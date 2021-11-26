@@ -28,7 +28,7 @@ import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.player.IFarPlayerServer;
 import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.mode.api.server.tracking.IFarTracker;
-import net.daporkchop.fp2.mode.api.tile.TileSnapshot;
+import net.daporkchop.fp2.core.mode.api.tile.TileSnapshot;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
 
 /**

@@ -20,9 +20,8 @@
 
 package net.daporkchop.fp2.asm.core.world.gen.layer;
 
-import io.netty.util.concurrent.FastThreadLocal;
-import net.daporkchop.fp2.util.threading.DefaultFastThreadLocal;
 import net.daporkchop.fp2.compat.vanilla.TLIntCache;
+import net.daporkchop.lib.common.misc.threadlocal.TL;
 import net.minecraft.world.gen.layer.IntCache;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -32,10 +31,11 @@ import org.spongepowered.asm.mixin.Overwrite;
  */
 @Mixin(IntCache.class)
 public abstract class MixinIntCache {
-    private static final FastThreadLocal<TLIntCache> tl = new DefaultFastThreadLocal<>(TLIntCache::new);
+    private static final TL<TLIntCache> tl = TL.initializedWith(TLIntCache::new);
 
     /**
      * @author DaPorkchop_
+     * @reason the original code sucks
      */
     @Overwrite
     public static int[] getIntCache(int size) {
@@ -44,6 +44,7 @@ public abstract class MixinIntCache {
 
     /**
      * @author DaPorkchop_
+     * @reason the original code sucks
      */
     @Overwrite
     public static void resetIntCache() {
@@ -52,6 +53,7 @@ public abstract class MixinIntCache {
 
     /**
      * @author DaPorkchop_
+     * @reason the original code sucks
      */
     @Overwrite
     public static String getCacheSizes() {

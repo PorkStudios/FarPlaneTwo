@@ -29,7 +29,6 @@ import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.fp2.common.util.exception.ResourceNotFoundException;
 import net.daporkchop.fp2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.compat.x86.x86FeatureDetector;
-import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.config.listener.ConfigListenerManager;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.network.RegisterPacketsEvent;
@@ -79,12 +78,14 @@ import static net.daporkchop.fp2.util.Constants.*;
         dependencies = "required-after:forgerocks@[6.20.3-1.12.2,);after:cubicchunks@[1.12.2-0.0.1188.0,)",
         acceptedMinecraftVersions = "1.12.2")
 public class FP2 extends FP2Core implements ResourceProvider {
+    private final Minecraft mc = Minecraft.getMinecraft();
+
     private String version = "";
 
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
         this.log(new Log4jAsPorkLibLogger(event.getModLog()));
-        this.chat(new ChatAsPorkLibLogger(Minecraft.getMinecraft()));
+        this.chat(new ChatAsPorkLibLogger(this.mc));
 
         FP2_LOG = event.getModLog();
         this.version = event.getModMetadata().version;

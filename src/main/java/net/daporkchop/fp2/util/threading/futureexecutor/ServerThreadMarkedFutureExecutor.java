@@ -21,11 +21,9 @@
 package net.daporkchop.fp2.util.threading.futureexecutor;
 
 import lombok.NonNull;
-import net.minecraft.client.Minecraft;
+import net.daporkchop.fp2.core.util.threading.futureexecutor.AbstractMarkedFutureExecutor;
 import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.common.WorldWorkerManager;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
 
 /**
  * @author DaPorkchop_

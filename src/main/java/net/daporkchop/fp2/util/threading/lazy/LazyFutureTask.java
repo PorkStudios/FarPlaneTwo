@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.util.threading.lazy;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.util.threading.ThreadingHelper;
+import net.daporkchop.fp2.core.util.threading.BlockingSupport;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.List;
@@ -81,6 +81,6 @@ public abstract class LazyFutureTask<V> extends CompletableFuture<V> implements 
             this.run();
         }
 
-        return ThreadingHelper.managedBlock(this);
+        return BlockingSupport.managedBlock(this);
     }
 }

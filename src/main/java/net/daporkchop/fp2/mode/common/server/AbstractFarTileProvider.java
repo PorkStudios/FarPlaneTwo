@@ -25,22 +25,21 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.Synchronized;
-import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
+import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.mode.api.server.storage.IFarStorage;
 import net.daporkchop.fp2.mode.api.server.tracking.IFarTrackerManager;
-import net.daporkchop.fp2.mode.api.tile.ITileHandle;
+import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.mode.common.server.storage.rocksdb.RocksStorage;
 import net.daporkchop.fp2.server.worldlistener.IWorldChangeListener;
 import net.daporkchop.fp2.server.worldlistener.WorldChangeListenerManager;
 import net.daporkchop.fp2.util.Constants;
-import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
 import net.daporkchop.fp2.util.threading.scheduler.ApproximatelyPrioritizedSharedFutureScheduler;
 import net.daporkchop.fp2.util.threading.scheduler.Scheduler;
@@ -117,8 +116,7 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
                             throw new IllegalArgumentException("unknown or stage in task: " + task);
                     }
                 },
-                ThreadingHelper.workerGroupBuilder()
-                        .world(this.world)
+                ((IFarWorldServer) this.world).fp2_IFarWorld_workerManager().createChildWorkerGroup()
                         .threads(fp2().globalConfig().performance().terrainThreads())
                         .threadFactory(PThreadFactories.builder().daemon().minPriority().collapsingId()
                                 .name(PStrings.fastFormat("FP2 %s DIM%d Worker #%%d", mode.name(), world.provider.getDimension())).build()),

@@ -18,9 +18,8 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.tile;
+package net.daporkchop.fp2.core.mode.api.tile;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -30,7 +29,6 @@ import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.util.SimpleRecycler;
-import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.lib.binary.stream.DataIn;
 import net.daporkchop.lib.binary.stream.DataOut;
 
@@ -49,8 +47,21 @@ public class TileSnapshot<POS extends IFarPos, T extends IFarTile> implements IT
     @Getter(AccessLevel.NONE)
     protected final byte[] data;
 
-    public TileSnapshot(@NonNull DataIn in, @NonNull IFarRenderMode<POS, T> mode) throws IOException {
+    /*TODO: public TileSnapshot(@NonNull DataIn in, @NonNull IFarRenderMode<POS, T> mode) throws IOException {
         this.pos = mode.readPos(in);
+        this.timestamp = in.readVarLongZigZag();
+
+        int len = in.readVarIntZigZag();
+        if (len < 0) { //no data!
+            this.data = null;
+        } else {
+            this.data = new byte[len];
+            in.readFully(this.data);
+        }
+    }*/
+
+    public TileSnapshot(@NonNull DataIn in, @NonNull POS pos) throws IOException {
+        this.pos = pos;
         this.timestamp = in.readVarLongZigZag();
 
         int len = in.readVarIntZigZag();
@@ -62,20 +73,7 @@ public class TileSnapshot<POS extends IFarPos, T extends IFarTile> implements IT
         }
     }
 
-    public TileSnapshot(@NonNull ByteBuf src, @NonNull IFarRenderMode<POS, T> mode) {
-        this.pos = mode.readPos(src);
-        this.timestamp = src.readLongLE();
-
-        int len = src.readIntLE();
-        if (len < 0) { //no data!
-            this.data = null;
-        } else { //tile data is non-empty, read it
-            this.data = new byte[len];
-            src.readBytes(this.data);
-        }
-    }
-
-    public void write(@NonNull DataOut out, @NonNull IFarRenderMode<POS, T> mode) throws IOException {
+    /*TODO: public void write(@NonNull DataOut out, @NonNull IFarRenderMode<POS, T> mode) throws IOException {
         mode.writePos(out, this.pos);
         out.writeVarLongZigZag(this.timestamp);
 
@@ -85,16 +83,16 @@ public class TileSnapshot<POS extends IFarPos, T extends IFarTile> implements IT
             out.writeVarIntZigZag(this.data.length);
             out.write(this.data);
         }
-    }
+    }*/
 
-    public void write(@NonNull ByteBuf dst) {
-        this.pos.writePos(dst);
-        dst.writeLongLE(this.timestamp);
+    public void write(@NonNull DataOut out) throws IOException {
+        out.writeVarLongZigZag(this.timestamp);
 
         if (this.data == null) { //no data!
-            dst.writeIntLE(-1);
-        } else { //tile data is present, write it to the buffer
-            dst.writeIntLE(this.data.length).writeBytes(this.data);
+            out.writeVarIntZigZag(-1);
+        } else { //tile data is present, write it
+            out.writeVarIntZigZag(this.data.length);
+            out.write(this.data);
         }
     }
 
@@ -116,8 +114,7 @@ public class TileSnapshot<POS extends IFarPos, T extends IFarTile> implements IT
 
     @Override
     public ITileSnapshot<POS, T> compressed() {
-        //return new CompressedTileSnapshot<>(this);
-        return null;
+        return new CompressedTileSnapshot<>(this);
     }
 
     @Override

@@ -25,11 +25,11 @@ import lombok.NonNull;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
 import net.daporkchop.fp2.compat.vanilla.region.ThreadSafeRegionFileCache;
+import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.server.worldlistener.IWorldChangeListener;
 import net.daporkchop.fp2.server.worldlistener.WorldChangeListenerManager;
 import net.daporkchop.fp2.util.datastructure.Datastructures;
 import net.daporkchop.fp2.util.datastructure.NDimensionalIntSegtreeSet;
-import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncCacheNBTBase;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
 import net.daporkchop.fp2.util.threading.futurecache.GenerationNotAllowedException;
@@ -204,7 +204,7 @@ public class VanillaAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldCha
 
         @Override
         protected void triggerGeneration(@NonNull ChunkPos key, @NonNull Object param) {
-            ThreadingHelper.scheduleTaskInWorldThread(VanillaAsyncBlockAccessImpl.this.world, (ERunnable) () -> {
+            ((IFarWorldServer) VanillaAsyncBlockAccessImpl.this.world).fp2_IFarWorld_workerManager().workExecutor().run((ERunnable) () -> {
                 int x = key.x;
                 int z = key.z;
 

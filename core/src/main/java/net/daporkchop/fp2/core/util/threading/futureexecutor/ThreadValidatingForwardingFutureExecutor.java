@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.util.threading.futureexecutor;
+package net.daporkchop.fp2.core.util.threading.futureexecutor;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;

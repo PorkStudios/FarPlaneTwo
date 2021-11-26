@@ -38,11 +38,11 @@ import net.daporkchop.fp2.compat.cc.biome.CubeBiomeAccessWrapper;
 import net.daporkchop.fp2.compat.cc.cube.CubeWithoutWorld;
 import net.daporkchop.fp2.compat.vanilla.IBiomeAccess;
 import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
+import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.server.worldlistener.IWorldChangeListener;
 import net.daporkchop.fp2.server.worldlistener.WorldChangeListenerManager;
 import net.daporkchop.fp2.util.datastructure.Datastructures;
 import net.daporkchop.fp2.util.datastructure.NDimensionalIntSegtreeSet;
-import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncCacheNBTBase;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
 import net.daporkchop.fp2.util.threading.futurecache.GenerationNotAllowedException;
@@ -263,7 +263,7 @@ public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldChangeLi
         @Override
         protected void triggerGeneration(@NonNull ChunkPos key, @NonNull Object param) {
             //load and immediately save column on server thread
-            ThreadingHelper.scheduleTaskInWorldThread(CCAsyncBlockAccessImpl.this.world, () -> {
+            ((IFarWorldServer) CCAsyncBlockAccessImpl.this.world).fp2_IFarWorld_workerManager().workExecutor().run(() -> {
                 Chunk column = ((ICubicWorldServer) CCAsyncBlockAccessImpl.this.world)
                         .getCubeCache().getColumn(key.x, key.z, ICubeProviderServer.Requirement.POPULATE);
                 if (column != null && !column.isEmpty()) {
@@ -302,7 +302,7 @@ public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldChangeLi
 
         @Override
         protected void triggerGeneration(@NonNull CubePos key, @NonNull Chunk param) {
-            ThreadingHelper.scheduleTaskInWorldThread(CCAsyncBlockAccessImpl.this.world, () -> {
+            ((IFarWorldServer) CCAsyncBlockAccessImpl.this.world).fp2_IFarWorld_workerManager().workExecutor().run(() -> {
                 //TODO: save column as well if needed
                 ICube cube = ((ICubicWorldServer) CCAsyncBlockAccessImpl.this.world)
                         .getCubeCache().getCube(key.getX(), key.getY(), key.getZ(), ICubeProviderServer.Requirement.LIGHT);

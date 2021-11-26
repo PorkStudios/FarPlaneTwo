@@ -23,9 +23,9 @@ package net.daporkchop.fp2.util.threading.scheduler;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import net.daporkchop.fp2.util.threading.ThreadingHelper;
-import net.daporkchop.fp2.util.threading.workergroup.WorkerGroupBuilder;
-import net.daporkchop.fp2.util.threading.workergroup.WorldWorkerGroup;
+import net.daporkchop.fp2.core.util.threading.BlockingSupport;
+import net.daporkchop.fp2.core.util.threading.workergroup.WorkerGroup;
+import net.daporkchop.fp2.core.util.threading.workergroup.WorkerGroupBuilder;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.reference.cache.Cached;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -70,7 +70,7 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
 
     protected final Function<P, V> function;
 
-    protected final WorldWorkerGroup group;
+    protected final WorkerGroup group;
     protected volatile boolean running = true;
 
     public SharedFutureScheduler(@NonNull Function<Scheduler<P, V>, Function<P, V>> functionFactory, @NonNull WorkerGroupBuilder builder) {
@@ -322,12 +322,12 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
         } catch (RecursiveTaskCancelledError e) { //a dependent task was cancelled, which likely means this one was too (but we need to make sure of it)
             if (!task.isCancelled()) { //this should be impossible
                 task.completeExceptionally(e);
-                ThreadingHelper.handle(this.group.world(), e);
+                this.group.manager().handle(e);
             }
         } catch (Throwable t) {
             task.completeExceptionally(t);
             if (this.running) { //only handle the exception if we aren't already shutting the scheduler down
-                ThreadingHelper.handle(this.group.world(), t);
+                this.group.manager().handle(t);
             }
         } finally { //the task's been executed, remove it from the map
             this.deleteTask(task);
@@ -491,7 +491,7 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
                     return super.join();
                 }
             } else { //not recursive, block normally
-                return ThreadingHelper.managedBlock(this);
+                return BlockingSupport.managedBlock(this);
             }
         }
 

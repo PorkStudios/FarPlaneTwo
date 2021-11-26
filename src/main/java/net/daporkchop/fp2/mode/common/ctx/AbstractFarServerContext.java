@@ -32,7 +32,7 @@ import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.mode.api.player.IFarPlayerServer;
 import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.mode.api.server.tracking.IFarTracker;
-import net.daporkchop.fp2.mode.api.tile.TileSnapshot;
+import net.daporkchop.fp2.core.mode.api.tile.TileSnapshot;
 import net.daporkchop.fp2.core.network.packet.debug.server.SPacketDebugUpdateStatistics;
 import net.daporkchop.fp2.net.packet.standard.server.SPacketTileData;
 import net.daporkchop.fp2.net.packet.standard.server.SPacketUnloadTile;

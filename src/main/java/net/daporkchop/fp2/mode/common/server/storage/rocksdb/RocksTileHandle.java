@@ -31,10 +31,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
-import net.daporkchop.fp2.mode.api.tile.ITileHandle;
-import net.daporkchop.fp2.mode.api.tile.ITileMetadata;
-import net.daporkchop.fp2.mode.api.tile.ITileSnapshot;
-import net.daporkchop.fp2.mode.api.tile.TileSnapshot;
+import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
+import net.daporkchop.fp2.core.mode.api.tile.ITileMetadata;
+import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
+import net.daporkchop.fp2.core.mode.api.tile.TileSnapshot;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.Transaction;
 

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,24 +18,46 @@
  *
  */
 
-package net.daporkchop.fp2.util.threading;
+package net.daporkchop.fp2.core.util.threading.futureexecutor;
 
-import io.netty.util.concurrent.FastThreadLocal;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 
 /**
+ * An {@link Executor} which returns a {@link CompletableFuture} when submitting tasks.
+ *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public class DefaultFastThreadLocal<V> extends FastThreadLocal<V> {
-    @NonNull
-    protected final Supplier<V> defaultValue;
-
+public interface FutureExecutor extends Executor, AutoCloseable {
     @Override
-    protected V initialValue() throws Exception {
-        return this.defaultValue.get();
+    default void execute(@NonNull Runnable runnable) {
+        this.run(runnable);
     }
+
+    /**
+     * Executes the given {@link Runnable} on this executor.
+     *
+     * @param runnable the {@link Runnable} to run
+     * @return a {@link CompletableFuture} which will be completed once the {@link Runnable} has returned
+     */
+    CompletableFuture<Void> run(@NonNull Runnable runnable);
+
+    /**
+     * Executes the given {@link Supplier} on this executor.
+     *
+     * @param supplier the {@link Supplier} to run
+     * @return a {@link CompletableFuture} which will be completed with the {@link Supplier}'s return value
+     */
+    <V> CompletableFuture<V> supply(@NonNull Supplier<V> supplier);
+
+    /**
+     * Shuts down this executor.
+     * <p>
+     * This will cancel all tasks, and prevent any further ones from being submitted.
+     */
+    @Override
+    void close();
 }

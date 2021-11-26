@@ -18,22 +18,29 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.ctx;
+package net.daporkchop.fp2.core.util.threading.workergroup;
 
-import net.daporkchop.fp2.core.mode.api.ctx.IFarWorld;
-import net.daporkchop.fp2.core.util.annotation.CalledFromClientThread;
+import net.daporkchop.fp2.common.util.capability.CloseableResource;
+import net.daporkchop.fp2.core.util.threading.futureexecutor.FutureExecutor;
+
+import java.util.Collection;
 
 /**
- * Provides access to {@link IFarClientContext} instances in a client world.
- *
  * @author DaPorkchop_
  */
-public interface IFarWorldClient extends IFarWorld {
-    @CalledFromClientThread
-    @Override
-    void fp2_IFarWorld_init();
+public interface WorkerGroup extends CloseableResource {
+    /**
+     * @return the {@link WorkerManager} which this group belongs to
+     */
+    WorkerManager manager();
 
-    @CalledFromClientThread
-    @Override
-    void fp2_IFarWorld_close();
+    /**
+     * @return the individual worker threads in this group
+     */
+    Collection<Thread> threads();
+
+    /**
+     * @return the {@link FutureExecutor} to be used by this group's threads to execute tasks on the world thread
+     */
+    FutureExecutor worldExecutor();
 }

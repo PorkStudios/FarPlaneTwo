@@ -29,7 +29,7 @@ import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.mode.api.client.IFarTileCache;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
-import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldClient;
 import net.daporkchop.fp2.mode.common.client.FarTileCache;
 import net.daporkchop.fp2.core.util.annotation.CalledFromNetworkThread;
 
@@ -72,7 +72,7 @@ public abstract class AbstractFarClientContext<POS extends IFarPos, T extends IF
         this.config = config;
 
         //check if we need to replace the renderer on the client thread
-        this.world.fp2_IFarWorld_scheduleTask(() -> {
+        this.world.fp2_IFarWorld_workerManager().rootExecutor().execute(() -> {
             if (this.config != config) { //config has changed since this task was scheduled, skip re-check since we're technically out-of-date
                 return;
             }
@@ -95,7 +95,7 @@ public abstract class AbstractFarClientContext<POS extends IFarPos, T extends IF
         this.closed = true;
 
         //do all cleanup on client thread
-        this.world.fp2_IFarWorld_scheduleTask(() -> {
+        this.world.fp2_IFarWorld_workerManager().rootExecutor().execute(() -> {
             if (this.renderer != null) {
                 this.renderer.close();
                 this.renderer = null;

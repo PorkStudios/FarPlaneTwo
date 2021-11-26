@@ -25,7 +25,7 @@ import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.client.IFarTileCache;
-import net.daporkchop.fp2.mode.api.tile.ITileSnapshot;
+import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
 import net.daporkchop.fp2.util.annotation.DebugOnly;
 import net.daporkchop.fp2.util.annotation.RemovalPolicy;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;

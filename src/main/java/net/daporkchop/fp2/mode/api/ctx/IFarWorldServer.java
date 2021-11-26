@@ -26,16 +26,13 @@ import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorld;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
-import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
 
 import java.util.function.Consumer;
 
 /**
- * Provides access to {@link IFarTileProvider} instances in a server world.
- *
  * @author DaPorkchop_
  */
-public interface IFarWorldServer extends IFarWorld, IAsyncBlockAccess.Holder {
+public interface IFarWorldServer extends IFarWorld {
     /**
      * Gets the {@link IFarTileProvider} used by the given {@link IFarRenderMode} in this world.
      *

@@ -28,12 +28,11 @@ import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import lombok.NonNull;
 import lombok.SneakyThrows;
-import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.server.storage.IFarStorage;
-import net.daporkchop.fp2.mode.api.tile.ITileHandle;
+import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.mode.common.server.AbstractFarTileProvider;
 import net.daporkchop.lib.common.misc.file.PFiles;
 import net.daporkchop.lib.common.system.PlatformInfo;
@@ -68,7 +67,7 @@ import java.util.stream.Stream;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.core.FP2Core.*;
-import static net.daporkchop.fp2.mode.api.tile.ITileMetadata.*;
+import static net.daporkchop.fp2.core.mode.api.tile.ITileMetadata.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**

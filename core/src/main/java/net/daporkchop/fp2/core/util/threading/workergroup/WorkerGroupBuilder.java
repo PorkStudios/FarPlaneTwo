@@ -18,37 +18,37 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.tile;
+package net.daporkchop.fp2.core.util.threading.workergroup;
+
+import lombok.NonNull;
+
+import java.util.concurrent.ThreadFactory;
 
 /**
- * Additional information stored alongside tile data.
+ * Builder for constructing {@link WorkerGroup}s.
  *
  * @author DaPorkchop_
  */
-public interface ITileMetadata {
-    static ITileMetadata ofTimestamp(long timestamp) {
-        return () -> timestamp;
-    }
+public interface WorkerGroupBuilder {
+    /**
+     * Sets the number of threads which the {@link WorkerGroup} will have.
+     *
+     * @param threads the number of threads
+     */
+    WorkerGroupBuilder threads(int threads);
 
     /**
-     * Timestamp indicating that the tile has not yet been generated.
+     * Sets the {@link ThreadFactory} which the {@link WorkerGroup}'s threads will be created by.
+     *
+     * @param threadFactory the {@link ThreadFactory}
      */
-    long TIMESTAMP_BLANK = Long.MIN_VALUE;
+    WorkerGroupBuilder threadFactory(@NonNull ThreadFactory threadFactory);
 
     /**
-     * Timestamp indicating that the tile's rough generation has been completed.
+     * Builds the {@link WorkerGroup} using the configured settings.
+     *
+     * @param action the {@link Runnable} which the workers will run
+     * @return the constructed {@link WorkerGroup}
      */
-    long TIMESTAMP_GENERATED = -1L;
-
-    /**
-     * @return the tile's timestamp
-     */
-    long timestamp();
-
-    /**
-     * @return whether or not the tile's data has been initialized
-     */
-    default boolean isInitialized() {
-        return this.timestamp() != TIMESTAMP_BLANK;
-    }
+    WorkerGroup build(@NonNull Runnable action);
 }

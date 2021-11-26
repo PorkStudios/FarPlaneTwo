@@ -22,18 +22,17 @@ package net.daporkchop.fp2.mode.common.client;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldClient;
 import net.daporkchop.fp2.mode.api.client.IFarTileCache;
-import net.daporkchop.fp2.mode.api.tile.ITileSnapshot;
+import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
 import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
 import net.daporkchop.fp2.mode.common.client.bake.IRenderBaker;
 import net.daporkchop.fp2.mode.common.client.index.IRenderIndex;
 import net.daporkchop.fp2.mode.common.client.strategy.IFarRenderStrategy;
 import net.daporkchop.fp2.core.util.SimpleRecycler;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
-import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.daporkchop.fp2.util.threading.scheduler.NoFutureScheduler;
 import net.daporkchop.fp2.util.threading.scheduler.Scheduler;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
@@ -89,8 +88,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
         this.world = MC.world;
         this.coordLimits = renderer.context().world().fp2_IFarWorld_coordLimits();
 
-        this.bakeScheduler = new NoFutureScheduler<>(this, ThreadingHelper.workerGroupBuilder()
-                .world(this.world)
+        this.bakeScheduler = new NoFutureScheduler<>(this, this.renderer.context().world().fp2_IFarWorld_workerManager().createChildWorkerGroup()
                 .threads(fp2().globalConfig().performance().bakeThreads())
                 .threadFactory(PThreadFactories.builder().daemon().minPriority().collapsingId().name("FP2 Rendering Thread #%d").build()));
 
@@ -108,7 +106,16 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
         this.dataUpdatesLock.drainPermits();
         this.dataUpdatesLock.release(Integer.MAX_VALUE);
 
+        //this will block until all of the bake threads have exited
         this.bakeScheduler.close();
+
+        //release all of the bake outputs and remove them from the map
+        for (Iterator<POS> itr = this.pendingDataUpdates.keySet().iterator(); itr.hasNext(); ) {
+            this.pendingDataUpdates.computeIfPresent(itr.next(), (pos, output) -> {
+                output.ifPresent(IBakeOutput::release);
+                return null;
+            });
+        }
     }
 
     @Override
@@ -206,7 +213,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
         });
 
         if (this.isBulkUpdateQueued.compareAndSet(false, true)) { //we won the race to enqueue a bulk update!
-            ThreadingHelper.scheduleTaskInWorldThread(this.world, this);
+            this.renderer.context().world().fp2_IFarWorld_workerManager().workExecutor().run(this);
         }
     }
 
@@ -214,7 +221,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
         this.pendingRenderableUpdates.put(pos, renderable);
 
         if (this.isBulkUpdateQueued.compareAndSet(false, true)) { //we won the race to enqueue a bulk update!
-            ThreadingHelper.scheduleTaskInWorldThread(this.world, this);
+            this.renderer.context().world().fp2_IFarWorld_workerManager().workExecutor().run(this);
         }
     }
 

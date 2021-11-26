@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2020 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -24,7 +24,7 @@ import lombok.Getter;
 import net.daporkchop.fp2.util.math.Matrix3d;
 import net.daporkchop.fp2.util.math.SMatrix3d;
 import net.daporkchop.fp2.util.math.Vector3d;
-import net.daporkchop.fp2.util.threading.DefaultFastThreadLocal;
+import net.daporkchop.lib.common.misc.threadlocal.TL;
 
 import static java.lang.Math.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -33,7 +33,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 public class QefSolver {
-    protected static final DefaultFastThreadLocal<Ctx> CTX_TL = new DefaultFastThreadLocal<>(Ctx::new);
+    protected static final TL<Ctx> CTX_TL = TL.initializedWith(Ctx::new);
 
     protected static double dot(Vector3d a, Vector3d b) {
         return a.x * b.x + a.y * b.y + a.z * b.z;

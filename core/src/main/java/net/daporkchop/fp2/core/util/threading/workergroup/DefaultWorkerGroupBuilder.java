@@ -18,62 +18,44 @@
  *
  */
 
-package net.daporkchop.fp2.util.threading.workergroup;
+package net.daporkchop.fp2.core.util.threading.workergroup;
 
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
-import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
-import net.minecraft.world.World;
 
 import java.util.concurrent.ThreadFactory;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
- * Builder for {@link WorldWorkerGroup} instances.
+ * Default implementation of {@link WorkerGroupBuilder}.
  *
  * @author DaPorkchop_
- * @see ThreadingHelper#workerGroupBuilder()
  */
+@RequiredArgsConstructor
 @Getter
 @Setter
-public abstract class WorkerGroupBuilder {
-    /**
-     * The number of threads that this worker group will use.
-     */
+public class DefaultWorkerGroupBuilder implements WorkerGroupBuilder {
+    @NonNull
+    protected final DefaultWorkerManager manager;
+
     protected int threads = -1;
 
-    /**
-     * The {@link ThreadFactory} that will be used for creating this worker group's threads.
-     */
     @NonNull
     protected ThreadFactory threadFactory = PThreadFactories.DEFAULT_THREAD_FACTORY;
 
-    /**
-     * The {@link World} that this worker group belongs to.
-     * <p>
-     * This will affect the behavior of the task scheduling methods in {@link ThreadingHelper}.
-     */
-    @NonNull
-    protected World world;
-
+    @Override
     public WorkerGroupBuilder threads(int threads) {
         this.threads = positive(threads, "threads");
         return this;
     }
 
-    protected void validate() {
+    @Override
+    public WorkerGroup build(@NonNull Runnable action) {
         positive(this.threads, "threads");
-        checkArg(this.world != null, "world must be set!");
+        return new DefaultWorkerGroup(this, action);
     }
-
-    /**
-     * Constructs a new {@link WorldWorkerGroup} using the settings configured in this builder.
-     *
-     * @param task the root task to be executed by the worker threads
-     * @return the constructed {@link WorldWorkerGroup}
-     */
-    public abstract WorldWorkerGroup build(@NonNull Runnable task);
 }

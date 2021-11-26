@@ -21,7 +21,6 @@
 package net.daporkchop.fp2.mode.common.server.tracking;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
@@ -29,7 +28,7 @@ import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.mode.api.server.tracking.IFarTracker;
-import net.daporkchop.fp2.mode.api.tile.ITileSnapshot;
+import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
 import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
 import net.daporkchop.fp2.util.annotation.DebugOnly;
@@ -37,7 +36,6 @@ import net.daporkchop.fp2.util.annotation.RemovalPolicy;
 import net.daporkchop.fp2.util.datastructure.RecyclingArrayDeque;
 import net.daporkchop.fp2.util.datastructure.SimpleSet;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
-import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.ArrayList;
@@ -293,7 +291,7 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
                 this.updateWaiting();
             }
         } catch (Throwable t) {
-            ThreadingHelper.handle(this.context.tileProvider().world(), t);
+            ((IFarWorldServer) this.context.tileProvider().world()).fp2_IFarWorld_workerManager().handle(t);
             PUnsafe.throwException(t);
         }
     }

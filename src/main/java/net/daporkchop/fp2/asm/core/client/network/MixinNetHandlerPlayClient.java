@@ -24,26 +24,28 @@ import lombok.NonNull;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.core.network.IPacket;
-import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
-import net.daporkchop.fp2.mode.api.client.IFarTileCache;
-import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
-import net.daporkchop.fp2.mode.api.player.IFarPlayerClient;
+import net.daporkchop.fp2.core.network.IPacket;
 import net.daporkchop.fp2.core.network.packet.debug.server.SPacketDebugUpdateStatistics;
 import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketHandshake;
-import net.daporkchop.fp2.net.FP2Network;
-import net.daporkchop.fp2.net.packet.standard.server.SPacketSessionBegin;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionEnd;
-import net.daporkchop.fp2.net.packet.standard.server.SPacketTileData;
-import net.daporkchop.fp2.net.packet.standard.server.SPacketUnloadTile;
-import net.daporkchop.fp2.net.packet.standard.server.SPacketUnloadTiles;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUpdateConfig;
 import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromClientThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromNetworkThread;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.FakeFarWorldClient;
+import net.daporkchop.fp2.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.mode.api.client.IFarTileCache;
+import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
+import net.daporkchop.fp2.mode.api.player.IFarPlayerClient;
+import net.daporkchop.fp2.net.FP2Network;
+import net.daporkchop.fp2.net.packet.standard.server.SPacketSessionBegin;
+import net.daporkchop.fp2.net.packet.standard.server.SPacketTileData;
+import net.daporkchop.fp2.net.packet.standard.server.SPacketUnloadTile;
+import net.daporkchop.fp2.net.packet.standard.server.SPacketUnloadTiles;
 import net.daporkchop.lib.common.util.PorkUtil;
+import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.network.NetHandlerPlayClient;
 import net.minecraft.network.NetworkManager;
 import org.spongepowered.asm.mixin.Final;
@@ -57,7 +59,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.Objects;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
-import static net.daporkchop.fp2.net.FP2Network.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
@@ -67,7 +68,12 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 @Mixin(NetHandlerPlayClient.class)
 public abstract class MixinNetHandlerPlayClient implements IFarPlayerClient {
-    @Shadow @Final public NetworkManager netManager;
+    @Shadow
+    @Final
+    public NetworkManager netManager;
+    @Shadow
+    public WorldClient world;
+
     @Unique
     private FP2Config serverConfig;
     @Unique
@@ -129,7 +135,7 @@ public abstract class MixinNetHandlerPlayClient implements IFarPlayerClient {
 
         IFarRenderMode<?, ?> mode = this.modeFor(this.config);
         if (mode != null) {
-            this.context = mode.clientContext(packet.fakeWorldClient(), this.config);
+            this.context = mode.clientContext(new FakeFarWorldClient(this.world, packet.coordLimits()), this.config);
         }
     }
 
@@ -150,6 +156,8 @@ public abstract class MixinNetHandlerPlayClient implements IFarPlayerClient {
         checkState(this.context != null, "active session has no render mode!");
 
         this.context.tileCache().receiveTile(uncheckedCast(packet.tile()));
+        //TODO: tile compression on the network thread is simply too expensive and causes lots of issues... we need congestion control
+        //this.context.tileCache().receiveTile(uncheckedCast(packet.tile().compressed()));
     }
 
     @Unique

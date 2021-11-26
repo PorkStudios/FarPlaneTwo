@@ -24,7 +24,6 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
-import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
@@ -33,13 +32,12 @@ import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.mode.api.server.storage.IFarStorage;
 import net.daporkchop.fp2.mode.api.server.tracking.IFarTracker;
 import net.daporkchop.fp2.mode.api.server.tracking.IFarTrackerManager;
-import net.daporkchop.fp2.mode.api.tile.ITileHandle;
-import net.daporkchop.fp2.mode.api.tile.ITileMetadata;
-import net.daporkchop.fp2.mode.api.tile.ITileSnapshot;
+import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
+import net.daporkchop.fp2.core.mode.api.tile.ITileMetadata;
+import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
 import net.daporkchop.fp2.util.annotation.DebugOnly;
 import net.daporkchop.fp2.util.datastructure.CompactReferenceArraySet;
-import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.daporkchop.fp2.util.threading.scheduler.NoFutureScheduler;
 import net.daporkchop.fp2.util.threading.scheduler.Scheduler;
 import net.daporkchop.lib.common.misc.string.PStrings;
@@ -77,8 +75,7 @@ public abstract class AbstractTrackerManager<POS extends IFarPos, T extends IFar
         this.tileProvider = tileProvider;
 
         this.scheduler = new NoFutureScheduler<>(AbstractTracker::doUpdate,
-                ThreadingHelper.workerGroupBuilder()
-                        .world(tileProvider.world())
+                ((IFarWorldServer) tileProvider.world()).fp2_IFarWorld_workerManager().createChildWorkerGroup()
                         .threads(fp2().globalConfig().performance().trackingThreads())
                         .threadFactory(PThreadFactories.builder().daemon().minPriority().collapsingId()
                                 .name(PStrings.fastFormat("FP2 %s DIM%d Tracker #%%d", tileProvider.mode().name(), ((IFarWorldServer) tileProvider.world()).fp2_IFarWorld_dimensionId())).build()));

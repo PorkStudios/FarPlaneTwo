@@ -18,47 +18,19 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.tile;
+package net.daporkchop.fp2.core.mode.api.ctx;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.core.debug.util.DebugStats;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
-import net.daporkchop.fp2.core.util.SimpleRecycler;
+import net.daporkchop.fp2.core.util.annotation.CalledFromClientThread;
 
 /**
- * A snapshot of the data stored at a given tile position.
- *
  * @author DaPorkchop_
  */
-public interface ITileSnapshot<POS extends IFarPos, T extends IFarTile> extends ITileMetadata {
-    /**
-     * @return the tile's position
-     */
-    POS pos();
+public interface IFarWorldClient extends IFarWorld {
+    @CalledFromClientThread
+    @Override
+    void fp2_IFarWorld_init();
 
-    /**
-     * Allocates a {@link T} using the given {@link SimpleRecycler} and initializes it using the data stored in this snapshot.
-     *
-     * @param recycler a {@link SimpleRecycler} to use for allocating instances of {@link T}
-     * @return the loaded {@link T}, or {@code null} if this snapshot is empty
-     */
-    T loadTile(@NonNull SimpleRecycler<T> recycler);
-
-    /**
-     * @return whether or not this snapshot's tile data is empty
-     */
-    boolean isEmpty();
-
-    /**
-     * @return this snapshot, with its tile data stored compressed in-memory
-     */
-    ITileSnapshot<POS, T> compressed();
-
-    /**
-     * @return this snapshot, with its tile data stored in-memory without compression
-     */
-    ITileSnapshot<POS, T> uncompressed();
-
-    DebugStats.TileSnapshot stats();
+    @CalledFromClientThread
+    @Override
+    void fp2_IFarWorld_close();
 }

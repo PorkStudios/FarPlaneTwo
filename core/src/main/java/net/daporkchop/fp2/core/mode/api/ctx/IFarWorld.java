@@ -20,11 +20,8 @@
 
 package net.daporkchop.fp2.core.mode.api.ctx;
 
-import lombok.NonNull;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
-
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
+import net.daporkchop.fp2.core.util.threading.workergroup.WorkerManager;
 
 /**
  * Provides access to additional fp2 information in a world.
@@ -48,20 +45,9 @@ public interface IFarWorld {
     void fp2_IFarWorld_close();
 
     /**
-     * Schedules a task to be run on this world's thread.
-     *
-     * @param task the task to run
-     * @return a {@link CompletableFuture} which will be completed with the result of the task
+     * @return the {@link WorkerManager} used by this world
      */
-    CompletableFuture<Void> fp2_IFarWorld_scheduleTask(@NonNull Runnable task);
-
-    /**
-     * Schedules a task to be run on this world's thread.
-     *
-     * @param task the task to run
-     * @return a {@link CompletableFuture} which will be completed with the result of the task
-     */
-    <T> CompletableFuture<T> fp2_IFarWorld_scheduleTask(@NonNull Supplier<T> task);
+    WorkerManager fp2_IFarWorld_workerManager();
 
     /**
      * @return this world's dimension ID

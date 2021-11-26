@@ -18,15 +18,12 @@
  *
  */
 
-package net.daporkchop.fp2.util.threading.futureexecutor;
+package net.daporkchop.fp2.core.util.threading.futureexecutor;
 
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
-import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.lib.common.util.PorkUtil;
-import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -35,7 +32,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.RunnableFuture;
 import java.util.function.Supplier;
 
-import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
@@ -142,7 +139,7 @@ public abstract class AbstractMarkedFutureExecutor implements MarkedFutureExecut
         this.running = false;
 
         if (!this.queue.isEmpty()) {
-            Constants.bigWarning("%s: %d elements left in the queue after shutdown!", this, this.queue.size());
+            fp2().log().alert("%s: %d elements left in the queue after shutdown!", this, this.queue.size());
         }
     }
 

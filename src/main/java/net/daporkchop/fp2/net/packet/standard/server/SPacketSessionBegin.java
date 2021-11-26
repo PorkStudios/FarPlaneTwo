@@ -20,21 +20,15 @@
 
 package net.daporkchop.fp2.net.packet.standard.server;
 
-import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.core.network.IPacket;
-import net.daporkchop.fp2.core.util.annotation.CalledFromClientThread;
-import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
-import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.daporkchop.lib.binary.stream.DataIn;
 import net.daporkchop.lib.binary.stream.DataOut;
 
 import java.io.IOException;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
 
 /**
  * Sent by the server to tell the client to get ready to initiate a new session.
@@ -69,43 +63,5 @@ public class SPacketSessionBegin implements IPacket {
             out.writeIntLE(bb.maxY());
             out.writeIntLE(bb.maxZ());
         }
-    }
-
-    public IFarWorldClient fakeWorldClient() {
-        IntAxisAlignedBB[] coordLimits = this.coordLimits;
-
-        return new IFarWorldClient() {
-            @CalledFromClientThread
-            @Override
-            public void fp2_IFarWorld_init() {
-                throw new UnsupportedOperationException();
-            }
-
-            @CalledFromClientThread
-            @Override
-            public void fp2_IFarWorld_close() {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public IntAxisAlignedBB[] fp2_IFarWorld_coordLimits() {
-                return coordLimits;
-            }
-
-            @Override
-            public CompletableFuture<Void> fp2_IFarWorld_scheduleTask(@NonNull Runnable task) {
-                return ThreadingHelper.scheduleTaskInClientThread(task);
-            }
-
-            @Override
-            public <T> CompletableFuture<T> fp2_IFarWorld_scheduleTask(@NonNull Supplier<T> task) {
-                return ThreadingHelper.scheduleTaskInClientThread(task);
-            }
-
-            @Override
-            public int fp2_IFarWorld_dimensionId() {
-                throw new UnsupportedOperationException();
-            }
-        };
     }
 }

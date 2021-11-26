@@ -18,34 +18,35 @@
  *
  */
 
-package net.daporkchop.fp2.util.threading.workergroup;
+package net.daporkchop.fp2.core.util.threading.workergroup;
 
-import net.daporkchop.fp2.util.threading.ThreadingHelper;
-import net.daporkchop.fp2.util.threading.futureexecutor.FutureExecutor;
-import net.daporkchop.lib.unsafe.capability.Releasable;
-import net.minecraft.world.World;
-
-import java.util.Collection;
+import lombok.NonNull;
+import net.daporkchop.fp2.core.util.threading.futureexecutor.FutureExecutor;
+import net.daporkchop.fp2.core.util.threading.futureexecutor.MarkedFutureExecutor;
 
 /**
- * A group of worker threads in a {@link World}.
- *
  * @author DaPorkchop_
- * @see ThreadingHelper#workerGroupBuilder()
  */
-public interface WorldWorkerGroup extends Releasable {
+public interface WorkerManager {
     /**
-     * @return the {@link World} that this group belongs to
+     * @return the root executor
      */
-    World world();
+    MarkedFutureExecutor rootExecutor();
 
     /**
-     * @return the individual worker threads in this group
+     * @return the {@link FutureExecutor} which should be used by the current thread
      */
-    Collection<Thread> threads();
+    FutureExecutor workExecutor();
 
     /**
-     * @return the {@link FutureExecutor} to be used by this group's threads to execute tasks on the world thread
+     * @return a {@link WorkerGroupBuilder} for creating a new {@link WorkerGroup} as a child of this {@link WorkerManager}
      */
-    FutureExecutor worldExecutor();
+    WorkerGroupBuilder createChildWorkerGroup();
+
+    /**
+     * Handles an exception as if it were thrown by the {@link #rootExecutor()}.
+     *
+     * @param t the exception
+     */
+    void handle(@NonNull Throwable t);
 }

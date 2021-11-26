@@ -21,9 +21,8 @@
 package net.daporkchop.fp2.util.threading.scheduler;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.util.threading.ThreadingHelper;
-import net.daporkchop.fp2.util.threading.workergroup.WorkerGroupBuilder;
-import net.daporkchop.fp2.util.threading.workergroup.WorldWorkerGroup;
+import net.daporkchop.fp2.core.util.threading.workergroup.WorkerGroup;
+import net.daporkchop.fp2.core.util.threading.workergroup.WorkerGroupBuilder;
 
 import java.util.List;
 import java.util.Map;
@@ -57,7 +56,7 @@ public class NoFutureScheduler<P> implements Scheduler<P, Void>, Runnable {
 
     protected final Consumer<P> function;
 
-    protected final WorldWorkerGroup group;
+    protected final WorkerGroup group;
     protected volatile boolean running = true;
 
     public NoFutureScheduler(@NonNull Consumer<P> function, @NonNull WorkerGroupBuilder builder) {
@@ -120,7 +119,7 @@ public class NoFutureScheduler<P> implements Scheduler<P, Void>, Runnable {
                     //pass the parameter to the function
                     this.function.accept(param);
                 } catch (Throwable t) {
-                    ThreadingHelper.handle(this.group.world(), t);
+                    this.group.manager().handle(t);
                 } finally {
                     //if the parameter was re-scheduled while running the function, it'll have been mapped to ADDED again and this removal will fail. it's our
                     //  responsibility to add it to the queue again now that execution has finished.

@@ -21,8 +21,8 @@
 package net.daporkchop.fp2.util.threading.scheduler;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.core.util.threading.workergroup.WorkerGroupBuilder;
 import net.daporkchop.fp2.util.datastructure.ConcurrentUnboundedPriorityBlockingQueue;
-import net.daporkchop.fp2.util.threading.workergroup.WorkerGroupBuilder;
 import net.daporkchop.lib.common.util.PorkUtil;
 
 import java.util.ArrayDeque;

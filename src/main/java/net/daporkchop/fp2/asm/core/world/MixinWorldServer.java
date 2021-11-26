@@ -25,21 +25,24 @@ import lombok.NonNull;
 import net.daporkchop.fp2.compat.cc.asyncblockaccess.CCAsyncBlockAccessImpl;
 import net.daporkchop.fp2.compat.vanilla.asyncblockaccess.VanillaAsyncBlockAccessImpl;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
+import net.daporkchop.fp2.core.util.threading.workergroup.DefaultWorkerManager;
+import net.daporkchop.fp2.core.util.threading.workergroup.WorkerManager;
+import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.util.Constants;
-import net.daporkchop.fp2.util.threading.ThreadingHelper;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
+import net.daporkchop.fp2.util.threading.futureexecutor.ServerThreadMarkedFutureExecutor;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.WorldServer;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
@@ -48,11 +51,18 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @Mixin(WorldServer.class)
-public abstract class MixinWorldServer extends MixinWorld implements IFarWorldServer {
+public abstract class MixinWorldServer extends MixinWorld implements IFarWorldServer, IAsyncBlockAccess.Holder {
+    @Shadow
+    @Final
+    private MinecraftServer server;
+
     @Unique
     protected Map<IFarRenderMode, IFarTileProvider> tileProvidersByMode;
     @Unique
     protected IFarTileProvider[] tileProviders;
+
+    @Unique
+    protected WorkerManager workerManager;
 
     @Unique
     protected IAsyncBlockAccess asyncBlockAccess;
@@ -60,6 +70,8 @@ public abstract class MixinWorldServer extends MixinWorld implements IFarWorldSe
     @Override
     public void fp2_IFarWorld_init() {
         super.fp2_IFarWorld_init();
+
+        this.workerManager = new DefaultWorkerManager(this.server.serverThread, ServerThreadMarkedFutureExecutor.getFor(this.server));
 
         this.asyncBlockAccess = Constants.isCubicWorld(uncheckedCast(this))
                 ? new CCAsyncBlockAccessImpl(uncheckedCast(this))
@@ -78,13 +90,8 @@ public abstract class MixinWorldServer extends MixinWorld implements IFarWorldSe
     }
 
     @Override
-    public CompletableFuture<Void> fp2_IFarWorld_scheduleTask(@NonNull Runnable task) {
-        return ThreadingHelper.scheduleTaskInWorldThread(uncheckedCast(this), task);
-    }
-
-    @Override
-    public <T> CompletableFuture<T> fp2_IFarWorld_scheduleTask(@NonNull Supplier<T> task) {
-        return ThreadingHelper.scheduleTaskInWorldThread(uncheckedCast(this), task);
+    public WorkerManager fp2_IFarWorld_workerManager() {
+        return this.workerManager;
     }
 
     @Override

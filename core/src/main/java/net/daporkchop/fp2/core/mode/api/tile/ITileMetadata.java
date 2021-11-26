@@ -18,42 +18,37 @@
  *
  */
 
-package net.daporkchop.fp2.net.packet.standard.server;
-
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
-import net.daporkchop.fp2.core.network.IPacket;
-import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.core.mode.api.tile.TileSnapshot;
-import net.daporkchop.lib.binary.stream.DataIn;
-import net.daporkchop.lib.binary.stream.DataOut;
-
-import java.io.IOException;
-
-import static net.daporkchop.lib.common.util.PorkUtil.*;
+package net.daporkchop.fp2.core.mode.api.tile;
 
 /**
+ * Additional information stored alongside tile data.
+ *
  * @author DaPorkchop_
  */
-@Getter
-@Setter
-public class SPacketTileData implements IPacket {
-    @NonNull
-    protected IFarRenderMode<?, ?> mode;
-    @NonNull
-    protected TileSnapshot<?, ?> tile;
-
-    @Override
-    public void read(@NonNull DataIn in) throws IOException {
-        this.mode = IFarRenderMode.REGISTRY.get(in.readVarUTF());
-        this.tile = new TileSnapshot<>(in, uncheckedCast(this.mode.readPos(in)));
+public interface ITileMetadata {
+    static ITileMetadata ofTimestamp(long timestamp) {
+        return () -> timestamp;
     }
 
-    @Override
-    public void write(@NonNull DataOut out) throws IOException {
-        out.writeVarUTF(this.mode.name());
-        this.mode.writePos(out, uncheckedCast(this.tile.pos()));
-        this.tile.write(out);
+    /**
+     * Timestamp indicating that the tile has not yet been generated.
+     */
+    long TIMESTAMP_BLANK = Long.MIN_VALUE;
+
+    /**
+     * Timestamp indicating that the tile's rough generation has been completed.
+     */
+    long TIMESTAMP_GENERATED = -1L;
+
+    /**
+     * @return the tile's timestamp
+     */
+    long timestamp();
+
+    /**
+     * @return whether or not the tile's data has been initialized
+     */
+    default boolean isInitialized() {
+        return this.timestamp() != TIMESTAMP_BLANK;
     }
 }

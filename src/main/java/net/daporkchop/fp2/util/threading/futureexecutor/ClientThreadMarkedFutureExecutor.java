@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.util.threading.futureexecutor;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.core.util.threading.futureexecutor.AbstractMarkedFutureExecutor;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;

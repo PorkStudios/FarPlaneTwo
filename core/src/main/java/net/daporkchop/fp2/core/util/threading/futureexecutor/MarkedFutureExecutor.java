@@ -18,46 +18,62 @@
  *
  */
 
-package net.daporkchop.fp2.util.threading.futureexecutor;
+package net.daporkchop.fp2.core.util.threading.futureexecutor;
 
 import lombok.NonNull;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 
 /**
- * An {@link Executor} which returns a {@link CompletableFuture} when submitting tasks.
+ * A {@link FutureExecutor} whose tasks are categorized using an arbitrary object as a marker.
  *
  * @author DaPorkchop_
  */
-public interface FutureExecutor extends Executor, AutoCloseable {
+public interface MarkedFutureExecutor extends FutureExecutor {
+    Object DEFAULT_MARKER = new Object[0];
+
+    /**
+     * @deprecated use {@link #run(Object, Runnable)}
+     */
     @Override
-    default void execute(@NonNull Runnable runnable) {
-        this.run(runnable);
+    @Deprecated
+    default CompletableFuture<Void> run(@NonNull Runnable runnable) {
+        return this.run(DEFAULT_MARKER, runnable);
+    }
+
+    /**
+     * @deprecated use {@link #supply(Object, Supplier)}
+     */
+    @Override
+    default <V> CompletableFuture<V> supply(@NonNull Supplier<V> supplier) {
+        return this.supply(DEFAULT_MARKER, supplier);
     }
 
     /**
      * Executes the given {@link Runnable} on this executor.
      *
+     * @param marker   the task's marker
      * @param runnable the {@link Runnable} to run
      * @return a {@link CompletableFuture} which will be completed once the {@link Runnable} has returned
      */
-    CompletableFuture<Void> run(@NonNull Runnable runnable);
+    CompletableFuture<Void> run(@NonNull Object marker, @NonNull Runnable runnable);
 
     /**
      * Executes the given {@link Supplier} on this executor.
      *
+     * @param marker   the task's marker
      * @param supplier the {@link Supplier} to run
      * @return a {@link CompletableFuture} which will be completed with the {@link Supplier}'s return value
      */
-    <V> CompletableFuture<V> supply(@NonNull Supplier<V> supplier);
+    <V> CompletableFuture<V> supply(@NonNull Object marker, @NonNull Supplier<V> supplier);
 
     /**
-     * Shuts down this executor.
+     * Cancels all pending tasks with the given marker.
      * <p>
-     * This will cancel all tasks, and prevent any further ones from being submitted.
+     * Markers are compared using {@link Object#equals(Object)}.
+     *
+     * @param marker the marker
      */
-    @Override
-    void close();
+    void cancelAll(@NonNull Object marker);
 }
