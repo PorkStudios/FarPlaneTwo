@@ -22,6 +22,7 @@ package util;
 
 import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.CubicBiome;
 import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.FP2;
 import net.minecraft.init.Bootstrap;
 
 /**

@@ -111,7 +111,7 @@ public class Constants {
     public static Minecraft MC;
 
     static {
-        if (fp2().hasClient()) { //initialize client-only fields here to prevent errors
+        if (!FP2_TEST && fp2().hasClient()) { //initialize client-only fields here to prevent errors
             MC = Minecraft.getMinecraft();
         }
     }
