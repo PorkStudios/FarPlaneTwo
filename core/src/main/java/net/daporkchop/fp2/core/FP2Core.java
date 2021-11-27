@@ -29,6 +29,8 @@ import net.daporkchop.fp2.api.FP2;
 import net.daporkchop.fp2.api.event.FEventBus;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.common.util.ResourceProvider;
+import net.daporkchop.fp2.core.client.gui.GuiContext;
+import net.daporkchop.fp2.core.client.gui.GuiScreen;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.event.EventBus;
 import net.daporkchop.fp2.core.network.RegisterPacketsEvent;
@@ -38,13 +40,13 @@ import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfi
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketHandshake;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionEnd;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUpdateConfig;
-import net.daporkchop.fp2.core.util.threading.futureexecutor.MarkedFutureExecutor;
-import net.daporkchop.fp2.core.util.threading.workergroup.WorkerManager;
+import net.daporkchop.fp2.core.util.I18n;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.logging.Logger;
 
 import java.lang.reflect.Method;
 import java.nio.file.Path;
+import java.util.function.Function;
 
 /**
  * @author DaPorkchop_
@@ -101,6 +103,22 @@ public abstract class FP2Core implements FP2 {
      * @return the directory where fp2's config file is stored
      */
     protected abstract Path configDir();
+
+    /**
+     * @return the {@link I18n} instance used for localizing strings
+     * @throws UnsupportedOperationException if the active game distribution does not contain a client
+     */
+    public abstract I18n i18n();
+
+    /**
+     * Opens a new {@link GuiScreen}.
+     *
+     * @param factory a factory for creating a new {@link GuiScreen}
+     * @param <T>     the {@link GuiScreen}
+     * @return the created {@link GuiScreen}
+     * @throws UnsupportedOperationException if the active game distribution does not contain a client
+     */
+    public abstract <T extends GuiScreen> T openScreen(@NonNull Function<GuiContext, T> factory);
 
     /**
      * Sets the global {@link FP2Config}.

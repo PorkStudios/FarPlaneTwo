@@ -18,24 +18,10 @@
  *
  */
 
-package net.daporkchop.fp2.client.gui.element;
-
-import lombok.NonNull;
-import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.client.gui.IConfigGuiContext;
-import net.daporkchop.fp2.core.config.gui.access.ConfigGuiObjectAccess;
-
-import static net.daporkchop.fp2.core.debug.FP2Debug.*;
+package net.daporkchop.fp2.core.client.gui;
 
 /**
  * @author DaPorkchop_
  */
-public class GuiDebugButton extends GuiSubmenuButton<FP2Config.Debug> {
-    public GuiDebugButton(@NonNull IConfigGuiContext context, @NonNull ConfigGuiObjectAccess<FP2Config.Debug> access) {
-        super(context, access);
-
-        if (!FP2_DEBUG) {
-            this.button.enabled = false;
-        }
-    }
+public interface GuiContainer extends GuiElement, Iterable<GuiElement> {
 }

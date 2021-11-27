@@ -18,24 +18,30 @@
  *
  */
 
-package net.daporkchop.fp2.client.gui.element;
+package net.daporkchop.fp2.client.gui;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.client.gui.IConfigGuiContext;
+import net.daporkchop.fp2.core.client.gui.GuiRenderer;
 import net.daporkchop.fp2.core.config.gui.access.ConfigGuiObjectAccess;
 
-import static net.daporkchop.fp2.core.debug.FP2Debug.*;
+import java.util.function.Function;
 
 /**
  * @author DaPorkchop_
  */
-public class GuiDebugButton extends GuiSubmenuButton<FP2Config.Debug> {
-    public GuiDebugButton(@NonNull IConfigGuiContext context, @NonNull ConfigGuiObjectAccess<FP2Config.Debug> access) {
-        super(context, access);
+@Deprecated
+public interface IConfigGuiContext {
+    GuiRenderer renderer();
 
-        if (!FP2_DEBUG) {
-            this.button.enabled = false;
-        }
+    String localeKeyBase();
+
+    default void pushSubmenu(@NonNull String name, @NonNull ConfigGuiObjectAccess<?> access) {
+        throw new UnsupportedOperationException();
     }
+
+    void pushSubmenu(@NonNull String name, @NonNull ConfigGuiObjectAccess<?> access, @NonNull Function<IConfigGuiContext, IConfigGuiScreen> screenFactory);
+
+    void pop();
+
+    void pack();
 }

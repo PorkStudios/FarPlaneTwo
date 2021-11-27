@@ -21,16 +21,14 @@
 package net.daporkchop.fp2.client.gui.element;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gui.IGuiContext;
-import net.daporkchop.fp2.client.gui.access.GuiObjectAccess;
-import net.daporkchop.fp2.client.gui.util.ComponentDimensions;
-import net.daporkchop.fp2.config.Config;
-import net.daporkchop.fp2.config.ConfigHelper;
+import net.daporkchop.fp2.client.gui.IConfigGuiContext;
+import net.daporkchop.fp2.core.config.gui.access.ConfigGuiObjectAccess;
+import net.daporkchop.fp2.core.client.gui.util.ComponentDimensions;
+import net.daporkchop.fp2.core.config.Config;
+import net.daporkchop.fp2.core.config.ConfigHelper;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.I18n;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
 
 import java.util.Optional;
 import java.util.function.Function;
@@ -39,7 +37,7 @@ import java.util.stream.Stream;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.FP2.*;
-import static net.daporkchop.fp2.client.gui.GuiConstants.*;
+import static net.daporkchop.fp2.core.client.gui.GuiConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -47,11 +45,10 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
 public class GuiSlider extends AbstractReflectiveConfigGuiElement<Number> {
     protected final net.minecraftforge.fml.client.config.GuiSlider slider;
 
-    public GuiSlider(@NonNull IGuiContext context, @NonNull GuiObjectAccess<Number> access) {
+    public GuiSlider(@NonNull IConfigGuiContext context, @NonNull ConfigGuiObjectAccess<Number> access) {
         super(context, access);
 
         Config.Range rangeAnnotation = access.getAnnotation(Config.Range.class);

@@ -18,12 +18,13 @@
  *
  */
 
-package net.daporkchop.fp2.config;
+package net.daporkchop.fp2.core.config;
 
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.client.gui.IConfigGuiElement;
-import net.daporkchop.fp2.client.gui.IConfigGuiScreen;
-import net.daporkchop.fp2.client.gui.container.ColumnsContainer;
+import net.daporkchop.fp2.core.client.gui.GuiContainer;
+import net.daporkchop.fp2.core.client.gui.GuiElement;
+import net.daporkchop.fp2.core.client.gui.GuiScreen;
+import net.daporkchop.fp2.core.client.gui.container.ColumnsContainer;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
@@ -52,9 +53,9 @@ public class Config {
     @Target(TYPE)
     public @interface GuiScreenClass {
         /**
-         * @return the class type of the {@link IConfigGuiScreen} to use for this object
+         * @return the class type of the {@link GuiScreen} to use for this object
          */
-        Class<? extends IConfigGuiScreen> value();
+        Class<? extends GuiScreen> value();
     }
 
     /**
@@ -64,9 +65,9 @@ public class Config {
     @Target(FIELD)
     public @interface GuiElementClass {
         /**
-         * @return the class type of the {@link IConfigGuiElement} to use for this setting
+         * @return the class type of the {@link GuiElement} to use for this setting
          */
-        Class<? extends IConfigGuiElement> value();
+        Class<? extends GuiElement> value();
     }
 
     /**
@@ -100,7 +101,7 @@ public class Config {
         /**
          * @return the class of the container which will store the GUI components used by this category
          */
-        Class<? extends IConfigGuiElement> containerClass() default ColumnsContainer.class;
+        Class<? extends GuiContainer> containerClass() default ColumnsContainer.class;
     }
 
     /**

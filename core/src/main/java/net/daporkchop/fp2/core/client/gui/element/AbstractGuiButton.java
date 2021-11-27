@@ -18,39 +18,35 @@
  *
  */
 
-package net.daporkchop.fp2.client.gui.element;
+package net.daporkchop.fp2.core.client.gui.element;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gui.IConfigGuiContext;
-import net.daporkchop.fp2.core.config.gui.access.ConfigGuiObjectAccess;
+import net.daporkchop.fp2.core.client.gui.GuiContext;
+import net.daporkchop.fp2.core.client.gui.element.properties.GuiElementProperties;
 import net.daporkchop.fp2.core.client.gui.util.ComponentDimensions;
-import net.minecraftforge.fml.client.config.GuiButtonExt;
 
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static java.lang.Math.*;
-import static net.daporkchop.fp2.core.client.gui.GuiConstants.*;
-import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.fp2.core.FP2Core.*;
 
 /**
  * @author DaPorkchop_
  */
-public abstract class GuiButton<V> extends AbstractReflectiveConfigGuiElement<V> {
-    protected GuiButtonExt button = new GuiButtonExt(0, 0, 0, "");
+public abstract class AbstractGuiButton extends AbstractGuiElement {
+    public static final int BUTTON_WIDTH = 200;
+    public static final int BUTTON_HEIGHT = 20;
 
-    public GuiButton(@NonNull IConfigGuiContext context, @NonNull ConfigGuiObjectAccess<V> access) {
-        super(context, access);
-    }
+    protected static final int BUTTON_INTERNAL_PADDING_HORIZONTAL = 6;
 
-    @Override
-    public void init() {
-        this.button.displayString = this.text();
+    public AbstractGuiButton(@NonNull GuiContext context, @NonNull GuiElementProperties properties) {
+        super(context, properties);
     }
 
     @Override
     public Stream<ComponentDimensions> possibleDimensions(int totalSizeX, int totalSizeY) {
-        int textWidth = MC.fontRenderer.getStringWidth(this.button.displayString) + BUTTON_INTERNAL_PADDING_HORIZONTAL;
+        int textWidth = this.context.renderer().getStringWidth(this.properties.text()) + BUTTON_INTERNAL_PADDING_HORIZONTAL;
         return textWidth >= totalSizeX
                 ? Stream.of(new ComponentDimensions(totalSizeX, min(totalSizeY, BUTTON_HEIGHT))) //not enough space for the full text width
                 : IntStream.rangeClosed(textWidth, totalSizeX).mapToObj(i -> new ComponentDimensions(i, min(totalSizeY, BUTTON_HEIGHT)));
@@ -58,49 +54,38 @@ public abstract class GuiButton<V> extends AbstractReflectiveConfigGuiElement<V>
 
     @Override
     public ComponentDimensions preferredMinimumDimensions() {
-        return new ComponentDimensions(200, BUTTON_HEIGHT);
-    }
-
-    @Override
-    public void pack() {
-        this.button.x = this.bounds.x();
-        this.button.y = this.bounds.y();
-        this.button.width = this.bounds.sizeX();
-        this.button.height = this.bounds.sizeY();
+        return new ComponentDimensions(BUTTON_WIDTH, BUTTON_HEIGHT);
     }
 
     @Override
     public void render(int mouseX, int mouseY) {
-        this.button.drawButton(MC, mouseX, mouseY, 0);
+        super.render(mouseX, mouseY);
+
+        //draw background
+        this.context.renderer().drawButtonBackground(this.bounds.x(), this.bounds.y(), this.bounds.sizeX(), this.bounds.sizeY(), this.bounds.contains(mouseX, mouseY), true);
+
+        //get text
+        String text = this.properties.text();
+        String ellipsis = fp2().i18n().format(MODID + ".gui.ellipsis");
+
+        //truncate text if necessary
+        int textWidth = this.context.renderer().getStringWidth(text);
+        int ellipsisWidth = this.context.renderer().getStringWidth(ellipsis);
+        if (textWidth > this.bounds.sizeX() && textWidth > ellipsisWidth) {
+            text = this.context.renderer().trimStringToWidth(text, this.bounds.sizeX() - ellipsisWidth - BUTTON_INTERNAL_PADDING_HORIZONTAL, false) + ellipsis;
+        }
+
+        //draw text
+        this.context.renderer().drawCenteredString(text, this.bounds.centerX(), this.bounds.centerY(), -1, false, true, true);
     }
 
     @Override
     public void mouseDown(int mouseX, int mouseY, int button) {
         super.mouseDown(mouseX, mouseY, button);
 
-        if (button == 0 && this.button.mousePressed(MC, mouseX, mouseY)) {
+        if (this.bounds.contains(mouseX, mouseY)) {
             this.handleClick(button);
         }
-    }
-
-    @Override
-    public void mouseUp(int mouseX, int mouseY, int button) {
-        //no-op
-    }
-
-    @Override
-    public void mouseDragged(int oldMouseX, int oldMouseY, int newMouseX, int newMouseY, int button) {
-        //no-op
-    }
-
-    @Override
-    public void mouseScroll(int mouseX, int mouseY, int dWheel) {
-        //no-op
-    }
-
-    @Override
-    public void keyPressed(char typedChar, int keyCode) {
-        //no-op
     }
 
     protected abstract void handleClick(int button);

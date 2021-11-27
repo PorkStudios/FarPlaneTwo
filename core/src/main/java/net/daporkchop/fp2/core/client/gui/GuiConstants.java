@@ -18,24 +18,48 @@
  *
  */
 
-package net.daporkchop.fp2.client.gui.element;
+package net.daporkchop.fp2.core.client.gui;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.client.gui.IConfigGuiContext;
-import net.daporkchop.fp2.core.config.gui.access.ConfigGuiObjectAccess;
-
-import static net.daporkchop.fp2.core.debug.FP2Debug.*;
+import lombok.experimental.UtilityClass;
 
 /**
+ * Constant values used throughout the GUI code.
+ *
  * @author DaPorkchop_
  */
-public class GuiDebugButton extends GuiSubmenuButton<FP2Config.Debug> {
-    public GuiDebugButton(@NonNull IConfigGuiContext context, @NonNull ConfigGuiObjectAccess<FP2Config.Debug> access) {
-        super(context, access);
+@UtilityClass
+@Deprecated
+public class GuiConstants {
+    //
+    // sizes
+    //
 
-        if (!FP2_DEBUG) {
-            this.button.enabled = false;
-        }
-    }
+    /**
+     * The padding around all components (vertical and horizontal).
+     */
+    public static final int PADDING = 2;
+
+    /**
+     * The height of the title in a GUI header.
+     */
+    public static final int HEADER_HEIGHT = 30;
+
+    public static final int FOOTER_HEIGHT = 27;
+
+    /**
+     * The width of a scrollbar.
+     */
+    public static final int SCROLLBAR_WIDTH = 5;
+
+    /**
+     * The maximum number of columns to use.
+     */
+    public static final int MAX_COLUMNS = 2;
+
+    /**
+     * The height of a button.
+     */
+    public static final int BUTTON_HEIGHT = 20;
+
+    public static final int BUTTON_INTERNAL_PADDING_HORIZONTAL = 6;
 }

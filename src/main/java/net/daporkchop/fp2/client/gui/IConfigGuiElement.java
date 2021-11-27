@@ -21,17 +21,15 @@
 package net.daporkchop.fp2.client.gui;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gui.util.ComponentDimensions;
-import net.daporkchop.fp2.client.gui.util.ElementBounds;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
+import net.daporkchop.fp2.core.client.gui.util.ComponentDimensions;
+import net.daporkchop.fp2.core.client.gui.util.ElementBounds;
 
 import java.util.stream.Stream;
 
 /**
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
+@Deprecated
 public interface IConfigGuiElement extends IConfigGuiComponent {
     Stream<ComponentDimensions> possibleDimensions(int totalSizeX, int totalSizeY);
 

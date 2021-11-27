@@ -22,18 +22,17 @@ package net.daporkchop.fp2.client.gui;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gui.access.GuiObjectAccess;
-import net.daporkchop.fp2.client.gui.util.ComponentDimensions;
-import net.daporkchop.fp2.config.Config;
-import net.daporkchop.fp2.config.ConfigHelper;
+import net.daporkchop.fp2.core.config.gui.access.ConfigGuiObjectAccess;
+import net.daporkchop.fp2.core.client.gui.util.ComponentDimensions;
+import net.daporkchop.fp2.core.config.Config;
+import net.daporkchop.fp2.core.config.ConfigHelper;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.fml.client.config.GuiMessageDialog;
 import net.minecraftforge.fml.client.config.GuiUtils;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
 import org.lwjgl.input.Mouse;
 
 import java.io.IOException;
@@ -42,17 +41,15 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static net.daporkchop.fp2.FP2.*;
-import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
-public class DefaultGuiContext extends GuiScreen implements IGuiContext {
-    protected final DefaultGuiContext topContext;
+public class DefaultConfigGuiContext extends GuiScreen implements IConfigGuiContext {
+    protected final DefaultConfigGuiContext topContext;
     protected final GuiScreen parentScreen;
 
-    protected final GuiObjectAccess<?> access;
+    protected final ConfigGuiObjectAccess<?> access;
     protected final Consumer callback;
 
     @Getter
@@ -60,9 +57,9 @@ public class DefaultGuiContext extends GuiScreen implements IGuiContext {
 
     protected final IConfigGuiScreen screen;
 
-    public DefaultGuiContext(@NonNull String localeKeyBase, @NonNull GuiObjectAccess<?> access, @NonNull Consumer callback) {
+    public DefaultConfigGuiContext(@NonNull String localeKeyBase, @NonNull ConfigGuiObjectAccess<?> access, @NonNull Consumer callback) {
         this.topContext = this;
-        this.parentScreen = MC.currentScreen;
+        this.parentScreen = Minecraft.getMinecraft().currentScreen;
 
         this.access = access;
         this.callback = callback;
@@ -70,10 +67,10 @@ public class DefaultGuiContext extends GuiScreen implements IGuiContext {
         this.localeKeyBase = localeKeyBase;
         this.screen = GuiHelper.createConfigGuiScreen(this, this.access);
 
-        MC.displayGuiScreen(this);
+        Minecraft.getMinecraft().displayGuiScreen(this);
     }
 
-    protected DefaultGuiContext(@NonNull DefaultGuiContext parentContext, @NonNull String name, @NonNull GuiObjectAccess<?> access, @NonNull Function<IGuiContext, IConfigGuiScreen> screenFactory) {
+    protected DefaultConfigGuiContext(@NonNull DefaultConfigGuiContext parentContext, @NonNull String name, @NonNull ConfigGuiObjectAccess<?> access, @NonNull Function<IConfigGuiContext, IConfigGuiScreen> screenFactory) {
         this.topContext = parentContext.topContext;
         this.parentScreen = parentContext;
 
@@ -85,8 +82,8 @@ public class DefaultGuiContext extends GuiScreen implements IGuiContext {
     }
 
     @Override
-    public void pushSubmenu(@NonNull String name, @NonNull GuiObjectAccess<?> access, @NonNull Function<IGuiContext, IConfigGuiScreen> screenFactory) {
-        MC.displayGuiScreen(new DefaultGuiContext(this, name, access, screenFactory));
+    public void pushSubmenu(@NonNull String name, @NonNull ConfigGuiObjectAccess<?> access, @NonNull Function<IConfigGuiContext, IConfigGuiScreen> screenFactory) {
+        this.mc.displayGuiScreen(new DefaultConfigGuiContext(this, name, access, screenFactory));
     }
 
     @Override
@@ -97,24 +94,24 @@ public class DefaultGuiContext extends GuiScreen implements IGuiContext {
             Object newInstance = this.access.getCurrent();
 
             if (oldInstance.equals(newInstance)) {
-                FP2_LOG.info("closed config gui: unchanged");
+                fp2().log().info("closed config gui: unchanged");
             } else {
-                FP2_LOG.info("closed config gui: {}", newInstance);
+                fp2().log().info("closed config gui: {}", newInstance);
 
                 ConfigHelper.validateConfig(newInstance);
 
                 Config.Requirement restartRequirement = ConfigHelper.restartRequirement(oldInstance, newInstance);
-                FP2_LOG.info("restart required: {}", restartRequirement);
+                fp2().log().info("restart required: {}", restartRequirement);
 
                 this.callback.accept(newInstance);
 
                 switch (restartRequirement) {
                     case WORLD:
-                        if (MC.world == null) { //the world isn't set, so we don't need to notify the player that a reload is required
+                        if (this.mc.world == null) { //the world isn't set, so we don't need to notify the player that a reload is required
                             break;
                         }
                     case GAME:
-                        MC.displayGuiScreen(new GuiMessageDialog(
+                        this.mc.displayGuiScreen(new GuiMessageDialog(
                                 this.parentScreen,
                                 MODID + ".config.restartRequired.dialog.title." + restartRequirement,
                                 new TextComponentString(I18n.format(MODID + ".config.restartRequired.dialog.message." + restartRequirement)),
@@ -124,7 +121,7 @@ public class DefaultGuiContext extends GuiScreen implements IGuiContext {
             }
         }
 
-        MC.displayGuiScreen(this.parentScreen);
+        this.mc.displayGuiScreen(this.parentScreen);
     }
 
     @Override
@@ -144,7 +141,7 @@ public class DefaultGuiContext extends GuiScreen implements IGuiContext {
         this.drawDefaultBackground();
 
         this.screen.render(mouseX, mouseY, partialTicks);
-        this.screen.getTooltip(mouseX, mouseY).ifPresent(lines -> GuiUtils.drawHoveringText(Arrays.asList(lines), mouseX, mouseY, this.width, this.height, -1, MC.fontRenderer));
+        this.screen.getTooltip(mouseX, mouseY).ifPresent(lines -> GuiUtils.drawHoveringText(Arrays.asList(lines), mouseX, mouseY, this.width, this.height, -1, this.mc.fontRenderer));
     }
 
     @Override

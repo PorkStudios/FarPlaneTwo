@@ -1,6 +1,12 @@
 #PARSE_ESCAPES
 
 #
+# Misc.
+#
+
+fp2.playerJoinWarningMessage=§c§lFarPlaneTwo pre-pre-pre-alpha build: use at your own risk!
+
+#
 # Number formatting
 #
 
@@ -25,7 +31,8 @@ fp2.util.numberFormat.time.days=%sd
 #
 
 fp2.gui.buttonFP2Options=FP2
-fp2.playerJoinWarningMessage=§c§lFarPlaneTwo pre-pre-pre-alpha build: use at your own risk!
+
+fp2.gui.ellipsis=...
 
 #
 # Keybinds
@@ -74,7 +81,7 @@ fp2.config.menu.renderDistance.category=Render Distance
 fp2.config.menu.maxLevels=LoD Levels
 fp2.config.menu.maxLevels.tooltip=The number of detail levels to use.\nThe first detail level has a radius of §o<Cutoff Distance>§r and is rendered with maximum visual quality. Each subsequent detail level has twice the radius and half the quality of the previous level.\nIncreasing this value by 1 will double the radius rendered by FP2.
 fp2.config.menu.cutoffDistance=Cutoff Distance
-fp2.config.menu.cutoffDistance.format=%s blocks
+fp2.config.menu.cutoffDistance.valueFormat=%s blocks
 fp2.config.menu.cutoffDistance.tooltip=The radius (in blocks) of the maximum detail level.\nThis value is doubled for each subsequent level, so a value of 256 will mean a 256 block radius for the maximum detail level, a 512 block radius for the 1/2-detail level, a 1024 block radius for the 1/4-detail level, etc.
 
 fp2.config.menu.labelEquivalentRenderDistance=Render Distance Equivalent: %1$s blocks (%2$s chunks)

@@ -20,15 +20,12 @@
 
 package net.daporkchop.fp2.client.gui;
 
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
-
 import java.util.Optional;
 
 /**
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
+@Deprecated
 public interface IConfigGuiComponent {
     /**
      * Initializes this component's contents.

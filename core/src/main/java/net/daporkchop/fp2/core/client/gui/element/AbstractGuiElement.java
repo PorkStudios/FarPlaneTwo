@@ -18,75 +18,80 @@
  *
  */
 
-package net.daporkchop.fp2.client.gui.element;
+package net.daporkchop.fp2.core.client.gui.element;
 
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
-import lombok.experimental.Accessors;
-import net.daporkchop.fp2.client.gui.IConfigGuiElement;
-import net.daporkchop.fp2.core.client.gui.util.ComponentDimensions;
+import net.daporkchop.fp2.core.client.gui.GuiContext;
+import net.daporkchop.fp2.core.client.gui.GuiElement;
+import net.daporkchop.fp2.core.client.gui.element.properties.GuiElementProperties;
 import net.daporkchop.fp2.core.client.gui.util.ElementBounds;
-
-import java.util.Optional;
-import java.util.stream.Stream;
-
-import static java.lang.Math.*;
 
 /**
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-@Getter
-@Setter
-@Accessors(chain = false)
-public class GuiNoopPaddingElement implements IConfigGuiElement {
+public abstract class AbstractGuiElement implements GuiElement {
     @NonNull
-    protected final ComponentDimensions preferredMinimumDimensions;
+    protected final GuiContext context;
+    @NonNull
+    protected final GuiElementProperties properties;
 
-    @NonNull
-    protected ElementBounds bounds = null;
+    @Getter
+    protected ElementBounds bounds = ElementBounds.ZERO;
 
     @Override
-    public Stream<ComponentDimensions> possibleDimensions(int totalSizeX, int totalSizeY) {
-        return Stream.of(new ComponentDimensions(min(this.preferredMinimumDimensions.sizeX(), totalSizeX), min(this.preferredMinimumDimensions.sizeY(), totalSizeY)));
+    public void bounds(@NonNull ElementBounds bounds) {
+        this.bounds = bounds;
+
+        this.pack();
     }
 
     @Override
     public void init() {
+        //no-op
+    }
+
+    @Override
+    public void close() {
+        //no-op
     }
 
     @Override
     public void pack() {
+        //no-op
     }
 
     @Override
-    public void render(int mouseX, int mouseY, float partialTicks) {
-    }
-
-    @Override
-    public Optional<String[]> getTooltip(int mouseX, int mouseY) {
-        return Optional.empty();
+    public void render(int mouseX, int mouseY) {
+        if (this.bounds.contains(mouseX, mouseY)) {
+            this.properties.tooltip().ifPresent(lines -> this.context.renderer().drawTooltip(mouseX, mouseY, -1, lines));
+        }
     }
 
     @Override
     public void mouseDown(int mouseX, int mouseY, int button) {
+        //no-op
     }
 
     @Override
     public void mouseUp(int mouseX, int mouseY, int button) {
-    }
-
-    @Override
-    public void mouseScroll(int mouseX, int mouseY, int dWheel) {
+        //no-op
     }
 
     @Override
     public void mouseDragged(int oldMouseX, int oldMouseY, int newMouseX, int newMouseY, int button) {
+        //no-op
+    }
+
+    @Override
+    public void mouseScroll(int mouseX, int mouseY, int dWheel) {
+        //no-op
     }
 
     @Override
     public void keyPressed(char typedChar, int keyCode) {
+        //no-op
     }
 }

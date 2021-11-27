@@ -21,20 +21,17 @@
 package net.daporkchop.fp2.client.gui.element;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gui.IGuiContext;
-import net.daporkchop.fp2.client.gui.access.GuiObjectAccess;
+import net.daporkchop.fp2.client.gui.IConfigGuiContext;
+import net.daporkchop.fp2.core.config.gui.access.ConfigGuiObjectAccess;
 import net.minecraft.client.resources.I18n;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
 
 import static net.daporkchop.fp2.FP2.*;
 
 /**
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
 public class GuiToggleButton extends GuiButton<Boolean> {
-    public GuiToggleButton(@NonNull IGuiContext context, @NonNull GuiObjectAccess<Boolean> access) {
+    public GuiToggleButton(@NonNull IConfigGuiContext context, @NonNull ConfigGuiObjectAccess<Boolean> access) {
         super(context, access);
     }
 

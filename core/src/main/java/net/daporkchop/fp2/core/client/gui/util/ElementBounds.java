@@ -18,12 +18,10 @@
  *
  */
 
-package net.daporkchop.fp2.client.gui.util;
+package net.daporkchop.fp2.core.client.gui.util;
 
 import lombok.Data;
 import lombok.NonNull;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
 
 import static java.lang.Math.*;
 
@@ -31,7 +29,6 @@ import static java.lang.Math.*;
  * @author DaPorkchop_
  */
 @Data
-@SideOnly(Side.CLIENT)
 public final class ElementBounds {
     public static final ElementBounds ZERO = new ElementBounds(0, 0, 0, 0);
 
@@ -40,12 +37,28 @@ public final class ElementBounds {
     protected final int sizeX;
     protected final int sizeY;
 
+    public int minX() {
+        return this.x;
+    }
+
+    public int minY() {
+        return this.y;
+    }
+
     public int maxX() {
         return this.x + this.sizeX;
     }
 
     public int maxY() {
         return this.y + this.sizeY;
+    }
+
+    public int centerX() {
+        return this.x + (this.sizeX >> 1);
+    }
+
+    public int centerY() {
+        return this.y + (this.sizeY >> 1);
     }
 
     public ElementBounds union(@NonNull ElementBounds other) {

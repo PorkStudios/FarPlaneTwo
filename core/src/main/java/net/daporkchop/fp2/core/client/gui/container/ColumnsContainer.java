@@ -18,19 +18,16 @@
  *
  */
 
-package net.daporkchop.fp2.client.gui.container;
+package net.daporkchop.fp2.core.client.gui.container;
 
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.client.gui.IConfigGuiElement;
-import net.daporkchop.fp2.client.gui.IGuiContext;
-import net.daporkchop.fp2.client.gui.access.GuiObjectAccess;
-import net.daporkchop.fp2.client.gui.util.ComponentDimensions;
-import net.daporkchop.fp2.client.gui.util.ElementBounds;
+import net.daporkchop.fp2.core.client.gui.GuiContext;
+import net.daporkchop.fp2.core.client.gui.GuiElement;
+import net.daporkchop.fp2.core.client.gui.util.ComponentDimensions;
+import net.daporkchop.fp2.core.client.gui.util.ElementBounds;
 import net.daporkchop.lib.common.util.PArrays;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
 
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -42,16 +39,15 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static java.lang.Math.*;
-import static net.daporkchop.fp2.client.gui.GuiConstants.*;
+import static net.daporkchop.fp2.core.client.gui.GuiConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
-public class ColumnsContainer<T> extends AbstractConfigGuiContainer<T> {
-    public ColumnsContainer(@NonNull IGuiContext context, @NonNull GuiObjectAccess<T> access, @NonNull List<IConfigGuiElement> elements) {
-        super(context, access, elements);
+public class ColumnsContainer extends AbstractConfigGuiContainer {
+    public ColumnsContainer(@NonNull GuiContext context, @NonNull List<GuiElement> elements) {
+        super(context, elements);
     }
 
     protected int maxColumnSizeX(int sizeX, int columns) {
@@ -75,7 +71,7 @@ public class ColumnsContainer<T> extends AbstractConfigGuiContainer<T> {
         List<ElementBounds> out = new ArrayList<>(this.elements.size());
         int[] heights = new int[positive(columns, "columns")];
 
-        for (IConfigGuiElement element : this.elements) {
+        for (GuiElement element : this.elements) {
             ComponentDimensions dimensions = element.possibleDimensions(columnSizeX, Integer.MAX_VALUE)
                     .filter(d -> d.sizeX() == columnSizeX)
                     .min(Comparator.comparingInt(ComponentDimensions::sizeY)).get();
@@ -98,7 +94,7 @@ public class ColumnsContainer<T> extends AbstractConfigGuiContainer<T> {
         }
 
         int preferredWidth = this.elements.stream()
-                .map(IConfigGuiElement::preferredMinimumDimensions)
+                .map(GuiElement::preferredMinimumDimensions)
                 .mapToInt(ComponentDimensions::sizeX)
                 .max().getAsInt();
 
@@ -129,7 +125,7 @@ public class ColumnsContainer<T> extends AbstractConfigGuiContainer<T> {
     @Override
     public ComponentDimensions preferredMinimumDimensions() {
         return this.elements.stream()
-                .map(IConfigGuiElement::preferredMinimumDimensions)
+                .map(GuiElement::preferredMinimumDimensions)
                 .reduce((a, b) -> new ComponentDimensions(max(a.sizeX(), b.sizeX()), a.sizeY() + PADDING + b.sizeY()))
                 .get();
     }

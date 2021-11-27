@@ -18,24 +18,30 @@
  *
  */
 
-package net.daporkchop.fp2.client.gui.element;
+package net.daporkchop.fp2.core.client.gui.element.properties;
 
+import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.client.gui.IConfigGuiContext;
-import net.daporkchop.fp2.core.config.gui.access.ConfigGuiObjectAccess;
+import lombok.RequiredArgsConstructor;
 
-import static net.daporkchop.fp2.core.debug.FP2Debug.*;
+import java.util.Optional;
 
 /**
  * @author DaPorkchop_
  */
-public class GuiDebugButton extends GuiSubmenuButton<FP2Config.Debug> {
-    public GuiDebugButton(@NonNull IConfigGuiContext context, @NonNull ConfigGuiObjectAccess<FP2Config.Debug> access) {
-        super(context, access);
+@RequiredArgsConstructor
+@Getter
+public class SimpleGuiElementProperties extends AbstractGuiElementProperties {
+    @NonNull
+    protected final String localeKey;
 
-        if (!FP2_DEBUG) {
-            this.button.enabled = false;
-        }
+    @Override
+    public Optional<Number> min() {
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<Number> max() {
+        return Optional.empty();
     }
 }

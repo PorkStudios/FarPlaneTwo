@@ -18,24 +18,41 @@
  *
  */
 
-package net.daporkchop.fp2.client.gui.element;
+package net.daporkchop.fp2.core.client.gui.element.properties;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.client.gui.IConfigGuiContext;
-import net.daporkchop.fp2.core.config.gui.access.ConfigGuiObjectAccess;
-
-import static net.daporkchop.fp2.core.debug.FP2Debug.*;
+import java.util.Optional;
 
 /**
  * @author DaPorkchop_
  */
-public class GuiDebugButton extends GuiSubmenuButton<FP2Config.Debug> {
-    public GuiDebugButton(@NonNull IConfigGuiContext context, @NonNull ConfigGuiObjectAccess<FP2Config.Debug> access) {
-        super(context, access);
+public interface GuiElementProperties {
+    /**
+     * @return the element's base locale key
+     */
+    String localeKey();
 
-        if (!FP2_DEBUG) {
-            this.button.enabled = false;
-        }
-    }
+    /**
+     * @return the element's localized name
+     */
+    String name();
+
+    /**
+     * @return the element's localized text
+     */
+    String text();
+
+    /**
+     * @return the element's localized tooltip, or {@code null} if no tooltip should be displayed
+     */
+    Optional<String[]> tooltip();
+
+    /**
+     * @return the minimum value
+     */
+    Optional<Number> min();
+
+    /**
+     * @return the maximum numeric value
+     */
+    Optional<Number> max();
 }

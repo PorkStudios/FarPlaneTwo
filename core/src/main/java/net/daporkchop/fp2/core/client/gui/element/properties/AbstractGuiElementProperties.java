@@ -18,35 +18,43 @@
  *
  */
 
-package net.daporkchop.fp2.client.gui.util;
+package net.daporkchop.fp2.core.client.gui.element.properties;
 
-import lombok.Data;
 import lombok.NonNull;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
 
-import static java.lang.Math.*;
+import java.util.Optional;
+import java.util.StringJoiner;
+
+import static net.daporkchop.fp2.core.FP2Core.*;
 
 /**
  * @author DaPorkchop_
  */
-@Data
-@SideOnly(Side.CLIENT)
-public final class ComponentDimensions {
-    public static final ComponentDimensions ZERO = new ComponentDimensions(0, 0);
-
-    protected final int sizeX;
-    protected final int sizeY;
-
-    public ComponentDimensions pad(int padding) {
-        return this.pad(padding, padding);
+public abstract class AbstractGuiElementProperties implements GuiElementProperties {
+    @Override
+    public String name() {
+        return fp2().i18n().format(this.localeKey());
     }
 
-    public ComponentDimensions pad(int paddingX, int paddingY) {
-        return new ComponentDimensions(this.sizeX + paddingX, this.sizeY + paddingY);
+    @Override
+    public String text() {
+        return this.name();
     }
 
-    public ComponentDimensions union(@NonNull ComponentDimensions other) {
-        return new ComponentDimensions(max(this.sizeX, other.sizeX), max(this.sizeY, other.sizeY));
+    @Override
+    public Optional<String[]> tooltip() {
+        StringJoiner joiner = new StringJoiner("\n\n");
+        this.computeTooltipText0(joiner);
+
+        return joiner.length() == 0 ? Optional.empty() : Optional.of(joiner.toString().split("\n"));
+    }
+
+    protected void computeTooltipText0(@NonNull StringJoiner joiner) {
+        { //tooltip text from locale
+            String tooltipKey = this.localeKey() + ".tooltip";
+            if (fp2().i18n().hasKey(tooltipKey)) {
+                joiner.add(fp2().i18n().format(tooltipKey));
+            }
+        }
     }
 }

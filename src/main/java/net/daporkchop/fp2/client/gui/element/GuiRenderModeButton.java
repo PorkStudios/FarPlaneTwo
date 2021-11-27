@@ -23,19 +23,17 @@ package net.daporkchop.fp2.client.gui.element;
 import com.google.common.collect.ImmutableSet;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gui.IConfigGuiElement;
-import net.daporkchop.fp2.client.gui.IGuiContext;
-import net.daporkchop.fp2.client.gui.access.GuiObjectAccess;
-import net.daporkchop.fp2.client.gui.container.ColumnsContainer;
-import net.daporkchop.fp2.client.gui.container.ScrollingContainer;
-import net.daporkchop.fp2.client.gui.container.TableContainer;
-import net.daporkchop.fp2.client.gui.container.VerticallyStackedContainer;
+import net.daporkchop.fp2.client.gui.IConfigGuiContext;
+import net.daporkchop.fp2.core.config.gui.access.ConfigGuiObjectAccess;
+import net.daporkchop.fp2.core.client.gui.container.ColumnsContainer;
+import net.daporkchop.fp2.core.client.gui.container.ScrollingContainer;
+import net.daporkchop.fp2.core.client.gui.container.TableContainer;
+import net.daporkchop.fp2.core.client.gui.container.VerticallyStackedContainer;
 import net.daporkchop.fp2.client.gui.screen.DefaultConfigGuiScreen;
-import net.daporkchop.fp2.client.gui.util.ComponentDimensions;
+import net.daporkchop.fp2.core.client.gui.util.ComponentDimensions;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.lib.common.util.PArrays;
 import net.minecraft.client.resources.I18n;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -48,16 +46,15 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static java.lang.Math.*;
-import static net.daporkchop.fp2.client.gui.GuiConstants.*;
+import static net.daporkchop.fp2.core.client.gui.GuiConstants.*;
 
 /**
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
 public class GuiRenderModeButton extends GuiSubmenuButton<String[]> {
     protected final Set<String> serverModes;
 
-    public GuiRenderModeButton(@NonNull IGuiContext context, @NonNull GuiObjectAccess<String[]> access) {
+    public GuiRenderModeButton(@NonNull IConfigGuiContext context, @NonNull ConfigGuiObjectAccess<String[]> access) {
         super(context, access);
 
         this.serverModes = ImmutableSet.copyOf(Optional.ofNullable(access.getServer()).orElseGet(() -> IFarRenderMode.REGISTRY.nameStream().toArray(String[]::new)));
@@ -78,7 +75,7 @@ public class GuiRenderModeButton extends GuiSubmenuButton<String[]> {
      * @author DaPorkchop_
      */
     protected class EnabledContainer extends VerticallyStackedContainer<String[]> {
-        public EnabledContainer(@NonNull IGuiContext context, @NonNull GuiObjectAccess<String[]> access) {
+        public EnabledContainer(@NonNull IConfigGuiContext context, @NonNull ConfigGuiObjectAccess<String[]> access) {
             super(context, access, new ArrayList<>());
         }
 
@@ -157,7 +154,7 @@ public class GuiRenderModeButton extends GuiSubmenuButton<String[]> {
      * @author DaPorkchop_
      */
     protected class DisabledContainer extends VerticallyStackedContainer<String[]> {
-        public DisabledContainer(@NonNull IGuiContext context, @NonNull GuiObjectAccess<String[]> access) {
+        public DisabledContainer(@NonNull IConfigGuiContext context, @NonNull ConfigGuiObjectAccess<String[]> access) {
             super(context, access, new ArrayList<>());
         }
 
@@ -208,7 +205,7 @@ public class GuiRenderModeButton extends GuiSubmenuButton<String[]> {
     protected abstract class SquareButton extends GuiButton<String[]> {
         protected final String name;
 
-        public SquareButton(@NonNull IGuiContext context, @NonNull GuiObjectAccess<String[]> access, @NonNull String name) {
+        public SquareButton(@NonNull IConfigGuiContext context, @NonNull ConfigGuiObjectAccess<String[]> access, @NonNull String name) {
             super(context, access);
 
             this.name = name;
@@ -261,7 +258,7 @@ public class GuiRenderModeButton extends GuiSubmenuButton<String[]> {
     protected class ModeLabel extends GuiLabel {
         protected final String name;
 
-        public ModeLabel(@NonNull IGuiContext context, @NonNull String name) {
+        public ModeLabel(@NonNull IConfigGuiContext context, @NonNull String name) {
             super(context, name, GuiLabel.Alignment.LEFT, GuiLabel.Alignment.CENTER);
 
             this.name = name;

@@ -21,16 +21,14 @@
 package net.daporkchop.fp2.client.gui.element;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gui.IGuiContext;
-import net.daporkchop.fp2.client.gui.access.GuiObjectAccess;
-import net.daporkchop.fp2.client.gui.container.ColumnsContainer;
-import net.daporkchop.fp2.client.gui.container.ScrollingContainer;
+import net.daporkchop.fp2.client.gui.IConfigGuiContext;
+import net.daporkchop.fp2.core.config.gui.access.ConfigGuiObjectAccess;
+import net.daporkchop.fp2.core.client.gui.container.ColumnsContainer;
+import net.daporkchop.fp2.core.client.gui.container.ScrollingContainer;
 import net.daporkchop.fp2.client.gui.screen.DefaultConfigGuiScreen;
-import net.daporkchop.fp2.config.Config;
-import net.daporkchop.fp2.config.ConfigHelper;
-import net.minecraft.client.resources.I18n;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
+import net.daporkchop.fp2.core.config.Config;
+import net.daporkchop.fp2.core.config.ConfigHelper;
+import net.daporkchop.fp2.core.client.gui.element.AbstractGuiElement;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -46,11 +44,10 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 /**
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
-public abstract class AbstractReflectiveConfigGuiElement<V> extends AbstractConfigGuiElement {
-    protected final GuiObjectAccess<V> access;
+public abstract class AbstractReflectiveConfigGuiElement<V> extends AbstractGuiElement {
+    protected final ConfigGuiObjectAccess<V> access;
 
-    public AbstractReflectiveConfigGuiElement(@NonNull IGuiContext context, @NonNull GuiObjectAccess<V> access) {
+    public AbstractReflectiveConfigGuiElement(@NonNull IConfigGuiContext context, @NonNull ConfigGuiObjectAccess<V> access) {
         super(context);
 
         this.access = access;
@@ -66,7 +63,7 @@ public abstract class AbstractReflectiveConfigGuiElement<V> extends AbstractConf
     }
 
     protected String text() {
-        return I18n.format(MODID + ".config.property.format", this.localizedName(), this.localizeValue(this.access.getCurrent()));
+        return fp2().i18n().format(MODID + ".config.property.format", this.localizedName(), this.localizeValue(this.access.getCurrent()));
     }
 
     protected abstract String localizeValue(@NonNull V value);
@@ -77,9 +74,9 @@ public abstract class AbstractReflectiveConfigGuiElement<V> extends AbstractConf
 
         { //indicator for this option's old/default values
             String text = Stream.of(
-                    Optional.ofNullable(this.localizeValue(this.access.getOld())).map(val -> I18n.format(MODID + ".config.old.tooltip", val)).orElse(null),
-                    Optional.ofNullable(this.localizeValue(this.access.getDefault())).map(val -> I18n.format(MODID + ".config.default.tooltip", val)).orElse(null),
-                    this.access.getAnnotation(Config.GuiShowServerValue.class) != null ? Optional.ofNullable(this.access.getServer()).map(this::localizeValue).map(val -> I18n.format(MODID + ".config.server.tooltip", val)).orElse(null) : null)
+                    Optional.ofNullable(this.localizeValue(this.access.getOld())).map(val -> fp2().i18n().format(MODID + ".config.old.tooltip", val)).orElse(null),
+                    Optional.ofNullable(this.localizeValue(this.access.getDefault())).map(val -> fp2().i18n().format(MODID + ".config.default.tooltip", val)).orElse(null),
+                    this.access.getAnnotation(Config.GuiShowServerValue.class) != null ? Optional.ofNullable(this.access.getServer()).map(this::localizeValue).map(val -> fp2().i18n().format(MODID + ".config.server.tooltip", val)).orElse(null) : null)
                     .filter(Objects::nonNull)
                     .collect(Collectors.joining("\n"));
 
@@ -95,19 +92,19 @@ public abstract class AbstractReflectiveConfigGuiElement<V> extends AbstractConf
                 V min = uncheckedCast(ConfigHelper.evaluate(guiRange != null ? guiRange.min() : range.min()));
                 V max = uncheckedCast(ConfigHelper.evaluate(guiRange != null ? guiRange.max() : range.max()));
 
-                joiner.add(I18n.format(MODID + ".config.range.tooltip", this.localizeValue(min), this.localizeValue(max)));
+                joiner.add(fp2().i18n().format(MODID + ".config.range.tooltip", this.localizeValue(min), this.localizeValue(max)));
             }
         }
 
         { //indicator for whether this option requires a restart
             Config.RestartRequired restartRequired = this.access.getAnnotation(Config.RestartRequired.class);
             if (restartRequired != null) {
-                joiner.add(I18n.format(MODID + ".config.restartRequired.tooltip." + restartRequired.value()));
+                joiner.add(fp2().i18n().format(MODID + ".config.restartRequired.tooltip." + restartRequired.value()));
             }
         }
 
         if (this.allowMoreOptions()) { //indicator to open "more options" menu
-            joiner.add(I18n.format(MODID + ".config.moreOptions.tooltip"));
+            joiner.add(fp2().i18n().format(MODID + ".config.moreOptions.tooltip"));
         }
     }
 
@@ -118,7 +115,7 @@ public abstract class AbstractReflectiveConfigGuiElement<V> extends AbstractConf
                 final String name;
                 final V value;
 
-                public ResetButton(@NonNull IGuiContext context, @NonNull GuiObjectAccess<V> access, @NonNull String name, @NonNull V value) {
+                public ResetButton(@NonNull IConfigGuiContext context, @NonNull ConfigGuiObjectAccess<V> access, @NonNull String name, @NonNull V value) {
                     super(context, access);
 
                     this.name = name;

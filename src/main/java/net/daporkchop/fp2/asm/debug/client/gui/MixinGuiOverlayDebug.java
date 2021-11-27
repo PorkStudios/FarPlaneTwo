@@ -22,6 +22,7 @@ package net.daporkchop.fp2.asm.debug.client.gui;
 
 import net.daporkchop.fp2.client.gui.GuiHelper;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
+import net.daporkchop.fp2.core.util.I18n;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.mode.api.client.IFarTileCache;
 import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
@@ -37,6 +38,7 @@ import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 import java.text.NumberFormat;
 import java.util.List;
 
+import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.fp2.util.Constants.*;
 
 /**
@@ -54,8 +56,10 @@ public abstract class MixinGuiOverlayDebug extends Gui {
             return;
         }
 
-        NumberFormat numberFormat = GuiHelper.numberFormat();
-        NumberFormat percentFormat = GuiHelper.percentFormat();
+        I18n i18n = fp2().i18n();
+
+        NumberFormat numberFormat = i18n.numberFormat();
+        NumberFormat percentFormat = i18n.percentFormat();
 
         {
             list.add("");
@@ -68,8 +72,8 @@ public abstract class MixinGuiOverlayDebug extends Gui {
                     DebugStats.TileCache stats = tileCache.stats();
                     list.add("TileCache: " + numberFormat.format(stats.tileCountWithData()) + '/' + numberFormat.format(stats.tileCount())
                              + ' ' + percentFormat.format((stats.allocatedSpace() | stats.totalSpace()) != 0L ? stats.allocatedSpace() / (double) stats.totalSpace() : 1.0d)
-                             + ' ' + GuiHelper.formatByteCount(stats.allocatedSpace()) + '/' + GuiHelper.formatByteCount(stats.totalSpace())
-                             + " (" + percentFormat.format((stats.allocatedSpace() | stats.uncompressedSize()) != 0L ? stats.allocatedSpace() / (double) stats.uncompressedSize() : 1.0d) + " -> " + GuiHelper.formatByteCount(stats.uncompressedSize()) + ')');
+                             + ' ' + i18n.formatByteCount(stats.allocatedSpace()) + '/' + i18n.formatByteCount(stats.totalSpace())
+                             + " (" + percentFormat.format((stats.allocatedSpace() | stats.uncompressedSize()) != 0L ? stats.allocatedSpace() / (double) stats.uncompressedSize() : 1.0d) + " -> " + i18n.formatByteCount(stats.uncompressedSize()) + ')');
                 } else {
                     list.add("§oNo TileCache active");
                 }
@@ -80,15 +84,15 @@ public abstract class MixinGuiOverlayDebug extends Gui {
                     list.add("Baked Tiles: " + numberFormat.format(stats.bakedTiles()) + "T " + numberFormat.format(stats.bakedTilesWithData()) + "D "
                              + numberFormat.format(stats.bakedTiles() - stats.bakedTilesWithData()) + 'E');
                     list.add("All VRAM: " + percentFormat.format(stats.allocatedVRAM() / (double) stats.totalVRAM())
-                             + ' ' + GuiHelper.formatByteCount(stats.allocatedVRAM()) + '/' + GuiHelper.formatByteCount(stats.totalVRAM()));
+                             + ' ' + i18n.formatByteCount(stats.allocatedVRAM()) + '/' + i18n.formatByteCount(stats.totalVRAM()));
                     list.add("Indices: " + percentFormat.format(stats.allocatedIndices() / (double) stats.totalIndices())
                              + ' ' + numberFormat.format(stats.allocatedIndices()) + '/' + numberFormat.format(stats.totalIndices())
-                             + '@' + GuiHelper.formatByteCount(stats.indexSize())
-                             + " (" + GuiHelper.formatByteCount(stats.allocatedIndices() * stats.indexSize()) + '/' + GuiHelper.formatByteCount(stats.totalIndices() * stats.indexSize()) + ')');
+                             + '@' + i18n.formatByteCount(stats.indexSize())
+                             + " (" + i18n.formatByteCount(stats.allocatedIndices() * stats.indexSize()) + '/' + i18n.formatByteCount(stats.totalIndices() * stats.indexSize()) + ')');
                     list.add("Vertices: " + percentFormat.format(stats.allocatedVertices() / (double) stats.totalVertices())
                              + ' ' + numberFormat.format(stats.allocatedVertices()) + '/' + numberFormat.format(stats.totalVertices())
-                             + '@' + GuiHelper.formatByteCount(stats.vertexSize())
-                             + " (" + GuiHelper.formatByteCount(stats.allocatedVertices() * stats.vertexSize()) + '/' + GuiHelper.formatByteCount(stats.totalVertices() * stats.vertexSize()) + ')');
+                             + '@' + i18n.formatByteCount(stats.vertexSize())
+                             + " (" + i18n.formatByteCount(stats.allocatedVertices() * stats.vertexSize()) + '/' + i18n.formatByteCount(stats.totalVertices() * stats.vertexSize()) + ')');
                 } else {
                     list.add("§oNo renderer active");
                 }
@@ -106,7 +110,7 @@ public abstract class MixinGuiOverlayDebug extends Gui {
                 list.add("Tracker: " + numberFormat.format(trackingStats.tilesTrackedGlobal()) + "G "
                          + numberFormat.format(trackingStats.tilesTotal()) + "T " + numberFormat.format(trackingStats.tilesLoaded()) + "L "
                          + numberFormat.format(trackingStats.tilesLoading()) + "P " + numberFormat.format(trackingStats.tilesQueued()) + 'Q');
-                list.add("Updates: " + GuiHelper.formatDuration(trackingStats.avgUpdateDuration()) + " avg, " + GuiHelper.formatDuration(trackingStats.lastUpdateDuration()) + " last");
+                list.add("Updates: " + i18n.formatDuration(trackingStats.avgUpdateDuration()) + " avg, " + i18n.formatDuration(trackingStats.lastUpdateDuration()) + " last");
             } else {
                 list.add("§oTracking data not available");
             }

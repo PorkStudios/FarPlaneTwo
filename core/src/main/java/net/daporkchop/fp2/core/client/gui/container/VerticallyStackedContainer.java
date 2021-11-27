@@ -18,16 +18,13 @@
  *
  */
 
-package net.daporkchop.fp2.client.gui.container;
+package net.daporkchop.fp2.core.client.gui.container;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gui.IConfigGuiElement;
-import net.daporkchop.fp2.client.gui.IGuiContext;
-import net.daporkchop.fp2.client.gui.access.GuiObjectAccess;
-import net.daporkchop.fp2.client.gui.util.ComponentDimensions;
-import net.daporkchop.fp2.client.gui.util.ElementBounds;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
+import net.daporkchop.fp2.core.client.gui.GuiContext;
+import net.daporkchop.fp2.core.client.gui.GuiElement;
+import net.daporkchop.fp2.core.client.gui.util.ComponentDimensions;
+import net.daporkchop.fp2.core.client.gui.util.ElementBounds;
 
 import java.util.Comparator;
 import java.util.List;
@@ -36,18 +33,17 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.lang.Math.*;
-import static net.daporkchop.fp2.client.gui.GuiConstants.*;
+import static net.daporkchop.fp2.core.client.gui.GuiConstants.*;
 
 /**
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
-public class VerticallyStackedContainer<T> extends AbstractConfigGuiContainer<T> {
+public class VerticallyStackedContainer extends AbstractConfigGuiContainer {
     protected static final Comparator<ComponentDimensions> COMPARATOR_LOWY_HIGHX = Comparator.comparingInt(ComponentDimensions::sizeY)
             .thenComparing(Comparator.comparingInt(ComponentDimensions::sizeX).reversed());
 
-    public VerticallyStackedContainer(@NonNull IGuiContext context, @NonNull GuiObjectAccess<T> access, @NonNull List<IConfigGuiElement> elements) {
-        super(context, access, elements);
+    public VerticallyStackedContainer(@NonNull GuiContext context, @NonNull List<GuiElement> elements) {
+        super(context, elements);
     }
 
     @Override
@@ -65,7 +61,7 @@ public class VerticallyStackedContainer<T> extends AbstractConfigGuiContainer<T>
     @Override
     public ComponentDimensions preferredMinimumDimensions() {
         return this.elements.stream()
-                .map(IConfigGuiElement::preferredMinimumDimensions)
+                .map(GuiElement::preferredMinimumDimensions)
                 .reduce((a, b) -> new ComponentDimensions(max(a.sizeX(), b.sizeX()), a.sizeY() + PADDING + b.sizeY()))
                 .get();
     }
@@ -73,7 +69,7 @@ public class VerticallyStackedContainer<T> extends AbstractConfigGuiContainer<T>
     @Override
     public void pack() {
         for (int y = 0, i = 0; i < this.elements.size(); i++) {
-            IConfigGuiElement element = this.elements.get(i);
+            GuiElement element = this.elements.get(i);
             ComponentDimensions dimensions = element.possibleDimensions(this.bounds.sizeX(), Integer.MAX_VALUE).min(COMPARATOR_LOWY_HIGHX).get();
 
             element.bounds(new ElementBounds((this.bounds.sizeX() - dimensions.sizeX()) >> 1, y, dimensions.sizeX(), dimensions.sizeY()));

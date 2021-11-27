@@ -18,11 +18,9 @@
  *
  */
 
-package net.daporkchop.fp2.client.gui.access;
+package net.daporkchop.fp2.core.config.gui.access;
 
 import lombok.NonNull;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
 
 import java.lang.annotation.Annotation;
 
@@ -32,8 +30,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 /**
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
-final class ReferenceGuiObjectAccess<V> implements GuiObjectAccess<V> {
+final class ReferenceConfigGuiObjectAccess<V> implements ConfigGuiObjectAccess<V> {
     protected final V defaultInstance;
     protected final V serverInstance;
     protected final V oldInstance;
@@ -41,7 +38,7 @@ final class ReferenceGuiObjectAccess<V> implements GuiObjectAccess<V> {
 
     protected final Class<V> clazz;
 
-    public ReferenceGuiObjectAccess(@NonNull V defaultInstance, V serverInstance, @NonNull V oldInstance, @NonNull V currentInstance) {
+    public ReferenceConfigGuiObjectAccess(@NonNull V defaultInstance, V serverInstance, @NonNull V oldInstance, @NonNull V currentInstance) {
         Class<V> clazz = uncheckedCast(defaultInstance.getClass());
         checkArg(clazz == oldInstance.getClass() && clazz == currentInstance.getClass() && (serverInstance == null || clazz == serverInstance.getClass()),
                 "all parameters must of the same class! (defaultInstance=%s, serverInstance=%s, oldInstance=%s, currentInstance=%s)",

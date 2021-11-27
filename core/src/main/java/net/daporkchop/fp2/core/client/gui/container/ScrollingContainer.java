@@ -18,18 +18,13 @@
  *
  */
 
-package net.daporkchop.fp2.client.gui.container;
+package net.daporkchop.fp2.core.client.gui.container;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gui.IConfigGuiElement;
-import net.daporkchop.fp2.client.gui.IGuiContext;
-import net.daporkchop.fp2.client.gui.access.GuiObjectAccess;
-import net.daporkchop.fp2.client.gui.util.ComponentDimensions;
-import net.daporkchop.fp2.client.gui.util.ElementBounds;
-import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.ScaledResolution;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
+import net.daporkchop.fp2.core.client.gui.GuiContext;
+import net.daporkchop.fp2.core.client.gui.GuiElement;
+import net.daporkchop.fp2.core.client.gui.util.ComponentDimensions;
+import net.daporkchop.fp2.core.client.gui.util.ElementBounds;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -39,16 +34,13 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.lang.Math.*;
-import static net.daporkchop.fp2.client.gui.GuiConstants.*;
-import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.fp2.core.client.gui.GuiConstants.*;
 import static net.daporkchop.lib.common.math.PMath.*;
-import static org.lwjgl.opengl.GL11.*;
 
 /**
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
-public class ScrollingContainer<T> extends AbstractConfigGuiContainer<T> {
+public class ScrollingContainer extends AbstractConfigGuiContainer {
     protected static final Comparator<ComponentDimensions> COMPARATOR_LOWY_HIGHX = Comparator.comparingInt(ComponentDimensions::sizeY)
             .thenComparing(Comparator.comparingInt(ComponentDimensions::sizeX).reversed());
 
@@ -57,8 +49,8 @@ public class ScrollingContainer<T> extends AbstractConfigGuiContainer<T> {
 
     protected boolean draggingScrollbar = false;
 
-    public ScrollingContainer(@NonNull IGuiContext context, @NonNull GuiObjectAccess<T> access, @NonNull List<IConfigGuiElement> elements) {
-        super(context, access, elements);
+    public ScrollingContainer(@NonNull GuiContext context, @NonNull List<GuiElement> elements) {
+        super(context, elements);
     }
 
     @Override
@@ -95,7 +87,7 @@ public class ScrollingContainer<T> extends AbstractConfigGuiContainer<T> {
     @Override
     public ComponentDimensions preferredMinimumDimensions() {
         return this.elements.stream()
-                .map(IConfigGuiElement::preferredMinimumDimensions)
+                .map(GuiElement::preferredMinimumDimensions)
                 .reduce((a, b) -> new ComponentDimensions(max(a.sizeX(), b.sizeX()), a.sizeY() + PADDING + b.sizeY()))
                 .get();
     }
@@ -137,7 +129,7 @@ public class ScrollingContainer<T> extends AbstractConfigGuiContainer<T> {
         this.totalHeight = totalHeight;
 
         for (int y = 0, i = 0; i < this.elements.size(); i++) {
-            IConfigGuiElement element = this.elements.get(i);
+            GuiElement element = this.elements.get(i);
             ComponentDimensions dimensions = elementDimensions.get(i);
 
             element.bounds(new ElementBounds((this.bounds.sizeX() - dimensions.sizeX()) >> 1, y, dimensions.sizeX(), dimensions.sizeY()));
@@ -151,25 +143,18 @@ public class ScrollingContainer<T> extends AbstractConfigGuiContainer<T> {
     }
 
     @Override
-    public void render(int mouseX, int mouseY, float partialTicks) {
-        ScaledResolution scaledResolution = new ScaledResolution(MC);
-        int scale = scaledResolution.getScaleFactor();
-        glScissor(this.bounds.x() * scale, (scaledResolution.getScaledHeight() - this.bounds.y() - this.bounds.sizeY()) * scale, this.bounds.sizeX() * scale, this.bounds.sizeY() * scale);
-        glEnable(GL_SCISSOR_TEST);
-
-        try {
-            super.render(mouseX, mouseY, partialTicks);
-        } finally {
-            glDisable(GL_SCISSOR_TEST);
-        }
+    public void render(int mouseX, int mouseY) {
+        this.context.renderer().scissor(this.bounds.x(), this.bounds.y(), this.bounds.sizeX(), this.bounds.sizeY(), () -> {
+            super.render(mouseX, mouseY);
+        });
 
         if (this.totalHeight > this.bounds.sizeY()) { //we need to draw a scrollbar
             double viewPort = (double) this.bounds.sizeY() / (double) this.totalHeight;
             int barHeight = floorI(this.bounds.sizeY() * viewPort);
             int barStart = floorI(((double) this.deltaY / (double) (this.totalHeight - this.bounds.sizeY())) * (this.bounds.sizeY() - barHeight));
 
-            Gui.drawRect(this.bounds.x() + this.bounds.sizeX() - SCROLLBAR_WIDTH, this.bounds.y(), this.bounds.x() + this.bounds.sizeX(), this.bounds.y() + this.bounds.sizeY(), 0xB0000000);
-            Gui.drawRect(this.bounds.x() + this.bounds.sizeX() - SCROLLBAR_WIDTH, this.bounds.y() + barStart, this.bounds.x() + this.bounds.sizeX(), this.bounds.y() + barStart + barHeight, 0xFFDDDDDD);
+            this.context.renderer().drawQuadColored(this.bounds.x() + this.bounds.sizeX() - SCROLLBAR_WIDTH, this.bounds.y(), this.bounds.sizeX(), this.bounds.sizeY(), 0xB0000000);
+            this.context.renderer().drawQuadColored(this.bounds.x() + this.bounds.sizeX() - SCROLLBAR_WIDTH, this.bounds.y() + barStart, this.bounds.sizeX(), barHeight, 0xFFDDDDDD);
         }
     }
 

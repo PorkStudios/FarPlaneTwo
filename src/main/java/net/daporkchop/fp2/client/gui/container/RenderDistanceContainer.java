@@ -24,15 +24,15 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gui.GuiHelper;
 import net.daporkchop.fp2.client.gui.IConfigGuiElement;
-import net.daporkchop.fp2.client.gui.IGuiContext;
-import net.daporkchop.fp2.client.gui.access.GuiObjectAccess;
-import net.daporkchop.fp2.client.gui.element.AbstractConfigGuiElement;
-import net.daporkchop.fp2.client.gui.util.ComponentDimensions;
-import net.daporkchop.fp2.client.gui.util.ElementBounds;
+import net.daporkchop.fp2.client.gui.IConfigGuiContext;
+import net.daporkchop.fp2.core.config.gui.access.ConfigGuiObjectAccess;
+import net.daporkchop.fp2.core.client.gui.container.ColumnsContainer;
+import net.daporkchop.fp2.core.client.gui.container.VerticallyStackedContainer;
+import net.daporkchop.fp2.core.client.gui.element.AbstractGuiElement;
+import net.daporkchop.fp2.core.client.gui.util.ComponentDimensions;
+import net.daporkchop.fp2.core.client.gui.util.ElementBounds;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.minecraft.client.resources.I18n;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
 
 import java.text.NumberFormat;
 import java.util.Arrays;
@@ -43,7 +43,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.lang.Math.*;
-import static net.daporkchop.fp2.client.gui.GuiConstants.*;
+import static net.daporkchop.fp2.core.FP2Core.*;
+import static net.daporkchop.fp2.core.client.gui.GuiConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.math.PMath.*;
@@ -51,9 +52,8 @@ import static net.daporkchop.lib.common.math.PMath.*;
 /**
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
 public class RenderDistanceContainer extends VerticallyStackedContainer<FP2Config> {
-    protected static List<IConfigGuiElement> createElements(@NonNull IGuiContext context, @NonNull GuiObjectAccess<FP2Config> access, @NonNull List<IConfigGuiElement> elements) {
+    protected static List<IConfigGuiElement> createElements(@NonNull IConfigGuiContext context, @NonNull ConfigGuiObjectAccess<FP2Config> access, @NonNull List<IConfigGuiElement> elements) {
         return Arrays.asList(
                 new ColumnsContainer<>(context, access, elements),
                 new GuiDynamicLabel(context, access,
@@ -112,7 +112,7 @@ public class RenderDistanceContainer extends VerticallyStackedContainer<FP2Confi
                             return new LabelContents(
                                     "labelApproximateVRAM",
                                     true,
-                                    GuiHelper.formatByteCount(estimatedVRAM));
+                                    fp2().i18n().formatByteCount(estimatedVRAM));
                         },
                         (config, langKey) -> {
                             double factor = 1.5d;
@@ -143,19 +143,19 @@ public class RenderDistanceContainer extends VerticallyStackedContainer<FP2Confi
                         }));
     }
 
-    public RenderDistanceContainer(@NonNull IGuiContext context, @NonNull GuiObjectAccess<FP2Config> access, @NonNull List<IConfigGuiElement> elements) {
+    public RenderDistanceContainer(@NonNull IConfigGuiContext context, @NonNull ConfigGuiObjectAccess<FP2Config> access, @NonNull List<IConfigGuiElement> elements) {
         super(context, access, createElements(context, access, elements));
     }
 
     /**
      * @author DaPorkchop_
      */
-    protected static class GuiDynamicLabel extends AbstractConfigGuiElement {
-        protected final GuiObjectAccess<FP2Config> access;
+    protected static class GuiDynamicLabel extends AbstractGuiElement {
+        protected final ConfigGuiObjectAccess<FP2Config> access;
         protected final BiFunction<FP2Config, String, LabelContents>[] labels;
 
         @SafeVarargs
-        public GuiDynamicLabel(@NonNull IGuiContext context, @NonNull GuiObjectAccess<FP2Config> access, @NonNull BiFunction<FP2Config, String, LabelContents>... labels) {
+        public GuiDynamicLabel(@NonNull IConfigGuiContext context, @NonNull ConfigGuiObjectAccess<FP2Config> access, @NonNull BiFunction<FP2Config, String, LabelContents>... labels) {
             super(context);
 
             this.access = access;
@@ -270,7 +270,7 @@ public class RenderDistanceContainer extends VerticallyStackedContainer<FP2Confi
             this.name = name;
             this.visible = visible;
 
-            NumberFormat numberFormat = GuiHelper.numberFormat();
+            NumberFormat numberFormat = fp2().i18n().numberFormat();
             this.formatArgs = Stream.of(formatArgs).map(arg -> arg instanceof Number ? numberFormat.format(arg) : arg).toArray();
         }
 

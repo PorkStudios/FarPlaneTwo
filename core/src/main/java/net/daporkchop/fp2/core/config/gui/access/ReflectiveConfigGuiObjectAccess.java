@@ -18,13 +18,11 @@
  *
  */
 
-package net.daporkchop.fp2.client.gui.access;
+package net.daporkchop.fp2.core.config.gui.access;
 
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.SneakyThrows;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
@@ -36,8 +34,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 /**
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
-final class ReflectiveGuiObjectAccess<T, V> implements GuiObjectAccess<V> {
+final class ReflectiveConfigGuiObjectAccess<T, V> implements ConfigGuiObjectAccess<V> {
     protected final T defaultInstance;
     protected final T serverInstance;
     protected final T oldInstance;
@@ -46,7 +43,7 @@ final class ReflectiveGuiObjectAccess<T, V> implements GuiObjectAccess<V> {
     @Getter
     protected final Field field;
 
-    public ReflectiveGuiObjectAccess(@NonNull Field field) {
+    public ReflectiveConfigGuiObjectAccess(@NonNull Field field) {
         checkArg((field.getModifiers() & Modifier.STATIC) != 0, "field must be static: %s", field);
 
         this.defaultInstance = null;
@@ -56,7 +53,7 @@ final class ReflectiveGuiObjectAccess<T, V> implements GuiObjectAccess<V> {
         this.field = field;
     }
 
-    public ReflectiveGuiObjectAccess(@NonNull T defaultInstance, T serverInstance, @NonNull T oldInstance, @NonNull T currentInstance, @NonNull Field field) {
+    public ReflectiveConfigGuiObjectAccess(@NonNull T defaultInstance, T serverInstance, @NonNull T oldInstance, @NonNull T currentInstance, @NonNull Field field) {
         checkArg((field.getModifiers() & Modifier.STATIC) == 0, "field must be non-static: %s", field);
 
         Class<?> clazz = defaultInstance.getClass();

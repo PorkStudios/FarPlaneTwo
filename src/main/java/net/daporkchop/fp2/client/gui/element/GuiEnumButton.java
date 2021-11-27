@@ -21,13 +21,11 @@
 package net.daporkchop.fp2.client.gui.element;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gui.IGuiContext;
-import net.daporkchop.fp2.client.gui.access.GuiObjectAccess;
-import net.daporkchop.fp2.client.gui.container.ScrollingContainer;
+import net.daporkchop.fp2.client.gui.IConfigGuiContext;
+import net.daporkchop.fp2.core.config.gui.access.ConfigGuiObjectAccess;
+import net.daporkchop.fp2.core.client.gui.container.ScrollingContainer;
 import net.daporkchop.fp2.client.gui.screen.DefaultConfigGuiScreen;
 import net.minecraft.client.resources.I18n;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
 
 import java.lang.reflect.Field;
 import java.util.Objects;
@@ -40,12 +38,11 @@ import static net.daporkchop.fp2.FP2.*;
 /**
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
 public class GuiEnumButton<E extends Enum<E>> extends GuiButton<E> {
     protected final E[] values;
     protected final Field[] fields;
 
-    public GuiEnumButton(@NonNull IGuiContext context, @NonNull GuiObjectAccess<E> access) {
+    public GuiEnumButton(@NonNull IConfigGuiContext context, @NonNull ConfigGuiObjectAccess<E> access) {
         super(context, access);
 
         Class<E> enumClazz = this.access.getCurrent().getDeclaringClass();
@@ -78,8 +75,8 @@ public class GuiEnumButton<E extends Enum<E>> extends GuiButton<E> {
     protected class ValueSelectionButton extends GuiButton<E> {
         protected final E value;
 
-        public ValueSelectionButton(@NonNull IGuiContext context, @NonNull E value) {
-            super(context, GuiObjectAccess.forStaticField(GuiEnumButton.this.fields[value.ordinal()]));
+        public ValueSelectionButton(@NonNull IConfigGuiContext context, @NonNull E value) {
+            super(context, ConfigGuiObjectAccess.forStaticField(GuiEnumButton.this.fields[value.ordinal()]));
 
             this.value = value;
         }

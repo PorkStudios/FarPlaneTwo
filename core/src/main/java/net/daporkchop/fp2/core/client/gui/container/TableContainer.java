@@ -18,16 +18,13 @@
  *
  */
 
-package net.daporkchop.fp2.client.gui.container;
+package net.daporkchop.fp2.core.client.gui.container;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gui.IConfigGuiElement;
-import net.daporkchop.fp2.client.gui.IGuiContext;
-import net.daporkchop.fp2.client.gui.access.GuiObjectAccess;
-import net.daporkchop.fp2.client.gui.util.ComponentDimensions;
-import net.daporkchop.fp2.client.gui.util.ElementBounds;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
+import net.daporkchop.fp2.core.client.gui.GuiContext;
+import net.daporkchop.fp2.core.client.gui.GuiElement;
+import net.daporkchop.fp2.core.client.gui.util.ComponentDimensions;
+import net.daporkchop.fp2.core.client.gui.util.ElementBounds;
 
 import java.lang.reflect.Array;
 import java.util.stream.Collectors;
@@ -35,19 +32,18 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static java.lang.Math.*;
-import static net.daporkchop.fp2.client.gui.GuiConstants.*;
+import static net.daporkchop.fp2.core.client.gui.GuiConstants.*;
 
 /**
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
-public class TableContainer<T> extends AbstractConfigGuiContainer<T> {
-    protected final IConfigGuiElement[][] grid;
+public class TableContainer extends AbstractConfigGuiContainer {
+    protected final GuiElement[][] grid;
     protected final int rows;
     protected final int cols;
 
-    public TableContainer(@NonNull IGuiContext context, @NonNull GuiObjectAccess<T> access, @NonNull IConfigGuiElement[]... grid) {
-        super(context, access, Stream.of(grid).flatMap(Stream::of).collect(Collectors.toList()));
+    public TableContainer(@NonNull GuiContext context, @NonNull GuiElement[]... grid) {
+        super(context, Stream.of(grid).flatMap(Stream::of).collect(Collectors.toList()));
 
         this.grid = grid;
         this.rows = grid.length;
@@ -75,7 +71,7 @@ public class TableContainer<T> extends AbstractConfigGuiContainer<T> {
 
     protected int getRowHeight(int row) {
         return Stream.of(this.grid[row])
-                .map(IConfigGuiElement::preferredMinimumDimensions)
+                .map(GuiElement::preferredMinimumDimensions)
                 .mapToInt(ComponentDimensions::sizeY)
                 .max().getAsInt();
     }
@@ -95,7 +91,7 @@ public class TableContainer<T> extends AbstractConfigGuiContainer<T> {
         }
 
         for (int row = 0; row < this.rows; row++) {
-            IConfigGuiElement[] rowElements = this.grid[row];
+            GuiElement[] rowElements = this.grid[row];
 
             for (int col = 0; col < min(rowElements.length, this.cols); col++) {
                 rowElements[col].bounds(new ElementBounds(x[col], y[row], widths[col], heights[row]));

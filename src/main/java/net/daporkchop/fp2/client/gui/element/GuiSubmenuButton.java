@@ -21,17 +21,14 @@
 package net.daporkchop.fp2.client.gui.element;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gui.IGuiContext;
-import net.daporkchop.fp2.client.gui.access.GuiObjectAccess;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
+import net.daporkchop.fp2.client.gui.IConfigGuiContext;
+import net.daporkchop.fp2.core.config.gui.access.ConfigGuiObjectAccess;
 
 /**
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
 public class GuiSubmenuButton<V> extends GuiButton<V> {
-    public GuiSubmenuButton(@NonNull IGuiContext context, @NonNull GuiObjectAccess<V> access) {
+    public GuiSubmenuButton(@NonNull IConfigGuiContext context, @NonNull ConfigGuiObjectAccess<V> access) {
         super(context, access);
     }
 

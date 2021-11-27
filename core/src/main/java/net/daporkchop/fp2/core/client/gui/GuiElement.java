@@ -18,24 +18,33 @@
  *
  */
 
-package net.daporkchop.fp2.client.gui.element;
+package net.daporkchop.fp2.core.client.gui;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.client.gui.IConfigGuiContext;
-import net.daporkchop.fp2.core.config.gui.access.ConfigGuiObjectAccess;
+import net.daporkchop.fp2.core.client.gui.util.ComponentDimensions;
+import net.daporkchop.fp2.core.client.gui.util.ElementBounds;
 
-import static net.daporkchop.fp2.core.debug.FP2Debug.*;
+import java.util.stream.Stream;
 
 /**
  * @author DaPorkchop_
  */
-public class GuiDebugButton extends GuiSubmenuButton<FP2Config.Debug> {
-    public GuiDebugButton(@NonNull IConfigGuiContext context, @NonNull ConfigGuiObjectAccess<FP2Config.Debug> access) {
-        super(context, access);
+public interface GuiElement extends GuiEventHandler {
+    Stream<ComponentDimensions> possibleDimensions(int totalSizeX, int totalSizeY);
 
-        if (!FP2_DEBUG) {
-            this.button.enabled = false;
-        }
-    }
+    ComponentDimensions preferredMinimumDimensions();
+
+    /**
+     * @return this element's bounds
+     */
+    ElementBounds bounds();
+
+    /**
+     * Sets this element's bounds.
+     * <p>
+     * Implicitly calls {@link #pack()} after the bounds are updated.
+     *
+     * @param bounds the new bounds
+     */
+    void bounds(@NonNull ElementBounds bounds);
 }

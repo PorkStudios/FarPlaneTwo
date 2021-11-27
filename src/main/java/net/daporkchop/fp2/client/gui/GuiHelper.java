@@ -23,30 +23,22 @@ package net.daporkchop.fp2.client.gui;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.client.gui.access.GuiObjectAccess;
 import net.daporkchop.fp2.client.gui.element.GuiEnumButton;
 import net.daporkchop.fp2.client.gui.element.GuiSlider;
 import net.daporkchop.fp2.client.gui.element.GuiSubmenuButton;
 import net.daporkchop.fp2.client.gui.element.GuiToggleButton;
 import net.daporkchop.fp2.client.gui.screen.DefaultConfigGuiScreen;
-import net.daporkchop.fp2.config.Config;
-import net.daporkchop.fp2.config.ConfigHelper;
-import net.minecraft.client.resources.I18n;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
+import net.daporkchop.fp2.core.config.Config;
+import net.daporkchop.fp2.core.config.ConfigHelper;
+import net.daporkchop.fp2.core.config.gui.access.ConfigGuiObjectAccess;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
-import java.text.NumberFormat;
 import java.util.List;
-import java.util.Locale;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-import static java.lang.Math.*;
 import static net.daporkchop.fp2.FP2.*;
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
@@ -54,7 +46,6 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @UtilityClass
-@SideOnly(Side.CLIENT)
 public class GuiHelper {
     /**
      * Creates and displays a new config menu.
@@ -63,20 +54,20 @@ public class GuiHelper {
      * @param callback a callback function that will be called if the configuration has been modified once the menu is closed
      */
     public <V> void createAndDisplayGuiContext(@NonNull String menuName, @NonNull V defaultConfig, V serverConfig, @NonNull V currentConfig, @NonNull Consumer<V> callback) {
-        new DefaultGuiContext(MODID + ".config." + menuName + '.', GuiObjectAccess.forValues(defaultConfig, serverConfig, currentConfig, ConfigHelper.cloneConfigObject(currentConfig)), callback);
+        new DefaultConfigGuiContext(MODID + ".config." + menuName + '.', ConfigGuiObjectAccess.forValues(defaultConfig, serverConfig, currentConfig, ConfigHelper.cloneConfigObject(currentConfig)), callback);
     }
 
     /**
-     * Creates a new {@link IConfigGuiScreen} for a given {@link IGuiContext} and config struct instance.
+     * Creates a new {@link IConfigGuiScreen} for a given {@link IConfigGuiContext} and config struct instance.
      *
-     * @param context the current {@link IGuiContext}
+     * @param context the current {@link IConfigGuiContext}
      * @return a new {@link IConfigGuiScreen}
      */
     @SneakyThrows({ IllegalAccessException.class, InstantiationException.class, InvocationTargetException.class, NoSuchMethodException.class })
-    public IConfigGuiScreen createConfigGuiScreen(@NonNull IGuiContext context, @NonNull GuiObjectAccess<?> access) {
+    public IConfigGuiScreen createConfigGuiScreen(@NonNull IConfigGuiContext context, @NonNull ConfigGuiObjectAccess<?> access) {
         Config.GuiScreenClass guiScreenAnnotation = access.getAnnotation(Config.GuiScreenClass.class);
         if (guiScreenAnnotation != null) { //a specific gui screen class was requested, so let's use it
-            Constructor<? extends IConfigGuiScreen> constructor = guiScreenAnnotation.value().getDeclaredConstructor(IGuiContext.class, GuiObjectAccess.class);
+            Constructor<? extends IConfigGuiScreen> constructor = guiScreenAnnotation.value().getDeclaredConstructor(IConfigGuiContext.class, ConfigGuiObjectAccess.class);
             constructor.setAccessible(true);
             return constructor.newInstance(context, access);
         }
@@ -85,16 +76,16 @@ public class GuiHelper {
     }
 
     /**
-     * Creates a new {@link IConfigGuiElement} for a given {@link IGuiContext}, config struct instance and config property field.
+     * Creates a new {@link IConfigGuiElement} for a given {@link IConfigGuiContext}, config struct instance and config property field.
      *
-     * @param context the current {@link IGuiContext}
+     * @param context the current {@link IConfigGuiContext}
      * @return a new {@link IConfigGuiElement}
      */
     @SneakyThrows({ IllegalAccessException.class, InstantiationException.class, InvocationTargetException.class, NoSuchMethodException.class })
-    public IConfigGuiElement createConfigGuiElement(@NonNull IGuiContext context, @NonNull GuiObjectAccess<?> access) {
+    public IConfigGuiElement createConfigGuiElement(@NonNull IConfigGuiContext context, @NonNull ConfigGuiObjectAccess<?> access) {
         Config.GuiElementClass guiElementAnnotation = access.getAnnotation(Config.GuiElementClass.class);
         if (guiElementAnnotation != null) { //a specific gui element class was requested, so let's use it
-            Constructor<? extends IConfigGuiElement> constructor = guiElementAnnotation.value().getDeclaredConstructor(IGuiContext.class, GuiObjectAccess.class);
+            Constructor<? extends IConfigGuiElement> constructor = guiElementAnnotation.value().getDeclaredConstructor(IConfigGuiContext.class, ConfigGuiObjectAccess.class);
             constructor.setAccessible(true);
             return constructor.newInstance(context, access);
         }
@@ -129,58 +120,9 @@ public class GuiHelper {
      * @return a {@link IConfigGuiElement} containing the given {@link IConfigGuiElement}s
      */
     @SneakyThrows({ IllegalAccessException.class, InstantiationException.class, InvocationTargetException.class, NoSuchMethodException.class })
-    public IConfigGuiElement createConfigGuiContainer(@NonNull Config.CategoryMeta categoryMeta, @NonNull IGuiContext context, @NonNull GuiObjectAccess<?> access, @NonNull List<IConfigGuiElement> elements) {
-        Constructor<? extends IConfigGuiElement> constructor = categoryMeta.containerClass().getDeclaredConstructor(IGuiContext.class, GuiObjectAccess.class, List.class);
+    public IConfigGuiElement createConfigGuiContainer(@NonNull Config.CategoryMeta categoryMeta, @NonNull IConfigGuiContext context, @NonNull ConfigGuiObjectAccess<?> access, @NonNull List<IConfigGuiElement> elements) {
+        Constructor<? extends IConfigGuiElement> constructor = categoryMeta.containerClass().getDeclaredConstructor(IConfigGuiContext.class, ConfigGuiObjectAccess.class, List.class);
         constructor.setAccessible(true);
         return constructor.newInstance(context, access, elements);
-    }
-
-    /**
-     * @return a {@link NumberFormat} for numbers which can be used in the current locale
-     */
-    public NumberFormat numberFormat() {
-        NumberFormat numberFormat = NumberFormat.getInstance(MC.languageManager.getCurrentLanguage().getJavaLocale());
-        numberFormat.setMaximumFractionDigits(2);
-        return numberFormat;
-    }
-
-    /**
-     * @return a {@link NumberFormat} for percentages which can be used in the current locale
-     */
-    public NumberFormat percentFormat() {
-        NumberFormat numberFormat = NumberFormat.getPercentInstance(MC.languageManager.getCurrentLanguage().getJavaLocale());
-        numberFormat.setMaximumFractionDigits(2);
-        return numberFormat;
-    }
-
-    /**
-     * Formats a byte count as a human-readable number in the current locale.
-     *
-     * @param bytes the byte count
-     * @return the formatted count
-     */
-    public String formatByteCount(long bytes) {
-        for (long log1024 = 6L; ; log1024--) {
-            long fac = 1L << (log1024 * 10L);
-            if (log1024 == 0L || abs(bytes) >= fac) {
-                return I18n.format(MODID + ".util.numberFormat.bytes." + log1024, numberFormat().format(bytes / (double) fac));
-            }
-        }
-    }
-
-    /**
-     * Formats a duration as a human-readable number in the current locale.
-     *
-     * @param nanos the duration (in nanoseconds)
-     * @return the formatted count
-     */
-    public String formatDuration(long nanos) {
-        TimeUnit[] units = TimeUnit.values();
-        for (int i = units.length - 1; ; i--) { //iterate backwards
-            long fac = units[i].toNanos(1L);
-            if (fac == 1L || abs(nanos) >= fac) {
-                return I18n.format(MODID + ".util.numberFormat.time." + units[i].name().toLowerCase(Locale.ROOT), numberFormat().format(nanos / (double) fac));
-            }
-        }
     }
 }

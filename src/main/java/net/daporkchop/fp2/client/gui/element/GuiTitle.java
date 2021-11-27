@@ -21,29 +21,27 @@
 package net.daporkchop.fp2.client.gui.element;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gui.IGuiContext;
-import net.daporkchop.fp2.client.gui.util.ComponentDimensions;
+import net.daporkchop.fp2.client.gui.IConfigGuiContext;
+import net.daporkchop.fp2.core.client.gui.element.AbstractGuiElement;
+import net.daporkchop.fp2.core.client.gui.util.ComponentDimensions;
 import net.minecraft.client.resources.I18n;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
 
 import java.util.stream.Stream;
 
 import static java.lang.Math.*;
-import static net.daporkchop.fp2.client.gui.GuiConstants.*;
+import static net.daporkchop.fp2.core.client.gui.GuiConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
-public class GuiTitle extends AbstractConfigGuiElement {
+public class GuiTitle extends AbstractGuiElement {
     protected final String name;
 
     protected String text;
     protected int textWidth;
 
-    public GuiTitle(@NonNull IGuiContext context, @NonNull String name) {
+    public GuiTitle(@NonNull IConfigGuiContext context, @NonNull String name) {
         super(context);
 
         this.name = name;

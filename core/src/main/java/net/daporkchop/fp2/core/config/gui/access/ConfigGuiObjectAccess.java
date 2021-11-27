@@ -18,11 +18,9 @@
  *
  */
 
-package net.daporkchop.fp2.client.gui.access;
+package net.daporkchop.fp2.core.config.gui.access;
 
 import lombok.NonNull;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
@@ -34,18 +32,17 @@ import java.lang.reflect.Field;
  *
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
-public interface GuiObjectAccess<V> {
-    static <V> GuiObjectAccess<V> forStaticField(@NonNull Field field) {
-        return new ReflectiveGuiObjectAccess<>(field);
+public interface ConfigGuiObjectAccess<V> {
+    static <V> ConfigGuiObjectAccess<V> forStaticField(@NonNull Field field) {
+        return new ReflectiveConfigGuiObjectAccess<>(field);
     }
 
-    static <T, V> GuiObjectAccess<V> forMemberField(@NonNull T defaultInstance, T serverInstance, @NonNull T oldInstance, @NonNull T currentInstance, @NonNull Field field) {
-        return new ReflectiveGuiObjectAccess<>(defaultInstance, serverInstance, oldInstance, currentInstance, field);
+    static <T, V> ConfigGuiObjectAccess<V> forMemberField(@NonNull T defaultInstance, T serverInstance, @NonNull T oldInstance, @NonNull T currentInstance, @NonNull Field field) {
+        return new ReflectiveConfigGuiObjectAccess<>(defaultInstance, serverInstance, oldInstance, currentInstance, field);
     }
 
-    static <V> GuiObjectAccess<V> forValues(@NonNull V defaultInstance, V serverInstance, @NonNull V oldInstance, @NonNull V currentInstance) {
-        return new ReferenceGuiObjectAccess<>(defaultInstance, serverInstance, oldInstance, currentInstance);
+    static <V> ConfigGuiObjectAccess<V> forValues(@NonNull V defaultInstance, V serverInstance, @NonNull V oldInstance, @NonNull V currentInstance) {
+        return new ReferenceConfigGuiObjectAccess<>(defaultInstance, serverInstance, oldInstance, currentInstance);
     }
 
     String name();
@@ -64,7 +61,7 @@ public interface GuiObjectAccess<V> {
 
     void setCurrent(@NonNull V value);
 
-    default <NEW_V> GuiObjectAccess<NEW_V> childAccess(@NonNull Field field) {
+    default <NEW_V> ConfigGuiObjectAccess<NEW_V> childAccess(@NonNull Field field) {
         return forMemberField(this.getDefault(), this.getServer(), this.getOld(), this.getCurrent(), field);
     }
 }

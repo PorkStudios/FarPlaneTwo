@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.config;
+package net.daporkchop.fp2.core.config;
 
 import com.google.common.collect.ImmutableSet;
 import lombok.NonNull;

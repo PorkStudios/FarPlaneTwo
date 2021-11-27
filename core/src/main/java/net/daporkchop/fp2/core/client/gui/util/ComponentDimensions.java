@@ -18,24 +18,32 @@
  *
  */
 
-package net.daporkchop.fp2.client.gui.element;
+package net.daporkchop.fp2.core.client.gui.util;
 
+import lombok.Data;
 import lombok.NonNull;
-import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.client.gui.IConfigGuiContext;
-import net.daporkchop.fp2.core.config.gui.access.ConfigGuiObjectAccess;
 
-import static net.daporkchop.fp2.core.debug.FP2Debug.*;
+import static java.lang.Math.*;
 
 /**
  * @author DaPorkchop_
  */
-public class GuiDebugButton extends GuiSubmenuButton<FP2Config.Debug> {
-    public GuiDebugButton(@NonNull IConfigGuiContext context, @NonNull ConfigGuiObjectAccess<FP2Config.Debug> access) {
-        super(context, access);
+@Data
+public final class ComponentDimensions {
+    public static final ComponentDimensions ZERO = new ComponentDimensions(0, 0);
 
-        if (!FP2_DEBUG) {
-            this.button.enabled = false;
-        }
+    protected final int sizeX;
+    protected final int sizeY;
+
+    public ComponentDimensions pad(int padding) {
+        return this.pad(padding, padding);
+    }
+
+    public ComponentDimensions pad(int paddingX, int paddingY) {
+        return new ComponentDimensions(this.sizeX + paddingX, this.sizeY + paddingY);
+    }
+
+    public ComponentDimensions union(@NonNull ComponentDimensions other) {
+        return new ComponentDimensions(max(this.sizeX, other.sizeX), max(this.sizeY, other.sizeY));
     }
 }

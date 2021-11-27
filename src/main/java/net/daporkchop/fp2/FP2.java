@@ -31,9 +31,14 @@ import net.daporkchop.fp2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.compat.x86.x86FeatureDetector;
 import net.daporkchop.fp2.config.listener.ConfigListenerManager;
 import net.daporkchop.fp2.core.FP2Core;
+import net.daporkchop.fp2.core.client.gui.GuiContext;
+import net.daporkchop.fp2.core.client.gui.GuiScreen;
 import net.daporkchop.fp2.core.network.RegisterPacketsEvent;
+import net.daporkchop.fp2.core.util.I18n;
 import net.daporkchop.fp2.debug.client.DebugClientEvents;
 import net.daporkchop.fp2.debug.client.DebugKeyBindings;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.I18n1_12_2;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.client.gui.GuiContext1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.log.ChatAsPorkLibLogger;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.log.Log4jAsPorkLibLogger;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
@@ -67,6 +72,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.function.Function;
 
 import static net.daporkchop.fp2.FP2.*;
 import static net.daporkchop.fp2.core.debug.FP2Debug.*;
@@ -205,6 +211,16 @@ public class FP2 extends FP2Core implements ResourceProvider {
     @Override
     protected Path configDir() {
         return Loader.instance().getConfigDir().toPath();
+    }
+
+    @Override
+    public I18n i18n() {
+        return new I18n1_12_2();
+    }
+
+    @Override
+    public <T extends GuiScreen> T openScreen(@NonNull Function<GuiContext, T> factory) {
+        return new GuiContext1_12_2().createScreenAndOpen(this.mc, factory);
     }
 
     @Override

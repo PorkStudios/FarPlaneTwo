@@ -18,29 +18,23 @@
  *
  */
 
-package net.daporkchop.fp2.client.gui;
-
-import lombok.NonNull;
-import net.daporkchop.fp2.client.gui.access.GuiObjectAccess;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
-
-import java.util.function.Function;
+package net.daporkchop.fp2.core.client.gui;
 
 /**
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
-public interface IGuiContext {
-    String localeKeyBase();
+public interface GuiContext {
+    /**
+     * @return the {@link GuiRenderer} to use for rendering this GUI
+     */
+    GuiRenderer renderer();
 
-    default void pushSubmenu(@NonNull String name, @NonNull GuiObjectAccess<?> access) {
-        this.pushSubmenu(name, access, context -> GuiHelper.createConfigGuiScreen(context, access));
-    }
-
-    void pushSubmenu(@NonNull String name, @NonNull GuiObjectAccess<?> access, @NonNull Function<IGuiContext, IConfigGuiScreen> screenFactory);
-
-    void pop();
-
-    void pack();
+    /**
+     * Closes this context, closing the GUI in the process.
+     * <p>
+     * This will restore whatever GUI was open when this context was created.
+     *
+     * @throws IllegalStateException if this context is not currently active
+     */
+    void close();
 }

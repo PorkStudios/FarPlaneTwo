@@ -18,44 +18,41 @@
  *
  */
 
-package net.daporkchop.fp2.client.gui.container;
+package net.daporkchop.fp2.core.client.gui.container;
 
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.client.gui.IConfigGuiComponent;
-import net.daporkchop.fp2.client.gui.IConfigGuiElement;
-import net.daporkchop.fp2.client.gui.IGuiContext;
-import net.daporkchop.fp2.client.gui.access.GuiObjectAccess;
-import net.daporkchop.fp2.client.gui.util.ElementBounds;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
+import net.daporkchop.fp2.core.client.gui.GuiContainer;
+import net.daporkchop.fp2.core.client.gui.GuiContext;
+import net.daporkchop.fp2.core.client.gui.GuiElement;
+import net.daporkchop.fp2.core.client.gui.util.ElementBounds;
 
-import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-
-import static org.lwjgl.opengl.GL11.*;
 
 /**
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-@SideOnly(Side.CLIENT)
-public abstract class AbstractConfigGuiContainer<T> implements IConfigGuiElement {
+@Getter
+public abstract class AbstractConfigGuiContainer implements GuiContainer {
     @NonNull
-    protected final IGuiContext context;
+    protected final GuiContext context;
     @NonNull
-    protected final GuiObjectAccess<T> access;
-    @NonNull
-    protected final List<IConfigGuiElement> elements;
+    protected final List<GuiElement> elements;
 
-    @Getter
     protected ElementBounds bounds = ElementBounds.ZERO;
 
+    @Getter(AccessLevel.NONE)
     protected final BitSet mouseButtonsDown = new BitSet();
+
+    @Override
+    public Iterator<GuiElement> iterator() {
+        return this.elements.iterator();
+    }
 
     @Override
     public void bounds(@NonNull ElementBounds bounds) {
@@ -66,7 +63,12 @@ public abstract class AbstractConfigGuiContainer<T> implements IConfigGuiElement
 
     @Override
     public void init() {
-        this.elements.forEach(IConfigGuiComponent::init);
+        this.elements.forEach(GuiElement::init);
+    }
+
+    @Override
+    public void close() {
+        this.elements.forEach(GuiElement::close);
     }
 
     protected int offsetX(int x) {
@@ -78,40 +80,21 @@ public abstract class AbstractConfigGuiContainer<T> implements IConfigGuiElement
     }
 
     @Override
-    public void render(int mouseX, int mouseY, float partialTicks) {
-        glPushMatrix();
-        glTranslatef(-this.offsetX(0), -this.offsetY(0), 0.0f);
-
-        try {
-            if (!this.mouseButtonsDown.isEmpty() || this.bounds.contains(mouseX, mouseY)) {
-                mouseX = this.offsetX(mouseX);
-                mouseY = this.offsetY(mouseY);
-            } else {
-                mouseX = mouseY = Integer.MIN_VALUE;
-            }
-
-            for (IConfigGuiElement element : this.elements) {
-                element.render(mouseX, mouseY, partialTicks);
-            }
-        } finally {
-            glPopMatrix();
-        }
-    }
-
-    @Override
-    public Optional<String[]> getTooltip(int mouseX, int mouseY) {
-        if (!this.bounds.contains(mouseX, mouseY)) {
-            return Optional.empty();
+    public void render(int mouseX, int mouseY) {
+        int offsetMouseX;
+        int offsetMouseY;
+        if (!this.mouseButtonsDown.isEmpty() || this.bounds.contains(mouseX, mouseY)) {
+            offsetMouseX = this.offsetX(mouseX);
+            offsetMouseY = this.offsetY(mouseY);
+        } else {
+            offsetMouseX = offsetMouseY = Integer.MIN_VALUE;
         }
 
-        return this.elements.stream()
-                .map(element -> element.getTooltip(this.offsetX(mouseX), this.offsetY(mouseY)).orElse(null))
-                .filter(Objects::nonNull)
-                .reduce((a, b) -> {
-                    String[] merged = Arrays.copyOf(a, a.length + b.length);
-                    System.arraycopy(b, 0, merged, a.length, b.length);
-                    return merged;
-                });
+        this.context.renderer().translate(-this.offsetX(0), -this.offsetY(0), () -> {
+            for (GuiElement element : this.elements) {
+                element.render(offsetMouseX, offsetMouseY);
+            }
+        });
     }
 
     @Override
@@ -119,7 +102,7 @@ public abstract class AbstractConfigGuiContainer<T> implements IConfigGuiElement
         if (this.bounds.contains(mouseX, mouseY)) {
             this.mouseButtonsDown.set(button);
 
-            for (IConfigGuiElement element : this.elements) {
+            for (GuiElement element : this.elements) {
                 element.mouseDown(this.offsetX(mouseX), this.offsetY(mouseY), button);
             }
         }
@@ -130,7 +113,7 @@ public abstract class AbstractConfigGuiContainer<T> implements IConfigGuiElement
         if (this.mouseButtonsDown.get(button)) {
             this.mouseButtonsDown.clear(button);
 
-            for (IConfigGuiElement element : this.elements) {
+            for (GuiElement element : this.elements) {
                 element.mouseUp(this.offsetX(mouseX), this.offsetY(mouseY), button);
             }
         }
@@ -139,7 +122,7 @@ public abstract class AbstractConfigGuiContainer<T> implements IConfigGuiElement
     @Override
     public void mouseDragged(int oldMouseX, int oldMouseY, int newMouseX, int newMouseY, int button) {
         if (this.mouseButtonsDown.get(button)) {
-            for (IConfigGuiElement element : this.elements) {
+            for (GuiElement element : this.elements) {
                 element.mouseDragged(this.offsetX(oldMouseX), this.offsetY(oldMouseY), this.offsetX(newMouseX), this.offsetY(newMouseY), button);
             }
         }
@@ -148,7 +131,7 @@ public abstract class AbstractConfigGuiContainer<T> implements IConfigGuiElement
     @Override
     public void mouseScroll(int mouseX, int mouseY, int dWheel) {
         if (this.bounds.contains(mouseX, mouseY)) {
-            for (IConfigGuiElement element : this.elements) {
+            for (GuiElement element : this.elements) {
                 element.mouseScroll(this.offsetX(mouseX), this.offsetY(mouseY), dWheel);
             }
         }
@@ -156,7 +139,7 @@ public abstract class AbstractConfigGuiContainer<T> implements IConfigGuiElement
 
     @Override
     public void keyPressed(char typedChar, int keyCode) {
-        for (IConfigGuiElement element : this.elements) {
+        for (GuiElement element : this.elements) {
             element.keyPressed(typedChar, keyCode);
         }
     }

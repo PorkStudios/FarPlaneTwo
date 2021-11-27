@@ -18,41 +18,40 @@
  *
  */
 
-package net.daporkchop.fp2.client.gui;
+package net.daporkchop.fp2.core.client.gui.element;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.mode.api.player.IFarPlayerClient;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiButton;
-import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.client.resources.I18n;
+import net.daporkchop.fp2.core.client.gui.GuiContext;
+import net.daporkchop.fp2.core.client.gui.element.properties.GuiElementProperties;
+import net.daporkchop.fp2.core.client.gui.util.ComponentDimensions;
 
-import static net.daporkchop.fp2.FP2.*;
+import java.util.stream.Stream;
+
+import static java.lang.Math.*;
+import static net.daporkchop.fp2.core.client.gui.GuiConstants.*;
 
 /**
  * @author DaPorkchop_
  */
-public class GuiButtonFP2Options extends GuiButton {
-    protected final GuiScreen parent;
-
-    public GuiButtonFP2Options(int buttonId, int x, int y, @NonNull GuiScreen parent) {
-        super(buttonId, x, y, 40, 20, I18n.format(MODID + ".gui.buttonFP2Options"));
-
-        this.parent = parent;
+public class GuiTitle extends AbstractGuiElement {
+    public GuiTitle(@NonNull GuiContext context, @NonNull GuiElementProperties properties) {
+        super(context, properties);
     }
 
     @Override
-    public boolean mousePressed(Minecraft mc, int mouseX, int mouseY) {
-        if (super.mousePressed(mc, mouseX, mouseY)) {
-            FP2Config defaultConfig = FP2Config.DEFAULT_CONFIG;
-            FP2Config serverConfig = !mc.integratedServerIsRunning && mc.getConnection() != null ? ((IFarPlayerClient) mc.getConnection()).fp2_IFarPlayerClient_serverConfig() : null;
-            FP2Config clientConfig = fp2().globalConfig();
+    public Stream<ComponentDimensions> possibleDimensions(int totalSizeX, int totalSizeY) {
+        return Stream.of(new ComponentDimensions(totalSizeX, min((this.context.renderer().getStringHeight() << 1) + PADDING, totalSizeY)));
+    }
 
-            GuiHelper.createAndDisplayGuiContext("menu", defaultConfig, serverConfig, clientConfig, fp2()::globalConfig);
-            return true;
-        } else {
-            return false;
-        }
+    @Override
+    public ComponentDimensions preferredMinimumDimensions() {
+        return new ComponentDimensions(this.context.renderer().getStringWidth(this.properties.text()), (this.context.renderer().getStringHeight() << 1) + PADDING);
+    }
+
+    @Override
+    public void render(int mouseX, int mouseY) {
+        super.render(mouseX, mouseY);
+
+        this.context.renderer().drawCenteredString(this.properties.text(), this.bounds.centerX(), this.bounds.centerY() + this.context.renderer().getStringHeight() + PADDING, -1, true, true, false);
     }
 }

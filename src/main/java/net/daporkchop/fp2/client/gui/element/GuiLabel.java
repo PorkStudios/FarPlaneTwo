@@ -21,11 +21,10 @@
 package net.daporkchop.fp2.client.gui.element;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gui.IGuiContext;
-import net.daporkchop.fp2.client.gui.util.ComponentDimensions;
+import net.daporkchop.fp2.client.gui.IConfigGuiContext;
+import net.daporkchop.fp2.core.client.gui.element.AbstractGuiElement;
+import net.daporkchop.fp2.core.client.gui.util.ComponentDimensions;
 import net.minecraft.client.resources.I18n;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
 
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -36,8 +35,7 @@ import static net.daporkchop.fp2.util.Constants.*;
 /**
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
-public class GuiLabel extends AbstractConfigGuiElement {
+public class GuiLabel extends AbstractGuiElement {
     protected final Supplier<String> langKeyFactory;
     protected final Supplier<String> textFactory;
 
@@ -48,7 +46,7 @@ public class GuiLabel extends AbstractConfigGuiElement {
     protected int textWidth;
     protected int textHeight;
 
-    public GuiLabel(@NonNull IGuiContext context, @NonNull String name, @NonNull Alignment horizontalAlignment, @NonNull Alignment verticalAlignment) {
+    public GuiLabel(@NonNull IConfigGuiContext context, @NonNull String name, @NonNull Alignment horizontalAlignment, @NonNull Alignment verticalAlignment) {
         super(context);
 
         this.langKeyFactory = () -> context.localeKeyBase() + name;
@@ -58,7 +56,7 @@ public class GuiLabel extends AbstractConfigGuiElement {
         this.verticalAlignment = verticalAlignment;
     }
 
-    public GuiLabel(@NonNull IGuiContext context, @NonNull Supplier<String> textFactory, @NonNull Alignment horizontalAlignment, @NonNull Alignment verticalAlignment) {
+    public GuiLabel(@NonNull IConfigGuiContext context, @NonNull Supplier<String> textFactory, @NonNull Alignment horizontalAlignment, @NonNull Alignment verticalAlignment) {
         super(context);
 
         this.langKeyFactory = () -> context.localeKeyBase().substring(0, max(context.localeKeyBase().length() - 1, 0));

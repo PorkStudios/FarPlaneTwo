@@ -18,50 +18,28 @@
  *
  */
 
-package net.daporkchop.fp2.client.gui;
+package net.daporkchop.fp2.impl.mc.forge1_12_2;
 
-import lombok.experimental.UtilityClass;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
+import lombok.NonNull;
+import net.daporkchop.fp2.core.util.I18n;
 
 /**
- * Constant values used throughout the GUI code.
- *
  * @author DaPorkchop_
  */
-@UtilityClass
-@SideOnly(Side.CLIENT)
-public class GuiConstants {
-    //
-    // sizes
-    //
+@SuppressWarnings("deprecation")
+public class I18n1_12_2 implements I18n {
+    @Override
+    public boolean hasKey(@NonNull String key) {
+        return net.minecraft.util.text.translation.I18n.canTranslate(key);
+    }
 
-    /**
-     * The padding around all components (vertical and horizontal).
-     */
-    public static final int PADDING = 2;
+    @Override
+    public String format(@NonNull String key) {
+        return net.minecraft.util.text.translation.I18n.translateToLocal(key);
+    }
 
-    /**
-     * The height of the title in a GUI header.
-     */
-    public static final int HEADER_TITLE_HEIGHT = 30;
-
-    public static final int FOOTER_HEIGHT = 27;
-
-    /**
-     * The width of a scrollbar.
-     */
-    public static final int SCROLLBAR_WIDTH = 5;
-
-    /**
-     * The maximum number of columns to use.
-     */
-    public static final int MAX_COLUMNS = 2;
-
-    /**
-     * The height of a button.
-     */
-    public static final int BUTTON_HEIGHT = 20;
-
-    public static final int BUTTON_INTERNAL_PADDING_HORIZONTAL = 6;
+    @Override
+    public String format(@NonNull String key, @NonNull Object... args) {
+        return net.minecraft.util.text.translation.I18n.translateToLocalFormatted(key, args);
+    }
 }

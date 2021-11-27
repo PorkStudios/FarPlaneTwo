@@ -59,10 +59,10 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 @With
 @ToString
 @EqualsAndHashCode
-/*@Config.GuiCategories({
+@Config.GuiCategories({
         @Config.CategoryMeta(name = "default", title = false),
-        @Config.CategoryMeta(name = FP2Config.CATEGORY_RENDER_DISTANCE, containerClass = RenderDistanceContainer.class),
-})*/
+        @Config.CategoryMeta(name = FP2Config.CATEGORY_RENDER_DISTANCE/*, containerClass = RenderDistanceContainer.class*/),
+})
 public final class FP2Config implements Cloneable<FP2Config> {
     private static final Gson GSON = new Gson();
     private static final Gson GSON_PRETTY = new GsonBuilder().setPrettyPrinting().create();
@@ -148,16 +148,16 @@ public final class FP2Config implements Cloneable<FP2Config> {
     }
 
     @Builder.Default
-    /*@Config.Range(min = @Config.Constant(1), max = @Config.Constant(field = "net.daporkchop.fp2.util.Constants#MAX_LODS"))
+    @Config.Range(min = @Config.Constant(1), max = @Config.Constant(field = "net.daporkchop.fp2.util.Constants#MAX_LODS"))
     @Config.GuiCategory(CATEGORY_RENDER_DISTANCE)
-    @Config.GuiShowServerValue*/
+    @Config.GuiShowServerValue
     private final int maxLevels = preventInline(3);
 
     @Builder.Default
-    /*@Config.Range(min = @Config.Constant(0), max = @Config.Constant(Integer.MAX_VALUE))
+    @Config.Range(min = @Config.Constant(0), max = @Config.Constant(Integer.MAX_VALUE))
     @Config.GuiRange(min = @Config.Constant(field = "net.daporkchop.fp2.util.Constants#T_VOXELS"), max = @Config.Constant(1024), snapTo = @Config.Constant(field = "net.daporkchop.fp2.util.Constants#T_VOXELS"))
     @Config.GuiCategory(CATEGORY_RENDER_DISTANCE)
-    @Config.GuiShowServerValue*/
+    @Config.GuiShowServerValue
     private final int cutoffDistance = preventInline(256);
 
     @Builder.Default
