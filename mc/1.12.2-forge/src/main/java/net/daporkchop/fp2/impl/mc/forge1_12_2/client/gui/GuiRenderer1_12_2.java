@@ -26,16 +26,18 @@ import net.daporkchop.fp2.core.client.gui.GuiRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiButton;
-import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraftforge.fml.client.config.GuiUtils;
 
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 import static org.lwjgl.opengl.GL11.*;
 
 /**
@@ -48,28 +50,58 @@ public class GuiRenderer1_12_2 implements GuiRenderer {
     @NonNull
     protected final GuiContext1_12_2 context;
 
+    protected int totalDx;
+    protected int totalDy;
+
+    protected boolean scissor;
+
+    public void render(@NonNull Runnable action) {
+        glStencilMask(1);
+        glClearStencil(0);
+        GlStateManager.clear(GL_STENCIL_BUFFER_BIT);
+
+        glEnable(GL_STENCIL_TEST);
+        glStencilMask(0);
+        glStencilFunc(GL_EQUAL, 0, 1);
+        glStencilOp(GL_KEEP, GL_REPLACE, GL_REPLACE);
+
+        try {
+            action.run();
+        } finally {
+            glDisable(GL_STENCIL_TEST);
+        }
+    }
+
     @Override
     public void translate(int dx, int dy, @NonNull Runnable action) {
         glPushMatrix();
         glTranslatef(dx, dy, 0.0f);
 
         try {
+            this.totalDx += dx;
+            this.totalDy += dy;
             action.run();
         } finally {
+            this.totalDx -= dx;
+            this.totalDy -= dy;
             glPopMatrix();
         }
     }
 
     @Override
     public void scissor(int x, int y, int width, int height, @NonNull Runnable action) {
+        checkState(!this.scissor, "recursive scissor");
+
         int scale = this.context.scaleFactor;
         glScissor(x * scale, (this.context.height - y - height) * scale, width * scale, height * scale);
-        glEnable(GL_SCISSOR_BIT);
+        glEnable(GL_SCISSOR_TEST);
 
         try {
+            this.scissor = true;
             action.run();
         } finally {
-            glDisable(GL_SCISSOR_BIT);
+            this.scissor = false;
+            glDisable(GL_SCISSOR_TEST);
         }
     }
 
@@ -146,12 +178,41 @@ public class GuiRenderer1_12_2 implements GuiRenderer {
     }
 
     @Override
+    public List<CharSequence> wrapStringToWidth(@NonNull CharSequence text, int width) {
+        return uncheckedCast(this.mc.fontRenderer.listFormattedStringToWidth(text.toString(), width));
+    }
+
+    @Override
     public void drawString(@NonNull CharSequence text, int x, int y, int argb, boolean shadow) {
         this.mc.fontRenderer.drawString(text.toString(), x, y, argb, shadow);
     }
 
     @Override
     public void drawTooltip(int mouseX, int mouseY, int maxWidth, @NonNull CharSequence... lines) {
-        GuiUtils.drawHoveringText(Stream.of(lines).map(CharSequence::toString).collect(Collectors.toList()), mouseX, mouseY, this.context.width, this.context.height, maxWidth, this.mc.fontRenderer);
+        glPushMatrix();
+        glTranslatef(-this.totalDx, -this.totalDy, 0.0f);
+
+        if (this.scissor) {
+            glDisable(GL_SCISSOR_TEST);
+        }
+
+        glStencilMask(1);
+        glStencilFunc(GL_ALWAYS, 1, 1);
+        glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
+
+        try {
+            GuiUtils.drawHoveringText(Stream.of(lines).map(CharSequence::toString).collect(Collectors.toList()), mouseX + this.totalDx, mouseY + this.totalDy, this.context.width, this.context.height, maxWidth, this.mc.fontRenderer);
+            GlStateManager.disableLighting();
+        } finally {
+            glStencilMask(0);
+            glStencilFunc(GL_EQUAL, 0, 1);
+            glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+
+            if (this.scissor) {
+                glEnable(GL_SCISSOR_TEST);
+            }
+
+            glPopMatrix();
+        }
     }
 }

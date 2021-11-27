@@ -57,4 +57,19 @@ public abstract class AbstractGuiElementProperties implements GuiElementProperti
             }
         }
     }
+
+    @Override
+    public Optional<Number> min() {
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<Number> max() {
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<Number> step() {
+        return Optional.empty();
+    }
 }

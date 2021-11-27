@@ -120,6 +120,12 @@ public abstract class FP2Core implements FP2 {
      */
     public abstract <T extends GuiScreen> T openScreen(@NonNull Function<GuiContext, T> factory);
 
+    @Deprecated
+    public abstract String[] renderModeNames();
+
+    @Deprecated
+    public abstract int vanillaRenderDistanceChunks();
+
     /**
      * Sets the global {@link FP2Config}.
      *

@@ -52,6 +52,6 @@ public class GuiTitle extends AbstractGuiElement {
     public void render(int mouseX, int mouseY) {
         super.render(mouseX, mouseY);
 
-        this.context.renderer().drawCenteredString(this.properties.text(), this.bounds.centerX(), this.bounds.centerY() + this.context.renderer().getStringHeight() + PADDING, -1, true, true, false);
+        this.context.renderer().drawCenteredString(this.properties.text(), this.bounds.centerX(), this.bounds.y() + this.context.renderer().getStringHeight() + PADDING, -1, true, true, false);
     }
 }

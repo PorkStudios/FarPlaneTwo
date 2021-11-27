@@ -6,6 +6,11 @@
 
 fp2.playerJoinWarningMessage=§c§lFarPlaneTwo pre-pre-pre-alpha build: use at your own risk!
 
+net.daporkchop.fp2.core.config.TestConfig$TestEnum#FIRST=First
+net.daporkchop.fp2.core.config.TestConfig$TestEnum#FIRST.tooltip=This is the first entry!
+net.daporkchop.fp2.core.config.TestConfig$TestEnum#SECOND=Second
+net.daporkchop.fp2.core.config.TestConfig$TestEnum#THIRD=Third
+
 #
 # Number formatting
 #
@@ -146,12 +151,12 @@ fp2.config.menu.compatibility.workaroundIntelMultidrawNotWorking=Broken MultiDra
 fp2.config.menu.compatibility.workaroundIntelMultidrawNotWorking.title=Workaround - Broken MultiDraw (Intel)
 fp2.config.menu.compatibility.workaroundIntelMultidrawNotWorking.tooltip=A workaround for an issue with Intel's official GPU driver which results in multidraw drawing commands being so horrifically buggy that they might as well not work at all.\nMore specifically: flickering, things being rendered in the wrong positions, memory corruption, driver segfaults, etc.
 
-net.daporkchop.fp2.config.FP2Config$Compatibility$WorkaroundState#AUTO=§bAuto§r
-net.daporkchop.fp2.config.FP2Config$Compatibility$WorkaroundState#AUTO.tooltip=Automatically determines whether or not this workaround should be enabled based on your detected system information.
-net.daporkchop.fp2.config.FP2Config$Compatibility$WorkaroundState#ENABLED=§aEnable§r
-net.daporkchop.fp2.config.FP2Config$Compatibility$WorkaroundState#ENABLED.tooltip=Forces this workaround to be enabled, regardless of whether or not it would be needed.\nNote that this can needlessly hurt performance on systems where the workaround isn't strictly necessary.
-net.daporkchop.fp2.config.FP2Config$Compatibility$WorkaroundState#DISABLED=§cDisable§r
-net.daporkchop.fp2.config.FP2Config$Compatibility$WorkaroundState#DISABLED.tooltip=Forces this workaround to be disabled, even if it would be needed.\nNote that this can cause things to break unexpectedly on systems where the workaround would be required.
+net.daporkchop.fp2.core.config.FP2Config$Compatibility$WorkaroundState#AUTO=§bAuto§r
+net.daporkchop.fp2.core.config.FP2Config$Compatibility$WorkaroundState#AUTO.tooltip=Automatically determines whether or not this workaround should be enabled based on your detected system information.
+net.daporkchop.fp2.core.config.FP2Config$Compatibility$WorkaroundState#ENABLED=§aEnable§r
+net.daporkchop.fp2.core.config.FP2Config$Compatibility$WorkaroundState#ENABLED.tooltip=Forces this workaround to be enabled, regardless of whether or not it would be needed.\nNote that this can needlessly hurt performance on systems where the workaround isn't strictly necessary.
+net.daporkchop.fp2.core.config.FP2Config$Compatibility$WorkaroundState#DISABLED=§cDisable§r
+net.daporkchop.fp2.core.config.FP2Config$Compatibility$WorkaroundState#DISABLED.tooltip=Forces this workaround to be disabled, even if it would be needed.\nNote that this can cause things to break unexpectedly on systems where the workaround would be required.
 
 fp2.config.menu.debug=Debug
 fp2.config.menu.debug.tooltip=These options are intended to be used while debugging FarPlaneTwo.\n§c§lAll options in this category will do nothing unless debug mode is enabled! To enable debug mode, add §c§o-Dfp2.debug=true §c§lto your JVM launch arguments. If you don't know what that means, you should leave this category alone.
@@ -168,14 +173,14 @@ fp2.config.menu.debug.debugColors=Debug Colors
 fp2.config.menu.debug.debugColors.title=Debug Colors
 fp2.config.menu.debug.debugColors.tooltip=Causes FP2's terrain to be colored differently.
 
-net.daporkchop.fp2.config.FP2Config$Debug$DebugColorMode#DISABLED=Disabled
-net.daporkchop.fp2.config.FP2Config$Debug$DebugColorMode#DISABLED.tooltip=Debug colors are disabled; FP2 terrain is rendered normally.
-net.daporkchop.fp2.config.FP2Config$Debug$DebugColorMode#LEVEL=Tile Level
-net.daporkchop.fp2.config.FP2Config$Debug$DebugColorMode#LEVEL.tooltip=Colors tiles based on their detail level.
-net.daporkchop.fp2.config.FP2Config$Debug$DebugColorMode#POSITION=Tile Position
-net.daporkchop.fp2.config.FP2Config$Debug$DebugColorMode#POSITION.tooltip=Colors tiles in a checkerboard patter based on their position and detail level.
-net.daporkchop.fp2.config.FP2Config$Debug$DebugColorMode#NORMAL=Normal
-net.daporkchop.fp2.config.FP2Config$Debug$DebugColorMode#NORMAL.tooltip=Colors individual triangles based on their normal vector.
+net.daporkchop.fp2.core.config.FP2Config$Debug$DebugColorMode#DISABLED=Disabled
+net.daporkchop.fp2.core.config.FP2Config$Debug$DebugColorMode#DISABLED.tooltip=Debug colors are disabled; FP2 terrain is rendered normally.
+net.daporkchop.fp2.core.config.FP2Config$Debug$DebugColorMode#LEVEL=Tile Level
+net.daporkchop.fp2.core.config.FP2Config$Debug$DebugColorMode#LEVEL.tooltip=Colors tiles based on their detail level.
+net.daporkchop.fp2.core.config.FP2Config$Debug$DebugColorMode#POSITION=Tile Position
+net.daporkchop.fp2.core.config.FP2Config$Debug$DebugColorMode#POSITION.tooltip=Colors tiles in a checkerboard patter based on their position and detail level.
+net.daporkchop.fp2.core.config.FP2Config$Debug$DebugColorMode#NORMAL=Normal
+net.daporkchop.fp2.core.config.FP2Config$Debug$DebugColorMode#NORMAL.tooltip=Colors individual triangles based on their normal vector.
 
 fp2.config.menu.debug.server.category=Server
 fp2.config.menu.debug.exactGeneration=Exact Generation

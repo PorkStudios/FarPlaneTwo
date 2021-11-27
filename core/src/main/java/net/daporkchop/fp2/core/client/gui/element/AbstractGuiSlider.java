@@ -20,9 +20,7 @@
 
 package net.daporkchop.fp2.core.client.gui.element;
 
-import lombok.Getter;
 import lombok.NonNull;
-import lombok.Setter;
 import net.daporkchop.fp2.core.client.gui.GuiContext;
 import net.daporkchop.fp2.core.client.gui.element.properties.GuiElementProperties;
 import net.daporkchop.fp2.core.client.gui.util.ComponentDimensions;
@@ -32,22 +30,31 @@ import java.util.stream.Stream;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.core.FP2Core.*;
+import static net.daporkchop.fp2.core.client.gui.element.AbstractGuiButton.*;
+import static net.daporkchop.lib.common.math.PMath.*;
 
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractGuiButton extends AbstractGuiElement {
-    public static final int BUTTON_WIDTH = 200;
-    public static final int BUTTON_HEIGHT = 20;
+public abstract class AbstractGuiSlider extends AbstractGuiElement {
+    public static final int CONTROL_WIDTH = 8;
 
-    protected static final int BUTTON_INTERNAL_PADDING_HORIZONTAL = 6;
+    protected final double min;
+    protected final double max;
+    protected final double step;
 
-    @Getter
-    @Setter
-    protected boolean enabled = true;
+    protected double value;
 
-    public AbstractGuiButton(@NonNull GuiContext context, @NonNull GuiElementProperties properties) {
+    protected boolean dragging = false;
+
+    public AbstractGuiSlider(@NonNull GuiContext context, @NonNull GuiElementProperties properties, @NonNull Number initialValue) {
         super(context, properties);
+
+        this.min = properties.min().get().doubleValue();
+        this.max = properties.max().get().doubleValue();
+        this.step = properties.step().orElse(Double.NaN).doubleValue();
+
+        this.value = initialValue.doubleValue();
     }
 
     @Override
@@ -68,7 +75,10 @@ public abstract class AbstractGuiButton extends AbstractGuiElement {
         super.render(mouseX, mouseY);
 
         //draw background
-        this.context.renderer().drawButtonBackground(this.bounds.x(), this.bounds.y(), this.bounds.sizeX(), this.bounds.sizeY(), this.bounds.contains(mouseX, mouseY), this.enabled);
+        this.drawBackground(mouseX, mouseY);
+
+        //draw control
+        this.context.renderer().drawButtonBackground(this.bounds.x() + (int) (this.value / (this.max - this.min) * (this.bounds.sizeX() - CONTROL_WIDTH)), this.bounds.y(), CONTROL_WIDTH, this.bounds.sizeY(), this.bounds.contains(mouseX, mouseY), true);
 
         //get text
         String text = this.properties.text();
@@ -85,14 +95,44 @@ public abstract class AbstractGuiButton extends AbstractGuiElement {
         this.context.renderer().drawCenteredString(text, this.bounds.centerX(), this.bounds.centerY(), this.bounds.contains(mouseX, mouseY) ? -1 : 0xFFE0E0E0, true, true, true);
     }
 
+    protected void drawBackground(int mouseX, int mouseY) {
+        this.context.renderer().drawButtonBackground(this.bounds.x(), this.bounds.y(), this.bounds.sizeX(), this.bounds.sizeY(), false, false);
+    }
+
     @Override
     public void mouseDown(int mouseX, int mouseY, int button) {
         super.mouseDown(mouseX, mouseY, button);
 
-        if (this.enabled && this.bounds.contains(mouseX, mouseY)) {
-            this.handleClick(button);
+        if (button == MOUSE_BUTTON_LEFT && this.bounds.contains(mouseX, mouseY)) {
+            this.dragging = true;
         }
     }
 
-    protected abstract void handleClick(int button);
+    @Override
+    public void mouseDragged(int oldMouseX, int oldMouseY, int newMouseX, int newMouseY, int button) {
+        super.mouseDragged(oldMouseX, oldMouseY, newMouseX, newMouseY, button);
+
+        if (button == MOUSE_BUTTON_LEFT && this.dragging) {
+            double value = lerp(this.min, this.max, clamp((newMouseX - (this.bounds.minX() + (CONTROL_WIDTH >> 1))) / (double) (this.bounds.sizeX() - CONTROL_WIDTH), 0.0d, 1.0d));
+            if (!Double.isNaN(this.step)) {
+                value = round(value / this.step) * this.step;
+            }
+
+            if (value != this.value) {
+                this.value = value;
+                this.valueChanged(value);
+            }
+        }
+    }
+
+    @Override
+    public void mouseUp(int mouseX, int mouseY, int button) {
+        super.mouseUp(mouseX, mouseY, button);
+
+        if (button == MOUSE_BUTTON_LEFT && this.dragging) {
+            this.dragging = false;
+        }
+    }
+
+    protected abstract void valueChanged(@NonNull Number value);
 }

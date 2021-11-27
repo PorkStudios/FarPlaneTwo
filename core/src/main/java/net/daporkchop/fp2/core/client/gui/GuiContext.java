@@ -30,6 +30,11 @@ public interface GuiContext {
     GuiRenderer renderer();
 
     /**
+     * Causes the window to be re-initialized.
+     */
+    void reinit();
+
+    /**
      * Closes this context, closing the GUI in the process.
      * <p>
      * This will restore whatever GUI was open when this context was created.

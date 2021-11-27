@@ -22,6 +22,8 @@ package net.daporkchop.fp2.core.client.gui;
 
 import lombok.NonNull;
 
+import java.util.List;
+
 /**
  * Version-independent interface for rendering GUI components.
  *
@@ -103,6 +105,15 @@ public interface GuiRenderer {
      * @return the trimmed text
      */
     CharSequence trimStringToWidth(@NonNull CharSequence text, int width, boolean reverse);
+
+    /**
+     * Wraps the given {@link CharSequence} so that it is at most the given width.
+     *
+     * @param text  the text
+     * @param width the text's maximum width
+     * @return the wrapped text
+     */
+    List<CharSequence> wrapStringToWidth(@NonNull CharSequence text, int width);
 
     /**
      * Draws the given {@link CharSequence}.

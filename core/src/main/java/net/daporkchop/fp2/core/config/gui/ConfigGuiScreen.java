@@ -85,7 +85,7 @@ public class ConfigGuiScreen extends AbstractGuiScreen {
                         },
                         Collectors.mapping(field -> {
                             ConfigGuiObjectAccess<?> childAccess = access.childAccess(field);
-                            return ConfigGuiHelper.createConfigGuiElement(context, new ConfigGuiElementProperties<>(localeKey + '.' + childAccess.name(), childAccess), childAccess);
+                            return ConfigGuiHelper.createConfigGuiElement(context, new ConfigGuiElementProperties<>(localeKey, childAccess), childAccess);
                         }, Collectors.toList())));
 
         ((ScrollingContainer) this.child).elements().addAll(categoriesByName.values().stream()
@@ -93,7 +93,7 @@ public class ConfigGuiScreen extends AbstractGuiScreen {
                 .filter(entry -> entry.getValue() != null && !entry.getValue().isEmpty())
                 .flatMap(entry -> Stream.of(
                         elementsByCategory.size() == 1 || !entry.getKey().title() ? null : new GuiTitle(context, new SimpleGuiElementProperties(localeKey + '.' + entry.getKey().name() + ".category")),
-                        ConfigGuiHelper.createConfigGuiContainer(entry.getKey(), context, entry.getValue())))
+                        ConfigGuiHelper.createConfigGuiContainer(entry.getKey(), context, access, entry.getValue())))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList()));
     }
@@ -104,5 +104,10 @@ public class ConfigGuiScreen extends AbstractGuiScreen {
         fp2().log().info("def=%s", this.access.getDefault());
         fp2().log().info("old=%s", this.access.getOld());
         fp2().log().info("new=%s", this.access.getCurrent());
+    }
+
+    @Override
+    protected String localizedTitleString() {
+        return fp2().i18n().format(this.localeKey + ".title");
     }
 }

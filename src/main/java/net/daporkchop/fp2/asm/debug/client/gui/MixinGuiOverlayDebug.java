@@ -20,7 +20,6 @@
 
 package net.daporkchop.fp2.asm.debug.client.gui;
 
-import net.daporkchop.fp2.client.gui.GuiHelper;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.util.I18n;
 import net.daporkchop.fp2.mode.api.client.IFarRenderer;

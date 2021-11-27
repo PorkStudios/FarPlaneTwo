@@ -18,106 +18,50 @@
  *
  */
 
-package net.daporkchop.fp2.client.gui.element;
+package net.daporkchop.fp2.core.client.gui.element;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gui.IConfigGuiContext;
-import net.daporkchop.fp2.core.client.gui.element.AbstractGuiElement;
+import net.daporkchop.fp2.core.client.gui.GuiContext;
+import net.daporkchop.fp2.core.client.gui.element.properties.GuiElementProperties;
 import net.daporkchop.fp2.core.client.gui.util.ComponentDimensions;
-import net.minecraft.client.resources.I18n;
 
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static java.lang.Math.*;
-import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * @author DaPorkchop_
  */
 public class GuiLabel extends AbstractGuiElement {
-    protected final Supplier<String> langKeyFactory;
-    protected final Supplier<String> textFactory;
-
     protected final Alignment horizontalAlignment;
     protected final Alignment verticalAlignment;
 
-    protected String text;
-    protected int textWidth;
-    protected int textHeight;
-
-    public GuiLabel(@NonNull IConfigGuiContext context, @NonNull String name, @NonNull Alignment horizontalAlignment, @NonNull Alignment verticalAlignment) {
-        super(context);
-
-        this.langKeyFactory = () -> context.localeKeyBase() + name;
-        this.textFactory = () -> I18n.format(this.langKey());
+    public GuiLabel(@NonNull GuiContext context, @NonNull GuiElementProperties properties, @NonNull Alignment horizontalAlignment, @NonNull Alignment verticalAlignment) {
+        super(context, properties);
 
         this.horizontalAlignment = horizontalAlignment;
         this.verticalAlignment = verticalAlignment;
-    }
-
-    public GuiLabel(@NonNull IConfigGuiContext context, @NonNull Supplier<String> textFactory, @NonNull Alignment horizontalAlignment, @NonNull Alignment verticalAlignment) {
-        super(context);
-
-        this.langKeyFactory = () -> context.localeKeyBase().substring(0, max(context.localeKeyBase().length() - 1, 0));
-        this.textFactory = textFactory;
-
-        this.horizontalAlignment = horizontalAlignment;
-        this.verticalAlignment = verticalAlignment;
-    }
-
-    @Override
-    protected String langKey() {
-        return this.langKeyFactory.get();
-    }
-
-    @Override
-    public void init() {
-        this.text = this.textFactory.get();
-        this.textWidth = MC.fontRenderer.getStringWidth(this.text);
-        this.textHeight = MC.fontRenderer.FONT_HEIGHT;
     }
 
     @Override
     public Stream<ComponentDimensions> possibleDimensions(int totalSizeX, int totalSizeY) {
-        return Stream.of(new ComponentDimensions(totalSizeX, min(this.textHeight, totalSizeY)));
+        return Stream.of(new ComponentDimensions(totalSizeX, min(this.context.renderer().getStringWidth(this.properties.text()), totalSizeY)));
     }
 
     @Override
     public ComponentDimensions preferredMinimumDimensions() {
-        return new ComponentDimensions(this.textWidth, this.textHeight);
+        return new ComponentDimensions(this.context.renderer().getStringWidth(this.properties.text()), this.context.renderer().getStringHeight());
     }
 
     @Override
-    public void pack() {
-    }
+    public void render(int mouseX, int mouseY) {
+        super.render(mouseX, mouseY);
 
-    @Override
-    public void render(int mouseX, int mouseY, float partialTicks) {
-        MC.fontRenderer.drawStringWithShadow(this.text,
-                this.horizontalAlignment.align(this.bounds.x(), this.bounds.sizeX(), this.textWidth),
-                this.verticalAlignment.align(this.bounds.y(), this.bounds.sizeY(), this.textHeight),
-                -1);
-    }
-
-    @Override
-    public void mouseDown(int mouseX, int mouseY, int button) {
-    }
-
-    @Override
-    public void mouseUp(int mouseX, int mouseY, int button) {
-    }
-
-    @Override
-    public void mouseScroll(int mouseX, int mouseY, int dWheel) {
-    }
-
-    @Override
-    public void mouseDragged(int oldMouseX, int oldMouseY, int newMouseX, int newMouseY, int button) {
-    }
-
-    @Override
-    public void keyPressed(char typedChar, int keyCode) {
+        String text = this.properties.text();
+        this.context.renderer().drawString(text,
+                this.horizontalAlignment.align(this.bounds.x(), this.bounds.sizeX(), this.context.renderer().getStringWidth(text)),
+                this.verticalAlignment.align(this.bounds.y(), this.bounds.sizeY(), this.context.renderer().getStringHeight()),
+                -1, true);
     }
 
     /**

@@ -23,6 +23,7 @@ package net.daporkchop.fp2.core.config.gui.access;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.SneakyThrows;
+import lombok.ToString;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
@@ -34,6 +35,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 /**
  * @author DaPorkchop_
  */
+@ToString
 final class ReflectiveConfigGuiObjectAccess<T, V> implements ConfigGuiObjectAccess<V> {
     protected final T defaultInstance;
     protected final T serverInstance;

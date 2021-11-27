@@ -91,7 +91,7 @@ public abstract class AbstractGuiScreen implements GuiScreen {
     @Override
     public void render(int mouseX, int mouseY) {
         this.context.renderer().drawCenteredString(this.localizedTitleString(), this.dimensions.sizeX() >> 1, HEADER_HEIGHT >> 1, -1, true, true, true);
-        this.context.renderer().drawDefaultBackground(0, HEADER_HEIGHT, this.dimensions.sizeX(), this.dimensions.sizeY() - FOOTER_HEIGHT - PADDING);
+        this.context.renderer().drawDefaultBackground(0, HEADER_HEIGHT, this.dimensions.sizeX(), this.dimensions.sizeY() - HEADER_HEIGHT - FOOTER_HEIGHT - PADDING);
 
         this.child.render(mouseX, mouseY);
         this.doneButton.render(mouseX, mouseY);

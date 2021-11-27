@@ -55,4 +55,9 @@ public interface GuiElementProperties {
      * @return the maximum numeric value
      */
     Optional<Number> max();
+
+    /**
+     * @return the step
+     */
+    Optional<Number> step();
 }

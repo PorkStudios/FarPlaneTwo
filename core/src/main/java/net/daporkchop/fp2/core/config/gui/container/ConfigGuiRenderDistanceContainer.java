@@ -18,21 +18,21 @@
  *
  */
 
-package net.daporkchop.fp2.client.gui.container;
+package net.daporkchop.fp2.core.config.gui.container;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gui.GuiHelper;
-import net.daporkchop.fp2.client.gui.IConfigGuiElement;
-import net.daporkchop.fp2.client.gui.IConfigGuiContext;
-import net.daporkchop.fp2.core.config.gui.access.ConfigGuiObjectAccess;
+import net.daporkchop.fp2.core.client.gui.GuiContext;
+import net.daporkchop.fp2.core.client.gui.GuiElement;
+import net.daporkchop.fp2.core.client.gui.GuiRenderer;
 import net.daporkchop.fp2.core.client.gui.container.ColumnsContainer;
 import net.daporkchop.fp2.core.client.gui.container.VerticallyStackedContainer;
 import net.daporkchop.fp2.core.client.gui.element.AbstractGuiElement;
+import net.daporkchop.fp2.core.client.gui.element.properties.SimpleGuiElementProperties;
 import net.daporkchop.fp2.core.client.gui.util.ComponentDimensions;
 import net.daporkchop.fp2.core.client.gui.util.ElementBounds;
 import net.daporkchop.fp2.core.config.FP2Config;
-import net.minecraft.client.resources.I18n;
+import net.daporkchop.fp2.core.config.gui.access.ConfigGuiObjectAccess;
 
 import java.text.NumberFormat;
 import java.util.Arrays;
@@ -45,18 +45,20 @@ import java.util.stream.Stream;
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.fp2.core.client.gui.GuiConstants.*;
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 
 /**
  * @author DaPorkchop_
  */
-public class RenderDistanceContainer extends VerticallyStackedContainer<FP2Config> {
-    protected static List<IConfigGuiElement> createElements(@NonNull IConfigGuiContext context, @NonNull ConfigGuiObjectAccess<FP2Config> access, @NonNull List<IConfigGuiElement> elements) {
+public class ConfigGuiRenderDistanceContainer extends VerticallyStackedContainer {
+    protected static final int T_SHIFT = 4; //TODO: remove this
+    protected static final int T_VOXELS = 1 << T_SHIFT;
+
+    protected static List<GuiElement> createElements(@NonNull GuiContext context, @NonNull ConfigGuiObjectAccess<FP2Config> access, @NonNull List<GuiElement> elements) {
         return Arrays.asList(
-                new ColumnsContainer<>(context, access, elements),
-                new GuiDynamicLabel(context, access,
+                new ColumnsContainer(context, elements),
+                new GuiDynamicLabel(context, MODID + ".config.menu.", access,
                         (config, langKey) -> {
                             long renderDistanceBlocks = config.effectiveRenderDistanceBlocks();
 
@@ -117,7 +119,7 @@ public class RenderDistanceContainer extends VerticallyStackedContainer<FP2Confi
                         (config, langKey) -> {
                             double factor = 1.5d;
 
-                            int renderDistanceVanilla = MC.gameSettings.renderDistanceChunks;
+                            int renderDistanceVanilla = fp2().vanillaRenderDistanceChunks();
                             int renderDistanceBlocks = renderDistanceVanilla << 4;
                             int recommendedCutoff = roundUp(floorI(renderDistanceBlocks * factor), T_VOXELS);
 
@@ -143,33 +145,29 @@ public class RenderDistanceContainer extends VerticallyStackedContainer<FP2Confi
                         }));
     }
 
-    public RenderDistanceContainer(@NonNull IConfigGuiContext context, @NonNull ConfigGuiObjectAccess<FP2Config> access, @NonNull List<IConfigGuiElement> elements) {
-        super(context, access, createElements(context, access, elements));
+    public ConfigGuiRenderDistanceContainer(@NonNull GuiContext context, @NonNull ConfigGuiObjectAccess<FP2Config> access, @NonNull List<GuiElement> elements) {
+        super(context, createElements(context, access, elements));
     }
 
     /**
      * @author DaPorkchop_
      */
     protected static class GuiDynamicLabel extends AbstractGuiElement {
+        protected final String localeKey;
         protected final ConfigGuiObjectAccess<FP2Config> access;
         protected final BiFunction<FP2Config, String, LabelContents>[] labels;
 
-        @SafeVarargs
-        public GuiDynamicLabel(@NonNull IConfigGuiContext context, @NonNull ConfigGuiObjectAccess<FP2Config> access, @NonNull BiFunction<FP2Config, String, LabelContents>... labels) {
-            super(context);
+        public GuiDynamicLabel(@NonNull GuiContext context, @NonNull String localeKey, @NonNull ConfigGuiObjectAccess<FP2Config> access, @NonNull BiFunction<FP2Config, String, LabelContents>... labels) {
+            super(context, new SimpleGuiElementProperties(localeKey));
 
+            this.localeKey = localeKey;
             this.access = access;
             this.labels = labels;
         }
 
-        @Override
-        protected String langKey() {
-            return this.context.localeKeyBase();
-        }
-
         protected Stream<LabelContents> labels() {
             return Stream.of(this.labels)
-                    .map(textFormatter -> textFormatter.apply(this.access.getCurrent(), this.langKey()));
+                    .map(textFormatter -> textFormatter.apply(this.access.getCurrent(), this.localeKey));
         }
 
         @Override
@@ -181,79 +179,37 @@ public class RenderDistanceContainer extends VerticallyStackedContainer<FP2Confi
         public ComponentDimensions preferredMinimumDimensions() {
             return new ComponentDimensions(
                     this.labels()
-                            .flatMap(label -> Stream.of(label.text(this.langKey(), Integer.MAX_VALUE)))
-                            .mapToInt(MC.fontRenderer::getStringWidth)
+                            .flatMap(label -> Stream.of(label.text(this.context.renderer(), this.localeKey, Integer.MAX_VALUE)))
+                            .mapToInt(this.context.renderer()::getStringWidth)
                             .max().orElse(0),
                     this.heightFor(Integer.MAX_VALUE));
         }
 
         protected int heightFor(int width) {
-            return this.labels().mapToInt(label -> label.height(this.langKey(), width)).sum() + max(this.labels.length - 1, 0) * PADDING;
+            return this.labels().mapToInt(label -> label.height(this.context.renderer(), this.localeKey, width)).sum() + max(this.labels.length - 1, 0) * PADDING;
         }
 
         @Override
-        public void init() {
-        }
-
-        @Override
-        public void pack() {
-        }
-
-        @Override
-        public void render(int mouseX, int mouseY, float partialTicks) {
+        public void render(int mouseX, int mouseY) {
             int x = this.bounds.x() + PADDING;
             int y = this.bounds.y() + PADDING;
 
             for (LabelContents label : this.labels().filter(LabelContents::visible).collect(Collectors.toList())) {
-                for (String line : label.text(this.langKey(), this.bounds.sizeX())) {
-                    MC.fontRenderer.drawStringWithShadow(line, x, y, -1);
-                    y += MC.fontRenderer.FONT_HEIGHT + 1;
+                int startY = y;
+                int maxWidth = 0;
+
+                for (CharSequence line : label.text(this.context.renderer(), this.localeKey, this.bounds.sizeX())) {
+                    maxWidth = max(maxWidth, this.context.renderer().getStringWidth(line));
+
+                    this.context.renderer().drawString(line, x, y, -1, true);
+                    y += this.context.renderer().getStringHeight() + 1;
                 }
                 y += PADDING;
-            }
-        }
 
-        @Override
-        public Optional<String[]> getTooltip(int mouseX, int mouseY) {
-            if (!this.bounds.contains(mouseX, mouseY)) {
-                return Optional.empty();
-            }
-
-            int x = this.bounds.x() + PADDING;
-            int y = this.bounds.y() + PADDING;
-
-            for (LabelContents label : this.labels().filter(LabelContents::visible).collect(Collectors.toList())) {
-                int height = label.height(this.langKey(), this.bounds.sizeX());
-                int width = Stream.of(label.text(this.langKey(), this.bounds.sizeX())).mapToInt(MC.fontRenderer::getStringWidth).max().orElse(0);
-
-                if (new ElementBounds(x, y, width, height).contains(mouseX, mouseY)) {
-                    return label.tooltip(this.langKey());
+                if (new ElementBounds(x, startY, maxWidth, y - startY - PADDING).contains(mouseX, mouseY)) {
+                    label.tooltip(this.localeKey).ifPresent(lines -> this.context.renderer().drawTooltip(mouseX, mouseY, -1, lines));
                 }
-
-                y += height + PADDING;
             }
-
-            return Optional.empty();
-        }
-
-        @Override
-        public void mouseDown(int mouseX, int mouseY, int button) {
-        }
-
-        @Override
-        public void mouseUp(int mouseX, int mouseY, int button) {
-        }
-
-        @Override
-        public void mouseScroll(int mouseX, int mouseY, int dWheel) {
-        }
-
-        @Override
-        public void mouseDragged(int oldMouseX, int oldMouseY, int newMouseX, int newMouseY, int button) {
-        }
-
-        @Override
-        public void keyPressed(char typedChar, int keyCode) {
         }
     }
 
@@ -274,19 +230,19 @@ public class RenderDistanceContainer extends VerticallyStackedContainer<FP2Confi
             this.formatArgs = Stream.of(formatArgs).map(arg -> arg instanceof Number ? numberFormat.format(arg) : arg).toArray();
         }
 
-        public String[] text(@NonNull String langKeyBase, int width) {
-            return MC.fontRenderer.listFormattedStringToWidth(I18n.format(langKeyBase + this.name, this.formatArgs), width).toArray(new String[0]);
+        public CharSequence[] text(@NonNull GuiRenderer renderer, @NonNull String langKeyBase, int width) {
+            return renderer.wrapStringToWidth(fp2().i18n().format(langKeyBase + this.name, this.formatArgs), width).toArray(new CharSequence[0]);
         }
 
-        public int height(@NonNull String langKeyBase, int width) {
-            int lines = this.text(langKeyBase, width).length;
-            return lines * MC.fontRenderer.FONT_HEIGHT + max(lines - 1, 0);
+        public int height(@NonNull GuiRenderer renderer, @NonNull String langKeyBase, int width) {
+            int lines = this.text(renderer, langKeyBase, width).length;
+            return lines * renderer.getStringHeight() + max(lines - 1, 0);
         }
 
         public Optional<String[]> tooltip(@NonNull String langKeyBase) {
             String tooltipKey = langKeyBase + this.name + ".tooltip";
-            return I18n.hasKey(tooltipKey)
-                    ? Optional.of(I18n.format(tooltipKey, this.formatArgs).split("\n"))
+            return fp2().i18n().hasKey(tooltipKey)
+                    ? Optional.of(fp2().i18n().format(tooltipKey, this.formatArgs).split("\n"))
                     : Optional.empty();
         }
     }

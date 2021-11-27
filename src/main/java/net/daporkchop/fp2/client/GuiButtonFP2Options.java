@@ -18,24 +18,42 @@
  *
  */
 
-package net.daporkchop.fp2.client.gui.element;
+package net.daporkchop.fp2.client;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.client.gui.IConfigGuiContext;
-import net.daporkchop.fp2.core.config.gui.access.ConfigGuiObjectAccess;
+import net.daporkchop.fp2.core.config.gui.ConfigGuiHelper;
+import net.daporkchop.fp2.mode.api.player.IFarPlayerClient;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiButton;
+import net.minecraft.client.gui.GuiScreen;
+import net.minecraft.client.resources.I18n;
 
-import static net.daporkchop.fp2.core.debug.FP2Debug.*;
+import static net.daporkchop.fp2.FP2.*;
 
 /**
  * @author DaPorkchop_
  */
-public class GuiDebugButton extends GuiSubmenuButton<FP2Config.Debug> {
-    public GuiDebugButton(@NonNull IConfigGuiContext context, @NonNull ConfigGuiObjectAccess<FP2Config.Debug> access) {
-        super(context, access);
+public class GuiButtonFP2Options extends GuiButton {
+    protected final GuiScreen parent;
 
-        if (!FP2_DEBUG) {
-            this.button.enabled = false;
+    public GuiButtonFP2Options(int buttonId, int x, int y, @NonNull GuiScreen parent) {
+        super(buttonId, x, y, 40, 20, I18n.format(MODID + ".gui.buttonFP2Options"));
+
+        this.parent = parent;
+    }
+
+    @Override
+    public boolean mousePressed(Minecraft mc, int mouseX, int mouseY) {
+        if (super.mousePressed(mc, mouseX, mouseY)) {
+            FP2Config defaultConfig = FP2Config.DEFAULT_CONFIG;
+            FP2Config serverConfig = !mc.integratedServerIsRunning && mc.getConnection() != null ? ((IFarPlayerClient) mc.getConnection()).fp2_IFarPlayerClient_serverConfig() : null;
+            FP2Config clientConfig = fp2().globalConfig();
+
+            ConfigGuiHelper.createAndDisplayGuiContext("menu", defaultConfig, serverConfig, clientConfig, fp2()::globalConfig);
+            return true;
+        } else {
+            return false;
         }
     }
 }

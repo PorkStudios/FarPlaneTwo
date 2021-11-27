@@ -24,8 +24,6 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
-import java.util.Optional;
-
 /**
  * @author DaPorkchop_
  */
@@ -34,14 +32,4 @@ import java.util.Optional;
 public class SimpleGuiElementProperties extends AbstractGuiElementProperties {
     @NonNull
     protected final String localeKey;
-
-    @Override
-    public Optional<Number> min() {
-        return Optional.empty();
-    }
-
-    @Override
-    public Optional<Number> max() {
-        return Optional.empty();
-    }
 }

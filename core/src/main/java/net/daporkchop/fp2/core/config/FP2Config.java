@@ -34,6 +34,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.With;
+import net.daporkchop.fp2.core.config.gui.container.ConfigGuiRenderDistanceContainer;
+import net.daporkchop.fp2.core.config.gui.element.ConfigGuiRenderModeButton;
 import net.daporkchop.lib.common.misc.Cloneable;
 import net.daporkchop.lib.common.util.PorkUtil;
 
@@ -46,7 +48,7 @@ import java.util.stream.Stream;
 import static java.lang.Math.*;
 import static java.nio.file.StandardCopyOption.*;
 import static java.nio.file.StandardOpenOption.*;
-import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
@@ -61,7 +63,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 @EqualsAndHashCode
 @Config.GuiCategories({
         @Config.CategoryMeta(name = "default", title = false),
-        @Config.CategoryMeta(name = FP2Config.CATEGORY_RENDER_DISTANCE/*, containerClass = RenderDistanceContainer.class*/),
+        @Config.CategoryMeta(name = FP2Config.CATEGORY_RENDER_DISTANCE, containerClass = ConfigGuiRenderDistanceContainer.class),
 })
 public final class FP2Config implements Cloneable<FP2Config> {
     private static final Gson GSON = new Gson();
@@ -81,8 +83,7 @@ public final class FP2Config implements Cloneable<FP2Config> {
      */
     public static FP2Config fromJson(@NonNull String json) {
         FP2Config config = GSON.fromJson(json, FP2Config.class);
-        return config != null ? config.clean() : null;
-        //TODO: return config != null ? ConfigHelper.validateConfig(config.clean()) : null;
+        return config != null ? ConfigHelper.validateConfig(config.clean()) : null;
     }
 
     /**
@@ -161,11 +162,9 @@ public final class FP2Config implements Cloneable<FP2Config> {
     private final int cutoffDistance = preventInline(256);
 
     @Builder.Default
-    //@Config.GuiElementClass(GuiRenderModeButton.class)
+    @Config.GuiElementClass(ConfigGuiRenderModeButton.class)
     @NonNull
-    private final String[] renderModes = {
-            "voxel", "heightmap" //TODO: don't hard-code this: IFarRenderMode.REGISTRY.nameStream().toArray(String[]::new)
-    };
+    private final String[] renderModes = fp2().renderModeNames();
 
     @Builder.Default
     @NonNull
@@ -176,7 +175,6 @@ public final class FP2Config implements Cloneable<FP2Config> {
     private final Compatibility compatibility = new Compatibility();
 
     @Builder.Default
-    //@Config.GuiElementClass(GuiDebugButton.class)
     @NonNull
     private final Debug debug = new Debug();
 
@@ -187,7 +185,7 @@ public final class FP2Config implements Cloneable<FP2Config> {
      */
     public FP2Config clean() {
         return this.withRenderModes(Stream.of(this.renderModes)
-                //TODO: .filter(IFarRenderMode.REGISTRY.stream().map(Map.Entry::getKey).collect(Collectors.toSet())::contains)
+                .filter(ImmutableSet.copyOf(fp2().renderModeNames())::contains)
                 .toArray(String[]::new));
     }
 
@@ -218,45 +216,45 @@ public final class FP2Config implements Cloneable<FP2Config> {
     @With
     @ToString
     @EqualsAndHashCode
-    /*@Config.GuiCategories({
+    @Config.GuiCategories({
             @Config.CategoryMeta(name = "default", title = false),
             @Config.CategoryMeta(name = Performance.CATEGORY_CLIENT),
             @Config.CategoryMeta(name = Performance.CATEGORY_THREADS),
-    })*/
+    })
     public static class Performance implements Cloneable<Performance> {
         protected static final String CATEGORY_CLIENT = "client";
         protected static final String CATEGORY_THREADS = "threads";
 
         @Builder.Default
-        /*@Config.RestartRequired(Config.Requirement.WORLD)
-        @Config.GuiCategory(CATEGORY_CLIENT)*/
+        @Config.RestartRequired(Config.Requirement.WORLD)
+        @Config.GuiCategory(CATEGORY_CLIENT)
         private final boolean gpuFrustumCulling = preventInline(true);
 
         @Builder.Default
-        /*@Config.Range(min = @Config.Constant(1), max = @Config.Constant(Integer.MAX_VALUE))
+        @Config.Range(min = @Config.Constant(1), max = @Config.Constant(Integer.MAX_VALUE))
         @Config.GuiRange(min = @Config.Constant(1), max = @Config.Constant(1024))
-        @Config.GuiCategory(CATEGORY_CLIENT)*/
+        @Config.GuiCategory(CATEGORY_CLIENT)
         private final int maxBakesProcessedPerFrame = preventInline(256);
 
         @Builder.Default
-        /*@Config.Range(min = @Config.Constant(1), max = @Config.Constant(Integer.MAX_VALUE))
+        @Config.Range(min = @Config.Constant(1), max = @Config.Constant(Integer.MAX_VALUE))
         @Config.GuiRange(min = @Config.Constant(1), max = @Config.Constant(field = "net.daporkchop.lib.common.util.PorkUtil#CPU_COUNT"))
         @Config.RestartRequired(Config.Requirement.GAME)
-        @Config.GuiCategory(CATEGORY_THREADS)*/
+        @Config.GuiCategory(CATEGORY_THREADS)
         private final int trackingThreads = max(PorkUtil.CPU_COUNT >> 2, 1);
 
         @Builder.Default
-        /*@Config.Range(min = @Config.Constant(1), max = @Config.Constant(Integer.MAX_VALUE))
+        @Config.Range(min = @Config.Constant(1), max = @Config.Constant(Integer.MAX_VALUE))
         @Config.GuiRange(min = @Config.Constant(1), max = @Config.Constant(field = "net.daporkchop.lib.common.util.PorkUtil#CPU_COUNT"))
         @Config.RestartRequired(Config.Requirement.WORLD)
-        @Config.GuiCategory(CATEGORY_THREADS)*/
+        @Config.GuiCategory(CATEGORY_THREADS)
         private final int terrainThreads = max((PorkUtil.CPU_COUNT >> 1) + (PorkUtil.CPU_COUNT >> 2), 1);
 
         @Builder.Default
-        /*@Config.Range(min = @Config.Constant(1), max = @Config.Constant(Integer.MAX_VALUE))
+        @Config.Range(min = @Config.Constant(1), max = @Config.Constant(Integer.MAX_VALUE))
         @Config.GuiRange(min = @Config.Constant(1), max = @Config.Constant(field = "net.daporkchop.lib.common.util.PorkUtil#CPU_COUNT"))
         @Config.RestartRequired(Config.Requirement.WORLD)
-        @Config.GuiCategory(CATEGORY_THREADS)*/
+        @Config.GuiCategory(CATEGORY_THREADS)
         private final int bakeThreads = max((PorkUtil.CPU_COUNT >> 1) + (PorkUtil.CPU_COUNT >> 2), 1);
 
         @Override
@@ -275,28 +273,28 @@ public final class FP2Config implements Cloneable<FP2Config> {
     @With
     @ToString
     @EqualsAndHashCode
-    /*@Config.GuiCategories({
+    @Config.GuiCategories({
             @Config.CategoryMeta(name = "default", title = false),
             @Config.CategoryMeta(name = Compatibility.CATEGORY_CLIENT),
             @Config.CategoryMeta(name = Compatibility.CATEGORY_CLIENT_WORKAROUNDS),
-    })*/
+    })
     public static class Compatibility implements Cloneable<Compatibility> {
         protected static final String CATEGORY_CLIENT = "client";
         protected static final String CATEGORY_CLIENT_WORKAROUNDS = "clientWorkarounds";
 
         @Builder.Default
-        //@Config.GuiCategory(CATEGORY_CLIENT)
+        @Config.GuiCategory(CATEGORY_CLIENT)
         private final boolean reversedZ = preventInline(true);
 
         @Builder.Default
-        /*@Config.GuiCategory(CATEGORY_CLIENT_WORKAROUNDS)
-        @Config.RestartRequired(Config.Requirement.GAME)*/
+        @Config.GuiCategory(CATEGORY_CLIENT_WORKAROUNDS)
+        @Config.RestartRequired(Config.Requirement.GAME)
         @NonNull
         private final WorkaroundState workaroundAmdVertexPadding = preventInline(WorkaroundState.AUTO);
 
         @Builder.Default
-        /*@Config.GuiCategory(CATEGORY_CLIENT_WORKAROUNDS)
-        @Config.RestartRequired(Config.Requirement.GAME)*/
+        @Config.GuiCategory(CATEGORY_CLIENT_WORKAROUNDS)
+        @Config.RestartRequired(Config.Requirement.GAME)
         @NonNull
         private final WorkaroundState workaroundIntelMultidrawNotWorking = preventInline(WorkaroundState.AUTO);
 
@@ -342,40 +340,40 @@ public final class FP2Config implements Cloneable<FP2Config> {
     @With
     @ToString
     @EqualsAndHashCode
-    /*@Config.GuiCategories({
+    @Config.GuiCategories({
             @Config.CategoryMeta(name = "default", title = false),
             @Config.CategoryMeta(name = Debug.CATEGORY_CLIENT),
             @Config.CategoryMeta(name = Debug.CATEGORY_SERVER),
-    })*/
+    })
     public static class Debug implements Cloneable<Debug> {
         protected static final String CATEGORY_CLIENT = "client";
         protected static final String CATEGORY_SERVER = "server";
 
         @Builder.Default
-        //@Config.GuiCategory(CATEGORY_CLIENT)
+        @Config.GuiCategory(CATEGORY_CLIENT)
         private final boolean backfaceCulling = preventInline(true);
 
         @Builder.Default
-        //@Config.GuiCategory(CATEGORY_CLIENT)
+        @Config.GuiCategory(CATEGORY_CLIENT)
         private final boolean vanillaTerrainRendering = preventInline(true);
 
         @Builder.Default
-        //@Config.GuiCategory(CATEGORY_CLIENT)
+        @Config.GuiCategory(CATEGORY_CLIENT)
         private final boolean levelZeroRendering = preventInline(true);
 
         @Builder.Default
-        //@Config.GuiCategory(CATEGORY_CLIENT)
+        @Config.GuiCategory(CATEGORY_CLIENT)
         @NonNull
         private final DebugColorMode debugColors = preventInline(DebugColorMode.DISABLED);
 
         @Builder.Default
-        /*@Config.GuiCategory(CATEGORY_SERVER)
-        @Config.GuiShowServerValue*/
+        @Config.GuiCategory(CATEGORY_SERVER)
+        @Config.GuiShowServerValue
         private final boolean exactGeneration = preventInline(true);
 
         @Builder.Default
-        /*@Config.GuiCategory(CATEGORY_SERVER)
-        @Config.GuiShowServerValue*/
+        @Config.GuiCategory(CATEGORY_SERVER)
+        @Config.GuiShowServerValue
         private final boolean levelZeroTracking = preventInline(true);
 
         @Override

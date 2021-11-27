@@ -28,20 +28,51 @@ import net.daporkchop.fp2.core.client.gui.GuiContext;
 import net.daporkchop.fp2.core.client.gui.GuiElement;
 import net.daporkchop.fp2.core.client.gui.element.properties.GuiElementProperties;
 import net.daporkchop.fp2.core.config.Config;
+import net.daporkchop.fp2.core.config.ConfigHelper;
 import net.daporkchop.fp2.core.config.gui.access.ConfigGuiObjectAccess;
+import net.daporkchop.fp2.core.config.gui.element.ConfigGuiEnumButton;
+import net.daporkchop.fp2.core.config.gui.element.ConfigGuiSlider;
+import net.daporkchop.fp2.core.config.gui.element.ConfigGuiSubmenuButton;
+import net.daporkchop.fp2.core.config.gui.element.ConfigGuiToggleButton;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.List;
+import java.util.Objects;
+import java.util.function.Consumer;
 
+import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
 @UtilityClass
 public class ConfigGuiHelper {
+    /**
+     * Creates and displays a new config menu.
+     *
+     * @param menuName the name of the config menu
+     * @param callback a callback function that will be called if the configuration has been modified once the menu is closed
+     */
+    public <V> void createAndDisplayGuiContext(@NonNull String menuName, @NonNull V defaultConfig, V serverConfig, @NonNull V currentConfig, @NonNull Consumer<V> callback) {
+        V newConfig = ConfigHelper.cloneConfigObject(currentConfig);
+        fp2().openScreen(context -> new ConfigGuiScreen(context,
+                MODID + ".config." + menuName,
+                ConfigGuiObjectAccess.forValues(defaultConfig, serverConfig, currentConfig, newConfig)) {
+            @Override
+            public void close() {
+                super.close();
+
+                if (!Objects.equals(currentConfig, newConfig)) { //config has changed!
+                    callback.accept(newConfig);
+                }
+            }
+        });
+    }
+
     /**
      * Creates a new {@link GuiElement} for a given {@link GuiContext}, {@link GuiElementProperties} and {@link ConfigGuiObjectAccess}.
      *
@@ -65,19 +96,18 @@ public class ConfigGuiHelper {
                  && !type.isInterface() && !type.isAnonymousClass(),
                 "unsupported type for access: %s", access);
 
-        /*if (type.isEnum()) {
-            return new GuiEnumButton<>(context, uncheckedCast(access));
-        } else if (type == boolean.class || type == Boolean.class) {
-            return new GuiToggleButton(context, uncheckedCast(access));
+        if (type == boolean.class || type == Boolean.class) {
+            return new ConfigGuiToggleButton(context, properties, uncheckedCast(access));
+        } else if (type.isEnum()) {
+            return new ConfigGuiEnumButton<>(context, properties, uncheckedCast(access));
         } else if (type == int.class || type == Integer.class
                    || type == long.class || type == Long.class
                    || type == float.class || type == Float.class
                    || type == double.class || type == Double.class) {
-            return new GuiSlider(context, uncheckedCast(access));
+            return new ConfigGuiSlider(context, properties, uncheckedCast(access));
         } else {
-            return new GuiSubmenuButton<>(context, access);
-        }*/
-        throw new IllegalStateException();
+            return new ConfigGuiSubmenuButton(context, properties, access);
+        }
     }
 
     /**
@@ -88,9 +118,15 @@ public class ConfigGuiHelper {
      * @return a {@link GuiContainer} containing the given {@link GuiElement}s
      */
     @SneakyThrows({ IllegalAccessException.class, InstantiationException.class, InvocationTargetException.class, NoSuchMethodException.class })
-    public GuiContainer createConfigGuiContainer(@NonNull Config.CategoryMeta categoryMeta, @NonNull GuiContext context, @NonNull List<GuiElement> elements) {
-        Constructor<? extends GuiContainer> constructor = categoryMeta.containerClass().getDeclaredConstructor(GuiContext.class, List.class);
-        constructor.setAccessible(true);
-        return constructor.newInstance(context, elements);
+    public GuiContainer createConfigGuiContainer(@NonNull Config.CategoryMeta categoryMeta, @NonNull GuiContext context, @NonNull ConfigGuiObjectAccess<?> access, @NonNull List<GuiElement> elements) {
+        try {
+            Constructor<? extends GuiContainer> constructor = categoryMeta.containerClass().getDeclaredConstructor(GuiContext.class, List.class);
+            constructor.setAccessible(true);
+            return constructor.newInstance(context, elements);
+        } catch (NoSuchMethodException e) {
+            Constructor<? extends GuiContainer> constructor = categoryMeta.containerClass().getDeclaredConstructor(GuiContext.class, ConfigGuiObjectAccess.class, List.class);
+            constructor.setAccessible(true);
+            return constructor.newInstance(context, access, elements);
+        }
     }
 }

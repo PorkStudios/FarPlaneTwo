@@ -50,18 +50,6 @@ public class Config {
      * @author DaPorkchop_
      */
     @Retention(RUNTIME)
-    @Target(TYPE)
-    public @interface GuiScreenClass {
-        /**
-         * @return the class type of the {@link GuiScreen} to use for this object
-         */
-        Class<? extends GuiScreen> value();
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    @Retention(RUNTIME)
     @Target(FIELD)
     public @interface GuiElementClass {
         /**
@@ -148,9 +136,9 @@ public class Config {
     @Retention(RUNTIME)
     @Target(FIELD)
     public @interface Range {
-        Constant min();
+        Constant min() default @Constant(field = "<null>");
 
-        Constant max();
+        Constant max() default @Constant(field = "<null>");
     }
 
     /**

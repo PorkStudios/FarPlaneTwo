@@ -224,6 +224,16 @@ public class FP2 extends FP2Core implements ResourceProvider {
     }
 
     @Override
+    public String[] renderModeNames() {
+        return IFarRenderMode.REGISTRY.nameStream().toArray(String[]::new);
+    }
+
+    @Override
+    public int vanillaRenderDistanceChunks() {
+        return this.mc.gameSettings.renderDistanceChunks;
+    }
+
+    @Override
     protected void registerPackets(@NonNull RegisterPacketsEvent event) { //TODO: remove this once all packets have been moved to :core module
         super.registerPackets(event);
 

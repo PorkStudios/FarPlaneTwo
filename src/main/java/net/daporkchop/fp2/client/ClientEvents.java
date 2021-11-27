@@ -22,7 +22,6 @@ package net.daporkchop.fp2.client;
 
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.asm.core.client.gui.IGuiScreen;
-import net.daporkchop.fp2.client.gui.GuiButtonFP2Options;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiVideoSettings;
 import net.minecraftforge.client.event.GuiScreenEvent;

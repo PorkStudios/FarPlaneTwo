@@ -18,36 +18,30 @@
  *
  */
 
-package net.daporkchop.fp2.client.gui;
+package net.daporkchop.fp2.core.config.gui.element;
 
-import java.util.Optional;
+import lombok.NonNull;
+import net.daporkchop.fp2.core.client.gui.GuiContext;
+import net.daporkchop.fp2.core.client.gui.element.AbstractGuiButton;
+import net.daporkchop.fp2.core.client.gui.element.properties.GuiElementProperties;
+import net.daporkchop.fp2.core.config.gui.access.ConfigGuiObjectAccess;
 
 /**
  * @author DaPorkchop_
  */
-@Deprecated
-public interface IConfigGuiComponent {
-    /**
-     * Initializes this component's contents.
-     */
-    void init();
+public class ConfigGuiToggleButton extends AbstractGuiButton {
+    protected final ConfigGuiObjectAccess<Boolean> access;
 
-    /**
-     * Re-evaluates and updates this component's contents.
-     */
-    void pack();
+    public ConfigGuiToggleButton(@NonNull GuiContext context, @NonNull GuiElementProperties properties, @NonNull ConfigGuiObjectAccess<Boolean> access) {
+        super(context, properties);
 
-    void render(int mouseX, int mouseY, float partialTicks);
+        this.access = access;
+    }
 
-    Optional<String[]> getTooltip(int mouseX, int mouseY);
-
-    void mouseDown(int mouseX, int mouseY, int button);
-
-    void mouseUp(int mouseX, int mouseY, int button);
-
-    void mouseScroll(int mouseX, int mouseY, int dWheel);
-
-    void mouseDragged(int oldMouseX, int oldMouseY, int newMouseX, int newMouseY, int button);
-
-    void keyPressed(char typedChar, int keyCode);
+    @Override
+    protected void handleClick(int button) {
+        if (button == MOUSE_BUTTON_LEFT) {
+            this.access.setCurrent(!this.access.getCurrent());
+        }
+    }
 }

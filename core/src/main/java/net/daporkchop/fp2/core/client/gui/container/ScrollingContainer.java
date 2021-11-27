@@ -132,7 +132,7 @@ public class ScrollingContainer extends AbstractConfigGuiContainer {
             GuiElement element = this.elements.get(i);
             ComponentDimensions dimensions = elementDimensions.get(i);
 
-            element.bounds(new ElementBounds((this.bounds.sizeX() - dimensions.sizeX()) >> 1, y, dimensions.sizeX(), dimensions.sizeY()));
+            element.bounds(new ElementBounds(0, y, dimensions.sizeX(), dimensions.sizeY()));
             y += dimensions.sizeY() + PADDING;
         }
     }
@@ -153,8 +153,8 @@ public class ScrollingContainer extends AbstractConfigGuiContainer {
             int barHeight = floorI(this.bounds.sizeY() * viewPort);
             int barStart = floorI(((double) this.deltaY / (double) (this.totalHeight - this.bounds.sizeY())) * (this.bounds.sizeY() - barHeight));
 
-            this.context.renderer().drawQuadColored(this.bounds.x() + this.bounds.sizeX() - SCROLLBAR_WIDTH, this.bounds.y(), this.bounds.sizeX(), this.bounds.sizeY(), 0xB0000000);
-            this.context.renderer().drawQuadColored(this.bounds.x() + this.bounds.sizeX() - SCROLLBAR_WIDTH, this.bounds.y() + barStart, this.bounds.sizeX(), barHeight, 0xFFDDDDDD);
+            this.context.renderer().drawQuadColored(this.bounds.maxX() - SCROLLBAR_WIDTH, this.bounds.y(), SCROLLBAR_WIDTH, this.bounds.sizeY(), 0xB0000000);
+            this.context.renderer().drawQuadColored(this.bounds.maxX() - SCROLLBAR_WIDTH, this.bounds.y() + barStart, SCROLLBAR_WIDTH, barHeight, 0xFFDDDDDD);
         }
     }
 

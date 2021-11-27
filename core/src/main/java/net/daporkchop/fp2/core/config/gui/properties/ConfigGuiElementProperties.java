@@ -46,6 +46,8 @@ public class ConfigGuiElementProperties<V> extends AbstractGuiElementProperties 
     protected final Optional<Number> min;
     protected final Optional<Number> max;
 
+    protected final Optional<Number> step;
+
     public ConfigGuiElementProperties(@NonNull String localeKeyBase, @NonNull ConfigGuiObjectAccess<V> access) {
         this.access = access;
         this.localeKey = localeKeyBase + '.' + access.name();
@@ -58,6 +60,10 @@ public class ConfigGuiElementProperties<V> extends AbstractGuiElementProperties 
         } else {
             this.min = this.max = Optional.empty();
         }
+
+        this.step = guiRange != null
+                ? Optional.ofNullable(ConfigHelper.evaluate(guiRange.snapTo()))
+                : Optional.empty();
     }
 
     @Override
@@ -67,8 +73,15 @@ public class ConfigGuiElementProperties<V> extends AbstractGuiElementProperties 
     }
 
     protected String localizeValue(Object val) {
-        String formatKey = this.localeKey() + ".valueFormat";
-        return fp2().i18n().hasKey(formatKey) ? fp2().i18n().format(formatKey, val) : Objects.toString(val);
+        if (val instanceof Boolean) {
+            return fp2().i18n().format(MODID + ".config.boolean." + val);
+        } else if (val instanceof Enum) {
+            Enum e = (Enum) val;
+            return fp2().i18n().format(e.getDeclaringClass().getTypeName() + '#' + e.name());
+        } else {
+            String formatKey = this.localeKey() + ".valueFormat";
+            return fp2().i18n().hasKey(formatKey) ? fp2().i18n().format(formatKey, val) : Objects.toString(val);
+        }
     }
 
     @Override
@@ -101,6 +114,6 @@ public class ConfigGuiElementProperties<V> extends AbstractGuiElementProperties 
         }
 
         //indicator to open "more options" menu
-        joiner.add(fp2().i18n().format(MODID + ".config.moreOptions.tooltip"));
+        //joiner.add(fp2().i18n().format(MODID + ".config.moreOptions.tooltip"));
     }
 }

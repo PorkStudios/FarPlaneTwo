@@ -18,18 +18,14 @@
  *
  */
 
-package net.daporkchop.fp2.client.gui.element;
+package net.daporkchop.fp2.core.client.gui.element;
 
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
-import lombok.experimental.Accessors;
-import net.daporkchop.fp2.client.gui.IConfigGuiElement;
+import net.daporkchop.fp2.core.client.gui.GuiContext;
+import net.daporkchop.fp2.core.client.gui.element.properties.SimpleGuiElementProperties;
 import net.daporkchop.fp2.core.client.gui.util.ComponentDimensions;
-import net.daporkchop.fp2.core.client.gui.util.ElementBounds;
 
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import static java.lang.Math.*;
@@ -37,56 +33,18 @@ import static java.lang.Math.*;
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
 @Getter
-@Setter
-@Accessors(chain = false)
-public class GuiNoopPaddingElement implements IConfigGuiElement {
-    @NonNull
+public class GuiNoopPaddingElement extends AbstractGuiElement {
     protected final ComponentDimensions preferredMinimumDimensions;
 
-    @NonNull
-    protected ElementBounds bounds = null;
+    public GuiNoopPaddingElement(@NonNull GuiContext context, @NonNull ComponentDimensions preferredMinimumDimensions) {
+        super(context, new SimpleGuiElementProperties(""));
+
+        this.preferredMinimumDimensions = preferredMinimumDimensions;
+    }
 
     @Override
     public Stream<ComponentDimensions> possibleDimensions(int totalSizeX, int totalSizeY) {
         return Stream.of(new ComponentDimensions(min(this.preferredMinimumDimensions.sizeX(), totalSizeX), min(this.preferredMinimumDimensions.sizeY(), totalSizeY)));
-    }
-
-    @Override
-    public void init() {
-    }
-
-    @Override
-    public void pack() {
-    }
-
-    @Override
-    public void render(int mouseX, int mouseY, float partialTicks) {
-    }
-
-    @Override
-    public Optional<String[]> getTooltip(int mouseX, int mouseY) {
-        return Optional.empty();
-    }
-
-    @Override
-    public void mouseDown(int mouseX, int mouseY, int button) {
-    }
-
-    @Override
-    public void mouseUp(int mouseX, int mouseY, int button) {
-    }
-
-    @Override
-    public void mouseScroll(int mouseX, int mouseY, int dWheel) {
-    }
-
-    @Override
-    public void mouseDragged(int oldMouseX, int oldMouseY, int newMouseX, int newMouseY, int button) {
-    }
-
-    @Override
-    public void keyPressed(char typedChar, int keyCode) {
     }
 }

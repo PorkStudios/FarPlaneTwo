@@ -21,7 +21,11 @@
 package net.daporkchop.fp2.impl.mc.forge1_12_2;
 
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.core.util.I18n;
+import net.minecraft.client.Minecraft;
+
+import java.util.Locale;
 
 /**
  * @author DaPorkchop_
@@ -41,5 +45,10 @@ public class I18n1_12_2 implements I18n {
     @Override
     public String format(@NonNull String key, @NonNull Object... args) {
         return net.minecraft.util.text.translation.I18n.translateToLocalFormatted(key, args);
+    }
+
+    @Override
+    public Locale javaLocale() {
+        return Minecraft.getMinecraft().languageManager.getCurrentLanguage().getJavaLocale();
     }
 }

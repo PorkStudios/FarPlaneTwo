@@ -39,7 +39,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 public class GuiContext1_12_2 extends net.minecraft.client.gui.GuiScreen implements GuiContext {
     @Getter
-    protected GuiRenderer renderer;
+    protected GuiRenderer1_12_2 renderer;
     protected net.minecraft.client.gui.GuiScreen previousScreen;
 
     protected boolean initialized = false;
@@ -80,10 +80,17 @@ public class GuiContext1_12_2 extends net.minecraft.client.gui.GuiScreen impleme
     }
 
     @Override
+    public void reinit() {
+        this.screen.init();
+        this.screen.resized(this.width, this.height);
+        this.screen.pack();
+    }
+
+    @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
         this.drawDefaultBackground();
 
-        this.screen.render(mouseX, mouseY);
+        this.renderer.render(() -> this.screen.render(mouseX, mouseY));
     }
 
     @Override
