@@ -18,27 +18,33 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.client;
+package net.daporkchop.fp2.core.mode.api.server.tracking;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
-import net.daporkchop.fp2.util.annotation.DebugOnly;
-import net.daporkchop.lib.unsafe.capability.Releasable;
-import net.minecraft.client.Minecraft;
-import net.minecraft.util.BlockRenderLayer;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
+import net.daporkchop.fp2.core.mode.api.IFarPos;
+import net.daporkchop.fp2.core.mode.api.IFarTile;
+import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
 
 /**
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
-public interface IFarRenderer extends Releasable {
-    void prepare(float partialTicks, @NonNull Minecraft mc, @NonNull IFrustum frustum);
+public interface IFarTracker<POS extends IFarPos, T extends IFarTile> extends AutoCloseable {
+    /**
+     * Updates this tracker.
+     * <p>
+     * Should be called periodically to check for tiles which should be loaded or unloaded.
+     */
+    @CalledFromServerThread
+    void update();
 
-    void render(@NonNull Minecraft mc, @NonNull BlockRenderLayer layer, boolean pre);
+    /**
+     * Closes this tracker, unloading all tiles and releasing all resources.
+     * <p>
+     * Once this method has been called, calling any method on this instance will result in undefined behavior.
+     */
+    @CalledFromServerThread
+    @Override
+    void close();
 
-    @DebugOnly
-    DebugStats.Renderer stats();
+    DebugStats.Tracking debugStats();
 }

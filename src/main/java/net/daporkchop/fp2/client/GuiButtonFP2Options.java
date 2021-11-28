@@ -23,7 +23,7 @@ package net.daporkchop.fp2.client;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.config.gui.ConfigGuiHelper;
-import net.daporkchop.fp2.mode.api.player.IFarPlayerClient;
+import net.daporkchop.fp2.core.mode.api.player.IFarPlayerClient;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;

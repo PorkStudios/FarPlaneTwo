@@ -25,7 +25,7 @@ import lombok.NonNull;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
 import net.daporkchop.fp2.compat.vanilla.region.ThreadSafeRegionFileCache;
-import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.server.worldlistener.IWorldChangeListener;
 import net.daporkchop.fp2.server.worldlistener.WorldChangeListenerManager;
 import net.daporkchop.fp2.core.util.datastructure.Datastructures;

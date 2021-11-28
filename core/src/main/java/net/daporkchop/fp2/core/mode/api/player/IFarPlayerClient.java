@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.player;
+package net.daporkchop.fp2.core.mode.api.player;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.config.FP2Config;
@@ -29,14 +29,11 @@ import net.daporkchop.fp2.core.network.IPacket;
 import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromClientThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromNetworkThread;
-import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
 
 /**
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
 public interface IFarPlayerClient {
     @CalledFromNetworkThread
     void fp2_IFarPlayerClient_handle(@NonNull Object packet);

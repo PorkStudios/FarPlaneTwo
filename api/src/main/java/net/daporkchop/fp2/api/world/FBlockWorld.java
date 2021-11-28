@@ -23,7 +23,7 @@ package net.daporkchop.fp2.api.world;
 /**
  * A read-only world consisting of voxels at integer coordinates, where each voxel contains the following information:<br>
  * <ul>
- *     <li>A block state (represented as an {@code int}, as returned by the corresponding methods in {@link FGameRegistry})</li>
+ *     <li>A state (represented as an {@code int}, as returned by the corresponding methods in {@link FGameRegistry})</li>
  *     <li>A biome (represented by an {@code int}, as returned by the corresponding methods in {@link FGameRegistry})</li>
  *     <li>A block light level and sky light level (represented as a {@code byte}, as returned by {@link #packLight(int, int)}). Light levels are unsigned nibbles (4-bit integers),
  *     where {@code 0} is the darkest and {@code 15} is the brightest possible value.</li>
@@ -86,4 +86,39 @@ public interface FBlockWorld extends AutoCloseable {
      */
     @Override
     void close();
+
+    /**
+     * @return the {@link FGameRegistry} instance used by this world
+     */
+    FGameRegistry registry();
+
+    /**
+     * Gets the state at the position described by the given coordinates.
+     *
+     * @param x the X coordinate
+     * @param y the Y coordinate
+     * @param z the Z coordinate
+     * @return the state
+     */
+    int getState(int x, int y, int z);
+
+    /**
+     * Gets the biome at the position described by the given coordinates.
+     *
+     * @param x the X coordinate
+     * @param y the Y coordinate
+     * @param z the Z coordinate
+     * @return the biome
+     */
+    int getBiome(int x, int y, int z);
+
+    /**
+     * Gets the packed block/sky light at the position described by the given coordinates.
+     *
+     * @param x the X coordinate
+     * @param y the Y coordinate
+     * @param z the Z coordinate
+     * @return the packed light levels
+     */
+    byte getLight(int x, int y, int z);
 }

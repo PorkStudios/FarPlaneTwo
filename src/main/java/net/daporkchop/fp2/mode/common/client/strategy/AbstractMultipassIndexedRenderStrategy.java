@@ -22,7 +22,6 @@ package net.daporkchop.fp2.mode.common.client.strategy;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.client.GlStateUniformAttributes;
-import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
@@ -33,7 +32,7 @@ import net.daporkchop.fp2.gl.draw.command.DrawCommandIndexed;
 import net.daporkchop.fp2.gl.draw.index.IndexFormat;
 import net.daporkchop.fp2.gl.draw.index.IndexWriter;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.common.client.bake.IBakeOutputStorage;
 import net.daporkchop.fp2.mode.common.client.bake.indexed.IndexedBakeOutput;

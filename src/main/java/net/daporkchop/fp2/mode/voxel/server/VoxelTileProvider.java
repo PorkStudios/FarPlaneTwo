@@ -22,9 +22,9 @@ package net.daporkchop.fp2.mode.voxel.server;
 
 import io.github.opencubicchunks.cubicchunks.api.world.ICube;
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.server.tracking.IFarTrackerManager;
-import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
+import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTrackerManager;
+import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.mode.common.server.AbstractFarTileProvider;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;

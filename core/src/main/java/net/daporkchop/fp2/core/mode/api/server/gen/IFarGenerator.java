@@ -18,12 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.server.gen;
-
-import lombok.NonNull;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
-import net.minecraft.world.WorldServer;
+package net.daporkchop.fp2.core.mode.api.server.gen;
 
 /**
  * Extracts height and color information from a world for use by a rendering mode.
@@ -32,33 +27,5 @@ import net.minecraft.world.WorldServer;
  *
  * @author DaPorkchop_
  */
-public interface IFarGeneratorRough<POS extends IFarPos, T extends IFarTile> extends IFarGenerator {
-    /**
-     * @return whether or not this generator can generate tiles at low resolution
-     */
-    boolean supportsLowResolution();
-
-    /**
-     * Generates a rough estimate of the terrain in the given tile.
-     *
-     * @param pos  the position of the tile to generate
-     * @param tile the tile to generate
-     */
-    void generate(@NonNull POS pos, @NonNull T tile);
-
-    /**
-     * Factory method for creating instances of {@link IFarGeneratorRough}.
-     *
-     * @author DaPorkchop_
-     */
-    @FunctionalInterface
-    interface Factory<POS extends IFarPos, T extends IFarTile> {
-        /**
-         * Creates a new {@link IFarGeneratorRough} in the given world.
-         *
-         * @param world the world
-         * @return the new {@link IFarGeneratorRough}, or {@code null} if no generator could be created for the given world
-         */
-        IFarGeneratorRough<POS, T> forWorld(@NonNull WorldServer world);
-    }
+public interface IFarGenerator {
 }

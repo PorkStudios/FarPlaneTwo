@@ -18,20 +18,20 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.server;
+package net.daporkchop.fp2.core.mode.api.server;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
-import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
-import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
-import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
-import net.daporkchop.fp2.mode.api.server.storage.IFarStorage;
-import net.daporkchop.fp2.mode.api.server.tracking.IFarTrackerManager;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
+import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
+import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
+import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
+import net.daporkchop.fp2.core.mode.api.server.storage.IFarStorage;
+import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTrackerManager;
 import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
-import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
-import net.minecraft.world.WorldServer;
 
 import java.io.Closeable;
 import java.util.concurrent.CompletableFuture;
@@ -40,9 +40,9 @@ import java.util.concurrent.CompletableFuture;
  * @author DaPorkchop_
  */
 public interface IFarTileProvider<POS extends IFarPos, T extends IFarTile> extends Closeable {
-    WorldServer world();
+    IFarWorldServer world();
 
-    IAsyncBlockAccess blockAccess();
+    FBlockWorld blockAccess();
 
     CompletableFuture<ITileHandle<POS, T>> requestLoad(@NonNull POS pos);
 

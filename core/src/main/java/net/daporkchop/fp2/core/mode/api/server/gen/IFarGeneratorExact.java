@@ -18,15 +18,15 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.server.gen;
+package net.daporkchop.fp2.core.mode.api.server.gen;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
+import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.Vec3i;
-import net.minecraft.world.WorldServer;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
+import net.daporkchop.lib.math.vector.i.Vec2i;
+import net.daporkchop.lib.math.vector.i.Vec3i;
 
 import java.util.stream.Stream;
 
@@ -44,27 +44,27 @@ public interface IFarGeneratorExact<POS extends IFarPos, T extends IFarTile> ext
      * @param pos the position of the tile to generate
      * @return the positions of all of the columns that need to be loaded in order for this generator to generate the tile at the given position
      */
-    Stream<ChunkPos> neededColumns(@NonNull POS pos);
+    Stream<Vec2i> neededColumns(@NonNull POS pos);
 
     /**
      * Gets the positions of all of the cubes that need to be loaded in order for this generator to generate the tile at the given position.
      * <p>
      * Note that this method is only guaranteed to be called in cubic chunks worlds.
      *
-     * @param world the {@link IBlockHeightAccess} providing access to block/height data in the world
+     * @param world the {@link FBlockWorld} providing access to block/height data in the world
      * @param pos   the position of the tile to generate
      * @return the positions of all of the cubes that need to be loaded in order for this generator to generate the tile at the given position
      */
-    Stream<Vec3i> neededCubes(@NonNull IBlockHeightAccess world, @NonNull POS pos);
+    Stream<Vec3i> neededCubes(@NonNull FBlockWorld world, @NonNull POS pos);
 
     /**
      * Generates the terrain in the given tile.
      *
-     * @param world the {@link IBlockHeightAccess} providing access to block/height data in the world
+     * @param world the {@link FBlockWorld} providing access to block/height data in the world
      * @param pos   the position of the tile to generate
      * @param tile  the tile to generate
      */
-    void generate(@NonNull IBlockHeightAccess world, @NonNull POS pos, @NonNull T tile);
+    void generate(@NonNull FBlockWorld world, @NonNull POS pos, @NonNull T tile);
 
     /**
      * Factory method for creating instances of {@link IFarGeneratorExact}.
@@ -79,6 +79,6 @@ public interface IFarGeneratorExact<POS extends IFarPos, T extends IFarTile> ext
          * @param world the world
          * @return the new {@link IFarGeneratorExact}, or {@code null} if no generator could be created for the given world
          */
-        IFarGeneratorExact<POS, T> forWorld(@NonNull WorldServer world);
+        IFarGeneratorExact<POS, T> forWorld(@NonNull IFarWorldServer world);
     }
 }

@@ -24,7 +24,7 @@ import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.config.listener.ConfigListenerManager;
 import net.daporkchop.fp2.core.client.shader.ShaderMacros;
 import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
-import net.daporkchop.fp2.mode.api.player.IFarPlayerClient;
+import net.daporkchop.fp2.core.mode.api.player.IFarPlayerClient;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;

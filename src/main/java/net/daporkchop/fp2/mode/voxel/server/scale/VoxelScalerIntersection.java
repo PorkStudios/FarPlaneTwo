@@ -23,7 +23,7 @@ package net.daporkchop.fp2.mode.voxel.server.scale;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.FastRegistry;
-import net.daporkchop.fp2.mode.api.server.gen.IFarScaler;
+import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;

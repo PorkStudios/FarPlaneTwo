@@ -22,12 +22,12 @@ package net.daporkchop.fp2.mode.voxel.ctx;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
+import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.mode.common.ctx.AbstractFarServerContext;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
-import net.daporkchop.fp2.mode.api.player.IFarPlayerServer;
+import net.daporkchop.fp2.core.mode.api.player.IFarPlayerServer;
 
 /**
  * @author DaPorkchop_

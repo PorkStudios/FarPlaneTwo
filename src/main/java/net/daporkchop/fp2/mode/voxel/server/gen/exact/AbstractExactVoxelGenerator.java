@@ -21,9 +21,10 @@
 package net.daporkchop.fp2.mode.voxel.server.gen.exact;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
-import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
+import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
@@ -83,7 +84,7 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
     }
 
     @Override
-    public void generate(@NonNull IBlockHeightAccess world, @NonNull VoxelPos posIn, @NonNull VoxelTile tile) {
+    public void generate(@NonNull FBlockWorld world, @NonNull VoxelPos posIn, @NonNull VoxelTile tile) {
         final int baseX = posIn.blockX();
         final int baseY = posIn.blockY();
         final int baseZ = posIn.blockZ();

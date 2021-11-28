@@ -27,7 +27,7 @@ import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
 import net.daporkchop.fp2.debug.util.DebugUtils;
-import net.daporkchop.fp2.mode.api.player.IFarPlayerClient;
+import net.daporkchop.fp2.core.mode.api.player.IFarPlayerClient;
 import net.minecraft.client.gui.GuiIngameMenu;
 import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraft.client.gui.GuiScreen;

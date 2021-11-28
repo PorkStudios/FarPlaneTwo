@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.server.gen;
+package net.daporkchop.fp2.core.mode.api.server.gen;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.mode.api.IFarPos;

@@ -18,36 +18,39 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.player;
+package net.daporkchop.fp2.core.mode.api.server.tracking;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.core.network.IPacket;
-import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
-import net.daporkchop.fp2.core.util.annotation.CalledFromNetworkThread;
+import net.daporkchop.fp2.core.mode.api.IFarPos;
+import net.daporkchop.fp2.core.mode.api.IFarTile;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
-import net.daporkchop.lib.math.vector.d.Vec3d;
 
 /**
  * @author DaPorkchop_
  */
-public interface IFarPlayerServer {
-    Vec3d fp2_IFarPlayer_position();
-
-    @CalledFromNetworkThread
-    void fp2_IFarPlayerServer_handle(@NonNull Object packet);
+public interface IFarTrackerManager<POS extends IFarPos, T extends IFarTile> extends AutoCloseable {
+    /**
+     * Begins tracking tiles for the given {@link IFarServerContext}.
+     *
+     * @param context the context to track
+     * @return the {@link IFarTracker} instance for interfacing with the new tracking session
+     * @throws IllegalArgumentException if the given {@link IFarServerContext} is already being tracked
+     */
+    @CalledFromServerThread
+    IFarTracker<POS, T> beginTracking(@NonNull IFarServerContext<POS, T> context);
 
     @CalledFromServerThread
-    void fp2_IFarPlayer_serverConfig(FP2Config serverConfig);
+    void dropAllTiles();
 
+    /**
+     * Closes this tracker manager, releasing all resources.
+     * <p>
+     * Once this method has been called, calling any method on this instance will result in undefined behavior.
+     *
+     * @throws IllegalStateException if any {@link IFarTracker} instances belonging to this tracker manager are still active
+     */
     @CalledFromServerThread
-    void fp2_IFarPlayer_joinedWorld(@NonNull IFarWorldServer world);
-
-    void fp2_IFarPlayer_sendPacket(@NonNull IPacket packet);
-
-    @CalledFromServerThread
-    void fp2_IFarPlayer_update();
-
-    @CalledFromServerThread
-    void fp2_IFarPlayer_close();
+    @Override
+    void close();
 }

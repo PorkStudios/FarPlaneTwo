@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.mode.heightmap.server.gen.exact;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.minecraft.block.state.IBlockState;
@@ -50,7 +51,7 @@ public class VanillaHeightmapGenerator extends AbstractExactHeightmapGenerator {
     }
 
     @Override
-    public Stream<Vec3i> neededCubes(@NonNull IBlockHeightAccess world, @NonNull HeightmapPos pos) {
+    public Stream<Vec3i> neededCubes(@NonNull FBlockWorld world, @NonNull HeightmapPos pos) {
         return Stream.empty(); //assume that all relevant data is loaded with the chunk
     }
 

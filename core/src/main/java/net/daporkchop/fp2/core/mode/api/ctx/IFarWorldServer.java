@@ -18,41 +18,32 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.server.tracking;
+package net.daporkchop.fp2.core.mode.api.ctx;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
-import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
-import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
-import net.daporkchop.fp2.util.annotation.DebugOnly;
+import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
+
+import java.util.function.Consumer;
 
 /**
  * @author DaPorkchop_
  */
-public interface IFarTrackerManager<POS extends IFarPos, T extends IFarTile> extends AutoCloseable {
+public interface IFarWorldServer extends IFarWorld {
     /**
-     * Begins tracking tiles for the given {@link IFarServerContext}.
+     * Gets the {@link IFarTileProvider} used by the given {@link IFarRenderMode} in this world.
      *
-     * @param context the context to track
-     * @return the {@link IFarTracker} instance for interfacing with the new tracking session
-     * @throws IllegalArgumentException if the given {@link IFarServerContext} is already being tracked
+     * @param mode the {@link IFarRenderMode}
+     * @return the {@link IFarTileProvider} used by the given {@link IFarRenderMode} in this world
      */
-    @CalledFromServerThread
-    IFarTracker<POS, T> beginTracking(@NonNull IFarServerContext<POS, T> context);
-
-    @DebugOnly
-    @CalledFromServerThread
-    void dropAllTiles();
+    <POS extends IFarPos, T extends IFarTile> IFarTileProvider<POS, T> fp2_IFarWorldServer_tileProviderFor(@NonNull IFarRenderMode<POS, T> mode);
 
     /**
-     * Closes this tracker manager, releasing all resources.
-     * <p>
-     * Once this method has been called, calling any method on this instance will result in undefined behavior.
+     * Runs the given action on every {@link IFarTileProvider}.
      *
-     * @throws IllegalStateException if any {@link IFarTracker} instances belonging to this tracker manager are still active
+     * @param action the action
      */
-    @CalledFromServerThread
-    @Override
-    void close();
+    void fp2_IFarWorldServer_forEachTileProvider(@NonNull Consumer<IFarTileProvider<?, ?>> action);
 }

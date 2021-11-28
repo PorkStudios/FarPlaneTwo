@@ -28,7 +28,7 @@ import net.daporkchop.fp2.gl.draw.command.DrawCommand;
 import net.daporkchop.fp2.gl.draw.command.DrawCommandBuffer;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.common.client.ICullingStrategy;
 import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;

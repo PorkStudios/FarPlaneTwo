@@ -21,13 +21,13 @@
 package net.daporkchop.fp2.mode.heightmap.server.gen.exact;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
+import net.daporkchop.fp2.api.world.FBlockWorld;
+import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.common.server.gen.AbstractFarGenerator;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.HeightmapData;
 import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
 import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
-import net.minecraft.init.Blocks;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.WorldServer;
 
@@ -47,7 +47,7 @@ public abstract class AbstractExactHeightmapGenerator extends AbstractFarGenerat
     protected abstract void computeElevations(@NonNull IBlockHeightAccess world, @NonNull int[] elevations, @NonNull BlockPos.MutableBlockPos pos, int blockX, int blockZ);
 
     @Override
-    public void generate(@NonNull IBlockHeightAccess world, @NonNull HeightmapPos posIn, @NonNull HeightmapTile tile) {
+    public void generate(@NonNull FBlockWorld world, @NonNull HeightmapPos posIn, @NonNull HeightmapTile tile) {
         int tileX = posIn.x();
         int tileZ = posIn.z();
 

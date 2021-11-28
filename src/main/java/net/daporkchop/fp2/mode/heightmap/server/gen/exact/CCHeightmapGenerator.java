@@ -22,6 +22,7 @@ package net.daporkchop.fp2.mode.heightmap.server.gen.exact;
 
 import io.github.opencubicchunks.cubicchunks.api.util.Coords;
 import lombok.NonNull;
+import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.minecraft.block.state.IBlockState;
@@ -53,7 +54,7 @@ public class CCHeightmapGenerator extends AbstractExactHeightmapGenerator {
     }
 
     @Override
-    public Stream<Vec3i> neededCubes(@NonNull IBlockHeightAccess world, @NonNull HeightmapPos pos) {
+    public Stream<Vec3i> neededCubes(@NonNull FBlockWorld world, @NonNull HeightmapPos pos) {
         return IntStream.range(0, T_VOXELS * T_VOXELS)
                 .map(packed -> {
                     int blockX = pos.blockX() + (packed & T_MASK);

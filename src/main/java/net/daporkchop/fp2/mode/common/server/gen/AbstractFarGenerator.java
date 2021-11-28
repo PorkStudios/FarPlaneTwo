@@ -21,8 +21,7 @@
 package net.daporkchop.fp2.mode.common.server.gen;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.api.server.gen.IFarGenerator;
-import net.daporkchop.lib.unsafe.PUnsafe;
+import net.daporkchop.fp2.core.mode.api.server.gen.IFarGenerator;
 import net.minecraft.world.WorldServer;
 
 /**

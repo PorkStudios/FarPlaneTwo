@@ -39,6 +39,9 @@ dependencies {
     implementationShade("net.daporkchop.lib:logging:$porklibVersion") {
         exclude group: "io.netty"
     }
+    implementationShade("net.daporkchop.lib:math:$porklibVersion") {
+        exclude group: "io.netty"
+    }
     implementationShade("net.daporkchop.lib:primitive:$porklibVersion") {
         exclude group: "io.netty"
     }

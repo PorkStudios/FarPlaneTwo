@@ -18,15 +18,12 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api;
+package net.daporkchop.fp2.core.mode.api;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.client.IFrustum;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.util.datastructure.SimpleSet;
 import net.daporkchop.fp2.core.util.math.geometry.Volume;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
 
 /**
  * Provides access to an off-heap representation of a {@link IFarPos}.
@@ -132,7 +129,6 @@ public interface IFarDirectPosAccess<POS extends IFarPos> {
      * @param frustum the frustum
      * @return whether or not the tile at the given position is in the given frustum
      */
-    @SideOnly(Side.CLIENT)
     boolean inFrustum(long addr, @NonNull IFrustum frustum);
 
     /**

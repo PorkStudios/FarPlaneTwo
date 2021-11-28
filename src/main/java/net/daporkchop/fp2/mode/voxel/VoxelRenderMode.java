@@ -26,16 +26,16 @@ import lombok.SneakyThrows;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.event.AbstractRegisterEvent;
 import net.daporkchop.fp2.core.util.registry.LinkedOrderedRegistry;
-import net.daporkchop.fp2.mode.api.IFarDirectPosAccess;
-import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
-import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
+import net.daporkchop.fp2.core.mode.api.IFarDirectPosAccess;
+import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldClient;
-import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
-import net.daporkchop.fp2.mode.api.player.IFarPlayerServer;
-import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
-import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
-import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
+import net.daporkchop.fp2.core.mode.api.player.IFarPlayerServer;
+import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
+import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
+import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.common.AbstractFarRenderMode;
 import net.daporkchop.fp2.mode.voxel.ctx.VoxelClientContext;
 import net.daporkchop.fp2.mode.voxel.ctx.VoxelServerContext;
@@ -47,7 +47,6 @@ import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.core.util.math.MathUtil;
 import net.daporkchop.lib.binary.stream.DataIn;
 import net.daporkchop.lib.binary.stream.DataOut;
-import net.minecraft.world.WorldServer;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
@@ -86,7 +85,7 @@ public class VoxelRenderMode extends AbstractFarRenderMode<VoxelPos, VoxelTile> 
     }
 
     @Override
-    public IFarTileProvider<VoxelPos, VoxelTile> tileProvider(@NonNull WorldServer world) {
+    public IFarTileProvider<VoxelPos, VoxelTile> tileProvider(@NonNull IFarWorldServer world) {
         return isCubicWorld(world)
                 ? new VoxelTileProvider.CubicChunks(world, this)
                 : new VoxelTileProvider.Vanilla(world, this);

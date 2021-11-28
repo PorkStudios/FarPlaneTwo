@@ -41,7 +41,7 @@ import net.daporkchop.fp2.impl.mc.forge1_12_2.I18n1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.client.gui.GuiContext1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.log.ChatAsPorkLibLogger;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.log.Log4jAsPorkLibLogger;
-import net.daporkchop.fp2.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.heightmap.HeightmapRenderMode;
 import net.daporkchop.fp2.mode.voxel.VoxelRenderMode;
 import net.daporkchop.fp2.net.FP2Network;

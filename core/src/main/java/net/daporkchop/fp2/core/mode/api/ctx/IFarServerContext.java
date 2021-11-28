@@ -18,16 +18,16 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.ctx;
+package net.daporkchop.fp2.core.mode.api.ctx;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
-import net.daporkchop.fp2.mode.api.player.IFarPlayerServer;
-import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
-import net.daporkchop.fp2.mode.api.server.tracking.IFarTracker;
+import net.daporkchop.fp2.core.mode.api.player.IFarPlayerServer;
+import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
+import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTracker;
 import net.daporkchop.fp2.core.mode.api.tile.TileSnapshot;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
 

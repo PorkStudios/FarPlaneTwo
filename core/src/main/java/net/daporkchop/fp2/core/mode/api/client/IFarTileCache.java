@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.client;
+package net.daporkchop.fp2.core.mode.api.client;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.debug.util.DebugStats;

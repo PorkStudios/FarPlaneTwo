@@ -25,24 +25,23 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.mode.api.IFarDirectPosAccess;
+import net.daporkchop.fp2.core.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
-import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
-import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldClient;
-import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
-import net.daporkchop.fp2.mode.api.player.IFarPlayerServer;
-import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
-import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
-import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
+import net.daporkchop.fp2.core.mode.api.player.IFarPlayerServer;
+import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
+import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
+import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.core.util.SimpleRecycler;
 import net.daporkchop.fp2.core.event.AbstractRegisterEvent;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.reference.cache.Cached;
-import net.minecraft.world.WorldServer;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
@@ -73,7 +72,7 @@ public abstract class AbstractFarRenderMode<POS extends IFarPos, T extends IFarT
     protected abstract T newTile();
 
     @Override
-    public IFarGeneratorExact<POS, T> exactGenerator(@NonNull WorldServer world) {
+    public IFarGeneratorExact<POS, T> exactGenerator(@NonNull IFarWorldServer world) {
         return Arrays.stream(this.exactGeneratorFactories)
                 .map(f -> f.forWorld(world))
                 .filter(Objects::nonNull)
@@ -86,7 +85,7 @@ public abstract class AbstractFarRenderMode<POS extends IFarPos, T extends IFarT
     }
 
     @Override
-    public IFarGeneratorRough<POS, T> roughGenerator(@NonNull WorldServer world) {
+    public IFarGeneratorRough<POS, T> roughGenerator(@NonNull IFarWorldServer world) {
         return Arrays.stream(this.roughGeneratorFactories)
                 .map(f -> f.forWorld(world))
                 .filter(Objects::nonNull)
@@ -94,7 +93,7 @@ public abstract class AbstractFarRenderMode<POS extends IFarPos, T extends IFarT
     }
 
     @Override
-    public abstract IFarTileProvider<POS, T> tileProvider(@NonNull WorldServer world);
+    public abstract IFarTileProvider<POS, T> tileProvider(@NonNull IFarWorldServer world);
 
     @Override
     public abstract IFarServerContext<POS, T> serverContext(@NonNull IFarPlayerServer player, @NonNull IFarWorldServer world, @NonNull FP2Config config);

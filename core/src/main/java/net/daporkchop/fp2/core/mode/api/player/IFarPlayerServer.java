@@ -18,35 +18,36 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.server.tracking;
+package net.daporkchop.fp2.core.mode.api.player;
 
-import net.daporkchop.fp2.core.debug.util.DebugStats;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
+import lombok.NonNull;
+import net.daporkchop.fp2.core.config.FP2Config;
+import net.daporkchop.fp2.core.network.IPacket;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
+import net.daporkchop.fp2.core.util.annotation.CalledFromNetworkThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
-import net.daporkchop.fp2.util.annotation.DebugOnly;
+import net.daporkchop.lib.math.vector.d.Vec3d;
 
 /**
  * @author DaPorkchop_
  */
-public interface IFarTracker<POS extends IFarPos, T extends IFarTile> extends AutoCloseable {
-    /**
-     * Updates this tracker.
-     * <p>
-     * Should be called periodically to check for tiles which should be loaded or unloaded.
-     */
-    @CalledFromServerThread
-    void update();
+public interface IFarPlayerServer {
+    Vec3d fp2_IFarPlayer_position();
 
-    /**
-     * Closes this tracker, unloading all tiles and releasing all resources.
-     * <p>
-     * Once this method has been called, calling any method on this instance will result in undefined behavior.
-     */
-    @CalledFromServerThread
-    @Override
-    void close();
+    @CalledFromNetworkThread
+    void fp2_IFarPlayerServer_handle(@NonNull Object packet);
 
-    @DebugOnly
-    DebugStats.Tracking debugStats();
+    @CalledFromServerThread
+    void fp2_IFarPlayer_serverConfig(FP2Config serverConfig);
+
+    @CalledFromServerThread
+    void fp2_IFarPlayer_joinedWorld(@NonNull IFarWorldServer world);
+
+    void fp2_IFarPlayer_sendPacket(@NonNull IPacket packet);
+
+    @CalledFromServerThread
+    void fp2_IFarPlayer_update();
+
+    @CalledFromServerThread
+    void fp2_IFarPlayer_close();
 }

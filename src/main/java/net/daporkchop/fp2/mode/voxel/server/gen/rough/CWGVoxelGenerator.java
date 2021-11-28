@@ -24,7 +24,7 @@ import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.IBiomeBlockRe
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.cwg.CWGContext;
 import net.daporkchop.fp2.compat.vanilla.FastRegistry;
-import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
+import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;

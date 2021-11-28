@@ -21,10 +21,9 @@
 package net.daporkchop.fp2.server;
 
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.config.listener.ConfigListenerManager;
-import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.player.IFarPlayerServer;
+import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.core.mode.api.player.IFarPlayerServer;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.lib.common.system.PlatformInfo;
 import net.daporkchop.lib.compression.zstd.Zstd;

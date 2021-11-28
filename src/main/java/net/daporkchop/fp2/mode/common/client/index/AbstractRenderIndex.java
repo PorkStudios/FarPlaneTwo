@@ -36,7 +36,7 @@ import net.daporkchop.fp2.gl.bitset.GLBitSetBuilder;
 import net.daporkchop.fp2.gl.draw.command.DrawCommand;
 import net.daporkchop.fp2.gl.draw.command.DrawCommandBuffer;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
-import net.daporkchop.fp2.mode.api.IFarDirectPosAccess;
+import net.daporkchop.fp2.core.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.common.client.ICullingStrategy;

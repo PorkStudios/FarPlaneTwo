@@ -22,10 +22,10 @@ package net.daporkchop.fp2.asm.debug.client.gui;
 
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.util.I18n;
-import net.daporkchop.fp2.mode.api.client.IFarRenderer;
-import net.daporkchop.fp2.mode.api.client.IFarTileCache;
-import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
-import net.daporkchop.fp2.mode.api.player.IFarPlayerClient;
+import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
+import net.daporkchop.fp2.core.mode.api.client.IFarTileCache;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
+import net.daporkchop.fp2.core.mode.api.player.IFarPlayerClient;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiOverlayDebug;
 import org.spongepowered.asm.mixin.Mixin;

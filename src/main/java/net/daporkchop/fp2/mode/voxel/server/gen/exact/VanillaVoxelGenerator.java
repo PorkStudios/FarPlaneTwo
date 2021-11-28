@@ -21,8 +21,8 @@
 package net.daporkchop.fp2.mode.voxel.server.gen.exact;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
-import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.WorldServer;
@@ -47,7 +47,7 @@ public class VanillaVoxelGenerator extends AbstractExactVoxelGenerator {
     }
 
     @Override
-    public Stream<Vec3i> neededCubes(@NonNull IBlockHeightAccess world, @NonNull VoxelPos pos) {
+    public Stream<Vec3i> neededCubes(@NonNull FBlockWorld world, @NonNull VoxelPos pos) {
         return Stream.empty();
     }
 }

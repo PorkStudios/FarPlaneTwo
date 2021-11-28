@@ -18,33 +18,24 @@
  *
  */
 
-package net.daporkchop.fp2.mode.api.ctx;
+package net.daporkchop.fp2.core.mode.api.client;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
-import net.daporkchop.fp2.core.mode.api.ctx.IFarWorld;
-import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
-
-import java.util.function.Consumer;
+import net.daporkchop.fp2.core.client.IFrustum;
+import net.daporkchop.fp2.core.debug.util.DebugStats;
+import net.daporkchop.lib.unsafe.capability.Releasable;
 
 /**
  * @author DaPorkchop_
  */
-public interface IFarWorldServer extends IFarWorld {
-    /**
-     * Gets the {@link IFarTileProvider} used by the given {@link IFarRenderMode} in this world.
-     *
-     * @param mode the {@link IFarRenderMode}
-     * @return the {@link IFarTileProvider} used by the given {@link IFarRenderMode} in this world
-     */
-    <POS extends IFarPos, T extends IFarTile> IFarTileProvider<POS, T> fp2_IFarWorldServer_tileProviderFor(@NonNull IFarRenderMode<POS, T> mode);
+public interface IFarRenderer extends Releasable {
+    int LAYER_SOLID = 0;
+    int LAYER_CUTOUT = 1;
+    int LAYER_TRANSPARENT = 2;
 
-    /**
-     * Runs the given action on every {@link IFarTileProvider}.
-     *
-     * @param action the action
-     */
-    void fp2_IFarWorldServer_forEachTileProvider(@NonNull Consumer<IFarTileProvider<?, ?>> action);
+    void prepare(@NonNull IFrustum frustum);
+
+    void render(int layer, boolean pre);
+
+    DebugStats.Renderer stats();
 }

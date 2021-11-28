@@ -20,7 +20,7 @@
 
 package net.daporkchop.fp2.asm.core.client;
 
-import net.daporkchop.fp2.mode.api.player.IFarPlayerClient;
+import net.daporkchop.fp2.core.mode.api.player.IFarPlayerClient;
 import net.daporkchop.fp2.util.threading.futureexecutor.ClientThreadMarkedFutureExecutor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
