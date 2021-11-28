@@ -39,13 +39,17 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static java.lang.Math.*;
-import static net.daporkchop.fp2.core.client.gui.GuiConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
 public class ColumnsContainer extends AbstractConfigGuiContainer {
+    /**
+     * The maximum number of columns to use.
+     */
+    public static final int MAX_COLUMNS = 2;
+
     public ColumnsContainer(@NonNull GuiContext context, @NonNull List<GuiElement> elements) {
         super(context, elements);
     }

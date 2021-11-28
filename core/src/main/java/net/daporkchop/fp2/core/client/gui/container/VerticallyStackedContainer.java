@@ -33,7 +33,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.lang.Math.*;
-import static net.daporkchop.fp2.core.client.gui.GuiConstants.*;
 
 /**
  * @author DaPorkchop_

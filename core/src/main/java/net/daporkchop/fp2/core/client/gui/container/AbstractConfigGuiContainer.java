@@ -39,6 +39,11 @@ import java.util.List;
 @RequiredArgsConstructor
 @Getter
 public abstract class AbstractConfigGuiContainer implements GuiContainer {
+    /**
+     * The padding around all components (vertical and horizontal).
+     */
+    public static final int PADDING = 2;
+
     @NonNull
     protected final GuiContext context;
     @NonNull

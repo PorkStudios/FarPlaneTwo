@@ -28,7 +28,6 @@ import net.daporkchop.fp2.core.client.gui.util.ComponentDimensions;
 import java.util.stream.Stream;
 
 import static java.lang.Math.*;
-import static net.daporkchop.fp2.core.client.gui.GuiConstants.*;
 
 /**
  * @author DaPorkchop_
@@ -40,18 +39,18 @@ public class GuiTitle extends AbstractGuiElement {
 
     @Override
     public Stream<ComponentDimensions> possibleDimensions(int totalSizeX, int totalSizeY) {
-        return Stream.of(new ComponentDimensions(totalSizeX, min((this.context.renderer().getStringHeight() << 1) + PADDING, totalSizeY)));
+        return Stream.of(new ComponentDimensions(totalSizeX, min(this.context.renderer().getStringHeight() << 1, totalSizeY)));
     }
 
     @Override
     public ComponentDimensions preferredMinimumDimensions() {
-        return new ComponentDimensions(this.context.renderer().getStringWidth(this.properties.text()), (this.context.renderer().getStringHeight() << 1) + PADDING);
+        return new ComponentDimensions(this.context.renderer().getStringWidth(this.properties.text()), this.context.renderer().getStringHeight() << 1);
     }
 
     @Override
     public void render(int mouseX, int mouseY) {
         super.render(mouseX, mouseY);
 
-        this.context.renderer().drawCenteredString(this.properties.text(), this.bounds.centerX(), this.bounds.y() + this.context.renderer().getStringHeight() + PADDING, -1, true, true, false);
+        this.context.renderer().drawCenteredString(this.properties.text(), this.bounds.centerX(), this.bounds.y() + this.context.renderer().getStringHeight(), -1, true, true, false);
     }
 }

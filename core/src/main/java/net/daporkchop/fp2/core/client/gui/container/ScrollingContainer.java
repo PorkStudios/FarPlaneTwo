@@ -34,13 +34,17 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.lang.Math.*;
-import static net.daporkchop.fp2.core.client.gui.GuiConstants.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 
 /**
  * @author DaPorkchop_
  */
 public class ScrollingContainer extends AbstractConfigGuiContainer {
+    /**
+     * The width of a scrollbar.
+     */
+    public static final int SCROLLBAR_WIDTH = 5;
+
     protected static final Comparator<ComponentDimensions> COMPARATOR_LOWY_HIGHX = Comparator.comparingInt(ComponentDimensions::sizeY)
             .thenComparing(Comparator.comparingInt(ComponentDimensions::sizeX).reversed());
 

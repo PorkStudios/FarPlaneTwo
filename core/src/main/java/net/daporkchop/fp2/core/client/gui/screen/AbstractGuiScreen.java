@@ -24,6 +24,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.core.client.gui.GuiContext;
 import net.daporkchop.fp2.core.client.gui.GuiElement;
 import net.daporkchop.fp2.core.client.gui.GuiScreen;
+import net.daporkchop.fp2.core.client.gui.container.AbstractConfigGuiContainer;
 import net.daporkchop.fp2.core.client.gui.element.AbstractGuiButton;
 import net.daporkchop.fp2.core.client.gui.element.properties.SimpleGuiElementProperties;
 import net.daporkchop.fp2.core.client.gui.util.ComponentDimensions;
@@ -32,7 +33,6 @@ import net.daporkchop.fp2.core.client.gui.util.ElementBounds;
 import java.util.Comparator;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
-import static net.daporkchop.fp2.core.client.gui.GuiConstants.*;
 
 /**
  * Base implementation of {@link GuiScreen} which renders headers and footers, and then delegates all other rendering to a child {@link GuiElement}.
@@ -40,6 +40,11 @@ import static net.daporkchop.fp2.core.client.gui.GuiConstants.*;
  * @author DaPorkchop_
  */
 public abstract class AbstractGuiScreen implements GuiScreen {
+    public static final int PADDING = AbstractConfigGuiContainer.PADDING;
+
+    public static final int HEADER_HEIGHT = 30;
+    public static final int FOOTER_HEIGHT = 27;
+
     protected final GuiContext context;
     protected final String localeKey;
     protected final GuiElement child;

@@ -14,7 +14,7 @@ run/
 *.log
 *.so
 *.dll
-/logs/
+logs/
 
 classes/
 
