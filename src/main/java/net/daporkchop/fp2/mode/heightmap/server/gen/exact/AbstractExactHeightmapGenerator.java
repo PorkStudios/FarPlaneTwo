@@ -22,6 +22,7 @@ package net.daporkchop.fp2.mode.heightmap.server.gen.exact;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.api.world.FBlockWorld;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.common.server.gen.AbstractFarGenerator;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
@@ -40,11 +41,11 @@ import static net.daporkchop.fp2.util.Constants.*;
  * @author DaPorkchop_
  */
 public abstract class AbstractExactHeightmapGenerator extends AbstractFarGenerator implements IFarGeneratorExact<HeightmapPos, HeightmapTile> {
-    public AbstractExactHeightmapGenerator(@NonNull WorldServer world) {
+    public AbstractExactHeightmapGenerator(@NonNull IFarWorldServer world) {
         super(world);
     }
 
-    protected abstract void computeElevations(@NonNull IBlockHeightAccess world, @NonNull int[] elevations, @NonNull BlockPos.MutableBlockPos pos, int blockX, int blockZ);
+    protected abstract void computeElevations(@NonNull FBlockWorld world, @NonNull int[] elevations, int blockX, int blockZ);
 
     @Override
     public void generate(@NonNull FBlockWorld world, @NonNull HeightmapPos posIn, @NonNull HeightmapTile tile) {
@@ -52,7 +53,6 @@ public abstract class AbstractExactHeightmapGenerator extends AbstractFarGenerat
         int tileZ = posIn.z();
 
         HeightmapData data = new HeightmapData();
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         int[] elevations = new int[MAX_LAYERS];
 
         for (int x = 0; x < T_VOXELS; x++) {
@@ -61,15 +61,15 @@ public abstract class AbstractExactHeightmapGenerator extends AbstractFarGenerat
 
                 int blockX = tileX * T_VOXELS + x;
                 int blockZ = tileZ * T_VOXELS + z;
-                this.computeElevations(world, elevations, pos.setPos(blockX, 0, blockZ), blockX, blockZ);
+                this.computeElevations(world, elevations, blockX, blockZ);
 
                 for (int layer = 0; layer < MAX_LAYERS; layer++) {
                     int elevation = elevations[layer];
                     if (elevation != Integer.MIN_VALUE) {
-                        data.state = world.getBlockState(pos.setPos(blockX, elevation, blockZ));
-                        data.biome = world.getBiome(pos);
-                        pos.setY(data.height_int = pos.getY() + 1);
-                        data.light = packCombinedLight(world.getCombinedLight(pos, 0));
+                        data.state = world.getState(blockX, elevation, blockZ);
+                        data.biome = world.getBiome(blockX, elevation, blockZ);
+                        data.height_int = elevation + 1;
+                        data.light = world.getLight(blockX, elevation + 1, blockZ);
 
                         if (layer == WATER_LAYER) {
                             data.height_frac = HEIGHT_FRAC_LIQUID;

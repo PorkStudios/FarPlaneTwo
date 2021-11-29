@@ -24,6 +24,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
@@ -48,13 +49,12 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator implements IFarGeneratorExact<VoxelPos, VoxelTile> {
     protected final Cached<int[]> stateMapCache = Cached.threadLocal(() -> new int[cb(CACHE_SIZE)], ReferenceStrength.WEAK);
 
-    public AbstractExactVoxelGenerator(@NonNull WorldServer world) {
+    public AbstractExactVoxelGenerator(@NonNull IFarWorldServer world) {
         super(world);
     }
 
-    protected int[] populateStateMapFromWorld(@NonNull IBlockHeightAccess world, int baseX, int baseY, int baseZ) {
+    protected int[] populateStateMapFromWorld(@NonNull FBlockWorld world, int baseX, int baseY, int baseZ) {
         int[] stateMap = this.stateMapCache.get();
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 
         //range check here to allow JIT to avoid range checking inside the loop
         checkArg(stateMap.length >= cb(CACHE_SIZE));
@@ -62,7 +62,7 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
         for (int i = 0, dx = CACHE_MIN; dx < CACHE_MAX; dx++) { //set each type flag depending on the block state at the corresponding position
             for (int dy = CACHE_MIN; dy < CACHE_MAX; dy++) {
                 for (int dz = CACHE_MIN; dz < CACHE_MAX; dz++, i++) {
-                    stateMap[i] = FastRegistry.getId(world.getBlockState(pos.setPos(baseX + dx, baseY + dy, baseZ + dz)));
+                    stateMap[i] = world.getState(baseX + dx, baseY + dy, baseZ + dz);
                 }
             }
         }
@@ -93,7 +93,6 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
         //use bit flags to identify voxel types rather than reading from the world each time to keep innermost loop head tight and cache-friendly
         byte[] CACHE = this.populateTypeMapFromStateMap(stateMap);
 
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         VoxelData data = new VoxelData();
 
         data.x = data.y = data.z = POS_ONE;
@@ -132,12 +131,11 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
                         if ((edges & (EDGE_DIR_MASK << (edge << 1))) != EDGE_DIR_NONE) {
                             //((edges >> (edge << 1) >> 1) & 1) is 1 if the face is negative, 0 otherwise
                             int i = EDGE_VERTEX_MAP[(edge << 1) | ((edges >> (edge << 1) >> 1) & 1)];
-                            pos.setPos(baseX + dx + ((i >> 2) & 1), baseY + dy + ((i >> 1) & 1), baseZ + dz + (i & 1));
-                            data.states[edge] = FastRegistry.getId(world.getBlockState(pos));
+                            data.states[edge] = world.getState(baseX + dx + ((i >> 2) & 1), baseY + dy + ((i >> 1) & 1), baseZ + dz + (i & 1));
                         }
                     }
 
-                    data.biome = FastRegistry.getId(world.getBiome(pos));
+                    data.biome = world.getBiome(baseX + dx, baseY + dy, baseZ + dz);
 
                     int skyLight = 0;
                     int blockLight = 0;
@@ -152,10 +150,9 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
 
                         for (int i = 0; i < 8; i++) {
                             if (((corners >> (i << 1)) & 3) == type) {
-                                pos.setPos(baseX + dx + ((i >> 2) & 1), baseY + dy + ((i >> 1) & 1), baseZ + dz + (i & 1));
-                                int light = world.getCombinedLight(pos, 0);
-                                skyLight += light >> 20;
-                                blockLight += (light >> 4) & 0xF;
+                                byte packedLight = world.getLight(baseX + dx + ((i >> 2) & 1), baseY + dy + ((i >> 1) & 1), baseZ + dz + (i & 1));
+                                skyLight += FBlockWorld.unpackSkyLight(packedLight);
+                                blockLight += FBlockWorld.unpackBlockLight(packedLight);
                                 samples++;
                             }
                         }
@@ -164,10 +161,9 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
                         for (int edge = 0; edge < EDGE_COUNT; edge++) {
                             if ((edges & (EDGE_DIR_MASK << (edge << 1))) != EDGE_DIR_NONE) {
                                 int i = EDGE_VERTEX_MAP[(edge << 1) | (~(edges >> (edge << 1) >> 1) & 1)];
-                                pos.setPos(baseX + dx + ((i >> 2) & 1), baseY + dy + ((i >> 1) & 1), baseZ + dz + (i & 1));
-                                int light = world.getCombinedLight(pos, 0);
-                                skyLight += light >> 20;
-                                blockLight += (light >> 4) & 0xF;
+                                byte packedLight = world.getLight(baseX + dx + ((i >> 2) & 1), baseY + dy + ((i >> 1) & 1), baseZ + dz + (i & 1));
+                                skyLight += FBlockWorld.unpackSkyLight(packedLight);
+                                blockLight += FBlockWorld.unpackBlockLight(packedLight);
                                 samples++;
                             }
                         }
@@ -176,7 +172,7 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
                         skyLight /= samples;
                         blockLight /= samples;
                     }
-                    data.light = Constants.packCombinedLight(skyLight << 20 | blockLight << 4);
+                    data.light = FBlockWorld.packLight(skyLight, blockLight);
 
                     tile.set(dx, dy, dz, data);
                 }

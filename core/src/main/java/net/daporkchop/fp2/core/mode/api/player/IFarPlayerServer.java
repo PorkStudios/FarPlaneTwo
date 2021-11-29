@@ -26,7 +26,7 @@ import net.daporkchop.fp2.core.network.IPacket;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.core.util.annotation.CalledFromNetworkThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
-import net.daporkchop.lib.math.vector.d.Vec3d;
+import net.daporkchop.lib.math.vector.Vec3d;
 
 /**
  * @author DaPorkchop_

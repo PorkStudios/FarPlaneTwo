@@ -22,13 +22,11 @@ package net.daporkchop.fp2.mode.heightmap.server.gen.exact;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.api.world.FBlockWorld;
-import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
-import net.minecraft.block.state.IBlockState;
+import net.daporkchop.lib.math.vector.Vec2i;
+import net.daporkchop.lib.math.vector.Vec3i;
 import net.minecraft.init.Blocks;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.WorldServer;
 
 import java.util.stream.Stream;
@@ -41,12 +39,12 @@ import static net.daporkchop.fp2.mode.heightmap.HeightmapConstants.*;
 public class VanillaHeightmapGenerator extends AbstractExactHeightmapGenerator {
     protected static final int Y_LIMIT = 0; //TODO: don't hardcode this to 0 (because 1.17)
 
-    public VanillaHeightmapGenerator(@NonNull WorldServer world) {
+    public VanillaHeightmapGenerator(@NonNull IFarWorldServer world) {
         super(world);
     }
 
     @Override
-    public Stream<ChunkPos> neededColumns(@NonNull HeightmapPos pos) {
+    public Stream<Vec2i> neededColumns(@NonNull HeightmapPos pos) {
         return Stream.of(pos.flooredChunkPos());
     }
 
@@ -56,7 +54,7 @@ public class VanillaHeightmapGenerator extends AbstractExactHeightmapGenerator {
     }
 
     @Override
-    protected void computeElevations(@NonNull IBlockHeightAccess world, @NonNull int[] elevations, @NonNull BlockPos.MutableBlockPos pos, int blockX, int blockZ) {
+    protected void computeElevations(@NonNull FBlockWorld world, @NonNull int[] elevations, int blockX, int blockZ) {
         int y = world.getTopBlockY(blockX, blockZ);
         if (y < Y_LIMIT) { //there are no blocks in this column, therefore nothing to do
             return;
@@ -65,9 +63,8 @@ public class VanillaHeightmapGenerator extends AbstractExactHeightmapGenerator {
         //vanilla worlds have the convenient trait that everything in the column is already generated and loaded, which allows us to simply iterate from top to bottom
 
         int usedExtraLayers = 0;
-        for (IBlockState prevState = null; y >= Y_LIMIT; y--) {
-            pos.setY(y);
-            IBlockState state = world.getBlockState(pos);
+        for (int prevState = -1; y >= Y_LIMIT; y--) {
+            int state = world.getState(blockX, y, blockZ);
 
             if (state == prevState) { //skip duplicate block states
                 continue;

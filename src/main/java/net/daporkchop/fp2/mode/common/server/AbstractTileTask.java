@@ -23,6 +23,7 @@ package net.daporkchop.fp2.mode.common.server;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
@@ -31,8 +32,8 @@ import net.daporkchop.fp2.core.mode.api.tile.ITileMetadata;
 import net.daporkchop.fp2.core.util.SimpleRecycler;
 import net.daporkchop.fp2.core.util.threading.futurecache.GenerationNotAllowedException;
 import net.daporkchop.fp2.core.util.threading.scheduler.Scheduler;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.Vec3i;
+import net.daporkchop.lib.math.vector.Vec2i;
+import net.daporkchop.lib.math.vector.Vec3i;
 
 import java.util.List;
 import java.util.function.Function;
@@ -141,12 +142,12 @@ public abstract class AbstractTileTask<POS extends IFarPos, T extends IFarTile> 
         T tile = tileRecycler.allocate();
         try {
             //prefetch terrain
-            Stream<ChunkPos> columns = this.world.generatorExact().neededColumns(this.pos);
-            Function<IBlockHeightAccess, Stream<Vec3i>> cubesMappingFunction = world -> this.world.generatorExact().neededCubes(world, this.pos);
+            Stream<Vec2i> columns = this.world.generatorExact().neededColumns(this.pos);
+            Function<FBlockWorld, Stream<Vec3i>> cubesMappingFunction = world -> this.world.generatorExact().neededCubes(world, this.pos);
 
-            IBlockHeightAccess access = allowGeneration
-                    ? this.world.blockAccess().prefetch(columns, cubesMappingFunction)
-                    : this.world.blockAccess().prefetchWithoutGenerating(columns, cubesMappingFunction);
+            FBlockWorld access = allowGeneration
+                    ? this.world.world().fp2_IFarWorldServer_fblockWorld().prefetch(columns, cubesMappingFunction)
+                    : this.world.world().fp2_IFarWorldServer_fblockWorld().prefetchWithoutGenerating(columns, cubesMappingFunction);
 
             //generate tile
             this.world.generatorExact().generate(access, this.pos, tile);

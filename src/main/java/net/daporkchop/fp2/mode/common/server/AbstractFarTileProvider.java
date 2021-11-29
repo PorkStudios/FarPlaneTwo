@@ -36,19 +36,15 @@ import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.core.mode.api.server.storage.IFarStorage;
 import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTrackerManager;
 import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
-import net.daporkchop.fp2.mode.common.server.storage.rocksdb.RocksStorage;
-import net.daporkchop.fp2.server.worldlistener.IWorldChangeListener;
-import net.daporkchop.fp2.server.worldlistener.WorldChangeListenerManager;
-import net.daporkchop.fp2.util.Constants;
-import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
 import net.daporkchop.fp2.core.util.threading.scheduler.ApproximatelyPrioritizedSharedFutureScheduler;
 import net.daporkchop.fp2.core.util.threading.scheduler.Scheduler;
+import net.daporkchop.fp2.mode.common.server.storage.rocksdb.RocksStorage;
+import net.daporkchop.fp2.server.worldlistener.IWorldChangeListener;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
-import net.minecraft.world.WorldServer;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Set;
 import java.util.Spliterators;
 import java.util.concurrent.CompletableFuture;
@@ -57,7 +53,6 @@ import java.util.stream.StreamSupport;
 
 import static java.util.Spliterator.*;
 import static net.daporkchop.fp2.core.FP2Core.*;
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
@@ -66,9 +61,9 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 @Getter
 public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFarTile> implements IFarTileProvider<POS, T>, IWorldChangeListener {
-    protected final WorldServer world;
+    protected final IFarWorldServer world;
     protected final IFarRenderMode<POS, T> mode;
-    protected final File root;
+    protected final Path root;
 
     protected final IFarGeneratorRough<POS, T> generatorRough;
     protected final IFarGeneratorExact<POS, T> generatorExact;
@@ -85,7 +80,7 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
     protected Set<POS> updatesPending = new ObjectRBTreeSet<>();
     protected long lastCompletedTick = -1L;
 
-    public AbstractFarTileProvider(@NonNull WorldServer world, @NonNull IFarRenderMode<POS, T> mode) {
+    public AbstractFarTileProvider(@NonNull IFarWorldServer world, @NonNull IFarRenderMode<POS, T> mode) {
         this.world = world;
         this.mode = mode;
 
@@ -93,7 +88,7 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
         this.generatorExact = this.mode().exactGenerator(world);
 
         if (this.generatorRough == null) {
-            FP2_LOG.warn("no rough {} generator exists for world {} (type={}, generator={})! Falling back to exact generator, this will have serious performance implications.", mode.name(), world.provider.getDimension(), world.getWorldType(), Constants.getTerrainGenerator(world));
+            fp2().log().warn("no rough {} generator exists for world {} (generator={})! Falling back to exact generator, this will have serious performance implications.", mode.name(), world.fp2_IFarWorld_dimensionId(), world.fp2_IFarWorldServer_getVanillaGenerator());
             //TODO: make the fallback generator smart! rather than simply getting the chunks from the world, do generation and population in
             // a volatile, in-memory world clone to prevent huge numbers of chunks/cubes from potentially being generated (and therefore saved)
         }
@@ -102,7 +97,7 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
 
         this.scaler = this.createScaler();
 
-        this.root = new File(world.getChunkSaveLocation(), "fp2/" + this.mode().name().toLowerCase());
+        this.root = world.fp2_IFarWorldServer_worldDirectory().resolve(MODID).resolve(this.mode().name().toLowerCase());
         this.storage = new RocksStorage<>(this, this.root);
 
         this.scheduler = new ApproximatelyPrioritizedSharedFutureScheduler<>(
@@ -116,15 +111,15 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
                             throw new IllegalArgumentException("unknown or stage in task: " + task);
                     }
                 },
-                ((IFarWorldServer) this.world).fp2_IFarWorld_workerManager().createChildWorkerGroup()
+                this.world.fp2_IFarWorld_workerManager().createChildWorkerGroup()
                         .threads(fp2().globalConfig().performance().terrainThreads())
                         .threadFactory(PThreadFactories.builder().daemon().minPriority().collapsingId()
-                                .name(PStrings.fastFormat("FP2 %s DIM%d Worker #%%d", mode.name(), world.provider.getDimension())).build()),
+                                .name(PStrings.fastFormat("FP2 %s DIM%d Worker #%%d", mode.name(), world.fp2_IFarWorld_dimensionId())).build()),
                 PriorityTask.approxComparator());
 
         this.trackerManager = this.createTracker();
 
-        WorldChangeListenerManager.add(this.world, this);
+        fp2().eventBus().registerWeak(this);
     }
 
     protected abstract IFarScaler<POS, T> createScaler();
@@ -166,14 +161,14 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
     @Synchronized("updatesPending")
     protected void scheduleForUpdate(@NonNull Stream<POS> positions) {
         positions.forEach(pos -> {
-            for (; this.updatesPending.add(pos) && pos.level() < MAX_LODS; pos = uncheckedCast(pos.up())) {
+            for (; this.updatesPending.add(pos) && pos.isLevelValid(); pos = uncheckedCast(pos.up())) {
             }
         });
     }
 
     @Override
     public void onTickEnd() {
-        this.lastCompletedTick = this.world.getTotalWorldTime();
+        this.lastCompletedTick = this.world.fp2_IFarWorld_timestamp();
         checkState(this.lastCompletedTick >= 0L, "lastCompletedTick (%d) < 0?!?", this.lastCompletedTick);
 
         this.flushUpdateQueue();
@@ -197,23 +192,18 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
     }
 
     @Override
-    public IAsyncBlockAccess blockAccess() {
-        return ((IAsyncBlockAccess.Holder) this.world).fp2_IAsyncBlockAccess$Holder_asyncBlockAccess();
-    }
-
-    @Override
     @SneakyThrows(IOException.class)
     public void close() {
         this.trackerManager.close();
 
-        WorldChangeListenerManager.remove(this.world, this);
+        fp2().eventBus().unregister(this);
 
         this.scheduler.close();
 
         this.onTickEnd();
         this.shutdownUpdateQueue();
 
-        FP2_LOG.trace("Shutting down storage in DIM{}", this.world.provider.getDimension());
+        fp2().log().trace("Shutting down storage in DIM{}", this.world.fp2_IFarWorld_dimensionId());
         this.storage.close();
     }
 }

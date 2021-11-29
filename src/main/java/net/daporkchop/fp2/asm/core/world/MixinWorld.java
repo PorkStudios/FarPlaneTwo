@@ -26,12 +26,13 @@ import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 
 import java.util.stream.IntStream;
 
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
+import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
@@ -40,6 +41,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 @Mixin(World.class)
 public abstract class MixinWorld implements IFarWorld {
+
     @Unique
     protected IntAxisAlignedBB[] coordLimits;
 
@@ -75,4 +77,15 @@ public abstract class MixinWorld implements IFarWorld {
     public int fp2_IFarWorld_dimensionId() {
         return PorkUtil.<World>uncheckedCast(this).provider.getDimension();
     }
+
+    @Shadow
+    public abstract long getTotalWorldTime();
+
+    @Override
+    public long fp2_IFarWorld_timestamp() {
+        return this.getTotalWorldTime();
+    }
+
+    @Shadow
+    public abstract int getSeaLevel();
 }

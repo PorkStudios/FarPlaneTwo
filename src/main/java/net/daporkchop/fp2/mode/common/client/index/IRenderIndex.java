@@ -58,7 +58,7 @@ public interface IRenderIndex<POS extends IFarPos, BO extends IBakeOutput, DB ex
      * <p>
      * This will determine which tiles need to be rendered for the current frame.
      */
-    void select(@NonNull IFrustum frustum, float partialTicks);
+    void select(@NonNull IFrustum frustum);
 
     /**
      * Checks whether or not there are any renderable tiles at the given level.

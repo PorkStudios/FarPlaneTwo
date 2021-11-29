@@ -39,6 +39,7 @@ import java.util.stream.Stream;
  *
  * @author DaPorkchop_
  */
+@Deprecated
 public interface IAsyncBlockAccess extends IBlockHeightAccess {
     /**
      * Asynchronously prefetches the columns at the given positions into a single {@link IBlockHeightAccess}.
@@ -105,6 +106,12 @@ public interface IAsyncBlockAccess extends IBlockHeightAccess {
      * @return whether or not any cubes in the given area exist
      */
     boolean anyCubeIntersects(int tileX, int tileY, int tileZ, int level);
+
+    @Override
+    default boolean containsAnyData(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+        int level = Integer.numberOfTrailingZeros(maxX - minX); //assumes a square AABB with a side length of a power of two
+        return this.anyCubeIntersects(minX >> level, minY >> level, minZ >> level, level);
+    }
 
     /**
      * @see io.github.opencubicchunks.cubicchunks.api.world.IHeightMap#isOccluded(int, int, int)

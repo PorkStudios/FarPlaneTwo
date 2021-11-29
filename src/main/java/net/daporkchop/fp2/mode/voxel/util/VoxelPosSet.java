@@ -28,6 +28,8 @@ import net.daporkchop.fp2.core.util.datastructure.SimpleSet;
 
 import java.util.function.Consumer;
 
+import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
+
 /**
  * Implementation of {@link SimpleSet} optimized specifically for {@link VoxelPos}.
  * <p>
@@ -37,7 +39,7 @@ import java.util.function.Consumer;
  */
 public class VoxelPosSet extends AbstractPosSet<VoxelPos> {
     public VoxelPosSet() {
-        super(3);
+        super(3, V_MAX_LODS);
     }
 
     @Override

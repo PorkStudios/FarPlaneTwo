@@ -35,6 +35,8 @@ import static net.daporkchop.fp2.util.Constants.*;
 public class HeightmapConstants {
     public static final int STORAGE_VERSION = 10;
 
+    public static final int H_MAX_LODS = 32 - Integer.numberOfLeadingZeros(60_000_000 >> T_SHIFT);
+
     /**
      * The maximum number of layers allowed per block in a tile.
      */

@@ -56,6 +56,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -172,11 +173,11 @@ public class RocksStorage<POS extends IFarPos, T extends IFarTile> implements IF
             .build(CacheLoader.from(pos -> new RocksTileHandle<>(pos, this)));
 
     @SneakyThrows(RocksDBException.class)
-    public RocksStorage(@NonNull AbstractFarTileProvider<POS, T> world, @NonNull File storageRoot) {
+    public RocksStorage(@NonNull AbstractFarTileProvider<POS, T> world, @NonNull Path storageRoot) {
         this.world = world;
         this.version = world.mode().storageVersion();
 
-        File markerFile = new File(storageRoot, "v4");
+        Path markerFile = storageRoot.resolve("v4");
         if (PFiles.checkDirectoryExists(storageRoot) && !PFiles.checkFileExists(markerFile)) { //it's an old storage
             PFiles.rmContentsParallel(storageRoot);
         }
@@ -190,7 +191,7 @@ public class RocksStorage<POS extends IFarPos, T extends IFarTile> implements IF
                 new ColumnFamilyDescriptor(COLUMN_NAME_ANY_VANILLA_EXISTS, CF_OPTIONS));
         this.handles = new ArrayList<>(descriptors.size());
 
-        this.db = TransactionDB.open(DB_OPTIONS, TX_DB_OPTIONS, storageRoot.getPath(), descriptors, this.handles);
+        this.db = TransactionDB.open(DB_OPTIONS, TX_DB_OPTIONS, storageRoot.toString(), descriptors, this.handles);
 
         this.cfTileTimestamp = this.handles.get(1);
         this.cfTileDirtyTimestamp = this.handles.get(2);

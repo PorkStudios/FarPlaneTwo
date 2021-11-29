@@ -30,6 +30,7 @@ import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -41,13 +42,14 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 public abstract class AbstractPosSet<POS extends IFarPos> implements SimpleSet<POS> {
-    protected final NDimensionalIntSet[] delegates = new NDimensionalIntSet[MAX_LODS];
+    protected final NDimensionalIntSet[] delegates;
 
-    public AbstractPosSet(int dimensions) {
+    public AbstractPosSet(int dimensions, int maxLevels) {
         NDimensionalIntSet.Builder builder = Datastructures.INSTANCE.nDimensionalIntSet()
                 .dimensions(dimensions).threadSafe(false);
 
-        for (int level = 0; level < this.delegates.length; level++) {
+        this.delegates = new NDimensionalIntSet[maxLevels];
+        for (int level = 0; level < maxLevels; level++) {
             this.delegates[level] = builder.build();
         }
     }

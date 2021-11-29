@@ -37,11 +37,15 @@ import static net.daporkchop.fp2.core.FP2Core.*;
 /**
  * @author DaPorkchop_
  */
-public class GameRegistry1_12_2 implements FGameRegistry {
+public final class GameRegistry1_12_2 implements FGameRegistry {
     private static GameRegistry1_12_2 INSTANCE = new GameRegistry1_12_2();
 
     static {
         fp2().eventBus().registerStatic(GameRegistry1_12_2.class);
+    }
+
+    public static GameRegistry1_12_2 get() {
+        return INSTANCE;
     }
 
     @FEventHandler

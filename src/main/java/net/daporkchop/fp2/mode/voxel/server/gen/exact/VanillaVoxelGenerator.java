@@ -22,10 +22,10 @@ package net.daporkchop.fp2.mode.voxel.server.gen.exact;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.api.world.FBlockWorld;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.Vec3i;
-import net.minecraft.world.WorldServer;
+import net.daporkchop.lib.math.vector.Vec2i;
+import net.daporkchop.lib.math.vector.Vec3i;
 
 import java.util.stream.Stream;
 
@@ -33,17 +33,17 @@ import java.util.stream.Stream;
  * @author DaPorkchop_
  */
 public class VanillaVoxelGenerator extends AbstractExactVoxelGenerator {
-    public VanillaVoxelGenerator(@NonNull WorldServer world) {
+    public VanillaVoxelGenerator(@NonNull IFarWorldServer world) {
         super(world);
     }
 
     @Override
-    public Stream<ChunkPos> neededColumns(@NonNull VoxelPos pos) {
+    public Stream<Vec2i> neededColumns(@NonNull VoxelPos pos) {
         return Stream.of(
-                new ChunkPos(pos.x(), pos.z()),
-                new ChunkPos(pos.x(), pos.z() + 1),
-                new ChunkPos(pos.x() + 1, pos.z()),
-                new ChunkPos(pos.x() + 1, pos.z() + 1));
+                Vec2i.of(pos.x(), pos.z()),
+                Vec2i.of(pos.x(), pos.z() + 1),
+                Vec2i.of(pos.x() + 1, pos.z()),
+                Vec2i.of(pos.x() + 1, pos.z() + 1));
     }
 
     @Override

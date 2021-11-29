@@ -42,8 +42,6 @@ import net.daporkchop.fp2.core.event.AbstractRegisterEvent;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.reference.cache.Cached;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -64,6 +62,8 @@ public abstract class AbstractFarRenderMode<POS extends IFarPos, T extends IFarT
     private final String name = REGISTRY.getName(this);
     @Getter
     protected final int storageVersion;
+    @Getter
+    protected final int maxLevels;
 
     protected abstract AbstractRegisterEvent<IFarGeneratorExact.Factory<POS, T>> exactGeneratorFactoryEvent();
 
@@ -77,9 +77,8 @@ public abstract class AbstractFarRenderMode<POS extends IFarPos, T extends IFarT
                 .map(f -> f.forWorld(world))
                 .filter(Objects::nonNull)
                 .findFirst().orElseThrow(() -> new IllegalStateException(PStrings.fastFormat(
-                        "No exact generator could be found for world %d (type: %s), mode:%s",
-                        world.provider.getDimension(),
-                        world.getWorldType(),
+                        "No exact generator could be found for world %d, mode:%s",
+                        world.fp2_IFarWorld_dimensionId(),
                         this.name()
                 )));
     }
@@ -98,7 +97,6 @@ public abstract class AbstractFarRenderMode<POS extends IFarPos, T extends IFarT
     @Override
     public abstract IFarServerContext<POS, T> serverContext(@NonNull IFarPlayerServer player, @NonNull IFarWorldServer world, @NonNull FP2Config config);
 
-    @SideOnly(Side.CLIENT)
     @Override
     public abstract IFarClientContext<POS, T> clientContext(@NonNull IFarWorldClient world, @NonNull FP2Config config);
 

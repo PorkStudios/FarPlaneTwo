@@ -59,7 +59,6 @@ import java.util.stream.Stream;
 import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.fp2.core.debug.FP2Debug.*;
 import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
@@ -80,8 +79,8 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
         this.cullingStrategy = this.strategy.cullingStrategy();
         this.renderablePositions = this.strategy.mode().directPosAccess().newPositionSet();
 
-        this.levels = uncheckedCast(Array.newInstance(Level.class, MAX_LODS));
-        for (int level = 0; level < MAX_LODS; level++) {
+        this.levels = uncheckedCast(Array.newInstance(Level.class, this.strategy.mode().maxLevels()));
+        for (int level = 0; level < this.levels.length; level++) {
             this.levels[level] = this.createLevel(level);
         }
     }
@@ -116,9 +115,9 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
     }
 
     @Override
-    public void select(@NonNull IFrustum frustum, float partialTicks) {
+    public void select(@NonNull IFrustum frustum) {
         for (Level level : this.levels) {
-            level.select(frustum, partialTicks);
+            level.select(frustum);
         }
     }
 
@@ -284,17 +283,17 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
             }
         }
 
-        public void select(@NonNull IFrustum frustum, float partialTicks) {
+        public void select(@NonNull IFrustum frustum) {
             if (this.positionsToHandles.isEmpty()) { //nothing to do
                 return;
             }
 
             this.upload();
 
-            this.select0(frustum, partialTicks);
+            this.select0(frustum);
         }
 
-        protected abstract void select0(@NonNull IFrustum frustum, float partialTicks);
+        protected abstract void select0(@NonNull IFrustum frustum);
 
         public void draw(int pass, @NonNull DrawShaderProgram shader) {
             if (this.positionsToHandles.isEmpty()) { //nothing to do

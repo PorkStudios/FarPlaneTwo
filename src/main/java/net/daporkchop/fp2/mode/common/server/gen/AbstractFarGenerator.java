@@ -21,8 +21,8 @@
 package net.daporkchop.fp2.mode.common.server.gen;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGenerator;
-import net.minecraft.world.WorldServer;
 
 /**
  * @author DaPorkchop_
@@ -30,7 +30,7 @@ import net.minecraft.world.WorldServer;
 public abstract class AbstractFarGenerator implements IFarGenerator {
     protected final int seaLevel;
 
-    public AbstractFarGenerator(@NonNull WorldServer world) {
-        this.seaLevel = world.getSeaLevel();
+    public AbstractFarGenerator(@NonNull IFarWorldServer world) {
+        this.seaLevel = world.fp2_IFarWorldServer_seaLevel();
     }
 }

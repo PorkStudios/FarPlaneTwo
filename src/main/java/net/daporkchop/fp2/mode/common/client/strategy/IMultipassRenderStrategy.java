@@ -22,6 +22,7 @@ package net.daporkchop.fp2.mode.common.client.strategy;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.client.DrawMode;
+import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.gl.draw.command.DrawCommand;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
@@ -32,7 +33,6 @@ import net.daporkchop.fp2.mode.common.client.index.IRenderIndex;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.client.renderer.texture.TextureMap;
-import net.minecraft.util.BlockRenderLayer;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.fp2.core.debug.FP2Debug.*;
@@ -44,8 +44,8 @@ import static org.lwjgl.opengl.GL11.*;
  */
 public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTile, BO extends IBakeOutput, DB extends DrawBinding, DC extends DrawCommand> extends IFarRenderStrategy<POS, T, BO, DB, DC> {
     @Override
-    default void render(@NonNull IRenderIndex<POS, BO, DB, DC> index, @NonNull BlockRenderLayer layer, boolean pre) {
-        if (layer == BlockRenderLayer.CUTOUT && !pre) {
+    default void render(@NonNull IRenderIndex<POS, BO, DB, DC> index, int layer, boolean pre) {
+        if (layer == IFarRenderer.LAYER_CUTOUT && !pre) {
             ((AbstractTexture) MC.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE)).setBlurMipmapDirect(false, MC.gameSettings.mipmapLevels > 0);
 
             try (DrawMode mode = DrawMode.SHADER.begin()) {
@@ -65,7 +65,7 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
         //- render the TRANSPARENT pass at all detail levels at once, using the stencil to not only prevent low-detail from rendering over high-detail, but also fp2 transparent water
         //  from rendering over vanilla water
 
-        for (int level = 0; level < MAX_LODS; level++) {
+        for (int level = 0; level < this.mode().maxLevels(); level++) {
             if (index.hasAnyTilesForLevel(level)) {
                 this.renderSolid(index, level);
                 this.renderCutout(index, level);
@@ -127,9 +127,9 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
         GlStateManager.depthMask(false);
 
         glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-        for (int level = 0; level < MAX_LODS; level++) {
+        for (int level = 0; level < this.mode().maxLevels(); level++) {
             if (index.hasAnyTilesForLevel(level)) {
-                glStencilFunc(GL_GEQUAL, 0x80 | (MAX_LODS - level), 0xFF);
+                glStencilFunc(GL_GEQUAL, 0x80 | (this.mode().maxLevels() - level), 0xFF);
                 index.draw(level, 2, this.stencilShader());
             }
         }
@@ -147,9 +147,9 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
         glStencilMask(0);
 
         glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-        for (int level = 0; level < MAX_LODS; level++) {
+        for (int level = 0; level < this.mode().maxLevels(); level++) {
             if (index.hasAnyTilesForLevel(level)) {
-                glStencilFunc(GL_EQUAL, 0x80 | (MAX_LODS - level), 0xFF);
+                glStencilFunc(GL_EQUAL, 0x80 | (this.mode().maxLevels() - level), 0xFF);
                 index.draw(level, 2, this.blockShaderTransparent());
             }
         }

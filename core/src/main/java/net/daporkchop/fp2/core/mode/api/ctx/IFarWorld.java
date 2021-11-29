@@ -53,4 +53,9 @@ public interface IFarWorld {
      * @return this world's dimension ID
      */
     int fp2_IFarWorld_dimensionId();
+
+    /**
+     * @return this world's current timestamp
+     */
+    long fp2_IFarWorld_timestamp();
 }

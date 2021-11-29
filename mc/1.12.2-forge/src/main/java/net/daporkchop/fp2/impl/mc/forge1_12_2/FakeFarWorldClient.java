@@ -69,4 +69,9 @@ public class FakeFarWorldClient implements IFarWorldClient {
     public int fp2_IFarWorld_dimensionId() {
         return this.parent.provider.getDimension();
     }
+
+    @Override
+    public long fp2_IFarWorld_timestamp() {
+        return this.parent.getTotalWorldTime();
+    }
 }

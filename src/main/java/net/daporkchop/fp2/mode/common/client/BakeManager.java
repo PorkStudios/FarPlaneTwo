@@ -25,6 +25,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.client.IFarTileCache;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldClient;
 import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
 import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
 import net.daporkchop.fp2.mode.common.client.bake.IRenderBaker;
@@ -37,7 +38,6 @@ import net.daporkchop.fp2.core.util.threading.scheduler.Scheduler;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
-import net.minecraft.world.World;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -69,7 +69,6 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
     protected final IRenderBaker<POS, T, ?> baker;
 
     protected final Scheduler<POS, Void> bakeScheduler;
-    protected final World world;
     protected final IntAxisAlignedBB[] coordLimits;
 
     protected final Map<POS, Optional<IBakeOutput>> pendingDataUpdates = new ConcurrentHashMap<>();
@@ -84,7 +83,6 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
 
         this.index = this.strategy.createIndex();
         this.baker = this.strategy.createBaker();
-        this.world = MC.world;
         this.coordLimits = renderer.context().world().fp2_IFarWorld_coordLimits();
 
         this.bakeScheduler = new NoFutureScheduler<>(this, this.renderer.context().world().fp2_IFarWorld_workerManager().createChildWorkerGroup()
@@ -136,7 +134,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
     protected void notifyOutputs(@NonNull POS pos) {
         //schedule all of the positions affected by the tile for re-bake
         this.baker.bakeOutputs(pos).forEach(outputPos -> {
-            if (outputPos.level() < 0 || outputPos.level() >= MAX_LODS) { //output tile is at an invalid zoom level, skip it
+            if (!outputPos.isLevelValid()) { //output tile is at an invalid zoom level, skip it
                 return;
             }
 

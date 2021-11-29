@@ -37,7 +37,6 @@ import net.daporkchop.fp2.mode.common.client.bake.IRenderBaker;
 import net.daporkchop.fp2.mode.common.client.index.IRenderIndex;
 import net.daporkchop.lib.common.misc.refcount.RefCounted;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
-import net.minecraft.util.BlockRenderLayer;
 
 /**
  * @author DaPorkchop_
@@ -63,7 +62,7 @@ public interface IFarRenderStrategy<POS extends IFarPos, T extends IFarTile, BO 
 
     DrawBindingBuilder<DB> configureDrawBinding(@NonNull DrawBindingBuilder<DB> builder);
 
-    void render(@NonNull IRenderIndex<POS, BO, DB, DC> index, @NonNull BlockRenderLayer layer, boolean pre);
+    void render(@NonNull IRenderIndex<POS, BO, DB, DC> index, int layer, boolean pre);
 
     @Override
     int refCnt();

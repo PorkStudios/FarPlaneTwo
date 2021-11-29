@@ -22,7 +22,9 @@ package net.daporkchop.fp2.mode.voxel.server;
 
 import io.github.opencubicchunks.cubicchunks.api.world.ICube;
 import lombok.NonNull;
+import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTrackerManager;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.mode.common.server.AbstractFarTileProvider;
@@ -32,14 +34,13 @@ import net.daporkchop.fp2.mode.voxel.server.scale.VoxelScalerIntersection;
 import net.daporkchop.fp2.mode.voxel.server.tracking.VoxelTrackerManager;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.World;
-import net.minecraft.world.WorldServer;
 import net.minecraft.world.chunk.Chunk;
 
 /**
  * @author DaPorkchop_
  */
 public abstract class VoxelTileProvider extends AbstractFarTileProvider<VoxelPos, VoxelTile> {
-    public VoxelTileProvider(@NonNull WorldServer world, @NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
+    public VoxelTileProvider(@NonNull IFarWorldServer world, @NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
         super(world, mode);
     }
 
@@ -55,14 +56,18 @@ public abstract class VoxelTileProvider extends AbstractFarTileProvider<VoxelPos
 
     @Override
     protected boolean anyVanillaTerrainExistsAt(@NonNull VoxelPos pos) {
-        return this.blockAccess().anyCubeIntersects(pos.x(), pos.y(), pos.z(), pos.level());
+        int x = pos.x();
+        int y = pos.y();
+        int z = pos.z();
+        int level = pos.level();
+        return this.world().fp2_IFarWorldServer_fblockWorld().containsAnyData(x << level, y << level, z << level, (x + 1) << level, (y + 1) << level, (z + 1) << level);
     }
 
     /**
      * @author DaPorkchop_
      */
     public static class Vanilla extends VoxelTileProvider {
-        public Vanilla(@NonNull WorldServer world, @NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
+        public Vanilla(@NonNull IFarWorldServer world, @NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
             super(world, mode);
         }
 
@@ -70,10 +75,10 @@ public abstract class VoxelTileProvider extends AbstractFarTileProvider<VoxelPos
         public void onColumnSaved(@NonNull World world, int columnX, int columnZ, @NonNull NBTTagCompound nbt, @NonNull Chunk column) {
             if (column.isPopulated()) { //TODO: we want to check if the chunk is FULLY populated
                 //schedule entire column to be updated
-                int height = this.world.getHeight() >> 4;
-                VoxelPos[] positions = new VoxelPos[height];
-                for (int y = 0; y < height; y++) {
-                    positions[y] = new VoxelPos(0, columnX, y, columnZ);
+                IntAxisAlignedBB coordLimits = this.world.fp2_IFarWorld_coordLimits()[0];
+                VoxelPos[] positions = new VoxelPos[coordLimits.maxX() + 1 - coordLimits.minY()];
+                for (int i = 0, y = coordLimits.minY(); y <= coordLimits.maxY(); i++, y++) {
+                    positions[i] = new VoxelPos(0, columnX, y, columnZ);
                 }
                 this.scheduleForUpdate(positions);
             }
@@ -89,7 +94,7 @@ public abstract class VoxelTileProvider extends AbstractFarTileProvider<VoxelPos
      * @author DaPorkchop_
      */
     public static class CubicChunks extends VoxelTileProvider {
-        public CubicChunks(@NonNull WorldServer world, @NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
+        public CubicChunks(@NonNull IFarWorldServer world, @NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
             super(world, mode);
         }
 

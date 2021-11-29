@@ -93,9 +93,15 @@ public abstract class MixinRenderGlobal implements IMixinRenderGlobal {
             this.vanillaRenderabilityTracker.update(uncheckedCast(this));
 
             this.mc.profiler.startSection("fp2_prepare");
-            renderer.prepare((float) partialTicks, this.mc, (IFrustum) camera);
+            renderer.prepare((IFrustum) camera);
             this.mc.profiler.endSection();
         }
+    }
+
+    @Unique
+    private int toLayerIndex(BlockRenderLayer layer) {
+        int ordinal = layer.ordinal();
+        return ordinal + ((-ordinal) >> 31);
     }
 
     @Inject(method = "Lnet/minecraft/client/renderer/RenderGlobal;renderBlockLayer(Lnet/minecraft/util/BlockRenderLayer;DILnet/minecraft/entity/Entity;)I",
@@ -104,11 +110,15 @@ public abstract class MixinRenderGlobal implements IMixinRenderGlobal {
                     shift = At.Shift.AFTER),
             allow = 1, require = 1)
     private void fp2_renderBlockLayer_pre(BlockRenderLayer layer, double partialTicks, int pass, Entity entity, CallbackInfoReturnable<Integer> ci) {
+        if (layer == BlockRenderLayer.CUTOUT_MIPPED) {
+            return;
+        }
+
         IFarClientContext<?, ?> context = ((IFarPlayerClient) this.mc.getConnection()).fp2_IFarPlayerClient_activeContext();
         IFarRenderer renderer;
         if (context != null && (renderer = context.renderer()) != null) {
             this.mc.profiler.startSection("fp2_render_pre");
-            renderer.render(this.mc, layer, true);
+            renderer.render(this.toLayerIndex(layer), true);
             this.mc.profiler.endSection();
         }
     }
@@ -117,11 +127,15 @@ public abstract class MixinRenderGlobal implements IMixinRenderGlobal {
             at = @At(value = "RETURN"),
             allow = 2, require = 1)
     private void fp2_renderBlockLayer_post(BlockRenderLayer layer, double partialTicks, int pass, Entity entity, CallbackInfoReturnable<Integer> ci) {
+        if (layer == BlockRenderLayer.CUTOUT_MIPPED) {
+            return;
+        }
+
         IFarClientContext<?, ?> context = ((IFarPlayerClient) this.mc.getConnection()).fp2_IFarPlayerClient_activeContext();
         IFarRenderer renderer;
         if (context != null && (renderer = context.renderer()) != null) {
             this.mc.profiler.startSection("fp2_render_post");
-            renderer.render(this.mc, layer, false);
+            renderer.render(this.toLayerIndex(layer), false);
             this.mc.profiler.endSection();
         }
     }

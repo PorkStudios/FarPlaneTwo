@@ -35,7 +35,7 @@ import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.core.mode.api.player.IFarPlayerServer;
 import net.daporkchop.fp2.net.FP2Network;
 import net.daporkchop.fp2.net.packet.standard.server.SPacketSessionBegin;
-import net.daporkchop.lib.math.vector.d.Vec3d;
+import net.daporkchop.lib.math.vector.Vec3d;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.network.NetHandlerPlayServer;
 import net.minecraft.util.text.ITextComponent;
@@ -81,7 +81,7 @@ public abstract class MixinNetHandlerPlayServer implements IFarPlayerServer {
     @Override
     public Vec3d fp2_IFarPlayer_position() {
         EntityPlayerMP player = this.player;
-        return new Vec3d(player.posX, player.posY, player.posZ);
+        return Vec3d.of(player.posX, player.posY, player.posZ);
     }
 
     @CalledFromNetworkThread

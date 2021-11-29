@@ -20,7 +20,10 @@
 
 package net.daporkchop.fp2.compat.vanilla;
 
+import net.daporkchop.fp2.api.world.FBlockWorld;
+import net.daporkchop.fp2.api.world.FGameRegistry;
 import net.daporkchop.fp2.core.util.IHeightMap;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.GameRegistry1_12_2;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.biome.Biome;
@@ -30,7 +33,8 @@ import net.minecraft.world.biome.Biome;
  *
  * @author DaPorkchop_
  */
-public interface IBlockHeightAccess extends IBlockAccess, IHeightMap {
+@Deprecated
+public interface IBlockHeightAccess extends IBlockAccess, IHeightMap, FBlockWorld {
     /**
      * Re-definition of {@link IBlockAccess#getBiome(BlockPos)}, as that method's marked as client-only.
      */
@@ -45,5 +49,31 @@ public interface IBlockHeightAccess extends IBlockAccess, IHeightMap {
     default int getCombinedLight(BlockPos pos, int defaultBlockLightValue) {
         return (this.getSkyLight(pos) << 20)
                | (Math.max(this.getBlockLight(pos), defaultBlockLightValue) << 4);
+    }
+
+    @Override
+    default void close() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    default FGameRegistry registry() {
+        return GameRegistry1_12_2.get();
+    }
+
+    @Override
+    default int getState(int x, int y, int z) {
+        return GameRegistry1_12_2.get().state2id(this.getBlockState(new BlockPos(x, y, z)));
+    }
+
+    @Override
+    default int getBiome(int x, int y, int z) {
+        return GameRegistry1_12_2.get().biome2id(this.getBiome(new BlockPos(x, y, z)));
+    }
+
+    @Override
+    default byte getLight(int x, int y, int z) {
+        int combinedLight = this.getCombinedLight(new BlockPos(x, y, z), 0);
+        return FBlockWorld.packLight(combinedLight >> 20, combinedLight >> 4);
     }
 }

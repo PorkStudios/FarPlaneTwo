@@ -111,4 +111,9 @@ public abstract class AbstractPrefetchedAsyncBlockAccess<P extends IAsyncBlockAc
     public TileEntity getTileEntity(BlockPos pos) {
         throw new UnsupportedOperationException();
     }
+
+    @Override
+    public boolean containsAnyData(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+        return this.parent.containsAnyData(minX, minY, minZ, maxX, maxY, maxZ);
+    }
 }

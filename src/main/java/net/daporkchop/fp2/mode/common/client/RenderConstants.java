@@ -22,11 +22,6 @@ package net.daporkchop.fp2.mode.common.client;
 
 import io.netty.buffer.ByteBuf;
 import lombok.experimental.UtilityClass;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
-
-import static net.daporkchop.fp2.client.gl.OpenGL.*;
-import static org.lwjgl.opengl.GL11.*;
 
 /**
  * Constant values used throughout the render code.
@@ -34,7 +29,6 @@ import static org.lwjgl.opengl.GL11.*;
  * @author DaPorkchop_
  */
 @UtilityClass
-@SideOnly(Side.CLIENT)
 public class RenderConstants {
     public final int RENDER_PASS_COUNT = 3; //the total number of render passes
 

@@ -28,6 +28,8 @@ import net.daporkchop.fp2.core.util.datastructure.SimpleSet;
 
 import java.util.function.Consumer;
 
+import static net.daporkchop.fp2.mode.heightmap.HeightmapConstants.*;
+
 /**
  * Implementation of {@link SimpleSet} optimized specifically for {@link HeightmapPos}.
  * <p>
@@ -37,7 +39,7 @@ import java.util.function.Consumer;
  */
 public class HeightmapPosSet extends AbstractPosSet<HeightmapPos> {
     public HeightmapPosSet() {
-        super(2);
+        super(2, H_MAX_LODS);
     }
 
     @Override

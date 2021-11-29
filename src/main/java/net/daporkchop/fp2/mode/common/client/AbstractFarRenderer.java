@@ -24,20 +24,16 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
-import net.daporkchop.fp2.gl.GL;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.ResourceProvider1_12_2;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
+import net.daporkchop.fp2.gl.GL;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.ResourceProvider1_12_2;
 import net.daporkchop.fp2.mode.common.client.strategy.IFarRenderStrategy;
-import net.daporkchop.fp2.util.annotation.DebugOnly;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
-import net.minecraft.client.Minecraft;
-import net.minecraft.util.BlockRenderLayer;
 
-import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
@@ -80,25 +76,16 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTil
     }
 
     @Override
-    public void prepare(float partialTicks, @NonNull Minecraft mc, @NonNull IFrustum frustum) {
-        checkGLError("pre fp2 select");
-
+    public void prepare(@NonNull IFrustum frustum) {
         this.gl.runCleanup();
-        this.bakeManager.index.select(frustum, partialTicks);
-
-        checkGLError("post fp2 select");
+        this.bakeManager.index.select(frustum);
     }
 
     @Override
-    public void render(@NonNull Minecraft mc, @NonNull BlockRenderLayer layer, boolean pre) {
-        checkGLError("pre fp2 render");
-
+    public void render(int layer, boolean pre) {
         this.strategy.render(uncheckedCast(this.bakeManager.index), layer, pre);
-
-        checkGLError("post fp2 render");
     }
 
-    @DebugOnly
     @Override
     public DebugStats.Renderer stats() {
         return this.bakeManager.index.stats();

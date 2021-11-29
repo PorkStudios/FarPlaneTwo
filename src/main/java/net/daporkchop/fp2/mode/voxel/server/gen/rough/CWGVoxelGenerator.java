@@ -24,6 +24,7 @@ import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.IBiomeBlockRe
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.cwg.CWGContext;
 import net.daporkchop.fp2.compat.vanilla.FastRegistry;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
@@ -45,7 +46,7 @@ import static net.daporkchop.fp2.util.Constants.*;
 public class CWGVoxelGenerator extends AbstractRoughVoxelGenerator<CWGContext> implements IFarGeneratorRough<VoxelPos, VoxelTile> {
     protected final Cached<CWGContext> ctx;
 
-    public CWGVoxelGenerator(@NonNull WorldServer world) {
+    public CWGVoxelGenerator(@NonNull IFarWorldServer world) {
         super(world);
 
         this.ctx = Cached.threadLocal(() -> new CWGContext(world, CACHE_SIZE, 2), ReferenceStrength.WEAK);

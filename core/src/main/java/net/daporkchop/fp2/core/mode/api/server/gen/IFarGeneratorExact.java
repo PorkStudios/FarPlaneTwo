@@ -25,8 +25,8 @@ import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
-import net.daporkchop.lib.math.vector.i.Vec2i;
-import net.daporkchop.lib.math.vector.i.Vec3i;
+import net.daporkchop.lib.math.vector.Vec2i;
+import net.daporkchop.lib.math.vector.Vec3i;
 
 import java.util.stream.Stream;
 

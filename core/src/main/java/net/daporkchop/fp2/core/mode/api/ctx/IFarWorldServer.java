@@ -21,11 +21,13 @@
 package net.daporkchop.fp2.core.mode.api.ctx;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 
+import java.nio.file.Path;
 import java.util.function.Consumer;
 
 /**
@@ -46,4 +48,24 @@ public interface IFarWorldServer extends IFarWorld {
      * @param action the action
      */
     void fp2_IFarWorldServer_forEachTileProvider(@NonNull Consumer<IFarTileProvider<?, ?>> action);
+
+    /**
+     * @return the world's root directory
+     */
+    Path fp2_IFarWorldServer_worldDirectory();
+
+    /**
+     * @return the vanilla terrain generator instance
+     */
+    Object fp2_IFarWorldServer_getVanillaGenerator();
+
+    /**
+     * @return a {@link FBlockWorld} for accessing this world's data
+     */
+    FBlockWorld fp2_IFarWorldServer_fblockWorld();
+
+    /**
+     * @return the sea level
+     */
+    int fp2_IFarWorldServer_seaLevel();
 }

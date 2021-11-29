@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.mode.voxel.server.gen.rough;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.mode.voxel.server.gen.AbstractVoxelGenerator;
@@ -44,7 +45,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 public abstract class AbstractRoughVoxelGenerator<PARAM> extends AbstractVoxelGenerator {
     protected final Cached<double[][]> densityMapCache = Cached.threadLocal(() -> new double[2][cb(CACHE_SIZE)], ReferenceStrength.WEAK);
 
-    public AbstractRoughVoxelGenerator(@NonNull WorldServer world) {
+    public AbstractRoughVoxelGenerator(@NonNull IFarWorldServer world) {
         super(world);
     }
 

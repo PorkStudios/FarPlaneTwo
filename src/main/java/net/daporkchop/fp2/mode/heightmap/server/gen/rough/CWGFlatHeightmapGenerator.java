@@ -23,6 +23,7 @@ package net.daporkchop.fp2.mode.heightmap.server.gen.rough;
 import io.github.opencubicchunks.cubicchunks.cubicgen.preset.FlatGeneratorSettings;
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.FastRegistry;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Biomes;
 import net.minecraft.world.WorldServer;
@@ -37,7 +38,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 public class CWGFlatHeightmapGenerator extends FlatHeightmapGenerator {
-    public CWGFlatHeightmapGenerator(@NonNull WorldServer world) {
+    public CWGFlatHeightmapGenerator(@NonNull IFarWorldServer world) {
         super(world);
     }
 

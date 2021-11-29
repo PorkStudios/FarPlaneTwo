@@ -24,6 +24,7 @@ import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.FastRegistry;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.mode.heightmap.HeightmapData;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
@@ -48,7 +49,7 @@ import static net.daporkchop.fp2.util.Constants.*;
 public class FlatHeightmapGenerator extends AbstractRoughHeightmapGenerator {
     protected final HeightmapData[] datas = new HeightmapData[MAX_LAYERS];
 
-    public FlatHeightmapGenerator(@NonNull WorldServer world) {
+    public FlatHeightmapGenerator(@NonNull IFarWorldServer world) {
         super(world);
 
         FlatGeneratorInfo generatorInfo = this.loadGeneratorInfoFromWorld(world);

@@ -23,23 +23,23 @@ package net.daporkchop.fp2.mode.heightmap.server;
 import io.github.opencubicchunks.cubicchunks.api.world.ICube;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTrackerManager;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
+import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTrackerManager;
 import net.daporkchop.fp2.mode.common.server.AbstractFarTileProvider;
-import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
+import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
 import net.daporkchop.fp2.mode.heightmap.server.scale.HeightmapScalerMinMax;
 import net.daporkchop.fp2.mode.heightmap.server.tracking.HeightmapTrackerManager;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.World;
-import net.minecraft.world.WorldServer;
 import net.minecraft.world.chunk.Chunk;
 
 /**
  * @author DaPorkchop_
  */
 public abstract class HeightmapTileProvider extends AbstractFarTileProvider<HeightmapPos, HeightmapTile> {
-    public HeightmapTileProvider(@NonNull WorldServer world, @NonNull IFarRenderMode<HeightmapPos, HeightmapTile> mode) {
+    public HeightmapTileProvider(@NonNull IFarWorldServer world, @NonNull IFarRenderMode<HeightmapPos, HeightmapTile> mode) {
         super(world, mode);
     }
 
@@ -55,7 +55,10 @@ public abstract class HeightmapTileProvider extends AbstractFarTileProvider<Heig
 
     @Override
     protected boolean anyVanillaTerrainExistsAt(@NonNull HeightmapPos pos) {
-        return this.blockAccess().anyColumnIntersects(pos.x(), pos.z(), pos.level());
+        int x = pos.x();
+        int z = pos.z();
+        int level = pos.level();
+        return this.world().fp2_IFarWorldServer_fblockWorld().containsAnyData(x << level, Integer.MIN_VALUE, z << level, (x + 1) << level, Integer.MAX_VALUE, (z + 1) << level);
     }
 
     @Override
@@ -64,7 +67,7 @@ public abstract class HeightmapTileProvider extends AbstractFarTileProvider<Heig
     }
 
     public static class Vanilla extends HeightmapTileProvider {
-        public Vanilla(@NonNull WorldServer world, @NonNull IFarRenderMode<HeightmapPos, HeightmapTile> mode) {
+        public Vanilla(@NonNull IFarWorldServer world, @NonNull IFarRenderMode<HeightmapPos, HeightmapTile> mode) {
             super(world, mode);
         }
 
@@ -75,7 +78,7 @@ public abstract class HeightmapTileProvider extends AbstractFarTileProvider<Heig
     }
 
     public static class CubicChunks extends HeightmapTileProvider {
-        public CubicChunks(@NonNull WorldServer world, @NonNull IFarRenderMode<HeightmapPos, HeightmapTile> mode) {
+        public CubicChunks(@NonNull IFarWorldServer world, @NonNull IFarRenderMode<HeightmapPos, HeightmapTile> mode) {
             super(world, mode);
         }
 

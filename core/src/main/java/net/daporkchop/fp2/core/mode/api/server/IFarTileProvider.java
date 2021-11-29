@@ -42,8 +42,6 @@ import java.util.concurrent.CompletableFuture;
 public interface IFarTileProvider<POS extends IFarPos, T extends IFarTile> extends Closeable {
     IFarWorldServer world();
 
-    FBlockWorld blockAccess();
-
     CompletableFuture<ITileHandle<POS, T>> requestLoad(@NonNull POS pos);
 
     CompletableFuture<ITileHandle<POS, T>> requestUpdate(@NonNull POS pos);

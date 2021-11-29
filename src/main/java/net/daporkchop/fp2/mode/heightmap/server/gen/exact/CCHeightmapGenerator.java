@@ -24,12 +24,12 @@ import io.github.opencubicchunks.cubicchunks.api.util.Coords;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
+import net.daporkchop.lib.math.vector.Vec2i;
+import net.daporkchop.lib.math.vector.Vec3i;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.WorldServer;
 
 import java.util.stream.IntStream;
@@ -44,12 +44,12 @@ import static net.daporkchop.fp2.util.Constants.*;
 public class CCHeightmapGenerator extends AbstractExactHeightmapGenerator {
     protected static final int Y_LIMIT = Integer.MIN_VALUE + Character.MAX_VALUE; //the minimum Y coordinate that will be considered for heightmap samples
 
-    public CCHeightmapGenerator(@NonNull WorldServer world) {
+    public CCHeightmapGenerator(@NonNull IFarWorldServer world) {
         super(world);
     }
 
     @Override
-    public Stream<ChunkPos> neededColumns(@NonNull HeightmapPos pos) {
+    public Stream<Vec2i> neededColumns(@NonNull HeightmapPos pos) {
         return Stream.of(pos.flooredChunkPos());
     }
 
@@ -63,11 +63,11 @@ public class CCHeightmapGenerator extends AbstractExactHeightmapGenerator {
                 })
                 .distinct() //we don't want a bunch of identical cube Y coordinates
                 .filter(cubeY -> cubeY > Coords.blockToCube(Y_LIMIT))
-                .mapToObj(cubeY -> new Vec3i(pos.flooredChunkX(), cubeY, pos.flooredChunkZ()));
+                .mapToObj(cubeY -> Vec3i.of(pos.flooredChunkX(), cubeY, pos.flooredChunkZ()));
     }
 
     @Override
-    protected void computeElevations(@NonNull IBlockHeightAccess world, @NonNull int[] elevations, @NonNull BlockPos.MutableBlockPos pos, int blockX, int blockZ) {
+    protected void computeElevations(@NonNull FBlockWorld world, @NonNull int[] elevations, int blockX, int blockZ) {
         int y = world.getTopBlockY(blockX, blockZ);
         if (y < Y_LIMIT) { //there are no blocks in this column, therefore nothing to do
             return;
@@ -83,8 +83,7 @@ public class CCHeightmapGenerator extends AbstractExactHeightmapGenerator {
 
         int usedExtraLayers = 0;
 
-        pos.setY(y);
-        IBlockState state = world.getBlockState(pos);
+        int state = world.getState(blockX,y, blockZ);
         if (state.isOpaqueCube()) {
             elevations[DEFAULT_LAYER] = y;
             return;
@@ -99,8 +98,7 @@ public class CCHeightmapGenerator extends AbstractExactHeightmapGenerator {
         //first pass: sample blocks in increasingly large intervals, as a quick test to make sure that an opaque surface actually exists
         //TODO: this is inaccurate...
         for (int dy = -1; y + dy < y; dy <<= 1) {
-            pos.setY(y + dy);
-            if ((state = world.getBlockState(pos)).isOpaqueCube()) {
+            if ((state = world.getState(blockX, y + dy, blockZ)).isOpaqueCube()) {
                 break;
             }
         }
@@ -109,9 +107,8 @@ public class CCHeightmapGenerator extends AbstractExactHeightmapGenerator {
             return;
         }
 
-        for (IBlockState prevState = state; --y >= Y_LIMIT; ) {
-            pos.setY(y);
-            state = world.getBlockState(pos);
+        for (int prevState = state; --y >= Y_LIMIT; ) {
+            state = world.getState(blockX, y, blockZ);
 
             if (state == prevState) { //skip duplicate block states
                 continue;

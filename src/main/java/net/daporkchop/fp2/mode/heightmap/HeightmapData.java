@@ -20,11 +20,7 @@
 
 package net.daporkchop.fp2.mode.heightmap;
 
-import net.minecraft.block.state.IBlockState;
-import net.minecraft.world.biome.Biome;
-
 import static net.daporkchop.fp2.mode.heightmap.HeightmapConstants.*;
-import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * Represents a single data sample contained in a single layer heightmap tile.
@@ -32,8 +28,8 @@ import static net.daporkchop.fp2.util.Constants.*;
  * @author DaPorkchop_
  */
 public class HeightmapData {
-    public IBlockState state = STATE_AIR;
-    public Biome biome;
+    public int state = 0;
+    public int biome;
     public int height_int; //the 32-bit integer part of the layer's height
     public int height_frac; //the 8-bit fractional part of the layer's height
     public int light;
@@ -45,8 +41,8 @@ public class HeightmapData {
      * @return this instance
      */
     public HeightmapData reset() {
-        this.state = STATE_AIR;
-        this.biome = null;
+        this.state = 0;
+        this.biome = 0;
         this.height_int = 0;
         this.height_frac = 0;
         this.light = 0;

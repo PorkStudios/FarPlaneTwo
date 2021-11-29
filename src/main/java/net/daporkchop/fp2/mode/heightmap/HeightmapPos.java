@@ -29,6 +29,7 @@ import lombok.ToString;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.core.util.math.MathUtil;
+import net.daporkchop.lib.math.vector.Vec2i;
 import net.minecraft.util.math.ChunkPos;
 
 import java.util.function.Function;
@@ -36,6 +37,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static java.lang.Math.*;
+import static net.daporkchop.fp2.mode.heightmap.HeightmapConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -57,6 +59,11 @@ public class HeightmapPos implements IFarPos {
         long interleaved = buf.readLong();
         this.x = MathUtil.uninterleave2_0(interleaved);
         this.z = MathUtil.uninterleave2_1(interleaved);
+    }
+
+    @Override
+    public boolean isLevelValid() {
+        return this.level >= 0 && this.level < H_MAX_LODS;
     }
 
     @Override
@@ -87,8 +94,8 @@ public class HeightmapPos implements IFarPos {
         return this.blockZ() >> 4;
     }
 
-    public ChunkPos flooredChunkPos() {
-        return new ChunkPos(this.flooredChunkX(), this.flooredChunkZ());
+    public Vec2i flooredChunkPos() {
+        return Vec2i.of(this.flooredChunkX(), this.flooredChunkZ());
     }
 
     @Override

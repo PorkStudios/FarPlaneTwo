@@ -78,12 +78,12 @@ public class GPUCulledRenderIndex<POS extends IFarPos, BO extends IBakeOutput, D
     }
 
     @Override
-    public void select(@NonNull IFrustum frustum, float partialTicks) {
+    public void select(@NonNull IFrustum frustum) {
         ShaderClippingStateHelper.update(frustum);
         ShaderClippingStateHelper.bind();
 
         for (AbstractRenderIndex.Level level : this.levels) {
-            level.select(frustum, partialTicks);
+            level.select(frustum);
         }
 
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, POSITIONS_BUFFER_BINDING_INDEX, 0);
@@ -107,7 +107,7 @@ public class GPUCulledRenderIndex<POS extends IFarPos, BO extends IBakeOutput, D
         }
 
         @Override
-        protected void select0(@NonNull IFrustum frustum, float partialTicks) {
+        protected void select0(@NonNull IFrustum frustum) {
             //bind SSBOs
             //TODO: this.positionsBuffer.bindBase(GL_SHADER_STORAGE_BUFFER, POSITIONS_BUFFER_BINDING_INDEX);
 

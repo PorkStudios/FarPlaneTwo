@@ -22,15 +22,16 @@ package net.daporkchop.fp2.asm.core.world;
 
 import com.google.common.collect.ImmutableMap;
 import lombok.NonNull;
+import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.compat.cc.asyncblockaccess.CCAsyncBlockAccessImpl;
 import net.daporkchop.fp2.compat.vanilla.asyncblockaccess.VanillaAsyncBlockAccessImpl;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
-import net.daporkchop.fp2.core.util.threading.workergroup.DefaultWorkerManager;
-import net.daporkchop.fp2.core.util.threading.workergroup.WorkerManager;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
+import net.daporkchop.fp2.core.util.threading.workergroup.DefaultWorkerManager;
+import net.daporkchop.fp2.core.util.threading.workergroup.WorkerManager;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
 import net.daporkchop.fp2.util.threading.futureexecutor.ServerThreadMarkedFutureExecutor;
@@ -41,6 +42,8 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 
+import java.io.File;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -106,6 +109,29 @@ public abstract class MixinWorldServer extends MixinWorld implements IFarWorldSe
         for (IFarTileProvider tileProvider : this.tileProviders) {
             action.accept(uncheckedCast(tileProvider));
         }
+    }
+
+    @Shadow
+    public abstract File getChunkSaveLocation();
+
+    @Override
+    public Path fp2_IFarWorldServer_worldDirectory() {
+        return this.getChunkSaveLocation().toPath();
+    }
+
+    @Override
+    public Object fp2_IFarWorldServer_getVanillaGenerator() {
+        return Constants.getTerrainGenerator(uncheckedCast(this));
+    }
+
+    @Override
+    public FBlockWorld fp2_IFarWorldServer_fblockWorld() {
+        return this.asyncBlockAccess;
+    }
+
+    @Override
+    public int fp2_IFarWorldServer_seaLevel() {
+        return this.getSeaLevel();
     }
 
     @Override

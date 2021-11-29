@@ -35,6 +35,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static java.lang.Math.*;
+import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -59,6 +60,11 @@ public class VoxelPos implements IFarPos {
         this.x = MathUtil.uninterleave3_0(interleavedLow, interleavedHigh);
         this.y = MathUtil.uninterleave3_1(interleavedLow, interleavedHigh);
         this.z = MathUtil.uninterleave3_2(interleavedLow, interleavedHigh);
+    }
+
+    @Override
+    public boolean isLevelValid() {
+        return this.level >= 0 && this.level < V_MAX_LODS;
     }
 
     @Override

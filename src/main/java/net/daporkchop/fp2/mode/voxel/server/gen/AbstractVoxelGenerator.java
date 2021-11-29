@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.mode.voxel.server.gen;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.mode.common.server.gen.AbstractFarGenerator;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.reference.cache.Cached;
@@ -59,7 +60,7 @@ public abstract class AbstractVoxelGenerator extends AbstractFarGenerator {
 
     protected final Cached<byte[]> typeMapCache = Cached.threadLocal(() -> new byte[cb(CACHE_SIZE)], ReferenceStrength.WEAK);
 
-    public AbstractVoxelGenerator(@NonNull WorldServer world) {
+    public AbstractVoxelGenerator(@NonNull IFarWorldServer world) {
         super(world);
     }
 }

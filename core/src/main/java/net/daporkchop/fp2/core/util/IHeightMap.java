@@ -25,6 +25,7 @@ package net.daporkchop.fp2.core.util;
  *
  * @author DaPorkchop_
  */
+@Deprecated
 public interface IHeightMap {
     default boolean isOccluded(int blockX, int blockY, int blockZ)  {
         return blockY < this.getTopBlockY(blockX, blockZ);

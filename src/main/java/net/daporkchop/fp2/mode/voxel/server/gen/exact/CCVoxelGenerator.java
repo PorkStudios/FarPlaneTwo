@@ -22,10 +22,10 @@ package net.daporkchop.fp2.mode.voxel.server.gen.exact;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.api.world.FBlockWorld;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.Vec3i;
-import net.minecraft.world.WorldServer;
+import net.daporkchop.lib.math.vector.Vec2i;
+import net.daporkchop.lib.math.vector.Vec3i;
 
 import java.util.stream.Stream;
 
@@ -33,12 +33,12 @@ import java.util.stream.Stream;
  * @author DaPorkchop_
  */
 public class CCVoxelGenerator extends AbstractExactVoxelGenerator {
-    public CCVoxelGenerator(@NonNull WorldServer world) {
+    public CCVoxelGenerator(@NonNull IFarWorldServer world) {
         super(world);
     }
 
     @Override
-    public Stream<ChunkPos> neededColumns(@NonNull VoxelPos pos) {
+    public Stream<Vec2i> neededColumns(@NonNull VoxelPos pos) {
         return Stream.empty();
     }
 
@@ -48,7 +48,7 @@ public class CCVoxelGenerator extends AbstractExactVoxelGenerator {
         for (int i = 0, dx = 0; dx < 2; dx++) {
             for (int dy = 0; dy < 2; dy++) {
                 for (int dz = 0; dz < 2; dz++) {
-                    arr[i++] = new Vec3i(pos.x() + dx, pos.y() + dy, pos.z() + dz);
+                    arr[i++] = Vec3i.of(pos.x() + dx, pos.y() + dy, pos.z() + dz);
                 }
             }
         }

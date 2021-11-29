@@ -95,9 +95,6 @@ public class Constants {
     public static final int GTV_COUNT = T_VOXELS >> GTV_SHIFT;
     public static final int GTV_SIZE = 1 << GTV_SHIFT;
 
-    //this is enough levels for the tree to encompass the entire minecraft world
-    public static final int MAX_LODS = 32 - Integer.numberOfLeadingZeros(60_000_000 >> T_SHIFT);
-
     public static final boolean FP2_TEST = Boolean.parseBoolean(System.getProperty("fp2.test", "false"));
 
     public static Logger FP2_LOG = new SimpleLogger("[fp2 bootstrap]", Level.INFO, true, false, true, false, "[yyyy/MM/dd HH:mm:ss:SSS]", null, new PropertiesUtil("log4j2.simplelog.properties"), System.out);

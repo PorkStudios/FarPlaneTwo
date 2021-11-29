@@ -33,6 +33,8 @@ import static net.daporkchop.fp2.util.Constants.*;
 public class VoxelConstants {
     public static final int STORAGE_VERSION = 6;
 
+    public static final int V_MAX_LODS = 32 - Integer.numberOfLeadingZeros(60_000_000 >> T_SHIFT);
+
     /**
      * The size of the fractional part of a voxel position, in bits.
      */

@@ -25,7 +25,6 @@ import lombok.NonNull;
 import net.daporkchop.fp2.api.util.OrderedRegistry;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.event.AbstractRegisterEvent;
-import net.daporkchop.fp2.core.util.SimpleRecycler;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldClient;
@@ -34,6 +33,7 @@ import net.daporkchop.fp2.core.mode.api.player.IFarPlayerServer;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
+import net.daporkchop.fp2.core.util.SimpleRecycler;
 import net.daporkchop.lib.binary.stream.DataIn;
 import net.daporkchop.lib.binary.stream.DataOut;
 
@@ -49,6 +49,11 @@ public interface IFarRenderMode<POS extends IFarPos, T extends IFarTile> {
      * @return this storage version's name
      */
     String name();
+
+    /**
+     * The maximum number of detail levels which may be used by this render mode.
+     */
+    int maxLevels();
 
     /**
      * @return the storage format version number
