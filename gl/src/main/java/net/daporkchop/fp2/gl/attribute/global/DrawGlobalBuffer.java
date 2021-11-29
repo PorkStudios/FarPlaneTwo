@@ -28,7 +28,7 @@ import net.daporkchop.fp2.gl.attribute.BaseAttributeBuffer;
  *
  * @author DaPorkchop_
  */
-public interface DrawGlobalBuffer<S> extends BaseAttributeBuffer<S, DrawGlobalFormat<S>> {
+public interface DrawGlobalBuffer<S> extends BaseAttributeBuffer<DrawGlobalFormat<S>> {
     /**
      * @return the number of attribute data elements that this buffer can store
      */

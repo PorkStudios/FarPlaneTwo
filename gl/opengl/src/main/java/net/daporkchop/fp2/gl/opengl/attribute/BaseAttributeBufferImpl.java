@@ -36,7 +36,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class BaseAttributeBufferImpl<S, F extends BaseAttributeFormatImpl<S, ?>, F_EXTERNAL extends BaseAttributeFormat<S>> implements BaseAttributeBuffer<S, F_EXTERNAL> {
+public abstract class BaseAttributeBufferImpl<S, F extends BaseAttributeFormatImpl<S, ?>, F_EXTERNAL extends BaseAttributeFormat> implements BaseAttributeBuffer<F_EXTERNAL> {
     protected final OpenGL gl;
     private final F formatImpl;
 

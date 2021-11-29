@@ -28,7 +28,7 @@ import net.daporkchop.fp2.gl.attribute.BaseAttributeBuffer;
  *
  * @author DaPorkchop_
  */
-public interface DrawLocalBuffer<S> extends BaseAttributeBuffer<S, DrawLocalFormat<S>> {
+public interface DrawLocalBuffer<S> extends BaseAttributeBuffer<DrawLocalFormat<S>> {
     /**
      * @return the number of attribute data elements that this buffer can store
      */

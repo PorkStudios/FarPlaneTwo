@@ -25,5 +25,5 @@ import net.daporkchop.fp2.gl.attribute.BaseAttributeBuffer;
 /**
  * @author DaPorkchop_
  */
-public interface BaseTexture<S, F extends BaseTextureFormat<S>> extends BaseAttributeBuffer<S, F> {
+public interface BaseTexture<F extends BaseTextureFormat> extends BaseAttributeBuffer<F> {
 }

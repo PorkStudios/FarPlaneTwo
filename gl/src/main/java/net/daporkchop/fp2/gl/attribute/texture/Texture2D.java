@@ -27,7 +27,7 @@ import lombok.NonNull;
  *
  * @author DaPorkchop_
  */
-public interface Texture2D<S> extends BaseTexture<S, TextureFormat2D<S>> {
+public interface Texture2D<S> extends BaseTexture<TextureFormat2D<S>> {
     /**
      * @return the width of this texture
      */

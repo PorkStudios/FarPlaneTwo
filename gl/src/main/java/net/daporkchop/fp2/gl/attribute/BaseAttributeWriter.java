@@ -27,7 +27,7 @@ import net.daporkchop.fp2.common.util.capability.CloseableResource;
  *
  * @author DaPorkchop_
  */
-public interface BaseAttributeWriter<S, F extends BaseAttributeFormat<S>> extends CloseableResource {
+public interface BaseAttributeWriter<F extends BaseAttributeFormat> extends CloseableResource {
     /**
      * @return the {@link BaseAttributeFormat} used by this writer
      */

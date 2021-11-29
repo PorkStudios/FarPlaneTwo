@@ -27,5 +27,5 @@ import net.daporkchop.fp2.gl.attribute.BaseAttributeWriter;
  *
  * @author DaPorkchop_
  */
-public interface BaseTextureWriter<S, F extends BaseTextureFormat<S>> extends BaseAttributeWriter<S, F> {
+public interface BaseTextureWriter<F extends BaseTextureFormat> extends BaseAttributeWriter<F> {
 }

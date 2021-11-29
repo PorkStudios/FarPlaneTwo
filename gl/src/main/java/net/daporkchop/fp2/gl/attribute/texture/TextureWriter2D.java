@@ -25,7 +25,7 @@ import lombok.NonNull;
 /**
  * @author DaPorkchop_
  */
-public interface TextureWriter2D<S> extends BaseTextureWriter<S, TextureFormat2D<S>> {
+public interface TextureWriter2D<S> extends BaseTextureWriter<TextureFormat2D<S>> {
     /**
      * Sets the texel at the given coordinates.
      *

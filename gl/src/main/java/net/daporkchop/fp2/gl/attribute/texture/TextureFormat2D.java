@@ -25,7 +25,7 @@ import lombok.NonNull;
 /**
  * @author DaPorkchop_
  */
-public interface TextureFormat2D<S> extends BaseTextureFormat<S> {
+public interface TextureFormat2D<S> extends BaseTextureFormat {
     TextureWriter2D<S> createWriter(int width, int height);
 
     Texture2D<S> createTexture(int width, int height, int levels);

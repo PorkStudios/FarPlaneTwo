@@ -33,7 +33,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class BaseTextureWriterImpl<S, F extends BaseTextureFormatImpl<S>, F_EXTERNAL extends BaseTextureFormat<S>> implements BaseTextureWriter<S, F_EXTERNAL> {
+public abstract class BaseTextureWriterImpl<S, F extends BaseTextureFormatImpl<S>, F_EXTERNAL extends BaseTextureFormat> implements BaseTextureWriter<F_EXTERNAL> {
     protected final OpenGL gl;
     protected final F formatImpl;
     protected final TextureStructFormat<S> structFormat;

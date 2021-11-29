@@ -27,7 +27,7 @@ import net.daporkchop.fp2.gl.buffer.BufferUsage;
 /**
  * @author DaPorkchop_
  */
-public interface DrawGlobalFormat<S> extends BaseAttributeFormat<S> {
+public interface DrawGlobalFormat<S> extends BaseAttributeFormat {
     DrawGlobalWriter<S> createWriter();
 
     DrawGlobalBuffer<S> createBuffer(@NonNull BufferUsage usage);

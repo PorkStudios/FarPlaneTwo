@@ -36,7 +36,7 @@ import java.util.stream.Stream;
  */
 @RequiredArgsConstructor
 @Getter
-public abstract class BaseAttributeFormatImpl<S, SF extends StructFormat<S, ?>> implements BaseAttributeFormat<S> {
+public abstract class BaseAttributeFormatImpl<S, SF extends StructFormat<S, ?>> implements BaseAttributeFormat {
     @NonNull
     protected final OpenGL gl;
     @NonNull

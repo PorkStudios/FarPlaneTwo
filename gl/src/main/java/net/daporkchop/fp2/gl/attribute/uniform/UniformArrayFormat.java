@@ -27,6 +27,6 @@ import net.daporkchop.fp2.gl.buffer.BufferUsage;
 /**
  * @author DaPorkchop_
  */
-public interface UniformArrayFormat<S> extends BaseAttributeFormat<S> {
+public interface UniformArrayFormat<S> extends BaseAttributeFormat {
     UniformArrayBuffer<S> createBuffer(@NonNull BufferUsage usage);
 }
