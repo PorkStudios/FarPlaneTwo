@@ -28,6 +28,6 @@ import net.daporkchop.fp2.gl.attribute.BaseAttributeWriter;
  *
  * @author DaPorkchop_
  */
-public interface DrawGlobalWriter<S> extends BaseAttributeWriter<S, DrawGlobalFormat<S>> {
+public interface DrawGlobalWriter<S> extends BaseAttributeWriter<DrawGlobalFormat<S>> {
     void set(@NonNull S struct);
 }

@@ -25,5 +25,5 @@ import net.daporkchop.fp2.gl.attribute.BaseAttributeFormat;
 /**
  * @author DaPorkchop_
  */
-public interface BaseTextureFormat<S> extends BaseAttributeFormat<S> {
+public interface BaseTextureFormat extends BaseAttributeFormat {
 }

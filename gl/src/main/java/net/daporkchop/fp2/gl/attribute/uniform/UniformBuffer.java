@@ -28,6 +28,6 @@ import net.daporkchop.fp2.gl.attribute.BaseAttributeBuffer;
  *
  * @author DaPorkchop_
  */
-public interface UniformBuffer<S> extends BaseAttributeBuffer<S, UniformFormat<S>> {
+public interface UniformBuffer<S> extends BaseAttributeBuffer<UniformFormat<S>> {
     void set(@NonNull S struct);
 }

@@ -34,7 +34,7 @@ import java.util.function.IntConsumer;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class BaseTextureImpl<S, F extends BaseTextureFormatImpl<S>, F_EXTERNAL extends BaseTextureFormat<S>> extends BaseAttributeBufferImpl<S, F, F_EXTERNAL> implements BaseTexture<S, F_EXTERNAL>, TextureBuffer {
+public abstract class BaseTextureImpl<S, F extends BaseTextureFormatImpl<S>, F_EXTERNAL extends BaseTextureFormat> extends BaseAttributeBufferImpl<S, F, F_EXTERNAL> implements BaseTexture<F_EXTERNAL>, TextureBuffer {
     protected final TextureStructFormat<S> structFormat;
 
     protected final int id;

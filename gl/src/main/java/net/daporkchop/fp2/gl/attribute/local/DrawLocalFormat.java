@@ -27,7 +27,7 @@ import net.daporkchop.fp2.gl.buffer.BufferUsage;
 /**
  * @author DaPorkchop_
  */
-public interface DrawLocalFormat<S> extends BaseAttributeFormat<S> {
+public interface DrawLocalFormat<S> extends BaseAttributeFormat {
     DrawLocalWriter<S> createWriter();
 
     DrawLocalBuffer<S> createBuffer(@NonNull BufferUsage usage);

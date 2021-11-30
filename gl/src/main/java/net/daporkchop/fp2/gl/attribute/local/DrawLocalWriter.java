@@ -28,7 +28,7 @@ import net.daporkchop.fp2.gl.attribute.BaseAttributeWriter;
  *
  * @author DaPorkchop_
  */
-public interface DrawLocalWriter<S> extends BaseAttributeWriter<S, DrawLocalFormat<S>> {
+public interface DrawLocalWriter<S> extends BaseAttributeWriter<DrawLocalFormat<S>> {
     /**
      * @return the number of vertices written so far
      */

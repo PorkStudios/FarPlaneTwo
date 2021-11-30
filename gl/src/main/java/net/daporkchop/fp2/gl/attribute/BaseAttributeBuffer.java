@@ -27,7 +27,7 @@ import net.daporkchop.fp2.gl.GLResource;
  *
  * @author DaPorkchop_
  */
-public interface BaseAttributeBuffer<S, F extends BaseAttributeFormat<S>> extends GLResource {
+public interface BaseAttributeBuffer<F extends BaseAttributeFormat> extends GLResource {
     /**
      * @return the {@link BaseAttributeFormat} used by this buffer
      */

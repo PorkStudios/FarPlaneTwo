@@ -30,7 +30,7 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.format.TextureStructFormat;
 /**
  * @author DaPorkchop_
  */
-public abstract class BaseTextureFormatImpl<S> extends BaseAttributeFormatImpl<S, TextureStructFormat<S>> implements BaseTextureFormat<S>, TextureFormat {
+public abstract class BaseTextureFormatImpl<S> extends BaseAttributeFormatImpl<S, TextureStructFormat<S>> implements BaseTextureFormat, TextureFormat {
     public BaseTextureFormatImpl(@NonNull OpenGL gl, @NonNull TextureStructFormat<S> structFormat) {
         super(gl, structFormat);
     }
