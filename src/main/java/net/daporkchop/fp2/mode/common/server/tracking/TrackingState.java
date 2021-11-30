@@ -24,7 +24,7 @@ import lombok.Data;
 import lombok.NonNull;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
-import net.daporkchop.lib.math.vector.d.Vec3d;
+import net.daporkchop.lib.math.vector.Vec3d;
 
 import static net.daporkchop.fp2.debug.FP2Debug.*;
 import static net.daporkchop.fp2.util.Constants.*;
@@ -41,7 +41,7 @@ public class TrackingState {
         Vec3d pos = context.player().fp2_IFarPlayer_position();
         FP2Config config = context.config();
 
-        return new TrackingState(pos.getX(), pos.getY(), pos.getZ(),
+        return new TrackingState(pos.x(), pos.y(), pos.z(),
                 asrRound(config.cutoffDistance(), T_SHIFT),
                 FP2_DEBUG && !config.debug().levelZeroTracking() ? 1 : 0,
                 config.maxLevels());
