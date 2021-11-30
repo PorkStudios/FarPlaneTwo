@@ -34,4 +34,13 @@ public interface TextureWriter2D<S> extends BaseTextureWriter<TextureFormat2D<S>
      * @param struct a {@link S} instance containing the texel data
      */
     void set(int x, int y, @NonNull S struct);
+
+    /**
+     * Sets the texel at the given coordinates to the given ARGB color. If this texture has less than 4 components, any extra components will be silently discarded.
+     *
+     * @param x    the X coordinate
+     * @param y    the Y coordinate
+     * @param argb the color
+     */
+    void setARGB(int x, int y, int argb);
 }

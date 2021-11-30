@@ -66,4 +66,13 @@ public abstract class TextureStructFormat<S> extends StructFormat<S, TextureStru
      * @param dstOffset the destination base offset
      */
     public abstract void copy(Object srcBase, long srcOffset, Object dstBase, long dstOffset);
+
+    /**
+     * Translates the given ARGB color to the layout format, and writes it to the given destination.
+     *
+     * @param argb      the ARGB color
+     * @param dstBase   the destination base instance
+     * @param dstOffset the destination base offset
+     */
+    public abstract void copyFromARGB(int argb, Object dstBase, long dstOffset);
 }
