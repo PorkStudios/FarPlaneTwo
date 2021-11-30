@@ -31,8 +31,10 @@ import net.minecraft.block.state.IBlockState;
 import net.minecraft.world.biome.Biome;
 
 import java.util.stream.IntStream;
+import java.util.stream.StreamSupport;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
@@ -53,44 +55,40 @@ public final class GameRegistry1_12_2 implements FGameRegistry {
         INSTANCE = new GameRegistry1_12_2();
     }
 
-    private final Reference2IntMap<Biome> biomesToIds;
     private final Biome[] idsToBiomes;
+    private final Reference2IntMap<Biome> biomesToIds;
 
-    private final Reference2IntMap<IBlockState> statesToIds;
     private final IBlockState[] idsToStates;
+    private final Reference2IntMap<IBlockState> statesToIds;
 
     private GameRegistry1_12_2() {
-        this.biomesToIds = new Reference2IntOpenHashMap<>();
-        Biome.REGISTRY.forEach(biome -> this.biomesToIds.put(biome, Biome.getIdForBiome(biome)));
+        //ids -> biomes
+        this.idsToBiomes = StreamSupport.stream(Biome.REGISTRY.spliterator(), false).toArray(Biome[]::new);
 
-        // ids -> biomes
-        this.idsToBiomes = new Biome[this.biomesToIds.values().stream().mapToInt(Integer::intValue).max().getAsInt() + 1];
-        IntStream.range(0, this.idsToBiomes.length).forEach(id -> this.idsToBiomes[id] = Biome.getBiome(id));
+        //biomes -> ids
+        this.biomesToIds = new Reference2IntOpenHashMap<>(this.idsToBiomes.length);
+        this.biomesToIds.defaultReturnValue(-1);
+        IntStream.range(0, this.idsToBiomes.length).forEach(id -> checkState(this.biomesToIds.put(this.idsToBiomes[id], id) < 0, "duplicate biome: %s", this.idsToBiomes[id]));
 
-        // block states -> ids
-        this.statesToIds = new Reference2IntOpenHashMap<>();
-        Block.REGISTRY.forEach(block -> block.getBlockState().getValidStates().forEach(state -> this.statesToIds.put(state, Block.getStateId(state))));
+        //ids -> states
+        this.idsToStates = StreamSupport.stream(Block.REGISTRY.spliterator(), false)
+                .flatMap(block -> block.getBlockState().getValidStates().stream())
+                .toArray(IBlockState[]::new);
 
-        // ids -> block states
-        this.idsToStates = new IBlockState[this.statesToIds.values().stream().mapToInt(Integer::intValue).max().getAsInt() + 1];
-        IntStream.range(0, this.idsToStates.length).forEach(id -> {
-            try {
-                this.idsToStates[id] = Block.getStateById(id);
-            } catch (Exception ignored) {
-                //an exception means the id isn't valid
-                //this is probably the worst possible way of handling this, but i don't want to hard-code the mechanics of Block.getStateById(int) in case a mod changes it
-            }
-        });
+        //states -> ids
+        this.statesToIds = new Reference2IntOpenHashMap<>(this.idsToStates.length);
+        this.statesToIds.defaultReturnValue(-1);
+        IntStream.range(0, this.idsToStates.length).forEach(id -> checkState(this.statesToIds.put(this.idsToStates[id], id) < 0, "duplicate state: %s", this.idsToStates[id]));
     }
 
     @Override
     public int biome2id(@NonNull Object biome) throws UnsupportedOperationException, ClassCastException {
-        return this.biomesToIds.getInt((Biome) biome);
+        return this.biomesToIds.getInt(biome);
     }
 
     @Override
     public int state2id(@NonNull Object state) throws UnsupportedOperationException, ClassCastException {
-        return this.statesToIds.getInt((IBlockState) state);
+        return this.statesToIds.getInt(state);
     }
 
     @Override
