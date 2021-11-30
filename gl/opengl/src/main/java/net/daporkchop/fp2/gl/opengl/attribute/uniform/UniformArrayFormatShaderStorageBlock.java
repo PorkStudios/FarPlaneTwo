@@ -25,7 +25,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayBuffer;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayFormat;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
-import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.common.ShaderStorageBlockFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLBlockMemoryLayout;
@@ -37,8 +37,8 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFor
  */
 @Getter
 public class UniformArrayFormatShaderStorageBlock<S> extends BaseAttributeFormatImpl<S, InterleavedStructFormat<S>> implements UniformArrayFormat<S>, ShaderStorageBlockFormat {
-    public UniformArrayFormatShaderStorageBlock(@NonNull OpenGL gl, @NonNull Class<S> clazz) {
-        super(gl, gl.structFormatGenerator().getInterleaved(GLSLBlockMemoryLayout.STD140.layout(new StructInfo<>(clazz))));
+    public UniformArrayFormatShaderStorageBlock(@NonNull AttributeFormatBuilderImpl<UniformArrayFormat<S>, S> builder) {
+        super(builder.gl(), builder.gl().structFormatGenerator().getInterleaved(GLSLBlockMemoryLayout.STD140.layout(new StructInfo<>(builder))));
     }
 
     @Override

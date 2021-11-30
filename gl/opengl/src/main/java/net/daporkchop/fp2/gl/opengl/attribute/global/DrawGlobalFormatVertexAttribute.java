@@ -26,7 +26,7 @@ import net.daporkchop.fp2.gl.attribute.global.DrawGlobalBuffer;
 import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
 import net.daporkchop.fp2.gl.attribute.global.DrawGlobalWriter;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
-import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.common.VertexAttributeFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.StructInfo;
@@ -38,8 +38,8 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFor
  */
 @Getter
 public class DrawGlobalFormatVertexAttribute<S> extends BaseAttributeFormatImpl<S, InterleavedStructFormat<S>> implements DrawGlobalFormat<S>, VertexAttributeFormat {
-    public DrawGlobalFormatVertexAttribute(@NonNull OpenGL gl, @NonNull Class<S> clazz) {
-        super(gl, gl.structFormatGenerator().getInterleaved(StructLayouts.vertexAttributesInterleaved(gl, new StructInfo<>(clazz))));
+    public DrawGlobalFormatVertexAttribute(@NonNull AttributeFormatBuilderImpl<DrawGlobalFormat<S>, S> builder) {
+        super(builder.gl(), builder.gl().structFormatGenerator().getInterleaved(StructLayouts.vertexAttributesInterleaved(builder.gl(), new StructInfo<>(builder))));
     }
 
     @Override

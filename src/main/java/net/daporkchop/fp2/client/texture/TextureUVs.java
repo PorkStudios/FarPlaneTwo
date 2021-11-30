@@ -155,10 +155,10 @@ public class TextureUVs extends AbstractReleasable {
     public TextureUVs(@NonNull GL gl) {
         this.gl = gl;
 
-        this.listsFormat = gl.createUniformArrayFormat(QuadList.class);
+        this.listsFormat = gl.createUniformArrayFormat(QuadList.class).build();
         this.listsBuffer = this.listsFormat.createBuffer(BufferUsage.STATIC_DRAW);
 
-        this.quadsFormat = gl.createUniformArrayFormat(PackedBakedQuad.class);
+        this.quadsFormat = gl.createUniformArrayFormat(PackedBakedQuad.class).build();
         this.quadsBuffer = this.quadsFormat.createBuffer(BufferUsage.STATIC_DRAW);
 
         this.reloadUVs();

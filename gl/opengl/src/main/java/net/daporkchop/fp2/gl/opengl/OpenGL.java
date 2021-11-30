@@ -29,6 +29,7 @@ import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.GLModule;
+import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
 import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
@@ -44,6 +45,7 @@ import net.daporkchop.fp2.gl.draw.index.IndexFormatBuilder;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.draw.shader.FragmentShader;
 import net.daporkchop.fp2.gl.draw.shader.VertexShader;
+import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.global.DrawGlobalFormatVertexAttribute;
 import net.daporkchop.fp2.gl.opengl.attribute.local.DrawLocalFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.StructFormatGenerator;
@@ -182,33 +184,58 @@ public class OpenGL implements GL {
     }
 
     @Override
-    public <S> TextureFormat2D<S> createTextureFormat2D(@NonNull Class<S> clazz) {
-        return new TextureFormat2DImpl<>(this, clazz);
-    }
-
-    @Override
     public IndexFormatBuilder.TypeSelectionStage createIndexFormat() {
         return new IndexFormatBuilderImpl(this);
     }
 
     @Override
-    public <S> UniformFormat<S> createUniformFormat(@NonNull Class<S> clazz) {
-        return new UniformFormatBlock<>(this, clazz);
+    public <S> AttributeFormatBuilder<TextureFormat2D<S>> createTextureFormat2D(@NonNull Class<S> clazz) {
+        return new AttributeFormatBuilderImpl<TextureFormat2D<S>, S>(this, clazz) {
+            @Override
+            public TextureFormat2D<S> build() {
+                return new TextureFormat2DImpl<>(this);
+            }
+        };
     }
 
     @Override
-    public <S> UniformArrayFormat<S> createUniformArrayFormat(@NonNull Class<S> clazz) {
-        return new UniformArrayFormatShaderStorageBlock<>(this, clazz);
+    public <S> AttributeFormatBuilder<UniformFormat<S>> createUniformFormat(@NonNull Class<S> clazz) {
+        return new AttributeFormatBuilderImpl<UniformFormat<S>, S>(this, clazz) {
+            @Override
+            public UniformFormat<S> build() {
+                return new UniformFormatBlock<>(this);
+            }
+        };
     }
 
     @Override
-    public <S> DrawGlobalFormat<S> createDrawGlobalFormat(@NonNull Class<S> clazz) {
-        return new DrawGlobalFormatVertexAttribute<>(this, clazz);
+    public <S> AttributeFormatBuilder<UniformArrayFormat<S>> createUniformArrayFormat(@NonNull Class<S> clazz) {
+        return new AttributeFormatBuilderImpl<UniformArrayFormat<S>, S>(this, clazz) {
+            @Override
+            public UniformArrayFormat<S> build() {
+                return new UniformArrayFormatShaderStorageBlock<>(this);
+            }
+        };
     }
 
     @Override
-    public <S> DrawLocalFormat<S> createDrawLocalFormat(@NonNull Class<S> clazz) {
-        return new DrawLocalFormatImpl<>(this, clazz);
+    public <S> AttributeFormatBuilder<DrawGlobalFormat<S>> createDrawGlobalFormat(@NonNull Class<S> clazz) {
+        return new AttributeFormatBuilderImpl<DrawGlobalFormat<S>, S>(this, clazz) {
+            @Override
+            public DrawGlobalFormat<S> build() {
+                return new DrawGlobalFormatVertexAttribute<>(this);
+            }
+        };
+    }
+
+    @Override
+    public <S> AttributeFormatBuilder<DrawLocalFormat<S>> createDrawLocalFormat(@NonNull Class<S> clazz) {
+        return new AttributeFormatBuilderImpl<DrawLocalFormat<S>, S>(this, clazz) {
+            @Override
+            public DrawLocalFormat<S> build() {
+                return new DrawLocalFormatImpl<>(this);
+            }
+        };
     }
 
     @Override
