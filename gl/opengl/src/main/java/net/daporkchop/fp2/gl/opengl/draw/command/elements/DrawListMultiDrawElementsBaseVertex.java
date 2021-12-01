@@ -26,8 +26,8 @@ import net.daporkchop.fp2.gl.draw.command.DrawCommandIndexed;
 import net.daporkchop.fp2.gl.draw.binding.DrawMode;
 import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
 import net.daporkchop.fp2.gl.opengl.bitset.AbstractGLBitSet;
-import net.daporkchop.fp2.gl.opengl.draw.command.DrawCommandBufferBuilderImpl;
-import net.daporkchop.fp2.gl.opengl.draw.command.DrawCommandBufferImpl;
+import net.daporkchop.fp2.gl.opengl.draw.command.DrawListBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.draw.command.DrawListImpl;
 import net.daporkchop.fp2.gl.opengl.draw.binding.DrawBindingIndexedImpl;
 import net.daporkchop.fp2.gl.opengl.draw.index.IndexFormatImpl;
 import net.daporkchop.fp2.gl.opengl.draw.shader.DrawShaderProgramImpl;
@@ -41,7 +41,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public class CommandBufferMultiDrawElementsBaseVertex extends DrawCommandBufferImpl<DrawCommandIndexed, DrawBindingIndexedImpl> {
+public class DrawListMultiDrawElementsBaseVertex extends DrawListImpl<DrawCommandIndexed, DrawBindingIndexedImpl> {
     protected long countAddr;
     protected long indicesAddr;
     protected long basevertexAddr;
@@ -49,7 +49,7 @@ public class CommandBufferMultiDrawElementsBaseVertex extends DrawCommandBufferI
     protected final int indexType;
     protected final int indexShift;
 
-    public CommandBufferMultiDrawElementsBaseVertex(@NonNull DrawCommandBufferBuilderImpl builder) {
+    public DrawListMultiDrawElementsBaseVertex(@NonNull DrawListBuilderImpl builder) {
         super(builder);
 
         IndexFormatImpl format = this.binding.indices().format();

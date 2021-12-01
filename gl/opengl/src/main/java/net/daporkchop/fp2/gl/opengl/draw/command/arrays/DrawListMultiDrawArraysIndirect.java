@@ -29,8 +29,8 @@ import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
 import net.daporkchop.fp2.gl.opengl.bitset.AbstractGLBitSet;
 import net.daporkchop.fp2.gl.opengl.buffer.BufferTarget;
 import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
-import net.daporkchop.fp2.gl.opengl.draw.command.DrawCommandBufferBuilderImpl;
-import net.daporkchop.fp2.gl.opengl.draw.command.DrawCommandBufferImpl;
+import net.daporkchop.fp2.gl.opengl.draw.command.DrawListBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.draw.command.DrawListImpl;
 import net.daporkchop.fp2.gl.opengl.draw.binding.DrawBindingImpl;
 import net.daporkchop.fp2.gl.opengl.draw.shader.DrawShaderProgramImpl;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
@@ -43,7 +43,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public class CommandBufferMultiDrawArraysIndirect extends DrawCommandBufferImpl<DrawCommandArrays, DrawBindingImpl> {
+public class DrawListMultiDrawArraysIndirect extends DrawListImpl<DrawCommandArrays, DrawBindingImpl> {
     public static final long _COUNT_OFFSET = 0L;
     public static final long _INSTANCECOUNT_OFFSET = _COUNT_OFFSET + INT_SIZE;
     public static final long _FIRST_OFFSET = _INSTANCECOUNT_OFFSET + INT_SIZE;
@@ -87,7 +87,7 @@ public class CommandBufferMultiDrawArraysIndirect extends DrawCommandBufferImpl<
 
     protected long commandsAddr;
 
-    public CommandBufferMultiDrawArraysIndirect(@NonNull DrawCommandBufferBuilderImpl builder) {
+    public DrawListMultiDrawArraysIndirect(@NonNull DrawListBuilderImpl builder) {
         super(builder);
 
         this.buffer = this.gl().createBuffer(BufferUsage.STREAM_DRAW);

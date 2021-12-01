@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.gl.bitset;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.draw.command.DrawCommandBuffer;
+import net.daporkchop.fp2.gl.draw.command.DrawList;
 import net.daporkchop.fp2.gl.draw.binding.DrawMode;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 
@@ -32,12 +32,12 @@ import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
  */
 public interface GLBitSetBuilder {
     /**
-     * Hints that a {@link GLBitSet} implementation should be chosen which is optimized for usage with {@link DrawCommandBuffer#execute(DrawMode, DrawShaderProgram, GLBitSet)}
-     * for the given {@link DrawCommandBuffer}.
+     * Hints that a {@link GLBitSet} implementation should be chosen which is optimized for usage with {@link DrawList#execute(DrawMode, DrawShaderProgram, GLBitSet)}
+     * for the given {@link DrawList}.
      *
-     * @param commandBuffer the {@link DrawCommandBuffer}
+     * @param commandBuffer the {@link DrawList}
      */
-    GLBitSetBuilder optimizeFor(@NonNull DrawCommandBuffer<?> commandBuffer);
+    GLBitSetBuilder optimizeFor(@NonNull DrawList<?> commandBuffer);
 
     /**
      * @return the constructed {@link GLBitSet}

@@ -45,7 +45,7 @@ import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.draw.binding.DrawBindingIndexed;
 import net.daporkchop.fp2.gl.draw.binding.DrawMode;
 import net.daporkchop.fp2.gl.draw.command.DrawCommandArrays;
-import net.daporkchop.fp2.gl.draw.command.DrawCommandBuffer;
+import net.daporkchop.fp2.gl.draw.command.DrawList;
 import net.daporkchop.fp2.gl.draw.command.DrawCommandIndexed;
 import net.daporkchop.fp2.gl.draw.index.IndexBuffer;
 import net.daporkchop.fp2.gl.draw.index.IndexFormat;
@@ -210,7 +210,7 @@ public class TestLWJGL2 {
                 .withTexture(texture)
                 .build();
 
-        DrawCommandBuffer<DrawCommandArrays> commandBufferArrays = gl.createCommandBuffer()
+        DrawList<DrawCommandArrays> commandBufferArrays = gl.createCommandBuffer()
                 .forArrays(binding)
                 .build();
         commandBufferArrays.resize(4);
@@ -219,7 +219,7 @@ public class TestLWJGL2 {
         commandBufferArrays.set(2, new DrawCommandArrays(0, 3));
         commandBufferArrays.set(3, new DrawCommandArrays(0, 3));
 
-        DrawCommandBuffer<DrawCommandIndexed> commandBufferElements = gl.createCommandBuffer()
+        DrawList<DrawCommandIndexed> commandBufferElements = gl.createCommandBuffer()
                 .forIndexed(binding)
                 .build();
         commandBufferElements.resize(4);

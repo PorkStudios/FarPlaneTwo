@@ -35,7 +35,7 @@ import net.daporkchop.fp2.gl.draw.binding.DrawMode;
 import net.daporkchop.fp2.gl.bitset.GLBitSet;
 import net.daporkchop.fp2.gl.bitset.GLBitSetBuilder;
 import net.daporkchop.fp2.gl.draw.command.DrawCommand;
-import net.daporkchop.fp2.gl.draw.command.DrawCommandBuffer;
+import net.daporkchop.fp2.gl.draw.command.DrawList;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.mode.api.IFarPos;
@@ -162,7 +162,7 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
 
         protected final IBakeOutputStorage<BO, DB, DC> storage;
         protected final List<DB> bindings;
-        protected final DrawCommandBuffer<DC>[] commandBuffers = uncheckedCast(new DrawCommandBuffer[RENDER_PASS_COUNT]);
+        protected final DrawList<DC>[] commandBuffers = uncheckedCast(new DrawList[RENDER_PASS_COUNT]);
 
         protected final GLBitSet bitsValid;
         protected final GLBitSet bitsSelection;
@@ -318,7 +318,7 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
             //delete all gl objects
             this.bitsValid.close();
             this.bitsSelection.close();
-            Stream.of(this.commandBuffers).forEach(DrawCommandBuffer::close);
+            Stream.of(this.commandBuffers).forEach(DrawList::close);
             this.bindings.forEach(DB::close);
             this.storage.release();
         }

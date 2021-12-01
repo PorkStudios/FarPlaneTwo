@@ -40,7 +40,7 @@ import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.compute.GLCompute;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.draw.DrawLayoutBuilder;
-import net.daporkchop.fp2.gl.draw.command.DrawCommandBufferBuilder;
+import net.daporkchop.fp2.gl.draw.command.DrawListBuilder;
 import net.daporkchop.fp2.gl.draw.index.IndexFormatBuilder;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.draw.shader.FragmentShader;
@@ -57,7 +57,7 @@ import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
 import net.daporkchop.fp2.gl.opengl.compute.ComputeImpl;
 import net.daporkchop.fp2.gl.opengl.draw.DrawLayoutBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.draw.DrawLayoutImpl;
-import net.daporkchop.fp2.gl.opengl.draw.command.DrawCommandBufferBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.draw.command.DrawListBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.draw.index.IndexFormatBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.draw.shader.DrawShaderProgramImpl;
 import net.daporkchop.fp2.gl.opengl.draw.shader.FragmentShaderImpl;
@@ -244,8 +244,8 @@ public class OpenGL implements GL {
     }
 
     @Override
-    public DrawCommandBufferBuilder.TypeStage createCommandBuffer() {
-        return new DrawCommandBufferBuilderImpl(this);
+    public DrawListBuilder.TypeStage createCommandBuffer() {
+        return new DrawListBuilderImpl(this);
     }
 
     //

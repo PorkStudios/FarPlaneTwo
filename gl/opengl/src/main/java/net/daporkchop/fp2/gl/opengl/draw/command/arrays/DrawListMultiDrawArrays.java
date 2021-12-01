@@ -26,8 +26,8 @@ import net.daporkchop.fp2.gl.draw.command.DrawCommandArrays;
 import net.daporkchop.fp2.gl.draw.binding.DrawMode;
 import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
 import net.daporkchop.fp2.gl.opengl.bitset.AbstractGLBitSet;
-import net.daporkchop.fp2.gl.opengl.draw.command.DrawCommandBufferBuilderImpl;
-import net.daporkchop.fp2.gl.opengl.draw.command.DrawCommandBufferImpl;
+import net.daporkchop.fp2.gl.opengl.draw.command.DrawListBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.draw.command.DrawListImpl;
 import net.daporkchop.fp2.gl.opengl.draw.binding.DrawBindingImpl;
 import net.daporkchop.fp2.gl.opengl.draw.shader.DrawShaderProgramImpl;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
@@ -39,11 +39,11 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public class CommandBufferMultiDrawArrays extends DrawCommandBufferImpl<DrawCommandArrays, DrawBindingImpl> {
+public class DrawListMultiDrawArrays extends DrawListImpl<DrawCommandArrays, DrawBindingImpl> {
     protected long firstAddr;
     protected long countAddr;
 
-    public CommandBufferMultiDrawArrays(@NonNull DrawCommandBufferBuilderImpl builder) {
+    public DrawListMultiDrawArrays(@NonNull DrawListBuilderImpl builder) {
         super(builder);
     }
 

@@ -34,8 +34,8 @@ import net.daporkchop.fp2.gl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.compute.GLCompute;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.draw.DrawLayoutBuilder;
-import net.daporkchop.fp2.gl.draw.command.DrawCommandBuffer;
-import net.daporkchop.fp2.gl.draw.command.DrawCommandBufferBuilder;
+import net.daporkchop.fp2.gl.draw.command.DrawList;
+import net.daporkchop.fp2.gl.draw.command.DrawListBuilder;
 import net.daporkchop.fp2.gl.draw.index.IndexFormat;
 import net.daporkchop.fp2.gl.draw.index.IndexFormatBuilder;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
@@ -148,9 +148,9 @@ public interface GL extends AutoCloseable {
     DrawLayoutBuilder createDrawLayout();
 
     /**
-     * @return a builder for constructing a new {@link DrawCommandBuffer}
+     * @return a builder for constructing a new {@link DrawList}
      */
-    DrawCommandBufferBuilder.TypeStage createCommandBuffer();
+    DrawListBuilder.TypeStage createCommandBuffer();
 
     //
     // SHADERS

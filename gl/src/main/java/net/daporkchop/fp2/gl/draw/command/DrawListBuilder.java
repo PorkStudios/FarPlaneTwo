@@ -25,12 +25,12 @@ import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.fp2.gl.draw.binding.DrawBindingIndexed;
 
 /**
- * Builder for {@link DrawCommandBuffer}s.
+ * Builder for {@link DrawList}s.
  *
  * @param <B> the type of command buffer to build
  * @author DaPorkchop_
  */
-public interface DrawCommandBufferBuilder<B extends DrawCommandBuffer> {
+public interface DrawListBuilder<B extends DrawList> {
     /**
      * @return the constructed {@link B}
      */
@@ -40,15 +40,15 @@ public interface DrawCommandBufferBuilder<B extends DrawCommandBuffer> {
      * @author DaPorkchop_
      */
     interface TypeStage {
-        OptimizeStage<DrawCommandBuffer<DrawCommandArrays>> forArrays(@NonNull DrawBinding binding);
+        OptimizeStage<DrawList<DrawCommandArrays>> forArrays(@NonNull DrawBinding binding);
 
-        OptimizeStage<DrawCommandBuffer<DrawCommandIndexed>> forIndexed(@NonNull DrawBindingIndexed binding);
+        OptimizeStage<DrawList<DrawCommandIndexed>> forIndexed(@NonNull DrawBindingIndexed binding);
     }
 
     /**
      * @author DaPorkchop_
      */
-    interface OptimizeStage<B extends DrawCommandBuffer> extends DrawCommandBufferBuilder<B> {
-        DrawCommandBufferBuilder<B> optimizeForCpuSelection();
+    interface OptimizeStage<B extends DrawList> extends DrawListBuilder<B> {
+        DrawListBuilder<B> optimizeForCpuSelection();
     }
 }

@@ -29,7 +29,7 @@ import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 /**
  * @author DaPorkchop_
  */
-public interface DrawCommandBuffer<C extends DrawCommand> extends GLResource {
+public interface DrawList<C extends DrawCommand> extends GLResource {
     /**
      * @return the number of commands that this buffer can store
      */
