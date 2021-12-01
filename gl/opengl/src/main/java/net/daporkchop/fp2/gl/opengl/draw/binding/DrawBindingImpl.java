@@ -21,25 +21,21 @@
 package net.daporkchop.fp2.gl.opengl.draw.binding;
 
 import com.google.common.collect.ImmutableList;
+import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
-import net.daporkchop.fp2.gl.opengl.GLAPI;
-import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.common.ShaderStorageBlockBuffer;
 import net.daporkchop.fp2.gl.opengl.attribute.common.TextureBuffer;
 import net.daporkchop.fp2.gl.opengl.attribute.common.UniformBlockBuffer;
-import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureTarget;
-import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
 import net.daporkchop.fp2.gl.opengl.draw.DrawLayoutImpl;
+import net.daporkchop.fp2.gl.opengl.layout.BaseBindingImpl;
 
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -47,10 +43,8 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public class DrawBindingImpl implements DrawBinding {
-    protected final OpenGL gl;
-    protected final GLAPI api;
-
+@Getter
+public class DrawBindingImpl extends BaseBindingImpl implements DrawBinding {
     protected final DrawLayoutImpl layout;
 
     protected final int vao;
@@ -59,9 +53,9 @@ public class DrawBindingImpl implements DrawBinding {
     protected final List<UniformBufferBinding> uniformBuffers;
 
     public DrawBindingImpl(@NonNull DrawBindingBuilderImpl builder) {
+        super(builder.layout.gl());
+
         this.layout = builder.layout;
-        this.gl = this.layout.gl();
-        this.api = this.gl.api();
 
         //create a VAO
         this.vao = this.api.glGenVertexArray();
@@ -153,36 +147,4 @@ public class DrawBindingImpl implements DrawBinding {
         }
     }
 
-    /**
-     * @author DaPorkchop_
-     */
-    @RequiredArgsConstructor
-    protected static class ShaderStorageBufferBinding {
-        @NonNull
-        protected final GLBufferImpl buffer;
-        protected final int bindingIndex;
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    @RequiredArgsConstructor
-    protected static class TextureBinding {
-        protected final int unit;
-        @NonNull
-        protected final TextureTarget target;
-        protected final int id;
-
-        protected int prevId = -1;
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    @RequiredArgsConstructor
-    protected static class UniformBufferBinding {
-        @NonNull
-        protected final GLBufferImpl buffer;
-        protected final int bindingIndex;
-    }
 }

@@ -41,6 +41,7 @@ import net.daporkchop.fp2.gl.attribute.uniform.UniformBuffer;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
 import net.daporkchop.fp2.gl.bitset.GLBitSet;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
+import net.daporkchop.fp2.gl.command.CommandBuffer;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.draw.binding.DrawBindingIndexed;
 import net.daporkchop.fp2.gl.draw.binding.DrawMode;
@@ -210,7 +211,7 @@ public class TestLWJGL2 {
                 .withTexture(texture)
                 .build();
 
-        DrawList<DrawCommandArrays> commandBufferArrays = gl.createCommandBuffer()
+        DrawList<DrawCommandArrays> commandBufferArrays = gl.createDrawList()
                 .forArrays(binding)
                 .build();
         commandBufferArrays.resize(4);
@@ -219,7 +220,7 @@ public class TestLWJGL2 {
         commandBufferArrays.set(2, new DrawCommandArrays(0, 3));
         commandBufferArrays.set(3, new DrawCommandArrays(0, 3));
 
-        DrawList<DrawCommandIndexed> commandBufferElements = gl.createCommandBuffer()
+        DrawList<DrawCommandIndexed> commandBufferElements = gl.createDrawList()
                 .forIndexed(binding)
                 .build();
         commandBufferElements.resize(4);
@@ -236,13 +237,20 @@ public class TestLWJGL2 {
         while (!Display.isCloseRequested()) {
             glClear(GL_COLOR_BUFFER_BIT);
 
-            bitSet.set(i -> ThreadLocalRandom.current().nextBoolean());
+            try (CommandBuffer commandBuffer = gl.createCommandBuffer()
+                    .drawArrays(binding, drawShaderProgram, DrawMode.TRIANGLES, 0, 3)
+                    .build()) {
+                uniformBuffer.set(new UniformAttribs((byte) 32, (byte) 32));
+                commandBuffer.execute();
+            }
+
+            /*bitSet.set(i -> ThreadLocalRandom.current().nextBoolean());
 
             uniformBuffer.set(new UniformAttribs((byte) 32, (byte) 32));
             commandBufferArrays.execute(DrawMode.TRIANGLES, drawShaderProgram, bitSet);
 
             uniformBuffer.set(new UniformAttribs((byte) -128, (byte) -128));
-            commandBufferElements.execute(DrawMode.TRIANGLES, drawShaderProgram);
+            commandBufferElements.execute(DrawMode.TRIANGLES, drawShaderProgram);*/
 
             Display.update();
             Display.sync(60);

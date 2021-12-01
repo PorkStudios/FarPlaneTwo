@@ -1,0 +1,87 @@
+/*
+ * Adapted from The MIT License (MIT)
+ *
+ * Copyright (c) 2020-2021 DaPorkchop_
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
+ * modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software
+ * is furnished to do so, subject to the following conditions:
+ *
+ * Any persons and/or organizations using this software must include the above copyright notice and this permission notice,
+ * provide sufficient credit to the original authors of the project (IE: DaPorkchop_), as well as provide a link to the original project.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ */
+
+package net.daporkchop.fp2.gl.command;
+
+import lombok.NonNull;
+import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
+import net.daporkchop.fp2.gl.draw.binding.DrawMode;
+import net.daporkchop.fp2.gl.draw.command.DrawList;
+import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
+
+/**
+ * Builder for {@link CommandBuffer}s.
+ *
+ * @author DaPorkchop_
+ */
+public interface CommandBufferBuilder {
+    //
+    // STATE
+    //
+
+    CommandBufferBuilder framebufferClear(@NonNull FramebufferLayer... layers);
+
+    CommandBufferBuilder stencilEnable();
+
+    CommandBufferBuilder stencilDisable();
+
+    CommandBufferBuilder stencilWriteMask(int writeMask);
+
+    CommandBufferBuilder stencilCompareMask(int compareMask);
+
+    CommandBufferBuilder stencilReference(int reference);
+
+    CommandBufferBuilder stencilCompare(@NonNull Comparison comparison);
+
+    /**
+     * Sets the operations used to modify the value in the stencil buffer for a given fragment.
+     *
+     * @param fail      the action performed if the stencil test fails
+     * @param pass      the action performed if both the stencil test and depth test pass
+     * @param depthFail the action performed if the stencil test passes, but the depth test fails
+     */
+    CommandBufferBuilder stencilOperation(@NonNull StencilOperation fail, @NonNull StencilOperation pass, @NonNull StencilOperation depthFail);
+
+    //
+    // DRAWING
+    //
+
+    CommandBufferBuilder drawArrays(@NonNull DrawBinding binding, @NonNull DrawShaderProgram shader, @NonNull DrawMode mode, int first, int count);
+
+    CommandBufferBuilder drawList(@NonNull DrawShaderProgram shader, @NonNull DrawMode mode, @NonNull DrawList<?> list);
+
+    //
+    // MISC
+    //
+
+    /**
+     * Executes the given {@link CommandBuffer}.
+     */
+    CommandBufferBuilder execute(@NonNull CommandBuffer buffer);
+
+    //
+    // BUILDER
+    //
+
+    /**
+     * @return the constructed {@link CommandBuffer}
+     */
+    CommandBuffer build();
+}

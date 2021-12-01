@@ -37,6 +37,7 @@ import java.util.List;
 import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.objectweb.asm.Opcodes.*;
+import static org.objectweb.asm.Type.*;
 
 /**
  * @author DaPorkchop_
@@ -457,7 +458,7 @@ public class StructMember<S> {
             Field field = this.fields[componentIndex];
 
             mv.visitVarInsn(ALOAD, structLvtIndex);
-            mv.visitFieldInsn(GETFIELD, Type.getInternalName(field.getDeclaringClass()), field.getName(), Type.getDescriptor(field.getType()));
+            mv.visitFieldInsn(GETFIELD, getInternalName(field.getDeclaringClass()), field.getName(), Type.getDescriptor(field.getType()));
         }
 
         @Override
@@ -465,8 +466,8 @@ public class StructMember<S> {
             for (Field field : this.fields) {
                 mv.visitVarInsn(ALOAD, dstStructLvtIndex);
                 mv.visitVarInsn(ALOAD, srcStructLvtIndex);
-                mv.visitFieldInsn(GETFIELD, Type.getInternalName(field.getDeclaringClass()), field.getName(), Type.getDescriptor(field.getType()));
-                mv.visitFieldInsn(PUTFIELD, Type.getInternalName(field.getDeclaringClass()), field.getName(), Type.getDescriptor(field.getType()));
+                mv.visitFieldInsn(GETFIELD, getInternalName(field.getDeclaringClass()), field.getName(), Type.getDescriptor(field.getType()));
+                mv.visitFieldInsn(PUTFIELD, getInternalName(field.getDeclaringClass()), field.getName(), Type.getDescriptor(field.getType()));
             }
         }
     }
@@ -505,7 +506,7 @@ public class StructMember<S> {
             checkIndex(this.components(), componentIndex);
 
             mv.visitVarInsn(ALOAD, structLvtIndex);
-            mv.visitFieldInsn(GETFIELD, Type.getInternalName(this.field.getDeclaringClass()), this.field.getName(), "I");
+            mv.visitFieldInsn(GETFIELD, getInternalName(this.field.getDeclaringClass()), this.field.getName(), "I");
 
             mv.visitLdcInsn((((2 - componentIndex) & 3) << 3));
             mv.visitInsn(ISHR);
@@ -517,8 +518,8 @@ public class StructMember<S> {
         public void cloneStruct(@NonNull MethodVisitor mv, int srcStructLvtIndex, int dstStructLvtIndex) {
             mv.visitVarInsn(ALOAD, dstStructLvtIndex);
             mv.visitVarInsn(ALOAD, srcStructLvtIndex);
-            mv.visitFieldInsn(GETFIELD, Type.getInternalName(this.field.getDeclaringClass()), this.field.getName(), "I");
-            mv.visitFieldInsn(PUTFIELD, Type.getInternalName(this.field.getDeclaringClass()), this.field.getName(), "I");
+            mv.visitFieldInsn(GETFIELD, getInternalName(this.field.getDeclaringClass()), this.field.getName(), "I");
+            mv.visitFieldInsn(PUTFIELD, getInternalName(this.field.getDeclaringClass()), this.field.getName(), "I");
         }
     }
 
@@ -558,7 +559,7 @@ public class StructMember<S> {
             Label label = new Label();
 
             mv.visitVarInsn(ALOAD, structLvtIndex);
-            mv.visitFieldInsn(GETFIELD, Type.getInternalName(this.field.getDeclaringClass()), this.field.getName(), Type.getDescriptor(this.field.getType()));
+            mv.visitFieldInsn(GETFIELD, getInternalName(this.field.getDeclaringClass()), this.field.getName(), Type.getDescriptor(this.field.getType()));
             mv.visitInsn(ARRAYLENGTH);
             mv.visitLdcInsn(this.components());
             mv.visitJumpInsn(IF_ICMPEQ, label);
@@ -577,7 +578,7 @@ public class StructMember<S> {
             checkIndex(this.components(), componentIndex);
 
             mv.visitVarInsn(ALOAD, structLvtIndex);
-            mv.visitFieldInsn(GETFIELD, Type.getInternalName(this.field.getDeclaringClass()), this.field.getName(), Type.getDescriptor(this.field.getType()));
+            mv.visitFieldInsn(GETFIELD, getInternalName(this.field.getDeclaringClass()), this.field.getName(), Type.getDescriptor(this.field.getType()));
             mv.visitLdcInsn(componentIndex);
             this.componentType.arrayLoad(mv);
         }
@@ -586,9 +587,9 @@ public class StructMember<S> {
         public void cloneStruct(@NonNull MethodVisitor mv, int srcStructLvtIndex, int dstStructLvtIndex) {
             mv.visitVarInsn(ALOAD, dstStructLvtIndex);
             mv.visitVarInsn(ALOAD, srcStructLvtIndex);
-            mv.visitFieldInsn(GETFIELD, Type.getInternalName(this.field.getDeclaringClass()), this.field.getName(), Type.getDescriptor(this.field.getType()));
-            mv.visitMethodInsn(INVOKEVIRTUAL, Type.getInternalName(this.field.getType()), "clone", Type.getMethodDescriptor(Type.getType(this.field.getType())), false);
-            mv.visitFieldInsn(PUTFIELD, Type.getInternalName(this.field.getDeclaringClass()), this.field.getName(), Type.getDescriptor(this.field.getType()));
+            mv.visitFieldInsn(GETFIELD, getInternalName(this.field.getDeclaringClass()), this.field.getName(), Type.getDescriptor(this.field.getType()));
+            mv.visitMethodInsn(INVOKEVIRTUAL, getInternalName(this.field.getType()), "clone", Type.getMethodDescriptor(Type.getType(this.field.getType())), false);
+            mv.visitFieldInsn(PUTFIELD, getInternalName(this.field.getDeclaringClass()), this.field.getName(), Type.getDescriptor(this.field.getType()));
         }
     }
 

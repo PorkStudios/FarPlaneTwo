@@ -25,6 +25,7 @@ import net.daporkchop.fp2.common.GlobalProperties;
 import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
 import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
+import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayFormat;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
 import net.daporkchop.fp2.gl.bitset.GLBitSet;
@@ -34,6 +35,8 @@ import net.daporkchop.fp2.gl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.compute.GLCompute;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.draw.DrawLayoutBuilder;
+import net.daporkchop.fp2.gl.command.CommandBuffer;
+import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
 import net.daporkchop.fp2.gl.draw.command.DrawList;
 import net.daporkchop.fp2.gl.draw.command.DrawListBuilder;
 import net.daporkchop.fp2.gl.draw.index.IndexFormat;
@@ -43,7 +46,6 @@ import net.daporkchop.fp2.gl.draw.shader.FragmentShader;
 import net.daporkchop.fp2.gl.draw.shader.VertexShader;
 import net.daporkchop.fp2.gl.shader.BaseShaderBuilder;
 import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
-import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
 
 import java.util.function.Supplier;
 
@@ -150,7 +152,12 @@ public interface GL extends AutoCloseable {
     /**
      * @return a builder for constructing a new {@link DrawList}
      */
-    DrawListBuilder.TypeStage createCommandBuffer();
+    DrawListBuilder.TypeStage createDrawList();
+
+    /**
+     * @return a builder for constructing a new {@link CommandBuffer}
+     */
+    CommandBufferBuilder createCommandBuffer();
 
     //
     // SHADERS

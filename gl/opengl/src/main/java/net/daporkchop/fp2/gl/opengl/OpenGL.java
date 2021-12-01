@@ -37,6 +37,7 @@ import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayFormat;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
 import net.daporkchop.fp2.gl.bitset.GLBitSetBuilder;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
+import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
 import net.daporkchop.fp2.gl.compute.GLCompute;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.draw.DrawLayoutBuilder;
@@ -54,6 +55,7 @@ import net.daporkchop.fp2.gl.opengl.attribute.uniform.UniformArrayFormatShaderSt
 import net.daporkchop.fp2.gl.opengl.attribute.uniform.UniformFormatBlock;
 import net.daporkchop.fp2.gl.opengl.bitset.GLBitSetBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
+import net.daporkchop.fp2.gl.opengl.command.CommandBufferBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.compute.ComputeImpl;
 import net.daporkchop.fp2.gl.opengl.draw.DrawLayoutBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.draw.DrawLayoutImpl;
@@ -244,8 +246,13 @@ public class OpenGL implements GL {
     }
 
     @Override
-    public DrawListBuilder.TypeStage createCommandBuffer() {
+    public DrawListBuilder.TypeStage createDrawList() {
         return new DrawListBuilderImpl(this);
+    }
+
+    @Override
+    public CommandBufferBuilder createCommandBuffer() {
+        return new CommandBufferBuilderImpl(this);
     }
 
     //

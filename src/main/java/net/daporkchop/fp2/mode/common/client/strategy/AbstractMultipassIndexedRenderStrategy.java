@@ -79,7 +79,7 @@ public abstract class AbstractMultipassIndexedRenderStrategy<POS extends IFarPos
 
     @Override
     public DrawList<DrawCommandIndexed> createCommandBuffer(@NonNull DrawBindingIndexed binding) {
-        return this.gl.createCommandBuffer()
+        return this.gl.createDrawList()
                 .forIndexed(binding)
                 .build();
     }
