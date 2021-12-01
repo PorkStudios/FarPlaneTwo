@@ -120,11 +120,13 @@ public class TestLWJGL2 {
 
     @SneakyThrows({ ShaderCompilationException.class, ShaderLinkageException.class })
     private static void run(@NonNull GL gl) {
-        UniformFormat<UniformAttribs> uniformFormat = gl.createUniformFormat(UniformAttribs.class);
-        UniformArrayFormat<UniformArrayAttribs> uniformArrayFormat = gl.createUniformArrayFormat(UniformArrayAttribs.class);
-        DrawGlobalFormat<GlobalAttribs> globalFormat = gl.createDrawGlobalFormat(GlobalAttribs.class);
-        DrawLocalFormat<LocalAttribs> localFormat = gl.createDrawLocalFormat(LocalAttribs.class);
-        TextureFormat2D<TextureAttribs> textureFormat = gl.createTextureFormat2D(TextureAttribs.class);
+        UniformFormat<UniformAttribs> uniformFormat = gl.createUniformFormat(UniformAttribs.class).build();
+        UniformArrayFormat<UniformArrayAttribs> uniformArrayFormat = gl.createUniformArrayFormat(UniformArrayAttribs.class).build();
+        DrawGlobalFormat<GlobalAttribs> globalFormat = gl.createDrawGlobalFormat(GlobalAttribs.class).build();
+        DrawLocalFormat<LocalAttribs> localFormat = gl.createDrawLocalFormat(LocalAttribs.class)
+                .rename("a_pos", "a_posRenamed")
+                .build();
+        TextureFormat2D<TextureAttribs> textureFormat = gl.createTextureFormat2D(TextureAttribs.class).build();
 
         DrawLayout layout = gl.createDrawLayout()
                 .withUniforms(uniformFormat)

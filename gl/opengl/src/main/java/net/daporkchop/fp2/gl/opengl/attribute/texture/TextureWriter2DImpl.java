@@ -23,7 +23,6 @@ package net.daporkchop.fp2.gl.opengl.attribute.texture;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureWriter2D;
-import net.daporkchop.lib.unsafe.PUnsafe;
 
 import static java.lang.Math.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -36,7 +35,6 @@ public class TextureWriter2DImpl<S> extends BaseTextureWriterImpl<S, TextureForm
     protected final int height;
     protected final int stride;
 
-    protected final byte[] buf;
     protected final long addr;
 
     public TextureWriter2DImpl(@NonNull TextureFormat2DImpl<S> format, int width, int height) {
@@ -46,7 +44,6 @@ public class TextureWriter2DImpl<S> extends BaseTextureWriterImpl<S, TextureForm
         this.height = positive(height, "height");
         this.stride = toInt(this.structFormat.stride(), "stride");
 
-        this.buf = new byte[multiplyExact(multiplyExact(this.width, this.height), this.stride)];
         this.addr = this.gl.directMemoryAllocator().alloc(multiplyExact(multiplyExact(this.width, this.height), this.stride));
     }
 
@@ -63,6 +60,14 @@ public class TextureWriter2DImpl<S> extends BaseTextureWriterImpl<S, TextureForm
         //well, it *isn't* being implicitly cast to a long - it's quite EXPLICITLY being cast to a long! no clue why intellij has decided to warn me about this...
         //noinspection IntegerMultiplicationImplicitCastToLong
         this.structFormat.copy(struct, null, this.addr + (long) ((y * this.width + x) * this.stride));
-        this.structFormat.copy(struct, this.buf, PUnsafe.ARRAY_BYTE_BASE_OFFSET + (long) ((y * this.width + x) * this.stride));
+    }
+
+    @Override
+    public void setARGB(int x, int y, int argb) {
+        checkIndex(this.width, x);
+        checkIndex(this.height, y);
+
+        //noinspection IntegerMultiplicationImplicitCastToLong
+        this.structFormat.copyFromARGB(argb, null, this.addr + (long) ((y * this.width + x) * this.stride));
     }
 }

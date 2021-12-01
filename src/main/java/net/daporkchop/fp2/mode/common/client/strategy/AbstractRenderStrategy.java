@@ -76,12 +76,12 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
         this.mode = mode;
         this.gl = gl;
 
-        this.uniformFormat = gl.createUniformFormat(GlStateUniformAttributes.class);
+        this.uniformFormat = gl.createUniformFormat(GlStateUniformAttributes.class).build();
         this.uniformBuffer = this.uniformFormat.createBuffer(BufferUsage.STATIC_DRAW);
 
-        this.textureFormatTerrain = gl.createTextureFormat2D(TerrainTextureAttribute.class);
+        this.textureFormatTerrain = gl.createTextureFormat2D(TerrainTextureAttribute.class).build();
         this.textureTerrain = this.textureFormatTerrain.wrapExternalTexture(MC.getTextureMapBlocks().getGlTextureId());
-        this.textureFormatLightmap = gl.createTextureFormat2D(LightmapTextureAttribute.class);
+        this.textureFormatLightmap = gl.createTextureFormat2D(LightmapTextureAttribute.class).build();
         this.textureLightmap = this.textureFormatLightmap.wrapExternalTexture(MC.getTextureManager().getTexture(MC.entityRenderer.locationLightMap).getGlTextureId());
 
         this.textureUVs = new TextureUVs(gl);

@@ -18,29 +18,28 @@
  *
  */
 
-package net.daporkchop.fp2.gl.attribute.texture;
+package net.daporkchop.fp2.gl.attribute;
 
 import lombok.NonNull;
 
 /**
+ * Builder for {@link BaseAttributeFormat} types.
+ *
  * @author DaPorkchop_
  */
-public interface TextureWriter2D<S> extends BaseTextureWriter<TextureFormat2D<S>> {
+public interface AttributeFormatBuilder<F extends BaseAttributeFormat> {
     /**
-     * Sets the texel at the given coordinates.
+     * Registers an attribute name override.
+     * <p>
+     * The attribute with the given original name will be visible in shaders under the given new name.
      *
-     * @param x      the X coordinate
-     * @param y      the Y coordinate
-     * @param struct a {@link S} instance containing the texel data
+     * @param originalName the original name
+     * @param newName      the new name
      */
-    void set(int x, int y, @NonNull S struct);
+    AttributeFormatBuilder<F> rename(@NonNull String originalName, @NonNull String newName);
 
     /**
-     * Sets the texel at the given coordinates to the given ARGB color. If this texture has less than 4 components, any extra components will be silently discarded.
-     *
-     * @param x    the X coordinate
-     * @param y    the Y coordinate
-     * @param argb the color
+     * @return the constructed {@link F}
      */
-    void setARGB(int x, int y, int argb);
+    F build();
 }

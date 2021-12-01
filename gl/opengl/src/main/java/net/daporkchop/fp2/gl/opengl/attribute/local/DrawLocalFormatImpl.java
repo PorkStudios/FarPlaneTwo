@@ -26,7 +26,7 @@ import net.daporkchop.fp2.gl.attribute.local.DrawLocalBuffer;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalWriter;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
-import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.common.VertexAttributeFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.StructInfo;
@@ -38,8 +38,8 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFor
  */
 @Getter
 public class DrawLocalFormatImpl<S> extends BaseAttributeFormatImpl<S, InterleavedStructFormat<S>> implements DrawLocalFormat<S>, VertexAttributeFormat {
-    public DrawLocalFormatImpl(@NonNull OpenGL gl, @NonNull Class<S> clazz) {
-        super(gl, gl.structFormatGenerator().getInterleaved(StructLayouts.vertexAttributesInterleaved(gl, new StructInfo<>(clazz))));
+    public DrawLocalFormatImpl(@NonNull AttributeFormatBuilderImpl<DrawLocalFormat<S>, S> builder) {
+        super(builder.gl(), builder.gl().structFormatGenerator().getInterleaved(StructLayouts.vertexAttributesInterleaved(builder.gl(), new StructInfo<>(builder))));
     }
 
     @Override

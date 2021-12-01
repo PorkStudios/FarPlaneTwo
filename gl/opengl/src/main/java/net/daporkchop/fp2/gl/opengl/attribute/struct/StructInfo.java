@@ -25,8 +25,11 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.Attribute;
+import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
+import net.daporkchop.lib.common.util.PorkUtil;
 
 import java.lang.reflect.Field;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,15 +48,17 @@ public class StructInfo<S> {
     protected final Class<S> clazz;
     protected final List<StructMember<S>> members;
 
-    public StructInfo(@NonNull Class<S> clazz) {
-        this.clazz = clazz;
+    public StructInfo(@NonNull AttributeFormatBuilderImpl<?, S> builder) {
+        this.clazz = builder.clazz();
 
-        ImmutableList.Builder<StructMember<S>> builder = ImmutableList.builder();
-        Map<String, Field> fieldsByName = Stream.of(clazz.getFields())
+        ImmutableList.Builder<StructMember<S>> memberListBuilder = ImmutableList.builder();
+        Map<String, Field> fieldsByName = Stream.of(this.clazz.getFields())
                 .collect(Collectors.toMap(Field::getName, Function.identity(), (a, b) -> {
                             throw new IllegalArgumentException(a + " " + b);
                         },
                         LinkedHashMap::new));
+
+        Map<String, String> nameOverrides = new HashMap<>(builder.nameOverrides());
 
         while (!fieldsByName.isEmpty()) {
             Field field = fieldsByName.values().stream()
@@ -66,14 +71,14 @@ public class StructInfo<S> {
 
             if (attribute.vectorAxes().length == 0) {
                 fieldsByName.remove(name);
-                builder.add(new StructMember<>(clazz, name, attribute, ImmutableList.of(field)));
+                memberListBuilder.add(new StructMember<>(this.clazz, name, attribute, ImmutableList.of(field)));
             } else {
                 String[] vectorAxes = attribute.vectorAxes();
                 checkArg(name.endsWith(vectorAxes[0]), "name doesn't end in %s: %s", vectorAxes[0], field);
 
                 String baseName = name.substring(0, name.length() - vectorAxes[0].length());
 
-                builder.add(new StructMember<>(clazz, baseName, attribute, Stream.of(vectorAxes)
+                memberListBuilder.add(new StructMember<>(this.clazz, PorkUtil.fallbackIfNull(nameOverrides.remove(baseName), baseName), attribute, Stream.of(vectorAxes)
                         .map(axisSuffix -> {
                             Field componentField = fieldsByName.remove(baseName + axisSuffix);
                             checkArg(componentField != null, "no such field: %s%s", baseName, axisSuffix);
@@ -83,7 +88,9 @@ public class StructInfo<S> {
             }
         }
 
-        this.members = builder.build();
+        nameOverrides.forEach((oldName, newName) -> checkArg(false, "cannot rename attribute %s to %s: no such attribute %1$s", oldName, newName));
+
+        this.members = memberListBuilder.build();
     }
 
     public String name() {

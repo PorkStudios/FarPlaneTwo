@@ -35,6 +35,7 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.InterleavedStructLay
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.StructLayout;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.TextureStructLayout;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLMatrixType;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLPrimitiveType;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
@@ -287,6 +288,38 @@ public class StructFormatGenerator {
 
             //copy each member type
             member.copyStageOutput(mv, stage, 1, 2, 4, 5, 0L);
+
+            mv.visitInsn(RETURN);
+
+            mv.visitMaxs(0, 0);
+            mv.visitEnd();
+        }
+
+        { //void copyFromARGB(int argb, long srcOffset, Object dstBase, long dstOffset)
+            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "copyFromARGB", "(ILjava/lang/Object;J)V", null, null);
+
+            //copy each member type
+            for (int componentIndex = 0; componentIndex < stage.components(); componentIndex++) {
+                mv.visitVarInsn(ALOAD, 2);
+                mv.visitVarInsn(LLOAD, 3);
+                mv.visitLdcInsn(componentIndex * (long) stage.componentType().stride());
+                mv.visitInsn(LADD);
+
+                mv.visitVarInsn(ILOAD, 1);
+                mv.visitLdcInsn((((2 - componentIndex) & 3) << 3));
+                mv.visitInsn(ISHR);
+                mv.visitLdcInsn(0xFF);
+                mv.visitInsn(IAND);
+                if (stage.glslType().primitive() == GLSLPrimitiveType.FLOAT) {
+                    mv.visitInsn(I2F);
+                    if (stage.isNormalizedFloat()) {
+                        mv.visitLdcInsn(1.0f / 256.0f);
+                        mv.visitInsn(FMUL);
+                    }
+                }
+
+                stage.componentType().unsafePut(mv);
+            }
 
             mv.visitInsn(RETURN);
 
