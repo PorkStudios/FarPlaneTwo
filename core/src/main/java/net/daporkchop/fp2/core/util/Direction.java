@@ -18,25 +18,16 @@
  *
  */
 
-package net.daporkchop.fp2.core.mode.api.ctx;
-
-import net.daporkchop.fp2.core.client.render.WorldRenderer;
-import net.daporkchop.fp2.core.util.annotation.CalledFromClientThread;
+package net.daporkchop.fp2.core.util;
 
 /**
  * @author DaPorkchop_
  */
-public interface IFarWorldClient extends IFarWorld {
-    @CalledFromClientThread
-    @Override
-    void fp2_IFarWorld_init();
-
-    @CalledFromClientThread
-    @Override
-    void fp2_IFarWorld_close();
-
-    /**
-     * @return a {@link WorldRenderer} for rendering this world
-     */
-    WorldRenderer fp2_IFarWorldClient_renderer();
+public enum Direction {
+    POSITIVE_X,
+    POSITIVE_Y,
+    POSITIVE_Z,
+    NEGATIVE_X,
+    NEGATIVE_Y,
+    NEGATIVE_Z;
 }

@@ -18,25 +18,41 @@
  *
  */
 
-package net.daporkchop.fp2.core.mode.api.ctx;
-
-import net.daporkchop.fp2.core.client.render.WorldRenderer;
-import net.daporkchop.fp2.core.util.annotation.CalledFromClientThread;
+package net.daporkchop.fp2.core.client.render.texture;
 
 /**
+ * A quad-shaped region in the texture atlas.
+ *
  * @author DaPorkchop_
  */
-public interface IFarWorldClient extends IFarWorld {
-    @CalledFromClientThread
-    @Override
-    void fp2_IFarWorld_init();
-
-    @CalledFromClientThread
-    @Override
-    void fp2_IFarWorld_close();
+public interface TexturedQuad {
+    /**
+     * @return the texture's minimum X coordinate (inclusive)
+     */
+    int minX();
 
     /**
-     * @return a {@link WorldRenderer} for rendering this world
+     * @return the texture's minimum Y coordinate (inclusive)
      */
-    WorldRenderer fp2_IFarWorldClient_renderer();
+    int minY();
+
+    /**
+     * @return the texture's maximum X coordinate (exclusive)
+     */
+    int maxX();
+
+    /**
+     * @return the texture's maximum Y coordinate (exclusive)
+     */
+    int maxY();
+
+    /**
+     * @return the {@link TextureAtlas} this quad is in
+     */
+    TextureAtlas atlas();
+
+    /**
+     * @return the alpha mode
+     */
+    AlphaMode alphaMode();
 }

@@ -18,25 +18,17 @@
  *
  */
 
-package net.daporkchop.fp2.core.mode.api.ctx;
-
-import net.daporkchop.fp2.core.client.render.WorldRenderer;
-import net.daporkchop.fp2.core.util.annotation.CalledFromClientThread;
+package net.daporkchop.fp2.core.client.render.texture;
 
 /**
  * @author DaPorkchop_
  */
-public interface IFarWorldClient extends IFarWorld {
-    @CalledFromClientThread
-    @Override
-    void fp2_IFarWorld_init();
-
-    @CalledFromClientThread
-    @Override
-    void fp2_IFarWorld_close();
-
+public interface ModelRegistry {
     /**
-     * @return a {@link WorldRenderer} for rendering this world
+     * Gets the {@link StateModel} for the given state.
+     *
+     * @param state the state ID
+     * @return the corresponding {@link StateModel}
      */
-    WorldRenderer fp2_IFarWorldClient_renderer();
+    StateModel getModelForState(int state);
 }

@@ -22,6 +22,7 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
+import net.daporkchop.fp2.core.client.render.WorldRenderer;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldClient;
 import net.daporkchop.fp2.core.util.threading.workergroup.DefaultWorkerManager;
 import net.daporkchop.fp2.core.util.threading.workergroup.WorkerManager;
@@ -73,5 +74,10 @@ public class FakeFarWorldClient implements IFarWorldClient {
     @Override
     public long fp2_IFarWorld_timestamp() {
         return this.parent.getTotalWorldTime();
+    }
+
+    @Override
+    public WorldRenderer fp2_IFarWorldClient_renderer() {
+        return null;
     }
 }

@@ -18,25 +18,38 @@
  *
  */
 
-package net.daporkchop.fp2.core.mode.api.ctx;
+package net.daporkchop.fp2.impl.mc.forge1_12_2.client.render;
 
+import lombok.Getter;
+import lombok.NonNull;
 import net.daporkchop.fp2.core.client.render.WorldRenderer;
-import net.daporkchop.fp2.core.util.annotation.CalledFromClientThread;
+import net.daporkchop.fp2.gl.GL;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.ResourceProvider1_12_2;
+import net.minecraft.client.Minecraft;
 
 /**
  * @author DaPorkchop_
  */
-public interface IFarWorldClient extends IFarWorld {
-    @CalledFromClientThread
-    @Override
-    void fp2_IFarWorld_init();
+@Getter
+public class WorldRenderer1_12_2 implements WorldRenderer {
+    protected final Minecraft mc;
+    protected final GL gl;
 
-    @CalledFromClientThread
-    @Override
-    void fp2_IFarWorld_close();
+    public WorldRenderer1_12_2(@NonNull Minecraft mc) {
+        this.mc = mc;
 
-    /**
-     * @return a {@link WorldRenderer} for rendering this world
-     */
-    WorldRenderer fp2_IFarWorldClient_renderer();
+        this.gl = GL.builder()
+                .withResourceProvider(new ResourceProvider1_12_2(this.mc))
+                .wrapCurrent();
+    }
+
+    @Override
+    public Object terrainTextureId() {
+        return this.mc.getTextureMapBlocks().getGlTextureId();
+    }
+
+    @Override
+    public Object lightmapTextureId() {
+        return this.mc.entityRenderer.lightmapTexture.getGlTextureId();
+    }
 }

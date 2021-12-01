@@ -18,25 +18,28 @@
  *
  */
 
-package net.daporkchop.fp2.core.mode.api.ctx;
+package net.daporkchop.fp2.core.client.render;
 
-import net.daporkchop.fp2.core.client.render.WorldRenderer;
-import net.daporkchop.fp2.core.util.annotation.CalledFromClientThread;
+import net.daporkchop.fp2.gl.GL;
 
 /**
+ * Version-independent interface for rendering the world.
+ *
  * @author DaPorkchop_
  */
-public interface IFarWorldClient extends IFarWorld {
-    @CalledFromClientThread
-    @Override
-    void fp2_IFarWorld_init();
-
-    @CalledFromClientThread
-    @Override
-    void fp2_IFarWorld_close();
+public interface WorldRenderer {
+    /**
+     * @return the {@link GL} used in this world
+     */
+    GL gl();
 
     /**
-     * @return a {@link WorldRenderer} for rendering this world
+     * @return the GL-implementation-specific ID for the terrain texture
      */
-    WorldRenderer fp2_IFarWorldClient_renderer();
+    Object terrainTextureId();
+
+    /**
+     * @return the GL-implementation-specific ID for the lightmap texture
+     */
+    Object lightmapTextureId();
 }

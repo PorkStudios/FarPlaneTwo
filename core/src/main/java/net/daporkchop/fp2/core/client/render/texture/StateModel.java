@@ -18,25 +18,16 @@
  *
  */
 
-package net.daporkchop.fp2.core.mode.api.ctx;
+package net.daporkchop.fp2.core.client.render.texture;
 
-import net.daporkchop.fp2.core.client.render.WorldRenderer;
-import net.daporkchop.fp2.core.util.annotation.CalledFromClientThread;
+import lombok.NonNull;
+import net.daporkchop.fp2.core.util.Direction;
+
+import java.util.List;
 
 /**
  * @author DaPorkchop_
  */
-public interface IFarWorldClient extends IFarWorld {
-    @CalledFromClientThread
-    @Override
-    void fp2_IFarWorld_init();
-
-    @CalledFromClientThread
-    @Override
-    void fp2_IFarWorld_close();
-
-    /**
-     * @return a {@link WorldRenderer} for rendering this world
-     */
-    WorldRenderer fp2_IFarWorldClient_renderer();
+public interface StateModel {
+    List<TexturedQuad> getRepresentativeQuads(@NonNull Direction direction);
 }
