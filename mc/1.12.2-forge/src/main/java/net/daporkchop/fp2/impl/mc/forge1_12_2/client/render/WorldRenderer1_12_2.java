@@ -31,7 +31,7 @@ import net.minecraft.client.Minecraft;
  * @author DaPorkchop_
  */
 @Getter
-public class WorldRenderer1_12_2 implements WorldRenderer {
+public class WorldRenderer1_12_2 implements WorldRenderer, AutoCloseable {
     protected final Minecraft mc;
     protected final GL gl;
 
@@ -51,5 +51,10 @@ public class WorldRenderer1_12_2 implements WorldRenderer {
     @Override
     public Object lightmapTextureId() {
         return this.mc.entityRenderer.lightmapTexture.getGlTextureId();
+    }
+
+    @Override
+    public void close() {
+        this.gl.close();
     }
 }

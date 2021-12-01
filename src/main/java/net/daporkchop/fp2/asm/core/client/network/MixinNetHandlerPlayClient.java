@@ -146,6 +146,7 @@ public abstract class MixinNetHandlerPlayClient implements IFarPlayerClient {
 
         if (this.context != null) {
             this.context.close();
+            this.context.world().fp2_IFarWorld_close();
             this.context = null;
         }
     }

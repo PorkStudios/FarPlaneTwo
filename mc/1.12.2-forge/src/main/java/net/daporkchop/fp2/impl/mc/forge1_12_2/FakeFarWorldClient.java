@@ -26,9 +26,12 @@ import net.daporkchop.fp2.core.client.render.WorldRenderer;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldClient;
 import net.daporkchop.fp2.core.util.threading.workergroup.DefaultWorkerManager;
 import net.daporkchop.fp2.core.util.threading.workergroup.WorkerManager;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.client.render.WorldRenderer1_12_2;
 import net.daporkchop.fp2.util.threading.futureexecutor.ClientThreadMarkedFutureExecutor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
@@ -39,11 +42,15 @@ public class FakeFarWorldClient implements IFarWorldClient {
     protected final IntAxisAlignedBB[] coordLimits;
     protected final WorkerManager workerManager;
 
+    protected WorldRenderer1_12_2 renderer;
+
     public FakeFarWorldClient(@NonNull WorldClient parent, @NonNull IntAxisAlignedBB[] coordLimits) {
         this.parent = parent;
 
         this.coordLimits = coordLimits;
         this.workerManager = new DefaultWorkerManager(Minecraft.getMinecraft().thread, ClientThreadMarkedFutureExecutor.getFor(Minecraft.getMinecraft()));
+
+        this.workerManager.rootExecutor().execute(() -> this.renderer = new WorldRenderer1_12_2(Minecraft.getMinecraft()));
     }
 
     @Override
@@ -53,7 +60,7 @@ public class FakeFarWorldClient implements IFarWorldClient {
 
     @Override
     public void fp2_IFarWorld_close() {
-        throw new UnsupportedOperationException();
+        this.renderer.close();
     }
 
     @Override
@@ -78,6 +85,7 @@ public class FakeFarWorldClient implements IFarWorldClient {
 
     @Override
     public WorldRenderer fp2_IFarWorldClient_renderer() {
-        return null;
+        checkState(this.renderer != null, "renderer hasn't been initialized!");
+        return this.renderer;
     }
 }

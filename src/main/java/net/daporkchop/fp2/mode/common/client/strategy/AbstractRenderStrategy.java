@@ -24,21 +24,23 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.FP2Client;
 import net.daporkchop.fp2.client.GlStateUniformAttributes;
-import net.daporkchop.fp2.core.client.shader.ShaderMacros;
 import net.daporkchop.fp2.client.TextureUVs;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
+import net.daporkchop.fp2.core.client.render.WorldRenderer;
+import net.daporkchop.fp2.core.client.shader.ShaderMacros;
+import net.daporkchop.fp2.core.mode.api.IFarPos;
+import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformBuffer;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
-import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
+import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.fp2.gl.draw.command.DrawCommand;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
+import net.daporkchop.fp2.mode.common.client.AbstractFarRenderer;
 import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
 import net.daporkchop.fp2.mode.common.client.strategy.texture.LightmapTextureAttribute;
 import net.daporkchop.fp2.mode.common.client.strategy.texture.TerrainTextureAttribute;
@@ -57,6 +59,8 @@ import static org.lwjgl.opengl.GL11.*;
 public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFarTile, BO extends IBakeOutput, DB extends DrawBinding, DC extends DrawCommand> extends AbstractRefCounted implements IFarRenderStrategy<POS, T, BO, DB, DC> {
     protected final Allocator alloc = new DirectMemoryAllocator();
 
+    protected final AbstractFarRenderer<POS, T> farRenderer;
+    protected final WorldRenderer worldRenderer;
     protected final IFarRenderMode<POS, T> mode;
     protected final GL gl;
 
@@ -72,19 +76,21 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
 
     protected final ShaderMacros.Mutable macros = new ShaderMacros.Mutable(FP2Client.GLOBAL_SHADER_MACROS);
 
-    public AbstractRenderStrategy(@NonNull IFarRenderMode<POS, T> mode, @NonNull GL gl) {
-        this.mode = mode;
-        this.gl = gl;
+    public AbstractRenderStrategy(@NonNull AbstractFarRenderer<POS, T> farRenderer) {
+        this.farRenderer = farRenderer;
+        this.worldRenderer = farRenderer.worldRenderer();
+        this.mode = farRenderer.mode();
+        this.gl = farRenderer.gl();
 
-        this.uniformFormat = gl.createUniformFormat(GlStateUniformAttributes.class).build();
+        this.uniformFormat = this.gl.createUniformFormat(GlStateUniformAttributes.class).build();
         this.uniformBuffer = this.uniformFormat.createBuffer(BufferUsage.STATIC_DRAW);
 
-        this.textureFormatTerrain = gl.createTextureFormat2D(TerrainTextureAttribute.class).build();
-        this.textureTerrain = this.textureFormatTerrain.wrapExternalTexture(MC.getTextureMapBlocks().getGlTextureId());
-        this.textureFormatLightmap = gl.createTextureFormat2D(LightmapTextureAttribute.class).build();
-        this.textureLightmap = this.textureFormatLightmap.wrapExternalTexture(MC.getTextureManager().getTexture(MC.entityRenderer.locationLightMap).getGlTextureId());
+        this.textureFormatTerrain = this.gl.createTextureFormat2D(TerrainTextureAttribute.class).build();
+        this.textureTerrain = this.textureFormatTerrain.wrapExternalTexture(this.worldRenderer.terrainTextureId());
+        this.textureFormatLightmap = this.gl.createTextureFormat2D(LightmapTextureAttribute.class).build();
+        this.textureLightmap = this.textureFormatLightmap.wrapExternalTexture(this.worldRenderer.lightmapTextureId());
 
-        this.textureUVs = new TextureUVs(gl);
+        this.textureUVs = new TextureUVs(this.gl);
     }
 
     @Override

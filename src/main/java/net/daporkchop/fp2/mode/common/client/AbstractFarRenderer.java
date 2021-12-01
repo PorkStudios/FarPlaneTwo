@@ -23,6 +23,7 @@ package net.daporkchop.fp2.mode.common.client;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.client.IFrustum;
+import net.daporkchop.fp2.core.client.render.WorldRenderer;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
@@ -42,10 +43,11 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 @Getter
 public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTile> extends AbstractReleasable implements IFarRenderer {
+    protected final WorldRenderer worldRenderer;
+    protected final GL gl;
+
     protected final IFarClientContext<POS, T> context;
     protected final IFarRenderMode<POS, T> mode;
-
-    protected final GL gl;
 
     protected final BakeManager<POS, T> bakeManager;
 
@@ -55,9 +57,8 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTil
         this.context = context;
         this.mode = context.mode();
 
-        this.gl = GL.builder()
-                .withResourceProvider(new ResourceProvider1_12_2(MC))
-                .wrapCurrent();
+        this.worldRenderer = context.world().fp2_IFarWorldClient_renderer();
+        this.gl = this.worldRenderer.gl();
 
         this.strategy = this.strategy0();
         this.bakeManager = this.bakeManager0();
