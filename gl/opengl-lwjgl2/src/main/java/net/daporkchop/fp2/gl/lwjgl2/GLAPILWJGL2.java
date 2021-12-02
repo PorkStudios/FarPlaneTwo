@@ -123,6 +123,16 @@ public class GLAPILWJGL2 implements GLAPI {
     //
 
     @Override
+    public void glEnable(int cap) {
+        GL11.glEnable(cap);
+    }
+
+    @Override
+    public void glDisable(int cap) {
+        GL11.glDisable(cap);
+    }
+
+    @Override
     public int glGetError() {
         return GL11.glGetError();
     }
@@ -224,6 +234,21 @@ public class GLAPILWJGL2 implements GLAPI {
     @Override
     public void glTexSubImage2D(int target, int level, int xoffset, int yoffset, int width, int height, int format, int type, @NonNull ByteBuffer data) {
         GL11.glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, data);
+    }
+
+    @Override
+    public void glStencilFunc(int func, int ref, int mask) {
+        GL11.glStencilFunc(func, ref, mask);
+    }
+
+    @Override
+    public void glStencilMask(int mask) {
+        GL11.glStencilMask(mask);
+    }
+
+    @Override
+    public void glStencilOp(int sfail, int dpfail, int dppass) {
+        GL11.glStencilOp(sfail, dpfail, dppass);
     }
 
     //

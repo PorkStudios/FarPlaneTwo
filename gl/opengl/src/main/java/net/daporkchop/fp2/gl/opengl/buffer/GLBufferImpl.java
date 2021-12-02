@@ -70,7 +70,7 @@ public class GLBufferImpl implements GLBuffer {
     @Override
     public void capacity(long capacity) {
         this.bind(BufferTarget.ARRAY_BUFFER, target -> {
-            this.api.glBufferData(target.id(), this.capacity = notNegative(capacity, "capacity"), 0L, this.usage);
+            this.api.glBufferData(target.target(), this.capacity = notNegative(capacity, "capacity"), 0L, this.usage);
         });
     }
 
@@ -105,7 +105,7 @@ public class GLBufferImpl implements GLBuffer {
         notNegative(size, "size");
 
         this.bind(BufferTarget.ARRAY_BUFFER, target -> {
-            this.api.glBufferData(target.id(), size, addr, this.usage);
+            this.api.glBufferData(target.target(), size, addr, this.usage);
             this.capacity = size;
         });
     }
@@ -113,7 +113,7 @@ public class GLBufferImpl implements GLBuffer {
     @Override
     public void upload(@NonNull ByteBuffer data) {
         this.bind(BufferTarget.ARRAY_BUFFER, target -> {
-            this.api.glBufferData(target.id(), data, this.usage);
+            this.api.glBufferData(target.target(), data, this.usage);
             this.capacity = data.remaining();
         });
     }
@@ -132,13 +132,13 @@ public class GLBufferImpl implements GLBuffer {
             int readableBytes = data.readableBytes();
 
             //initialize storage
-            this.api.glBufferData(target.id(), readableBytes, 0L, this.usage);
+            this.api.glBufferData(target.target(), readableBytes, 0L, this.usage);
             this.capacity = readableBytes;
 
             //upload each data block individually
             long offset = 0L;
             for (ByteBuffer nioBuffer : data.nioBuffers()) {
-                this.api.glBufferSubData(target.id(), offset, nioBuffer);
+                this.api.glBufferSubData(target.target(), offset, nioBuffer);
                 offset += nioBuffer.remaining();
             }
         });
@@ -149,7 +149,7 @@ public class GLBufferImpl implements GLBuffer {
         checkRangeLen(this.capacity, start, size);
 
         this.bind(BufferTarget.ARRAY_BUFFER, target -> {
-            this.api.glBufferSubData(target.id(), start, size, addr);
+            this.api.glBufferSubData(target.target(), start, size, addr);
         });
     }
 
@@ -158,7 +158,7 @@ public class GLBufferImpl implements GLBuffer {
         checkRangeLen(this.capacity, start, data.remaining());
 
         this.bind(BufferTarget.ARRAY_BUFFER, target -> {
-            this.api.glBufferSubData(target.id(), start, data);
+            this.api.glBufferSubData(target.target(), start, data);
         });
     }
 
@@ -178,7 +178,7 @@ public class GLBufferImpl implements GLBuffer {
             //upload each data block individually
             long offset = start;
             for (ByteBuffer nioBuffer : data.nioBuffers()) {
-                this.api.glBufferSubData(target.id(), offset, nioBuffer);
+                this.api.glBufferSubData(target.target(), offset, nioBuffer);
                 offset += nioBuffer.remaining();
             }
         });
@@ -189,7 +189,7 @@ public class GLBufferImpl implements GLBuffer {
         checkRangeLen(this.capacity, start, size);
 
         this.bind(BufferTarget.ARRAY_BUFFER, target -> {
-            this.api.glGetBufferSubData(target.id(), start, size, addr);
+            this.api.glGetBufferSubData(target.target(), start, size, addr);
         });
     }
 
@@ -198,18 +198,18 @@ public class GLBufferImpl implements GLBuffer {
         checkRangeLen(this.capacity, start, data.remaining());
 
         this.bind(BufferTarget.ARRAY_BUFFER, target -> {
-            this.api.glGetBufferSubData(target.id(), start, data);
+            this.api.glGetBufferSubData(target.target(), start, data);
         });
     }
 
     public void bind(@NonNull BufferTarget target, @NonNull Consumer<BufferTarget> callback) {
         int old = this.api.glGetInteger(target.binding());
         try {
-            this.api.glBindBuffer(target.id(), this.id);
+            this.api.glBindBuffer(target.target(), this.id);
 
             callback.accept(target);
         } finally {
-            this.api.glBindBuffer(target.id(), old);
+            this.api.glBindBuffer(target.target(), old);
         }
     }
 
@@ -222,11 +222,11 @@ public class GLBufferImpl implements GLBuffer {
                 : write ? GL_WRITE_ONLY : -1;
 
         this.bind(BufferTarget.ARRAY_BUFFER, target -> {
-            long addr = this.api.glMapBuffer(target.id(), access);
+            long addr = this.api.glMapBuffer(target.target(), access);
             try {
                 callback.accept(addr);
             } finally {
-                this.api.glUnmapBuffer(target.id());
+                this.api.glUnmapBuffer(target.target());
             }
         });
     }

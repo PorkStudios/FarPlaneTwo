@@ -23,6 +23,9 @@ package net.daporkchop.fp2.gl.opengl;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
+import net.daporkchop.fp2.gl.command.Comparison;
+import net.daporkchop.fp2.gl.command.FramebufferLayer;
+import net.daporkchop.fp2.gl.command.StencilOperation;
 import net.daporkchop.fp2.gl.draw.binding.DrawMode;
 import net.daporkchop.fp2.gl.draw.index.IndexType;
 
@@ -94,5 +97,72 @@ public class GLEnumUtil {
             default:
                 throw new IllegalArgumentException(type.name());
         }
+    }
+
+    public int from(@NonNull Comparison comparison) {
+        switch (comparison) {
+            case NEVER:
+                return GL_NEVER;
+            case LESS:
+                return GL_LESS;
+            case EQUAL:
+                return GL_EQUAL;
+            case LESS_OR_EQUAL:
+                return GL_LEQUAL;
+            case GREATER:
+                return GL_GREATER;
+            case NOT_EQUAL:
+                return GL_NOTEQUAL;
+            case GREATER_OR_EQUAL:
+                return GL_GEQUAL;
+            case ALWAYS:
+                return GL_ALWAYS;
+            default:
+                throw new IllegalArgumentException(comparison.name());
+        }
+    }
+
+    public int from(@NonNull StencilOperation operation) {
+        switch (operation) {
+            case KEEP:
+                return GL_KEEP;
+            case ZERO:
+                return GL_ZERO;
+            case REPLACE:
+                return GL_REPLACE;
+            case INCREMENT_AND_CLAMP:
+                return GL_INCR;
+            case DECREMENT_AND_CLAMP:
+                return GL_DECR;
+            case INVERT:
+                return GL_INVERT;
+            case INCREMENT_AND_WRAP:
+                return GL_INCR_WRAP;
+            case DECREMENT_AND_WRAP:
+                return GL_DECR_WRAP;
+            default:
+                throw new IllegalArgumentException(operation.name());
+        }
+    }
+
+    public int from(@NonNull FramebufferLayer layer) {
+        switch (layer) {
+            case COLOR:
+                return GL_COLOR_BUFFER_BIT;
+            case DEPTH:
+                return GL_DEPTH_BUFFER_BIT;
+            case STENCIL:
+                return GL_STENCIL_BUFFER_BIT;
+            default:
+                throw new IllegalArgumentException(layer.name());
+        }
+    }
+
+    public int from(@NonNull FramebufferLayer... layers) {
+        int flags = 0;
+        for (FramebufferLayer layer : layers) {
+            flags |= from(layer);
+        }
+        return flags;
     }
 }

@@ -18,33 +18,23 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.buffer;
+package net.daporkchop.fp2.gl.opengl.command;
 
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-
-import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
+import org.objectweb.asm.MethodVisitor;
 
 /**
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
 @Getter
-public enum BufferTarget {
-    ARRAY_BUFFER(GL_ARRAY_BUFFER, GL_ARRAY_BUFFER_BINDING),
-    COPY_READ_BUFFER(GL_COPY_READ_BUFFER, GL_COPY_READ_BUFFER_BINDING),
-    COPY_WRITE_BUFFER(GL_COPY_WRITE_BUFFER, GL_COPY_WRITE_BUFFER_BINDING),
-    DISPATCH_INDIRECT_BUFFER(GL_DISPATCH_INDIRECT_BUFFER, GL_DISPATCH_INDIRECT_BUFFER_BINDING),
-    DRAW_INDIRECT_BUFFER(GL_DRAW_INDIRECT_BUFFER, GL_DRAW_INDIRECT_BUFFER_BINDING),
-    ELEMENT_ARRAY_BUFFER(GL_ELEMENT_ARRAY_BUFFER, GL_ELEMENT_ARRAY_BUFFER_BINDING),
-    PIXEL_PACK_BUFFER(GL_PIXEL_PACK_BUFFER, GL_PIXEL_PACK_BUFFER_BINDING),
-    PIXEL_UNPACK_BUFFER(GL_PIXEL_UNPACK_BUFFER, GL_PIXEL_UNPACK_BUFFER_BINDING),
-    QUERY_BUFFER(GL_QUERY_BUFFER, GL_QUERY_BUFFER_BINDING),
-    SHADER_STORAGE_BUFFER(GL_SHADER_STORAGE_BUFFER, GL_SHADER_STORAGE_BUFFER_BINDING),
-    TEXTURE_BUFFER(GL_TEXTURE_BUFFER, GL_TEXTURE_BINDING_BUFFER),
-    TRANSFORM_FEEDBACK_BUFFER(GL_TRANSFORM_FEEDBACK_BUFFER, GL_TRANSFORM_FEEDBACK_BUFFER_BINDING),
-    UNIFORM_BUFFER(GL_UNIFORM_BUFFER, GL_UNIFORM_BUFFER_BINDING);
+public abstract class Uop {
+    @NonNull
+    private final State state;
 
-    private final int target;
-    private final int binding;
+    public void emitCode(@NonNull CommandBufferBuilderImpl builder, @NonNull State lastState, @NonNull MethodVisitor mv, int apiLvtIndex) {
+        State.generateStateChange(mv, apiLvtIndex, lastState, this.state);
+    }
 }

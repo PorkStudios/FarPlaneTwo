@@ -20,11 +20,15 @@
 
 package net.daporkchop.fp2.gl.opengl.command;
 
+import com.google.common.collect.ImmutableList;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.common.asm.ClassloadingUtils;
 import net.daporkchop.fp2.gl.command.CommandBuffer;
 import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
+import net.daporkchop.fp2.gl.command.Comparison;
+import net.daporkchop.fp2.gl.command.FramebufferLayer;
+import net.daporkchop.fp2.gl.command.StencilOperation;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.fp2.gl.draw.binding.DrawMode;
 import net.daporkchop.fp2.gl.draw.command.DrawList;
@@ -48,8 +52,10 @@ import java.io.UncheckedIOException;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.Deque;
 import java.util.List;
 
 import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
@@ -64,7 +70,7 @@ import static org.objectweb.asm.Type.*;
  * @author DaPorkchop_
  */
 public class CommandBufferBuilderImpl implements CommandBufferBuilder {
-    private static final String CLASS_NAME = getInternalName(CommandBufferBuilderImpl.class).replace("Builder", "");
+    private static final String CLASS_NAME = getInternalName(CommandBufferImpl.class) + '0';
 
     protected final OpenGL gl;
 
@@ -74,9 +80,13 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
     protected final MethodVisitor codeVisitor;
 
     protected final String apiFieldName;
+    protected final int apiLvtIndex;
 
     protected final BitSet lvtAllocationTable = new BitSet();
     protected final List<Object> fieldValues = new ArrayList<>();
+
+    protected final ImmutableList.Builder<Uop> uops = ImmutableList.builder();
+    protected State state = State.DEFAULT_STATE;
 
     protected BaseBindingImpl binding;
     protected BaseShaderProgramImpl shader;
@@ -85,31 +95,23 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
         this.gl = gl;
 
         this.writer = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
-        this.writer.visit(V1_8, ACC_PUBLIC | ACC_FINAL, CLASS_NAME, null, getInternalName(Object.class), new String[]{
-                getInternalName(CommandBuffer.class)
-        });
+        this.writer.visit(V1_8, ACC_PUBLIC | ACC_FINAL, CLASS_NAME, null, getInternalName(CommandBufferImpl.class), null);
 
-        this.ctorVisitor = this.writer.visitMethod(ACC_PUBLIC, "<init>", getMethodDescriptor(VOID_TYPE, getType(List.class)), null, null);
+        this.ctorVisitor = this.writer.visitMethod(ACC_PUBLIC, "<init>", getMethodDescriptor(VOID_TYPE, getType(List.class), getType(List.class)), null, null);
         this.ctorVisitor.visitCode();
         this.ctorVisitor.visitVarInsn(ALOAD, 0);
-        this.ctorVisitor.visitMethodInsn(INVOKESPECIAL, getInternalName(Object.class), "<init>", getMethodDescriptor(VOID_TYPE), false);
+        this.ctorVisitor.visitVarInsn(ALOAD, 1);
+        this.ctorVisitor.visitMethodInsn(INVOKESPECIAL, getInternalName(CommandBufferImpl.class), "<init>", getMethodDescriptor(VOID_TYPE, getType(List.class)), false);
+
+        this.apiFieldName = this.makeField(getType(GLAPI.class), gl.api());
 
         this.codeVisitor = this.writer.visitMethod(ACC_PUBLIC | ACC_FINAL, "execute", getMethodDescriptor(VOID_TYPE), null, null);
         this.codeVisitor.visitCode();
-
-        { //void close()
-            MethodVisitor mv = this.writer.visitMethod(ACC_PUBLIC | ACC_FINAL, "close", getMethodDescriptor(VOID_TYPE), null, null);
-            mv.visitCode();
-
-            mv.visitInsn(RETURN);
-
-            mv.visitMaxs(0, 0);
-            mv.visitEnd();
-        }
-
         this.lvtAllocationTable.set(0);
 
-        this.apiFieldName = this.makeField(getType(GLAPI.class), gl.api());
+        this.codeVisitor.visitVarInsn(ALOAD, 0);
+        this.codeVisitor.visitFieldInsn(GETFIELD, CLASS_NAME, this.apiFieldName, getDescriptor(GLAPI.class));
+        this.codeVisitor.visitVarInsn(ASTORE, this.apiLvtIndex = this.allocateLocalVariable());
     }
 
     protected String makeField(@NonNull Type type, @NonNull Object value) {
@@ -123,18 +125,13 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
 
         //set the field value in the constructor
         this.ctorVisitor.visitVarInsn(ALOAD, 0); //this
-        this.ctorVisitor.visitVarInsn(ALOAD, 1); //list
+        this.ctorVisitor.visitVarInsn(ALOAD, 2); //list
         this.ctorVisitor.visitLdcInsn(index); //index
         this.ctorVisitor.visitMethodInsn(INVOKEINTERFACE, getInternalName(List.class), "get", getMethodDescriptor(getType(Object.class), INT_TYPE), true); //list.get(index)
         this.ctorVisitor.visitTypeInsn(CHECKCAST, type.getInternalName()); //(type)
         this.ctorVisitor.visitFieldInsn(PUTFIELD, CLASS_NAME, name, type.getDescriptor()); //this.name = (type) list.get(index);
 
         return name;
-    }
-
-    protected void loadGLAPI() {
-        this.codeVisitor.visitVarInsn(ALOAD, 0);
-        this.codeVisitor.visitFieldInsn(GETFIELD, CLASS_NAME, this.apiFieldName, getDescriptor(GLAPI.class));
     }
 
     protected int allocateLocalVariable() {
@@ -150,22 +147,14 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
     protected void bind(@NonNull BaseBindingImpl binding) {
         checkArg(binding.gl() == this.gl, "binding belongs to another context");
 
-        //bind VAO if needed (new binding or previous binding has a VAO)
-        this.loadGLAPI();
-        this.codeVisitor.visitLdcInsn(binding.vao());
-        this.codeVisitor.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glBindVertexArray", getMethodDescriptor(VOID_TYPE, INT_TYPE), true);
+        this.state = this.state.withVao(binding.vao());
 
         //bind SSBOs
-        binding.shaderStorageBuffers().forEach(ssboBinding -> {
-            this.loadGLAPI();
-            this.codeVisitor.visitLdcInsn(GL_SHADER_STORAGE_BUFFER);
-            this.codeVisitor.visitLdcInsn(ssboBinding.bindingIndex);
-            this.codeVisitor.visitLdcInsn(ssboBinding.buffer.id());
-            this.codeVisitor.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glBindBufferBase", getMethodDescriptor(VOID_TYPE, INT_TYPE, INT_TYPE, INT_TYPE), true);
-        });
+        binding.shaderStorageBuffers().forEach(ssboBinding -> this.state = this.state.withShaderStorageBuffer(ssboBinding.bindingIndex, ssboBinding.buffer.id()));
+        binding.uniformBuffers().forEach(uniformBinding -> this.state = this.state.withUniformBuffer(uniformBinding.bindingIndex, uniformBinding.buffer.id()));
 
         //bind textures
-        binding.textures().forEach(textureBinding -> {
+        /*binding.textures().forEach(textureBinding -> {
             //switch texture units
             this.loadGLAPI();
             this.codeVisitor.visitLdcInsn(GL_TEXTURE0 + textureBinding.unit);
@@ -176,16 +165,7 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
             this.codeVisitor.visitLdcInsn(textureBinding.target.target());
             this.codeVisitor.visitLdcInsn(textureBinding.id);
             this.codeVisitor.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glBindTexture", getMethodDescriptor(VOID_TYPE, INT_TYPE, INT_TYPE), true);
-        });
-
-        //bind UBOs
-        binding.uniformBuffers().forEach(uniformBinding -> {
-            this.loadGLAPI();
-            this.codeVisitor.visitLdcInsn(GL_UNIFORM_BUFFER);
-            this.codeVisitor.visitLdcInsn(uniformBinding.bindingIndex);
-            this.codeVisitor.visitLdcInsn(uniformBinding.buffer.id());
-            this.codeVisitor.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glBindBufferBase", getMethodDescriptor(VOID_TYPE, INT_TYPE, INT_TYPE, INT_TYPE), true);
-        });
+        });*/
 
         this.binding = binding;
     }
@@ -193,25 +173,54 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
     protected void bind(@NonNull BaseShaderProgramImpl shader) {
         checkArg(shader.gl() == this.gl, "shader belongs to another context");
 
-        //shader programs are different, bind a new one
-        if (shader != this.shader) {
-            this.shader = shader;
-
-            this.loadGLAPI();
-            this.codeVisitor.visitLdcInsn(shader.id());
-            this.codeVisitor.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glUseProgram", getMethodDescriptor(VOID_TYPE, INT_TYPE), true);
-        }
+        this.state = this.state.withProgram(shader.id());
     }
 
     @Override
-    public CommandBufferBuilder execute(@NonNull CommandBuffer buffer) {
-        //put the reference to the command buffer in a field
-        String fieldName = this.makeField(getType(CommandBuffer.class), buffer);
+    public CommandBufferBuilder framebufferClear(@NonNull FramebufferLayer... layers) {
+        //TODO
+        return this;
+    }
 
-        //generate code to load the field and invoke execute()
-        this.codeVisitor.visitVarInsn(ALOAD, 0);
-        this.codeVisitor.visitFieldInsn(GETFIELD, CLASS_NAME, fieldName, getDescriptor(CommandBuffer.class));
-        this.codeVisitor.visitMethodInsn(INVOKEINTERFACE, getInternalName(CommandBuffer.class), "execute", getMethodDescriptor(VOID_TYPE), true);
+    @Override
+    public CommandBufferBuilder stencilEnable() {
+        this.state = this.state.withStencil(true);
+        return this;
+    }
+
+    @Override
+    public CommandBufferBuilder stencilDisable() {
+        this.state = this.state.withStencil(false);
+        return this;
+    }
+
+    @Override
+    public CommandBufferBuilder stencilWriteMask(int writeMask) {
+        this.state = this.state.withStencilWriteMask(writeMask);
+        return this;
+    }
+
+    @Override
+    public CommandBufferBuilder stencilCompareMask(int compareMask) {
+        this.state = this.state.withStencilCompareMask(compareMask);
+        return this;
+    }
+
+    @Override
+    public CommandBufferBuilder stencilReference(int reference) {
+        this.state = this.state.withStencilReference(reference);
+        return this;
+    }
+
+    @Override
+    public CommandBufferBuilder stencilCompare(@NonNull Comparison comparison) {
+        this.state = this.state.withStencilCompare(comparison);
+        return this;
+    }
+
+    @Override
+    public CommandBufferBuilder stencilOperation(@NonNull StencilOperation fail, @NonNull StencilOperation pass, @NonNull StencilOperation depthFail) {
+        this.state = this.state.withStencilOperationFail(fail).withStencilOperationPass(pass).withStencilOperationDepthFail(depthFail);
         return this;
     }
 
@@ -220,11 +229,18 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
         this.bind((DrawBindingImpl) _binding);
         this.bind((DrawShaderProgramImpl) _shader);
 
-        this.loadGLAPI();
-        this.codeVisitor.visitLdcInsn(GLEnumUtil.from(mode));
-        this.codeVisitor.visitLdcInsn(first);
-        this.codeVisitor.visitLdcInsn(count);
-        this.codeVisitor.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glDrawArrays", getMethodDescriptor(VOID_TYPE, INT_TYPE, INT_TYPE, INT_TYPE), true);
+        this.uops.add(new Uop(this.state) {
+            @Override
+            public void emitCode(@NonNull CommandBufferBuilderImpl builder, @NonNull State lastState, @NonNull MethodVisitor mv, int apiLvtIndex) {
+                super.emitCode(builder, lastState, mv, apiLvtIndex);
+
+                mv.visitVarInsn(ALOAD, apiLvtIndex);
+                mv.visitLdcInsn(GLEnumUtil.from(mode));
+                mv.visitLdcInsn(first);
+                mv.visitLdcInsn(count);
+                mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glDrawArrays", getMethodDescriptor(VOID_TYPE, INT_TYPE, INT_TYPE, INT_TYPE), true);
+            }
+        });
         return this;
     }
 
@@ -237,8 +253,23 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
     }
 
     @Override
+    public CommandBufferBuilder execute(@NonNull CommandBuffer buffer) {
+        this.uops.addAll(((CommandBufferImpl) buffer).uops);
+        return this;
+    }
+
+    @Override
     @SneakyThrows({ IllegalAccessException.class, InstantiationException.class, InvocationTargetException.class, NoSuchMethodException.class })
     public CommandBuffer build() {
+        List<Uop> uops = this.uops.build();
+        {
+            State state = State.DEFAULT_STATE;
+            for (Uop uop : uops) {
+                uop.emitCode(this, state, this.codeVisitor, this.apiLvtIndex);
+                state = uop.state();
+            }
+        }
+
         this.ctorVisitor.visitInsn(RETURN);
         this.ctorVisitor.visitMaxs(0, 0);
 
@@ -256,6 +287,6 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
         }
 
         Class<? extends CommandBuffer> clazz = uncheckedCast(ClassloadingUtils.defineHiddenClass(CommandBufferBuilderImpl.class.getClassLoader(), this.writer.toByteArray()));
-        return clazz.getDeclaredConstructor(List.class).newInstance(this.fieldValues);
+        return clazz.getDeclaredConstructor(List.class, List.class).newInstance(uops, this.fieldValues);
     }
 }

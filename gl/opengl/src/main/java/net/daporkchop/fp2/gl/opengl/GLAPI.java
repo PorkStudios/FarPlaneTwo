@@ -44,6 +44,10 @@ public interface GLAPI {
     //
     //
 
+    void glEnable(int cap);
+
+    void glDisable(int cap);
+
     int glGetError();
 
     int glGetInteger(int pname);
@@ -83,6 +87,12 @@ public interface GLAPI {
     void glTexSubImage2D(int target, int level, int xoffset, int yoffset, int width, int height, int format, int type, long data);
 
     void glTexSubImage2D(int target, int level, int xoffset, int yoffset, int width, int height, int format, int type, @NonNull ByteBuffer data);
+
+    void glStencilFunc(int func, int ref, int mask);
+
+    void glStencilMask(int mask);
+
+    void glStencilOp(int sfail, int dpfail, int dppass);
 
     //
     //
