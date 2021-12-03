@@ -23,6 +23,8 @@ package net.daporkchop.fp2.gl.opengl;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
+import net.daporkchop.fp2.gl.command.BlendFactor;
+import net.daporkchop.fp2.gl.command.BlendOp;
 import net.daporkchop.fp2.gl.command.Comparison;
 import net.daporkchop.fp2.gl.command.FramebufferLayer;
 import net.daporkchop.fp2.gl.command.StencilOperation;
@@ -164,5 +166,67 @@ public class GLEnumUtil {
             flags |= from(layer);
         }
         return flags;
+    }
+
+    public int from(@NonNull BlendFactor factor) {
+        switch (factor) {
+            case ZERO:
+                return GL_ZERO;
+            case ONE:
+                return GL_ONE;
+            case SRC_COLOR:
+                return GL_SRC_COLOR;
+            case ONE_MINUS_SRC_COLOR:
+                return GL_ONE_MINUS_SRC_COLOR;
+            case DST_COLOR:
+                return GL_DST_COLOR;
+            case ONE_MINUS_DST_COLOR:
+                return GL_ONE_MINUS_DST_COLOR;
+            case SRC_ALPHA:
+                return GL_SRC_ALPHA;
+            case ONE_MINUS_SRC_ALPHA:
+                return GL_ONE_MINUS_SRC_ALPHA;
+            case DST_ALPHA:
+                return GL_DST_ALPHA;
+            case ONE_MINUS_DST_ALPHA:
+                return GL_ONE_MINUS_DST_ALPHA;
+            case CONSTANT_COLOR:
+                return GL_CONSTANT_COLOR;
+            case ONE_MINUS_CONSTANT_COLOR:
+                return GL_ONE_MINUS_CONSTANT_COLOR;
+            case CONSTANT_ALPHA:
+                return GL_CONSTANT_ALPHA;
+            case ONE_MINUS_CONSTANT_ALPHA:
+                return GL_ONE_MINUS_CONSTANT_ALPHA;
+            case SRC_ALPHA_SATURATE:
+                return GL_SRC_ALPHA_SATURATE;
+            case SRC1_COLOR:
+                return GL_SRC1_COLOR;
+            case ONE_MINUS_SRC1_COLOR:
+                return GL_ONE_MINUS_SRC1_COLOR;
+            case SRC1_ALPHA:
+                return GL_SRC1_ALPHA;
+            case ONE_MINUS_SRC1_ALPHA:
+                return GL_ONE_MINUS_SRC1_ALPHA;
+            default:
+                throw new IllegalArgumentException(factor.name());
+        }
+    }
+
+    public int from(@NonNull BlendOp op) {
+        switch (op) {
+            case ADD:
+                return GL_FUNC_ADD;
+            case SUBTRACT:
+                return GL_FUNC_SUBTRACT;
+            case REVERSE_SUBTRACT:
+                return GL_FUNC_REVERSE_SUBTRACT;
+            case MIN:
+                return GL_MIN;
+            case MAX:
+                return GL_MAX;
+            default:
+                throw new IllegalArgumentException(op.name());
+        }
     }
 }

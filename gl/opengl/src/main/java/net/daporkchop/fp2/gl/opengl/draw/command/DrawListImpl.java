@@ -24,9 +24,9 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
+import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.fp2.gl.draw.command.DrawCommand;
 import net.daporkchop.fp2.gl.draw.command.DrawList;
-import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 
@@ -63,4 +63,8 @@ public abstract class DrawListImpl<C extends DrawCommand, B extends DrawBinding>
     }
 
     protected abstract void resize0(int oldCapacity, int newCapacity);
+
+    public void draw0(GLAPI api, int mode) {
+        //no-op
+    }
 }

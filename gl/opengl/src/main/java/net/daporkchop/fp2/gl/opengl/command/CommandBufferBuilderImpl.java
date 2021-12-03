@@ -24,6 +24,8 @@ import com.google.common.collect.ImmutableList;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.common.asm.ClassloadingUtils;
+import net.daporkchop.fp2.gl.command.BlendFactor;
+import net.daporkchop.fp2.gl.command.BlendOp;
 import net.daporkchop.fp2.gl.command.CommandBuffer;
 import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
 import net.daporkchop.fp2.gl.command.Comparison;
@@ -36,7 +38,6 @@ import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.OpenGLConstants;
 import net.daporkchop.fp2.gl.opengl.draw.binding.DrawBindingImpl;
 import net.daporkchop.fp2.gl.opengl.draw.command.DrawListImpl;
 import net.daporkchop.fp2.gl.opengl.draw.shader.DrawShaderProgramImpl;
@@ -52,13 +53,10 @@ import java.io.UncheckedIOException;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.BitSet;
-import java.util.Deque;
 import java.util.List;
 
-import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 import static org.objectweb.asm.Opcodes.*;
@@ -149,23 +147,10 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
 
         this.state = this.state.withVao(binding.vao());
 
-        //bind SSBOs
         binding.shaderStorageBuffers().forEach(ssboBinding -> this.state = this.state.withShaderStorageBuffer(ssboBinding.bindingIndex, ssboBinding.buffer.id()));
         binding.uniformBuffers().forEach(uniformBinding -> this.state = this.state.withUniformBuffer(uniformBinding.bindingIndex, uniformBinding.buffer.id()));
 
-        //bind textures
-        /*binding.textures().forEach(textureBinding -> {
-            //switch texture units
-            this.loadGLAPI();
-            this.codeVisitor.visitLdcInsn(GL_TEXTURE0 + textureBinding.unit);
-            this.codeVisitor.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glActiveTexture", getMethodDescriptor(VOID_TYPE, INT_TYPE), true);
-
-            //actually bind the texture
-            this.loadGLAPI();
-            this.codeVisitor.visitLdcInsn(textureBinding.target.target());
-            this.codeVisitor.visitLdcInsn(textureBinding.id);
-            this.codeVisitor.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glBindTexture", getMethodDescriptor(VOID_TYPE, INT_TYPE, INT_TYPE), true);
-        });*/
+        binding.textures().forEach(textureBinding -> this.state = this.state.withTexture(textureBinding.unit, textureBinding.target, textureBinding.id));
 
         this.binding = binding;
     }
@@ -178,7 +163,94 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
 
     @Override
     public CommandBufferBuilder framebufferClear(@NonNull FramebufferLayer... layers) {
-        //TODO
+        this.uops.add(new Uop(this.state) {
+            @Override
+            public void emitCode(@NonNull CommandBufferBuilderImpl builder, @NonNull State lastState, @NonNull MethodVisitor mv, int apiLvtIndex) {
+                super.emitCode(builder, lastState, mv, apiLvtIndex);
+
+                mv.visitVarInsn(ALOAD, apiLvtIndex);
+                mv.visitLdcInsn(GLEnumUtil.from(layers));
+                mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glClear", getMethodDescriptor(VOID_TYPE, INT_TYPE), true);
+            }
+        });
+        return this;
+    }
+
+    @Override
+    public CommandBufferBuilder blendEnable() {
+        this.state = this.state.withBlend(true);
+        return this;
+    }
+
+    @Override
+    public CommandBufferBuilder blendDisable() {
+        this.state = this.state.withBlend(false);
+        return null;
+    }
+
+    @Override
+    public CommandBufferBuilder blendFunctionSrc(@NonNull BlendFactor rgb, @NonNull BlendFactor a) {
+        this.state = this.state.withBlendFactorSrcRGB(rgb).withBlendFactorSrcA(a);
+        return this;
+    }
+
+    @Override
+    public CommandBufferBuilder blendFunctionDst(@NonNull BlendFactor rgb, @NonNull BlendFactor a) {
+        this.state = this.state.withBlendFactorDstRGB(rgb).withBlendFactorDstA(a);
+        return this;
+    }
+
+    @Override
+    public CommandBufferBuilder blendOp(@NonNull BlendOp rgb, @NonNull BlendOp a) {
+        this.state = this.state.withBlendOpRGB(rgb).withBlendOpA(a);
+        return this;
+    }
+
+    @Override
+    public CommandBufferBuilder blendColor(float r, float g, float b, float a) {
+        this.state = this.state.withBlendColorR(r).withBlendColorG(g).withBlendColorB(b).withBlendColorA(a);
+        return this;
+    }
+
+    @Override
+    public CommandBufferBuilder colorClear(float r, float g, float b, float a) {
+        this.state = this.state.withColorClearR(r).withColorClearG(g).withColorClearB(b).withColorClearA(a);
+        return this;
+    }
+
+    @Override
+    public CommandBufferBuilder colorMask(boolean r, boolean g, boolean b, boolean a) {
+        this.state = this.state.withColorMask((r ? 1 : 0) | (g ? 2 : 0) | (b ? 4 : 0) | (a ? 8 : 0));
+        return this;
+    }
+
+    @Override
+    public CommandBufferBuilder depthEnable() {
+        this.state = this.state.withDepth(true);
+        return this;
+    }
+
+    @Override
+    public CommandBufferBuilder depthDisable() {
+        this.state = this.state.withDepth(false);
+        return this;
+    }
+
+    @Override
+    public CommandBufferBuilder depthClear(double value) {
+        this.state = this.state.withDepthClearValue(value);
+        return this;
+    }
+
+    @Override
+    public CommandBufferBuilder depthWrite(boolean mask) {
+        this.state = this.state.withDepthWriteMask(mask);
+        return this;
+    }
+
+    @Override
+    public CommandBufferBuilder depthCompare(@NonNull Comparison comparison) {
+        this.state = this.state.withDepthCompare(comparison);
         return this;
     }
 
@@ -191,6 +263,12 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
     @Override
     public CommandBufferBuilder stencilDisable() {
         this.state = this.state.withStencil(false);
+        return this;
+    }
+
+    @Override
+    public CommandBufferBuilder stencilClear(int value) {
+        this.state = this.state.withStencilClearValue(value);
         return this;
     }
 
@@ -245,10 +323,24 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
     }
 
     @Override
-    public CommandBufferBuilder drawList(@NonNull DrawShaderProgram _shader, @NonNull DrawMode _mode, @NonNull DrawList<?> _list) {
+    public CommandBufferBuilder drawList(@NonNull DrawShaderProgram _shader, @NonNull DrawMode mode, @NonNull DrawList<?> _list) {
         DrawListImpl<?, ?> list = (DrawListImpl<?, ?>) _list;
         this.bind((DrawBindingImpl) list.binding());
         this.bind((DrawShaderProgramImpl) _shader);
+
+        this.uops.add(new Uop(this.state) {
+            @Override
+            public void emitCode(@NonNull CommandBufferBuilderImpl builder, @NonNull State lastState, @NonNull MethodVisitor mv, int apiLvtIndex) {
+                super.emitCode(builder, lastState, mv, apiLvtIndex);
+
+                String fieldName = builder.makeField(getType(DrawListImpl.class), list);
+                mv.visitVarInsn(ALOAD, 0);
+                mv.visitFieldInsn(GETFIELD, CLASS_NAME, fieldName, getDescriptor(DrawListImpl.class));
+                mv.visitVarInsn(ALOAD, apiLvtIndex);
+                mv.visitLdcInsn(GLEnumUtil.from(mode));
+                mv.visitMethodInsn(INVOKEVIRTUAL, getInternalName(DrawListImpl.class), "draw0", getMethodDescriptor(VOID_TYPE, getType(GLAPI.class), INT_TYPE), false);
+            }
+        });
         return this;
     }
 

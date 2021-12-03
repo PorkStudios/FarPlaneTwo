@@ -25,6 +25,7 @@ import net.daporkchop.fp2.gl.bitset.GLBitSet;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.draw.command.DrawCommandArrays;
 import net.daporkchop.fp2.gl.draw.binding.DrawMode;
+import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
 import net.daporkchop.fp2.gl.opengl.bitset.AbstractGLBitSet;
 import net.daporkchop.fp2.gl.opengl.buffer.BufferTarget;
@@ -170,5 +171,11 @@ public class DrawListMultiDrawArraysIndirect extends DrawListImpl<DrawCommandArr
         } finally {
             PUnsafe.freeMemory(dstCommands);
         }
+    }
+
+    @Override
+    public void draw0(GLAPI api, int mode) {
+        this.buffer.upload(this.commandsAddr, this.capacity * _SIZE);
+        this.buffer.bind(BufferTarget.DRAW_INDIRECT_BUFFER, target -> api.glMultiDrawArraysIndirect(mode, 0L, this.capacity, 0));
     }
 }

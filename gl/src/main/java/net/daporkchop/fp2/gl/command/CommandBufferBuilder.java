@@ -38,9 +38,47 @@ public interface CommandBufferBuilder {
 
     CommandBufferBuilder framebufferClear(@NonNull FramebufferLayer... layers);
 
+    CommandBufferBuilder blendEnable();
+
+    CommandBufferBuilder blendDisable();
+
+    CommandBufferBuilder blendFunctionSrc(@NonNull BlendFactor rgb, @NonNull BlendFactor a);
+
+    CommandBufferBuilder blendFunctionDst(@NonNull BlendFactor rgb, @NonNull BlendFactor a);
+
+    CommandBufferBuilder blendOp(@NonNull BlendOp rgb, @NonNull BlendOp a);
+
+    CommandBufferBuilder blendColor(float r, float g, float b, float a);
+
+    default CommandBufferBuilder blendColor(int argb) {
+        final float F = 1.0f / 255.0f;
+        return this.blendColor(((argb >>> 16) & 0xFF) * F, ((argb >>> 8) & 0xFF) * F, (argb & 0xFF) * F, (argb >>> 24) * F);
+    }
+
+    CommandBufferBuilder colorClear(float r, float g, float b, float a);
+
+    default CommandBufferBuilder colorClear(int argb) {
+        final float F = 1.0f / 255.0f;
+        return this.colorClear(((argb >>> 16) & 0xFF) * F, ((argb >>> 8) & 0xFF) * F, (argb & 0xFF) * F, (argb >>> 24) * F);
+    }
+
+    CommandBufferBuilder colorMask(boolean r, boolean g, boolean b, boolean a);
+
+    CommandBufferBuilder depthEnable();
+
+    CommandBufferBuilder depthDisable();
+
+    CommandBufferBuilder depthClear(double value);
+
+    CommandBufferBuilder depthWrite(boolean mask);
+
+    CommandBufferBuilder depthCompare(@NonNull Comparison comparison);
+
     CommandBufferBuilder stencilEnable();
 
     CommandBufferBuilder stencilDisable();
+
+    CommandBufferBuilder stencilClear(int value);
 
     CommandBufferBuilder stencilWriteMask(int writeMask);
 

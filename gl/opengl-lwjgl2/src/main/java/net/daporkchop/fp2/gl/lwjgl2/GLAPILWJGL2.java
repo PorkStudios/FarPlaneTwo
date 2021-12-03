@@ -237,6 +237,41 @@ public class GLAPILWJGL2 implements GLAPI {
     }
 
     @Override
+    public void glClear(int mask) {
+        GL11.glClear(mask);
+    }
+
+    @Override
+    public void glClearColor(float red, float green, float blue, float alpha) {
+        GL11.glClearColor(red, green, blue, alpha);
+    }
+
+    @Override
+    public void glColorMask(boolean red, boolean green, boolean blue, boolean alpha) {
+        GL11.glColorMask(red, green, blue, alpha);
+    }
+
+    @Override
+    public void glClearDepth(double depth) {
+        GL11.glClearDepth(depth);
+    }
+
+    @Override
+    public void glDepthFunc(int func) {
+        GL11.glDepthFunc(func);
+    }
+
+    @Override
+    public void glDepthMask(boolean flag) {
+        GL11.glDepthMask(flag);
+    }
+
+    @Override
+    public void glClearStencil(int s) {
+        GL11.glClearStencil(s);
+    }
+
+    @Override
     public void glStencilFunc(int func, int ref, int mask) {
         GL11.glStencilFunc(func, ref, mask);
     }
@@ -299,6 +334,16 @@ public class GLAPILWJGL2 implements GLAPI {
     @Override
     public void glMultiDrawArrays(int mode, long first, long count, int drawcount) {
         GL14.glMultiDrawArrays(mode, DirectBufferHackery.wrapInt(first, drawcount), DirectBufferHackery.wrapInt(count, drawcount));
+    }
+
+    @Override
+    public void glBlendColor(float red, float green, float blue, float alpha) {
+        GL14.glBlendColor(red, green, blue, alpha);
+    }
+
+    @Override
+    public void glBlendFuncSeparate(int sfactorRGB, int dfactorRGB, int sfactorAlpha, int dfactorAlpha) {
+        GL14.glBlendFuncSeparate(sfactorRGB, dfactorRGB, sfactorAlpha, dfactorAlpha);
     }
 
     //
@@ -525,6 +570,11 @@ public class GLAPILWJGL2 implements GLAPI {
     @Override
     public void glUniform(int location, float v0, float v1, float v2, float v3) {
         GL20.glUniform4f(location, v0, v1, v2, v3);
+    }
+
+    @Override
+    public void glBlendEquationSeparate(int modeRGB, int modeAlpha) {
+        GL20.glBlendEquationSeparate(modeRGB, modeAlpha);
     }
 
     //
