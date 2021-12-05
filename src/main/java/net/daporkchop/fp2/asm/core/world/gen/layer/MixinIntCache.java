@@ -32,14 +32,14 @@ import org.spongepowered.asm.mixin.Overwrite;
  */
 @Mixin(IntCache.class)
 public abstract class MixinIntCache {
-    private static final FastThreadLocal<TLIntCache> tl = new DefaultFastThreadLocal<>(TLIntCache::new);
+    private static final FastThreadLocal<TLIntCache> FP2_TL = new DefaultFastThreadLocal<>(TLIntCache::new);
 
     /**
      * @author DaPorkchop_
      */
     @Overwrite
     public static int[] getIntCache(int size) {
-        return tl.get().getIntCache(size);
+        return FP2_TL.get().getIntCache(size);
     }
 
     /**
@@ -47,7 +47,7 @@ public abstract class MixinIntCache {
      */
     @Overwrite
     public static void resetIntCache() {
-        tl.get().resetIntCache();
+        FP2_TL.get().resetIntCache();
     }
 
     /**
@@ -55,6 +55,6 @@ public abstract class MixinIntCache {
      */
     @Overwrite
     public static String getCacheSizes() {
-        return tl.get().getCacheSizes();
+        return FP2_TL.get().getCacheSizes();
     }
 }

@@ -46,24 +46,25 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 @Mixin(Minecraft.class)
 @SuppressWarnings("deprecation")
 public abstract class MixinMinecraft implements ClientThreadMarkedFutureExecutor.Holder {
-    @Unique
-    private ClientThreadMarkedFutureExecutor executor;
-
     @Shadow
     @Final
     public Profiler profiler;
 
-    @Shadow public EntityPlayerSP player;
+    @Shadow
+    public EntityPlayerSP player;
+
+    @Unique
+    private ClientThreadMarkedFutureExecutor fp2_executor;
 
     @Inject(method = "Lnet/minecraft/client/Minecraft;<init>*",
             at = @At("RETURN"))
     private void fp2_$init$_constructMarkedExecutor(CallbackInfo ci) {
-        this.executor = new ClientThreadMarkedFutureExecutor(uncheckedCast(this));
+        this.fp2_executor = new ClientThreadMarkedFutureExecutor(uncheckedCast(this));
     }
 
     @Override
     public ClientThreadMarkedFutureExecutor fp2_ClientThreadMarkedFutureExecutor$Holder_get() {
-        return this.executor;
+        return this.fp2_executor;
     }
 
     @Inject(method = "Lnet/minecraft/client/Minecraft;runGameLoop()V",
@@ -74,7 +75,7 @@ public abstract class MixinMinecraft implements ClientThreadMarkedFutureExecutor
             allow = 1)
     private void fp2_runGameLoop_runScheduledClientTasks(CallbackInfo ci) {
         this.profiler.startSection("fp2_scheduled_tasks");
-        this.executor.doAllWork();
+        this.fp2_executor.doAllWork();
         this.profiler.endSection();
     }
 

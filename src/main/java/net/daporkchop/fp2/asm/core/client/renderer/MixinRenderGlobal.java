@@ -58,7 +58,7 @@ public abstract class MixinRenderGlobal implements IMixinRenderGlobal {
     public Minecraft mc;
 
     @Unique
-    protected VanillaRenderabilityTracker vanillaRenderabilityTracker;
+    protected VanillaRenderabilityTracker fp2_vanillaRenderabilityTracker;
 
     @Inject(method = "Lnet/minecraft/client/renderer/RenderGlobal;setWorldAndLoadRenderers(Lnet/minecraft/client/multiplayer/WorldClient;)V",
             at = @At(value = "FIELD",
@@ -67,8 +67,8 @@ public abstract class MixinRenderGlobal implements IMixinRenderGlobal {
                     shift = At.Shift.AFTER),
             require = 1)
     private void fp2_loadRenderers_onDestroyViewFrustum(CallbackInfo ci) {
-        this.vanillaRenderabilityTracker.release();
-        this.vanillaRenderabilityTracker = null;
+        this.fp2_vanillaRenderabilityTracker.release();
+        this.fp2_vanillaRenderabilityTracker = null;
     }
 
     @Inject(method = "Lnet/minecraft/client/renderer/RenderGlobal;loadRenderers()V",
@@ -78,10 +78,10 @@ public abstract class MixinRenderGlobal implements IMixinRenderGlobal {
                     shift = At.Shift.BEFORE),
             require = 1)
     private void fp2_loadRenderers_onCreateViewFrustum(CallbackInfo ci) {
-        if (this.vanillaRenderabilityTracker != null) {
-            this.vanillaRenderabilityTracker.release();
+        if (this.fp2_vanillaRenderabilityTracker != null) {
+            this.fp2_vanillaRenderabilityTracker.release();
         }
-        this.vanillaRenderabilityTracker = new VanillaRenderabilityTracker(new DirectMemoryAllocator());
+        this.fp2_vanillaRenderabilityTracker = new VanillaRenderabilityTracker(new DirectMemoryAllocator());
     }
 
     @Inject(method = "Lnet/minecraft/client/renderer/RenderGlobal;setupTerrain(Lnet/minecraft/entity/Entity;DLnet/minecraft/client/renderer/culling/ICamera;IZ)V",
@@ -90,7 +90,7 @@ public abstract class MixinRenderGlobal implements IMixinRenderGlobal {
         IFarClientContext<?, ?> context = ((IFarPlayerClient) this.mc.getConnection()).fp2_IFarPlayerClient_activeContext();
         IFarRenderer renderer;
         if (context != null && (renderer = context.renderer()) != null) {
-            this.vanillaRenderabilityTracker.update(uncheckedCast(this));
+            this.fp2_vanillaRenderabilityTracker.update(uncheckedCast(this));
 
             this.mc.profiler.startSection("fp2_prepare");
             renderer.prepare((float) partialTicks, this.mc, (IFrustum) camera);
@@ -128,6 +128,6 @@ public abstract class MixinRenderGlobal implements IMixinRenderGlobal {
 
     @Override
     public VanillaRenderabilityTracker fp2_vanillaRenderabilityTracker() {
-        return this.vanillaRenderabilityTracker;
+        return this.fp2_vanillaRenderabilityTracker;
     }
 }
