@@ -18,24 +18,44 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.command;
+package net.daporkchop.fp2.gl.opengl.command.state.struct;
 
-import lombok.Getter;
+import lombok.Data;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.gl.opengl.command.state.FixedState;
-import org.objectweb.asm.MethodVisitor;
+import lombok.With;
+import net.daporkchop.fp2.gl.command.BlendFactor;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-@Getter
-public abstract class Uop {
-    @NonNull
-    private final FixedState state;
+@Data
+@With
+public final class BlendFactors {
+    private static boolean usesUserColor(BlendFactor factor) {
+        switch (factor) {
+            case CONSTANT_COLOR:
+            case ONE_MINUS_CONSTANT_COLOR:
+            case CONSTANT_ALPHA:
+            case ONE_MINUS_CONSTANT_ALPHA:
+                return true;
+            default:
+                return false;
+        }
+    }
 
-    public void emitCode(@NonNull CommandBufferBuilderImpl builder, @NonNull FixedState lastState, @NonNull MethodVisitor mv, int apiLvtIndex) {
-        FixedState.generateStateChange(mv, apiLvtIndex, lastState, this.state);
+    @NonNull
+    private final BlendFactor srcRGB;
+    @NonNull
+    private final BlendFactor srcA;
+    @NonNull
+    private final BlendFactor dstRGB;
+    @NonNull
+    private final BlendFactor dstA;
+
+    /**
+     * @return whether or not any of the blend factors uses the user-defined constant color
+     */
+    public boolean usesUserColor() {
+        return usesUserColor(this.srcRGB) || usesUserColor(this.srcA) || usesUserColor(this.dstRGB) || usesUserColor(this.dstA);
     }
 }

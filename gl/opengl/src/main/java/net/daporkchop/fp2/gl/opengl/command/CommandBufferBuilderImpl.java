@@ -38,6 +38,7 @@ import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.command.state.FixedState;
 import net.daporkchop.fp2.gl.opengl.draw.binding.DrawBindingImpl;
 import net.daporkchop.fp2.gl.opengl.draw.command.DrawListImpl;
 import net.daporkchop.fp2.gl.opengl.draw.shader.DrawShaderProgramImpl;
@@ -84,7 +85,7 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
     protected final List<Object> fieldValues = new ArrayList<>();
 
     protected final ImmutableList.Builder<Uop> uops = ImmutableList.builder();
-    protected State state = State.DEFAULT_STATE;
+    protected FixedState state = FixedState.DEFAULT_STATE;
 
     protected BaseBindingImpl binding;
     protected BaseShaderProgramImpl shader;
@@ -165,7 +166,7 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
     public CommandBufferBuilder framebufferClear(@NonNull FramebufferLayer... layers) {
         this.uops.add(new Uop(this.state) {
             @Override
-            public void emitCode(@NonNull CommandBufferBuilderImpl builder, @NonNull State lastState, @NonNull MethodVisitor mv, int apiLvtIndex) {
+            public void emitCode(@NonNull CommandBufferBuilderImpl builder, @NonNull FixedState lastState, @NonNull MethodVisitor mv, int apiLvtIndex) {
                 super.emitCode(builder, lastState, mv, apiLvtIndex);
 
                 mv.visitVarInsn(ALOAD, apiLvtIndex);
@@ -309,7 +310,7 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
 
         this.uops.add(new Uop(this.state) {
             @Override
-            public void emitCode(@NonNull CommandBufferBuilderImpl builder, @NonNull State lastState, @NonNull MethodVisitor mv, int apiLvtIndex) {
+            public void emitCode(@NonNull CommandBufferBuilderImpl builder, @NonNull FixedState lastState, @NonNull MethodVisitor mv, int apiLvtIndex) {
                 super.emitCode(builder, lastState, mv, apiLvtIndex);
 
                 mv.visitVarInsn(ALOAD, apiLvtIndex);
@@ -330,7 +331,7 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
 
         this.uops.add(new Uop(this.state) {
             @Override
-            public void emitCode(@NonNull CommandBufferBuilderImpl builder, @NonNull State lastState, @NonNull MethodVisitor mv, int apiLvtIndex) {
+            public void emitCode(@NonNull CommandBufferBuilderImpl builder, @NonNull FixedState lastState, @NonNull MethodVisitor mv, int apiLvtIndex) {
                 super.emitCode(builder, lastState, mv, apiLvtIndex);
 
                 String fieldName = builder.makeField(getType(DrawListImpl.class), list);
@@ -351,11 +352,17 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
     }
 
     @Override
+    public CommandBufferBuilder barrier() {
+        //no-op: the current implementation is always ordered
+        return this;
+    }
+
+    @Override
     @SneakyThrows({ IllegalAccessException.class, InstantiationException.class, InvocationTargetException.class, NoSuchMethodException.class })
     public CommandBuffer build() {
         List<Uop> uops = this.uops.build();
         {
-            State state = State.DEFAULT_STATE;
+            FixedState state = FixedState.DEFAULT_STATE;
             for (Uop uop : uops) {
                 uop.emitCode(this, state, this.codeVisitor, this.apiLvtIndex);
                 state = uop.state();

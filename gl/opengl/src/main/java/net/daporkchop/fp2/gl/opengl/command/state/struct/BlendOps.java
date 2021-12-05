@@ -18,24 +18,21 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.command;
+package net.daporkchop.fp2.gl.opengl.command.state.struct;
 
-import lombok.Getter;
+import lombok.Data;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.gl.opengl.command.state.FixedState;
-import org.objectweb.asm.MethodVisitor;
+import lombok.With;
+import net.daporkchop.fp2.gl.command.BlendOp;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-@Getter
-public abstract class Uop {
+@Data
+@With
+public final class BlendOps {
     @NonNull
-    private final FixedState state;
-
-    public void emitCode(@NonNull CommandBufferBuilderImpl builder, @NonNull FixedState lastState, @NonNull MethodVisitor mv, int apiLvtIndex) {
-        FixedState.generateStateChange(mv, apiLvtIndex, lastState, this.state);
-    }
+    private final BlendOp rgb;
+    @NonNull
+    private final BlendOp a;
 }

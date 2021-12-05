@@ -18,12 +18,11 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.command;
+package net.daporkchop.fp2.gl.opengl.command.state;
 
 import com.google.common.collect.ImmutableMap;
 import lombok.AccessLevel;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.With;
@@ -34,11 +33,9 @@ import net.daporkchop.fp2.gl.command.StencilOperation;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureTarget;
-import net.daporkchop.fp2.gl.opengl.buffer.BufferTarget;
 import net.daporkchop.lib.common.misc.Tuple;
 import org.objectweb.asm.MethodVisitor;
 
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -53,8 +50,8 @@ import static org.objectweb.asm.Type.*;
 @RequiredArgsConstructor
 @Data
 @With
-public class State {
-    public static final State DEFAULT_STATE = new State();
+public class FixedState {
+    public static final FixedState DEFAULT_STATE = new FixedState();
 
     private static <K, V> Map<K, V> cowImmutableMapPut(@NonNull Map<K, V> map, K key, V value) {
         if (Objects.equals(value, map.get(key)) && map.containsKey(key)) { //already present, do nothing
@@ -66,7 +63,7 @@ public class State {
         return ImmutableMap.copyOf(tmp);
     }
 
-    public static void generateStateChange(@NonNull MethodVisitor mv, int apiLvtIndex, @NonNull State prevState, @NonNull State nextState) {
+    public static void generateStateChange(@NonNull MethodVisitor mv, int apiLvtIndex, @NonNull FixedState prevState, @NonNull FixedState nextState) {
         //blend
         if (prevState.blend != nextState.blend) { //toggle blend if it changed
             mv.visitVarInsn(ALOAD, apiLvtIndex);
@@ -294,7 +291,7 @@ public class State {
     //texture bindings
     private final Map<Integer, Tuple<TextureTarget, Integer>> textureBindings;
 
-    private State() {
+    private FixedState() {
         this.blend = false;
         this.blendFactorSrcRGB = BlendFactor.ONE;
         this.blendFactorSrcA = BlendFactor.ONE;
@@ -381,15 +378,15 @@ public class State {
         this.uniformBufferBindings.forEach((index, buffer) -> api.glBindBufferBase(GL_UNIFORM_BUFFER, index, buffer));
     }
 
-    public State withShaderStorageBuffer(int index, int buffer) {
+    public FixedState withShaderStorageBuffer(int index, int buffer) {
         return this.withShaderStorageBufferBindings(cowImmutableMapPut(this.shaderStorageBufferBindings, index, buffer));
     }
 
-    public State withUniformBuffer(int index, int buffer) {
+    public FixedState withUniformBuffer(int index, int buffer) {
         return this.withUniformBufferBindings(cowImmutableMapPut(this.uniformBufferBindings, index, buffer));
     }
 
-    public State withTexture(int unit, @NonNull TextureTarget target, int texture) {
+    public FixedState withTexture(int unit, @NonNull TextureTarget target, int texture) {
         return this.withTextureBindings(cowImmutableMapPut(this.textureBindings, unit, new Tuple<>(target, texture)));
     }
 }

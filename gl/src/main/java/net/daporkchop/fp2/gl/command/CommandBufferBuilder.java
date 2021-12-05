@@ -114,6 +114,14 @@ public interface CommandBufferBuilder {
      */
     CommandBufferBuilder execute(@NonNull CommandBuffer buffer);
 
+    /**
+     * Places an ordering barrier at the current stage.
+     * <p>
+     * All commands issued before a barrier are guaranteed to have been executed before the barrier can be passed, and subsequent commands will not begin until after the barrier
+     * is passed.
+     */
+    CommandBufferBuilder barrier();
+
     //
     // BUILDER
     //

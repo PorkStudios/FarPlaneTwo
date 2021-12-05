@@ -18,24 +18,15 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.command;
+package net.daporkchop.fp2.gl.opengl.command.state;
 
-import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.gl.opengl.command.state.FixedState;
-import org.objectweb.asm.MethodVisitor;
+
+import java.util.stream.Stream;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-@Getter
-public abstract class Uop {
-    @NonNull
-    private final FixedState state;
-
-    public void emitCode(@NonNull CommandBufferBuilderImpl builder, @NonNull FixedState lastState, @NonNull MethodVisitor mv, int apiLvtIndex) {
-        FixedState.generateStateChange(mv, apiLvtIndex, lastState, this.state);
-    }
+public interface StateProperty {
+    Stream<StateProperty> depends(@NonNull State state);
 }
