@@ -27,6 +27,7 @@ import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
@@ -36,8 +37,8 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @NoArgsConstructor
-public class CowState implements State {
-    private final Map<StateValueProperty<?>, Object> values = new IdentityHashMap<>();
+public final class CowState implements State {
+    protected final Map<StateValueProperty<?>, Object> values = new IdentityHashMap<>();
 
     private CowState(@NonNull CowState state) {
         this.values.putAll(state.values);
@@ -58,6 +59,10 @@ public class CowState implements State {
         }
     }
 
+    public <T> CowState update(@NonNull StateValueProperty<T> property, @NonNull Function<T, T> updater) {
+        return this.set(property, updater.apply(this.getOrDef(property)));
+    }
+
     public CowState unset(@NonNull StateValueProperty<?> property) {
         if (this.values.containsKey(property)) {
             CowState next = new CowState(this);
@@ -66,5 +71,9 @@ public class CowState implements State {
         } else {
             return this;
         }
+    }
+
+    public MutableState mutableSnapshot() {
+        return new MutableState(this);
     }
 }

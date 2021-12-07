@@ -28,7 +28,7 @@ import lombok.With;
  */
 @Data
 @With
-public class Color4f {
+public final class Color4f {
     private final float r;
     private final float g;
     private final float b;

@@ -18,18 +18,19 @@
  *
  */
 
-package net.daporkchop.fp2.gl.command;
+package net.daporkchop.fp2.gl.opengl.command.state.struct;
+
+import lombok.Data;
+import lombok.With;
 
 /**
  * @author DaPorkchop_
  */
-public enum Comparison {
-    NEVER,
-    LESS,
-    EQUAL,
-    LESS_OR_EQUAL,
-    GREATER,
-    NOT_EQUAL,
-    GREATER_OR_EQUAL,
-    ALWAYS;
+@Data
+@With
+public final class Color4b {
+    private final boolean r;
+    private final boolean g;
+    private final boolean b;
+    private final boolean a;
 }

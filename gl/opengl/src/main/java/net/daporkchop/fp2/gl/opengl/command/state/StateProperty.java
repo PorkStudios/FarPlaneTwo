@@ -28,5 +28,7 @@ import java.util.stream.Stream;
  * @author DaPorkchop_
  */
 public interface StateProperty {
-    Stream<StateProperty> depends(@NonNull State state);
+    default Stream<StateProperty> depends(@NonNull State state) {
+        return Stream.empty();
+    }
 }

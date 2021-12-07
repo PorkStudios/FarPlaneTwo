@@ -25,7 +25,7 @@ import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.command.BlendFactor;
 import net.daporkchop.fp2.gl.command.BlendOp;
-import net.daporkchop.fp2.gl.command.Comparison;
+import net.daporkchop.fp2.gl.command.Compare;
 import net.daporkchop.fp2.gl.command.FramebufferLayer;
 import net.daporkchop.fp2.gl.command.StencilOperation;
 import net.daporkchop.fp2.gl.draw.binding.DrawMode;
@@ -101,8 +101,8 @@ public class GLEnumUtil {
         }
     }
 
-    public int from(@NonNull Comparison comparison) {
-        switch (comparison) {
+    public int from(@NonNull Compare compare) {
+        switch (compare) {
             case NEVER:
                 return GL_NEVER;
             case LESS:
@@ -120,7 +120,7 @@ public class GLEnumUtil {
             case ALWAYS:
                 return GL_ALWAYS;
             default:
-                throw new IllegalArgumentException(comparison.name());
+                throw new IllegalArgumentException(compare.name());
         }
     }
 

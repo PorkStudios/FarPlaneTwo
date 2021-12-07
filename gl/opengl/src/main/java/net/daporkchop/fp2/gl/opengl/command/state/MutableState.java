@@ -20,20 +20,45 @@
 
 package net.daporkchop.fp2.gl.opengl.command.state;
 
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
-import org.objectweb.asm.MethodVisitor;
 
+import java.util.IdentityHashMap;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
- * A {@link StateProperty} with an associated value.
- * <p>
- * Property values are always {@link Optional}. An empty {@link Optional} indicates that we don't care what the property is set to.
+ * Immutable implementation of {@link State} with copy-on-write mutators.
  *
  * @author DaPorkchop_
  */
-public interface StateValueProperty<T> extends StateProperty {
-    T def();
+@NoArgsConstructor
+public final class MutableState implements State {
+    private final Map<StateValueProperty<?>, Object> values = new IdentityHashMap<>();
 
-    void emitCode(@NonNull T value, @NonNull MethodVisitor mv, int apiLvtIndex);
+    MutableState(@NonNull CowState state) {
+        this.values.putAll(state.values);
+    }
+
+    @Override
+    public <T> Optional<T> get(@NonNull StateValueProperty<T> property) {
+        return uncheckedCast(Optional.ofNullable(this.values.get(property)));
+    }
+
+    public <T> MutableState set(@NonNull StateValueProperty<T> property, @NonNull T value) {
+        this.values.put(property, value);
+        return this;
+    }
+
+    public <T> MutableState update(@NonNull StateValueProperty<T> property, @NonNull Function<T, T> updater) {
+        return this.set(property, updater.apply(this.getOrDef(property)));
+    }
+
+    public MutableState unset(@NonNull StateValueProperty<?> property) {
+        this.values.remove(property);
+        return this;
+    }
 }

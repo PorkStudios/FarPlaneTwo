@@ -28,7 +28,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.With;
 import net.daporkchop.fp2.gl.command.BlendFactor;
 import net.daporkchop.fp2.gl.command.BlendOp;
-import net.daporkchop.fp2.gl.command.Comparison;
+import net.daporkchop.fp2.gl.command.Compare;
 import net.daporkchop.fp2.gl.command.StencilOperation;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
@@ -265,7 +265,7 @@ public class FixedState {
     private final boolean depth;
     private final double depthClearValue;
     private final boolean depthWriteMask;
-    private final Comparison depthCompare;
+    private final Compare depthCompare;
 
     //stencil
     private final boolean stencil;
@@ -273,7 +273,7 @@ public class FixedState {
     private final int stencilWriteMask;
     private final int stencilCompareMask;
     private final int stencilReference;
-    private final Comparison stencilCompare;
+    private final Compare stencilCompare;
     private final StencilOperation stencilOperationFail;
     private final StencilOperation stencilOperationPass;
     private final StencilOperation stencilOperationDepthFail;
@@ -313,14 +313,14 @@ public class FixedState {
         this.depth = false;
         this.depthClearValue = 1.0d;
         this.depthWriteMask = true;
-        this.depthCompare = Comparison.LESS;
+        this.depthCompare = Compare.LESS;
 
         this.stencil = false;
         this.stencilClearValue = 0;
         this.stencilWriteMask = -1;
         this.stencilCompareMask = -1;
         this.stencilReference = 0;
-        this.stencilCompare = Comparison.NEVER;
+        this.stencilCompare = Compare.NEVER;
         this.stencilOperationFail = StencilOperation.KEEP;
         this.stencilOperationPass = StencilOperation.KEEP;
         this.stencilOperationDepthFail = StencilOperation.KEEP;

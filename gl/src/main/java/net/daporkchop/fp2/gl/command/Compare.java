@@ -18,22 +18,18 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.command.state;
-
-import lombok.NonNull;
-import org.objectweb.asm.MethodVisitor;
-
-import java.util.Optional;
+package net.daporkchop.fp2.gl.command;
 
 /**
- * A {@link StateProperty} with an associated value.
- * <p>
- * Property values are always {@link Optional}. An empty {@link Optional} indicates that we don't care what the property is set to.
- *
  * @author DaPorkchop_
  */
-public interface StateValueProperty<T> extends StateProperty {
-    T def();
-
-    void emitCode(@NonNull T value, @NonNull MethodVisitor mv, int apiLvtIndex);
+public enum Compare {
+    NEVER,
+    LESS,
+    EQUAL,
+    LESS_OR_EQUAL,
+    GREATER,
+    NOT_EQUAL,
+    GREATER_OR_EQUAL,
+    ALWAYS;
 }

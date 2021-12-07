@@ -72,7 +72,7 @@ public interface CommandBufferBuilder {
 
     CommandBufferBuilder depthWrite(boolean mask);
 
-    CommandBufferBuilder depthCompare(@NonNull Comparison comparison);
+    CommandBufferBuilder depthCompare(@NonNull Compare compare);
 
     CommandBufferBuilder stencilEnable();
 
@@ -86,7 +86,7 @@ public interface CommandBufferBuilder {
 
     CommandBufferBuilder stencilReference(int reference);
 
-    CommandBufferBuilder stencilCompare(@NonNull Comparison comparison);
+    CommandBufferBuilder stencilCompare(@NonNull Compare compare);
 
     /**
      * Sets the operations used to modify the value in the stencil buffer for a given fragment.
