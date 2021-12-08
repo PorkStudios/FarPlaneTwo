@@ -29,15 +29,23 @@ import net.daporkchop.fp2.gl.command.BlendOp;
 import net.daporkchop.fp2.gl.command.Compare;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
+import net.daporkchop.fp2.gl.opengl.buffer.IndexedBufferTarget;
 import net.daporkchop.fp2.gl.opengl.command.state.struct.BlendFactors;
 import net.daporkchop.fp2.gl.opengl.command.state.struct.BlendOps;
 import net.daporkchop.fp2.gl.opengl.command.state.struct.Color4b;
 import net.daporkchop.fp2.gl.opengl.command.state.struct.Color4f;
 import net.daporkchop.lib.common.util.PArrays;
+import net.daporkchop.lib.unsafe.PUnsafe;
+import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Type;
 
+import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
+import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 import static org.objectweb.asm.Opcodes.*;
@@ -51,7 +59,7 @@ public class StateProperties {
     public final StateProperty FIXED_FUNCTION_DRAW_PROPERTIES = new StateProperty() {
         @Override
         public Stream<StateProperty> depends(@NonNull State state) {
-            return Stream.of(BLEND, COLOR_MASK);
+            return Stream.of(BLEND, COLOR_MASK).flatMap(property -> Stream.concat(Stream.of(property), property.depends(state)));
         }
     };
 
@@ -66,15 +74,15 @@ public class StateProperties {
         }
     };
 
-    public final StateValueProperty<BlendFactors> BLEND_FACTORS = new BaseStateValueProperty<BlendFactors>(new BlendFactors(BlendFactor.ONE, BlendFactor.ONE, BlendFactor.ZERO, BlendFactor.ZERO)) {
+    public final StateValueProperty<BlendFactors> BLEND_FACTORS = new StructContainingMultipleIntegersProperty<BlendFactors>(new BlendFactors(BlendFactor.ONE, BlendFactor.ONE, BlendFactor.ZERO, BlendFactor.ZERO),
+            "glBlendFuncSeparate",
+            GL_BLEND_SRC_RGB, GL_BLEND_SRC_ALPHA, GL_BLEND_DST_RGB, GL_BLEND_DST_ALPHA) {
         @Override
-        public void emitCode(@NonNull BlendFactors value, @NonNull MethodVisitor mv, int apiLvtIndex) {
-            mv.visitVarInsn(ALOAD, apiLvtIndex);
+        protected void loadFromValue(@NonNull MethodVisitor mv, @NonNull BlendFactors value) {
             mv.visitLdcInsn(GLEnumUtil.from(value.srcRGB()));
             mv.visitLdcInsn(GLEnumUtil.from(value.dstRGB()));
             mv.visitLdcInsn(GLEnumUtil.from(value.srcA()));
             mv.visitLdcInsn(GLEnumUtil.from(value.dstA()));
-            mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glBlendFuncSeparate", getMethodDescriptor(VOID_TYPE, INT_TYPE, INT_TYPE, INT_TYPE, INT_TYPE), true);
         }
 
         @Override
@@ -83,33 +91,59 @@ public class StateProperties {
         }
     };
 
-    public final StateValueProperty<BlendOps> BLEND_OPS = new BaseStateValueProperty<BlendOps>(new BlendOps(BlendOp.ADD, BlendOp.ADD)) {
+    public final StateValueProperty<BlendOps> BLEND_OPS = new StructContainingMultipleIntegersProperty<BlendOps>(new BlendOps(BlendOp.ADD, BlendOp.ADD),
+            "glBlendEquationSeparate",
+            GL_BLEND_EQUATION_RGB, GL_BLEND_EQUATION_ALPHA) {
         @Override
-        public void emitCode(@NonNull BlendOps value, @NonNull MethodVisitor mv, int apiLvtIndex) {
-            mv.visitVarInsn(ALOAD, apiLvtIndex);
+        protected void loadFromValue(@NonNull MethodVisitor mv, @NonNull BlendOps value) {
             mv.visitLdcInsn(GLEnumUtil.from(value.rgb()));
             mv.visitLdcInsn(GLEnumUtil.from(value.a()));
-            mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glBlendEquationSeparate", getMethodDescriptor(VOID_TYPE, INT_TYPE, INT_TYPE), true);
         }
     };
 
-    public final StateValueProperty<Color4f> BLEND_COLOR = new ColorProperty("glBlendColor");
+    public final StateValueProperty<Color4f> BLEND_COLOR = new ColorProperty("glBlendColor", GL_BLEND_COLOR);
 
     //
     // COLOR
     //
 
-    public final StateValueProperty<Color4f> CLEAR_COLOR = new ColorProperty("glClearColor");
+    public final StateValueProperty<Color4f> CLEAR_COLOR = new ColorProperty("glClearColor", GL_COLOR_CLEAR_VALUE);
 
-    public final StateValueProperty<Color4b> COLOR_MASK = new BaseStateValueProperty<Color4b>(new Color4b(true, true, true, true)) {
+    public final StateValueProperty<Color4b> COLOR_MASK = new SimpleStateValueProperty<Color4b>(new Color4b(true, true, true, true)) {
         @Override
-        public void emitCode(@NonNull Color4b value, @NonNull MethodVisitor mv, int apiLvtIndex) {
-            mv.visitVarInsn(ALOAD, apiLvtIndex);
+        protected void set(@NonNull MethodVisitor mv) {
+            mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glColorMask", getMethodDescriptor(VOID_TYPE, BOOLEAN_TYPE, BOOLEAN_TYPE, BOOLEAN_TYPE, BOOLEAN_TYPE), true);
+        }
+
+        @Override
+        protected void loadFromValue(@NonNull MethodVisitor mv, @NonNull Color4b value) {
             mv.visitLdcInsn(value.r());
             mv.visitLdcInsn(value.g());
             mv.visitLdcInsn(value.b());
             mv.visitLdcInsn(value.a());
-            mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glColorMask", getMethodDescriptor(VOID_TYPE, BOOLEAN_TYPE, BOOLEAN_TYPE, BOOLEAN_TYPE, BOOLEAN_TYPE), true);
+        }
+
+        @Override
+        public void backup(@NonNull MethodVisitor mv, int apiLvtIndex, int bufferLvtIndex, @NonNull AtomicInteger lvtIndexAllocator) {
+            mv.visitVarInsn(ALOAD, apiLvtIndex);
+            mv.visitLdcInsn(GL_COLOR_WRITEMASK);
+            mv.visitVarInsn(LLOAD, bufferLvtIndex);
+            mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glGetBoolean", getMethodDescriptor(VOID_TYPE, INT_TYPE, LONG_TYPE), true);
+
+            for (int i = 0; i < 4; i++) {
+                mv.visitVarInsn(LLOAD, bufferLvtIndex);
+                mv.visitLdcInsn((long) i);
+                mv.visitInsn(LADD);
+                mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "getByte", getMethodDescriptor(BYTE_TYPE, LONG_TYPE), false);
+                mv.visitVarInsn(ISTORE, lvtIndexAllocator.getAndIncrement());
+            }
+        }
+
+        @Override
+        protected void loadFromBackup(@NonNull MethodVisitor mv, int bufferLvtIndex, int lvtIndexBase) {
+            for (int i = 0; i < 4; i++) {
+                mv.visitVarInsn(ILOAD, lvtIndexBase + i);
+            }
         }
     };
 
@@ -124,32 +158,11 @@ public class StateProperties {
         }
     };
 
-    public final StateValueProperty<Double> DEPTH_CLEAR = new BaseStateValueProperty<Double>(0.0d) {
-        @Override
-        public void emitCode(@NonNull Double value, @NonNull MethodVisitor mv, int apiLvtIndex) {
-            mv.visitVarInsn(ALOAD, apiLvtIndex);
-            mv.visitLdcInsn(value);
-            mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glClearDepth", getMethodDescriptor(VOID_TYPE, DOUBLE_TYPE), true);
-        }
-    };
+    public final StateValueProperty<Double> DEPTH_CLEAR = new DoubleSimpleStateValueProperty(0.0d, "glClearDepth", GL_DEPTH_CLEAR_VALUE);
 
-    public final StateValueProperty<Compare> DEPTH_COMPARE = new BaseStateValueProperty<Compare>(Compare.LESS) {
-        @Override
-        public void emitCode(@NonNull Compare value, @NonNull MethodVisitor mv, int apiLvtIndex) {
-            mv.visitVarInsn(ALOAD, apiLvtIndex);
-            mv.visitLdcInsn(GLEnumUtil.from(value));
-            mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glDepthFunc", getMethodDescriptor(VOID_TYPE, INT_TYPE), true);
-        }
-    };
+    public final StateValueProperty<Compare> DEPTH_COMPARE = new IntegerSimpleStateValueProperty<>(Compare.LESS, GLEnumUtil::from, "glDepthFunc", GL_DEPTH_FUNC);
 
-    public final StateValueProperty<Boolean> DEPTH_WRITE_MASK = new BaseStateValueProperty<Boolean>(true) {
-        @Override
-        public void emitCode(@NonNull Boolean value, @NonNull MethodVisitor mv, int apiLvtIndex) {
-            mv.visitVarInsn(ALOAD, apiLvtIndex);
-            mv.visitLdcInsn(value);
-            mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glDepthMask", getMethodDescriptor(VOID_TYPE, BOOLEAN_TYPE), true);
-        }
-    };
+    public final StateValueProperty<Boolean> DEPTH_WRITE_MASK = new BooleanSimpleStateValueProperty(true, "glDepthMask", GL_DEPTH_WRITEMASK);
 
     //
     // STENCIL
@@ -159,59 +172,72 @@ public class StateProperties {
     // SIMPLE BINDINGS
     //
 
-    public final StateValueProperty<Integer> BOUND_PROGRAM = new BaseStateValueProperty<Integer>(0) {
-        @Override
-        public void emitCode(@NonNull Integer value, @NonNull MethodVisitor mv, int apiLvtIndex) {
-            mv.visitVarInsn(ALOAD, apiLvtIndex);
-            mv.visitLdcInsn(value);
-            mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glUseProgram", getMethodDescriptor(VOID_TYPE, INT_TYPE), true);
-        }
-    };
+    public final StateValueProperty<Integer> BOUND_PROGRAM = new IntegerSimpleStateValueProperty<>(0, Function.identity(), "glUseProgram", GL_CURRENT_PROGRAM);
 
-    public final StateValueProperty<Integer> BOUND_VAO = new BaseStateValueProperty<Integer>(0) {
-        @Override
-        public void emitCode(@NonNull Integer value, @NonNull MethodVisitor mv, int apiLvtIndex) {
-            mv.visitVarInsn(ALOAD, apiLvtIndex);
-            mv.visitLdcInsn(value);
-            mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glBindVertexArray", getMethodDescriptor(VOID_TYPE, INT_TYPE), true);
-        }
-    };
+    public final StateValueProperty<Integer> BOUND_VAO = new IntegerSimpleStateValueProperty<>(0, Function.identity(), "glBindVertexArray", GL_VERTEX_ARRAY_BINDING);
 
     //
     // BUFFER BINDINGS
     //
 
-    public final StateValueProperty<Integer>[] BOUND_SSBO = uncheckedCast(PArrays.filledBy(16, StateValueProperty[]::new, i -> new IndexedBufferBindingProperty(GL_SHADER_STORAGE_BUFFER, i)));
+    public final StateValueProperty<Integer>[] BOUND_SSBO = uncheckedCast(PArrays.filledBy(16, StateValueProperty[]::new, i -> new IndexedBufferBindingProperty(IndexedBufferTarget.SHADER_STORAGE_BUFFER, i)));
 
-    public final StateValueProperty<Integer>[] BOUND_UBO = uncheckedCast(PArrays.filledBy(16, StateValueProperty[]::new, i -> new IndexedBufferBindingProperty(GL_UNIFORM_BUFFER, i)));
+    public final StateValueProperty<Integer>[] BOUND_UBO = uncheckedCast(PArrays.filledBy(16, StateValueProperty[]::new, i -> new IndexedBufferBindingProperty(IndexedBufferTarget.UNIFORM_BUFFER, i)));
+
+    //
+    //
+    // CLASSES
+    //
+    //
 
     /**
      * @author DaPorkchop_
      */
     @RequiredArgsConstructor
-    @Getter
-    private static abstract class BaseStateValueProperty<T> implements StateValueProperty<T> {
-        @NonNull
-        private final T def;
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    private static abstract class FixedFunctionStateEnableProperty extends BaseStateValueProperty<Boolean> {
+    private static abstract class FixedFunctionStateEnableProperty implements StateValueProperty<Boolean> {
         private final int cap;
 
-        public FixedFunctionStateEnableProperty(int cap) {
-            super(false);
-
-            this.cap = cap;
+        @Override
+        public Boolean def() {
+            return false;
         }
 
         @Override
-        public void emitCode(@NonNull Boolean value, @NonNull MethodVisitor mv, int apiLvtIndex) {
+        public void set(@NonNull Boolean value, @NonNull MethodVisitor mv, int apiLvtIndex) {
             mv.visitVarInsn(ALOAD, apiLvtIndex);
             mv.visitLdcInsn(this.cap);
             mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), value ? "glEnable" : "glDisable", getMethodDescriptor(VOID_TYPE, INT_TYPE), true);
+        }
+
+        @Override
+        public void backup(@NonNull MethodVisitor mv, int apiLvtIndex, int bufferLvtIndex, @NonNull AtomicInteger lvtIndexAllocator) {
+            mv.visitVarInsn(ALOAD, apiLvtIndex);
+            mv.visitLdcInsn(this.cap);
+            mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glGetInteger", getMethodDescriptor(INT_TYPE, INT_TYPE), true);
+            mv.visitVarInsn(ISTORE, lvtIndexAllocator.getAndIncrement());
+        }
+
+        @Override
+        public void restore(@NonNull MethodVisitor mv, int apiLvtIndex, int bufferLvtIndex, int lvtIndexBase) {
+            Label l0 = new Label();
+            Label lEnd = new Label();
+
+            mv.visitVarInsn(ILOAD, lvtIndexBase);
+            mv.visitJumpInsn(IFNE, l0);
+
+            //disabled
+            mv.visitVarInsn(ALOAD, apiLvtIndex);
+            mv.visitLdcInsn(this.cap);
+            mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glDisable", getMethodDescriptor(VOID_TYPE, INT_TYPE), true);
+            mv.visitJumpInsn(GOTO, lEnd);
+
+            //enabled
+            mv.visitLabel(l0);
+            mv.visitVarInsn(ALOAD, apiLvtIndex);
+            mv.visitLdcInsn(this.cap);
+            mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glEnable", getMethodDescriptor(VOID_TYPE, INT_TYPE), true);
+
+            mv.visitLabel(lEnd);
         }
 
         @Override
@@ -227,47 +253,290 @@ public class StateProperties {
     /**
      * @author DaPorkchop_
      */
-    private static class ColorProperty extends BaseStateValueProperty<Color4f> {
-        private final String methodName;
+    @RequiredArgsConstructor
+    @Getter
+    private static abstract class SimpleStateValueProperty<T> implements StateValueProperty<T> {
+        @NonNull
+        private final T def;
 
-        public ColorProperty(@NonNull String methodName) {
-            super(new Color4f(0.0f, 0.0f, 0.0f, 0.0f));
-
-            this.methodName = methodName;
+        @Override
+        public void set(@NonNull T value, @NonNull MethodVisitor mv, int apiLvtIndex) {
+            mv.visitVarInsn(ALOAD, apiLvtIndex);
+            this.loadFromValue(mv, value);
+            this.set(mv);
         }
 
         @Override
-        public void emitCode(@NonNull Color4f value, @NonNull MethodVisitor mv, int apiLvtIndex) {
+        public void restore(@NonNull MethodVisitor mv, int apiLvtIndex, int bufferLvtIndex, int lvtIndexBase) {
             mv.visitVarInsn(ALOAD, apiLvtIndex);
-            mv.visitLdcInsn(value.r());
-            mv.visitLdcInsn(value.g());
-            mv.visitLdcInsn(value.b());
-            mv.visitLdcInsn(value.a());
-            mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), this.methodName, getMethodDescriptor(VOID_TYPE, FLOAT_TYPE, FLOAT_TYPE, FLOAT_TYPE, FLOAT_TYPE), true);
+            this.loadFromBackup(mv, bufferLvtIndex, lvtIndexBase);
+            this.set(mv);
+        }
+
+        protected abstract void set(@NonNull MethodVisitor mv);
+
+        protected abstract void loadFromValue(@NonNull MethodVisitor mv, @NonNull T value);
+
+        @Override
+        public abstract void backup(@NonNull MethodVisitor mv, int apiLvtIndex, int bufferLvtIndex, @NonNull AtomicInteger lvtIndexAllocator);
+
+        protected abstract void loadFromBackup(@NonNull MethodVisitor mv, int bufferLvtIndex, int lvtIndexBase);
+    }
+
+    //
+    // SIMPLE PRIMITIVE PROPERTIES
+    //
+
+    /**
+     * @author DaPorkchop_
+     */
+    private static class BooleanSimpleStateValueProperty extends SimpleStateValueProperty<Boolean> {
+        private final String func;
+        private final int binding;
+
+        public BooleanSimpleStateValueProperty(@NonNull Boolean def, @NonNull String func, int binding) {
+            super(def);
+
+            this.func = func;
+            this.binding = binding;
+        }
+
+        @Override
+        protected void set(@NonNull MethodVisitor mv) {
+            mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), this.func, getMethodDescriptor(VOID_TYPE, BOOLEAN_TYPE), true);
+        }
+
+        @Override
+        protected void loadFromValue(@NonNull MethodVisitor mv, @NonNull Boolean value) {
+            mv.visitLdcInsn(value);
+        }
+
+        @Override
+        public void backup(@NonNull MethodVisitor mv, int apiLvtIndex, int bufferLvtIndex, @NonNull AtomicInteger lvtIndexAllocator) {
+            mv.visitVarInsn(ALOAD, apiLvtIndex);
+            mv.visitLdcInsn(this.binding);
+            mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glGetBoolean", getMethodDescriptor(BOOLEAN_TYPE, INT_TYPE), true);
+            mv.visitVarInsn(ISTORE, lvtIndexAllocator.getAndIncrement());
+        }
+
+        @Override
+        protected void loadFromBackup(@NonNull MethodVisitor mv, int bufferLvtIndex, int lvtIndexBase) {
+            mv.visitVarInsn(ILOAD, lvtIndexBase);
         }
     }
 
     /**
      * @author DaPorkchop_
      */
-    private static class IndexedBufferBindingProperty extends BaseStateValueProperty<Integer> {
-        private final int type;
+    private static class IntegerSimpleStateValueProperty<T> extends SimpleStateValueProperty<T> {
+        private final Function<T, Integer> toInt;
+        private final String func;
+        private final int binding;
+
+        public IntegerSimpleStateValueProperty(@NonNull T def, @NonNull Function<T, Integer> toInt, @NonNull String func, int binding) {
+            super(def);
+
+            this.toInt = toInt;
+            this.func = func;
+            this.binding = binding;
+        }
+
+        @Override
+        protected void set(@NonNull MethodVisitor mv) {
+            mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), this.func, getMethodDescriptor(VOID_TYPE, INT_TYPE), true);
+        }
+
+        @Override
+        protected void loadFromValue(@NonNull MethodVisitor mv, @NonNull T value) {
+            mv.visitLdcInsn(this.toInt.apply(value));
+        }
+
+        @Override
+        public void backup(@NonNull MethodVisitor mv, int apiLvtIndex, int bufferLvtIndex, @NonNull AtomicInteger lvtIndexAllocator) {
+            mv.visitVarInsn(ALOAD, apiLvtIndex);
+            mv.visitLdcInsn(this.binding);
+            mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glGetInteger", getMethodDescriptor(INT_TYPE, INT_TYPE), true);
+            mv.visitVarInsn(ISTORE, lvtIndexAllocator.getAndIncrement());
+        }
+
+        @Override
+        protected void loadFromBackup(@NonNull MethodVisitor mv, int bufferLvtIndex, int lvtIndexBase) {
+            mv.visitVarInsn(ILOAD, lvtIndexBase);
+        }
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    private static class DoubleSimpleStateValueProperty extends SimpleStateValueProperty<Double> {
+        private final String func;
+        private final int binding;
+
+        public DoubleSimpleStateValueProperty(@NonNull Double def, @NonNull String func, int binding) {
+            super(def);
+
+            this.func = func;
+            this.binding = binding;
+        }
+
+        @Override
+        protected void set(@NonNull MethodVisitor mv) {
+            mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), this.func, getMethodDescriptor(VOID_TYPE, DOUBLE_TYPE), true);
+        }
+
+        @Override
+        protected void loadFromValue(@NonNull MethodVisitor mv, @NonNull Double value) {
+            mv.visitLdcInsn(value);
+        }
+
+        @Override
+        public void backup(@NonNull MethodVisitor mv, int apiLvtIndex, int bufferLvtIndex, @NonNull AtomicInteger lvtIndexAllocator) {
+            mv.visitVarInsn(ALOAD, apiLvtIndex);
+            mv.visitLdcInsn(this.binding);
+            mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glGetDouble", getMethodDescriptor(DOUBLE_TYPE, INT_TYPE), true);
+            mv.visitVarInsn(DSTORE, lvtIndexAllocator.getAndAdd(2));
+        }
+
+        @Override
+        protected void loadFromBackup(@NonNull MethodVisitor mv, int bufferLvtIndex, int lvtIndexBase) {
+            mv.visitVarInsn(DLOAD, lvtIndexBase);
+        }
+    }
+
+    //
+    // SLIGHTLY MORE COMPLEX PROPERTIES
+    //
+
+    /**
+     * @author DaPorkchop_
+     */
+    private static class ColorProperty extends SimpleStateValueProperty<Color4f> {
+        private final String func;
+        private final int pname;
+
+        public ColorProperty(@NonNull String func, int pname) {
+            super(new Color4f(0.0f, 0.0f, 0.0f, 0.0f));
+
+            this.func = func;
+            this.pname = pname;
+        }
+
+        @Override
+        protected void set(@NonNull MethodVisitor mv) {
+            mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), this.func, getMethodDescriptor(VOID_TYPE, FLOAT_TYPE, FLOAT_TYPE, FLOAT_TYPE, FLOAT_TYPE), true);
+        }
+
+        @Override
+        protected void loadFromValue(@NonNull MethodVisitor mv, @NonNull Color4f value) {
+            mv.visitLdcInsn(value.r());
+            mv.visitLdcInsn(value.g());
+            mv.visitLdcInsn(value.b());
+            mv.visitLdcInsn(value.a());
+        }
+
+        @Override
+        public void backup(@NonNull MethodVisitor mv, int apiLvtIndex, int bufferLvtIndex, @NonNull AtomicInteger lvtIndexAllocator) {
+            mv.visitVarInsn(ALOAD, apiLvtIndex);
+            mv.visitLdcInsn(this.pname);
+            mv.visitVarInsn(LLOAD, bufferLvtIndex);
+            mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glGetFloat", getMethodDescriptor(VOID_TYPE, INT_TYPE, LONG_TYPE), true);
+
+            for (int i = 0; i < 4; i++) {
+                mv.visitVarInsn(LLOAD, bufferLvtIndex);
+                mv.visitLdcInsn(i * (long) FLOAT_SIZE);
+                mv.visitInsn(LADD);
+                mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "getFloat", getMethodDescriptor(FLOAT_TYPE, LONG_TYPE), false);
+                mv.visitVarInsn(FSTORE, lvtIndexAllocator.getAndIncrement());
+            }
+        }
+
+        @Override
+        protected void loadFromBackup(@NonNull MethodVisitor mv, int bufferLvtIndex, int lvtIndexBase) {
+            for (int i = 0; i < 4; i++) {
+                mv.visitVarInsn(FLOAD, lvtIndexBase + i);
+            }
+        }
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    private static class IndexedBufferBindingProperty extends SimpleStateValueProperty<Integer> {
+        private final IndexedBufferTarget target;
         private final int index;
 
-        public IndexedBufferBindingProperty(int type, int index) {
+        public IndexedBufferBindingProperty(@NonNull IndexedBufferTarget target, int index) {
             super(0);
 
-            this.type = type;
+            this.target = target;
             this.index = index;
         }
 
         @Override
-        public void emitCode(@NonNull Integer value, @NonNull MethodVisitor mv, int apiLvtIndex) {
-            mv.visitVarInsn(ALOAD, apiLvtIndex);
-            mv.visitLdcInsn(this.type);
+        protected void set(@NonNull MethodVisitor mv) {
+            mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glBindBufferBase", getMethodDescriptor(VOID_TYPE, INT_TYPE, INT_TYPE, INT_TYPE), true);
+        }
+
+        @Override
+        protected void loadFromValue(@NonNull MethodVisitor mv, @NonNull Integer value) {
+            mv.visitLdcInsn(this.target.id());
             mv.visitLdcInsn(this.index);
             mv.visitLdcInsn(value);
-            mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glBindBufferBase", getMethodDescriptor(VOID_TYPE, INT_TYPE, INT_TYPE, INT_TYPE), true);
+        }
+
+        @Override
+        public void backup(@NonNull MethodVisitor mv, int apiLvtIndex, int bufferLvtIndex, @NonNull AtomicInteger lvtIndexAllocator) {
+            mv.visitVarInsn(ALOAD, apiLvtIndex);
+            mv.visitLdcInsn(this.target.binding());
+            mv.visitLdcInsn(this.index);
+            mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glGetInteger", getMethodDescriptor(INT_TYPE, INT_TYPE, INT_TYPE), true);
+            mv.visitVarInsn(ISTORE, lvtIndexAllocator.getAndIncrement());
+        }
+
+        @Override
+        protected void loadFromBackup(@NonNull MethodVisitor mv, int bufferLvtIndex, int lvtIndexBase) {
+            mv.visitLdcInsn(this.target.id());
+            mv.visitLdcInsn(this.index);
+            mv.visitVarInsn(ILOAD, lvtIndexBase);
+        }
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    private abstract static class StructContainingMultipleIntegersProperty<S> extends SimpleStateValueProperty<S> {
+        private final String func;
+        private final int[] indices;
+
+        public StructContainingMultipleIntegersProperty(@NonNull S def, @NonNull String func, @NonNull int... indices) {
+            super(def);
+
+            this.func = func;
+            this.indices = indices;
+        }
+
+        @Override
+        protected void set(@NonNull MethodVisitor mv) {
+            Type[] argumentTypes = new Type[this.indices.length];
+            Arrays.fill(argumentTypes, INT_TYPE);
+            mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), this.func, getMethodDescriptor(VOID_TYPE, argumentTypes), true);
+        }
+
+        @Override
+        public void backup(@NonNull MethodVisitor mv, int apiLvtIndex, int bufferLvtIndex, @NonNull AtomicInteger lvtIndexAllocator) {
+            for (int i : this.indices) {
+                mv.visitVarInsn(ALOAD, apiLvtIndex);
+                mv.visitLdcInsn(i);
+                mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glGetInteger", getMethodDescriptor(INT_TYPE, INT_TYPE), true);
+                mv.visitVarInsn(ISTORE, lvtIndexAllocator.getAndIncrement());
+            }
+        }
+
+        @Override
+        protected void loadFromBackup(@NonNull MethodVisitor mv, int bufferLvtIndex, int lvtIndexBase) {
+            for (int i = 0; i < this.indices.length; i++) {
+                mv.visitVarInsn(ILOAD, lvtIndexBase + i);
+            }
         }
     }
 }

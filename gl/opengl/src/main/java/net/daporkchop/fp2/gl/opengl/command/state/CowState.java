@@ -38,10 +38,24 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 @NoArgsConstructor
 public final class CowState implements State {
-    protected final Map<StateValueProperty<?>, Object> values = new IdentityHashMap<>();
+    final Map<StateValueProperty<?>, Object> values = new IdentityHashMap<>();
 
-    private CowState(@NonNull CowState state) {
+    CowState(@NonNull CowState state) {
         this.values.putAll(state.values);
+    }
+
+    CowState(@NonNull MutableState state) {
+        this.values.putAll(state.values);
+    }
+
+    @Override
+    public CowState immutableSnapshot() {
+        return this;
+    }
+
+    @Override
+    public MutableState mutableSnapshot() {
+        return new MutableState(this);
     }
 
     @Override
@@ -49,6 +63,7 @@ public final class CowState implements State {
         return uncheckedCast(Optional.ofNullable(this.values.get(property)));
     }
 
+    @Override
     public <T> CowState set(@NonNull StateValueProperty<T> property, @NonNull T value) {
         if (!Objects.equals(this.values.get(property), value)) {
             CowState next = new CowState(this);
@@ -59,10 +74,12 @@ public final class CowState implements State {
         }
     }
 
+    @Override
     public <T> CowState update(@NonNull StateValueProperty<T> property, @NonNull Function<T, T> updater) {
         return this.set(property, updater.apply(this.getOrDef(property)));
     }
 
+    @Override
     public CowState unset(@NonNull StateValueProperty<?> property) {
         if (this.values.containsKey(property)) {
             CowState next = new CowState(this);
@@ -71,9 +88,5 @@ public final class CowState implements State {
         } else {
             return this;
         }
-    }
-
-    public MutableState mutableSnapshot() {
-        return new MutableState(this);
     }
 }

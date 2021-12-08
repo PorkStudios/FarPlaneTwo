@@ -72,13 +72,13 @@ public abstract class Uop {
             binding.uniformBuffers().forEach(uboBinding -> state.set(StateProperties.BOUND_UBO[uboBinding.bindingIndex], uboBinding.buffer.id()));
 
             //binding.textures().forEach(textureBinding -> this.fixedState = this.fixedState.withTexture(textureBinding.unit, textureBinding.target, textureBinding.id));
-            return state;
+            return state.immutableSnapshot();
         }
 
         protected final List<StateProperty> depends;
 
         public Bound(@NonNull CowState state, @NonNull BaseBindingImpl binding, @NonNull BaseShaderProgramImpl shader) {
-            super(toBoundState(state, binding, (BaseShaderProgramImpl) shader));
+            super(toBoundState(state, binding, shader));
 
             ImmutableList.Builder<StateProperty> depends = ImmutableList.builder();
             this.buildDependsFirst(depends, binding);

@@ -104,6 +104,8 @@ public class OpenGL implements GL {
 
     protected final int vertexAttributeAlignment;
 
+    protected final boolean preserveInputGlState;
+
     protected OpenGL(@NonNull OpenGLBuilder builder) {
         this.resourceProvider = ResourceProvider.selectingByNamespace(OPENGL_NAMESPACE, ResourceProvider.loadingClassResources(OpenGL.class), builder.resourceProvider);
 
@@ -112,6 +114,7 @@ public class OpenGL implements GL {
                 .get();
 
         this.version = this.api.version();
+        this.preserveInputGlState = true;
 
         { //get supported extensions
             Set<String> extensionNames;

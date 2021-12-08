@@ -41,6 +41,7 @@ import net.daporkchop.fp2.gl.attribute.uniform.UniformBuffer;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
 import net.daporkchop.fp2.gl.bitset.GLBitSet;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
+import net.daporkchop.fp2.gl.command.BlendFactor;
 import net.daporkchop.fp2.gl.command.CommandBuffer;
 import net.daporkchop.fp2.gl.command.FramebufferLayer;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
@@ -233,14 +234,16 @@ public class TestLWJGL2 {
                 .build();
         bitSet.resize(4);
 
-        try (CommandBuffer cmdBuffer0 = gl.createCommandBuffer()
-                .framebufferClear(FramebufferLayer.COLOR)
-                .drawList(drawShaderProgram, DrawMode.TRIANGLES, commandBufferArrays)
-                .drawArrays(binding, drawShaderProgram, DrawMode.TRIANGLES, 0, 3)
-                .build();
-             CommandBuffer cmdBuffer1 = gl.createCommandBuffer()
-                     .drawList(drawShaderProgram, DrawMode.TRIANGLES, commandBufferElements)
-                     .build()) {
+        try (
+                CommandBuffer cmdBuffer1 = gl.createCommandBuffer()
+                        .drawList(drawShaderProgram, DrawMode.TRIANGLES, commandBufferElements)
+                        .build();
+                CommandBuffer cmdBuffer0 = gl.createCommandBuffer()
+                        .blendDisable()
+                        .framebufferClear(FramebufferLayer.COLOR)
+                        .drawList(drawShaderProgram, DrawMode.TRIANGLES, commandBufferArrays)
+                        .drawArrays(binding, drawShaderProgram, DrawMode.TRIANGLES, 0, 3)
+                        .build()) {
             while (!Display.isCloseRequested()) {
                 uniformBuffer.set(new UniformAttribs((byte) 32, (byte) 32));
                 cmdBuffer0.execute();

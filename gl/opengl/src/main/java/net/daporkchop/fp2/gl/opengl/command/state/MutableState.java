@@ -31,16 +31,30 @@ import java.util.function.Function;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
- * Immutable implementation of {@link State} with copy-on-write mutators.
+ * Mutable implementation of {@link State}.
  *
  * @author DaPorkchop_
  */
 @NoArgsConstructor
 public final class MutableState implements State {
-    private final Map<StateValueProperty<?>, Object> values = new IdentityHashMap<>();
+    final Map<StateValueProperty<?>, Object> values = new IdentityHashMap<>();
 
     MutableState(@NonNull CowState state) {
         this.values.putAll(state.values);
+    }
+
+    MutableState(@NonNull MutableState state) {
+        this.values.putAll(state.values);
+    }
+
+    @Override
+    public CowState immutableSnapshot() {
+        return new CowState(this);
+    }
+
+    @Override
+    public MutableState mutableSnapshot() {
+        return new MutableState(this);
     }
 
     @Override
@@ -48,15 +62,18 @@ public final class MutableState implements State {
         return uncheckedCast(Optional.ofNullable(this.values.get(property)));
     }
 
+    @Override
     public <T> MutableState set(@NonNull StateValueProperty<T> property, @NonNull T value) {
         this.values.put(property, value);
         return this;
     }
 
+    @Override
     public <T> MutableState update(@NonNull StateValueProperty<T> property, @NonNull Function<T, T> updater) {
         return this.set(property, updater.apply(this.getOrDef(property)));
     }
 
+    @Override
     public MutableState unset(@NonNull StateValueProperty<?> property) {
         this.values.remove(property);
         return this;

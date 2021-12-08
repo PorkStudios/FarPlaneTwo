@@ -50,7 +50,21 @@ public interface GLAPI {
 
     int glGetError();
 
+    boolean glGetBoolean(int pname);
+
+    void glGetBoolean(int pname, long data);
+
     int glGetInteger(int pname);
+
+    void glGetInteger(int pname, long data);
+
+    float glGetFloat(int pname);
+
+    void glGetFloat(int pname, long data);
+
+    double glGetDouble(int pname);
+
+    void glGetDouble(int pname, long data);
 
     String glGetString(int pname);
 

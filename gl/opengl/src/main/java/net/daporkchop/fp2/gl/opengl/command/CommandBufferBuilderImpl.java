@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableList;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.common.asm.ClassloadingUtils;
+import net.daporkchop.fp2.common.util.DirectBufferHackery;
 import net.daporkchop.fp2.gl.command.BlendFactor;
 import net.daporkchop.fp2.gl.command.BlendOp;
 import net.daporkchop.fp2.gl.command.CommandBuffer;
@@ -40,7 +41,6 @@ import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.command.state.CowState;
 import net.daporkchop.fp2.gl.opengl.command.state.FixedState;
-import net.daporkchop.fp2.gl.opengl.command.state.MutableState;
 import net.daporkchop.fp2.gl.opengl.command.state.StateProperties;
 import net.daporkchop.fp2.gl.opengl.command.state.StateProperty;
 import net.daporkchop.fp2.gl.opengl.command.state.StateValueProperty;
@@ -52,24 +52,32 @@ import net.daporkchop.fp2.gl.opengl.draw.command.DrawListImpl;
 import net.daporkchop.fp2.gl.opengl.layout.BaseBindingImpl;
 import net.daporkchop.fp2.gl.opengl.shader.BaseShaderProgramImpl;
 import net.daporkchop.lib.common.misc.string.PStrings;
+import net.daporkchop.lib.unsafe.PUnsafe;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.Buffer;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
+import java.util.Queue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
+import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 import static org.objectweb.asm.Opcodes.*;
 import static org.objectweb.asm.Type.*;
@@ -87,10 +95,8 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
     protected final ClassWriter writer;
 
     protected final MethodVisitor ctorVisitor;
-    protected final MethodVisitor codeVisitor;
 
     protected final String apiFieldName;
-    protected final int apiLvtIndex;
 
     protected final BitSet lvtAllocationTable = new BitSet();
     protected final List<Object> fieldValues = new ArrayList<>();
@@ -118,14 +124,6 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
         this.ctorVisitor.visitMethodInsn(INVOKESPECIAL, getInternalName(CommandBufferImpl.class), "<init>", getMethodDescriptor(VOID_TYPE, getType(List.class)), false);
 
         this.apiFieldName = this.makeField(getType(GLAPI.class), gl.api());
-
-        this.codeVisitor = this.writer.visitMethod(ACC_PUBLIC | ACC_FINAL, "execute", getMethodDescriptor(VOID_TYPE), null, null);
-        this.codeVisitor.visitCode();
-        this.lvtAllocationTable.set(0);
-
-        this.codeVisitor.visitVarInsn(ALOAD, 0);
-        this.codeVisitor.visitFieldInsn(GETFIELD, CLASS_NAME, this.apiFieldName, getDescriptor(GLAPI.class));
-        this.codeVisitor.visitVarInsn(ASTORE, this.apiLvtIndex = this.allocateLocalVariable());
     }
 
     protected String makeField(@NonNull Type type, @NonNull Object value) {
@@ -146,12 +144,6 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
         this.ctorVisitor.visitFieldInsn(PUTFIELD, CLASS_NAME, name, type.getDescriptor()); //this.name = (type) list.get(index);
 
         return name;
-    }
-
-    protected int allocateLocalVariable() {
-        int lvtIndex = this.lvtAllocationTable.nextClearBit(0);
-        this.lvtAllocationTable.set(lvtIndex);
-        return lvtIndex;
     }
 
     protected void releaseLocalVariable(int lvtIndex) {
@@ -196,7 +188,7 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
     @Override
     public CommandBufferBuilder blendDisable() {
         this.state = this.state.set(StateProperties.BLEND, false);
-        return null;
+        return this;
     }
 
     @Override
@@ -361,38 +353,90 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
     @Override
     @SneakyThrows({ IllegalAccessException.class, InstantiationException.class, InvocationTargetException.class, NoSuchMethodException.class })
     public CommandBuffer build() {
-        List<Uop> uops = this.uops.build();
-        {
-            Map<StateValueProperty<?>, Object> state = new IdentityHashMap<>();
-            for (Uop uop : uops) {
-                uop.depends()
-                        .filter(property -> property instanceof StateValueProperty)
-                        .map(property -> (StateValueProperty<?>) property)
-                        .distinct()
-                        .forEach(property -> {
-                            uop.state().get(property).ifPresent(value -> {
-                                if (!Objects.equals(value, state.put(property, value))) {
-                                    property.emitCode(value, this.codeVisitor, this.apiLvtIndex);
-                                }
-                            });
-                        });
+        MethodVisitor entryVisitor = this.writer.visitMethod(ACC_PUBLIC | ACC_FINAL, "execute", getMethodDescriptor(VOID_TYPE), null, null);
+        entryVisitor.visitCode();
 
-                uop.emitCode(this, this.codeVisitor, this.apiLvtIndex);
-            }
+        entryVisitor.visitVarInsn(ALOAD, 0);
+        entryVisitor.visitFieldInsn(GETFIELD, CLASS_NAME, this.apiFieldName, getDescriptor(GLAPI.class));
+        entryVisitor.visitVarInsn(ASTORE, 1);
+
+        MethodVisitor codeVisitor = this.writer.visitMethod(ACC_PRIVATE | ACC_FINAL, "execute", getMethodDescriptor(VOID_TYPE, getType(GLAPI.class)), null, null);
+        codeVisitor.visitCode();
+
+        List<Uop> uops = this.uops.build();
+        Map<StateValueProperty<?>, Object> state = new IdentityHashMap<>();
+        for (Uop uop : uops) {
+            uop.depends()
+                    .filter(property -> property instanceof StateValueProperty)
+                    .map(property -> (StateValueProperty<?>) property)
+                    .distinct()
+                    .forEach(property -> {
+                        uop.state().get(property).ifPresent(value -> {
+                            if (!Objects.equals(value, state.put(property, value))) {
+                                property.set(value, codeVisitor, 1);
+                            }
+                        });
+                    });
+
+            uop.emitCode(this, codeVisitor, 1);
+        }
+
+        if (this.gl.preserveInputGlState()) { //we want to preserve the current OpenGL state
+            AtomicInteger lvtIndexAllocator = new AtomicInteger(2);
+            Queue<Integer> baseLvts = new ArrayDeque<>();
+
+            //allocate buffer for temporary data to/from glGet()s
+            String bufferFieldName = this.makeField(getType(ByteBuffer.class), ByteBuffer.allocateDirect(16 * DOUBLE_SIZE));
+            entryVisitor.visitVarInsn(ALOAD, 0);
+            entryVisitor.visitFieldInsn(GETFIELD, CLASS_NAME, bufferFieldName, getDescriptor(ByteBuffer.class));
+            entryVisitor.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "pork_directBufferAddress", getMethodDescriptor(LONG_TYPE, getType(Buffer.class)), false);
+            int bufferLvtIndex = lvtIndexAllocator.getAndAdd(2);
+            entryVisitor.visitVarInsn(LSTORE, bufferLvtIndex);
+
+            //back up all affected OpenGL properties into local variables
+            state.keySet().forEach(property -> {
+                baseLvts.add(lvtIndexAllocator.get());
+                property.backup(entryVisitor, 1, bufferLvtIndex, lvtIndexAllocator);
+            });
+
+            //invoke execute(GLAPI)
+            entryVisitor.visitVarInsn(ALOAD, 0);
+            entryVisitor.visitVarInsn(ALOAD, 1);
+            entryVisitor.visitMethodInsn(INVOKEVIRTUAL, CLASS_NAME, "execute", getMethodDescriptor(VOID_TYPE, getType(GLAPI.class)), false);
+
+            //restore all affected OpenGL properties from their saved values
+            state.keySet().forEach(property -> {
+                property.restore(entryVisitor, 1, bufferLvtIndex, baseLvts.poll());
+            });
+        } else {
+            //invoke execute(GLAPI)
+            entryVisitor.visitVarInsn(ALOAD, 0);
+            entryVisitor.visitVarInsn(ALOAD, 1);
+            entryVisitor.visitMethodInsn(INVOKEVIRTUAL, CLASS_NAME, "execute", getMethodDescriptor(VOID_TYPE, getType(GLAPI.class)), false);
 
             //reset all properties to their default values
-            state.keySet().forEach(property -> property.emitCode(uncheckedCast(property.def()), this.codeVisitor, this.apiLvtIndex));
+            state.forEach((property, value) -> {
+                if (!Objects.equals(value, property.def())) {
+                    property.set(uncheckedCast(property.def()), entryVisitor, 1);
+                }
+            });
         }
 
         this.ctorVisitor.visitInsn(RETURN);
         this.ctorVisitor.visitMaxs(0, 0);
+        this.ctorVisitor.visitEnd();
 
-        this.codeVisitor.visitInsn(RETURN);
-        this.codeVisitor.visitMaxs(0, 0);
+        codeVisitor.visitInsn(RETURN);
+        codeVisitor.visitMaxs(0, 0);
+        codeVisitor.visitEnd();
+
+        entryVisitor.visitInsn(RETURN);
+        entryVisitor.visitMaxs(0, 0);
+        entryVisitor.visitEnd();
 
         this.writer.visitEnd();
 
-        if (false) {
+        if (true) {
             try {
                 Files.write(Paths.get(CLASS_NAME.substring(CLASS_NAME.lastIndexOf('/') + 1) + ".class"), this.writer.toByteArray());
             } catch (IOException e) {

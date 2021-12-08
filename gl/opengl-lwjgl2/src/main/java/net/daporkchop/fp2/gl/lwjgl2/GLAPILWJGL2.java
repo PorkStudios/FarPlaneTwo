@@ -138,8 +138,43 @@ public class GLAPILWJGL2 implements GLAPI {
     }
 
     @Override
+    public boolean glGetBoolean(int pname) {
+        return GL11.glGetBoolean(pname);
+    }
+
+    @Override
+    public void glGetBoolean(int pname, long data) {
+        GL11.glGetBoolean(pname, DirectBufferHackery.wrapByte(data, 16)); //LWJGL2 will throw a fit if the buffer doesn't have at least 16 elements
+    }
+
+    @Override
     public int glGetInteger(int pname) {
         return GL11.glGetInteger(pname);
+    }
+
+    @Override
+    public void glGetInteger(int pname, long data) {
+        GL11.glGetInteger(pname, DirectBufferHackery.wrapInt(data, 16));
+    }
+
+    @Override
+    public float glGetFloat(int pname) {
+        return GL11.glGetFloat(pname);
+    }
+
+    @Override
+    public void glGetFloat(int pname, long data) {
+        GL11.glGetFloat(pname, DirectBufferHackery.wrapFloat(data, 16));
+    }
+
+    @Override
+    public double glGetDouble(int pname) {
+        return GL11.glGetDouble(pname);
+    }
+
+    @Override
+    public void glGetDouble(int pname, long data) {
+        GL11.glGetDouble(pname, DirectBufferHackery.wrapDouble(data, 16));
     }
 
     @Override
