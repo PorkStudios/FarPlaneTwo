@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.gl.opengl.command.state;
 
+import com.google.common.collect.ImmutableMap;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -27,13 +28,17 @@ import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.gl.command.BlendFactor;
 import net.daporkchop.fp2.gl.command.BlendOp;
 import net.daporkchop.fp2.gl.command.Compare;
+import net.daporkchop.fp2.gl.command.StencilOperation;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
+import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureTarget;
 import net.daporkchop.fp2.gl.opengl.buffer.IndexedBufferTarget;
 import net.daporkchop.fp2.gl.opengl.command.state.struct.BlendFactors;
 import net.daporkchop.fp2.gl.opengl.command.state.struct.BlendOps;
 import net.daporkchop.fp2.gl.opengl.command.state.struct.Color4b;
 import net.daporkchop.fp2.gl.opengl.command.state.struct.Color4f;
+import net.daporkchop.fp2.gl.opengl.command.state.struct.StencilFunc;
+import net.daporkchop.fp2.gl.opengl.command.state.struct.StencilOp;
 import net.daporkchop.lib.common.util.PArrays;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import org.objectweb.asm.Label;
@@ -41,8 +46,10 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 
 import java.util.Arrays;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.common.util.TypeSize.*;
@@ -59,7 +66,7 @@ public class StateProperties {
     public final StateProperty FIXED_FUNCTION_DRAW_PROPERTIES = new StateProperty() {
         @Override
         public Stream<StateProperty> depends(@NonNull State state) {
-            return Stream.of(BLEND, COLOR_MASK).flatMap(property -> Stream.concat(Stream.of(property), property.depends(state)));
+            return Stream.of(BLEND, COLOR_MASK, STENCIL).flatMap(property -> Stream.concat(Stream.of(property), property.depends(state)));
         }
     };
 
@@ -168,6 +175,39 @@ public class StateProperties {
     // STENCIL
     //
 
+    public final StateValueProperty<Boolean> STENCIL = new FixedFunctionStateEnableProperty(GL_STENCIL_TEST) {
+        @Override
+        protected Stream<StateProperty> dependenciesWhenEnabled() {
+            return Stream.of(STENCIL_MASK, STENCIL_FUNC, STENCIL_OP);
+        }
+    };
+
+    public final StateValueProperty<Integer> STENCIL_CLEAR = new IntegerSimpleStateValueProperty<>(0, Function.identity(), "glClearStencil", GL_STENCIL_CLEAR_VALUE);
+
+    public final StateValueProperty<Integer> STENCIL_MASK = new IntegerSimpleStateValueProperty<>(0, Function.identity(), "glStencilMask", GL_STENCIL_WRITEMASK);
+
+    public final StateValueProperty<StencilFunc> STENCIL_FUNC = new StructContainingMultipleIntegersProperty<StencilFunc>(new StencilFunc(Compare.ALWAYS, 0, -1),
+            "glStencilFunc",
+            GL_STENCIL_FUNC, GL_STENCIL_REF, GL_STENCIL_VALUE_MASK) {
+        @Override
+        protected void loadFromValue(@NonNull MethodVisitor mv, @NonNull StencilFunc value) {
+            mv.visitLdcInsn(GLEnumUtil.from(value.compare()));
+            mv.visitLdcInsn(value.reference());
+            mv.visitLdcInsn(value.mask());
+        }
+    };
+
+    public final StateValueProperty<StencilOp> STENCIL_OP = new StructContainingMultipleIntegersProperty<StencilOp>(new StencilOp(StencilOperation.KEEP, StencilOperation.KEEP, StencilOperation.KEEP),
+            "glStencilOp",
+            GL_STENCIL_FAIL, GL_STENCIL_PASS_DEPTH_PASS,  GL_STENCIL_PASS_DEPTH_FAIL) {
+        @Override
+        protected void loadFromValue(@NonNull MethodVisitor mv, @NonNull StencilOp value) {
+            mv.visitLdcInsn(GLEnumUtil.from(value.fail()));
+            mv.visitLdcInsn(GLEnumUtil.from(value.pass()));
+            mv.visitLdcInsn(GLEnumUtil.from(value.depthFail()));
+        }
+    };
+
     //
     // SIMPLE BINDINGS
     //
@@ -177,12 +217,19 @@ public class StateProperties {
     public final StateValueProperty<Integer> BOUND_VAO = new IntegerSimpleStateValueProperty<>(0, Function.identity(), "glBindVertexArray", GL_VERTEX_ARRAY_BINDING);
 
     //
-    // BUFFER BINDINGS
+    // INDEXED BUFFER BINDINGS
     //
 
-    public final StateValueProperty<Integer>[] BOUND_SSBO = uncheckedCast(PArrays.filledBy(16, StateValueProperty[]::new, i -> new IndexedBufferBindingProperty(IndexedBufferTarget.SHADER_STORAGE_BUFFER, i)));
+    public final StateValueProperty<Integer>[] BOUND_SSBO = uncheckedCast(PArrays.filledBy(16, StateValueProperty[]::new, index -> new IndexedBufferBindingProperty(IndexedBufferTarget.SHADER_STORAGE_BUFFER, index)));
 
-    public final StateValueProperty<Integer>[] BOUND_UBO = uncheckedCast(PArrays.filledBy(16, StateValueProperty[]::new, i -> new IndexedBufferBindingProperty(IndexedBufferTarget.UNIFORM_BUFFER, i)));
+    public final StateValueProperty<Integer>[] BOUND_UBO = uncheckedCast(PArrays.filledBy(16, StateValueProperty[]::new, index -> new IndexedBufferBindingProperty(IndexedBufferTarget.UNIFORM_BUFFER, index)));
+
+    //
+    // TEXTURE BINDINGS
+    //
+
+    public final Map<TextureTarget, StateValueProperty<Integer>>[] BOUND_TEXTURE = uncheckedCast(PArrays.filledBy(80, Map[]::new, unit ->
+            Stream.of(TextureTarget.values()).collect(ImmutableMap.toImmutableMap(Function.identity(), target -> new TextureBindingProperty(target, unit)))));
 
     //
     //
@@ -404,7 +451,7 @@ public class StateProperties {
     }
 
     //
-    // SLIGHTLY MORE COMPLEX PROPERTIES
+    // MORE COMPLEX PROPERTIES
     //
 
     /**
@@ -497,6 +544,68 @@ public class StateProperties {
         protected void loadFromBackup(@NonNull MethodVisitor mv, int bufferLvtIndex, int lvtIndexBase) {
             mv.visitLdcInsn(this.target.id());
             mv.visitLdcInsn(this.index);
+            mv.visitVarInsn(ILOAD, lvtIndexBase);
+        }
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    private static class TextureBindingProperty extends SimpleStateValueProperty<Integer> {
+        private final TextureTarget target;
+        private final int unit;
+
+        public TextureBindingProperty(@NonNull TextureTarget target, int unit) {
+            super(0);
+
+            this.target = target;
+            this.unit = unit;
+        }
+
+        @Override
+        public void set(@NonNull Integer value, @NonNull MethodVisitor mv, int apiLvtIndex) {
+            mv.visitVarInsn(ALOAD, apiLvtIndex);
+            mv.visitLdcInsn(GL_TEXTURE0 + this.unit);
+            mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glActiveTexture", getMethodDescriptor(VOID_TYPE, INT_TYPE), true);
+
+            super.set(value, mv, apiLvtIndex);
+        }
+
+        @Override
+        public void restore(@NonNull MethodVisitor mv, int apiLvtIndex, int bufferLvtIndex, int lvtIndexBase) {
+            mv.visitVarInsn(ALOAD, apiLvtIndex);
+            mv.visitLdcInsn(GL_TEXTURE0 + this.unit);
+            mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glActiveTexture", getMethodDescriptor(VOID_TYPE, INT_TYPE), true);
+
+            super.restore(mv, apiLvtIndex, bufferLvtIndex, lvtIndexBase);
+        }
+
+        @Override
+        protected void set(@NonNull MethodVisitor mv) {
+            mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glBindTexture", getMethodDescriptor(VOID_TYPE, INT_TYPE, INT_TYPE), true);
+        }
+
+        @Override
+        protected void loadFromValue(@NonNull MethodVisitor mv, @NonNull Integer value) {
+            mv.visitLdcInsn(this.target.target());
+            mv.visitLdcInsn(value);
+        }
+
+        @Override
+        public void backup(@NonNull MethodVisitor mv, int apiLvtIndex, int bufferLvtIndex, @NonNull AtomicInteger lvtIndexAllocator) {
+            mv.visitVarInsn(ALOAD, apiLvtIndex);
+            mv.visitLdcInsn(GL_TEXTURE0 + this.unit);
+            mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glActiveTexture", getMethodDescriptor(VOID_TYPE, INT_TYPE), true);
+
+            mv.visitVarInsn(ALOAD, apiLvtIndex);
+            mv.visitLdcInsn(this.target.binding());
+            mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glGetInteger", getMethodDescriptor(INT_TYPE, INT_TYPE), true);
+            mv.visitVarInsn(ISTORE, lvtIndexAllocator.getAndIncrement());
+        }
+
+        @Override
+        protected void loadFromBackup(@NonNull MethodVisitor mv, int bufferLvtIndex, int lvtIndexBase) {
+            mv.visitLdcInsn(this.target.target());
             mv.visitVarInsn(ILOAD, lvtIndexBase);
         }
     }

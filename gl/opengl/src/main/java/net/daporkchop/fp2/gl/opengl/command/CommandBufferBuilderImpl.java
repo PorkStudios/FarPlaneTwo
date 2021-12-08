@@ -24,7 +24,6 @@ import com.google.common.collect.ImmutableList;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.common.asm.ClassloadingUtils;
-import net.daporkchop.fp2.common.util.DirectBufferHackery;
 import net.daporkchop.fp2.gl.command.BlendFactor;
 import net.daporkchop.fp2.gl.command.BlendOp;
 import net.daporkchop.fp2.gl.command.CommandBuffer;
@@ -40,7 +39,6 @@ import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.command.state.CowState;
-import net.daporkchop.fp2.gl.opengl.command.state.FixedState;
 import net.daporkchop.fp2.gl.opengl.command.state.StateProperties;
 import net.daporkchop.fp2.gl.opengl.command.state.StateProperty;
 import net.daporkchop.fp2.gl.opengl.command.state.StateValueProperty;
@@ -48,13 +46,13 @@ import net.daporkchop.fp2.gl.opengl.command.state.struct.BlendFactors;
 import net.daporkchop.fp2.gl.opengl.command.state.struct.BlendOps;
 import net.daporkchop.fp2.gl.opengl.command.state.struct.Color4b;
 import net.daporkchop.fp2.gl.opengl.command.state.struct.Color4f;
+import net.daporkchop.fp2.gl.opengl.command.state.struct.StencilOp;
 import net.daporkchop.fp2.gl.opengl.draw.command.DrawListImpl;
 import net.daporkchop.fp2.gl.opengl.layout.BaseBindingImpl;
 import net.daporkchop.fp2.gl.opengl.shader.BaseShaderProgramImpl;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 
@@ -64,7 +62,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -104,9 +101,6 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
     protected final ImmutableList.Builder<Uop> uops = ImmutableList.builder();
 
     protected CowState state = new CowState();
-
-    @Deprecated
-    protected FixedState fixedState = FixedState.DEFAULT_STATE;
 
     protected BaseBindingImpl binding;
     protected BaseShaderProgramImpl shader;
@@ -155,14 +149,14 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
         this.uops.add(new Uop(this.state) {
             @Override
             protected Stream<StateProperty> dependsFirst() {
-                return Stream.of(layers).map(layer -> {
+                return Stream.of(layers).flatMap(layer -> {
                     switch (layer) {
                         case COLOR:
-                            return StateProperties.CLEAR_COLOR;
+                            return Stream.of(StateProperties.CLEAR_COLOR);
                         case STENCIL:
-                            throw new UnsupportedOperationException(); //TODO
+                            return Stream.of(StateProperties.STENCIL_CLEAR, StateProperties.STENCIL_MASK);
                         case DEPTH:
-                            return StateProperties.DEPTH_CLEAR;
+                            return Stream.of(StateProperties.DEPTH_CLEAR);
                         default:
                             throw new IllegalArgumentException(layer.name());
                     }
@@ -259,49 +253,49 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
 
     @Override
     public CommandBufferBuilder stencilEnable() {
-        this.fixedState = this.fixedState.withStencil(true);
+        this.state = this.state.set(StateProperties.STENCIL, true);
         return this;
     }
 
     @Override
     public CommandBufferBuilder stencilDisable() {
-        this.fixedState = this.fixedState.withStencil(false);
+        this.state = this.state.set(StateProperties.STENCIL, false);
         return this;
     }
 
     @Override
     public CommandBufferBuilder stencilClear(int value) {
-        this.fixedState = this.fixedState.withStencilClearValue(value);
+        this.state = this.state.set(StateProperties.STENCIL_CLEAR, value);
         return this;
     }
 
     @Override
     public CommandBufferBuilder stencilWriteMask(int writeMask) {
-        this.fixedState = this.fixedState.withStencilWriteMask(writeMask);
+        this.state = this.state.set(StateProperties.STENCIL_MASK, writeMask);
         return this;
     }
 
     @Override
     public CommandBufferBuilder stencilCompareMask(int compareMask) {
-        this.fixedState = this.fixedState.withStencilCompareMask(compareMask);
+        this.state = this.state.update(StateProperties.STENCIL_FUNC, func -> func.withMask(compareMask));
         return this;
     }
 
     @Override
     public CommandBufferBuilder stencilReference(int reference) {
-        this.fixedState = this.fixedState.withStencilReference(reference);
+        this.state = this.state.update(StateProperties.STENCIL_FUNC, func -> func.withReference(reference));
         return this;
     }
 
     @Override
     public CommandBufferBuilder stencilCompare(@NonNull Compare compare) {
-        this.fixedState = this.fixedState.withStencilCompare(compare);
+        this.state = this.state.update(StateProperties.STENCIL_FUNC, func -> func.withCompare(compare));
         return this;
     }
 
     @Override
     public CommandBufferBuilder stencilOperation(@NonNull StencilOperation fail, @NonNull StencilOperation pass, @NonNull StencilOperation depthFail) {
-        this.fixedState = this.fixedState.withStencilOperationFail(fail).withStencilOperationPass(pass).withStencilOperationDepthFail(depthFail);
+        this.state = this.state.set(StateProperties.STENCIL_OP, new StencilOp(fail, pass, depthFail));
         return this;
     }
 
@@ -436,7 +430,7 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
 
         this.writer.visitEnd();
 
-        if (true) {
+        if (false) {
             try {
                 Files.write(Paths.get(CLASS_NAME.substring(CLASS_NAME.lastIndexOf('/') + 1) + ".class"), this.writer.toByteArray());
             } catch (IOException e) {

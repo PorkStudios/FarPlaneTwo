@@ -71,7 +71,8 @@ public abstract class Uop {
             binding.shaderStorageBuffers().forEach(ssboBinding -> state.set(StateProperties.BOUND_SSBO[ssboBinding.bindingIndex], ssboBinding.buffer.id()));
             binding.uniformBuffers().forEach(uboBinding -> state.set(StateProperties.BOUND_UBO[uboBinding.bindingIndex], uboBinding.buffer.id()));
 
-            //binding.textures().forEach(textureBinding -> this.fixedState = this.fixedState.withTexture(textureBinding.unit, textureBinding.target, textureBinding.id));
+            binding.textures().forEach(textureBinding -> state.set(StateProperties.BOUND_TEXTURE[textureBinding.unit].get(textureBinding.target), textureBinding.id));
+
             return state.immutableSnapshot();
         }
 
@@ -93,6 +94,8 @@ public abstract class Uop {
 
             binding.shaderStorageBuffers().forEach(ssboBinding -> depends.add(StateProperties.BOUND_SSBO[ssboBinding.bindingIndex]));
             binding.uniformBuffers().forEach(uboBinding -> depends.add(StateProperties.BOUND_UBO[uboBinding.bindingIndex]));
+
+            binding.textures().forEach(textureBinding -> depends.add(StateProperties.BOUND_TEXTURE[textureBinding.unit].get(textureBinding.target)));
         }
 
         @Override
