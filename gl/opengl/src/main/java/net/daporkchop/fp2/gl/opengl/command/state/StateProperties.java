@@ -32,6 +32,7 @@ import net.daporkchop.fp2.gl.command.StencilOperation;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureTarget;
+import net.daporkchop.fp2.gl.opengl.buffer.BufferTarget;
 import net.daporkchop.fp2.gl.opengl.buffer.IndexedBufferTarget;
 import net.daporkchop.fp2.gl.opengl.command.state.struct.BlendFactors;
 import net.daporkchop.fp2.gl.opengl.command.state.struct.BlendOps;
@@ -49,7 +50,6 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.common.util.TypeSize.*;
@@ -215,6 +215,12 @@ public class StateProperties {
     public final StateValueProperty<Integer> BOUND_PROGRAM = new IntegerSimpleStateValueProperty<>(0, Function.identity(), "glUseProgram", GL_CURRENT_PROGRAM);
 
     public final StateValueProperty<Integer> BOUND_VAO = new IntegerSimpleStateValueProperty<>(0, Function.identity(), "glBindVertexArray", GL_VERTEX_ARRAY_BINDING);
+
+    //
+    // BUFFER BINDINGS
+    //
+
+    public final Map<BufferTarget, StateValueProperty<Integer>> BOUND_BUFFER = Stream.of(BufferTarget.values()).collect(ImmutableMap.toImmutableMap(Function.identity(), BufferBindingProperty::new));
 
     //
     // INDEXED BUFFER BINDINGS
@@ -502,6 +508,44 @@ public class StateProperties {
             for (int i = 0; i < 4; i++) {
                 mv.visitVarInsn(FLOAD, lvtIndexBase + i);
             }
+        }
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    private static class BufferBindingProperty extends SimpleStateValueProperty<Integer> {
+        private final BufferTarget target;
+
+        public BufferBindingProperty(@NonNull BufferTarget target) {
+            super(0);
+
+            this.target = target;
+        }
+
+        @Override
+        protected void set(@NonNull MethodVisitor mv) {
+            mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glBindBuffer", getMethodDescriptor(VOID_TYPE, INT_TYPE, INT_TYPE), true);
+        }
+
+        @Override
+        protected void loadFromValue(@NonNull MethodVisitor mv, @NonNull Integer value) {
+            mv.visitLdcInsn(this.target.id());
+            mv.visitLdcInsn(value);
+        }
+
+        @Override
+        public void backup(@NonNull MethodVisitor mv, int apiLvtIndex, int bufferLvtIndex, @NonNull AtomicInteger lvtIndexAllocator) {
+            mv.visitVarInsn(ALOAD, apiLvtIndex);
+            mv.visitLdcInsn(this.target.binding());
+            mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glGetInteger", getMethodDescriptor(INT_TYPE, INT_TYPE), true);
+            mv.visitVarInsn(ISTORE, lvtIndexAllocator.getAndIncrement());
+        }
+
+        @Override
+        protected void loadFromBackup(@NonNull MethodVisitor mv, int bufferLvtIndex, int lvtIndexBase) {
+            mv.visitLdcInsn(this.target.id());
+            mv.visitVarInsn(ILOAD, lvtIndexBase);
         }
     }
 

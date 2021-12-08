@@ -18,17 +18,20 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.draw.command;
+package net.daporkchop.fp2.gl.opengl.draw.list;
 
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
-import net.daporkchop.fp2.gl.draw.command.DrawCommand;
-import net.daporkchop.fp2.gl.draw.command.DrawList;
+import net.daporkchop.fp2.gl.draw.list.DrawCommand;
+import net.daporkchop.fp2.gl.draw.list.DrawList;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.command.state.StateValueProperty;
+
+import java.util.Map;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
@@ -64,7 +67,7 @@ public abstract class DrawListImpl<C extends DrawCommand, B extends DrawBinding>
 
     protected abstract void resize0(int oldCapacity, int newCapacity);
 
-    public void draw0(GLAPI api, int mode) {
-        //no-op
-    }
+    public abstract Map<StateValueProperty<?>, Object> stateProperties0();
+
+    public abstract void draw0(GLAPI api, int mode);
 }

@@ -32,15 +32,19 @@ import net.daporkchop.fp2.gl.bitset.GLBitSet;
 import net.daporkchop.fp2.gl.bitset.GLBitSetBuilder;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.buffer.GLBuffer;
+import net.daporkchop.fp2.gl.command.CommandBuffer;
+import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
 import net.daporkchop.fp2.gl.compute.GLCompute;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.draw.DrawLayoutBuilder;
-import net.daporkchop.fp2.gl.command.CommandBuffer;
-import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
-import net.daporkchop.fp2.gl.draw.command.DrawList;
-import net.daporkchop.fp2.gl.draw.command.DrawListBuilder;
+import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
+import net.daporkchop.fp2.gl.draw.binding.DrawBindingIndexed;
 import net.daporkchop.fp2.gl.draw.index.IndexFormat;
 import net.daporkchop.fp2.gl.draw.index.IndexFormatBuilder;
+import net.daporkchop.fp2.gl.draw.list.DrawCommandArrays;
+import net.daporkchop.fp2.gl.draw.list.DrawCommandIndexed;
+import net.daporkchop.fp2.gl.draw.list.DrawList;
+import net.daporkchop.fp2.gl.draw.list.DrawListBuilder;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.draw.shader.FragmentShader;
 import net.daporkchop.fp2.gl.draw.shader.VertexShader;
@@ -150,9 +154,14 @@ public interface GL extends AutoCloseable {
     DrawLayoutBuilder createDrawLayout();
 
     /**
-     * @return a builder for constructing a new {@link DrawList}
+     * @return a builder for constructing a new {@link DrawList} for array drawing commands
      */
-    DrawListBuilder.TypeStage createDrawList();
+    DrawListBuilder<DrawCommandArrays> createDrawListArrays(@NonNull DrawBinding binding);
+
+    /**
+     * @return a builder for constructing a new {@link DrawList} for indexed drawing commands
+     */
+    DrawListBuilder<DrawCommandIndexed> createDrawListIndexed(@NonNull DrawBindingIndexed binding);
 
     /**
      * @return a builder for constructing a new {@link CommandBuffer}

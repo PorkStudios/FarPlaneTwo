@@ -41,8 +41,13 @@ import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
 import net.daporkchop.fp2.gl.compute.GLCompute;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.draw.DrawLayoutBuilder;
-import net.daporkchop.fp2.gl.draw.command.DrawListBuilder;
+import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
+import net.daporkchop.fp2.gl.draw.binding.DrawBindingIndexed;
 import net.daporkchop.fp2.gl.draw.index.IndexFormatBuilder;
+import net.daporkchop.fp2.gl.draw.list.DrawCommandArrays;
+import net.daporkchop.fp2.gl.draw.list.DrawCommandIndexed;
+import net.daporkchop.fp2.gl.draw.list.DrawList;
+import net.daporkchop.fp2.gl.draw.list.DrawListBuilder;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.draw.shader.FragmentShader;
 import net.daporkchop.fp2.gl.draw.shader.VertexShader;
@@ -59,8 +64,13 @@ import net.daporkchop.fp2.gl.opengl.command.CommandBufferBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.compute.ComputeImpl;
 import net.daporkchop.fp2.gl.opengl.draw.DrawLayoutBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.draw.DrawLayoutImpl;
-import net.daporkchop.fp2.gl.opengl.draw.command.DrawListBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.draw.binding.DrawBindingImpl;
 import net.daporkchop.fp2.gl.opengl.draw.index.IndexFormatBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.draw.list.DrawListBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.draw.list.arrays.DrawListMultiDrawArrays;
+import net.daporkchop.fp2.gl.opengl.draw.list.arrays.DrawListMultiDrawArraysIndirect;
+import net.daporkchop.fp2.gl.opengl.draw.list.elements.DrawListMultiDrawElementsBaseVertex;
+import net.daporkchop.fp2.gl.opengl.draw.list.elements.DrawListMultiDrawElementsIndirect;
 import net.daporkchop.fp2.gl.opengl.draw.shader.DrawShaderProgramImpl;
 import net.daporkchop.fp2.gl.opengl.draw.shader.FragmentShaderImpl;
 import net.daporkchop.fp2.gl.opengl.draw.shader.VertexShaderImpl;
@@ -249,8 +259,27 @@ public class OpenGL implements GL {
     }
 
     @Override
-    public DrawListBuilder.TypeStage createDrawList() {
-        return new DrawListBuilderImpl(this);
+    public DrawListBuilder<DrawCommandArrays> createDrawListArrays(@NonNull DrawBinding binding) {
+        return new DrawListBuilderImpl<DrawCommandArrays>(this, (DrawBindingImpl) binding) {
+            @Override
+            public DrawList<DrawCommandArrays> build() {
+                return this.optimizeForCpuSelection
+                        ? new DrawListMultiDrawArrays(this)
+                        : new DrawListMultiDrawArraysIndirect(this);
+            }
+        };
+    }
+
+    @Override
+    public DrawListBuilder<DrawCommandIndexed> createDrawListIndexed(@NonNull DrawBindingIndexed binding) {
+        return new DrawListBuilderImpl<DrawCommandIndexed>(this, (DrawBindingImpl) binding) {
+            @Override
+            public DrawList<DrawCommandIndexed> build() {
+                return this.optimizeForCpuSelection
+                        ? new DrawListMultiDrawElementsBaseVertex(this)
+                        : new DrawListMultiDrawElementsIndirect(this);
+            }
+        };
     }
 
     @Override

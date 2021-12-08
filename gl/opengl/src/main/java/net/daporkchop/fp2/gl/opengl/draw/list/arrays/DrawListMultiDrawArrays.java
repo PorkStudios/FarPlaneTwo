@@ -18,20 +18,25 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.draw.command.arrays;
+package net.daporkchop.fp2.gl.opengl.draw.list.arrays;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.bitset.GLBitSet;
-import net.daporkchop.fp2.gl.draw.command.DrawCommandArrays;
+import net.daporkchop.fp2.gl.draw.list.DrawCommandArrays;
 import net.daporkchop.fp2.gl.draw.binding.DrawMode;
+import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
 import net.daporkchop.fp2.gl.opengl.bitset.AbstractGLBitSet;
-import net.daporkchop.fp2.gl.opengl.draw.command.DrawListBuilderImpl;
-import net.daporkchop.fp2.gl.opengl.draw.command.DrawListImpl;
+import net.daporkchop.fp2.gl.opengl.command.state.StateValueProperty;
+import net.daporkchop.fp2.gl.opengl.draw.list.DrawListBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.draw.list.DrawListImpl;
 import net.daporkchop.fp2.gl.opengl.draw.binding.DrawBindingImpl;
 import net.daporkchop.fp2.gl.opengl.draw.shader.DrawShaderProgramImpl;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.lib.unsafe.PUnsafe;
+
+import java.util.Collections;
+import java.util.Map;
 
 import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -122,5 +127,15 @@ public class DrawListMultiDrawArrays extends DrawListImpl<DrawCommandArrays, Dra
         } finally {
             PUnsafe.freeMemory(dstCounts);
         }
+    }
+
+    @Override
+    public Map<StateValueProperty<?>, Object> stateProperties0() {
+        return Collections.emptyMap();
+    }
+
+    @Override
+    public void draw0(GLAPI api, int mode) {
+        api.glMultiDrawArrays(mode, this.firstAddr, this.countAddr, this.capacity);
     }
 }

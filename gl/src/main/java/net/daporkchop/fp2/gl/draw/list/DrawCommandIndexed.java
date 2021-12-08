@@ -18,14 +18,34 @@
  *
  */
 
-package net.daporkchop.fp2.gl.draw.command;
+package net.daporkchop.fp2.gl.draw.list;
+
+import lombok.Data;
 
 /**
+ * A indexed drawing command.
+ *
  * @author DaPorkchop_
  */
-public interface DrawCommand {
+@Data
+public final class DrawCommandIndexed implements DrawCommand {
     /**
-     * @return whether or not this command is empty (will do nothing when executed)
+     * The index of the first index.
      */
-    boolean isEmpty();
+    protected final int firstIndex;
+
+    /**
+     * The number of indices.
+     */
+    protected final int count;
+
+    /**
+     * The index of the first vertex.
+     */
+    protected final int baseVertex;
+
+    @Override
+    public boolean isEmpty() {
+        return this.count == 0;
+    }
 }

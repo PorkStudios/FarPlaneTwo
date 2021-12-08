@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.gl.draw.command;
+package net.daporkchop.fp2.gl.draw.list;
 
 import lombok.Data;
 

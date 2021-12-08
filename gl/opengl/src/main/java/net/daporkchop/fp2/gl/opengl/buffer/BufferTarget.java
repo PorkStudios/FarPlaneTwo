@@ -45,6 +45,6 @@ public enum BufferTarget {
     TRANSFORM_FEEDBACK_BUFFER(GL_TRANSFORM_FEEDBACK_BUFFER, GL_TRANSFORM_FEEDBACK_BUFFER_BINDING),
     UNIFORM_BUFFER(GL_UNIFORM_BUFFER, GL_UNIFORM_BUFFER_BINDING);
 
-    private final int target;
+    private final int id;
     private final int binding;
 }

@@ -18,37 +18,19 @@
  *
  */
 
-package net.daporkchop.fp2.gl.draw.command;
-
-import lombok.NonNull;
-import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
-import net.daporkchop.fp2.gl.draw.binding.DrawBindingIndexed;
+package net.daporkchop.fp2.gl.draw.list;
 
 /**
  * Builder for {@link DrawList}s.
  *
- * @param <B> the type of command buffer to build
+ * @param <C> the type of command which will be stored in the list
  * @author DaPorkchop_
  */
-public interface DrawListBuilder<B extends DrawList> {
-    /**
-     * @return the constructed {@link B}
-     */
-    B build();
+public interface DrawListBuilder<C extends DrawCommand> {
+    DrawListBuilder<C> optimizeForCpuSelection();
 
     /**
-     * @author DaPorkchop_
+     * @return the constructed {@link DrawList}
      */
-    interface TypeStage {
-        OptimizeStage<DrawList<DrawCommandArrays>> forArrays(@NonNull DrawBinding binding);
-
-        OptimizeStage<DrawList<DrawCommandIndexed>> forIndexed(@NonNull DrawBindingIndexed binding);
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    interface OptimizeStage<B extends DrawList> extends DrawListBuilder<B> {
-        DrawListBuilder<B> optimizeForCpuSelection();
-    }
+    DrawList<C> build();
 }

@@ -33,7 +33,7 @@ import net.daporkchop.fp2.gl.command.FramebufferLayer;
 import net.daporkchop.fp2.gl.command.StencilOperation;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.fp2.gl.draw.binding.DrawMode;
-import net.daporkchop.fp2.gl.draw.command.DrawList;
+import net.daporkchop.fp2.gl.draw.list.DrawList;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
@@ -47,7 +47,7 @@ import net.daporkchop.fp2.gl.opengl.command.state.struct.BlendOps;
 import net.daporkchop.fp2.gl.opengl.command.state.struct.Color4b;
 import net.daporkchop.fp2.gl.opengl.command.state.struct.Color4f;
 import net.daporkchop.fp2.gl.opengl.command.state.struct.StencilOp;
-import net.daporkchop.fp2.gl.opengl.draw.command.DrawListImpl;
+import net.daporkchop.fp2.gl.opengl.draw.list.DrawListImpl;
 import net.daporkchop.fp2.gl.opengl.layout.BaseBindingImpl;
 import net.daporkchop.fp2.gl.opengl.shader.BaseShaderProgramImpl;
 import net.daporkchop.lib.common.misc.string.PStrings;
@@ -66,6 +66,7 @@ import java.nio.file.Paths;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -301,7 +302,7 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
 
     @Override
     public CommandBufferBuilder drawArrays(@NonNull DrawBinding binding, @NonNull DrawShaderProgram shader, @NonNull DrawMode mode, int first, int count) {
-        this.uops.add(new Uop.Draw(this.state, binding, shader) {
+        this.uops.add(new Uop.Draw(this.state, binding, shader, Collections.emptyMap()) {
             @Override
             public void emitCode(@NonNull CommandBufferBuilderImpl builder, @NonNull MethodVisitor mv, int apiLvtIndex) {
                 mv.visitVarInsn(ALOAD, apiLvtIndex);
@@ -318,15 +319,15 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
     public CommandBufferBuilder drawList(@NonNull DrawShaderProgram shader, @NonNull DrawMode mode, @NonNull DrawList<?> _list) {
         DrawListImpl<?, ?> list = (DrawListImpl<?, ?>) _list;
 
-        this.uops.add(new Uop.Draw(this.state, list.binding(), shader) {
+        this.uops.add(new Uop.Draw(this.state, list.binding(), shader, list.stateProperties0()) {
             @Override
             public void emitCode(@NonNull CommandBufferBuilderImpl builder, @NonNull MethodVisitor mv, int apiLvtIndex) {
-                String fieldName = builder.makeField(getType(DrawListImpl.class), list);
+                String fieldName = builder.makeField(getType(list.getClass()), list);
                 mv.visitVarInsn(ALOAD, 0);
-                mv.visitFieldInsn(GETFIELD, CLASS_NAME, fieldName, getDescriptor(DrawListImpl.class));
+                mv.visitFieldInsn(GETFIELD, CLASS_NAME, fieldName, getDescriptor(list.getClass()));
                 mv.visitVarInsn(ALOAD, apiLvtIndex);
                 mv.visitLdcInsn(GLEnumUtil.from(mode));
-                mv.visitMethodInsn(INVOKEVIRTUAL, getInternalName(DrawListImpl.class), "draw0", getMethodDescriptor(VOID_TYPE, getType(GLAPI.class), INT_TYPE), false);
+                mv.visitMethodInsn(INVOKEVIRTUAL, getInternalName(list.getClass()), "draw0", getMethodDescriptor(VOID_TYPE, getType(GLAPI.class), INT_TYPE), false);
             }
         });
         return this;
@@ -430,7 +431,7 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
 
         this.writer.visitEnd();
 
-        if (false) {
+        if (true) {
             try {
                 Files.write(Paths.get(CLASS_NAME.substring(CLASS_NAME.lastIndexOf('/') + 1) + ".class"), this.writer.toByteArray());
             } catch (IOException e) {

@@ -18,13 +18,16 @@
  *
  */
 
-package net.daporkchop.fp2.gl.draw.command;
+package net.daporkchop.fp2.gl.draw.list;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.GLResource;
 import net.daporkchop.fp2.gl.bitset.GLBitSet;
+import net.daporkchop.fp2.gl.compute.ComputeLocalSize;
+import net.daporkchop.fp2.gl.compute.ComputeShader;
 import net.daporkchop.fp2.gl.draw.binding.DrawMode;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
+import net.daporkchop.fp2.gl.shader.BaseShaderBuilder;
 
 /**
  * @author DaPorkchop_
@@ -71,11 +74,13 @@ public interface DrawList<C extends DrawCommand> extends GLResource {
     /**
      * Executes every command in this buffer.
      */
+    @Deprecated
     void execute(@NonNull DrawMode mode, @NonNull DrawShaderProgram shader);
 
     /**
      * Executes every command in this buffer for whom the corresponding bit in the given {@link GLBitSet} is {@code true}.
      */
+    @Deprecated
     default void execute(@NonNull DrawMode mode, @NonNull DrawShaderProgram shader, @NonNull GLBitSet selector) {
         throw new UnsupportedOperationException();
     }

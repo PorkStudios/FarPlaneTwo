@@ -41,15 +41,14 @@ import net.daporkchop.fp2.gl.attribute.uniform.UniformBuffer;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
 import net.daporkchop.fp2.gl.bitset.GLBitSet;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
-import net.daporkchop.fp2.gl.command.BlendFactor;
 import net.daporkchop.fp2.gl.command.CommandBuffer;
 import net.daporkchop.fp2.gl.command.FramebufferLayer;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.draw.binding.DrawBindingIndexed;
 import net.daporkchop.fp2.gl.draw.binding.DrawMode;
-import net.daporkchop.fp2.gl.draw.command.DrawCommandArrays;
-import net.daporkchop.fp2.gl.draw.command.DrawCommandIndexed;
-import net.daporkchop.fp2.gl.draw.command.DrawList;
+import net.daporkchop.fp2.gl.draw.list.DrawCommandArrays;
+import net.daporkchop.fp2.gl.draw.list.DrawCommandIndexed;
+import net.daporkchop.fp2.gl.draw.list.DrawList;
 import net.daporkchop.fp2.gl.draw.index.IndexBuffer;
 import net.daporkchop.fp2.gl.draw.index.IndexFormat;
 import net.daporkchop.fp2.gl.draw.index.IndexType;
@@ -211,18 +210,14 @@ public class TestLWJGL2 {
                 .withTexture(texture)
                 .build();
 
-        DrawList<DrawCommandArrays> commandBufferArrays = gl.createDrawList()
-                .forArrays(binding)
-                .build();
+        DrawList<DrawCommandArrays> commandBufferArrays = gl.createDrawListArrays(binding).build();
         commandBufferArrays.resize(4);
         commandBufferArrays.set(0, new DrawCommandArrays(0, 3));
         commandBufferArrays.set(1, new DrawCommandArrays(0, 3));
         commandBufferArrays.set(2, new DrawCommandArrays(0, 3));
         commandBufferArrays.set(3, new DrawCommandArrays(0, 3));
 
-        DrawList<DrawCommandIndexed> commandBufferElements = gl.createDrawList()
-                .forIndexed(binding)
-                .build();
+        DrawList<DrawCommandIndexed> commandBufferElements = gl.createDrawListIndexed(binding).build();
         commandBufferElements.resize(4);
         commandBufferElements.set(0, new DrawCommandIndexed(0, 6, 0));
         commandBufferElements.set(1, new DrawCommandIndexed(0, 6, 0));

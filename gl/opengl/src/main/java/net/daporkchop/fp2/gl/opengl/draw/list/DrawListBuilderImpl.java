@@ -18,34 +18,34 @@
  *
  */
 
-package net.daporkchop.fp2.gl.draw.command;
+package net.daporkchop.fp2.gl.opengl.draw.list;
 
-import lombok.Data;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.gl.draw.list.DrawCommand;
+import net.daporkchop.fp2.gl.draw.list.DrawListBuilder;
+import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.draw.binding.DrawBindingImpl;
+import net.daporkchop.fp2.gl.opengl.draw.list.arrays.DrawListMultiDrawArrays;
+import net.daporkchop.fp2.gl.opengl.draw.list.arrays.DrawListMultiDrawArraysIndirect;
+import net.daporkchop.fp2.gl.opengl.draw.list.elements.DrawListMultiDrawElementsBaseVertex;
+import net.daporkchop.fp2.gl.opengl.draw.list.elements.DrawListMultiDrawElementsIndirect;
 
 /**
- * A indexed drawing command.
- *
  * @author DaPorkchop_
  */
-@Data
-public final class DrawCommandIndexed implements DrawCommand {
-    /**
-     * The index of the first index.
-     */
-    protected final int firstIndex;
+@RequiredArgsConstructor
+public abstract class DrawListBuilderImpl<C extends DrawCommand> implements DrawListBuilder<C> {
+    @NonNull
+    protected final OpenGL gl;
+    @NonNull
+    protected final DrawBindingImpl binding;
 
-    /**
-     * The number of indices.
-     */
-    protected final int count;
-
-    /**
-     * The index of the first vertex.
-     */
-    protected final int baseVertex;
+    protected boolean optimizeForCpuSelection;
 
     @Override
-    public boolean isEmpty() {
-        return this.count == 0;
+    public DrawListBuilder<C> optimizeForCpuSelection() {
+        this.optimizeForCpuSelection = true;
+        return this;
     }
 }

@@ -31,13 +31,18 @@ import net.daporkchop.fp2.gl.opengl.command.state.MutableState;
 import net.daporkchop.fp2.gl.opengl.command.state.State;
 import net.daporkchop.fp2.gl.opengl.command.state.StateProperties;
 import net.daporkchop.fp2.gl.opengl.command.state.StateProperty;
+import net.daporkchop.fp2.gl.opengl.command.state.StateValueProperty;
 import net.daporkchop.fp2.gl.opengl.layout.BaseBindingImpl;
 import net.daporkchop.fp2.gl.opengl.shader.BaseShaderProgramImpl;
 import net.daporkchop.fp2.gl.shader.BaseShaderProgram;
+import net.daporkchop.lib.common.util.PorkUtil;
 import org.objectweb.asm.MethodVisitor;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
+
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
@@ -60,7 +65,7 @@ public abstract class Uop {
      * @author DaPorkchop_
      */
     public static abstract class Bound extends Uop {
-        protected static State toBoundState(@NonNull CowState stateIn, @NonNull BaseBindingImpl binding, @NonNull BaseShaderProgramImpl shader) {
+        protected static State toBoundState(@NonNull CowState stateIn, @NonNull BaseBindingImpl binding, @NonNull BaseShaderProgramImpl shader, @NonNull Map<StateValueProperty<?>, Object> propertyValues) {
             MutableState state = stateIn.mutableSnapshot();
 
             state.set(StateProperties.BOUND_PROGRAM, shader.id());
@@ -73,16 +78,19 @@ public abstract class Uop {
 
             binding.textures().forEach(textureBinding -> state.set(StateProperties.BOUND_TEXTURE[textureBinding.unit].get(textureBinding.target), textureBinding.id));
 
+            PorkUtil.<Map<StateValueProperty<Object>, Object>>uncheckedCast(propertyValues).forEach(state::set);
+
             return state.immutableSnapshot();
         }
 
         protected final List<StateProperty> depends;
 
-        public Bound(@NonNull CowState state, @NonNull BaseBindingImpl binding, @NonNull BaseShaderProgramImpl shader) {
-            super(toBoundState(state, binding, shader));
+        public Bound(@NonNull CowState state, @NonNull BaseBindingImpl binding, @NonNull BaseShaderProgramImpl shader, @NonNull Map<StateValueProperty<?>, Object> propertyValues) {
+            super(toBoundState(state, binding, shader, propertyValues));
 
             ImmutableList.Builder<StateProperty> depends = ImmutableList.builder();
             this.buildDependsFirst(depends, binding);
+            depends.add(propertyValues.keySet().toArray(new StateProperty[0]));
             this.depends = depends.build();
         }
 
@@ -108,13 +116,15 @@ public abstract class Uop {
      * @author DaPorkchop_
      */
     public static abstract class Draw extends Bound {
-        public Draw(@NonNull CowState state, @NonNull DrawBinding binding, @NonNull DrawShaderProgram shader) {
-            super(state, (BaseBindingImpl) binding, (BaseShaderProgramImpl) shader);
+        public Draw(@NonNull CowState state, @NonNull DrawBinding binding, @NonNull DrawShaderProgram shader, @NonNull Map<StateValueProperty<?>, Object> propertyValues) {
+            super(state, (BaseBindingImpl) binding, (BaseShaderProgramImpl) shader, propertyValues);
         }
 
         @Override
-        protected Stream<StateProperty> dependsFirst() {
-            return Stream.concat(super.dependsFirst(), Stream.of(StateProperties.FIXED_FUNCTION_DRAW_PROPERTIES));
+        protected void buildDependsFirst(@NonNull ImmutableList.Builder<StateProperty> depends, @NonNull BaseBindingImpl binding) {
+            super.buildDependsFirst(depends, binding);
+
+            depends.add(StateProperties.FIXED_FUNCTION_DRAW_PROPERTIES);
         }
     }
 }

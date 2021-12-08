@@ -18,22 +18,27 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.draw.command.elements;
+package net.daporkchop.fp2.gl.opengl.draw.list.elements;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.bitset.GLBitSet;
-import net.daporkchop.fp2.gl.draw.command.DrawCommandIndexed;
+import net.daporkchop.fp2.gl.draw.list.DrawCommandIndexed;
 import net.daporkchop.fp2.gl.draw.binding.DrawMode;
+import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
 import net.daporkchop.fp2.gl.opengl.bitset.AbstractGLBitSet;
-import net.daporkchop.fp2.gl.opengl.draw.command.DrawListBuilderImpl;
-import net.daporkchop.fp2.gl.opengl.draw.command.DrawListImpl;
+import net.daporkchop.fp2.gl.opengl.command.state.StateValueProperty;
+import net.daporkchop.fp2.gl.opengl.draw.list.DrawListBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.draw.list.DrawListImpl;
 import net.daporkchop.fp2.gl.opengl.draw.binding.DrawBindingIndexedImpl;
 import net.daporkchop.fp2.gl.opengl.draw.index.IndexFormatImpl;
 import net.daporkchop.fp2.gl.opengl.draw.shader.DrawShaderProgramImpl;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.lib.common.math.BinMath;
 import net.daporkchop.lib.unsafe.PUnsafe;
+
+import java.util.Collections;
+import java.util.Map;
 
 import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -139,5 +144,15 @@ public class DrawListMultiDrawElementsBaseVertex extends DrawListImpl<DrawComman
         } finally {
             PUnsafe.freeMemory(dstCounts);
         }
+    }
+
+    @Override
+    public Map<StateValueProperty<?>, Object> stateProperties0() {
+        return Collections.emptyMap();
+    }
+
+    @Override
+    public void draw0(GLAPI api, int mode) {
+        api.glMultiDrawElementsBaseVertex(mode, this.countAddr, this.indexType, this.indicesAddr, this.capacity, this.basevertexAddr);
     }
 }
