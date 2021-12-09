@@ -39,7 +39,10 @@ import net.daporkchop.fp2.gl.attribute.uniform.UniformBuffer;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
-import net.daporkchop.fp2.gl.draw.command.DrawCommand;
+import net.daporkchop.fp2.gl.draw.list.DrawCommand;
+import net.daporkchop.fp2.mode.api.IFarPos;
+import net.daporkchop.fp2.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.common.client.AbstractFarRenderer;
 import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
 import net.daporkchop.fp2.mode.common.client.strategy.texture.LightmapTextureAttribute;
@@ -105,7 +108,7 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
         this.uniformBuffer.close();
     }
 
-    protected void preRender() {
+    protected void preRender() { //TODO: this is never called
         this.macros.define("FP2_FOG_ENABLED", glGetBoolean(GL_FOG));
         this.macros.define("FP2_FOG_MODE", glGetInteger(GL_FOG_MODE));
     }

@@ -28,13 +28,14 @@ import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
+import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.fp2.gl.draw.binding.DrawBindingBuilder;
 import net.daporkchop.fp2.gl.draw.binding.DrawMode;
 import net.daporkchop.fp2.gl.bitset.GLBitSet;
 import net.daporkchop.fp2.gl.bitset.GLBitSetBuilder;
-import net.daporkchop.fp2.gl.draw.command.DrawCommand;
-import net.daporkchop.fp2.gl.draw.command.DrawCommandBuffer;
+import net.daporkchop.fp2.gl.draw.list.DrawCommand;
+import net.daporkchop.fp2.gl.draw.list.DrawList;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.core.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
@@ -122,19 +123,14 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
     }
 
     @Override
-    public boolean hasAnyTilesForLevel(int level) {
-        return !this.levels[level].positionsToHandles.isEmpty();
-    }
-
-    @Override
-    public void draw(int level, int pass, @NonNull DrawShaderProgram shader) {
+    public void draw(@NonNull CommandBufferBuilder builder, int level, int pass, @NonNull DrawShaderProgram shader) {
         checkIndex(RENDER_PASS_COUNT, pass);
 
         if (FP2_DEBUG && !fp2().globalConfig().debug().levelZeroRendering() && level == 0) { //debug mode: skip level-0 rendering if needed
             return;
         }
 
-        this.levels[level].draw(pass, shader);
+        this.levels[level].draw(builder, pass, shader);
     }
 
     @DebugOnly
@@ -161,7 +157,7 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
 
         protected final IBakeOutputStorage<BO, DB, DC> storage;
         protected final List<DB> bindings;
-        protected final DrawCommandBuffer<DC>[] commandBuffers = uncheckedCast(new DrawCommandBuffer[RENDER_PASS_COUNT]);
+        protected final DrawList<DC>[] commandBuffers = uncheckedCast(new DrawList[RENDER_PASS_COUNT]);
 
         protected final GLBitSet bitsValid;
         protected final GLBitSet bitsSelection;
@@ -295,12 +291,8 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
 
         protected abstract void select0(@NonNull IFrustum frustum);
 
-        public void draw(int pass, @NonNull DrawShaderProgram shader) {
-            if (this.positionsToHandles.isEmpty()) { //nothing to do
-                return;
-            }
-
-            this.commandBuffers[pass].execute(DrawMode.QUADS, shader, this.bitsSelection);
+        public void draw(@NonNull CommandBufferBuilder builder, int pass, @NonNull DrawShaderProgram shader) {
+            builder.drawList(shader, DrawMode.QUADS, this.commandBuffers[pass], this.bitsSelection);
         }
 
         protected void upload() {
@@ -317,7 +309,7 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
             //delete all gl objects
             this.bitsValid.close();
             this.bitsSelection.close();
-            Stream.of(this.commandBuffers).forEach(DrawCommandBuffer::close);
+            Stream.of(this.commandBuffers).forEach(DrawList::close);
             this.bindings.forEach(DB::close);
             this.storage.release();
         }

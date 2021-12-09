@@ -23,8 +23,9 @@ package net.daporkchop.fp2.mode.common.client.index;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
-import net.daporkchop.fp2.gl.draw.command.DrawCommand;
+import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
+import net.daporkchop.fp2.gl.draw.list.DrawCommand;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
@@ -61,21 +62,14 @@ public interface IRenderIndex<POS extends IFarPos, BO extends IBakeOutput, DB ex
     void select(@NonNull IFrustum frustum);
 
     /**
-     * Checks whether or not there are any renderable tiles at the given level.
-     *
-     * @param level the level to check
-     * @return whether or not there are any renderable tiles at the given level
-     */
-    boolean hasAnyTilesForLevel(int level);
-
-    /**
      * Draws a single render pass at the given level.
      *
-     * @param level  the level to render
-     * @param pass   the pass to render
-     * @param shader the {@link DrawShaderProgram} to render with
+     * @param builder the {@link CommandBufferBuilder} to render to
+     * @param level   the level to render
+     * @param pass    the pass to render
+     * @param shader  the {@link DrawShaderProgram} to render with
      */
-    void draw(int level, int pass, @NonNull DrawShaderProgram shader);
+    void draw(@NonNull CommandBufferBuilder builder, int level, int pass, @NonNull DrawShaderProgram shader);
 
     @Override
     int refCnt();

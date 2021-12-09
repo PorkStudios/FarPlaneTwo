@@ -18,49 +18,70 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.draw.command;
+package net.daporkchop.fp2.gl.opengl.layout;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.common.util.alloc.Allocator;
-import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
-import net.daporkchop.fp2.gl.draw.command.DrawCommand;
-import net.daporkchop.fp2.gl.draw.command.DrawCommandBuffer;
-import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.gl.GLResource;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureTarget;
+import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
 
-import static net.daporkchop.lib.common.util.PValidation.*;
-import static net.daporkchop.lib.common.util.PorkUtil.*;
+import java.util.List;
 
 /**
  * @author DaPorkchop_
  */
 @Getter
-public abstract class DrawCommandBufferImpl<C extends DrawCommand, B extends DrawBinding> implements DrawCommandBuffer<C> {
+public abstract class BaseBindingImpl implements GLResource {
     protected final OpenGL gl;
     protected final GLAPI api;
 
-    protected final Allocator alloc = new DirectMemoryAllocator();
-
-    protected final B binding;
-
-    protected int capacity = 0;
-
-    public DrawCommandBufferImpl(@NonNull DrawCommandBufferBuilderImpl builder) {
-        this.gl = builder.gl;
-        this.api = this.gl.api();
-
-        this.binding = uncheckedCast(builder.binding);
+    public BaseBindingImpl(@NonNull OpenGL gl) {
+        this.gl = gl;
+        this.api = gl.api();
     }
 
-    @Override
-    public void resize(int capacity) {
-        if (this.capacity != notNegative(capacity, "capacity")) {
-            this.resize0(this.capacity, capacity);
-            this.capacity = capacity;
-        }
+    public abstract int vao();
+
+    public abstract List<ShaderStorageBufferBinding> shaderStorageBuffers();
+
+    public abstract List<TextureBinding> textures();
+
+    public abstract List<UniformBufferBinding> uniformBuffers();
+
+    /**
+     * @author DaPorkchop_
+     */
+    @RequiredArgsConstructor
+    public static class ShaderStorageBufferBinding {
+        @NonNull
+        public final GLBufferImpl buffer;
+        public final int bindingIndex;
     }
 
-    protected abstract void resize0(int oldCapacity, int newCapacity);
+    /**
+     * @author DaPorkchop_
+     */
+    @RequiredArgsConstructor
+    public static class TextureBinding {
+        public final int unit;
+        @NonNull
+        public final TextureTarget target;
+        public final int id;
+
+        public int prevId = -1;
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @RequiredArgsConstructor
+    public static class UniformBufferBinding {
+        @NonNull
+        public final GLBufferImpl buffer;
+        public final int bindingIndex;
+    }
 }

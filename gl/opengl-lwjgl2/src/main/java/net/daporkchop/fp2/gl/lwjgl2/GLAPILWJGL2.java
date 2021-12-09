@@ -123,13 +123,58 @@ public class GLAPILWJGL2 implements GLAPI {
     //
 
     @Override
+    public void glEnable(int cap) {
+        GL11.glEnable(cap);
+    }
+
+    @Override
+    public void glDisable(int cap) {
+        GL11.glDisable(cap);
+    }
+
+    @Override
     public int glGetError() {
         return GL11.glGetError();
     }
 
     @Override
+    public boolean glGetBoolean(int pname) {
+        return GL11.glGetBoolean(pname);
+    }
+
+    @Override
+    public void glGetBoolean(int pname, long data) {
+        GL11.glGetBoolean(pname, DirectBufferHackery.wrapByte(data, 16)); //LWJGL2 will throw a fit if the buffer doesn't have at least 16 elements
+    }
+
+    @Override
     public int glGetInteger(int pname) {
         return GL11.glGetInteger(pname);
+    }
+
+    @Override
+    public void glGetInteger(int pname, long data) {
+        GL11.glGetInteger(pname, DirectBufferHackery.wrapInt(data, 16));
+    }
+
+    @Override
+    public float glGetFloat(int pname) {
+        return GL11.glGetFloat(pname);
+    }
+
+    @Override
+    public void glGetFloat(int pname, long data) {
+        GL11.glGetFloat(pname, DirectBufferHackery.wrapFloat(data, 16));
+    }
+
+    @Override
+    public double glGetDouble(int pname) {
+        return GL11.glGetDouble(pname);
+    }
+
+    @Override
+    public void glGetDouble(int pname, long data) {
+        GL11.glGetDouble(pname, DirectBufferHackery.wrapDouble(data, 16));
     }
 
     @Override
@@ -226,6 +271,56 @@ public class GLAPILWJGL2 implements GLAPI {
         GL11.glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, data);
     }
 
+    @Override
+    public void glClear(int mask) {
+        GL11.glClear(mask);
+    }
+
+    @Override
+    public void glClearColor(float red, float green, float blue, float alpha) {
+        GL11.glClearColor(red, green, blue, alpha);
+    }
+
+    @Override
+    public void glColorMask(boolean red, boolean green, boolean blue, boolean alpha) {
+        GL11.glColorMask(red, green, blue, alpha);
+    }
+
+    @Override
+    public void glClearDepth(double depth) {
+        GL11.glClearDepth(depth);
+    }
+
+    @Override
+    public void glDepthFunc(int func) {
+        GL11.glDepthFunc(func);
+    }
+
+    @Override
+    public void glDepthMask(boolean flag) {
+        GL11.glDepthMask(flag);
+    }
+
+    @Override
+    public void glClearStencil(int s) {
+        GL11.glClearStencil(s);
+    }
+
+    @Override
+    public void glStencilFunc(int func, int ref, int mask) {
+        GL11.glStencilFunc(func, ref, mask);
+    }
+
+    @Override
+    public void glStencilMask(int mask) {
+        GL11.glStencilMask(mask);
+    }
+
+    @Override
+    public void glStencilOp(int sfail, int dpfail, int dppass) {
+        GL11.glStencilOp(sfail, dpfail, dppass);
+    }
+
     //
     //
     // OpenGL 1.2
@@ -274,6 +369,16 @@ public class GLAPILWJGL2 implements GLAPI {
     @Override
     public void glMultiDrawArrays(int mode, long first, long count, int drawcount) {
         GL14.glMultiDrawArrays(mode, DirectBufferHackery.wrapInt(first, drawcount), DirectBufferHackery.wrapInt(count, drawcount));
+    }
+
+    @Override
+    public void glBlendColor(float red, float green, float blue, float alpha) {
+        GL14.glBlendColor(red, green, blue, alpha);
+    }
+
+    @Override
+    public void glBlendFuncSeparate(int sfactorRGB, int dfactorRGB, int sfactorAlpha, int dfactorAlpha) {
+        GL14.glBlendFuncSeparate(sfactorRGB, dfactorRGB, sfactorAlpha, dfactorAlpha);
     }
 
     //
@@ -500,6 +605,11 @@ public class GLAPILWJGL2 implements GLAPI {
     @Override
     public void glUniform(int location, float v0, float v1, float v2, float v3) {
         GL20.glUniform4f(location, v0, v1, v2, v3);
+    }
+
+    @Override
+    public void glBlendEquationSeparate(int modeRGB, int modeAlpha) {
+        GL20.glBlendEquationSeparate(modeRGB, modeAlpha);
     }
 
     //

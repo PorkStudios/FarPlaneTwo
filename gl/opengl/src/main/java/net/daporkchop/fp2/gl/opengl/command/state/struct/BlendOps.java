@@ -18,37 +18,21 @@
  *
  */
 
-package net.daporkchop.fp2.gl.draw.command;
+package net.daporkchop.fp2.gl.opengl.command.state.struct;
 
+import lombok.Data;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
-import net.daporkchop.fp2.gl.draw.binding.DrawBindingIndexed;
+import lombok.With;
+import net.daporkchop.fp2.gl.command.BlendOp;
 
 /**
- * Builder for {@link DrawCommandBuffer}s.
- *
- * @param <B> the type of command buffer to build
  * @author DaPorkchop_
  */
-public interface DrawCommandBufferBuilder<B extends DrawCommandBuffer> {
-    /**
-     * @return the constructed {@link B}
-     */
-    B build();
-
-    /**
-     * @author DaPorkchop_
-     */
-    interface TypeStage {
-        OptimizeStage<DrawCommandBuffer<DrawCommandArrays>> forArrays(@NonNull DrawBinding binding);
-
-        OptimizeStage<DrawCommandBuffer<DrawCommandIndexed>> forIndexed(@NonNull DrawBindingIndexed binding);
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    interface OptimizeStage<B extends DrawCommandBuffer> extends DrawCommandBufferBuilder<B> {
-        DrawCommandBufferBuilder<B> optimizeForCpuSelection();
-    }
+@Data
+@With
+public final class BlendOps {
+    @NonNull
+    private final BlendOp rgb;
+    @NonNull
+    private final BlendOp a;
 }

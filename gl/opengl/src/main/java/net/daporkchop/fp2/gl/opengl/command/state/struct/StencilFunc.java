@@ -18,29 +18,21 @@
  *
  */
 
-package net.daporkchop.fp2.gl.bitset;
+package net.daporkchop.fp2.gl.opengl.command.state.struct;
 
+import lombok.Data;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.draw.list.DrawList;
-import net.daporkchop.fp2.gl.draw.binding.DrawMode;
-import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
+import lombok.With;
+import net.daporkchop.fp2.gl.command.Compare;
 
 /**
- * Builder for {@link GLBitSet}s.
- *
  * @author DaPorkchop_
  */
-public interface GLBitSetBuilder {
-    /**
-     * Hints that a {@link GLBitSet} implementation should be chosen which is optimized for usage with {@link DrawList#execute(DrawMode, DrawShaderProgram, GLBitSet)}
-     * for the given {@link DrawList}.
-     *
-     * @param commandBuffer the {@link DrawList}
-     */
-    GLBitSetBuilder optimizeFor(@NonNull DrawList<?> commandBuffer);
-
-    /**
-     * @return the constructed {@link GLBitSet}
-     */
-    GLBitSet build();
+@Data
+@With
+public final class StencilFunc {
+    @NonNull
+    private final Compare compare;
+    private final int reference;
+    private final int mask;
 }

@@ -18,29 +18,34 @@
  *
  */
 
-package net.daporkchop.fp2.gl.bitset;
+package net.daporkchop.fp2.gl.draw.list;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.gl.draw.list.DrawList;
-import net.daporkchop.fp2.gl.draw.binding.DrawMode;
-import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
+import lombok.Data;
 
 /**
- * Builder for {@link GLBitSet}s.
+ * A indexed drawing command.
  *
  * @author DaPorkchop_
  */
-public interface GLBitSetBuilder {
+@Data
+public final class DrawCommandIndexed implements DrawCommand {
     /**
-     * Hints that a {@link GLBitSet} implementation should be chosen which is optimized for usage with {@link DrawList#execute(DrawMode, DrawShaderProgram, GLBitSet)}
-     * for the given {@link DrawList}.
-     *
-     * @param commandBuffer the {@link DrawList}
+     * The index of the first index.
      */
-    GLBitSetBuilder optimizeFor(@NonNull DrawList<?> commandBuffer);
+    protected final int firstIndex;
 
     /**
-     * @return the constructed {@link GLBitSet}
+     * The number of indices.
      */
-    GLBitSet build();
+    protected final int count;
+
+    /**
+     * The index of the first vertex.
+     */
+    protected final int baseVertex;
+
+    @Override
+    public boolean isEmpty() {
+        return this.count == 0;
+    }
 }

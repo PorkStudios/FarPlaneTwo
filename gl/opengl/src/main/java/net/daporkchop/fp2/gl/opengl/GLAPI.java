@@ -44,9 +44,27 @@ public interface GLAPI {
     //
     //
 
+    void glEnable(int cap);
+
+    void glDisable(int cap);
+
     int glGetError();
 
+    boolean glGetBoolean(int pname);
+
+    void glGetBoolean(int pname, long data);
+
     int glGetInteger(int pname);
+
+    void glGetInteger(int pname, long data);
+
+    float glGetFloat(int pname);
+
+    void glGetFloat(int pname, long data);
+
+    double glGetDouble(int pname);
+
+    void glGetDouble(int pname, long data);
 
     String glGetString(int pname);
 
@@ -84,6 +102,26 @@ public interface GLAPI {
 
     void glTexSubImage2D(int target, int level, int xoffset, int yoffset, int width, int height, int format, int type, @NonNull ByteBuffer data);
 
+    void glClear(int mask);
+
+    void glClearColor(float red, float green, float blue, float alpha);
+
+    void glColorMask(boolean red, boolean green, boolean blue, boolean alpha);
+
+    void glClearDepth(double depth);
+
+    void glDepthFunc(int func);
+
+    void glDepthMask(boolean flag);
+
+    void glClearStencil(int s);
+
+    void glStencilFunc(int func, int ref, int mask);
+
+    void glStencilMask(int mask);
+
+    void glStencilOp(int sfail, int dpfail, int dppass);
+
     //
     //
     // OpenGL 1.2
@@ -113,6 +151,10 @@ public interface GLAPI {
     //
 
     void glMultiDrawArrays(int mode, long first, long count, int drawcount);
+
+    void glBlendColor(float red, float green, float blue, float alpha);
+
+    void glBlendFuncSeparate(int sfactorRGB, int dfactorRGB, int sfactorAlpha, int dfactorAlpha);
 
     //
     //
@@ -201,6 +243,8 @@ public interface GLAPI {
     void glUniform(int location, float v0, float v1, float v2);
 
     void glUniform(int location, float v0, float v1, float v2, float v3);
+
+    void glBlendEquationSeparate(int modeRGB, int modeAlpha);
 
     //
     //

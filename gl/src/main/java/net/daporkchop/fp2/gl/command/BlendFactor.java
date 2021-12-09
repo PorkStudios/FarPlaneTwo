@@ -18,29 +18,29 @@
  *
  */
 
-package net.daporkchop.fp2.gl.bitset;
-
-import lombok.NonNull;
-import net.daporkchop.fp2.gl.draw.list.DrawList;
-import net.daporkchop.fp2.gl.draw.binding.DrawMode;
-import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
+package net.daporkchop.fp2.gl.command;
 
 /**
- * Builder for {@link GLBitSet}s.
- *
  * @author DaPorkchop_
  */
-public interface GLBitSetBuilder {
-    /**
-     * Hints that a {@link GLBitSet} implementation should be chosen which is optimized for usage with {@link DrawList#execute(DrawMode, DrawShaderProgram, GLBitSet)}
-     * for the given {@link DrawList}.
-     *
-     * @param commandBuffer the {@link DrawList}
-     */
-    GLBitSetBuilder optimizeFor(@NonNull DrawList<?> commandBuffer);
-
-    /**
-     * @return the constructed {@link GLBitSet}
-     */
-    GLBitSet build();
+public enum BlendFactor {
+    ZERO,
+    ONE,
+    SRC_COLOR,
+    ONE_MINUS_SRC_COLOR,
+    DST_COLOR,
+    ONE_MINUS_DST_COLOR,
+    SRC_ALPHA,
+    ONE_MINUS_SRC_ALPHA,
+    DST_ALPHA,
+    ONE_MINUS_DST_ALPHA,
+    CONSTANT_COLOR,
+    ONE_MINUS_CONSTANT_COLOR,
+    CONSTANT_ALPHA,
+    ONE_MINUS_CONSTANT_ALPHA,
+    SRC_ALPHA_SATURATE,
+    SRC1_COLOR,
+    ONE_MINUS_SRC1_COLOR,
+    SRC1_ALPHA,
+    ONE_MINUS_SRC1_ALPHA;
 }

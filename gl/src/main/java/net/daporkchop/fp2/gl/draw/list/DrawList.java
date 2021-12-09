@@ -18,14 +18,50 @@
  *
  */
 
-package net.daporkchop.fp2.gl.draw.command;
+package net.daporkchop.fp2.gl.draw.list;
+
+import lombok.NonNull;
+import net.daporkchop.fp2.gl.GLResource;
 
 /**
  * @author DaPorkchop_
  */
-public interface DrawCommand {
+public interface DrawList<C extends DrawCommand> extends GLResource {
     /**
-     * @return whether or not this command is empty (will do nothing when executed)
+     * @return the number of commands that this buffer can store
      */
-    boolean isEmpty();
+    int capacity();
+
+    /**
+     * Sets the capacity of this command buffer.
+     * <p>
+     * If the new capacity is less than the current capacity, the buffer's contents will be truncated. If greater than the current capacity, the
+     * data will be extended with empty commands.
+     *
+     * @param capacity the new capacity
+     */
+    void resize(int capacity);
+
+    /**
+     * Sets the command at the given index to the given command.
+     *
+     * @param index   the command index
+     * @param command the command
+     */
+    void set(int index, @NonNull C command);
+
+    /**
+     * Gets the command at the given index.
+     *
+     * @param index the command index
+     * @return the command
+     */
+    C get(int index);
+
+    /**
+     * Sets the command at the given index to an empty command.
+     *
+     * @param index the command index
+     */
+    void clear(int index);
 }

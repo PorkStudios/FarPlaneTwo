@@ -38,11 +38,14 @@ public abstract class BaseShaderProgramImpl implements BaseShaderProgram {
     protected final OpenGL gl;
     protected final GLAPI api;
 
+    protected final BaseLayoutImpl layout;
+
     protected final int id;
 
     public BaseShaderProgramImpl(@NonNull OpenGL gl, @NonNull BaseLayoutImpl layout, @NonNull BaseShaderImpl... shaders) throws ShaderLinkageException {
         this.gl = gl;
         this.api = gl.api();
+        this.layout = layout;
 
         //allocate new shader
         this.id = this.api.glCreateProgram();

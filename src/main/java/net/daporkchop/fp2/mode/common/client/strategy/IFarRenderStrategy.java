@@ -24,8 +24,8 @@ import lombok.NonNull;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.fp2.gl.draw.binding.DrawBindingBuilder;
-import net.daporkchop.fp2.gl.draw.command.DrawCommand;
-import net.daporkchop.fp2.gl.draw.command.DrawCommandBuffer;
+import net.daporkchop.fp2.gl.draw.list.DrawCommand;
+import net.daporkchop.fp2.gl.draw.list.DrawList;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
@@ -58,7 +58,7 @@ public interface IFarRenderStrategy<POS extends IFarPos, T extends IFarTile, BO 
 
     IBakeOutputStorage<BO, DB, DC> createBakeOutputStorage();
 
-    DrawCommandBuffer<DC> createCommandBuffer(@NonNull DB binding);
+    DrawList<DC> createCommandBuffer(@NonNull DB binding);
 
     DrawBindingBuilder<DB> configureDrawBinding(@NonNull DrawBindingBuilder<DB> builder);
 

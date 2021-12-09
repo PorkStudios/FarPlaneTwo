@@ -18,29 +18,19 @@
  *
  */
 
-package net.daporkchop.fp2.gl.bitset;
-
-import lombok.NonNull;
-import net.daporkchop.fp2.gl.draw.list.DrawList;
-import net.daporkchop.fp2.gl.draw.binding.DrawMode;
-import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
+package net.daporkchop.fp2.gl.draw.list;
 
 /**
- * Builder for {@link GLBitSet}s.
+ * Builder for {@link DrawList}s.
  *
+ * @param <C> the type of command which will be stored in the list
  * @author DaPorkchop_
  */
-public interface GLBitSetBuilder {
-    /**
-     * Hints that a {@link GLBitSet} implementation should be chosen which is optimized for usage with {@link DrawList#execute(DrawMode, DrawShaderProgram, GLBitSet)}
-     * for the given {@link DrawList}.
-     *
-     * @param commandBuffer the {@link DrawList}
-     */
-    GLBitSetBuilder optimizeFor(@NonNull DrawList<?> commandBuffer);
+public interface DrawListBuilder<C extends DrawCommand> {
+    DrawListBuilder<C> optimizeForCpuSelection();
 
     /**
-     * @return the constructed {@link GLBitSet}
+     * @return the constructed {@link DrawList}
      */
-    GLBitSet build();
+    DrawList<C> build();
 }

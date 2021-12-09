@@ -26,7 +26,6 @@ import lombok.NonNull;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.common.asm.ClassloadingUtils;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
-import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.OpenGLConstants;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.StructFormat;
@@ -48,6 +47,7 @@ import java.util.concurrent.ExecutionException;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 import static org.objectweb.asm.Opcodes.*;
+import static org.objectweb.asm.Type.*;
 
 /**
  * @author DaPorkchop_
@@ -63,9 +63,9 @@ public class StructFormatGenerator {
     }
 
     private <S> InterleavedStructFormat<S> generateInterleaved(@NonNull InterleavedStructLayout<S> layout) throws Exception {
-        String baseClassName = Type.getInternalName(InterleavedStructFormat.class);
-        String className = baseClassName + '$' + layout.layoutName() + '$' + Type.getInternalName(layout.structInfo().clazz()).replace("/", "__");
-        String structName = Type.getInternalName(layout.structInfo().clazz());
+        String baseClassName = getInternalName(InterleavedStructFormat.class);
+        String className = baseClassName + '$' + layout.layoutName() + '$' + getInternalName(layout.structInfo().clazz()).replace("/", "__");
+        String structName = getInternalName(layout.structInfo().clazz());
 
         ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
 
@@ -82,11 +82,11 @@ public class StructFormatGenerator {
         }
 
         { //constructor
-            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "<init>", Type.getMethodDescriptor(Type.VOID_TYPE, Type.getObjectType(Type.getInternalName(InterleavedStructLayout.class))), null, null);
+            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "<init>", Type.getMethodDescriptor(Type.VOID_TYPE, Type.getObjectType(getInternalName(InterleavedStructLayout.class))), null, null);
 
             mv.visitVarInsn(ALOAD, 0);
             mv.visitVarInsn(ALOAD, 1);
-            mv.visitMethodInsn(INVOKESPECIAL, baseClassName, "<init>", Type.getMethodDescriptor(Type.VOID_TYPE, Type.getObjectType(Type.getInternalName(InterleavedStructLayout.class))), false);
+            mv.visitMethodInsn(INVOKESPECIAL, baseClassName, "<init>", Type.getMethodDescriptor(Type.VOID_TYPE, Type.getObjectType(getInternalName(InterleavedStructLayout.class))), false);
             mv.visitInsn(RETURN);
 
             mv.visitMaxs(0, 0);
@@ -162,7 +162,7 @@ public class StructFormatGenerator {
                     mv.visitInsn(IADD);
 
                     mv.visitLdcInsn(rows); //GLint size,
-                    mv.visitFieldInsn(GETSTATIC, Type.getInternalName(OpenGLConstants.class), "GL_" + srcStage.componentType(), "I"); //GLenum type,
+                    mv.visitFieldInsn(GETSTATIC, getInternalName(OpenGLConstants.class), "GL_" + srcStage.componentType(), "I"); //GLenum type,
 
                     if (unpackedStage.componentType().floatingPoint()) { //GLboolean normalized,
                         mv.visitLdcInsn(unpackedStage.isNormalizedFloat());
@@ -172,9 +172,9 @@ public class StructFormatGenerator {
                     mv.visitLdcInsn(layout.memberOffsets()[i] + layout.memberComponentOffsets()[i][column * rows]); //const void* pointer);
 
                     if (unpackedStage.componentType().floatingPoint()) { //<method>
-                        mv.visitMethodInsn(INVOKEINTERFACE, Type.getInternalName(GLAPI.class), "glVertexAttribPointer", "(IIIZIJ)V", true);
+                        mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glVertexAttribPointer", "(IIIZIJ)V", true);
                     } else {
-                        mv.visitMethodInsn(INVOKEINTERFACE, Type.getInternalName(GLAPI.class), "glVertexAttribIPointer", "(IIIIJ)V", true);
+                        mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glVertexAttribIPointer", "(IIIIJ)V", true);
                     }
                 }
             }
@@ -209,9 +209,9 @@ public class StructFormatGenerator {
         StructMember.Stage stage = layout.unpacked() ? member.unpackedStage : member.packedStage;
         StructMember.Stage unpackedStage = member.unpackedStage;
 
-        String baseClassName = Type.getInternalName(TextureStructFormat.class);
-        String className = baseClassName + '$' + layout.layoutName() + '$' + Type.getInternalName(layout.structInfo().clazz()).replace("/", "__");
-        String structName = Type.getInternalName(layout.structInfo().clazz());
+        String baseClassName = getInternalName(TextureStructFormat.class);
+        String className = baseClassName + '$' + layout.layoutName() + '$' + getInternalName(layout.structInfo().clazz()).replace("/", "__");
+        String structName = getInternalName(layout.structInfo().clazz());
 
         ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
 
@@ -228,7 +228,7 @@ public class StructFormatGenerator {
         }
 
         { //constructor
-            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "<init>", Type.getMethodDescriptor(Type.VOID_TYPE, Type.getObjectType(Type.getInternalName(TextureStructLayout.class))), null, null);
+            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "<init>", Type.getMethodDescriptor(Type.VOID_TYPE, Type.getObjectType(getInternalName(TextureStructLayout.class))), null, null);
 
             mv.visitVarInsn(ALOAD, 0);
             mv.visitVarInsn(ALOAD, 1);
@@ -244,20 +244,20 @@ public class StructFormatGenerator {
                 } else {
                     suffix = "F";
                 }
-                mv.visitFieldInsn(GETSTATIC, Type.getInternalName(OpenGLConstants.class), "GL_" + components + bitDepth + suffix, "I");
+                mv.visitFieldInsn(GETSTATIC, getInternalName(OpenGLConstants.class), "GL_" + components + bitDepth + suffix, "I");
             }
 
             { //int textureFormat
                 String components = "RGBA".substring(0, unpackedStage.components());
                 String suffix = unpackedStage.componentType().integer() ? "_INTEGER" : "";
-                mv.visitFieldInsn(GETSTATIC, Type.getInternalName(OpenGLConstants.class), "GL_" + components + suffix, "I");
+                mv.visitFieldInsn(GETSTATIC, getInternalName(OpenGLConstants.class), "GL_" + components + suffix, "I");
             }
 
             { //int textureType
-                mv.visitFieldInsn(GETSTATIC, Type.getInternalName(OpenGLConstants.class), "GL_" + stage.componentType(), "I");
+                mv.visitFieldInsn(GETSTATIC, getInternalName(OpenGLConstants.class), "GL_" + stage.componentType(), "I");
             }
 
-            mv.visitMethodInsn(INVOKESPECIAL, baseClassName, "<init>", Type.getMethodDescriptor(Type.VOID_TYPE, Type.getObjectType(Type.getInternalName(TextureStructLayout.class)), Type.INT_TYPE, Type.INT_TYPE, Type.INT_TYPE), false);
+            mv.visitMethodInsn(INVOKESPECIAL, baseClassName, "<init>", Type.getMethodDescriptor(Type.VOID_TYPE, Type.getObjectType(getInternalName(TextureStructLayout.class)), Type.INT_TYPE, Type.INT_TYPE, Type.INT_TYPE), false);
             mv.visitInsn(RETURN);
 
             mv.visitMaxs(0, 0);
@@ -342,7 +342,7 @@ public class StructFormatGenerator {
     }
 
     private <S> void generateClone(@NonNull ClassVisitor cv, @NonNull StructInfo<S> structInfo) {
-        String structName = Type.getInternalName(structInfo.clazz());
+        String structName = getInternalName(structInfo.clazz());
 
         { //Object clone(Object struct)
             MethodVisitor mv = cv.visitMethod(ACC_PUBLIC, "clone", "(Ljava/lang/Object;)Ljava/lang/Object;", null, null);

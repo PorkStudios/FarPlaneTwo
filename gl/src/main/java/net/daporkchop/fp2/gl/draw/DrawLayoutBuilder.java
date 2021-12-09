@@ -69,6 +69,11 @@ public interface DrawLayoutBuilder {
     DrawLayoutBuilder withTexture(@NonNull TextureFormat2D<?> format);
 
     /**
+     * Makes the {@link DrawLayout} support draw list selection.
+     */
+    DrawLayoutBuilder enableSelection(); //TODO: this does nothing
+
+    /**
      * @return the constructed {@link DrawLayout}
      */
     DrawLayout build();

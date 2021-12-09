@@ -18,31 +18,18 @@
  *
  */
 
-package net.daporkchop.fp2.gl.draw.command;
+package net.daporkchop.fp2.gl.command;
 
-import lombok.Data;
+import net.daporkchop.fp2.gl.GLResource;
 
 /**
- * An array drawing command.
+ * A sequence of GL commands.
  *
  * @author DaPorkchop_
  */
-@Data
-public final class DrawCommandArrays implements DrawCommand {
-    public static final DrawCommandArrays EMPTY = new DrawCommandArrays(0, 0);
-
+public interface CommandBuffer extends GLResource {
     /**
-     * The index of the first vertex.
+     * Executes the commands in this buffer.
      */
-    protected final int first;
-
-    /**
-     * The number of vertices.
-     */
-    protected final int count;
-
-    @Override
-    public boolean isEmpty() {
-        return this.count == 0;
-    }
+    void execute();
 }

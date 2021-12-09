@@ -37,11 +37,17 @@ import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayFormat;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
 import net.daporkchop.fp2.gl.bitset.GLBitSetBuilder;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
+import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
 import net.daporkchop.fp2.gl.compute.GLCompute;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.draw.DrawLayoutBuilder;
-import net.daporkchop.fp2.gl.draw.command.DrawCommandBufferBuilder;
+import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
+import net.daporkchop.fp2.gl.draw.binding.DrawBindingIndexed;
 import net.daporkchop.fp2.gl.draw.index.IndexFormatBuilder;
+import net.daporkchop.fp2.gl.draw.list.DrawCommandArrays;
+import net.daporkchop.fp2.gl.draw.list.DrawCommandIndexed;
+import net.daporkchop.fp2.gl.draw.list.DrawList;
+import net.daporkchop.fp2.gl.draw.list.DrawListBuilder;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.draw.shader.FragmentShader;
 import net.daporkchop.fp2.gl.draw.shader.VertexShader;
@@ -54,11 +60,17 @@ import net.daporkchop.fp2.gl.opengl.attribute.uniform.UniformArrayFormatShaderSt
 import net.daporkchop.fp2.gl.opengl.attribute.uniform.UniformFormatBlock;
 import net.daporkchop.fp2.gl.opengl.bitset.GLBitSetBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
+import net.daporkchop.fp2.gl.opengl.command.CommandBufferBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.compute.ComputeImpl;
 import net.daporkchop.fp2.gl.opengl.draw.DrawLayoutBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.draw.DrawLayoutImpl;
-import net.daporkchop.fp2.gl.opengl.draw.command.DrawCommandBufferBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.draw.binding.DrawBindingImpl;
 import net.daporkchop.fp2.gl.opengl.draw.index.IndexFormatBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.draw.list.DrawListBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.draw.list.arrays.DrawListMultiDrawArrays;
+import net.daporkchop.fp2.gl.opengl.draw.list.arrays.DrawListMultiDrawArraysIndirect;
+import net.daporkchop.fp2.gl.opengl.draw.list.elements.DrawListMultiDrawElementsBaseVertex;
+import net.daporkchop.fp2.gl.opengl.draw.list.elements.DrawListMultiDrawElementsIndirect;
 import net.daporkchop.fp2.gl.opengl.draw.shader.DrawShaderProgramImpl;
 import net.daporkchop.fp2.gl.opengl.draw.shader.FragmentShaderImpl;
 import net.daporkchop.fp2.gl.opengl.draw.shader.VertexShaderImpl;
@@ -83,6 +95,8 @@ import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
  */
 @Getter
 public class OpenGL implements GL {
+    public static final boolean DEBUG = Boolean.getBoolean("fp2.gl.opengl.debug");
+
     public static final String OPENGL_NAMESPACE = "fp2_gl_opengl";
 
     protected final GLAPI api;
@@ -102,6 +116,8 @@ public class OpenGL implements GL {
 
     protected final int vertexAttributeAlignment;
 
+    protected final boolean preserveInputGlState;
+
     protected OpenGL(@NonNull OpenGLBuilder builder) {
         this.resourceProvider = ResourceProvider.selectingByNamespace(OPENGL_NAMESPACE, ResourceProvider.loadingClassResources(OpenGL.class), builder.resourceProvider);
 
@@ -110,6 +126,7 @@ public class OpenGL implements GL {
                 .get();
 
         this.version = this.api.version();
+        this.preserveInputGlState = true;
 
         { //get supported extensions
             Set<String> extensionNames;
@@ -244,8 +261,32 @@ public class OpenGL implements GL {
     }
 
     @Override
-    public DrawCommandBufferBuilder.TypeStage createCommandBuffer() {
-        return new DrawCommandBufferBuilderImpl(this);
+    public DrawListBuilder<DrawCommandArrays> createDrawListArrays(@NonNull DrawBinding binding) {
+        return new DrawListBuilderImpl<DrawCommandArrays>(this, (DrawBindingImpl) binding) {
+            @Override
+            public DrawList<DrawCommandArrays> build() {
+                return this.optimizeForCpuSelection
+                        ? new DrawListMultiDrawArrays(this)
+                        : new DrawListMultiDrawArraysIndirect(this);
+            }
+        };
+    }
+
+    @Override
+    public DrawListBuilder<DrawCommandIndexed> createDrawListIndexed(@NonNull DrawBindingIndexed binding) {
+        return new DrawListBuilderImpl<DrawCommandIndexed>(this, (DrawBindingImpl) binding) {
+            @Override
+            public DrawList<DrawCommandIndexed> build() {
+                return this.optimizeForCpuSelection
+                        ? new DrawListMultiDrawElementsBaseVertex(this)
+                        : new DrawListMultiDrawElementsIndirect(this);
+            }
+        };
+    }
+
+    @Override
+    public CommandBufferBuilder createCommandBuffer() {
+        return new CommandBufferBuilderImpl(this);
     }
 
     //
@@ -273,7 +314,7 @@ public class OpenGL implements GL {
     }
 
     @Override
-    public DrawShaderProgram linkShaderProgram(@NonNull DrawLayout layout, @NonNull VertexShader vertexShader, @NonNull FragmentShader fragmentShader) throws ShaderLinkageException {
+    public DrawShaderProgram linkDrawShaderProgram(@NonNull DrawLayout layout, @NonNull VertexShader vertexShader, @NonNull FragmentShader fragmentShader) throws ShaderLinkageException {
         return new DrawShaderProgramImpl(this, (DrawLayoutImpl) layout, (VertexShaderImpl) vertexShader, (FragmentShaderImpl) fragmentShader);
     }
 

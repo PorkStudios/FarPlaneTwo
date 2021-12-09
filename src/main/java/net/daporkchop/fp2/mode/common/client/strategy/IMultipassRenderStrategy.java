@@ -23,41 +23,44 @@ package net.daporkchop.fp2.mode.common.client.strategy;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.DrawMode;
 import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
-import net.daporkchop.fp2.gl.draw.command.DrawCommand;
+import net.daporkchop.fp2.gl.command.BlendFactor;
+import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
+import net.daporkchop.fp2.gl.command.Compare;
+import net.daporkchop.fp2.gl.command.FramebufferLayer;
+import net.daporkchop.fp2.gl.command.StencilOperation;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
+import net.daporkchop.fp2.gl.draw.list.DrawCommand;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
 import net.daporkchop.fp2.mode.common.client.index.IRenderIndex;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.client.renderer.texture.TextureMap;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.fp2.core.debug.FP2Debug.*;
 import static net.daporkchop.fp2.util.Constants.*;
-import static org.lwjgl.opengl.GL11.*;
 
 /**
  * @author DaPorkchop_
  */
 public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTile, BO extends IBakeOutput, DB extends DrawBinding, DC extends DrawCommand> extends IFarRenderStrategy<POS, T, BO, DB, DC> {
-    @Override
+    /*@Override
     default void render(@NonNull IRenderIndex<POS, BO, DB, DC> index, int layer, boolean pre) {
         if (layer == IFarRenderer.LAYER_CUTOUT && !pre) {
-            ((AbstractTexture) MC.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE)).setBlurMipmapDirect(false, MC.gameSettings.mipmapLevels > 0);
+            //((AbstractTexture) MC.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE)).setBlurMipmapDirect(false, MC.gameSettings.mipmapLevels > 0);
 
             try (DrawMode mode = DrawMode.SHADER.begin()) {
                 this.render(index);
             }
 
-            MC.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
+            //MC.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
         }
-    }
+    }*/
 
-    default void render(@NonNull IRenderIndex<POS, BO, DB, DC> index) {
-        this.preRender();
+    default void render(@NonNull CommandBufferBuilder builder, @NonNull IRenderIndex<POS, BO, DB, DC> index) {
+        this.preRender(builder);
 
         //in order to properly render overlapping layers while ensuring that low-detail levels always get placed on top of high-detail ones, we'll need to do the following:
         //- for each detail level:
@@ -66,95 +69,96 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
         //  from rendering over vanilla water
 
         for (int level = 0; level < this.mode().maxLevels(); level++) {
-            if (index.hasAnyTilesForLevel(level)) {
-                this.renderSolid(index, level);
-                this.renderCutout(index, level);
-            }
+            this.renderSolid(builder, index, level);
+            this.renderCutout(builder, index, level);
         }
 
-        this.renderTransparent(index);
+        this.renderTransparent(builder, index);
 
-        this.postRender();
+        this.postRender(builder);
     }
 
-    default void preRender() {
-        if (FP2_DEBUG && !fp2().globalConfig().debug().backfaceCulling()) {
-            GlStateManager.disableCull();
+    default void preRender(@NonNull CommandBufferBuilder builder) {
+        if (!FP2_DEBUG || fp2().globalConfig().debug().backfaceCulling()) {
+            builder.cullEnable();
         }
 
-        glEnable(GL_STENCIL_TEST);
-        glStencilMask(0xFF);
-        glClearStencil(0x7F);
-        GlStateManager.clear(GL_STENCIL_BUFFER_BIT);
+        builder.depthEnable();
+        builder.depthCompare(FP2Config.global().compatibility().reversedZ() ? Compare.GREATER : Compare.LESS);
+
+        builder.stencilEnable();
+        builder.stencilWriteMask(0xFF);
+        builder.stencilClear(0x7F).framebufferClear(FramebufferLayer.STENCIL);
     }
 
-    default void postRender() {
-        glDisable(GL_STENCIL_TEST);
-
-        if (FP2_DEBUG && !fp2().globalConfig().debug().backfaceCulling()) {
-            GlStateManager.enableCull();
-        }
+    default void postRender(@NonNull CommandBufferBuilder builder) {
     }
 
-    default void renderSolid(@NonNull IRenderIndex<POS, BO, DB, DC> index, int level) {
-        GlStateManager.disableAlpha();
+    default void renderSolid(@NonNull CommandBufferBuilder builder, @NonNull IRenderIndex<POS, BO, DB, DC> index, int level) {
+        //GlStateManager.disableAlpha();
 
-        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-        glStencilFunc(GL_LEQUAL, level, 0x7F);
-        index.draw(level, 0, this.blockShader());
+        builder.stencilOperation(StencilOperation.KEEP, StencilOperation.KEEP, StencilOperation.REPLACE)
+                .stencilCompare(Compare.LESS_OR_EQUAL)
+                .stencilReference(level)
+                .stencilCompareMask(0x7F);
+        index.draw(builder, level, 0, this.blockShader());
 
-        GlStateManager.enableAlpha();
+        //GlStateManager.enableAlpha();
     }
 
-    default void renderCutout(@NonNull IRenderIndex<POS, BO, DB, DC> index, int level) {
-        MC.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).setBlurMipmap(false, MC.gameSettings.mipmapLevels > 0);
+    default void renderCutout(@NonNull CommandBufferBuilder builder, @NonNull IRenderIndex<POS, BO, DB, DC> index, int level) {
+        //MC.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).setBlurMipmap(false, MC.gameSettings.mipmapLevels > 0);
 
-        glStencilOp(GL_KEEP, GL_REPLACE, GL_REPLACE);
-        glStencilFunc(GL_LEQUAL, level, 0x7F);
-        index.draw(level, 1, this.blockShader());
+        builder.stencilOperation(StencilOperation.KEEP, StencilOperation.REPLACE, StencilOperation.REPLACE)
+                .stencilCompare(Compare.LESS_OR_EQUAL)
+                .stencilReference(level)
+                .stencilCompareMask(0x7F);
+        index.draw(builder, level, 1, this.blockShader());
 
-        MC.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
+        //MC.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
     }
 
-    default void renderTransparent(@NonNull IRenderIndex<POS, BO, DB, DC> index) {
-        this.renderTransparentStencilPass(index);
-        this.renderTransparentFragmentPass(index);
+    default void renderTransparent(@NonNull CommandBufferBuilder builder, @NonNull IRenderIndex<POS, BO, DB, DC> index) {
+        this.renderTransparentStencilPass(builder, index);
+
+        //don't want fragments to be rendered before the stencil pass can complete
+        builder.barrier();
+
+        this.renderTransparentFragmentPass(builder, index);
     }
 
-    default void renderTransparentStencilPass(@NonNull IRenderIndex<POS, BO, DB, DC> index) {
-        GlStateManager.colorMask(false, false, false, false);
+    default void renderTransparentStencilPass(@NonNull CommandBufferBuilder builder, @NonNull IRenderIndex<POS, BO, DB, DC> index) {
+        builder.colorWrite(false, false, false, false);
+        builder.depthWrite(false);
 
-        GlStateManager.depthMask(false);
-
-        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+        builder.stencilOperation(StencilOperation.KEEP, StencilOperation.KEEP, StencilOperation.REPLACE)
+                .stencilCompare(Compare.GREATER_OR_EQUAL)
+                .stencilCompareMask(0xFF);
         for (int level = 0; level < this.mode().maxLevels(); level++) {
-            if (index.hasAnyTilesForLevel(level)) {
-                glStencilFunc(GL_GEQUAL, 0x80 | (this.mode().maxLevels() - level), 0xFF);
-                index.draw(level, 2, this.stencilShader());
-            }
+            builder.stencilReference(0x80 | (this.mode().maxLevels() - level));
+            index.draw(builder, level, 2, this.stencilShader());
         }
 
-        GlStateManager.depthMask(true);
-
-        GlStateManager.colorMask(true, true, true, true);
+        builder.depthWrite(true);
+        builder.colorWrite(true, true, true, true);
     }
 
-    default void renderTransparentFragmentPass(@NonNull IRenderIndex<POS, BO, DB, DC> index) {
-        GlStateManager.enableBlend();
-        GlStateManager.tryBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
-        GlStateManager.alphaFunc(GL_GREATER, 0.1f);
+    default void renderTransparentFragmentPass(@NonNull CommandBufferBuilder builder, @NonNull IRenderIndex<POS, BO, DB, DC> index) {
+        builder.blendEnable();
+        builder.blendFunctionSrc(BlendFactor.SRC_ALPHA, BlendFactor.ONE).blendFunctionDst(BlendFactor.ONE_MINUS_SRC_ALPHA, BlendFactor.ZERO);
 
-        glStencilMask(0);
+        //GlStateManager.alphaFunc(GL_GREATER, 0.1f);
 
-        glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+        builder.stencilWriteMask(0);
+        builder.stencilOperation(StencilOperation.KEEP, StencilOperation.KEEP, StencilOperation.KEEP)
+                .stencilCompare(Compare.EQUAL)
+                .stencilCompareMask(0xFF);
         for (int level = 0; level < this.mode().maxLevels(); level++) {
-            if (index.hasAnyTilesForLevel(level)) {
-                glStencilFunc(GL_EQUAL, 0x80 | (this.mode().maxLevels() - level), 0xFF);
-                index.draw(level, 2, this.blockShaderTransparent());
-            }
+            builder.stencilReference(0x80 | (this.mode().maxLevels() - level));
+            index.draw(builder, level, 2, this.blockShaderTransparent());
         }
 
-        GlStateManager.disableBlend();
+        builder.blendDisable();
     }
 
     /**

@@ -18,29 +18,17 @@
  *
  */
 
-package net.daporkchop.fp2.gl.bitset;
+package net.daporkchop.fp2.gl.opengl.command.state;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.draw.list.DrawList;
-import net.daporkchop.fp2.gl.draw.binding.DrawMode;
-import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
+
+import java.util.stream.Stream;
 
 /**
- * Builder for {@link GLBitSet}s.
- *
  * @author DaPorkchop_
  */
-public interface GLBitSetBuilder {
-    /**
-     * Hints that a {@link GLBitSet} implementation should be chosen which is optimized for usage with {@link DrawList#execute(DrawMode, DrawShaderProgram, GLBitSet)}
-     * for the given {@link DrawList}.
-     *
-     * @param commandBuffer the {@link DrawList}
-     */
-    GLBitSetBuilder optimizeFor(@NonNull DrawList<?> commandBuffer);
-
-    /**
-     * @return the constructed {@link GLBitSet}
-     */
-    GLBitSet build();
+public interface StateProperty {
+    default Stream<StateProperty> depends(@NonNull State state) {
+        return Stream.empty();
+    }
 }

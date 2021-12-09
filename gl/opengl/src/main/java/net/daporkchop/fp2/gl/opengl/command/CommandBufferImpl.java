@@ -18,34 +18,26 @@
  *
  */
 
-package net.daporkchop.fp2.gl.draw.command;
+package net.daporkchop.fp2.gl.opengl.command;
 
-import lombok.Data;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.gl.command.CommandBuffer;
+
+import java.util.List;
 
 /**
- * A indexed drawing command.
+ * Base implementation of {@link CommandBuffer}.
  *
  * @author DaPorkchop_
  */
-@Data
-public final class DrawCommandIndexed implements DrawCommand {
-    /**
-     * The index of the first index.
-     */
-    protected final int firstIndex;
-
-    /**
-     * The number of indices.
-     */
-    protected final int count;
-
-    /**
-     * The index of the first vertex.
-     */
-    protected final int baseVertex;
+@RequiredArgsConstructor
+public abstract class CommandBufferImpl implements CommandBuffer {
+    @NonNull
+    protected final List<Uop> uops;
 
     @Override
-    public boolean isEmpty() {
-        return this.count == 0;
+    public void close() {
+        //no-op
     }
 }

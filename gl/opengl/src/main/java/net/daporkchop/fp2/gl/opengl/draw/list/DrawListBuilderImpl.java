@@ -18,29 +18,34 @@
  *
  */
 
-package net.daporkchop.fp2.gl.bitset;
+package net.daporkchop.fp2.gl.opengl.draw.list;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.draw.list.DrawList;
-import net.daporkchop.fp2.gl.draw.binding.DrawMode;
-import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.gl.draw.list.DrawCommand;
+import net.daporkchop.fp2.gl.draw.list.DrawListBuilder;
+import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.draw.binding.DrawBindingImpl;
+import net.daporkchop.fp2.gl.opengl.draw.list.arrays.DrawListMultiDrawArrays;
+import net.daporkchop.fp2.gl.opengl.draw.list.arrays.DrawListMultiDrawArraysIndirect;
+import net.daporkchop.fp2.gl.opengl.draw.list.elements.DrawListMultiDrawElementsBaseVertex;
+import net.daporkchop.fp2.gl.opengl.draw.list.elements.DrawListMultiDrawElementsIndirect;
 
 /**
- * Builder for {@link GLBitSet}s.
- *
  * @author DaPorkchop_
  */
-public interface GLBitSetBuilder {
-    /**
-     * Hints that a {@link GLBitSet} implementation should be chosen which is optimized for usage with {@link DrawList#execute(DrawMode, DrawShaderProgram, GLBitSet)}
-     * for the given {@link DrawList}.
-     *
-     * @param commandBuffer the {@link DrawList}
-     */
-    GLBitSetBuilder optimizeFor(@NonNull DrawList<?> commandBuffer);
+@RequiredArgsConstructor
+public abstract class DrawListBuilderImpl<C extends DrawCommand> implements DrawListBuilder<C> {
+    @NonNull
+    protected final OpenGL gl;
+    @NonNull
+    protected final DrawBindingImpl binding;
 
-    /**
-     * @return the constructed {@link GLBitSet}
-     */
-    GLBitSet build();
+    protected boolean optimizeForCpuSelection;
+
+    @Override
+    public DrawListBuilder<C> optimizeForCpuSelection() {
+        this.optimizeForCpuSelection = true;
+        return this;
+    }
 }

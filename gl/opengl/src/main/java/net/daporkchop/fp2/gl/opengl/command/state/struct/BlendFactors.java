@@ -18,29 +18,44 @@
  *
  */
 
-package net.daporkchop.fp2.gl.bitset;
+package net.daporkchop.fp2.gl.opengl.command.state.struct;
 
+import lombok.Data;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.draw.list.DrawList;
-import net.daporkchop.fp2.gl.draw.binding.DrawMode;
-import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
+import lombok.With;
+import net.daporkchop.fp2.gl.command.BlendFactor;
 
 /**
- * Builder for {@link GLBitSet}s.
- *
  * @author DaPorkchop_
  */
-public interface GLBitSetBuilder {
-    /**
-     * Hints that a {@link GLBitSet} implementation should be chosen which is optimized for usage with {@link DrawList#execute(DrawMode, DrawShaderProgram, GLBitSet)}
-     * for the given {@link DrawList}.
-     *
-     * @param commandBuffer the {@link DrawList}
-     */
-    GLBitSetBuilder optimizeFor(@NonNull DrawList<?> commandBuffer);
+@Data
+@With
+public final class BlendFactors {
+    private static boolean usesUserColor(BlendFactor factor) {
+        switch (factor) {
+            case CONSTANT_COLOR:
+            case ONE_MINUS_CONSTANT_COLOR:
+            case CONSTANT_ALPHA:
+            case ONE_MINUS_CONSTANT_ALPHA:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    @NonNull
+    private final BlendFactor srcRGB;
+    @NonNull
+    private final BlendFactor srcA;
+    @NonNull
+    private final BlendFactor dstRGB;
+    @NonNull
+    private final BlendFactor dstA;
 
     /**
-     * @return the constructed {@link GLBitSet}
+     * @return whether or not any of the blend factors uses the user-defined constant color
      */
-    GLBitSet build();
+    public boolean usesUserColor() {
+        return usesUserColor(this.srcRGB) || usesUserColor(this.srcA) || usesUserColor(this.dstRGB) || usesUserColor(this.dstA);
+    }
 }

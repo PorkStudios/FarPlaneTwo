@@ -18,29 +18,38 @@
  *
  */
 
-package net.daporkchop.fp2.gl.bitset;
+package net.daporkchop.fp2.gl.opengl.command.state;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.draw.list.DrawList;
-import net.daporkchop.fp2.gl.draw.binding.DrawMode;
-import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
+import net.daporkchop.fp2.gl.opengl.GLAPI;
+import org.objectweb.asm.MethodVisitor;
+
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Builder for {@link GLBitSet}s.
+ * A {@link StateProperty} with an associated value.
+ * <p>
+ * Property values are always {@link Optional}. An empty {@link Optional} indicates that we don't care what the property is set to.
  *
  * @author DaPorkchop_
  */
-public interface GLBitSetBuilder {
+public interface StateValueProperty<T> extends StateProperty {
     /**
-     * Hints that a {@link GLBitSet} implementation should be chosen which is optimized for usage with {@link DrawList#execute(DrawMode, DrawShaderProgram, GLBitSet)}
-     * for the given {@link DrawList}.
-     *
-     * @param commandBuffer the {@link DrawList}
+     * @return the property's default value
      */
-    GLBitSetBuilder optimizeFor(@NonNull DrawList<?> commandBuffer);
+    T def();
 
     /**
-     * @return the constructed {@link GLBitSet}
+     * Generates JVM bytecode for setting the property to the given value.
+     *
+     * @param value       the value
+     * @param mv          the {@link MethodVisitor} to which code should be written
+     * @param apiLvtIndex the index of the {@link GLAPI} instance in the LVT
      */
-    GLBitSet build();
+    void set(@NonNull T value, @NonNull MethodVisitor mv, int apiLvtIndex);
+
+    void backup(@NonNull MethodVisitor mv, int apiLvtIndex, int bufferLvtIndex, @NonNull AtomicInteger lvtIndexAllocator);
+
+    void restore(@NonNull MethodVisitor mv, int apiLvtIndex, int bufferLvtIndex, int lvtIndexBase);
 }
