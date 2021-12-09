@@ -25,6 +25,7 @@ import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.common.asm.ClassloadingUtils;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
+import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.reference.cache.Cached;
 import org.lwjgl.opengl.Util;
@@ -46,7 +47,7 @@ import static org.objectweb.asm.Opcodes.*;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 class APISupplierLWJGL2 implements Supplier<GLAPI> {
     private static final Cached<Class<? extends GLAPI>> TRANSFORMED_CLASS_CACHE = Cached.global(
-            () -> Boolean.parseBoolean(System.getProperty("fp2.gl.debug", "false")) ? transformClass() : GLAPILWJGL2.class,
+            () -> OpenGL.DEBUG ? transformClass() : GLAPILWJGL2.class,
             ReferenceStrength.WEAK);
 
     /**

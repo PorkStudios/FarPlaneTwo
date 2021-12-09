@@ -191,7 +191,7 @@ public interface GL extends AutoCloseable {
      * @return the linked {@link DrawShaderProgram}
      * @throws ShaderLinkageException if shader linkage fails
      */
-    DrawShaderProgram linkShaderProgram(@NonNull DrawLayout layout, @NonNull VertexShader vertexShader, @NonNull FragmentShader fragmentShader) throws ShaderLinkageException;
+    DrawShaderProgram linkDrawShaderProgram(@NonNull DrawLayout layout, @NonNull VertexShader vertexShader, @NonNull FragmentShader fragmentShader) throws ShaderLinkageException;
 
     //
     // MODULES

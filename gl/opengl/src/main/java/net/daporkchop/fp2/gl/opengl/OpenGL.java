@@ -95,6 +95,8 @@ import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
  */
 @Getter
 public class OpenGL implements GL {
+    public static final boolean DEBUG = Boolean.getBoolean("fp2.gl.opengl.debug");
+
     public static final String OPENGL_NAMESPACE = "fp2_gl_opengl";
 
     protected final GLAPI api;
@@ -312,7 +314,7 @@ public class OpenGL implements GL {
     }
 
     @Override
-    public DrawShaderProgram linkShaderProgram(@NonNull DrawLayout layout, @NonNull VertexShader vertexShader, @NonNull FragmentShader fragmentShader) throws ShaderLinkageException {
+    public DrawShaderProgram linkDrawShaderProgram(@NonNull DrawLayout layout, @NonNull VertexShader vertexShader, @NonNull FragmentShader fragmentShader) throws ShaderLinkageException {
         return new DrawShaderProgramImpl(this, (DrawLayoutImpl) layout, (VertexShaderImpl) vertexShader, (FragmentShaderImpl) fragmentShader);
     }
 

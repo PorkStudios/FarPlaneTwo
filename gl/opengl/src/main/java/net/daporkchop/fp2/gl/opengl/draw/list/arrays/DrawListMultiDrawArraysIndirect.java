@@ -22,28 +22,24 @@ package net.daporkchop.fp2.gl.opengl.draw.list.arrays;
 
 import com.google.common.collect.ImmutableMap;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.bitset.GLBitSet;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.draw.list.DrawCommandArrays;
-import net.daporkchop.fp2.gl.draw.binding.DrawMode;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
-import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
 import net.daporkchop.fp2.gl.opengl.bitset.AbstractGLBitSet;
 import net.daporkchop.fp2.gl.opengl.buffer.BufferTarget;
 import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
 import net.daporkchop.fp2.gl.opengl.command.state.StateProperties;
 import net.daporkchop.fp2.gl.opengl.command.state.StateValueProperty;
+import net.daporkchop.fp2.gl.opengl.draw.binding.DrawBindingImpl;
 import net.daporkchop.fp2.gl.opengl.draw.list.DrawListBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.draw.list.DrawListImpl;
-import net.daporkchop.fp2.gl.opengl.draw.binding.DrawBindingImpl;
-import net.daporkchop.fp2.gl.opengl.draw.shader.DrawShaderProgramImpl;
-import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.Map;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.common.util.TypeSize.*;
+import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -101,7 +97,6 @@ public class DrawListMultiDrawArraysIndirect extends DrawListImpl<DrawCommandArr
 
     @Override
     protected void resize0(int oldCapacity, int newCapacity) {
-        this.buffer.resize(newCapacity * _SIZE);
         this.commandsAddr = this.alloc.realloc(this.commandsAddr, newCapacity * _SIZE);
 
         if (newCapacity > oldCapacity) { //zero out the commands
@@ -122,8 +117,6 @@ public class DrawListMultiDrawArraysIndirect extends DrawListImpl<DrawCommandArr
         _count(commandAddr, command.count());
         _instanceCount(commandAddr, 1);
         _baseInstance(commandAddr, index);
-
-        this.buffer.uploadRange(index * _SIZE, commandAddr, _SIZE);
     }
 
     @Override
@@ -136,30 +129,25 @@ public class DrawListMultiDrawArraysIndirect extends DrawListImpl<DrawCommandArr
 
     @Override
     public void clear(int index) {
-        long commandAddr = this.commandsAddr + checkIndex(this.capacity, index) * _SIZE;
-        _instanceCount(commandAddr, 0);
-
-        this.buffer.uploadRange(index * _SIZE, commandAddr, _SIZE);
+        _instanceCount(this.commandsAddr + checkIndex(this.capacity, index) * _SIZE, 0);
     }
 
     @Override
-    public void execute(@NonNull DrawMode mode, @NonNull DrawShaderProgram shader) {
-        this.buffer.bind(BufferTarget.DRAW_INDIRECT_BUFFER, target -> ((DrawShaderProgramImpl) shader).bind(() -> this.binding.bind(() -> {
-            this.api.glMultiDrawArraysIndirect(GLEnumUtil.from(mode), 0L, this.capacity, 0);
-        })));
+    public Map<StateValueProperty<?>, Object> stateProperties0() {
+        return ImmutableMap.of(StateProperties.BOUND_BUFFER.get(BufferTarget.DRAW_INDIRECT_BUFFER), this.buffer.id());
     }
 
     @Override
-    public void execute(@NonNull DrawMode mode, @NonNull DrawShaderProgram shader, @NonNull GLBitSet _selector) {
-        AbstractGLBitSet selector = (AbstractGLBitSet) _selector;
-
-        this.executeMappedClient(mode, shader, selector);
+    public void draw0(GLAPI api, int mode) {
+        api.glBufferData(GL_DRAW_INDIRECT_BUFFER, this.capacity * _SIZE, this.commandsAddr, GL_STREAM_DRAW);
+        api.glMultiDrawArraysIndirect(mode, 0L, this.capacity, 0);
     }
 
-    protected void executeMappedClient(@NonNull DrawMode mode, @NonNull DrawShaderProgram shader, @NonNull AbstractGLBitSet selector) {
+    @Override
+    public void draw0(GLAPI api, int mode, AbstractGLBitSet selectionMask) {
         long dstCommands = PUnsafe.allocateMemory(this.capacity * _SIZE);
         try {
-            selector.mapClient(this.capacity, (bitsBase, bitsOffset) -> {
+            selectionMask.mapClient(this.capacity, (bitsBase, bitsOffset) -> {
                 long srcCommandAddr = this.commandsAddr;
                 long dstCommandAddr = dstCommands;
                 for (int bitIndex = 0; bitIndex < this.capacity; bitsOffset += INT_SIZE) {
@@ -174,21 +162,10 @@ public class DrawListMultiDrawArraysIndirect extends DrawListImpl<DrawCommandArr
                 }
             });
 
-            this.buffer.bind(BufferTarget.DRAW_INDIRECT_BUFFER, target -> ((DrawShaderProgramImpl) shader).bind(() -> this.binding.bind(() -> {
-                this.api.glMultiDrawArraysIndirect(GLEnumUtil.from(mode), 0L, this.capacity, 0);
-            })));
+            api.glBufferData(GL_DRAW_INDIRECT_BUFFER, this.capacity * _SIZE, dstCommands, GL_STREAM_DRAW);
+            api.glMultiDrawArraysIndirect(mode, 0L, this.capacity, 0);
         } finally {
             PUnsafe.freeMemory(dstCommands);
         }
-    }
-
-    @Override
-    public Map<StateValueProperty<?>, Object> stateProperties0() {
-        return ImmutableMap.of(StateProperties.BOUND_BUFFER.get(BufferTarget.DRAW_INDIRECT_BUFFER), this.buffer.id());
-    }
-
-    @Override
-    public void draw0(GLAPI api, int mode) {
-        api.glMultiDrawArraysIndirect(mode, 0L, this.capacity, 0);
     }
 }

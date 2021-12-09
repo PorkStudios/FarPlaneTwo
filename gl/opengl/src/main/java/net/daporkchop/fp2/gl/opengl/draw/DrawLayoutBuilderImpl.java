@@ -50,6 +50,8 @@ public class DrawLayoutBuilderImpl implements DrawLayoutBuilder {
     protected final List<BaseAttributeFormatImpl<?, ?>> locals = new ArrayList<>();
     protected final List<BaseAttributeFormatImpl<?, ?>> textures = new ArrayList<>();
 
+    protected boolean selectionEnabled = false;
+
     @Override
     public DrawLayoutBuilder withUniforms(@NonNull UniformFormat<?> format) {
         this.uniforms.add((BaseAttributeFormatImpl<?, ?>) format);
@@ -77,6 +79,12 @@ public class DrawLayoutBuilderImpl implements DrawLayoutBuilder {
     @Override
     public DrawLayoutBuilder withTexture(@NonNull TextureFormat2D<?> format) {
         this.textures.add((BaseAttributeFormatImpl<?, ?>) format);
+        return this;
+    }
+
+    @Override
+    public DrawLayoutBuilder enableSelection() {
+        this.selectionEnabled = true;
         return this;
     }
 

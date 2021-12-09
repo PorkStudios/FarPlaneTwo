@@ -24,11 +24,13 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
+import net.daporkchop.fp2.gl.bitset.GLBitSet;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.fp2.gl.draw.list.DrawCommand;
 import net.daporkchop.fp2.gl.draw.list.DrawList;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.bitset.AbstractGLBitSet;
 import net.daporkchop.fp2.gl.opengl.command.state.StateValueProperty;
 
 import java.util.Map;
@@ -70,4 +72,6 @@ public abstract class DrawListImpl<C extends DrawCommand, B extends DrawBinding>
     public abstract Map<StateValueProperty<?>, Object> stateProperties0();
 
     public abstract void draw0(GLAPI api, int mode);
+
+    public abstract void draw0(GLAPI api, int mode, AbstractGLBitSet selectionMask);
 }

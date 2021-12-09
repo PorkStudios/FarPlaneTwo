@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableMap;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.gl.command.BlendFactor;
 import net.daporkchop.fp2.gl.command.BlendOp;
@@ -31,6 +32,8 @@ import net.daporkchop.fp2.gl.command.Compare;
 import net.daporkchop.fp2.gl.command.StencilOperation;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
+import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.OpenGLConstants;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureTarget;
 import net.daporkchop.fp2.gl.opengl.buffer.BufferTarget;
 import net.daporkchop.fp2.gl.opengl.buffer.IndexedBufferTarget;
@@ -46,6 +49,8 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -66,7 +71,7 @@ public class StateProperties {
     public final StateProperty FIXED_FUNCTION_DRAW_PROPERTIES = new StateProperty() {
         @Override
         public Stream<StateProperty> depends(@NonNull State state) {
-            return Stream.of(BLEND, COLOR_MASK, STENCIL).flatMap(property -> Stream.concat(Stream.of(property), property.depends(state)));
+            return Stream.of(BLEND, COLOR_MASK, CULL, STENCIL).flatMap(property -> Stream.concat(Stream.of(property), property.depends(state)));
         }
     };
 
@@ -86,10 +91,10 @@ public class StateProperties {
             GL_BLEND_SRC_RGB, GL_BLEND_SRC_ALPHA, GL_BLEND_DST_RGB, GL_BLEND_DST_ALPHA) {
         @Override
         protected void loadFromValue(@NonNull MethodVisitor mv, @NonNull BlendFactors value) {
-            mv.visitLdcInsn(GLEnumUtil.from(value.srcRGB()));
-            mv.visitLdcInsn(GLEnumUtil.from(value.dstRGB()));
-            mv.visitLdcInsn(GLEnumUtil.from(value.srcA()));
-            mv.visitLdcInsn(GLEnumUtil.from(value.dstA()));
+            visitGLConstant(mv, GLEnumUtil.from(value.srcRGB()));
+            visitGLConstant(mv, GLEnumUtil.from(value.dstRGB()));
+            visitGLConstant(mv, GLEnumUtil.from(value.srcA()));
+            visitGLConstant(mv, GLEnumUtil.from(value.dstA()));
         }
 
         @Override
@@ -103,8 +108,8 @@ public class StateProperties {
             GL_BLEND_EQUATION_RGB, GL_BLEND_EQUATION_ALPHA) {
         @Override
         protected void loadFromValue(@NonNull MethodVisitor mv, @NonNull BlendOps value) {
-            mv.visitLdcInsn(GLEnumUtil.from(value.rgb()));
-            mv.visitLdcInsn(GLEnumUtil.from(value.a()));
+            visitGLConstant(mv, GLEnumUtil.from(value.rgb()));
+            visitGLConstant(mv, GLEnumUtil.from(value.a()));
         }
     };
 
@@ -133,7 +138,7 @@ public class StateProperties {
         @Override
         public void backup(@NonNull MethodVisitor mv, int apiLvtIndex, int bufferLvtIndex, @NonNull AtomicInteger lvtIndexAllocator) {
             mv.visitVarInsn(ALOAD, apiLvtIndex);
-            mv.visitLdcInsn(GL_COLOR_WRITEMASK);
+            visitGLConstant(mv, GL_COLOR_WRITEMASK);
             mv.visitVarInsn(LLOAD, bufferLvtIndex);
             mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glGetBoolean", getMethodDescriptor(VOID_TYPE, INT_TYPE, LONG_TYPE), true);
 
@@ -153,6 +158,12 @@ public class StateProperties {
             }
         }
     };
+
+    //
+    // BACKFACE CULLING
+    //
+
+    public final StateValueProperty<Boolean> CULL = new FixedFunctionStateEnableProperty(GL_CULL_FACE);
 
     //
     // DEPTH
@@ -191,7 +202,7 @@ public class StateProperties {
             GL_STENCIL_FUNC, GL_STENCIL_REF, GL_STENCIL_VALUE_MASK) {
         @Override
         protected void loadFromValue(@NonNull MethodVisitor mv, @NonNull StencilFunc value) {
-            mv.visitLdcInsn(GLEnumUtil.from(value.compare()));
+            visitGLConstant(mv, GLEnumUtil.from(value.compare()));
             mv.visitLdcInsn(value.reference());
             mv.visitLdcInsn(value.mask());
         }
@@ -202,9 +213,9 @@ public class StateProperties {
             GL_STENCIL_FAIL, GL_STENCIL_PASS_DEPTH_PASS,  GL_STENCIL_PASS_DEPTH_FAIL) {
         @Override
         protected void loadFromValue(@NonNull MethodVisitor mv, @NonNull StencilOp value) {
-            mv.visitLdcInsn(GLEnumUtil.from(value.fail()));
-            mv.visitLdcInsn(GLEnumUtil.from(value.pass()));
-            mv.visitLdcInsn(GLEnumUtil.from(value.depthFail()));
+            visitGLConstant(mv, GLEnumUtil.from(value.fail()));
+            visitGLConstant(mv, GLEnumUtil.from(value.pass()));
+            visitGLConstant(mv, GLEnumUtil.from(value.depthFail()));
         }
     };
 
@@ -239,6 +250,36 @@ public class StateProperties {
 
     //
     //
+    // METHODS
+    //
+    //
+
+    @SneakyThrows(IllegalAccessException.class)
+    private static void visitGLConstant(@NonNull MethodVisitor mv, int constant) {
+        DEBUG:
+        if (OpenGL.DEBUG) { //debug mode - try to load constant by doing a GETSTATIC on the field in OpenGLConstants with a matching value (assuming there's exactly one)
+            Field matchingField = null;
+            for (Field field : OpenGLConstants.class.getFields()) {
+                if ((field.getModifiers() & Modifier.STATIC) != 0 && field.getType() == int.class && !field.getName().endsWith("_EXT") && ((Integer) field.get(null)) == constant) {
+                    if (matchingField != null) { //there are multiple matching fields!
+                        break DEBUG;
+                    }
+                    matchingField = field;
+                }
+            }
+
+            if (matchingField != null) { //exactly one matching field was found
+                mv.visitFieldInsn(GETSTATIC, getInternalName(OpenGLConstants.class), matchingField.getName(), INT_TYPE.getDescriptor());
+                return;
+            }
+        }
+
+        //load the constant value using a standard LDC instruction
+        mv.visitLdcInsn(constant);
+    }
+
+    //
+    //
     // CLASSES
     //
     //
@@ -247,7 +288,7 @@ public class StateProperties {
      * @author DaPorkchop_
      */
     @RequiredArgsConstructor
-    private static abstract class FixedFunctionStateEnableProperty implements StateValueProperty<Boolean> {
+    private static class FixedFunctionStateEnableProperty implements StateValueProperty<Boolean> {
         private final int cap;
 
         @Override
@@ -258,14 +299,14 @@ public class StateProperties {
         @Override
         public void set(@NonNull Boolean value, @NonNull MethodVisitor mv, int apiLvtIndex) {
             mv.visitVarInsn(ALOAD, apiLvtIndex);
-            mv.visitLdcInsn(this.cap);
+            visitGLConstant(mv, this.cap);
             mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), value ? "glEnable" : "glDisable", getMethodDescriptor(VOID_TYPE, INT_TYPE), true);
         }
 
         @Override
         public void backup(@NonNull MethodVisitor mv, int apiLvtIndex, int bufferLvtIndex, @NonNull AtomicInteger lvtIndexAllocator) {
             mv.visitVarInsn(ALOAD, apiLvtIndex);
-            mv.visitLdcInsn(this.cap);
+            visitGLConstant(mv, this.cap);
             mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glGetInteger", getMethodDescriptor(INT_TYPE, INT_TYPE), true);
             mv.visitVarInsn(ISTORE, lvtIndexAllocator.getAndIncrement());
         }
@@ -280,14 +321,14 @@ public class StateProperties {
 
             //disabled
             mv.visitVarInsn(ALOAD, apiLvtIndex);
-            mv.visitLdcInsn(this.cap);
+            visitGLConstant(mv, this.cap);
             mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glDisable", getMethodDescriptor(VOID_TYPE, INT_TYPE), true);
             mv.visitJumpInsn(GOTO, lEnd);
 
             //enabled
             mv.visitLabel(l0);
             mv.visitVarInsn(ALOAD, apiLvtIndex);
-            mv.visitLdcInsn(this.cap);
+            visitGLConstant(mv, this.cap);
             mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glEnable", getMethodDescriptor(VOID_TYPE, INT_TYPE), true);
 
             mv.visitLabel(lEnd);
@@ -300,7 +341,9 @@ public class StateProperties {
                     : Stream.empty();
         }
 
-        protected abstract Stream<StateProperty> dependenciesWhenEnabled();
+        protected Stream<StateProperty> dependenciesWhenEnabled() {
+            return Stream.empty();
+        }
     }
 
     /**
@@ -367,7 +410,7 @@ public class StateProperties {
         @Override
         public void backup(@NonNull MethodVisitor mv, int apiLvtIndex, int bufferLvtIndex, @NonNull AtomicInteger lvtIndexAllocator) {
             mv.visitVarInsn(ALOAD, apiLvtIndex);
-            mv.visitLdcInsn(this.binding);
+            visitGLConstant(mv, this.binding);
             mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glGetBoolean", getMethodDescriptor(BOOLEAN_TYPE, INT_TYPE), true);
             mv.visitVarInsn(ISTORE, lvtIndexAllocator.getAndIncrement());
         }
@@ -407,7 +450,7 @@ public class StateProperties {
         @Override
         public void backup(@NonNull MethodVisitor mv, int apiLvtIndex, int bufferLvtIndex, @NonNull AtomicInteger lvtIndexAllocator) {
             mv.visitVarInsn(ALOAD, apiLvtIndex);
-            mv.visitLdcInsn(this.binding);
+            visitGLConstant(mv, this.binding);
             mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glGetInteger", getMethodDescriptor(INT_TYPE, INT_TYPE), true);
             mv.visitVarInsn(ISTORE, lvtIndexAllocator.getAndIncrement());
         }
@@ -445,7 +488,7 @@ public class StateProperties {
         @Override
         public void backup(@NonNull MethodVisitor mv, int apiLvtIndex, int bufferLvtIndex, @NonNull AtomicInteger lvtIndexAllocator) {
             mv.visitVarInsn(ALOAD, apiLvtIndex);
-            mv.visitLdcInsn(this.binding);
+            visitGLConstant(mv, this.binding);
             mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glGetDouble", getMethodDescriptor(DOUBLE_TYPE, INT_TYPE), true);
             mv.visitVarInsn(DSTORE, lvtIndexAllocator.getAndAdd(2));
         }
@@ -490,7 +533,7 @@ public class StateProperties {
         @Override
         public void backup(@NonNull MethodVisitor mv, int apiLvtIndex, int bufferLvtIndex, @NonNull AtomicInteger lvtIndexAllocator) {
             mv.visitVarInsn(ALOAD, apiLvtIndex);
-            mv.visitLdcInsn(this.pname);
+            visitGLConstant(mv, this.pname);
             mv.visitVarInsn(LLOAD, bufferLvtIndex);
             mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glGetFloat", getMethodDescriptor(VOID_TYPE, INT_TYPE, LONG_TYPE), true);
 
@@ -530,21 +573,21 @@ public class StateProperties {
 
         @Override
         protected void loadFromValue(@NonNull MethodVisitor mv, @NonNull Integer value) {
-            mv.visitLdcInsn(this.target.id());
+            visitGLConstant(mv, this.target.id());
             mv.visitLdcInsn(value);
         }
 
         @Override
         public void backup(@NonNull MethodVisitor mv, int apiLvtIndex, int bufferLvtIndex, @NonNull AtomicInteger lvtIndexAllocator) {
             mv.visitVarInsn(ALOAD, apiLvtIndex);
-            mv.visitLdcInsn(this.target.binding());
+            visitGLConstant(mv, this.target.binding());
             mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glGetInteger", getMethodDescriptor(INT_TYPE, INT_TYPE), true);
             mv.visitVarInsn(ISTORE, lvtIndexAllocator.getAndIncrement());
         }
 
         @Override
         protected void loadFromBackup(@NonNull MethodVisitor mv, int bufferLvtIndex, int lvtIndexBase) {
-            mv.visitLdcInsn(this.target.id());
+            visitGLConstant(mv, this.target.id());
             mv.visitVarInsn(ILOAD, lvtIndexBase);
         }
     }
@@ -570,7 +613,7 @@ public class StateProperties {
 
         @Override
         protected void loadFromValue(@NonNull MethodVisitor mv, @NonNull Integer value) {
-            mv.visitLdcInsn(this.target.id());
+            visitGLConstant(mv, this.target.id());
             mv.visitLdcInsn(this.index);
             mv.visitLdcInsn(value);
         }
@@ -578,7 +621,7 @@ public class StateProperties {
         @Override
         public void backup(@NonNull MethodVisitor mv, int apiLvtIndex, int bufferLvtIndex, @NonNull AtomicInteger lvtIndexAllocator) {
             mv.visitVarInsn(ALOAD, apiLvtIndex);
-            mv.visitLdcInsn(this.target.binding());
+            visitGLConstant(mv, this.target.binding());
             mv.visitLdcInsn(this.index);
             mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glGetInteger", getMethodDescriptor(INT_TYPE, INT_TYPE, INT_TYPE), true);
             mv.visitVarInsn(ISTORE, lvtIndexAllocator.getAndIncrement());
@@ -586,7 +629,7 @@ public class StateProperties {
 
         @Override
         protected void loadFromBackup(@NonNull MethodVisitor mv, int bufferLvtIndex, int lvtIndexBase) {
-            mv.visitLdcInsn(this.target.id());
+            visitGLConstant(mv, this.target.id());
             mv.visitLdcInsn(this.index);
             mv.visitVarInsn(ILOAD, lvtIndexBase);
         }
@@ -609,7 +652,7 @@ public class StateProperties {
         @Override
         public void set(@NonNull Integer value, @NonNull MethodVisitor mv, int apiLvtIndex) {
             mv.visitVarInsn(ALOAD, apiLvtIndex);
-            mv.visitLdcInsn(GL_TEXTURE0 + this.unit);
+            visitGLConstant(mv, GL_TEXTURE0 + this.unit);
             mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glActiveTexture", getMethodDescriptor(VOID_TYPE, INT_TYPE), true);
 
             super.set(value, mv, apiLvtIndex);
@@ -618,7 +661,7 @@ public class StateProperties {
         @Override
         public void restore(@NonNull MethodVisitor mv, int apiLvtIndex, int bufferLvtIndex, int lvtIndexBase) {
             mv.visitVarInsn(ALOAD, apiLvtIndex);
-            mv.visitLdcInsn(GL_TEXTURE0 + this.unit);
+            visitGLConstant(mv, GL_TEXTURE0 + this.unit);
             mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glActiveTexture", getMethodDescriptor(VOID_TYPE, INT_TYPE), true);
 
             super.restore(mv, apiLvtIndex, bufferLvtIndex, lvtIndexBase);
@@ -631,25 +674,25 @@ public class StateProperties {
 
         @Override
         protected void loadFromValue(@NonNull MethodVisitor mv, @NonNull Integer value) {
-            mv.visitLdcInsn(this.target.target());
+            visitGLConstant(mv, this.target.target());
             mv.visitLdcInsn(value);
         }
 
         @Override
         public void backup(@NonNull MethodVisitor mv, int apiLvtIndex, int bufferLvtIndex, @NonNull AtomicInteger lvtIndexAllocator) {
             mv.visitVarInsn(ALOAD, apiLvtIndex);
-            mv.visitLdcInsn(GL_TEXTURE0 + this.unit);
+            visitGLConstant(mv, GL_TEXTURE0 + this.unit);
             mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glActiveTexture", getMethodDescriptor(VOID_TYPE, INT_TYPE), true);
 
             mv.visitVarInsn(ALOAD, apiLvtIndex);
-            mv.visitLdcInsn(this.target.binding());
+            visitGLConstant(mv, this.target.binding());
             mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glGetInteger", getMethodDescriptor(INT_TYPE, INT_TYPE), true);
             mv.visitVarInsn(ISTORE, lvtIndexAllocator.getAndIncrement());
         }
 
         @Override
         protected void loadFromBackup(@NonNull MethodVisitor mv, int bufferLvtIndex, int lvtIndexBase) {
-            mv.visitLdcInsn(this.target.target());
+            visitGLConstant(mv, this.target.target());
             mv.visitVarInsn(ILOAD, lvtIndexBase);
         }
     }
@@ -679,7 +722,7 @@ public class StateProperties {
         public void backup(@NonNull MethodVisitor mv, int apiLvtIndex, int bufferLvtIndex, @NonNull AtomicInteger lvtIndexAllocator) {
             for (int i : this.indices) {
                 mv.visitVarInsn(ALOAD, apiLvtIndex);
-                mv.visitLdcInsn(i);
+                visitGLConstant(mv, i);
                 mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glGetInteger", getMethodDescriptor(INT_TYPE, INT_TYPE), true);
                 mv.visitVarInsn(ISTORE, lvtIndexAllocator.getAndIncrement());
             }

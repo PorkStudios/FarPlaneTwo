@@ -21,18 +21,13 @@
 package net.daporkchop.fp2.gl.opengl.draw.list.arrays;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.bitset.GLBitSet;
 import net.daporkchop.fp2.gl.draw.list.DrawCommandArrays;
-import net.daporkchop.fp2.gl.draw.binding.DrawMode;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
-import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
 import net.daporkchop.fp2.gl.opengl.bitset.AbstractGLBitSet;
 import net.daporkchop.fp2.gl.opengl.command.state.StateValueProperty;
+import net.daporkchop.fp2.gl.opengl.draw.binding.DrawBindingImpl;
 import net.daporkchop.fp2.gl.opengl.draw.list.DrawListBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.draw.list.DrawListImpl;
-import net.daporkchop.fp2.gl.opengl.draw.binding.DrawBindingImpl;
-import net.daporkchop.fp2.gl.opengl.draw.shader.DrawShaderProgramImpl;
-import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.Collections;
@@ -92,23 +87,20 @@ public class DrawListMultiDrawArrays extends DrawListImpl<DrawCommandArrays, Dra
     }
 
     @Override
-    public void execute(@NonNull DrawMode mode, @NonNull DrawShaderProgram shader) {
-        ((DrawShaderProgramImpl) shader).bind(() -> this.binding.bind(() -> {
-            this.api.glMultiDrawArrays(GLEnumUtil.from(mode), this.firstAddr, this.countAddr, this.capacity);
-        }));
+    public Map<StateValueProperty<?>, Object> stateProperties0() {
+        return Collections.emptyMap();
     }
 
     @Override
-    public void execute(@NonNull DrawMode mode, @NonNull DrawShaderProgram shader, @NonNull GLBitSet _selector) {
-        AbstractGLBitSet selector = (AbstractGLBitSet) _selector;
-
-        this.executeMappedClient(mode, shader, selector);
+    public void draw0(GLAPI api, int mode) {
+        api.glMultiDrawArrays(mode, this.firstAddr, this.countAddr, this.capacity);
     }
 
-    protected void executeMappedClient(@NonNull DrawMode mode, @NonNull DrawShaderProgram shader, @NonNull AbstractGLBitSet selector) {
+    @Override
+    public void draw0(GLAPI api, int mode, AbstractGLBitSet selectionMask) {
         long dstCounts = PUnsafe.allocateMemory(this.capacity * (long) INT_SIZE);
         try {
-            selector.mapClient(this.capacity, (bitsBase, bitsOffset) -> {
+            selectionMask.mapClient(this.capacity, (bitsBase, bitsOffset) -> {
                 long srcCountAddr = this.countAddr;
                 long dstCountAddr = dstCounts;
                 for (int bitIndex = 0; bitIndex < this.capacity; bitsOffset += INT_SIZE) {
@@ -121,21 +113,9 @@ public class DrawListMultiDrawArrays extends DrawListImpl<DrawCommandArrays, Dra
                 }
             });
 
-            ((DrawShaderProgramImpl) shader).bind(() -> this.binding.bind(() -> {
-                this.api.glMultiDrawArrays(GLEnumUtil.from(mode), this.firstAddr, this.countAddr, this.capacity);
-            }));
+            api.glMultiDrawArrays(mode, this.firstAddr, dstCounts, this.capacity);
         } finally {
             PUnsafe.freeMemory(dstCounts);
         }
-    }
-
-    @Override
-    public Map<StateValueProperty<?>, Object> stateProperties0() {
-        return Collections.emptyMap();
-    }
-
-    @Override
-    public void draw0(GLAPI api, int mode) {
-        api.glMultiDrawArrays(mode, this.firstAddr, this.countAddr, this.capacity);
     }
 }

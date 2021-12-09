@@ -99,7 +99,7 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
         this.uniformBuffer.close();
     }
 
-    protected void preRender() {
+    protected void preRender() { //TODO: this is never called
         this.macros.define("FP2_FOG_ENABLED", glGetBoolean(GL_FOG));
         this.macros.define("FP2_FOG_MODE", glGetInteger(GL_FOG_MODE));
     }

@@ -51,7 +51,7 @@ public interface ReloadableShaderProgram<P extends BaseShaderProgram> extends Su
                                 .defineAll(macrosSnapshot.macros())
                                 .include(fragmentShaderSource)
                                 .build()) {
-                    this.program = gl.linkShaderProgram(layout, vertexShader, fragmentShader);
+                    this.program = gl.linkDrawShaderProgram(layout, vertexShader, fragmentShader);
                 }
             }
         };

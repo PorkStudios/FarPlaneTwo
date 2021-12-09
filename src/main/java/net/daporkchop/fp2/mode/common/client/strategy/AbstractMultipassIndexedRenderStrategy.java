@@ -26,12 +26,14 @@ import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
+import net.daporkchop.fp2.gl.command.CommandBuffer;
+import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
 import net.daporkchop.fp2.gl.draw.binding.DrawBindingBuilder;
 import net.daporkchop.fp2.gl.draw.binding.DrawBindingIndexed;
-import net.daporkchop.fp2.gl.draw.list.DrawList;
-import net.daporkchop.fp2.gl.draw.list.DrawCommandIndexed;
 import net.daporkchop.fp2.gl.draw.index.IndexFormat;
 import net.daporkchop.fp2.gl.draw.index.IndexWriter;
+import net.daporkchop.fp2.gl.draw.list.DrawCommandIndexed;
+import net.daporkchop.fp2.gl.draw.list.DrawList;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
@@ -42,6 +44,9 @@ import net.daporkchop.fp2.mode.common.client.index.CPUCulledRenderIndex;
 import net.daporkchop.fp2.mode.common.client.index.GPUCulledRenderIndex;
 import net.daporkchop.fp2.mode.common.client.index.IRenderIndex;
 import net.daporkchop.lib.common.util.PArrays;
+import net.minecraft.client.renderer.texture.AbstractTexture;
+import net.minecraft.client.renderer.texture.TextureMap;
+import net.minecraft.util.BlockRenderLayer;
 
 import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
@@ -50,6 +55,8 @@ import static net.daporkchop.fp2.util.Constants.*;
  * @author DaPorkchop_
  */
 public abstract class AbstractMultipassIndexedRenderStrategy<POS extends IFarPos, T extends IFarTile, SG, SL> extends AbstractRenderStrategy<POS, T, IndexedBakeOutput<SG, SL>, DrawBindingIndexed, DrawCommandIndexed> implements IMultipassRenderStrategy<POS, T, IndexedBakeOutput<SG, SL>, DrawBindingIndexed, DrawCommandIndexed> {
+    protected CommandBuffer commandBuffer;
+
     public AbstractMultipassIndexedRenderStrategy(@NonNull IFarRenderMode<POS, T> mode, @NonNull GL gl) {
         super(mode, gl);
     }
@@ -92,10 +99,27 @@ public abstract class AbstractMultipassIndexedRenderStrategy<POS extends IFarPos
     }
 
     @Override
-    public void preRender() {
-        super.preRender();
-        IMultipassRenderStrategy.super.preRender();
+    public void render(@NonNull IRenderIndex<POS, IndexedBakeOutput<SG, SL>, DrawBindingIndexed, DrawCommandIndexed> index, @NonNull BlockRenderLayer layer, boolean pre) {
+        if (layer == BlockRenderLayer.CUTOUT && !pre) {
+            this.uniformBuffer.set(new GlStateUniformAttributes().initFromGlState(MC.getRenderPartialTicks(), MC));
 
-        this.uniformBuffer.set(new GlStateUniformAttributes().initFromGlState(MC.getRenderPartialTicks(), MC));
+            if (this.commandBuffer == null) {
+                this.rebuildCommandBuffer(index);
+            }
+
+            MC.textureMapBlocks.setBlurMipmapDirect(false, MC.gameSettings.mipmapLevels > 0);
+            MC.entityRenderer.enableLightmap();
+            this.commandBuffer.execute();
+            MC.entityRenderer.disableLightmap();
+            MC.textureMapBlocks.restoreLastBlurMipmap();
+        }
+    }
+
+    protected void rebuildCommandBuffer(@NonNull IRenderIndex<POS, IndexedBakeOutput<SG, SL>, DrawBindingIndexed, DrawCommandIndexed> index) {
+        this.preRender();
+
+        CommandBufferBuilder builder = this.gl.createCommandBuffer();
+        this.render(builder, index);
+        this.commandBuffer = builder.build();
     }
 }

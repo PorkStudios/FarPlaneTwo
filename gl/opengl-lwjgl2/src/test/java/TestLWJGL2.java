@@ -46,13 +46,13 @@ import net.daporkchop.fp2.gl.command.FramebufferLayer;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.draw.binding.DrawBindingIndexed;
 import net.daporkchop.fp2.gl.draw.binding.DrawMode;
-import net.daporkchop.fp2.gl.draw.list.DrawCommandArrays;
-import net.daporkchop.fp2.gl.draw.list.DrawCommandIndexed;
-import net.daporkchop.fp2.gl.draw.list.DrawList;
 import net.daporkchop.fp2.gl.draw.index.IndexBuffer;
 import net.daporkchop.fp2.gl.draw.index.IndexFormat;
 import net.daporkchop.fp2.gl.draw.index.IndexType;
 import net.daporkchop.fp2.gl.draw.index.IndexWriter;
+import net.daporkchop.fp2.gl.draw.list.DrawCommandArrays;
+import net.daporkchop.fp2.gl.draw.list.DrawCommandIndexed;
+import net.daporkchop.fp2.gl.draw.list.DrawList;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.draw.shader.FragmentShader;
 import net.daporkchop.fp2.gl.draw.shader.VertexShader;
@@ -146,7 +146,7 @@ public class TestLWJGL2 {
         FragmentShader fragmentShader = gl.createFragmentShader(layout)
                 .include(Identifier.from("test.frag"))
                 .build();
-        DrawShaderProgram drawShaderProgram = gl.linkShaderProgram(layout, vertexShader, fragmentShader);
+        DrawShaderProgram drawShaderProgram = gl.linkDrawShaderProgram(layout, vertexShader, fragmentShader);
 
         DrawLocalBuffer<LocalAttribs> localBuffer = localFormat.createBuffer(BufferUsage.STATIC_DRAW);
         localBuffer.resize(4);
@@ -188,7 +188,11 @@ public class TestLWJGL2 {
                 new UniformArrayAttribs(1.0f, 1.0f, 0.5f),
         });
 
-        UniformBuffer<UniformAttribs> uniformBuffer = uniformFormat.createBuffer(BufferUsage.STATIC_DRAW);
+        UniformBuffer<UniformAttribs> uniformBuffer0 = uniformFormat.createBuffer(BufferUsage.STATIC_DRAW);
+        uniformBuffer0.set(new UniformAttribs((byte) 32, (byte) 32));
+
+        UniformBuffer<UniformAttribs> uniformBuffer1 = uniformFormat.createBuffer(BufferUsage.STATIC_DRAW);
+        uniformBuffer1.set(new UniformAttribs((byte) -128, (byte) -128));
 
         Texture2D<TextureAttribs> texture = textureFormat.createTexture(512, 512, 1);
         try (TextureWriter2D<TextureAttribs> writer = textureFormat.createWriter(512, 512)) {
@@ -201,50 +205,54 @@ public class TestLWJGL2 {
             texture.set(0, 0, 0, writer);
         }
 
-        DrawBindingIndexed binding = layout.createBinding()
+        DrawBindingIndexed binding0 = layout.createBinding()
                 .withIndexes(indexBuffer)
-                .withUniforms(uniformBuffer)
+                .withUniforms(uniformBuffer0)
                 .withUniformArrays(uniformArrayBuffer)
                 .withGlobals(globalBuffer)
                 .withLocals(localBuffer)
                 .withTexture(texture)
                 .build();
 
-        DrawList<DrawCommandArrays> commandBufferArrays = gl.createDrawListArrays(binding).build();
-        commandBufferArrays.resize(4);
-        commandBufferArrays.set(0, new DrawCommandArrays(0, 3));
-        commandBufferArrays.set(1, new DrawCommandArrays(0, 3));
-        commandBufferArrays.set(2, new DrawCommandArrays(0, 3));
-        commandBufferArrays.set(3, new DrawCommandArrays(0, 3));
+        DrawBindingIndexed binding1 = layout.createBinding()
+                .withIndexes(indexBuffer)
+                .withUniforms(uniformBuffer1)
+                .withUniformArrays(uniformArrayBuffer)
+                .withGlobals(globalBuffer)
+                .withLocals(localBuffer)
+                .withTexture(texture)
+                .build();
 
-        DrawList<DrawCommandIndexed> commandBufferElements = gl.createDrawListIndexed(binding).build();
-        commandBufferElements.resize(4);
-        commandBufferElements.set(0, new DrawCommandIndexed(0, 6, 0));
-        commandBufferElements.set(1, new DrawCommandIndexed(0, 6, 0));
-        commandBufferElements.set(2, new DrawCommandIndexed(0, 6, 0));
-        commandBufferElements.set(3, new DrawCommandIndexed(0, 6, 0));
+        DrawList<DrawCommandArrays> listArrays = gl.createDrawListArrays(binding0).build();
+        listArrays.resize(4);
+        listArrays.set(0, new DrawCommandArrays(0, 3));
+        listArrays.set(1, new DrawCommandArrays(0, 3));
+        listArrays.set(2, new DrawCommandArrays(0, 3));
+        listArrays.set(3, new DrawCommandArrays(0, 3));
+
+        DrawList<DrawCommandIndexed> listElements = gl.createDrawListIndexed(binding1).build();
+        listElements.resize(4);
+        listElements.set(0, new DrawCommandIndexed(0, 6, 0));
+        listElements.set(1, new DrawCommandIndexed(0, 6, 0));
+        listElements.set(2, new DrawCommandIndexed(0, 6, 0));
+        listElements.set(3, new DrawCommandIndexed(0, 6, 0));
 
         GLBitSet bitSet = gl.createBitSet()
-                .optimizeFor(commandBufferElements)
+                .optimizeFor(listElements)
                 .build();
-        bitSet.resize(4);
+        bitSet.resize(listElements.capacity());
 
-        try (
-                CommandBuffer cmdBuffer1 = gl.createCommandBuffer()
-                        .drawList(drawShaderProgram, DrawMode.TRIANGLES, commandBufferElements)
-                        .build();
-                CommandBuffer cmdBuffer0 = gl.createCommandBuffer()
-                        .blendDisable()
-                        .framebufferClear(FramebufferLayer.COLOR)
-                        .drawList(drawShaderProgram, DrawMode.TRIANGLES, commandBufferArrays)
-                        .drawArrays(binding, drawShaderProgram, DrawMode.TRIANGLES, 0, 3)
-                        .build()) {
+        try (CommandBuffer cmdBuffer = gl.createCommandBuffer()
+                .blendDisable()
+                .framebufferClear(FramebufferLayer.COLOR)
+                .drawList(drawShaderProgram, DrawMode.TRIANGLES, listElements, bitSet)
+                .drawList(drawShaderProgram, DrawMode.TRIANGLES, listArrays)
+                .drawArrays(binding0, drawShaderProgram, DrawMode.TRIANGLES, 0, 3)
+                .build()) {
             while (!Display.isCloseRequested()) {
-                uniformBuffer.set(new UniformAttribs((byte) 32, (byte) 32));
-                cmdBuffer0.execute();
+                bitSet.set(i -> ThreadLocalRandom.current().nextBoolean());
 
-                uniformBuffer.set(new UniformAttribs((byte) -128, (byte) -128));
-                cmdBuffer1.execute();
+                cmdBuffer.execute();
 
                 Display.update();
                 Display.sync(60);

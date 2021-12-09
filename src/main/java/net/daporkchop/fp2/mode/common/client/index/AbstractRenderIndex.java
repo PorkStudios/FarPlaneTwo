@@ -29,6 +29,7 @@ import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.debug.util.DebugStats;
+import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.fp2.gl.draw.binding.DrawBindingBuilder;
 import net.daporkchop.fp2.gl.draw.binding.DrawMode;
@@ -123,19 +124,14 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
     }
 
     @Override
-    public boolean hasAnyTilesForLevel(int level) {
-        return !this.levels[level].positionsToHandles.isEmpty();
-    }
-
-    @Override
-    public void draw(int level, int pass, @NonNull DrawShaderProgram shader) {
+    public void draw(@NonNull CommandBufferBuilder builder, int level, int pass, @NonNull DrawShaderProgram shader) {
         checkIndex(RENDER_PASS_COUNT, pass);
 
         if (FP2_DEBUG && !FP2Config.global().debug().levelZeroRendering() && level == 0) { //debug mode: skip level-0 rendering if needed
             return;
         }
 
-        this.levels[level].draw(pass, shader);
+        this.levels[level].draw(builder, pass, shader);
     }
 
     @DebugOnly
@@ -296,12 +292,8 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
 
         protected abstract void select0(@NonNull IFrustum frustum, float partialTicks);
 
-        public void draw(int pass, @NonNull DrawShaderProgram shader) {
-            if (this.positionsToHandles.isEmpty()) { //nothing to do
-                return;
-            }
-
-            this.commandBuffers[pass].execute(DrawMode.QUADS, shader, this.bitsSelection);
+        public void draw(@NonNull CommandBufferBuilder builder, int pass, @NonNull DrawShaderProgram shader) {
+            builder.drawList(shader, DrawMode.QUADS, this.commandBuffers[pass], this.bitsSelection);
         }
 
         protected void upload() {

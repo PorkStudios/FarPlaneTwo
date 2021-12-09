@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableList;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.common.asm.ClassloadingUtils;
+import net.daporkchop.fp2.gl.bitset.GLBitSet;
 import net.daporkchop.fp2.gl.command.BlendFactor;
 import net.daporkchop.fp2.gl.command.BlendOp;
 import net.daporkchop.fp2.gl.command.CommandBuffer;
@@ -38,6 +39,7 @@ import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.bitset.AbstractGLBitSet;
 import net.daporkchop.fp2.gl.opengl.command.state.CowState;
 import net.daporkchop.fp2.gl.opengl.command.state.StateProperties;
 import net.daporkchop.fp2.gl.opengl.command.state.StateProperty;
@@ -217,8 +219,20 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
     }
 
     @Override
-    public CommandBufferBuilder colorMask(boolean r, boolean g, boolean b, boolean a) {
+    public CommandBufferBuilder colorWrite(boolean r, boolean g, boolean b, boolean a) {
         this.state = this.state.set(StateProperties.COLOR_MASK, new Color4b(r, g, b, a));
+        return this;
+    }
+
+    @Override
+    public CommandBufferBuilder cullEnable() {
+        this.state = this.state.set(StateProperties.CULL, true);
+        return this;
+    }
+
+    @Override
+    public CommandBufferBuilder cullDisable() {
+        this.state = this.state.set(StateProperties.CULL, false);
         return this;
     }
 
@@ -334,6 +348,29 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
     }
 
     @Override
+    public CommandBufferBuilder drawList(@NonNull DrawShaderProgram shader, @NonNull DrawMode mode, @NonNull DrawList<?> _list, @NonNull GLBitSet _selectionMask) {
+        DrawListImpl<?, ?> list = (DrawListImpl<?, ?>) _list;
+        AbstractGLBitSet mask = (AbstractGLBitSet) _selectionMask;
+
+        this.uops.add(new Uop.Draw(this.state, list.binding(), shader, list.stateProperties0()) {
+            @Override
+            public void emitCode(@NonNull CommandBufferBuilderImpl builder, @NonNull MethodVisitor mv, int apiLvtIndex) {
+                String listFieldName = builder.makeField(getType(list.getClass()), list);
+                String maskFieldName = builder.makeField(getType(mask.getClass()), mask);
+
+                mv.visitVarInsn(ALOAD, 0);
+                mv.visitFieldInsn(GETFIELD, CLASS_NAME, listFieldName, getDescriptor(list.getClass()));
+                mv.visitVarInsn(ALOAD, apiLvtIndex);
+                mv.visitLdcInsn(GLEnumUtil.from(mode));
+                mv.visitVarInsn(ALOAD, 0);
+                mv.visitFieldInsn(GETFIELD, CLASS_NAME, maskFieldName, getDescriptor(mask.getClass()));
+                mv.visitMethodInsn(INVOKEVIRTUAL, getInternalName(list.getClass()), "draw0", getMethodDescriptor(VOID_TYPE, getType(GLAPI.class), INT_TYPE, getType(AbstractGLBitSet.class)), false);
+            }
+        });
+        return this;
+    }
+
+    @Override
     public CommandBufferBuilder execute(@NonNull CommandBuffer buffer) {
         this.uops.addAll(((CommandBufferImpl) buffer).uops);
         return this;
@@ -431,7 +468,7 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
 
         this.writer.visitEnd();
 
-        if (true) {
+        if (OpenGL.DEBUG) {
             try {
                 Files.write(Paths.get(CLASS_NAME.substring(CLASS_NAME.lastIndexOf('/') + 1) + ".class"), this.writer.toByteArray());
             } catch (IOException e) {
