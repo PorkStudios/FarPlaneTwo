@@ -84,7 +84,7 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
         }
 
         builder.depthEnable();
-        builder.depthCompare(FP2Config.global().compatibility().reversedZ() ? Compare.GREATER : Compare.LESS);
+        builder.depthCompare(fp2().globalConfig().compatibility().reversedZ() ? Compare.GREATER : Compare.LESS);
 
         builder.stencilEnable();
         builder.stencilWriteMask(0xFF);

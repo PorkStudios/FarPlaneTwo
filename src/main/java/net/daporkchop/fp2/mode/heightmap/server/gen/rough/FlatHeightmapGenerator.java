@@ -52,7 +52,7 @@ public class FlatHeightmapGenerator extends AbstractRoughHeightmapGenerator {
     public FlatHeightmapGenerator(@NonNull IFarWorldServer world) {
         super(world);
 
-        FlatGeneratorInfo generatorInfo = this.loadGeneratorInfoFromWorld(world);
+        FlatGeneratorInfo generatorInfo = this.loadGeneratorInfoFromWorld((WorldServer) world.fp2_IFarWorld_implWorld());
 
         List<FlatLayerInfo> layers = generatorInfo.getFlatLayers();
         int topOpaqueLayerIndex = -1;
@@ -94,8 +94,8 @@ public class FlatHeightmapGenerator extends AbstractRoughHeightmapGenerator {
         HeightmapData data = new HeightmapData();
         FlatLayerInfo layer = generatorInfo.getFlatLayers().get(layerIndex);
 
-        data.state = layer.getLayerMaterial();
-        data.biome = FastRegistry.getBiome(generatorInfo.getBiome());
+        data.state = this.registry.state2id(layer.getLayerMaterial());
+        data.biome = this.registry.biome2id(FastRegistry.getBiome(generatorInfo.getBiome()));
         data.height_int = layer.getMinY() + layer.getLayerCount();
         data.light = this.getLightAtLayer(generatorInfo.getFlatLayers(), layerIndex);
         data.secondaryConnection = secondaryConnection;

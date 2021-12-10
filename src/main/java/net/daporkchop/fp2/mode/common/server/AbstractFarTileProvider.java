@@ -88,7 +88,7 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
         this.generatorExact = this.mode().exactGenerator(world);
 
         if (this.generatorRough == null) {
-            fp2().log().warn("no rough {} generator exists for world {} (generator={})! Falling back to exact generator, this will have serious performance implications.", mode.name(), world.fp2_IFarWorld_dimensionId(), world.fp2_IFarWorldServer_getVanillaGenerator());
+            fp2().log().warn("no rough {} generator exists for world {} (generator={})! Falling back to exact generator, this will have serious performance implications.", mode.name(), world.fp2_IFarWorld_dimensionId(), world.fp2_IFarWorldServer_terrainGeneratorInfo().implGenerator());
             //TODO: make the fallback generator smart! rather than simply getting the chunks from the world, do generation and population in
             // a volatile, in-memory world clone to prevent huge numbers of chunks/cubes from potentially being generated (and therefore saved)
         }

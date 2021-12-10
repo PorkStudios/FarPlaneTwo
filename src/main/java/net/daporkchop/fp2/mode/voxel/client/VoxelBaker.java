@@ -21,8 +21,10 @@
 package net.daporkchop.fp2.mode.voxel.client;
 
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.client.TextureUVs;
 import net.daporkchop.fp2.compat.vanilla.FastRegistry;
+import net.daporkchop.fp2.core.client.render.WorldRenderer;
 import net.daporkchop.fp2.core.util.GlobalAllocators;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalWriter;
 import net.daporkchop.fp2.gl.draw.index.IndexWriter;
@@ -33,26 +35,24 @@ import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.mode.voxel.client.struct.VoxelGlobalAttributes;
 import net.daporkchop.fp2.mode.voxel.client.struct.VoxelLocalAttributes;
-import net.daporkchop.fp2.util.SingleBiomeBlockAccess;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.init.Biomes;
 import net.minecraft.init.Blocks;
-import net.minecraft.util.math.BlockPos;
 
 import java.util.Arrays;
 import java.util.stream.Stream;
 
+import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
 import static net.daporkchop.fp2.util.BlockType.*;
 import static net.daporkchop.fp2.util.Constants.*;
-import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 
 /**
  * Shared code for baking voxel geometry.
  *
  * @author DaPorkchop_
  */
+@RequiredArgsConstructor
 public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBakeOutput<VoxelGlobalAttributes, VoxelLocalAttributes>> {
     protected static int vertexMapIndex(int dx, int dy, int dz, int i, int edge) {
         int j = CONNECTION_INDICES[i];
@@ -62,6 +62,9 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
 
         return ((ddx * T_VERTS + ddy) * T_VERTS + ddz) * EDGE_COUNT + edge;
     }
+
+    @NonNull
+    protected final WorldRenderer worldRenderer;
 
     @Override
     public Stream<VoxelPos> bakeOutputs(@NonNull VoxelPos srcPos) {
@@ -126,8 +129,6 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
     }
 
     protected void writeVertices(VoxelTile[] srcs, int blockX, int blockY, int blockZ, int level, int[] map, DrawLocalWriter<VoxelLocalAttributes> verts) {
-        final BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        final SingleBiomeBlockAccess biomeAccess = new SingleBiomeBlockAccess();
         final VoxelData data = new VoxelData();
         final VoxelLocalAttributes attributes = new VoxelLocalAttributes();
 
@@ -148,14 +149,14 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
                             continue;
                         }
 
-                        indexCounter = this.writeVertex(blockX, blockY, blockZ, level, dx + (((i >> 2) & 1) << T_SHIFT), dy + (((i >> 1) & 1) << T_SHIFT), dz + ((i & 1) << T_SHIFT), data, verts, pos, biomeAccess, attributes, map, indexCounter);
+                        indexCounter = this.writeVertex(blockX, blockY, blockZ, level, dx + (((i >> 2) & 1) << T_SHIFT), dy + (((i >> 1) & 1) << T_SHIFT), dz + ((i & 1) << T_SHIFT), data, verts, attributes, map, indexCounter);
                     }
                 }
             }
         }
     }
 
-    protected int writeVertex(int baseX, int baseY, int baseZ, int level, int x, int y, int z, VoxelData data, DrawLocalWriter<VoxelLocalAttributes> vertices, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess, VoxelLocalAttributes attributes, int[] map, int indexCounter) {
+    protected int writeVertex(int baseX, int baseY, int baseZ, int level, int x, int y, int z, VoxelData data, DrawLocalWriter<VoxelLocalAttributes> vertices, VoxelLocalAttributes attributes, int[] map, int indexCounter) {
         baseX += (x & T_VOXELS) << level;
         baseY += (y & T_VOXELS) << level;
         baseZ += (z & T_VOXELS) << level;
@@ -165,9 +166,6 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
         final int blockX = baseX + ((x & ~(x & T_VOXELS)) << level);
         final int blockY = baseY + ((y & ~(y & T_VOXELS)) << level);
         final int blockZ = baseZ + ((z & ~(z & T_VOXELS)) << level);
-
-        pos.setPos(blockX, blockY, blockZ);
-        biomeAccess.biome(FastRegistry.getBiome(data.biome, Biomes.PLAINS));
 
         int blockLight = data.light & 0xF;
         int skyLight = data.light >> 4;
@@ -189,7 +187,7 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
 
             IBlockState state = FastRegistry.getBlockState(data.states[edge]);
             attributes.a_state = TextureUVs.STATEID_TO_INDEXID.get(state);
-            attributes.a_color = MC.getBlockColors().colorMultiplier(state, biomeAccess, pos, 0);
+            attributes.a_color = this.worldRenderer.tintFactorForStateInBiomeAtPos(data.states[edge], data.biome, blockX, blockY, blockZ);
 
             map[baseMapIndex + edge] = vertices.put(attributes);
         }

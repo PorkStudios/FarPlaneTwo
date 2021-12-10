@@ -149,7 +149,7 @@ public final class FP2Config implements Cloneable<FP2Config> {
     }
 
     @Builder.Default
-    @Config.Range(min = @Config.Constant(1), max = @Config.Constant(field = "net.daporkchop.fp2.util.Constants#MAX_LODS"))
+    @Config.Range(min = @Config.Constant(1), max = @Config.Constant(field = "net.daporkchop.fp2.mode.voxel.VoxelConstants#V_MAX_LODS"))
     @Config.GuiCategory(CATEGORY_RENDER_DISTANCE)
     @Config.GuiShowServerValue
     private final int maxLevels = preventInline(3);

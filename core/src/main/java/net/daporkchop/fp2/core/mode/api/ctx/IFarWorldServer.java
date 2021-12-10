@@ -55,6 +55,11 @@ public interface IFarWorldServer extends IFarWorld {
     Path fp2_IFarWorldServer_worldDirectory();
 
     /**
+     * @return a {@link TerrainGeneratorInfo} for this world
+     */
+    TerrainGeneratorInfo fp2_IFarWorldServer_terrainGeneratorInfo();
+
+    /**
      * @return the vanilla terrain generator instance
      */
     Object fp2_IFarWorldServer_getVanillaGenerator();

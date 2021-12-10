@@ -21,7 +21,10 @@
 package net.daporkchop.fp2.mode.heightmap.client;
 
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.api.world.FGameRegistry;
 import net.daporkchop.fp2.client.TextureUVs;
+import net.daporkchop.fp2.core.client.render.WorldRenderer;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalWriter;
 import net.daporkchop.fp2.mode.common.client.bake.IRenderBaker;
 import net.daporkchop.fp2.mode.common.client.bake.indexed.IndexedBakeOutput;
@@ -39,7 +42,6 @@ import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.mode.heightmap.HeightmapConstants.*;
 import static net.daporkchop.fp2.mode.heightmap.HeightmapTile.*;
-import static net.daporkchop.fp2.util.BlockType.*;
 import static net.daporkchop.fp2.util.Constants.*;
 
 /**
@@ -47,10 +49,14 @@ import static net.daporkchop.fp2.util.Constants.*;
  *
  * @author DaPorkchop_
  */
+@RequiredArgsConstructor
 public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile, IndexedBakeOutput<HeightmapGlobalAttributes, HeightmapLocalAttributes>> {
     protected static int vertexMapIndex(int x, int z, int layer) {
         return (x * T_VERTS + z) * MAX_LAYERS + layer;
     }
+
+    @NonNull
+    protected final WorldRenderer worldRenderer;
 
     @Override
     public Stream<HeightmapPos> bakeOutputs(@NonNull HeightmapPos srcPos) {
@@ -97,8 +103,6 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
         final int blockX = pos.blockX();
         final int blockZ = pos.blockZ();
 
-        final BlockPos.MutableBlockPos blockPos = new BlockPos.MutableBlockPos();
-        final SingleBiomeBlockAccess biomeAccess = new SingleBiomeBlockAccess();
         final HeightmapData data = new HeightmapData();
         final HeightmapLocalAttributes attributes = new HeightmapLocalAttributes();
 
@@ -125,7 +129,7 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
                         int x = dx + (((i >> 1) & 1) << T_SHIFT);
                         int z = dz + ((i & 1) << T_SHIFT);
 
-                        map[vertexMapIndex(x, z, layer)] = this.writeVertex(blockX, blockZ, level, src, x, z, layer, output.verts(), blockPos, biomeAccess, data, attributes);
+                        map[vertexMapIndex(x, z, layer)] = this.writeVertex(blockX, blockZ, level, src, x, z, layer, output.verts(), data, attributes);
                     }
                 }
             }
@@ -150,7 +154,7 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
                         continue; //skip if any of the vertices are missing
                     }
 
-                    output.indices()[renderType(data.state)].appendQuad(oppositeCorner, c1, c0, provoking);
+                    output.indices()[this.worldRenderer.renderTypeForState(data.state)].appendQuad(oppositeCorner, c1, c0, provoking);
                     rendered.set(vertexMapIndex(x, z, layer));
                 }
             }
@@ -184,7 +188,7 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
                                 continue; //skip if any of the vertices are missing
                             }
 
-                            output.indices()[renderType(data.state)].appendQuad(oppositeCorner, c1, c0, provoking);
+                            output.indices()[this.worldRenderer.renderTypeForState(data.state)].appendQuad(oppositeCorner, c1, c0, provoking);
                         }
                     }
                 }
@@ -192,7 +196,7 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
         }
     }
 
-    private int writeVertex(int baseX, int baseZ, int level, HeightmapTile tile, int x, int z, int layer, DrawLocalWriter<HeightmapLocalAttributes> out, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess, HeightmapData data, HeightmapLocalAttributes attributes) {
+    private int writeVertex(int baseX, int baseZ, int level, HeightmapTile tile, int x, int z, int layer, DrawLocalWriter<HeightmapLocalAttributes> out, HeightmapData data, HeightmapLocalAttributes attributes) {
         baseX += (x & T_VOXELS) << level;
         baseZ += (z & T_VOXELS) << level;
 
@@ -201,16 +205,13 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
         final int blockX = baseX + ((x & T_MASK) << level);
         final int blockZ = baseZ + ((z & T_MASK) << level);
 
-        pos.setPos(blockX, data.height_int, blockZ);
-        biomeAccess.biome(data.biome);
-
         attributes.a_state = TextureUVs.STATEID_TO_INDEXID.get(data.state);
 
         int blockLight = data.light & 0xF;
         int skyLight = data.light >> 4;
         attributes.a_lightBlock = (byte) (blockLight | (blockLight << 4));
         attributes.a_lightSky = (byte) (skyLight | (skyLight << 4));
-        attributes.a_color = MC.getBlockColors().colorMultiplier(data.state, biomeAccess, pos, 0);
+        attributes.a_color = this.worldRenderer.tintFactorForStateInBiomeAtPos(data.state, data.biome, blockX, data.height_int, blockZ);
 
         attributes.a_posHorizX = (byte) x;
         attributes.a_posHorizZ = (byte) z;

@@ -47,6 +47,8 @@ import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.core.util.math.MathUtil;
 import net.daporkchop.lib.binary.stream.DataIn;
 import net.daporkchop.lib.binary.stream.DataOut;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldServer;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
@@ -69,14 +71,14 @@ public class VoxelRenderMode extends AbstractFarRenderMode<VoxelPos, VoxelTile> 
     @Override
     protected AbstractRegisterEvent<IFarGeneratorExact.Factory<VoxelPos, VoxelTile>> exactGeneratorFactoryEvent() {
         return new AbstractRegisterEvent<IFarGeneratorExact.Factory<VoxelPos, VoxelTile>>(new LinkedOrderedRegistry<IFarGeneratorExact.Factory<VoxelPos, VoxelTile>>()
-                .addLast("cubic_chunks", world -> Constants.isCubicWorld(world) ? new CCVoxelGenerator(world) : null)
+                .addLast("cubic_chunks", world -> Constants.isCubicWorld((World) world.fp2_IFarWorld_implWorld()) ? new CCVoxelGenerator(world) : null)
                 .addLast("vanilla", VanillaVoxelGenerator::new)) {};
     }
 
     @Override
     protected AbstractRegisterEvent<IFarGeneratorRough.Factory<VoxelPos, VoxelTile>> roughGeneratorFactoryEvent() {
         return new AbstractRegisterEvent<IFarGeneratorRough.Factory<VoxelPos, VoxelTile>>(new LinkedOrderedRegistry<IFarGeneratorRough.Factory<VoxelPos, VoxelTile>>()
-                .addLast("cubic_world_gen", world -> Constants.isCwgWorld(world) ? new CWGVoxelGenerator(world) : null)) {};
+                .addLast("cubic_world_gen", world -> Constants.isCwgWorld((WorldServer) world.fp2_IFarWorld_implWorld()) ? new CWGVoxelGenerator(world) : null)) {};
     }
 
     @Override
@@ -86,7 +88,7 @@ public class VoxelRenderMode extends AbstractFarRenderMode<VoxelPos, VoxelTile> 
 
     @Override
     public IFarTileProvider<VoxelPos, VoxelTile> tileProvider(@NonNull IFarWorldServer world) {
-        return isCubicWorld(world)
+        return isCubicWorld((World) world.fp2_IFarWorld_implWorld())
                 ? new VoxelTileProvider.CubicChunks(world, this)
                 : new VoxelTileProvider.Vanilla(world, this);
     }

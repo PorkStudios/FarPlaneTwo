@@ -30,6 +30,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
  * @author DaPorkchop_
  */
 @UtilityClass
+@Deprecated
 public class BlockType {
     public final int BLOCK_TYPE_AIR = 0;
     public final int BLOCK_TYPE_TRANSPARENT = 1;

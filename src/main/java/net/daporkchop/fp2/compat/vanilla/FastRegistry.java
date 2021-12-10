@@ -41,7 +41,6 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @UtilityClass
-@Deprecated
 public class FastRegistry {
     private Reference2IntMap<Biome> BIOMES_TO_IDS;
     private Biome[] IDS_TO_BIOMES;

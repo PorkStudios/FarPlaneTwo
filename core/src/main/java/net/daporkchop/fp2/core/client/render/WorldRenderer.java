@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.core.client.render;
 
+import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldClient;
 import net.daporkchop.fp2.gl.GL;
 
 /**
@@ -28,6 +29,31 @@ import net.daporkchop.fp2.gl.GL;
  * @author DaPorkchop_
  */
 public interface WorldRenderer {
+    /**
+     * @return the {@link IFarWorldClient} which is being rendered in
+     */
+    IFarWorldClient world();
+
+    /**
+     * Gets the render type which the given block state will be rendered as.
+     *
+     * @param state the block state
+     * @return the render pass
+     */
+    int renderTypeForState(int state);
+
+    /**
+     * Gets the tint factor which will affect the texture color for the block state in the given biome at the given position.
+     *
+     * @param state the block state
+     * @param biome the biome
+     * @param x     the position's X coordinate
+     * @param y     the position's Y coordinate
+     * @param z     the position's Z coordinate
+     * @return the tint factor, as an ARGB color
+     */
+    int tintFactorForStateInBiomeAtPos(int state, int biome, int x, int y, int z);
+
     /**
      * @return the {@link GL} used in this world
      */

@@ -40,9 +40,6 @@ import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.fp2.gl.draw.list.DrawCommand;
-import net.daporkchop.fp2.mode.api.IFarPos;
-import net.daporkchop.fp2.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.common.client.AbstractFarRenderer;
 import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
 import net.daporkchop.fp2.mode.common.client.strategy.texture.LightmapTextureAttribute;
@@ -50,7 +47,6 @@ import net.daporkchop.fp2.mode.common.client.strategy.texture.TerrainTextureAttr
 import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
-import static net.daporkchop.fp2.util.Constants.*;
 import static org.lwjgl.opengl.GL11.*;
 
 /**
@@ -108,7 +104,7 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
         this.uniformBuffer.close();
     }
 
-    protected void preRender() { //TODO: this is never called
+    protected void preRender() {
         this.macros.define("FP2_FOG_ENABLED", glGetBoolean(GL_FOG));
         this.macros.define("FP2_FOG_MODE", glGetInteger(GL_FOG_MODE));
     }

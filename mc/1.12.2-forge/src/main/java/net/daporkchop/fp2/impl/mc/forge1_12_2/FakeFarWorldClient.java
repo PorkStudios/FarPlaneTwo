@@ -50,7 +50,7 @@ public class FakeFarWorldClient implements IFarWorldClient {
         this.coordLimits = coordLimits;
         this.workerManager = new DefaultWorkerManager(Minecraft.getMinecraft().thread, ClientThreadMarkedFutureExecutor.getFor(Minecraft.getMinecraft()));
 
-        this.workerManager.rootExecutor().execute(() -> this.renderer = new WorldRenderer1_12_2(Minecraft.getMinecraft()));
+        this.workerManager.rootExecutor().execute(() -> this.renderer = new WorldRenderer1_12_2(Minecraft.getMinecraft(), this));
     }
 
     @Override
@@ -61,6 +61,11 @@ public class FakeFarWorldClient implements IFarWorldClient {
     @Override
     public void fp2_IFarWorld_close() {
         this.renderer.close();
+    }
+
+    @Override
+    public WorldClient fp2_IFarWorld_implWorld() {
+        return this.parent;
     }
 
     @Override
@@ -87,5 +92,10 @@ public class FakeFarWorldClient implements IFarWorldClient {
     public WorldRenderer fp2_IFarWorldClient_renderer() {
         checkState(this.renderer != null, "renderer hasn't been initialized!");
         return this.renderer;
+    }
+
+    @Override
+    public GameRegistry1_12_2 fp2_IFarWorld_registry() {
+        return GameRegistry1_12_2.get();
     }
 }

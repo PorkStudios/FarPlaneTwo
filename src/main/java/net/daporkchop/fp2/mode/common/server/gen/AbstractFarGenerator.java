@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.mode.common.server.gen;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.api.world.FGameRegistry;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGenerator;
 
@@ -28,9 +29,11 @@ import net.daporkchop.fp2.core.mode.api.server.gen.IFarGenerator;
  * @author DaPorkchop_
  */
 public abstract class AbstractFarGenerator implements IFarGenerator {
+    protected final FGameRegistry registry;
     protected final int seaLevel;
 
     public AbstractFarGenerator(@NonNull IFarWorldServer world) {
+        this.registry = world.fp2_IFarWorld_registry();
         this.seaLevel = world.fp2_IFarWorldServer_seaLevel();
     }
 }

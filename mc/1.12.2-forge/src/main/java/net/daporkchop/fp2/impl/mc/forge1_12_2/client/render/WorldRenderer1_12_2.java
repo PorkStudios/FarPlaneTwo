@@ -24,8 +24,14 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.client.render.WorldRenderer;
 import net.daporkchop.fp2.gl.GL;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.FakeFarWorldClient;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.GameRegistry1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.ResourceProvider1_12_2;
+import net.daporkchop.fp2.util.SingleBiomeBlockAccess;
 import net.minecraft.client.Minecraft;
+import net.minecraft.util.math.BlockPos;
+
+import static net.daporkchop.fp2.util.BlockType.*;
 
 /**
  * @author DaPorkchop_
@@ -35,12 +41,49 @@ public class WorldRenderer1_12_2 implements WorldRenderer, AutoCloseable {
     protected final Minecraft mc;
     protected final GL gl;
 
-    public WorldRenderer1_12_2(@NonNull Minecraft mc) {
+    protected final FakeFarWorldClient world;
+
+    protected final GameRegistry1_12_2 registry;
+    protected final byte[] renderTypeLookup;
+
+    public WorldRenderer1_12_2(@NonNull Minecraft mc, @NonNull FakeFarWorldClient world) {
         this.mc = mc;
+        this.world = world;
+
+        this.registry = world.fp2_IFarWorld_registry();
+
+        //look up and cache the render type for each block state
+        this.renderTypeLookup = new byte[this.registry.states().max().getAsInt()];
+        this.registry.states().forEach(state -> {
+            int typeIndex;
+            switch (this.registry.id2state(state).getBlock().getRenderLayer()) {
+                default:
+                    typeIndex = RENDER_TYPE_OPAQUE;
+                    break;
+                case CUTOUT:
+                case CUTOUT_MIPPED:
+                    typeIndex = RENDER_TYPE_CUTOUT;
+                    break;
+                case TRANSLUCENT:
+                    typeIndex = RENDER_TYPE_TRANSLUCENT;
+                    break;
+            }
+            this.renderTypeLookup[state] = (byte) typeIndex;
+        });
 
         this.gl = GL.builder()
                 .withResourceProvider(new ResourceProvider1_12_2(this.mc))
                 .wrapCurrent();
+    }
+
+    @Override
+    public int renderTypeForState(int state) {
+        return this.renderTypeLookup[state];
+    }
+
+    @Override
+    public int tintFactorForStateInBiomeAtPos(int state, int biome, int x, int y, int z) {
+        return this.mc.getBlockColors().colorMultiplier(this.registry.id2state(state), new SingleBiomeBlockAccess().biome(this.registry.id2biome(biome)), new BlockPos(x, y, z), 0);
     }
 
     @Override

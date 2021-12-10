@@ -18,31 +18,36 @@
  *
  */
 
-package net.daporkchop.fp2.mode.voxel.client;
-
-import lombok.NonNull;
-import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
-import net.daporkchop.fp2.mode.common.client.AbstractFarRenderer;
-import net.daporkchop.fp2.mode.common.client.strategy.IFarRenderStrategy;
-import net.daporkchop.fp2.mode.voxel.VoxelPos;
-import net.daporkchop.fp2.mode.voxel.VoxelTile;
+package net.daporkchop.fp2.core.mode.api.ctx;
 
 /**
+ * Provides information about the terrain generator used in a given {@link IFarWorldServer}.
+ *
  * @author DaPorkchop_
  */
-public abstract class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelTile> {
-    public VoxelRenderer(@NonNull IFarClientContext<VoxelPos, VoxelTile> context) {
-        super(context);
-    }
+public interface TerrainGeneratorInfo {
+    /**
+     * @return the {@link IFarWorldServer} which th
+     */
+    IFarWorldServer world();
 
-    public static class ShaderMultidraw extends VoxelRenderer {
-        public ShaderMultidraw(@NonNull IFarClientContext<VoxelPos, VoxelTile> context) {
-            super(context);
-        }
+    /**
+     * @return the implementation-specific terrain generator instance
+     */
+    Object implGenerator();
 
-        @Override
-        protected IFarRenderStrategy<VoxelPos, VoxelTile, ?, ?, ?> strategy0() {
-            return new ShaderBasedVoxelRenderStrategy(this);
-        }
-    }
+    /**
+     * @return the terrain generator name
+     */
+    String generator();
+
+    /**
+     * @return the terrain generator options
+     */
+    String options();
+
+    /**
+     * @return the terrain generator seed
+     */
+    long seed();
 }

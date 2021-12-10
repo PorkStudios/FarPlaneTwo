@@ -82,8 +82,26 @@ public final class GameRegistry1_12_2 implements FGameRegistry {
     }
 
     @Override
+    public IntStream biomes() {
+        return IntStream.range(0, this.idsToBiomes.length);
+    }
+
+    public Biome id2biome(int biome) {
+        return this.idsToBiomes[biome];
+    }
+
+    @Override
     public int biome2id(@NonNull Object biome) throws UnsupportedOperationException, ClassCastException {
         return this.biomesToIds.getInt(biome);
+    }
+
+    @Override
+    public IntStream states() {
+        return IntStream.range(0, this.idsToStates.length);
+    }
+
+    public IBlockState id2state(int state) {
+        return this.idsToStates[state];
     }
 
     @Override

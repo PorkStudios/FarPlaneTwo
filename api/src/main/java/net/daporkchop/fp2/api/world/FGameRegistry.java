@@ -22,12 +22,23 @@ package net.daporkchop.fp2.api.world;
 
 import lombok.NonNull;
 
+import java.util.stream.IntStream;
+
 /**
  * A registry for converting implementation-dependent game resources to their unique IDs.
  *
  * @author DaPorkchop_
  */
 public interface FGameRegistry {
+    //
+    // BIOMES
+    //
+
+    /**
+     * @return an {@link IntStream} over all the biomes in this registry
+     */
+    IntStream biomes();
+
     /**
      * Gets the unique ID corresponding to the biome described by the given {@link Object}.
      *
@@ -37,6 +48,15 @@ public interface FGameRegistry {
      * @throws ClassCastException            if {@code biome} is not of the type used by the implementation to describe a biome
      */
     int biome2id(@NonNull Object biome) throws UnsupportedOperationException, ClassCastException;
+
+    //
+    // (BLOCK) STATES
+    //
+
+    /**
+     * @return an {@link IntStream} over all the states in this registry
+     */
+    IntStream states();
 
     /**
      * Gets the unique ID corresponding to the state described by the given {@link Object}.

@@ -49,7 +49,7 @@ public class CWGVoxelGenerator extends AbstractRoughVoxelGenerator<CWGContext> i
     public CWGVoxelGenerator(@NonNull IFarWorldServer world) {
         super(world);
 
-        this.ctx = Cached.threadLocal(() -> new CWGContext(world, CACHE_SIZE, 2), ReferenceStrength.WEAK);
+        this.ctx = Cached.threadLocal(() -> new CWGContext((WorldServer) world.fp2_IFarWorld_implWorld(), CACHE_SIZE, 2), ReferenceStrength.WEAK);
     }
 
     @Override

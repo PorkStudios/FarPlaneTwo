@@ -24,7 +24,6 @@ import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.compat.vanilla.biome.layer.AbstractFastLayer;
 import net.daporkchop.lib.unsafe.PUnsafe;
-import net.minecraft.world.biome.Biome;
 import net.minecraft.world.gen.layer.GenLayerBiome;
 import net.minecraftforge.common.BiomeManager;
 

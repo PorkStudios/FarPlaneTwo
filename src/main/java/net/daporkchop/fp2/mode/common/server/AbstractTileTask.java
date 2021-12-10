@@ -24,7 +24,6 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.world.FBlockWorld;
-import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
@@ -145,12 +144,13 @@ public abstract class AbstractTileTask<POS extends IFarPos, T extends IFarTile> 
             Stream<Vec2i> columns = this.world.generatorExact().neededColumns(this.pos);
             Function<FBlockWorld, Stream<Vec3i>> cubesMappingFunction = world -> this.world.generatorExact().neededCubes(world, this.pos);
 
-            FBlockWorld access = allowGeneration
+            //TODO: prefetching?
+            /*FBlockWorld access = allowGeneration
                     ? this.world.world().fp2_IFarWorldServer_fblockWorld().prefetch(columns, cubesMappingFunction)
-                    : this.world.world().fp2_IFarWorldServer_fblockWorld().prefetchWithoutGenerating(columns, cubesMappingFunction);
+                    : this.world.world().fp2_IFarWorldServer_fblockWorld().prefetchWithoutGenerating(columns, cubesMappingFunction);*/
 
             //generate tile
-            this.world.generatorExact().generate(access, this.pos, tile);
+            this.world.generatorExact().generate(this.world.world().fp2_IFarWorldServer_fblockWorld(), this.pos, tile);
 
             this.handle.set(ITileMetadata.ofTimestamp(minimumTimestamp), tile);
         } finally {

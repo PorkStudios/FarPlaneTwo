@@ -408,6 +408,10 @@ public abstract class AbstractTrackerManager<POS extends IFarPos, T extends IFar
         }
 
         protected void checkDirty(@NonNull ITileHandle<POS, T> handle) {
+            if (true) { //TODO: re-enable updates
+                return;
+            }
+
             if (this.updateFuture != null && this.updateFuture.isDone()) { //an update was previously pending and has been completed
                 this.updateFuture = null;
             }

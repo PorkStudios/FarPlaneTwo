@@ -18,31 +18,45 @@
  *
  */
 
-package net.daporkchop.fp2.mode.voxel.client;
+package net.daporkchop.fp2.impl.mc.forge1_12_2;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
-import net.daporkchop.fp2.mode.common.client.AbstractFarRenderer;
-import net.daporkchop.fp2.mode.common.client.strategy.IFarRenderStrategy;
-import net.daporkchop.fp2.mode.voxel.VoxelPos;
-import net.daporkchop.fp2.mode.voxel.VoxelTile;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
+import net.daporkchop.fp2.core.mode.api.ctx.TerrainGeneratorInfo;
+import net.daporkchop.fp2.util.Constants;
+import net.minecraft.world.WorldServer;
 
 /**
  * @author DaPorkchop_
  */
-public abstract class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelTile> {
-    public VoxelRenderer(@NonNull IFarClientContext<VoxelPos, VoxelTile> context) {
-        super(context);
+@RequiredArgsConstructor
+public class TerrainGeneratorInfo1_12_2 implements TerrainGeneratorInfo {
+    @NonNull
+    protected final WorldServer world;
+
+    @Override
+    public IFarWorldServer world() {
+        return (IFarWorldServer) this.world;
     }
 
-    public static class ShaderMultidraw extends VoxelRenderer {
-        public ShaderMultidraw(@NonNull IFarClientContext<VoxelPos, VoxelTile> context) {
-            super(context);
-        }
+    @Override
+    public Object implGenerator() {
+        return Constants.getTerrainGenerator(this.world);
+    }
 
-        @Override
-        protected IFarRenderStrategy<VoxelPos, VoxelTile, ?, ?, ?> strategy0() {
-            return new ShaderBasedVoxelRenderStrategy(this);
-        }
+    @Override
+    public String generator() {
+        return this.world.getWorldInfo().getTerrainType().getName();
+    }
+
+    @Override
+    public String options() {
+        return this.world.getWorldInfo().getGeneratorOptions();
+    }
+
+    @Override
+    public long seed() {
+        return this.world.getSeed();
     }
 }

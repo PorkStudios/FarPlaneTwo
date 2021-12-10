@@ -88,7 +88,7 @@ public class ConfigGuiElementProperties<V> extends AbstractGuiElementProperties 
     protected void computeTooltipText0(@NonNull StringJoiner joiner) {
         super.computeTooltipText0(joiner);
 
-        { //indicator for this option's old/default values
+        if (this.access.type().isPrimitive() || this.access.type().isEnum()) { //indicator for this option's old/default values
             String text = Stream.of(
                     Optional.ofNullable(this.localizeValue(this.access.getOld())).map(val -> fp2().i18n().format(MODID + ".config.old.tooltip", val)).orElse(null),
                     Optional.ofNullable(this.localizeValue(this.access.getDefault())).map(val -> fp2().i18n().format(MODID + ".config.default.tooltip", val)).orElse(null),

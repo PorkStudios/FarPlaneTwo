@@ -50,6 +50,8 @@ import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.core.util.math.MathUtil;
 import net.daporkchop.lib.binary.stream.DataIn;
 import net.daporkchop.lib.binary.stream.DataOut;
+import net.minecraft.world.World;
+import net.minecraft.world.WorldServer;
 import net.minecraft.world.gen.ChunkGeneratorFlat;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -73,16 +75,16 @@ public class HeightmapRenderMode extends AbstractFarRenderMode<HeightmapPos, Hei
     @Override
     protected AbstractRegisterEvent<IFarGeneratorExact.Factory<HeightmapPos, HeightmapTile>> exactGeneratorFactoryEvent() {
         return new AbstractRegisterEvent<IFarGeneratorExact.Factory<HeightmapPos, HeightmapTile>>(new LinkedOrderedRegistry<IFarGeneratorExact.Factory<HeightmapPos, HeightmapTile>>()
-                .addLast("cubic_chunks", world -> Constants.isCubicWorld(world) ? new CCHeightmapGenerator(world) : null)
+                .addLast("cubic_chunks", world -> Constants.isCubicWorld((World) world.fp2_IFarWorld_implWorld()) ? new CCHeightmapGenerator(world) : null)
                 .addLast("vanilla", VanillaHeightmapGenerator::new)) {};
     }
 
     @Override
     protected AbstractRegisterEvent<IFarGeneratorRough.Factory<HeightmapPos, HeightmapTile>> roughGeneratorFactoryEvent() {
         return new AbstractRegisterEvent<IFarGeneratorRough.Factory<HeightmapPos, HeightmapTile>>(new LinkedOrderedRegistry<IFarGeneratorRough.Factory<HeightmapPos, HeightmapTile>>()
-                .addLast("superflat", world -> Constants.getTerrainGenerator(world) instanceof ChunkGeneratorFlat ? new FlatHeightmapGenerator(world) : null)
-                .addLast("flatcubic", world -> CWG && Constants.getTerrainGenerator(world) instanceof FlatTerrainProcessor ? new CWGFlatHeightmapGenerator(world) : null)
-                .addLast("cubic_world_gen", world -> Constants.isCwgWorld(world) ? new CWGHeightmapGenerator(world) : null)) {};
+                .addLast("superflat", world -> Constants.getTerrainGenerator((WorldServer) world.fp2_IFarWorld_implWorld()) instanceof ChunkGeneratorFlat ? new FlatHeightmapGenerator(world) : null)
+                .addLast("flatcubic", world -> CWG && Constants.getTerrainGenerator((WorldServer) world.fp2_IFarWorld_implWorld()) instanceof FlatTerrainProcessor ? new CWGFlatHeightmapGenerator(world) : null)
+                .addLast("cubic_world_gen", world -> Constants.isCwgWorld((WorldServer) world.fp2_IFarWorld_implWorld()) ? new CWGHeightmapGenerator(world) : null)) {};
     }
 
     @Override
@@ -92,7 +94,7 @@ public class HeightmapRenderMode extends AbstractFarRenderMode<HeightmapPos, Hei
 
     @Override
     public IFarTileProvider<HeightmapPos, HeightmapTile> tileProvider(@NonNull IFarWorldServer world) {
-        return isCubicWorld(world)
+        return isCubicWorld((World) world.fp2_IFarWorld_implWorld())
                 ? new HeightmapTileProvider.CubicChunks(world, this)
                 : new HeightmapTileProvider.Vanilla(world, this);
     }

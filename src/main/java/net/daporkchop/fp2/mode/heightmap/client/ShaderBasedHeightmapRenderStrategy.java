@@ -22,16 +22,15 @@ package net.daporkchop.fp2.mode.heightmap.client;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;
 import net.daporkchop.fp2.common.util.Identifier;
-import net.daporkchop.fp2.gl.GL;
+import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;
 import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
+import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.draw.index.IndexFormat;
 import net.daporkchop.fp2.gl.draw.index.IndexType;
-import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
-import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.mode.common.client.AbstractFarRenderer;
 import net.daporkchop.fp2.mode.common.client.ICullingStrategy;
 import net.daporkchop.fp2.mode.common.client.bake.IRenderBaker;
 import net.daporkchop.fp2.mode.common.client.bake.indexed.IndexedBakeOutput;
@@ -58,14 +57,14 @@ public class ShaderBasedHeightmapRenderStrategy extends AbstractMultipassIndexed
     protected final ReloadableShaderProgram<DrawShaderProgram> blockShader;
     protected final ReloadableShaderProgram<DrawShaderProgram> stencilShader;
 
-    public ShaderBasedHeightmapRenderStrategy(@NonNull IFarRenderMode<HeightmapPos, HeightmapTile> mode, @NonNull GL gl) {
-        super(mode, gl);
+    public ShaderBasedHeightmapRenderStrategy(@NonNull AbstractFarRenderer<HeightmapPos, HeightmapTile> farRenderer) {
+        super(farRenderer);
 
-        this.globalFormat = gl.createDrawGlobalFormat(HeightmapGlobalAttributes.class).build();
-        this.vertexFormat = gl.createDrawLocalFormat(HeightmapLocalAttributes.class).build();
-        this.indexFormat = gl.createIndexFormat().type(IndexType.UNSIGNED_SHORT).build();
+        this.globalFormat = this.gl.createDrawGlobalFormat(HeightmapGlobalAttributes.class).build();
+        this.vertexFormat = this.gl.createDrawLocalFormat(HeightmapLocalAttributes.class).build();
+        this.indexFormat = this.gl.createIndexFormat().type(IndexType.UNSIGNED_SHORT).build();
 
-        this.drawLayout = gl.createDrawLayout()
+        this.drawLayout = this.gl.createDrawLayout()
                 .withUniforms(this.uniformFormat)
                 .withUniformArrays(this.textureUVs.listsFormat())
                 .withUniformArrays(this.textureUVs.quadsFormat())
@@ -75,10 +74,10 @@ public class ShaderBasedHeightmapRenderStrategy extends AbstractMultipassIndexed
                 .withTexture(this.textureFormatLightmap)
                 .build();
 
-        this.blockShader = ReloadableShaderProgram.draw(gl, this.drawLayout, this.macros,
+        this.blockShader = ReloadableShaderProgram.draw(this.gl, this.drawLayout, this.macros,
                 Identifier.from(MODID, "shaders/vert/heightmap/heightmap.vert"),
                 Identifier.from(MODID, "shaders/frag/block.frag"));
-        this.stencilShader = ReloadableShaderProgram.draw(gl, this.drawLayout, this.macros,
+        this.stencilShader = ReloadableShaderProgram.draw(this.gl, this.drawLayout, this.macros,
                 Identifier.from(MODID, "shaders/vert/heightmap/heightmap.vert"),
                 Identifier.from(MODID, "shaders/frag/stencil.frag"));
     }
@@ -100,7 +99,7 @@ public class ShaderBasedHeightmapRenderStrategy extends AbstractMultipassIndexed
 
     @Override
     public IRenderBaker<HeightmapPos, HeightmapTile, IndexedBakeOutput<HeightmapGlobalAttributes, HeightmapLocalAttributes>> createBaker() {
-        return new HeightmapBaker();
+        return new HeightmapBaker(this.worldRenderer);
     }
 
     @Override

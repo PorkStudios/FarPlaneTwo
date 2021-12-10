@@ -55,7 +55,8 @@ public class CCHeightmapGenerator extends AbstractExactHeightmapGenerator {
 
     @Override
     public Stream<Vec3i> neededCubes(@NonNull FBlockWorld world, @NonNull HeightmapPos pos) {
-        return IntStream.range(0, T_VOXELS * T_VOXELS)
+        throw new UnsupportedOperationException(); //TODO
+        /*return IntStream.range(0, T_VOXELS * T_VOXELS)
                 .map(packed -> {
                     int blockX = pos.blockX() + (packed & T_MASK);
                     int blockZ = pos.blockZ() + ((packed >> T_SHIFT) & T_MASK);
@@ -63,12 +64,13 @@ public class CCHeightmapGenerator extends AbstractExactHeightmapGenerator {
                 })
                 .distinct() //we don't want a bunch of identical cube Y coordinates
                 .filter(cubeY -> cubeY > Coords.blockToCube(Y_LIMIT))
-                .mapToObj(cubeY -> Vec3i.of(pos.flooredChunkX(), cubeY, pos.flooredChunkZ()));
+                .mapToObj(cubeY -> Vec3i.of(pos.flooredChunkX(), cubeY, pos.flooredChunkZ()));*/
     }
 
     @Override
     protected void computeElevations(@NonNull FBlockWorld world, @NonNull int[] elevations, int blockX, int blockZ) {
-        int y = world.getTopBlockY(blockX, blockZ);
+        throw new UnsupportedOperationException(); //TODO
+        /*int y = world.getTopBlockY(blockX, blockZ);
         if (y < Y_LIMIT) { //there are no blocks in this column, therefore nothing to do
             return;
         }
@@ -125,6 +127,6 @@ public class CCHeightmapGenerator extends AbstractExactHeightmapGenerator {
             } else if (usedExtraLayers < EXTRA_LAYERS.length && (state.getMaterial().isSolid() || state.getMaterial().isLiquid())) { //all other blocks: put the first few on extra layers, discard everything else
                 elevations[EXTRA_LAYERS[usedExtraLayers++]] = y;
             }
-        }
+        }*/
     }
 }

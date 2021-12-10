@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.core.mode.api.ctx;
 
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
+import net.daporkchop.fp2.api.world.FGameRegistry;
 import net.daporkchop.fp2.core.util.threading.workergroup.WorkerManager;
 
 /**
@@ -29,6 +30,11 @@ import net.daporkchop.fp2.core.util.threading.workergroup.WorkerManager;
  * @author DaPorkchop_
  */
 public interface IFarWorld {
+    /**
+     * @return the implementation-specific object corresponding to this world
+     */
+    Object fp2_IFarWorld_implWorld();
+
     /**
      * @return the tile coordinate limits in this world, indexed by detail level
      */
@@ -58,4 +64,9 @@ public interface IFarWorld {
      * @return this world's current timestamp
      */
     long fp2_IFarWorld_timestamp();
+
+    /**
+     * @return the {@link FGameRegistry} used in this world
+     */
+    FGameRegistry fp2_IFarWorld_registry();
 }

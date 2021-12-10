@@ -68,7 +68,7 @@ public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
     public CWGHeightmapGenerator(@NonNull IFarWorldServer world) {
         super(world);
 
-        this.ctx = Cached.threadLocal(() -> new CWGContext(world, HMAP_SIZE, 2), ReferenceStrength.WEAK);
+        this.ctx = Cached.threadLocal(() -> new CWGContext((WorldServer) world.fp2_IFarWorld_implWorld(), HMAP_SIZE, 2), ReferenceStrength.WEAK);
     }
 
     @Override
@@ -127,7 +127,7 @@ public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
 
         data.height_int = heightI;
         data.height_frac = heightF;
-        data.state = state;
+        data.state = this.registry.state2id(state);
         data.light = (15 - clamp(this.seaLevel - heightI, 0, 5) * 3) << 4;
         data.biome = biome;
         tile.setLayer(x, z, DEFAULT_LAYER, data);
@@ -135,7 +135,7 @@ public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
         if (addWater) { //set water
             data.height_int = this.seaLevel - 1;
             data.height_frac = HEIGHT_FRAC_LIQUID;
-            data.state = Blocks.WATER.getDefaultState();
+            data.state = this.registry.state2id(Blocks.WATER.getDefaultState());
             data.light = packCombinedLight(15 << 20);
             data.secondaryConnection = WATER_LAYER;
             tile.setLayer(x, z, WATER_LAYER, data);

@@ -55,7 +55,8 @@ public class VanillaHeightmapGenerator extends AbstractExactHeightmapGenerator {
 
     @Override
     protected void computeElevations(@NonNull FBlockWorld world, @NonNull int[] elevations, int blockX, int blockZ) {
-        int y = world.getTopBlockY(blockX, blockZ);
+        throw new UnsupportedOperationException(); //TODO
+        /*int y = world.getTopBlockY(blockX, blockZ);
         if (y < Y_LIMIT) { //there are no blocks in this column, therefore nothing to do
             return;
         }
@@ -81,6 +82,6 @@ public class VanillaHeightmapGenerator extends AbstractExactHeightmapGenerator {
             } else if (usedExtraLayers < EXTRA_LAYERS.length && (state.getMaterial().isSolid() || state.getMaterial().isLiquid())) { //all other blocks: put the first few on extra layers, discard everything else
                 elevations[EXTRA_LAYERS[usedExtraLayers++]] = y;
             }
-        }
+        }*/
     }
 }

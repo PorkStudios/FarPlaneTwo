@@ -22,16 +22,15 @@ package net.daporkchop.fp2.mode.voxel.client;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;
 import net.daporkchop.fp2.common.util.Identifier;
-import net.daporkchop.fp2.gl.GL;
+import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;
 import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
+import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.draw.index.IndexFormat;
 import net.daporkchop.fp2.gl.draw.index.IndexType;
-import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
-import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.mode.common.client.AbstractFarRenderer;
 import net.daporkchop.fp2.mode.common.client.ICullingStrategy;
 import net.daporkchop.fp2.mode.common.client.bake.IRenderBaker;
 import net.daporkchop.fp2.mode.common.client.bake.indexed.IndexedBakeOutput;
@@ -58,17 +57,17 @@ public class ShaderBasedVoxelRenderStrategy extends AbstractMultipassIndexedRend
     protected final ReloadableShaderProgram<DrawShaderProgram> blockShader;
     protected final ReloadableShaderProgram<DrawShaderProgram> stencilShader;
 
-    public ShaderBasedVoxelRenderStrategy(@NonNull IFarRenderMode<VoxelPos, VoxelTile> mode, @NonNull GL gl) {
-        super(mode, gl);
+    public ShaderBasedVoxelRenderStrategy(@NonNull AbstractFarRenderer<VoxelPos, VoxelTile> farRenderer) {
+        super(farRenderer);
 
-        this.globalFormat = gl.createDrawGlobalFormat(VoxelGlobalAttributes.class).build();
-        this.vertexFormat = gl.createDrawLocalFormat(VoxelLocalAttributes.class).build();
+        this.globalFormat = this.gl.createDrawGlobalFormat(VoxelGlobalAttributes.class).build();
+        this.vertexFormat = this.gl.createDrawLocalFormat(VoxelLocalAttributes.class).build();
 
-        this.indexFormat = gl.createIndexFormat()
+        this.indexFormat = this.gl.createIndexFormat()
                 .type(IndexType.UNSIGNED_SHORT)
                 .build();
 
-        this.drawLayout = gl.createDrawLayout()
+        this.drawLayout = this.gl.createDrawLayout()
                 .withUniforms(this.uniformFormat)
                 .withUniformArrays(this.textureUVs.listsFormat())
                 .withUniformArrays(this.textureUVs.quadsFormat())
@@ -78,10 +77,10 @@ public class ShaderBasedVoxelRenderStrategy extends AbstractMultipassIndexedRend
                 .withTexture(this.textureFormatLightmap)
                 .build();
 
-        this.blockShader = ReloadableShaderProgram.draw(gl, this.drawLayout, this.macros,
+        this.blockShader = ReloadableShaderProgram.draw(this.gl, this.drawLayout, this.macros,
                 Identifier.from(MODID, "shaders/vert/voxel/voxel.vert"),
                 Identifier.from(MODID, "shaders/frag/block.frag"));
-        this.stencilShader = ReloadableShaderProgram.draw(gl, this.drawLayout, this.macros,
+        this.stencilShader = ReloadableShaderProgram.draw(this.gl, this.drawLayout, this.macros,
                 Identifier.from(MODID, "shaders/vert/voxel/voxel.vert"),
                 Identifier.from(MODID, "shaders/frag/stencil.frag"));
     }
@@ -103,7 +102,7 @@ public class ShaderBasedVoxelRenderStrategy extends AbstractMultipassIndexedRend
 
     @Override
     public IRenderBaker<VoxelPos, VoxelTile, IndexedBakeOutput<VoxelGlobalAttributes, VoxelLocalAttributes>> createBaker() {
-        return new VoxelBaker();
+        return new VoxelBaker(this.worldRenderer);
     }
 
     @Override

@@ -25,8 +25,6 @@ import net.daporkchop.lib.logging.LogLevel;
 import net.daporkchop.lib.logging.Logger;
 import net.daporkchop.lib.logging.format.FormatParser;
 import net.daporkchop.lib.logging.format.MessageFormatter;
-import net.daporkchop.lib.logging.format.MessagePrinter;
-import net.daporkchop.lib.logging.format.component.TextComponent;
 
 import java.util.EnumSet;
 import java.util.Set;
@@ -60,46 +58,6 @@ public abstract class BaseProxyLogger implements Logger {
 
     @Override
     public Logger setMessageFormatter(@NonNull MessageFormatter formatter) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public MessagePrinter getMessagePrinter() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Logger setMessagePrinter(@NonNull MessagePrinter printer) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public TextComponent getAlertHeader() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Logger setAlertHeader(@NonNull TextComponent alertHeader) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public TextComponent getAlertPrefix() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Logger setAlertPrefix(@NonNull TextComponent alertPrefix) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public TextComponent getAlertFooter() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Logger setAlertFooter(@NonNull TextComponent alertFooter) {
         throw new UnsupportedOperationException();
     }
 

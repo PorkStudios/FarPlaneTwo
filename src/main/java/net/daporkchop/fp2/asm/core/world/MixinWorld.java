@@ -21,7 +21,9 @@
 package net.daporkchop.fp2.asm.core.world;
 
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
+import net.daporkchop.fp2.api.world.FGameRegistry;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorld;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.GameRegistry1_12_2;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.minecraft.world.World;
@@ -41,13 +43,17 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 @Mixin(World.class)
 public abstract class MixinWorld implements IFarWorld {
-
     @Unique
     protected IntAxisAlignedBB[] coordLimits;
 
     @Unique
     protected boolean isInitialized() {
         return this.coordLimits != null;
+    }
+
+    @Override
+    public Object fp2_IFarWorld_implWorld() {
+        return this;
     }
 
     @Override
@@ -84,6 +90,11 @@ public abstract class MixinWorld implements IFarWorld {
     @Override
     public long fp2_IFarWorld_timestamp() {
         return this.getTotalWorldTime();
+    }
+
+    @Override
+    public FGameRegistry fp2_IFarWorld_registry() {
+        return GameRegistry1_12_2.get();
     }
 
     @Shadow

@@ -29,9 +29,11 @@ import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
+import net.daporkchop.fp2.core.mode.api.ctx.TerrainGeneratorInfo;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.util.threading.workergroup.DefaultWorkerManager;
 import net.daporkchop.fp2.core.util.threading.workergroup.WorkerManager;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.TerrainGeneratorInfo1_12_2;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
 import net.daporkchop.fp2.util.threading.futureexecutor.ServerThreadMarkedFutureExecutor;
@@ -117,6 +119,11 @@ public abstract class MixinWorldServer extends MixinWorld implements IFarWorldSe
     @Override
     public Path fp2_IFarWorldServer_worldDirectory() {
         return this.getChunkSaveLocation().toPath();
+    }
+
+    @Override
+    public TerrainGeneratorInfo fp2_IFarWorldServer_terrainGeneratorInfo() {
+        return new TerrainGeneratorInfo1_12_2(uncheckedCast(this));
     }
 
     @Override

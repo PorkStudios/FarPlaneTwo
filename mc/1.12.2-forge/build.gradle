@@ -99,7 +99,8 @@ dependencies {
 
     implementationProvided "net.daporkchop:forgerocks:$rocksdbVersion-$minecraftVersion"
 
-    implementationProvided "io.github.opencubicchunks:cubicchunks:1.12.2-0.0-SNAPSHOT:dev"
+    //implementationProvided "io.github.opencubicchunks:cubicchunks:1.12.2-0.0-SNAPSHOT:dev"
+    implementationProvided fg.deobf("io.github.opencubicchunks:cubicchunks:1.12.2-0.0-SNAPSHOT")
     //implementation "com.github.OpenCubicChunks.CubicChunks:cubicchunks:355923c35c:dev"
     implementationProvided "io.github.opencubicchunks:cubicworldgen:1.12.2-0.0-SNAPSHOT:dev"
     //implementation fg.deobf("io.github.opencubicchunks:cubicworldgen:1.12.2-0.0-SNAPSHOT")
