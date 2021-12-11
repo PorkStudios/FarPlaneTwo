@@ -18,27 +18,41 @@
  *
  */
 
-package net.daporkchop.fp2.mode.voxel.client;
+package net.daporkchop.fp2.core.network.packet.standard.server;
 
+import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
-import net.daporkchop.fp2.mode.common.client.ICullingStrategy;
-import net.daporkchop.fp2.mode.voxel.VoxelDirectPosAccess;
-import net.daporkchop.fp2.mode.voxel.VoxelPos;
+import lombok.Setter;
+import net.daporkchop.fp2.core.mode.api.IFarPos;
+import net.daporkchop.fp2.core.network.IPacket;
+import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
+import net.daporkchop.lib.binary.stream.DataIn;
+import net.daporkchop.lib.binary.stream.DataOut;
+
+import java.io.IOException;
+
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
- * Implementation of {@link ICullingStrategy} for {@link VoxelPos}.
- *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public final class VoxelCullingStrategy implements ICullingStrategy {
+@Getter
+@Setter
+public class SPacketUnloadTile implements IPacket {
     @NonNull
-    protected final TerrainRenderingBlockedTracker renderingBlockedTracker;
+    protected IFarRenderMode<?, ?> mode;
+    @NonNull
+    protected IFarPos pos;
 
     @Override
-    public boolean blocked(long pos) {
-        return this.renderingBlockedTracker.renderingBlocked(VoxelDirectPosAccess._x(pos), VoxelDirectPosAccess._y(pos), VoxelDirectPosAccess._z(pos));
+    public void read(@NonNull DataIn in) throws IOException {
+        this.mode = IFarRenderMode.REGISTRY.get(in.readVarUTF());
+        this.pos = this.mode.readPos(in);
+    }
+
+    @Override
+    public void write(@NonNull DataOut out) throws IOException {
+        out.writeVarUTF(this.mode.name());
+        this.mode.writePos(out, uncheckedCast(this.pos));
     }
 }

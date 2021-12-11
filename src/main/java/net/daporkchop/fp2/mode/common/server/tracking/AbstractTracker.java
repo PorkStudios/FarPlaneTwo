@@ -31,8 +31,6 @@ import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTracker;
 import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
 import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
-import net.daporkchop.fp2.util.annotation.DebugOnly;
-import net.daporkchop.fp2.util.annotation.RemovalPolicy;
 import net.daporkchop.fp2.core.util.datastructure.RecyclingArrayDeque;
 import net.daporkchop.fp2.core.util.datastructure.SimpleSet;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
@@ -83,7 +81,6 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
     protected volatile boolean queuePaused = false;
     protected volatile boolean closed = false;
 
-    @DebugOnly(RemovalPolicy.DROP)
     protected long lastUpdateTime;
 
     public AbstractTracker(@NonNull AbstractTrackerManager<POS, T> manager, @NonNull IFarServerContext<POS, T> context) {
@@ -336,7 +333,6 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
         this.doneWaitingPositions.clear();
     }
 
-    @DebugOnly
     @Override
     public DebugStats.Tracking debugStats() {
         //i don't care that i'm calling #count() and #size() in a not thread-safe manner - worst-case scenario, the count is reported incorrectly for a split second

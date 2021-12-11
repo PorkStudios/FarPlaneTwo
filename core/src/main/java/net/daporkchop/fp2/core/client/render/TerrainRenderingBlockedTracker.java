@@ -18,27 +18,19 @@
  *
  */
 
-package net.daporkchop.fp2.mode.voxel.client;
-
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
-import net.daporkchop.fp2.mode.common.client.ICullingStrategy;
-import net.daporkchop.fp2.mode.voxel.VoxelDirectPosAccess;
-import net.daporkchop.fp2.mode.voxel.VoxelPos;
+package net.daporkchop.fp2.core.client.render;
 
 /**
- * Implementation of {@link ICullingStrategy} for {@link VoxelPos}.
- *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public final class VoxelCullingStrategy implements ICullingStrategy {
-    @NonNull
-    protected final TerrainRenderingBlockedTracker renderingBlockedTracker;
-
-    @Override
-    public boolean blocked(long pos) {
-        return this.renderingBlockedTracker.renderingBlocked(VoxelDirectPosAccess._x(pos), VoxelDirectPosAccess._y(pos), VoxelDirectPosAccess._z(pos));
-    }
+public interface TerrainRenderingBlockedTracker {
+    /**
+     * Checks whether or not the chunk section at the given coordinates.
+     *
+     * @param chunkX the chunk section's X coordinate
+     * @param chunkY the chunk section's Y coordinate
+     * @param chunkZ the chunk section's Z coordinate
+     * @return whether or not vanilla terrain at the given chunk section would prevent us from rendering level-0 FP2 terrain
+     */
+    boolean renderingBlocked(int chunkX, int chunkY, int chunkZ);
 }

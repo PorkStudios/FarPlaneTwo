@@ -21,25 +21,13 @@
 package net.daporkchop.fp2.mode.common.client.index;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.asm.interfaz.client.renderer.IMixinRenderGlobal;
-import net.daporkchop.fp2.client.ShaderClippingStateHelper;
 import net.daporkchop.fp2.core.client.IFrustum;
-import net.daporkchop.fp2.client.gl.shader.ComputeShaderBuilder;
-import net.daporkchop.fp2.client.gl.shader.ComputeShaderProgram;
-import net.daporkchop.fp2.common.util.alloc.Allocator;
-import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
-import net.daporkchop.fp2.gl.draw.list.DrawCommand;
-import net.daporkchop.fp2.gl.compute.ComputeLocalSize;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
+import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
+import net.daporkchop.fp2.gl.draw.list.DrawCommand;
 import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
 import net.daporkchop.fp2.mode.common.client.strategy.IFarRenderStrategy;
-
-import static java.lang.Math.*;
-import static net.daporkchop.fp2.client.gl.OpenGL.*;
-import static net.daporkchop.fp2.util.Constants.*;
-import static org.lwjgl.opengl.GL30.*;
-import static org.lwjgl.opengl.GL43.*;
 
 /**
  * Implementation of {@link AbstractRenderIndex} which does frustum culling in a compute shader on the GPU.
@@ -62,8 +50,8 @@ public class GPUCulledRenderIndex<POS extends IFarPos, BO extends IBakeOutput, D
      */
     protected static final long MIN_CAPACITY = 1024L;
 
-    protected static final ComputeLocalSize WORK_GROUP_SIZE = getOptimalComputeWorkSizePow2(null, MAX_COMPUTE_WORK_GROUP_SIZE);
-    protected static final Allocator.GrowFunction GROW_FUNCTION = Allocator.GrowFunction.pow2(max(WORK_GROUP_SIZE.count(), MIN_CAPACITY));
+    //protected static final ComputeLocalSize WORK_GROUP_SIZE = getOptimalComputeWorkSizePow2(null, MAX_COMPUTE_WORK_GROUP_SIZE);
+    //protected static final Allocator.GrowFunction GROW_FUNCTION = Allocator.GrowFunction.pow2(max(WORK_GROUP_SIZE.count(), MIN_CAPACITY));
 
     protected static final int POSITIONS_BUFFER_BINDING_INDEX = 3;
     protected static final int COMMANDS_BUFFER_BINDING_INDEX = 4;
@@ -79,31 +67,32 @@ public class GPUCulledRenderIndex<POS extends IFarPos, BO extends IBakeOutput, D
 
     @Override
     public void select(@NonNull IFrustum frustum) {
-        ShaderClippingStateHelper.update(frustum);
-        ShaderClippingStateHelper.bind();
+        /*ShaderClippingStateHelper.update(frustum);
+        ShaderClippingStateHelper.bind();*/
 
         for (AbstractRenderIndex.Level level : this.levels) {
             level.select(frustum);
         }
 
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, POSITIONS_BUFFER_BINDING_INDEX, 0);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, COMMANDS_BUFFER_BINDING_INDEX, 0);
+        /*glBindBufferBase(GL_SHADER_STORAGE_BUFFER, POSITIONS_BUFFER_BINDING_INDEX, 0);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, COMMANDS_BUFFER_BINDING_INDEX, 0);*/
     }
 
     /**
      * @author DaPorkchop_
      */
     protected class Level extends AbstractRenderIndex<POS, BO, DB, DC>.Level {
-        protected final ComputeShaderProgram cullShader;
+        //protected final ComputeShaderProgram cullShader;
 
         public Level(int level) {
-            super(level, GROW_FUNCTION);
+            super(level, /*TODO: GROW_FUNCTION*/ null);
 
-            ComputeShaderBuilder cullShaderBuilder = GPUCulledRenderIndex.this.cullingStrategy.cullShaderBuilder()
+            //TODO: AAAAA
+            /*ComputeShaderBuilder cullShaderBuilder = GPUCulledRenderIndex.this.cullingStrategy.cullShaderBuilder()
                     .withWorkGroupSize(WORK_GROUP_SIZE)
-                    .define("LEVEL_0", this.level == 0);
+                    .define("LEVEL_0", this.level == 0);*/
 
-            this.cullShader = null;//TODO: this.commandBuffer.configureShader(cullShaderBuilder).link();
+            //TODO: this.cullShader = this.commandBuffer.configureShader(cullShaderBuilder).link();
         }
 
         @Override
@@ -112,12 +101,13 @@ public class GPUCulledRenderIndex<POS extends IFarPos, BO extends IBakeOutput, D
             //TODO: this.positionsBuffer.bindBase(GL_SHADER_STORAGE_BUFFER, POSITIONS_BUFFER_BINDING_INDEX);
 
             if (this.level == 0) { //level-0: we should bind the vanilla renderability info (for use in shader) and use the level-0 shader
-                ((IMixinRenderGlobal) MC.renderGlobal).fp2_vanillaRenderabilityTracker().bindForShaderUse();
+                //((IMixinRenderGlobal) MC.renderGlobal).fp2_vanillaRenderabilityTracker().bindForShaderUse();
             }
 
-            try (ComputeShaderProgram cullShader = this.cullShader.use()) { //do frustum culling
-                //TODO: this.commandBuffer.select(cullShader);
-            }
+            //TODO: all of this
+            /*try (ComputeShaderProgram cullShader = this.cullShader.use()) { //do frustum culling
+                this.commandBuffer.select(cullShader);
+            }*/
         }
     }
 }

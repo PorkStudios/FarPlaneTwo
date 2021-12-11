@@ -18,41 +18,44 @@
  *
  */
 
-package net.daporkchop.fp2.net.packet.standard.server;
+package net.daporkchop.fp2.core.client.render;
 
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.core.network.IPacket;
-import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
-import net.daporkchop.lib.binary.stream.DataIn;
-import net.daporkchop.lib.binary.stream.DataOut;
-
-import java.io.IOException;
-
-import static net.daporkchop.lib.common.util.PorkUtil.*;
+import net.daporkchop.fp2.gl.attribute.Attribute;
 
 /**
  * @author DaPorkchop_
  */
-@Getter
-@Setter
-public class SPacketUnloadTile implements IPacket {
-    @NonNull
-    protected IFarRenderMode<?, ?> mode;
-    @NonNull
-    protected IFarPos pos;
+public class GlobalUniformAttributes {
+    @Attribute(
+            transform = Attribute.Transformation.ARRAY_TO_MATRIX,
+            matrixDimension = @Attribute.MatrixDimension(columns = 4, rows = 4))
+    public final float[] u_modelViewProjectionMatrix = new float[16];
 
-    @Override
-    public void read(@NonNull DataIn in) throws IOException {
-        this.mode = IFarRenderMode.REGISTRY.get(in.readVarUTF());
-        this.pos = this.mode.readPos(in);
-    }
+    @Attribute(vectorAxes = { "X", "Y", "Z" })
+    public int u_positionFloorX;
+    public int u_positionFloorY;
+    public int u_positionFloorZ;
 
-    @Override
-    public void write(@NonNull DataOut out) throws IOException {
-        out.writeVarUTF(this.mode.name());
-        this.mode.writePos(out, uncheckedCast(this.pos));
-    }
+    @Attribute(vectorAxes = { "X", "Y", "Z" })
+    public float u_positionFracX;
+    public float u_positionFracY;
+    public float u_positionFracZ;
+
+    @Attribute(vectorAxes = { "R", "G", "B", "A" })
+    public float u_fogColorR;
+    public float u_fogColorG;
+    public float u_fogColorB;
+    public float u_fogColorA;
+
+    @Attribute
+    public float u_fogDensity;
+
+    @Attribute
+    public float u_fogStart;
+
+    @Attribute
+    public float u_fogEnd;
+
+    @Attribute
+    public float u_fogScale;
 }

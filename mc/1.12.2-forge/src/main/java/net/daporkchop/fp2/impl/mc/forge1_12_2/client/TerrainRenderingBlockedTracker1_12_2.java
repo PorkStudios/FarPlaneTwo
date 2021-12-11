@@ -18,13 +18,15 @@
  *
  */
 
-package net.daporkchop.fp2.client;
+package net.daporkchop.fp2.impl.mc.forge1_12_2.client;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
-import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
+import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
+import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
+import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.lib.common.math.PMath;
 import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -43,12 +45,10 @@ import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL43.*;
 
 /**
- * Keeps track of which chunk sections are able to be rendered by vanilla, and therefore should not be rendered by fp2 at detail level 0.
- *
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public class VanillaRenderabilityTracker extends AbstractRefCounted {
+public class TerrainRenderingBlockedTracker1_12_2 extends AbstractRefCounted implements TerrainRenderingBlockedTracker {
     protected static final long HEADERS_OFFSET = 0L;
     protected static final long FLAGS_OFFSET = HEADERS_OFFSET + 2L * IVEC3_SIZE;
 
@@ -62,8 +62,7 @@ public class VanillaRenderabilityTracker extends AbstractRefCounted {
         return mask;
     }
 
-    @NonNull
-    protected final Allocator alloc;
+    protected final Allocator alloc = new DirectMemoryAllocator();
     protected final GLBuffer glBuffer = new GLBuffer(GL_STREAM_DRAW);
 
     protected int offsetX;
@@ -79,7 +78,7 @@ public class VanillaRenderabilityTracker extends AbstractRefCounted {
     protected boolean dirty;
 
     @Override
-    public VanillaRenderabilityTracker retain() throws AlreadyReleasedException {
+    public TerrainRenderingBlockedTracker1_12_2 retain() throws AlreadyReleasedException {
         super.retain();
         return this;
     }
@@ -240,15 +239,8 @@ public class VanillaRenderabilityTracker extends AbstractRefCounted {
         this.dirty = true;
     }
 
-    /**
-     * Checks whether or not vanilla terrain at the given chunk section would prevent us from rendering level-0 FP2 terrain.
-     *
-     * @param chunkX the chunk section's X coordinate
-     * @param chunkY the chunk section's Y coordinate
-     * @param chunkZ the chunk section's Z coordinate
-     * @return whether or not vanilla terrain at the given chunk section would prevent us from rendering level-0 FP2 terrain
-     */
-    public boolean vanillaBlocksFP2RenderingAtLevel0(int chunkX, int chunkY, int chunkZ) {
+    @Override
+    public boolean renderingBlocked(int chunkX, int chunkY, int chunkZ) {
         int x = chunkX + this.offsetX;
         int y = chunkY + this.offsetY;
         int z = chunkZ + this.offsetZ;

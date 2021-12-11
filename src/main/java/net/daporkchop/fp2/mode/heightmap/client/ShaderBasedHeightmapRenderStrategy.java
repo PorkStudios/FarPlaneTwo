@@ -93,7 +93,7 @@ public class ShaderBasedHeightmapRenderStrategy extends AbstractMultipassIndexed
     }
 
     @Override
-    public ICullingStrategy<HeightmapPos> cullingStrategy() {
+    public ICullingStrategy cullingStrategy() {
         return HeightmapCullingStrategy.INSTANCE;
     }
 

@@ -18,50 +18,42 @@
  *
  */
 
-package net.daporkchop.fp2.net.packet.standard.server;
+package net.daporkchop.fp2.core.network.packet.standard.server;
 
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.core.network.IPacket;
+import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.core.mode.api.tile.TileSnapshot;
 import net.daporkchop.lib.binary.stream.DataIn;
 import net.daporkchop.lib.binary.stream.DataOut;
 
 import java.io.IOException;
 
+import static net.daporkchop.lib.common.util.PorkUtil.*;
+
 /**
- * Sent by the server to tell the client to get ready to initiate a new session.
- *
  * @author DaPorkchop_
  */
 @Getter
 @Setter
-public class SPacketSessionBegin implements IPacket {
+public class SPacketTileData implements IPacket {
     @NonNull
-    protected IntAxisAlignedBB[] coordLimits;
+    protected IFarRenderMode<?, ?> mode;
+    @NonNull
+    protected TileSnapshot<?, ?> tile;
 
     @Override
     public void read(@NonNull DataIn in) throws IOException {
-        int len = in.readIntLE();
-
-        this.coordLimits = new IntAxisAlignedBB[len];
-        for (int i = 0; i < len; i++) {
-            this.coordLimits[i] = new IntAxisAlignedBB(in.readIntLE(), in.readIntLE(), in.readIntLE(), in.readIntLE(), in.readIntLE(), in.readIntLE());
-        }
+        this.mode = IFarRenderMode.REGISTRY.get(in.readVarUTF());
+        this.tile = new TileSnapshot<>(in, uncheckedCast(this.mode.readPos(in)));
     }
 
     @Override
     public void write(@NonNull DataOut out) throws IOException {
-        out.writeIntLE(this.coordLimits.length);
-
-        for (IntAxisAlignedBB bb : this.coordLimits) {
-            out.writeIntLE(bb.minX());
-            out.writeIntLE(bb.minY());
-            out.writeIntLE(bb.minZ());
-            out.writeIntLE(bb.maxX());
-            out.writeIntLE(bb.maxY());
-            out.writeIntLE(bb.maxZ());
-        }
+        out.writeVarUTF(this.mode.name());
+        this.mode.writePos(out, uncheckedCast(this.tile.pos()));
+        this.tile.write(out);
     }
 }

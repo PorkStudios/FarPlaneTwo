@@ -41,12 +41,11 @@ import net.daporkchop.fp2.mode.common.client.bake.IBakeOutputStorage;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.SequentialFixedSizeAllocator;
 import net.daporkchop.fp2.common.util.alloc.SequentialVariableSizedAllocator;
-import net.daporkchop.fp2.util.annotation.DebugOnly;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.stream.Stream;
 
-import static net.daporkchop.fp2.client.gl.OpenGL.*;
+import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -237,7 +236,6 @@ public class IndexedBakeOutputStorage<SU, SG, SL> extends AbstractBakeOutputStor
         return commands;
     }
 
-    @DebugOnly
     @Override
     public DebugStats.Renderer stats() {
         Allocator.Stats vertexStats = this.vertexAlloc.stats();

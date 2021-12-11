@@ -20,28 +20,17 @@
 
 package net.daporkchop.fp2.mode.common.client;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.client.VanillaRenderabilityTracker;
-import net.daporkchop.fp2.client.gl.shader.ComputeShaderBuilder;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
-
 /**
  * General-purpose functions for tile culling and selection.
  *
  * @author DaPorkchop_
  */
-public interface ICullingStrategy<POS extends IFarPos> {
-    /**
-     * @return a {@link ComputeShaderBuilder} for a compute shader which can do selection for this position type
-     */
-    ComputeShaderBuilder cullShaderBuilder();
-
+public interface ICullingStrategy {
     /**
      * Checks whether or not the tile at the given off-heap position shouldn't be rendered because it would intersect vanilla terrain.
      *
-     * @param tracker a {@link VanillaRenderabilityTracker} to use for checking vanilla renderability
-     * @param pos     the address of the off-heap tile position
+     * @param pos the address of the off-heap tile position
      * @return whether or not the tile at the given off-heap position shouldn't be rendered because it would intersect vanilla terrain
      */
-    boolean blockedByVanilla(@NonNull VanillaRenderabilityTracker tracker, long pos);
+    boolean blocked(long pos);
 }

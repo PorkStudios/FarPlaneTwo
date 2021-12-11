@@ -22,13 +22,8 @@ package net.daporkchop.fp2.mode.heightmap.client;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import lombok.NonNull;
-import net.daporkchop.fp2.client.VanillaRenderabilityTracker;
-import net.daporkchop.fp2.client.gl.shader.ComputeShaderBuilder;
 import net.daporkchop.fp2.mode.common.client.ICullingStrategy;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
-import net.daporkchop.fp2.mode.voxel.VoxelDirectPosAccess;
-import net.daporkchop.fp2.mode.voxel.client.VoxelShaders;
 
 /**
  * Implementation of {@link ICullingStrategy} for {@link HeightmapPos}.
@@ -36,16 +31,12 @@ import net.daporkchop.fp2.mode.voxel.client.VoxelShaders;
  * @author DaPorkchop_
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public final class HeightmapCullingStrategy implements ICullingStrategy<HeightmapPos> {
+public final class HeightmapCullingStrategy implements ICullingStrategy {
     public static final HeightmapCullingStrategy INSTANCE = new HeightmapCullingStrategy();
 
     @Override
-    public ComputeShaderBuilder cullShaderBuilder() {
-        return HeightmapShaders.CULL_SHADER;
-    }
-
-    @Override
-    public boolean blockedByVanilla(@NonNull VanillaRenderabilityTracker tracker, long pos) {
+    public boolean blocked(long pos) {
+        //TODO: this needs to be tested in the fragment shader
         return false; //we don't test that here
     }
 }

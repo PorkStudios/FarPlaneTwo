@@ -21,12 +21,11 @@
 package net.daporkchop.fp2.asm.core.client.renderer;
 
 import net.daporkchop.fp2.asm.interfaz.client.renderer.IMixinRenderGlobal;
-import net.daporkchop.fp2.client.VanillaRenderabilityTracker;
 import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.mode.api.player.IFarPlayerClient;
-import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.client.TerrainRenderingBlockedTracker1_12_2;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.RenderGlobal;
@@ -58,7 +57,7 @@ public abstract class MixinRenderGlobal implements IMixinRenderGlobal {
     public Minecraft mc;
 
     @Unique
-    protected VanillaRenderabilityTracker vanillaRenderabilityTracker;
+    protected TerrainRenderingBlockedTracker1_12_2 vanillaRenderabilityTracker;
 
     @Inject(method = "Lnet/minecraft/client/renderer/RenderGlobal;setWorldAndLoadRenderers(Lnet/minecraft/client/multiplayer/WorldClient;)V",
             at = @At(value = "FIELD",
@@ -81,7 +80,7 @@ public abstract class MixinRenderGlobal implements IMixinRenderGlobal {
         if (this.vanillaRenderabilityTracker != null) {
             this.vanillaRenderabilityTracker.release();
         }
-        this.vanillaRenderabilityTracker = new VanillaRenderabilityTracker(new DirectMemoryAllocator());
+        this.vanillaRenderabilityTracker = new TerrainRenderingBlockedTracker1_12_2();
     }
 
     @Inject(method = "Lnet/minecraft/client/renderer/RenderGlobal;setupTerrain(Lnet/minecraft/entity/Entity;DLnet/minecraft/client/renderer/culling/ICamera;IZ)V",
@@ -135,13 +134,20 @@ public abstract class MixinRenderGlobal implements IMixinRenderGlobal {
         IFarRenderer renderer;
         if (context != null && (renderer = context.renderer()) != null) {
             this.mc.profiler.startSection("fp2_render_post");
+
+            //TODO: reduce this down to a single call - the implementation shouldn't have to be aware of which vanilla render passes have completed
+            this.mc.textureMapBlocks.setBlurMipmapDirect(false, this.mc.gameSettings.mipmapLevels > 0);
+            this.mc.entityRenderer.enableLightmap();
             renderer.render(this.toLayerIndex(layer), false);
+            this.mc.entityRenderer.disableLightmap();
+            this.mc.textureMapBlocks.restoreLastBlurMipmap();
+
             this.mc.profiler.endSection();
         }
     }
 
     @Override
-    public VanillaRenderabilityTracker fp2_vanillaRenderabilityTracker() {
+    public TerrainRenderingBlockedTracker1_12_2 fp2_vanillaRenderabilityTracker() {
         return this.vanillaRenderabilityTracker;
     }
 }

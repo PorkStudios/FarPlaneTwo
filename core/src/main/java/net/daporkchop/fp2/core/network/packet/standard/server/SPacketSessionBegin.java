@@ -18,27 +18,50 @@
  *
  */
 
-package net.daporkchop.fp2.mode.voxel.client;
+package net.daporkchop.fp2.core.network.packet.standard.server;
 
+import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
-import net.daporkchop.fp2.mode.common.client.ICullingStrategy;
-import net.daporkchop.fp2.mode.voxel.VoxelDirectPosAccess;
-import net.daporkchop.fp2.mode.voxel.VoxelPos;
+import lombok.Setter;
+import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
+import net.daporkchop.fp2.core.network.IPacket;
+import net.daporkchop.lib.binary.stream.DataIn;
+import net.daporkchop.lib.binary.stream.DataOut;
+
+import java.io.IOException;
 
 /**
- * Implementation of {@link ICullingStrategy} for {@link VoxelPos}.
+ * Sent by the server to tell the client to get ready to initiate a new session.
  *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public final class VoxelCullingStrategy implements ICullingStrategy {
+@Getter
+@Setter
+public class SPacketSessionBegin implements IPacket {
     @NonNull
-    protected final TerrainRenderingBlockedTracker renderingBlockedTracker;
+    protected IntAxisAlignedBB[] coordLimits;
 
     @Override
-    public boolean blocked(long pos) {
-        return this.renderingBlockedTracker.renderingBlocked(VoxelDirectPosAccess._x(pos), VoxelDirectPosAccess._y(pos), VoxelDirectPosAccess._z(pos));
+    public void read(@NonNull DataIn in) throws IOException {
+        int len = in.readIntLE();
+
+        this.coordLimits = new IntAxisAlignedBB[len];
+        for (int i = 0; i < len; i++) {
+            this.coordLimits[i] = new IntAxisAlignedBB(in.readIntLE(), in.readIntLE(), in.readIntLE(), in.readIntLE(), in.readIntLE(), in.readIntLE());
+        }
+    }
+
+    @Override
+    public void write(@NonNull DataOut out) throws IOException {
+        out.writeIntLE(this.coordLimits.length);
+
+        for (IntAxisAlignedBB bb : this.coordLimits) {
+            out.writeIntLE(bb.minX());
+            out.writeIntLE(bb.minY());
+            out.writeIntLE(bb.minZ());
+            out.writeIntLE(bb.maxX());
+            out.writeIntLE(bb.maxY());
+            out.writeIntLE(bb.maxZ());
+        }
     }
 }

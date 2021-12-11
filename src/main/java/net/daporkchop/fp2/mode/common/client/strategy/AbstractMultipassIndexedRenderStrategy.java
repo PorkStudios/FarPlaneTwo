@@ -21,7 +21,6 @@
 package net.daporkchop.fp2.mode.common.client.strategy;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.GlStateUniformAttributes;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
@@ -46,7 +45,6 @@ import net.daporkchop.lib.common.util.PArrays;
 import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.fp2.core.mode.api.client.IFarRenderer.*;
 import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
-import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * @author DaPorkchop_
@@ -98,17 +96,13 @@ public abstract class AbstractMultipassIndexedRenderStrategy<POS extends IFarPos
     @Override
     public void render(@NonNull IRenderIndex<POS, IndexedBakeOutput<SG, SL>, DrawBindingIndexed, DrawCommandIndexed> index, int layer, boolean pre) {
         if (layer == LAYER_CUTOUT && !pre) {
-            this.uniformBuffer.set(new GlStateUniformAttributes().initFromGlState(MC.getRenderPartialTicks(), MC));
+            this.uniformBuffer.set(this.worldRenderer.globalUniformAttributes());
 
             if (this.commandBuffer == null) {
                 this.rebuildCommandBuffer(index);
             }
 
-            MC.textureMapBlocks.setBlurMipmapDirect(false, MC.gameSettings.mipmapLevels > 0);
-            MC.entityRenderer.enableLightmap();
             this.commandBuffer.execute();
-            MC.entityRenderer.disableLightmap();
-            MC.textureMapBlocks.restoreLastBlurMipmap();
         }
     }
 

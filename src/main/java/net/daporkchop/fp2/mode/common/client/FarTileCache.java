@@ -26,8 +26,6 @@ import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.client.IFarTileCache;
 import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
-import net.daporkchop.fp2.util.annotation.DebugOnly;
-import net.daporkchop.fp2.util.annotation.RemovalPolicy;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
 
 import java.util.Collection;
@@ -52,9 +50,7 @@ public class FarTileCache<POS extends IFarPos, T extends IFarTile> extends Abstr
     protected final Map<POS, ITileSnapshot<POS, T>> tiles = new ConcurrentHashMap<>();
     protected final Collection<Listener<POS, T>> listeners = new CopyOnWriteArraySet<>();
 
-    @DebugOnly
     protected final AtomicReference<DebugStats.TileSnapshot> debug_tileStats = new AtomicReference<>(DebugStats.TileSnapshot.ZERO);
-    @DebugOnly
     protected final LongAdder debug_nonEmptyTileCount = new LongAdder();
 
     @Override
@@ -113,7 +109,6 @@ public class FarTileCache<POS extends IFarPos, T extends IFarTile> extends Abstr
         return position.map(this);
     }
 
-    @DebugOnly(RemovalPolicy.DROP)
     protected void debug_updateStats(ITileSnapshot<POS, T> prev, ITileSnapshot<POS, T> next) {
         DebugStats.TileSnapshot prevStats = prev != null ? prev.stats() : DebugStats.TileSnapshot.ZERO;
         DebugStats.TileSnapshot nextStats = next != null ? next.stats() : DebugStats.TileSnapshot.ZERO;
@@ -124,7 +119,6 @@ public class FarTileCache<POS extends IFarPos, T extends IFarTile> extends Abstr
                 : next != null ? 1L : 0L);
     }
 
-    @DebugOnly
     @Override
     public DebugStats.TileCache stats() {
         DebugStats.TileSnapshot snapshotStats = this.debug_tileStats.get();

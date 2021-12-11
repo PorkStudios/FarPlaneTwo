@@ -18,42 +18,15 @@
  *
  */
 
-package net.daporkchop.fp2.net.packet.standard.server;
+package net.daporkchop.fp2.core.client;
 
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
-import net.daporkchop.fp2.core.network.IPacket;
-import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.core.mode.api.tile.TileSnapshot;
-import net.daporkchop.lib.binary.stream.DataIn;
-import net.daporkchop.lib.binary.stream.DataOut;
-
-import java.io.IOException;
-
-import static net.daporkchop.lib.common.util.PorkUtil.*;
+import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.core.client.shader.ShaderMacros;
 
 /**
  * @author DaPorkchop_
  */
-@Getter
-@Setter
-public class SPacketTileData implements IPacket {
-    @NonNull
-    protected IFarRenderMode<?, ?> mode;
-    @NonNull
-    protected TileSnapshot<?, ?> tile;
-
-    @Override
-    public void read(@NonNull DataIn in) throws IOException {
-        this.mode = IFarRenderMode.REGISTRY.get(in.readVarUTF());
-        this.tile = new TileSnapshot<>(in, uncheckedCast(this.mode.readPos(in)));
-    }
-
-    @Override
-    public void write(@NonNull DataOut out) throws IOException {
-        out.writeVarUTF(this.mode.name());
-        this.mode.writePos(out, uncheckedCast(this.tile.pos()));
-        this.tile.write(out);
-    }
+@UtilityClass
+public class FP2Client { //TODO: this class is useless lol
+    public static final ShaderMacros.Mutable GLOBAL_SHADER_MACROS = new ShaderMacros.Mutable();
 }

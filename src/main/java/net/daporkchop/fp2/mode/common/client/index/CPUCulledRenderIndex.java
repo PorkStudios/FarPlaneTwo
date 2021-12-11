@@ -21,8 +21,7 @@
 package net.daporkchop.fp2.mode.common.client.index;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.asm.interfaz.client.renderer.IMixinRenderGlobal;
-import net.daporkchop.fp2.client.VanillaRenderabilityTracker;
+import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
 import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
@@ -34,8 +33,6 @@ import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
 import net.daporkchop.fp2.mode.common.client.strategy.IFarRenderStrategy;
 
 import java.util.function.IntPredicate;
-
-import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * Implementation of {@link AbstractRenderIndex} which does frustum culling on the CPU.
@@ -70,11 +67,10 @@ public class CPUCulledRenderIndex<POS extends IFarPos, BO extends IBakeOutput, D
 
         protected IntPredicate cull(@NonNull IFrustum frustum) {
             if (this.level == 0) { //level-0 is tested for vanilla terrain intersection AND frustum intersection
-                ICullingStrategy<POS> cullingStrategy = CPUCulledRenderIndex.this.cullingStrategy;
-                VanillaRenderabilityTracker vanillaRenderabilityTracker = ((IMixinRenderGlobal) MC.renderGlobal).fp2_vanillaRenderabilityTracker();
+                ICullingStrategy cullingStrategy = CPUCulledRenderIndex.this.cullingStrategy;
                 return slot -> {
                     long posAddr = this.positionsAddr + slot * this.positionSize;
-                    return !cullingStrategy.blockedByVanilla(vanillaRenderabilityTracker, posAddr) && this.directPosAccess.inFrustum(posAddr, frustum);
+                    return !cullingStrategy.blocked(posAddr) && this.directPosAccess.inFrustum(posAddr, frustum);
                 };
             } else { //all other levels are only tested for frustum intersection
                 return slot -> this.directPosAccess.inFrustum(this.positionsAddr + slot * this.positionSize, frustum);

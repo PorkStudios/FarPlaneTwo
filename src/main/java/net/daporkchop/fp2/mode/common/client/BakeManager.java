@@ -22,19 +22,18 @@ package net.daporkchop.fp2.mode.common.client;
 
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.client.IFarTileCache;
-import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldClient;
 import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
+import net.daporkchop.fp2.core.util.SimpleRecycler;
+import net.daporkchop.fp2.core.util.threading.scheduler.NoFutureScheduler;
+import net.daporkchop.fp2.core.util.threading.scheduler.Scheduler;
 import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
 import net.daporkchop.fp2.mode.common.client.bake.IRenderBaker;
 import net.daporkchop.fp2.mode.common.client.index.IRenderIndex;
 import net.daporkchop.fp2.mode.common.client.strategy.IFarRenderStrategy;
-import net.daporkchop.fp2.core.util.SimpleRecycler;
-import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
-import net.daporkchop.fp2.core.util.threading.scheduler.NoFutureScheduler;
-import net.daporkchop.fp2.core.util.threading.scheduler.Scheduler;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
@@ -52,7 +51,6 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**

@@ -30,7 +30,6 @@ import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.core.util.math.MathUtil;
 import net.daporkchop.lib.math.vector.Vec2i;
-import net.minecraft.util.math.ChunkPos;
 
 import java.util.function.Function;
 import java.util.stream.IntStream;

@@ -36,7 +36,6 @@ import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.core.mode.api.tile.ITileMetadata;
 import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
-import net.daporkchop.fp2.util.annotation.DebugOnly;
 import net.daporkchop.fp2.core.util.datastructure.CompactReferenceArraySet;
 import net.daporkchop.fp2.core.util.threading.scheduler.NoFutureScheduler;
 import net.daporkchop.fp2.core.util.threading.scheduler.Scheduler;
@@ -150,7 +149,6 @@ public abstract class AbstractTrackerManager<POS extends IFarPos, T extends IFar
         }.run();
     }
 
-    @DebugOnly
     @CalledFromServerThread
     @Override
     public void dropAllTiles() {

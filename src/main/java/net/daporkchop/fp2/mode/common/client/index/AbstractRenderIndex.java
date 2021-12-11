@@ -44,7 +44,6 @@ import net.daporkchop.fp2.mode.common.client.ICullingStrategy;
 import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
 import net.daporkchop.fp2.mode.common.client.bake.IBakeOutputStorage;
 import net.daporkchop.fp2.mode.common.client.strategy.IFarRenderStrategy;
-import net.daporkchop.fp2.util.annotation.DebugOnly;
 import net.daporkchop.fp2.core.util.datastructure.SimpleSet;
 import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
@@ -68,7 +67,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeOutput, DB extends DrawBinding, DC extends DrawCommand> extends AbstractRefCounted implements IRenderIndex<POS, BO, DB, DC> {
     protected final IFarRenderStrategy<POS, ?, BO, DB, DC> strategy;
-    protected final ICullingStrategy<POS> cullingStrategy;
+    protected final ICullingStrategy cullingStrategy;
 
     protected final Allocator directMemoryAlloc = new DirectMemoryAllocator(true);
 
@@ -133,7 +132,6 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
         this.levels[level].draw(builder, pass, shader);
     }
 
-    @DebugOnly
     @Override
     public DebugStats.Renderer stats() {
         return Stream.of(this.levels)
@@ -314,7 +312,6 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
             this.storage.release();
         }
 
-        @DebugOnly
         protected DebugStats.Renderer stats() {
             return DebugStats.Renderer.builder()
                     .bakedTilesWithData(this.positionsToHandles.size())

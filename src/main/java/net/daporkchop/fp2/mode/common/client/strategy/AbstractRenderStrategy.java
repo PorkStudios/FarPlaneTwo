@@ -22,11 +22,11 @@ package net.daporkchop.fp2.mode.common.client.strategy;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.client.FP2Client;
-import net.daporkchop.fp2.client.GlStateUniformAttributes;
+import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.client.TextureUVs;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
+import net.daporkchop.fp2.core.client.render.GlobalUniformAttributes;
 import net.daporkchop.fp2.core.client.render.WorldRenderer;
 import net.daporkchop.fp2.core.client.shader.ShaderMacros;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
@@ -63,8 +63,8 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
     protected final IFarRenderMode<POS, T> mode;
     protected final GL gl;
 
-    protected final UniformFormat<GlStateUniformAttributes> uniformFormat;
-    protected final UniformBuffer<GlStateUniformAttributes> uniformBuffer;
+    protected final UniformFormat<GlobalUniformAttributes> uniformFormat;
+    protected final UniformBuffer<GlobalUniformAttributes> uniformBuffer;
 
     protected final TextureFormat2D<TerrainTextureAttribute> textureFormatTerrain;
     protected final Texture2D<TerrainTextureAttribute> textureTerrain;
@@ -81,7 +81,7 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
         this.mode = farRenderer.mode();
         this.gl = farRenderer.gl();
 
-        this.uniformFormat = this.gl.createUniformFormat(GlStateUniformAttributes.class).build();
+        this.uniformFormat = this.gl.createUniformFormat(GlobalUniformAttributes.class).build();
         this.uniformBuffer = this.uniformFormat.createBuffer(BufferUsage.STATIC_DRAW);
 
         this.textureFormatTerrain = this.gl.createTextureFormat2D(TerrainTextureAttribute.class).build();

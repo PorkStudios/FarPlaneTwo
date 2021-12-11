@@ -23,7 +23,10 @@ package net.daporkchop.fp2;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.api.event.RegisterEvent;
-import net.daporkchop.fp2.client.FP2Client;
+import net.daporkchop.fp2.client.ClientEvents;
+import net.daporkchop.fp2.client.FP2ResourceReloadListener;
+import net.daporkchop.fp2.client.KeyBindings;
+import net.daporkchop.fp2.client.TextureUVs;
 import net.daporkchop.fp2.common.util.Identifier;
 import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.fp2.common.util.exception.ResourceNotFoundException;
@@ -34,7 +37,9 @@ import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.gui.GuiContext;
 import net.daporkchop.fp2.core.client.gui.GuiScreen;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.core.mode.api.player.IFarPlayerClient;
 import net.daporkchop.fp2.core.network.RegisterPacketsEvent;
+import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
 import net.daporkchop.fp2.core.util.I18n;
 import net.daporkchop.fp2.debug.client.DebugClientEvents;
 import net.daporkchop.fp2.debug.client.DebugKeyBindings;
@@ -45,13 +50,14 @@ import net.daporkchop.fp2.impl.mc.forge1_12_2.log.Log4jAsPorkLibLogger;
 import net.daporkchop.fp2.mode.heightmap.HeightmapRenderMode;
 import net.daporkchop.fp2.mode.voxel.VoxelRenderMode;
 import net.daporkchop.fp2.net.FP2Network;
-import net.daporkchop.fp2.net.packet.standard.server.SPacketSessionBegin;
-import net.daporkchop.fp2.net.packet.standard.server.SPacketTileData;
-import net.daporkchop.fp2.net.packet.standard.server.SPacketUnloadTile;
-import net.daporkchop.fp2.net.packet.standard.server.SPacketUnloadTiles;
+import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionBegin;
+import net.daporkchop.fp2.core.network.packet.standard.server.SPacketTileData;
+import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUnloadTile;
+import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUnloadTiles;
 import net.daporkchop.fp2.server.FP2Server;
 import net.daporkchop.fp2.util.event.IdMappingsChangedEvent;
 import net.daporkchop.fp2.util.threading.futureexecutor.ServerThreadMarkedFutureExecutor;
+import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.common.MinecraftForge;
@@ -75,7 +81,11 @@ import java.util.Map;
 import java.util.function.Function;
 
 import static net.daporkchop.fp2.FP2.*;
+import static net.daporkchop.fp2.core.client.FP2Client.*;
+import static net.daporkchop.fp2.client.gl.OpenGL.*;
+import static net.daporkchop.fp2.compat.of.OFHelper.*;
 import static net.daporkchop.fp2.core.debug.FP2Debug.*;
+import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
 
 /**
@@ -106,7 +116,7 @@ public class FP2 extends FP2Core implements ResourceProvider {
             bigWarning("FarPlaneTwo debug mode enabled!");
 
             if (this.hasClient()) {
-                ConfigListenerManager.add(() -> FP2Client.GLOBAL_SHADER_MACROS
+                ConfigListenerManager.add(() -> GLOBAL_SHADER_MACROS
                         .define("FP2_DEBUG_COLORS_ENABLED", fp2().globalConfig().debug().debugColors().enable())
                         .define("FP2_DEBUG_COLORS_MODE", fp2().globalConfig().debug().debugColors().ordinal()));
 
@@ -117,7 +127,28 @@ public class FP2 extends FP2Core implements ResourceProvider {
         FP2Server.preInit();
 
         if (this.hasClient()) {
-            FP2Client.preInit();
+            if (!OPENGL_45) { //require at least OpenGL 4.5
+                unsupported("Your system does not support OpenGL 4.5!\nRequired by FarPlaneTwo.");
+            }
+
+            if (!MC.getFramebuffer().isStencilEnabled() && !MC.getFramebuffer().enableStencil()) {
+                if (OF && (PUnsafe.getBoolean(MC.gameSettings, OF_FASTRENDER_OFFSET) || PUnsafe.getInt(MC.gameSettings, OF_AALEVEL_OFFSET) > 0)) {
+                    unsupported("FarPlaneTwo was unable to enable the OpenGL stencil buffer!\n"
+                                + "Please launch the game without FarPlaneTwo and disable\n"
+                                + "  OptiFine's \"Fast Render\" and \"Antialiasing\", then\n"
+                                + "  try again.");
+                } else {
+                    unsupported("Unable to enable the OpenGL stencil buffer!\nRequired by FarPlaneTwo.");
+                }
+            }
+
+            ClientEvents.register();
+
+            ConfigListenerManager.add(() -> {
+                if (MC.player != null && MC.player.connection != null) {
+                    ((IFarPlayerClient) MC.player.connection).fp2_IFarPlayerClient_send(new CPacketClientConfig().config(fp2().globalConfig()));
+                }
+            });
         }
     }
 
@@ -126,7 +157,7 @@ public class FP2 extends FP2Core implements ResourceProvider {
         FP2Server.init();
 
         if (this.hasClient()) {
-            FP2Client.init();
+            KeyBindings.register();
         }
 
         if (FP2_DEBUG && this.hasClient()) {
@@ -140,7 +171,12 @@ public class FP2 extends FP2Core implements ResourceProvider {
         FP2Server.postInit();
 
         if (this.hasClient()) {
-            FP2Client.postInit();
+            //TODO: move this to core?
+            GLOBAL_SHADER_MACROS.define("T_SHIFT", T_SHIFT).define("RENDER_PASS_COUNT", RENDER_PASS_COUNT);
+
+            TextureUVs.initDefault();
+
+            MC.resourceManager.registerReloadListener(new FP2ResourceReloadListener());
         }
     }
 

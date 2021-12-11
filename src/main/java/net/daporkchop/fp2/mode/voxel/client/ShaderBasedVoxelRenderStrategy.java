@@ -96,8 +96,8 @@ public class ShaderBasedVoxelRenderStrategy extends AbstractMultipassIndexedRend
     }
 
     @Override
-    public ICullingStrategy<VoxelPos> cullingStrategy() {
-        return VoxelCullingStrategy.INSTANCE;
+    public ICullingStrategy cullingStrategy() {
+        return new VoxelCullingStrategy(this.worldRenderer.blockedTracker());
     }
 
     @Override

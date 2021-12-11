@@ -55,6 +55,15 @@ public interface WorldRenderer {
     int tintFactorForStateInBiomeAtPos(int state, int biome, int x, int y, int z);
 
     /**
+     * Gets the {@link TerrainRenderingBlockedTracker} used by this renderer for keeping track of which terrain cannot be rendered.
+     *
+     * @return the {@link TerrainRenderingBlockedTracker}
+     */
+    TerrainRenderingBlockedTracker blockedTracker();
+
+    GlobalUniformAttributes globalUniformAttributes();
+
+    /**
      * @return the {@link GL} used in this world
      */
     GL gl();

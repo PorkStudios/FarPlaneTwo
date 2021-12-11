@@ -34,11 +34,9 @@ import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTracker;
 import net.daporkchop.fp2.core.mode.api.tile.TileSnapshot;
 import net.daporkchop.fp2.core.network.packet.debug.server.SPacketDebugUpdateStatistics;
-import net.daporkchop.fp2.net.packet.standard.server.SPacketTileData;
-import net.daporkchop.fp2.net.packet.standard.server.SPacketUnloadTile;
+import net.daporkchop.fp2.core.network.packet.standard.server.SPacketTileData;
+import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUnloadTile;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
-import net.daporkchop.fp2.util.annotation.DebugOnly;
-import net.daporkchop.fp2.util.annotation.RemovalPolicy;
 
 import java.util.Map;
 import java.util.Optional;
@@ -67,7 +65,6 @@ public abstract class AbstractFarServerContext<POS extends IFarPos, T extends IF
 
     protected boolean closed = false;
 
-    @DebugOnly
     private int debugLastUpdateSent;
 
     public AbstractFarServerContext(@NonNull IFarPlayerServer player, @NonNull IFarWorldServer world, @NonNull FP2Config config, @NonNull IFarRenderMode<POS, T> mode) {
@@ -110,7 +107,6 @@ public abstract class AbstractFarServerContext<POS extends IFarPos, T extends IF
         }
     }
 
-    @DebugOnly(RemovalPolicy.DROP)
     private void debugUpdate() {
         if (!FP2_DEBUG) { //debug mode not enabled, do nothing
             //TODO: remove this once @DebugOnly actually works

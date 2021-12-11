@@ -44,7 +44,7 @@ import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 public interface IFarRenderStrategy<POS extends IFarPos, T extends IFarTile, BO extends IBakeOutput, DB extends DrawBinding, DC extends DrawCommand> extends RefCounted {
     IFarRenderMode<POS, T> mode();
 
-    ICullingStrategy<POS> cullingStrategy();
+    ICullingStrategy cullingStrategy();
 
     GL gl();
 

@@ -20,11 +20,11 @@
 
 package net.daporkchop.fp2.asm.interfaz.client.renderer;
 
-import net.daporkchop.fp2.client.VanillaRenderabilityTracker;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.client.TerrainRenderingBlockedTracker1_12_2;
 
 /**
  * @author DaPorkchop_
  */
 public interface IMixinRenderGlobal {
-    VanillaRenderabilityTracker fp2_vanillaRenderabilityTracker();
+    TerrainRenderingBlockedTracker1_12_2 fp2_vanillaRenderabilityTracker();
 }

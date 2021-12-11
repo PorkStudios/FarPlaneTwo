@@ -22,11 +22,10 @@ package net.daporkchop.fp2.mode.common.client.bake;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
-import net.daporkchop.fp2.gl.draw.list.DrawCommand;
+import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.fp2.gl.draw.binding.DrawBindingBuilder;
-import net.daporkchop.fp2.gl.draw.DrawLayout;
-import net.daporkchop.fp2.util.annotation.DebugOnly;
+import net.daporkchop.fp2.gl.draw.list.DrawCommand;
 import net.daporkchop.lib.common.misc.refcount.RefCounted;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
@@ -75,6 +74,5 @@ public interface IBakeOutputStorage<BO extends IBakeOutput, DB extends DrawBindi
     @Override
     boolean release() throws AlreadyReleasedException;
 
-    @DebugOnly
     DebugStats.Renderer stats();
 }

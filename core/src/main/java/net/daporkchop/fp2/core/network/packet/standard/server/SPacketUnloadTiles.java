@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.net.packet.standard.server;
+package net.daporkchop.fp2.core.network.packet.standard.server;
 
 import lombok.Getter;
 import lombok.NonNull;
