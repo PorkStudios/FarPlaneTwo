@@ -22,7 +22,9 @@ package net.daporkchop.fp2.util;
 
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.compat.vanilla.FastRegistry;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.GameRegistry1_12_2;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.init.Blocks;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
@@ -55,7 +57,7 @@ public class BlockType {
      * @return the block type
      */
     public int blockType(int stateId) {
-        return blockType(FastRegistry.getBlockState(stateId));
+        return blockType(GameRegistry1_12_2.get().id2state(stateId));
     }
 
     /**
@@ -77,6 +79,17 @@ public class BlockType {
     /**
      * Gets the given {@link IBlockState}'s render type.
      *
+     * @param stateId the block state ID
+     * @return the render type
+     */
+    @SideOnly(Side.CLIENT)
+    public int renderType(int stateId) {
+        return renderType(GameRegistry1_12_2.get().id2state(stateId));
+    }
+
+    /**
+     * Gets the given {@link IBlockState}'s render type.
+     *
      * @param state the {@link IBlockState}
      * @return the render type
      */
@@ -87,5 +100,10 @@ public class BlockType {
             return RENDER_TYPE_OPAQUE;
         }*/
         return RENDER_TYPE_LOOKUP[state.getBlock().getRenderLayer().ordinal()];
+    }
+
+    @SideOnly(Side.CLIENT)
+    public boolean isWater(int stateId) {
+        return GameRegistry1_12_2.get().id2state(stateId).getBlock() == Blocks.WATER;
     }
 }

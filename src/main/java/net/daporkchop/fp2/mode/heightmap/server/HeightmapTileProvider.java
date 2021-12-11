@@ -20,20 +20,18 @@
 
 package net.daporkchop.fp2.mode.heightmap.server;
 
-import io.github.opencubicchunks.cubicchunks.api.world.ICube;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTrackerManager;
+import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
+import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
 import net.daporkchop.fp2.mode.common.server.AbstractFarTileProvider;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
 import net.daporkchop.fp2.mode.heightmap.server.scale.HeightmapScalerMinMax;
 import net.daporkchop.fp2.mode.heightmap.server.tracking.HeightmapTrackerManager;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.world.World;
-import net.minecraft.world.chunk.Chunk;
 
 /**
  * @author DaPorkchop_
@@ -62,8 +60,8 @@ public abstract class HeightmapTileProvider extends AbstractFarTileProvider<Heig
     }
 
     @Override
-    public void onColumnSaved(@NonNull World world, int columnX, int columnZ, @NonNull NBTTagCompound nbt, @NonNull Chunk column) {
-        this.scheduleForUpdate(new HeightmapPos(0, columnX, columnZ));
+    protected void onColumnSaved(ColumnSavedEvent event) {
+        this.scheduleForUpdate(new HeightmapPos(0, event.pos().x(), event.pos().y()));
     }
 
     public static class Vanilla extends HeightmapTileProvider {
@@ -72,7 +70,7 @@ public abstract class HeightmapTileProvider extends AbstractFarTileProvider<Heig
         }
 
         @Override
-        public void onCubeSaved(@NonNull World world, int cubeX, int cubeY, int cubeZ, @NonNull NBTTagCompound nbt, @NonNull ICube cube) {
+        protected void onCubeSaved(CubeSavedEvent event) {
             throw new UnsupportedOperationException();
         }
     }
@@ -83,9 +81,9 @@ public abstract class HeightmapTileProvider extends AbstractFarTileProvider<Heig
         }
 
         @Override
-        public void onCubeSaved(@NonNull World world, int cubeX, int cubeY, int cubeZ, @NonNull NBTTagCompound nbt, @NonNull ICube cube) {
-            if (cube.isFullyPopulated()) {
-                this.scheduleForUpdate(new HeightmapPos(0, cubeX, cubeZ));
+        protected void onCubeSaved(CubeSavedEvent event) {
+            if (event.cube().isFullyPopulated()) {
+                this.scheduleForUpdate(new HeightmapPos(0, event.pos().x(), event.pos().z()));
             }
         }
     }

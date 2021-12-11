@@ -33,6 +33,7 @@ import java.util.Comparator;
 import java.util.function.Consumer;
 
 import static java.lang.Math.*;
+import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.math.PMath.*;
@@ -41,6 +42,13 @@ import static net.daporkchop.lib.common.math.PMath.*;
  * @author DaPorkchop_
  */
 public class VoxelTracker extends AbstractTracker<VoxelPos, VoxelTile, TrackingState> {
+    /**
+     * The squared distance a player must move from their previous position in order to trigger a tracking update.
+     * <p>
+     * The default value of {@code (T_VOXELS / 2)²} is based on the equivalent value of {@code 64} (which is {@code (CHUNK_SIZE / 2)²}) used by vanilla.
+     */
+    protected static final double UPDATE_TRIGGER_DISTANCE_SQUARED = sq(VT_VOXELS >> 1);
+
     protected static boolean overlaps(int x0, int y0, int z0, int x1, int y1, int z1, int radius) {
         int dx = abs(x0 - x1);
         int dy = abs(y0 - y1);
@@ -54,7 +62,7 @@ public class VoxelTracker extends AbstractTracker<VoxelPos, VoxelTile, TrackingS
 
     @Override
     protected TrackingState currentState(@NonNull IFarServerContext<VoxelPos, VoxelTile> context) {
-        return TrackingState.createDefault(context);
+        return TrackingState.createDefault(context, VT_SHIFT);
     }
 
     @Override

@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.core.mode.api.ctx;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.api.event.FEventBus;
 import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
@@ -73,4 +74,9 @@ public interface IFarWorldServer extends IFarWorld {
      * @return the sea level
      */
     int fp2_IFarWorldServer_seaLevel();
+
+    /**
+     * @return an event bus for events specific to this world
+     */
+    FEventBus fp2_IFarWorldServer_eventBus();
 }

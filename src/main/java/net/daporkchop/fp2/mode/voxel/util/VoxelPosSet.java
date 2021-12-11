@@ -39,7 +39,7 @@ import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
  */
 public class VoxelPosSet extends AbstractPosSet<VoxelPos> {
     public VoxelPosSet() {
-        super(3, V_MAX_LODS);
+        super(3, VMAX_LODS);
     }
 
     @Override

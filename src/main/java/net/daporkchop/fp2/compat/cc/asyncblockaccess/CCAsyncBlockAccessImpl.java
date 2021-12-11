@@ -33,21 +33,22 @@ import io.github.opencubicchunks.cubicchunks.core.world.ICubeProviderInternal;
 import io.github.opencubicchunks.cubicchunks.core.world.cube.Cube;
 import lombok.NonNull;
 import lombok.SneakyThrows;
+import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.compat.cc.biome.Column2dBiomeAccessWrapper;
 import net.daporkchop.fp2.compat.cc.biome.CubeBiomeAccessWrapper;
 import net.daporkchop.fp2.compat.cc.cube.CubeWithoutWorld;
 import net.daporkchop.fp2.compat.vanilla.IBiomeAccess;
 import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
-import net.daporkchop.fp2.server.worldlistener.IWorldChangeListener;
-import net.daporkchop.fp2.server.worldlistener.WorldChangeListenerManager;
+import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
+import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
 import net.daporkchop.fp2.core.util.datastructure.Datastructures;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSegtreeSet;
-import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncCacheNBTBase;
-import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
 import net.daporkchop.fp2.core.util.threading.futurecache.GenerationNotAllowedException;
 import net.daporkchop.fp2.core.util.threading.futurecache.IAsyncCache;
 import net.daporkchop.fp2.core.util.threading.lazy.LazyFutureTask;
+import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncCacheNBTBase;
+import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.block.state.IBlockState;
@@ -56,7 +57,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.EnumSkyBlock;
-import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.WorldType;
 import net.minecraft.world.biome.Biome;
@@ -76,7 +76,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  *
  * @author DaPorkchop_
  */
-public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldChangeListener {
+public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess {
     protected static final long ASYNCBATCHINGCUBEIO_STORAGE_OFFSET = PUnsafe.pork_getOffset(AsyncBatchingCubeIO.class, "storage");
 
     protected final WorldServer world;
@@ -98,7 +98,7 @@ public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldChangeLi
 
         this.emptyStorage = new ExtendedBlockStorage(0, world.provider.hasSkyLight());
 
-        WorldChangeListenerManager.add(this.world, this);
+        ((IFarWorldServer) world).fp2_IFarWorldServer_eventBus().registerWeak(this);
 
         this.columnsExistCache = Datastructures.INSTANCE.nDimensionalIntSegtreeSet()
                 .dimensions(2)
@@ -163,16 +163,16 @@ public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldChangeLi
                 .peek(GenerationNotAllowedException.throwIfNull()));
     }
 
-    @Override
-    public void onColumnSaved(@NonNull World world, int columnX, int columnZ, @NonNull NBTTagCompound nbt, @NonNull Chunk column) {
-        this.columnsExistCache.add(columnX, columnZ);
-        this.columns.notifyUpdate(new ChunkPos(columnX, columnZ), nbt);
+    @FEventHandler
+    private void onColumnSaved(@NonNull ColumnSavedEvent event) {
+        this.columnsExistCache.add(event.pos().x(), event.pos().y());
+        this.columns.notifyUpdate(new ChunkPos(event.pos().x(), event.pos().y()), (NBTTagCompound) event.data());
     }
 
-    @Override
-    public void onCubeSaved(@NonNull World world, int cubeX, int cubeY, int cubeZ, @NonNull NBTTagCompound nbt, @NonNull ICube cube) {
-        this.cubesExistCache.add(cubeX, cubeY, cubeZ);
-        this.cubes.notifyUpdate(new CubePos(cubeX, cubeY, cubeZ), nbt);
+    @FEventHandler
+    private void onCubeSaved(@NonNull CubeSavedEvent event) {
+        this.cubesExistCache.add(event.pos().x(), event.pos().y(), event.pos().z());
+        this.cubes.notifyUpdate(new CubePos(event.pos().x(), event.pos().y(), event.pos().z()), (NBTTagCompound) event.data());
     }
 
     @Override

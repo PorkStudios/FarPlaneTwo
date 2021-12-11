@@ -25,6 +25,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.Synchronized;
+import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
@@ -36,10 +37,12 @@ import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.core.mode.api.server.storage.IFarStorage;
 import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTrackerManager;
 import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
+import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
+import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
+import net.daporkchop.fp2.core.server.event.TickEndEvent;
 import net.daporkchop.fp2.core.util.threading.scheduler.ApproximatelyPrioritizedSharedFutureScheduler;
 import net.daporkchop.fp2.core.util.threading.scheduler.Scheduler;
 import net.daporkchop.fp2.mode.common.server.storage.rocksdb.RocksStorage;
-import net.daporkchop.fp2.server.worldlistener.IWorldChangeListener;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
 
@@ -60,7 +63,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFarTile> implements IFarTileProvider<POS, T>, IWorldChangeListener {
+public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFarTile> implements IFarTileProvider<POS, T> {
     protected final IFarWorldServer world;
     protected final IFarRenderMode<POS, T> mode;
     protected final Path root;
@@ -119,7 +122,10 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
 
         this.trackerManager = this.createTracker();
 
-        fp2().eventBus().registerWeak(this);
+        //TODO: figure out why i was registering this here?
+        // fp2().eventBus().registerWeak(this);
+
+        world.fp2_IFarWorldServer_eventBus().registerWeak(this);
     }
 
     protected abstract IFarScaler<POS, T> createScaler();
@@ -166,8 +172,14 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
         });
     }
 
-    @Override
-    public void onTickEnd() {
+    @FEventHandler
+    protected abstract void onColumnSaved(ColumnSavedEvent event);
+
+    @FEventHandler
+    protected abstract void onCubeSaved(CubeSavedEvent event);
+
+    @FEventHandler
+    private void onTickEnd(TickEndEvent event) {
         this.lastCompletedTick = this.world.fp2_IFarWorld_timestamp();
         checkState(this.lastCompletedTick >= 0L, "lastCompletedTick (%d) < 0?!?", this.lastCompletedTick);
 
@@ -200,7 +212,7 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
 
         this.scheduler.close();
 
-        this.onTickEnd();
+        this.onTickEnd(null);
         this.shutdownUpdateQueue();
 
         fp2().log().trace("Shutting down storage in DIM{}", this.world.fp2_IFarWorld_dimensionId());

@@ -20,21 +20,21 @@
 
 package net.daporkchop.fp2.compat.vanilla.asyncblockaccess;
 
-import io.github.opencubicchunks.cubicchunks.api.world.ICube;
 import lombok.NonNull;
 import lombok.SneakyThrows;
+import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
 import net.daporkchop.fp2.compat.vanilla.region.ThreadSafeRegionFileCache;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
-import net.daporkchop.fp2.server.worldlistener.IWorldChangeListener;
-import net.daporkchop.fp2.server.worldlistener.WorldChangeListenerManager;
+import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
+import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
 import net.daporkchop.fp2.core.util.datastructure.Datastructures;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSegtreeSet;
-import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncCacheNBTBase;
-import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
 import net.daporkchop.fp2.core.util.threading.futurecache.GenerationNotAllowedException;
 import net.daporkchop.fp2.core.util.threading.futurecache.IAsyncCache;
 import net.daporkchop.fp2.core.util.threading.lazy.LazyFutureTask;
+import net.daporkchop.fp2.util.threading.asyncblockaccess.AsyncCacheNBTBase;
+import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
 import net.daporkchop.lib.common.function.throwing.ERunnable;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.nbt.NBTTagCompound;
@@ -42,7 +42,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.EnumSkyBlock;
-import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.WorldType;
 import net.minecraft.world.biome.Biome;
@@ -60,7 +59,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  *
  * @author DaPorkchop_
  */
-public class VanillaAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldChangeListener {
+public class VanillaAsyncBlockAccessImpl implements IAsyncBlockAccess {
     protected final WorldServer world;
     protected final AnvilChunkLoader io;
 
@@ -80,7 +79,7 @@ public class VanillaAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldCha
                         .parallel())
                 .build();
 
-        WorldChangeListenerManager.add(this.world, this);
+        ((IFarWorldServer) world).fp2_IFarWorldServer_eventBus().registerWeak(this);
     }
 
     @Override
@@ -110,10 +109,15 @@ public class VanillaAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldCha
         return this.prefetchWithoutGenerating(columns); //silently ignore cubes
     }
 
-    @Override
-    public void onColumnSaved(@NonNull World world, int columnX, int columnZ, @NonNull NBTTagCompound nbt, @NonNull Chunk column) {
-        this.chunksExistCache.add(columnX, columnZ);
-        this.chunks.notifyUpdate(new ChunkPos(columnX, columnZ), nbt);
+    @FEventHandler
+    private void onColumnSaved(@NonNull ColumnSavedEvent event) {
+        this.chunksExistCache.add(event.pos().x(), event.pos().y());
+        this.chunks.notifyUpdate(new ChunkPos(event.pos().x(), event.pos().y()), (NBTTagCompound) event.data());
+    }
+
+    @FEventHandler
+    private void onCubeSaved(@NonNull CubeSavedEvent event) {
+        throw new UnsupportedOperationException("vanilla world shouldn't have cubes!");
     }
 
     @Override
@@ -124,11 +128,6 @@ public class VanillaAsyncBlockAccessImpl implements IAsyncBlockAccess, IWorldCha
     @Override
     public boolean anyCubeIntersects(int tileX, int tileY, int tileZ, int level) {
         return tileY < 16 && level >= 0 && this.anyColumnIntersects(tileX, tileZ, level);
-    }
-
-    @Override
-    public void onCubeSaved(@NonNull World world, int cubeX, int cubeY, int cubeZ, @NonNull NBTTagCompound nbt, @NonNull ICube cube) {
-        throw new UnsupportedOperationException("vanilla world shouldn't have cubes!");
     }
 
     protected Chunk getChunk(int chunkX, int chunkZ, boolean allowGeneration) {

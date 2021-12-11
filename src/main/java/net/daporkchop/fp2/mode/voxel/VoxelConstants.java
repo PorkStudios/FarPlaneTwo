@@ -33,7 +33,13 @@ import static net.daporkchop.fp2.util.Constants.*;
 public class VoxelConstants {
     public static final int STORAGE_VERSION = 6;
 
-    public static final int V_MAX_LODS = 32 - Integer.numberOfLeadingZeros(60_000_000 >> T_SHIFT);
+    //definitions of tile sizes
+    public static final int VT_SHIFT = 4;
+    public static final int VT_MASK = (1 << VT_SHIFT) - 1;
+    public static final int VT_VOXELS = 1 << VT_SHIFT;
+    public static final int VT_VERTS = VT_VOXELS + 1;
+
+    public static final int VMAX_LODS = 32 - Integer.numberOfLeadingZeros(60_000_000 >> VT_SHIFT);
 
     /**
      * The size of the fractional part of a voxel position, in bits.

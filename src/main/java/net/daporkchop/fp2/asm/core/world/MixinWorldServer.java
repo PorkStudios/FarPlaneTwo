@@ -22,9 +22,11 @@ package net.daporkchop.fp2.asm.core.world;
 
 import com.google.common.collect.ImmutableMap;
 import lombok.NonNull;
+import net.daporkchop.fp2.api.event.FEventBus;
 import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.compat.cc.asyncblockaccess.CCAsyncBlockAccessImpl;
 import net.daporkchop.fp2.compat.vanilla.asyncblockaccess.VanillaAsyncBlockAccessImpl;
+import net.daporkchop.fp2.core.event.EventBus;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
@@ -71,6 +73,9 @@ public abstract class MixinWorldServer extends MixinWorld implements IFarWorldSe
 
     @Unique
     protected IAsyncBlockAccess asyncBlockAccess;
+
+    @Unique
+    protected FEventBus eventBus = new EventBus();
 
     @Override
     public void fp2_IFarWorld_init() {
@@ -144,5 +149,10 @@ public abstract class MixinWorldServer extends MixinWorld implements IFarWorldSe
     @Override
     public IAsyncBlockAccess fp2_IAsyncBlockAccess$Holder_asyncBlockAccess() {
         return this.asyncBlockAccess;
+    }
+
+    @Override
+    public FEventBus fp2_IFarWorldServer_eventBus() {
+        return this.eventBus;
     }
 }

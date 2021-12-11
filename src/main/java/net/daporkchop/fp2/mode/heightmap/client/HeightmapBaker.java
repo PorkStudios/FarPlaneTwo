@@ -57,6 +57,8 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
 
     @NonNull
     protected final WorldRenderer worldRenderer;
+    @NonNull
+    protected final TextureUVs textureUVs;
 
     @Override
     public Stream<HeightmapPos> bakeOutputs(@NonNull HeightmapPos srcPos) {
@@ -205,7 +207,7 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
         final int blockX = baseX + ((x & T_MASK) << level);
         final int blockZ = baseZ + ((z & T_MASK) << level);
 
-        attributes.a_state = TextureUVs.STATEID_TO_INDEXID.get(data.state);
+        attributes.a_state = this.textureUVs.indexIdForState(data.state);
 
         int blockLight = data.light & 0xF;
         int skyLight = data.light >> 4;

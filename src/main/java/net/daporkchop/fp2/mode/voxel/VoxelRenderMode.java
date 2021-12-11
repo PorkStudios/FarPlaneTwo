@@ -65,7 +65,7 @@ import static net.daporkchop.fp2.util.Constants.*;
  */
 public class VoxelRenderMode extends AbstractFarRenderMode<VoxelPos, VoxelTile> {
     public VoxelRenderMode() {
-        super(VoxelConstants.STORAGE_VERSION, VoxelConstants.V_MAX_LODS);
+        super(VoxelConstants.STORAGE_VERSION, VoxelConstants.VMAX_LODS);
     }
 
     @Override

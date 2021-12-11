@@ -99,7 +99,7 @@ public class ShaderBasedHeightmapRenderStrategy extends AbstractMultipassIndexed
 
     @Override
     public IRenderBaker<HeightmapPos, HeightmapTile, IndexedBakeOutput<HeightmapGlobalAttributes, HeightmapLocalAttributes>> createBaker() {
-        return new HeightmapBaker(this.worldRenderer);
+        return new HeightmapBaker(this.worldRenderer, this.textureUVs);
     }
 
     @Override

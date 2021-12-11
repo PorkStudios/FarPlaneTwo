@@ -24,8 +24,6 @@ import lombok.experimental.UtilityClass;
 
 import java.util.stream.IntStream;
 
-import static net.daporkchop.fp2.util.Constants.*;
-
 /**
  * Constants used throughout the heightmap code.
  *
@@ -35,7 +33,13 @@ import static net.daporkchop.fp2.util.Constants.*;
 public class HeightmapConstants {
     public static final int STORAGE_VERSION = 10;
 
-    public static final int H_MAX_LODS = 32 - Integer.numberOfLeadingZeros(60_000_000 >> T_SHIFT);
+    //definitions of tile sizes
+    public static final int HT_SHIFT = 4;
+    public static final int HT_MASK = (1 << HT_SHIFT) - 1;
+    public static final int HT_VOXELS = 1 << HT_SHIFT;
+    public static final int HT_VERTS = HT_VOXELS + 1;
+
+    public static final int HMAX_LODS = 32 - Integer.numberOfLeadingZeros(60_000_000 >> HT_SHIFT);
 
     /**
      * The maximum number of layers allowed per block in a tile.
@@ -58,9 +62,9 @@ public class HeightmapConstants {
     public static final int[] EXTRA_LAYERS = IntStream.range(0, MAX_LAYERS).filter(layer -> layer != DEFAULT_LAYER && layer != WATER_LAYER).toArray();
 
     public static final int[] CONNECTION_INTERSECTION_AREAS = {
-            T_VOXELS, T_VOXELS,
-            T_VOXELS, 1,
-            1, T_VOXELS,
+            HT_VOXELS, HT_VOXELS,
+            HT_VOXELS, 1,
+            1, HT_VOXELS,
             1, 1
     };
 

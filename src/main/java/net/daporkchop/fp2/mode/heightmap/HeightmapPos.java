@@ -62,7 +62,7 @@ public class HeightmapPos implements IFarPos {
 
     @Override
     public boolean isLevelValid() {
-        return this.level >= 0 && this.level < H_MAX_LODS;
+        return this.level >= 0 && this.level < HMAX_LODS;
     }
 
     @Override

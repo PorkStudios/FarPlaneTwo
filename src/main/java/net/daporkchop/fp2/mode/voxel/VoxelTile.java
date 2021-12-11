@@ -64,7 +64,7 @@ public class VoxelTile implements IFarTile {
 
     static void writeData(long base, VoxelData data) {
         PUnsafe.putInt(base + 0L, (data.x << 24) | (data.y << 16) | (data.z << 8) | data.edges);
-        PUnsafe.putInt(base + 4L, (data.biome << 8) | data.light);
+        PUnsafe.putInt(base + 4L, (data.biome << 8) | (data.light & 0xFF));
         PUnsafe.copyMemory(data.states, PUnsafe.ARRAY_INT_BASE_OFFSET, null, base + 8L, 4L * EDGE_COUNT);
     }
 
@@ -78,7 +78,7 @@ public class VoxelTile implements IFarTile {
         data.edges = i0 & 0x3F;
 
         data.biome = (i1 >> 8) & 0xFF;
-        data.light = i1 & 0xFF;
+        data.light = (byte) i1;
 
         PUnsafe.copyMemory(null, base + 8L, data.states, PUnsafe.ARRAY_INT_BASE_OFFSET, 4L * EDGE_COUNT);
     }

@@ -27,7 +27,6 @@ import net.daporkchop.fp2.core.mode.api.ctx.IFarServerContext;
 import net.daporkchop.lib.math.vector.Vec3d;
 
 import static net.daporkchop.fp2.core.debug.FP2Debug.*;
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 
 /**
@@ -37,12 +36,12 @@ import static net.daporkchop.fp2.core.util.math.MathUtil.*;
  */
 @Data
 public class TrackingState {
-    public static TrackingState createDefault(@NonNull IFarServerContext<?, ?> context) {
+    public static TrackingState createDefault(@NonNull IFarServerContext<?, ?> context, int shift) {
         Vec3d pos = context.player().fp2_IFarPlayer_position();
         FP2Config config = context.config();
 
         return new TrackingState(pos.x(), pos.y(), pos.z(),
-                asrRound(config.cutoffDistance(), T_SHIFT),
+                asrRound(config.cutoffDistance(), shift),
                 FP2_DEBUG && !config.debug().levelZeroTracking() ? 1 : 0,
                 config.maxLevels());
     }

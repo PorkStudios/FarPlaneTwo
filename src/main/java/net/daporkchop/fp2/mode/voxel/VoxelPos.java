@@ -64,7 +64,7 @@ public class VoxelPos implements IFarPos {
 
     @Override
     public boolean isLevelValid() {
-        return this.level >= 0 && this.level < V_MAX_LODS;
+        return this.level >= 0 && this.level < VMAX_LODS;
     }
 
     @Override

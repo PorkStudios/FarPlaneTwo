@@ -18,42 +18,21 @@
  *
  */
 
-package net.daporkchop.fp2.mode.voxel;
+package net.daporkchop.fp2.core.server.world;
 
-import java.util.Arrays;
-
-import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
+import net.daporkchop.lib.math.vector.Vec2i;
 
 /**
- * Represents a single data sample contained in a voxel tile.
- *
  * @author DaPorkchop_
  */
-public class VoxelData {
-    //vertex position and mesh intersection data
-    public int x;
-    public int y;
-    public int z;
-    public int edges;
-
-    //block data (for texturing and shading)
-    public final int[] states = new int[EDGE_COUNT];
-    public int biome;
-    public byte light;
+public interface FColumn {
+    /**
+     * @return this column's position
+     */
+    Vec2i pos();
 
     /**
-     * Resets this instance.
-     *
-     * @return this instance
+     * @return whether or not this column has been fully populated
      */
-    public VoxelData reset() {
-        this.x = 0;
-        this.y = 0;
-        this.z = 0;
-        this.edges = 0;
-        Arrays.fill(this.states, 0);
-        this.biome = 0;
-        this.light = 0;
-        return this;
-    }
+    boolean isFullyPopulated();
 }

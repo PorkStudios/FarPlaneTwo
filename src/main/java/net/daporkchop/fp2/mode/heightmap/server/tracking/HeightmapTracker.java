@@ -33,6 +33,7 @@ import java.util.Comparator;
 import java.util.function.Consumer;
 
 import static java.lang.Math.*;
+import static net.daporkchop.fp2.mode.heightmap.HeightmapConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.math.PMath.*;
@@ -41,6 +42,13 @@ import static net.daporkchop.lib.common.math.PMath.*;
  * @author DaPorkchop_
  */
 public class HeightmapTracker extends AbstractTracker<HeightmapPos, HeightmapTile, TrackingState> {
+    /**
+     * The squared distance a player must move from their previous position in order to trigger a tracking update.
+     * <p>
+     * The default value of {@code (T_VOXELS / 2)²} is based on the equivalent value of {@code 64} (which is {@code (CHUNK_SIZE / 2)²}) used by vanilla.
+     */
+    protected static final double UPDATE_TRIGGER_DISTANCE_SQUARED = sq(HT_VOXELS >> 1);
+
     protected static boolean overlaps(int x0, int z0, int x1, int z1, int radius) {
         int dx = abs(x0 - x1);
         int dz = abs(z0 - z1);
@@ -53,7 +61,7 @@ public class HeightmapTracker extends AbstractTracker<HeightmapPos, HeightmapTil
 
     @Override
     protected TrackingState currentState(@NonNull IFarServerContext<HeightmapPos, HeightmapTile> context) {
-        return TrackingState.createDefault(context);
+        return TrackingState.createDefault(context, HT_SHIFT);
     }
 
     @Override

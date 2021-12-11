@@ -28,6 +28,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.api.event.ReloadEvent;
+import net.daporkchop.fp2.api.world.FGameRegistry;
 import net.daporkchop.fp2.core.event.AbstractReloadEvent;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.attribute.Attribute;
@@ -93,8 +94,6 @@ public class TextureUVs extends AbstractReleasable {
         }
         return null;
     };
-
-    public static Reference2IntMap<IBlockState> STATEID_TO_INDEXID;
 
     public static void putReplacer(@NonNull Block block, @NonNull StateFaceReplacer replacer) {
         for (IBlockState state : block.getBlockState().getValidStates()) {
@@ -169,8 +168,13 @@ public class TextureUVs extends AbstractReleasable {
     protected final UniformArrayFormat<PackedBakedQuad> quadsFormat;
     protected final UniformArrayBuffer<PackedBakedQuad> quadsBuffer;
 
-    public TextureUVs(@NonNull GL gl) {
+    protected final FGameRegistry registry;
+
+    protected int[] stateIdToIndexId;
+
+    public TextureUVs(@NonNull GL gl, @NonNull FGameRegistry registry) {
         this.gl = gl;
+        this.registry = registry;
 
         this.listsFormat = gl.createUniformArrayFormat(QuadList.class).build();
         this.listsBuffer = this.listsFormat.createBuffer(BufferUsage.STATIC_DRAW);
@@ -259,7 +263,9 @@ public class TextureUVs extends AbstractReleasable {
             erroredStates.forEach(state -> stateIdToIndexId.put(state, id));
         }
 
-        STATEID_TO_INDEXID = stateIdToIndexId;
+        int[] realStateIdToIndexId = new int[this.registry.states().max().getAsInt() + 1];
+        stateIdToIndexId.forEach((state, indexId) -> realStateIdToIndexId[this.registry.state2id(state)] = indexId);
+        this.stateIdToIndexId = realStateIdToIndexId;
 
         QuadList[] quadIdToList = new QuadList[distinctQuadsById.size()];
         List<PackedBakedQuad> quadsOut = new ArrayList<>(distinctQuadsById.size());
@@ -277,6 +283,10 @@ public class TextureUVs extends AbstractReleasable {
             }
         }
         this.listsBuffer.set(listsOut.toArray(new QuadList[0]));
+    }
+
+    public int indexIdForState(int state) {
+        return this.stateIdToIndexId[state];
     }
 
     /**

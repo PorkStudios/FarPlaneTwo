@@ -102,7 +102,7 @@ public class ShaderBasedVoxelRenderStrategy extends AbstractMultipassIndexedRend
 
     @Override
     public IRenderBaker<VoxelPos, VoxelTile, IndexedBakeOutput<VoxelGlobalAttributes, VoxelLocalAttributes>> createBaker() {
-        return new VoxelBaker(this.worldRenderer);
+        return new VoxelBaker(this.worldRenderer, this.textureUVs);
     }
 
     @Override

@@ -39,7 +39,7 @@ import static net.daporkchop.fp2.mode.heightmap.HeightmapConstants.*;
  */
 public class HeightmapPosSet extends AbstractPosSet<HeightmapPos> {
     public HeightmapPosSet() {
-        super(2, H_MAX_LODS);
+        super(2, HMAX_LODS);
     }
 
     @Override

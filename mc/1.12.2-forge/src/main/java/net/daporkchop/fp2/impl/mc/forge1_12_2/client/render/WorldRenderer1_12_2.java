@@ -146,7 +146,8 @@ public class WorldRenderer1_12_2 implements WorldRenderer, AutoCloseable {
             attributes.u_fogEnd = glGetFloat(GL_FOG_END);
             attributes.u_fogScale = 1.0f / (attributes.u_fogEnd - attributes.u_fogStart);
         }
-        return null;
+
+        return attributes;
     }
 
     private void initModelViewProjectionMatrix(GlobalUniformAttributes attributes) {

@@ -20,21 +20,19 @@
 
 package net.daporkchop.fp2.mode.voxel.server;
 
-import io.github.opencubicchunks.cubicchunks.api.world.ICube;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
-import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTrackerManager;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
+import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTrackerManager;
+import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
+import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
 import net.daporkchop.fp2.mode.common.server.AbstractFarTileProvider;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.mode.voxel.server.scale.VoxelScalerIntersection;
 import net.daporkchop.fp2.mode.voxel.server.tracking.VoxelTrackerManager;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.world.World;
-import net.minecraft.world.chunk.Chunk;
 
 /**
  * @author DaPorkchop_
@@ -72,20 +70,20 @@ public abstract class VoxelTileProvider extends AbstractFarTileProvider<VoxelPos
         }
 
         @Override
-        public void onColumnSaved(@NonNull World world, int columnX, int columnZ, @NonNull NBTTagCompound nbt, @NonNull Chunk column) {
-            if (column.isPopulated()) { //TODO: we want to check if the chunk is FULLY populated
+        protected void onColumnSaved(ColumnSavedEvent event) {
+            if (event.column().isFullyPopulated()) {
                 //schedule entire column to be updated
                 IntAxisAlignedBB coordLimits = this.world.fp2_IFarWorld_coordLimits()[0];
-                VoxelPos[] positions = new VoxelPos[coordLimits.maxX() + 1 - coordLimits.minY()];
+                VoxelPos[] positions = new VoxelPos[coordLimits.maxY() + 1 - coordLimits.minY()];
                 for (int i = 0, y = coordLimits.minY(); y <= coordLimits.maxY(); i++, y++) {
-                    positions[i] = new VoxelPos(0, columnX, y, columnZ);
+                    positions[i] = new VoxelPos(0, event.pos().x(), y, event.pos().y());
                 }
                 this.scheduleForUpdate(positions);
             }
         }
 
         @Override
-        public void onCubeSaved(@NonNull World world, int cubeX, int cubeY, int cubeZ, @NonNull NBTTagCompound nbt, @NonNull ICube cube) {
+        protected void onCubeSaved(CubeSavedEvent event) {
             throw new UnsupportedOperationException();
         }
     }
@@ -99,14 +97,14 @@ public abstract class VoxelTileProvider extends AbstractFarTileProvider<VoxelPos
         }
 
         @Override
-        public void onColumnSaved(@NonNull World world, int columnX, int columnZ, @NonNull NBTTagCompound nbt, @NonNull Chunk column) {
+        protected void onColumnSaved(ColumnSavedEvent event) {
             //no-op
         }
 
         @Override
-        public void onCubeSaved(@NonNull World world, int cubeX, int cubeY, int cubeZ, @NonNull NBTTagCompound nbt, @NonNull ICube cube) {
-            if (cube.isFullyPopulated()) {
-                this.scheduleForUpdate(new VoxelPos(0, cubeX, cubeY, cubeZ));
+        protected void onCubeSaved(CubeSavedEvent event) {
+            if (event.cube().isFullyPopulated()) {
+                this.scheduleForUpdate(new VoxelPos(0, event.pos().x(), event.pos().y(), event.pos().z()));
             }
         }
     }

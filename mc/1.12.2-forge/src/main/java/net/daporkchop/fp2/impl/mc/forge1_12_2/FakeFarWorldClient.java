@@ -24,6 +24,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.core.client.render.WorldRenderer;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldClient;
+import net.daporkchop.fp2.core.util.threading.futureexecutor.MarkedFutureExecutor;
 import net.daporkchop.fp2.core.util.threading.workergroup.DefaultWorkerManager;
 import net.daporkchop.fp2.core.util.threading.workergroup.WorkerManager;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.client.render.WorldRenderer1_12_2;
@@ -50,7 +51,7 @@ public class FakeFarWorldClient implements IFarWorldClient {
         this.coordLimits = coordLimits;
         this.workerManager = new DefaultWorkerManager(Minecraft.getMinecraft().thread, ClientThreadMarkedFutureExecutor.getFor(Minecraft.getMinecraft()));
 
-        this.workerManager.rootExecutor().execute(() -> this.renderer = new WorldRenderer1_12_2(Minecraft.getMinecraft(), this));
+        this.workerManager.rootExecutor().run(MarkedFutureExecutor.DEFAULT_MARKER, () -> this.renderer = new WorldRenderer1_12_2(Minecraft.getMinecraft(), this)).join();
     }
 
     @Override
@@ -60,7 +61,7 @@ public class FakeFarWorldClient implements IFarWorldClient {
 
     @Override
     public void fp2_IFarWorld_close() {
-        this.renderer.close();
+        this.workerManager.rootExecutor().run(MarkedFutureExecutor.DEFAULT_MARKER, this.renderer::close);
     }
 
     @Override

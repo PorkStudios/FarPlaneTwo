@@ -69,7 +69,7 @@ import static net.daporkchop.fp2.util.Constants.*;
  */
 public class HeightmapRenderMode extends AbstractFarRenderMode<HeightmapPos, HeightmapTile> {
     public HeightmapRenderMode() {
-        super(HeightmapConstants.STORAGE_VERSION, HeightmapConstants.H_MAX_LODS);
+        super(HeightmapConstants.STORAGE_VERSION, HeightmapConstants.HMAX_LODS);
     }
 
     @Override

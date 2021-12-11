@@ -22,8 +22,8 @@ package net.daporkchop.fp2.mode.voxel.client;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.client.TextureUVs;
-import net.daporkchop.fp2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.core.client.render.WorldRenderer;
 import net.daporkchop.fp2.core.util.GlobalAllocators;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalWriter;
@@ -36,8 +36,6 @@ import net.daporkchop.fp2.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.mode.voxel.client.struct.VoxelGlobalAttributes;
 import net.daporkchop.fp2.mode.voxel.client.struct.VoxelLocalAttributes;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
-import net.minecraft.block.state.IBlockState;
-import net.minecraft.init.Blocks;
 
 import java.util.Arrays;
 import java.util.stream.Stream;
@@ -65,6 +63,8 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
 
     @NonNull
     protected final WorldRenderer worldRenderer;
+    @NonNull
+    protected final TextureUVs textureUVs;
 
     @Override
     public Stream<VoxelPos> bakeOutputs(@NonNull VoxelPos srcPos) {
@@ -167,8 +167,8 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
         final int blockY = baseY + ((y & ~(y & T_VOXELS)) << level);
         final int blockZ = baseZ + ((z & ~(z & T_VOXELS)) << level);
 
-        int blockLight = data.light & 0xF;
-        int skyLight = data.light >> 4;
+        int blockLight = FBlockWorld.unpackBlockLight(data.light);
+        int skyLight = FBlockWorld.unpackSkyLight(data.light);
         attributes.a_lightBlock = (byte) (blockLight | (blockLight << 4));
         attributes.a_lightSky = (byte) (skyLight | (skyLight << 4));
 
@@ -185,8 +185,7 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
                 }
             }
 
-            IBlockState state = FastRegistry.getBlockState(data.states[edge]);
-            attributes.a_state = TextureUVs.STATEID_TO_INDEXID.get(state);
+            attributes.a_state = this.textureUVs.indexIdForState(data.states[edge]);
             attributes.a_color = this.worldRenderer.tintFactorForStateInBiomeAtPos(data.states[edge], data.biome, blockX, blockY, blockZ);
 
             map[baseMapIndex + edge] = vertices.put(attributes);
@@ -221,10 +220,9 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
                     continue; //skip if any of the vertices are missing
                 }
 
-                IBlockState state = FastRegistry.getBlockState(data.states[edge]);
-                IndexWriter buf = indices[renderType(state)];
+                IndexWriter buf = indices[renderType(data.states[edge])];
 
-                boolean water = state.getBlock() == Blocks.WATER;
+                boolean water = isWater(data.states[edge]);
                 if (water) {
                     edges |= EDGE_DIR_BOTH << (edge << 1);
                 }

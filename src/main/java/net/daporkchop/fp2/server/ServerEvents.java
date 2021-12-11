@@ -21,13 +21,21 @@
 package net.daporkchop.fp2.server;
 
 import io.github.opencubicchunks.cubicchunks.api.world.CubeDataEvent;
+import io.github.opencubicchunks.cubicchunks.api.world.ICube;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.core.mode.api.player.IFarPlayerServer;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketHandshake;
-import net.daporkchop.fp2.server.worldlistener.WorldChangeListenerManager;
+import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
+import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
+import net.daporkchop.fp2.core.server.event.TickEndEvent;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.server.world.FColumn1_12_2;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.server.world.FCube1_12_2;
+import net.daporkchop.lib.math.vector.Vec2i;
+import net.daporkchop.lib.math.vector.Vec3i;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.util.text.TextComponentTranslation;
+import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.world.ChunkDataEvent;
@@ -110,7 +118,7 @@ public class ServerEvents {
     @SubscribeEvent
     public void onWorldTickEnd(TickEvent.WorldTickEvent event) {
         if (!event.world.isRemote && event.phase == TickEvent.Phase.END) {
-            WorldChangeListenerManager.fireTickEnd(event.world);
+            ((IFarWorldServer) event.world).fp2_IFarWorldServer_eventBus().fire(new TickEndEvent());
 
             event.world.playerEntities.forEach(player -> ((IFarPlayerServer) ((EntityPlayerMP) player).connection).fp2_IFarPlayer_update());
         }
@@ -118,7 +126,8 @@ public class ServerEvents {
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public void onChunkDataSave(ChunkDataEvent.Save event) {
-        WorldChangeListenerManager.fireColumnSave(event.getChunk(), event.getData());
+        Chunk chunk = event.getChunk();
+        ((IFarWorldServer) chunk.getWorld()).fp2_IFarWorldServer_eventBus().fire(new ColumnSavedEvent(Vec2i.of(chunk.x, chunk.z), new FColumn1_12_2(chunk), event.getData()));
     }
 
     /**
@@ -130,7 +139,8 @@ public class ServerEvents {
     public static class _CC {
         @SubscribeEvent(priority = EventPriority.LOWEST)
         public void onCubeDataSave(CubeDataEvent.Save event) {
-            WorldChangeListenerManager.fireCubeSave(event.getCube(), event.getData());
+            ICube cube = event.getCube();
+            ((IFarWorldServer) cube.getWorld()).fp2_IFarWorldServer_eventBus().fire(new CubeSavedEvent(Vec3i.of(cube.getX(), cube.getY(), cube.getZ()), new FCube1_12_2(cube), event.getData()));
         }
     }
 }

@@ -18,42 +18,31 @@
  *
  */
 
-package net.daporkchop.fp2.mode.voxel;
+package net.daporkchop.fp2.core.server.event;
 
-import java.util.Arrays;
-
-import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
+import net.daporkchop.fp2.core.server.world.FColumn;
+import net.daporkchop.lib.math.vector.Vec2i;
 
 /**
- * Represents a single data sample contained in a voxel tile.
+ * Fired on an {@link IFarWorldServer}'s event bus when a column is saved.
  *
  * @author DaPorkchop_
  */
-public class VoxelData {
-    //vertex position and mesh intersection data
-    public int x;
-    public int y;
-    public int z;
-    public int edges;
-
-    //block data (for texturing and shading)
-    public final int[] states = new int[EDGE_COUNT];
-    public int biome;
-    public byte light;
+@RequiredArgsConstructor
+@Getter
+public class ColumnSavedEvent {
+    @NonNull
+    protected final Vec2i pos;
+    @NonNull
+    protected final FColumn column;
 
     /**
-     * Resets this instance.
-     *
-     * @return this instance
+     * The implementation-specific chunk data.
      */
-    public VoxelData reset() {
-        this.x = 0;
-        this.y = 0;
-        this.z = 0;
-        this.edges = 0;
-        Arrays.fill(this.states, 0);
-        this.biome = 0;
-        this.light = 0;
-        return this;
-    }
+    @NonNull
+    protected final Object data;
 }

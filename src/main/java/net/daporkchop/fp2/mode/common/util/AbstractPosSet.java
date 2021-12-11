@@ -30,8 +30,6 @@ import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import static net.daporkchop.fp2.core.FP2Core.*;
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**

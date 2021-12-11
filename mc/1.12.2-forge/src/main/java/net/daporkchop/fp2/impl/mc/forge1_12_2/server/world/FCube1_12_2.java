@@ -18,42 +18,29 @@
  *
  */
 
-package net.daporkchop.fp2.mode.voxel;
+package net.daporkchop.fp2.impl.mc.forge1_12_2.server.world;
 
-import java.util.Arrays;
-
-import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
+import io.github.opencubicchunks.cubicchunks.api.world.ICube;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.core.server.world.FCube;
+import net.daporkchop.lib.math.vector.Vec3i;
 
 /**
- * Represents a single data sample contained in a voxel tile.
- *
  * @author DaPorkchop_
  */
-public class VoxelData {
-    //vertex position and mesh intersection data
-    public int x;
-    public int y;
-    public int z;
-    public int edges;
+@RequiredArgsConstructor
+public class FCube1_12_2 implements FCube {
+    @NonNull
+    protected final ICube cube;
 
-    //block data (for texturing and shading)
-    public final int[] states = new int[EDGE_COUNT];
-    public int biome;
-    public byte light;
+    @Override
+    public Vec3i pos() {
+        return Vec3i.of(this.cube.getX(), this.cube.getY(), this.cube.getZ());
+    }
 
-    /**
-     * Resets this instance.
-     *
-     * @return this instance
-     */
-    public VoxelData reset() {
-        this.x = 0;
-        this.y = 0;
-        this.z = 0;
-        this.edges = 0;
-        Arrays.fill(this.states, 0);
-        this.biome = 0;
-        this.light = 0;
-        return this;
+    @Override
+    public boolean isFullyPopulated() {
+        return this.cube.isFullyPopulated();
     }
 }

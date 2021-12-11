@@ -18,47 +18,14 @@
  *
  */
 
-package net.daporkchop.fp2.server.worldlistener;
+package net.daporkchop.fp2.core.server.event;
 
-import io.github.opencubicchunks.cubicchunks.api.world.ICube;
-import lombok.NonNull;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.world.World;
-import net.minecraft.world.chunk.Chunk;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 
 /**
- * Listens for events in a world.
+ * Fired on an {@link IFarWorldServer}'s event bus when a game tick ends.
  *
  * @author DaPorkchop_
  */
-public interface IWorldChangeListener {
-    /**
-     * Fired immediately before a column is saved.
-     *
-     * @param world   the world that the column is in
-     * @param columnX the column's X coordinate
-     * @param columnZ the column's Z coordinate
-     * @param nbt     the column's NBT data
-     * @param column  the column
-     */
-    void onColumnSaved(@NonNull World world, int columnX, int columnZ, @NonNull NBTTagCompound nbt, @NonNull Chunk column);
-
-    /**
-     * Fired immediately before a cube is saved.
-     *
-     * @param world the world that the cube is in
-     * @param cubeX the cube's X coordinate
-     * @param cubeY the cube's Y coordinate
-     * @param cubeZ the cube's Z coordinate
-     * @param nbt   the cube's NBT data
-     * @param cube  the cube
-     */
-    void onCubeSaved(@NonNull World world, int cubeX, int cubeY, int cubeZ, @NonNull NBTTagCompound nbt, @NonNull ICube cube);
-
-    /**
-     * Fired after a world tick is completed.
-     */
-    default void onTickEnd() {
-        //no-op
-    }
+public class TickEndEvent {
 }

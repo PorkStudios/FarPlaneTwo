@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.mode.common.server.tracking;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
@@ -33,7 +34,6 @@ import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
 import net.daporkchop.fp2.core.util.datastructure.RecyclingArrayDeque;
 import net.daporkchop.fp2.core.util.datastructure.SimpleSet;
-import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.ArrayList;
@@ -46,8 +46,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
-import static net.daporkchop.fp2.util.Constants.*;
-import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
@@ -55,13 +53,6 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, STATE> implements IFarTracker<POS, T> {
-    /**
-     * The squared distance a player must move from their previous position in order to trigger a tracking update.
-     * <p>
-     * The default value of {@code (T_VOXELS / 2)²} is based on the equivalent value of {@code 64} (which is {@code (CHUNK_SIZE / 2)²}) used by vanilla.
-     */
-    protected static final double UPDATE_TRIGGER_DISTANCE_SQUARED = sq(T_VOXELS >> 1);
-
     protected final AbstractTrackerManager<POS, T> manager;
     protected final IFarRenderMode<POS, T> mode;
 

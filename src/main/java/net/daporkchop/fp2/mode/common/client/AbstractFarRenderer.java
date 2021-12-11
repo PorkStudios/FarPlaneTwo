@@ -94,6 +94,5 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTil
     protected void doRelease() {
         this.strategy.release();
         this.bakeManager.release();
-        this.gl.close();
     }
 }

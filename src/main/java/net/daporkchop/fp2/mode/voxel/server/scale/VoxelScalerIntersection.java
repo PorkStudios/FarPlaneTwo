@@ -141,7 +141,7 @@ public class VoxelScalerIntersection implements IFarScaler<VoxelPos, VoxelTile> 
                             }
                         }
                         srcEdges[srcIndex(x, y, z)] = edges;
-                        srcBiomesAndLights[srcIndex(x, y, z)] = data.biome << 8 | data.light;
+                        srcBiomesAndLights[srcIndex(x, y, z)] = data.biome << 8 | (data.light & 0xFF);
                     }
                 }
             }
@@ -268,7 +268,7 @@ public class VoxelScalerIntersection implements IFarScaler<VoxelPos, VoxelTile> 
                                             if ((data.states[edge] = srcStates[srcIndex((x << 1) + dx, (y << 1) + dy, (z << 1) + dz, edge)]) != 0) {
                                                 int si = srcIndex((x << 1) + dx, (y << 1) + dy, (z << 1) + dz);
                                                 data.biome = srcBiomesAndLights[si] >> 8;
-                                                data.light = srcBiomesAndLights[si] & 0xFF;
+                                                data.light = (byte) srcBiomesAndLights[si];
                                                 break VOXEL_SEARCH;
                                             }
                                         }

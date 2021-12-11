@@ -89,7 +89,7 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
         this.textureFormatLightmap = this.gl.createTextureFormat2D(LightmapTextureAttribute.class).build();
         this.textureLightmap = this.textureFormatLightmap.wrapExternalTexture(this.worldRenderer.lightmapTextureId());
 
-        this.textureUVs = new TextureUVs(this.gl);
+        this.textureUVs = new TextureUVs(this.gl, this.worldRenderer.world().fp2_IFarWorld_registry());
     }
 
     @Override
