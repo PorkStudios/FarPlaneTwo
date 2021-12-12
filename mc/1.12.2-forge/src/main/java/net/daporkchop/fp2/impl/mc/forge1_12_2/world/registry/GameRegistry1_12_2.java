@@ -67,9 +67,9 @@ public final class GameRegistry1_12_2 implements FGameRegistry {
     private final Reference2IntMap<IBlockState> statesToIds;
 
     @Getter
-    private final ExtendedBiomeRegistryInfo1_12_2 extendedBiomeRegistryData;
+    private final ExtendedBiomeRegistryData1_12_2 extendedBiomeRegistryData;
     @Getter
-    private final ExtendedStateRegistryInfo1_12_2 extendedStateRegistryData;
+    private final ExtendedStateRegistryData1_12_2 extendedStateRegistryData;
 
     private GameRegistry1_12_2() {
         //ids -> biomes
@@ -81,7 +81,7 @@ public final class GameRegistry1_12_2 implements FGameRegistry {
         IntStream.range(0, this.idsToBiomes.length).forEach(id -> checkState(this.biomesToIds.put(this.idsToBiomes[id], id) < 0, "duplicate biome: %s", this.idsToBiomes[id]));
 
         //extended registry information
-        this.extendedBiomeRegistryData = new ExtendedBiomeRegistryInfo1_12_2(this);
+        this.extendedBiomeRegistryData = new ExtendedBiomeRegistryData1_12_2(this);
 
         //ids -> states
         this.idsToStates = StreamSupport.stream(Block.REGISTRY.spliterator(), false)
@@ -94,7 +94,7 @@ public final class GameRegistry1_12_2 implements FGameRegistry {
         IntStream.range(0, this.idsToStates.length).forEach(id -> checkState(this.statesToIds.put(this.idsToStates[id], id) < 0, "duplicate state: %s", this.idsToStates[id]));
 
         //extended registry information
-        this.extendedStateRegistryData = new ExtendedStateRegistryInfo1_12_2(this);
+        this.extendedStateRegistryData = new ExtendedStateRegistryData1_12_2(this);
     }
 
     @Override

@@ -23,15 +23,38 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.world.registry;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.world.registry.FExtendedStateRegistryData;
+import net.minecraft.block.state.IBlockState;
+
+import static net.daporkchop.fp2.api.world.BlockWorldConstants.*;
 
 /**
  * @author DaPorkchop_
  */
 @Getter
-public final class ExtendedStateRegistryInfo1_12_2 implements FExtendedStateRegistryData {
+public final class ExtendedStateRegistryData1_12_2 implements FExtendedStateRegistryData {
+    private static int type(IBlockState state) {
+        if (state.isOpaqueCube()) {
+            return BLOCK_TYPE_OPAQUE;
+        } else if (state.getMaterial().isSolid() || state.getMaterial().isLiquid()) {
+            return BLOCK_TYPE_TRANSPARENT;
+        } else {
+            return BLOCK_TYPE_INVISIBLE;
+        }
+    }
+
     private final GameRegistry1_12_2 registry;
 
-    public ExtendedStateRegistryInfo1_12_2(@NonNull GameRegistry1_12_2 registry) {
+    private final byte[] types;
+
+    public ExtendedStateRegistryData1_12_2(@NonNull GameRegistry1_12_2 registry) {
         this.registry = registry;
+
+        this.types = new byte[registry.states().max().getAsInt() + 1];
+        registry.states().forEach(state -> this.types[state] = (byte) type(registry.id2state(state)));
+    }
+
+    @Override
+    public int type(int state) throws IndexOutOfBoundsException {
+        return this.types[state] & 0xFF;
     }
 }

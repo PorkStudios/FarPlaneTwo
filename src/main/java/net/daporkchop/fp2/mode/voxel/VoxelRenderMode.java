@@ -25,6 +25,7 @@ import lombok.NonNull;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.event.AbstractRegisterEvent;
+import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.core.util.registry.LinkedOrderedRegistry;
 import net.daporkchop.fp2.core.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
@@ -43,6 +44,7 @@ import net.daporkchop.fp2.mode.voxel.server.VoxelTileProvider;
 import net.daporkchop.fp2.mode.voxel.server.gen.exact.CCVoxelGenerator;
 import net.daporkchop.fp2.mode.voxel.server.gen.exact.VanillaVoxelGenerator;
 import net.daporkchop.fp2.mode.voxel.server.gen.rough.CWGVoxelGenerator;
+import net.daporkchop.fp2.mode.voxel.server.scale.VoxelScalerIntersection;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.core.util.math.MathUtil;
 import net.daporkchop.lib.binary.stream.DataIn;
@@ -91,6 +93,11 @@ public class VoxelRenderMode extends AbstractFarRenderMode<VoxelPos, VoxelTile> 
         return isCubicWorld((World) world.fp2_IFarWorld_implWorld())
                 ? new VoxelTileProvider.CubicChunks(world, this)
                 : new VoxelTileProvider.Vanilla(world, this);
+    }
+
+    @Override
+    public IFarScaler<VoxelPos, VoxelTile> scaler(@NonNull IFarWorldServer world) {
+        return new VoxelScalerIntersection(world);
     }
 
     @Override

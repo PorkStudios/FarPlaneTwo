@@ -35,7 +35,6 @@ import static java.lang.Math.*;
 import static net.daporkchop.fp2.api.world.BlockWorldConstants.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
-import static net.daporkchop.fp2.util.BlockType.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -73,7 +72,7 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
         checkArg(typeMap.length >= cb(CACHE_SIZE) && stateMap.length >= cb(CACHE_SIZE));
 
         for (int i = 0; i < cb(CACHE_SIZE); i++) { //set each type flag depending on the block state at the corresponding position
-            typeMap[i] = (byte) blockType(stateMap[i]);
+            typeMap[i] = (byte) this.extendedStateRegistryData.type(stateMap[i]);
         }
 
         return typeMap;

@@ -24,14 +24,12 @@ import lombok.NonNull;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
-import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTrackerManager;
 import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
 import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
 import net.daporkchop.fp2.mode.common.server.AbstractFarTileProvider;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
-import net.daporkchop.fp2.mode.voxel.server.scale.VoxelScalerIntersection;
 import net.daporkchop.fp2.mode.voxel.server.tracking.VoxelTrackerManager;
 
 /**
@@ -40,11 +38,6 @@ import net.daporkchop.fp2.mode.voxel.server.tracking.VoxelTrackerManager;
 public abstract class VoxelTileProvider extends AbstractFarTileProvider<VoxelPos, VoxelTile> {
     public VoxelTileProvider(@NonNull IFarWorldServer world, @NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
         super(world, mode);
-    }
-
-    @Override
-    protected IFarScaler<VoxelPos, VoxelTile> createScaler() {
-        return new VoxelScalerIntersection();
     }
 
     @Override

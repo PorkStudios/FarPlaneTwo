@@ -91,14 +91,14 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
         this.generatorExact = this.mode().exactGenerator(world);
 
         if (this.generatorRough == null) {
-            fp2().log().warn("no rough {} generator exists for world {} (generator={})! Falling back to exact generator, this will have serious performance implications.", mode.name(), world.fp2_IFarWorld_dimensionId(), world.fp2_IFarWorldServer_terrainGeneratorInfo().implGenerator());
+            fp2().log().warn("no rough %s generator exists for DIM%d (generator=%s)! Falling back to exact generator, this will have serious performance implications.", mode.name(), world.fp2_IFarWorld_dimensionId(), world.fp2_IFarWorldServer_terrainGeneratorInfo().implGenerator());
             //TODO: make the fallback generator smart! rather than simply getting the chunks from the world, do generation and population in
             // a volatile, in-memory world clone to prevent huge numbers of chunks/cubes from potentially being generated (and therefore saved)
         }
 
         this.lowResolution = this.generatorRough != null && this.generatorRough.supportsLowResolution();
 
-        this.scaler = this.createScaler();
+        this.scaler = mode.scaler(world);
 
         this.root = world.fp2_IFarWorldServer_worldDirectory().resolve(MODID).resolve(this.mode().name().toLowerCase());
         this.storage = new RocksStorage<>(this, this.root);
@@ -127,8 +127,6 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
 
         world.fp2_IFarWorldServer_eventBus().registerWeak(this);
     }
-
-    protected abstract IFarScaler<POS, T> createScaler();
 
     protected abstract IFarTrackerManager<POS, T> createTracker();
 
@@ -215,7 +213,7 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
         this.onTickEnd(null);
         this.shutdownUpdateQueue();
 
-        fp2().log().trace("Shutting down storage in DIM{}", this.world.fp2_IFarWorld_dimensionId());
+        fp2().log().trace("Shutting down storage in DIM%d", this.world.fp2_IFarWorld_dimensionId());
         this.storage.close();
     }
 }

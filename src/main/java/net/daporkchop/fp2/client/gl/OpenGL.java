@@ -22,7 +22,6 @@ package net.daporkchop.fp2.client.gl;
 
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.gl.compute.ComputeLocalSize;
-import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import org.lwjgl.opengl.ContextCapabilities;
 import org.lwjgl.opengl.GLContext;
@@ -33,13 +32,11 @@ import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static net.daporkchop.fp2.core.debug.FP2Debug.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.lwjgl.opengl.GL11.glGetInteger;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL30.glGetInteger;
 import static org.lwjgl.opengl.GL43.*;
-import static org.lwjgl.util.glu.GLU.*;
 
 /**
  * @author DaPorkchop_
@@ -94,23 +91,6 @@ public class OpenGL {
                 glGetInteger(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 1),
                 glGetInteger(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 2));
         MAX_COMPUTE_WORK_GROUP_INVOCATIONS = glGetInteger(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS);
-    }
-
-    /**
-     * Checks for OpenGL errors, printing a message if any occurred.
-     * <p>
-     * Note that this function is a no-op if not in debug mode.
-     *
-     * @param message the message to print alongside the OpenGL error code
-     */
-    public void checkGLError(String message) {
-        if (FP2_DEBUG) {
-            for (int error; (error = glGetError()) != GL_NO_ERROR; ) {
-                Constants.FP2_LOG.error("########## GL ERROR ##########");
-                Constants.FP2_LOG.error("@ {}", message);
-                Constants.FP2_LOG.error("{}: {}", error, gluErrorString(error));
-            }
-        }
     }
 
     protected Stream<ComputeLocalSize> allPossibleWorkGroupSizes() {

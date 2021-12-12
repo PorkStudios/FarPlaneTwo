@@ -21,6 +21,8 @@
 package net.daporkchop.fp2.mode.common.server.gen;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.api.world.registry.FExtendedBiomeRegistryData;
+import net.daporkchop.fp2.api.world.registry.FExtendedStateRegistryData;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGenerator;
@@ -30,10 +32,16 @@ import net.daporkchop.fp2.core.mode.api.server.gen.IFarGenerator;
  */
 public abstract class AbstractFarGenerator implements IFarGenerator {
     protected final FGameRegistry registry;
+    protected final FExtendedBiomeRegistryData extendedBiomeRegistryData;
+    protected final FExtendedStateRegistryData extendedStateRegistryData;
+
     protected final int seaLevel;
 
     public AbstractFarGenerator(@NonNull IFarWorldServer world) {
         this.registry = world.fp2_IFarWorld_registry();
+        this.extendedBiomeRegistryData = this.registry.extendedBiomeRegistryData();
+        this.extendedStateRegistryData = this.registry.extendedStateRegistryData();
+
         this.seaLevel = world.fp2_IFarWorldServer_seaLevel();
     }
 }

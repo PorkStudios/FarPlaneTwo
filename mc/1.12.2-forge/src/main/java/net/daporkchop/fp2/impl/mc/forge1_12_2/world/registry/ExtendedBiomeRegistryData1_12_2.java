@@ -28,10 +28,10 @@ import net.daporkchop.fp2.api.world.registry.FExtendedBiomeRegistryData;
  * @author DaPorkchop_
  */
 @Getter
-public final class ExtendedBiomeRegistryInfo1_12_2 implements FExtendedBiomeRegistryData {
+public final class ExtendedBiomeRegistryData1_12_2 implements FExtendedBiomeRegistryData {
     private final GameRegistry1_12_2 registry;
 
-    public ExtendedBiomeRegistryInfo1_12_2(@NonNull GameRegistry1_12_2 registry) {
+    public ExtendedBiomeRegistryData1_12_2(@NonNull GameRegistry1_12_2 registry) {
         this.registry = registry;
     }
 }

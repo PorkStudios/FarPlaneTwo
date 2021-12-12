@@ -33,6 +33,7 @@ import net.daporkchop.fp2.core.mode.api.player.IFarPlayerServer;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
+import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.core.util.SimpleRecycler;
 import net.daporkchop.lib.binary.stream.DataIn;
 import net.daporkchop.lib.binary.stream.DataOut;
@@ -83,6 +84,14 @@ public interface IFarRenderMode<POS extends IFarPos, T extends IFarTile> {
      * @return the new {@link IFarGeneratorRough}
      */
     IFarGeneratorRough<POS, T> roughGenerator(@NonNull IFarWorldServer world);
+
+    /**
+     * Creates a new {@link IFarScaler} for the given world.
+     *
+     * @param world the world
+     * @return the new {@link IFarScaler}
+     */
+    IFarScaler<POS, T> scaler(@NonNull IFarWorldServer world);
 
     /**
      * Creates a new {@link IFarServerContext} for the given player in the given world.

@@ -40,7 +40,6 @@ import java.util.List;
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.api.world.BlockWorldConstants.*;
 import static net.daporkchop.fp2.mode.heightmap.HeightmapConstants.*;
-import static net.daporkchop.fp2.util.BlockType.*;
 import static net.daporkchop.fp2.util.Constants.*;
 
 /**
@@ -64,7 +63,7 @@ public class FlatHeightmapGenerator extends AbstractRoughHeightmapGenerator {
         for (int i = layers.size() - 1; i >= 0; i--) {
             FlatLayerInfo layer = layers.get(i);
 
-            int blockType = blockType(layer.getLayerMaterial());
+            int blockType = this.extendedStateRegistryData.type(this.registry.state2id(layer.getLayerMaterial()));
             if (topWaterLayerIndex < 0 && layer.getLayerMaterial().getBlock() == Blocks.WATER) {
                 topWaterLayerIndex = i;
             } else if (blockType == BLOCK_TYPE_OPAQUE) {

@@ -29,7 +29,7 @@ import java.util.stream.Stream;
 /**
  * @author DaPorkchop_
  */
-public interface IFarScaler<POS extends IFarPos, T extends IFarTile> {
+public interface IFarScaler<POS extends IFarPos, T extends IFarTile> extends IFarGenerator {
     /**
      * Gets the positions of all the low-detail tiles whose contents are affected by the content of the given high-detail tile.
      * <p>

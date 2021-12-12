@@ -33,6 +33,8 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Method;
 
+import static net.daporkchop.fp2.core.FP2Core.*;
+
 /**
  * Optifine compatibility code.
  *
@@ -55,12 +57,12 @@ public class OFHelper {
             ofVersion = ofVersion.replace("_pre", "");
             ofVersion = ofVersion.substring(ofVersion.length() - 2);
 
-            Constants.FP2_LOG.info("Detected Optifine version: {}", ofVersion);
+            fp2().log().info("Detected Optifine version: %s", ofVersion);
         } catch (ClassNotFoundException e) {
-            Constants.FP2_LOG.info("No Optifine detected");
+            fp2().log().info("No Optifine detected");
         } catch (Exception e) {
             ofVersion = "E1";
-            Constants.FP2_LOG.error("Optifine detected, but could not detect version. It may not work. Assuming Optifine E1...", e);
+            fp2().log().error("Optifine detected, but could not detect version. It may not work. Assuming Optifine E1...", e);
         } finally {
             OF_VERSION = ofVersion;
             OF = ofVersion != null;

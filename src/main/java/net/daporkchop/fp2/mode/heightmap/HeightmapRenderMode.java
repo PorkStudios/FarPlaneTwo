@@ -26,6 +26,7 @@ import lombok.NonNull;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.event.AbstractRegisterEvent;
+import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.core.util.registry.LinkedOrderedRegistry;
 import net.daporkchop.fp2.core.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
@@ -46,6 +47,7 @@ import net.daporkchop.fp2.mode.heightmap.server.gen.exact.VanillaHeightmapGenera
 import net.daporkchop.fp2.mode.heightmap.server.gen.rough.CWGFlatHeightmapGenerator;
 import net.daporkchop.fp2.mode.heightmap.server.gen.rough.CWGHeightmapGenerator;
 import net.daporkchop.fp2.mode.heightmap.server.gen.rough.FlatHeightmapGenerator;
+import net.daporkchop.fp2.mode.heightmap.server.scale.HeightmapScalerMinMax;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.core.util.math.MathUtil;
 import net.daporkchop.lib.binary.stream.DataIn;
@@ -97,6 +99,11 @@ public class HeightmapRenderMode extends AbstractFarRenderMode<HeightmapPos, Hei
         return isCubicWorld((World) world.fp2_IFarWorld_implWorld())
                 ? new HeightmapTileProvider.CubicChunks(world, this)
                 : new HeightmapTileProvider.Vanilla(world, this);
+    }
+
+    @Override
+    public IFarScaler<HeightmapPos, HeightmapTile> scaler(@NonNull IFarWorldServer world) {
+        return new HeightmapScalerMinMax(world);
     }
 
     @Override

@@ -21,7 +21,9 @@
 package net.daporkchop.fp2.mode.heightmap.server.scale;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
+import net.daporkchop.fp2.mode.common.server.gen.AbstractFarGenerator;
 import net.daporkchop.fp2.mode.heightmap.HeightmapData;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
@@ -40,7 +42,11 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  *
  * @author DaPorkchop_
  */
-public class HeightmapScalerMinMax implements IFarScaler<HeightmapPos, HeightmapTile> {
+public class HeightmapScalerMinMax extends AbstractFarGenerator implements IFarScaler<HeightmapPos, HeightmapTile> {
+    public HeightmapScalerMinMax(@NonNull IFarWorldServer world) {
+        super(world);
+    }
+
     @Override
     public Stream<HeightmapPos> outputs(@NonNull HeightmapPos srcPos) {
         return Stream.of(srcPos.up());

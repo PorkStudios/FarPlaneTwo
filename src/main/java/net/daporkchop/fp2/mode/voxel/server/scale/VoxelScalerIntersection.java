@@ -22,10 +22,11 @@ package net.daporkchop.fp2.mode.voxel.server.scale;
 
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.FastRegistry;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.core.util.math.Vector3d;
 import net.daporkchop.fp2.core.util.math.qef.QefSolver;
+import net.daporkchop.fp2.mode.common.server.gen.AbstractFarGenerator;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
@@ -39,7 +40,6 @@ import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.api.world.BlockWorldConstants.*;
 import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
-import static net.daporkchop.fp2.util.BlockType.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -50,7 +50,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 //TODO: this needs a LOT of work
 //TODO: re-implement using something based on https://www.researchgate.net/publication/220792145_Model_Simplification_Using_Vertex-Clustering
-public class VoxelScalerIntersection implements IFarScaler<VoxelPos, VoxelTile> {
+public class VoxelScalerIntersection extends AbstractFarGenerator implements IFarScaler<VoxelPos, VoxelTile> {
     public static final int SRC_MIN = -4;
     public static final int SRC_MAX = (T_VOXELS << 1) + 4;
     //public static final int SRC_MIN = 0;
@@ -86,6 +86,10 @@ public class VoxelScalerIntersection implements IFarScaler<VoxelPos, VoxelTile> 
     protected static Vec3d pos(int x, int y, int z, int edge, int i) {
         int c = CONNECTION_INDICES[edge * CONNECTION_INDEX_COUNT + i];
         return new Vec3d(x + ((c >> 2) & 1) + 0.5d, y + ((c >> 1) & 1) + 0.5d, z + (c & 1) + 0.5d);
+    }
+
+    public VoxelScalerIntersection(@NonNull IFarWorldServer world) {
+        super(world);
     }
 
     @Override
@@ -136,7 +140,7 @@ public class VoxelScalerIntersection implements IFarScaler<VoxelPos, VoxelTile> 
                         int edges = 0;
                         for (int edge = 0; edge < 3; edge++) {
                             if (((data.edges >> (edge << 1)) & EDGE_DIR_MASK) != EDGE_DIR_NONE
-                                && (true || blockType(FastRegistry.getBlockState(data.states[edge])) == BLOCK_TYPE_OPAQUE)) {
+                                && (true || this.extendedStateRegistryData.type(data.states[edge]) == BLOCK_TYPE_OPAQUE)) {
                                 edges |= (data.edges & (EDGE_DIR_MASK << (edge << 1)));
                                 srcStates[srcIndex(x, y, z, edge)] = data.states[edge];
                             }

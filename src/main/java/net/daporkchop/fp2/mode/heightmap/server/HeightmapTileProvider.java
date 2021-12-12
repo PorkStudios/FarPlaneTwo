@@ -23,14 +23,12 @@ package net.daporkchop.fp2.mode.heightmap.server;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
-import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTrackerManager;
 import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
 import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
 import net.daporkchop.fp2.mode.common.server.AbstractFarTileProvider;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
-import net.daporkchop.fp2.mode.heightmap.server.scale.HeightmapScalerMinMax;
 import net.daporkchop.fp2.mode.heightmap.server.tracking.HeightmapTrackerManager;
 
 /**
@@ -39,11 +37,6 @@ import net.daporkchop.fp2.mode.heightmap.server.tracking.HeightmapTrackerManager
 public abstract class HeightmapTileProvider extends AbstractFarTileProvider<HeightmapPos, HeightmapTile> {
     public HeightmapTileProvider(@NonNull IFarWorldServer world, @NonNull IFarRenderMode<HeightmapPos, HeightmapTile> mode) {
         super(world, mode);
-    }
-
-    @Override
-    protected IFarScaler<HeightmapPos, HeightmapTile> createScaler() {
-        return new HeightmapScalerMinMax();
     }
 
     @Override

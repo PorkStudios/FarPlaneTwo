@@ -27,6 +27,7 @@ import net.minecraft.world.gen.layer.GenLayer;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 
@@ -69,7 +70,7 @@ public interface IFastLayer {
      */
     default void getGrid(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
         if (__HAS_LOGGED_GRID_WARNING.add(this.getClass())) {
-            FP2_LOG.warn("{} does not override getGrid(), falling back to slow implementation...", this.getClass().getCanonicalName());
+            fp2().log().warn("%s does not override getGrid(), falling back to slow implementation...", this.getClass().getTypeName());
         }
 
         for (int i = 0, dx = 0; dx < sizeX; dx++) {
@@ -92,7 +93,7 @@ public interface IFastLayer {
      */
     default void multiGetGrids(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
         if (__HAS_LOGGED_MULTIGRID_WARNING.add(this.getClass())) {
-            FP2_LOG.warn("{} does not override multiGetGrids(), falling back to slow implementation...", this.getClass().getCanonicalName());
+            fp2().log().warn("%s does not override multiGetGrids(), falling back to slow implementation...", this.getClass().getTypeName());
         }
 
         int[] tmp = alloc.atLeast(size * size);

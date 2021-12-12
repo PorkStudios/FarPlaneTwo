@@ -27,8 +27,6 @@ import net.minecraft.init.Blocks;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
-import static net.daporkchop.fp2.api.world.BlockWorldConstants.*;
-
 /**
  * @author DaPorkchop_
  */
@@ -46,32 +44,6 @@ public class BlockType {
             RENDER_TYPE_CUTOUT, //CUTOUT,
             RENDER_TYPE_TRANSLUCENT, //TRANSLUCENT
     };
-
-    /**
-     * Gets the given {@link IBlockState}'s block type.
-     *
-     * @param stateId the block state ID
-     * @return the block type
-     */
-    public int blockType(int stateId) {
-        return blockType(GameRegistry1_12_2.get().id2state(stateId));
-    }
-
-    /**
-     * Gets the given {@link IBlockState}'s block type.
-     *
-     * @param state the {@link IBlockState}
-     * @return the block type
-     */
-    public int blockType(IBlockState state) {
-        if (state.isOpaqueCube()) {
-            return BLOCK_TYPE_OPAQUE;
-        } else if (state.getMaterial().isSolid() || state.getMaterial().isLiquid()) {
-            return BLOCK_TYPE_TRANSPARENT;
-        } else {
-            return BLOCK_TYPE_INVISIBLE;
-        }
-    }
 
     /**
      * Gets the given {@link IBlockState}'s render type.

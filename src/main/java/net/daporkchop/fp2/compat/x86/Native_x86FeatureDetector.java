@@ -24,6 +24,7 @@ import net.daporkchop.fp2.compat.windows.WindowsDLLDependencyInjector;
 import net.daporkchop.lib.common.system.OperatingSystem;
 import net.daporkchop.lib.common.system.PlatformInfo;
 
+import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.fp2.util.Constants.*;
 
 /**
@@ -42,7 +43,7 @@ final class Native_x86FeatureDetector implements x86FeatureDetector {
     }
 
     public Native_x86FeatureDetector() {
-        FP2_LOG.info("using x86 vector extension: {}", this.maxSupportedVectorExtension());
+        fp2().log().info("using x86 vector extension: {}", this.maxSupportedVectorExtension());
     }
 
     @Override

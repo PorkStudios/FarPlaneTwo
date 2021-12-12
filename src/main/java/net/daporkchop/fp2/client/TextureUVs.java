@@ -256,8 +256,8 @@ public class TextureUVs extends AbstractReleasable {
         }
 
         if (!erroredStates.isEmpty()) { //some block states failed!
-            FP2_LOG.error("failed to generate texture UVs for {} block states, they will be replaced with missing textures:", erroredStates.size());
-            erroredStates.forEach(FP2_LOG::error);
+            fp2().log().error("failed to generate texture UVs for %d block states, they will be replaced with missing textures:", erroredStates.size());
+            erroredStates.forEach(state -> fp2().log().error(state.toString()));
 
             int id = stateIdToIndexId.getInt(Blocks.AIR.getDefaultState());
             erroredStates.forEach(state -> stateIdToIndexId.put(state, id));

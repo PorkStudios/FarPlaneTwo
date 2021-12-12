@@ -40,6 +40,10 @@ import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.player.IFarPlayerClient;
 import net.daporkchop.fp2.core.network.RegisterPacketsEvent;
 import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
+import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionBegin;
+import net.daporkchop.fp2.core.network.packet.standard.server.SPacketTileData;
+import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUnloadTile;
+import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUnloadTiles;
 import net.daporkchop.fp2.core.util.I18n;
 import net.daporkchop.fp2.debug.client.DebugClientEvents;
 import net.daporkchop.fp2.debug.client.DebugKeyBindings;
@@ -50,11 +54,8 @@ import net.daporkchop.fp2.impl.mc.forge1_12_2.log.Log4jAsPorkLibLogger;
 import net.daporkchop.fp2.mode.heightmap.HeightmapRenderMode;
 import net.daporkchop.fp2.mode.voxel.VoxelRenderMode;
 import net.daporkchop.fp2.net.FP2Network;
-import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionBegin;
-import net.daporkchop.fp2.core.network.packet.standard.server.SPacketTileData;
-import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUnloadTile;
-import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUnloadTiles;
 import net.daporkchop.fp2.server.FP2Server;
+import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.event.IdMappingsChangedEvent;
 import net.daporkchop.fp2.util.threading.futureexecutor.ServerThreadMarkedFutureExecutor;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -81,9 +82,9 @@ import java.util.Map;
 import java.util.function.Function;
 
 import static net.daporkchop.fp2.FP2.*;
-import static net.daporkchop.fp2.core.client.FP2Client.*;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.compat.of.OFHelper.*;
+import static net.daporkchop.fp2.core.client.FP2Client.*;
 import static net.daporkchop.fp2.core.debug.FP2Debug.*;
 import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
@@ -105,10 +106,10 @@ public class FP2 extends FP2Core implements ResourceProvider {
         this.log(new Log4jAsPorkLibLogger(event.getModLog()));
         this.chat(new ChatAsPorkLibLogger(this.mc));
 
-        FP2_LOG = event.getModLog();
+        Constants.FP2_LOG = event.getModLog();
         this.version = event.getModMetadata().version;
 
-        FP2_LOG.info("Detected x86 SIMD extension: {}", x86FeatureDetector.INSTANCE.maxSupportedVectorExtension());
+        this.log().info("Detected x86 SIMD extension: %s", x86FeatureDetector.INSTANCE.maxSupportedVectorExtension());
 
         FP2Network.preInit();
 

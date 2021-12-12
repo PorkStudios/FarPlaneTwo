@@ -21,13 +21,11 @@
 package net.daporkchop.fp2.client.gl;
 
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.core.config.FP2Config;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.core.FP2Core.*;
-import static net.daporkchop.fp2.util.Constants.*;
 import static org.lwjgl.opengl.GL11.*;
 
 /**
@@ -43,8 +41,8 @@ public class GLCompatibilityHelper {
     public final boolean ALLOW_MULTIDRAW = !WORKAROUND_INTEL_MULTIDRAW_NOT_WORKING;
 
     static {
-        FP2_LOG.info("{}enabling AMD vertex attribute padding workaround", WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING ? "" : "not ");
-        FP2_LOG.info("{}enabling Intel multidraw workaround", WORKAROUND_INTEL_MULTIDRAW_NOT_WORKING ? "" : "not ");
+        fp2().log().info("%senabling AMD vertex attribute padding workaround", WORKAROUND_AMD_VERTEX_ATTRIBUTE_PADDING ? "" : "not ");
+        fp2().log().info("{}enabling Intel multidraw workaround", WORKAROUND_INTEL_MULTIDRAW_NOT_WORKING ? "" : "not ");
     }
 
     private boolean isOfficialAmdDriver() {
