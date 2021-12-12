@@ -22,8 +22,8 @@ package net.daporkchop.fp2.mode.voxel.server.tracking;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarServerContext;
-import net.daporkchop.fp2.mode.common.server.tracking.AbstractTracker;
-import net.daporkchop.fp2.mode.common.server.tracking.AbstractTrackerManager;
+import net.daporkchop.fp2.core.mode.common.server.tracking.AbstractTracker;
+import net.daporkchop.fp2.core.mode.common.server.tracking.AbstractTrackerManager;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.mode.voxel.server.VoxelTileProvider;

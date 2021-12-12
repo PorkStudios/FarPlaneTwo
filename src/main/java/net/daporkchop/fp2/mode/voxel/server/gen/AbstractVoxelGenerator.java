@@ -22,10 +22,9 @@ package net.daporkchop.fp2.mode.voxel.server.gen;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
-import net.daporkchop.fp2.mode.common.server.gen.AbstractFarGenerator;
+import net.daporkchop.fp2.core.mode.common.server.gen.AbstractFarGenerator;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.reference.cache.Cached;
-import net.minecraft.world.WorldServer;
 
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;

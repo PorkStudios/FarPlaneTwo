@@ -22,8 +22,8 @@ package net.daporkchop.fp2.mode.heightmap.client;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
-import net.daporkchop.fp2.mode.common.client.AbstractFarRenderer;
-import net.daporkchop.fp2.mode.common.client.strategy.IFarRenderStrategy;
+import net.daporkchop.fp2.core.mode.common.client.AbstractFarRenderer;
+import net.daporkchop.fp2.core.mode.common.client.strategy.IFarRenderStrategy;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
 import net.minecraftforge.fml.relauncher.Side;

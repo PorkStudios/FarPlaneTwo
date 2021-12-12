@@ -22,8 +22,8 @@ package net.daporkchop.fp2.mode.heightmap.server.tracking;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarServerContext;
-import net.daporkchop.fp2.mode.common.server.tracking.AbstractTracker;
-import net.daporkchop.fp2.mode.common.server.tracking.AbstractTrackerManager;
+import net.daporkchop.fp2.core.mode.common.server.tracking.AbstractTracker;
+import net.daporkchop.fp2.core.mode.common.server.tracking.AbstractTrackerManager;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
 import net.daporkchop.fp2.mode.heightmap.server.HeightmapTileProvider;

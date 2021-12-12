@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.mode.heightmap.util;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.common.util.AbstractPosSet;
+import net.daporkchop.fp2.core.mode.common.util.AbstractPosSet;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSet;
 import net.daporkchop.fp2.core.util.datastructure.SimpleSet;

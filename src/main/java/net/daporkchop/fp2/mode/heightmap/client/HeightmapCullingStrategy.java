@@ -22,7 +22,7 @@ package net.daporkchop.fp2.mode.heightmap.client;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import net.daporkchop.fp2.mode.common.client.ICullingStrategy;
+import net.daporkchop.fp2.core.mode.common.client.ICullingStrategy;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 
 /**

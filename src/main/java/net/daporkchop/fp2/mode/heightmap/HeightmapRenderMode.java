@@ -38,7 +38,7 @@ import net.daporkchop.fp2.core.mode.api.player.IFarPlayerServer;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
-import net.daporkchop.fp2.mode.common.AbstractFarRenderMode;
+import net.daporkchop.fp2.core.mode.common.AbstractFarRenderMode;
 import net.daporkchop.fp2.mode.heightmap.ctx.HeightmapClientContext;
 import net.daporkchop.fp2.mode.heightmap.ctx.HeightmapServerContext;
 import net.daporkchop.fp2.mode.heightmap.server.HeightmapTileProvider;

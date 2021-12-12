@@ -24,7 +24,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
-import net.daporkchop.fp2.mode.common.ctx.AbstractFarServerContext;
+import net.daporkchop.fp2.core.mode.common.ctx.AbstractFarServerContext;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
 import net.daporkchop.fp2.core.mode.api.player.IFarPlayerServer;

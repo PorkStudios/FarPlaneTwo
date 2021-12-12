@@ -23,7 +23,7 @@ package net.daporkchop.fp2.mode.voxel.client;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
-import net.daporkchop.fp2.mode.common.client.ICullingStrategy;
+import net.daporkchop.fp2.core.mode.common.client.ICullingStrategy;
 import net.daporkchop.fp2.mode.voxel.VoxelDirectPosAccess;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 

@@ -137,7 +137,7 @@ public class TextureUVs1_12_2 extends AbstractReleasable implements TextureUVs {
             return DEFAULT_RENDERER.render(state, face, model);
         });
     }
-    
+
     private static PackedBakedQuad quad(@NonNull TextureAtlasSprite sprite, float tintFactor) {
         return new PackedBakedQuad(sprite.getMinU(), sprite.getMinV(), sprite.getMaxU(), sprite.getMaxV(), tintFactor);
     }
@@ -194,10 +194,6 @@ public class TextureUVs1_12_2 extends AbstractReleasable implements TextureUVs {
     }
 
     protected void reloadUVs() {
-        if (this.mc.getTextureMapBlocks() == null) { //texture map hasn't been initialized yet, meaning the game is still starting
-            return;
-        }
-
         ObjIntMap<List<PackedBakedQuad>> distinctQuadsToId = new ObjIntOpenHashMap<>();
         List<List<PackedBakedQuad>> distinctQuadsById = new ArrayList<>();
 

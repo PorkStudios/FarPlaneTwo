@@ -26,7 +26,7 @@ import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.core.util.math.Vector3d;
 import net.daporkchop.fp2.core.util.math.qef.QefSolver;
-import net.daporkchop.fp2.mode.common.server.gen.AbstractFarGenerator;
+import net.daporkchop.fp2.core.mode.common.server.gen.AbstractFarGenerator;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;

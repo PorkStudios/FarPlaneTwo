@@ -23,7 +23,7 @@ package net.daporkchop.fp2.mode.heightmap.server.scale;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
-import net.daporkchop.fp2.mode.common.server.gen.AbstractFarGenerator;
+import net.daporkchop.fp2.core.mode.common.server.gen.AbstractFarGenerator;
 import net.daporkchop.fp2.mode.heightmap.HeightmapData;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.HeightmapTile;

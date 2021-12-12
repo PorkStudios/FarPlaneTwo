@@ -24,13 +24,10 @@ import lombok.NonNull;
 import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
-import net.daporkchop.fp2.mode.common.server.gen.AbstractFarGenerator;
+import net.daporkchop.fp2.core.mode.common.server.gen.AbstractFarGenerator;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.HeightmapData;
 import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
-import net.daporkchop.fp2.compat.vanilla.IBlockHeightAccess;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.WorldServer;
 
 import java.util.Arrays;
 

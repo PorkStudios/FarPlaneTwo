@@ -26,7 +26,7 @@ import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldClient;
-import net.daporkchop.fp2.mode.common.ctx.AbstractFarClientContext;
+import net.daporkchop.fp2.core.mode.common.ctx.AbstractFarClientContext;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.mode.voxel.client.VoxelRenderer;

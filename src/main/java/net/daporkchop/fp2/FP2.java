@@ -86,7 +86,7 @@ import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.compat.of.OFHelper.*;
 import static net.daporkchop.fp2.core.client.FP2Client.*;
 import static net.daporkchop.fp2.core.debug.FP2Debug.*;
-import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
+import static net.daporkchop.fp2.core.mode.common.client.RenderConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
 
 /**
