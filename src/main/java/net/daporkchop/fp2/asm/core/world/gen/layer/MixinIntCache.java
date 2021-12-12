@@ -31,7 +31,7 @@ import org.spongepowered.asm.mixin.Overwrite;
  */
 @Mixin(IntCache.class)
 public abstract class MixinIntCache {
-    private static final TL<TLIntCache> tl = TL.initializedWith(TLIntCache::new);
+    private static final TL<TLIntCache> FP2_TL = TL.initializedWith(TLIntCache::new);
 
     /**
      * @author DaPorkchop_
@@ -39,7 +39,7 @@ public abstract class MixinIntCache {
      */
     @Overwrite
     public static int[] getIntCache(int size) {
-        return tl.get().getIntCache(size);
+        return FP2_TL.get().getIntCache(size);
     }
 
     /**
@@ -48,7 +48,7 @@ public abstract class MixinIntCache {
      */
     @Overwrite
     public static void resetIntCache() {
-        tl.get().resetIntCache();
+        FP2_TL.get().resetIntCache();
     }
 
     /**
@@ -57,6 +57,6 @@ public abstract class MixinIntCache {
      */
     @Overwrite
     public static String getCacheSizes() {
-        return tl.get().getCacheSizes();
+        return FP2_TL.get().getCacheSizes();
     }
 }

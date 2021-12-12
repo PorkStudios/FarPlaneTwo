@@ -39,18 +39,18 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 @SuppressWarnings("deprecation")
 public abstract class MixinMinecraftServer implements ServerThreadMarkedFutureExecutor.Holder {
     @Unique
-    private ServerThreadMarkedFutureExecutor executor;
+    private ServerThreadMarkedFutureExecutor fp2_executor;
 
     @Inject(method = "Lnet/minecraft/server/MinecraftServer;startServerThread()V",
             at = @At(value = "INVOKE",
                     target = "Ljava/lang/Thread;start()V",
                     shift = At.Shift.BEFORE))
     private void fp2_startServerThread_constructMarkedExecutor(CallbackInfo ci) {
-        this.executor = new ServerThreadMarkedFutureExecutor(uncheckedCast(this));
+        this.fp2_executor = new ServerThreadMarkedFutureExecutor(uncheckedCast(this));
     }
 
     @Override
     public ServerThreadMarkedFutureExecutor fp2_ServerThreadMarkedFutureExecutor$Holder_get() {
-        return this.executor;
+        return this.fp2_executor;
     }
 }

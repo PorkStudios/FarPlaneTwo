@@ -64,15 +64,15 @@ public abstract class MixinWorldServer extends MixinWorld implements IFarWorldSe
     private MinecraftServer server;
 
     @Unique
-    protected Map<IFarRenderMode, IFarTileProvider> tileProvidersByMode;
+    protected Map<IFarRenderMode, IFarTileProvider> fp2_tileProvidersByMode;
     @Unique
-    protected IFarTileProvider[] tileProviders;
+    protected IFarTileProvider[] fp2_tileProviders;
 
     @Unique
     protected WorkerManager workerManager;
 
     @Unique
-    protected IAsyncBlockAccess asyncBlockAccess;
+    protected IAsyncBlockAccess fp2_asyncBlockAccess;
 
     @Unique
     protected FEventBus eventBus = new EventBus();
@@ -83,15 +83,15 @@ public abstract class MixinWorldServer extends MixinWorld implements IFarWorldSe
 
         this.workerManager = new DefaultWorkerManager(this.server.serverThread, ServerThreadMarkedFutureExecutor.getFor(this.server));
 
-        this.asyncBlockAccess = Constants.isCubicWorld(uncheckedCast(this))
+        this.fp2_asyncBlockAccess = Constants.isCubicWorld(uncheckedCast(this))
                 ? new CCAsyncBlockAccessImpl(uncheckedCast(this))
                 : new VanillaAsyncBlockAccessImpl(uncheckedCast(this));
 
         ImmutableMap.Builder<IFarRenderMode, IFarTileProvider> builder = ImmutableMap.builder();
         IFarRenderMode.REGISTRY.forEachEntry((name, mode) -> builder.put(mode, mode.tileProvider(uncheckedCast(this))));
-        this.tileProvidersByMode = builder.build();
+        this.fp2_tileProvidersByMode = builder.build();
 
-        this.tileProviders = this.tileProvidersByMode.values().toArray(new IFarTileProvider[0]);
+        this.fp2_tileProviders = this.fp2_tileProvidersByMode.values().toArray(new IFarTileProvider[0]);
     }
 
     @Override
@@ -106,14 +106,14 @@ public abstract class MixinWorldServer extends MixinWorld implements IFarWorldSe
 
     @Override
     public <POS extends IFarPos, T extends IFarTile> IFarTileProvider<POS, T> fp2_IFarWorldServer_tileProviderFor(@NonNull IFarRenderMode<POS, T> mode) {
-        IFarTileProvider<POS, T> context = uncheckedCast(this.tileProvidersByMode.get(mode));
+        IFarTileProvider<POS, T> context = uncheckedCast(this.fp2_tileProvidersByMode.get(mode));
         checkArg(context != null, "cannot find tile provider for unknown render mode: %s", mode);
         return context;
     }
 
     @Override
     public void fp2_IFarWorldServer_forEachTileProvider(@NonNull Consumer<IFarTileProvider<?, ?>> action) {
-        for (IFarTileProvider tileProvider : this.tileProviders) {
+        for (IFarTileProvider tileProvider : this.fp2_tileProviders) {
             action.accept(uncheckedCast(tileProvider));
         }
     }
@@ -138,7 +138,7 @@ public abstract class MixinWorldServer extends MixinWorld implements IFarWorldSe
 
     @Override
     public FBlockWorld fp2_IFarWorldServer_fblockWorld() {
-        return this.asyncBlockAccess;
+        return this.fp2_asyncBlockAccess;
     }
 
     @Override
@@ -148,7 +148,7 @@ public abstract class MixinWorldServer extends MixinWorld implements IFarWorldSe
 
     @Override
     public IAsyncBlockAccess fp2_IAsyncBlockAccess$Holder_asyncBlockAccess() {
-        return this.asyncBlockAccess;
+        return this.fp2_asyncBlockAccess;
     }
 
     @Override

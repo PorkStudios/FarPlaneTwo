@@ -263,7 +263,7 @@ public class RocksStorage<POS extends IFarPos, T extends IFarTile> implements IF
                     for (int i = 0; i < keys.length; ) {
                         int batchSize = min(keys.length - i, MAX_BATCH_SIZE);
 
-                        byte[][] tmp = txn.multiGet(READ_OPTIONS, Arrays.asList(handles).subList(i, i + batchSize), Arrays.copyOfRange(keys, i, i + batchSize));
+                        byte[][] tmp = txn.multiGetForUpdate(READ_OPTIONS, Arrays.asList(handles).subList(i, i + batchSize), Arrays.copyOfRange(keys, i, i + batchSize));
                         System.arraycopy(tmp, 0, get, i, batchSize);
 
                         i += batchSize;
