@@ -18,18 +18,23 @@
  *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_12_2;
+package net.daporkchop.fp2.impl.mc.forge1_12_2.world.registry;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import it.unimi.dsi.fastutil.objects.Reference2IntMap;
 import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
+import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.event.FEventHandler;
-import net.daporkchop.fp2.api.world.FGameRegistry;
+import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.fp2.util.event.IdMappingsChangedEvent;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.world.biome.Biome;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 import java.util.stream.IntStream;
 import java.util.stream.StreamSupport;
 
@@ -61,6 +66,11 @@ public final class GameRegistry1_12_2 implements FGameRegistry {
     private final IBlockState[] idsToStates;
     private final Reference2IntMap<IBlockState> statesToIds;
 
+    @Getter
+    private final ExtendedBiomeRegistryInfo1_12_2 extendedBiomeRegistryData;
+    @Getter
+    private final ExtendedStateRegistryInfo1_12_2 extendedStateRegistryData;
+
     private GameRegistry1_12_2() {
         //ids -> biomes
         this.idsToBiomes = StreamSupport.stream(Biome.REGISTRY.spliterator(), false).toArray(Biome[]::new);
@@ -69,6 +79,9 @@ public final class GameRegistry1_12_2 implements FGameRegistry {
         this.biomesToIds = new Reference2IntOpenHashMap<>(this.idsToBiomes.length);
         this.biomesToIds.defaultReturnValue(-1);
         IntStream.range(0, this.idsToBiomes.length).forEach(id -> checkState(this.biomesToIds.put(this.idsToBiomes[id], id) < 0, "duplicate biome: %s", this.idsToBiomes[id]));
+
+        //extended registry information
+        this.extendedBiomeRegistryData = new ExtendedBiomeRegistryInfo1_12_2(this);
 
         //ids -> states
         this.idsToStates = StreamSupport.stream(Block.REGISTRY.spliterator(), false)
@@ -79,6 +92,33 @@ public final class GameRegistry1_12_2 implements FGameRegistry {
         this.statesToIds = new Reference2IntOpenHashMap<>(this.idsToStates.length);
         this.statesToIds.defaultReturnValue(-1);
         IntStream.range(0, this.idsToStates.length).forEach(id -> checkState(this.statesToIds.put(this.idsToStates[id], id) < 0, "duplicate state: %s", this.idsToStates[id]));
+
+        //extended registry information
+        this.extendedStateRegistryData = new ExtendedStateRegistryInfo1_12_2(this);
+    }
+
+    @Override
+    public Optional<byte[]> registryToken() {
+        ByteBuf buf = ByteBufAllocator.DEFAULT.buffer();
+        try {
+            //serialize the registry
+            buf.writeCharSequence(this.getClass().getTypeName(), StandardCharsets.UTF_8); //class name
+            for (Biome biome : this.idsToBiomes) { //biomes
+                buf.writeCharSequence(biome.getRegistryName().toString(), StandardCharsets.UTF_8);
+                buf.writeByte(0);
+            }
+            for (IBlockState state : this.idsToStates) { //states
+                buf.writeCharSequence(state.toString(), StandardCharsets.UTF_8);
+                buf.writeByte(0);
+            }
+
+            //copy buffer contents to a byte[]
+            byte[] arr = new byte[buf.readableBytes()];
+            buf.readBytes(arr);
+            return Optional.of(arr);
+        } finally {
+            buf.release();
+        }
     }
 
     @Override

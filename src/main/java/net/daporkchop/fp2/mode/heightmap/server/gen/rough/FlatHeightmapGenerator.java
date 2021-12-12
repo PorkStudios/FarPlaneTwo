@@ -23,6 +23,7 @@ package net.daporkchop.fp2.mode.heightmap.server.gen.rough;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import lombok.NonNull;
+import net.daporkchop.fp2.api.world.BlockWorldConstants;
 import net.daporkchop.fp2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.mode.heightmap.HeightmapData;
@@ -37,6 +38,7 @@ import net.minecraft.world.gen.FlatLayerInfo;
 import java.util.List;
 
 import static java.lang.Math.*;
+import static net.daporkchop.fp2.api.world.BlockWorldConstants.*;
 import static net.daporkchop.fp2.mode.heightmap.HeightmapConstants.*;
 import static net.daporkchop.fp2.util.BlockType.*;
 import static net.daporkchop.fp2.util.Constants.*;
@@ -124,7 +126,7 @@ public class FlatHeightmapGenerator extends AbstractRoughHeightmapGenerator {
         //if the layer itself is brighter, use that as the brightness level
         blockLight = max(layers.get(layerIndex).getLayerMaterial().getLightValue(), blockLight);
 
-        return packLight(skyLight, blockLight);
+        return BlockWorldConstants.packLight(skyLight, blockLight);
     }
 
     @Override

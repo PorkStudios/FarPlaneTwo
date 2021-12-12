@@ -21,12 +21,13 @@
 package net.daporkchop.fp2.util;
 
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.compat.vanilla.FastRegistry;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.GameRegistry1_12_2;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.world.registry.GameRegistry1_12_2;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
+
+import static net.daporkchop.fp2.api.world.BlockWorldConstants.*;
 
 /**
  * @author DaPorkchop_
@@ -34,10 +35,6 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 @UtilityClass
 @Deprecated
 public class BlockType {
-    public final int BLOCK_TYPE_AIR = 0;
-    public final int BLOCK_TYPE_TRANSPARENT = 1;
-    public final int BLOCK_TYPE_OPAQUE = 2;
-
     public final int RENDER_TYPE_OPAQUE = 0;
     public final int RENDER_TYPE_CUTOUT = 1;
     public final int RENDER_TYPE_TRANSLUCENT = 2;
@@ -72,7 +69,7 @@ public class BlockType {
         } else if (state.getMaterial().isSolid() || state.getMaterial().isLiquid()) {
             return BLOCK_TYPE_TRANSPARENT;
         } else {
-            return BLOCK_TYPE_AIR;
+            return BLOCK_TYPE_INVISIBLE;
         }
     }
 

@@ -18,18 +18,46 @@
  *
  */
 
-package net.daporkchop.fp2.api.world;
+package net.daporkchop.fp2.api.world.registry;
 
 import lombok.NonNull;
 
+import java.util.Arrays;
+import java.util.Optional;
 import java.util.stream.IntStream;
 
 /**
  * A registry for converting implementation-dependent game resources to their unique IDs.
+ * <p>
+ * In general, IDs should be considered arbitrary integers. They must not be persisted unless sufficient care is taken to ensure that all data is invalidated when the ID mappings
+ * are changed (see {@link #registryToken()}). However, implementations must respect the following rules when assigning IDs:
+ * <ul>
+ *     <li>IDs must never be negative. If more than {@link Integer#MAX_VALUE} IDs would be required, an exception should be thrown when constructing the registry.</li>
+ *     <li>The ID {@code 0} is always valid. For biomes, it may be assigned to any valid biome. For states, it must always be assigned to air.</li>
+ *     <li>IDs should be allocated in a mostly sequential order. They do not necessarily have to be tightly packed, but users should be able to use them as simple array
+ *     indices without wasting too much memory.</li>
+ * </ul>
  *
  * @author DaPorkchop_
  */
 public interface FGameRegistry {
+    //
+    // GENERAL
+    //
+
+    /**
+     * Returns a {@code byte[]} which identifies the contents of this registry.
+     * <p>
+     * The {@code byte[]}'s contents should be considered arbitrary data. Users should not attempt to parse or otherwise read it, it is simply a unique token. The implementation
+     * provides no guarantees as to the contents of the data, only that if two tokens are exactly equal (e.g. when compared using {@link Arrays#equals(byte[], byte[])}), it is safe
+     * to assume that the two registries contain identical mappings. For instance, one could persistently save this token to disk alongside other data utilizing the same registry
+     * mappings, and if the saved token is unchanged on the next load it would be safe to re-use the other saved data (the data would have to be erased and re-generated if the token
+     * were to change).
+     *
+     * @return a {@code byte[]} which identifies the contents of this registry, or an empty {@link Optional} if none is available
+     */
+    Optional<byte[]> registryToken();
+
     //
     // BIOMES
     //
@@ -48,6 +76,11 @@ public interface FGameRegistry {
      * @throws ClassCastException            if {@code biome} is not of the type used by the implementation to describe a biome
      */
     int biome2id(@NonNull Object biome) throws UnsupportedOperationException, ClassCastException;
+
+    /**
+     * @return a {@link FExtendedBiomeRegistryData} instance for the biomes in this registry
+     */
+    FExtendedBiomeRegistryData extendedBiomeRegistryData();
 
     //
     // (BLOCK) STATES
@@ -78,4 +111,9 @@ public interface FGameRegistry {
      * @throws ClassCastException            if {@code block} is not of the type used by the implementation to describe a state
      */
     int state2id(@NonNull Object block, int meta) throws UnsupportedOperationException, ClassCastException;
+
+    /**
+     * @return a {@link FExtendedStateRegistryData} instance for the states in this registry
+     */
+    FExtendedStateRegistryData extendedStateRegistryData();
 }

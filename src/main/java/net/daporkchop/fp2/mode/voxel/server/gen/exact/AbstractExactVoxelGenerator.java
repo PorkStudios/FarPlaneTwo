@@ -32,10 +32,11 @@ import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.reference.cache.Cached;
 
 import static java.lang.Math.*;
+import static net.daporkchop.fp2.api.world.BlockWorldConstants.*;
+import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
 import static net.daporkchop.fp2.util.BlockType.*;
 import static net.daporkchop.fp2.util.Constants.*;
-import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -146,8 +147,8 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
                         for (int i = 0; i < 8; i++) {
                             if (((corners >> (i << 1)) & 3) == type) {
                                 byte packedLight = world.getLight(baseX + dx + ((i >> 2) & 1), baseY + dy + ((i >> 1) & 1), baseZ + dz + (i & 1));
-                                skyLight += FBlockWorld.unpackSkyLight(packedLight);
-                                blockLight += FBlockWorld.unpackBlockLight(packedLight);
+                                skyLight += unpackSkyLight(packedLight);
+                                blockLight += unpackBlockLight(packedLight);
                                 samples++;
                             }
                         }
@@ -157,8 +158,8 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
                             if ((edges & (EDGE_DIR_MASK << (edge << 1))) != EDGE_DIR_NONE) {
                                 int i = EDGE_VERTEX_MAP[(edge << 1) | (~(edges >> (edge << 1) >> 1) & 1)];
                                 byte packedLight = world.getLight(baseX + dx + ((i >> 2) & 1), baseY + dy + ((i >> 1) & 1), baseZ + dz + (i & 1));
-                                skyLight += FBlockWorld.unpackSkyLight(packedLight);
-                                blockLight += FBlockWorld.unpackBlockLight(packedLight);
+                                skyLight += unpackSkyLight(packedLight);
+                                blockLight += unpackBlockLight(packedLight);
                                 samples++;
                             }
                         }
@@ -167,7 +168,7 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
                         skyLight /= samples;
                         blockLight /= samples;
                     }
-                    data.light = FBlockWorld.packLight(skyLight, blockLight);
+                    data.light = packLight(skyLight, blockLight);
 
                     tile.set(dx, dy, dz, data);
                 }

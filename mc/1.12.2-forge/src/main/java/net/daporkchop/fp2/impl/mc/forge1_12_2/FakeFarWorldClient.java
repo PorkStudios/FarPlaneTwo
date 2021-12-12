@@ -28,6 +28,7 @@ import net.daporkchop.fp2.core.util.threading.futureexecutor.MarkedFutureExecuto
 import net.daporkchop.fp2.core.util.threading.workergroup.DefaultWorkerManager;
 import net.daporkchop.fp2.core.util.threading.workergroup.WorkerManager;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.client.render.WorldRenderer1_12_2;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.world.registry.GameRegistry1_12_2;
 import net.daporkchop.fp2.util.threading.futureexecutor.ClientThreadMarkedFutureExecutor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;

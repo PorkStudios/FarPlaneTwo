@@ -20,10 +20,11 @@
 
 package net.daporkchop.fp2.compat.vanilla;
 
+import net.daporkchop.fp2.api.world.BlockWorldConstants;
 import net.daporkchop.fp2.api.world.FBlockWorld;
-import net.daporkchop.fp2.api.world.FGameRegistry;
+import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.fp2.core.util.IHeightMap;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.GameRegistry1_12_2;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.world.registry.GameRegistry1_12_2;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.biome.Biome;
@@ -74,6 +75,6 @@ public interface IBlockHeightAccess extends IBlockAccess, IHeightMap, FBlockWorl
     @Override
     default byte getLight(int x, int y, int z) {
         int combinedLight = this.getCombinedLight(new BlockPos(x, y, z), 0);
-        return FBlockWorld.packLight(combinedLight >> 20, combinedLight >> 4);
+        return BlockWorldConstants.packLight(combinedLight >> 20, combinedLight >> 4);
     }
 }

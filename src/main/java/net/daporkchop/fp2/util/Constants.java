@@ -30,9 +30,6 @@ import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.lib.common.misc.string.PStrings;
-import net.daporkchop.lib.common.pool.array.ArrayAllocator;
-import net.daporkchop.lib.common.reference.ReferenceStrength;
-import net.daporkchop.lib.common.reference.cache.Cached;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.block.state.IBlockState;
@@ -201,10 +198,6 @@ public class Constants {
      */
     public static int packCombinedLight(int combinedLight) {
         return (combinedLight >> 16) | ((combinedLight >> 4) & 0xF);
-    }
-
-    public static int packLight(int skyLight, int blockLight) {
-        return (skyLight << 4) | blockLight;
     }
 
     public static int packedLightTo8BitVec2(int packedLight) {

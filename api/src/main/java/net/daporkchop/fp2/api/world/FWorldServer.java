@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.api.world;
 
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
+import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 
 /**
  * A world consisting of blocks.

@@ -18,55 +18,16 @@
  *
  */
 
-package net.daporkchop.fp2.core.mode.api.ctx;
-
-import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
-import net.daporkchop.fp2.api.world.registry.FGameRegistry;
-import net.daporkchop.fp2.core.util.threading.workergroup.WorkerManager;
+package net.daporkchop.fp2.api.world.registry;
 
 /**
- * Provides access to additional fp2 information in a world.
+ * Extended information describing the attributes of individual biome using IDs from a {@link FGameRegistry}.
  *
  * @author DaPorkchop_
  */
-public interface IFarWorld {
+public interface FExtendedBiomeRegistryData {
     /**
-     * @return the implementation-specific object corresponding to this world
+     * @return the {@link FGameRegistry} containing the biome ID mappings
      */
-    Object fp2_IFarWorld_implWorld();
-
-    /**
-     * @return the tile coordinate limits in this world, indexed by detail level
-     */
-    IntAxisAlignedBB[] fp2_IFarWorld_coordLimits();
-
-    /**
-     * Called when the world is being loaded.
-     */
-    void fp2_IFarWorld_init();
-
-    /**
-     * Called when the world is being unloaded.
-     */
-    void fp2_IFarWorld_close();
-
-    /**
-     * @return the {@link WorkerManager} used by this world
-     */
-    WorkerManager fp2_IFarWorld_workerManager();
-
-    /**
-     * @return this world's dimension ID
-     */
-    int fp2_IFarWorld_dimensionId();
-
-    /**
-     * @return this world's current timestamp
-     */
-    long fp2_IFarWorld_timestamp();
-
-    /**
-     * @return the {@link FGameRegistry} used in this world
-     */
-    FGameRegistry fp2_IFarWorld_registry();
+    FGameRegistry registry();
 }

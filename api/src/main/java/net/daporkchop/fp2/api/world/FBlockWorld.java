@@ -20,12 +20,14 @@
 
 package net.daporkchop.fp2.api.world;
 
+import net.daporkchop.fp2.api.world.registry.FGameRegistry;
+
 /**
  * A read-only world consisting of voxels at integer coordinates, where each voxel contains the following information:<br>
  * <ul>
  *     <li>A state (represented as an {@code int}, as returned by the corresponding methods in {@link FGameRegistry})</li>
  *     <li>A biome (represented by an {@code int}, as returned by the corresponding methods in {@link FGameRegistry})</li>
- *     <li>A block light level and sky light level (represented as a {@code byte}, as returned by {@link #packLight(int, int)}). Light levels are unsigned nibbles (4-bit integers),
+ *     <li>A block light level and sky light level (represented as a {@code byte}, as returned by {@link BlockWorldConstants#packLight(int, int)}). Light levels are unsigned nibbles (4-bit integers),
  *     where {@code 0} is the darkest and {@code 15} is the brightest possible value.</li>
  * </ul>
  * <p>
@@ -46,37 +48,6 @@ package net.daporkchop.fp2.api.world;
  * @author DaPorkchop_
  */
 public interface FBlockWorld extends AutoCloseable {
-    /**
-     * Packs the given sky light and block light values together into a single {@code byte}.
-     *
-     * @param skyLight   the sky light value. The 4 lowest bits are kept, all other information is discarded.
-     * @param blockLight the block light value. The 4 lowest bits are kept, all other information is discarded.
-     * @return the packed light value
-     */
-    static byte packLight(int skyLight, int blockLight) {
-        return (byte) ((skyLight << 4) | (blockLight & 0xF));
-    }
-
-    /**
-     * Unpacks the sky light value from the given {@code byte}.
-     *
-     * @param packedLight the packed light data, as returned by {@link #packLight(int, int)}
-     * @return the sky light value
-     */
-    static int unpackSkyLight(byte packedLight) {
-        return (packedLight & 0xFF) >>> 4; //i'm pretty sure that doing it in this order will allow JIT to interpret it as an unsigned byte, thus reducing it to a simple shift
-    }
-
-    /**
-     * Unpacks the block light value from the given {@code byte}.
-     *
-     * @param packedLight the packed light data, as returned by {@link #packLight(int, int)}
-     * @return the block light value
-     */
-    static int unpackBlockLight(byte packedLight) {
-        return packedLight & 0xF;
-    }
-
     /**
      * Closes this world, immediately releasing any internally allocated resources.
      * <p>

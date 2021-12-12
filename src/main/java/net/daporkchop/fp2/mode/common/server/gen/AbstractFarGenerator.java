@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.mode.common.server.gen;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.api.world.FGameRegistry;
+import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGenerator;
 

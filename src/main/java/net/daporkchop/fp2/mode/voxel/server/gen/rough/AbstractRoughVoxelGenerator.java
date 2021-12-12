@@ -22,20 +22,19 @@ package net.daporkchop.fp2.mode.voxel.server.gen.rough;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
+import net.daporkchop.fp2.core.util.math.Vector3d;
+import net.daporkchop.fp2.core.util.math.qef.QefSolver;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.mode.voxel.server.gen.AbstractVoxelGenerator;
-import net.daporkchop.fp2.core.util.math.Vector3d;
-import net.daporkchop.fp2.core.util.math.qef.QefSolver;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.reference.cache.Cached;
-import net.minecraft.world.WorldServer;
 
 import static java.lang.Math.*;
-import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
-import static net.daporkchop.fp2.util.BlockType.*;
-import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.fp2.api.world.BlockWorldConstants.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
+import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
+import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 

@@ -18,55 +18,20 @@
  *
  */
 
-package net.daporkchop.fp2.core.mode.api.ctx;
+package net.daporkchop.fp2.impl.mc.forge1_12_2.world.registry;
 
-import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
-import net.daporkchop.fp2.api.world.registry.FGameRegistry;
-import net.daporkchop.fp2.core.util.threading.workergroup.WorkerManager;
+import lombok.Getter;
+import lombok.NonNull;
+import net.daporkchop.fp2.api.world.registry.FExtendedStateRegistryData;
 
 /**
- * Provides access to additional fp2 information in a world.
- *
  * @author DaPorkchop_
  */
-public interface IFarWorld {
-    /**
-     * @return the implementation-specific object corresponding to this world
-     */
-    Object fp2_IFarWorld_implWorld();
+@Getter
+public final class ExtendedStateRegistryInfo1_12_2 implements FExtendedStateRegistryData {
+    private final GameRegistry1_12_2 registry;
 
-    /**
-     * @return the tile coordinate limits in this world, indexed by detail level
-     */
-    IntAxisAlignedBB[] fp2_IFarWorld_coordLimits();
-
-    /**
-     * Called when the world is being loaded.
-     */
-    void fp2_IFarWorld_init();
-
-    /**
-     * Called when the world is being unloaded.
-     */
-    void fp2_IFarWorld_close();
-
-    /**
-     * @return the {@link WorkerManager} used by this world
-     */
-    WorkerManager fp2_IFarWorld_workerManager();
-
-    /**
-     * @return this world's dimension ID
-     */
-    int fp2_IFarWorld_dimensionId();
-
-    /**
-     * @return this world's current timestamp
-     */
-    long fp2_IFarWorld_timestamp();
-
-    /**
-     * @return the {@link FGameRegistry} used in this world
-     */
-    FGameRegistry fp2_IFarWorld_registry();
+    public ExtendedStateRegistryInfo1_12_2(@NonNull GameRegistry1_12_2 registry) {
+        this.registry = registry;
+    }
 }

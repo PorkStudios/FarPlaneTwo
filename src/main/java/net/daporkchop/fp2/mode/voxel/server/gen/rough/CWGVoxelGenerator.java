@@ -22,7 +22,7 @@ package net.daporkchop.fp2.mode.voxel.server.gen.rough;
 
 import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.IBiomeBlockReplacer;
 import lombok.NonNull;
-import net.daporkchop.fp2.api.world.FBlockWorld;
+import net.daporkchop.fp2.api.world.BlockWorldConstants;
 import net.daporkchop.fp2.compat.cwg.CWGContext;
 import net.daporkchop.fp2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
@@ -39,7 +39,6 @@ import net.minecraft.world.WorldServer;
 import java.util.Arrays;
 
 import static java.lang.Math.*;
-import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * @author DaPorkchop_
@@ -100,7 +99,7 @@ public class CWGVoxelGenerator extends AbstractRoughVoxelGenerator<CWGContext> i
         blockY++;
 
         int seaLevel = this.seaLevel >> level << level; //truncate lower bits in order to scale the sea level to the current zoom level
-        data.light = FBlockWorld.packLight(blockY < seaLevel ? max(15 - (seaLevel - blockY) * 3, 0) : 15, 0);
+        data.light = BlockWorldConstants.packLight(blockY < seaLevel ? max(15 - (seaLevel - blockY) * 3, 0) : 15, 0);
         data.biome = ctx.getBiome(blockX, blockZ);
     }
 

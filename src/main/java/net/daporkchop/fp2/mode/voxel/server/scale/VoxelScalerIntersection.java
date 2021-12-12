@@ -24,11 +24,11 @@ import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import net.daporkchop.fp2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
+import net.daporkchop.fp2.core.util.math.Vector3d;
+import net.daporkchop.fp2.core.util.math.qef.QefSolver;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
-import net.daporkchop.fp2.core.util.math.Vector3d;
-import net.daporkchop.fp2.core.util.math.qef.QefSolver;
 import net.minecraft.util.math.Vec3d;
 
 import java.util.ArrayList;
@@ -37,6 +37,7 @@ import java.util.BitSet;
 import java.util.List;
 import java.util.stream.Stream;
 
+import static net.daporkchop.fp2.api.world.BlockWorldConstants.*;
 import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
 import static net.daporkchop.fp2.util.BlockType.*;
 import static net.daporkchop.fp2.util.Constants.*;

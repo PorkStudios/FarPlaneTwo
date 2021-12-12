@@ -22,7 +22,7 @@ package net.daporkchop.fp2.mode.voxel.client;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.api.world.FBlockWorld;
+import net.daporkchop.fp2.api.world.BlockWorldConstants;
 import net.daporkchop.fp2.client.TextureUVs;
 import net.daporkchop.fp2.core.client.render.WorldRenderer;
 import net.daporkchop.fp2.core.util.GlobalAllocators;
@@ -167,8 +167,8 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
         final int blockY = baseY + ((y & ~(y & T_VOXELS)) << level);
         final int blockZ = baseZ + ((z & ~(z & T_VOXELS)) << level);
 
-        int blockLight = FBlockWorld.unpackBlockLight(data.light);
-        int skyLight = FBlockWorld.unpackSkyLight(data.light);
+        int blockLight = BlockWorldConstants.unpackBlockLight(data.light);
+        int skyLight = BlockWorldConstants.unpackSkyLight(data.light);
         attributes.a_lightBlock = (byte) (blockLight | (blockLight << 4));
         attributes.a_lightSky = (byte) (skyLight | (skyLight << 4));
 

@@ -18,55 +18,34 @@
  *
  */
 
-package net.daporkchop.fp2.core.mode.api.ctx;
+package net.daporkchop.fp2.api.world.registry;
 
-import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
-import net.daporkchop.fp2.api.world.registry.FGameRegistry;
-import net.daporkchop.fp2.core.util.threading.workergroup.WorkerManager;
+import net.daporkchop.fp2.api.world.BlockWorldConstants;
 
 /**
- * Provides access to additional fp2 information in a world.
+ * Extended information describing the attributes of individual states using IDs from a {@link FGameRegistry}.
  *
  * @author DaPorkchop_
  */
-public interface IFarWorld {
+public interface FExtendedStateRegistryData {
     /**
-     * @return the implementation-specific object corresponding to this world
+     * @return the {@link FGameRegistry} containing the state ID mappings
      */
-    Object fp2_IFarWorld_implWorld();
+    FGameRegistry registry();
 
     /**
-     * @return the tile coordinate limits in this world, indexed by detail level
+     * Gets the block type for the given state ID.
+     * <p>
+     * The resulting value will be one of the block types defined in {@link BlockWorldConstants}:
+     * <ul>
+     *     <li>{@link BlockWorldConstants#BLOCK_TYPE_INVISIBLE}</li>
+     *     <li>{@link BlockWorldConstants#BLOCK_TYPE_TRANSPARENT}</li>
+     *     <li>{@link BlockWorldConstants#BLOCK_TYPE_OPAQUE}</li>
+     * </ul>
+     *
+     * @param state the state ID
+     * @return the block type
+     * @throws IndexOutOfBoundsException if {@code state} is not a valid state ID
      */
-    IntAxisAlignedBB[] fp2_IFarWorld_coordLimits();
-
-    /**
-     * Called when the world is being loaded.
-     */
-    void fp2_IFarWorld_init();
-
-    /**
-     * Called when the world is being unloaded.
-     */
-    void fp2_IFarWorld_close();
-
-    /**
-     * @return the {@link WorkerManager} used by this world
-     */
-    WorkerManager fp2_IFarWorld_workerManager();
-
-    /**
-     * @return this world's dimension ID
-     */
-    int fp2_IFarWorld_dimensionId();
-
-    /**
-     * @return this world's current timestamp
-     */
-    long fp2_IFarWorld_timestamp();
-
-    /**
-     * @return the {@link FGameRegistry} used in this world
-     */
-    FGameRegistry fp2_IFarWorld_registry();
+    int type(int state) throws IndexOutOfBoundsException;
 }

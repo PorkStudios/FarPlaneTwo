@@ -21,9 +21,9 @@
 package net.daporkchop.fp2.asm.core.world;
 
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
-import net.daporkchop.fp2.api.world.FGameRegistry;
+import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorld;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.GameRegistry1_12_2;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.world.registry.GameRegistry1_12_2;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.minecraft.world.World;

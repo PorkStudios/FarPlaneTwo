@@ -22,7 +22,6 @@ package net.daporkchop.fp2.mode.heightmap.client;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.api.world.FGameRegistry;
 import net.daporkchop.fp2.client.TextureUVs;
 import net.daporkchop.fp2.core.client.render.WorldRenderer;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalWriter;
@@ -33,8 +32,6 @@ import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
 import net.daporkchop.fp2.mode.heightmap.client.struct.HeightmapGlobalAttributes;
 import net.daporkchop.fp2.mode.heightmap.client.struct.HeightmapLocalAttributes;
-import net.daporkchop.fp2.util.SingleBiomeBlockAccess;
-import net.minecraft.util.math.BlockPos;
 
 import java.util.Arrays;
 import java.util.BitSet;

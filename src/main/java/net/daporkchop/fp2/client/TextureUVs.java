@@ -28,7 +28,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.api.event.ReloadEvent;
-import net.daporkchop.fp2.api.world.FGameRegistry;
+import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.fp2.core.event.AbstractReloadEvent;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.attribute.Attribute;
