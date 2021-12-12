@@ -23,7 +23,7 @@ package net.daporkchop.fp2.mode.voxel.client;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.api.world.BlockWorldConstants;
-import net.daporkchop.fp2.client.TextureUVs;
+import net.daporkchop.fp2.core.client.render.TextureUVs;
 import net.daporkchop.fp2.core.client.render.WorldRenderer;
 import net.daporkchop.fp2.core.util.GlobalAllocators;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalWriter;
@@ -42,7 +42,6 @@ import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
-import static net.daporkchop.fp2.util.BlockType.*;
 import static net.daporkchop.fp2.util.Constants.*;
 
 /**
@@ -185,7 +184,7 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
                 }
             }
 
-            attributes.a_state = this.textureUVs.indexIdForState(data.states[edge]);
+            attributes.a_state = this.textureUVs.state2index(data.states[edge]);
             attributes.a_color = this.worldRenderer.tintFactorForStateInBiomeAtPos(data.states[edge], data.biome, blockX, blockY, blockZ);
 
             map[baseMapIndex + edge] = vertices.put(attributes);
@@ -220,9 +219,9 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
                     continue; //skip if any of the vertices are missing
                 }
 
-                IndexWriter buf = indices[renderType(data.states[edge])];
+                IndexWriter buf = indices[this.worldRenderer.renderTypeForState(data.states[edge])];
 
-                boolean water = isWater(data.states[edge]);
+                boolean water = false; //TODO: isWater(data.states[edge]);
                 if (water) {
                     edges |= EDGE_DIR_BOTH << (edge << 1);
                 }

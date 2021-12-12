@@ -18,23 +18,20 @@
  *
  */
 
-package net.daporkchop.fp2.client;
+package net.daporkchop.fp2.impl.mc.forge1_12_2.client.render;
 
 import it.unimi.dsi.fastutil.objects.Reference2IntMap;
 import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.api.event.ReloadEvent;
-import net.daporkchop.fp2.api.world.registry.FGameRegistry;
-import net.daporkchop.fp2.core.event.AbstractReloadEvent;
+import net.daporkchop.fp2.core.client.render.TextureUVs;
 import net.daporkchop.fp2.gl.GL;
-import net.daporkchop.fp2.gl.attribute.Attribute;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayBuffer;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayFormat;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.world.registry.GameRegistry1_12_2;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.primitive.map.ObjIntMap;
 import net.daporkchop.lib.primitive.map.open.ObjIntOpenHashMap;
@@ -42,6 +39,7 @@ import net.daporkchop.lib.unsafe.PUnsafe;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BlockModelShapes;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.block.model.IBakedModel;
@@ -61,12 +59,10 @@ import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.fp2.util.Constants.*;
 
 /**
- * Global terrain info used by terrain rendering shaders.
- *
  * @author DaPorkchop_
  */
 @Getter
-public class TextureUVs extends AbstractReleasable {
+public class TextureUVs1_12_2 extends AbstractReleasable implements TextureUVs {
     private static final Map<IBlockState, StateFaceReplacer> STATE_TO_REPLACER = new IdentityHashMap<>();
     private static final StateFaceReplacer DEFAULT_REPLACER = (state, face) -> state;
 
@@ -88,7 +84,7 @@ public class TextureUVs extends AbstractReleasable {
         if (!quads.isEmpty()) {
             List<PackedBakedQuad> out = new ArrayList<>(quads.size());
             for (int i = 0, len = quads.size(); i < len; i++) {
-                out.add(new PackedBakedQuad(quads.get(i)));
+                out.add(quad(quads.get(i)));
             }
             return out;
         }
@@ -126,9 +122,9 @@ public class TextureUVs extends AbstractReleasable {
         putRenderer(Blocks.WATER, waterRenderer);
         putRenderer(Blocks.FLOWING_WATER, waterRenderer);
         putRenderer(Blocks.LAVA, (state, face, model) ->
-                Collections.singletonList(new PackedBakedQuad(MC.getTextureMapBlocks().getAtlasSprite("minecraft:blocks/lava_still"), -1)));
+                Collections.singletonList(quad(MC.getTextureMapBlocks().getAtlasSprite("minecraft:blocks/lava_still"), -1)));
         putRenderer(Blocks.FLOWING_LAVA, (state, face, model) ->
-                Collections.singletonList(new PackedBakedQuad(MC.getTextureMapBlocks().getAtlasSprite("minecraft:blocks/lava_flow"), -1)));
+                Collections.singletonList(quad(MC.getTextureMapBlocks().getAtlasSprite("minecraft:blocks/lava_flow"), -1)));
 
         //grass renders in two layers, which is somewhat expensive to simulate with shaders. we render the sides as dirt, you can't tell the difference
         // from far away anyway
@@ -140,27 +136,26 @@ public class TextureUVs extends AbstractReleasable {
             }
             return DEFAULT_RENDERER.render(state, face, model);
         });
-
-        //reload texture UVs for the first time
-        reloadAll();
+    }
+    
+    private static PackedBakedQuad quad(@NonNull TextureAtlasSprite sprite, float tintFactor) {
+        return new PackedBakedQuad(sprite.getMinU(), sprite.getMinV(), sprite.getMaxU(), sprite.getMaxV(), tintFactor);
     }
 
-    public static void reloadAll() {
-        new AbstractReloadEvent<TextureUVs>() {
-            @Override
-            protected void handleSuccess(int total) {
-                fp2().chat().success("§a%d texture UV caches successfully reloaded.", total);
-            }
-
-            @Override
-            protected void handleFailure(int failed, int total, @NonNull Throwable cause) {
-                fp2().log().error("texture UV cache reload failed", cause);
-                fp2().chat().error("§c%d/%d texture UV cache failed to reload (check log for info)", failed, total);
-            }
-        }.fire();
+    private static PackedBakedQuad quad(@NonNull TextureAtlasSprite sprite, int tintIndex) {
+        return quad(sprite, tintIndex == -1 ? 1.0f : 0.0f);
     }
 
-    protected final GL gl;
+    private static PackedBakedQuad quad(@NonNull TextureAtlasSprite sprite) {
+        return quad(sprite, 1.0f);
+    }
+
+    private static PackedBakedQuad quad(@NonNull BakedQuad quad) {
+        return quad(quad.getSprite(), quad.getTintIndex());
+    }
+
+    protected final Minecraft mc;
+    protected final GameRegistry1_12_2 registry;
 
     protected final UniformArrayFormat<QuadList> listsFormat;
     protected final UniformArrayBuffer<QuadList> listsBuffer;
@@ -168,12 +163,10 @@ public class TextureUVs extends AbstractReleasable {
     protected final UniformArrayFormat<PackedBakedQuad> quadsFormat;
     protected final UniformArrayBuffer<PackedBakedQuad> quadsBuffer;
 
-    protected final FGameRegistry registry;
-
     protected int[] stateIdToIndexId;
 
-    public TextureUVs(@NonNull GL gl, @NonNull FGameRegistry registry) {
-        this.gl = gl;
+    public TextureUVs1_12_2(@NonNull Minecraft mc, @NonNull GameRegistry1_12_2 registry, @NonNull GL gl) {
+        this.mc = mc;
         this.registry = registry;
 
         this.listsFormat = gl.createUniformArrayFormat(QuadList.class).build();
@@ -201,7 +194,7 @@ public class TextureUVs extends AbstractReleasable {
     }
 
     protected void reloadUVs() {
-        if (MC.getTextureMapBlocks() == null) { //texture map hasn't been initialized yet, meaning the game is still starting
+        if (this.mc.getTextureMapBlocks() == null) { //texture map hasn't been initialized yet, meaning the game is still starting
             return;
         }
 
@@ -214,11 +207,11 @@ public class TextureUVs extends AbstractReleasable {
         Reference2IntMap<IBlockState> stateIdToIndexId = new Reference2IntOpenHashMap<>();
 
         List<PackedBakedQuad> missingTextureQuads = new ArrayList<>();
-        missingTextureQuads.add(new PackedBakedQuad(MC.getTextureMapBlocks().getMissingSprite(), -1));
+        missingTextureQuads.add(quad(this.mc.getTextureMapBlocks().getMissingSprite()));
 
         List<IBlockState> erroredStates = new ArrayList<>();
 
-        BlockModelShapes shapes = MC.getBlockRendererDispatcher().getBlockModelShapes();
+        BlockModelShapes shapes = this.mc.getBlockRendererDispatcher().getBlockModelShapes();
         for (Block block : Block.REGISTRY) {
             for (IBlockState state : block.getBlockState().getValidStates()) {
                 int[] faceIds = new int[6];
@@ -240,7 +233,7 @@ public class TextureUVs extends AbstractReleasable {
                         faceIds[face.getIndex()] = id;
                     }
                 } catch (Exception e) { //we couldn't process the state (likely a buggy mod block), so let's just ignore it for now
-                    FP2_LOG.error("exception while generating texture UVs for " + state, e);
+                    fp2().log().error("exception while generating texture UVs for %s", e, state);
                     erroredStates.add(state);
                     continue;
                 }
@@ -285,7 +278,8 @@ public class TextureUVs extends AbstractReleasable {
         this.listsBuffer.set(listsOut.toArray(new QuadList[0]));
     }
 
-    public int indexIdForState(int state) {
+    @Override
+    public int state2index(int state) {
         return this.stateIdToIndexId[state];
     }
 
@@ -303,45 +297,6 @@ public class TextureUVs extends AbstractReleasable {
     @FunctionalInterface
     public interface StateFaceQuadRenderer {
         List<PackedBakedQuad> render(IBlockState state, EnumFacing face, IBakedModel model);
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    @AllArgsConstructor
-    @EqualsAndHashCode
-    public static class QuadList {
-        @Attribute(vectorAxes = { "First", "Last" }, convert = Attribute.Conversion.TO_UNSIGNED)
-        public final int ua_texQuadListFirst;
-        public final int ua_texQuadListLast;
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    @AllArgsConstructor
-    @EqualsAndHashCode
-    public static class PackedBakedQuad {
-        @Attribute(vectorAxes = { "S", "T", "P", "Q" })
-        public final float ua_texQuadCoordS;
-        public final float ua_texQuadCoordT;
-        public final float ua_texQuadCoordP;
-        public final float ua_texQuadCoordQ;
-
-        @Attribute
-        public final float ua_texQuadTint;
-
-        public PackedBakedQuad(TextureAtlasSprite sprite, float tintFactor) {
-            this(sprite.getMinU(), sprite.getMinV(), sprite.getMaxU(), sprite.getMaxV(), tintFactor);
-        }
-
-        public PackedBakedQuad(TextureAtlasSprite sprite, int tintIndex) {
-            this(sprite, tintIndex == -1 ? 1.0f : 0.0f);
-        }
-
-        public PackedBakedQuad(BakedQuad quad) {
-            this(quad.getSprite(), quad.getTintIndex());
-        }
     }
 
     /**

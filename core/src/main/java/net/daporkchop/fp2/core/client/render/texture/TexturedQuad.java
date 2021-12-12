@@ -27,29 +27,24 @@ package net.daporkchop.fp2.core.client.render.texture;
  */
 public interface TexturedQuad {
     /**
-     * @return the texture's minimum X coordinate (inclusive)
+     * @return the texture's minimum U coordinate (inclusive)
      */
-    int minX();
+    int minU();
 
     /**
-     * @return the texture's minimum Y coordinate (inclusive)
+     * @return the texture's minimum V coordinate (inclusive)
      */
-    int minY();
+    int minV();
 
     /**
-     * @return the texture's maximum X coordinate (exclusive)
+     * @return the texture's maximum U coordinate (exclusive)
      */
-    int maxX();
+    int maxU();
 
     /**
-     * @return the texture's maximum Y coordinate (exclusive)
+     * @return the texture's maximum V coordinate (exclusive)
      */
-    int maxY();
-
-    /**
-     * @return the {@link TextureAtlas} this quad is in
-     */
-    TextureAtlas atlas();
+    int maxV();
 
     /**
      * @return the alpha mode

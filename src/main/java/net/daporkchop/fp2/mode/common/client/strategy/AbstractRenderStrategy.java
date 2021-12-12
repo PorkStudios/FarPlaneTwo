@@ -23,10 +23,10 @@ package net.daporkchop.fp2.mode.common.client.strategy;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.client.FP2Client;
-import net.daporkchop.fp2.client.TextureUVs;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.core.client.render.GlobalUniformAttributes;
+import net.daporkchop.fp2.core.client.render.TextureUVs;
 import net.daporkchop.fp2.core.client.render.WorldRenderer;
 import net.daporkchop.fp2.core.client.shader.ShaderMacros;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
@@ -89,7 +89,7 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
         this.textureFormatLightmap = this.gl.createTextureFormat2D(LightmapTextureAttribute.class).build();
         this.textureLightmap = this.textureFormatLightmap.wrapExternalTexture(this.worldRenderer.lightmapTextureId());
 
-        this.textureUVs = new TextureUVs(this.gl, this.worldRenderer.world().fp2_IFarWorld_registry());
+        this.textureUVs = this.worldRenderer.textureUVs();
     }
 
     @Override
@@ -100,7 +100,6 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
 
     @Override
     protected void doRelease() {
-        this.textureUVs.close();
         this.uniformBuffer.close();
     }
 

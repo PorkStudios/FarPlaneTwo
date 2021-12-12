@@ -46,7 +46,6 @@ import java.nio.FloatBuffer;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.compat.of.OFHelper.*;
-import static net.daporkchop.fp2.util.BlockType.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 import static net.minecraft.util.math.MathHelper.*;
 import static org.lwjgl.opengl.GL11.*;
@@ -61,6 +60,8 @@ public class WorldRenderer1_12_2 implements WorldRenderer, AutoCloseable {
 
     protected final FakeFarWorldClient world;
 
+    protected final TextureUVs1_12_2 textureUVs;
+
     protected final GameRegistry1_12_2 registry;
     protected final byte[] renderTypeLookup;
 
@@ -73,18 +74,22 @@ public class WorldRenderer1_12_2 implements WorldRenderer, AutoCloseable {
         //look up and cache the render type for each block state
         this.renderTypeLookup = new byte[this.registry.states().max().getAsInt() + 1];
         this.registry.states().forEach(state -> {
+            //TODO: i need to do something about this: grass is rendered as CUTOUT_MIPPED, which makes it always render both faces
+
             int typeIndex;
             switch (this.registry.id2state(state).getBlock().getRenderLayer()) {
-                default:
-                    typeIndex = RENDER_TYPE_OPAQUE;
+                case SOLID:
+                    typeIndex = 0;
                     break;
                 case CUTOUT:
                 case CUTOUT_MIPPED:
-                    typeIndex = RENDER_TYPE_CUTOUT;
+                    typeIndex = 1;
                     break;
                 case TRANSLUCENT:
-                    typeIndex = RENDER_TYPE_TRANSLUCENT;
+                    typeIndex = 2;
                     break;
+                default:
+                    throw new IllegalArgumentException(this.registry.id2state(state).getBlock().getRenderLayer().name());
             }
             this.renderTypeLookup[state] = (byte) typeIndex;
         });
@@ -92,6 +97,8 @@ public class WorldRenderer1_12_2 implements WorldRenderer, AutoCloseable {
         this.gl = GL.builder()
                 .withResourceProvider(new ResourceProvider1_12_2(this.mc))
                 .wrapCurrent();
+
+        this.textureUVs = new TextureUVs1_12_2(mc, world.fp2_IFarWorld_registry(), this.gl);
     }
 
     @Override
@@ -198,6 +205,7 @@ public class WorldRenderer1_12_2 implements WorldRenderer, AutoCloseable {
 
     @Override
     public void close() {
+        this.textureUVs.close();
         this.gl.close();
     }
 }

@@ -22,7 +22,7 @@ package net.daporkchop.fp2.mode.heightmap.client;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.client.TextureUVs;
+import net.daporkchop.fp2.core.client.render.TextureUVs;
 import net.daporkchop.fp2.core.client.render.WorldRenderer;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalWriter;
 import net.daporkchop.fp2.mode.common.client.bake.IRenderBaker;
@@ -204,7 +204,7 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
         final int blockX = baseX + ((x & T_MASK) << level);
         final int blockZ = baseZ + ((z & T_MASK) << level);
 
-        attributes.a_state = this.textureUVs.indexIdForState(data.state);
+        attributes.a_state = this.textureUVs.state2index(data.state);
 
         int blockLight = data.light & 0xF;
         int skyLight = data.light >> 4;

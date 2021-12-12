@@ -26,7 +26,6 @@ import net.daporkchop.fp2.api.event.RegisterEvent;
 import net.daporkchop.fp2.client.ClientEvents;
 import net.daporkchop.fp2.client.FP2ResourceReloadListener;
 import net.daporkchop.fp2.client.KeyBindings;
-import net.daporkchop.fp2.client.TextureUVs;
 import net.daporkchop.fp2.common.util.Identifier;
 import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.fp2.common.util.exception.ResourceNotFoundException;
@@ -49,6 +48,7 @@ import net.daporkchop.fp2.debug.client.DebugClientEvents;
 import net.daporkchop.fp2.debug.client.DebugKeyBindings;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.I18n1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.client.gui.GuiContext1_12_2;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.client.render.TextureUVs1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.log.ChatAsPorkLibLogger;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.log.Log4jAsPorkLibLogger;
 import net.daporkchop.fp2.mode.heightmap.HeightmapRenderMode;
@@ -175,7 +175,7 @@ public class FP2 extends FP2Core implements ResourceProvider {
             //TODO: move this to core?
             GLOBAL_SHADER_MACROS.define("T_SHIFT", T_SHIFT).define("RENDER_PASS_COUNT", RENDER_PASS_COUNT);
 
-            TextureUVs.initDefault();
+            TextureUVs1_12_2.initDefault();
 
             MC.resourceManager.registerReloadListener(new FP2ResourceReloadListener());
         }
