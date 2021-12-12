@@ -23,6 +23,13 @@ package net.daporkchop.fp2.core.mode.common.client.strategy;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
+import net.daporkchop.fp2.core.mode.common.client.AbstractFarRenderer;
+import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutputStorage;
+import net.daporkchop.fp2.core.mode.common.client.bake.indexed.IndexedBakeOutput;
+import net.daporkchop.fp2.core.mode.common.client.bake.indexed.IndexedBakeOutputStorage;
+import net.daporkchop.fp2.core.mode.common.client.index.CPUCulledRenderIndex;
+import net.daporkchop.fp2.core.mode.common.client.index.GPUCulledRenderIndex;
+import net.daporkchop.fp2.core.mode.common.client.index.IRenderIndex;
 import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
 import net.daporkchop.fp2.gl.command.CommandBuffer;
@@ -33,13 +40,6 @@ import net.daporkchop.fp2.gl.draw.index.IndexFormat;
 import net.daporkchop.fp2.gl.draw.index.IndexWriter;
 import net.daporkchop.fp2.gl.draw.list.DrawCommandIndexed;
 import net.daporkchop.fp2.gl.draw.list.DrawList;
-import net.daporkchop.fp2.core.mode.common.client.AbstractFarRenderer;
-import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutputStorage;
-import net.daporkchop.fp2.core.mode.common.client.bake.indexed.IndexedBakeOutput;
-import net.daporkchop.fp2.core.mode.common.client.bake.indexed.IndexedBakeOutputStorage;
-import net.daporkchop.fp2.core.mode.common.client.index.CPUCulledRenderIndex;
-import net.daporkchop.fp2.core.mode.common.client.index.GPUCulledRenderIndex;
-import net.daporkchop.fp2.core.mode.common.client.index.IRenderIndex;
 import net.daporkchop.lib.common.util.PArrays;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
@@ -107,8 +107,6 @@ public abstract class AbstractMultipassIndexedRenderStrategy<POS extends IFarPos
     }
 
     protected void rebuildCommandBuffer(@NonNull IRenderIndex<POS, IndexedBakeOutput<SG, SL>, DrawBindingIndexed, DrawCommandIndexed> index) {
-        this.preRender();
-
         CommandBufferBuilder builder = this.gl.createCommandBuffer();
         this.render(builder, index);
         this.commandBuffer = builder.build();

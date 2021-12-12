@@ -48,6 +48,9 @@ public class GlobalUniformAttributes {
     public float u_fogColorA;
 
     @Attribute
+    public int u_fogMode;
+
+    @Attribute
     public float u_fogDensity;
 
     @Attribute

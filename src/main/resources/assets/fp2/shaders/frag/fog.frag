@@ -29,11 +29,9 @@
 //
 //
 
-#if FP2_FOG_ENABLED
 in FOG {
     float depth;
 } fog_in;
-#endif //FP2_FOG_ENABLED
 
 //
 //
@@ -42,25 +40,25 @@ in FOG {
 //
 
 vec4 addFog(in vec4 color) {
-#if FP2_FOG_ENABLED
     //compute the fog factor (formula depends on the current fog mode)
     float fogFactor;
-
-#if FP2_FOG_MODE == FP2_FOG_MODE_LINEAR
-    fogFactor = (u_fogEnd - fog_in.depth) * u_fogScale;
-#elif FP2_FOG_MODE == FP2_FOG_MODE_EXP
-    fogFactor = exp(-u_fogDensity * fog_in.depth);
-#elif FP2_FOG_MODE == FP2_FOG_MODE_EXP2
-    float depth = fog_in.depth;
-    fogFactor = exp(-u_fogDensity * (depth * depth));
-#endif
+    switch (u_fogMode) {
+        case FP2_FOG_MODE_DISABLED:
+            //fog is disabled, don't modify the fragment color
+            return color;
+        case FP2_FOG_MODE_LINEAR:
+            fogFactor = (u_fogEnd - fog_in.depth) * u_fogScale;
+            break;
+        case FP2_FOG_MODE_EXP:
+            fogFactor = exp(-u_fogDensity * fog_in.depth);
+            break;
+        case FP2_FOG_MODE_EXP2:
+            fogFactor = exp(-u_fogDensity * (fog_in.depth * fog_in.depth));
+            break;
+    }
 
     //mix fog colors
     return mix(u_fogColor, color, clamp(fogFactor, 0., 1.));
-#else
-    //fog is disabled, don't modify the fragment color
-    return color;
-#endif
 }
 
 #endif //FRAG_FOG

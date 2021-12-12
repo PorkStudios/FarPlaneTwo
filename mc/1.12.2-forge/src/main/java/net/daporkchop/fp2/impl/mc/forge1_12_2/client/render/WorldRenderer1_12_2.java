@@ -147,6 +147,8 @@ public class WorldRenderer1_12_2 implements WorldRenderer, AutoCloseable {
         { //fog
             this.initFogColor(attributes);
 
+            attributes.u_fogMode = glGetBoolean(GL_FOG) ? glGetInteger(GL_FOG_MODE) : 0;
+
             attributes.u_fogDensity = glGetFloat(GL_FOG_DENSITY);
             attributes.u_fogStart = glGetFloat(GL_FOG_START);
             attributes.u_fogEnd = glGetFloat(GL_FOG_END);
