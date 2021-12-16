@@ -230,7 +230,7 @@ public class TestLWJGL2 {
         listArrays.set(2, new DrawCommandArrays(0, 3));
         listArrays.set(3, new DrawCommandArrays(0, 3));
 
-        DrawList<DrawCommandIndexed> listElements = gl.createDrawListIndexed(binding1).build();
+        DrawList<DrawCommandIndexed> listElements = gl.createDrawListIndexed(binding1).optimizeForCpuSelection().build();
         listElements.resize(4);
         listElements.set(0, new DrawCommandIndexed(0, 6, 0));
         listElements.set(1, new DrawCommandIndexed(0, 6, 0));

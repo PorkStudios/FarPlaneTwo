@@ -152,6 +152,8 @@ public interface GLAPI {
 
     void glMultiDrawArrays(int mode, long first, long count, int drawcount);
 
+    void glMultiDrawElements(int mode, long count, int type, long indices, int drawcount);
+
     void glBlendColor(float red, float green, float blue, float alpha);
 
     void glBlendFuncSeparate(int sfactorRGB, int dfactorRGB, int sfactorAlpha, int dfactorAlpha);

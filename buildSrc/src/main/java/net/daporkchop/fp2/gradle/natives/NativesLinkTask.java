@@ -18,29 +18,42 @@
  *
  */
 
-package net.daporkchop.fp2.gradle;
+package net.daporkchop.fp2.gradle.natives;
 
-import lombok.Getter;
-import lombok.NonNull;
-import net.daporkchop.fp2.gradle.deletemixin.DeleteMixin;
-import net.daporkchop.fp2.gradle.natives.Natives;
-import org.gradle.api.Plugin;
-import org.gradle.api.Project;
+import lombok.SneakyThrows;
+import org.gradle.api.DefaultTask;
+import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.tasks.InputDirectory;
+import org.gradle.api.tasks.OutputFile;
+import org.gradle.api.tasks.PathSensitive;
+import org.gradle.api.tasks.PathSensitivity;
+import org.gradle.api.tasks.TaskAction;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 /**
  * @author DaPorkchop_
  */
-@Getter
-public class FP2GradlePlugin implements Plugin<Project> {
-    public static String makeFileName(@NonNull String fileName) {
-        //put the file in the deobfedDeps folder in order to force mixin to load it as a normal mod
-        // see https://github.com/SpongePowered/Mixin/issues/207
-        return "deobfedDeps/" + fileName;
-    }
+public abstract class NativesLinkTask extends DefaultTask {
+    @PathSensitive(PathSensitivity.RELATIVE)
+    @InputDirectory
+    public abstract DirectoryProperty getInput();
 
-    @Override
-    public void apply(@NonNull Project project) {
-        new DeleteMixin(project).register();
-        new Natives(project).register();
+    @OutputFile
+    public abstract RegularFileProperty getOutput();
+
+    @TaskAction
+    @SneakyThrows(IOException.class)
+    public void execute() {
+        System.out.println("linking natives: " + this.getInput().get());
+
+        Path inputRoot = this.getInput().getAsFile().get().toPath();
+        Path outputFile = this.getOutput().getAsFile().get().toPath();
+
+        Files.createDirectories(outputFile.getParent());
+        Files.write(outputFile, this.getInput().getAsFileTree().getFiles().toString().getBytes());
     }
 }

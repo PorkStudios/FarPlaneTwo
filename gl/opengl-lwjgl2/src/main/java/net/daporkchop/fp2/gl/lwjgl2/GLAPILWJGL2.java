@@ -22,6 +22,8 @@ package net.daporkchop.fp2.gl.lwjgl2;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.common.util.DirectBufferHackery;
+import net.daporkchop.fp2.gl.lwjgl2.extra.ExtraFunctions;
+import net.daporkchop.fp2.gl.lwjgl2.extra.ExtraFunctionsProvider;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.GLVersion;
 import net.daporkchop.lib.common.function.throwing.EPredicate;
@@ -60,6 +62,8 @@ import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
  * @author DaPorkchop_
  */
 public class GLAPILWJGL2 implements GLAPI {
+    private final ExtraFunctions extraFunctions;
+
     // OpenGL 3.1
     private final boolean GL_ARB_texture_buffer_object;
     private final boolean GL_ARB_uniform_buffer_object;
@@ -80,6 +84,8 @@ public class GLAPILWJGL2 implements GLAPI {
 
     public GLAPILWJGL2() {
         ContextCapabilities capabilities = GLContext.getCapabilities();
+
+        this.extraFunctions = ExtraFunctionsProvider.INSTANCE.get();
 
         // OpenGL 3.1
         this.GL_ARB_texture_buffer_object = !capabilities.OpenGL31 && capabilities.GL_ARB_texture_buffer_object;
@@ -369,6 +375,11 @@ public class GLAPILWJGL2 implements GLAPI {
     @Override
     public void glMultiDrawArrays(int mode, long first, long count, int drawcount) {
         GL14.glMultiDrawArrays(mode, DirectBufferHackery.wrapInt(first, drawcount), DirectBufferHackery.wrapInt(count, drawcount));
+    }
+
+    @Override
+    public void glMultiDrawElements(int mode, long count, int type, long indices, int drawcount) {
+        this.extraFunctions.glMultiDrawElements(mode, count, type, indices, drawcount);
     }
 
     @Override
@@ -713,7 +724,11 @@ public class GLAPILWJGL2 implements GLAPI {
 
     @Override
     public void glMultiDrawElementsBaseVertex(int mode, long count, int type, long indices, int drawcount, long basevertex) {
-        throw new UnsupportedOperationException();
+        if (this.GL_ARB_draw_elements_base_vertex) {
+            this.extraFunctions.glMultiDrawElementsBaseVertex(mode, count, type, indices, drawcount, basevertex);
+        } else {
+            throw new UnsupportedOperationException();
+        }
     }
 
     //

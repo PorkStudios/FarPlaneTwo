@@ -18,29 +18,15 @@
  *
  */
 
-package net.daporkchop.fp2.gradle;
+package net.daporkchop.fp2.gradle.natives.struct;
 
-import lombok.Getter;
-import lombok.NonNull;
-import net.daporkchop.fp2.gradle.deletemixin.DeleteMixin;
-import net.daporkchop.fp2.gradle.natives.Natives;
-import org.gradle.api.Plugin;
-import org.gradle.api.Project;
+import org.gradle.api.NamedDomainObjectContainer;
 
 /**
  * @author DaPorkchop_
  */
-@Getter
-public class FP2GradlePlugin implements Plugin<Project> {
-    public static String makeFileName(@NonNull String fileName) {
-        //put the file in the deobfedDeps folder in order to force mixin to load it as a normal mod
-        // see https://github.com/SpongePowered/Mixin/issues/207
-        return "deobfedDeps/" + fileName;
-    }
+public interface NativesExtension {
+    NamedDomainObjectContainer<NativeArchitecture> getArchitectures();
 
-    @Override
-    public void apply(@NonNull Project project) {
-        new DeleteMixin(project).register();
-        new Natives(project).register();
-    }
+    NamedDomainObjectContainer<NativeModule> getModules();
 }

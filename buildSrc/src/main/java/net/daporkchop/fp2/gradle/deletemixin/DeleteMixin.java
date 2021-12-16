@@ -21,26 +21,29 @@
 package net.daporkchop.fp2.gradle.deletemixin;
 
 import lombok.NonNull;
-import lombok.experimental.UtilityClass;
+import lombok.RequiredArgsConstructor;
 import org.gradle.api.Project;
 import org.gradle.api.attributes.Attribute;
 
 /**
  * @author DaPorkchop_
  */
-@UtilityClass
-public class DeleteMixin {
+@RequiredArgsConstructor
+public final class DeleteMixin {
     public static final Attribute<Boolean> ATTRIBUTE = Attribute.of(Boolean.class);
 
-    public void register(@NonNull Project project) {
-        project.getDependencies().getAttributesSchema().attribute(ATTRIBUTE);
-        project.getDependencies().registerTransform(DeleteMixinTransform.class, spec -> {
+    @NonNull
+    protected final Project project;
+
+    public void register() {
+        this.project.getDependencies().getAttributesSchema().attribute(ATTRIBUTE);
+        this.project.getDependencies().registerTransform(DeleteMixinTransform.class, spec -> {
             spec.getFrom().attribute(ATTRIBUTE, false);
             spec.getTo().attribute(ATTRIBUTE, true);
         });
 
-        project.getDependencies().getArtifactTypes().getByName("jar").getAttributes().attribute(ATTRIBUTE, false);
+        this.project.getDependencies().getArtifactTypes().getByName("jar").getAttributes().attribute(ATTRIBUTE, false);
 
-        project.getExtensions().create("fp2", DeleteMixinExtension.class, project);
+        this.project.getExtensions().create("fp2", DeleteMixinExtension.class, this.project);
     }
 }

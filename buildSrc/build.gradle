@@ -27,6 +27,8 @@ repositories {
 }
 
 dependencies {
+    implementation gradleApi()
+
     compileOnly "org.projectlombok:lombok:$lombokVersion"
     annotationProcessor "org.projectlombok:lombok:$lombokVersion"
 }

@@ -18,29 +18,14 @@
  *
  */
 
-package net.daporkchop.fp2.gradle;
+#include <fp2.h>
 
-import lombok.Getter;
-import lombok.NonNull;
-import net.daporkchop.fp2.gradle.deletemixin.DeleteMixin;
-import net.daporkchop.fp2.gradle.natives.Natives;
-import org.gradle.api.Plugin;
-import org.gradle.api.Project;
+FP2_JNI(void, NativeExtraFunctionsProvider, glMultiDrawElements) (JNIEnv* env, jobject obj,
+        jint mode, jlong count, jint type, jlong indices, jint drawcount, void(*glMultiDrawElements)(jint, jlong, jint, jlong, jint)) {
+    glMultiDrawElements(mode, count, type, indices, drawcount);
+}
 
-/**
- * @author DaPorkchop_
- */
-@Getter
-public class FP2GradlePlugin implements Plugin<Project> {
-    public static String makeFileName(@NonNull String fileName) {
-        //put the file in the deobfedDeps folder in order to force mixin to load it as a normal mod
-        // see https://github.com/SpongePowered/Mixin/issues/207
-        return "deobfedDeps/" + fileName;
-    }
-
-    @Override
-    public void apply(@NonNull Project project) {
-        new DeleteMixin(project).register();
-        new Natives(project).register();
-    }
+FP2_JNI(void, NativeExtraFunctionsProvider, glMultiDrawElementsBaseVertex) (JNIEnv* env, jobject obj,
+        jint mode, jlong count, jint type, jlong indices, jint drawcount, jlong basevertex, void(*glMultiDrawElementsBaseVertex)(jint, jlong, jint, jlong, jint, jlong)) {
+    glMultiDrawElementsBaseVertex(mode, count, type, indices, drawcount, basevertex);
 }

@@ -21,6 +21,8 @@
 dependencies {
     implementationShade project(":gl:opengl")
 
+    implementationProvided "net.daporkchop.lib:natives:$porklibVersion"
+
     implementationProvided "org.lwjgl.lwjgl:lwjgl:$lwjgl2Version"
     implementationProvided "org.lwjgl.lwjgl:lwjgl_util:$lwjgl2Version"
 
@@ -28,4 +30,25 @@ dependencies {
     implementationProvided "org.lwjgl.lwjgl:lwjgl-platform:$lwjgl2Version:natives-windows"
 
     implementationProvided "org.ow2.asm:asm-debug-all:$asmVersion"
+}
+
+natives {
+    architectures {
+        x86 {
+            sharedLibraryExtension = "so"
+            
+            simdExtensions {
+                sse2 {
+                    compilerFlags = ["-msse2"]
+                }
+            }
+        }
+    }
+
+    modules {
+        main {
+            sourceSet = sourceSets.main
+            root = "gl/lwjgl2/extra"
+        }
+    }
 }

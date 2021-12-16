@@ -18,29 +18,20 @@
  *
  */
 
-package net.daporkchop.fp2.gradle;
+package net.daporkchop.fp2.gl.lwjgl2.extra;
 
-import lombok.Getter;
-import lombok.NonNull;
-import net.daporkchop.fp2.gradle.deletemixin.DeleteMixin;
-import net.daporkchop.fp2.gradle.natives.Natives;
-import org.gradle.api.Plugin;
-import org.gradle.api.Project;
+import net.daporkchop.lib.natives.Feature;
+import net.daporkchop.lib.natives.FeatureBuilder;
+
+import java.util.function.Supplier;
 
 /**
+ * Creates instances of {@link ExtraFunctions}.
+ *
  * @author DaPorkchop_
  */
-@Getter
-public class FP2GradlePlugin implements Plugin<Project> {
-    public static String makeFileName(@NonNull String fileName) {
-        //put the file in the deobfedDeps folder in order to force mixin to load it as a normal mod
-        // see https://github.com/SpongePowered/Mixin/issues/207
-        return "deobfedDeps/" + fileName;
-    }
-
-    @Override
-    public void apply(@NonNull Project project) {
-        new DeleteMixin(project).register();
-        new Natives(project).register();
-    }
+public interface ExtraFunctionsProvider extends Feature<ExtraFunctionsProvider>, Supplier<ExtraFunctions> {
+    ExtraFunctionsProvider INSTANCE = FeatureBuilder.<ExtraFunctionsProvider>create(ExtraFunctionsProvider.class)
+            .addNative("net.daporkchop.fp2.gl.lwjgl2.extra.NativeExtraFunctionsProvider")
+            .build(true);
 }
