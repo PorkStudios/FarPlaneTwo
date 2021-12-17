@@ -22,6 +22,7 @@ package net.daporkchop.fp2.gradle.natives;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.gradle.FP2GradlePlugin;
 import net.daporkchop.fp2.gradle.natives.struct.NativeModule;
 import net.daporkchop.fp2.gradle.natives.struct.NativesExtension;
 import org.gradle.api.Project;
@@ -30,9 +31,9 @@ import org.gradle.api.file.Directory;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.TaskProvider;
 
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.Collections;
+import java.util.Optional;
 
 /**
  * @author DaPorkchop_
@@ -41,11 +42,14 @@ import java.util.Collections;
 public final class Natives {
     private static final String ROOT_TASK_NAME = "natives";
 
+    public static final Optional<Path> CLANG_PATH = FP2GradlePlugin.findInPath("clang++");
+    public static final Optional<Path> TAR_PATH = FP2GradlePlugin.findInPath("tar");
+
     @NonNull
     protected final Project project;
 
     public void register() {
-        if (!Files.exists(Paths.get("/usr/bin/clang++"))) { //do nothing
+        if (!CLANG_PATH.isPresent() || !TAR_PATH.isPresent()) { //do nothing
             return;
         }
 
@@ -74,10 +78,19 @@ public final class Natives {
     private TaskProvider<Task> registerBuild(NativeSpec spec, NativeModule module) {
         Directory sourceDir = this.project.getLayout().getProjectDirectory().dir("src/" + module.getSourceSet().get().getName() + "/native/" + module.getRoot().get());
 
+        Provider<Directory> downloadOutputDir = this.project.getLayout().getBuildDirectory().dir(spec.librariesOutputDirectory());
         Provider<Directory> compileOutputDir = this.project.getLayout().getBuildDirectory().dir(spec.compileOutputDirectory());
         Provider<Directory> linkOutputDir = this.project.getLayout().getBuildDirectory().dir(spec.linkOutputDirectory());
 
+        spec.includeDirectories().add(downloadOutputDir.get().getAsFile().getAbsolutePath());
+
+        TaskProvider<NativesDownloadTask> downloadTask = this.project.getTasks().register(spec.librariesTaskName(), NativesDownloadTask.class, task -> {
+            task.getSpec().set(spec);
+            task.getDestinationDirectory().set(downloadOutputDir);
+        });
         TaskProvider<NativesCompileTask> compileTask = this.project.getTasks().register(spec.compileTaskName(), NativesCompileTask.class, task -> {
+            task.dependsOn(downloadTask);
+
             task.getSpec().set(spec);
             task.getSourceDirectory().set(sourceDir);
             task.getDestinationDirectory().set(compileOutputDir);
@@ -91,7 +104,7 @@ public final class Natives {
         });
 
         TaskProvider<Task> rootTask = this.project.getTasks().register(spec.rootTaskName(), task -> {
-            task.dependsOn(compileTask, linkTask);
+            task.dependsOn(downloadTask, compileTask, linkTask);
         });
 
         module.getSourceSet().get().getOutput().dir(Collections.singletonMap("builtBy", rootTask.getName()), linkOutputDir);

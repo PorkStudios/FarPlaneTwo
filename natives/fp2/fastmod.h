@@ -2,8 +2,7 @@
  * Adapted from https://github.com/lemire/fastmod/blob/master/include/fastmod.h
  */
 
-#ifndef FASTMOD_H
-#define FASTMOD_H
+#pragma once
 
 #include <cstdint>
 
@@ -109,5 +108,3 @@ namespace fp2 {
         }*/
     };
 }
-
-#endif //FASTMOD_H

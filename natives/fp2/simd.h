@@ -18,10 +18,9 @@
  *
  */
 
-#ifndef SIMD_H
-#define SIMD_H
+#pragma once
 
-#include <lib/vectorclass-2.01.03/vectorclass.h>
+#include <vectorclass-2.01.03/vectorclass.h>
 
 #ifndef _FP2_VEC_SIZE
 #define _FP2_VEC_SIZE 128
@@ -169,5 +168,3 @@ public: \
         return out;
     }
 }
-
-#endif //SIMD_H

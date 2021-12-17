@@ -27,6 +27,8 @@ import org.gradle.api.provider.SetProperty;
  * @author DaPorkchop_
  */
 public interface NativeCompilerOptions {
+    SetProperty<String> getLibraries();
+
     SetProperty<String> getIncludeDirectories();
 
     ListProperty<String> getCxxFlags();

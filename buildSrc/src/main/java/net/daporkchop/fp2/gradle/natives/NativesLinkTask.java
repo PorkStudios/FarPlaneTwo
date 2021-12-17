@@ -64,7 +64,7 @@ public abstract class NativesLinkTask extends DefaultTask {
         System.out.println("linking " + this.getInput().get() + " for " + spec.descriptionText());
 
         List<String> command = new ArrayList<>();
-        command.add("/usr/bin/clang++");
+        command.add(Natives.CLANG_PATH.get().toString());
         command.add("-target");
         command.add(spec.platformString());
         command.addAll(spec.linkerFlags());

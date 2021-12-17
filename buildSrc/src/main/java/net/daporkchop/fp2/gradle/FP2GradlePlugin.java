@@ -27,6 +27,13 @@ import net.daporkchop.fp2.gradle.natives.Natives;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Optional;
+import java.util.regex.Pattern;
+
 /**
  * @author DaPorkchop_
  */
@@ -36,6 +43,16 @@ public class FP2GradlePlugin implements Plugin<Project> {
         //put the file in the deobfedDeps folder in order to force mixin to load it as a normal mod
         // see https://github.com/SpongePowered/Mixin/issues/207
         return "deobfedDeps/" + fileName;
+    }
+
+    public static Optional<Path> findInPath(@NonNull String name) {
+        for (String dir : System.getenv("PATH").split(Pattern.quote(File.pathSeparator))) {
+            Path path = Paths.get(dir).resolve(name);
+            if (Files.exists(path)) {
+                return Optional.of(path);
+            }
+        }
+        return Optional.empty();
     }
 
     @Override

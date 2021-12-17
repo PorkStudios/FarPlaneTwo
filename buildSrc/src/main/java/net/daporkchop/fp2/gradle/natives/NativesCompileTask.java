@@ -138,7 +138,7 @@ public abstract class NativesCompileTask extends DefaultTask {
             NativeSpec spec = parameters.getSpec().get();
 
             List<String> command = new ArrayList<>();
-            command.add("/usr/bin/clang++");
+            command.add(Natives.CLANG_PATH.get().toString());
             command.add("-target");
             command.add(spec.platformString());
             command.addAll(spec.cxxFlags());

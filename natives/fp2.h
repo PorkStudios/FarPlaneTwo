@@ -18,8 +18,7 @@
  *
  */
 
-#ifndef FP2_H
-#define FP2_H
+#pragma once
 
 #define _GLIBCXX_DEBUG
 
@@ -110,5 +109,3 @@ namespace fp2 {
         return (B) a;
     }
 }
-
-#endif //FP2_H

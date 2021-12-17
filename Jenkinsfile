@@ -61,7 +61,7 @@ pipeline {
     stages {
         stage("Natives") {
             steps {
-                sh "./gradlew compileNatives -x test"
+                sh "./gradlew compileNatives natives -x test"
             }
         }
         stage("Build") {

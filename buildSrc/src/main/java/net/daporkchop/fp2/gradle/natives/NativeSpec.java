@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.gradle.natives;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.gradle.natives.struct.NativeArchitecture;
@@ -44,6 +45,7 @@ import java.util.stream.Stream;
  * @author DaPorkchop_
  */
 @Getter
+@EqualsAndHashCode
 public final class NativeSpec implements Serializable {
     private final String moduleName;
     private final String moduleRoot;
@@ -54,6 +56,8 @@ public final class NativeSpec implements Serializable {
     private final String operatingSystemSharedLibraryExtension;
 
     private final String simdExtensionName;
+
+    private final Set<String> libraries = new HashSet<>();
 
     private final List<String> cxxFlags = new ArrayList<>();
     private final List<String> linkerFlags = new ArrayList<>();
@@ -73,6 +77,7 @@ public final class NativeSpec implements Serializable {
 
         Stream.of(extension, module, architecture, operatingSystem, simdExtension).filter(Objects::nonNull)
                 .forEach(options -> {
+                    this.libraries.addAll(options.getLibraries().getOrElse(Collections.emptySet()));
                     this.cxxFlags.addAll(options.getCxxFlags().getOrElse(Collections.emptyList()));
                     this.linkerFlags.addAll(options.getLinkerFlags().getOrElse(Collections.emptyList()));
                     this.includeDirectories.addAll(options.getIncludeDirectories().getOrElse(Collections.emptySet()));
@@ -96,6 +101,10 @@ public final class NativeSpec implements Serializable {
         return "natives/" + this.platformString() + '/' + this.moduleName + Optional.ofNullable(this.simdExtensionName).map(name -> '/' + name).orElse("");
     }
 
+    public String librariesOutputDirectory() {
+        return this.rootOutputDirectory() + "/libraries";
+    }
+
     public String compileOutputDirectory() {
         return this.rootOutputDirectory() + "/compile";
     }
@@ -110,6 +119,10 @@ public final class NativeSpec implements Serializable {
 
     public String rootTaskName() {
         return "natives_" + this.platformString() + Optional.ofNullable(this.simdExtensionName).map(name -> '_' + name).orElse("") + '_' + this.moduleName;
+    }
+
+    public String librariesTaskName() {
+        return this.rootTaskName() + "_libraries";
     }
 
     public String compileTaskName() {
