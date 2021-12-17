@@ -20,37 +20,44 @@
 
 package net.daporkchop.fp2.gradle.natives;
 
+import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.SneakyThrows;
+import lombok.experimental.Accessors;
 import org.gradle.api.DefaultTask;
-import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.FileTree;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.InputDirectory;
+import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskAction;
 
-import java.io.BufferedInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.concurrent.Callable;
 
 /**
  * @author DaPorkchop_
  */
+@Getter
 public abstract class NativesLinkTask extends DefaultTask {
+    private final ConfigurableFileCollection inputs = this.getProject().getObjects().fileCollection();
+
+    @Accessors(fluent = false)
+    @Getter(value = AccessLevel.PROTECTED, onMethod_ = {
+            @PathSensitive(PathSensitivity.RELATIVE),
+            @InputFiles
+    })
+    private final FileTree stableSources = this.getProject()
+            .files((Callable<FileTree>) () -> this.inputs.getAsFileTree().matching(patternFilterable -> patternFilterable.include("**/*.o")))
+            .getAsFileTree();
+
     @Input
     public abstract Property<NativeSpec> getSpec();
-
-    @PathSensitive(PathSensitivity.RELATIVE)
-    @InputDirectory
-    public abstract DirectoryProperty getInput();
 
     @OutputFile
     public abstract RegularFileProperty getOutput();
@@ -61,7 +68,7 @@ public abstract class NativesLinkTask extends DefaultTask {
         NativeSpec spec = this.getSpec().get();
 
         this.getOutput().getAsFile().get().getParentFile().mkdirs();
-        System.out.println("linking " + this.getInput().get() + " for " + spec.descriptionText());
+        System.out.println("linking " + this.getOutput().getAsFile().get() + " for " + spec.descriptionText());
 
         List<String> command = new ArrayList<>();
         command.add(Natives.CLANG_PATH.get().toString());
@@ -70,21 +77,8 @@ public abstract class NativesLinkTask extends DefaultTask {
         command.addAll(spec.linkerFlags());
         command.add("-o");
         command.add(this.getOutput().getAsFile().get().getAbsolutePath());
-        command.addAll(this.getInput().getAsFileTree().getFiles().stream().map(File::getAbsolutePath).collect(Collectors.toList()));
+        this.stableSources.forEach(file -> command.add(file.getAbsolutePath()));
 
-        //System.out.println(String.join(" ", command));
-        Process process = new ProcessBuilder().redirectErrorStream(true).command(command).start();
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try (InputStream in = new BufferedInputStream(process.getInputStream())) {
-            for (int b; (b = in.read()) >= 0; ) {
-                baos.write(b);
-            }
-        }
-        process.waitFor();
-
-        if (process.exitValue() != 0) {
-            throw new IllegalStateException(new String(baos.toByteArray(), StandardCharsets.UTF_8));
-        }
+        Natives.launchProcessAndWait(command);
     }
 }

@@ -20,21 +20,28 @@
 
 package net.daporkchop.fp2.gradle.natives;
 
+import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.SneakyThrows;
+import lombok.experimental.Accessors;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.file.FileTree;
 import org.gradle.api.file.FileType;
 import org.gradle.api.file.RegularFile;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.InputDirectory;
+import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.internal.execution.history.changes.DefaultFileChange;
 import org.gradle.work.ChangeType;
+import org.gradle.work.FileChange;
 import org.gradle.work.Incremental;
 import org.gradle.work.InputChanges;
 import org.gradle.workers.WorkAction;
@@ -43,48 +50,75 @@ import org.gradle.workers.WorkQueue;
 import org.gradle.workers.WorkerExecutor;
 
 import javax.inject.Inject;
-import java.io.BufferedInputStream;
-import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.concurrent.Callable;
 
 /**
  * @author DaPorkchop_
  */
+@Getter
 public abstract class NativesCompileTask extends DefaultTask {
+    private final ConfigurableFileCollection inputs = this.getProject().getObjects().fileCollection();
+    private final ConfigurableFileCollection includes = this.getProject().getObjects().fileCollection();
+
+    @Accessors(fluent = false)
+    @Getter(value = AccessLevel.PROTECTED, onMethod_ = {
+            @Incremental,
+            @PathSensitive(PathSensitivity.RELATIVE),
+            @InputFiles
+    })
+    private final FileTree stableSources = this.getProject()
+            .files((Callable<FileTree>) () -> this.inputs.getAsFileTree().matching(patternFilterable -> patternFilterable.include("**/*.cpp")))
+            .getAsFileTree();
+
+    @Accessors(fluent = false)
+    @Getter(value = AccessLevel.PROTECTED, onMethod_ = {
+            @Incremental,
+            @PathSensitive(PathSensitivity.RELATIVE),
+            @InputFiles
+    })
+    private final FileTree stableHeaders = this.getProject()
+            .files((Callable<FileTree>) () -> this.includes.getAsFileTree().matching(patternFilterable -> patternFilterable.include("**/*.h", "**/*.hpp")))
+            .getAsFileTree();
+
     @Inject
     public abstract WorkerExecutor getExecutor();
 
     @Input
     public abstract Property<NativeSpec> getSpec();
 
-    @Incremental
-    @PathSensitive(PathSensitivity.RELATIVE)
-    @InputDirectory
-    public abstract DirectoryProperty getSourceDirectory();
-
     @OutputDirectory
-    public abstract DirectoryProperty getDestinationDirectory();
+    public abstract DirectoryProperty getOutputDirectory();
 
     @TaskAction
     public void execute(InputChanges changes) {
-        if (!changes.isIncremental() && this.getDestinationDirectory().getAsFile().get().exists()) {
+        WorkQueue workQueue = this.getExecutor().noIsolation();
+        Iterator<? extends FileChange> fileChanges = changes.getFileChanges(this.stableSources).iterator();
+
+        if (!changes.isIncremental()) {
             System.out.println("not an incremental build, nuking output directory...");
-            this.getProject().delete(this.getDestinationDirectory().getAsFileTree());
+            this.getProject().delete(this.getOutputDirectory().getAsFileTree());
+        } else if (changes.getFileChanges(this.stableHeaders).iterator().hasNext()) {
+            System.out.println("headers have changed, nuking output directory...");
+            this.getProject().delete(this.getOutputDirectory().getAsFileTree());
+
+            //forcibly iterate over EVERYTHING, since changes which take effect after the task begins aren't taken into account
+            fileChanges = this.stableSources.getFiles().stream().map(file -> DefaultFileChange.added(file.getAbsolutePath(), "", org.gradle.internal.file.FileType.RegularFile, file.getAbsolutePath())).iterator();
         }
 
-        WorkQueue workQueue = this.getExecutor().noIsolation();
-        changes.getFileChanges(this.getSourceDirectory()).forEach(fileChange -> {
+        fileChanges.forEachRemaining(fileChange -> {
             if (fileChange.getFileType() == FileType.DIRECTORY) { //we don't care about folders
                 return;
             }
 
-            Provider<RegularFile> objectFile = this.getDestinationDirectory().file(fileChange.getFile().getName() + ".o");
+            Path notAbsoluteSourcePath = fileChange.getFile().toPath().subpath(0, fileChange.getFile().toPath().getNameCount());
+            Provider<RegularFile> objectFile = this.getOutputDirectory().file(notAbsoluteSourcePath + ".o");
             workQueue.submit(CompileAction.class, parameters -> {
                 parameters.getSpec().set(this.getSpec().get());
                 parameters.getChangeType().set(fileChange.getChangeType());
@@ -133,7 +167,10 @@ public abstract class NativesCompileTask extends DefaultTask {
 
         @SneakyThrows
         private void compile(CompileParameters parameters) {
-            parameters.getObjectFile().getAsFile().get().getParentFile().mkdirs();
+            File sourceFile = parameters.getSourceFile().getAsFile().get();
+            File objectFile = parameters.getObjectFile().getAsFile().get();
+
+            objectFile.getParentFile().mkdirs();
 
             NativeSpec spec = parameters.getSpec().get();
 
@@ -145,24 +182,11 @@ public abstract class NativesCompileTask extends DefaultTask {
             spec.includeDirectories().forEach(d -> command.add("-I" + d));
             spec.defines().forEach((k, v) -> command.add("-D" + k + '=' + v));
             command.add("-c");
-            command.add(parameters.getSourceFile().getAsFile().get().getAbsolutePath());
+            command.add(sourceFile.getAbsolutePath());
             command.add("-o");
-            command.add(parameters.getObjectFile().getAsFile().get().getAbsolutePath());
+            command.add(objectFile.getAbsolutePath());
 
-            //System.out.println(String.join(" ", command));
-            Process process = new ProcessBuilder().redirectErrorStream(true).command(command).start();
-
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            try (InputStream in = new BufferedInputStream(process.getInputStream())) {
-                for (int b; (b = in.read()) >= 0; ) {
-                    baos.write(b);
-                }
-            }
-            process.waitFor();
-
-            if (process.exitValue() != 0) {
-                throw new IllegalStateException(new String(baos.toByteArray(), StandardCharsets.UTF_8));
-            }
+            Natives.launchProcessAndWait(command);
         }
     }
 }

@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.gl.lwjgl2;
+package net.daporkchop.fp2.gl.opengl.lwjgl2;
 
 import lombok.experimental.UtilityClass;
 

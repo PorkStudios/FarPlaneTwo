@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.gl.lwjgl2.extra;
+package net.daporkchop.fp2.gl.opengl.lwjgl2.extra;
 
 /**
  * @author DaPorkchop_

@@ -22,6 +22,7 @@ package net.daporkchop.fp2.gradle.natives;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import net.daporkchop.fp2.gradle.FP2GradlePlugin;
 import net.daporkchop.fp2.gradle.natives.struct.NativeModule;
 import net.daporkchop.fp2.gradle.natives.struct.NativesExtension;
@@ -31,8 +32,13 @@ import org.gradle.api.file.Directory;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.TaskProvider;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -44,6 +50,26 @@ public final class Natives {
 
     public static final Optional<Path> CLANG_PATH = FP2GradlePlugin.findInPath("clang++");
     public static final Optional<Path> TAR_PATH = FP2GradlePlugin.findInPath("tar");
+
+    @SneakyThrows({ InterruptedException.class, IOException.class })
+    public static void launchProcessAndWait(List<String> command) {
+        Process process = new ProcessBuilder().redirectErrorStream(true).command(command).start();
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (InputStream in = process.getInputStream()) {
+            byte[] buf = new byte[512];
+            for (int i; (i = in.read(buf)) >= 0; ) {
+                baos.write(buf, 0, i);
+            }
+        }
+        process.waitFor();
+
+        if (process.exitValue() != 0) {
+            throw new IllegalStateException("process exited with non-zero exit code " + process.exitValue()
+                                            + "\ncommand line: " + String.join(" ", command)
+                                            + "\nstdout+stderr:\n" + new String(baos.toByteArray(), StandardCharsets.UTF_8));
+        }
+    }
 
     @NonNull
     protected final Project project;
@@ -92,14 +118,19 @@ public final class Natives {
             task.dependsOn(downloadTask);
 
             task.getSpec().set(spec);
-            task.getSourceDirectory().set(sourceDir);
-            task.getDestinationDirectory().set(compileOutputDir);
+            task.inputs().from(module.getSourceSet().get().getAllSource().getSrcDirs().stream()
+                    .map(dir -> dir.toPath().getParent().resolve("native/" + spec.moduleRoot()).toFile())
+                    .toArray());
+
+            task.includes().from(task.inputs());
+            task.includes().from(spec.includeDirectories().toArray());
+            task.getOutputDirectory().set(compileOutputDir);
         });
         TaskProvider<NativesLinkTask> linkTask = this.project.getTasks().register(spec.linkTaskName(), NativesLinkTask.class, task -> {
             task.dependsOn(compileTask);
 
             task.getSpec().set(spec);
-            task.getInput().set(compileOutputDir);
+            task.inputs().from(compileOutputDir);
             task.getOutput().set(linkOutputDir.map(dir -> dir.file(spec.linkedLibraryFile())));
         });
 

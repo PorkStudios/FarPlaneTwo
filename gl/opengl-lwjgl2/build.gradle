@@ -37,6 +37,6 @@ dependencies {
 natives.modules {
     main {
         sourceSet = sourceSets.main
-        root = "net/daporkchop/fp2/gl/lwjgl2/extra"
+        root = "net/daporkchop/fp2/gl/opengl/lwjgl2/extra"
     }
 }

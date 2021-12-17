@@ -18,20 +18,15 @@
  *
  */
 
-package net.daporkchop.fp2.gl.lwjgl2.extra;
-
-import net.daporkchop.lib.natives.Feature;
-import net.daporkchop.lib.natives.FeatureBuilder;
-
-import java.util.function.Supplier;
+package net.daporkchop.fp2.gl.opengl.lwjgl2.extra;
 
 /**
- * Creates instances of {@link ExtraFunctions}.
+ * API endpoints for additional OpenGL functions not accessible through the standard LWJGL2 api.
  *
  * @author DaPorkchop_
  */
-public interface ExtraFunctionsProvider extends Feature<ExtraFunctionsProvider>, Supplier<ExtraFunctions> {
-    ExtraFunctionsProvider INSTANCE = FeatureBuilder.<ExtraFunctionsProvider>create(ExtraFunctionsProvider.class)
-            .addNative("net.daporkchop.fp2.gl.lwjgl2.extra.NativeExtraFunctionsProvider")
-            .build(true);
+public interface ExtraFunctions {
+    void glMultiDrawElements(int mode, long count, int type, long indices, int drawcount);
+
+    void glMultiDrawElementsBaseVertex(int mode, long count, int type, long indices, int drawcount, long basevertex);
 }
