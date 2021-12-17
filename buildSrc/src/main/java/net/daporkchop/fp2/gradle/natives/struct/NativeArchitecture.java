@@ -21,15 +21,12 @@
 package net.daporkchop.fp2.gradle.natives.struct;
 
 import org.gradle.api.NamedDomainObjectContainer;
-import org.gradle.api.provider.Property;
 
 /**
  * @author DaPorkchop_
  */
-public interface NativeArchitecture {
+public interface NativeArchitecture extends NativeCompilerOptions {
     String getName();
-
-    Property<String> getSharedLibraryExtension();
 
     NamedDomainObjectContainer<NativeSIMDExtension> getSimdExtensions();
 }

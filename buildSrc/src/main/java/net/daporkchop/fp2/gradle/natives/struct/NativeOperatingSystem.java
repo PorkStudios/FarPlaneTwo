@@ -21,17 +21,15 @@
 package net.daporkchop.fp2.gradle.natives.struct;
 
 import org.gradle.api.provider.Property;
-import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.provider.SetProperty;
 
 /**
  * @author DaPorkchop_
  */
-public interface NativeModule extends NativeCompilerOptions {
+public interface NativeOperatingSystem extends NativeCompilerOptions {
     String getName();
 
-    Property<SourceSet> getSourceSet();
+    Property<String> getSharedLibraryExtension();
 
-    Property<String> getRoot();
-
-    Property<Boolean> getSimd();
+    SetProperty<NativeArchitecture> getSupportedArchitectures();
 }

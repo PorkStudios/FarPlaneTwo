@@ -20,12 +20,12 @@
 
 #include <fp2.h>
 
-FP2_JNI(void, NativeExtraFunctionsProvider, glMultiDrawElements) (JNIEnv* env, jobject obj,
+FP2_JNI(void, NativeExtraFunctions, glMultiDrawElements) (JNIEnv* env, jobject obj,
         jint mode, jlong count, jint type, jlong indices, jint drawcount, void(*glMultiDrawElements)(jint, jlong, jint, jlong, jint)) {
     glMultiDrawElements(mode, count, type, indices, drawcount);
 }
 
-FP2_JNI(void, NativeExtraFunctionsProvider, glMultiDrawElementsBaseVertex) (JNIEnv* env, jobject obj,
+FP2_JNI(void, NativeExtraFunctions, glMultiDrawElementsBaseVertex) (JNIEnv* env, jobject obj,
         jint mode, jlong count, jint type, jlong indices, jint drawcount, jlong basevertex, void(*glMultiDrawElementsBaseVertex)(jint, jlong, jint, jlong, jint, jlong)) {
     glMultiDrawElementsBaseVertex(mode, count, type, indices, drawcount, basevertex);
 }

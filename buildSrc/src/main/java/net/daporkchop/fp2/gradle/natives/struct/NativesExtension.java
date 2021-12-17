@@ -25,8 +25,10 @@ import org.gradle.api.NamedDomainObjectContainer;
 /**
  * @author DaPorkchop_
  */
-public interface NativesExtension {
+public interface NativesExtension extends NativeCompilerOptions {
     NamedDomainObjectContainer<NativeArchitecture> getArchitectures();
+
+    NamedDomainObjectContainer<NativeOperatingSystem> getOperatingSystems();
 
     NamedDomainObjectContainer<NativeModule> getModules();
 }

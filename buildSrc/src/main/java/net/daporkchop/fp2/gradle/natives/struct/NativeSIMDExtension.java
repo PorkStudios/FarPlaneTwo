@@ -20,13 +20,13 @@
 
 package net.daporkchop.fp2.gradle.natives.struct;
 
-import org.gradle.api.provider.ListProperty;
+import org.gradle.api.provider.Property;
 
 /**
  * @author DaPorkchop_
  */
-public interface NativeSIMDExtension {
+public interface NativeSIMDExtension extends NativeCompilerOptions {
     String getName();
 
-    ListProperty<String> getCompilerFlags();
+    Property<Integer> getRegisterWidth();
 }

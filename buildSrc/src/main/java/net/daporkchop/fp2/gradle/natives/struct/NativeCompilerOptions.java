@@ -20,18 +20,16 @@
 
 package net.daporkchop.fp2.gradle.natives.struct;
 
-import org.gradle.api.provider.Property;
-import org.gradle.api.tasks.SourceSet;
+import org.gradle.api.provider.ListProperty;
+import org.gradle.api.provider.SetProperty;
 
 /**
  * @author DaPorkchop_
  */
-public interface NativeModule extends NativeCompilerOptions {
-    String getName();
+public interface NativeCompilerOptions {
+    SetProperty<String> getIncludeDirectories();
 
-    Property<SourceSet> getSourceSet();
+    ListProperty<String> getCxxFlags();
 
-    Property<String> getRoot();
-
-    Property<Boolean> getSimd();
+    ListProperty<String> getLinkerFlags();
 }

@@ -18,6 +18,8 @@
  *
  */
 
+apply from: "${project.rootDir}/natives/natives.gradle"
+
 dependencies {
     implementationShade project(":gl:opengl")
 
@@ -32,23 +34,9 @@ dependencies {
     implementationProvided "org.ow2.asm:asm-debug-all:$asmVersion"
 }
 
-natives {
-    architectures {
-        x86 {
-            sharedLibraryExtension = "so"
-            
-            simdExtensions {
-                sse2 {
-                    compilerFlags = ["-msse2"]
-                }
-            }
-        }
-    }
-
-    modules {
-        main {
-            sourceSet = sourceSets.main
-            root = "gl/lwjgl2/extra"
-        }
+natives.modules {
+    main {
+        sourceSet = sourceSets.main
+        root = "net/daporkchop/fp2/gl/lwjgl2/extra"
     }
 }

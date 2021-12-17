@@ -24,20 +24,30 @@ import lombok.SneakyThrows;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.Property;
+import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskAction;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author DaPorkchop_
  */
 public abstract class NativesLinkTask extends DefaultTask {
+    @Input
+    public abstract Property<NativeSpec> getSpec();
+
     @PathSensitive(PathSensitivity.RELATIVE)
     @InputDirectory
     public abstract DirectoryProperty getInput();
@@ -46,14 +56,35 @@ public abstract class NativesLinkTask extends DefaultTask {
     public abstract RegularFileProperty getOutput();
 
     @TaskAction
-    @SneakyThrows(IOException.class)
+    @SneakyThrows
     public void execute() {
-        System.out.println("linking natives: " + this.getInput().get());
+        NativeSpec spec = this.getSpec().get();
 
-        Path inputRoot = this.getInput().getAsFile().get().toPath();
-        Path outputFile = this.getOutput().getAsFile().get().toPath();
+        this.getOutput().getAsFile().get().getParentFile().mkdirs();
+        System.out.println("linking " + this.getInput().get() + " for " + spec.descriptionText());
 
-        Files.createDirectories(outputFile.getParent());
-        Files.write(outputFile, this.getInput().getAsFileTree().getFiles().toString().getBytes());
+        List<String> command = new ArrayList<>();
+        command.add("/usr/bin/clang++");
+        command.add("-target");
+        command.add(spec.platformString());
+        command.addAll(spec.linkerFlags());
+        command.add("-o");
+        command.add(this.getOutput().getAsFile().get().getAbsolutePath());
+        command.addAll(this.getInput().getAsFileTree().getFiles().stream().map(File::getAbsolutePath).collect(Collectors.toList()));
+
+        //System.out.println(String.join(" ", command));
+        Process process = new ProcessBuilder().redirectErrorStream(true).command(command).start();
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (InputStream in = new BufferedInputStream(process.getInputStream())) {
+            for (int b; (b = in.read()) >= 0; ) {
+                baos.write(b);
+            }
+        }
+        process.waitFor();
+
+        if (process.exitValue() != 0) {
+            throw new IllegalStateException(new String(baos.toByteArray(), StandardCharsets.UTF_8));
+        }
     }
 }

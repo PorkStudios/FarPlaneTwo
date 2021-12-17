@@ -21,7 +21,6 @@
 package net.daporkchop.fp2.gradle.natives;
 
 import lombok.SneakyThrows;
-import net.daporkchop.fp2.gradle.natives.struct.NativeArchitecture;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.FileType;
@@ -44,8 +43,15 @@ import org.gradle.workers.WorkQueue;
 import org.gradle.workers.WorkerExecutor;
 
 import javax.inject.Inject;
+import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author DaPorkchop_
@@ -55,7 +61,7 @@ public abstract class NativesCompileTask extends DefaultTask {
     public abstract WorkerExecutor getExecutor();
 
     @Input
-    public abstract Property<NativeArchitecture> getArchitecture();
+    public abstract Property<NativeSpec> getSpec();
 
     @Incremental
     @PathSensitive(PathSensitivity.RELATIVE)
@@ -67,6 +73,11 @@ public abstract class NativesCompileTask extends DefaultTask {
 
     @TaskAction
     public void execute(InputChanges changes) {
+        if (!changes.isIncremental() && this.getDestinationDirectory().getAsFile().get().exists()) {
+            System.out.println("not an incremental build, nuking output directory...");
+            this.getProject().delete(this.getDestinationDirectory().getAsFileTree());
+        }
+
         WorkQueue workQueue = this.getExecutor().noIsolation();
         changes.getFileChanges(this.getSourceDirectory()).forEach(fileChange -> {
             if (fileChange.getFileType() == FileType.DIRECTORY) { //we don't care about folders
@@ -75,6 +86,7 @@ public abstract class NativesCompileTask extends DefaultTask {
 
             Provider<RegularFile> objectFile = this.getDestinationDirectory().file(fileChange.getFile().getName() + ".o");
             workQueue.submit(CompileAction.class, parameters -> {
+                parameters.getSpec().set(this.getSpec().get());
                 parameters.getChangeType().set(fileChange.getChangeType());
                 parameters.getSourceFile().set(fileChange.getFile());
                 parameters.getObjectFile().set(objectFile);
@@ -86,6 +98,8 @@ public abstract class NativesCompileTask extends DefaultTask {
      * @author DaPorkchop_
      */
     public interface CompileParameters extends WorkParameters {
+        Property<NativeSpec> getSpec();
+
         Property<ChangeType> getChangeType();
 
         RegularFileProperty getSourceFile();
@@ -105,7 +119,7 @@ public abstract class NativesCompileTask extends DefaultTask {
             switch (parameters.getChangeType().get()) {
                 case ADDED:
                 case MODIFIED:
-                    System.out.println("compiling " + parameters.getObjectFile().getAsFile().get());
+                    System.out.println("compiling " + parameters.getObjectFile().getAsFile().get() + " for " + parameters.getSpec().get().descriptionText());
                     this.compile(parameters);
                     return;
                 case REMOVED:
@@ -117,7 +131,38 @@ public abstract class NativesCompileTask extends DefaultTask {
             }
         }
 
+        @SneakyThrows
         private void compile(CompileParameters parameters) {
+            parameters.getObjectFile().getAsFile().get().getParentFile().mkdirs();
+
+            NativeSpec spec = parameters.getSpec().get();
+
+            List<String> command = new ArrayList<>();
+            command.add("/usr/bin/clang++");
+            command.add("-target");
+            command.add(spec.platformString());
+            command.addAll(spec.cxxFlags());
+            spec.includeDirectories().forEach(d -> command.add("-I" + d));
+            spec.defines().forEach((k, v) -> command.add("-D" + k + '=' + v));
+            command.add("-c");
+            command.add(parameters.getSourceFile().getAsFile().get().getAbsolutePath());
+            command.add("-o");
+            command.add(parameters.getObjectFile().getAsFile().get().getAbsolutePath());
+
+            //System.out.println(String.join(" ", command));
+            Process process = new ProcessBuilder().redirectErrorStream(true).command(command).start();
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            try (InputStream in = new BufferedInputStream(process.getInputStream())) {
+                for (int b; (b = in.read()) >= 0; ) {
+                    baos.write(b);
+                }
+            }
+            process.waitFor();
+
+            if (process.exitValue() != 0) {
+                throw new IllegalStateException(new String(baos.toByteArray(), StandardCharsets.UTF_8));
+            }
         }
     }
 }
