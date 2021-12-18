@@ -41,6 +41,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.BlockPos;
+import org.lwjgl.BufferUtils;
 
 import java.nio.FloatBuffer;
 
@@ -64,6 +65,8 @@ public class WorldRenderer1_12_2 implements WorldRenderer, AutoCloseable {
 
     protected final GameRegistry1_12_2 registry;
     protected final byte[] renderTypeLookup;
+
+    protected final FloatBuffer tempMatrix = BufferUtils.createFloatBuffer(MatrixHelper.MAT4_ELEMENTS);
 
     public WorldRenderer1_12_2(@NonNull Minecraft mc, @NonNull FakeFarWorldClient world) {
         this.mc = mc;
@@ -165,8 +168,10 @@ public class WorldRenderer1_12_2 implements WorldRenderer, AutoCloseable {
         float[] projection = alloc.atLeast(MAT4_ELEMENTS);
         try {
             //load both matrices into arrays
-            MatrixHelper.getFloatMatrixFromGL(GL_MODELVIEW_MATRIX, modelView);
-            MatrixHelper.getFloatMatrixFromGL(GL_PROJECTION_MATRIX, projection);
+            glGetFloat(GL_MODELVIEW_MATRIX, (FloatBuffer) this.tempMatrix.clear());
+            this.tempMatrix.get(modelView);
+            glGetFloat(GL_PROJECTION_MATRIX, (FloatBuffer) this.tempMatrix.clear());
+            this.tempMatrix.get(projection);
 
             //pre-multiply matrices on CPU to avoid having to do it per-vertex on GPU
             MatrixHelper.multiply4x4(projection, modelView, attributes.u_modelViewProjectionMatrix);

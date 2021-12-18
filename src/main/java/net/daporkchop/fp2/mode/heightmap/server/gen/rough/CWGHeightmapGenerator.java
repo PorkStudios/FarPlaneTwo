@@ -22,6 +22,8 @@ package net.daporkchop.fp2.mode.heightmap.server.gen.rough;
 
 import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.IBiomeBlockReplacer;
 import lombok.NonNull;
+import net.daporkchop.fp2.api.world.BlockWorldConstants;
+import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.compat.cwg.CWGContext;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.mode.heightmap.HeightmapData;
@@ -136,7 +138,7 @@ public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
             data.height_int = this.seaLevel - 1;
             data.height_frac = HEIGHT_FRAC_LIQUID;
             data.state = this.registry.state2id(Blocks.WATER.getDefaultState());
-            data.light = packCombinedLight(15 << 20);
+            data.light = BlockWorldConstants.packLight(15, 0);
             data.secondaryConnection = WATER_LAYER;
             tile.setLayer(x, z, WATER_LAYER, data);
             data.secondaryConnection = DEFAULT_LAYER;

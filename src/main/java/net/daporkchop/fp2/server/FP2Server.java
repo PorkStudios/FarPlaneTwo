@@ -24,7 +24,6 @@ import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.config.listener.ConfigListenerManager;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.player.IFarPlayerServer;
-import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.lib.common.system.PlatformInfo;
 import net.daporkchop.lib.compression.zstd.Zstd;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -35,7 +34,6 @@ import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
-import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * Manages initialization of FP2 on the server.
@@ -49,14 +47,14 @@ public class FP2Server {
      */
     public void preInit() {
         if (!PlatformInfo.IS_64BIT) { //require 64-bit
-            unsupported("Your system or JVM is not 64-bit!\nRequired by FarPlaneTwo.");
+            fp2().unsupported("Your system or JVM is not 64-bit!\nRequired by FarPlaneTwo.");
         } else if (!PlatformInfo.IS_LITTLE_ENDIAN) { //require little-endian
-            unsupported("Your system is not little-endian!\nRequired by FarPlaneTwo.");
+            fp2().unsupported("Your system is not little-endian!\nRequired by FarPlaneTwo.");
         }
 
         System.setProperty("porklib.native.printStackTraces", "true");
         if (!Zstd.PROVIDER.isNative()) {
-            Constants.bigWarning("Native ZSTD could not be loaded! This will have SERIOUS performance implications!");
+            fp2().log().alert("Native ZSTD could not be loaded! This will have SERIOUS performance implications!");
         }
 
         ServerEvents.register();

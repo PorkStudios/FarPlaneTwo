@@ -23,9 +23,6 @@ package net.daporkchop.fp2;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.api.event.RegisterEvent;
-import net.daporkchop.fp2.client.ClientEvents;
-import net.daporkchop.fp2.client.FP2ResourceReloadListener;
-import net.daporkchop.fp2.client.KeyBindings;
 import net.daporkchop.fp2.common.util.Identifier;
 import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.fp2.common.util.exception.ResourceNotFoundException;
@@ -33,23 +30,11 @@ import net.daporkchop.fp2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.compat.x86.x86FeatureDetector;
 import net.daporkchop.fp2.config.listener.ConfigListenerManager;
 import net.daporkchop.fp2.core.FP2Core;
-import net.daporkchop.fp2.core.client.gui.GuiContext;
-import net.daporkchop.fp2.core.client.gui.GuiScreen;
+import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.core.mode.api.player.IFarPlayerClient;
-import net.daporkchop.fp2.core.network.RegisterPacketsEvent;
-import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
-import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionBegin;
-import net.daporkchop.fp2.core.network.packet.standard.server.SPacketTileData;
-import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUnloadTile;
-import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUnloadTiles;
 import net.daporkchop.fp2.core.util.I18n;
-import net.daporkchop.fp2.debug.client.DebugClientEvents;
-import net.daporkchop.fp2.debug.client.DebugKeyBindings;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.I18n1_12_2;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.client.gui.GuiContext1_12_2;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.client.render.TextureUVs1_12_2;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.log.ChatAsPorkLibLogger;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.client.FP2Client1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.log.Log4jAsPorkLibLogger;
 import net.daporkchop.fp2.mode.heightmap.HeightmapRenderMode;
 import net.daporkchop.fp2.mode.voxel.VoxelRenderMode;
@@ -58,10 +43,7 @@ import net.daporkchop.fp2.server.FP2Server;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.event.IdMappingsChangedEvent;
 import net.daporkchop.fp2.util.threading.futureexecutor.ServerThreadMarkedFutureExecutor;
-import net.daporkchop.lib.unsafe.PUnsafe;
-import net.minecraft.client.Minecraft;
 import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.client.FMLClientHandler;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Loader;
@@ -74,19 +56,15 @@ import net.minecraftforge.fml.common.event.FMLServerStoppedEvent;
 import net.minecraftforge.fml.common.network.NetworkCheckHandler;
 import net.minecraftforge.fml.relauncher.Side;
 
+import javax.swing.JOptionPane;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.function.Function;
 
 import static net.daporkchop.fp2.FP2.*;
-import static net.daporkchop.fp2.client.gl.OpenGL.*;
-import static net.daporkchop.fp2.compat.of.OFHelper.*;
-import static net.daporkchop.fp2.core.client.FP2Client.*;
 import static net.daporkchop.fp2.core.debug.FP2Debug.*;
-import static net.daporkchop.fp2.core.mode.common.client.RenderConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
 
 /**
@@ -97,14 +75,15 @@ import static net.daporkchop.fp2.util.Constants.*;
         dependencies = "required-after:forgerocks@[6.20.3-1.12.2,);after:cubicchunks@[1.12.2-0.0.1188.0,)",
         acceptedMinecraftVersions = "1.12.2")
 public class FP2 extends FP2Core implements ResourceProvider {
-    private final Minecraft mc = Minecraft.getMinecraft();
+    private FP2Client1_12_2 client;
 
     private String version = "";
 
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
+        this.client = this.hasClient() ? new FP2Client1_12_2(this) : null;
+
         this.log(new Log4jAsPorkLibLogger(event.getModLog()));
-        this.chat(new ChatAsPorkLibLogger(this.mc));
 
         Constants.FP2_LOG = event.getModLog();
         this.version = event.getModMetadata().version;
@@ -114,42 +93,13 @@ public class FP2 extends FP2Core implements ResourceProvider {
         FP2Network.preInit();
 
         if (FP2_DEBUG) {
-            bigWarning("FarPlaneTwo debug mode enabled!");
-
-            if (this.hasClient()) {
-                ConfigListenerManager.add(() -> GLOBAL_SHADER_MACROS
-                        .define("FP2_DEBUG_COLORS_ENABLED", fp2().globalConfig().debug().debugColors().enable())
-                        .define("FP2_DEBUG_COLORS_MODE", fp2().globalConfig().debug().debugColors().ordinal()));
-
-                MinecraftForge.EVENT_BUS.register(new DebugClientEvents());
-            }
+            this.log().alert("FarPlaneTwo debug mode enabled!");
         }
 
         FP2Server.preInit();
 
-        if (this.hasClient()) {
-            if (!OPENGL_45) { //require at least OpenGL 4.5
-                unsupported("Your system does not support OpenGL 4.5!\nRequired by FarPlaneTwo.");
-            }
-
-            if (!MC.getFramebuffer().isStencilEnabled() && !MC.getFramebuffer().enableStencil()) {
-                if (OF && (PUnsafe.getBoolean(MC.gameSettings, OF_FASTRENDER_OFFSET) || PUnsafe.getInt(MC.gameSettings, OF_AALEVEL_OFFSET) > 0)) {
-                    unsupported("FarPlaneTwo was unable to enable the OpenGL stencil buffer!\n"
-                                + "Please launch the game without FarPlaneTwo and disable\n"
-                                + "  OptiFine's \"Fast Render\" and \"Antialiasing\", then\n"
-                                + "  try again.");
-                } else {
-                    unsupported("Unable to enable the OpenGL stencil buffer!\nRequired by FarPlaneTwo.");
-                }
-            }
-
-            ClientEvents.register();
-
-            ConfigListenerManager.add(() -> {
-                if (MC.player != null && MC.player.connection != null) {
-                    ((IFarPlayerClient) MC.player.connection).fp2_IFarPlayerClient_send(new CPacketClientConfig().config(fp2().globalConfig()));
-                }
-            });
+        if (this.client != null) {
+            this.client.preInit();
         }
     }
 
@@ -157,12 +107,8 @@ public class FP2 extends FP2Core implements ResourceProvider {
     public void init(FMLInitializationEvent event) {
         FP2Server.init();
 
-        if (this.hasClient()) {
-            KeyBindings.register();
-        }
-
-        if (FP2_DEBUG && this.hasClient()) {
-            DebugKeyBindings.register();
+        if (this.client != null) {
+            this.client.init();
         }
     }
 
@@ -171,13 +117,8 @@ public class FP2 extends FP2Core implements ResourceProvider {
         ConfigListenerManager.fire();
         FP2Server.postInit();
 
-        if (this.hasClient()) {
-            //TODO: move this to core?
-            GLOBAL_SHADER_MACROS.define("T_SHIFT", T_SHIFT).define("RENDER_PASS_COUNT", RENDER_PASS_COUNT);
-
-            TextureUVs1_12_2.initDefault();
-
-            MC.resourceManager.registerReloadListener(new FP2ResourceReloadListener());
+        if (this.client != null) {
+            this.client.postInit();
         }
     }
 
@@ -256,8 +197,12 @@ public class FP2 extends FP2Core implements ResourceProvider {
     }
 
     @Override
-    public <T extends GuiScreen> T openScreen(@NonNull Function<GuiContext, T> factory) {
-        return new GuiContext1_12_2().createScreenAndOpen(this.mc, factory);
+    public FP2Client client() {
+        if (this.client != null) {
+            return this.client;
+        } else {
+            throw new UnsupportedOperationException();
+        }
     }
 
     @Override
@@ -266,17 +211,12 @@ public class FP2 extends FP2Core implements ResourceProvider {
     }
 
     @Override
-    public int vanillaRenderDistanceChunks() {
-        return this.mc.gameSettings.renderDistanceChunks;
-    }
+    public void unsupported(@NonNull String message) {
+        this.log().alert(message);
+        if (this.hasClient()) {
+            JOptionPane.showMessageDialog(null, message, null, JOptionPane.ERROR_MESSAGE);
+        }
 
-    @Override
-    protected void registerPackets(@NonNull RegisterPacketsEvent event) { //TODO: remove this once all packets have been moved to :core module
-        super.registerPackets(event);
-
-        event.registerClientbound(SPacketSessionBegin.class)
-                .registerClientbound(SPacketTileData.class)
-                .registerClientbound(SPacketUnloadTile.class)
-                .registerClientbound(SPacketUnloadTiles.class);
+        FMLCommonHandler.instance().exitJava(1, true);
     }
 }

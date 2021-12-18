@@ -24,24 +24,16 @@ import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorld;
 import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorldServer;
 import io.github.opencubicchunks.cubicchunks.api.worldgen.ICubeGenerator;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomTerrainGenerator;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
-import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.util.PorkUtil;
-import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.init.Blocks;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.gen.IChunkGenerator;
-import net.minecraftforge.fml.common.FMLCommonHandler;
-import net.minecraftforge.fml.common.FMLLog;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -50,21 +42,11 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.simple.SimpleLogger;
 import org.apache.logging.log4j.util.PropertiesUtil;
 
-import javax.swing.JOptionPane;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.CharBuffer;
-import java.nio.DoubleBuffer;
-import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
-import java.nio.LongBuffer;
-import java.nio.ShortBuffer;
 import java.util.Arrays;
 
-import static java.lang.Math.*;
 import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
@@ -108,34 +90,6 @@ public class Constants {
         if (!FP2_TEST && fp2().hasClient()) { //initialize client-only fields here to prevent errors
             MC = Minecraft.getMinecraft();
         }
-    }
-
-    /**
-     * Copypasta of {@link FMLLog#bigWarning(String, Object...)} with support for multi-line error messages.
-     * <p>
-     * Note that formatting is done using {@link PStrings#fastFormat(String, Object...)}, not Log4j's {@code {}}-style formatting.
-     */
-    public static void bigWarning(@NonNull String format, Object... params) {
-        StackTraceElement[] trace = Thread.currentThread().getStackTrace();
-
-        FP2_LOG.warn("****************************************");
-        for (String line : PStrings.fastFormat(format, params).split("\n")) {
-            FP2_LOG.warn("* " + line);
-        }
-        for (int i = 2; i < 10 && i < trace.length; i++) {
-            FP2_LOG.warn("*  at {}{}", trace[i].toString(), i == 9 ? "..." : "");
-        }
-        FP2_LOG.warn("****************************************");
-    }
-
-    /**
-     * Converts an ARGB color to ABGR.
-     *
-     * @param in the ARGB color
-     * @return the input color in ABGR
-     */
-    public static int convertARGB_ABGR(int in) {
-        return (in & 0xFF00FF00) | ((in >>> 16) & 0xFF) | ((in & 0xFF) << 16);
     }
 
     /**
@@ -189,23 +143,6 @@ public class Constants {
         return new IntAxisAlignedBB(-HORIZONTAL_LIMIT, minY, -HORIZONTAL_LIMIT, HORIZONTAL_LIMIT, maxY, HORIZONTAL_LIMIT);
     }
 
-    /**
-     * Converts a combined light value returned by {@link IBlockAccess#getCombinedLight(BlockPos, int)} to a more compact format that only uses
-     * a single byte.
-     *
-     * @param combinedLight the combined light value to pack
-     * @return the packed combined light value
-     */
-    public static int packCombinedLight(int combinedLight) {
-        return (combinedLight >> 16) | ((combinedLight >> 4) & 0xF);
-    }
-
-    public static int packedLightTo8BitVec2(int packedLight) {
-        int blockLight = packedLight & 0xF;
-        int skyLight = packedLight >> 4;
-        return (((skyLight << 4) | skyLight) << 8) | ((blockLight << 4) | blockLight);
-    }
-
     private static Class<?> toClass(@NonNull Object in) {
         if (in instanceof Class) {
             return uncheckedCast(in);
@@ -223,137 +160,5 @@ public class Constants {
         } catch (NoSuchMethodException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    //the following methods are copied from LWJGL's BufferUtils in order to ensure their availability on the dedicated server as well
-
-    /**
-     * @param size the size of the buffer
-     * @return a {@link ByteBuffer} using the native byte order
-     */
-    public static ByteBuffer createByteBuffer(int size) {
-        return ByteBuffer.allocateDirect(size).order(ByteOrder.nativeOrder());
-    }
-
-    /**
-     * @param size the size of the buffer
-     * @return a {@link ByteBuffer} using the native byte order
-     */
-    public static ShortBuffer createShortBuffer(int size) {
-        return createByteBuffer(size << 1).asShortBuffer();
-    }
-
-    /**
-     * @param size the size of the buffer
-     * @return a {@link CharBuffer} using the native byte order
-     */
-    public static CharBuffer createCharBuffer(int size) {
-        return createByteBuffer(size << 1).asCharBuffer();
-    }
-
-    /**
-     * @param size the size of the buffer
-     * @return a {@link IntBuffer} using the native byte order
-     */
-    public static IntBuffer createIntBuffer(int size) {
-        return createByteBuffer(size << 2).asIntBuffer();
-    }
-
-    /**
-     * @param size the size of the buffer
-     * @return a {@link LongBuffer} using the native byte order
-     */
-    public static LongBuffer createLongBuffer(int size) {
-        return createByteBuffer(size << 3).asLongBuffer();
-    }
-
-    /**
-     * @param size the size of the buffer
-     * @return a {@link FloatBuffer} using the native byte order
-     */
-    public static FloatBuffer createFloatBuffer(int size) {
-        return createByteBuffer(size << 2).asFloatBuffer();
-    }
-
-    /**
-     * @param size the size of the buffer
-     * @return a {@link DoubleBuffer} using the native byte order
-     */
-    public static DoubleBuffer createDoubleBuffer(int size) {
-        return createByteBuffer(size << 3).asDoubleBuffer();
-    }
-
-    /**
-     * @param capacity the maximum capacity of the buffer
-     * @return a {@link ByteBuf}
-     */
-    public static ByteBuf allocateByteBuf(int capacity) {
-        return ByteBufAllocator.DEFAULT.directBuffer(min(capacity, 256), capacity);
-    }
-
-    /**
-     * @param capacity the capacity of the buffer
-     * @return a {@link ByteBuf}
-     */
-    public static ByteBuf allocateByteBufExactly(int capacity) {
-        return ByteBufAllocator.DEFAULT.directBuffer(capacity, capacity);
-    }
-
-    /**
-     * @param capacity the capacity of the buffer
-     * @return a {@link ByteBuf} using the native byte order
-     */
-    @SuppressWarnings("deprecation")
-    public static ByteBuf allocateByteBufNativeOrder(int capacity) {
-        return allocateByteBuf(capacity).order(ByteOrder.nativeOrder());
-    }
-
-    /**
-     * Ensures that the given buffer has the requested amount of space remaining. If not, the buffer will be grown.
-     *
-     * @param buffer the buffer
-     * @param needed the required space
-     * @return the buffer, or a new one if the buffer was grown
-     */
-    public static IntBuffer ensureWritable(IntBuffer buffer, int needed) {
-        if (buffer.remaining() < needed) {
-            IntBuffer bigger = createIntBuffer(buffer.capacity() << 1);
-            bigger.put((IntBuffer) buffer.flip());
-            PUnsafe.pork_releaseBuffer(buffer);
-            buffer = bigger;
-        }
-        return buffer;
-    }
-
-    //reflection
-
-    /**
-     * Functions similarly to {@link PUnsafe#pork_getOffset(Class, String)}, but with support for multiple possible field names.
-     * <p>
-     * Used to get unsafe offsets for fields whose names may be obfuscated.
-     *
-     * @param clazz the {@link Class} containing the field to get
-     * @param names the possible names of the field
-     * @return the field's offset
-     * @throws IllegalArgumentException if no field with any of the given names could be found
-     */
-    public static long fieldOffset(@NonNull Class<?> clazz, @NonNull String... names) {
-        for (String name : names) {
-            try {
-                return PUnsafe.objectFieldOffset(clazz.getField(name));
-            } catch (NoSuchFieldException e) {
-            }
-        }
-        throw new IllegalArgumentException(PStrings.fastFormat("Unable to find field in class %s with names %s", clazz.getCanonicalName(), Arrays.toString(names)));
-    }
-
-    //math
-
-    public static void unsupported(String msg) {
-        bigWarning(msg);
-        if (FMLCommonHandler.instance().getSide() == Side.CLIENT) {
-            JOptionPane.showMessageDialog(null, msg, null, JOptionPane.ERROR_MESSAGE);
-        }
-        FMLCommonHandler.instance().exitJava(1, true);
     }
 }

@@ -27,16 +27,20 @@ import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.mode.api.player.IFarPlayerClient;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.EntityRenderer;
+import org.lwjgl.BufferUtils;
 import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyConstant;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+import java.nio.FloatBuffer;
 
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL12.*;
@@ -53,6 +57,9 @@ public abstract class MixinEntityRenderer {
     @Shadow
     private float farPlaneDistance;
 
+    @Unique
+    private final FloatBuffer fp2_tempMatrix = BufferUtils.createFloatBuffer(MatrixHelper.MAT4_ELEMENTS);
+
     @Inject(method = "Lnet/minecraft/client/renderer/EntityRenderer;renderWorldPass(IFJ)V",
             at = @At("HEAD"))
     private void fp2_renderWorldPass_pre(int pass, float partialTicks, long finishTimeNano, CallbackInfo ci) {
@@ -61,32 +68,12 @@ public abstract class MixinEntityRenderer {
 
     //use reversed-z projection with infinite zFar everywhere
 
-    @Redirect(method = "Lnet/minecraft/client/renderer/EntityRenderer;renderCloudsCheck(Lnet/minecraft/client/renderer/RenderGlobal;FIDDD)V",
+    @Redirect(method = "*",
             at = @At(value = "INVOKE",
                     target = "Lorg/lwjgl/util/glu/Project;gluPerspective(FFFF)V"))
-    private void fp2_renderCloudsCheck_dontUseGluPerspective(float fov, float aspect, float zNear, float zFar) {
-        MatrixHelper.reversedZ(fov, aspect, zNear);
-    }
-
-    @Redirect(method = "Lnet/minecraft/client/renderer/EntityRenderer;renderHand(FI)V",
-            at = @At(value = "INVOKE",
-                    target = "Lorg/lwjgl/util/glu/Project;gluPerspective(FFFF)V"))
-    private void fp2_renderHand_dontUseGluPerspective(float fov, float aspect, float zNear, float zFar) {
-        MatrixHelper.reversedZ(fov, aspect, zNear);
-    }
-
-    @Redirect(method = "Lnet/minecraft/client/renderer/EntityRenderer;renderWorldPass(IFJ)V",
-            at = @At(value = "INVOKE",
-                    target = "Lorg/lwjgl/util/glu/Project;gluPerspective(FFFF)V"))
-    private void fp2_renderWorldPass_dontUseGluPerspective(float fov, float aspect, float zNear, float zFar) {
-        MatrixHelper.reversedZ(fov, aspect, zNear);
-    }
-
-    @Redirect(method = "Lnet/minecraft/client/renderer/EntityRenderer;setupCameraTransform(FI)V",
-            at = @At(value = "INVOKE",
-                    target = "Lorg/lwjgl/util/glu/Project;gluPerspective(FFFF)V"))
-    private void fp2_setupCameraTransform_dontUseGluPerspective(float fov, float aspect, float zNear, float zFar) {
-        MatrixHelper.reversedZ(fov, aspect, zNear);
+    private void fp2_$everything$_dontUseGluPerspective(float fov, float aspect, float zNear, float zFar) {
+        MatrixHelper.reversedZ(this.fp2_tempMatrix, fov, aspect, zNear);
+        glMultMatrix(this.fp2_tempMatrix);
     }
 
     //set farPlaneDistance to the value in config

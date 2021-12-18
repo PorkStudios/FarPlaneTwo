@@ -47,6 +47,8 @@ import net.daporkchop.fp2.gl.draw.list.DrawCommand;
 import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
+import static net.daporkchop.fp2.core.FP2Core.*;
+
 /**
  * Base implementation of {@link IFarRenderStrategy}.
  *
@@ -71,7 +73,7 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
 
     protected final TextureUVs textureUVs;
 
-    protected final ShaderMacros.Mutable macros = new ShaderMacros.Mutable(FP2Client.GLOBAL_SHADER_MACROS);
+    protected final ShaderMacros.Mutable macros = new ShaderMacros.Mutable(fp2().client().globalShaderMacros());
 
     public AbstractRenderStrategy(@NonNull AbstractFarRenderer<POS, T> farRenderer) {
         this.farRenderer = farRenderer;

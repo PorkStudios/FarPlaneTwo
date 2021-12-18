@@ -29,6 +29,7 @@ import net.daporkchop.fp2.api.FP2;
 import net.daporkchop.fp2.api.event.FEventBus;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.common.util.ResourceProvider;
+import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.gui.GuiContext;
 import net.daporkchop.fp2.core.client.gui.GuiScreen;
 import net.daporkchop.fp2.core.config.FP2Config;
@@ -38,7 +39,11 @@ import net.daporkchop.fp2.core.network.packet.debug.client.CPacketDebugDropAllTi
 import net.daporkchop.fp2.core.network.packet.debug.server.SPacketDebugUpdateStatistics;
 import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketHandshake;
+import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionBegin;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionEnd;
+import net.daporkchop.fp2.core.network.packet.standard.server.SPacketTileData;
+import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUnloadTile;
+import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUnloadTiles;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUpdateConfig;
 import net.daporkchop.fp2.core.util.I18n;
 import net.daporkchop.lib.common.util.PorkUtil;
@@ -68,7 +73,6 @@ public abstract class FP2Core implements FP2 {
     private FP2Config globalConfig;
 
     private Logger log;
-    private Logger chat;
 
     @SneakyThrows
     protected FP2Core() {
@@ -106,9 +110,14 @@ public abstract class FP2Core implements FP2 {
 
     /**
      * @return the {@link I18n} instance used for localizing strings
-     * @throws UnsupportedOperationException if the active game distribution does not contain a client
      */
     public abstract I18n i18n();
+
+    /**
+     * @return the {@link FP2Client} instance for interacting with client features
+     * @throws UnsupportedOperationException if the active game distribution does not contain a client
+     */
+    public abstract FP2Client client();
 
     /**
      * Opens a new {@link GuiScreen}.
@@ -118,13 +127,12 @@ public abstract class FP2Core implements FP2 {
      * @return the created {@link GuiScreen}
      * @throws UnsupportedOperationException if the active game distribution does not contain a client
      */
-    public abstract <T extends GuiScreen> T openScreen(@NonNull Function<GuiContext, T> factory);
+    public <T extends GuiScreen> T openScreen(@NonNull Function<GuiContext, T> factory) {
+        return this.client().openScreen(factory);
+    }
 
     @Deprecated
     public abstract String[] renderModeNames();
-
-    @Deprecated
-    public abstract int vanillaRenderDistanceChunks();
 
     /**
      * Sets the global {@link FP2Config}.
@@ -136,15 +144,26 @@ public abstract class FP2Core implements FP2 {
         this.globalConfig = config;
     }
 
+    /**
+     * Informs the user that the current system is unsupported by displaying the given message and subsequently crashing the game.
+     *
+     * @param message the message
+     */
+    public abstract void unsupported(@NonNull String message);
+
     @FEventHandler
     protected void registerPackets(@NonNull RegisterPacketsEvent event) {
         event.registerServerbound(CPacketClientConfig.class)
                 .registerServerbound(CPacketDebugDropAllTiles.class);
 
         event.registerClientbound(SPacketHandshake.class)
+                .registerClientbound(SPacketSessionBegin.class)
+                .registerClientbound(SPacketSessionEnd.class)
+                .registerClientbound(SPacketTileData.class)
+                .registerClientbound(SPacketUnloadTile.class)
+                .registerClientbound(SPacketUnloadTiles.class)
                 .registerClientbound(SPacketUpdateConfig.Merged.class)
                 .registerClientbound(SPacketUpdateConfig.Server.class)
-                .registerClientbound(SPacketSessionEnd.class)
                 .registerClientbound(SPacketDebugUpdateStatistics.class);
     }
 }

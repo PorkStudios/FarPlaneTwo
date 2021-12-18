@@ -118,7 +118,7 @@ public class ConfigGuiRenderDistanceContainer extends VerticallyStackedContainer
                         (config, langKey) -> {
                             double factor = 1.5d;
 
-                            int renderDistanceVanilla = fp2().vanillaRenderDistanceChunks();
+                            int renderDistanceVanilla = fp2().client().vanillaRenderDistanceChunks();
                             int renderDistanceBlocks = renderDistanceVanilla << 4;
                             int recommendedCutoff = roundUp(floorI(renderDistanceBlocks * factor), T_VOXELS);
 

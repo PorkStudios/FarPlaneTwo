@@ -37,13 +37,13 @@ public interface TextureUVs {
         new AbstractReloadEvent<TextureUVs>() {
             @Override
             protected void handleSuccess(int total) {
-                fp2().chat().success("§a%d texture UV caches successfully reloaded.", total);
+                fp2().client().chat().success("§a%d texture UV caches successfully reloaded.", total);
             }
 
             @Override
             protected void handleFailure(int failed, int total, @NonNull Throwable cause) {
                 fp2().log().error("texture UV cache reload failed", cause);
-                fp2().chat().error("§c%d/%d texture UV cache failed to reload (check log for info)", failed, total);
+                fp2().client().chat().error("§c%d/%d texture UV cache failed to reload (check log for info)", failed, total);
             }
         }.fire();
     }
