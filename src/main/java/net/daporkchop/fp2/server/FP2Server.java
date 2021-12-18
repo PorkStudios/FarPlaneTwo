@@ -21,7 +21,9 @@
 package net.daporkchop.fp2.server;
 
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.config.listener.ConfigListenerManager;
+import net.daporkchop.fp2.api.event.ChangedEvent;
+import net.daporkchop.fp2.api.event.FEventHandler;
+import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.player.IFarPlayerServer;
 import net.daporkchop.lib.common.system.PlatformInfo;
@@ -59,12 +61,7 @@ public class FP2Server {
 
         ServerEvents.register();
 
-        ConfigListenerManager.add(() -> {
-            MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
-            if (server != null) { //a server instance is currently present, update the serverConfig instance for every connected player
-                server.addScheduledTask(() -> server.playerList.getPlayers().forEach(player -> ((IFarPlayerServer) player.connection).fp2_IFarPlayer_serverConfig(fp2().globalConfig())));
-            }
-        });
+        fp2().eventBus().registerStatic(FP2Server.class);
     }
 
     /**
@@ -78,5 +75,13 @@ public class FP2Server {
      */
     public void postInit() {
         PUnsafe.ensureClassInitialized(IFarRenderMode.class);
+    }
+
+    @FEventHandler
+    protected void onConfigChanged(ChangedEvent<FP2Config> event) {
+        MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
+        if (server != null) { //a server instance is currently present, update the serverConfig instance for every connected player
+            server.addScheduledTask(() -> server.playerList.getPlayers().forEach(player -> ((IFarPlayerServer) player.connection).fp2_IFarPlayer_serverConfig(fp2().globalConfig())));
+        }
     }
 }

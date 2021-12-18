@@ -24,13 +24,15 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.FP2;
+import net.daporkchop.fp2.api.event.ChangedEvent;
+import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.client.ClientEvents;
 import net.daporkchop.fp2.client.FP2ResourceReloadListener;
 import net.daporkchop.fp2.client.KeyBindings;
-import net.daporkchop.fp2.config.listener.ConfigListenerManager;
 import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.gui.GuiContext;
 import net.daporkchop.fp2.core.client.gui.GuiScreen;
+import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.player.IFarPlayerClient;
 import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
 import net.daporkchop.fp2.debug.client.DebugClientEvents;
@@ -62,12 +64,12 @@ public class FP2Client1_12_2 extends FP2Client {
     private final FP2 fp2;
 
     public void preInit() {
+        this.fp2.eventBus().register(this);
+
         this.chat(new ChatAsPorkLibLogger(this.mc));
 
         if (FP2_DEBUG) {
-            ConfigListenerManager.add(() -> this.globalShaderMacros()
-                    .define("FP2_DEBUG_COLORS_ENABLED", this.fp2().globalConfig().debug().debugColors().enable())
-                    .define("FP2_DEBUG_COLORS_MODE", this.fp2().globalConfig().debug().debugColors().ordinal()));
+            this.updateDebugColorMacros(this.fp2().globalConfig());
 
             MinecraftForge.EVENT_BUS.register(new DebugClientEvents());
         }
@@ -88,12 +90,6 @@ public class FP2Client1_12_2 extends FP2Client {
         }
 
         ClientEvents.register();
-
-        ConfigListenerManager.add(() -> {
-            if (this.mc.player != null && this.mc.player.connection != null) {
-                ((IFarPlayerClient) this.mc.player.connection).fp2_IFarPlayerClient_send(new CPacketClientConfig().config(this.fp2().globalConfig()));
-            }
-        });
     }
 
     public void init() {
@@ -121,5 +117,23 @@ public class FP2Client1_12_2 extends FP2Client {
     @Override
     public int vanillaRenderDistanceChunks() {
         return this.mc.gameSettings.renderDistanceChunks;
+    }
+
+    @FEventHandler
+    protected void onConfigChanged(ChangedEvent<FP2Config> event) {
+        if (FP2_DEBUG) {
+            this.updateDebugColorMacros(event.next());
+        }
+
+        //send updated config to server
+        if (this.mc.player != null && this.mc.player.connection != null) {
+            ((IFarPlayerClient) this.mc.player.connection).fp2_IFarPlayerClient_send(new CPacketClientConfig().config(this.fp2().globalConfig()));
+        }
+    }
+
+    protected void updateDebugColorMacros(@NonNull FP2Config config) {
+        this.globalShaderMacros()
+                .define("FP2_DEBUG_COLORS_ENABLED", config.debug().debugColors().enable())
+                .define("FP2_DEBUG_COLORS_MODE", config.debug().debugColors().ordinal());
     }
 }

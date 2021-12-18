@@ -90,6 +90,8 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
         this.textureLightmap = this.textureFormatLightmap.wrapExternalTexture(this.worldRenderer.lightmapTextureId());
 
         this.textureUVs = this.worldRenderer.textureUVs();
+
+        fp2().eventBus().registerWeak(this);
     }
 
     @Override
@@ -100,6 +102,8 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
 
     @Override
     protected void doRelease() {
+        fp2().eventBus().unregister(this);
+
         this.uniformBuffer.close();
     }
 }

@@ -18,17 +18,21 @@
  *
  */
 
-package net.daporkchop.fp2.config.listener;
+package net.daporkchop.fp2.core.event;
+
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.api.event.ModifiedEvent;
 
 /**
- * A listener for configuration change events.
+ * Implementation of {@link ModifiedEvent}.
  *
  * @author DaPorkchop_
  */
-@FunctionalInterface
-public interface IConfigListener {
-    /**
-     * Fired whenever the config is changed.
-     */
-    void configChanged();
+@RequiredArgsConstructor
+@Getter
+public abstract class AbstractModifiedEvent<T> implements ModifiedEvent<T> {
+    @NonNull
+    protected final T value;
 }

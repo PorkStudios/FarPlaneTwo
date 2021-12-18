@@ -33,6 +33,7 @@ import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.gui.GuiContext;
 import net.daporkchop.fp2.core.client.gui.GuiScreen;
 import net.daporkchop.fp2.core.config.FP2Config;
+import net.daporkchop.fp2.core.event.AbstractChangedEvent;
 import net.daporkchop.fp2.core.event.EventBus;
 import net.daporkchop.fp2.core.network.RegisterPacketsEvent;
 import net.daporkchop.fp2.core.network.packet.debug.client.CPacketDebugDropAllTiles;
@@ -141,7 +142,10 @@ public abstract class FP2Core implements FP2 {
      */
     public synchronized void globalConfig(@NonNull FP2Config config) {
         FP2Config.save(this.configDir(), config);
+        FP2Config oldConfig = this.globalConfig;
         this.globalConfig = config;
+
+        this.eventBus().fire(new AbstractChangedEvent<FP2Config>(oldConfig, config) {});
     }
 
     /**

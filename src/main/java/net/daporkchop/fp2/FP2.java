@@ -28,7 +28,6 @@ import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.fp2.common.util.exception.ResourceNotFoundException;
 import net.daporkchop.fp2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.compat.x86.x86FeatureDetector;
-import net.daporkchop.fp2.config.listener.ConfigListenerManager;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
@@ -114,7 +113,6 @@ public class FP2 extends FP2Core implements ResourceProvider {
 
     @Mod.EventHandler
     public void postInit(FMLPostInitializationEvent event) {
-        ConfigListenerManager.fire();
         FP2Server.postInit();
 
         if (this.client != null) {

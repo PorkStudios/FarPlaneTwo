@@ -21,6 +21,9 @@
 package net.daporkchop.fp2.core.mode.common.client.strategy;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.api.event.FEventHandler;
+import net.daporkchop.fp2.api.event.ModifiedEvent;
+import net.daporkchop.fp2.core.client.shader.ShaderMacros;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.common.client.AbstractFarRenderer;
@@ -51,6 +54,8 @@ import static net.daporkchop.fp2.core.mode.common.client.RenderConstants.*;
  */
 public abstract class AbstractMultipassIndexedRenderStrategy<POS extends IFarPos, T extends IFarTile, SG, SL> extends AbstractRenderStrategy<POS, T, IndexedBakeOutput<SG, SL>, DrawBindingIndexed, DrawCommandIndexed> implements IMultipassRenderStrategy<POS, T, IndexedBakeOutput<SG, SL>, DrawBindingIndexed, DrawCommandIndexed> {
     protected CommandBuffer commandBuffer;
+
+    protected boolean dirty = false;
 
     public AbstractMultipassIndexedRenderStrategy(@NonNull AbstractFarRenderer<POS, T> farRenderer) {
         super(farRenderer);
@@ -98,7 +103,9 @@ public abstract class AbstractMultipassIndexedRenderStrategy<POS extends IFarPos
         if (layer == LAYER_CUTOUT && !pre) {
             this.uniformBuffer.set(this.worldRenderer.globalUniformAttributes());
 
-            if (this.commandBuffer == null) {
+            if (this.commandBuffer == null || this.dirty) {
+                this.dirty = false;
+
                 this.rebuildCommandBuffer(index);
             }
 
@@ -107,8 +114,20 @@ public abstract class AbstractMultipassIndexedRenderStrategy<POS extends IFarPos
     }
 
     protected void rebuildCommandBuffer(@NonNull IRenderIndex<POS, IndexedBakeOutput<SG, SL>, DrawBindingIndexed, DrawCommandIndexed> index) {
+        if (this.commandBuffer != null) { //close the existing command buffer, if any
+            this.commandBuffer.close();
+            this.commandBuffer = null;
+        }
+
         CommandBufferBuilder builder = this.gl.createCommandBuffer();
         this.render(builder, index);
         this.commandBuffer = builder.build();
+    }
+
+    @FEventHandler
+    protected void onShaderMacrosModified(ModifiedEvent<ShaderMacros.Mutable> event) {
+        if (this.macros.affectedBy(event.value())) {
+            this.dirty = true; //this.macros might be affected, mark self for command buffer rebuild
+        }
     }
 }
