@@ -19,6 +19,7 @@
  */
 
 apply from: "${project.rootDir}/mc/forge.gradle"
+apply from: "${project.rootDir}/natives/natives.gradle"
 
 minecraft {
     mappings mappingsChannel, mappingsVersion
@@ -128,26 +129,21 @@ mixin {
     add sourceSets.main, "mixins.fp2.refmap.json"
 }
 
-if (System.getProperty("os.name", "").toLowerCase().replaceAll("[^a-z0-9]+", "").startsWith("windows")) {
-    System.out.println("You are running Windows, which is bad and you should feel bad.\nThis means that native libraries will not be built.")
-} else {
-    task compileNatives(type: Exec) {
-        workingDir "$projectDir/../.."
-        commandLine "make",
-                "-f", "natives/project.mk",
-                String.format("-j%d", Runtime.getRuntime().availableProcessors())
+natives.modules {
+    register("cwg-noise") {
+        sourceSet = sourceSets.main
+        root = "net/daporkchop/fp2/compat/cwg/noise"
+        simd = true
     }
-
-    compileJava.dependsOn(compileNatives)
-
-    task cleanNatives(type: Exec) {
-        workingDir "$projectDir/../.."
-        commandLine "make",
-                "-f", "natives/project.mk",
-                "clean"
+    register("vanilla-biomes") {
+        sourceSet = sourceSets.main
+        root = "net/daporkchop/fp2/compat/vanilla/biome/layer/c"
+        simd = true
     }
-
-    clean.dependsOn(cleanNatives)
+    x86 {
+        sourceSet = sourceSets.main
+        root = "net/daporkchop/fp2/compat/x86"
+    }
 }
 
 //completely disable normal jar
