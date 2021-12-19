@@ -52,6 +52,7 @@ import net.daporkchop.lib.logging.Logger;
 
 import java.lang.reflect.Method;
 import java.nio.file.Path;
+import java.util.Objects;
 import java.util.function.Function;
 
 /**
@@ -141,6 +142,10 @@ public abstract class FP2Core implements FP2 {
      * @param config the new {@link FP2Config} instance
      */
     public synchronized void globalConfig(@NonNull FP2Config config) {
+        if (Objects.equals(this.globalConfig, config)) { //config is unchanged, do nothing
+            return;
+        }
+
         FP2Config.save(this.configDir(), config);
         FP2Config oldConfig = this.globalConfig;
         this.globalConfig = config;

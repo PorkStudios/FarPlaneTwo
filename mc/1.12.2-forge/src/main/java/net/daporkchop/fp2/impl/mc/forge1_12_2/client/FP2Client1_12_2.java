@@ -26,31 +26,37 @@ import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.api.event.ChangedEvent;
 import net.daporkchop.fp2.api.event.FEventHandler;
-import net.daporkchop.fp2.asm.core.client.gui.IGuiScreen;
 import net.daporkchop.fp2.client.FP2ResourceReloadListener;
 import net.daporkchop.fp2.client.GuiButtonFP2Options;
-import net.daporkchop.fp2.client.KeyBindings;
 import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.gui.GuiContext;
 import net.daporkchop.fp2.core.client.gui.GuiScreen;
+import net.daporkchop.fp2.core.client.key.KeyCategory;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.player.IFarPlayerClient;
 import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
-import net.daporkchop.fp2.debug.client.DebugClientEvents;
-import net.daporkchop.fp2.debug.client.DebugKeyBindings;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.client.gui.GuiContext1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.client.render.TextureUVs1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.log.ChatAsPorkLibLogger;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiIngameMenu;
+import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraft.client.gui.GuiVideoSettings;
 import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.client.settings.KeyBinding;
 import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.fml.client.registry.ClientRegistry;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.gameevent.InputEvent;
+import org.lwjgl.input.Keyboard;
 
+import java.util.IdentityHashMap;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
@@ -71,6 +77,8 @@ public class FP2Client1_12_2 extends FP2Client {
     @NonNull
     private final FP2 fp2;
 
+    private final Map<KeyBinding, Runnable> keyBindings = new IdentityHashMap<>();
+
     private boolean reverseZ = false;
 
     public void preInit() {
@@ -78,8 +86,6 @@ public class FP2Client1_12_2 extends FP2Client {
 
         if (FP2_DEBUG) {
             this.updateDebugColorMacros(this.fp2().globalConfig());
-
-            MinecraftForge.EVENT_BUS.register(new DebugClientEvents());
         }
 
         if (!OPENGL_45) { //require at least OpenGL 4.5
@@ -103,11 +109,6 @@ public class FP2Client1_12_2 extends FP2Client {
     }
 
     public void init() {
-        KeyBindings.register();
-
-        if (FP2_DEBUG) {
-            DebugKeyBindings.register();
-        }
     }
 
     public void postInit() {
@@ -119,6 +120,22 @@ public class FP2Client1_12_2 extends FP2Client {
     @Override
     public <T extends GuiScreen> T openScreen(@NonNull Function<GuiContext, T> factory) {
         return new GuiContext1_12_2().createScreenAndOpen(this.mc, factory);
+    }
+
+    @Override
+    public KeyCategory createKeyCategory(@NonNull String localeKey) {
+        return (name, defaultKey, handler) -> {
+            KeyBinding binding = new KeyBinding("key." + localeKey + '.' + name, Keyboard.getKeyIndex(defaultKey), "key.categories." + localeKey);
+            ClientRegistry.registerKeyBinding(binding);
+            this.keyBindings.put(binding, handler);
+        };
+    }
+
+    @Override
+    public Optional<IFarPlayerClient> currentPlayer() {
+        return this.mc.player != null
+                ? Optional.of((IFarPlayerClient) this.mc.player.connection)
+                : Optional.empty();
     }
 
     @Override
@@ -178,13 +195,28 @@ public class FP2Client1_12_2 extends FP2Client {
     @SubscribeEvent(priority = EventPriority.LOW)
     public void initGuiEvent(GuiScreenEvent.InitGuiEvent.Post event) {
         net.minecraft.client.gui.GuiScreen gui = event.getGui();
-        if (gui instanceof GuiVideoSettings) {
-            ((IGuiScreen) gui).getButtonList().add(new GuiButtonFP2Options(0xBEEF, gui.width / 2 + 165, gui.height / 6 - 12, gui));
+        if (gui instanceof GuiVideoSettings) { //add fp2 button to video settings menu
+            gui.buttonList.add(new GuiButtonFP2Options(0xBEEF, gui.width / 2 + 165, gui.height / 6 - 12, gui));
+        } else if (FP2_DEBUG) { //we're in debug mode, also add it to the main menu and pause menu
+            if (gui instanceof GuiMainMenu) {
+                gui.buttonList.add(new GuiButtonFP2Options(0xBEEF, gui.width / 2 + 104, gui.height / 4 + 48, gui));
+            } else if (gui instanceof GuiIngameMenu) {
+                gui.buttonList.add(new GuiButtonFP2Options(0xBEEF, gui.width / 2 + 104, gui.height / 4 + 8, gui));
+            }
         }
     }
 
     @SubscribeEvent
+    public void keyInput(InputEvent.KeyInputEvent event) {
+        this.keyBindings.forEach((binding, handler) -> {
+            if (binding.isPressed()) {
+                handler.run();
+            }
+        });
+    }
+
+    @SubscribeEvent
     public void renderWorldLast(RenderWorldLastEvent event) {
-        this.fp2().client().disableReverseZ();
+        this.disableReverseZ();
     }
 }

@@ -156,7 +156,7 @@ public final class FP2Config implements Cloneable<FP2Config> {
 
     @Builder.Default
     @Config.Range(min = @Config.Constant(0), max = @Config.Constant(Integer.MAX_VALUE))
-    @Config.GuiRange(min = @Config.Constant(field = "net.daporkchop.fp2.util.Constants#T_VOXELS"), max = @Config.Constant(1024), snapTo = @Config.Constant(field = "net.daporkchop.fp2.util.Constants#T_VOXELS"))
+    @Config.GuiRange(min = @Config.Constant(field = "net.daporkchop.fp2.mode.voxel.VoxelConstants#VT_VOXELS"), max = @Config.Constant(1024), snapTo = @Config.Constant(field = "net.daporkchop.fp2.mode.voxel.VoxelConstants#VT_VOXELS"))
     @Config.GuiCategory(CATEGORY_RENDER_DISTANCE)
     @Config.GuiShowServerValue
     private final int cutoffDistance = preventInline(256);

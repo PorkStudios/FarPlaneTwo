@@ -27,9 +27,12 @@ import lombok.Setter;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.gui.GuiContext;
 import net.daporkchop.fp2.core.client.gui.GuiScreen;
+import net.daporkchop.fp2.core.client.key.KeyCategory;
 import net.daporkchop.fp2.core.client.shader.ShaderMacros;
+import net.daporkchop.fp2.core.mode.api.player.IFarPlayerClient;
 import net.daporkchop.lib.logging.Logger;
 
+import java.util.Optional;
 import java.util.function.Function;
 
 /**
@@ -56,6 +59,19 @@ public abstract class FP2Client {
      * @throws UnsupportedOperationException if the active game distribution does not contain a client
      */
     public abstract <T extends GuiScreen> T openScreen(@NonNull Function<GuiContext, T> factory);
+
+    /**
+     * Creates a new {@link KeyCategory}.
+     *
+     * @param localeKey the locale key of the category name
+     * @return the created {@link KeyCategory}
+     */
+    public abstract KeyCategory createKeyCategory(@NonNull String localeKey);
+
+    /**
+     * @return the current {@link IFarPlayerClient}, or an empty {@link Optional} if the client is not connected
+     */
+    public abstract Optional<IFarPlayerClient> currentPlayer();
 
     //TODO: somehow move Reversed-Z stuff out of FP2Client, and preferably into :gl
     @Deprecated

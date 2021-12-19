@@ -4,7 +4,6 @@
   "package": "net.daporkchop.fp2.asm.core",
   "refmap": "mixins.fp2.refmap.json",
   "client": [
-    "client.gui.IGuiScreen",
     "client.network.MixinNetHandlerPlayClient",
     "client.renderer.culling.MixinFrustum",
     "client.renderer.culling.MixinICamera",

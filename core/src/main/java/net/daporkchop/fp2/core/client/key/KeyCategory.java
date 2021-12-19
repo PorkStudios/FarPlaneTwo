@@ -18,39 +18,13 @@
  *
  */
 
-package net.daporkchop.fp2.debug.util;
+package net.daporkchop.fp2.core.client.key;
 
 import lombok.NonNull;
-import lombok.experimental.UtilityClass;
-import net.minecraft.util.text.TextComponentString;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
-
-import static net.daporkchop.fp2.util.Constants.*;
 
 /**
- * Debug mode utility methods.
- *
  * @author DaPorkchop_
  */
-@UtilityClass
-public class DebugUtils {
-    public static final String CHAT_PREFIX = "§8§l[§9FarPlaneTwo Debug§8§l]§r ";
-
-    @SideOnly(Side.CLIENT)
-    public void clientMsg(@NonNull String msg) {
-        clientMsg(CHAT_PREFIX, msg);
-    }
-
-    @SideOnly(Side.CLIENT)
-    public void clientMsg(@NonNull String prefix, @NonNull String msg) {
-        for (String line : msg.split("\n")) {
-            line = prefix + line;
-            if (MC.player != null) {
-                MC.player.sendMessage(new TextComponentString(line));
-            } else { //not currently ingame...
-                FP2_LOG.info(line);
-            }
-        }
-    }
+public interface KeyCategory {
+    void addBinding(@NonNull String name, @NonNull String defaultKey, @NonNull Runnable handler);
 }

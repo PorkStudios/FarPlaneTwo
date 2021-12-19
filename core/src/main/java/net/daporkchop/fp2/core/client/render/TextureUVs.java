@@ -37,7 +37,7 @@ public interface TextureUVs {
         new AbstractReloadEvent<TextureUVs>() {
             @Override
             protected void handleSuccess(int total) {
-                fp2().client().chat().success("§a%d texture UV caches successfully reloaded.", total);
+                fp2().client().chat().success("reloaded §a%d texture UV cache(s)", total);
             }
 
             @Override

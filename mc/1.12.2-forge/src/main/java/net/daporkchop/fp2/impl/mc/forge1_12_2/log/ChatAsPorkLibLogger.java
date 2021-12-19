@@ -33,14 +33,26 @@ import static net.daporkchop.fp2.core.FP2Core.*;
  */
 @RequiredArgsConstructor
 public class ChatAsPorkLibLogger extends BaseProxyLogger {
+    protected static final String PRE = "§r§8§l[§r";
+    protected static final String POST = "§r§8§l]§r ";
+
+    protected static final String[] LEVEL_PREFIXES = {
+            PRE + "§9Info" + POST,
+            PRE + "§aSuccess" + POST,
+            PRE + "§4Error" + POST,
+            PRE + "§4§lFatal" + POST,
+            PRE + " §4§l§kI§r §4§lAlert§r §4§l§kI§r " + POST,
+            PRE + "§eWarn" + POST,
+            PRE + "§7§oTrace" + POST,
+            PRE + "§7§oDebug" + POST,
+    };
+
     @NonNull
     protected final Minecraft mc;
 
     @Override
     protected void log(@NonNull LogLevel level, String channel, @NonNull String message) {
-        if (channel != null) {
-            message = '[' + channel + "] " + message;
-        }
+        message = PRE + "§9FarPlaneTwo" + POST + (channel != null ? PRE + channel + POST : "") + LEVEL_PREFIXES[level.ordinal()] + message;
 
         if (this.mc.player != null) {
             this.mc.player.sendMessage(new TextComponentString(message));

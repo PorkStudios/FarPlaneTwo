@@ -30,6 +30,7 @@ import net.daporkchop.fp2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.compat.x86.x86FeatureDetector;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.FP2Client;
+import net.daporkchop.fp2.core.debug.FP2Debug;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.util.I18n;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.I18n1_12_2;
@@ -118,6 +119,10 @@ public class FP2 extends FP2Core implements ResourceProvider {
 
         if (this.client != null) {
             this.client.postInit();
+        }
+
+        if (FP2_DEBUG) {
+            FP2Debug.init(this);
         }
     }
 

@@ -64,7 +64,7 @@ public interface ReloadableShaderProgram<P extends BaseShaderProgram> extends Su
         new AbstractReloadEvent<ReloadableShaderProgram<?>>() {
             @Override
             protected void handleSuccess(int total) {
-                fp2().client().chat().success("§a%d shaders successfully reloaded.", total);
+                fp2().client().chat().success("reloaded §a%d shader(s)", total);
             }
 
             @Override
