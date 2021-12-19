@@ -64,6 +64,8 @@ public abstract class AbstractFarRenderMode<POS extends IFarPos, T extends IFarT
     protected final int storageVersion;
     @Getter
     protected final int maxLevels;
+    @Getter
+    protected final int tileShift;
 
     protected abstract AbstractRegisterEvent<IFarGeneratorExact.Factory<POS, T>> exactGeneratorFactoryEvent();
 

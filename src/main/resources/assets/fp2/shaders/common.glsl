@@ -72,9 +72,8 @@
 
 // FP2 constants
 
-//the following 2 macros are defined from java code:
+//the following macros is defined from java code:
 //#define T_SHIFT (uint)
-//#define RENDER_PASS_COUNT (uint)
 
 #if !defined(T_SHIFT)
 #error T_SHIFT must be set!
@@ -84,13 +83,9 @@
 #define T_VOXELS (1 << T_SHIFT)
 #define T_VERTS (T_VOXELS + 1)
 
-#if !defined(RENDER_PASS_COUNT)
-#error RENDER_PASS_COUNT must be set!
-#endif
-
 // FP2 detail level constants
 
-//the following macro is defined from java code:
+//the following macro may be defined from java code:
 //#define LEVEL_0 (bool)
 
 #if !defined(LEVEL_0)

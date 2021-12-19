@@ -26,7 +26,6 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.core.event.AbstractModifiedEvent;
 import net.daporkchop.lib.primitive.map.open.ObjObjOpenHashMap;
 
 import java.util.Collections;
@@ -35,8 +34,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.stream.Stream;
-
-import static net.daporkchop.fp2.core.FP2Core.*;
 
 /**
  * @author DaPorkchop_
@@ -92,16 +89,6 @@ public abstract class ShaderMacros {
         }
 
         /**
-         * Checks whether or not this instance is affected by the given {@link Mutable}.
-         *
-         * @param potentialSelfOrParent the {@link Mutable} to check
-         * @return whether or not this instance is affected by the given {@link Mutable}.
-         */
-        public boolean affectedBy(@NonNull ShaderMacros.Mutable potentialSelfOrParent) {
-            return this == potentialSelfOrParent || this.parentsFlattened().anyMatch(parent -> parent == potentialSelfOrParent);
-        }
-
-        /**
          * Equivalent to {@code define(key, true)}.
          *
          * @see #define(String, Object)
@@ -118,7 +105,6 @@ public abstract class ShaderMacros {
          */
         public Mutable define(@NonNull String key, @NonNull Object value) {
             if (!value.equals(this.macros.put(key, value))) { //the existing value for the key didn't match
-                fp2().eventBus().fire(new AbstractModifiedEvent<Mutable>(this) {});
                 this.markDirty();
             }
             return this;
@@ -131,7 +117,6 @@ public abstract class ShaderMacros {
          */
         public Mutable undefine(@NonNull String key) {
             if (this.macros.remove(key) != null) {
-                fp2().eventBus().fire(new AbstractModifiedEvent<Mutable>(this) {});
                 this.markDirty();
             }
             return this;

@@ -57,6 +57,11 @@ public interface IFarRenderMode<POS extends IFarPos, T extends IFarTile> {
     int maxLevels();
 
     /**
+     * @return {@code log2()} of the side length of a tile, in blocks
+     */
+    int tileShift();
+
+    /**
      * @return the storage format version number
      */
     int storageVersion();

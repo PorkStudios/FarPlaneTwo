@@ -34,6 +34,7 @@ import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.common.client.AbstractFarRenderer;
 import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutput;
+import net.daporkchop.fp2.core.mode.common.client.index.IRenderIndex;
 import net.daporkchop.fp2.core.mode.common.client.strategy.texture.LightmapTextureAttribute;
 import net.daporkchop.fp2.core.mode.common.client.strategy.texture.TerrainTextureAttribute;
 import net.daporkchop.fp2.gl.GL;
@@ -42,12 +43,17 @@ import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformBuffer;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
+import net.daporkchop.fp2.gl.command.CommandBuffer;
+import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
+import net.daporkchop.fp2.gl.draw.binding.DrawBindingIndexed;
 import net.daporkchop.fp2.gl.draw.list.DrawCommand;
+import net.daporkchop.fp2.gl.draw.list.DrawCommandIndexed;
 import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
+import static net.daporkchop.fp2.core.mode.api.client.IFarRenderer.*;
 
 /**
  * Base implementation of {@link IFarRenderStrategy}.
@@ -74,6 +80,9 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
     protected final TextureUVs textureUVs;
 
     protected final ShaderMacros.Mutable macros = new ShaderMacros.Mutable(fp2().client().globalShaderMacros());
+    protected ShaderMacros.Immutable lastMacrosSnapshot;
+
+    protected CommandBuffer commandBuffer;
 
     public AbstractRenderStrategy(@NonNull AbstractFarRenderer<POS, T> farRenderer) {
         this.farRenderer = farRenderer;
@@ -106,4 +115,37 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
 
         this.uniformBuffer.close();
     }
+
+    @Override
+    public void render(@NonNull IRenderIndex<POS, BO, DB, DC> index, int layer, boolean pre) {
+        if (layer != LAYER_CUTOUT || pre) { //only render after the CUTOUT pass
+            return;
+        }
+
+        //rebuild command buffer if needed
+        if (this.commandBuffer == null || this.lastMacrosSnapshot != this.macros.snapshot()) {
+            this.rebuildCommandBuffer(index);
+        }
+
+        //update uniforms
+        this.uniformBuffer.set(this.worldRenderer.globalUniformAttributes());
+
+        //execute command buffer
+        this.commandBuffer.execute();
+    }
+
+    protected void rebuildCommandBuffer(@NonNull IRenderIndex<POS, BO, DB, DC> index) {
+        if (this.commandBuffer != null) { //close the existing command buffer, if any
+            this.commandBuffer.close();
+            this.commandBuffer = null;
+        }
+
+        this.lastMacrosSnapshot = this.macros.snapshot();
+
+        CommandBufferBuilder builder = this.gl.createCommandBuffer();
+        this.render(builder, index);
+        this.commandBuffer = builder.build();
+    }
+
+    public abstract void render(@NonNull CommandBufferBuilder builder, @NonNull IRenderIndex<POS, BO, DB, DC> index);
 }

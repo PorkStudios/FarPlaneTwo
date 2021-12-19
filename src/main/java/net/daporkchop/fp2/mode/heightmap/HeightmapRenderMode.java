@@ -26,8 +26,6 @@ import lombok.NonNull;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.event.AbstractRegisterEvent;
-import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
-import net.daporkchop.fp2.core.util.registry.LinkedOrderedRegistry;
 import net.daporkchop.fp2.core.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
@@ -38,7 +36,10 @@ import net.daporkchop.fp2.core.mode.api.player.IFarPlayerServer;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
+import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.core.mode.common.AbstractFarRenderMode;
+import net.daporkchop.fp2.core.util.math.MathUtil;
+import net.daporkchop.fp2.core.util.registry.LinkedOrderedRegistry;
 import net.daporkchop.fp2.mode.heightmap.ctx.HeightmapClientContext;
 import net.daporkchop.fp2.mode.heightmap.ctx.HeightmapServerContext;
 import net.daporkchop.fp2.mode.heightmap.server.HeightmapTileProvider;
@@ -49,7 +50,6 @@ import net.daporkchop.fp2.mode.heightmap.server.gen.rough.CWGHeightmapGenerator;
 import net.daporkchop.fp2.mode.heightmap.server.gen.rough.FlatHeightmapGenerator;
 import net.daporkchop.fp2.mode.heightmap.server.scale.HeightmapScalerMinMax;
 import net.daporkchop.fp2.util.Constants;
-import net.daporkchop.fp2.core.util.math.MathUtil;
 import net.daporkchop.lib.binary.stream.DataIn;
 import net.daporkchop.lib.binary.stream.DataOut;
 import net.minecraft.world.World;
@@ -71,7 +71,7 @@ import static net.daporkchop.fp2.util.Constants.*;
  */
 public class HeightmapRenderMode extends AbstractFarRenderMode<HeightmapPos, HeightmapTile> {
     public HeightmapRenderMode() {
-        super(HeightmapConstants.STORAGE_VERSION, HeightmapConstants.HMAX_LODS);
+        super(HeightmapConstants.STORAGE_VERSION, HeightmapConstants.HMAX_LODS, HeightmapConstants.HT_SHIFT);
     }
 
     @Override
