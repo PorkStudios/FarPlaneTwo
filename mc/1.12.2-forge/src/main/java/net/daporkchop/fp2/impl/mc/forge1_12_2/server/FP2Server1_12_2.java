@@ -18,11 +18,18 @@
  *
  */
 
-package net.daporkchop.fp2.server;
+package net.daporkchop.fp2.impl.mc.forge1_12_2.server;
 
 import io.github.opencubicchunks.cubicchunks.api.world.CubeDataEvent;
 import io.github.opencubicchunks.cubicchunks.api.world.ICube;
-import lombok.experimental.UtilityClass;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.FP2;
+import net.daporkchop.fp2.api.event.ChangedEvent;
+import net.daporkchop.fp2.api.event.FEventHandler;
+import net.daporkchop.fp2.core.config.FP2Config;
+import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.core.mode.api.player.IFarPlayerServer;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketHandshake;
@@ -31,43 +38,77 @@ import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
 import net.daporkchop.fp2.core.server.event.TickEndEvent;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.server.world.FColumn1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.server.world.FCube1_12_2;
+import net.daporkchop.lib.common.system.PlatformInfo;
+import net.daporkchop.lib.compression.zstd.Zstd;
 import net.daporkchop.lib.math.vector.Vec2i;
 import net.daporkchop.lib.math.vector.Vec3i;
+import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.text.TextComponentTranslation;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.world.ChunkDataEvent;
 import net.minecraftforge.event.world.WorldEvent;
+import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.PlayerEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 
-import static net.daporkchop.fp2.FP2.*;
+import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.fp2.util.Constants.*;
-import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
- * Forge event listeners used on the server.
+ * Manages initialization of FP2 on the server.
  *
  * @author DaPorkchop_
  */
-@UtilityClass
-public class ServerEvents {
-    private boolean REGISTERED = false;
+@RequiredArgsConstructor
+@Getter
+public class FP2Server1_12_2 {
+    @NonNull
+    private final FP2 fp2;
 
-    public synchronized void register() {
-        checkState(!REGISTERED, "already registered!");
-        REGISTERED = true;
+    public void preInit() {
+        if (!PlatformInfo.IS_64BIT) { //require 64-bit
+            this.fp2().unsupported("Your system or JVM is not 64-bit!\nRequired by FarPlaneTwo.");
+        } else if (!PlatformInfo.IS_LITTLE_ENDIAN) { //require little-endian
+            this.fp2().unsupported("Your system is not little-endian!\nRequired by FarPlaneTwo.");
+        }
 
-        MinecraftForge.EVENT_BUS.register(ServerEvents.class);
+        System.setProperty("porklib.native.printStackTraces", "true");
+        if (!Zstd.PROVIDER.isNative()) {
+            this.fp2().log().alert("Native ZSTD could not be loaded! This will have SERIOUS performance implications!");
+        }
 
+        //register self to listen for events
+        this.fp2().eventBus().register(this);
+        MinecraftForge.EVENT_BUS.register(this);
         if (CC) {
-            MinecraftForge.EVENT_BUS.register(_CC.class);
+            MinecraftForge.EVENT_BUS.register(new CCEvents());
         }
     }
+
+    public void init() {
+    }
+
+    public void postInit() {
+        PUnsafe.ensureClassInitialized(IFarRenderMode.class);
+    }
+
+    //fp2 events
+
+    @FEventHandler
+    protected void onConfigChanged(ChangedEvent<FP2Config> event) {
+        MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
+        if (server != null) { //a server instance is currently present, update the serverConfig instance for every connected player
+            server.addScheduledTask(() -> server.playerList.getPlayers().forEach(player -> ((IFarPlayerServer) player.connection).fp2_IFarPlayer_serverConfig(this.fp2().globalConfig())));
+        }
+    }
+
+    //forge events
 
     @SubscribeEvent
     public void worldLoad(WorldEvent.Load event) {
@@ -89,7 +130,7 @@ public class ServerEvents {
             event.player.sendMessage(new TextComponentTranslation(MODID + ".playerJoinWarningMessage"));
 
             IFarPlayerServer player = (IFarPlayerServer) ((EntityPlayerMP) event.player).connection;
-            player.fp2_IFarPlayer_serverConfig(fp2().globalConfig());
+            player.fp2_IFarPlayer_serverConfig(this.fp2().globalConfig());
             player.fp2_IFarPlayer_sendPacket(new SPacketHandshake());
         }
     }
@@ -135,8 +176,7 @@ public class ServerEvents {
      *
      * @author DaPorkchop_
      */
-    @UtilityClass
-    public static class _CC {
+    private class CCEvents {
         @SubscribeEvent(priority = EventPriority.LOWEST)
         public void onCubeDataSave(CubeDataEvent.Save event) {
             ICube cube = event.getCube();

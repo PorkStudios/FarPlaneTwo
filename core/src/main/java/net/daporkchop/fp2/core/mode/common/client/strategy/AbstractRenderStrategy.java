@@ -100,6 +100,8 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
 
         this.textureUVs = this.worldRenderer.textureUVs();
 
+        this.macros.define("T_SHIFT", this.mode.tileShift());
+
         fp2().eventBus().registerWeak(this);
     }
 

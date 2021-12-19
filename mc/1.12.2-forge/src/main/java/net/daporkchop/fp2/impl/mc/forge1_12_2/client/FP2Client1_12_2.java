@@ -26,8 +26,9 @@ import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.FP2;
 import net.daporkchop.fp2.api.event.ChangedEvent;
 import net.daporkchop.fp2.api.event.FEventHandler;
-import net.daporkchop.fp2.client.ClientEvents;
+import net.daporkchop.fp2.asm.core.client.gui.IGuiScreen;
 import net.daporkchop.fp2.client.FP2ResourceReloadListener;
+import net.daporkchop.fp2.client.GuiButtonFP2Options;
 import net.daporkchop.fp2.client.KeyBindings;
 import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.gui.GuiContext;
@@ -42,16 +43,19 @@ import net.daporkchop.fp2.impl.mc.forge1_12_2.client.render.TextureUVs1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.log.ChatAsPorkLibLogger;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiVideoSettings;
 import net.minecraft.client.renderer.GlStateManager;
+import net.minecraftforge.client.event.GuiScreenEvent;
+import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.fml.common.eventhandler.EventPriority;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 import java.util.function.Function;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.compat.of.OFHelper.*;
 import static net.daporkchop.fp2.core.debug.FP2Debug.*;
-import static net.daporkchop.fp2.core.mode.common.client.RenderConstants.*;
-import static net.daporkchop.fp2.util.Constants.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL45.*;
@@ -70,8 +74,6 @@ public class FP2Client1_12_2 extends FP2Client {
     private boolean reverseZ = false;
 
     public void preInit() {
-        this.fp2.eventBus().register(this);
-
         this.chat(new ChatAsPorkLibLogger(this.mc));
 
         if (FP2_DEBUG) {
@@ -95,7 +97,9 @@ public class FP2Client1_12_2 extends FP2Client {
             }
         }
 
-        ClientEvents.register();
+        //register self to listen for events
+        this.fp2().eventBus().register(this);
+        MinecraftForge.EVENT_BUS.register(this);
     }
 
     public void init() {
@@ -107,9 +111,6 @@ public class FP2Client1_12_2 extends FP2Client {
     }
 
     public void postInit() {
-        //TODO: move this to core?
-        this.globalShaderMacros().define("T_SHIFT", T_SHIFT).define("RENDER_PASS_COUNT", RENDER_PASS_COUNT);
-
         TextureUVs1_12_2.initDefault();
 
         this.mc.resourceManager.registerReloadListener(new FP2ResourceReloadListener());
@@ -152,6 +153,14 @@ public class FP2Client1_12_2 extends FP2Client {
         return this.mc.gameSettings.renderDistanceChunks;
     }
 
+    protected void updateDebugColorMacros(@NonNull FP2Config config) {
+        this.globalShaderMacros()
+                .define("FP2_DEBUG_COLORS_ENABLED", config.debug().debugColors().enable())
+                .define("FP2_DEBUG_COLORS_MODE", config.debug().debugColors().ordinal());
+    }
+
+    //fp2 events
+
     @FEventHandler
     protected void onConfigChanged(ChangedEvent<FP2Config> event) {
         if (FP2_DEBUG) {
@@ -164,9 +173,18 @@ public class FP2Client1_12_2 extends FP2Client {
         }
     }
 
-    protected void updateDebugColorMacros(@NonNull FP2Config config) {
-        this.globalShaderMacros()
-                .define("FP2_DEBUG_COLORS_ENABLED", config.debug().debugColors().enable())
-                .define("FP2_DEBUG_COLORS_MODE", config.debug().debugColors().ordinal());
+    //forge events
+
+    @SubscribeEvent(priority = EventPriority.LOW)
+    public void initGuiEvent(GuiScreenEvent.InitGuiEvent.Post event) {
+        net.minecraft.client.gui.GuiScreen gui = event.getGui();
+        if (gui instanceof GuiVideoSettings) {
+            ((IGuiScreen) gui).getButtonList().add(new GuiButtonFP2Options(0xBEEF, gui.width / 2 + 165, gui.height / 6 - 12, gui));
+        }
+    }
+
+    @SubscribeEvent
+    public void renderWorldLast(RenderWorldLastEvent event) {
+        this.fp2().client().disableReverseZ();
     }
 }

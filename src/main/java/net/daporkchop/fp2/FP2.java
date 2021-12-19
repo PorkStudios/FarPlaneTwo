@@ -35,10 +35,10 @@ import net.daporkchop.fp2.core.util.I18n;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.I18n1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.client.FP2Client1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.log.Log4jAsPorkLibLogger;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.server.FP2Server1_12_2;
 import net.daporkchop.fp2.mode.heightmap.HeightmapRenderMode;
 import net.daporkchop.fp2.mode.voxel.VoxelRenderMode;
 import net.daporkchop.fp2.net.FP2Network;
-import net.daporkchop.fp2.server.FP2Server;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.event.IdMappingsChangedEvent;
 import net.daporkchop.fp2.util.threading.futureexecutor.ServerThreadMarkedFutureExecutor;
@@ -64,7 +64,6 @@ import java.util.Map;
 
 import static net.daporkchop.fp2.FP2.*;
 import static net.daporkchop.fp2.core.debug.FP2Debug.*;
-import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * @author DaPorkchop_
@@ -75,12 +74,14 @@ import static net.daporkchop.fp2.util.Constants.*;
         acceptedMinecraftVersions = "1.12.2")
 public class FP2 extends FP2Core implements ResourceProvider {
     private FP2Client1_12_2 client;
+    private FP2Server1_12_2 server;
 
     private String version = "";
 
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
         this.client = this.hasClient() ? new FP2Client1_12_2(this) : null;
+        this.server = new FP2Server1_12_2(this);
 
         this.log(new Log4jAsPorkLibLogger(event.getModLog()));
 
@@ -95,7 +96,7 @@ public class FP2 extends FP2Core implements ResourceProvider {
             this.log().alert("FarPlaneTwo debug mode enabled!");
         }
 
-        FP2Server.preInit();
+        this.server.preInit();
 
         if (this.client != null) {
             this.client.preInit();
@@ -104,7 +105,7 @@ public class FP2 extends FP2Core implements ResourceProvider {
 
     @Mod.EventHandler
     public void init(FMLInitializationEvent event) {
-        FP2Server.init();
+        this.server.init();
 
         if (this.client != null) {
             this.client.init();
@@ -113,7 +114,7 @@ public class FP2 extends FP2Core implements ResourceProvider {
 
     @Mod.EventHandler
     public void postInit(FMLPostInitializationEvent event) {
-        FP2Server.postInit();
+        this.server.postInit();
 
         if (this.client != null) {
             this.client.postInit();

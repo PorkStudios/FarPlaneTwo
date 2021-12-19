@@ -18,55 +18,21 @@
  *
  */
 
-package net.daporkchop.fp2.core.client;
+package net.daporkchop.fp2.core.server;
 
 import lombok.AccessLevel;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Setter;
 import net.daporkchop.fp2.core.FP2Core;
-import net.daporkchop.fp2.core.client.gui.GuiContext;
-import net.daporkchop.fp2.core.client.gui.GuiScreen;
-import net.daporkchop.fp2.core.client.shader.ShaderMacros;
-import net.daporkchop.lib.logging.Logger;
-
-import java.util.function.Function;
 
 /**
  * @author DaPorkchop_
  */
 @Getter
 @Setter(AccessLevel.PROTECTED)
-public abstract class FP2Client {
-    private final ShaderMacros.Mutable globalShaderMacros = new ShaderMacros.Mutable();
-
-    private Logger chat;
-
+public abstract class FP2Server {
     /**
-     * @return the {@link FP2Core} instance which this {@link FP2Client} is used for
+     * @return the {@link FP2Core} instance which this {@link FP2Server} is used for
      */
     public abstract FP2Core fp2();
-
-    /**
-     * Opens a new {@link GuiScreen}.
-     *
-     * @param factory a factory for creating a new {@link GuiScreen}
-     * @param <T>     the {@link GuiScreen}
-     * @return the created {@link GuiScreen}
-     * @throws UnsupportedOperationException if the active game distribution does not contain a client
-     */
-    public abstract <T extends GuiScreen> T openScreen(@NonNull Function<GuiContext, T> factory);
-
-    //TODO: somehow move Reversed-Z stuff out of FP2Client, and preferably into :gl
-    @Deprecated
-    public abstract void enableReverseZ();
-
-    @Deprecated
-    public abstract void disableReverseZ();
-
-    @Deprecated
-    public abstract boolean isReverseZ();
-
-    @Deprecated
-    public abstract int vanillaRenderDistanceChunks();
 }
