@@ -24,7 +24,7 @@
 #include <fp2.h>
 #include <fp2/fastmod.h>
 
-#include <lib/vectorclass-2.01.03/vectorclass.h>
+#include <vectorclass-2.01.03/vectorclass.h>
 
 #include <cstring>
 #include <vector>

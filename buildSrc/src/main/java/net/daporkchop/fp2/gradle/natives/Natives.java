@@ -30,6 +30,7 @@ import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.file.Directory;
 import org.gradle.api.provider.Provider;
+import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskProvider;
 
 import java.io.ByteArrayOutputStream;
@@ -38,7 +39,9 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -46,7 +49,8 @@ import java.util.Optional;
  */
 @RequiredArgsConstructor
 public final class Natives {
-    private static final String ROOT_TASK_NAME = "natives";
+    protected static final String ROOT_TASK_NAME = "natives";
+    protected static final String BUILD_DIR_NAME = "fp2_natives";
 
     public static final Optional<Path> CLANG_PATH = FP2GradlePlugin.findInPath("clang++");
     public static final Optional<Path> TAR_PATH = FP2GradlePlugin.findInPath("tar");
@@ -84,16 +88,24 @@ public final class Natives {
         this.project.afterEvaluate(_project -> {
             TaskProvider<Task> rootTask = this.project.getTasks().register(ROOT_TASK_NAME);
 
-            extension.getModules().all(module -> {
+            Map<SourceSet, Provider<Directory>> linkOutputDirsBySourceSet = new HashMap<>();
+
+            extension.getModules().forEach(module -> {
+                Provider<Directory> linkOutputDir = linkOutputDirsBySourceSet.computeIfAbsent(module.getSourceSet().get(), sourceSet -> {
+                    Provider<Directory> dir = this.project.getLayout().getBuildDirectory().dir(BUILD_DIR_NAME + "/link/" + sourceSet.getName());
+                    sourceSet.getOutput().dir(Collections.singletonMap("builtBy", ROOT_TASK_NAME), dir);
+                    return dir;
+                });
+
                 extension.getOperatingSystems().forEach(operatingSystem -> {
                     operatingSystem.getSupportedArchitectures().get().forEach(architecture -> {
                         if (module.getSimd().getOrElse(false)) {
-                            architecture.getSimdExtensions().all(simdExtension -> {
-                                TaskProvider<Task> moduleRootTask = this.registerBuild(new NativeSpec(extension, module, architecture, operatingSystem, simdExtension), module);
+                            architecture.getSimdExtensions().forEach(simdExtension -> {
+                                TaskProvider<Task> moduleRootTask = this.registerBuild(new NativeSpec(extension, module, architecture, operatingSystem, simdExtension), module, linkOutputDir);
                                 rootTask.configure(task -> task.dependsOn(moduleRootTask));
                             });
                         }
-                        TaskProvider<Task> moduleRootTask = this.registerBuild(new NativeSpec(extension, module, architecture, operatingSystem, null), module);
+                        TaskProvider<Task> moduleRootTask = this.registerBuild(new NativeSpec(extension, module, architecture, operatingSystem, null), module, linkOutputDir);
                         rootTask.configure(task -> task.dependsOn(moduleRootTask));
                     });
                 });
@@ -101,12 +113,9 @@ public final class Natives {
         });
     }
 
-    private TaskProvider<Task> registerBuild(NativeSpec spec, NativeModule module) {
-        Directory sourceDir = this.project.getLayout().getProjectDirectory().dir("src/" + module.getSourceSet().get().getName() + "/native/" + module.getRoot().get());
-
+    private TaskProvider<Task> registerBuild(NativeSpec spec, NativeModule module, Provider<Directory> linkOutputDir) {
         Provider<Directory> downloadOutputDir = this.project.getLayout().getBuildDirectory().dir(spec.librariesOutputDirectory());
         Provider<Directory> compileOutputDir = this.project.getLayout().getBuildDirectory().dir(spec.compileOutputDirectory());
-        Provider<Directory> linkOutputDir = this.project.getLayout().getBuildDirectory().dir(spec.linkOutputDirectory());
 
         spec.includeDirectories().add(downloadOutputDir.get().getAsFile().getAbsolutePath());
 
@@ -134,12 +143,8 @@ public final class Natives {
             task.getOutput().set(linkOutputDir.map(dir -> dir.file(spec.linkedLibraryFile())));
         });
 
-        TaskProvider<Task> rootTask = this.project.getTasks().register(spec.rootTaskName(), task -> {
+        return this.project.getTasks().register(spec.rootTaskName(), task -> {
             task.dependsOn(downloadTask, compileTask, linkTask);
         });
-
-        module.getSourceSet().get().getOutput().dir(Collections.singletonMap("builtBy", rootTask.getName()), linkOutputDir);
-
-        return rootTask;
     }
 }

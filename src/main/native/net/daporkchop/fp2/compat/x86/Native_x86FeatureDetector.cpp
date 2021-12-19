@@ -19,7 +19,7 @@
  */
 
 #include <fp2.h>
-#include <lib/vectorclass-2.01.03/instrset_detect.cpp>
+#include <vectorclass-2.01.03/instrset_detect.cpp>
 
 FP2_JNI(jstring, Native_1x86FeatureDetector, maxSupportedVectorExtension)(JNIEnv* env, jobject obj) FP2_JNI_HEAD
     auto instrset = instrset_detect();

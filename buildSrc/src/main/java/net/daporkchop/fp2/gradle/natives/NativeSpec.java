@@ -97,20 +97,16 @@ public final class NativeSpec implements Serializable {
         return this.platformString() + Optional.ofNullable(this.simdExtensionName).map(" with "::concat).orElse("");
     }
 
-    public String rootOutputDirectory() {
-        return "natives/" + this.platformString() + '/' + this.moduleName + Optional.ofNullable(this.simdExtensionName).map(name -> '/' + name).orElse("");
+    private String outputDirectory(String stage) {
+        return Natives.BUILD_DIR_NAME + '/' + stage + '/' + this.moduleName + '/' + this.platformString() + Optional.ofNullable(this.simdExtensionName).map(name -> '/' + name).orElse("");
     }
 
     public String librariesOutputDirectory() {
-        return this.rootOutputDirectory() + "/libraries";
+        return this.outputDirectory("libraries") + "/libraries";
     }
 
     public String compileOutputDirectory() {
-        return this.rootOutputDirectory() + "/compile";
-    }
-
-    public String linkOutputDirectory() {
-        return this.rootOutputDirectory() + "/link";
+        return this.outputDirectory("compile");
     }
 
     public String linkedLibraryFile() {
