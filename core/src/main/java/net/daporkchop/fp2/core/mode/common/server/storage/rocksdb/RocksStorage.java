@@ -55,6 +55,7 @@ import org.rocksdb.WriteOptions;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -171,13 +172,16 @@ public class RocksStorage<POS extends IFarPos, T extends IFarTile> implements IF
             .weakValues()
             .build(CacheLoader.from(pos -> new RocksTileHandle<>(pos, this)));
 
-    @SneakyThrows(RocksDBException.class)
+    @SneakyThrows({ IOException.class, RocksDBException.class })
     public RocksStorage(@NonNull AbstractFarTileProvider<POS, T> world, @NonNull Path storageRoot) {
         this.world = world;
         this.version = world.mode().storageVersion();
 
-        Path markerFile = storageRoot.resolve("v4");
-        if (PFiles.checkDirectoryExists(storageRoot) && !PFiles.checkFileExists(markerFile)) { //it's an old storage
+        byte[] token = world.world().fp2_IFarWorld_registry().registryToken().orElseGet(() -> new byte[0]);
+
+        Path markerFile = storageRoot.resolve("registry_v5");
+        if (PFiles.checkDirectoryExists(storageRoot) && (!PFiles.checkFileExists(markerFile) || !Arrays.equals(token, Files.readAllBytes(markerFile)))) {
+            //storage was created with a different registry
             PFiles.rmContentsParallel(storageRoot);
         }
         PFiles.ensureDirectoryExists(storageRoot);
@@ -197,7 +201,7 @@ public class RocksStorage<POS extends IFarPos, T extends IFarTile> implements IF
         this.cfTileData = this.handles.get(3);
         this.cfAnyVanillaExists = this.handles.get(4);
 
-        PFiles.ensureFileExists(markerFile); //create marker file
+        Files.write(markerFile, token);
     }
 
     @Override
