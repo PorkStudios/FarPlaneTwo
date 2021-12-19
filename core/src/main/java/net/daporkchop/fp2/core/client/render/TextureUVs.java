@@ -22,6 +22,7 @@ package net.daporkchop.fp2.core.client.render;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.api.event.ReloadCompleteEvent;
 import net.daporkchop.fp2.core.event.AbstractReloadEvent;
 import net.daporkchop.fp2.gl.attribute.Attribute;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayBuffer;
@@ -37,13 +38,18 @@ public interface TextureUVs {
         new AbstractReloadEvent<TextureUVs>() {
             @Override
             protected void handleSuccess(int total) {
-                fp2().client().chat().success("reloaded §a%d texture UV cache(s)", total);
+                fp2().client().chat().success("§areloaded %d texture UV cache(s)", total);
             }
 
             @Override
             protected void handleFailure(int failed, int total, @NonNull Throwable cause) {
                 fp2().log().error("texture UV cache reload failed", cause);
                 fp2().client().chat().error("§c%d/%d texture UV cache failed to reload (check log for info)", failed, total);
+            }
+
+            @Override
+            protected ReloadCompleteEvent<TextureUVs> completeEvent() {
+                return new ReloadCompleteEvent<TextureUVs>() {};
             }
         }.fire();
     }

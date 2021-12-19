@@ -22,12 +22,14 @@ package net.daporkchop.fp2.core.mode.common.client.strategy;
 
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.api.event.FEventHandler;
+import net.daporkchop.fp2.api.event.ReloadCompleteEvent;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
-import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.render.GlobalUniformAttributes;
 import net.daporkchop.fp2.core.client.render.TextureUVs;
 import net.daporkchop.fp2.core.client.render.WorldRenderer;
+import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;
 import net.daporkchop.fp2.core.client.shader.ShaderMacros;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
@@ -46,9 +48,7 @@ import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.command.CommandBuffer;
 import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
-import net.daporkchop.fp2.gl.draw.binding.DrawBindingIndexed;
 import net.daporkchop.fp2.gl.draw.list.DrawCommand;
-import net.daporkchop.fp2.gl.draw.list.DrawCommandIndexed;
 import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
@@ -150,4 +150,9 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
     }
 
     public abstract void render(@NonNull CommandBufferBuilder builder, @NonNull IRenderIndex<POS, BO, DB, DC> index);
+
+    @FEventHandler
+    protected void onShaderReloadComplete(ReloadCompleteEvent<ReloadableShaderProgram<?>> event) {
+        this.lastMacrosSnapshot = null; //force command buffer rebuild on next frame
+    }
 }

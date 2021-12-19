@@ -22,6 +22,7 @@ package net.daporkchop.fp2.core.event;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.api.event.FEventBus;
+import net.daporkchop.fp2.api.event.ReloadCompleteEvent;
 import net.daporkchop.fp2.api.event.ReloadEvent;
 import net.daporkchop.fp2.core.FP2Core;
 
@@ -53,11 +54,15 @@ public abstract class AbstractReloadEvent<T> implements ReloadEvent<T> {
 
             this.handleFailure(this.failureCauses.size(), this.total, cause);
         }
+
+        fp2().eventBus().fire(this.completeEvent());
     }
 
     protected abstract void handleSuccess(int total);
 
     protected abstract void handleFailure(int failed, int total, @NonNull Throwable cause);
+
+    protected abstract ReloadCompleteEvent<T> completeEvent();
 
     @Override
     public void notifySuccess() {

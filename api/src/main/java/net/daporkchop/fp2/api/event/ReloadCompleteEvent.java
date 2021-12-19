@@ -18,21 +18,12 @@
  *
  */
 
-package net.daporkchop.fp2.core.event;
-
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.api.event.ModifiedEvent;
+package net.daporkchop.fp2.api.event;
 
 /**
- * Implementation of {@link ModifiedEvent}.
+ * Fired after a {@link ReloadEvent} completes.
  *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-@Getter
-public abstract class AbstractModifiedEvent<T> implements ModifiedEvent<T> {
-    @NonNull
-    protected final T value;
+public interface ReloadCompleteEvent<T> { //TODO: replace with a priority system on FEventHandler
 }
