@@ -32,6 +32,7 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
+import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -64,7 +65,7 @@ public class ClientEvents {
 
     @SubscribeEvent
     public void renderWorldLast(RenderWorldLastEvent event) {
-        ReversedZ.disable();
+        fp2().client().disableReverseZ();
     }
 
     /**

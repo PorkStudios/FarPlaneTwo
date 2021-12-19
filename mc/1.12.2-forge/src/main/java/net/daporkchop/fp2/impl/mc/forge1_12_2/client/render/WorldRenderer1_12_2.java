@@ -23,7 +23,6 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.client.render;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.asm.interfaz.client.renderer.IMixinRenderGlobal;
-import net.daporkchop.fp2.client.ReversedZ;
 import net.daporkchop.fp2.client.gl.MatrixHelper;
 import net.daporkchop.fp2.common.util.DirectBufferHackery;
 import net.daporkchop.fp2.core.client.render.GlobalUniformAttributes;
@@ -32,8 +31,8 @@ import net.daporkchop.fp2.core.client.render.WorldRenderer;
 import net.daporkchop.fp2.core.util.GlobalAllocators;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.FakeFarWorldClient;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.world.registry.GameRegistry1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.ResourceProvider1_12_2;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.world.registry.GameRegistry1_12_2;
 import net.daporkchop.fp2.util.SingleBiomeBlockAccess;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -47,6 +46,7 @@ import java.nio.FloatBuffer;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.compat.of.OFHelper.*;
+import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 import static net.minecraft.util.math.MathHelper.*;
 import static org.lwjgl.opengl.GL11.*;
@@ -177,7 +177,7 @@ public class WorldRenderer1_12_2 implements WorldRenderer, AutoCloseable {
             MatrixHelper.multiply4x4(projection, modelView, attributes.u_modelViewProjectionMatrix);
 
             //offset the projected points' depth values to avoid z-fighting with vanilla terrain
-            MatrixHelper.offsetDepth(attributes.u_modelViewProjectionMatrix, ReversedZ.REVERSED ? -0.00001f : 0.00001f);
+            MatrixHelper.offsetDepth(attributes.u_modelViewProjectionMatrix, fp2().client().isReverseZ() ? -0.00001f : 0.00001f);
         } finally {
             alloc.release(projection);
             alloc.release(modelView);

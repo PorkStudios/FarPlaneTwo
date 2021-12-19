@@ -42,6 +42,7 @@ import net.daporkchop.fp2.impl.mc.forge1_12_2.client.render.TextureUVs1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.log.ChatAsPorkLibLogger;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.GlStateManager;
 import net.minecraftforge.common.MinecraftForge;
 
 import java.util.function.Function;
@@ -51,6 +52,9 @@ import static net.daporkchop.fp2.compat.of.OFHelper.*;
 import static net.daporkchop.fp2.core.debug.FP2Debug.*;
 import static net.daporkchop.fp2.core.mode.common.client.RenderConstants.*;
 import static net.daporkchop.fp2.util.Constants.*;
+import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL20.*;
+import static org.lwjgl.opengl.GL45.*;
 
 /**
  * @author DaPorkchop_
@@ -62,6 +66,8 @@ public class FP2Client1_12_2 extends FP2Client {
 
     @NonNull
     private final FP2 fp2;
+
+    private boolean reverseZ = false;
 
     public void preInit() {
         this.fp2.eventBus().register(this);
@@ -112,6 +118,33 @@ public class FP2Client1_12_2 extends FP2Client {
     @Override
     public <T extends GuiScreen> T openScreen(@NonNull Function<GuiContext, T> factory) {
         return new GuiContext1_12_2().createScreenAndOpen(this.mc, factory);
+    }
+
+    @Override
+    public void enableReverseZ() {
+        if (this.fp2.globalConfig().compatibility().reversedZ()) {
+            this.reverseZ = true;
+
+            GlStateManager.depthFunc(GL_LEQUAL);
+            glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
+            GlStateManager.clearDepth(0.0d);
+        }
+    }
+
+    @Override
+    public void disableReverseZ() {
+        if (this.reverseZ) {
+            this.reverseZ = false;
+
+            glClipControl(GL_LOWER_LEFT, GL_NEGATIVE_ONE_TO_ONE);
+            GlStateManager.depthFunc(GL_LEQUAL);
+            GlStateManager.clearDepth(1.0d);
+        }
+    }
+
+    @Override
+    public boolean isReverseZ() {
+        return this.reverseZ;
     }
 
     @Override

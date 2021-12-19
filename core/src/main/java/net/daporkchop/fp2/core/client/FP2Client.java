@@ -57,6 +57,12 @@ public abstract class FP2Client {
      */
     public abstract <T extends GuiScreen> T openScreen(@NonNull Function<GuiContext, T> factory);
 
+    public abstract void enableReverseZ();
+
+    public abstract void disableReverseZ();
+
+    public abstract boolean isReverseZ();
+
     @Deprecated
     public abstract int vanillaRenderDistanceChunks();
 }

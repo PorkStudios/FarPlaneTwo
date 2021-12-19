@@ -20,7 +20,6 @@
 
 package net.daporkchop.fp2.asm.core.client.renderer;
 
-import net.daporkchop.fp2.client.ReversedZ;
 import net.daporkchop.fp2.client.gl.MatrixHelper;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
@@ -42,6 +41,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.nio.FloatBuffer;
 
+import static net.daporkchop.fp2.core.FP2Core.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL12.*;
 
@@ -63,7 +63,7 @@ public abstract class MixinEntityRenderer {
     @Inject(method = "Lnet/minecraft/client/renderer/EntityRenderer;renderWorldPass(IFJ)V",
             at = @At("HEAD"))
     private void fp2_renderWorldPass_pre(int pass, float partialTicks, long finishTimeNano, CallbackInfo ci) {
-        ReversedZ.enable();
+        fp2().client().enableReverseZ();
     }
 
     //use reversed-z projection with infinite zFar everywhere

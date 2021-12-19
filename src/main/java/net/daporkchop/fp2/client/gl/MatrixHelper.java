@@ -21,13 +21,13 @@
 package net.daporkchop.fp2.client.gl;
 
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.client.ReversedZ;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.nio.FloatBuffer;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.common.util.TypeSize.*;
+import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -68,7 +68,7 @@ public class MatrixHelper {
 
         PUnsafe.setMemory(base, offset, MAT4_SIZE, (byte) 0);
 
-        if (ReversedZ.REVERSED) { //we are currently rendering the world, so we need to reverse the depth buffer
+        if (fp2().client().isReverseZ()) { //we are currently rendering the world, so we need to reverse the depth buffer
             PUnsafe.putFloat(base, offset + matrixOffset(0, 0), f / aspect);
             PUnsafe.putFloat(base, offset + matrixOffset(1, 1), f);
             PUnsafe.putFloat(base, offset + matrixOffset(3, 2), zNear);
