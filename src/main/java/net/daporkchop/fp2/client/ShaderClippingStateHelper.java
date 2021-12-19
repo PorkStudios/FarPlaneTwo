@@ -22,7 +22,7 @@ package net.daporkchop.fp2.client;
 
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.client.gl.MatrixHelper;
+import net.daporkchop.fp2.core.client.MatrixHelper;
 import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -33,8 +33,8 @@ import org.lwjgl.BufferUtils;
 
 import java.nio.FloatBuffer;
 
+import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.fp2.util.Constants.*;
-import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL31.*;
@@ -45,6 +45,8 @@ import static org.lwjgl.opengl.GL31.*;
 @UtilityClass
 public class ShaderClippingStateHelper {
     private final GLBuffer BUFFER = new GLBuffer(GL_STREAM_DRAW);
+
+    private final int VEC4_SIZE = 4 * FLOAT_SIZE;
 
     private final int OFFSET_FULLPLANES_OR = 0;
     private final int COUNT_FULLPLANES_OR = 4;

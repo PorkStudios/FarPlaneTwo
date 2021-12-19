@@ -28,6 +28,11 @@ import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.event.AbstractRegisterEvent;
 import net.daporkchop.fp2.core.mode.api.IFarCoordLimits;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
+import net.daporkchop.fp2.core.mode.voxel.VoxelConstants;
+import net.daporkchop.fp2.core.mode.voxel.VoxelCoordLimits;
+import net.daporkchop.fp2.core.mode.voxel.VoxelDirectPosAccess;
+import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
+import net.daporkchop.fp2.core.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.core.util.registry.LinkedOrderedRegistry;
 import net.daporkchop.fp2.core.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
@@ -40,13 +45,13 @@ import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.core.mode.common.AbstractFarRenderMode;
-import net.daporkchop.fp2.mode.voxel.ctx.VoxelClientContext;
-import net.daporkchop.fp2.mode.voxel.ctx.VoxelServerContext;
-import net.daporkchop.fp2.mode.voxel.server.VoxelTileProvider;
-import net.daporkchop.fp2.mode.voxel.server.gen.exact.CCVoxelGenerator;
-import net.daporkchop.fp2.mode.voxel.server.gen.exact.VanillaVoxelGenerator;
+import net.daporkchop.fp2.core.mode.voxel.ctx.VoxelClientContext;
+import net.daporkchop.fp2.core.mode.voxel.ctx.VoxelServerContext;
+import net.daporkchop.fp2.core.mode.voxel.server.VoxelTileProvider;
+import net.daporkchop.fp2.core.mode.voxel.server.gen.exact.CCVoxelGenerator;
+import net.daporkchop.fp2.core.mode.voxel.server.gen.exact.VanillaVoxelGenerator;
 import net.daporkchop.fp2.mode.voxel.server.gen.rough.CWGVoxelGenerator;
-import net.daporkchop.fp2.mode.voxel.server.scale.VoxelScalerIntersection;
+import net.daporkchop.fp2.core.mode.voxel.server.scale.VoxelScalerIntersection;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.core.util.math.MathUtil;
 import net.daporkchop.lib.binary.stream.DataIn;
@@ -59,7 +64,6 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import static java.lang.Math.*;
 import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.fp2.util.Constants.*;
 
@@ -151,9 +155,9 @@ public class VoxelRenderMode extends AbstractFarRenderMode<VoxelPos, VoxelTile> 
 
     @Override
     public void writePos(@NonNull DataOut out, @NonNull VoxelPos pos) throws IOException {
-        out.writeByte(pos.level);
-        out.writeInt(MathUtil.interleaveBitsHigh(pos.x, pos.y, pos.z));
-        out.writeLong(MathUtil.interleaveBits(pos.x, pos.y, pos.z));
+        out.writeByte(pos.level());
+        out.writeInt(MathUtil.interleaveBitsHigh(pos.x(), pos.y(), pos.z()));
+        out.writeLong(MathUtil.interleaveBits(pos.x(), pos.y(), pos.z()));
     }
 
     @Override

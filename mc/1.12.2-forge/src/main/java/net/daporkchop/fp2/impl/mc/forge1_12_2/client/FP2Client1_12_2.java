@@ -53,13 +53,13 @@ import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.InputEvent;
 import org.lwjgl.input.Keyboard;
+import org.lwjgl.opengl.GLContext;
 
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
-import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.compat.of.OFHelper.*;
 import static net.daporkchop.fp2.core.debug.FP2Debug.*;
 import static org.lwjgl.opengl.GL11.*;
@@ -88,7 +88,7 @@ public class FP2Client1_12_2 extends FP2Client {
             this.updateDebugColorMacros(this.fp2().globalConfig());
         }
 
-        if (!OPENGL_45) { //require at least OpenGL 4.5
+        if (!GLContext.getCapabilities().OpenGL45) { //require at least OpenGL 4.5
             this.fp2().unsupported("Your system does not support OpenGL 4.5!\nRequired by FarPlaneTwo.");
         }
 

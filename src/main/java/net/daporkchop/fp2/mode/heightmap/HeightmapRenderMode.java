@@ -40,17 +40,22 @@ import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.core.mode.common.AbstractFarRenderMode;
+import net.daporkchop.fp2.core.mode.heightmap.HeightmapConstants;
+import net.daporkchop.fp2.core.mode.heightmap.HeightmapCoordLimits;
+import net.daporkchop.fp2.core.mode.heightmap.HeightmapDirectPosAccess;
+import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
+import net.daporkchop.fp2.core.mode.heightmap.HeightmapTile;
 import net.daporkchop.fp2.core.util.math.MathUtil;
 import net.daporkchop.fp2.core.util.registry.LinkedOrderedRegistry;
-import net.daporkchop.fp2.mode.heightmap.ctx.HeightmapClientContext;
-import net.daporkchop.fp2.mode.heightmap.ctx.HeightmapServerContext;
-import net.daporkchop.fp2.mode.heightmap.server.HeightmapTileProvider;
-import net.daporkchop.fp2.mode.heightmap.server.gen.exact.CCHeightmapGenerator;
-import net.daporkchop.fp2.mode.heightmap.server.gen.exact.VanillaHeightmapGenerator;
+import net.daporkchop.fp2.core.mode.heightmap.ctx.HeightmapClientContext;
+import net.daporkchop.fp2.core.mode.heightmap.ctx.HeightmapServerContext;
+import net.daporkchop.fp2.core.mode.heightmap.server.HeightmapTileProvider;
+import net.daporkchop.fp2.core.mode.heightmap.server.gen.exact.CCHeightmapGenerator;
+import net.daporkchop.fp2.core.mode.heightmap.server.gen.exact.VanillaHeightmapGenerator;
 import net.daporkchop.fp2.mode.heightmap.server.gen.rough.CWGFlatHeightmapGenerator;
 import net.daporkchop.fp2.mode.heightmap.server.gen.rough.CWGHeightmapGenerator;
 import net.daporkchop.fp2.mode.heightmap.server.gen.rough.FlatHeightmapGenerator;
-import net.daporkchop.fp2.mode.heightmap.server.scale.HeightmapScalerMinMax;
+import net.daporkchop.fp2.core.mode.heightmap.server.scale.HeightmapScalerMinMax;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.lib.binary.stream.DataIn;
 import net.daporkchop.lib.binary.stream.DataOut;
@@ -63,7 +68,6 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import static java.lang.Math.*;
 import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.fp2.util.Constants.*;
 
@@ -155,8 +159,8 @@ public class HeightmapRenderMode extends AbstractFarRenderMode<HeightmapPos, Hei
 
     @Override
     public void writePos(@NonNull DataOut out, @NonNull HeightmapPos pos) throws IOException {
-        out.writeByte(pos.level);
-        out.writeLong(MathUtil.interleaveBits(pos.x, pos.z));
+        out.writeByte(pos.level());
+        out.writeLong(MathUtil.interleaveBits(pos.x(), pos.z()));
     }
 
     @Override

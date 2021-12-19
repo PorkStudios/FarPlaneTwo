@@ -20,7 +20,7 @@
 
 package net.daporkchop.fp2.asm.core.client.renderer;
 
-import net.daporkchop.fp2.client.gl.MatrixHelper;
+import net.daporkchop.fp2.core.client.MatrixHelper;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.mode.api.player.IFarPlayerClient;

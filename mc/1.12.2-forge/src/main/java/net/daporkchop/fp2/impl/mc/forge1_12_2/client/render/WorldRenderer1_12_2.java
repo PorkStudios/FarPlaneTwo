@@ -23,7 +23,7 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.client.render;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.asm.interfaz.client.renderer.IMixinRenderGlobal;
-import net.daporkchop.fp2.client.gl.MatrixHelper;
+import net.daporkchop.fp2.core.client.MatrixHelper;
 import net.daporkchop.fp2.common.util.DirectBufferHackery;
 import net.daporkchop.fp2.core.client.render.GlobalUniformAttributes;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
@@ -44,7 +44,7 @@ import org.lwjgl.BufferUtils;
 
 import java.nio.FloatBuffer;
 
-import static net.daporkchop.fp2.client.gl.OpenGL.*;
+import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.fp2.compat.of.OFHelper.*;
 import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.lib.common.math.PMath.*;
@@ -164,8 +164,8 @@ public class WorldRenderer1_12_2 implements WorldRenderer, AutoCloseable {
     private void initModelViewProjectionMatrix(GlobalUniformAttributes attributes) {
         ArrayAllocator<float[]> alloc = GlobalAllocators.ALLOC_FLOAT.get();
 
-        float[] modelView = alloc.atLeast(MAT4_ELEMENTS);
-        float[] projection = alloc.atLeast(MAT4_ELEMENTS);
+        float[] modelView = alloc.atLeast(MatrixHelper.MAT4_ELEMENTS);
+        float[] projection = alloc.atLeast(MatrixHelper.MAT4_ELEMENTS);
         try {
             //load both matrices into arrays
             glGetFloat(GL_MODELVIEW_MATRIX, (FloatBuffer) this.tempMatrix.clear());

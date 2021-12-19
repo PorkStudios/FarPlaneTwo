@@ -25,9 +25,10 @@ import it.unimi.dsi.fastutil.ints.IntList;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.world.BlockWorldConstants;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
-import net.daporkchop.fp2.mode.heightmap.HeightmapData;
-import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
-import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
+import net.daporkchop.fp2.core.mode.heightmap.HeightmapData;
+import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
+import net.daporkchop.fp2.core.mode.heightmap.HeightmapTile;
+import net.daporkchop.fp2.core.mode.heightmap.server.gen.rough.AbstractRoughHeightmapGenerator;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
 import net.minecraft.world.WorldServer;
@@ -38,7 +39,7 @@ import java.util.List;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.api.world.BlockWorldConstants.*;
-import static net.daporkchop.fp2.mode.heightmap.HeightmapConstants.*;
+import static net.daporkchop.fp2.core.mode.heightmap.HeightmapConstants.*;
 
 /**
  * Rough heightmap generator for the vanilla superflat world type.

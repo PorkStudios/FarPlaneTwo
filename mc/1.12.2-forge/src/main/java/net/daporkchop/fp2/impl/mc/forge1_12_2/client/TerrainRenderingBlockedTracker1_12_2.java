@@ -39,7 +39,7 @@ import net.minecraft.util.math.BlockPos;
 
 import java.util.stream.Stream;
 
-import static net.daporkchop.fp2.client.gl.OpenGL.*;
+import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL43.*;
@@ -50,7 +50,7 @@ import static org.lwjgl.opengl.GL43.*;
 @RequiredArgsConstructor
 public class TerrainRenderingBlockedTracker1_12_2 extends AbstractRefCounted implements TerrainRenderingBlockedTracker {
     protected static final long HEADERS_OFFSET = 0L;
-    protected static final long FLAGS_OFFSET = HEADERS_OFFSET + 2L * IVEC3_SIZE;
+    protected static final long FLAGS_OFFSET = HEADERS_OFFSET + 2L * (4 * INT_SIZE);
 
     protected static int visibilityMask(@NonNull CompiledChunk compiledChunk) {
         int mask = 0;
@@ -219,13 +219,13 @@ public class TerrainRenderingBlockedTracker1_12_2 extends AbstractRefCounted imp
             PUnsafe.putInt(headersAddr + 0 * INT_SIZE, offsetChunkX);
             PUnsafe.putInt(headersAddr + 1 * INT_SIZE, offsetChunkY);
             PUnsafe.putInt(headersAddr + 2 * INT_SIZE, offsetChunkZ);
-            headersAddr += IVEC3_SIZE;
+            headersAddr += 4 * INT_SIZE;
 
             //ivec3 size
             PUnsafe.putInt(headersAddr + 0 * INT_SIZE, factorChunkX);
             PUnsafe.putInt(headersAddr + 1 * INT_SIZE, factorChunkY);
             PUnsafe.putInt(headersAddr + 2 * INT_SIZE, factorChunkZ);
-            headersAddr += IVEC3_SIZE;
+            headersAddr += 4 * INT_SIZE;
         }
 
         this.offsetX = offsetChunkX;

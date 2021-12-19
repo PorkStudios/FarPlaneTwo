@@ -25,9 +25,10 @@ import lombok.NonNull;
 import net.daporkchop.fp2.api.world.BlockWorldConstants;
 import net.daporkchop.fp2.compat.cwg.CWGContext;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
-import net.daporkchop.fp2.mode.heightmap.HeightmapData;
-import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
-import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
+import net.daporkchop.fp2.core.mode.heightmap.HeightmapData;
+import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
+import net.daporkchop.fp2.core.mode.heightmap.HeightmapTile;
+import net.daporkchop.fp2.core.mode.heightmap.server.gen.rough.AbstractRoughHeightmapGenerator;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.reference.cache.Cached;
 import net.minecraft.block.state.IBlockState;
@@ -35,7 +36,7 @@ import net.minecraft.init.Blocks;
 import net.minecraft.world.WorldServer;
 
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
-import static net.daporkchop.fp2.mode.heightmap.HeightmapConstants.*;
+import static net.daporkchop.fp2.core.mode.heightmap.HeightmapConstants.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 
 /**

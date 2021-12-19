@@ -34,7 +34,7 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 
 import static java.lang.Math.*;
-import static net.daporkchop.fp2.client.gl.OpenGL.*;
+import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL30.*;

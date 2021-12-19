@@ -26,9 +26,10 @@ import net.daporkchop.fp2.api.world.BlockWorldConstants;
 import net.daporkchop.fp2.compat.cwg.CWGContext;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
-import net.daporkchop.fp2.mode.voxel.VoxelData;
-import net.daporkchop.fp2.mode.voxel.VoxelPos;
-import net.daporkchop.fp2.mode.voxel.VoxelTile;
+import net.daporkchop.fp2.core.mode.voxel.VoxelData;
+import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
+import net.daporkchop.fp2.core.mode.voxel.VoxelTile;
+import net.daporkchop.fp2.core.mode.voxel.server.gen.rough.AbstractRoughVoxelGenerator;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.reference.cache.Cached;
 import net.minecraft.block.state.IBlockState;
@@ -38,7 +39,7 @@ import net.minecraft.world.WorldServer;
 import java.util.Arrays;
 
 import static java.lang.Math.*;
-import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
+import static net.daporkchop.fp2.core.mode.voxel.VoxelConstants.*;
 
 /**
  * @author DaPorkchop_
