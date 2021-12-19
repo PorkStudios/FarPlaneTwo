@@ -22,7 +22,6 @@ package net.daporkchop.fp2.mode.heightmap.server.gen.rough;
 
 import io.github.opencubicchunks.cubicchunks.cubicgen.preset.FlatGeneratorSettings;
 import lombok.NonNull;
-import net.daporkchop.fp2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Biomes;
@@ -50,7 +49,7 @@ public class CWGFlatHeightmapGenerator extends FlatHeightmapGenerator {
         FlatGeneratorInfo generatorInfo = new FlatGeneratorInfo();
 
         //translate FlatCubic generator options to vanilla format
-        generatorInfo.setBiome(FastRegistry.getId(Biomes.PLAINS)); //FlatCubic always uses the same biome
+        generatorInfo.setBiome(this.registry.biome2id(Biomes.PLAINS)); //FlatCubic always uses the same biome
         settings.layers.values().stream().map(flatLayer -> {
             IBlockState state = flatLayer.blockState.getBlockState();
             FlatLayerInfo layerInfo = new FlatLayerInfo(3, flatLayer.toY - flatLayer.fromY, state.getBlock(), state.getBlock().getMetaFromState(state));

@@ -80,6 +80,8 @@ public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess {
     protected static final long ASYNCBATCHINGCUBEIO_STORAGE_OFFSET = PUnsafe.pork_getOffset(AsyncBatchingCubeIO.class, "storage");
 
     protected final WorldServer world;
+    protected final IFarWorldServer farWorld;
+
     protected final ICubeIO io;
     protected final ICubicStorage storage;
 
@@ -93,12 +95,14 @@ public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess {
 
     public CCAsyncBlockAccessImpl(@NonNull WorldServer world) {
         this.world = world;
+        this.farWorld = (IFarWorldServer) world;
+
         this.io = ((ICubeProviderInternal.Server) ((ICubicWorldInternal) world).getCubeCache()).getCubeIO();
         this.storage = PUnsafe.getObject(AsyncBatchingCubeIO.class.cast(this.io), ASYNCBATCHINGCUBEIO_STORAGE_OFFSET);
 
         this.emptyStorage = new ExtendedBlockStorage(0, world.provider.hasSkyLight());
 
-        ((IFarWorldServer) world).fp2_IFarWorldServer_eventBus().registerWeak(this);
+        this.farWorld.fp2_IFarWorldServer_eventBus().registerWeak(this);
 
         this.columnsExistCache = Datastructures.INSTANCE.nDimensionalIntSegtreeSet()
                 .dimensions(2)

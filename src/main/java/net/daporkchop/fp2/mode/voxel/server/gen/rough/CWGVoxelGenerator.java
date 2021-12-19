@@ -24,7 +24,6 @@ import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.IBiomeBlockRe
 import lombok.NonNull;
 import net.daporkchop.fp2.api.world.BlockWorldConstants;
 import net.daporkchop.fp2.compat.cwg.CWGContext;
-import net.daporkchop.fp2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
@@ -50,7 +49,7 @@ public class CWGVoxelGenerator extends AbstractRoughVoxelGenerator<CWGContext> i
     public CWGVoxelGenerator(@NonNull IFarWorldServer world) {
         super(world);
 
-        this.ctx = Cached.threadLocal(() -> new CWGContext((WorldServer) world.fp2_IFarWorld_implWorld(), CACHE_SIZE, 2, VT_SHIFT), ReferenceStrength.WEAK);
+        this.ctx = Cached.threadLocal(() -> new CWGContext(this.registry, (WorldServer) world.fp2_IFarWorld_implWorld(), CACHE_SIZE, 2, VT_SHIFT), ReferenceStrength.WEAK);
     }
 
     @Override
@@ -82,7 +81,7 @@ public class CWGVoxelGenerator extends AbstractRoughVoxelGenerator<CWGContext> i
     @Override
     protected int getFaceState(int blockX, int blockY, int blockZ, int level, double nx, double ny, double nz, double density0, double density1, int edge, int layer, CWGContext ctx) {
         if (layer == 0) { //layer 0 is always water lol
-            return FastRegistry.getId(Blocks.WATER.getDefaultState());
+            return this.registry.state2id(Blocks.WATER.getDefaultState());
         }
 
         double density = max(density0, density1);
@@ -92,7 +91,7 @@ public class CWGVoxelGenerator extends AbstractRoughVoxelGenerator<CWGContext> i
             state = replacer.getReplacedBlock(state, blockX, blockY, blockZ, nx, ny, nz, density);
         }
 
-        return FastRegistry.getId(state);
+        return this.registry.state2id(state);
     }
 
     @Override

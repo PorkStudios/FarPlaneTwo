@@ -67,7 +67,7 @@ public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
     public CWGHeightmapGenerator(@NonNull IFarWorldServer world) {
         super(world);
 
-        this.ctx = Cached.threadLocal(() -> new CWGContext((WorldServer) world.fp2_IFarWorld_implWorld(), HMAP_SIZE, 2, HT_SHIFT), ReferenceStrength.WEAK);
+        this.ctx = Cached.threadLocal(() -> new CWGContext(this.registry, (WorldServer) world.fp2_IFarWorld_implWorld(), HMAP_SIZE, 2, HT_SHIFT), ReferenceStrength.WEAK);
     }
 
     @Override

@@ -24,7 +24,6 @@ import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.world.BlockWorldConstants;
-import net.daporkchop.fp2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.mode.heightmap.HeightmapData;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
@@ -95,7 +94,7 @@ public class FlatHeightmapGenerator extends AbstractRoughHeightmapGenerator {
         FlatLayerInfo layer = generatorInfo.getFlatLayers().get(layerIndex);
 
         data.state = this.registry.state2id(layer.getLayerMaterial());
-        data.biome = this.registry.biome2id(FastRegistry.getBiome(generatorInfo.getBiome()));
+        data.biome = this.registry.biome2id(this.registry.biome2id(generatorInfo.getBiome()));
         data.height_int = layer.getMinY() + layer.getLayerCount();
         data.light = this.getLightAtLayer(generatorInfo.getFlatLayers(), layerIndex);
         data.secondaryConnection = secondaryConnection;

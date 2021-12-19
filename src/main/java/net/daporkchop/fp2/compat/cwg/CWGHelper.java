@@ -25,7 +25,7 @@ import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.replacer.Swam
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.builder.BiomeSource;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.compat.vanilla.FastRegistry;
+import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeProvider;
@@ -49,10 +49,10 @@ public class CWGHelper {
         return PUnsafe.getObject(biomeSource, BIOMEGEN_OFFSET);
     }
 
-    public static IBiomeBlockReplacer[][] blockReplacerMapToArray(@NonNull Map<Biome, List<IBiomeBlockReplacer>> replacerMap) {
-        int maxBiomeId = replacerMap.keySet().stream().mapToInt(FastRegistry::getId).max().orElse(0);
+    public static IBiomeBlockReplacer[][] blockReplacerMapToArray(@NonNull FGameRegistry registry, @NonNull Map<Biome, List<IBiomeBlockReplacer>> replacerMap) {
+        int maxBiomeId = replacerMap.keySet().stream().mapToInt(registry::biome2id).max().orElse(0);
         IBiomeBlockReplacer[][] biomeReplacers = new IBiomeBlockReplacer[maxBiomeId + 1][];
-        replacerMap.forEach((biome, list) -> biomeReplacers[FastRegistry.getId(biome)]
+        replacerMap.forEach((biome, list) -> biomeReplacers[registry.biome2id(biome)]
                 = list.stream().filter(r -> !(r instanceof SwampWaterWithLilypadReplacer)).toArray(IBiomeBlockReplacer[]::new));
         return biomeReplacers;
     }

@@ -25,7 +25,9 @@ import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomCubicWor
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomGeneratorSettings;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.builder.BiomeSource;
 import lombok.NonNull;
+import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.fp2.compat.cwg.noise.CWGNoiseProvider;
+import net.daporkchop.fp2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper;
 import net.daporkchop.fp2.compat.vanilla.biome.IBiomeProvider;
 import net.daporkchop.fp2.compat.vanilla.biome.weight.BiomeWeightHelper;
@@ -54,6 +56,8 @@ public class CWGContext {
     public final int size;
     public final int[] biomes;
 
+    protected final FGameRegistry registry;
+
     protected final IBiomeProvider biomeProvider;
     protected final BiomeWeightHelper weightHelper;
     protected final IBiomeBlockReplacer[][] biomeBlockReplacers;
@@ -79,10 +83,11 @@ public class CWGContext {
     protected int cacheBaseX;
     protected int cacheBaseZ;
 
-    public CWGContext(@NonNull World world, int size, int smoothRadius, int tileShift) {
+    public CWGContext(@NonNull FGameRegistry registry, @NonNull World world, int size, int smoothRadius, int tileShift) {
         this.size = notNegative(size, "size");
         this.biomes = new int[this.size * this.size];
 
+        this.registry = registry;
         this.tileShift = tileShift;
 
         CustomGeneratorSettings conf = CustomGeneratorSettings.getFromWorld(world);
@@ -90,7 +95,7 @@ public class CWGContext {
 
         this.biomeProvider = BiomeHelper.from(CWGHelper.getBiomeGen(biomeSource));
         this.weightHelper = new VanillaBiomeWeightHelper(0.0d, 1.0d, 0.0d, 1.0d, smoothRadius);
-        this.biomeBlockReplacers = CWGHelper.blockReplacerMapToArray(CWGHelper.getReplacerMap(biomeSource));
+        this.biomeBlockReplacers = CWGHelper.blockReplacerMapToArray(registry, CWGHelper.getReplacerMap(biomeSource));
 
         this.configuredNoiseGen = CWGNoiseProvider.INSTANCE.forSettings(conf, world.getSeed());
 
@@ -142,6 +147,12 @@ public class CWGContext {
         }
 
         this.biomeProvider.generateBiomesAndWeightedHeightsVariations(this.cacheBaseX, this.cacheBaseZ, this.cacheLevel, this.cacheSize, this.biomes, this.heights, this.variations, this.weightHelper);
+
+        //convert biome IDs to fp2 IDs
+        //TODO: eliminate this
+        for (int i = 0; i < sq(this.cacheSize); i++) {
+            this.biomes[i] = this.registry.biome2id(FastRegistry.getBiome(this.biomes[i]));
+        }
 
         //convert biome heights/variations to CWG forms
         for (int i = 0; i < sq(this.cacheSize); i++) {
