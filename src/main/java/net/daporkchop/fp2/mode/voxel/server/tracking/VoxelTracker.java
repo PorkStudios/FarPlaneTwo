@@ -34,7 +34,6 @@ import java.util.function.Consumer;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 
@@ -45,7 +44,7 @@ public class VoxelTracker extends AbstractTracker<VoxelPos, VoxelTile, TrackingS
     /**
      * The squared distance a player must move from their previous position in order to trigger a tracking update.
      * <p>
-     * The default value of {@code (T_VOXELS / 2)²} is based on the equivalent value of {@code 64} (which is {@code (CHUNK_SIZE / 2)²}) used by vanilla.
+     * The default value of {@code (VT_VOXELS / 2)²} is based on the equivalent value of {@code 64} (which is {@code (CHUNK_SIZE / 2)²}) used by vanilla.
      */
     protected static final double UPDATE_TRIGGER_DISTANCE_SQUARED = sq(VT_VOXELS >> 1);
 
@@ -80,17 +79,18 @@ public class VoxelTracker extends AbstractTracker<VoxelPos, VoxelTile, TrackingS
         final int playerZ = floorI(state.z());
 
         for (int lvl = state.minLevel(); lvl < state.maxLevel(); lvl++) {
-            final int baseX = asrRound(playerX, T_SHIFT + lvl);
-            final int baseY = asrRound(playerY, T_SHIFT + lvl);
-            final int baseZ = asrRound(playerZ, T_SHIFT + lvl);
+            final int baseX = asrRound(playerX, VT_SHIFT + lvl);
+            final int baseY = asrRound(playerY, VT_SHIFT + lvl);
+            final int baseZ = asrRound(playerZ, VT_SHIFT + lvl);
 
-            IntAxisAlignedBB limits = this.coordLimits[lvl];
-            int minX = max(baseX - state.cutoff(), limits.minX());
-            int minY = max(baseY - state.cutoff(), limits.minY());
-            int minZ = max(baseZ - state.cutoff(), limits.minZ());
-            int maxX = min(baseX + state.cutoff(), limits.maxX());
-            int maxY = min(baseY + state.cutoff(), limits.maxY());
-            int maxZ = min(baseZ + state.cutoff(), limits.maxZ());
+            VoxelPos min = this.coordLimits.min(lvl);
+            VoxelPos max = this.coordLimits.max(lvl);
+            int minX = max(baseX - state.cutoff(), min.x());
+            int minY = max(baseY - state.cutoff(), min.y());
+            int minZ = max(baseZ - state.cutoff(), min.z());
+            int maxX = min(baseX + state.cutoff(), max.x());
+            int maxY = min(baseY + state.cutoff(), max.y());
+            int maxZ = min(baseZ + state.cutoff(), max.z());
 
             for (int x = minX; x <= maxX; x++) {
                 for (int y = minY; y <= maxY; y++) {
@@ -112,28 +112,29 @@ public class VoxelTracker extends AbstractTracker<VoxelPos, VoxelTile, TrackingS
         final int newPlayerZ = floorI(newState.z());
 
         for (int lvl = min(oldState.minLevel(), newState.minLevel()); lvl < max(oldState.maxLevel(), newState.maxLevel()); lvl++) {
-            final int oldBaseX = asrRound(oldPlayerX, T_SHIFT + lvl);
-            final int oldBaseY = asrRound(oldPlayerY, T_SHIFT + lvl);
-            final int oldBaseZ = asrRound(oldPlayerZ, T_SHIFT + lvl);
-            final int newBaseX = asrRound(newPlayerX, T_SHIFT + lvl);
-            final int newBaseY = asrRound(newPlayerY, T_SHIFT + lvl);
-            final int newBaseZ = asrRound(newPlayerZ, T_SHIFT + lvl);
+            final int oldBaseX = asrRound(oldPlayerX, VT_SHIFT + lvl);
+            final int oldBaseY = asrRound(oldPlayerY, VT_SHIFT + lvl);
+            final int oldBaseZ = asrRound(oldPlayerZ, VT_SHIFT + lvl);
+            final int newBaseX = asrRound(newPlayerX, VT_SHIFT + lvl);
+            final int newBaseY = asrRound(newPlayerY, VT_SHIFT + lvl);
+            final int newBaseZ = asrRound(newPlayerZ, VT_SHIFT + lvl);
 
             if (oldState.hasLevel(lvl) && newState.hasLevel(lvl) && oldState.cutoff() == newState.cutoff()
                 && oldBaseX == newBaseX && oldBaseY == newBaseY && oldBaseZ == newBaseZ) { //nothing changed, skip this level
                 continue;
             }
 
-            IntAxisAlignedBB limits = this.coordLimits[lvl];
+            VoxelPos min = this.coordLimits.min(lvl);
+            VoxelPos max = this.coordLimits.max(lvl);
 
             //removed positions
             if (!newState.hasLevel(lvl) || oldState.hasLevel(lvl)) {
-                int minX = max(oldBaseX - oldState.cutoff(), limits.minX());
-                int minY = max(oldBaseY - oldState.cutoff(), limits.minY());
-                int minZ = max(oldBaseZ - oldState.cutoff(), limits.minZ());
-                int maxX = min(oldBaseX + oldState.cutoff(), limits.maxX());
-                int maxY = min(oldBaseY + oldState.cutoff(), limits.maxY());
-                int maxZ = min(oldBaseZ + oldState.cutoff(), limits.maxZ());
+                int minX = max(oldBaseX - oldState.cutoff(), min.x());
+                int minY = max(oldBaseY - oldState.cutoff(), min.y());
+                int minZ = max(oldBaseZ - oldState.cutoff(), min.z());
+                int maxX = min(oldBaseX + oldState.cutoff(), max.x());
+                int maxY = min(oldBaseY + oldState.cutoff(), max.y());
+                int maxZ = min(oldBaseZ + oldState.cutoff(), max.z());
 
                 for (int x = minX; x <= maxX; x++) {
                     for (int y = minY; y <= maxY; y++) {
@@ -148,12 +149,12 @@ public class VoxelTracker extends AbstractTracker<VoxelPos, VoxelTile, TrackingS
 
             //added positions
             if (!oldState.hasLevel(lvl) || newState.hasLevel(lvl)) {
-                int minX = max(newBaseX - newState.cutoff(), limits.minX());
-                int minY = max(newBaseY - newState.cutoff(), limits.minY());
-                int minZ = max(newBaseZ - newState.cutoff(), limits.minZ());
-                int maxX = min(newBaseX + newState.cutoff(), limits.maxX());
-                int maxY = min(newBaseY + newState.cutoff(), limits.maxY());
-                int maxZ = min(newBaseZ + newState.cutoff(), limits.maxZ());
+                int minX = max(newBaseX - newState.cutoff(), min.x());
+                int minY = max(newBaseY - newState.cutoff(), min.y());
+                int minZ = max(newBaseZ - newState.cutoff(), min.z());
+                int maxX = min(newBaseX + newState.cutoff(), max.x());
+                int maxY = min(newBaseY + newState.cutoff(), max.y());
+                int maxZ = min(newBaseZ + newState.cutoff(), max.z());
 
                 for (int x = minX; x <= maxX; x++) {
                     for (int y = minY; y <= maxY; y++) {
@@ -171,10 +172,10 @@ public class VoxelTracker extends AbstractTracker<VoxelPos, VoxelTile, TrackingS
     @Override
     protected boolean isVisible(@NonNull TrackingState state, @NonNull VoxelPos pos) {
         return state.hasLevel(pos.level())
-               && this.coordLimits[pos.level()].contains(pos.x(), pos.y(), pos.z())
-               && abs(pos.x() - asrRound(floorI(state.x()), T_SHIFT + pos.level())) <= state.cutoff()
-               && abs(pos.y() - asrRound(floorI(state.y()), T_SHIFT + pos.level())) <= state.cutoff()
-               && abs(pos.z() - asrRound(floorI(state.z()), T_SHIFT + pos.level())) <= state.cutoff();
+               && this.coordLimits.contains(pos)
+               && abs(pos.x() - asrRound(floorI(state.x()), VT_SHIFT + pos.level())) <= state.cutoff()
+               && abs(pos.y() - asrRound(floorI(state.y()), VT_SHIFT + pos.level())) <= state.cutoff()
+               && abs(pos.z() - asrRound(floorI(state.z()), VT_SHIFT + pos.level())) <= state.cutoff();
     }
 
     @Override
@@ -194,6 +195,6 @@ public class VoxelTracker extends AbstractTracker<VoxelPos, VoxelTile, TrackingS
             }
         }
 
-        return new VoxelPosAndComparator(0, asrRound(floorI(state.x()), T_SHIFT), asrRound(floorI(state.y()), T_SHIFT), asrRound(floorI(state.z()), T_SHIFT));
+        return new VoxelPosAndComparator(0, asrRound(floorI(state.x()), VT_SHIFT), asrRound(floorI(state.y()), VT_SHIFT), asrRound(floorI(state.z()), VT_SHIFT));
     }
 }

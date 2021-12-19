@@ -38,8 +38,8 @@ import net.daporkchop.lib.math.interpolation.LinearInterpolation;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
 
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
+import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -66,6 +66,8 @@ public class CWGContext {
 
     protected final int expectedBaseHeight;
 
+    protected final int tileShift;
+
     //current initialization position
     protected int baseX;
     protected int baseZ;
@@ -77,9 +79,11 @@ public class CWGContext {
     protected int cacheBaseX;
     protected int cacheBaseZ;
 
-    public CWGContext(@NonNull World world, int size, int smoothRadius) {
+    public CWGContext(@NonNull World world, int size, int smoothRadius, int tileShift) {
         this.size = notNegative(size, "size");
         this.biomes = new int[this.size * this.size];
+
+        this.tileShift = tileShift;
 
         CustomGeneratorSettings conf = CustomGeneratorSettings.getFromWorld(world);
         BiomeSource biomeSource = new BiomeSource(world, conf.createBiomeBlockReplacerConfig(), CustomCubicWorldType.makeBiomeProvider(world, conf), smoothRadius);
@@ -340,7 +344,7 @@ public class CWGContext {
         int minY = Integer.MIN_VALUE, maxY = Integer.MAX_VALUE;
         if (this.get(x, initialY, z) > 0.0d) { //initial point is solid
             minY = initialY;
-            for (int shift = T_SHIFT; shift < Integer.SIZE; shift++) {
+            for (int shift = this.tileShift; shift < Integer.SIZE; shift++) {
                 if (this.get(x, initialY + (1 << shift), z) <= 0.0d) {
                     maxY = initialY + (1 << shift);
                     break;
@@ -350,7 +354,7 @@ public class CWGContext {
             }
         } else {
             maxY = initialY;
-            for (int shift = T_SHIFT; shift < Integer.SIZE; shift++) {
+            for (int shift = this.tileShift; shift < Integer.SIZE; shift++) {
                 if (this.get(x, initialY - (1 << shift), z) > 0.0d) {
                     minY = initialY - (1 << shift);
                     break;

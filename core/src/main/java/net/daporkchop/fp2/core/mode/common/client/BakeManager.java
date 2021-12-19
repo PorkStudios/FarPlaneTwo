@@ -23,6 +23,7 @@ package net.daporkchop.fp2.core.mode.common.client;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
+import net.daporkchop.fp2.core.mode.api.IFarCoordLimits;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.client.IFarTileCache;
@@ -67,7 +68,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
     protected final IRenderBaker<POS, T, ?> baker;
 
     protected final Scheduler<POS, Void> bakeScheduler;
-    protected final IntAxisAlignedBB[] coordLimits;
+    protected final IFarCoordLimits<POS> coordLimits;
 
     protected final Map<POS, Optional<IBakeOutput>> pendingDataUpdates = new ConcurrentHashMap<>();
     protected final Map<POS, Boolean> pendingRenderableUpdates = new ConcurrentHashMap<>();
@@ -81,7 +82,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
 
         this.index = this.strategy.createIndex();
         this.baker = this.strategy.createBaker();
-        this.coordLimits = renderer.context().world().fp2_IFarWorld_coordLimits();
+        this.coordLimits = this.renderer.mode().tileCoordLimits(renderer.context().world().fp2_IFarWorld_coordLimits());
 
         this.bakeScheduler = new NoFutureScheduler<>(this, this.renderer.context().world().fp2_IFarWorld_workerManager().createChildWorkerGroup()
                 .threads(fp2().globalConfig().performance().bakeThreads())
@@ -191,10 +192,10 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
 
     protected void checkSelfRenderable(@NonNull POS pos) {
         this.updateRenderable(pos,
-                pos.containedBy(this.coordLimits)
+                this.coordLimits.contains(pos)
                 && this.tileCache.getTileCached(pos) != null
                 && (pos.level() == 0 || PorkUtil.<Stream<POS>>uncheckedCast(pos.down().allPositionsInBB(1, 3))
-                        .anyMatch(p -> p.containedBy(this.coordLimits) && this.tileCache.getTileCached(p) == null)));
+                        .anyMatch(p -> this.coordLimits.contains(p) && this.tileCache.getTileCached(p) == null)));
     }
 
     protected void updateData(@NonNull POS pos, @NonNull Optional<IBakeOutput> optionalBakeOutput) {

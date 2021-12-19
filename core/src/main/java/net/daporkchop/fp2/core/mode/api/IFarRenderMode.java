@@ -23,6 +23,7 @@ package net.daporkchop.fp2.core.mode.api;
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.util.OrderedRegistry;
+import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.event.AbstractRegisterEvent;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
@@ -126,6 +127,14 @@ public interface IFarRenderMode<POS extends IFarPos, T extends IFarTile> {
      * @return the {@link IFarDirectPosAccess} used by this render mode
      */
     IFarDirectPosAccess<POS> directPosAccess();
+
+    /**
+     * Creates a {@link IFarCoordLimits} for the given block coordinate limits as defined by the given {@link IntAxisAlignedBB}.
+     *
+     * @param blockCoordLimits the block coordinate limits
+     * @return the {@link IFarCoordLimits}
+     */
+    IFarCoordLimits<POS> tileCoordLimits(@NonNull IntAxisAlignedBB blockCoordLimits);
 
     /**
      * Reads a tile position from the given {@link ByteBuf}.

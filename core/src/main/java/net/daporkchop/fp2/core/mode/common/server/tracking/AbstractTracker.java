@@ -23,6 +23,7 @@ package net.daporkchop.fp2.core.mode.common.server.tracking;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
+import net.daporkchop.fp2.core.mode.api.IFarCoordLimits;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
@@ -57,7 +58,7 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
     protected final IFarRenderMode<POS, T> mode;
 
     protected final IFarServerContext<POS, T> context;
-    protected final IntAxisAlignedBB[] coordLimits;
+    protected final IFarCoordLimits<POS> coordLimits;
 
     protected final RecyclingArrayDeque<POS> queuedPositions = new RecyclingArrayDeque<>();
     protected final SimpleSet<POS> loadedPositions;
@@ -79,7 +80,7 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
         this.mode = manager.tileProvider().mode();
 
         this.context = context;
-        this.coordLimits = ((IFarWorldServer) manager.tileProvider().world()).fp2_IFarWorld_coordLimits();
+        this.coordLimits = manager.tileProvider().coordLimits();
 
         this.loadedPositions = this.mode.directPosAccess().newPositionSet();
     }

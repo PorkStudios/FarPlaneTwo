@@ -39,7 +39,6 @@ import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.mode.heightmap.HeightmapConstants.*;
 import static net.daporkchop.fp2.mode.heightmap.HeightmapTile.*;
-import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * Shared code for baking heightmap geometry.
@@ -49,7 +48,7 @@ import static net.daporkchop.fp2.util.Constants.*;
 @RequiredArgsConstructor
 public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile, IndexedBakeOutput<HeightmapGlobalAttributes, HeightmapLocalAttributes>> {
     protected static int vertexMapIndex(int x, int z, int layer) {
-        return (x * T_VERTS + z) * MAX_LAYERS + layer;
+        return (x * HT_VERTS + z) * MAX_LAYERS + layer;
     }
 
     @NonNull
@@ -105,7 +104,7 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
         final HeightmapData data = new HeightmapData();
         final HeightmapLocalAttributes attributes = new HeightmapLocalAttributes();
 
-        final int[] map = new int[T_VERTS * T_VERTS * MAX_LAYERS];
+        final int[] map = new int[HT_VERTS * HT_VERTS * MAX_LAYERS];
         Arrays.fill(map, -1);
 
         //write vertices and build index
@@ -125,8 +124,8 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
                             continue;
                         }
 
-                        int x = dx + (((i >> 1) & 1) << T_SHIFT);
-                        int z = dz + ((i & 1) << T_SHIFT);
+                        int x = dx + (((i >> 1) & 1) << HT_SHIFT);
+                        int z = dz + ((i & 1) << HT_SHIFT);
 
                         map[vertexMapIndex(x, z, layer)] = this.writeVertex(blockX, blockZ, level, src, x, z, layer, output.verts(), data, attributes);
                     }
@@ -134,11 +133,11 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
             }
         }
 
-        final BitSet rendered = new BitSet(T_VERTS * T_VERTS * MAX_LAYERS);
+        final BitSet rendered = new BitSet(HT_VERTS * HT_VERTS * MAX_LAYERS);
 
         //write indices
-        for (int x = 0; x < T_VOXELS; x++) {
-            for (int z = 0; z < T_VOXELS; z++) {
+        for (int x = 0; x < HT_VOXELS; x++) {
+            for (int z = 0; z < HT_VOXELS; z++) {
                 for (int layerFlags = srcs[0]._getLayerFlags(x, z), layer = 0; layer < MAX_LAYERS; layer++) {
                     if ((layerFlags & layerFlag(layer)) == 0) { //layer is unset
                         continue;
@@ -160,26 +159,26 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
         }
 
         //re-check behind each vertex to see if we need to render the back-face of a layer transition
-        for (int x = 1; x < T_VERTS; x++) {
-            for (int z = 1; z < T_VERTS; z++) {
-                HeightmapTile src = srcs[((x >> T_SHIFT) << 1) | (z >> T_SHIFT)];
+        for (int x = 1; x < HT_VERTS; x++) {
+            for (int z = 1; z < HT_VERTS; z++) {
+                HeightmapTile src = srcs[((x >> HT_SHIFT) << 1) | (z >> HT_SHIFT)];
                 if (src == null) {
                     continue;
                 }
 
-                for (int layerFlags = src._getLayerFlags(x & T_MASK, z & T_MASK), layer = 0; layer < MAX_LAYERS; layer++) {
+                for (int layerFlags = src._getLayerFlags(x & HT_MASK, z & HT_MASK), layer = 0; layer < MAX_LAYERS; layer++) {
                     if ((layerFlags & layerFlag(layer)) == 0) {  //layer is unset
                         continue;
                     }
 
-                    src._getLayerUnchecked(x & T_MASK, z & T_MASK, layer, data);
+                    src._getLayerUnchecked(x & HT_MASK, z & HT_MASK, layer, data);
                     int provoking = map[vertexMapIndex(x, z, layer)];
 
                     for (int dx = -1; dx <= 1; dx += 2) {
                         for (int dz = -1; dz <= 1; dz += 2) {
                             int oppositeCorner, c0, c1;
                             if ((dx | dz) >= 0 //at least one offset must be negative - the +,+ quadrant is always handled properly by the first pass
-                                || x + dx == T_VERTS || z + dz == T_VERTS //avoid out of bounds (will never happen in negative direction)
+                                || x + dx == HT_VERTS || z + dz == HT_VERTS //avoid out of bounds (will never happen in negative direction)
                                 || rendered.get(vertexMapIndex(x + dx, z + dz, layer)) //face behind was rendered correctly
                                 || ((c0 = map[vertexMapIndex(x, z + dz, layer)]) < 0 && (c0 = map[vertexMapIndex(x, z + dz, data.secondaryConnection)]) < 0)
                                 || ((c1 = map[vertexMapIndex(x + dx, z, layer)]) < 0 && (c1 = map[vertexMapIndex(x + dx, z, data.secondaryConnection)]) < 0)
@@ -196,13 +195,13 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
     }
 
     private int writeVertex(int baseX, int baseZ, int level, HeightmapTile tile, int x, int z, int layer, DrawLocalWriter<HeightmapLocalAttributes> out, HeightmapData data, HeightmapLocalAttributes attributes) {
-        baseX += (x & T_VOXELS) << level;
-        baseZ += (z & T_VOXELS) << level;
+        baseX += (x & HT_VOXELS) << level;
+        baseZ += (z & HT_VOXELS) << level;
 
-        tile._getLayerUnchecked(x & T_MASK, z & T_MASK, layer, data);
+        tile._getLayerUnchecked(x & HT_MASK, z & HT_MASK, layer, data);
 
-        final int blockX = baseX + ((x & T_MASK) << level);
-        final int blockZ = baseZ + ((z & T_MASK) << level);
+        final int blockX = baseX + ((x & HT_MASK) << level);
+        final int blockZ = baseZ + ((z & HT_MASK) << level);
 
         attributes.a_state = this.textureUVs.state2index(data.state);
 

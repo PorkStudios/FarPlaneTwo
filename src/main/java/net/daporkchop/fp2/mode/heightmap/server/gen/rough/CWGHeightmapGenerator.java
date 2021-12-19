@@ -23,7 +23,6 @@ package net.daporkchop.fp2.mode.heightmap.server.gen.rough;
 import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.IBiomeBlockReplacer;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.world.BlockWorldConstants;
-import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.compat.cwg.CWGContext;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.mode.heightmap.HeightmapData;
@@ -34,11 +33,9 @@ import net.daporkchop.lib.common.reference.cache.Cached;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
 import net.minecraft.world.WorldServer;
-import net.minecraft.world.biome.Biome;
 
-import static net.daporkchop.fp2.mode.heightmap.HeightmapConstants.*;
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
+import static net.daporkchop.fp2.mode.heightmap.HeightmapConstants.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 
 /**
@@ -46,7 +43,7 @@ import static net.daporkchop.lib.common.math.PMath.*;
  */
 public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
     public static final int HMAP_MIN = -1;
-    public static final int HMAP_MAX = T_VOXELS + 1;
+    public static final int HMAP_MAX = HT_VOXELS + 1;
     public static final int HMAP_SIZE = HMAP_MAX - HMAP_MIN;
 
     protected static final int[] SEARCH_AROUND_WATER_OFFSETS = {
@@ -70,7 +67,7 @@ public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
     public CWGHeightmapGenerator(@NonNull IFarWorldServer world) {
         super(world);
 
-        this.ctx = Cached.threadLocal(() -> new CWGContext((WorldServer) world.fp2_IFarWorld_implWorld(), HMAP_SIZE, 2), ReferenceStrength.WEAK);
+        this.ctx = Cached.threadLocal(() -> new CWGContext((WorldServer) world.fp2_IFarWorld_implWorld(), HMAP_SIZE, 2, HT_SHIFT), ReferenceStrength.WEAK);
     }
 
     @Override
@@ -92,8 +89,8 @@ public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
         double[] hmap = this.hmapCache.get();
         ctx.getHeights(hmap);
 
-        for (int x = 0; x < T_VOXELS; x++) {
-            for (int z = 0, inIdx = heightsIndex(x, z); z < T_VOXELS; z++, inIdx++) {
+        for (int x = 0; x < HT_VOXELS; x++) {
+            for (int z = 0, inIdx = heightsIndex(x, z); z < HT_VOXELS; z++, inIdx++) {
                 double height = hmap[inIdx];
 
                 boolean addWater = height < this.seaLevel;
@@ -122,7 +119,7 @@ public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
 
         int biome = ctx.getBiome(blockX, blockZ);
 
-        IBlockState state = STATE_AIR;
+        IBlockState state = Blocks.AIR.getDefaultState();
         for (IBiomeBlockReplacer replacer : ctx.replacersForBiome(biome)) {
             state = replacer.getReplacedBlock(state, blockX, heightI, blockZ, dx, dy, dz, density);
         }

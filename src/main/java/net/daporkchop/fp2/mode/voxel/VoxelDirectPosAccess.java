@@ -33,7 +33,7 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
-import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -161,7 +161,7 @@ public class VoxelDirectPosAccess implements IFarDirectPosAccess<VoxelPos> {
         double z = _z(addr);
 
         double d = 1 << _level(addr);
-        double f = d * T_VOXELS;
+        double f = d * VT_VOXELS;
         return volume.intersects(x * f, y * f, z * f, (x + 1.0d) * f + d, (y + 1.0d) * f + d, (z + 1.0d) * f + d);
     }
 
@@ -172,7 +172,7 @@ public class VoxelDirectPosAccess implements IFarDirectPosAccess<VoxelPos> {
         double z = _z(addr);
 
         double d = 1 << _level(addr);
-        double f = d * T_VOXELS;
+        double f = d * VT_VOXELS;
         return volume.contains(x * f, y * f, z * f, (x + 1.0d) * f + d, (y + 1.0d) * f + d, (z + 1.0d) * f + d);
     }
 
@@ -184,7 +184,7 @@ public class VoxelDirectPosAccess implements IFarDirectPosAccess<VoxelPos> {
         double z = _z(addr);
 
         double d = 1 << _level(addr);
-        double f = d * T_VOXELS;
+        double f = d * VT_VOXELS;
         return frustum.intersectsBB(x * f, y * f, z * f, (x + 1.0d) * f + d, (y + 1.0d) * f + d, (z + 1.0d) * f + d);
     }
 

@@ -31,10 +31,6 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 
-import java.util.stream.IntStream;
-
-import static net.daporkchop.fp2.core.util.math.MathUtil.*;
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
@@ -44,7 +40,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 @Mixin(World.class)
 public abstract class MixinWorld implements IFarWorld {
     @Unique
-    protected IntAxisAlignedBB[] fp2_coordLimits;
+    protected IntAxisAlignedBB fp2_coordLimits;
 
     @Unique
     protected boolean isInitialized() {
@@ -57,26 +53,16 @@ public abstract class MixinWorld implements IFarWorld {
     }
 
     @Override
-    public IntAxisAlignedBB[] fp2_IFarWorld_coordLimits() {
-        IntAxisAlignedBB[] coordLimits = this.fp2_coordLimits;
+    public IntAxisAlignedBB fp2_IFarWorld_coordLimits() {
         checkState(this.isInitialized(), "not initialized!");
-        return coordLimits;
+        return this.fp2_coordLimits;
     }
 
     @Override
     public void fp2_IFarWorld_init() {
         checkState(!this.isInitialized(), "already initialized!");
 
-        IntAxisAlignedBB bounds = Constants.getBounds(uncheckedCast(this));
-        this.fp2_coordLimits = IntStream.range(0, Integer.SIZE)
-                .mapToObj(lvl -> new IntAxisAlignedBB(
-                        asrFloor(bounds.minX(), T_SHIFT + lvl),
-                        asrFloor(bounds.minY(), T_SHIFT + lvl),
-                        asrFloor(bounds.minZ(), T_SHIFT + lvl),
-                        asrCeil(bounds.maxX(), T_SHIFT + lvl),
-                        asrCeil(bounds.maxY(), T_SHIFT + lvl),
-                        asrCeil(bounds.maxZ(), T_SHIFT + lvl)))
-                .toArray(IntAxisAlignedBB[]::new);
+        this.fp2_coordLimits = Constants.getBounds(uncheckedCast(this));
     }
 
     @Override

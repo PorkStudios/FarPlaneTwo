@@ -36,9 +36,9 @@ public interface IFarWorld {
     Object fp2_IFarWorld_implWorld();
 
     /**
-     * @return the tile coordinate limits in this world, indexed by detail level
+     * @return the block coordinate limits in this world
      */
-    IntAxisAlignedBB[] fp2_IFarWorld_coordLimits();
+    IntAxisAlignedBB fp2_IFarWorld_coordLimits();
 
     /**
      * Called when the world is being loaded.

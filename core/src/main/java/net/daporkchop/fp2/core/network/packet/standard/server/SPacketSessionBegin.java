@@ -39,29 +39,20 @@ import java.io.IOException;
 @Setter
 public class SPacketSessionBegin implements IPacket {
     @NonNull
-    protected IntAxisAlignedBB[] coordLimits;
+    protected IntAxisAlignedBB coordLimits;
 
     @Override
     public void read(@NonNull DataIn in) throws IOException {
-        int len = in.readIntLE();
-
-        this.coordLimits = new IntAxisAlignedBB[len];
-        for (int i = 0; i < len; i++) {
-            this.coordLimits[i] = new IntAxisAlignedBB(in.readIntLE(), in.readIntLE(), in.readIntLE(), in.readIntLE(), in.readIntLE(), in.readIntLE());
-        }
+        this.coordLimits = new IntAxisAlignedBB(in.readIntLE(), in.readIntLE(), in.readIntLE(), in.readIntLE(), in.readIntLE(), in.readIntLE());
     }
 
     @Override
     public void write(@NonNull DataOut out) throws IOException {
-        out.writeIntLE(this.coordLimits.length);
-
-        for (IntAxisAlignedBB bb : this.coordLimits) {
-            out.writeIntLE(bb.minX());
-            out.writeIntLE(bb.minY());
-            out.writeIntLE(bb.minZ());
-            out.writeIntLE(bb.maxX());
-            out.writeIntLE(bb.maxY());
-            out.writeIntLE(bb.maxZ());
-        }
+        out.writeIntLE(this.coordLimits.minX());
+        out.writeIntLE(this.coordLimits.minY());
+        out.writeIntLE(this.coordLimits.minZ());
+        out.writeIntLE(this.coordLimits.maxX());
+        out.writeIntLE(this.coordLimits.maxY());
+        out.writeIntLE(this.coordLimits.maxZ());
     }
 }

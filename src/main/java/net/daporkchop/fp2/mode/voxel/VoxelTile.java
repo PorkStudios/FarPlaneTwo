@@ -29,7 +29,6 @@ import net.daporkchop.lib.unsafe.PCleaner;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -48,7 +47,7 @@ public class VoxelTile implements IFarTile {
     //3: state1
     //4: state2
 
-    public static final int ENTRY_COUNT = T_VOXELS * T_VOXELS * T_VOXELS;
+    public static final int ENTRY_COUNT = VT_VOXELS * VT_VOXELS * VT_VOXELS;
     protected static final int INDEX_SIZE = ENTRY_COUNT * 2;
 
     public static final int ENTRY_DATA_SIZE = 2 + EDGE_COUNT;
@@ -58,8 +57,8 @@ public class VoxelTile implements IFarTile {
     public static final int TILE_SIZE = INDEX_SIZE + ENTRY_FULL_SIZE_BYTES * ENTRY_COUNT;
 
     static int index(int x, int y, int z) {
-        checkArg(x >= 0 && x < T_VOXELS && y >= 0 && y < T_VOXELS && z >= 0 && z < T_VOXELS, "coordinates out of bounds (x=%d, y=%d, z=%d)", x, y, z);
-        return (x * T_VOXELS + y) * T_VOXELS + z;
+        checkArg(x >= 0 && x < VT_VOXELS && y >= 0 && y < VT_VOXELS && z >= 0 && z < VT_VOXELS, "coordinates out of bounds (x=%d, y=%d, z=%d)", x, y, z);
+        return (x * VT_VOXELS + y) * VT_VOXELS + z;
     }
 
     static void writeData(long base, VoxelData data) {

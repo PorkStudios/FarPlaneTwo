@@ -22,6 +22,7 @@ package net.daporkchop.fp2.core.mode.api.server;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.api.world.FBlockWorld;
+import net.daporkchop.fp2.core.mode.api.IFarCoordLimits;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
@@ -45,6 +46,8 @@ public interface IFarTileProvider<POS extends IFarPos, T extends IFarTile> exten
     CompletableFuture<ITileHandle<POS, T>> requestLoad(@NonNull POS pos);
 
     CompletableFuture<ITileHandle<POS, T>> requestUpdate(@NonNull POS pos);
+
+    IFarCoordLimits<POS> coordLimits();
 
     /**
      * @return the (possibly {@code null}) {@link IFarGeneratorRough} used for rough generation of far terrain

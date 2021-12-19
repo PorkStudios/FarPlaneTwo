@@ -66,9 +66,11 @@ public abstract class VoxelTileProvider extends AbstractFarTileProvider<VoxelPos
         protected void onColumnSaved(ColumnSavedEvent event) {
             if (event.column().isFullyPopulated()) {
                 //schedule entire column to be updated
-                IntAxisAlignedBB coordLimits = this.world.fp2_IFarWorld_coordLimits()[0];
-                VoxelPos[] positions = new VoxelPos[coordLimits.maxY() + 1 - coordLimits.minY()];
-                for (int i = 0, y = coordLimits.minY(); y <= coordLimits.maxY(); i++, y++) {
+                int minY = this.coordLimits.min(0).y();
+                int maxY = this.coordLimits.max(0).y();
+
+                VoxelPos[] positions = new VoxelPos[maxY + 1 - minY];
+                for (int i = 0, y = minY; y <= maxY; i++, y++) {
                     positions[i] = new VoxelPos(0, event.pos().x(), y, event.pos().y());
                 }
                 this.scheduleForUpdate(positions);

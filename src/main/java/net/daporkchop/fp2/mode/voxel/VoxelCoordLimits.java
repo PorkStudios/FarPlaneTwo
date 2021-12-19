@@ -18,23 +18,43 @@
  *
  */
 
-package net.daporkchop.fp2.api.util.math;
+package net.daporkchop.fp2.mode.voxel;
 
-import lombok.Data;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.core.mode.api.IFarCoordLimits;
+
+import static net.daporkchop.fp2.core.util.math.MathUtil.*;
+import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
 
 /**
- * A 3-dimensional axis-aligned bounding box using {@code int} coordinates.
- * <p>
- * All coordinates are inclusive.
- *
  * @author DaPorkchop_
  */
-@Data
-public final class IntAxisAlignedBB {
+@RequiredArgsConstructor
+public class VoxelCoordLimits implements IFarCoordLimits<VoxelPos> {
     protected final int minX;
     protected final int minY;
     protected final int minZ;
     protected final int maxX;
     protected final int maxY;
     protected final int maxZ;
+
+    @Override
+    public boolean contains(@NonNull VoxelPos pos) {
+        int shift = VT_SHIFT + pos.level();
+
+        return pos.x() >= asrFloor(this.minX, shift) && pos.x() <= asrCeil(this.maxX, shift)
+               && pos.y() >= asrFloor(this.minY, shift) && pos.y() <= asrCeil(this.maxY, shift)
+               && pos.z() >= asrFloor(this.minZ, shift) && pos.z() <= asrCeil(this.maxZ, shift);
+    }
+
+    @Override
+    public VoxelPos min(int level) {
+        return new VoxelPos(level, asrFloor(this.minX, VT_SHIFT + level), asrFloor(this.minY, VT_SHIFT + level), asrFloor(this.minZ, VT_SHIFT + level));
+    }
+
+    @Override
+    public VoxelPos max(int level) {
+        return new VoxelPos(level, asrCeil(this.maxX, VT_SHIFT + level), asrCeil(this.maxY, VT_SHIFT + level), asrCeil(this.maxZ, VT_SHIFT + level));
+    }
 }

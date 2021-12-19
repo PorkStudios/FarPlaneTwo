@@ -40,7 +40,6 @@ import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.api.world.BlockWorldConstants.*;
 import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
@@ -52,19 +51,19 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 //TODO: re-implement using something based on https://www.researchgate.net/publication/220792145_Model_Simplification_Using_Vertex-Clustering
 public class VoxelScalerIntersection extends AbstractFarGenerator implements IFarScaler<VoxelPos, VoxelTile> {
     public static final int SRC_MIN = -4;
-    public static final int SRC_MAX = (T_VOXELS << 1) + 4;
+    public static final int SRC_MAX = (VT_VOXELS << 1) + 4;
     //public static final int SRC_MIN = 0;
-    //public static final int SRC_MAX = (T_VOXELS << 1);
+    //public static final int SRC_MAX = (VT_VOXELS << 1);
     public static final int SRC_SIZE = SRC_MAX - SRC_MIN;
 
     public static final int DST_MIN = -1;
-    public static final int DST_MAX = T_VOXELS + 1;
+    public static final int DST_MAX = VT_VOXELS + 1;
     public static final int DST_SIZE = DST_MAX - DST_MIN;
 
     protected static int srcTileIndex(int x, int y, int z) {
-        final int fac = (((SRC_MAX - 1) >> T_SHIFT) + 1) - (SRC_MIN >> T_SHIFT);
-        final int add = -(SRC_MIN >> T_SHIFT) << T_SHIFT;
-        return (((x + add) >> T_SHIFT) * fac + ((y + add) >> T_SHIFT)) * fac + ((z + add) >> T_SHIFT);
+        final int fac = (((SRC_MAX - 1) >> VT_SHIFT) + 1) - (SRC_MIN >> VT_SHIFT);
+        final int add = -(SRC_MIN >> VT_SHIFT) << VT_SHIFT;
+        return (((x + add) >> VT_SHIFT) * fac + ((y + add) >> VT_SHIFT)) * fac + ((z + add) >> VT_SHIFT);
     }
 
     protected static int srcIndex(int x, int y, int z) {
@@ -106,8 +105,8 @@ public class VoxelScalerIntersection extends AbstractFarGenerator implements IFa
         int z = dstPos.z() << 1;
         int level = dstPos.level() - 1;
 
-        final int min = SRC_MIN >> T_SHIFT;
-        final int max = ((SRC_MAX - 1) >> T_SHIFT) + 1;
+        final int min = SRC_MIN >> VT_SHIFT;
+        final int max = ((SRC_MAX - 1) >> VT_SHIFT) + 1;
         VoxelPos[] positions = new VoxelPos[(max - min) * (max - min) * (max - min)];
         for (int i = 0, dx = min; dx < max; dx++) {
             for (int dy = min; dy < max; dy++) {
@@ -134,7 +133,7 @@ public class VoxelScalerIntersection extends AbstractFarGenerator implements IFa
             for (int y = SRC_MIN; y < SRC_MAX; y++) {
                 for (int z = SRC_MIN; z < SRC_MAX; z++) {
                     VoxelTile srcTile = srcTiles[srcTileIndex(x, y, z)];
-                    if (srcTile != null && srcTile.get(x & T_MASK, y & T_MASK, z & T_MASK, data)) {
+                    if (srcTile != null && srcTile.get(x & VT_MASK, y & VT_MASK, z & VT_MASK, data)) {
                         srcVoxels.set(srcIndex(x, y, z));
 
                         int edges = 0;
@@ -223,9 +222,9 @@ public class VoxelScalerIntersection extends AbstractFarGenerator implements IFa
             }
         }
 
-        for (int x = 0; x < T_VOXELS; x++) {
-            for (int y = 0; y < T_VOXELS; y++) {
-                for (int z = 0; z < T_VOXELS; z++) {
+        for (int x = 0; x < VT_VOXELS; x++) {
+            for (int y = 0; y < VT_VOXELS; y++) {
+                for (int z = 0; z < VT_VOXELS; z++) {
                     if (dstVoxels.get(dstIndex(x, y, z))) {
                         qef.reset();
                         for (int edge = 0; edge < QEF_EDGE_COUNT; edge++) {

@@ -31,7 +31,6 @@ import net.daporkchop.lib.unsafe.PUnsafe;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.mode.heightmap.HeightmapConstants.*;
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -62,7 +61,7 @@ public class HeightmapTile implements IFarTile {
      * };
      */
 
-    public static final int ENTRY_COUNT = T_VOXELS * T_VOXELS;
+    public static final int ENTRY_COUNT = HT_VOXELS * HT_VOXELS;
 
     public static final int INDEX_SIZE = 1;
     public static final int LAYER_SIZE = 3;
@@ -80,8 +79,8 @@ public class HeightmapTile implements IFarTile {
     }
 
     static int entryOffset(int x, int z) {
-        checkArg(x >= 0 && x < T_VOXELS && z >= 0 && z < T_VOXELS, "coordinates out of bounds (x=%d, z=%d)", x, z);
-        return (x * T_VOXELS + z) * ENTRY_SIZE_BYTES;
+        checkArg(x >= 0 && x < HT_VOXELS && z >= 0 && z < HT_VOXELS, "coordinates out of bounds (x=%d, z=%d)", x, z);
+        return (x * HT_VOXELS + z) * ENTRY_SIZE_BYTES;
     }
 
     static int layerOffset(int x, int z, int layer) {

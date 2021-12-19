@@ -32,7 +32,6 @@ import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
 import java.util.Arrays;
 
 import static net.daporkchop.fp2.mode.heightmap.HeightmapConstants.*;
-import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * @author DaPorkchop_
@@ -52,12 +51,12 @@ public abstract class AbstractExactHeightmapGenerator extends AbstractFarGenerat
         HeightmapData data = new HeightmapData();
         int[] elevations = new int[MAX_LAYERS];
 
-        for (int x = 0; x < T_VOXELS; x++) {
-            for (int z = 0; z < T_VOXELS; z++) {
+        for (int x = 0; x < HT_VOXELS; x++) {
+            for (int z = 0; z < HT_VOXELS; z++) {
                 Arrays.fill(elevations, Integer.MIN_VALUE);
 
-                int blockX = tileX * T_VOXELS + x;
-                int blockZ = tileZ * T_VOXELS + z;
+                int blockX = tileX * HT_VOXELS + x;
+                int blockZ = tileZ * HT_VOXELS + z;
                 this.computeElevations(world, elevations, blockX, blockZ);
 
                 for (int layer = 0; layer < MAX_LAYERS; layer++) {

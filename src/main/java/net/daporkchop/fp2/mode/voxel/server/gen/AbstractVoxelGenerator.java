@@ -26,15 +26,15 @@ import net.daporkchop.fp2.core.mode.common.server.gen.AbstractFarGenerator;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.reference.cache.Cached;
 
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
+import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
 
 /**
  * @author DaPorkchop_
  */
 public abstract class AbstractVoxelGenerator extends AbstractFarGenerator {
     public static final int CACHE_MIN = 0;
-    public static final int CACHE_MAX = T_VOXELS + 1;
+    public static final int CACHE_MAX = VT_VOXELS + 1;
     public static final int CACHE_SIZE = CACHE_MAX - CACHE_MIN;
 
     protected static final int CACHE_INDEX_ADD_000 = cacheIndex(CACHE_MIN + 0, CACHE_MIN + 0, CACHE_MIN + 0);

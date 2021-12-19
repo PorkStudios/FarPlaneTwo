@@ -27,7 +27,6 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.core.util.math.MathUtil;
 
 import java.util.function.Function;
@@ -35,9 +34,8 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static java.lang.Math.*;
-import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
+import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -82,15 +80,15 @@ public class VoxelPos implements IFarPos {
     }
 
     public int blockX() {
-        return this.x * T_VOXELS << this.level;
+        return this.x * VT_VOXELS << this.level;
     }
 
     public int blockY() {
-        return this.y * T_VOXELS << this.level;
+        return this.y * VT_VOXELS << this.level;
     }
 
     public int blockZ() {
-        return this.z * T_VOXELS << this.level;
+        return this.z * VT_VOXELS << this.level;
     }
 
     public int flooredChunkX() {
@@ -145,16 +143,6 @@ public class VoxelPos implements IFarPos {
                && (this.x << d) >= pos.x && ((this.x + 1) << d) <= pos.x
                && (this.y << d) >= pos.y && ((this.y + 1) << d) <= pos.y
                && (this.z << d) >= pos.z && ((this.z + 1) << d) <= pos.z;
-    }
-
-    @Override
-    public boolean containedBy(@NonNull IntAxisAlignedBB coordLimits) {
-        return coordLimits.contains(this.x, this.y, this.z);
-    }
-
-    @Override
-    public boolean containedBy(@NonNull IntAxisAlignedBB[] coordLimits) {
-        return coordLimits[this.level].contains(this.x, this.y, this.z);
     }
 
     @Override

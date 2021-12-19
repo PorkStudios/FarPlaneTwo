@@ -33,8 +33,8 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
+import static net.daporkchop.fp2.mode.heightmap.HeightmapConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -146,7 +146,7 @@ public class HeightmapDirectPosAccess implements IFarDirectPosAccess<HeightmapPo
         double z = _z(addr);
 
         double d = 1 << _level(addr);
-        double f = d * T_VOXELS;
+        double f = d * HT_VOXELS;
         return volume.intersects(x * f, Integer.MIN_VALUE, z * f, (x + 1.0d) * f + d, Integer.MAX_VALUE, (z + 1.0d) * f + d);
     }
 
@@ -156,7 +156,7 @@ public class HeightmapDirectPosAccess implements IFarDirectPosAccess<HeightmapPo
         double z = _z(addr);
 
         double d = 1 << _level(addr);
-        double f = d * T_VOXELS;
+        double f = d * HT_VOXELS;
         return volume.contains(x * f, Integer.MIN_VALUE, z * f, (x + 1.0d) * f + d, Integer.MAX_VALUE, (z + 1.0d) * f + d);
     }
 
@@ -167,7 +167,7 @@ public class HeightmapDirectPosAccess implements IFarDirectPosAccess<HeightmapPo
         double z = _z(addr);
 
         double d = 1 << _level(addr);
-        double f = d * T_VOXELS;
+        double f = d * HT_VOXELS;
         return frustum.intersectsBB(x * f, Integer.MIN_VALUE, z * f, (x + 1.0d) * f + d, Integer.MAX_VALUE, (z + 1.0d) * f + d);
     }
 

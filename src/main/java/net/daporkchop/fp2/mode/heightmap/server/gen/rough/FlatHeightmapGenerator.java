@@ -40,7 +40,6 @@ import java.util.List;
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.api.world.BlockWorldConstants.*;
 import static net.daporkchop.fp2.mode.heightmap.HeightmapConstants.*;
-import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * Rough heightmap generator for the vanilla superflat world type.
@@ -142,8 +141,8 @@ public class FlatHeightmapGenerator extends AbstractRoughHeightmapGenerator {
             }
 
             //set the data at this layer across all block columns
-            for (int x = 0; x < T_VOXELS; x++) {
-                for (int z = 0; z < T_VOXELS; z++) {
+            for (int x = 0; x < HT_VOXELS; x++) {
+                for (int z = 0; z < HT_VOXELS; z++) {
                     tile.setLayer(x, z, layer, data);
                 }
             }

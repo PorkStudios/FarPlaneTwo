@@ -22,8 +22,6 @@ package net.daporkchop.fp2.mode.voxel;
 
 import lombok.experimental.UtilityClass;
 
-import static net.daporkchop.fp2.util.Constants.*;
-
 /**
  * Constants used throughout the voxel code.
  *
@@ -115,13 +113,13 @@ public class VoxelConstants {
     };
 
     public static final int[] CONNECTION_INTERSECTION_VOLUMES = {
-            T_VOXELS, T_VOXELS, T_VOXELS,
-            T_VOXELS, T_VOXELS, 1,
-            T_VOXELS, 1, T_VOXELS,
-            T_VOXELS, 1, 1,
-            1, T_VOXELS, T_VOXELS,
-            1, T_VOXELS, 1,
-            1, 1, T_VOXELS,
+            VT_VOXELS, VT_VOXELS, VT_VOXELS,
+            VT_VOXELS, VT_VOXELS, 1,
+            VT_VOXELS, 1, VT_VOXELS,
+            VT_VOXELS, 1, 1,
+            1, VT_VOXELS, VT_VOXELS,
+            1, VT_VOXELS, 1,
+            1, 1, VT_VOXELS,
             1, 1, 1
     };
 }

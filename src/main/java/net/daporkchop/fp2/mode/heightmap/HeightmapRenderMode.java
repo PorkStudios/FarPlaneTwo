@@ -24,8 +24,10 @@ import io.github.opencubicchunks.cubicchunks.cubicgen.flat.FlatTerrainProcessor;
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import lombok.SneakyThrows;
+import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.event.AbstractRegisterEvent;
+import net.daporkchop.fp2.core.mode.api.IFarCoordLimits;
 import net.daporkchop.fp2.core.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
@@ -61,6 +63,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import static java.lang.Math.*;
 import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.fp2.util.Constants.*;
 
@@ -120,6 +123,13 @@ public class HeightmapRenderMode extends AbstractFarRenderMode<HeightmapPos, Hei
     @Override
     public IFarDirectPosAccess<HeightmapPos> directPosAccess() {
         return HeightmapDirectPosAccess.INSTANCE;
+    }
+
+    @Override
+    public IFarCoordLimits<HeightmapPos> tileCoordLimits(@NonNull IntAxisAlignedBB blockCoordLimits) {
+        return new HeightmapCoordLimits(
+                blockCoordLimits.minX(), blockCoordLimits.minZ(),
+                blockCoordLimits.maxX(), blockCoordLimits.maxZ());
     }
 
     @Override

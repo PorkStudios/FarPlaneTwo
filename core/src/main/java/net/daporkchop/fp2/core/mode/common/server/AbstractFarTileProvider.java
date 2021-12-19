@@ -26,6 +26,7 @@ import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.Synchronized;
 import net.daporkchop.fp2.api.event.FEventHandler;
+import net.daporkchop.fp2.core.mode.api.IFarCoordLimits;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
@@ -74,6 +75,8 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
 
     protected final IFarStorage<POS, T> storage;
 
+    protected final IFarCoordLimits<POS> coordLimits;
+
     protected final IFarTrackerManager<POS, T> trackerManager;
 
     protected final Scheduler<PriorityTask<POS>, ITileHandle<POS, T>> scheduler; //TODO: make this global rather than per-mode and per-dimension
@@ -86,6 +89,8 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
     public AbstractFarTileProvider(@NonNull IFarWorldServer world, @NonNull IFarRenderMode<POS, T> mode) {
         this.world = world;
         this.mode = mode;
+
+        this.coordLimits = mode.tileCoordLimits(world.fp2_IFarWorld_coordLimits());
 
         this.generatorRough = this.mode().roughGenerator(world);
         this.generatorExact = this.mode().exactGenerator(world);

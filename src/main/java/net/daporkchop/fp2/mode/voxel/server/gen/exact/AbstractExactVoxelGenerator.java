@@ -35,7 +35,6 @@ import static java.lang.Math.*;
 import static net.daporkchop.fp2.api.world.BlockWorldConstants.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -92,9 +91,9 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
 
         data.x = data.y = data.z = POS_ONE;
 
-        for (int dx = 0; dx < T_VOXELS; dx++) {
-            for (int dy = 0; dy < T_VOXELS; dy++) {
-                for (int dz = 0; dz < T_VOXELS; dz++) {
+        for (int dx = 0; dx < VT_VOXELS; dx++) {
+            for (int dy = 0; dy < VT_VOXELS; dy++) {
+                for (int dz = 0; dz < VT_VOXELS; dz++) {
                     int corners = 0;
                     for (int ciCache = cacheIndex(dx, dy, dz), i = 0; i < 8; i++) {
                         corners |= (CACHE[ciCache + CACHE_INDEX_ADD[i]] & 0xFF) << (i << 1);

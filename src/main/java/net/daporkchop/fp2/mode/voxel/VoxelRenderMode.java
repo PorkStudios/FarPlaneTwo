@@ -23,8 +23,10 @@ package net.daporkchop.fp2.mode.voxel;
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import lombok.SneakyThrows;
+import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.event.AbstractRegisterEvent;
+import net.daporkchop.fp2.core.mode.api.IFarCoordLimits;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.core.util.registry.LinkedOrderedRegistry;
 import net.daporkchop.fp2.core.mode.api.IFarDirectPosAccess;
@@ -57,6 +59,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import static java.lang.Math.*;
 import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.fp2.util.Constants.*;
 
@@ -114,6 +117,13 @@ public class VoxelRenderMode extends AbstractFarRenderMode<VoxelPos, VoxelTile> 
     @Override
     public IFarDirectPosAccess<VoxelPos> directPosAccess() {
         return VoxelDirectPosAccess.INSTANCE;
+    }
+
+    @Override
+    public IFarCoordLimits<VoxelPos> tileCoordLimits(@NonNull IntAxisAlignedBB blockCoordLimits) {
+        return new VoxelCoordLimits(
+                blockCoordLimits.minX(), blockCoordLimits.minY(), blockCoordLimits.minZ(),
+                blockCoordLimits.maxX(), blockCoordLimits.maxY(), blockCoordLimits.maxZ());
     }
 
     @Override

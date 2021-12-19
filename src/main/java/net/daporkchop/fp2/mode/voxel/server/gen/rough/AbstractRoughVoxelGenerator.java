@@ -34,7 +34,6 @@ import static java.lang.Math.*;
 import static net.daporkchop.fp2.api.world.BlockWorldConstants.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -78,9 +77,9 @@ public abstract class AbstractRoughVoxelGenerator<PARAM> extends AbstractVoxelGe
         //use bit flags to identify voxel types rather than reading from the density map each time to keep innermost loop head tight and cache-friendly
         byte[] tMap = this.populateTypeMapFromDensityMap(densityMap);
 
-        for (int dx = 0; dx < T_VOXELS; dx++) {
-            for (int dy = 0; dy < T_VOXELS; dy++) {
-                for (int dz = 0; dz < T_VOXELS; dz++) {
+        for (int dx = 0; dx < VT_VOXELS; dx++) {
+            for (int dy = 0; dy < VT_VOXELS; dy++) {
+                for (int dz = 0; dz < VT_VOXELS; dz++) {
                     int diBase = cacheIndex(dx, dy, dz);
 
                     //check for intersection data for each corner

@@ -42,7 +42,6 @@ import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
-import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * Shared code for baking voxel geometry.
@@ -57,7 +56,7 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
         int ddy = dy + ((j >> 1) & 1);
         int ddz = dz + (j & 1);
 
-        return ((ddx * T_VERTS + ddy) * T_VERTS + ddz) * EDGE_COUNT + edge;
+        return ((ddx * VT_VERTS + ddy) * VT_VERTS + ddz) * EDGE_COUNT + edge;
     }
 
     @NonNull
@@ -113,8 +112,8 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
         output.globals().set(new VoxelGlobalAttributes(pos.x(), pos.y(), pos.z(), pos.level()));
 
         ArrayAllocator<int[]> alloc = GlobalAllocators.ALLOC_INT.get();
-        int[] map = alloc.atLeast(cb(T_VERTS) * EDGE_COUNT);
-        Arrays.fill(map, 0, cb(T_VERTS) * EDGE_COUNT, -1);
+        int[] map = alloc.atLeast(cb(VT_VERTS) * EDGE_COUNT);
+        Arrays.fill(map, 0, cb(VT_VERTS) * EDGE_COUNT, -1);
 
         try {
             //step 1: write vertices for all source tiles, and assign indices
@@ -148,7 +147,7 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
                             continue;
                         }
 
-                        indexCounter = this.writeVertex(blockX, blockY, blockZ, level, dx + (((i >> 2) & 1) << T_SHIFT), dy + (((i >> 1) & 1) << T_SHIFT), dz + ((i & 1) << T_SHIFT), data, verts, attributes, map, indexCounter);
+                        indexCounter = this.writeVertex(blockX, blockY, blockZ, level, dx + (((i >> 2) & 1) << VT_SHIFT), dy + (((i >> 1) & 1) << VT_SHIFT), dz + ((i & 1) << VT_SHIFT), data, verts, attributes, map, indexCounter);
                     }
                 }
             }
@@ -156,15 +155,15 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
     }
 
     protected int writeVertex(int baseX, int baseY, int baseZ, int level, int x, int y, int z, VoxelData data, DrawLocalWriter<VoxelLocalAttributes> vertices, VoxelLocalAttributes attributes, int[] map, int indexCounter) {
-        baseX += (x & T_VOXELS) << level;
-        baseY += (y & T_VOXELS) << level;
-        baseZ += (z & T_VOXELS) << level;
+        baseX += (x & VT_VOXELS) << level;
+        baseY += (y & VT_VOXELS) << level;
+        baseZ += (z & VT_VOXELS) << level;
 
-        int baseMapIndex = ((x * T_VERTS + y) * T_VERTS + z) * 3;
+        int baseMapIndex = ((x * VT_VERTS + y) * VT_VERTS + z) * 3;
 
-        final int blockX = baseX + ((x & ~(x & T_VOXELS)) << level);
-        final int blockY = baseY + ((y & ~(y & T_VOXELS)) << level);
-        final int blockZ = baseZ + ((z & ~(z & T_VOXELS)) << level);
+        final int blockX = baseX + ((x & ~(x & VT_VOXELS)) << level);
+        final int blockY = baseY + ((y & ~(y & VT_VOXELS)) << level);
+        final int blockZ = baseZ + ((z & ~(z & VT_VOXELS)) << level);
 
         int blockLight = BlockWorldConstants.unpackBlockLight(data.light);
         int skyLight = BlockWorldConstants.unpackSkyLight(data.light);
@@ -197,9 +196,9 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
 
         for (int j = 0; j < src.count(); j++) {
             int voxelPos = src.get(j, data);
-            int dx = (voxelPos >> (T_SHIFT << 1)) & T_MASK;
-            int dy = (voxelPos >> T_SHIFT) & T_MASK;
-            int dz = voxelPos & T_MASK;
+            int dx = (voxelPos >> (VT_SHIFT << 1)) & VT_MASK;
+            int dy = (voxelPos >> VT_SHIFT) & VT_MASK;
+            int dz = voxelPos & VT_MASK;
 
             int edges = data.edges;
             if ((((edges >> 2) ^ (edges >> 3)) & 1) != 0) { //for some reason y is backwards... let's invert it

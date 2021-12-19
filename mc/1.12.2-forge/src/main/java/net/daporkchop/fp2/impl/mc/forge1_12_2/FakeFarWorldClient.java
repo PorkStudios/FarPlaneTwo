@@ -41,12 +41,12 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 public class FakeFarWorldClient implements IFarWorldClient {
     protected final WorldClient parent;
 
-    protected final IntAxisAlignedBB[] coordLimits;
+    protected final IntAxisAlignedBB coordLimits;
     protected final WorkerManager workerManager;
 
     protected WorldRenderer1_12_2 renderer;
 
-    public FakeFarWorldClient(@NonNull WorldClient parent, @NonNull IntAxisAlignedBB[] coordLimits) {
+    public FakeFarWorldClient(@NonNull WorldClient parent, @NonNull IntAxisAlignedBB coordLimits) {
         this.parent = parent;
 
         this.coordLimits = coordLimits;
@@ -71,7 +71,7 @@ public class FakeFarWorldClient implements IFarWorldClient {
     }
 
     @Override
-    public IntAxisAlignedBB[] fp2_IFarWorld_coordLimits() {
+    public IntAxisAlignedBB fp2_IFarWorld_coordLimits() {
         return this.coordLimits;
     }
 

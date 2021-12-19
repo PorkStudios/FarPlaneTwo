@@ -39,6 +39,7 @@ import net.minecraft.world.WorldServer;
 import java.util.Arrays;
 
 import static java.lang.Math.*;
+import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
 
 /**
  * @author DaPorkchop_
@@ -49,7 +50,7 @@ public class CWGVoxelGenerator extends AbstractRoughVoxelGenerator<CWGContext> i
     public CWGVoxelGenerator(@NonNull IFarWorldServer world) {
         super(world);
 
-        this.ctx = Cached.threadLocal(() -> new CWGContext((WorldServer) world.fp2_IFarWorld_implWorld(), CACHE_SIZE, 2), ReferenceStrength.WEAK);
+        this.ctx = Cached.threadLocal(() -> new CWGContext((WorldServer) world.fp2_IFarWorld_implWorld(), CACHE_SIZE, 2, VT_SHIFT), ReferenceStrength.WEAK);
     }
 
     @Override

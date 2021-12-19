@@ -32,7 +32,6 @@ import java.util.stream.Stream;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.mode.heightmap.HeightmapConstants.*;
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -74,11 +73,11 @@ public class HeightmapScalerMinMax extends AbstractFarGenerator implements IFarS
         for (int subX = 0; subX < 2; subX++) {
             for (int subZ = 0; subZ < 2; subZ++) {
                 HeightmapTile src = srcs[subX * 2 + subZ];
-                int baseX = subX * (T_VOXELS >> 1);
-                int baseZ = subZ * (T_VOXELS >> 1);
+                int baseX = subX * (HT_VOXELS >> 1);
+                int baseZ = subZ * (HT_VOXELS >> 1);
 
-                for (int x = 0; x < T_VOXELS; x += 2) {
-                    for (int z = 0; z < T_VOXELS; z += 2) {
+                for (int x = 0; x < HT_VOXELS; x += 2) {
+                    for (int z = 0; z < HT_VOXELS; z += 2) {
                         int dstX = baseX + (x >> 1);
                         int dstZ = baseZ + (z >> 1);
 

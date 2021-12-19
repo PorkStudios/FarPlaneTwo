@@ -18,23 +18,39 @@
  *
  */
 
-package net.daporkchop.fp2.api.util.math;
+package net.daporkchop.fp2.core.mode.api;
 
-import lombok.Data;
+import lombok.NonNull;
 
 /**
- * A 3-dimensional axis-aligned bounding box using {@code int} coordinates.
- * <p>
- * All coordinates are inclusive.
- *
  * @author DaPorkchop_
  */
-@Data
-public final class IntAxisAlignedBB {
-    protected final int minX;
-    protected final int minY;
-    protected final int minZ;
-    protected final int maxX;
-    protected final int maxY;
-    protected final int maxZ;
+public interface IFarCoordLimits<POS extends IFarPos> {
+    /**
+     * Checks whether or not the given position is within these limits.
+     *
+     * @param pos the position to check
+     * @return whether or not the given position is within these limits
+     */
+    boolean contains(@NonNull POS pos);
+
+    /**
+     * Gets the position at the minimum corner of the limit's AABB at the given level.
+     * <p>
+     * The position's coordinates are inclusive.
+     *
+     * @param level the level
+     * @return the position at the minimum corner of the limit's AABB at the given level
+     */
+    POS min(int level);
+
+    /**
+     * Gets the position at the minimum corner of the limit's AABB at the given level.
+     * <p>
+     * The position's coordinates are inclusive.
+     *
+     * @param level the level
+     * @return the position at the minimum corner of the limit's AABB at the given level
+     */
+    POS max(int level);
 }

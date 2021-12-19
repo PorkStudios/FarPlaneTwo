@@ -28,9 +28,7 @@ import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.lib.common.util.PorkUtil;
-import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
-import net.minecraft.init.Blocks;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.gen.IChunkGenerator;
@@ -58,27 +56,17 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 @UtilityClass
 @Deprecated
 public class Constants {
-    //definitions of tile sizes
-    public static final int T_SHIFT = 4;
-    public static final int T_MASK = (1 << T_SHIFT) - 1;
-    public static final int T_VOXELS = 1 << T_SHIFT;
-    public static final int T_VERTS = T_VOXELS + 1;
-
     public static final int GTH_SHIFT = 2; //generation tile shift (horizontal)
     public static final int GTH_MASK = (1 << GTH_SHIFT) - 1;
-    public static final int GTH_COUNT = T_VOXELS >> GTH_SHIFT;
     public static final int GTH_SIZE = 1 << GTH_SHIFT; //generation tile size
 
     public static final int GTV_SHIFT = GTH_SHIFT + 1; //generation tile shift (vertical)
     public static final int GTV_MASK = (1 << GTV_SHIFT) - 1;
-    public static final int GTV_COUNT = T_VOXELS >> GTV_SHIFT;
     public static final int GTV_SIZE = 1 << GTV_SHIFT;
 
     public static final boolean FP2_TEST = Boolean.parseBoolean(System.getProperty("fp2.test", "false"));
 
     public static Logger FP2_LOG = new SimpleLogger("[fp2 bootstrap]", Level.INFO, true, false, true, false, "[yyyy/MM/dd HH:mm:ss:SSS]", null, new PropertiesUtil("log4j2.simplelog.properties"), System.out);
-
-    public static final IBlockState STATE_AIR = Blocks.AIR.getDefaultState();
 
     public static final boolean CC = !FP2_TEST && Loader.isModLoaded("cubicchunks");
     public static final boolean CWG = !FP2_TEST && Loader.isModLoaded("cubicgen");

@@ -18,23 +18,40 @@
  *
  */
 
-package net.daporkchop.fp2.api.util.math;
+package net.daporkchop.fp2.mode.heightmap;
 
-import lombok.Data;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.core.mode.api.IFarCoordLimits;
+
+import static net.daporkchop.fp2.core.util.math.MathUtil.*;
+import static net.daporkchop.fp2.mode.heightmap.HeightmapConstants.*;
 
 /**
- * A 3-dimensional axis-aligned bounding box using {@code int} coordinates.
- * <p>
- * All coordinates are inclusive.
- *
  * @author DaPorkchop_
  */
-@Data
-public final class IntAxisAlignedBB {
+@RequiredArgsConstructor
+public class HeightmapCoordLimits implements IFarCoordLimits<HeightmapPos> {
     protected final int minX;
-    protected final int minY;
     protected final int minZ;
     protected final int maxX;
-    protected final int maxY;
     protected final int maxZ;
+
+    @Override
+    public boolean contains(@NonNull HeightmapPos pos) {
+        int shift = HT_SHIFT + pos.level();
+
+        return pos.x() >= asrFloor(this.minX, shift) && pos.x() <= asrCeil(this.maxX, shift)
+               && pos.z() >= asrFloor(this.minZ, shift) && pos.z() <= asrCeil(this.maxZ, shift);
+    }
+
+    @Override
+    public HeightmapPos min(int level) {
+        return new HeightmapPos(level, asrFloor(this.minX, HT_SHIFT + level), asrFloor(this.minZ, HT_SHIFT + level));
+    }
+
+    @Override
+    public HeightmapPos max(int level) {
+        return new HeightmapPos(level, asrCeil(this.maxX, HT_SHIFT + level), asrCeil(this.maxZ, HT_SHIFT + level));
+    }
 }
