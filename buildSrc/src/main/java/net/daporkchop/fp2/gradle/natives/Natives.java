@@ -101,11 +101,11 @@ public final class Natives {
                     operatingSystem.getSupportedArchitectures().get().forEach(architecture -> {
                         if (module.getSimd().getOrElse(false)) {
                             architecture.getSimdExtensions().forEach(simdExtension -> {
-                                TaskProvider<Task> moduleRootTask = this.registerBuild(new NativeSpec(extension, module, architecture, operatingSystem, simdExtension), module, linkOutputDir);
+                                TaskProvider<? extends Task> moduleRootTask = this.registerBuild(new NativeSpec(extension, module, architecture, operatingSystem, simdExtension), module, linkOutputDir);
                                 rootTask.configure(task -> task.dependsOn(moduleRootTask));
                             });
                         }
-                        TaskProvider<Task> moduleRootTask = this.registerBuild(new NativeSpec(extension, module, architecture, operatingSystem, null), module, linkOutputDir);
+                        TaskProvider<? extends Task> moduleRootTask = this.registerBuild(new NativeSpec(extension, module, architecture, operatingSystem, null), module, linkOutputDir);
                         rootTask.configure(task -> task.dependsOn(moduleRootTask));
                     });
                 });
@@ -113,7 +113,7 @@ public final class Natives {
         });
     }
 
-    private TaskProvider<Task> registerBuild(NativeSpec spec, NativeModule module, Provider<Directory> linkOutputDir) {
+    private TaskProvider<? extends Task> registerBuild(NativeSpec spec, NativeModule module, Provider<Directory> linkOutputDir) {
         Provider<Directory> downloadOutputDir = this.project.getLayout().getBuildDirectory().dir(spec.librariesOutputDirectory());
         Provider<Directory> compileOutputDir = this.project.getLayout().getBuildDirectory().dir(spec.compileOutputDirectory());
 
@@ -143,8 +143,6 @@ public final class Natives {
             task.getOutput().set(linkOutputDir.map(dir -> dir.file(spec.linkedLibraryFile())));
         });
 
-        return this.project.getTasks().register(spec.rootTaskName(), task -> {
-            task.dependsOn(downloadTask, compileTask, linkTask);
-        });
+        return linkTask;
     }
 }

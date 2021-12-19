@@ -98,11 +98,11 @@ public final class NativeSpec implements Serializable {
     }
 
     private String outputDirectory(String stage) {
-        return Natives.BUILD_DIR_NAME + '/' + stage + '/' + this.moduleName + '/' + this.platformString() + Optional.ofNullable(this.simdExtensionName).map(name -> '/' + name).orElse("");
+        return Natives.BUILD_DIR_NAME + '/' + stage + '/' + this.moduleName + '/' + this.platformString() + Optional.ofNullable(this.simdExtensionName).map(name -> "/simd/" + name).orElse("/none");
     }
 
     public String librariesOutputDirectory() {
-        return this.outputDirectory("libraries") + "/libraries";
+        return this.outputDirectory("libraries");
     }
 
     public String compileOutputDirectory() {
@@ -113,7 +113,7 @@ public final class NativeSpec implements Serializable {
         return this.moduleRoot + '/' + this.platformString() + Optional.ofNullable(this.simdExtensionName).map(name -> '/' + name).orElse("") + '.' + this.operatingSystemSharedLibraryExtension;
     }
 
-    public String rootTaskName() {
+    private String rootTaskName() {
         return "natives_" + this.platformString() + Optional.ofNullable(this.simdExtensionName).map(name -> '_' + name).orElse("") + '_' + this.moduleName;
     }
 
