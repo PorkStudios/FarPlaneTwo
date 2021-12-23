@@ -23,7 +23,6 @@ package net.daporkchop.fp2.util;
 import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorld;
 import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorldServer;
 import io.github.opencubicchunks.cubicchunks.api.worldgen.ICubeGenerator;
-import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomTerrainGenerator;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
@@ -88,16 +87,6 @@ public class Constants {
      */
     public static boolean isCubicWorld(@NonNull World world) {
         return CC && world instanceof ICubicWorld && ((ICubicWorld) world).isCubicWorld();
-    }
-
-    /**
-     * Checks whether or not the given {@link WorldServer} uses Cubic World Gen.
-     *
-     * @param world the {@link WorldServer} to check
-     * @return whether or not the given {@link WorldServer} uses Cubic World Gen
-     */
-    public static boolean isCwgWorld(@NonNull WorldServer world) {
-        return CWG && getTerrainGenerator(world) instanceof CustomTerrainGenerator;
     }
 
     /**

@@ -72,8 +72,10 @@ public abstract class FP2Core implements FP2 {
 
     private final FEventBus eventBus = new EventBus();
 
+    @Setter(AccessLevel.NONE)
     private FP2Config globalConfig;
 
+    @NonNull
     private Logger log;
 
     @SneakyThrows
@@ -85,7 +87,17 @@ public abstract class FP2Core implements FP2 {
 
         //register self as an event listener
         this.eventBus.register(this);
+    }
 
+    /**
+     * Initializes this instance.
+     * <p>
+     * The following properties must be set before calling this method:
+     * <ul>
+     *     <li>{@link #log(Logger)}</li>
+     * </ul>
+     */
+    protected void init() {
         //load global config
         this.globalConfig = FP2Config.load(this.configDir());
     }

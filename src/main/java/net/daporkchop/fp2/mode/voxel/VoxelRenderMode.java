@@ -27,13 +27,6 @@ import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.event.AbstractRegisterEvent;
 import net.daporkchop.fp2.core.mode.api.IFarCoordLimits;
-import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
-import net.daporkchop.fp2.core.mode.voxel.VoxelConstants;
-import net.daporkchop.fp2.core.mode.voxel.VoxelCoordLimits;
-import net.daporkchop.fp2.core.mode.voxel.VoxelDirectPosAccess;
-import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
-import net.daporkchop.fp2.core.mode.voxel.VoxelTile;
-import net.daporkchop.fp2.core.util.registry.LinkedOrderedRegistry;
 import net.daporkchop.fp2.core.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
@@ -44,22 +37,21 @@ import net.daporkchop.fp2.core.mode.api.player.IFarPlayerServer;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
+import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.core.mode.common.AbstractFarRenderMode;
+import net.daporkchop.fp2.core.mode.voxel.VoxelConstants;
+import net.daporkchop.fp2.core.mode.voxel.VoxelCoordLimits;
+import net.daporkchop.fp2.core.mode.voxel.VoxelDirectPosAccess;
+import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
+import net.daporkchop.fp2.core.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.core.mode.voxel.ctx.VoxelClientContext;
 import net.daporkchop.fp2.core.mode.voxel.ctx.VoxelServerContext;
 import net.daporkchop.fp2.core.mode.voxel.server.VoxelTileProvider;
-import net.daporkchop.fp2.core.mode.voxel.server.gen.exact.CCVoxelGenerator;
-import net.daporkchop.fp2.core.mode.voxel.server.gen.exact.VanillaVoxelGenerator;
-import net.daporkchop.fp2.mode.voxel.server.gen.rough.CWGVoxelGenerator;
 import net.daporkchop.fp2.core.mode.voxel.server.scale.VoxelScalerIntersection;
-import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.core.util.math.MathUtil;
 import net.daporkchop.lib.binary.stream.DataIn;
 import net.daporkchop.lib.binary.stream.DataOut;
 import net.minecraft.world.World;
-import net.minecraft.world.WorldServer;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -79,15 +71,12 @@ public class VoxelRenderMode extends AbstractFarRenderMode<VoxelPos, VoxelTile> 
 
     @Override
     protected AbstractRegisterEvent<IFarGeneratorExact.Factory<VoxelPos, VoxelTile>> exactGeneratorFactoryEvent() {
-        return new AbstractRegisterEvent<IFarGeneratorExact.Factory<VoxelPos, VoxelTile>>(new LinkedOrderedRegistry<IFarGeneratorExact.Factory<VoxelPos, VoxelTile>>()
-                .addLast("cubic_chunks", world -> Constants.isCubicWorld((World) world.fp2_IFarWorld_implWorld()) ? new CCVoxelGenerator(world) : null)
-                .addLast("vanilla", VanillaVoxelGenerator::new)) {};
+        return new AbstractRegisterEvent<IFarGeneratorExact.Factory<VoxelPos, VoxelTile>>() {};
     }
 
     @Override
     protected AbstractRegisterEvent<IFarGeneratorRough.Factory<VoxelPos, VoxelTile>> roughGeneratorFactoryEvent() {
-        return new AbstractRegisterEvent<IFarGeneratorRough.Factory<VoxelPos, VoxelTile>>(new LinkedOrderedRegistry<IFarGeneratorRough.Factory<VoxelPos, VoxelTile>>()
-                .addLast("cubic_world_gen", world -> Constants.isCwgWorld((WorldServer) world.fp2_IFarWorld_implWorld()) ? new CWGVoxelGenerator(world) : null)) {};
+        return new AbstractRegisterEvent<IFarGeneratorRough.Factory<VoxelPos, VoxelTile>>() {};
     }
 
     @Override
@@ -112,7 +101,6 @@ public class VoxelRenderMode extends AbstractFarRenderMode<VoxelPos, VoxelTile> 
         return new VoxelServerContext(player, world, config, this);
     }
 
-    @SideOnly(Side.CLIENT)
     @Override
     public IFarClientContext<VoxelPos, VoxelTile> clientContext(@NonNull IFarWorldClient world, @NonNull FP2Config config) {
         return new VoxelClientContext(world, config, this);

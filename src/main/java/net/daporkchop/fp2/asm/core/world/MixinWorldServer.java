@@ -132,11 +132,6 @@ public abstract class MixinWorldServer extends MixinWorld implements IFarWorldSe
     }
 
     @Override
-    public Object fp2_IFarWorldServer_getVanillaGenerator() {
-        return Constants.getTerrainGenerator(uncheckedCast(this));
-    }
-
-    @Override
     public FBlockWorld fp2_IFarWorldServer_fblockWorld() {
         return this.fp2_asyncBlockAccess;
     }

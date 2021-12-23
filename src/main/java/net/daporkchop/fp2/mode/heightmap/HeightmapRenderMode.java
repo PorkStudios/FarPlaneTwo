@@ -20,7 +20,6 @@
 
 package net.daporkchop.fp2.mode.heightmap;
 
-import io.github.opencubicchunks.cubicchunks.cubicgen.flat.FlatTerrainProcessor;
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import lombok.SneakyThrows;
@@ -45,25 +44,14 @@ import net.daporkchop.fp2.core.mode.heightmap.HeightmapCoordLimits;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapDirectPosAccess;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapTile;
-import net.daporkchop.fp2.core.util.math.MathUtil;
-import net.daporkchop.fp2.core.util.registry.LinkedOrderedRegistry;
 import net.daporkchop.fp2.core.mode.heightmap.ctx.HeightmapClientContext;
 import net.daporkchop.fp2.core.mode.heightmap.ctx.HeightmapServerContext;
 import net.daporkchop.fp2.core.mode.heightmap.server.HeightmapTileProvider;
-import net.daporkchop.fp2.core.mode.heightmap.server.gen.exact.CCHeightmapGenerator;
-import net.daporkchop.fp2.core.mode.heightmap.server.gen.exact.VanillaHeightmapGenerator;
-import net.daporkchop.fp2.mode.heightmap.server.gen.rough.CWGFlatHeightmapGenerator;
-import net.daporkchop.fp2.mode.heightmap.server.gen.rough.CWGHeightmapGenerator;
-import net.daporkchop.fp2.mode.heightmap.server.gen.rough.FlatHeightmapGenerator;
 import net.daporkchop.fp2.core.mode.heightmap.server.scale.HeightmapScalerMinMax;
-import net.daporkchop.fp2.util.Constants;
+import net.daporkchop.fp2.core.util.math.MathUtil;
 import net.daporkchop.lib.binary.stream.DataIn;
 import net.daporkchop.lib.binary.stream.DataOut;
 import net.minecraft.world.World;
-import net.minecraft.world.WorldServer;
-import net.minecraft.world.gen.ChunkGeneratorFlat;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -83,17 +71,12 @@ public class HeightmapRenderMode extends AbstractFarRenderMode<HeightmapPos, Hei
 
     @Override
     protected AbstractRegisterEvent<IFarGeneratorExact.Factory<HeightmapPos, HeightmapTile>> exactGeneratorFactoryEvent() {
-        return new AbstractRegisterEvent<IFarGeneratorExact.Factory<HeightmapPos, HeightmapTile>>(new LinkedOrderedRegistry<IFarGeneratorExact.Factory<HeightmapPos, HeightmapTile>>()
-                .addLast("cubic_chunks", world -> Constants.isCubicWorld((World) world.fp2_IFarWorld_implWorld()) ? new CCHeightmapGenerator(world) : null)
-                .addLast("vanilla", VanillaHeightmapGenerator::new)) {};
+        return new AbstractRegisterEvent<IFarGeneratorExact.Factory<HeightmapPos, HeightmapTile>>() {};
     }
 
     @Override
     protected AbstractRegisterEvent<IFarGeneratorRough.Factory<HeightmapPos, HeightmapTile>> roughGeneratorFactoryEvent() {
-        return new AbstractRegisterEvent<IFarGeneratorRough.Factory<HeightmapPos, HeightmapTile>>(new LinkedOrderedRegistry<IFarGeneratorRough.Factory<HeightmapPos, HeightmapTile>>()
-                .addLast("superflat", world -> Constants.getTerrainGenerator((WorldServer) world.fp2_IFarWorld_implWorld()) instanceof ChunkGeneratorFlat ? new FlatHeightmapGenerator(world) : null)
-                .addLast("flatcubic", world -> CWG && Constants.getTerrainGenerator((WorldServer) world.fp2_IFarWorld_implWorld()) instanceof FlatTerrainProcessor ? new CWGFlatHeightmapGenerator(world) : null)
-                .addLast("cubic_world_gen", world -> Constants.isCwgWorld((WorldServer) world.fp2_IFarWorld_implWorld()) ? new CWGHeightmapGenerator(world) : null)) {};
+        return new AbstractRegisterEvent<IFarGeneratorRough.Factory<HeightmapPos, HeightmapTile>>() {};
     }
 
     @Override
@@ -118,7 +101,6 @@ public class HeightmapRenderMode extends AbstractFarRenderMode<HeightmapPos, Hei
         return new HeightmapServerContext(player, world, config, this);
     }
 
-    @SideOnly(Side.CLIENT)
     @Override
     public IFarClientContext<HeightmapPos, HeightmapTile> clientContext(@NonNull IFarWorldClient world, @NonNull FP2Config config) {
         return new HeightmapClientContext(world, config, this);

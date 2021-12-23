@@ -106,6 +106,8 @@ public class FP2 extends FP2Core implements ResourceProvider {
 
     @Mod.EventHandler
     public void init(FMLInitializationEvent event) {
+        this.init();
+
         this.server.init();
 
         if (this.client != null) {

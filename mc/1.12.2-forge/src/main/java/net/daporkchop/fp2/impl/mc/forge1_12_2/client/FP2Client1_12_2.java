@@ -84,10 +84,6 @@ public class FP2Client1_12_2 extends FP2Client {
     public void preInit() {
         this.chat(new ChatAsPorkLibLogger(this.mc));
 
-        if (FP2_DEBUG) {
-            this.updateDebugColorMacros(this.fp2().globalConfig());
-        }
-
         if (!GLContext.getCapabilities().OpenGL45) { //require at least OpenGL 4.5
             this.fp2().unsupported("Your system does not support OpenGL 4.5!\nRequired by FarPlaneTwo.");
         }
@@ -109,6 +105,9 @@ public class FP2Client1_12_2 extends FP2Client {
     }
 
     public void init() {
+        if (FP2_DEBUG) {
+            this.updateDebugColorMacros(this.fp2().globalConfig());
+        }
     }
 
     public void postInit() {

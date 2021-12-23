@@ -378,14 +378,14 @@ public class EventBus implements FEventBus {
         }
 
         public synchronized void cleanAndRemove(@NonNull Object referenceOrListener) {
-            Handler[] nextHandlers = this.handlers.clone();
+            Handler[] nextHandlers = new Handler[this.handlers.length];
             int i = 0;
             for (Handler handler : this.handlers) {
                 if (!handler.shouldRemove(referenceOrListener)) {
                     nextHandlers[i++] = handler;
                 }
             }
-            this.setHandlers(nextHandlers);
+            this.setHandlers(Arrays.copyOf(nextHandlers, i));
         }
 
         private void setHandlers(@NonNull Handler[] handlers) {

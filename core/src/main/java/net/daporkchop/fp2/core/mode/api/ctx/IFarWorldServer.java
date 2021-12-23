@@ -61,11 +61,6 @@ public interface IFarWorldServer extends IFarWorld {
     TerrainGeneratorInfo fp2_IFarWorldServer_terrainGeneratorInfo();
 
     /**
-     * @return the vanilla terrain generator instance
-     */
-    Object fp2_IFarWorldServer_getVanillaGenerator();
-
-    /**
      * @return a {@link FBlockWorld} for accessing this world's data
      */
     FBlockWorld fp2_IFarWorldServer_fblockWorld();
