@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.mode.heightmap.server.gen.rough;
+package net.daporkchop.fp2.compat.cwg.generator.heightmap;
 
 import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.IBiomeBlockReplacer;
 import lombok.NonNull;

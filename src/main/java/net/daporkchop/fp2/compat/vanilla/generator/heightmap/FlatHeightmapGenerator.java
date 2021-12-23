@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.mode.heightmap.server.gen.rough;
+package net.daporkchop.fp2.compat.vanilla.generator.heightmap;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;

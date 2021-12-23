@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.mode.voxel.server.gen.rough;
+package net.daporkchop.fp2.compat.cwg.generator.voxel;
 
 import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.IBiomeBlockReplacer;
 import lombok.NonNull;

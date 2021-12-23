@@ -33,7 +33,7 @@ import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.core.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.core.mode.voxel.server.VoxelTileProvider;
 import net.daporkchop.fp2.core.mode.voxel.server.gen.exact.VanillaVoxelGenerator;
-import net.daporkchop.fp2.mode.heightmap.server.gen.rough.FlatHeightmapGenerator;
+import net.daporkchop.fp2.compat.vanilla.generator.heightmap.FlatHeightmapGenerator;
 import net.minecraft.world.gen.ChunkGeneratorFlat;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;

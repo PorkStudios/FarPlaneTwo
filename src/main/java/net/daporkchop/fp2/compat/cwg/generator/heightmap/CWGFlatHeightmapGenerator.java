@@ -18,10 +18,11 @@
  *
  */
 
-package net.daporkchop.fp2.mode.heightmap.server.gen.rough;
+package net.daporkchop.fp2.compat.cwg.generator.heightmap;
 
 import io.github.opencubicchunks.cubicchunks.cubicgen.preset.FlatGeneratorSettings;
 import lombok.NonNull;
+import net.daporkchop.fp2.compat.vanilla.generator.heightmap.FlatHeightmapGenerator;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Biomes;
