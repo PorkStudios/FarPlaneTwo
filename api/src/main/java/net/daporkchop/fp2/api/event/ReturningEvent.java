@@ -20,33 +20,21 @@
 
 package net.daporkchop.fp2.api.event;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.util.Optional;
 
 /**
- * Indicates that the annotated instance method can accept events fired on an {@link FEventBus}.
+ * A special type of event whose handlers may have a return value.
  * <p>
- * An event handler method must accept a single parameter of the type of event which should be listened for. Its return value must always be {@code void} unless the event type is
- * a {@link ReturningEvent}, in which case it may be any of the types documented in {@link ReturningEvent}.
+ * Unlike handlers for other event types, which must always return {@code void}, handlers for a {@link ReturningEvent} of type {@link T} may have one of three return value types:
+ * <ul>
+ *     <li>if {@link Optional<T>}, the {@link Optional}'s value will be added to the event output if present, and discarded otherwise</li>
+ *     <li>if {@link T}, the behavior will be conceptually the same as if the value were first wrapped into an {@link Optional} as if by {@link Optional#of(Object)}
+ *     and subsequently handled according to the first rule</li>
+ *     <li>if {@code void}, the handler has no return value, and so the "return value" will be discarded in any case</li>
+ * </ul>
+ * Monitor handlers must always have a return type of {@code void} in any case.
  *
  * @author DaPorkchop_
  */
-@Target(ElementType.METHOD)
-@Retention(RetentionPolicy.RUNTIME)
-public @interface FEventHandler {
-    /**
-     * Gets the event handler's name. The name must be globally unique; if two event handlers share the same name, the behavior is undefined.
-     * <p>
-     * If the name is left as an empty string (default), a name will be computed from the method's erased signature
-     *
-     * @return the event handler's name
-     */
-    String name() default "";
-
-    /**
-     * @return the {@link Constrain} which restricts the order in which this event handler may be executed
-     */
-    Constrain constrain() default @Constrain;
+public interface ReturningEvent<T> {
 }

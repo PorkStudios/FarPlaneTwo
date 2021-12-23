@@ -28,12 +28,15 @@ import com.google.common.collect.ImmutableSet;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import net.daporkchop.fp2.api.event.Constraint;
+import net.daporkchop.fp2.api.event.Constrain;
 import net.daporkchop.fp2.api.event.FEventBus;
 import net.daporkchop.fp2.api.event.FEventHandler;
+import net.daporkchop.fp2.api.event.ReturningEvent;
 import net.daporkchop.lib.common.function.throwing.EFunction;
+import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.reference.Reference;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
+import net.daporkchop.lib.common.util.PorkUtil;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -123,18 +126,41 @@ public class EventBus implements FEventBus {
                             .flatMap(Stream::of)
                             .filter(method -> method.isAnnotationPresent(FEventHandler.class))
                             .map((EFunction<Method, HandlerMethod>) method -> {
-                                checkArg(method.getReturnType() == void.class, "method annotated as %s must return void: %s", FEventHandler.class.getTypeName(), method);
-                                checkArg(method.getParameterCount() == 1, "method annotated as %s must have exactly one parameter: %s", FEventHandler.class.getTypeName(), method);
-
-                                FEventHandler handler = method.getAnnotation(FEventHandler.class);
+                                String methodAsString = toStringGeneric(method);
 
                                 method.setAccessible(true);
-                                return new HandlerMethod(
-                                        handler.name().isEmpty() ? org.objectweb.asm.Type.getMethodDescriptor(method).intern() : handler.name(),
-                                        handler.constrain(),
-                                        method.getGenericParameterTypes()[0],
-                                        MethodHandles.publicLookup().unreflect(method),
-                                        (method.getModifiers() & Modifier.STATIC) == 0);
+                                FEventHandler handler = method.getAnnotation(FEventHandler.class);
+                                checkArg(method.getParameterCount() == 1, "event handler must have exactly one parameter: %s", methodAsString);
+
+                                String name = handler.name().isEmpty() ? org.objectweb.asm.Type.getMethodDescriptor(method).intern() : handler.name();
+                                Constrain constrain = handler.constrain();
+                                Type parameterType = method.getGenericParameterTypes()[0];
+                                MethodHandle handle = MethodHandles.publicLookup().unreflect(method);
+                                ReturnHandling returnHandling = ReturnHandling.VOID;
+                                boolean instance = (method.getModifiers() & Modifier.STATIC) == 0;
+
+                                boolean returning = ReturningEvent.class.isAssignableFrom(method.getParameterTypes()[0]);
+                                if (returning) {
+                                    Type t = parameterType instanceof ParameterizedType
+                                            ? ((ParameterizedType) parameterType).getActualTypeArguments()[0]
+                                            : Object.class;
+
+                                    if (method.getReturnType() == void.class) { //void
+                                        //no-op
+                                    } else if (constrain.monitor()) { //monitors may not have a return value
+                                        throw new IllegalStateException("monitor handler may not have a return value: " + methodAsString);
+                                    } else if (t.equals(method.getGenericReturnType())) { //T
+                                        returnHandling = ReturnHandling.T;
+                                    } else if (new ParameterizedTypeImpl(new Type[]{ t }, Optional.class, null).equals(method.getGenericReturnType())) { //Optional<T>
+                                        returnHandling = ReturnHandling.OPTIONAL_T;
+                                    } else {
+                                        throw new IllegalArgumentException(PStrings.fastFormat("event handler must return void, %2$s or Optional<%2$s>: %1$s", methodAsString, parameterType));
+                                    }
+                                } else {
+                                    checkArg(method.getReturnType() == void.class, "event handler must return void: %s", methodAsString);
+                                }
+
+                                return new HandlerMethod(name, constrain, parameterType, handle, returnHandling, instance);
                             })
                             .collect(Collectors.collectingAndThen(Collectors.toList(), ImmutableList::copyOf));
                 }
@@ -158,43 +184,7 @@ public class EventBus implements FEventBus {
             Type rawType = resolveType(parameterizedType.getRawType(), parameters);
             Type ownerType = resolveType(parameterizedType.getOwnerType(), parameters);
 
-            return new ParameterizedType() {
-                @Override
-                public Type[] getActualTypeArguments() {
-                    return actualTypeArguments;
-                }
-
-                @Override
-                public Type getRawType() {
-                    return rawType;
-                }
-
-                @Override
-                public Type getOwnerType() {
-                    return ownerType;
-                }
-
-                @Override
-                public int hashCode() {
-                    return Arrays.hashCode(actualTypeArguments)
-                           ^ Objects.hashCode(ownerType)
-                           ^ Objects.hashCode(rawType);
-                }
-
-                @Override
-                public boolean equals(Object obj) {
-                    if (obj == this) {
-                        return true;
-                    } else if (obj instanceof ParameterizedType) {
-                        ParameterizedType other = (ParameterizedType) obj;
-                        return Objects.equals(ownerType, other.getOwnerType())
-                               && Objects.equals(rawType, other.getRawType())
-                               && Arrays.equals(actualTypeArguments, other.getActualTypeArguments());
-                    } else {
-                        return false;
-                    }
-                }
-            };
+            return new ParameterizedTypeImpl(actualTypeArguments, rawType, ownerType);
         } else if (type instanceof TypeVariable) {
             TypeVariable typeVariable = (TypeVariable) type;
             Type value = parameters.get(typeVariable.getName());
@@ -205,37 +195,15 @@ public class EventBus implements FEventBus {
             Type[] upperBounds = Stream.of(wildcardType.getUpperBounds()).map(argument -> resolveType(argument, parameters)).toArray(Type[]::new);
             Type[] lowerBounds = Stream.of(wildcardType.getLowerBounds()).map(argument -> resolveType(argument, parameters)).toArray(Type[]::new);
 
-            return new WildcardType() {
-                @Override
-                public Type[] getUpperBounds() {
-                    return upperBounds;
-                }
-
-                @Override
-                public Type[] getLowerBounds() {
-                    return lowerBounds;
-                }
-
-                @Override
-                public int hashCode() {
-                    return Arrays.hashCode(upperBounds) ^ Arrays.hashCode(lowerBounds);
-                }
-
-                @Override
-                public boolean equals(Object obj) {
-                    if (obj == this) {
-                        return true;
-                    } else if (obj instanceof WildcardType) {
-                        WildcardType other = (WildcardType) obj;
-                        return Arrays.equals(upperBounds, other.getUpperBounds()) && Arrays.equals(lowerBounds, other.getLowerBounds());
-                    } else {
-                        return false;
-                    }
-                }
-            };
+            return new WildcardTypeImpl(upperBounds, lowerBounds);
         } else {
             throw new IllegalArgumentException("don't know how to handle type: " + type);
         }
+    }
+
+    protected static String toStringGeneric(@NonNull Method method) {
+        return Stream.of(method.getGenericParameterTypes()).map(Objects::toString).collect(Collectors.joining(", ",
+                method.getGenericReturnType() + " " + method.getDeclaringClass().getTypeName() + '#' + method.getName() + '(', ")"));
     }
 
     protected final Map<Type, Set<Class<?>>> signatureToEventClasses = new HashMap<>();
@@ -301,13 +269,45 @@ public class EventBus implements FEventBus {
 
     @Override
     public <T> T fire(@NonNull T event) {
-        HandlerList handlers = this.eventClassesToHandlers.get(event.getClass());
-        if (handlers == null) {
-            handlers = this.createListForUnknownEventType(event);
+        HandlerList list = this.eventClassesToHandlers.get(event.getClass());
+        if (list == null) {
+            list = this.createListForUnknownEventType(event);
         }
 
-        handlers.fire(event);
+        for (Handler handler : list.handlers) {
+            handler.fire(event);
+        }
         return event;
+    }
+
+    @Override
+    public <R> Optional<R> fireAndGetFirst(@NonNull ReturningEvent<R> event) {
+        HandlerList list = this.eventClassesToHandlers.get(event.getClass());
+        if (list == null) {
+            list = this.createListForUnknownEventType(event);
+        }
+
+        Optional<R> out = Optional.empty();
+        for (Handler handler : list.handlers) {
+            if (!out.isPresent() || handler.monitor) {
+                out = uncheckedCast(handler.fire(event));
+            }
+        }
+        return out;
+    }
+
+    @Override
+    public <R> List<R> fireAndGetAll(@NonNull ReturningEvent<R> event) {
+        HandlerList list = this.eventClassesToHandlers.get(event.getClass());
+        if (list == null) {
+            list = this.createListForUnknownEventType(event);
+        }
+
+        List<R> out = new ArrayList<>();
+        for (Handler handler : list.handlers) {
+            PorkUtil.<Optional<R>>uncheckedCast(handler.fire(event)).ifPresent(out::add);
+        }
+        return out;
     }
 
     protected synchronized HandlerList createListForUnknownEventType(@NonNull Object event) {
@@ -330,24 +330,26 @@ public class EventBus implements FEventBus {
         @NonNull
         protected final String name;
         @NonNull
-        protected final Constraint constraint;
+        protected final Constrain constrain;
 
         @NonNull
         protected final Type signature;
         @NonNull
         protected final MethodHandle handle;
+        @NonNull
+        protected final ReturnHandling returnHandling;
         protected final boolean member;
 
         public Optional<Handler> handlerMember(@NonNull Reference<Object> reference) {
             return this.member
-                    ? Optional.of(new Handler.Member(this, reference, this.handle))
+                    ? Optional.of(new Handler.Member(this, reference))
                     : Optional.empty();
         }
 
         public Optional<Handler> handlerStatic(@NonNull Class<?> clazz) {
             return this.member
                     ? Optional.empty()
-                    : Optional.of(new Handler.Static(this, this.handle, clazz));
+                    : Optional.of(new Handler.Static(this, clazz));
         }
     }
 
@@ -404,18 +406,18 @@ public class EventBus implements FEventBus {
             }
 
             //build dependencies graph
-            List<Handler> notMonitors = Stream.of(handlers).filter(handler -> !handler.method.constraint.monitor()).collect(Collectors.toList());
+            List<Handler> notMonitors = Stream.of(handlers).filter(handler -> !handler.method.constrain.monitor()).collect(Collectors.toList());
             for (Handler handler : handlers) {
-                Constraint constraint = handler.method.constraint;
+                Constrain constrain = handler.method.constrain;
                 Set<Handler> dependencies = dependenciesByHandler.get(handler);
 
-                if (constraint.monitor()) { //handler is a monitor, make it depend on everything which isn't
+                if (constrain.monitor()) { //handler is a monitor, make it depend on everything which isn't
                     dependencies.addAll(notMonitors);
                 }
-                for (String before : constraint.before()) {
+                for (String before : constrain.before()) {
                     handlersByName.getOrDefault(before, Collections.emptyList()).forEach(other -> dependenciesByHandler.get(other).add(handler));
                 }
-                for (String after : constraint.after()) {
+                for (String after : constrain.after()) {
                     dependencies.addAll(handlersByName.getOrDefault(after, Collections.emptyList()));
                 }
             }
@@ -463,12 +465,20 @@ public class EventBus implements FEventBus {
     /**
      * @author DaPorkchop_
      */
-    @RequiredArgsConstructor
     protected static abstract class Handler {
-        @NonNull
         protected final HandlerMethod method;
+        protected final MethodHandle handle;
+        protected final ReturnHandling returnHandling;
+        protected final boolean monitor;
 
-        public abstract void fire(@NonNull Object event);
+        public Handler(@NonNull HandlerMethod method) {
+            this.method = method;
+            this.handle = method.handle;
+            this.returnHandling = method.returnHandling;
+            this.monitor = method.constrain.monitor();
+        }
+
+        public abstract Optional<?> fire(@NonNull Object event);
 
         public abstract boolean shouldRemove(@NonNull Object referenceOrListener);
 
@@ -482,21 +492,19 @@ public class EventBus implements FEventBus {
          */
         protected static class Member extends Handler {
             protected final Reference<Object> reference;
-            protected final MethodHandle handle;
 
-            protected Member(@NonNull HandlerMethod method, @NonNull Reference<Object> reference, @NonNull MethodHandle handle) {
+            protected Member(@NonNull HandlerMethod method, @NonNull Reference<Object> reference) {
                 super(method);
                 this.reference = reference;
-                this.handle = handle;
             }
 
             @Override
             @SneakyThrows
-            public void fire(@NonNull Object event) {
+            public Optional<?> fire(@NonNull Object event) {
                 Object instance = this.reference.get();
-                if (instance != null) {
-                    this.handle.invoke(instance, event);
-                }
+                return instance != null
+                        ? this.returnHandling.wrapReturnValue(this.handle.invoke(instance, event))
+                        : Optional.empty();
             }
 
             @Override
@@ -514,24 +522,134 @@ public class EventBus implements FEventBus {
          * @author DaPorkchop_
          */
         protected static class Static extends Handler {
-            protected final MethodHandle handle;
             protected final Class<?> clazz;
 
-            protected Static(@NonNull HandlerMethod method, @NonNull MethodHandle handle, @NonNull Class<?> clazz) {
+            protected Static(@NonNull HandlerMethod method, @NonNull Class<?> clazz) {
                 super(method);
-                this.handle = handle;
                 this.clazz = clazz;
             }
 
             @Override
             @SneakyThrows
-            public void fire(@NonNull Object event) {
-                this.handle.invoke(event);
+            public Optional<?> fire(@NonNull Object event) {
+                return this.returnHandling.wrapReturnValue(this.handle.invoke(event));
             }
 
             @Override
             public boolean shouldRemove(@NonNull Object referenceOrListener) {
                 return this.clazz == referenceOrListener;
+            }
+        }
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    private enum ReturnHandling {
+        VOID {
+            @Override
+            public Optional<?> wrapReturnValue(Object returnValue) {
+                return Optional.empty();
+            }
+        },
+        T {
+            @Override
+            public Optional<?> wrapReturnValue(Object returnValue) {
+                return Optional.of(returnValue);
+            }
+        },
+        OPTIONAL_T {
+            @Override
+            public Optional<?> wrapReturnValue(Object returnValue) {
+                return uncheckedCast(returnValue);
+            }
+        };
+
+        public abstract Optional<?> wrapReturnValue(Object returnValue);
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @RequiredArgsConstructor
+    private static class ParameterizedTypeImpl implements ParameterizedType {
+        @NonNull
+        private final Type[] actualTypeArguments;
+        @NonNull
+        private final Type rawType;
+        private final Type ownerType;
+
+        @Override
+        public Type[] getActualTypeArguments() {
+            return this.actualTypeArguments;
+        }
+
+        @Override
+        public Type getRawType() {
+            return this.rawType;
+        }
+
+        @Override
+        public Type getOwnerType() {
+            return this.ownerType;
+        }
+
+        @Override
+        public int hashCode() {
+            return Arrays.hashCode(this.actualTypeArguments)
+                   ^ Objects.hashCode(this.ownerType)
+                   ^ Objects.hashCode(this.rawType);
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj == this) {
+                return true;
+            } else if (obj instanceof ParameterizedType) {
+                ParameterizedType other = (ParameterizedType) obj;
+                return Objects.equals(this.ownerType, other.getOwnerType())
+                       && Objects.equals(this.rawType, other.getRawType())
+                       && Arrays.equals(this.actualTypeArguments, other.getActualTypeArguments());
+            } else {
+                return false;
+            }
+        }
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @RequiredArgsConstructor
+    private static class WildcardTypeImpl implements WildcardType {
+        @NonNull
+        private final Type[] upperBounds;
+        @NonNull
+        private final Type[] lowerBounds;
+
+        @Override
+        public Type[] getUpperBounds() {
+            return this.upperBounds;
+        }
+
+        @Override
+        public Type[] getLowerBounds() {
+            return this.lowerBounds;
+        }
+
+        @Override
+        public int hashCode() {
+            return Arrays.hashCode(this.upperBounds) ^ Arrays.hashCode(this.lowerBounds);
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj == this) {
+                return true;
+            } else if (obj instanceof WildcardType) {
+                WildcardType other = (WildcardType) obj;
+                return Arrays.equals(this.upperBounds, other.getUpperBounds()) && Arrays.equals(this.lowerBounds, other.getLowerBounds());
+            } else {
+                return false;
             }
         }
     }

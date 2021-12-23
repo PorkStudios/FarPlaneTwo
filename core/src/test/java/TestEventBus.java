@@ -18,13 +18,16 @@
  *
  */
 
-import net.daporkchop.fp2.api.event.Constraint;
+import net.daporkchop.fp2.api.event.Constrain;
 import net.daporkchop.fp2.api.event.FEventBus;
 import net.daporkchop.fp2.api.event.FEventHandler;
+import net.daporkchop.fp2.api.event.ReturningEvent;
 import net.daporkchop.fp2.core.event.EventBus;
 import org.junit.Test;
 
 import java.lang.ref.WeakReference;
+import java.util.Map;
+import java.util.Optional;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -32,24 +35,42 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 public class TestEventBus {
-    private int object = 0;
-    private int baseString = 0;
-
-    private int eventBaseWildcard = 0;
-
     @Test
-    public void test() {
-        FEventBus eventBus = new EventBus();
-        eventBus.register(this);
-        checkState(this.object == 0 && this.baseString == 0);
-        eventBus.fire(new Object());
-        checkState(this.object == 1 && this.baseString == 0);
-        eventBus.fire(new Base<String>() {});
-        checkState(this.object == 2 && this.baseString == 1);
+    public void testFire() {
+        class Events {
+            private int object = 0;
+            private int baseString = 0;
 
-        checkState(this.eventBaseWildcard == 0);
+            private int eventBaseWildcard = 0;
+
+            @FEventHandler
+            private void handleObject(Object event) {
+                this.object++;
+            }
+
+            @FEventHandler
+            public void handleBaseString(Base<String> event) {
+                this.baseString++;
+            }
+
+            @FEventHandler
+            public void handleEventBaseWildcard(Event<Base<?>> event) {
+                this.eventBaseWildcard++;
+            }
+        }
+        Events events = new Events();
+
+        FEventBus eventBus = new EventBus();
+        eventBus.register(events);
+        checkState(events.object == 0 && events.baseString == 0);
+        eventBus.fire(new Object());
+        checkState(events.object == 1 && events.baseString == 0);
+        eventBus.fire(new Base<String>() {});
+        checkState(events.object == 2 && events.baseString == 1);
+
+        checkState(events.eventBaseWildcard == 0);
         eventBus.fire(new Event<Base<?>>() {});
-        checkState(this.eventBaseWildcard == 1);
+        checkState(events.eventBaseWildcard == 1);
 
         Object listener = new Object() {
             @FEventHandler
@@ -76,18 +97,17 @@ public class TestEventBus {
     }
 
     @FEventHandler
-    private void handleObject(Object event) {
-        this.object++;
+    public void handleReturningAsVoid(ReturningEvent<Map<String, Optional<? extends CharSequence>>> event) {
     }
 
     @FEventHandler
-    public void handleBaseString(Base<String> event) {
-        this.baseString++;
+    public Map<String, Optional<? extends CharSequence>> handleReturningAsT(ReturningEvent<Map<String, Optional<? extends CharSequence>>> event) {
+        return null;
     }
 
     @FEventHandler
-    public void handleEventBaseWildcard(Event<Base<?>> event) {
-        this.eventBaseWildcard++;
+    public Optional<Map<String, Optional<? extends CharSequence>>> handleReturningAsOptionalT(ReturningEvent<Map<String, Optional<? extends CharSequence>>> event) {
+        return Optional.empty();
     }
 
     @Test
@@ -103,7 +123,7 @@ public class TestEventBus {
             }
 
             @FEventHandler(name = "second",
-                    constrain = @Constraint(after = "first", before = "third"))
+                    constrain = @Constrain(after = "first", before = "third"))
             public void second(String s) {
                 checkState(this.idx++ == 1, this.idx);
             }
@@ -113,18 +133,18 @@ public class TestEventBus {
                 checkState(this.idx++ == 2, this.idx);
             }
 
-            @FEventHandler(name = "monitor_third", constrain = @Constraint(monitor = true))
+            @FEventHandler(name = "monitor_third", constrain = @Constrain(monitor = true))
             public void monitor_third(String s) {
                 checkState(this.idx++ == NOT_MONITOR_COUNT + 2, this.idx);
             }
 
             @FEventHandler(name = "monitor_second",
-                    constrain = @Constraint(after = "monitor_first", before = "monitor_third", monitor = true))
+                    constrain = @Constrain(after = "monitor_first", before = "monitor_third", monitor = true))
             public void monitor_second(String s) {
                 checkState(this.idx++ == NOT_MONITOR_COUNT + 1, this.idx);
             }
 
-            @FEventHandler(name = "monitor_first", constrain = @Constraint(monitor = true))
+            @FEventHandler(name = "monitor_first", constrain = @Constrain(monitor = true))
             public void monitor_first(String s) {
                 checkState(this.idx++ == NOT_MONITOR_COUNT + 0, this.idx);
             }
@@ -133,6 +153,43 @@ public class TestEventBus {
         FEventBus eventBus = new EventBus();
         eventBus.register(new Events());
         eventBus.fire("");
+    }
+
+    @Test
+    public void testReturning() {
+        class Events {
+            @FEventHandler(name = "first")
+            public void first(ReturningEvent<String> event) {
+                //no-op
+            }
+
+            @FEventHandler(name = "second", constrain = @Constrain(after = "first"))
+            public Optional<String> second(ReturningEvent<String> event) {
+                return Optional.of("second");
+            }
+
+            @FEventHandler(name = "third", constrain = @Constrain(after = "second"))
+            public String third(ReturningEvent<String> event) {
+                return "third";
+            }
+
+            @FEventHandler(constrain = @Constrain(monitor = true))
+            public void monitor(ReturningEvent<String> event) {
+                System.out.println("monitor");
+            }
+        }
+
+        ReturningEvent<String> event = new ReturningEvent<String>() {};
+
+        FEventBus eventBus = new EventBus();
+
+        System.out.println(eventBus.fireAndGetFirst(event));
+        System.out.println(eventBus.fireAndGetAll(event));
+
+        eventBus.register(new Events());
+
+        System.out.println(eventBus.fireAndGetFirst(event));
+        System.out.println(eventBus.fireAndGetAll(event));
     }
 
     private interface Base<T> {

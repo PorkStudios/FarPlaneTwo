@@ -31,7 +31,7 @@ import java.lang.annotation.Target;
  */
 @Target({})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface Constraint {
+public @interface Constrain {
     /**
      * Adds a dependency on handler(s) with the given name. If any other handler with the given name is found, it will be executed before this handler.
      *

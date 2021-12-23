@@ -22,6 +22,9 @@ package net.daporkchop.fp2.api.event;
 
 import lombok.NonNull;
 
+import java.util.List;
+import java.util.Optional;
+
 /**
  * Dispatches events to listeners, and provides ways for listeners to register themselves.
  * <p>
@@ -92,4 +95,24 @@ public interface FEventBus {
      * @return the event instance
      */
     <T> T fire(@NonNull T event);
+
+    /**
+     * Dispatches the given event to all registered listeners for the corresponding type.
+     * <p>
+     * If a handler returns a value, subsequent handlers will not be notified, although monitor handlers will be notified in any case.
+     *
+     * @param event the event
+     * @param <R>   the event's return type
+     * @return the return value. May be empty if no handlers return a value
+     */
+    <R> Optional<R> fireAndGetFirst(@NonNull ReturningEvent<R> event);
+
+    /**
+     * Dispatches the given event to all registered listeners for the corresponding type.
+     *
+     * @param event the event
+     * @param <R>   the event's return type
+     * @return a {@link List} containing every value returned by the handlers in the order in which they were encountered
+     */
+    <R> List<R> fireAndGetAll(@NonNull ReturningEvent<R> event);
 }

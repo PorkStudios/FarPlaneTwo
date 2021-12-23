@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.compat.cc;
 
 import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorld;
-import net.daporkchop.fp2.api.event.Constraint;
+import net.daporkchop.fp2.api.event.Constrain;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.api.event.RegisterEvent;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorld;
@@ -62,13 +62,13 @@ public class FP2CubicChunks {
     }
 
     @FEventHandler(name = "cubicchunks_register_heightmap_generator_exact",
-            constrain = @Constraint(before = "vanilla_register_heightmap_generator_exact"))
+            constrain = @Constrain(before = "vanilla_register_heightmap_generator_exact"))
     public void registerHeightmapGeneratorExact(RegisterEvent<IFarGeneratorExact.Factory<HeightmapPos, HeightmapTile>> event) {
         event.registry().addLast("cubicchunks", world -> this.isCubicWorld(world) ? new CCHeightmapGenerator(world) : null);
     }
 
     @FEventHandler(name = "cubicchunks_register_voxel_generator_exact",
-            constrain = @Constraint(before = "vanilla_register_voxel_generator_exact"))
+            constrain = @Constrain(before = "vanilla_register_voxel_generator_exact"))
     public void registerVoxelGeneratorExact(RegisterEvent<IFarGeneratorExact.Factory<VoxelPos, VoxelTile>> event) {
         event.registry().addLast("cubicchunks", world -> this.isCubicWorld(world) ? new CCVoxelGenerator(world) : null);
     }
