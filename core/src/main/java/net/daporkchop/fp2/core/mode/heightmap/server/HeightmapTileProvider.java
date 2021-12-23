@@ -57,6 +57,9 @@ public abstract class HeightmapTileProvider extends AbstractFarTileProvider<Heig
         this.scheduleForUpdate(new HeightmapPos(0, event.pos().x(), event.pos().y()));
     }
 
+    /**
+     * @author DaPorkchop_
+     */
     public static class Vanilla extends HeightmapTileProvider {
         public Vanilla(@NonNull IFarWorldServer world, @NonNull IFarRenderMode<HeightmapPos, HeightmapTile> mode) {
             super(world, mode);
@@ -68,6 +71,9 @@ public abstract class HeightmapTileProvider extends AbstractFarTileProvider<Heig
         }
     }
 
+    /**
+     * @author DaPorkchop_
+     */
     public static class CubicChunks extends HeightmapTileProvider {
         public CubicChunks(@NonNull IFarWorldServer world, @NonNull IFarRenderMode<HeightmapPos, HeightmapTile> mode) {
             super(world, mode);

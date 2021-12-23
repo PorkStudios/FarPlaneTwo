@@ -18,14 +18,13 @@
  *
  */
 
-package net.daporkchop.fp2.mode.voxel;
+package net.daporkchop.fp2.core.mode.voxel;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.core.event.AbstractRegisterEvent;
 import net.daporkchop.fp2.core.mode.api.IFarCoordLimits;
 import net.daporkchop.fp2.core.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
@@ -34,30 +33,20 @@ import net.daporkchop.fp2.core.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldClient;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.core.mode.api.player.IFarPlayerServer;
-import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
-import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
-import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.core.mode.common.AbstractFarRenderMode;
-import net.daporkchop.fp2.core.mode.voxel.VoxelConstants;
-import net.daporkchop.fp2.core.mode.voxel.VoxelCoordLimits;
-import net.daporkchop.fp2.core.mode.voxel.VoxelDirectPosAccess;
-import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
-import net.daporkchop.fp2.core.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.core.mode.voxel.ctx.VoxelClientContext;
 import net.daporkchop.fp2.core.mode.voxel.ctx.VoxelServerContext;
-import net.daporkchop.fp2.core.mode.voxel.server.VoxelTileProvider;
 import net.daporkchop.fp2.core.mode.voxel.server.scale.VoxelScalerIntersection;
 import net.daporkchop.fp2.core.util.math.MathUtil;
 import net.daporkchop.lib.binary.stream.DataIn;
 import net.daporkchop.lib.binary.stream.DataOut;
-import net.minecraft.world.World;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import static net.daporkchop.fp2.common.util.TypeSize.*;
-import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.fp2.core.mode.voxel.VoxelConstants.*;
 
 /**
  * Implementation of {@link IFarRenderMode} for the voxel rendering mode.
@@ -66,29 +55,27 @@ import static net.daporkchop.fp2.util.Constants.*;
  */
 public class VoxelRenderMode extends AbstractFarRenderMode<VoxelPos, VoxelTile> {
     public VoxelRenderMode() {
-        super(VoxelConstants.STORAGE_VERSION, VoxelConstants.VMAX_LODS, VoxelConstants.VT_SHIFT);
+        super(STORAGE_VERSION, VMAX_LODS, VT_SHIFT);
     }
 
     @Override
-    protected AbstractRegisterEvent<IFarGeneratorExact.Factory<VoxelPos, VoxelTile>> exactGeneratorFactoryEvent() {
-        return new AbstractRegisterEvent<IFarGeneratorExact.Factory<VoxelPos, VoxelTile>>() {};
+    protected AbstractExactGeneratorCreationEvent exactGeneratorCreationEvent(@NonNull IFarWorldServer world) {
+        return new AbstractExactGeneratorCreationEvent(world) {};
     }
 
     @Override
-    protected AbstractRegisterEvent<IFarGeneratorRough.Factory<VoxelPos, VoxelTile>> roughGeneratorFactoryEvent() {
-        return new AbstractRegisterEvent<IFarGeneratorRough.Factory<VoxelPos, VoxelTile>>() {};
+    protected AbstractRoughGeneratorCreationEvent roughGeneratorCreationEvent(@NonNull IFarWorldServer world) {
+        return new AbstractRoughGeneratorCreationEvent(world) {};
+    }
+
+    @Override
+    protected AbstractTileProviderCreationEvent tileProviderCreationEvent(@NonNull IFarWorldServer world) {
+        return new AbstractTileProviderCreationEvent(world) {};
     }
 
     @Override
     protected VoxelTile newTile() {
         return new VoxelTile();
-    }
-
-    @Override
-    public IFarTileProvider<VoxelPos, VoxelTile> tileProvider(@NonNull IFarWorldServer world) {
-        return isCubicWorld((World) world.fp2_IFarWorld_implWorld())
-                ? new VoxelTileProvider.CubicChunks(world, this)
-                : new VoxelTileProvider.Vanilla(world, this);
     }
 
     @Override

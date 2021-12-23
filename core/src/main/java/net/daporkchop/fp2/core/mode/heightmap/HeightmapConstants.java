@@ -31,6 +31,8 @@ import java.util.stream.IntStream;
  */
 @UtilityClass
 public class HeightmapConstants {
+    public static final String NAME = "heightmap";
+
     public static final int STORAGE_VERSION = 10;
 
     //definitions of tile sizes

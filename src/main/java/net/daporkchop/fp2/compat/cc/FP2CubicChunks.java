@@ -23,18 +23,22 @@ package net.daporkchop.fp2.compat.cc;
 import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorld;
 import net.daporkchop.fp2.api.event.Constrain;
 import net.daporkchop.fp2.api.event.FEventHandler;
-import net.daporkchop.fp2.api.event.RegisterEvent;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorld;
+import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapTile;
+import net.daporkchop.fp2.core.mode.heightmap.server.HeightmapTileProvider;
 import net.daporkchop.fp2.core.mode.heightmap.server.gen.exact.CCHeightmapGenerator;
 import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.core.mode.voxel.VoxelTile;
+import net.daporkchop.fp2.core.mode.voxel.server.VoxelTileProvider;
 import net.daporkchop.fp2.core.mode.voxel.server.gen.exact.CCVoxelGenerator;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
+
+import java.util.Optional;
 
 import static net.daporkchop.fp2.api.FP2.*;
 
@@ -61,15 +65,39 @@ public class FP2CubicChunks {
         return ((ICubicWorld) world.fp2_IFarWorld_implWorld()).isCubicWorld();
     }
 
-    @FEventHandler(name = "cubicchunks_register_heightmap_generator_exact",
-            constrain = @Constrain(before = "vanilla_register_heightmap_generator_exact"))
-    public void registerHeightmapGeneratorExact(RegisterEvent<IFarGeneratorExact.Factory<HeightmapPos, HeightmapTile>> event) {
-        event.registry().addLast("cubicchunks", world -> this.isCubicWorld(world) ? new CCHeightmapGenerator(world) : null);
+    //exact generators
+
+    @FEventHandler(name = "cubicchunks_heightmap_generator_exact",
+            constrain = @Constrain(before = "vanilla_heightmap_generator_exact"))
+    public Optional<IFarGeneratorExact<HeightmapPos, HeightmapTile>> createHeightmapGeneratorExact(IFarGeneratorExact.CreationEvent<HeightmapPos, HeightmapTile> event) {
+        return this.isCubicWorld(event.world())
+                ? Optional.of(new CCHeightmapGenerator(event.world()))
+                : Optional.empty();
     }
 
-    @FEventHandler(name = "cubicchunks_register_voxel_generator_exact",
-            constrain = @Constrain(before = "vanilla_register_voxel_generator_exact"))
-    public void registerVoxelGeneratorExact(RegisterEvent<IFarGeneratorExact.Factory<VoxelPos, VoxelTile>> event) {
-        event.registry().addLast("cubicchunks", world -> this.isCubicWorld(world) ? new CCVoxelGenerator(world) : null);
+    @FEventHandler(name = "cubicchunks_voxel_generator_exact",
+            constrain = @Constrain(before = "vanilla_voxel_generator_exact"))
+    public Optional<IFarGeneratorExact<VoxelPos, VoxelTile>> createVoxelGeneratorExact(IFarGeneratorExact.CreationEvent<VoxelPos, VoxelTile> event) {
+        return this.isCubicWorld(event.world())
+                ? Optional.of(new CCVoxelGenerator(event.world()))
+                : Optional.empty();
+    }
+
+    //tile providers
+
+    @FEventHandler(name = "cubicchunks_heightmap_tileprovider",
+            constrain = @Constrain(before = "vanilla_heightmap_tileprovider"))
+    public Optional<IFarTileProvider<HeightmapPos, HeightmapTile>> createHeightmapTileProvider(IFarTileProvider.CreationEvent<HeightmapPos, HeightmapTile> event) {
+        return this.isCubicWorld(event.world())
+                ? Optional.of(new HeightmapTileProvider.CubicChunks(event.world(), event.mode()))
+                : Optional.empty();
+    }
+
+    @FEventHandler(name = "cubicchunks_voxel_tileprovider",
+            constrain = @Constrain(before = "vanilla_voxel_tileprovider"))
+    public Optional<IFarTileProvider<VoxelPos, VoxelTile>> createVoxelTileProvider(IFarTileProvider.CreationEvent<VoxelPos, VoxelTile> event) {
+        return this.isCubicWorld(event.world())
+                ? Optional.of(new VoxelTileProvider.CubicChunks(event.world(), event.mode()))
+                : Optional.empty();
     }
 }

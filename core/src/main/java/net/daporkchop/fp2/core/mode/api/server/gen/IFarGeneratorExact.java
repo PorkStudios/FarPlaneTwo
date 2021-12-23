@@ -24,7 +24,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
-import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
+import net.daporkchop.fp2.core.mode.api.server.IFarServerResourceCreationEvent;
 import net.daporkchop.lib.math.vector.Vec2i;
 import net.daporkchop.lib.math.vector.Vec3i;
 
@@ -67,18 +67,10 @@ public interface IFarGeneratorExact<POS extends IFarPos, T extends IFarTile> ext
     void generate(@NonNull FBlockWorld world, @NonNull POS pos, @NonNull T tile);
 
     /**
-     * Factory method for creating instances of {@link IFarGeneratorExact}.
+     * Fired to create a new {@link IFarGeneratorExact}.
      *
      * @author DaPorkchop_
      */
-    @FunctionalInterface
-    interface Factory<POS extends IFarPos, T extends IFarTile> {
-        /**
-         * Creates a new {@link IFarGeneratorExact} in the given world.
-         *
-         * @param world the world
-         * @return the new {@link IFarGeneratorExact}, or {@code null} if no generator could be created for the given world
-         */
-        IFarGeneratorExact<POS, T> forWorld(@NonNull IFarWorldServer world);
+    interface CreationEvent<POS extends IFarPos, T extends IFarTile> extends IFarServerResourceCreationEvent<POS, T, IFarGeneratorExact<POS, T>> {
     }
 }

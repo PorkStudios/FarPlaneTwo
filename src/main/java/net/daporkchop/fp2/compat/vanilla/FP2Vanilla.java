@@ -21,20 +21,24 @@
 package net.daporkchop.fp2.compat.vanilla;
 
 import net.daporkchop.fp2.api.event.FEventHandler;
-import net.daporkchop.fp2.api.event.RegisterEvent;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
+import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapTile;
+import net.daporkchop.fp2.core.mode.heightmap.server.HeightmapTileProvider;
 import net.daporkchop.fp2.core.mode.heightmap.server.gen.exact.VanillaHeightmapGenerator;
 import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.core.mode.voxel.VoxelTile;
+import net.daporkchop.fp2.core.mode.voxel.server.VoxelTileProvider;
 import net.daporkchop.fp2.core.mode.voxel.server.gen.exact.VanillaVoxelGenerator;
 import net.daporkchop.fp2.mode.heightmap.server.gen.rough.FlatHeightmapGenerator;
 import net.minecraft.world.gen.ChunkGeneratorFlat;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
+
+import java.util.Optional;
 
 import static net.daporkchop.fp2.api.FP2.*;
 
@@ -48,22 +52,40 @@ public class FP2Vanilla {
         fp2().eventBus().register(this); //register self to receive fp2 events
     }
 
-    @FEventHandler(name = "vanilla_register_heightmap_generator_exact")
-    public void registerHeightmapGeneratorExact(RegisterEvent<IFarGeneratorExact.Factory<HeightmapPos, HeightmapTile>> event) {
-        event.registry().addLast("vanilla", VanillaHeightmapGenerator::new);
+    //exact generators
+
+    @FEventHandler(name = "vanilla_heightmap_generator_exact")
+    public IFarGeneratorExact<HeightmapPos, HeightmapTile> createHeightmapGeneratorExact(IFarGeneratorExact.CreationEvent<HeightmapPos, HeightmapTile> event) {
+        return new VanillaHeightmapGenerator(event.world());
     }
 
-    @FEventHandler(name = "vanilla_register_voxel_generator_exact")
-    public void registerVoxelGeneratorExact(RegisterEvent<IFarGeneratorExact.Factory<VoxelPos, VoxelTile>> event) {
-        event.registry().addLast("vanilla", VanillaVoxelGenerator::new);
+    @FEventHandler(name = "vanilla_voxel_generator_exact")
+    public IFarGeneratorExact<VoxelPos, VoxelTile> createVoxelGeneratorExact(IFarGeneratorExact.CreationEvent<VoxelPos, VoxelTile> event) {
+        return new VanillaVoxelGenerator(event.world());
     }
+
+    //Superflat rough generators
 
     protected boolean isSuperflatWorld(IFarWorldServer world) {
         return world.fp2_IFarWorldServer_terrainGeneratorInfo().implGenerator() instanceof ChunkGeneratorFlat;
     }
 
-    @FEventHandler(name = "vanilla_register_heightmap_generator_rough_superflat")
-    public void registerHeightmapGeneratorRoughSuperflat(RegisterEvent<IFarGeneratorRough.Factory<HeightmapPos, HeightmapTile>> event) {
-        event.registry().addLast("superflat", world -> this.isSuperflatWorld(world) ? new FlatHeightmapGenerator(world) : null);
+    @FEventHandler(name = "vanilla_heightmap_generator_rough_superflat")
+    public Optional<IFarGeneratorRough<HeightmapPos, HeightmapTile>> createHeightmapGeneratorRoughSuperflat(IFarGeneratorRough.CreationEvent<HeightmapPos, HeightmapTile> event) {
+        return this.isSuperflatWorld(event.world())
+                ? Optional.of(new FlatHeightmapGenerator(event.world()))
+                : Optional.empty();
+    }
+
+    //tile providers
+
+    @FEventHandler(name = "vanilla_heightmap_tileprovider")
+    public IFarTileProvider<HeightmapPos, HeightmapTile> createHeightmapTileProvider(IFarTileProvider.CreationEvent<HeightmapPos, HeightmapTile> event) {
+        return new HeightmapTileProvider.Vanilla(event.world(), event.mode());
+    }
+
+    @FEventHandler(name = "vanilla_voxel_tileprovider")
+    public IFarTileProvider<VoxelPos, VoxelTile> createVoxelTileProvider(IFarTileProvider.CreationEvent<VoxelPos, VoxelTile> event) {
+        return new VoxelTileProvider.Vanilla(event.world(), event.mode());
     }
 }

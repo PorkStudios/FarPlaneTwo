@@ -18,14 +18,13 @@
  *
  */
 
-package net.daporkchop.fp2.mode.heightmap;
+package net.daporkchop.fp2.core.mode.heightmap;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.core.event.AbstractRegisterEvent;
 import net.daporkchop.fp2.core.mode.api.IFarCoordLimits;
 import net.daporkchop.fp2.core.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
@@ -34,30 +33,20 @@ import net.daporkchop.fp2.core.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldClient;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.core.mode.api.player.IFarPlayerServer;
-import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
-import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
-import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.core.mode.common.AbstractFarRenderMode;
-import net.daporkchop.fp2.core.mode.heightmap.HeightmapConstants;
-import net.daporkchop.fp2.core.mode.heightmap.HeightmapCoordLimits;
-import net.daporkchop.fp2.core.mode.heightmap.HeightmapDirectPosAccess;
-import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
-import net.daporkchop.fp2.core.mode.heightmap.HeightmapTile;
 import net.daporkchop.fp2.core.mode.heightmap.ctx.HeightmapClientContext;
 import net.daporkchop.fp2.core.mode.heightmap.ctx.HeightmapServerContext;
-import net.daporkchop.fp2.core.mode.heightmap.server.HeightmapTileProvider;
 import net.daporkchop.fp2.core.mode.heightmap.server.scale.HeightmapScalerMinMax;
 import net.daporkchop.fp2.core.util.math.MathUtil;
 import net.daporkchop.lib.binary.stream.DataIn;
 import net.daporkchop.lib.binary.stream.DataOut;
-import net.minecraft.world.World;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import static net.daporkchop.fp2.common.util.TypeSize.*;
-import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.fp2.core.mode.heightmap.HeightmapConstants.*;
 
 /**
  * Implementation of {@link IFarRenderMode} for the heightmap rendering mode.
@@ -66,29 +55,27 @@ import static net.daporkchop.fp2.util.Constants.*;
  */
 public class HeightmapRenderMode extends AbstractFarRenderMode<HeightmapPos, HeightmapTile> {
     public HeightmapRenderMode() {
-        super(HeightmapConstants.STORAGE_VERSION, HeightmapConstants.HMAX_LODS, HeightmapConstants.HT_SHIFT);
+        super(STORAGE_VERSION, HMAX_LODS, HT_SHIFT);
     }
 
     @Override
-    protected AbstractRegisterEvent<IFarGeneratorExact.Factory<HeightmapPos, HeightmapTile>> exactGeneratorFactoryEvent() {
-        return new AbstractRegisterEvent<IFarGeneratorExact.Factory<HeightmapPos, HeightmapTile>>() {};
+    protected AbstractExactGeneratorCreationEvent exactGeneratorCreationEvent(@NonNull IFarWorldServer world) {
+        return new AbstractExactGeneratorCreationEvent(world) {};
     }
 
     @Override
-    protected AbstractRegisterEvent<IFarGeneratorRough.Factory<HeightmapPos, HeightmapTile>> roughGeneratorFactoryEvent() {
-        return new AbstractRegisterEvent<IFarGeneratorRough.Factory<HeightmapPos, HeightmapTile>>() {};
+    protected AbstractRoughGeneratorCreationEvent roughGeneratorCreationEvent(@NonNull IFarWorldServer world) {
+        return new AbstractRoughGeneratorCreationEvent(world) {};
+    }
+
+    @Override
+    protected AbstractTileProviderCreationEvent tileProviderCreationEvent(@NonNull IFarWorldServer world) {
+        return new AbstractTileProviderCreationEvent(world) {};
     }
 
     @Override
     protected HeightmapTile newTile() {
         return new HeightmapTile();
-    }
-
-    @Override
-    public IFarTileProvider<HeightmapPos, HeightmapTile> tileProvider(@NonNull IFarWorldServer world) {
-        return isCubicWorld((World) world.fp2_IFarWorld_implWorld())
-                ? new HeightmapTileProvider.CubicChunks(world, this)
-                : new HeightmapTileProvider.Vanilla(world, this);
     }
 
     @Override

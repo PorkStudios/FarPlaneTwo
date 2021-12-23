@@ -18,39 +18,30 @@
  *
  */
 
-package net.daporkchop.fp2.core.mode.api.server.gen;
+package net.daporkchop.fp2.core.mode.api.server;
 
-import lombok.NonNull;
+import net.daporkchop.fp2.api.event.ReturningEvent;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
+import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
-import net.daporkchop.fp2.core.mode.api.server.IFarServerResourceCreationEvent;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 
 /**
- * Extracts height and color information from a world for use by a rendering mode.
+ * Fired when a new {@link R} needs to be created for a given {@link IFarWorldServer}.
  * <p>
- * Once initialized, instances of this class are expected to be safely usable by multiple concurrent threads.
+ * Handlers should return a {@link R}, or nothing if they do not support the world type.
  *
+ * @param <R> the resource type
  * @author DaPorkchop_
  */
-public interface IFarGeneratorRough<POS extends IFarPos, T extends IFarTile> extends IFarGenerator {
+public interface IFarServerResourceCreationEvent<POS extends IFarPos, T extends IFarTile, R> extends ReturningEvent<R> {
     /**
-     * @return whether or not this generator can generate tiles at low resolution
+     * @return the {@link IFarWorldServer} which a {@link R} will be created for
      */
-    boolean supportsLowResolution();
+    IFarWorldServer world();
 
     /**
-     * Generates a rough estimate of the terrain in the given tile.
-     *
-     * @param pos  the position of the tile to generate
-     * @param tile the tile to generate
+     * @return the {@link IFarRenderMode} which the {@link R} will be created for
      */
-    void generate(@NonNull POS pos, @NonNull T tile);
-
-    /**
-     * Fired to create a new {@link IFarGeneratorRough}.
-     *
-     * @author DaPorkchop_
-     */
-    interface CreationEvent<POS extends IFarPos, T extends IFarTile> extends IFarServerResourceCreationEvent<POS, T, IFarGeneratorRough<POS, T>> {
-    }
+    IFarRenderMode<POS, T> mode();
 }

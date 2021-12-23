@@ -37,8 +37,8 @@ import net.daporkchop.fp2.impl.mc.forge1_12_2.I18n1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.client.FP2Client1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.log.Log4jAsPorkLibLogger;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.server.FP2Server1_12_2;
-import net.daporkchop.fp2.mode.heightmap.HeightmapRenderMode;
-import net.daporkchop.fp2.mode.voxel.VoxelRenderMode;
+import net.daporkchop.fp2.core.mode.heightmap.HeightmapRenderMode;
+import net.daporkchop.fp2.core.mode.voxel.VoxelRenderMode;
 import net.daporkchop.fp2.net.FP2Network;
 import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.event.IdMappingsChangedEvent;
@@ -151,13 +151,6 @@ public class FP2 extends FP2Core implements ResourceProvider {
         return FP2_DEBUG //accept any version in debug mode
                || remoteVersion == null //fp2 isn't present on the remote side, so it doesn't matter whether or not it's compatible
                || this.version.equals(remoteVersion); //if fp2 is present, the versions must match
-    }
-
-    @FEventHandler
-    public void registerDefaultRenderModes(RegisterEvent<IFarRenderMode<?, ?>> event) {
-        event.registry()
-                .addLast("voxel", new VoxelRenderMode())
-                .addLast("heightmap", new HeightmapRenderMode());
     }
 
     //

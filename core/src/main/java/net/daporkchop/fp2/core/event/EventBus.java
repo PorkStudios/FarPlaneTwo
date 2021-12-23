@@ -60,7 +60,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -72,11 +71,11 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 public class EventBus implements FEventBus {
-    protected static final LoadingCache<Class<?>, List<Type>> EVENT_TYPES_CACHE = CacheBuilder.newBuilder()
+    protected static final LoadingCache<Type, List<Type>> ALL_TYPES_CACHE = CacheBuilder.newBuilder()
             .weakKeys().weakValues()
-            .build(new CacheLoader<Class<?>, List<Type>>() {
+            .build(new CacheLoader<Type, List<Type>>() {
                 @Override
-                public List<Type> load(Class<?> key) throws Exception {
+                public List<Type> load(Type key) throws Exception {
                     ImmutableSet.Builder<Type> builder = ImmutableSet.builder();
                     this.findTypesRecursive(builder, key);
                     return ImmutableList.copyOf(builder.build());
@@ -86,26 +85,18 @@ public class EventBus implements FEventBus {
                     builder.add(type);
 
                     Class<T> rawType;
-                    Type[] typeArguments;
                     if (type == Object.class) {
                         return;
                     } else if (type instanceof Class) {
                         rawType = uncheckedCast(type);
-                        typeArguments = new Type[0];
                     } else if (type instanceof ParameterizedType) {
                         ParameterizedType parameterizedType = (ParameterizedType) type;
                         rawType = uncheckedCast(parameterizedType.getRawType());
-                        typeArguments = parameterizedType.getActualTypeArguments();
                     } else {
                         throw new IllegalArgumentException("don't know how to handle type: " + type);
                     }
 
-                    TypeVariable<Class<T>>[] typeVariables = rawType.getTypeParameters();
-                    checkArg(typeVariables.length == typeArguments.length, "cannot resolve type parameters for %s (length mismatch)", type);
-
-                    Map<String, Type> parameters = IntStream.range(0, typeVariables.length).boxed().collect(Collectors.toMap(
-                            i -> typeVariables[i].getName(),
-                            i -> typeArguments[i]));
+                    Map<String, Type> parameters = this.getParameters(type);
 
                     if (!rawType.isInterface()) {
                         this.findTypesRecursive(builder, resolveType(rawType.getGenericSuperclass(), parameters));
@@ -113,6 +104,36 @@ public class EventBus implements FEventBus {
                     for (Type interfaz : rawType.getGenericInterfaces()) {
                         this.findTypesRecursive(builder, resolveType(interfaz, parameters));
                     }
+                }
+
+                protected <T> Map<String, Type> getParameters(Type type) {
+                    Map<String, Type> map = new HashMap<>();
+
+                    Class<T> rawType;
+                    Type[] typeArguments;
+                    if (type instanceof Class) {
+                        rawType = uncheckedCast(type);
+                        typeArguments = new Type[0];
+                    } else if (type instanceof ParameterizedType) {
+                        ParameterizedType parameterizedType = (ParameterizedType) type;
+                        rawType = uncheckedCast(parameterizedType.getRawType());
+                        typeArguments = parameterizedType.getActualTypeArguments();
+
+                        if (parameterizedType.getOwnerType() != null) {
+                            map = this.getParameters(parameterizedType.getOwnerType());
+                        }
+                    } else {
+                        throw new IllegalArgumentException("don't know how to handle type: " + type);
+                    }
+
+                    TypeVariable<Class<T>>[] typeVariables = rawType.getTypeParameters();
+                    if (typeVariables.length == typeArguments.length) { //there are no type arguments
+                        for (int i = 0; i < typeVariables.length; i++) {
+                            map.put(typeVariables[i].getName(), typeArguments[i]);
+                        }
+                    }
+
+                    return map;
                 }
             });
 
@@ -141,8 +162,12 @@ public class EventBus implements FEventBus {
 
                                 boolean returning = ReturningEvent.class.isAssignableFrom(method.getParameterTypes()[0]);
                                 if (returning) {
-                                    Type t = parameterType instanceof ParameterizedType
-                                            ? ((ParameterizedType) parameterType).getActualTypeArguments()[0]
+                                    Type returningParameterType = ALL_TYPES_CACHE.getUnchecked(parameterType).stream()
+                                            .filter(type -> type == ReturningEvent.class
+                                                            || (type instanceof ParameterizedType && ((ParameterizedType) type).getRawType() == ReturningEvent.class))
+                                            .findAny().get();
+                                    Type t = returningParameterType instanceof ParameterizedType
+                                            ? ((ParameterizedType) returningParameterType).getActualTypeArguments()[0]
                                             : Object.class;
 
                                     if (method.getReturnType() == void.class) { //void
@@ -199,6 +224,20 @@ public class EventBus implements FEventBus {
         } else {
             throw new IllegalArgumentException("don't know how to handle type: " + type);
         }
+    }
+
+    protected static boolean isAssignableFrom(Type a, Type b) {
+        //TODO: this is incomplete, and partially wrong
+
+        if (a instanceof Class) {
+            if (b instanceof Class) {
+                return ((Class<?>) a).isAssignableFrom((Class<?>) b);
+            } else if (b instanceof ParameterizedType) {
+                return isAssignableFrom(a, ((ParameterizedType) b).getRawType());
+            }
+        }
+
+        throw new IllegalArgumentException(a + " " + b);
     }
 
     protected static String toStringGeneric(@NonNull Method method) {
@@ -313,7 +352,7 @@ public class EventBus implements FEventBus {
     protected synchronized HandlerList createListForUnknownEventType(@NonNull Object event) {
         return this.eventClassesToHandlers.computeIfAbsent(event.getClass(), eventClass -> {
             HandlerList list = new HandlerList(eventClass);
-            EVENT_TYPES_CACHE.getUnchecked(eventClass).forEach(type -> {
+            ALL_TYPES_CACHE.getUnchecked(eventClass).forEach(type -> {
                 list.add(this.signatureToHandlers.computeIfAbsent(type, HandlerList::new).handlers);
 
                 this.signatureToEventClasses.computeIfAbsent(type, _unused -> Collections.newSetFromMap(new WeakHashMap<>())).add(eventClass);

@@ -24,8 +24,8 @@ import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorldServer;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomTerrainGenerator;
 import io.github.opencubicchunks.cubicchunks.cubicgen.flat.FlatTerrainProcessor;
 import net.daporkchop.fp2.api.event.FEventHandler;
-import net.daporkchop.fp2.api.event.RegisterEvent;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
+import net.daporkchop.fp2.core.mode.api.server.IFarServerResourceCreationEvent;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapTile;
@@ -37,6 +37,8 @@ import net.daporkchop.fp2.mode.voxel.server.gen.rough.CWGVoxelGenerator;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
+
+import java.util.Optional;
 
 import static net.daporkchop.fp2.api.FP2.*;
 
@@ -59,32 +61,38 @@ public class FP2CubicWorldGen {
     // all subsequent code can only be called if both cubic chunks and cubicworldgen are present, and can therefore safely access both APIs
     //
 
-    // CustomCubic
+    //CustomCubic rough generators
 
     protected boolean isCustomCubicWorld(IFarWorldServer world) {
         ICubicWorldServer cubicWorld = (ICubicWorldServer) world.fp2_IFarWorld_implWorld();
         return cubicWorld.isCubicWorld() && cubicWorld.getCubeGenerator() instanceof CustomTerrainGenerator;
     }
 
-    @FEventHandler(name = "cubicworldgen_register_heightmap_generator_rough_customcubic")
-    public void registerHeightmapGeneratorRoughCustomCubic(RegisterEvent<IFarGeneratorRough.Factory<HeightmapPos, HeightmapTile>> event) {
-        event.registry().addLast("cubicworldgen", world -> this.isCustomCubicWorld(world) ? new CWGHeightmapGenerator(world) : null);
+    @FEventHandler(name = "cubicworldgen_heightmap_generator_rough_customcubic")
+    public Optional<IFarGeneratorRough<HeightmapPos, HeightmapTile>> createHeightmapGeneratorRoughCustomCubic(IFarGeneratorRough.CreationEvent<HeightmapPos, HeightmapTile> event) {
+        return this.isCustomCubicWorld(event.world())
+                ? Optional.of(new CWGHeightmapGenerator(event.world()))
+                : Optional.empty();
     }
 
-    @FEventHandler(name = "cubicworldgen_register_voxel_generator_rough_customcubic")
-    public void registerVoxelGeneratorRoughCustomCubic(RegisterEvent<IFarGeneratorRough.Factory<VoxelPos, VoxelTile>> event) {
-        event.registry().addLast("cubicworldgen", world -> this.isCustomCubicWorld(world) ? new CWGVoxelGenerator(world) : null);
+    @FEventHandler(name = "cubicworldgen_voxel_generator_rough_customcubic")
+    public Optional<IFarGeneratorRough<VoxelPos, VoxelTile>> createVoxelGeneratorRoughCustomCubic(IFarGeneratorRough.CreationEvent<VoxelPos, VoxelTile> event) {
+        return this.isCustomCubicWorld(event.world())
+                ? Optional.of(new CWGVoxelGenerator(event.world()))
+                : Optional.empty();
     }
 
-    // FlatCubic
+    //FlatCubic rough generators
 
     protected boolean isFlatCubicWorld(IFarWorldServer world) {
         ICubicWorldServer cubicWorld = (ICubicWorldServer) world.fp2_IFarWorld_implWorld();
         return cubicWorld.isCubicWorld() && cubicWorld.getCubeGenerator() instanceof FlatTerrainProcessor;
     }
 
-    @FEventHandler(name = "cubicworldgen_register_heightmap_generator_rough_flatcubic")
-    public void registerHeightmapGeneratorRoughFlatCubic(RegisterEvent<IFarGeneratorRough.Factory<HeightmapPos, HeightmapTile>> event) {
-        event.registry().addLast("flatcubic", world -> this.isFlatCubicWorld(world) ? new CWGFlatHeightmapGenerator(world) : null);
+    @FEventHandler(name = "cubicworldgen_heightmap_generator_rough_flatcubic")
+    public Optional<IFarGeneratorRough<HeightmapPos, HeightmapTile>> createHeightmapGeneratorRoughFlatCubic(IFarGeneratorRough.CreationEvent<HeightmapPos, HeightmapTile> event) {
+        return this.isFlatCubicWorld(event.world())
+                ? Optional.of(new CWGFlatHeightmapGenerator(event.world()))
+                : Optional.empty();
     }
 }

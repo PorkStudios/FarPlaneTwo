@@ -29,6 +29,8 @@ import lombok.experimental.UtilityClass;
  */
 @UtilityClass
 public class VoxelConstants {
+    public static final String NAME = "voxel";
+
     public static final int STORAGE_VERSION = 6;
 
     //definitions of tile sizes

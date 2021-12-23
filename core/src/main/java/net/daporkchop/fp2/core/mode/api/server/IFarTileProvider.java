@@ -21,7 +21,6 @@
 package net.daporkchop.fp2.core.mode.api.server;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.core.mode.api.IFarCoordLimits;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
@@ -81,4 +80,12 @@ public interface IFarTileProvider<POS extends IFarPos, T extends IFarTile> exten
 
     @Override
     void close();
+
+    /**
+     * Fired to create a new {@link IFarTileProvider}.
+     *
+     * @author DaPorkchop_
+     */
+    interface CreationEvent<POS extends IFarPos, T extends IFarTile> extends IFarServerResourceCreationEvent<POS, T, IFarTileProvider<POS, T>> {
+    }
 }
