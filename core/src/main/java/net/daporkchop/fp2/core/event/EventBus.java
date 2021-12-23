@@ -28,6 +28,7 @@ import com.google.common.collect.ImmutableSet;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import net.daporkchop.fp2.api.event.Constraint;
 import net.daporkchop.fp2.api.event.FEventBus;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.lib.common.function.throwing.EFunction;
@@ -42,16 +43,19 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.lang.reflect.WildcardType;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.WeakHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -122,8 +126,13 @@ public class EventBus implements FEventBus {
                                 checkArg(method.getReturnType() == void.class, "method annotated as %s must return void: %s", FEventHandler.class.getTypeName(), method);
                                 checkArg(method.getParameterCount() == 1, "method annotated as %s must have exactly one parameter: %s", FEventHandler.class.getTypeName(), method);
 
+                                FEventHandler handler = method.getAnnotation(FEventHandler.class);
+
                                 method.setAccessible(true);
-                                return new HandlerMethod(method.getGenericParameterTypes()[0],
+                                return new HandlerMethod(
+                                        handler.name().isEmpty() ? org.objectweb.asm.Type.getMethodDescriptor(method).intern() : handler.name(),
+                                        handler.constrain(),
+                                        method.getGenericParameterTypes()[0],
                                         MethodHandles.publicLookup().unreflect(method),
                                         (method.getModifiers() & Modifier.STATIC) == 0);
                             })
@@ -261,7 +270,7 @@ public class EventBus implements FEventBus {
     }
 
     protected void addHandler(@NonNull Handler handler, @NonNull Type signature) {
-        this.signatureToHandlers.computeIfAbsent(signature, _unused -> new HandlerList()).add(handler);
+        this.signatureToHandlers.computeIfAbsent(signature, HandlerList::new).add(handler);
         this.signatureToEventClasses.getOrDefault(signature, Collections.emptySet()).forEach(eventClass -> {
             this.eventClassesToHandlers.get(eventClass).add(handler);
         });
@@ -297,15 +306,15 @@ public class EventBus implements FEventBus {
             handlers = this.createListForUnknownEventType(event);
         }
 
-        handlers.forEach(handler -> handler.fire(event));
+        handlers.fire(event);
         return event;
     }
 
     protected synchronized HandlerList createListForUnknownEventType(@NonNull Object event) {
         return this.eventClassesToHandlers.computeIfAbsent(event.getClass(), eventClass -> {
-            HandlerList list = new HandlerList();
+            HandlerList list = new HandlerList(eventClass);
             EVENT_TYPES_CACHE.getUnchecked(eventClass).forEach(type -> {
-                list.addAll(this.signatureToHandlers.computeIfAbsent(type, _unused -> new HandlerList()));
+                list.add(this.signatureToHandlers.computeIfAbsent(type, HandlerList::new).handlers);
 
                 this.signatureToEventClasses.computeIfAbsent(type, _unused -> Collections.newSetFromMap(new WeakHashMap<>())).add(eventClass);
             });
@@ -319,6 +328,11 @@ public class EventBus implements FEventBus {
     @RequiredArgsConstructor
     protected static class HandlerMethod {
         @NonNull
+        protected final String name;
+        @NonNull
+        protected final Constraint constraint;
+
+        @NonNull
         protected final Type signature;
         @NonNull
         protected final MethodHandle handle;
@@ -326,43 +340,155 @@ public class EventBus implements FEventBus {
 
         public Optional<Handler> handlerMember(@NonNull Reference<Object> reference) {
             return this.member
-                    ? Optional.of(new Handler.Member(reference, this.handle))
+                    ? Optional.of(new Handler.Member(this, reference, this.handle))
                     : Optional.empty();
         }
 
         public Optional<Handler> handlerStatic(@NonNull Class<?> clazz) {
             return this.member
                     ? Optional.empty()
-                    : Optional.of(new Handler.Static(this.handle, clazz));
+                    : Optional.of(new Handler.Static(this, this.handle, clazz));
         }
     }
 
     /**
      * @author DaPorkchop_
      */
-    protected static class HandlerList extends CopyOnWriteArrayList<Handler> {
-        public void cleanAndRemove(@NonNull Object referenceOrListener) {
-            this.removeIf(handler -> handler.shouldRemove(referenceOrListener));
+    @RequiredArgsConstructor
+    protected static class HandlerList {
+        @NonNull
+        protected final Type eventType;
+
+        protected Handler[] handlers = new Handler[0];
+
+        public void fire(@NonNull Object event) {
+            for (Handler handler : this.handlers) {
+                handler.fire(event);
+            }
+        }
+
+        public boolean isEmpty() {
+            return this.handlers.length == 0;
+        }
+
+        public synchronized void add(@NonNull Handler... handlers) {
+            Handler[] nextHandlers = Arrays.copyOf(this.handlers, this.handlers.length + handlers.length);
+            System.arraycopy(handlers, 0, nextHandlers, this.handlers.length, handlers.length);
+            this.setHandlers(nextHandlers);
+        }
+
+        public synchronized void cleanAndRemove(@NonNull Object referenceOrListener) {
+            Handler[] nextHandlers = this.handlers.clone();
+            int i = 0;
+            for (Handler handler : this.handlers) {
+                if (!handler.shouldRemove(referenceOrListener)) {
+                    nextHandlers[i++] = handler;
+                }
+            }
+            this.setHandlers(nextHandlers);
+        }
+
+        private void setHandlers(@NonNull Handler[] handlers) {
+            if (handlers.length <= 1) { //no sorting is needed
+                this.handlers = handlers;
+                return;
+            }
+
+            //index handlers by their name, for improved lookup times
+            Map<String, List<Handler>> handlersByName = Stream.of(handlers).collect(Collectors.groupingBy(handler -> handler.method.name));
+
+            //prepare dependencies graph
+            Map<Handler, Set<Handler>> dependenciesByHandler = new IdentityHashMap<>();
+            for (Handler handler : handlers) {
+                dependenciesByHandler.put(handler, Collections.newSetFromMap(new IdentityHashMap<>()));
+            }
+
+            //build dependencies graph
+            List<Handler> notMonitors = Stream.of(handlers).filter(handler -> !handler.method.constraint.monitor()).collect(Collectors.toList());
+            for (Handler handler : handlers) {
+                Constraint constraint = handler.method.constraint;
+                Set<Handler> dependencies = dependenciesByHandler.get(handler);
+
+                if (constraint.monitor()) { //handler is a monitor, make it depend on everything which isn't
+                    dependencies.addAll(notMonitors);
+                }
+                for (String before : constraint.before()) {
+                    handlersByName.getOrDefault(before, Collections.emptyList()).forEach(other -> dependenciesByHandler.get(other).add(handler));
+                }
+                for (String after : constraint.after()) {
+                    dependencies.addAll(handlersByName.getOrDefault(after, Collections.emptyList()));
+                }
+            }
+
+            //sort the handlers using a topological sort
+            List<Handler> sorted = new ArrayList<>(handlers.length);
+            Set<Handler> visited = Collections.newSetFromMap(new IdentityHashMap<>());
+            Set<Handler> cycleGuard = new LinkedHashSet<>();
+            for (Handler handler : handlers) {
+                this.toposortHandlers(handler, sorted, dependenciesByHandler, visited, cycleGuard);
+            }
+            checkState(sorted.size() == handlers.length, "sorted handler list only contains %d/%d handlers!", sorted.size(), handlers.length);
+            this.handlers = sorted.toArray(new Handler[0]);
+        }
+
+        private void toposortHandlers(Handler handler, List<Handler> sorted, Map<Handler, Set<Handler>> dependenciesByHandler, Set<Handler> visited, Set<Handler> cycleGuard) {
+            if (!cycleGuard.add(handler)) {
+                throw this.cycleDetected(handler, cycleGuard);
+            }
+
+            if (visited.add(handler)) { //this is the first time we've visited this handler
+                dependenciesByHandler.get(handler).forEach(dependency -> this.toposortHandlers(dependency, sorted, dependenciesByHandler, visited, cycleGuard));
+                sorted.add(handler);
+            }
+
+            cycleGuard.remove(handler);
+        }
+
+        private IllegalStateException cycleDetected(Handler handler, Set<Handler> cycleGuard) {
+            StringBuilder builder = new StringBuilder();
+            builder.append("cycle detected when attempting to sort handlers for ").append(this.eventType.getTypeName()).append(": ");
+            for (Iterator<Handler> itr = cycleGuard.iterator(); itr.hasNext(); ) {
+                if (itr.next() == handler) {
+                    builder.append(handler);
+                    while (itr.hasNext()) {
+                        builder.append(" -> ").append(itr.next());
+                    }
+                    builder.append(" -> ").append(handler);
+                }
+            }
+            return new IllegalStateException(builder.toString());
         }
     }
 
     /**
      * @author DaPorkchop_
      */
+    @RequiredArgsConstructor
     protected static abstract class Handler {
+        @NonNull
+        protected final HandlerMethod method;
+
         public abstract void fire(@NonNull Object event);
 
         public abstract boolean shouldRemove(@NonNull Object referenceOrListener);
 
+        @Override
+        public String toString() {
+            return this.method.name;
+        }
+
         /**
          * @author DaPorkchop_
          */
-        @RequiredArgsConstructor
         protected static class Member extends Handler {
-            @NonNull
             protected final Reference<Object> reference;
-            @NonNull
             protected final MethodHandle handle;
+
+            protected Member(@NonNull HandlerMethod method, @NonNull Reference<Object> reference, @NonNull MethodHandle handle) {
+                super(method);
+                this.reference = reference;
+                this.handle = handle;
+            }
 
             @Override
             @SneakyThrows
@@ -387,12 +513,15 @@ public class EventBus implements FEventBus {
         /**
          * @author DaPorkchop_
          */
-        @RequiredArgsConstructor
         protected static class Static extends Handler {
-            @NonNull
             protected final MethodHandle handle;
-            @NonNull
             protected final Class<?> clazz;
+
+            protected Static(@NonNull HandlerMethod method, @NonNull MethodHandle handle, @NonNull Class<?> clazz) {
+                super(method);
+                this.handle = handle;
+                this.clazz = clazz;
+            }
 
             @Override
             @SneakyThrows

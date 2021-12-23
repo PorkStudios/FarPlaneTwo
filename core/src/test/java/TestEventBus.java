@@ -18,9 +18,9 @@
  *
  */
 
+import net.daporkchop.fp2.api.event.Constraint;
 import net.daporkchop.fp2.api.event.FEventBus;
 import net.daporkchop.fp2.api.event.FEventHandler;
-import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.event.EventBus;
 import org.junit.Test;
 
@@ -88,6 +88,51 @@ public class TestEventBus {
     @FEventHandler
     public void handleEventBaseWildcard(Event<Base<?>> event) {
         this.eventBaseWildcard++;
+    }
+
+    @Test
+    public void testOrdering() {
+        final int NOT_MONITOR_COUNT = 3;
+
+        class Events {
+            int idx = 0;
+
+            @FEventHandler(name = "first")
+            public void first(String s) {
+                checkState(this.idx++ == 0, this.idx);
+            }
+
+            @FEventHandler(name = "second",
+                    constrain = @Constraint(after = "first", before = "third"))
+            public void second(String s) {
+                checkState(this.idx++ == 1, this.idx);
+            }
+
+            @FEventHandler(name = "third")
+            public void third(String s) {
+                checkState(this.idx++ == 2, this.idx);
+            }
+
+            @FEventHandler(name = "monitor_third", constrain = @Constraint(monitor = true))
+            public void monitor_third(String s) {
+                checkState(this.idx++ == NOT_MONITOR_COUNT + 2, this.idx);
+            }
+
+            @FEventHandler(name = "monitor_second",
+                    constrain = @Constraint(after = "monitor_first", before = "monitor_third", monitor = true))
+            public void monitor_second(String s) {
+                checkState(this.idx++ == NOT_MONITOR_COUNT + 1, this.idx);
+            }
+
+            @FEventHandler(name = "monitor_first", constrain = @Constraint(monitor = true))
+            public void monitor_first(String s) {
+                checkState(this.idx++ == NOT_MONITOR_COUNT + 0, this.idx);
+            }
+        }
+
+        FEventBus eventBus = new EventBus();
+        eventBus.register(new Events());
+        eventBus.fire("");
     }
 
     private interface Base<T> {

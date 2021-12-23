@@ -20,30 +20,41 @@
 
 package net.daporkchop.fp2.api.event;
 
-import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Indicates that the annotated instance method can accept events fired on an {@link FEventBus}.
+ * Restricts the order in which {@link FEventHandler}s can be executed when multiple ones are listening for the same event.
  *
  * @author DaPorkchop_
  */
-@Target(ElementType.METHOD)
+@Target({})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface FEventHandler {
+public @interface Constraint {
     /**
-     * Gets the event handler's name. The name must be globally unique; if two event handlers share the same name, the behavior is undefined.
-     * <p>
-     * If the name is left as an empty string (default), a name will be computed from the method's erased signature
+     * Adds a dependency on handler(s) with the given name. If any other handler with the given name is found, it will be executed before this handler.
      *
-     * @return the event handler's name
+     * @return the name(s) of the handler(s) which should run before this handler
      */
-    String name() default "";
+    String[] before() default {};
 
     /**
-     * @return the {@link Constraint} which restricts the order in which this event handler may be executed
+     * Adds a reverse dependency on handler(s) with the given name. If any other handler with the given name is found, it will be executed after this handler.
+     *
+     * @return the name(s) of the handler(s) which should run after this handler
      */
-    Constraint constrain() default @Constraint;
+    String[] after() default {};
+
+    /**
+     * Marks this handler as a monitor. Monitors are always notified last.
+     * <p>
+     * If {@code true}, adds a dependency on all handler(s) for which {@link #monitor()} is {@code false}.
+     * <p>
+     * This is intended for handlers which want to consume the output of an event without modifying it. It should not be used as a lazy solution to make a "normal" handler run later than
+     * another one; that should be done using {@link #after()}.
+     *
+     * @return whether or not this handler is a monitor
+     */
+    boolean monitor() default false;
 }
