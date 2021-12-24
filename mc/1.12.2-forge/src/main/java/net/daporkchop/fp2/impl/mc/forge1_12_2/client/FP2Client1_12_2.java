@@ -36,7 +36,6 @@ import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.player.IFarPlayerClient;
 import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.client.gui.GuiContext1_12_2;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.client.render.TextureUVs1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.log.ChatAsPorkLibLogger;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
@@ -111,8 +110,6 @@ public class FP2Client1_12_2 extends FP2Client {
     }
 
     public void postInit() {
-        TextureUVs1_12_2.initDefault();
-
         this.mc.resourceManager.registerReloadListener(new FP2ResourceReloadListener());
     }
 

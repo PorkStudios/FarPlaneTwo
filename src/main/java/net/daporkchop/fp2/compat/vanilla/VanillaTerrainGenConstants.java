@@ -18,47 +18,20 @@
  *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_12_2;
+package net.daporkchop.fp2.compat.vanilla;
 
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
-import net.daporkchop.fp2.core.mode.api.ctx.TerrainGeneratorInfo;
-import net.daporkchop.fp2.core.server.event.GetTerrainGeneratorEvent;
-import net.minecraft.world.WorldServer;
-
-import static net.daporkchop.fp2.core.FP2Core.*;
+import lombok.experimental.UtilityClass;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public class TerrainGeneratorInfo1_12_2 implements TerrainGeneratorInfo {
-    @NonNull
-    protected final WorldServer world;
+@UtilityClass
+public class VanillaTerrainGenConstants {
+    public static final int GTH_SHIFT = 2; //generation tile shift (horizontal)
+    public static final int GTH_MASK = (1 << GTH_SHIFT) - 1;
+    public static final int GTH_SIZE = 1 << GTH_SHIFT; //generation tile size
 
-    @Override
-    public IFarWorldServer world() {
-        return (IFarWorldServer) this.world;
-    }
-
-    @Override
-    public Object implGenerator() {
-        return fp2().eventBus().fireAndGetFirst(new GetTerrainGeneratorEvent(this.world())).get();
-    }
-
-    @Override
-    public String generator() {
-        return this.world.getWorldInfo().getTerrainType().getName();
-    }
-
-    @Override
-    public String options() {
-        return this.world.getWorldInfo().getGeneratorOptions();
-    }
-
-    @Override
-    public long seed() {
-        return this.world.getSeed();
-    }
+    public static final int GTV_SHIFT = GTH_SHIFT + 1; //generation tile shift (vertical)
+    public static final int GTV_MASK = (1 << GTV_SHIFT) - 1;
+    public static final int GTV_SIZE = 1 << GTV_SHIFT;
 }

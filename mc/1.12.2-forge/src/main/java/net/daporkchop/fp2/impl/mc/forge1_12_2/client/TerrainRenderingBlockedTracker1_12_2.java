@@ -26,7 +26,6 @@ import net.daporkchop.fp2.client.gl.object.GLBuffer;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
-import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.lib.common.math.PMath;
 import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -97,7 +96,7 @@ public class TerrainRenderingBlockedTracker1_12_2 extends AbstractRefCounted imp
     public void update(@NonNull RenderGlobal renderGlobal) {
         //figure out the maximum extents of all of the renderChunks in the current ViewFrustum
         ViewFrustum viewFrustum = renderGlobal.viewFrustum;
-        boolean cubic = Constants.isCubicWorld(viewFrustum.world);
+        boolean cubic = false; //TODO: Constants.isCubicWorld(viewFrustum.world);
         int sizeX = viewFrustum.countChunksX + 2;
         int sizeY = viewFrustum.countChunksY + 2;
         int sizeZ = viewFrustum.countChunksZ + 2;

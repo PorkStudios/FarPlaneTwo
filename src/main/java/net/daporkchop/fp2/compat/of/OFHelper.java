@@ -20,9 +20,10 @@
 
 package net.daporkchop.fp2.compat.of;
 
+import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.util.Constants;
+import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.renderer.EntityRenderer;
 import net.minecraft.client.settings.GameSettings;
@@ -31,9 +32,13 @@ import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
 import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * Optifine compatibility code.
@@ -89,16 +94,16 @@ public class OFHelper {
     public static final int OF_SHADERS_MIDTEXCOORDATTRIB = 11;
     public static final int OF_SHADERS_TANGENTATTRIB = 12;
 
-    private static final MethodHandle OF_CONFIG_ISSHADERS = !OF ? null : Constants.staticHandle("Config", boolean.class, "isShaders");
+    private static final MethodHandle OF_CONFIG_ISSHADERS = !OF ? null : staticHandle("Config", boolean.class, "isShaders");
 
-    private static final MethodHandle OF_SHADERSRENDER_BEGINTERRAINSOLID = !OF ? null : Constants.staticHandle("net.optifine.shaders.ShadersRender", void.class, "beginTerrainSolid");
-    private static final MethodHandle OF_SHADERSRENDER_BEGINTERRAINCUTOUTMIPPED = !OF ? null : Constants.staticHandle("net.optifine.shaders.ShadersRender", void.class, "beginTerrainCutoutMipped");
-    private static final MethodHandle OF_SHADERSRENDER_BEGINTERRAINCUTOUT = !OF ? null : Constants.staticHandle("net.optifine.shaders.ShadersRender", void.class, "beginTerrainCutout");
-    private static final MethodHandle OF_SHADERSRENDER_ENDTERRAIN = !OF ? null : Constants.staticHandle("net.optifine.shaders.ShadersRender", void.class, "endTerrain");
-    private static final MethodHandle OF_SHADERSRENDER_PRERENDERCHUNKLAYER = !OF ? null : Constants.staticHandle("net.optifine.shaders.ShadersRender", void.class, "preRenderChunkLayer", BlockRenderLayer.class);
-    private static final MethodHandle OF_SHADERSRENDER_POSTRENDERCHUNKLAYER = !OF ? null : Constants.staticHandle("net.optifine.shaders.ShadersRender", void.class, "postRenderChunkLayer", BlockRenderLayer.class);
-    private static final MethodHandle OF_SHADERS_BEGINWATER = !OF ? null : Constants.staticHandle("net.optifine.shaders.Shaders", void.class, "beginWater");
-    private static final MethodHandle OF_SHADERS_ENDWATER = !OF ? null : Constants.staticHandle("net.optifine.shaders.Shaders", void.class, "endWater");
+    private static final MethodHandle OF_SHADERSRENDER_BEGINTERRAINSOLID = !OF ? null : staticHandle("net.optifine.shaders.ShadersRender", void.class, "beginTerrainSolid");
+    private static final MethodHandle OF_SHADERSRENDER_BEGINTERRAINCUTOUTMIPPED = !OF ? null : staticHandle("net.optifine.shaders.ShadersRender", void.class, "beginTerrainCutoutMipped");
+    private static final MethodHandle OF_SHADERSRENDER_BEGINTERRAINCUTOUT = !OF ? null : staticHandle("net.optifine.shaders.ShadersRender", void.class, "beginTerrainCutout");
+    private static final MethodHandle OF_SHADERSRENDER_ENDTERRAIN = !OF ? null : staticHandle("net.optifine.shaders.ShadersRender", void.class, "endTerrain");
+    private static final MethodHandle OF_SHADERSRENDER_PRERENDERCHUNKLAYER = !OF ? null : staticHandle("net.optifine.shaders.ShadersRender", void.class, "preRenderChunkLayer", BlockRenderLayer.class);
+    private static final MethodHandle OF_SHADERSRENDER_POSTRENDERCHUNKLAYER = !OF ? null : staticHandle("net.optifine.shaders.ShadersRender", void.class, "postRenderChunkLayer", BlockRenderLayer.class);
+    private static final MethodHandle OF_SHADERS_BEGINWATER = !OF ? null : staticHandle("net.optifine.shaders.Shaders", void.class, "beginWater");
+    private static final MethodHandle OF_SHADERS_ENDWATER = !OF ? null : staticHandle("net.optifine.shaders.Shaders", void.class, "endWater");
 
     public static final String OF_DEFINE_SHADERS = "OPTIFINE_SHADERS";
 
@@ -145,5 +150,24 @@ public class OFHelper {
     @SneakyThrows(Throwable.class)
     public static void of_Shaders_endWater() {
         OF_SHADERS_ENDWATER.invokeExact();
+    }
+
+    private static Class<?> toClass(@NonNull Object in) {
+        if (in instanceof Class) {
+            return uncheckedCast(in);
+        } else if (in instanceof String) {
+            return PorkUtil.classForName((String) in);
+        } else {
+            throw new IllegalArgumentException(PorkUtil.className(in));
+        }
+    }
+
+    private static MethodHandle staticHandle(@NonNull Object clazz, @NonNull Object returnType, @NonNull String name, @NonNull Object... params) {
+        try {
+            MethodType type = MethodType.methodType(toClass(returnType), Arrays.stream(params).map(OFHelper::toClass).toArray(Class[]::new));
+            return MethodHandles.lookup().findStatic(toClass(clazz), name, type);
+        } catch (NoSuchMethodException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

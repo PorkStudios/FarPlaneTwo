@@ -21,11 +21,12 @@
 package net.daporkchop.fp2.asm.debug.client.gui;
 
 import net.daporkchop.fp2.core.debug.util.DebugStats;
-import net.daporkchop.fp2.core.util.I18n;
 import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.core.mode.api.client.IFarTileCache;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.mode.api.player.IFarPlayerClient;
+import net.daporkchop.fp2.core.util.I18n;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiOverlayDebug;
 import org.spongepowered.asm.mixin.Mixin;
@@ -38,7 +39,6 @@ import java.text.NumberFormat;
 import java.util.List;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
-import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * @author DaPorkchop_
@@ -50,7 +50,7 @@ public abstract class MixinGuiOverlayDebug extends Gui {
             locals = LocalCapture.CAPTURE_FAILHARD)
     private void fp2_getDebugInfoRight_injectFP2DebugInfo(CallbackInfoReturnable<List<String>> ci,
                                                           long maxMemory, long totalMemory, long freeMemory, long usedMemory, List<String> list) {
-        IFarPlayerClient player = (IFarPlayerClient) MC.getConnection();
+        IFarPlayerClient player = (IFarPlayerClient) Minecraft.getMinecraft().getConnection();
         if (player == null) { //connection is null while the F3 screen is visible? this shouldn't be possible...
             return;
         }

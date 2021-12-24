@@ -72,7 +72,7 @@ import java.util.stream.Stream;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
- * Default implementation of {@link IAsyncBlockAccess} for vanilla worlds.
+ * Default implementation of {@link IAsyncBlockAccess} for cubic chunks worlds.
  *
  * @author DaPorkchop_
  */

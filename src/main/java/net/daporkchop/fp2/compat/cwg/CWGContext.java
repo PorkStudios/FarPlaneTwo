@@ -41,7 +41,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
 
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
-import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.fp2.compat.vanilla.VanillaTerrainGenConstants.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 

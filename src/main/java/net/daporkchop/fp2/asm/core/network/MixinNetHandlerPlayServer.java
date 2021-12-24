@@ -22,19 +22,19 @@ package net.daporkchop.fp2.asm.core.network;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.core.network.IPacket;
-import net.daporkchop.fp2.core.network.packet.debug.client.CPacketDebugDropAllTiles;
-import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
-import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionEnd;
-import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUpdateConfig;
-import net.daporkchop.fp2.core.util.annotation.CalledFromNetworkThread;
-import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.core.mode.api.player.IFarPlayerServer;
-import net.daporkchop.fp2.net.FP2Network;
+import net.daporkchop.fp2.core.network.IPacket;
+import net.daporkchop.fp2.core.network.packet.debug.client.CPacketDebugDropAllTiles;
+import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionBegin;
+import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionEnd;
+import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUpdateConfig;
+import net.daporkchop.fp2.core.util.annotation.CalledFromNetworkThread;
+import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
+import net.daporkchop.fp2.net.FP2Network;
 import net.daporkchop.lib.math.vector.Vec3d;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.network.NetHandlerPlayServer;
@@ -46,7 +46,7 @@ import org.spongepowered.asm.mixin.Unique;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
@@ -106,7 +106,7 @@ public abstract class MixinNetHandlerPlayServer implements IFarPlayerServer {
     @Unique
     private void handleDebug(@NonNull CPacketDebugDropAllTiles packet) {
         this.fp2_world.fp2_IFarWorld_workerManager().rootExecutor().execute(() -> {
-            FP2_LOG.info("Dropping all tiles");
+            fp2().log().info("Dropping all tiles");
             this.fp2_world.fp2_IFarWorldServer_forEachTileProvider(tileProvider -> tileProvider.trackerManager().dropAllTiles());
         });
     }

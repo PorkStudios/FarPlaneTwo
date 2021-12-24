@@ -59,7 +59,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.Objects;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
@@ -189,7 +188,7 @@ public abstract class MixinNetHandlerPlayClient implements IFarPlayerClient {
             if (this.modeFor(this.fp2_config) == this.fp2_context.mode()) {
                 this.fp2_context.notifyConfigChange(packet.config());
             } else {
-                FP2_LOG.warn("render mode was switched while a session is active!");
+                fp2().log().warn("render mode was switched while a session is active!");
             }
         }
     }

@@ -64,6 +64,19 @@ public interface FBlockWorld extends AutoCloseable {
     FGameRegistry registry();
 
     /**
+     * Checks whether or not <strong>any</strong> data in the given AABB is known.
+     *
+     * @param minX the minimum X coordinate (inclusive)
+     * @param minY the minimum Y coordinate (inclusive)
+     * @param minZ the minimum Z coordinate (inclusive)
+     * @param maxX the maximum X coordinate (exclusive)
+     * @param maxY the maximum Y coordinate (exclusive)
+     * @param maxZ the maximum Z coordinate (exclusive)
+     * @return whether or not any block data in the given AABB is known
+     */
+    boolean containsAnyData(int minX, int minY, int minZ, int maxX, int maxY, int maxZ);
+
+    /**
      * Gets the state at the position described by the given coordinates.
      *
      * @param x the X coordinate
@@ -92,17 +105,4 @@ public interface FBlockWorld extends AutoCloseable {
      * @return the packed light levels
      */
     byte getLight(int x, int y, int z);
-
-    /**
-     * Checks whether or not <strong>any</strong> data in the given AABB is known.
-     *
-     * @param minX the minimum X coordinate
-     * @param minY the minimum Y coordinate
-     * @param minZ the minimum Z coordinate
-     * @param maxX the maximum X coordinate
-     * @param maxY the maximum Y coordinate
-     * @param maxZ the maximum Z coordinate
-     * @return whether or not any block data in the given AABB is known
-     */
-    boolean containsAnyData(int minX, int minY, int minZ, int maxX, int maxY, int maxZ);
 }

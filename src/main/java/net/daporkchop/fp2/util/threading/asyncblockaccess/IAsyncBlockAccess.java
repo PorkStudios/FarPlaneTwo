@@ -116,7 +116,7 @@ public interface IAsyncBlockAccess extends IBlockHeightAccess {
     /**
      * @see io.github.opencubicchunks.cubicchunks.api.world.IHeightMap#isOccluded(int, int, int)
      */
-    default boolean isOccluded(int blockX, int blockY, int blockZ, boolean allowGeneration)  {
+    default boolean isOccluded(int blockX, int blockY, int blockZ, boolean allowGeneration) {
         return blockY < this.getTopBlockY(blockX, blockZ, allowGeneration);
     }
 
@@ -223,14 +223,5 @@ public interface IAsyncBlockAccess extends IBlockHeightAccess {
     @Deprecated
     default TileEntity getTileEntity(BlockPos pos) {
         throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Allows access to the {@link IAsyncBlockAccess} belonging to a {@link net.minecraft.world.WorldServer}.
-     *
-     * @author DaPorkchop_
-     */
-    interface Holder {
-        IAsyncBlockAccess fp2_IAsyncBlockAccess$Holder_asyncBlockAccess();
     }
 }

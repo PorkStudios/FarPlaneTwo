@@ -70,6 +70,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  *
  * @author DaPorkchop_
  */
+//TODO: this currently does not properly wait for handlers to be removed from all executing lists when unregistering them
 public class EventBus implements FEventBus {
     protected static final LoadingCache<Type, List<Type>> ALL_TYPES_CACHE = CacheBuilder.newBuilder()
             .weakKeys().weakValues()
@@ -248,7 +249,7 @@ public class EventBus implements FEventBus {
     protected final Map<Type, Set<Class<?>>> signatureToEventClasses = new HashMap<>();
     protected final Map<Type, HandlerList> signatureToHandlers = new HashMap<>();
 
-    protected final Map<Class<?>, HandlerList> eventClassesToHandlers = new WeakHashMap<>();
+    protected final Map<Class<?>, HandlerList> eventClassesToHandlers = CacheBuilder.newBuilder().weakKeys().<Class<?>, HandlerList>build().asMap();
 
     @Override
     public void register(@NonNull Object listener) {

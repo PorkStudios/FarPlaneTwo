@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.core.client.render;
 
+import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.api.event.ReloadCompleteEvent;
@@ -68,6 +69,7 @@ public interface TextureUVs {
      * @author DaPorkchop_
      */
     @RequiredArgsConstructor
+    @EqualsAndHashCode
     final class QuadList {
         @Attribute(vectorAxes = { "First", "Last" }, convert = Attribute.Conversion.TO_UNSIGNED)
         public final int ua_texQuadListFirst;
@@ -78,6 +80,7 @@ public interface TextureUVs {
      * @author DaPorkchop_
      */
     @RequiredArgsConstructor
+    @EqualsAndHashCode
     final class PackedBakedQuad {
         @Attribute(vectorAxes = { "S", "T", "P", "Q" })
         public final float ua_texQuadCoordS;

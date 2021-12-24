@@ -28,7 +28,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
-import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 
 /**

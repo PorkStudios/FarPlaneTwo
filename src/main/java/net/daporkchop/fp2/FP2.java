@@ -21,8 +21,6 @@
 package net.daporkchop.fp2;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.api.event.FEventHandler;
-import net.daporkchop.fp2.api.event.RegisterEvent;
 import net.daporkchop.fp2.common.util.Identifier;
 import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.fp2.common.util.exception.ResourceNotFoundException;
@@ -37,10 +35,7 @@ import net.daporkchop.fp2.impl.mc.forge1_12_2.I18n1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.client.FP2Client1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.log.Log4jAsPorkLibLogger;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.server.FP2Server1_12_2;
-import net.daporkchop.fp2.core.mode.heightmap.HeightmapRenderMode;
-import net.daporkchop.fp2.core.mode.voxel.VoxelRenderMode;
 import net.daporkchop.fp2.net.FP2Network;
-import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.fp2.util.event.IdMappingsChangedEvent;
 import net.daporkchop.fp2.util.threading.futureexecutor.ServerThreadMarkedFutureExecutor;
 import net.minecraft.util.ResourceLocation;
@@ -48,6 +43,7 @@ import net.minecraftforge.fml.client.FMLClientHandler;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.common.ModMetadata;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLModIdMappingEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
@@ -77,7 +73,8 @@ public class FP2 extends FP2Core implements ResourceProvider {
     private FP2Client1_12_2 client;
     private FP2Server1_12_2 server;
 
-    private String version = "";
+    @Mod.Metadata
+    private ModMetadata metadata;
 
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
@@ -85,9 +82,6 @@ public class FP2 extends FP2Core implements ResourceProvider {
         this.server = new FP2Server1_12_2(this);
 
         this.log(new Log4jAsPorkLibLogger(event.getModLog()));
-
-        Constants.FP2_LOG = event.getModLog();
-        this.version = event.getModMetadata().version;
 
         this.log().info("Detected x86 SIMD extension: %s", x86FeatureDetector.INSTANCE.maxSupportedVectorExtension());
 
@@ -150,7 +144,7 @@ public class FP2 extends FP2Core implements ResourceProvider {
 
         return FP2_DEBUG //accept any version in debug mode
                || remoteVersion == null //fp2 isn't present on the remote side, so it doesn't matter whether or not it's compatible
-               || this.version.equals(remoteVersion); //if fp2 is present, the versions must match
+               || this.metadata.version.equals(remoteVersion); //if fp2 is present, the versions must match
     }
 
     //

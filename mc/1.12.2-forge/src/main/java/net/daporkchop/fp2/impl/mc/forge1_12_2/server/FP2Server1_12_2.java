@@ -20,8 +20,6 @@
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.server;
 
-import io.github.opencubicchunks.cubicchunks.api.world.CubeDataEvent;
-import io.github.opencubicchunks.cubicchunks.api.world.ICube;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -34,14 +32,11 @@ import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.core.mode.api.player.IFarPlayerServer;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketHandshake;
 import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
-import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
 import net.daporkchop.fp2.core.server.event.TickEndEvent;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.server.world.FColumn1_12_2;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.server.world.FCube1_12_2;
 import net.daporkchop.lib.common.system.PlatformInfo;
 import net.daporkchop.lib.compression.zstd.Zstd;
 import net.daporkchop.lib.math.vector.Vec2i;
-import net.daporkchop.lib.math.vector.Vec3i;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
@@ -58,7 +53,6 @@ import net.minecraftforge.fml.common.gameevent.PlayerEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
-import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * Manages initialization of FP2 on the server.
@@ -86,9 +80,6 @@ public class FP2Server1_12_2 {
         //register self to listen for events
         this.fp2().eventBus().register(this);
         MinecraftForge.EVENT_BUS.register(this);
-        if (CC) {
-            MinecraftForge.EVENT_BUS.register(new CCEvents());
-        }
     }
 
     public void init() {
@@ -169,18 +160,5 @@ public class FP2Server1_12_2 {
     public void onChunkDataSave(ChunkDataEvent.Save event) {
         Chunk chunk = event.getChunk();
         ((IFarWorldServer) chunk.getWorld()).fp2_IFarWorldServer_eventBus().fire(new ColumnSavedEvent(Vec2i.of(chunk.x, chunk.z), new FColumn1_12_2(chunk), event.getData()));
-    }
-
-    /**
-     * Forge event listeners for Cubic Chunks' events used on the server.
-     *
-     * @author DaPorkchop_
-     */
-    private class CCEvents {
-        @SubscribeEvent(priority = EventPriority.LOWEST)
-        public void onCubeDataSave(CubeDataEvent.Save event) {
-            ICube cube = event.getCube();
-            ((IFarWorldServer) cube.getWorld()).fp2_IFarWorldServer_eventBus().fire(new CubeSavedEvent(Vec3i.of(cube.getX(), cube.getY(), cube.getZ()), new FCube1_12_2(cube), event.getData()));
-        }
     }
 }

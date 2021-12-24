@@ -24,18 +24,19 @@ import it.unimi.dsi.fastutil.objects.Reference2IntMap;
 import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.api.event.ReloadEvent;
+import net.daporkchop.fp2.api.event.ReturningEvent;
 import net.daporkchop.fp2.core.client.render.TextureUVs;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayBuffer;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayFormat;
 import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.world.registry.GameRegistry1_12_2;
-import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.primitive.map.ObjIntMap;
 import net.daporkchop.lib.primitive.map.open.ObjIntOpenHashMap;
-import net.daporkchop.lib.unsafe.PUnsafe;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
@@ -49,108 +50,28 @@ import net.minecraft.util.EnumFacing;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.IdentityHashMap;
 import java.util.List;
-import java.util.Map;
 
-import static net.daporkchop.fp2.compat.of.OFHelper.*;
 import static net.daporkchop.fp2.core.FP2Core.*;
-import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * @author DaPorkchop_
  */
 @Getter
 public class TextureUVs1_12_2 extends AbstractReleasable implements TextureUVs {
-    private static final Map<IBlockState, StateFaceReplacer> STATE_TO_REPLACER = new IdentityHashMap<>();
-    private static final StateFaceReplacer DEFAULT_REPLACER = (state, face) -> state;
-
-    private static final Map<IBlockState, StateFaceQuadRenderer> STATE_TO_RENDERER = new IdentityHashMap<>();
-    private static final StateFaceQuadRenderer DEFAULT_RENDERER = (state, face, model) -> {
-        List<BakedQuad> quads = model.getQuads(state, face, 0L);
-        if (quads.isEmpty()) { //the model has no cullfaces for the given facing direction, try to find a matching non-cullface
-            for (BakedQuad quad : model.getQuads(state, null, 0L)) {
-                if (quad.getFace() == face) {
-                    quads = Collections.singletonList(quad);
-                    break;
-                }
-            }
-        }
-
-        //TODO: we could possibly do something using the code from FaceBakery#getFacingFromVertexData(int[]) to find the quad closest to this face, even if it's not
-        // an exact match...
-
-        if (!quads.isEmpty()) {
-            List<PackedBakedQuad> out = new ArrayList<>(quads.size());
-            for (int i = 0, len = quads.size(); i < len; i++) {
-                out.add(quad(quads.get(i)));
-            }
-            return out;
-        }
-        return null;
-    };
-
-    public static void putReplacer(@NonNull Block block, @NonNull StateFaceReplacer replacer) {
-        for (IBlockState state : block.getBlockState().getValidStates()) {
-            putReplacer(state, replacer);
-        }
-    }
-
-    public static void putReplacer(@NonNull IBlockState state, @NonNull StateFaceReplacer replacer) {
-        STATE_TO_REPLACER.put(state, replacer);
-    }
-
-    public static void putRenderer(@NonNull Block block, @NonNull StateFaceQuadRenderer renderer) {
-        for (IBlockState state : block.getBlockState().getValidStates()) {
-            putRenderer(state, renderer);
-        }
-    }
-
-    public static void putRenderer(@NonNull IBlockState state, @NonNull StateFaceQuadRenderer renderer) {
-        STATE_TO_RENDERER.put(state, renderer);
-    }
-
-    public static void initDefault() {
-        //fluids use their own system for rendering
-        StateFaceQuadRenderer waterRenderer = (state, face, model) -> {
-            String spriteName = face.getHorizontalIndex() < 0 ? "minecraft:blocks/water_still" : "minecraft:blocks/water_flow";
-            double spriteFactor = face.getHorizontalIndex() < 0 ? 16.0d : 8.0d;
-            TextureAtlasSprite sprite = MC.getTextureMapBlocks().getAtlasSprite(spriteName);
-            return Collections.singletonList(new PackedBakedQuad(sprite.getInterpolatedU(0.0d), sprite.getInterpolatedV(0.0d), sprite.getInterpolatedU(spriteFactor), sprite.getInterpolatedV(spriteFactor), 0.0f));
-        };
-        putRenderer(Blocks.WATER, waterRenderer);
-        putRenderer(Blocks.FLOWING_WATER, waterRenderer);
-        putRenderer(Blocks.LAVA, (state, face, model) ->
-                Collections.singletonList(quad(MC.getTextureMapBlocks().getAtlasSprite("minecraft:blocks/lava_still"), -1)));
-        putRenderer(Blocks.FLOWING_LAVA, (state, face, model) ->
-                Collections.singletonList(quad(MC.getTextureMapBlocks().getAtlasSprite("minecraft:blocks/lava_flow"), -1)));
-
-        //grass renders in two layers, which is somewhat expensive to simulate with shaders. we render the sides as dirt, you can't tell the difference
-        // from far away anyway
-        putRenderer(Blocks.GRASS, (state, face, model) -> {
-            if (OF && PUnsafe.getInt(MC.gameSettings, OF_BETTERGRASS_OFFSET) != OF_OFF) {
-                if (face != EnumFacing.DOWN) {
-                    return DEFAULT_RENDERER.render(state, EnumFacing.UP, model); //use the top texture for the sides
-                }
-            }
-            return DEFAULT_RENDERER.render(state, face, model);
-        });
-    }
-
-    private static PackedBakedQuad quad(@NonNull TextureAtlasSprite sprite, float tintFactor) {
+    public static PackedBakedQuad quad(@NonNull TextureAtlasSprite sprite, float tintFactor) {
         return new PackedBakedQuad(sprite.getMinU(), sprite.getMinV(), sprite.getMaxU(), sprite.getMaxV(), tintFactor);
     }
 
-    private static PackedBakedQuad quad(@NonNull TextureAtlasSprite sprite, int tintIndex) {
+    public static PackedBakedQuad quad(@NonNull TextureAtlasSprite sprite, int tintIndex) {
         return quad(sprite, tintIndex == -1 ? 1.0f : 0.0f);
     }
 
-    private static PackedBakedQuad quad(@NonNull TextureAtlasSprite sprite) {
+    public static PackedBakedQuad quad(@NonNull TextureAtlasSprite sprite) {
         return quad(sprite, 1.0f);
     }
 
-    private static PackedBakedQuad quad(@NonNull BakedQuad quad) {
+    public static PackedBakedQuad quad(@NonNull BakedQuad quad) {
         return quad(quad.getSprite(), quad.getTintIndex());
     }
 
@@ -213,12 +134,10 @@ public class TextureUVs1_12_2 extends AbstractReleasable implements TextureUVs {
                 int[] faceIds = new int[6];
 
                 try {
-                    StateFaceReplacer replacer = STATE_TO_REPLACER.getOrDefault(state, DEFAULT_REPLACER);
-                    StateFaceQuadRenderer renderer = STATE_TO_RENDERER.getOrDefault(state, DEFAULT_RENDERER);
                     for (EnumFacing face : EnumFacing.VALUES) {
-                        IBlockState replacedState = replacer.replace(state, face);
+                        IBlockState replacedState = fp2().eventBus().fireAndGetFirst(new StateFaceReplaceEvent(state, face)).orElse(state);
                         IBakedModel model = shapes.getModelForState(replacedState);
-                        List<PackedBakedQuad> quads = PorkUtil.fallbackIfNull(renderer.render(replacedState, face, model), missingTextureQuads);
+                        List<PackedBakedQuad> quads = fp2().eventBus().fireAndGetFirst(new StateFaceQuadRenderEvent(state, face, model)).orElse(missingTextureQuads);
 
                         int id = distinctQuadsToId.getOrDefault(quads, -1);
                         if (id < 0) { //allocate new ID
@@ -282,17 +201,29 @@ public class TextureUVs1_12_2 extends AbstractReleasable implements TextureUVs {
     /**
      * @author DaPorkchop_
      */
-    @FunctionalInterface
-    public interface StateFaceReplacer {
-        IBlockState replace(IBlockState state, EnumFacing face);
+    @RequiredArgsConstructor
+    @Getter
+    @Setter
+    public static class StateFaceReplaceEvent implements ReturningEvent<IBlockState> {
+        @NonNull
+        private IBlockState state;
+        @NonNull
+        private EnumFacing facing;
     }
 
     /**
      * @author DaPorkchop_
      */
-    @FunctionalInterface
-    public interface StateFaceQuadRenderer {
-        List<PackedBakedQuad> render(IBlockState state, EnumFacing face, IBakedModel model);
+    @RequiredArgsConstructor
+    @Getter
+    @Setter
+    public static class StateFaceQuadRenderEvent implements ReturningEvent<List<PackedBakedQuad>> {
+        @NonNull
+        private IBlockState state;
+        @NonNull
+        private EnumFacing facing;
+        @NonNull
+        private IBakedModel model;
     }
 
     /**

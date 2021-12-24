@@ -24,8 +24,6 @@ import com.google.common.collect.ImmutableMap;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.event.FEventBus;
 import net.daporkchop.fp2.api.world.FBlockWorld;
-import net.daporkchop.fp2.compat.cc.asyncblockaccess.CCAsyncBlockAccessImpl;
-import net.daporkchop.fp2.compat.vanilla.asyncblockaccess.VanillaAsyncBlockAccessImpl;
 import net.daporkchop.fp2.core.event.EventBus;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
@@ -33,11 +31,10 @@ import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.core.mode.api.ctx.TerrainGeneratorInfo;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
+import net.daporkchop.fp2.core.server.event.GetExactFBlockWorldEvent;
 import net.daporkchop.fp2.core.util.threading.workergroup.DefaultWorkerManager;
 import net.daporkchop.fp2.core.util.threading.workergroup.WorkerManager;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.TerrainGeneratorInfo1_12_2;
-import net.daporkchop.fp2.util.Constants;
-import net.daporkchop.fp2.util.threading.asyncblockaccess.IAsyncBlockAccess;
 import net.daporkchop.fp2.util.threading.futureexecutor.ServerThreadMarkedFutureExecutor;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.WorldServer;
@@ -51,6 +48,7 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
@@ -58,7 +56,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @Mixin(WorldServer.class)
-public abstract class MixinWorldServer extends MixinWorld implements IFarWorldServer, IAsyncBlockAccess.Holder {
+public abstract class MixinWorldServer extends MixinWorld implements IFarWorldServer {
     @Shadow
     @Final
     private MinecraftServer server;
@@ -69,23 +67,21 @@ public abstract class MixinWorldServer extends MixinWorld implements IFarWorldSe
     protected IFarTileProvider[] fp2_tileProviders;
 
     @Unique
-    protected WorkerManager workerManager;
+    protected WorkerManager fp2_workerManager;
 
     @Unique
-    protected IAsyncBlockAccess fp2_asyncBlockAccess;
+    protected FBlockWorld fp2_exactFBlockWorld;
 
     @Unique
-    protected FEventBus eventBus = new EventBus();
+    protected FEventBus fp2_eventBus = new EventBus();
 
     @Override
     public void fp2_IFarWorld_init() {
         super.fp2_IFarWorld_init();
 
-        this.workerManager = new DefaultWorkerManager(this.server.serverThread, ServerThreadMarkedFutureExecutor.getFor(this.server));
+        this.fp2_workerManager = new DefaultWorkerManager(this.server.serverThread, ServerThreadMarkedFutureExecutor.getFor(this.server));
 
-        this.fp2_asyncBlockAccess = Constants.isCubicWorld(uncheckedCast(this))
-                ? new CCAsyncBlockAccessImpl(uncheckedCast(this))
-                : new VanillaAsyncBlockAccessImpl(uncheckedCast(this));
+        this.fp2_exactFBlockWorld = fp2().eventBus().fireAndGetFirst(new GetExactFBlockWorldEvent(this)).get();
 
         ImmutableMap.Builder<IFarRenderMode, IFarTileProvider> builder = ImmutableMap.builder();
         IFarRenderMode.REGISTRY.forEachEntry((name, mode) -> builder.put(mode, mode.tileProvider(uncheckedCast(this))));
@@ -101,7 +97,7 @@ public abstract class MixinWorldServer extends MixinWorld implements IFarWorldSe
 
     @Override
     public WorkerManager fp2_IFarWorld_workerManager() {
-        return this.workerManager;
+        return this.fp2_workerManager;
     }
 
     @Override
@@ -133,7 +129,7 @@ public abstract class MixinWorldServer extends MixinWorld implements IFarWorldSe
 
     @Override
     public FBlockWorld fp2_IFarWorldServer_fblockWorld() {
-        return this.fp2_asyncBlockAccess;
+        return this.fp2_exactFBlockWorld;
     }
 
     @Override
@@ -142,12 +138,7 @@ public abstract class MixinWorldServer extends MixinWorld implements IFarWorldSe
     }
 
     @Override
-    public IAsyncBlockAccess fp2_IAsyncBlockAccess$Holder_asyncBlockAccess() {
-        return this.fp2_asyncBlockAccess;
-    }
-
-    @Override
     public FEventBus fp2_IFarWorldServer_eventBus() {
-        return this.eventBus;
+        return this.fp2_eventBus;
     }
 }

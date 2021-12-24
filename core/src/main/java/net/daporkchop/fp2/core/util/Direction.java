@@ -20,14 +20,24 @@
 
 package net.daporkchop.fp2.core.util;
 
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.lib.math.vector.Vec3i;
+
 /**
  * @author DaPorkchop_
  */
+@RequiredArgsConstructor
+@Getter
 public enum Direction {
-    POSITIVE_X,
-    POSITIVE_Y,
-    POSITIVE_Z,
-    NEGATIVE_X,
-    NEGATIVE_Y,
-    NEGATIVE_Z;
+    POSITIVE_X(Vec3i.of(1, 0, 0)),
+    POSITIVE_Y(Vec3i.of(0, 1, 0)),
+    POSITIVE_Z(Vec3i.of(0, 0, 1)),
+    NEGATIVE_X(Vec3i.of(-1, 0, 0)),
+    NEGATIVE_Y(Vec3i.of(0, -1, 0)),
+    NEGATIVE_Z(Vec3i.of(0, 0, -1));
+    
+    @NonNull
+    private final Vec3i vector;
 }

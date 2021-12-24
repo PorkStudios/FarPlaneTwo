@@ -28,7 +28,7 @@ import net.daporkchop.fp2.core.util.GlobalAllocators;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.minecraft.world.biome.BiomeProvider;
 
-import static net.daporkchop.fp2.util.Constants.*;
+import static net.daporkchop.fp2.compat.vanilla.VanillaTerrainGenConstants.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 
 /**

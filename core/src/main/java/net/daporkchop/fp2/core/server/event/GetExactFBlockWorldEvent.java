@@ -18,47 +18,23 @@
  *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_12_2;
+package net.daporkchop.fp2.core.server.event;
 
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.api.event.ReturningEvent;
+import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
-import net.daporkchop.fp2.core.mode.api.ctx.TerrainGeneratorInfo;
-import net.daporkchop.fp2.core.server.event.GetTerrainGeneratorEvent;
-import net.minecraft.world.WorldServer;
-
-import static net.daporkchop.fp2.core.FP2Core.*;
 
 /**
+ * Fired in order to retrieve the exact {@link FBlockWorld} for accessing the real block data in a given {@link IFarWorldServer}.
+ *
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public class TerrainGeneratorInfo1_12_2 implements TerrainGeneratorInfo {
+@Getter
+public class GetExactFBlockWorldEvent implements ReturningEvent<FBlockWorld> {
     @NonNull
-    protected final WorldServer world;
-
-    @Override
-    public IFarWorldServer world() {
-        return (IFarWorldServer) this.world;
-    }
-
-    @Override
-    public Object implGenerator() {
-        return fp2().eventBus().fireAndGetFirst(new GetTerrainGeneratorEvent(this.world())).get();
-    }
-
-    @Override
-    public String generator() {
-        return this.world.getWorldInfo().getTerrainType().getName();
-    }
-
-    @Override
-    public String options() {
-        return this.world.getWorldInfo().getGeneratorOptions();
-    }
-
-    @Override
-    public long seed() {
-        return this.world.getSeed();
-    }
+    protected final IFarWorldServer world;
 }

@@ -23,14 +23,15 @@ package net.daporkchop.fp2.asm.core.world;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorld;
+import net.daporkchop.fp2.core.server.event.GetCoordinateLimitsEvent;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.world.registry.GameRegistry1_12_2;
-import net.daporkchop.fp2.util.Constants;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 
+import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
@@ -62,7 +63,7 @@ public abstract class MixinWorld implements IFarWorld {
     public void fp2_IFarWorld_init() {
         checkState(!this.isInitialized(), "already initialized!");
 
-        this.fp2_coordLimits = Constants.getBounds(uncheckedCast(this));
+        this.fp2_coordLimits = fp2().eventBus().fireAndGetFirst(new GetCoordinateLimitsEvent(uncheckedCast(this))).get();
     }
 
     @Override
