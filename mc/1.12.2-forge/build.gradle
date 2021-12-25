@@ -122,17 +122,17 @@ mixin {
 natives.modules {
     register("cwg-noise") {
         sourceSet = sourceSets.main
-        root = "net/daporkchop/fp2/compat/cwg/noise"
+        root = "net/daporkchop/fp2/impl/mc/forge1_12_2/compat/cwg/noise"
         simd = true
     }
     register("vanilla-biomes") {
         sourceSet = sourceSets.main
-        root = "net/daporkchop/fp2/compat/vanilla/biome/layer/c"
+        root = "net/daporkchop/fp2/impl/mc/forge1_12_2/compat/vanilla/biome/layer/c"
         simd = true
     }
     x86 {
         sourceSet = sourceSets.main
-        root = "net/daporkchop/fp2/compat/x86"
+        root = "net/daporkchop/fp2/impl/mc/forge1_12_2/compat/x86"
     }
 }
 

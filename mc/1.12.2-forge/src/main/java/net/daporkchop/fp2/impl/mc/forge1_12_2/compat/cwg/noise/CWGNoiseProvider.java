@@ -37,8 +37,8 @@ import static com.flowpowered.noise.module.source.Perlin.*;
  */
 public interface CWGNoiseProvider extends Feature<CWGNoiseProvider> {
     CWGNoiseProvider INSTANCE = FeatureBuilder.<CWGNoiseProvider>create(CWGNoiseProvider.class)
-            .addNative("net.daporkchop.fp2.compat.cwg.noise.NativeCWGNoiseProvider", x86FeatureDetector.INSTANCE.maxSupportedVectorExtension())
-            .addJava("net.daporkchop.fp2.compat.cwg.noise.JavaCWGNoiseProvider")
+            .addNative("net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cwg.noise.NativeCWGNoiseProvider", x86FeatureDetector.INSTANCE.maxSupportedVectorExtension())
+            .addJava("net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cwg.noise.JavaCWGNoiseProvider")
             .build(true);
 
     CWGNoiseProvider JAVA_INSTANCE = INSTANCE.isNative() ? new JavaCWGNoiseProvider() : INSTANCE;

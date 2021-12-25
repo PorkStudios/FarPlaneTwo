@@ -34,8 +34,8 @@ import net.minecraft.world.gen.layer.GenLayer;
  */
 public interface FastLayerProvider extends Feature<FastLayerProvider> {
     FastLayerProvider INSTANCE = FeatureBuilder.<FastLayerProvider>create(FastLayerProvider.class)
-            .addNative("net.daporkchop.fp2.compat.vanilla.biome.layer.c.NativeLayerProvider", x86FeatureDetector.INSTANCE.maxSupportedVectorExtension())
-            .addJava("net.daporkchop.fp2.compat.vanilla.biome.layer.java.JavaLayerProvider")
+            .addNative("net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.c.NativeLayerProvider", x86FeatureDetector.INSTANCE.maxSupportedVectorExtension())
+            .addJava("net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.java.JavaLayerProvider")
             .build(true);
 
     @SuppressWarnings("deprecation")

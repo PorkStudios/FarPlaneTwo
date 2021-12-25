@@ -39,6 +39,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -47,6 +48,25 @@ import java.util.stream.Stream;
 @Getter
 @EqualsAndHashCode
 public final class NativeSpec implements Serializable {
+    protected static String mangleModuleName(String name) {
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < name.length(); i++) {
+            char c = name.charAt(i);
+            if ((c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) { //the character can be used without changes
+                builder.append(c);
+            } else if (c == '_') {
+                builder.append("_1");
+            } else if (c == ';') {
+                builder.append("_2");
+            } else if (c == '[') {
+                builder.append("_3");
+            } else {
+                builder.append(String.format("_0%04x", (int) c));
+            }
+        }
+        return builder.toString();
+    }
+
     private final String moduleName;
     private final String moduleRoot;
 
@@ -83,7 +103,7 @@ public final class NativeSpec implements Serializable {
                     this.includeDirectories.addAll(options.getIncludeDirectories().getOrElse(Collections.emptySet()));
                 });
 
-        this.defines.put("FP2_MODULE", this.moduleRoot.replace('/', '_'));
+        this.defines.put("FP2_MODULE", Stream.of(this.moduleRoot.split("/")).map(NativeSpec::mangleModuleName).collect(Collectors.joining("_")));
         if (simdExtension != null) {
             this.defines.put("_FP2_VEC_SIZE", String.valueOf(simdExtension.getRegisterWidth().get()));
         }

@@ -31,7 +31,7 @@ import net.daporkchop.lib.natives.FeatureBuilder;
 public interface x86FeatureDetector extends Feature<x86FeatureDetector> {
     x86FeatureDetector INSTANCE = FeatureBuilder.<x86FeatureDetector>create(x86FeatureDetector.class)
             .addNative(Native_x86FeatureDetector.initAndGetClassName())
-            .addJava("net.daporkchop.fp2.compat.x86.Java_x86FeatureDetector")
+            .addJava("net.daporkchop.fp2.impl.mc.forge1_12_2.compat.x86.Java_x86FeatureDetector")
             .build(true);
 
     /**
