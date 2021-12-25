@@ -100,7 +100,7 @@ pipeline {
             deleteDir()
 
             withCredentials([string(credentialsId: "daporkchop_discord_webhook", variable: "discordWebhook")]) {
-                discordSend thumbnail: "https://raw.githubusercontent.com/PorkStudios/FarPlaneTwo/${BRANCH_NAME}/src/main/resources/assets/fp2/textures/logo.png",
+                discordSend thumbnail: "https://raw.githubusercontent.com/PorkStudios/FarPlaneTwo/${BRANCH_NAME}/core/src/main/resources/assets/fp2/textures/logo.png",
                         result: currentBuild.currentResult,
                         description: getDiscordMessage(),
                         link: env.BUILD_URL,

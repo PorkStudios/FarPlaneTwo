@@ -47,7 +47,7 @@ public abstract class MixinRegionFileCache {
      */
     @Overwrite
     public static synchronized RegionFile createOrLoadRegionFile(File worldDir, int chunkX, int chunkZ) {
-        throw new UnsupportedOperationException("fp2");
+        throw new UnsupportedOperationException("assets/fp2");
     }
 
     /**
@@ -55,7 +55,7 @@ public abstract class MixinRegionFileCache {
      */
     @Overwrite
     public static synchronized RegionFile getRegionFileIfExists(File worldDir, int chunkX, int chunkZ) {
-        throw new UnsupportedOperationException("fp2");
+        throw new UnsupportedOperationException("assets/fp2");
     }
 
     @Inject(method = "Lnet/minecraft/world/chunk/storage/RegionFileCache;clearRegionFileReferences()V",
