@@ -22,7 +22,7 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.client.render;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.asm.interfaz.client.renderer.IMixinRenderGlobal;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.client.renderer.IMixinRenderGlobal;
 import net.daporkchop.fp2.core.client.MatrixHelper;
 import net.daporkchop.fp2.common.util.DirectBufferHackery;
 import net.daporkchop.fp2.core.client.render.GlobalUniformAttributes;
@@ -33,7 +33,7 @@ import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.FakeFarWorldClient;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.ResourceProvider1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.world.registry.GameRegistry1_12_2;
-import net.daporkchop.fp2.util.SingleBiomeBlockAccess;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.util.SingleBiomeBlockAccess;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;

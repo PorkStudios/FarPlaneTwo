@@ -24,7 +24,7 @@ apply from: "${project.rootDir}/natives/natives.gradle"
 minecraft {
     mappings mappingsChannel, mappingsVersion
 
-    accessTransformer = file("../../src/main/resources/META-INF/fp2_at.cfg")
+    accessTransformer = file("src/main/resources/META-INF/fp2_at.cfg")
 
     runs {
         client {
@@ -42,7 +42,7 @@ minecraft {
     mappings = "$mcpmappingsVersion"
     makeObfSourceJar = false
 
-    coreMod = "net.daporkchop.fp2.asm.FP2MixinLoader"
+    coreMod = "net.daporkchop.fp2.impl.mc.forge1_12_2.asm.FP2MixinLoader"
 
     def args = [
             "-Dmixin.checks.interfaces=true",
@@ -171,7 +171,7 @@ shadowJar {
                 "tweakClass": "org.spongepowered.asm.launch.MixinTweaker",
                 "TweakOrder": 0,
                 "FMLCorePluginContainsFMLMod": "true",
-                "FMLCorePlugin": "net.daporkchop.fp2.asm.FP2MixinLoader",
+                "FMLCorePlugin": "net.daporkchop.fp2.impl.mc.forge1_12_2.asm.FP2MixinLoader",
                 "ForceLoadAsMod": "true",
                 "FMLAT": "fp2_at.cfg"
         )
