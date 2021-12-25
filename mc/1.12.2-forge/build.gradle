@@ -59,15 +59,6 @@ minecraft {
     serverJvmArgs += args
 }*/
 
-sourceSets.main {
-    java.srcDirs += ["../../src/main/java"]
-}
-
-sourceSets.test {
-    java.srcDirs += ["../../src/test/java"]
-    resources.srcDirs += ["../../src/test/resources"]
-}
-
 repositories {
     maven { //needed for CWG
         name = "elytradev"

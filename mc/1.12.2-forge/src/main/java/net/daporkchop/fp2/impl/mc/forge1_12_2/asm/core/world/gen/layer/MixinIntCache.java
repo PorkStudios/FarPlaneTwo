@@ -20,7 +20,7 @@
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.core.world.gen.layer;
 
-import net.daporkchop.fp2.compat.vanilla.TLIntCache;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.TLIntCache;
 import net.daporkchop.lib.common.misc.threadlocal.TL;
 import net.minecraft.world.gen.layer.IntCache;
 import org.spongepowered.asm.mixin.Mixin;

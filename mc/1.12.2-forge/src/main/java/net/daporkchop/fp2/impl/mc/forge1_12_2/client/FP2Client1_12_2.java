@@ -23,11 +23,9 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.client;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.FP2;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
 import net.daporkchop.fp2.api.event.ChangedEvent;
 import net.daporkchop.fp2.api.event.FEventHandler;
-import net.daporkchop.fp2.client.FP2ResourceReloadListener;
-import net.daporkchop.fp2.client.GuiButtonFP2Options;
 import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.gui.GuiContext;
 import net.daporkchop.fp2.core.client.gui.GuiScreen;
@@ -36,7 +34,7 @@ import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.player.IFarPlayerClient;
 import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.client.gui.GuiContext1_12_2;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.log.ChatAsPorkLibLogger;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.util.log.ChatAsPorkLibLogger;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiIngameMenu;
@@ -59,7 +57,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
-import static net.daporkchop.fp2.compat.of.OFHelper.*;
+import static net.daporkchop.fp2.impl.mc.forge1_12_2.compat.of.OFHelper.*;
 import static net.daporkchop.fp2.core.debug.FP2Debug.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL20.*;
@@ -74,7 +72,7 @@ public class FP2Client1_12_2 extends FP2Client {
     private final Minecraft mc = Minecraft.getMinecraft();
 
     @NonNull
-    private final FP2 fp2;
+    private final FP2Forge1_12_2 fp2;
 
     private final Map<KeyBinding, Runnable> keyBindings = new IdentityHashMap<>();
 
@@ -110,7 +108,7 @@ public class FP2Client1_12_2 extends FP2Client {
     }
 
     public void postInit() {
-        this.mc.resourceManager.registerReloadListener(new FP2ResourceReloadListener());
+        this.mc.resourceManager.registerReloadListener(new ResourceReloadListener1_12_2());
     }
 
     @Override
@@ -192,12 +190,12 @@ public class FP2Client1_12_2 extends FP2Client {
     public void initGuiEvent(GuiScreenEvent.InitGuiEvent.Post event) {
         net.minecraft.client.gui.GuiScreen gui = event.getGui();
         if (gui instanceof GuiVideoSettings) { //add fp2 button to video settings menu
-            gui.buttonList.add(new GuiButtonFP2Options(0xBEEF, gui.width / 2 + 165, gui.height / 6 - 12, gui));
+            gui.buttonList.add(new GuiButtonFP2Options1_12_2(0xBEEF, gui.width / 2 + 165, gui.height / 6 - 12, gui));
         } else if (FP2_DEBUG) { //we're in debug mode, also add it to the main menu and pause menu
             if (gui instanceof GuiMainMenu) {
-                gui.buttonList.add(new GuiButtonFP2Options(0xBEEF, gui.width / 2 + 104, gui.height / 4 + 48, gui));
+                gui.buttonList.add(new GuiButtonFP2Options1_12_2(0xBEEF, gui.width / 2 + 104, gui.height / 4 + 48, gui));
             } else if (gui instanceof GuiIngameMenu) {
-                gui.buttonList.add(new GuiButtonFP2Options(0xBEEF, gui.width / 2 + 104, gui.height / 4 + 8, gui));
+                gui.buttonList.add(new GuiButtonFP2Options1_12_2(0xBEEF, gui.width / 2 + 104, gui.height / 4 + 8, gui));
             }
         }
     }

@@ -34,12 +34,12 @@ import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUpdateConfi
 import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromClientThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromNetworkThread;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.FakeFarWorldClient;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.client.FakeFarWorldClient1_12_2;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.client.IFarTileCache;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.mode.api.player.IFarPlayerClient;
-import net.daporkchop.fp2.net.FP2Network;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.network.FP2Network1_12_2;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionBegin;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketTileData;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUnloadTile;
@@ -134,7 +134,7 @@ public abstract class MixinNetHandlerPlayClient implements IFarPlayerClient {
 
         IFarRenderMode<?, ?> mode = this.modeFor(this.fp2_config);
         if (mode != null) {
-            this.fp2_context = mode.clientContext(new FakeFarWorldClient(this.world, packet.coordLimits()), this.fp2_config);
+            this.fp2_context = mode.clientContext(new FakeFarWorldClient1_12_2(this.world, packet.coordLimits()), this.fp2_config);
         }
     }
 
@@ -205,7 +205,7 @@ public abstract class MixinNetHandlerPlayClient implements IFarPlayerClient {
 
     @Override
     public void fp2_IFarPlayerClient_send(@NonNull IPacket packet) {
-        FP2Network.sendToServer(packet);
+        FP2Network1_12_2.sendToServer(packet);
     }
 
     @CalledFromAnyThread

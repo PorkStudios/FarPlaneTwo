@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.core.client;
 
 import net.daporkchop.fp2.core.mode.api.player.IFarPlayerClient;
-import net.daporkchop.fp2.util.threading.futureexecutor.ClientThreadMarkedFutureExecutor;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.util.threading.futureexecutor.ClientThreadMarkedFutureExecutor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.profiler.Profiler;

@@ -34,7 +34,7 @@ import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionEnd;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUpdateConfig;
 import net.daporkchop.fp2.core.util.annotation.CalledFromNetworkThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
-import net.daporkchop.fp2.net.FP2Network;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.network.FP2Network1_12_2;
 import net.daporkchop.lib.math.vector.Vec3d;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.network.NetHandlerPlayServer;
@@ -210,7 +210,7 @@ public abstract class MixinNetHandlerPlayServer implements IFarPlayerServer {
     @Override
     public void fp2_IFarPlayer_sendPacket(@NonNull IPacket packet) {
         if (!this.fp2_closed) {
-            FP2Network.sendToPlayer(packet, this.player);
+            FP2Network1_12_2.sendToPlayer(packet, this.player);
         }
     }
 

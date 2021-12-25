@@ -23,7 +23,7 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.server;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.FP2;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
 import net.daporkchop.fp2.api.event.ChangedEvent;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.core.config.FP2Config;
@@ -63,7 +63,7 @@ import static net.daporkchop.fp2.core.FP2Core.*;
 @Getter
 public class FP2Server1_12_2 {
     @NonNull
-    private final FP2 fp2;
+    private final FP2Forge1_12_2 fp2;
 
     public void preInit() {
         if (!PlatformInfo.IS_64BIT) { //require 64-bit

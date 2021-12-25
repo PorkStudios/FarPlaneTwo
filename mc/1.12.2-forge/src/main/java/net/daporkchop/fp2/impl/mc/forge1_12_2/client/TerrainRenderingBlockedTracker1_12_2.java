@@ -22,7 +22,7 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.client;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.client.gl.object.GLBuffer;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.old.client.gl.object.GLBuffer;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;

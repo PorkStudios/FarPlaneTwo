@@ -20,8 +20,8 @@
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.core.world.chunk.storage;
 
-import net.daporkchop.fp2.compat.vanilla.region.RegionByteBufOutput;
-import net.daporkchop.fp2.compat.vanilla.region.ThreadSafeRegionFileCache;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.region.RegionByteBufOutput;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.region.ThreadSafeRegionFileCache;
 import net.minecraft.world.chunk.storage.RegionFile;
 import net.minecraft.world.chunk.storage.RegionFileCache;
 import org.spongepowered.asm.mixin.Mixin;

@@ -20,7 +20,7 @@
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.core.server;
 
-import net.daporkchop.fp2.util.threading.futureexecutor.ServerThreadMarkedFutureExecutor;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.util.threading.futureexecutor.ServerThreadMarkedFutureExecutor;
 import net.minecraft.server.MinecraftServer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;

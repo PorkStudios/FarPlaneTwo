@@ -28,7 +28,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
-import net.daporkchop.fp2.util.event.IdMappingsChangedEvent;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.util.event.IdMappingsChangedEvent;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.world.biome.Biome;
