@@ -101,7 +101,7 @@ public class WorldRenderer1_12_2 implements WorldRenderer, AutoCloseable {
                 .withResourceProvider(new ResourceProvider1_12_2(this.mc))
                 .wrapCurrent();
 
-        this.textureUVs = new TextureUVs1_12_2(mc, world.fp2_IFarWorld_registry(), this.gl);
+        this.textureUVs = new TextureUVs1_12_2(world.fp2_IFarWorld_registry(), this.gl, mc);
     }
 
     @Override

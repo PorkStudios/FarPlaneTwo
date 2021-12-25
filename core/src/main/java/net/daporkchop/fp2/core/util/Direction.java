@@ -37,6 +37,8 @@ public enum Direction {
     NEGATIVE_X(Vec3i.of(-1, 0, 0)),
     NEGATIVE_Y(Vec3i.of(0, -1, 0)),
     NEGATIVE_Z(Vec3i.of(0, 0, -1));
+
+    public static final Direction[] VALUES = values();
     
     @NonNull
     private final Vec3i vector;

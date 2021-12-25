@@ -149,25 +149,25 @@ int normalToFaceIndex(vec3 normal)  {
     //component-wise mask. one lane is set (the lane whose component has the greatest absolute value)
     ivec3 axisMask = -ivec3(greaterThan(n, max(n.yxx, n.zzy)));
 
-    //components set to 0 if the corresponding component in the normal vector is negative, 1 otherwise
-    ivec3 positive = ivec3(greaterThanEqual(normal, vec3(0.)));
+    //components set to 3 if the corresponding component in the normal vector is negative, 0 otherwise
+    ivec3 negativeOffset = ivec3(lessThanEqual(normal, vec3(0.))) * 3;
 
     //the base offset to apply per component
-    const ivec3 base = ivec3(4, 0, 2);
+    const ivec3 base = ivec3(0, 1, 2);
 
     //contains the final output value for each component, or 0 if the component isn't the greatest
-    ivec3 values = (base + positive) & axisMask;
+    ivec3 values = (base + negativeOffset) & axisMask;
 
     //the maximum component value will be the only one that wasn't masked to zero
     return max(values.x, max(values.y, values.z));
 
     // equivalent code:
     /*if (n.y > n.x && n.y > n.z)  {
-        return normal.y < 0. ? 0 : 1;
+        return normal.y < 0. ? 4 : 1;
     } else if (n.z > n.x && n.z > n.y) {
-        return normal.z < 0. ? 2 : 3;
+        return normal.z < 0. ? 5 : 2;
     } else {
-        return normal.x < 0. ? 4 : 5;
+        return normal.x < 0. ? 3 : 0;
     }*/
 }
 

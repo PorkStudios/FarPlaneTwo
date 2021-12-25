@@ -78,6 +78,15 @@ public interface FGameRegistry {
     int biome2id(@NonNull Object biome) throws UnsupportedOperationException, ClassCastException;
 
     /**
+     * Gets the {@link Object} corresponding to the given biome ID.
+     *
+     * @param biome a biome's unique ID
+     * @return an {@link Object} which describes the biome
+     * @throws UnsupportedOperationException if the implementation cannot describe a biome using a single {@link Object}
+     */
+    Object id2biome(int biome) throws UnsupportedOperationException;
+
+    /**
      * @return a {@link FExtendedBiomeRegistryData} instance for the biomes in this registry
      */
     FExtendedBiomeRegistryData extendedBiomeRegistryData();
@@ -100,6 +109,15 @@ public interface FGameRegistry {
      * @throws ClassCastException            if {@code state} is not of the type used by the implementation to describe a state
      */
     int state2id(@NonNull Object state) throws UnsupportedOperationException, ClassCastException;
+
+    /**
+     * Gets the {@link Object} corresponding to the given state ID.
+     *
+     * @param state a state's unique ID
+     * @return an {@link Object} which describes the state
+     * @throws UnsupportedOperationException if the implementation cannot describe a state using a single {@link Object}
+     */
+    Object id2state(int state) throws UnsupportedOperationException;
 
     /**
      * Gets the unique ID corresponding to the state described by the given {@link Object} and the given {@code int}.

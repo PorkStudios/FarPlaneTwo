@@ -20,14 +20,22 @@
 
 package net.daporkchop.fp2.core.client.render;
 
+import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import net.daporkchop.fp2.api.event.ReloadCompleteEvent;
+import net.daporkchop.fp2.api.event.ReturningEvent;
+import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.fp2.core.event.AbstractReloadEvent;
+import net.daporkchop.fp2.core.util.Direction;
 import net.daporkchop.fp2.gl.attribute.Attribute;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayBuffer;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayFormat;
+
+import java.util.List;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
 
@@ -90,5 +98,19 @@ public interface TextureUVs {
 
         @Attribute
         public final float ua_texQuadTint;
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @AllArgsConstructor
+    @Getter
+    @Setter
+    class StateFaceQuadRenderEvent implements ReturningEvent<List<PackedBakedQuad>> {
+        @NonNull
+        private final FGameRegistry registry;
+        private int state;
+        @NonNull
+        private Direction direction;
     }
 }

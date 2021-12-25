@@ -406,7 +406,8 @@ public abstract class AbstractTrackerManager<POS extends IFarPos, T extends IFar
         }
 
         protected void checkDirty(@NonNull ITileHandle<POS, T> handle) {
-            if (true) { //TODO: re-enable updates
+            if (false) { //TODO: re-enable updates
+                //TODO: figure out why i had this disabled
                 return;
             }
 

@@ -22,11 +22,12 @@ package net.daporkchop.fp2.compat.of;
 
 import net.daporkchop.fp2.api.event.Constrain;
 import net.daporkchop.fp2.api.event.FEventHandler;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.client.render.TextureUVs1_12_2;
+import net.daporkchop.fp2.core.client.render.TextureUVs;
+import net.daporkchop.fp2.core.util.Direction;
 import net.daporkchop.lib.unsafe.PUnsafe;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.init.Blocks;
-import net.minecraft.util.EnumFacing;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.relauncher.Side;
@@ -55,10 +56,11 @@ public class FP2OptiFine {
     @SideOnly(Side.CLIENT)
     @FEventHandler(name = "optifine_texuvs_renderquads_grass",
             constrain = @Constrain(before = "vanilla_texuvs_renderquads_default"))
-    public void texUVsRenderQuadsBetterGrass(TextureUVs1_12_2.StateFaceQuadRenderEvent event) {
-        if (event.state().getBlock() == Blocks.GRASS && event.facing() != EnumFacing.DOWN //side texture of a grass block
+    public void texUVsRenderQuadsBetterGrass(TextureUVs.StateFaceQuadRenderEvent event) {
+        IBlockState state = (IBlockState) event.registry().id2state(event.state());
+        if (state.getBlock() == Blocks.GRASS && event.direction() != Direction.NEGATIVE_Y //side texture of a grass block
             && PUnsafe.getInt(Minecraft.getMinecraft().gameSettings, OF_BETTERGRASS_OFFSET) != OF_OFF) { //better grass is enabled
-            event.facing(EnumFacing.UP); //use the top texture for the sides
+            event.direction(Direction.POSITIVE_Y); //use the top texture for the sides
         }
     }
 }

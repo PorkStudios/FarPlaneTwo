@@ -140,6 +140,7 @@ public final class GameRegistry1_12_2 implements FGameRegistry {
         return IntStream.range(0, this.idsToStates.length);
     }
 
+    @Override
     public IBlockState id2state(int state) {
         return this.idsToStates[state];
     }

@@ -42,11 +42,14 @@ import net.daporkchop.fp2.core.mode.voxel.server.gen.exact.VanillaVoxelGenerator
 import net.daporkchop.fp2.core.server.event.GetCoordinateLimitsEvent;
 import net.daporkchop.fp2.core.server.event.GetExactFBlockWorldEvent;
 import net.daporkchop.fp2.core.server.event.GetTerrainGeneratorEvent;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.client.render.TextureUVs1_12_2;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.util.Util1_12_2;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.block.model.BakedQuad;
+import net.minecraft.client.renderer.block.model.IBakedModel;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.init.Blocks;
+import net.minecraft.util.EnumFacing;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.gen.ChunkGeneratorFlat;
@@ -135,11 +138,12 @@ public class FP2Vanilla {
     @SideOnly(Side.CLIENT)
     @FEventHandler(name = "vanilla_texuvs_renderquads_water",
             constrain = @Constrain(before = "vanilla_texuvs_renderquads_default"))
-    public Optional<List<TextureUVs.PackedBakedQuad>> texUVsRenderQuadsWater(TextureUVs1_12_2.StateFaceQuadRenderEvent event) {
-        if (event.state().getBlock() == Blocks.WATER || event.state().getBlock() == Blocks.FLOWING_WATER) {
+    public Optional<List<TextureUVs.PackedBakedQuad>> texUVsRenderQuadsWater(TextureUVs.StateFaceQuadRenderEvent event) {
+        IBlockState state = (IBlockState) event.registry().id2state(event.state());
+        if (state.getBlock() == Blocks.WATER || state.getBlock() == Blocks.FLOWING_WATER) {
             String spriteName;
             double spriteFactor;
-            if (event.facing().getHorizontalIndex() < 0) {
+            if (event.direction().vector().z() != 0) { //(POSITIVE|NEGATIVE)_Z
                 spriteName = "minecraft:blocks/water_still";
                 spriteFactor = 16.0d;
             } else {
@@ -158,11 +162,22 @@ public class FP2Vanilla {
     @SideOnly(Side.CLIENT)
     @FEventHandler(name = "vanilla_texuvs_renderquads_lava",
             constrain = @Constrain(before = "vanilla_texuvs_renderquads_default"))
-    public Optional<List<TextureUVs.PackedBakedQuad>> texUVsRenderQuadsLava(TextureUVs1_12_2.StateFaceQuadRenderEvent event) {
-        if (event.state().getBlock() == Blocks.LAVA || event.state().getBlock() == Blocks.FLOWING_LAVA) {
+    public Optional<List<TextureUVs.PackedBakedQuad>> texUVsRenderQuadsLava(TextureUVs.StateFaceQuadRenderEvent event) {
+        IBlockState state = (IBlockState) event.registry().id2state(event.state());
+        if (state.getBlock() == Blocks.LAVA || state.getBlock() == Blocks.FLOWING_LAVA) {
+            String spriteName;
+            double spriteFactor;
+            if (event.direction().vector().z() != 0) { //(POSITIVE|NEGATIVE)_Z
+                spriteName = "minecraft:blocks/lava_still";
+                spriteFactor = 16.0d;
+            } else {
+                spriteName = "minecraft:blocks/lava_flow";
+                spriteFactor = 8.0d;
+            }
 
-            return Optional.of(Collections.singletonList(TextureUVs1_12_2.quad(Minecraft.getMinecraft().getTextureMapBlocks().getAtlasSprite(
-                            event.state().getBlock() == Blocks.LAVA ? "minecraft:blocks/lava_still" : "minecraft:blocks/lava_flow"), -1)));
+            TextureAtlasSprite sprite = Minecraft.getMinecraft().getTextureMapBlocks().getAtlasSprite(spriteName);
+            return Optional.of(Collections.singletonList(new TextureUVs.PackedBakedQuad(
+                    sprite.getInterpolatedU(0.0d), sprite.getInterpolatedV(0.0d), sprite.getInterpolatedU(spriteFactor), sprite.getInterpolatedV(spriteFactor), 0.0f)));
         }
 
         return Optional.empty();
@@ -170,11 +185,15 @@ public class FP2Vanilla {
 
     @SideOnly(Side.CLIENT)
     @FEventHandler(name = "vanilla_texuvs_renderquads_default")
-    public Optional<List<TextureUVs.PackedBakedQuad>> texUVsRenderQuadsDefault(TextureUVs1_12_2.StateFaceQuadRenderEvent event) {
-        List<BakedQuad> quads = event.model().getQuads(event.state(), event.facing(), 0L);
+    public Optional<List<TextureUVs.PackedBakedQuad>> texUVsRenderQuadsDefault(TextureUVs.StateFaceQuadRenderEvent event) {
+        IBlockState state = (IBlockState) event.registry().id2state(event.state());
+        EnumFacing facing = Util1_12_2.directionToFacing(event.direction());
+
+        IBakedModel model = Minecraft.getMinecraft().getBlockRendererDispatcher().getBlockModelShapes().getModelForState(state);
+        List<BakedQuad> quads = model.getQuads(state, facing, 0L);
         if (quads.isEmpty()) { //the model has no cullfaces for the given facing direction, try to find a matching non-cullface
-            for (BakedQuad quad : event.model().getQuads(event.state(), null, 0L)) {
-                if (quad.getFace() == event.facing()) {
+            for (BakedQuad quad : model.getQuads(state, null, 0L)) {
+                if (quad.getFace() == facing) {
                     quads = Collections.singletonList(quad);
                     break;
                 }
@@ -186,8 +205,10 @@ public class FP2Vanilla {
 
         if (!quads.isEmpty()) {
             List<TextureUVs.PackedBakedQuad> out = new ArrayList<>(quads.size());
-            for (int i = 0, len = quads.size(); i < len; i++) {
-                out.add(TextureUVs1_12_2.quad(quads.get(i)));
+            for (BakedQuad quad : quads) {
+                TextureAtlasSprite sprite = quad.getSprite();
+                float tintFactor = quad.getTintIndex() < 0 ? 1.0f : 0.0f;
+                out.add(new TextureUVs.PackedBakedQuad(sprite.getMinU(), sprite.getMinV(), sprite.getMaxU(), sprite.getMaxV(), tintFactor));
             }
             return Optional.of(out);
         }
