@@ -36,7 +36,7 @@ import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayFormat;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
 import net.daporkchop.fp2.gl.bitset.GLBitSetBuilder;
-import net.daporkchop.fp2.gl.buffer.BufferUsage;
+import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
 import net.daporkchop.fp2.gl.compute.GLCompute;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
@@ -60,7 +60,7 @@ import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureFormat2DImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.uniform.UniformArrayFormatShaderStorageBlock;
 import net.daporkchop.fp2.gl.opengl.attribute.uniform.UniformFormatBlock;
 import net.daporkchop.fp2.gl.opengl.bitset.GLBitSetBuilderImpl;
-import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
+import net.daporkchop.fp2.gl.opengl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.opengl.command.CommandBufferBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.compute.ComputeImpl;
 import net.daporkchop.fp2.gl.opengl.draw.DrawLayoutBuilderImpl;
@@ -193,9 +193,8 @@ public class OpenGL implements GL {
         return (brand.contains("Intel")) && !brand.contains("Mesa");
     }
 
-    @Override
-    public GLBufferImpl createBuffer(@NonNull BufferUsage usage) {
-        return new GLBufferImpl(this, usage);
+    public GLBuffer createBuffer(@NonNull BufferUsage usage) {
+        return new GLBuffer(this, usage);
     }
 
     @Override

@@ -25,7 +25,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalBuffer;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalWriter;
-import net.daporkchop.fp2.gl.buffer.BufferUsage;
+import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.common.VertexAttributeFormat;

@@ -22,7 +22,7 @@ package net.daporkchop.fp2.gl.opengl;
 
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.gl.buffer.BufferUsage;
+import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.command.BlendFactor;
 import net.daporkchop.fp2.gl.command.BlendOp;
 import net.daporkchop.fp2.gl.command.Compare;

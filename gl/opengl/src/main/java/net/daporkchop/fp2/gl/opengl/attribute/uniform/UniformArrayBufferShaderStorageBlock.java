@@ -24,11 +24,11 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayBuffer;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayFormat;
-import net.daporkchop.fp2.gl.buffer.BufferUsage;
+import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.common.ShaderStorageBlockBuffer;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
-import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
+import net.daporkchop.fp2.gl.opengl.buffer.GLBuffer;
 
 /**
  * @author DaPorkchop_
@@ -37,7 +37,7 @@ import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
 public class UniformArrayBufferShaderStorageBlock<S> extends BaseAttributeBufferImpl<S, UniformArrayFormatShaderStorageBlock<S>, UniformArrayFormat<S>> implements UniformArrayBuffer<S>, ShaderStorageBlockBuffer {
     protected final InterleavedStructFormat<S> structFormat;
 
-    protected final GLBufferImpl internalBuffer;
+    protected final GLBuffer internalBuffer;
 
     protected final long stride;
 

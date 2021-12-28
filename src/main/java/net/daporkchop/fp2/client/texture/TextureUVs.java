@@ -30,7 +30,7 @@ import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.attribute.Attribute;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayBuffer;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayFormat;
-import net.daporkchop.fp2.gl.buffer.BufferUsage;
+import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.primitive.map.ObjIntMap;
 import net.daporkchop.lib.primitive.map.open.ObjIntOpenHashMap;

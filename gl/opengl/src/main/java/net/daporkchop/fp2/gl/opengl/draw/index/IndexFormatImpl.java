@@ -23,7 +23,7 @@ package net.daporkchop.fp2.gl.opengl.draw.index;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.gl.buffer.BufferUsage;
+import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.draw.index.IndexBuffer;
 import net.daporkchop.fp2.gl.draw.index.IndexFormat;
 import net.daporkchop.fp2.gl.draw.index.IndexType;

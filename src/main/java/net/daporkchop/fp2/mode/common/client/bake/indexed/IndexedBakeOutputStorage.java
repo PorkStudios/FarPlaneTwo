@@ -28,7 +28,7 @@ import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalBuffer;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformBuffer;
-import net.daporkchop.fp2.gl.buffer.BufferUsage;
+import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.draw.list.DrawCommandIndexed;
 import net.daporkchop.fp2.gl.draw.binding.DrawBindingBuilder;
 import net.daporkchop.fp2.gl.draw.binding.DrawBindingIndexed;

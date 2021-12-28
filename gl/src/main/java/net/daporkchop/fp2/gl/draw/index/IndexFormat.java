@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.gl.draw.index;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.buffer.BufferUsage;
+import net.daporkchop.fp2.gl.attribute.BufferUsage;
 
 /**
  * @author DaPorkchop_

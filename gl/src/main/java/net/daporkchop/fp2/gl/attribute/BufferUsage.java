@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.gl.buffer;
+package net.daporkchop.fp2.gl.attribute;
 
 /**
  * The usage hints which an OpenGL buffer's storage may be created with.

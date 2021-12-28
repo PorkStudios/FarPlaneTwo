@@ -30,11 +30,8 @@ import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayFormat;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
 import net.daporkchop.fp2.gl.bitset.GLBitSet;
 import net.daporkchop.fp2.gl.bitset.GLBitSetBuilder;
-import net.daporkchop.fp2.gl.buffer.BufferUsage;
-import net.daporkchop.fp2.gl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.command.CommandBuffer;
 import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
-import net.daporkchop.fp2.gl.compute.GLCompute;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.draw.DrawLayoutBuilder;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
@@ -85,14 +82,6 @@ public interface GL extends AutoCloseable {
      */
     @Override
     void close();
-
-    /**
-     * Creates a new OpenGL buffer.
-     *
-     * @param usage the buffer's usage hint
-     * @return a new {@link GLBuffer}
-     */
-    GLBuffer createBuffer(@NonNull BufferUsage usage);
 
     /**
      * @return a builder for constructing a new {@link GLBitSet}
@@ -187,13 +176,4 @@ public interface GL extends AutoCloseable {
      * @return a builder for constructing a new {@link DrawShaderProgram}
      */
     BaseShaderProgramBuilder<DrawShaderProgram, BaseDrawShader, DrawLayout> createDrawShaderProgram(@NonNull DrawLayout layout);
-
-    //
-    // MODULES
-    //
-
-    /**
-     * @return the module for accessing compute shaders
-     */
-    GLCompute compute();
 }

@@ -25,12 +25,12 @@ import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalBuffer;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalWriter;
-import net.daporkchop.fp2.gl.buffer.BufferUsage;
+import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.common.VertexAttributeBuffer;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
 import net.daporkchop.fp2.gl.opengl.buffer.BufferTarget;
-import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
+import net.daporkchop.fp2.gl.opengl.buffer.GLBuffer;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -41,7 +41,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 public class DrawLocalBufferImpl<S> extends BaseAttributeBufferImpl<S, DrawLocalFormatImpl<S>, DrawLocalFormat<S>> implements DrawLocalBuffer<S>, VertexAttributeBuffer {
     protected final InterleavedStructFormat<S> structFormat;
 
-    protected final GLBufferImpl buffer;
+    protected final GLBuffer buffer;
     protected final long stride;
 
     protected int capacity;

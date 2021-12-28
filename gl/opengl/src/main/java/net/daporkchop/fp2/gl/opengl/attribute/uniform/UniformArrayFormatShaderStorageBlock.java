@@ -24,7 +24,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayBuffer;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayFormat;
-import net.daporkchop.fp2.gl.buffer.BufferUsage;
+import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.common.ShaderStorageBlockFormat;

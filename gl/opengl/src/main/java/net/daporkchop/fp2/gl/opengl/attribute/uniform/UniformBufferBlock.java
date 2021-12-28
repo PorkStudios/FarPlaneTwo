@@ -24,11 +24,11 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformBuffer;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
-import net.daporkchop.fp2.gl.buffer.BufferUsage;
+import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.common.UniformBlockBuffer;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
-import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
+import net.daporkchop.fp2.gl.opengl.buffer.GLBuffer;
 
 /**
  * @author DaPorkchop_
@@ -37,7 +37,7 @@ import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
 public class UniformBufferBlock<S> extends BaseAttributeBufferImpl<S, UniformFormatBlock<S>, UniformFormat<S>> implements UniformBuffer<S>, UniformBlockBuffer {
     protected final InterleavedStructFormat<S> structFormat;
 
-    protected final GLBufferImpl internalBuffer;
+    protected final GLBuffer internalBuffer;
 
     protected final long addr;
     protected final long stride;

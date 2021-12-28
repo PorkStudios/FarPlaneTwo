@@ -22,13 +22,13 @@ package net.daporkchop.fp2.gl.opengl.draw.list.elements;
 
 import com.google.common.collect.ImmutableMap;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.buffer.BufferUsage;
+import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.draw.list.DrawCommandIndexed;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
 import net.daporkchop.fp2.gl.opengl.bitset.AbstractGLBitSet;
 import net.daporkchop.fp2.gl.opengl.buffer.BufferTarget;
-import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
+import net.daporkchop.fp2.gl.opengl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.opengl.command.state.StateProperties;
 import net.daporkchop.fp2.gl.opengl.command.state.StateValueProperty;
 import net.daporkchop.fp2.gl.opengl.draw.binding.DrawBindingIndexedImpl;
@@ -96,7 +96,7 @@ public class DrawListMultiDrawElementsIndirect extends DrawListImpl<DrawCommandI
         PUnsafe.putInt(cmd + _BASEINSTANCE_OFFSET, baseInstance);
     }
 
-    protected final GLBufferImpl buffer;
+    protected final GLBuffer buffer;
 
     protected long commandsAddr;
 

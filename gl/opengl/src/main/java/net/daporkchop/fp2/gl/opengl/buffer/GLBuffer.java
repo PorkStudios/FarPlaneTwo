@@ -23,8 +23,8 @@ package net.daporkchop.fp2.gl.opengl.buffer;
 import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.buffer.BufferUsage;
-import net.daporkchop.fp2.gl.buffer.GLBuffer;
+import net.daporkchop.fp2.gl.GLResource;
+import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
@@ -42,7 +42,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @Getter
-public class GLBufferImpl implements GLBuffer {
+public class GLBuffer implements GLResource {
     protected final OpenGL gl;
     protected final GLAPI api;
 
@@ -51,7 +51,7 @@ public class GLBufferImpl implements GLBuffer {
     protected final int id;
     protected final int usage;
 
-    public GLBufferImpl(@NonNull OpenGL gl, @NonNull BufferUsage usage) {
+    public GLBuffer(@NonNull OpenGL gl, @NonNull BufferUsage usage) {
         this.gl = gl;
         this.api = gl.api();
         this.usage = GLEnumUtil.from(usage);
@@ -67,14 +67,29 @@ public class GLBufferImpl implements GLBuffer {
         this.gl.resourceArena().delete(this);
     }
 
-    @Override
+    /**
+     * Sets the capacity of this buffer.
+     * <p>
+     * If the buffer already has the requested capacity, nothing is changed. Otherwise, the buffer is resized and its contents are now undefined.
+     *
+     * @param capacity the new capacity
+     */
     public void capacity(long capacity) {
         this.bind(BufferTarget.ARRAY_BUFFER, target -> {
             this.api.glBufferData(target.id(), this.capacity = notNegative(capacity, "capacity"), 0L, this.usage);
         });
     }
 
-    @Override
+    /**
+     * Sets the capacity of this buffer.
+     * <p>
+     * Unlike {@link #capacity(long)}, this method will retain as much of the original data as possible.
+     * <p>
+     * If the new capacity is less than the current capacity, the buffer's contents will be truncated. If greater than the current capacity, the
+     * data will be extended with undefined contents.
+     *
+     * @param capacity the new capacity
+     */
     public void resize(long capacity) {
         long retainedCapacity = min(this.capacity, notNegative(capacity, "capacity"));
 
@@ -100,7 +115,12 @@ public class GLBufferImpl implements GLBuffer {
         }
     }
 
-    @Override
+    /**
+     * Sets the buffer contents.
+     *
+     * @param addr the base address of the data to upload
+     * @param size the size of the data (in bytes)
+     */
     public void upload(long addr, long size) {
         notNegative(size, "size");
 
@@ -110,7 +130,11 @@ public class GLBufferImpl implements GLBuffer {
         });
     }
 
-    @Override
+    /**
+     * Sets the buffer contents.
+     *
+     * @param data the {@link ByteBuffer} containing the data to upload
+     */
     public void upload(@NonNull ByteBuffer data) {
         this.bind(BufferTarget.ARRAY_BUFFER, target -> {
             this.api.glBufferData(target.id(), data, this.usage);
@@ -118,7 +142,11 @@ public class GLBufferImpl implements GLBuffer {
         });
     }
 
-    @Override
+    /**
+     * Sets the buffer contents.
+     *
+     * @param data the {@link ByteBuf} containing the data to upload
+     */
     public void upload(@NonNull ByteBuf data) {
         if (data.nioBufferCount() == 1) { //fast path: upload whole buffer contents at once
             this.upload(data.nioBuffer());
@@ -144,7 +172,13 @@ public class GLBufferImpl implements GLBuffer {
         });
     }
 
-    @Override
+    /**
+     * Updates the buffer contents in a certain range.
+     *
+     * @param start the offset of the range inside the buffer (in bytes)
+     * @param addr  the base address of the data to upload
+     * @param size  the size of the data (in bytes)
+     */
     public void uploadRange(long start, long addr, long size) {
         checkRangeLen(this.capacity, start, size);
 
@@ -153,7 +187,12 @@ public class GLBufferImpl implements GLBuffer {
         });
     }
 
-    @Override
+    /**
+     * Updates the buffer contents in a certain range.
+     *
+     * @param start the offset of the range inside the buffer (in bytes)
+     * @param data  the {@link ByteBuffer} containing the data to upload
+     */
     public void uploadRange(long start, @NonNull ByteBuffer data) {
         checkRangeLen(this.capacity, start, data.remaining());
 
@@ -162,7 +201,12 @@ public class GLBufferImpl implements GLBuffer {
         });
     }
 
-    @Override
+    /**
+     * Updates the buffer contents in a certain range.
+     *
+     * @param start the offset of the range inside the buffer (in bytes)
+     * @param data  the {@link ByteBuf} containing the data to upload
+     */
     public void uploadRange(long start, @NonNull ByteBuf data) {
         if (data.nioBufferCount() == 1) { //fast path: upload whole buffer contents at once
             this.uploadRange(start, data.nioBuffer());
@@ -184,7 +228,13 @@ public class GLBufferImpl implements GLBuffer {
         });
     }
 
-    @Override
+    /**
+     * Downloads the buffer contents in a certain range.
+     *
+     * @param start the offset of the range inside the buffer (in bytes)
+     * @param addr  the base address where the data should be stored
+     * @param size  the size of the data (in bytes)
+     */
     public void downloadRange(long start, long addr, long size) {
         checkRangeLen(this.capacity, start, size);
 
@@ -193,7 +243,12 @@ public class GLBufferImpl implements GLBuffer {
         });
     }
 
-    @Override
+    /**
+     * Downloads the buffer contents in a certain range.
+     *
+     * @param start the offset of the range inside the buffer (in bytes)
+     * @param data  the {@link ByteBuffer} where the data should be stored
+     */
     public void downloadRange(long start, @NonNull ByteBuffer data) {
         checkRangeLen(this.capacity, start, data.remaining());
 
@@ -213,7 +268,13 @@ public class GLBufferImpl implements GLBuffer {
         }
     }
 
-    @Override
+    /**
+     * Maps this buffer's contents into client address space and passes the mapping address to the given callback function before unmapping the buffer again.
+     *
+     * @param read     whether or not the mapping may be read from
+     * @param write    whether or not the mapping may be written to
+     * @param callback the callback function
+     */
     public void map(boolean read, boolean write, @NonNull LongConsumer callback) {
         assert read || write : "at least one of read or write must be enabled!";
 

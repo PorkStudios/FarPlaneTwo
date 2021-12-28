@@ -27,7 +27,7 @@ import net.daporkchop.fp2.gl.GLResource;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureTarget;
-import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
+import net.daporkchop.fp2.gl.opengl.buffer.GLBuffer;
 
 import java.util.List;
 
@@ -58,7 +58,7 @@ public abstract class BaseBindingImpl implements GLResource {
     @RequiredArgsConstructor
     public static class ShaderStorageBufferBinding {
         @NonNull
-        public final GLBufferImpl buffer;
+        public final GLBuffer buffer;
         public final int bindingIndex;
     }
 
@@ -81,7 +81,7 @@ public abstract class BaseBindingImpl implements GLResource {
     @RequiredArgsConstructor
     public static class UniformBufferBinding {
         @NonNull
-        public final GLBufferImpl buffer;
+        public final GLBuffer buffer;
         public final int bindingIndex;
     }
 }

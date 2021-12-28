@@ -20,11 +20,11 @@
 
 package net.daporkchop.fp2.gl.opengl.attribute.common;
 
-import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
+import net.daporkchop.fp2.gl.opengl.buffer.GLBuffer;
 
 /**
  * @author DaPorkchop_
  */
 public interface UniformBlockBuffer {
-    GLBufferImpl internalBuffer();
+    GLBuffer internalBuffer();
 }
