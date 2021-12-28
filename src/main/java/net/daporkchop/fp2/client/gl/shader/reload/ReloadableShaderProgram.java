@@ -25,19 +25,19 @@ import net.daporkchop.fp2.common.util.Identifier;
 import net.daporkchop.fp2.common.util.capability.CloseableResource;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
-import net.daporkchop.fp2.gl.shader.BaseShaderProgram;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.draw.shader.FragmentShader;
+import net.daporkchop.fp2.gl.draw.shader.VertexShader;
+import net.daporkchop.fp2.gl.shader.BaseShaderProgram;
 import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
 import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
-import net.daporkchop.fp2.gl.draw.shader.VertexShader;
 
 import java.util.function.Supplier;
 
 /**
  * @author DaPorkchop_
  */
-public interface ReloadableShaderProgram<P extends BaseShaderProgram> extends Supplier<P>, CloseableResource {
+public interface ReloadableShaderProgram<P extends BaseShaderProgram<?>> extends Supplier<P>, CloseableResource {
     static ReloadableShaderProgram<DrawShaderProgram> draw(@NonNull GL gl, @NonNull DrawLayout layout, @NonNull ShaderMacros macros, @NonNull Identifier vertexShaderSource, @NonNull Identifier fragmentShaderSource) {
         return new AbstractReloadableShaderProgram<DrawShaderProgram>(macros) {
             @Override
@@ -51,7 +51,10 @@ public interface ReloadableShaderProgram<P extends BaseShaderProgram> extends Su
                                 .defineAll(macrosSnapshot.macros())
                                 .include(fragmentShaderSource)
                                 .build()) {
-                    this.program = gl.linkDrawShaderProgram(layout, vertexShader, fragmentShader);
+                    this.program = gl.createDrawShaderProgram(layout)
+                            .addShader(vertexShader)
+                            .addShader(fragmentShader)
+                            .build();
                 }
             }
         };

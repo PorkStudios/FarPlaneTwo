@@ -83,6 +83,17 @@ public class DrawLayoutBuilderImpl implements DrawLayoutBuilder {
     }
 
     @Override
+    public DrawLayoutBuilder with(@NonNull DrawLayout _layout) {
+        DrawLayoutImpl layout = (DrawLayoutImpl) _layout;
+        this.uniforms.addAll(layout.uniformFormatsByName.values());
+        this.uniformArrays.addAll(layout.uniformArrayFormatsByName.values());
+        this.globals.addAll(layout.globalFormatsByName.values());
+        this.locals.addAll(layout.localFormatsByName.values());
+        this.textures.addAll(layout.textureFormatsByName.values());
+        return this;
+    }
+
+    @Override
     public DrawLayoutBuilder enableSelection() {
         this.selectionEnabled = true;
         return this;

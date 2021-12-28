@@ -48,6 +48,7 @@ import net.daporkchop.fp2.gl.draw.list.DrawCommandArrays;
 import net.daporkchop.fp2.gl.draw.list.DrawCommandIndexed;
 import net.daporkchop.fp2.gl.draw.list.DrawList;
 import net.daporkchop.fp2.gl.draw.list.DrawListBuilder;
+import net.daporkchop.fp2.gl.draw.shader.BaseDrawShader;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.draw.shader.FragmentShader;
 import net.daporkchop.fp2.gl.draw.shader.VertexShader;
@@ -75,9 +76,11 @@ import net.daporkchop.fp2.gl.opengl.draw.shader.DrawShaderProgramImpl;
 import net.daporkchop.fp2.gl.opengl.draw.shader.FragmentShaderImpl;
 import net.daporkchop.fp2.gl.opengl.draw.shader.VertexShaderImpl;
 import net.daporkchop.fp2.gl.opengl.shader.BaseShaderBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.shader.BaseShaderProgramBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
 import net.daporkchop.fp2.gl.opengl.shader.source.SourceLine;
 import net.daporkchop.fp2.gl.shader.BaseShaderBuilder;
+import net.daporkchop.fp2.gl.shader.BaseShaderProgramBuilder;
 import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
 import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
 
@@ -314,8 +317,13 @@ public class OpenGL implements GL {
     }
 
     @Override
-    public DrawShaderProgram linkDrawShaderProgram(@NonNull DrawLayout layout, @NonNull VertexShader vertexShader, @NonNull FragmentShader fragmentShader) throws ShaderLinkageException {
-        return new DrawShaderProgramImpl(this, (DrawLayoutImpl) layout, (VertexShaderImpl) vertexShader, (FragmentShaderImpl) fragmentShader);
+    public BaseShaderProgramBuilder<DrawShaderProgram, BaseDrawShader, DrawLayout> createDrawShaderProgram(@NonNull DrawLayout layout) {
+        return new BaseShaderProgramBuilderImpl<DrawShaderProgram, BaseDrawShader, DrawLayoutImpl, DrawLayout>(this, (DrawLayoutImpl) layout) {
+            @Override
+            public DrawShaderProgram build() throws ShaderLinkageException {
+                return new DrawShaderProgramImpl(this);
+            }
+        };
     }
 
     @Override

@@ -45,11 +45,12 @@ import net.daporkchop.fp2.gl.draw.list.DrawCommandArrays;
 import net.daporkchop.fp2.gl.draw.list.DrawCommandIndexed;
 import net.daporkchop.fp2.gl.draw.list.DrawList;
 import net.daporkchop.fp2.gl.draw.list.DrawListBuilder;
+import net.daporkchop.fp2.gl.draw.shader.BaseDrawShader;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.draw.shader.FragmentShader;
 import net.daporkchop.fp2.gl.draw.shader.VertexShader;
 import net.daporkchop.fp2.gl.shader.BaseShaderBuilder;
-import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
+import net.daporkchop.fp2.gl.shader.BaseShaderProgramBuilder;
 
 import java.util.function.Supplier;
 
@@ -183,15 +184,9 @@ public interface GL extends AutoCloseable {
     BaseShaderBuilder<FragmentShader> createFragmentShader(@NonNull DrawLayout layout);
 
     /**
-     * Links a {@link DrawShaderProgram} from the given {@link VertexShader} and {@link FragmentShader}, tuned for rendering data formatted with the given {@link DrawLayout}.
-     *
-     * @param layout         the {@link DrawLayout}
-     * @param vertexShader   the {@link VertexShader}
-     * @param fragmentShader the {@link FragmentShader}
-     * @return the linked {@link DrawShaderProgram}
-     * @throws ShaderLinkageException if shader linkage fails
+     * @return a builder for constructing a new {@link DrawShaderProgram}
      */
-    DrawShaderProgram linkDrawShaderProgram(@NonNull DrawLayout layout, @NonNull VertexShader vertexShader, @NonNull FragmentShader fragmentShader) throws ShaderLinkageException;
+    BaseShaderProgramBuilder<DrawShaderProgram, BaseDrawShader, DrawLayout> createDrawShaderProgram(@NonNull DrawLayout layout);
 
     //
     // MODULES

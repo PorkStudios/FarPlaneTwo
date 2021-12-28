@@ -20,64 +20,35 @@
 
 package net.daporkchop.fp2.gl.opengl.shader;
 
-import lombok.Getter;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.layout.BaseLayout;
-import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.layout.BaseLayoutImpl;
+import net.daporkchop.fp2.gl.shader.BaseShader;
 import net.daporkchop.fp2.gl.shader.BaseShaderProgram;
-import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
+import net.daporkchop.fp2.gl.shader.BaseShaderProgramBuilder;
 
-import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
+import java.util.ArrayList;
+import java.util.List;
+
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
-@Getter
-public abstract class BaseShaderProgramImpl<L extends BaseLayoutImpl, L_EXTERNAL extends BaseLayout> implements BaseShaderProgram<L_EXTERNAL> {
+@RequiredArgsConstructor
+public abstract class BaseShaderProgramBuilderImpl<P extends BaseShaderProgram<L_EXTERNAL>, S extends BaseShader<L_EXTERNAL>, L extends BaseLayoutImpl, L_EXTERNAL extends BaseLayout> implements BaseShaderProgramBuilder<P, S, L_EXTERNAL> {
+    @NonNull
     protected final OpenGL gl;
+    @NonNull
+    protected final L layout;
 
-    protected final L layoutImpl;
-
-    protected final int id;
-
-    public BaseShaderProgramImpl(@NonNull BaseShaderProgramBuilderImpl<?, ?, L, L_EXTERNAL> builder) throws ShaderLinkageException {
-        this.gl = builder.gl;
-        this.layoutImpl = builder.layout;
-
-        GLAPI api = this.gl.api();
-        this.id = api.glCreateProgram();
-        this.gl.resourceArena().register(this, this.id, api::glDeleteProgram);
-
-        //attach shaders and link, then detach shaders again
-        for (BaseShaderImpl<L_EXTERNAL> shader : builder.shaders) {
-            api.glAttachShader(this.id, shader.id);
-        }
-        this.layoutImpl.configureProgramPreLink(this.id);
-        api.glLinkProgram(this.id);
-        for (BaseShaderImpl<L_EXTERNAL> shader : builder.shaders) {
-            api.glDetachShader(this.id, shader.id);
-        }
-
-        //check for errors
-        if (api.glGetProgrami(this.id, GL_LINK_STATUS) == GL_FALSE) {
-            String log = api.glGetProgramInfoLog(this.id);
-            throw new ShaderLinkageException(log);
-        }
-
-        this.layoutImpl.configureProgramPostLink(this.id);
-    }
+    protected final List<BaseShaderImpl<L_EXTERNAL>> shaders = new ArrayList<>();
 
     @Override
-    public void close() {
-        this.gl.resourceArena().delete(this);
-    }
-
-    @Override
-    @Deprecated
-    public L_EXTERNAL layout() {
-        return uncheckedCast(this.layoutImpl);
+    public BaseShaderProgramBuilder<P, S, L_EXTERNAL> addShader(@NonNull S shader) {
+        this.shaders.add(uncheckedCast(shader));
+        return this;
     }
 }

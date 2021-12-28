@@ -50,8 +50,6 @@ import net.daporkchop.fp2.gl.opengl.command.state.struct.Color4b;
 import net.daporkchop.fp2.gl.opengl.command.state.struct.Color4f;
 import net.daporkchop.fp2.gl.opengl.command.state.struct.StencilOp;
 import net.daporkchop.fp2.gl.opengl.draw.list.DrawListImpl;
-import net.daporkchop.fp2.gl.opengl.layout.BaseBindingImpl;
-import net.daporkchop.fp2.gl.opengl.shader.BaseShaderProgramImpl;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import org.objectweb.asm.ClassWriter;
@@ -104,9 +102,6 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
     protected final ImmutableList.Builder<Uop> uops = ImmutableList.builder();
 
     protected CowState state = new CowState();
-
-    protected BaseBindingImpl binding;
-    protected BaseShaderProgramImpl shader;
 
     public CommandBufferBuilderImpl(@NonNull OpenGL gl) {
         this.gl = gl;

@@ -31,9 +31,11 @@ import net.daporkchop.fp2.gl.compute.GLCompute;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.shader.BaseShaderBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.shader.BaseShaderProgramBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
 import net.daporkchop.fp2.gl.opengl.shader.source.SourceLine;
 import net.daporkchop.fp2.gl.shader.BaseShaderBuilder;
+import net.daporkchop.fp2.gl.shader.BaseShaderProgramBuilder;
 import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
 import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
 
@@ -106,7 +108,12 @@ public class ComputeImpl implements GLCompute {
     }
 
     @Override
-    public ComputeShaderProgram linkShaderProgram(@NonNull ComputeLayout layout, @NonNull ComputeShader computeShader) throws ShaderLinkageException {
-        return new ComputeShaderProgramImpl(this.gl, (ComputeLayoutImpl) layout, (ComputeShaderImpl) computeShader);
+    public BaseShaderProgramBuilder<ComputeShaderProgram, ComputeShader, ComputeLayout> createComputeShaderProgram(@NonNull ComputeLayout layout) {
+        return new BaseShaderProgramBuilderImpl<ComputeShaderProgram, ComputeShader, ComputeLayoutImpl, ComputeLayout>(this.gl, (ComputeLayoutImpl) layout) {
+            @Override
+            public ComputeShaderProgram build() throws ShaderLinkageException {
+                return new ComputeShaderProgramImpl(this);
+            }
+        };
     }
 }

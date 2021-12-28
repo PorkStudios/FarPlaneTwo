@@ -23,7 +23,7 @@ package net.daporkchop.fp2.gl.compute;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.GLModule;
 import net.daporkchop.fp2.gl.shader.BaseShaderBuilder;
-import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
+import net.daporkchop.fp2.gl.shader.BaseShaderProgramBuilder;
 
 /**
  * API for OpenGL compute shaders.
@@ -64,12 +64,7 @@ public interface GLCompute extends GLModule {
     BaseShaderBuilder<ComputeShader> createComputeShader(@NonNull ComputeLayout layout);
 
     /**
-     * Links a {@link ComputeShaderProgram} from the given {@link ComputeShader}, tuned for computing data formatted with the given {@link ComputeLayout}.
-     *
-     * @param layout        the {@link ComputeLayout}
-     * @param computeShader the {@link ComputeShader}
-     * @return the linked {@link ComputeShaderProgram}
-     * @throws ShaderLinkageException if shader linkage fails
+     * @return a builder for constructing a new {@link ComputeShaderProgram}
      */
-    ComputeShaderProgram linkShaderProgram(@NonNull ComputeLayout layout, @NonNull ComputeShader computeShader) throws ShaderLinkageException;
+    BaseShaderProgramBuilder<ComputeShaderProgram, ComputeShader, ComputeLayout> createComputeShaderProgram(@NonNull ComputeLayout layout);
 }

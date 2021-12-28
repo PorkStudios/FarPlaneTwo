@@ -23,10 +23,9 @@ package net.daporkchop.fp2.gl.opengl.compute;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.compute.ComputeGlobalSize;
-import net.daporkchop.fp2.gl.compute.ComputeLocalSize;
+import net.daporkchop.fp2.gl.compute.ComputeLayout;
 import net.daporkchop.fp2.gl.compute.ComputeShaderProgram;
-import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.shader.BaseShaderImpl;
+import net.daporkchop.fp2.gl.opengl.shader.BaseShaderProgramBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.shader.BaseShaderProgramImpl;
 import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
 
@@ -34,9 +33,9 @@ import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
  * @author DaPorkchop_
  */
 @Getter
-public class ComputeShaderProgramImpl extends BaseShaderProgramImpl implements ComputeShaderProgram {
-    public ComputeShaderProgramImpl(@NonNull OpenGL gl, @NonNull ComputeLayoutImpl layout, @NonNull BaseShaderImpl... shaders) throws ShaderLinkageException {
-        super(gl, layout, shaders);
+public class ComputeShaderProgramImpl extends BaseShaderProgramImpl<ComputeLayoutImpl, ComputeLayout> implements ComputeShaderProgram {
+    public ComputeShaderProgramImpl(@NonNull BaseShaderProgramBuilderImpl<?, ?, ComputeLayoutImpl, ComputeLayout> builder) throws ShaderLinkageException {
+        super(builder);
     }
 
     @Override

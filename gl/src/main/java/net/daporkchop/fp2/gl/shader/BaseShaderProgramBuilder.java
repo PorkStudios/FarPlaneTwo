@@ -18,10 +18,28 @@
  *
  */
 
-package net.daporkchop.fp2.gl.draw.shader;
+package net.daporkchop.fp2.gl.shader;
+
+import lombok.NonNull;
+import net.daporkchop.fp2.gl.layout.BaseLayout;
 
 /**
+ * Builder for {@link BaseShaderProgram}s.
+ *
+ * @param <P> the type of {@link BaseShaderProgram} to build
  * @author DaPorkchop_
  */
-public interface VertexShader extends BaseDrawShader {
+public interface BaseShaderProgramBuilder<P extends BaseShaderProgram<L>, S extends BaseShader<L>, L extends BaseLayout> {
+    /**
+     * Adds a {@link S} to be linked with the program.
+     *
+     * @param shader the {@link S}
+     */
+    BaseShaderProgramBuilder<P, S, L> addShader(@NonNull S shader);
+
+    /**
+     * @return the linked {@link P}
+     * @throws ShaderLinkageException if shader linkage fails
+     */
+    P build() throws ShaderLinkageException;
 }

@@ -146,7 +146,10 @@ public class TestLWJGL2 {
         FragmentShader fragmentShader = gl.createFragmentShader(layout)
                 .include(Identifier.from("test.frag"))
                 .build();
-        DrawShaderProgram drawShaderProgram = gl.linkDrawShaderProgram(layout, vertexShader, fragmentShader);
+        DrawShaderProgram drawShaderProgram = gl.createDrawShaderProgram(layout)
+                .addShader(vertexShader)
+                .addShader(fragmentShader)
+                .build();
 
         DrawLocalBuffer<LocalAttribs> localBuffer = localFormat.createBuffer(BufferUsage.STATIC_DRAW);
         localBuffer.resize(4);

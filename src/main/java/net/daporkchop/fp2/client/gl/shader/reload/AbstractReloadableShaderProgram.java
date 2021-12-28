@@ -33,7 +33,7 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
  *
  * @author DaPorkchop_
  */
-abstract class AbstractReloadableShaderProgram<P extends BaseShaderProgram> implements ReloadableShaderProgram<P> {
+abstract class AbstractReloadableShaderProgram<P extends BaseShaderProgram<?>> implements ReloadableShaderProgram<P> {
     protected final ShaderMacros macros;
 
     protected ShaderMacros.Immutable macrosSnapshot;

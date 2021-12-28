@@ -20,11 +20,8 @@
 
 package net.daporkchop.fp2.gl.draw.shader;
 
-import net.daporkchop.fp2.gl.draw.DrawLayout;
-import net.daporkchop.fp2.gl.shader.BaseShader;
-
 /**
  * @author DaPorkchop_
  */
-public interface FragmentShader extends BaseShader<DrawLayout> {
+public interface FragmentShader extends BaseDrawShader {
 }

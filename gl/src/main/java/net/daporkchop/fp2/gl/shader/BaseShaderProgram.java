@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.gl.shader;
 
 import net.daporkchop.fp2.gl.GLResource;
+import net.daporkchop.fp2.gl.layout.BaseLayout;
 
 /**
  * Base interface for all shader program types.
@@ -29,5 +30,9 @@ import net.daporkchop.fp2.gl.GLResource;
  *
  * @author DaPorkchop_
  */
-public interface BaseShaderProgram extends GLResource {
+public interface BaseShaderProgram<L extends BaseLayout> extends GLResource {
+    /**
+     * @return the layout for this shader program's inputs and outputs
+     */
+    L layout();
 }

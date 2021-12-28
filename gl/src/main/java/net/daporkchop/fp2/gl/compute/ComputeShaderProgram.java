@@ -28,7 +28,7 @@ import net.daporkchop.fp2.gl.shader.BaseShaderProgram;
  *
  * @author DaPorkchop_
  */
-public interface ComputeShaderProgram extends BaseShaderProgram {
+public interface ComputeShaderProgram extends BaseShaderProgram<ComputeLayout> {
     /**
      * Dispatches this compute shader.
      *

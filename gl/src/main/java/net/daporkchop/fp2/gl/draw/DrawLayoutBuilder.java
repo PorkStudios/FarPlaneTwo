@@ -69,6 +69,13 @@ public interface DrawLayoutBuilder {
     DrawLayoutBuilder withTexture(@NonNull TextureFormat2D<?> format);
 
     /**
+     * Adds all the formats from the given {@link DrawLayout}.
+     *
+     * @param layout the {@link DrawLayout}
+     */
+    DrawLayoutBuilder with(@NonNull DrawLayout layout);
+
+    /**
      * Makes the {@link DrawLayout} support draw list selection.
      */
     DrawLayoutBuilder enableSelection(); //TODO: this does nothing

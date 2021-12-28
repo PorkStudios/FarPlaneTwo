@@ -20,8 +20,11 @@
 
 package net.daporkchop.fp2.gl.draw.shader;
 
+import net.daporkchop.fp2.gl.draw.DrawLayout;
+import net.daporkchop.fp2.gl.shader.BaseShader;
+
 /**
  * @author DaPorkchop_
  */
-public interface VertexShader extends BaseDrawShader {
+public interface BaseDrawShader extends BaseShader<DrawLayout> {
 }

@@ -65,7 +65,7 @@ public abstract class Uop {
      * @author DaPorkchop_
      */
     public static abstract class Bound extends Uop {
-        protected static State toBoundState(@NonNull CowState stateIn, @NonNull BaseBindingImpl binding, @NonNull BaseShaderProgramImpl shader, @NonNull Map<StateValueProperty<?>, Object> propertyValues) {
+        protected static State toBoundState(@NonNull CowState stateIn, @NonNull BaseBindingImpl binding, @NonNull BaseShaderProgramImpl<?, ?> shader, @NonNull Map<StateValueProperty<?>, Object> propertyValues) {
             MutableState state = stateIn.mutableSnapshot();
 
             state.set(StateProperties.BOUND_PROGRAM, shader.id());
@@ -85,7 +85,7 @@ public abstract class Uop {
 
         protected final List<StateProperty> depends;
 
-        public Bound(@NonNull CowState state, @NonNull BaseBindingImpl binding, @NonNull BaseShaderProgramImpl shader, @NonNull Map<StateValueProperty<?>, Object> propertyValues) {
+        public Bound(@NonNull CowState state, @NonNull BaseBindingImpl binding, @NonNull BaseShaderProgramImpl<?, ?> shader, @NonNull Map<StateValueProperty<?>, Object> propertyValues) {
             super(toBoundState(state, binding, shader, propertyValues));
 
             ImmutableList.Builder<StateProperty> depends = ImmutableList.builder();
@@ -117,7 +117,7 @@ public abstract class Uop {
      */
     public static abstract class Draw extends Bound {
         public Draw(@NonNull CowState state, @NonNull DrawBinding binding, @NonNull DrawShaderProgram shader, @NonNull Map<StateValueProperty<?>, Object> propertyValues) {
-            super(state, (BaseBindingImpl) binding, (BaseShaderProgramImpl) shader, propertyValues);
+            super(state, (BaseBindingImpl) binding, (BaseShaderProgramImpl<?, ?>) shader, propertyValues);
         }
 
         @Override
