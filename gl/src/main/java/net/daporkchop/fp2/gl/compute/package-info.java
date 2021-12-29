@@ -18,22 +18,12 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.compute;
-
-import lombok.NonNull;
-import net.daporkchop.fp2.gl.compute.ComputeShader;
-import net.daporkchop.fp2.gl.compute.ComputeLayout;
-import net.daporkchop.fp2.gl.opengl.shader.BaseShaderImpl;
-import net.daporkchop.fp2.gl.opengl.shader.BaseShaderBuilderImpl;
-import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
-import net.daporkchop.fp2.gl.opengl.shader.source.SourceLine;
-import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
-
 /**
+ * The two classes in this package, {@link net.daporkchop.fp2.gl.compute.ComputeLocalSize} and {@link net.daporkchop.fp2.gl.compute.ComputeGlobalSize},
+ * are no longer used by {@code :gl}. I can't delete them, though, since they're still used by the old rendering code, and I don't want to move them
+ * elsewhere to avoid merge conflicts, so instead they will stay here and I'll just deprecate the package instead.
+ *
  * @author DaPorkchop_
  */
-public class ComputeShaderImpl extends BaseShaderImpl<ComputeLayout> implements ComputeShader {
-    public ComputeShaderImpl(@NonNull BaseShaderBuilderImpl<?, ComputeLayout> builder, @NonNull SourceLine... lines) throws ShaderCompilationException {
-        super(builder, ShaderType.COMPUTE, lines);
-    }
-}
+@Deprecated
+package net.daporkchop.fp2.gl.compute;

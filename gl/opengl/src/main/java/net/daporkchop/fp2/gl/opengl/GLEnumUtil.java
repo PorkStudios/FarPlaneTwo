@@ -28,7 +28,7 @@ import net.daporkchop.fp2.gl.command.BlendOp;
 import net.daporkchop.fp2.gl.command.Compare;
 import net.daporkchop.fp2.gl.command.FramebufferLayer;
 import net.daporkchop.fp2.gl.command.StencilOperation;
-import net.daporkchop.fp2.gl.draw.binding.DrawMode;
+import net.daporkchop.fp2.gl.draw.DrawMode;
 import net.daporkchop.fp2.gl.draw.index.IndexType;
 
 import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;

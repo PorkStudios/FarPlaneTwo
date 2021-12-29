@@ -18,46 +18,16 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.compute;
-
-import lombok.Getter;
-import lombok.NonNull;
-import net.daporkchop.fp2.gl.compute.ComputeLayout;
-import net.daporkchop.fp2.gl.compute.ComputeLocalSize;
-import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.layout.BaseLayoutImpl;
-import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
+package net.daporkchop.fp2.gl.draw;
 
 /**
+ * The different primitive geometry types which can be rendered.
+ *
  * @author DaPorkchop_
  */
-@Getter
-public class ComputeLayoutImpl extends BaseLayoutImpl implements ComputeLayout {
-    protected final ComputeLocalSize localSize;
-
-    public ComputeLayoutImpl(@NonNull ComputeLayoutBuilderImpl builder) {
-        super(builder.gl);
-
-        this.localSize = builder.localSize;
-    }
-
-    @Override
-    public void prefixShaderSource(@NonNull ShaderType type, @NonNull StringBuilder builder) {
-        builder.append("layout(local_size_x = ").append(this.localSize.x())
-                .append(", local_size_y = ").append(this.localSize.y())
-                .append(", local_size_z = ").append(this.localSize.z())
-                .append(") in;\n");
-    }
-
-    @Override
-    public void configureProgramPreLink(int program) {
-    }
-
-    @Override
-    public void configureProgramPostLink(int program) {
-    }
-
-    @Override
-    public void close() {
-    }
+public enum DrawPrimitive {
+    POINTS,
+    LINES,
+    TRIANGLES,
+    QUADS;
 }

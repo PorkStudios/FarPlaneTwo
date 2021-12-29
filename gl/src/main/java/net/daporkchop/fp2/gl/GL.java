@@ -89,6 +89,15 @@ public interface GL extends AutoCloseable {
     GLBitSetBuilder createBitSet();
 
     /**
+     * @return a builder for constructing a new {@link CommandBuffer}
+     */
+    CommandBufferBuilder createCommandBuffer();
+
+    //
+    // FORMATS
+    //
+
+    /**
      * @return a builder for constructing a new {@link IndexFormat}
      */
     IndexFormatBuilder.TypeSelectionStage createIndexFormat();
@@ -138,6 +147,10 @@ public interface GL extends AutoCloseable {
      */
     <S> AttributeFormatBuilder<DrawLocalFormat<S>> createDrawLocalFormat(@NonNull Class<S> clazz);
 
+    //
+    // DRAW
+    //
+
     /**
      * @return a builder for constructing a new {@link DrawLayout}
      */
@@ -152,15 +165,6 @@ public interface GL extends AutoCloseable {
      * @return a builder for constructing a new {@link DrawList} for indexed drawing commands
      */
     DrawListBuilder<DrawCommandIndexed> createDrawListIndexed(@NonNull DrawBindingIndexed binding);
-
-    /**
-     * @return a builder for constructing a new {@link CommandBuffer}
-     */
-    CommandBufferBuilder createCommandBuffer();
-
-    //
-    // SHADERS
-    //
 
     /**
      * @return a builder for constructing a new {@link VertexShader}

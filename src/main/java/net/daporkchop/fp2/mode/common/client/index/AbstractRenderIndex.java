@@ -32,7 +32,7 @@ import net.daporkchop.fp2.debug.util.DebugStats;
 import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.fp2.gl.draw.binding.DrawBindingBuilder;
-import net.daporkchop.fp2.gl.draw.binding.DrawMode;
+import net.daporkchop.fp2.gl.draw.DrawMode;
 import net.daporkchop.fp2.gl.bitset.GLBitSet;
 import net.daporkchop.fp2.gl.bitset.GLBitSetBuilder;
 import net.daporkchop.fp2.gl.draw.list.DrawCommand;

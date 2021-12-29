@@ -23,30 +23,14 @@ package net.daporkchop.fp2.gl.draw;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
-import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayFormat;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
+import net.daporkchop.fp2.gl.layout.BaseLayoutBuilder;
 
 /**
  * Builder for {@link DrawLayout}s.
  *
  * @author DaPorkchop_
  */
-public interface DrawLayoutBuilder {
-    /**
-     * Adds a {@link UniformFormat}.
-     *
-     * @param format the format of the uniform attributes
-     */
-    DrawLayoutBuilder withUniforms(@NonNull UniformFormat<?> format);
-
-    /**
-     * Adds a {@link UniformArrayFormat}.
-     *
-     * @param format the format of the uniform array attributes
-     */
-    DrawLayoutBuilder withUniformArrays(@NonNull UniformArrayFormat<?> format);
-
+public interface DrawLayoutBuilder extends BaseLayoutBuilder<DrawLayoutBuilder, DrawLayout> {
     /**
      * Adds a {@link DrawGlobalFormat}.
      *
@@ -62,26 +46,7 @@ public interface DrawLayoutBuilder {
     DrawLayoutBuilder withLocals(@NonNull DrawLocalFormat<?> format);
 
     /**
-     * Adds a {@link TextureFormat2D}.
-     *
-     * @param format the format of the texture
-     */
-    DrawLayoutBuilder withTexture(@NonNull TextureFormat2D<?> format);
-
-    /**
-     * Adds all the formats from the given {@link DrawLayout}.
-     *
-     * @param layout the {@link DrawLayout}
-     */
-    DrawLayoutBuilder with(@NonNull DrawLayout layout);
-
-    /**
      * Makes the {@link DrawLayout} support draw list selection.
      */
     DrawLayoutBuilder enableSelection(); //TODO: this does nothing
-
-    /**
-     * @return the constructed {@link DrawLayout}
-     */
-    DrawLayout build();
 }

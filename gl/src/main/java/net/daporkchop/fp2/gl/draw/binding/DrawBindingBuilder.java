@@ -23,10 +23,8 @@ package net.daporkchop.fp2.gl.draw.binding;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.global.DrawGlobalBuffer;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalBuffer;
-import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayBuffer;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformBuffer;
 import net.daporkchop.fp2.gl.draw.index.IndexBuffer;
+import net.daporkchop.fp2.gl.layout.binding.BaseBindingBuilder;
 
 /**
  * Builder for {@link DrawBinding}s.
@@ -34,21 +32,7 @@ import net.daporkchop.fp2.gl.draw.index.IndexBuffer;
  * @param <B> the type of {@link DrawBinding} to construct
  * @author DaPorkchop_
  */
-public interface DrawBindingBuilder<B extends DrawBinding> {
-    /**
-     * Adds a {@link UniformBuffer} which contains uniform attributes.
-     *
-     * @param buffer the uniform attributes
-     */
-    DrawBindingBuilder<B> withUniforms(@NonNull UniformBuffer<?> buffer);
-
-    /**
-     * Adds a {@link UniformArrayBuffer} which contains uniform array attributes.
-     *
-     * @param buffer the uniform attributes
-     */
-    DrawBindingBuilder<B> withUniformArrays(@NonNull UniformArrayBuffer<?> buffer);
-
+public interface DrawBindingBuilder<B extends DrawBinding> extends BaseBindingBuilder<DrawBindingBuilder<B>, B> {
     /**
      * Adds a {@link DrawGlobalBuffer} which contains global attributes.
      *
@@ -62,18 +46,6 @@ public interface DrawBindingBuilder<B extends DrawBinding> {
      * @param buffer the local attributes
      */
     DrawBindingBuilder<B> withLocals(@NonNull DrawLocalBuffer<?> buffer);
-
-    /**
-     * Adds a {@link DrawLocalBuffer} which contains a 2D texture.
-     *
-     * @param texture the texture
-     */
-    DrawBindingBuilder<B> withTexture(@NonNull Texture2D<?> texture);
-
-    /**
-     * @return the constructed {@link B}
-     */
-    B build();
 
     /**
      * @author DaPorkchop_

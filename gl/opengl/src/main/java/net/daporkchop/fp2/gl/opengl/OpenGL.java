@@ -28,17 +28,15 @@ import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.gl.GL;
-import net.daporkchop.fp2.gl.GLModule;
 import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
+import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayFormat;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
 import net.daporkchop.fp2.gl.bitset.GLBitSetBuilder;
-import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
-import net.daporkchop.fp2.gl.compute.GLCompute;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.draw.DrawLayoutBuilder;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
@@ -62,7 +60,6 @@ import net.daporkchop.fp2.gl.opengl.attribute.uniform.UniformFormatBlock;
 import net.daporkchop.fp2.gl.opengl.bitset.GLBitSetBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.opengl.command.CommandBufferBuilderImpl;
-import net.daporkchop.fp2.gl.opengl.compute.ComputeImpl;
 import net.daporkchop.fp2.gl.opengl.draw.DrawLayoutBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.draw.DrawLayoutImpl;
 import net.daporkchop.fp2.gl.opengl.draw.binding.DrawBindingImpl;
@@ -110,8 +107,6 @@ public class OpenGL implements GL {
 
     protected final ResourceArena resourceArena = new ResourceArena();
     protected final ResourceProvider resourceProvider;
-
-    protected final GLCompute compute;
 
     protected final Allocator directMemoryAllocator = new DirectMemoryAllocator();
 
@@ -168,15 +163,6 @@ public class OpenGL implements GL {
             this.profile = !core && !forwards ? GLProfile.COMPAT : GLProfile.CORE;
         }
 
-        //
-        // create modules
-        //
-
-        //compute
-        this.compute = GLExtension.GL_ARB_compute_shader.supported(this)
-                ? new ComputeImpl(this)
-                : GLModule.unsupportedImplementation(GLCompute.class);
-
         //compatibility hacks
         this.vertexAttributeAlignment = this.isOfficialAmdDriver() ? INT_SIZE : 1;
     }
@@ -198,9 +184,28 @@ public class OpenGL implements GL {
     }
 
     @Override
+    public void runCleanup() {
+        this.resourceArena.clean();
+    }
+
+    @Override
+    public void close() {
+        this.resourceArena.release();
+    }
+
+    @Override
     public GLBitSetBuilder createBitSet() {
         return new GLBitSetBuilderImpl(this);
     }
+
+    @Override
+    public CommandBufferBuilder createCommandBuffer() {
+        return new CommandBufferBuilderImpl(this);
+    }
+
+    //
+    // FORMATS
+    //
 
     @Override
     public IndexFormatBuilder.TypeSelectionStage createIndexFormat() {
@@ -257,6 +262,10 @@ public class OpenGL implements GL {
         };
     }
 
+    //
+    // DRAW
+    //
+
     @Override
     public DrawLayoutBuilder createDrawLayout() {
         return new DrawLayoutBuilderImpl(this);
@@ -284,11 +293,6 @@ public class OpenGL implements GL {
                         : new DrawListMultiDrawElementsIndirect(this);
             }
         };
-    }
-
-    @Override
-    public CommandBufferBuilder createCommandBuffer() {
-        return new CommandBufferBuilderImpl(this);
     }
 
     //
@@ -323,15 +327,5 @@ public class OpenGL implements GL {
                 return new DrawShaderProgramImpl(this);
             }
         };
-    }
-
-    @Override
-    public void runCleanup() {
-        this.resourceArena.clean();
-    }
-
-    @Override
-    public void close() {
-        this.resourceArena.release();
     }
 }

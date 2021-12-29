@@ -22,7 +22,7 @@ package net.daporkchop.fp2.gl.bitset;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.draw.list.DrawList;
-import net.daporkchop.fp2.gl.draw.binding.DrawMode;
+import net.daporkchop.fp2.gl.draw.DrawMode;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 
 /**

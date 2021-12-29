@@ -18,40 +18,29 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.compute;
+package net.daporkchop.fp2.gl.draw;
 
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
-import net.daporkchop.fp2.gl.compute.ComputeLayout;
-import net.daporkchop.fp2.gl.compute.ComputeLayoutBuilder;
-import net.daporkchop.fp2.gl.compute.ComputeLocalSize;
-import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
+ * The different geometry types supported by OpenGL.
+ *
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public class ComputeLayoutBuilderImpl implements ComputeLayoutBuilder {
+@Getter
+public enum DrawMode {
+    POINTS(DrawPrimitive.POINTS),
+    LINES(DrawPrimitive.LINES),
+    LINE_STRIP(DrawPrimitive.LINES),
+    LINE_LOOP(DrawPrimitive.LINES),
+    TRIANGLES(DrawPrimitive.TRIANGLES),
+    TRIANGLE_STRIP(DrawPrimitive.TRIANGLES),
+    TRIANGLE_FAN(DrawPrimitive.TRIANGLES),
+    QUADS(DrawPrimitive.QUADS);
+
     @NonNull
-    protected final OpenGL gl;
-    @NonNull
-    protected final ComputeLocalSize localSize;
-
-    protected final List<BaseAttributeFormatImpl<?, ?>> uniforms = new ArrayList<>();
-
-    @Override
-    public ComputeLayoutBuilder withUniforms(@NonNull UniformFormat<?> uniforms) {
-        this.uniforms.add((BaseAttributeFormatImpl<?, ?>) uniforms);
-        return this;
-    }
-
-    @Override
-    public ComputeLayout build() {
-        return new ComputeLayoutImpl(this);
-    }
+    private final DrawPrimitive primitive;
 }

@@ -18,16 +18,44 @@
  *
  */
 
-package net.daporkchop.fp2.gl.compute;
+package net.daporkchop.fp2.gl.layout.binding;
 
-import net.daporkchop.fp2.gl.layout.BaseLayout;
+import lombok.NonNull;
+import net.daporkchop.fp2.gl.attribute.local.DrawLocalBuffer;
+import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
+import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayBuffer;
+import net.daporkchop.fp2.gl.attribute.uniform.UniformBuffer;
 
 /**
+ * Generic builder type for {@link BaseBinding}s.
+ *
+ * @param <B> the type of {@link BaseBinding} to build
  * @author DaPorkchop_
  */
-public interface ComputeLayout extends BaseLayout {
+public interface BaseBindingBuilder<BUILDER extends BaseBindingBuilder<BUILDER, B>, B extends BaseBinding> {
     /**
-     * @return the local size of a compute shader dispatch
+     * Adds a {@link UniformBuffer} which contains uniform attributes.
+     *
+     * @param buffer the uniform attributes
      */
-    ComputeLocalSize localSize();
+    BUILDER withUniforms(@NonNull UniformBuffer<?> buffer);
+
+    /**
+     * Adds a {@link UniformArrayBuffer} which contains uniform array attributes.
+     *
+     * @param buffer the uniform attributes
+     */
+    BUILDER withUniformArrays(@NonNull UniformArrayBuffer<?> buffer);
+
+    /**
+     * Adds a {@link DrawLocalBuffer} which contains a 2D texture.
+     *
+     * @param texture the texture
+     */
+    BUILDER withTexture(@NonNull Texture2D<?> texture);
+
+    /**
+     * @return the constructed {@link B}
+     */
+    B build();
 }

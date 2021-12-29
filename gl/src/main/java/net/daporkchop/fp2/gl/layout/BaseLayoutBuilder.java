@@ -18,16 +18,50 @@
  *
  */
 
-package net.daporkchop.fp2.gl.draw.binding;
+package net.daporkchop.fp2.gl.layout;
+
+import lombok.NonNull;
+import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
+import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayFormat;
+import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
 
 /**
- * The different primitive geometry types which can be rendered.
+ * Generic builder type for {@link BaseLayout}s.
  *
+ * @param <L> the type of {@link BaseLayout} to build
  * @author DaPorkchop_
  */
-public enum DrawPrimitive {
-    POINTS,
-    LINES,
-    TRIANGLES,
-    QUADS;
+public interface BaseLayoutBuilder<BUILDER extends BaseLayoutBuilder<BUILDER, L>, L extends BaseLayout> {
+    /**
+     * Adds a {@link UniformFormat}.
+     *
+     * @param format the format of the uniform attributes
+     */
+    BUILDER withUniforms(@NonNull UniformFormat<?> format);
+
+    /**
+     * Adds a {@link UniformArrayFormat}.
+     *
+     * @param format the format of the uniform array attributes
+     */
+    BUILDER withUniformArrays(@NonNull UniformArrayFormat<?> format);
+
+    /**
+     * Adds a {@link TextureFormat2D}.
+     *
+     * @param format the format of the texture
+     */
+    BUILDER withTexture(@NonNull TextureFormat2D<?> format);
+
+    /**
+     * Adds all the formats from the given {@link L}.
+     *
+     * @param layout the {@link L}
+     */
+    BUILDER with(@NonNull L layout);
+
+    /**
+     * @return the constructed {@link L}
+     */
+    L build();
 }
