@@ -310,7 +310,7 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
     }
 
     @Override
-    public CommandBufferBuilder drawArrays(@NonNull DrawBinding binding, @NonNull DrawShaderProgram shader, @NonNull DrawMode mode, int first, int count) {
+    public CommandBufferBuilder drawArrays(@NonNull DrawShaderProgram shader, @NonNull DrawMode mode, @NonNull DrawBinding binding, int first, int count) {
         this.uops.add(new Uop.Draw(this.state, binding, shader, Collections.emptyMap()) {
             @Override
             public void emitCode(@NonNull CommandBufferBuilderImpl builder, @NonNull MethodVisitor mv, int apiLvtIndex) {

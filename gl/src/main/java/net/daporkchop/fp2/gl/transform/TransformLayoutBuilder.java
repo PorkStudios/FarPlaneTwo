@@ -18,30 +18,14 @@
  *
  */
 
-package net.daporkchop.fp2.gl.draw;
+package net.daporkchop.fp2.gl.transform;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
-import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
 import net.daporkchop.fp2.gl.layout.BaseLayoutBuilder;
 
 /**
- * Builder for {@link DrawLayout}s.
+ * Builder for {@link TransformLayout}s.
  *
  * @author DaPorkchop_
  */
-public interface DrawLayoutBuilder extends BaseLayoutBuilder<DrawLayoutBuilder, DrawLayout> {
-    /**
-     * Adds a {@link DrawGlobalFormat}.
-     *
-     * @param format the format of the global attributes
-     */
-    DrawLayoutBuilder withGlobals(@NonNull DrawGlobalFormat<?> format);
-
-    /**
-     * Adds a {@link DrawLocalFormat}.
-     *
-     * @param format the format of the local attributes
-     */
-    DrawLayoutBuilder withLocals(@NonNull DrawLocalFormat<?> format);
+public interface TransformLayoutBuilder extends BaseLayoutBuilder<TransformLayoutBuilder, TransformLayout> {
 }

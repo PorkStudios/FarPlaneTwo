@@ -250,7 +250,7 @@ public class TestLWJGL2 {
                 .framebufferClear(FramebufferLayer.COLOR)
                 .drawList(drawShaderProgram, DrawMode.TRIANGLES, listElements, bitSet)
                 .drawList(drawShaderProgram, DrawMode.TRIANGLES, listArrays)
-                .drawArrays(binding0, drawShaderProgram, DrawMode.TRIANGLES, 0, 3)
+                .drawArrays(drawShaderProgram, DrawMode.TRIANGLES, binding0, 0, 3)
                 .build()) {
             while (!Display.isCloseRequested()) {
                 bitSet.set(i -> ThreadLocalRandom.current().nextBoolean());

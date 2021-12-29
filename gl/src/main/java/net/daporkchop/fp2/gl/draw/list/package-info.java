@@ -18,30 +18,10 @@
  *
  */
 
-package net.daporkchop.fp2.gl.draw;
-
-import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
-import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
-import net.daporkchop.fp2.gl.layout.BaseLayoutBuilder;
-
 /**
- * Builder for {@link DrawLayout}s.
+ * Draw lists contain a mutable sequence of draw commands which read data from the same {@link net.daporkchop.fp2.gl.draw.binding.DrawBinding}, which can be executed in
+ * a batch.
  *
  * @author DaPorkchop_
  */
-public interface DrawLayoutBuilder extends BaseLayoutBuilder<DrawLayoutBuilder, DrawLayout> {
-    /**
-     * Adds a {@link DrawGlobalFormat}.
-     *
-     * @param format the format of the global attributes
-     */
-    DrawLayoutBuilder withGlobals(@NonNull DrawGlobalFormat<?> format);
-
-    /**
-     * Adds a {@link DrawLocalFormat}.
-     *
-     * @param format the format of the local attributes
-     */
-    DrawLayoutBuilder withLocals(@NonNull DrawLocalFormat<?> format);
-}
+package net.daporkchop.fp2.gl.draw.list;

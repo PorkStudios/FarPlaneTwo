@@ -106,7 +106,7 @@ public interface CommandBufferBuilder {
     // DRAWING
     //
 
-    CommandBufferBuilder drawArrays(@NonNull DrawBinding binding, @NonNull DrawShaderProgram shader, @NonNull DrawMode mode, int first, int count);
+    CommandBufferBuilder drawArrays(@NonNull DrawShaderProgram shader, @NonNull DrawMode mode, @NonNull DrawBinding binding, int first, int count);
 
     CommandBufferBuilder drawList(@NonNull DrawShaderProgram shader, @NonNull DrawMode mode, @NonNull DrawList<?> list);
 
