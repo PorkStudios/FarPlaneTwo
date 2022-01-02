@@ -18,38 +18,25 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.command.state;
+package net.daporkchop.fp2.gl.opengl.command.methodwriter;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.opengl.command.CodegenArgs;
-import net.daporkchop.fp2.gl.opengl.command.methodwriter.MethodWriter;
 import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Type;
 
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 
 /**
- * A {@link StateProperty} with an associated value.
- * <p>
- * Property values are always {@link Optional}. An empty {@link Optional} indicates that we don't care what the property is set to.
- *
  * @author DaPorkchop_
  */
-public interface StateValueProperty<T> extends StateProperty {
-    /**
-     * @return the property's default value
-     */
-    T def();
+@FunctionalInterface
+public interface MethodWriter<A extends MethodWriter.Args> {
+    void write(@NonNull BiConsumer<MethodVisitor, A> action);
 
     /**
-     * Generates JVM bytecode for setting the property to the given value.
-     *
-     * @param value  the value
-     * @param writer the {@link MethodWriter} to which code should be written
+     * @author DaPorkchop_
      */
-    void set(@NonNull T value, @NonNull MethodWriter<CodegenArgs> writer);
-
-    void backup(@NonNull MethodVisitor mv, int apiLvtIndex, int bufferLvtIndex, @NonNull AtomicInteger lvtIndexAllocator);
-
-    void restore(@NonNull MethodVisitor mv, int apiLvtIndex, int bufferLvtIndex, int lvtIndexBase);
+    interface Args {
+        Type[] argumentTypes();
+    }
 }

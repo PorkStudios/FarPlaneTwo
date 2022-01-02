@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -26,6 +26,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
+import net.daporkchop.fp2.gl.opengl.command.methodwriter.MethodWriter;
 import net.daporkchop.fp2.gl.opengl.command.state.CowState;
 import net.daporkchop.fp2.gl.opengl.command.state.MutableState;
 import net.daporkchop.fp2.gl.opengl.command.state.State;
@@ -34,15 +35,11 @@ import net.daporkchop.fp2.gl.opengl.command.state.StateProperty;
 import net.daporkchop.fp2.gl.opengl.command.state.StateValueProperty;
 import net.daporkchop.fp2.gl.opengl.layout.BaseBindingImpl;
 import net.daporkchop.fp2.gl.opengl.shader.BaseShaderProgramImpl;
-import net.daporkchop.fp2.gl.shader.BaseShaderProgram;
 import net.daporkchop.lib.common.util.PorkUtil;
-import org.objectweb.asm.MethodVisitor;
 
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
-
-import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
@@ -59,7 +56,7 @@ public abstract class Uop {
 
     protected abstract Stream<StateProperty> dependsFirst();
 
-    public abstract void emitCode(@NonNull CommandBufferBuilderImpl builder, @NonNull MethodVisitor mv, int apiLvtIndex);
+    public abstract void emitCode(@NonNull CommandBufferBuilderImpl builder, @NonNull MethodWriter<CodegenArgs> writer);
 
     /**
      * @author DaPorkchop_

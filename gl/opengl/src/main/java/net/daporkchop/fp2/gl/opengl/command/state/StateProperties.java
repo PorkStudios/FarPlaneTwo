@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -37,6 +37,8 @@ import net.daporkchop.fp2.gl.opengl.OpenGLConstants;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureTarget;
 import net.daporkchop.fp2.gl.opengl.buffer.BufferTarget;
 import net.daporkchop.fp2.gl.opengl.buffer.IndexedBufferTarget;
+import net.daporkchop.fp2.gl.opengl.command.CodegenArgs;
+import net.daporkchop.fp2.gl.opengl.command.methodwriter.MethodWriter;
 import net.daporkchop.fp2.gl.opengl.command.state.struct.BlendFactors;
 import net.daporkchop.fp2.gl.opengl.command.state.struct.BlendOps;
 import net.daporkchop.fp2.gl.opengl.command.state.struct.Color4b;
@@ -297,10 +299,12 @@ public class StateProperties {
         }
 
         @Override
-        public void set(@NonNull Boolean value, @NonNull MethodVisitor mv, int apiLvtIndex) {
-            mv.visitVarInsn(ALOAD, apiLvtIndex);
-            visitGLConstant(mv, this.cap);
-            mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), value ? "glEnable" : "glDisable", getMethodDescriptor(VOID_TYPE, INT_TYPE), true);
+        public void set(@NonNull Boolean value, @NonNull MethodWriter<CodegenArgs> writer) {
+            writer.write((mv, args) -> {
+                mv.visitVarInsn(ALOAD, args.apiLvtIndex());
+                visitGLConstant(mv, this.cap);
+                mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), value ? "glEnable" : "glDisable", getMethodDescriptor(VOID_TYPE, INT_TYPE), true);
+            });
         }
 
         @Override
@@ -356,10 +360,12 @@ public class StateProperties {
         private final T def;
 
         @Override
-        public void set(@NonNull T value, @NonNull MethodVisitor mv, int apiLvtIndex) {
-            mv.visitVarInsn(ALOAD, apiLvtIndex);
-            this.loadFromValue(mv, value);
-            this.set(mv);
+        public void set(@NonNull T value, @NonNull MethodWriter<CodegenArgs> writer) {
+            writer.write((mv, args) -> {
+                mv.visitVarInsn(ALOAD, args.apiLvtIndex());
+                this.loadFromValue(mv, value);
+                this.set(mv);
+            });
         }
 
         @Override
@@ -650,12 +656,14 @@ public class StateProperties {
         }
 
         @Override
-        public void set(@NonNull Integer value, @NonNull MethodVisitor mv, int apiLvtIndex) {
-            mv.visitVarInsn(ALOAD, apiLvtIndex);
-            visitGLConstant(mv, GL_TEXTURE0 + this.unit);
-            mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glActiveTexture", getMethodDescriptor(VOID_TYPE, INT_TYPE), true);
+        public void set(@NonNull Integer value, @NonNull MethodWriter<CodegenArgs> writer) {
+            writer.write((mv, args) -> {
+                mv.visitVarInsn(ALOAD, args.apiLvtIndex());
+                visitGLConstant(mv, GL_TEXTURE0 + this.unit);
+                mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glActiveTexture", getMethodDescriptor(VOID_TYPE, INT_TYPE), true);
+            });
 
-            super.set(value, mv, apiLvtIndex);
+            super.set(value, writer);
         }
 
         @Override

@@ -18,38 +18,22 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.command.state;
+package net.daporkchop.fp2.gl.opengl.command;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.gl.opengl.command.CodegenArgs;
+import lombok.Data;
+import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.command.methodwriter.MethodWriter;
-import org.objectweb.asm.MethodVisitor;
-
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
+import org.objectweb.asm.Type;
 
 /**
- * A {@link StateProperty} with an associated value.
- * <p>
- * Property values are always {@link Optional}. An empty {@link Optional} indicates that we don't care what the property is set to.
- *
  * @author DaPorkchop_
  */
-public interface StateValueProperty<T> extends StateProperty {
-    /**
-     * @return the property's default value
-     */
-    T def();
+@Data
+public final class CodegenArgs implements MethodWriter.Args {
+    private final int apiLvtIndex;
 
-    /**
-     * Generates JVM bytecode for setting the property to the given value.
-     *
-     * @param value  the value
-     * @param writer the {@link MethodWriter} to which code should be written
-     */
-    void set(@NonNull T value, @NonNull MethodWriter<CodegenArgs> writer);
-
-    void backup(@NonNull MethodVisitor mv, int apiLvtIndex, int bufferLvtIndex, @NonNull AtomicInteger lvtIndexAllocator);
-
-    void restore(@NonNull MethodVisitor mv, int apiLvtIndex, int bufferLvtIndex, int lvtIndexBase);
+    @Override
+    public Type[] argumentTypes() {
+        return new Type[]{ Type.getType(GLAPI.class) };
+    }
 }
