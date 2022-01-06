@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -35,6 +35,7 @@ import net.daporkchop.fp2.gl.draw.binding.DrawBindingBuilder;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.BindingLocationAssigner;
 import net.daporkchop.fp2.gl.opengl.attribute.common.ShaderStorageBlockFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.common.TextureFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.common.UniformBlockFormat;
@@ -129,25 +130,27 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
         ImmutableList.Builder<VertexAttributeBindings> vertexAttributeBindings = ImmutableList.builder();
         ImmutableList.Builder<UniformBlockBinding> uniformBlockBindings = ImmutableList.builder();
 
+        BindingLocationAssigner assigner = new BindingLocationAssigner(this.gl, this.api);
+
         //register everything
         builder.allFormatsAndChildren()
                 .forEach(format -> {
                     boolean handled = false;
                     if (format instanceof ShaderStorageBlockFormat) {
                         handled = true;
-                        shaderStorageBlockBindings.add(new ShaderStorageBlockBinding(format));
+                        shaderStorageBlockBindings.add(new ShaderStorageBlockBinding(format, assigner.shaderStorageBuffer()));
                     }
                     if (format instanceof TextureFormat) {
                         handled = true;
-                        textureBindings.add(new TextureBinding(format));
+                        textureBindings.add(new TextureBinding(format, assigner.textureUnit()));
                     }
                     if (format instanceof VertexAttributeFormat) {
                         handled = true;
-                        vertexAttributeBindings.add(new VertexAttributeBindings(format));
+                        vertexAttributeBindings.add(new VertexAttributeBindings(format, assigner));
                     }
                     if (format instanceof UniformBlockFormat) {
                         handled = true;
-                        uniformBlockBindings.add(new UniformBlockBinding(format));
+                        uniformBlockBindings.add(new UniformBlockBinding(format, assigner.uniformBuffer()));
                     }
 
                     if (!handled) {
@@ -155,7 +158,7 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
                     }
                 });
 
-        fragmentColorBindings.add(new FragmentColorBinding());
+        fragmentColorBindings.add(new FragmentColorBinding(assigner.fragmentColor()));
 
         //make temporary lists immutable
         this.fragmentColorBindings = fragmentColorBindings.build();
@@ -170,72 +173,6 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
                         VertexAttributeBindings::format,
                         Function.identity()),
                 ImmutableMap::copyOf));
-
-        //final configuration
-        this.configureFragmentColors();
-        this.configureShaderStorageBlocks();
-        this.configureTextures();
-        this.configureVertexAttributes();
-        this.configureUniformBlocks();
-    }
-
-    protected void configureFragmentColors() {
-        int index = 0;
-        int max = this.api.glGetInteger(GL_MAX_DRAW_BUFFERS);
-
-        for (FragmentColorBinding binding : this.fragmentColorBindings) {
-            checkIndex(index < max, "cannot use more than %d fragment colors!", max);
-            binding.colorIndex = index++;
-        }
-    }
-
-    protected void configureShaderStorageBlocks() {
-        int index = 0;
-        int max = this.api.glGetInteger(GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS);
-
-        for (ShaderStorageBlockBinding binding : this.shaderStorageBlockBindings) {
-            checkIndex(index < max, "cannot use more than %d shader storage buffers!", max);
-            binding.bindingIndex = index++;
-        }
-    }
-
-    protected void configureTextures() {
-        int[] indices = new int[TextureTarget.values().length];
-        int max = this.api.glGetInteger(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS);
-
-        for (TextureBinding binding : this.textureBindings) {
-            int targetIndex = binding.target.ordinal();
-
-            checkIndex(indices[targetIndex] < max, "cannot use more than %d texture units!", max);
-            binding.unit = indices[targetIndex]++;
-        }
-    }
-
-    protected void configureVertexAttributes() {
-        int index = 0;
-        int max = this.api.glGetInteger(GL_MAX_VERTEX_ATTRIBS);
-
-        for (VertexAttributeBindings bindings : this.vertexAttributeBindings) {
-            int[] attributeIndices = bindings.attributeIndices;
-
-            for (int i = 0; i < attributeIndices.length; i++) {
-                checkIndex(index < max, "cannot use more than %d vertex attributes!", max);
-                attributeIndices[i] = index;
-
-                GLSLType type = bindings.format.attributeFields().get(i).type();
-                index += type instanceof GLSLMatrixType ? ((GLSLMatrixType) type).columns() : 1;
-            }
-        }
-    }
-
-    protected void configureUniformBlocks() {
-        int index = 0;
-        int max = this.api.glGetInteger(GL_MAX_UNIFORM_BUFFER_BINDINGS);
-
-        for (UniformBlockBinding binding : this.uniformBlockBindings) {
-            checkIndex(index < max, "cannot use more than %d uniform buffers!", max);
-            binding.bindingIndex = index++;
-        }
     }
 
     @Override
@@ -291,7 +228,7 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
     public static class FragmentColorBinding {
         protected final GLSLField field = new GLSLField(GLSLType.vec(GLSLPrimitiveType.FLOAT, 4), "f_color");
 
-        protected int colorIndex = -1;
+        protected final int colorIndex;
 
         public void bindColorLocation(@NonNull GLAPI api, int program) {
             api.glBindFragDataLocation(program, this.colorIndex, this.field.name());
@@ -312,9 +249,12 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
         protected final BaseAttributeFormatImpl<?, ?> format;
         protected final int[] attributeIndices;
 
-        protected VertexAttributeBindings(@NonNull BaseAttributeFormatImpl<?, ?> format) {
+        protected VertexAttributeBindings(@NonNull BaseAttributeFormatImpl<?, ?> format, @NonNull BindingLocationAssigner assigner) {
             this.format = format;
-            this.attributeIndices = PArrays.filled(format.attributeFields().size(), -1);
+            this.attributeIndices = format.attributeFields().stream()
+                    .map(GLSLField::type)
+                    .mapToInt(type -> assigner.vertexAttribute(type instanceof GLSLMatrixType ? ((GLSLMatrixType) type).columns() : 1))
+                    .toArray();
         }
 
         public void enableAndBind(@NonNull GLAPI api, @NonNull BaseAttributeBufferImpl<?, ?, ?> buffer) {
@@ -347,7 +287,7 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
         @NonNull
         protected final BaseAttributeFormatImpl<?, ?> format;
 
-        protected int bindingIndex = -1;
+        protected final int bindingIndex;
 
         public void bindBlockLocation(@NonNull GLAPI api, int program) {
             int blockIndex = api.glGetProgramResourceIndex(program, GL_SHADER_STORAGE_BLOCK, "BUFFER_" + this.format.name());
@@ -389,11 +329,12 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
         protected final BaseAttributeFormatImpl<?, ?> format;
         protected final TextureTarget target;
 
-        protected int unit = -1;
+        protected final int unit;
 
-        protected TextureBinding(@NonNull BaseAttributeFormatImpl<?, ?> format) {
+        protected TextureBinding(@NonNull BaseAttributeFormatImpl<?, ?> format, int unit) {
             this.format = format;
             this.target = ((TextureFormat) format).target();
+            this.unit = unit;
         }
 
         public void bindSamplerLocations(@NonNull GLAPI api, int program) {
@@ -438,7 +379,7 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
         @NonNull
         protected final BaseAttributeFormatImpl<?, ?> format;
 
-        protected int bindingIndex = -1;
+        protected final int bindingIndex;
 
         public void bindBlockLocation(@NonNull GLAPI api, int program) {
             int blockIndex = api.glGetUniformBlockIndex(program, "UNIFORM_" + this.format.name());
