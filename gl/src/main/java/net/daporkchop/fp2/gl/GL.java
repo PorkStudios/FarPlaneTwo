@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -23,8 +23,10 @@ package net.daporkchop.fp2.gl;
 import lombok.NonNull;
 import net.daporkchop.fp2.common.GlobalProperties;
 import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
+import net.daporkchop.fp2.gl.attribute.array.ArrayFormat;
 import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
 import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
+import net.daporkchop.fp2.gl.attribute.single.SingleFormat;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayFormat;
 import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
@@ -103,6 +105,24 @@ public interface GL extends AutoCloseable {
     IndexFormatBuilder.TypeSelectionStage createIndexFormat();
 
     /**
+     * Gets an {@link ArrayFormat} for the given struct class.
+     *
+     * @param clazz the struct class
+     * @param <S>   the struct type
+     * @return an {@link ArrayFormat}
+     */
+    <S> AttributeFormatBuilder<ArrayFormat<S>> createArrayFormat(@NonNull Class<S> clazz);
+
+    /**
+     * Gets a {@link SingleFormat} for the given struct class.
+     *
+     * @param clazz the struct class
+     * @param <S>   the struct type
+     * @return a {@link SingleFormat}
+     */
+    <S> AttributeFormatBuilder<ArrayFormat<S>> createSingleFormat(@NonNull Class<S> clazz);
+
+    /**
      * Gets a {@link TextureFormat2D} for the given struct class.
      *
      * @param clazz the struct class
@@ -118,6 +138,7 @@ public interface GL extends AutoCloseable {
      * @param <S>   the struct type
      * @return a {@link UniformFormat}
      */
+    @Deprecated
     <S> AttributeFormatBuilder<UniformFormat<S>> createUniformFormat(@NonNull Class<S> clazz);
 
     /**
@@ -127,6 +148,7 @@ public interface GL extends AutoCloseable {
      * @param <S>   the struct type
      * @return a {@link UniformArrayFormat}
      */
+    @Deprecated
     <S> AttributeFormatBuilder<UniformArrayFormat<S>> createUniformArrayFormat(@NonNull Class<S> clazz);
 
     /**
@@ -136,6 +158,7 @@ public interface GL extends AutoCloseable {
      * @param <S>   the struct type
      * @return a {@link DrawGlobalFormat}
      */
+    @Deprecated
     <S> AttributeFormatBuilder<DrawGlobalFormat<S>> createDrawGlobalFormat(@NonNull Class<S> clazz);
 
     /**
@@ -145,6 +168,7 @@ public interface GL extends AutoCloseable {
      * @param <S>   the struct type
      * @return a {@link DrawLocalFormat}
      */
+    @Deprecated
     <S> AttributeFormatBuilder<DrawLocalFormat<S>> createDrawLocalFormat(@NonNull Class<S> clazz);
 
     //

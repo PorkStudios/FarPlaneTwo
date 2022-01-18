@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute;
+package net.daporkchop.fp2.gl.opengl.attribute.binding;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.opengl.GLAPI;

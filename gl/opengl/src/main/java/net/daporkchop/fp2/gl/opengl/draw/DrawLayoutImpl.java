@@ -35,7 +35,7 @@ import net.daporkchop.fp2.gl.draw.binding.DrawBindingBuilder;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.BindingLocationAssigner;
+import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
 import net.daporkchop.fp2.gl.opengl.attribute.common.ShaderStorageBlockFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.common.TextureFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.common.UniformBlockFormat;
@@ -49,7 +49,6 @@ import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureTarget;
 import net.daporkchop.fp2.gl.opengl.draw.binding.DrawBindingBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.layout.BaseLayoutImpl;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
-import net.daporkchop.lib.common.util.PArrays;
 import net.daporkchop.lib.common.util.PorkUtil;
 
 import java.util.List;
