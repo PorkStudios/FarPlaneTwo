@@ -18,36 +18,32 @@
  *
  */
 
-package net.daporkchop.fp2.gl.attribute.array;
-
-import net.daporkchop.fp2.gl.attribute.BaseAttributeBuffer;
+package net.daporkchop.fp2.gl.attribute;
 
 /**
- * A resizeable array of array attribute data in server memory.
+ * All things which an attribute format may be used for.
  *
  * @author DaPorkchop_
  */
-public interface ArrayBuffer<S> extends BaseAttributeBuffer<ArrayFormat<S>> {
+public enum AttributeUsage {
     /**
-     * @return the number of attribute data elements that this buffer can store
+     * Buffers using this attribute format contain data which may be used as uniforms.
      */
-    int capacity();
-
+    UNIFORM,
     /**
-     * Sets the capacity of this buffer.
-     * <p>
-     * If the new capacity is less than the current capacity, the buffer's contents will be truncated. If greater than the current capacity, the
-     * data will be extended with undefined contents.
-     *
-     * @param capacity the new capacity
+     * Buffers using this attribute format contain data which may be used as a uniform array.
      */
-    void resize(int capacity);
-
+    UNIFORM_ARRAY,
     /**
-     * Copies the attribute data from the given {@link ArrayWriter} into this buffer.
-     *
-     * @param startIndex the destination index for the first attribute data element
-     * @param writer     a {@link ArrayWriter} containing the sequence of attribute data elements to copy
+     * Buffers using this attribute format contain data which may be used as local vertex data when drawing.
      */
-    void set(int startIndex, ArrayWriter<S> writer);
+    DRAW_LOCAL,
+    /**
+     * Buffers using this attribute format contain data which may be used as global vertex data when drawing.
+     */
+    DRAW_GLOBAL,
+    /**
+     * Buffers using this attribute format may be used as the destination for transform commands.
+     */
+    TRANSFORM_OUTPUT;
 }

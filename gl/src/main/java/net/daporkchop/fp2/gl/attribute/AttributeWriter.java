@@ -18,17 +18,22 @@
  *
  */
 
-package net.daporkchop.fp2.gl.attribute.array;
+package net.daporkchop.fp2.gl.attribute;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.BaseAttributeWriter;
+import net.daporkchop.fp2.common.util.capability.CloseableResource;
 
 /**
- * A buffer in client memory which is used for building sequences of array attribute data.
+ * A buffer in client memory which is used for building sequences of attribute data.
  *
  * @author DaPorkchop_
  */
-public interface ArrayWriter<S> extends BaseAttributeWriter<ArrayFormat<S>> {
+public interface AttributeWriter<S> extends CloseableResource {
+    /**
+     * @return the {@link AttributeFormat} used by this writer
+     */
+    AttributeFormat<S> format();
+
     /**
      * @return the number of vertices written so far
      */

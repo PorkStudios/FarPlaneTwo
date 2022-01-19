@@ -18,28 +18,41 @@
  *
  */
 
-package net.daporkchop.fp2.gl.attribute.array;
+package net.daporkchop.fp2.gl.attribute;
+
+import net.daporkchop.fp2.gl.GLResource;
 
 /**
- * All valid usages of an array format.
+ * A resizeable array of attribute data in server memory.
  *
  * @author DaPorkchop_
  */
-public enum ArrayUsage {
+public interface AttributeBuffer<S> extends GLResource {
     /**
-     * The array may be used as a uniform array.
+     * @return the {@link AttributeFormat} used by this buffer
      */
-    UNIFORM_ARRAY,
+    AttributeFormat<S> format();
+
     /**
-     * The array may be used for local vertex data when drawing.
+     * @return the number of attribute data elements that this buffer can store
      */
-    DRAW_LOCAL,
+    int capacity();
+
     /**
-     * The array may be used for global vertex data when drawing.
+     * Sets the capacity of this buffer.
+     * <p>
+     * If the new capacity is less than the current capacity, the buffer's contents will be truncated. If greater than the current capacity, the
+     * data will be extended with undefined contents.
+     *
+     * @param capacity the new capacity
      */
-    DRAW_GLOBAL,
+    void resize(int capacity);
+
     /**
-     * The array may be used as the destination for transform commands.
+     * Copies the attribute data from the given {@link AttributeWriter} into this buffer.
+     *
+     * @param startIndex the destination index for the first attribute data element
+     * @param writer     a {@link AttributeWriter} containing the sequence of attribute data elements to copy
      */
-    TRANSFORM_OUTPUT;
+    void set(int startIndex, AttributeWriter<S> writer);
 }

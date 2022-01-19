@@ -18,17 +18,29 @@
  *
  */
 
-package net.daporkchop.fp2.gl.attribute.array;
+package net.daporkchop.fp2.gl.attribute;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.BaseAttributeFormat;
-import net.daporkchop.fp2.gl.attribute.BufferUsage;
 
 /**
+ * Builder for {@link AttributeFormat}s.
+ *
  * @author DaPorkchop_
  */
-public interface ArrayFormat<S> extends BaseAttributeFormat {
-    ArrayWriter<S> createWriter();
+//TODO: rename to AttributeFormatBuilder after the old builders are deleted
+public interface IAttributeFormatBuilder<S> {
+    /**
+     * Registers an attribute name override.
+     * <p>
+     * The attribute with the given original name will be visible in shaders under the given new name.
+     *
+     * @param originalName the original name
+     * @param newName      the new name
+     */
+    IAttributeFormatBuilder<S> rename(@NonNull String originalName, @NonNull String newName);
 
-    ArrayBuffer<S> createBuffer(@NonNull BufferUsage usage);
+    /**
+     * @return the constructed {@link S}
+     */
+    AttributeFormat<S> build();
 }

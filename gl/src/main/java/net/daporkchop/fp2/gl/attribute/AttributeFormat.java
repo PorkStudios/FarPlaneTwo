@@ -18,21 +18,20 @@
  *
  */
 
-package net.daporkchop.fp2.gl.attribute.single;
+package net.daporkchop.fp2.gl.attribute;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.BaseAttributeBuffer;
 
 /**
- * A resizeable array of array attribute data in server memory.
- *
  * @author DaPorkchop_
  */
-public interface SingleBuffer<S> extends BaseAttributeBuffer<SingleFormat<S>> {
+public interface AttributeFormat<S> {
     /**
-     * Sets this buffer's contents to the given struct value.
-     *
-     * @param struct the struct
+     * @return the number of bytes used by each element in a {@link AttributeBuffer} using this format
      */
-    void set(@NonNull S struct);
+    long size();
+
+    AttributeWriter<S> createWriter();
+
+    AttributeBuffer<S> createBuffer(@NonNull BufferUsage usage);
 }
