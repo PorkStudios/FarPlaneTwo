@@ -18,34 +18,19 @@
  *
  */
 
-package net.daporkchop.fp2.gl.transform;
+package net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.uniform;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.common.AttributeFormat;
-import net.daporkchop.fp2.gl.attribute.common.AttributeUsage;
-import net.daporkchop.fp2.gl.layout.BaseLayoutBuilder;
+import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
 
 /**
- * Builder for {@link TransformLayout}s.
- *
  * @author DaPorkchop_
  */
-public interface TransformLayoutBuilder extends BaseLayoutBuilder<TransformLayoutBuilder, TransformLayout> {
-    /**
-     * Adds a {@link AttributeFormat} which will be used for inputs.
-     * <p>
-     * The format must support {@link AttributeUsage#TRANSFORM_INPUT}.
-     *
-     * @param format the format of the inputs
-     */
-    TransformLayoutBuilder withInputs(@NonNull AttributeFormat<?> format);
+public class InterleavedDrawGlobalAttributeBindingLocation<S> extends InterleavedDrawLocalAttributeBindingLocation<S> {
+    public InterleavedDrawGlobalAttributeBindingLocation(@NonNull InterleavedStructFormat<S> structFormat, @NonNull BindingLocationAssigner assigner) {
+        super(structFormat, assigner);
+    }
 
-    /**
-     * Adds a {@link AttributeFormat} which will be used for outputs.
-     * <p>
-     * The format must support {@link AttributeUsage#TRANSFORM_OUTPUT}.
-     *
-     * @param format the format of the outputs
-     */
-    TransformLayoutBuilder withOutputs(@NonNull AttributeFormat<?> format);
+    //TODO: add a vertex attribute divisor
 }

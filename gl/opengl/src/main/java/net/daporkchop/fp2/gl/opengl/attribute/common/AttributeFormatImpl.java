@@ -18,34 +18,53 @@
  *
  */
 
-package net.daporkchop.fp2.gl.transform;
+package net.daporkchop.fp2.gl.opengl.attribute.common;
 
+import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.common.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.common.AttributeUsage;
-import net.daporkchop.fp2.gl.layout.BaseLayoutBuilder;
+import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.format.StructFormat;
+
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
- * Builder for {@link TransformLayout}s.
- *
  * @author DaPorkchop_
  */
-public interface TransformLayoutBuilder extends BaseLayoutBuilder<TransformLayoutBuilder, TransformLayout> {
-    /**
-     * Adds a {@link AttributeFormat} which will be used for inputs.
-     * <p>
-     * The format must support {@link AttributeUsage#TRANSFORM_INPUT}.
-     *
-     * @param format the format of the inputs
-     */
-    TransformLayoutBuilder withInputs(@NonNull AttributeFormat<?> format);
+@Getter
+public abstract class AttributeFormatImpl<S, SF extends StructFormat<S, ?>> extends BaseAttributeFormatImpl<S> implements AttributeFormat<S> {
+    private final SF structFormat;
 
-    /**
-     * Adds a {@link AttributeFormat} which will be used for outputs.
-     * <p>
-     * The format must support {@link AttributeUsage#TRANSFORM_OUTPUT}.
-     *
-     * @param format the format of the outputs
-     */
-    TransformLayoutBuilder withOutputs(@NonNull AttributeFormat<?> format);
+    public AttributeFormatImpl(@NonNull OpenGL gl, @NonNull SF structFormat) {
+        super(gl);
+
+        this.structFormat = structFormat;
+    }
+
+    @Override
+    public Set<AttributeUsage> usage() {
+        return this.validUsages().stream().map(InternalAttributeUsage::external).filter(Objects::nonNull).collect(Collectors.toSet());
+    }
+
+    @Override
+    public long size() {
+        return this.structFormat.totalSize();
+    }
+
+    @Override
+    public String name() {
+        return this.structFormat.structName();
+    }
+
+    @Override
+    public List<GLSLField> attributeFields() {
+        return this.structFormat.glslFields();
+    }
 }

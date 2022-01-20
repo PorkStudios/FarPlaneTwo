@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -21,8 +21,8 @@
 package net.daporkchop.fp2.gl.draw;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
-import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
+import net.daporkchop.fp2.gl.attribute.common.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.common.AttributeUsage;
 import net.daporkchop.fp2.gl.layout.BaseLayoutBuilder;
 
 /**
@@ -32,16 +32,20 @@ import net.daporkchop.fp2.gl.layout.BaseLayoutBuilder;
  */
 public interface DrawLayoutBuilder extends BaseLayoutBuilder<DrawLayoutBuilder, DrawLayout> {
     /**
-     * Adds a {@link DrawGlobalFormat}.
+     * Adds a {@link AttributeFormat} which will be used for global vertex attributes.
+     * <p>
+     * The format must support {@link AttributeUsage#DRAW_GLOBAL}.
      *
      * @param format the format of the global attributes
      */
-    DrawLayoutBuilder withGlobals(@NonNull DrawGlobalFormat<?> format);
+    DrawLayoutBuilder withGlobals(@NonNull AttributeFormat<?> format);
 
     /**
-     * Adds a {@link DrawLocalFormat}.
+     * Adds a {@link AttributeFormat} which will be used for global vertex attributes.
+     * <p>
+     * The format must support {@link AttributeUsage#DRAW_LOCAL}.
      *
      * @param format the format of the local attributes
      */
-    DrawLayoutBuilder withLocals(@NonNull DrawLocalFormat<?> format);
+    DrawLayoutBuilder withLocals(@NonNull AttributeFormat<?> format);
 }

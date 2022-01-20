@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -21,9 +21,9 @@
 package net.daporkchop.fp2.gl.layout;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.attribute.common.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.common.AttributeUsage;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayFormat;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
 
 /**
  * Generic builder type for {@link BaseLayout}s.
@@ -33,18 +33,22 @@ import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
  */
 public interface BaseLayoutBuilder<BUILDER extends BaseLayoutBuilder<BUILDER, L>, L extends BaseLayout> {
     /**
-     * Adds a {@link UniformFormat}.
+     * Adds a {@link AttributeFormat} which will be used for uniform attributes.
+     * <p>
+     * The format must support {@link AttributeUsage#UNIFORM}.
      *
      * @param format the format of the uniform attributes
      */
-    BUILDER withUniforms(@NonNull UniformFormat<?> format);
+    BUILDER withUniforms(@NonNull AttributeFormat<?> format);
 
     /**
-     * Adds a {@link UniformArrayFormat}.
+     * Adds a {@link AttributeFormat} which will be used for uniform array attributes.
+     * <p>
+     * The format must support {@link AttributeUsage#UNIFORM_ARRAY}.
      *
      * @param format the format of the uniform array attributes
      */
-    BUILDER withUniformArrays(@NonNull UniformArrayFormat<?> format);
+    BUILDER withUniformArrays(@NonNull AttributeFormat<?> format);
 
     /**
      * Adds a {@link TextureFormat2D}.

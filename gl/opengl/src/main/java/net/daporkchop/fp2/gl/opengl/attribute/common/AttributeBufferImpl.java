@@ -18,32 +18,24 @@
  *
  */
 
-package net.daporkchop.fp2.gl.attribute;
+package net.daporkchop.fp2.gl.opengl.attribute.common;
 
+import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.common.util.capability.CloseableResource;
+import net.daporkchop.fp2.gl.attribute.BufferUsage;
+import net.daporkchop.fp2.gl.attribute.common.AttributeBuffer;
+import net.daporkchop.fp2.gl.opengl.OpenGL;
 
 /**
- * A buffer in client memory which is used for building sequences of attribute data.
- *
  * @author DaPorkchop_
  */
-public interface AttributeWriter<S> extends CloseableResource {
-    /**
-     * @return the {@link AttributeFormat} used by this writer
-     */
-    AttributeFormat<S> format();
+@Getter
+public abstract class AttributeBufferImpl<S, F extends AttributeFormatImpl<S, ?>> implements AttributeBuffer<S> {
+    protected final OpenGL gl;
+    protected final F format;
 
-    /**
-     * @return the number of vertices written so far
-     */
-    int size();
-
-    /**
-     * Appends a new vertex with data from the given {@link S}.
-     *
-     * @param struct the struct containing the vertex data
-     * @return the index of the completed vertex
-     */
-    int put(@NonNull S struct);
+    public AttributeBufferImpl(@NonNull F format) {
+        this.gl = format.gl();
+        this.format = format;
+    }
 }

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -30,7 +30,7 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.format.TextureStructFormat;
 /**
  * @author DaPorkchop_
  */
-public abstract class BaseTextureFormatImpl<S> extends BaseAttributeFormatImpl<S, TextureStructFormat<S>> implements BaseTextureFormat, TextureFormat {
+public abstract class BaseTextureFormatImpl<S> extends BaseAttributeFormatImpl<S> implements BaseTextureFormat, TextureFormat {
     public BaseTextureFormatImpl(@NonNull OpenGL gl, @NonNull TextureStructFormat<S> structFormat) {
         super(gl, structFormat);
     }

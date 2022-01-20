@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -22,19 +22,24 @@ package net.daporkchop.fp2.gl.opengl.draw;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
-import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
+import net.daporkchop.fp2.gl.attribute.common.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.common.AttributeUsage;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayFormat;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.draw.DrawLayoutBuilder;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
+import net.daporkchop.fp2.gl.opengl.attribute.common.AttributeFormatImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.texture.BaseTextureFormatImpl;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Stream;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
@@ -44,50 +49,54 @@ public class DrawLayoutBuilderImpl implements DrawLayoutBuilder {
     @NonNull
     protected final OpenGL gl;
 
-    protected final List<BaseAttributeFormatImpl<?, ?>> uniforms = new ArrayList<>();
-    protected final List<BaseAttributeFormatImpl<?, ?>> uniformArrays = new ArrayList<>();
-    protected final List<BaseAttributeFormatImpl<?, ?>> globals = new ArrayList<>();
-    protected final List<BaseAttributeFormatImpl<?, ?>> locals = new ArrayList<>();
-    protected final List<BaseAttributeFormatImpl<?, ?>> textures = new ArrayList<>();
+    protected final List<AttributeFormatImpl<?, ?>> uniforms = new ArrayList<>();
+    protected final List<AttributeFormatImpl<?, ?>> uniformArrays = new ArrayList<>();
+    protected final List<AttributeFormatImpl<?, ?>> globals = new ArrayList<>();
+    protected final List<AttributeFormatImpl<?, ?>> locals = new ArrayList<>();
+    protected final List<BaseTextureFormatImpl<?>> textures = new ArrayList<>();
 
     @Override
-    public DrawLayoutBuilder withUniforms(@NonNull UniformFormat<?> format) {
-        this.uniforms.add((BaseAttributeFormatImpl<?, ?>) format);
+    public DrawLayoutBuilder withUniforms(@NonNull AttributeFormat<?> format) {
+        checkArg(format.usage().contains(AttributeUsage.UNIFORM), "%s doesn't support %s", format, AttributeUsage.UNIFORM);
+        this.uniforms.add((AttributeFormatImpl<?, ?>) format);
         return this;
     }
 
     @Override
-    public DrawLayoutBuilder withUniformArrays(@NonNull UniformArrayFormat<?> format) {
-        this.uniformArrays.add((BaseAttributeFormatImpl<?, ?>) format);
+    public DrawLayoutBuilder withUniformArrays(@NonNull AttributeFormat<?> format) {
+        checkArg(format.usage().contains(AttributeUsage.UNIFORM_ARRAY), "%s doesn't support %s", format, AttributeUsage.UNIFORM_ARRAY);
+        this.uniformArrays.add((AttributeFormatImpl<?, ?>) format);
         return this;
     }
 
     @Override
-    public DrawLayoutBuilder withGlobals(@NonNull DrawGlobalFormat<?> format) {
-        this.globals.add((BaseAttributeFormatImpl<?, ?>) format);
+    public DrawLayoutBuilder withGlobals(@NonNull AttributeFormat<?> format) {
+        checkArg(format.usage().contains(AttributeUsage.DRAW_GLOBAL), "%s doesn't support %s", format, AttributeUsage.DRAW_GLOBAL);
+        this.globals.add((AttributeFormatImpl<?, ?>) format);
         return this;
     }
 
     @Override
-    public DrawLayoutBuilder withLocals(@NonNull DrawLocalFormat<?> format) {
-        this.locals.add((BaseAttributeFormatImpl<?, ?>) format);
+    public DrawLayoutBuilder withLocals(@NonNull AttributeFormat<?> format) {
+        checkArg(format.usage().contains(AttributeUsage.DRAW_LOCAL), "%s doesn't support %s", format, AttributeUsage.DRAW_LOCAL);
+        this.locals.add((AttributeFormatImpl<?, ?>) format);
         return this;
     }
 
     @Override
     public DrawLayoutBuilder withTexture(@NonNull TextureFormat2D<?> format) {
-        this.textures.add((BaseAttributeFormatImpl<?, ?>) format);
+        this.textures.add((BaseTextureFormatImpl<?>) format);
         return this;
     }
 
     @Override
     public DrawLayoutBuilder with(@NonNull DrawLayout _layout) {
         DrawLayoutImpl layout = (DrawLayoutImpl) _layout;
-        this.uniforms.addAll(layout.uniformFormatsByName.values());
-        this.uniformArrays.addAll(layout.uniformArrayFormatsByName.values());
-        this.globals.addAll(layout.globalFormatsByName.values());
-        this.locals.addAll(layout.localFormatsByName.values());
-        this.textures.addAll(layout.textureFormatsByName.values());
+        this.uniforms.addAll(layout.uniformFormats);
+        this.uniformArrays.addAll(layout.uniformArrayFormats);
+        this.globals.addAll(layout.globalFormats);
+        this.locals.addAll(layout.localFormats);
+        this.textures.addAll(layout.textureFormats);
         return this;
     }
 
@@ -96,11 +105,13 @@ public class DrawLayoutBuilderImpl implements DrawLayoutBuilder {
         return new DrawLayoutImpl(this);
     }
 
-    public Stream<BaseAttributeFormatImpl<?, ?>> allFormats() {
-        return Stream.of(this.uniforms, this.uniformArrays, this.globals, this.locals, this.textures).flatMap(List::stream);
-    }
-
-    public Stream<BaseAttributeFormatImpl<?, ?>> allFormatsAndChildren() {
-        return this.allFormats().flatMap(BaseAttributeFormatImpl::selfAndChildren);
+    public Stream<? extends Map.Entry<InternalAttributeUsage, ? extends BaseAttributeFormatImpl<?>>> allFormatsWithUsage() {
+        return Stream.of(
+                this.uniforms.stream().flatMap(format -> format.actualFormatsFor(InternalAttributeUsage.UNIFORM)),
+                this.uniformArrays.stream().flatMap(format -> format.actualFormatsFor(InternalAttributeUsage.UNIFORM_ARRAY)),
+                this.globals.stream().flatMap(format -> format.actualFormatsFor(InternalAttributeUsage.DRAW_GLOBAL)),
+                this.locals.stream().flatMap(format -> format.actualFormatsFor(InternalAttributeUsage.DRAW_LOCAL)),
+                this.textures.stream().flatMap(format -> format.actualFormatsFor(InternalAttributeUsage.TEXTURE)))
+                .flatMap(Function.identity());
     }
 }

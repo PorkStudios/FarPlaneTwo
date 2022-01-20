@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.gl.attribute;
+package net.daporkchop.fp2.gl.attribute.common;
 
 /**
  * All things which an attribute format may be used for.
@@ -43,7 +43,11 @@ public enum AttributeUsage {
      */
     DRAW_GLOBAL,
     /**
-     * Buffers using this attribute format may be used as the destination for transform commands.
+     * Buffers using this attribute format may be used as the input for transform commands.
+     */
+    TRANSFORM_INPUT,
+    /**
+     * Buffers using this attribute format may be used as the output for transform commands.
      */
     TRANSFORM_OUTPUT;
 }

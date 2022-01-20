@@ -18,20 +18,32 @@
  *
  */
 
-package net.daporkchop.fp2.gl.attribute;
+package net.daporkchop.fp2.gl.opengl.attribute.common.interleaved;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.attribute.BufferUsage;
+import net.daporkchop.fp2.gl.attribute.common.AttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.common.AttributeWriter;
+import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.attribute.common.AttributeFormatImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.InterleavedStructLayout;
 
 /**
  * @author DaPorkchop_
  */
-public interface AttributeFormat<S> {
-    /**
-     * @return the number of bytes used by each element in a {@link AttributeBuffer} using this format
-     */
-    long size();
+public abstract class InterleavedAttributeFormatImpl<S> extends AttributeFormatImpl<S, InterleavedStructFormat<S>> {
+    public InterleavedAttributeFormatImpl(@NonNull OpenGL gl, @NonNull InterleavedStructLayout<S> structLayout) {
+        super(gl, gl.structFormatGenerator().getInterleaved(structLayout));
+    }
 
-    AttributeWriter<S> createWriter();
+    @Override
+    public AttributeWriter<S> createWriter() {
+        return new InterleavedAttributeWriterImpl<>(this);
+    }
 
-    AttributeBuffer<S> createBuffer(@NonNull BufferUsage usage);
+    @Override
+    public AttributeBuffer<S> createBuffer(@NonNull BufferUsage usage) {
+        return new InterleavedAttributeBufferImpl<>(this, usage);
+    }
 }

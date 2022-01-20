@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -108,32 +108,32 @@ public class DrawBindingBuilderImpl implements DrawBindingBuilder.OptionallyInde
     @Override
     public DrawBinding build() {
         { //uniforms
-            Set<BaseAttributeFormatImpl<?, ?>> givenFormats = this.uniforms.stream().map(BaseAttributeBufferImpl::formatImpl).collect(Collectors.toSet());
-            Set<BaseAttributeFormatImpl<?, ?>> expectedFormats = this.layout.uniformFormatsByName().values();
+            Set<BaseAttributeFormatImpl<?>> givenFormats = this.uniforms.stream().map(BaseAttributeBufferImpl::formatImpl).collect(Collectors.toSet());
+            Set<BaseAttributeFormatImpl<?>> expectedFormats = this.layout.uniformFormats().values();
             checkArg(expectedFormats.equals(givenFormats), "attribute format mismatch: %s (given) != %s (expected)", givenFormats, expectedFormats);
         }
 
         { //uniform arrays
-            Set<BaseAttributeFormatImpl<?, ?>> givenFormats = this.uniformArrays.stream().map(BaseAttributeBufferImpl::formatImpl).collect(Collectors.toSet());
-            Set<BaseAttributeFormatImpl<?, ?>> expectedFormats = this.layout.uniformArrayFormatsByName().values();
+            Set<BaseAttributeFormatImpl<?>> givenFormats = this.uniformArrays.stream().map(BaseAttributeBufferImpl::formatImpl).collect(Collectors.toSet());
+            Set<BaseAttributeFormatImpl<?>> expectedFormats = this.layout.uniformArrayFormats().values();
             checkArg(expectedFormats.equals(givenFormats), "attribute format mismatch: %s (given) != %s (expected)", givenFormats, expectedFormats);
         }
 
         { //globals
-            Set<BaseAttributeFormatImpl<?, ?>> givenFormats = this.globals.stream().map(BaseAttributeBufferImpl::formatImpl).collect(Collectors.toSet());
-            Set<BaseAttributeFormatImpl<?, ?>> expectedFormats = this.layout.globalFormatsByName().values();
+            Set<BaseAttributeFormatImpl<?>> givenFormats = this.globals.stream().map(BaseAttributeBufferImpl::formatImpl).collect(Collectors.toSet());
+            Set<BaseAttributeFormatImpl<?>> expectedFormats = this.layout.globalFormats().values();
             checkArg(expectedFormats.equals(givenFormats), "attribute format mismatch: %s (given) != %s (expected)", givenFormats, expectedFormats);
         }
 
         { //locals
-            Set<BaseAttributeFormatImpl<?, ?>> givenFormats = this.locals.stream().map(BaseAttributeBufferImpl::formatImpl).collect(Collectors.toSet());
-            Set<BaseAttributeFormatImpl<?, ?>> expectedFormats = this.layout.localFormatsByName().values();
+            Set<BaseAttributeFormatImpl<?>> givenFormats = this.locals.stream().map(BaseAttributeBufferImpl::formatImpl).collect(Collectors.toSet());
+            Set<BaseAttributeFormatImpl<?>> expectedFormats = this.layout.localFormats().values();
             checkArg(expectedFormats.equals(givenFormats), "attribute format mismatch: %s (given) != %s (expected)", givenFormats, expectedFormats);
         }
 
         { //textures
-            Set<BaseAttributeFormatImpl<?, ?>> givenFormats = this.textures.stream().map(BaseAttributeBufferImpl::formatImpl).collect(Collectors.toSet());
-            Set<BaseAttributeFormatImpl<?, ?>> expectedFormats = this.layout.textureFormatsByName().values();
+            Set<BaseAttributeFormatImpl<?>> givenFormats = this.textures.stream().map(BaseAttributeBufferImpl::formatImpl).collect(Collectors.toSet());
+            Set<BaseAttributeFormatImpl<?>> expectedFormats = this.layout.textureFormats().values();
             checkArg(expectedFormats.equals(givenFormats), "attribute format mismatch: %s (given) != %s (expected)", givenFormats, expectedFormats);
         }
 

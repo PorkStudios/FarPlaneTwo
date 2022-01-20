@@ -20,10 +20,9 @@
 
 package net.daporkchop.fp2.gl.opengl.draw;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import lombok.AccessLevel;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -35,7 +34,9 @@ import net.daporkchop.fp2.gl.draw.binding.DrawBindingBuilder;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
+import net.daporkchop.fp2.gl.opengl.attribute.common.AttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.common.ShaderStorageBlockFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.common.TextureFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.common.UniformBlockFormat;
@@ -45,17 +46,20 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLMatrixType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLPrimitiveType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLType;
+import net.daporkchop.fp2.gl.opengl.attribute.texture.BaseTextureFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureTarget;
 import net.daporkchop.fp2.gl.opengl.draw.binding.DrawBindingBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.layout.BaseLayoutImpl;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
 import net.daporkchop.lib.common.util.PorkUtil;
 
+import java.util.AbstractMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -65,21 +69,9 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @Getter
 public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
-    protected final BiMap<String, BaseAttributeFormatImpl<?, ?>> allFormatsByName;
-    protected final BiMap<String, BaseAttributeFormatImpl<?, ?>> uniformFormatsByName;
-    protected final BiMap<String, BaseAttributeFormatImpl<?, ?>> uniformArrayFormatsByName;
-    protected final BiMap<String, BaseAttributeFormatImpl<?, ?>> globalFormatsByName;
-    protected final BiMap<String, BaseAttributeFormatImpl<?, ?>> localFormatsByName;
-    protected final BiMap<String, BaseAttributeFormatImpl<?, ?>> textureFormatsByName;
+    protected final Map<InternalAttributeUsage, Set<? extends BaseAttributeFormatImpl<?>>> allFormatsByUsage;
 
-    protected final BiMap<String, GLSLField> allAttribsByName;
-    protected final BiMap<String, GLSLField> uniformAttribsByName;
-    protected final BiMap<String, GLSLField> uniformArrayAttribsByName;
-    protected final BiMap<String, GLSLField> globalAttribsByName;
-    protected final BiMap<String, GLSLField> localAttribsByName;
-    protected final BiMap<String, GLSLField> textureAttribsByName;
-
-    protected final Map<BaseAttributeFormatImpl<?, ?>, VertexAttributeBindings> vertexAttributeBindingsByFormat;
+    protected final Map<AttributeFormatImpl<?, ?>, VertexAttributeBindings> vertexAttributeBindingsByFormat;
 
     protected final List<FragmentColorBinding> fragmentColorBindings;
     protected final List<ShaderStorageBlockBinding> shaderStorageBlockBindings;
@@ -87,40 +79,11 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
     protected final List<VertexAttributeBindings> vertexAttributeBindings;
     protected final List<UniformBlockBinding> uniformBlockBindings;
 
+    @SuppressWarnings("UnstableApiUsage")
     public DrawLayoutImpl(@NonNull DrawLayoutBuilderImpl builder) {
         super(builder.gl);
 
-        {
-            Collector<BaseAttributeFormatImpl<?, ?>, ?, BiMap<String, BaseAttributeFormatImpl<?, ?>>> formatToMapCollector = Collectors.collectingAndThen(
-                    Collectors.toMap(BaseAttributeFormatImpl::name, Function.identity()),
-                    ImmutableBiMap::copyOf);
-
-            //collect all attribute formats into a single map (also ensures names are unique)
-            this.allFormatsByName = builder.allFormatsAndChildren().collect(formatToMapCollector);
-
-            //create maps for formats, separated by usage
-            this.uniformFormatsByName = builder.uniforms.stream().flatMap(BaseAttributeFormatImpl::selfAndChildren).collect(formatToMapCollector);
-            this.uniformArrayFormatsByName = builder.uniformArrays.stream().flatMap(BaseAttributeFormatImpl::selfAndChildren).collect(formatToMapCollector);
-            this.globalFormatsByName = builder.globals.stream().flatMap(BaseAttributeFormatImpl::selfAndChildren).collect(formatToMapCollector);
-            this.localFormatsByName = builder.locals.stream().flatMap(BaseAttributeFormatImpl::selfAndChildren).collect(formatToMapCollector);
-            this.textureFormatsByName = builder.textures.stream().flatMap(BaseAttributeFormatImpl::selfAndChildren).collect(formatToMapCollector);
-        }
-
-        {
-            Collector<GLSLField, ?, BiMap<String, GLSLField>> attribToMapCollector = Collectors.collectingAndThen(
-                    Collectors.toMap(GLSLField::name, Function.identity()),
-                    ImmutableBiMap::copyOf);
-
-            //collect all attributes into a single map (also ensures names are unique)
-            this.allAttribsByName = builder.allFormatsAndChildren().map(BaseAttributeFormatImpl::attributeFields).flatMap(List::stream).collect(attribToMapCollector);
-
-            //create maps for attributes, separated by usage
-            this.uniformAttribsByName = builder.uniforms.stream().flatMap(BaseAttributeFormatImpl::selfAndChildren).map(BaseAttributeFormatImpl::attributeFields).flatMap(List::stream).collect(attribToMapCollector);
-            this.uniformArrayAttribsByName = builder.uniformArrays.stream().flatMap(BaseAttributeFormatImpl::selfAndChildren).map(BaseAttributeFormatImpl::attributeFields).flatMap(List::stream).collect(attribToMapCollector);
-            this.globalAttribsByName = builder.globals.stream().flatMap(BaseAttributeFormatImpl::selfAndChildren).map(BaseAttributeFormatImpl::attributeFields).flatMap(List::stream).collect(attribToMapCollector);
-            this.localAttribsByName = builder.locals.stream().flatMap(BaseAttributeFormatImpl::selfAndChildren).map(BaseAttributeFormatImpl::attributeFields).flatMap(List::stream).collect(attribToMapCollector);
-            this.textureAttribsByName = builder.textures.stream().flatMap(BaseAttributeFormatImpl::selfAndChildren).map(BaseAttributeFormatImpl::attributeFields).flatMap(List::stream).collect(attribToMapCollector);
-        }
+        this.allFormatsByUsage = builder.allFormatsWithUsage().collect(Collectors.collectingAndThen(Collectors.groupingBy(Map.Entry::getKey, Collectors.mapping(Map.Entry::getValue, ImmutableSet.toImmutableSet())), ImmutableMap::copyOf));
 
         //create temporary lists
         ImmutableList.Builder<FragmentColorBinding> fragmentColorBindings = ImmutableList.builder();
@@ -132,7 +95,8 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
         BindingLocationAssigner assigner = new BindingLocationAssigner(this.gl, this.api);
 
         //register everything
-        builder.allFormatsAndChildren()
+        this.allFormatsWithUsage()
+                .map(entry -> entry.getValue().bindingLocation(entry.getKey(), assigner))
                 .forEach(format -> {
                     boolean handled = false;
                     if (format instanceof ShaderStorageBlockFormat) {
@@ -172,6 +136,10 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
                         VertexAttributeBindings::format,
                         Function.identity()),
                 ImmutableMap::copyOf));
+    }
+
+    public Stream<Map.Entry<InternalAttributeUsage, ? extends BaseAttributeFormatImpl<?>>> allFormatsWithUsage() {
+        return this.allFormatsByUsage.entrySet().stream().flatMap(entry -> entry.getValue().stream().map(format -> new AbstractMap.SimpleEntry<>(entry.getKey(), format)));
     }
 
     @Override
@@ -245,10 +213,10 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
     @EqualsAndHashCode
     public static class VertexAttributeBindings {
         @Getter
-        protected final BaseAttributeFormatImpl<?, ?> format;
+        protected final AttributeFormatImpl<?, ?> format;
         protected final int[] attributeIndices;
 
-        protected VertexAttributeBindings(@NonNull BaseAttributeFormatImpl<?, ?> format, @NonNull BindingLocationAssigner assigner) {
+        protected VertexAttributeBindings(@NonNull AttributeFormatImpl<?, ?> format, @NonNull BindingLocationAssigner assigner) {
             this.format = format;
             this.attributeIndices = format.attributeFields().stream()
                     .map(GLSLField::type)
@@ -284,7 +252,7 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
     @EqualsAndHashCode
     public static class ShaderStorageBlockBinding {
         @NonNull
-        protected final BaseAttributeFormatImpl<?, ?> format;
+        protected final AttributeFormatImpl<?, ?> format;
 
         protected final int bindingIndex;
 
@@ -325,14 +293,14 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
     @ToString
     @EqualsAndHashCode
     public static class TextureBinding {
-        protected final BaseAttributeFormatImpl<?, ?> format;
+        protected final BaseTextureFormatImpl<?> format;
         protected final TextureTarget target;
 
         protected final int unit;
 
-        protected TextureBinding(@NonNull BaseAttributeFormatImpl<?, ?> format, int unit) {
+        protected TextureBinding(@NonNull BaseTextureFormatImpl<?> format, int unit) {
             this.format = format;
-            this.target = ((TextureFormat) format).target();
+            this.target = format.target();
             this.unit = unit;
         }
 
@@ -376,7 +344,7 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
     @EqualsAndHashCode
     public static class UniformBlockBinding {
         @NonNull
-        protected final BaseAttributeFormatImpl<?, ?> format;
+        protected final AttributeFormatImpl<?, ?> format;
 
         protected final int bindingIndex;
 

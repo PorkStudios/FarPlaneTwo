@@ -18,34 +18,45 @@
  *
  */
 
-package net.daporkchop.fp2.gl.transform;
+package net.daporkchop.fp2.gl.opengl.attribute;
 
+import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.common.AttributeFormat;
-import net.daporkchop.fp2.gl.attribute.common.AttributeUsage;
-import net.daporkchop.fp2.gl.layout.BaseLayoutBuilder;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
+import net.daporkchop.fp2.gl.attribute.BaseAttributeFormat;
+import net.daporkchop.fp2.gl.attribute.IAttributeFormatBuilder;
+import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.StructInfo;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
- * Builder for {@link TransformLayout}s.
- *
  * @author DaPorkchop_
  */
-public interface TransformLayoutBuilder extends BaseLayoutBuilder<TransformLayoutBuilder, TransformLayout> {
-    /**
-     * Adds a {@link AttributeFormat} which will be used for inputs.
-     * <p>
-     * The format must support {@link AttributeUsage#TRANSFORM_INPUT}.
-     *
-     * @param format the format of the inputs
-     */
-    TransformLayoutBuilder withInputs(@NonNull AttributeFormat<?> format);
+@RequiredArgsConstructor
+@Getter
+public abstract class IAttributeFormatBuilderImpl<S> implements IAttributeFormatBuilder<S> {
+    @NonNull
+    protected final OpenGL gl;
+    @NonNull
+    protected final Class<S> clazz;
+    @NonNull
+    protected final Set<InternalAttributeUsage> usages;
 
-    /**
-     * Adds a {@link AttributeFormat} which will be used for outputs.
-     * <p>
-     * The format must support {@link AttributeUsage#TRANSFORM_OUTPUT}.
-     *
-     * @param format the format of the outputs
-     */
-    TransformLayoutBuilder withOutputs(@NonNull AttributeFormat<?> format);
+    protected final Map<String, String> nameOverrides = new HashMap<>();
+
+    @Override
+    public IAttributeFormatBuilder<S> rename(@NonNull String originalName, @NonNull String newName) {
+        checkState(this.nameOverrides.putIfAbsent(originalName, newName) == null, "name %s cannot be overridden twice!", originalName);
+        return this;
+    }
+
+    public StructInfo<S> structInfo() {
+        return new StructInfo<>(this.clazz, this.nameOverrides);
+    }
 }

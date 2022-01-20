@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.gl.attribute;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.attribute.common.AttributeFormat;
 
 /**
  * Builder for {@link AttributeFormat}s.

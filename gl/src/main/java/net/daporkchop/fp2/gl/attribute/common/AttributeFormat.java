@@ -18,34 +18,29 @@
  *
  */
 
-package net.daporkchop.fp2.gl.transform;
+package net.daporkchop.fp2.gl.attribute.common;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.common.AttributeFormat;
-import net.daporkchop.fp2.gl.attribute.common.AttributeUsage;
-import net.daporkchop.fp2.gl.layout.BaseLayoutBuilder;
+import net.daporkchop.fp2.gl.attribute.BaseAttributeFormat;
+import net.daporkchop.fp2.gl.attribute.BufferUsage;
+
+import java.util.Set;
 
 /**
- * Builder for {@link TransformLayout}s.
- *
  * @author DaPorkchop_
  */
-public interface TransformLayoutBuilder extends BaseLayoutBuilder<TransformLayoutBuilder, TransformLayout> {
+public interface AttributeFormat<S> extends BaseAttributeFormat {
     /**
-     * Adds a {@link AttributeFormat} which will be used for inputs.
-     * <p>
-     * The format must support {@link AttributeUsage#TRANSFORM_INPUT}.
-     *
-     * @param format the format of the inputs
+     * @return the number of bytes used by each element in a {@link AttributeBuffer} using this format
      */
-    TransformLayoutBuilder withInputs(@NonNull AttributeFormat<?> format);
+    long size();
 
     /**
-     * Adds a {@link AttributeFormat} which will be used for outputs.
-     * <p>
-     * The format must support {@link AttributeUsage#TRANSFORM_OUTPUT}.
-     *
-     * @param format the format of the outputs
+     * @return a {@link Set} of the {@link AttributeUsage}s valid for this {@link AttributeFormat}
      */
-    TransformLayoutBuilder withOutputs(@NonNull AttributeFormat<?> format);
+    Set<AttributeUsage> usage();
+
+    AttributeWriter<S> createWriter();
+
+    AttributeBuffer<S> createBuffer(@NonNull BufferUsage usage);
 }

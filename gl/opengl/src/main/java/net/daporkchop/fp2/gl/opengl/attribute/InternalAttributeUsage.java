@@ -21,42 +21,48 @@
 package net.daporkchop.fp2.gl.opengl.attribute;
 
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
-import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
-
-import java.util.AbstractMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Stream;
+import net.daporkchop.fp2.gl.attribute.common.AttributeUsage;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
+ * Extension of {@link AttributeUsage} with additional usage types. Only used internally.
+ *
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
 @Getter
-public abstract class BaseAttributeFormatImpl<S> {
-    @NonNull
-    protected final OpenGL gl;
+public enum InternalAttributeUsage {
+    UNIFORM(AttributeUsage.UNIFORM),
+    UNIFORM_ARRAY(AttributeUsage.UNIFORM_ARRAY),
+    DRAW_LOCAL(AttributeUsage.DRAW_LOCAL),
+    DRAW_GLOBAL(AttributeUsage.DRAW_GLOBAL),
+    TRANSFORM_INPUT(AttributeUsage.TRANSFORM_INPUT),
+    TRANSFORM_OUTPUT(AttributeUsage.TRANSFORM_OUTPUT),
+    TEXTURE(null);
 
-    public abstract Set<InternalAttributeUsage> validUsages();
+    private static final InternalAttributeUsage[] VALUES = values();
 
-    public Stream<? extends Map.Entry<InternalAttributeUsage, ? extends BaseAttributeFormatImpl<?>>> actualFormatsFor(@NonNull InternalAttributeUsage usage) {
-        checkArg(this.validUsages().contains(usage), "this format only supports %s, not %s", this.validUsages(), usage);
-        return Stream.of(new AbstractMap.SimpleEntry<>(usage, this));
+    static {
+        InternalAttributeUsage[] internal = VALUES;
+        AttributeUsage[] external = AttributeUsage.values();
+
+        checkState(internal.length >= external.length);
+        for (int i = 0; i < external.length; i++) {
+            checkState(external[i].name().equals(internal[i].name()), "%s != %s", external[i].name(), internal[i].name());
+        }
     }
 
-    public abstract BindingLocation<?> bindingLocation(@NonNull InternalAttributeUsage usage, @NonNull BindingLocationAssigner assigner);
+    /**
+     * Gets the {@link InternalAttributeUsage} equivalent to the given {@link AttributeUsage}.
+     *
+     * @param external the external {@link AttributeUsage}
+     * @return the equivalent {@link InternalAttributeUsage}
+     */
+    public static InternalAttributeUsage fromExternal(AttributeUsage external) {
+        return VALUES[external.ordinal()];
+    }
 
-    @Deprecated
-    public abstract String name();
-
-    @Deprecated
-    public abstract List<GLSLField> attributeFields();
+    private final AttributeUsage external;
 }

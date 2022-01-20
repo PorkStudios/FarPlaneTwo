@@ -18,40 +18,36 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.binding;
+package net.daporkchop.fp2.gl.opengl.attribute;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.opengl.GLAPI;
-import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
-import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
+import net.daporkchop.fp2.gl.opengl.attribute.common.AttributeFormatImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.glsl.GLSLBlockAttributeFormat;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLBlockMemoryLayout;
+
+import java.util.Optional;
 
 /**
- * Describes a binding between an attribute format and the contents of an attribute buffer in a shader.
+ * All of the supported types of {@link AttributeFormatImpl}.
  *
  * @author DaPorkchop_
  */
-public interface AttributeBinding<B extends BaseAttributeBufferImpl> {
-    /**
-     * Configures the given shader program for this binding prior to linking it.
-     *
-     * @param api     the {@link GLAPI} instance
-     * @param program the ID of the program to configure
-     */
-    void configureProgramPreLink(@NonNull GLAPI api, int program);
+public enum AttributeFormatTypes {
+    GLSL_BLOCK_STD140 {
+        @Override
+        public <S> Optional<AttributeFormatImpl<S, ?>> createFormat(@NonNull IAttributeFormatBuilderImpl<S> builder) {
+            return GLSLBlockAttributeFormat.VALID_USAGES.containsAll(builder.usages()) //should always be supported
+                    ? Optional.of(new GLSLBlockAttributeFormat<>(builder, GLSLBlockMemoryLayout.STD140))
+                    : Optional.empty();
+        }
+    };
 
     /**
-     * Configures the given shader program for this binding after linking it.
+     * Creates an {@link AttributeFormatImpl} for the given {@link IAttributeFormatBuilderImpl} using this format type if possible.
      *
-     * @param api     the {@link GLAPI} instance
-     * @param program the ID of the program to configure
+     * @param builder the {@link IAttributeFormatBuilderImpl}
+     * @param <S>     the struct type
+     * @return the created {@link AttributeFormatImpl}, or an empty {@link Optional} if this type cannot support the given {@link IAttributeFormatBuilderImpl}'s options
      */
-    void configureProgramPostLink(@NonNull GLAPI api, int program);
-
-    /**
-     * Generates the GLSL code required for the user to access this attribute.
-     *
-     * @param type    the type of shader to generate code for
-     * @param builder a {@link StringBuilder} which the generated GLSL code should be appended to
-     */
-    void generateGLSL(@NonNull ShaderType type, @NonNull StringBuilder builder);
+    public abstract <S> Optional<AttributeFormatImpl<S, ?>> createFormat(@NonNull IAttributeFormatBuilderImpl<S> builder);
 }

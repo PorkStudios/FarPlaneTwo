@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -48,8 +48,14 @@ public class StructInfo<S> {
     protected final Class<S> clazz;
     protected final List<StructMember<S>> members;
 
+    @Deprecated
     public StructInfo(@NonNull AttributeFormatBuilderImpl<?, S> builder) {
-        this.clazz = builder.clazz();
+        this(builder.clazz(), builder.nameOverrides());
+    }
+
+    public StructInfo(@NonNull Class<S> clazz, @NonNull Map<String, String> nameOverrides) {
+        this.clazz = clazz;
+        nameOverrides = new HashMap<>(nameOverrides);
 
         ImmutableList.Builder<StructMember<S>> memberListBuilder = ImmutableList.builder();
         Map<String, Field> fieldsByName = Stream.of(this.clazz.getFields())
@@ -57,8 +63,6 @@ public class StructInfo<S> {
                             throw new IllegalArgumentException(a + " " + b);
                         },
                         LinkedHashMap::new));
-
-        Map<String, String> nameOverrides = new HashMap<>(builder.nameOverrides());
 
         while (!fieldsByName.isEmpty()) {
             Field field = fieldsByName.values().stream()

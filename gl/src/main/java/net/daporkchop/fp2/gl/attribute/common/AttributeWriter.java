@@ -18,34 +18,32 @@
  *
  */
 
-package net.daporkchop.fp2.gl.transform;
+package net.daporkchop.fp2.gl.attribute.common;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.common.AttributeFormat;
-import net.daporkchop.fp2.gl.attribute.common.AttributeUsage;
-import net.daporkchop.fp2.gl.layout.BaseLayoutBuilder;
+import net.daporkchop.fp2.common.util.capability.CloseableResource;
 
 /**
- * Builder for {@link TransformLayout}s.
+ * A buffer in client memory which is used for building sequences of attribute data.
  *
  * @author DaPorkchop_
  */
-public interface TransformLayoutBuilder extends BaseLayoutBuilder<TransformLayoutBuilder, TransformLayout> {
+public interface AttributeWriter<S> extends CloseableResource {
     /**
-     * Adds a {@link AttributeFormat} which will be used for inputs.
-     * <p>
-     * The format must support {@link AttributeUsage#TRANSFORM_INPUT}.
-     *
-     * @param format the format of the inputs
+     * @return the {@link AttributeFormat} used by this writer
      */
-    TransformLayoutBuilder withInputs(@NonNull AttributeFormat<?> format);
+    AttributeFormat<S> format();
 
     /**
-     * Adds a {@link AttributeFormat} which will be used for outputs.
-     * <p>
-     * The format must support {@link AttributeUsage#TRANSFORM_OUTPUT}.
-     *
-     * @param format the format of the outputs
+     * @return the number of vertices written so far
      */
-    TransformLayoutBuilder withOutputs(@NonNull AttributeFormat<?> format);
+    int size();
+
+    /**
+     * Appends a new element with data from the given {@link S}.
+     *
+     * @param struct the struct containing the element data
+     * @return the index of the completed element
+     */
+    int put(@NonNull S struct);
 }

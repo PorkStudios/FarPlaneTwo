@@ -18,8 +18,9 @@
  *
  */
 
-package net.daporkchop.fp2.gl.attribute;
+package net.daporkchop.fp2.gl.attribute.common;
 
+import lombok.NonNull;
 import net.daporkchop.fp2.gl.GLResource;
 
 /**
@@ -49,10 +50,42 @@ public interface AttributeBuffer<S> extends GLResource {
     void resize(int capacity);
 
     /**
+     * Invalidates the element at the given index. After calling this method, the element's contents are undefined.
+     * <p>
+     * When invalidating multiple sequential elements, {@link #invalidate(int, int)} will likely be more performant.
+     *
+     * @param index the index of the element to invalidate
+     */
+    default void invalidate(int index) {
+        this.invalidate(index, 1);
+    }
+
+    /**
+     * Invalidates all elements in the given range. After calling this method, the contents of all elements in the range are undefined.
+     *
+     * @param startIndex the index of the first element to invalidate (inclusive)
+     * @param count      the number of elements to invalidate
+     */
+    void invalidate(int startIndex, int count);
+
+    /**
+     * Copies the attribute data from the given struct into this buffer.
+     *
+     * @param index  the index of the element to modify
+     * @param struct the struct containing the element data
+     */
+    default void set(int index, @NonNull S struct) {
+        try (AttributeWriter<S> writer = this.format().createWriter()) {
+            writer.put(struct);
+            this.set(index, writer);
+        }
+    }
+
+    /**
      * Copies the attribute data from the given {@link AttributeWriter} into this buffer.
      *
      * @param startIndex the destination index for the first attribute data element
      * @param writer     a {@link AttributeWriter} containing the sequence of attribute data elements to copy
      */
-    void set(int startIndex, AttributeWriter<S> writer);
+    void set(int startIndex, @NonNull AttributeWriter<S> writer);
 }
