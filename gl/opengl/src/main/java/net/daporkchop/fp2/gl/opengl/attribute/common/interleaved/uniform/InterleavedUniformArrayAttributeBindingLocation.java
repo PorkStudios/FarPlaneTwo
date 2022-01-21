@@ -78,4 +78,9 @@ public class InterleavedUniformArrayAttributeBindingLocation<S> implements Bindi
             builder.append("}\n");
         });
     }
+
+    @Override
+    public void configureBuffer(@NonNull GLAPI api, @NonNull InterleavedAttributeBufferImpl<S, ?> buffer) {
+        //no-op
+    }
 }

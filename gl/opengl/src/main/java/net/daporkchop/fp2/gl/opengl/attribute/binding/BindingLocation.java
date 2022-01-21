@@ -22,7 +22,6 @@ package net.daporkchop.fp2.gl.opengl.attribute.binding;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
-import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
 import net.daporkchop.fp2.gl.opengl.attribute.common.AttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
@@ -61,4 +60,12 @@ public interface BindingLocation<B extends AttributeBufferImpl<?, ?>> {
      * @param builder a {@link StringBuilder} which the generated GLSL code should be appended to
      */
     void generateGLSL(@NonNull ShaderType type, @NonNull StringBuilder builder);
+
+    /**
+     * Configures the OpenGL state in order to bind the given {@link B} to this binding location.
+     *
+     * @param api    the {@link GLAPI} instance
+     * @param buffer the {@link B} to bind
+     */
+    void configureBuffer(@NonNull GLAPI api, @NonNull B buffer);
 }

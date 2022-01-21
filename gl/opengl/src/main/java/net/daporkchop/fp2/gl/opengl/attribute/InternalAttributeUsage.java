@@ -22,7 +22,7 @@ package net.daporkchop.fp2.gl.opengl.attribute;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.gl.attribute.common.AttributeUsage;
+import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 

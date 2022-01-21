@@ -35,7 +35,7 @@ import java.util.Optional;
 public enum AttributeFormatTypes {
     GLSL_BLOCK_STD140 {
         @Override
-        public <S> Optional<AttributeFormatImpl<S, ?>> createFormat(@NonNull IAttributeFormatBuilderImpl<S> builder) {
+        public <S> Optional<AttributeFormatImpl<S, ?>> createFormat(@NonNull AttributeFormatBuilderImpl<S> builder) {
             return GLSLBlockAttributeFormat.VALID_USAGES.containsAll(builder.usages()) //should always be supported
                     ? Optional.of(new GLSLBlockAttributeFormat<>(builder, GLSLBlockMemoryLayout.STD140))
                     : Optional.empty();
@@ -43,11 +43,11 @@ public enum AttributeFormatTypes {
     };
 
     /**
-     * Creates an {@link AttributeFormatImpl} for the given {@link IAttributeFormatBuilderImpl} using this format type if possible.
+     * Creates an {@link AttributeFormatImpl} for the given {@link AttributeFormatBuilderImpl} using this format type if possible.
      *
-     * @param builder the {@link IAttributeFormatBuilderImpl}
+     * @param builder the {@link AttributeFormatBuilderImpl}
      * @param <S>     the struct type
-     * @return the created {@link AttributeFormatImpl}, or an empty {@link Optional} if this type cannot support the given {@link IAttributeFormatBuilderImpl}'s options
+     * @return the created {@link AttributeFormatImpl}, or an empty {@link Optional} if this type cannot support the given {@link AttributeFormatBuilderImpl}'s options
      */
-    public abstract <S> Optional<AttributeFormatImpl<S, ?>> createFormat(@NonNull IAttributeFormatBuilderImpl<S> builder);
+    public abstract <S> Optional<AttributeFormatImpl<S, ?>> createFormat(@NonNull AttributeFormatBuilderImpl<S> builder);
 }

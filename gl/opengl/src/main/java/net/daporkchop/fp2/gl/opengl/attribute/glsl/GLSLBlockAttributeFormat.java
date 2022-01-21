@@ -22,7 +22,7 @@ package net.daporkchop.fp2.gl.opengl.attribute.glsl;
 
 import com.google.common.collect.ImmutableSet;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.opengl.attribute.IAttributeFormatBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
@@ -47,7 +47,7 @@ public final class GLSLBlockAttributeFormat<S> extends InterleavedAttributeForma
             InternalAttributeUsage.DRAW_GLOBAL
     ));
 
-    public GLSLBlockAttributeFormat(@NonNull IAttributeFormatBuilderImpl<S> builder, @NonNull GLSLBlockMemoryLayout layout) {
+    public GLSLBlockAttributeFormat(@NonNull AttributeFormatBuilderImpl<S> builder, @NonNull GLSLBlockMemoryLayout layout) {
         super(builder.gl(), layout.layout(builder.structInfo()));
     }
 

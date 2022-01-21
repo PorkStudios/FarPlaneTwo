@@ -20,11 +20,11 @@
 
 package net.daporkchop.fp2.gl.opengl.attribute.common.interleaved;
 
+import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
-import net.daporkchop.fp2.gl.attribute.common.AttributeWriter;
+import net.daporkchop.fp2.gl.attribute.AttributeWriter;
 import net.daporkchop.fp2.gl.opengl.attribute.common.AttributeBufferImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.common.AttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
 import net.daporkchop.fp2.gl.opengl.buffer.GLBuffer;
 
@@ -33,6 +33,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
+@Getter
 public final class InterleavedAttributeBufferImpl<S, F extends InterleavedAttributeFormatImpl<S>> extends AttributeBufferImpl<S, F> {
     protected final InterleavedStructFormat<S> structFormat;
 

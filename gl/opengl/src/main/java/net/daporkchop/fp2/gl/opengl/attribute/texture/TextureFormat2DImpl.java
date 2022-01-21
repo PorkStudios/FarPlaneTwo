@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -26,7 +26,6 @@ import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureWriter2D;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.StructInfo;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.StructLayouts;
 
 /**
@@ -34,8 +33,8 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.StructLayouts;
  */
 @Getter
 public class TextureFormat2DImpl<S> extends BaseTextureFormatImpl<S> implements TextureFormat2D<S> {
-    public TextureFormat2DImpl(@NonNull AttributeFormatBuilderImpl<TextureFormat2D<S>, S> builder) {
-        super(builder.gl(), builder.gl().structFormatGenerator().getTexture(StructLayouts.texture(builder.gl(), new StructInfo<>(builder))));
+    public TextureFormat2DImpl(@NonNull AttributeFormatBuilderImpl<S> builder) {
+        super(builder.gl(), builder.gl().structFormatGenerator().getTexture(StructLayouts.texture(builder.gl(), builder.structInfo())));
     }
 
     @Override

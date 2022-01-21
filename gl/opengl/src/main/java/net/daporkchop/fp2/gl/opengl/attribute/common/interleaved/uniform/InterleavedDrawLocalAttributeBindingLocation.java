@@ -29,6 +29,7 @@ import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttr
 import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLType;
+import net.daporkchop.fp2.gl.opengl.buffer.BufferTarget;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
 
 /**
@@ -67,5 +68,16 @@ public class InterleavedDrawLocalAttributeBindingLocation<S> implements BindingL
     @Override
     public void generateGLSL(@NonNull ShaderType type, @NonNull StringBuilder builder) {
         this.structFormat.glslFields().forEach(field -> builder.append("in ").append(field.declaration()).append(";\n"));
+    }
+
+    @Override
+    public void configureBuffer(@NonNull GLAPI api, @NonNull InterleavedAttributeBufferImpl<S, ?> buffer) {
+        //enable attributes
+        for (int attributeIndex : this.attributeIndices) {
+            api.glEnableVertexAttribArray(attributeIndex);
+        }
+
+        //configure attributes
+        buffer.buffer().bind(BufferTarget.ARRAY_BUFFER, target -> this.structFormat.configureVAO(api, this.attributeIndices));
     }
 }

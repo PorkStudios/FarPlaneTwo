@@ -22,15 +22,13 @@ package net.daporkchop.fp2.gl;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.common.GlobalProperties;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
-import net.daporkchop.fp2.gl.attribute.common.AttributeFormat;
-import net.daporkchop.fp2.gl.attribute.common.AttributeUsage;
-import net.daporkchop.fp2.gl.attribute.IAttributeFormatBuilder;
-import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
-import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
+import net.daporkchop.fp2.gl.attribute.old.global.DrawGlobalFormat;
+import net.daporkchop.fp2.gl.attribute.old.local.DrawLocalFormat;
+import net.daporkchop.fp2.gl.attribute.old.uniform.UniformArrayFormat;
+import net.daporkchop.fp2.gl.attribute.old.uniform.UniformFormat;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayFormat;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
 import net.daporkchop.fp2.gl.bitset.GLBitSet;
 import net.daporkchop.fp2.gl.bitset.GLBitSetBuilder;
 import net.daporkchop.fp2.gl.command.CommandBuffer;
@@ -109,11 +107,10 @@ public interface GL extends AutoCloseable {
      * Gets an {@link AttributeFormat} for the given struct class.
      *
      * @param clazz the struct class
-     * @param usage a list of the {@link AttributeUsage}s which this attribute format may be used for
      * @param <S>   the struct type
      * @return an {@link AttributeFormat}
      */
-    <S> IAttributeFormatBuilder<S> createAttributeFormat(@NonNull Class<S> clazz, @NonNull AttributeUsage... usage);
+    <S> AttributeFormatBuilder<AttributeFormat<S>> createAttributeFormat(@NonNull Class<S> clazz);
 
     /**
      * Gets a {@link TextureFormat2D} for the given struct class.

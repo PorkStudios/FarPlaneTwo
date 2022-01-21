@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -30,11 +30,11 @@ import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
-import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
-import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
+import net.daporkchop.fp2.gl.attribute.old.global.DrawGlobalFormat;
+import net.daporkchop.fp2.gl.attribute.old.local.DrawLocalFormat;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayFormat;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
+import net.daporkchop.fp2.gl.attribute.old.uniform.UniformArrayFormat;
+import net.daporkchop.fp2.gl.attribute.old.uniform.UniformFormat;
 import net.daporkchop.fp2.gl.bitset.GLBitSetBuilder;
 import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
@@ -51,12 +51,12 @@ import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.draw.shader.FragmentShader;
 import net.daporkchop.fp2.gl.draw.shader.VertexShader;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.global.DrawGlobalFormatVertexAttribute;
-import net.daporkchop.fp2.gl.opengl.attribute.local.DrawLocalFormatImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.old.global.DrawGlobalFormatVertexAttribute;
+import net.daporkchop.fp2.gl.opengl.attribute.old.local.DrawLocalFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.StructFormatGenerator;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureFormat2DImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.uniform.UniformArrayFormatShaderStorageBlock;
-import net.daporkchop.fp2.gl.opengl.attribute.uniform.UniformFormatBlock;
+import net.daporkchop.fp2.gl.opengl.attribute.old.uniform.UniformArrayFormatShaderStorageBlock;
+import net.daporkchop.fp2.gl.opengl.attribute.old.uniform.UniformFormatBlock;
 import net.daporkchop.fp2.gl.opengl.bitset.GLBitSetBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.opengl.command.CommandBufferBuilderImpl;
@@ -214,7 +214,7 @@ public class OpenGL implements GL {
 
     @Override
     public <S> AttributeFormatBuilder<TextureFormat2D<S>> createTextureFormat2D(@NonNull Class<S> clazz) {
-        return new AttributeFormatBuilderImpl<TextureFormat2D<S>, S>(this, clazz) {
+        return new AttributeFormatBuilderImpl<S>(this, clazz) {
             @Override
             public TextureFormat2D<S> build() {
                 return new TextureFormat2DImpl<>(this);
@@ -224,7 +224,7 @@ public class OpenGL implements GL {
 
     @Override
     public <S> AttributeFormatBuilder<UniformFormat<S>> createUniformFormat(@NonNull Class<S> clazz) {
-        return new AttributeFormatBuilderImpl<UniformFormat<S>, S>(this, clazz) {
+        return new AttributeFormatBuilderImpl<S>(this, clazz) {
             @Override
             public UniformFormat<S> build() {
                 return new UniformFormatBlock<>(this);
@@ -234,7 +234,7 @@ public class OpenGL implements GL {
 
     @Override
     public <S> AttributeFormatBuilder<UniformArrayFormat<S>> createUniformArrayFormat(@NonNull Class<S> clazz) {
-        return new AttributeFormatBuilderImpl<UniformArrayFormat<S>, S>(this, clazz) {
+        return new AttributeFormatBuilderImpl<S>(this, clazz) {
             @Override
             public UniformArrayFormat<S> build() {
                 return new UniformArrayFormatShaderStorageBlock<>(this);
@@ -244,7 +244,7 @@ public class OpenGL implements GL {
 
     @Override
     public <S> AttributeFormatBuilder<DrawGlobalFormat<S>> createDrawGlobalFormat(@NonNull Class<S> clazz) {
-        return new AttributeFormatBuilderImpl<DrawGlobalFormat<S>, S>(this, clazz) {
+        return new AttributeFormatBuilderImpl<S>(this, clazz) {
             @Override
             public DrawGlobalFormat<S> build() {
                 return new DrawGlobalFormatVertexAttribute<>(this);
@@ -254,7 +254,7 @@ public class OpenGL implements GL {
 
     @Override
     public <S> AttributeFormatBuilder<DrawLocalFormat<S>> createDrawLocalFormat(@NonNull Class<S> clazz) {
-        return new AttributeFormatBuilderImpl<DrawLocalFormat<S>, S>(this, clazz) {
+        return new AttributeFormatBuilderImpl<S>(this, clazz) {
             @Override
             public DrawLocalFormat<S> build() {
                 return new DrawLocalFormatImpl<>(this);

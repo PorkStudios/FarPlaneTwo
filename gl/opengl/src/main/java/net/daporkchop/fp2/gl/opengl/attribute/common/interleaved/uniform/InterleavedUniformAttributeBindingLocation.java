@@ -68,4 +68,9 @@ public class InterleavedUniformAttributeBindingLocation<S> implements BindingLoc
         this.structFormat.glslFields().forEach(field -> builder.append("    ").append(field.declaration()).append(";\n"));
         builder.append("};\n");
     }
+
+    @Override
+    public void configureBuffer(@NonNull GLAPI api, @NonNull InterleavedAttributeBufferImpl<S, ?> buffer) {
+        //no-op
+    }
 }

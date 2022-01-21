@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -23,11 +23,11 @@ package net.daporkchop.fp2.gl.attribute;
 import lombok.NonNull;
 
 /**
- * Builder for {@link BaseAttributeFormat} types.
+ * Builder for attribute format types.
  *
  * @author DaPorkchop_
  */
-public interface AttributeFormatBuilder<F extends BaseAttributeFormat> {
+public interface AttributeFormatBuilder<S> {
     /**
      * Registers an attribute name override.
      * <p>
@@ -36,10 +36,24 @@ public interface AttributeFormatBuilder<F extends BaseAttributeFormat> {
      * @param originalName the original name
      * @param newName      the new name
      */
-    AttributeFormatBuilder<F> rename(@NonNull String originalName, @NonNull String newName);
+    AttributeFormatBuilder<S> rename(@NonNull String originalName, @NonNull String newName);
 
     /**
-     * @return the constructed {@link F}
+     * Registers a {@link AttributeUsage} which the attribute format will support.
+     *
+     * @param usage the {@link AttributeUsage}
      */
-    F build();
+    AttributeFormatBuilder<S> useFor(@NonNull AttributeUsage usage);
+
+    /**
+     * Registers multiple {@link AttributeUsage}s which the attribute format will support.
+     *
+     * @param usages the {@link AttributeUsage}s
+     */
+    AttributeFormatBuilder<S> useFor(@NonNull AttributeUsage... usages);
+
+    /**
+     * @return the constructed {@link AttributeFormat}
+     */
+    AttributeFormat<S> build();
 }

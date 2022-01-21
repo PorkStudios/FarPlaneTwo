@@ -49,7 +49,7 @@ public class StructInfo<S> {
     protected final List<StructMember<S>> members;
 
     @Deprecated
-    public StructInfo(@NonNull AttributeFormatBuilderImpl<?, S> builder) {
+    public StructInfo(@NonNull AttributeFormatBuilderImpl<S> builder) {
         this(builder.clazz(), builder.nameOverrides());
     }
 

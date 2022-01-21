@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -26,19 +26,19 @@ import net.daporkchop.fp2.common.util.Identifier;
 import net.daporkchop.fp2.common.util.exception.ResourceNotFoundException;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.attribute.Attribute;
-import net.daporkchop.fp2.gl.attribute.global.DrawGlobalBuffer;
-import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
-import net.daporkchop.fp2.gl.attribute.global.DrawGlobalWriter;
-import net.daporkchop.fp2.gl.attribute.local.DrawLocalBuffer;
-import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
-import net.daporkchop.fp2.gl.attribute.local.DrawLocalWriter;
+import net.daporkchop.fp2.gl.attribute.old.global.DrawGlobalBuffer;
+import net.daporkchop.fp2.gl.attribute.old.global.DrawGlobalFormat;
+import net.daporkchop.fp2.gl.attribute.old.global.DrawGlobalWriter;
+import net.daporkchop.fp2.gl.attribute.old.local.DrawLocalBuffer;
+import net.daporkchop.fp2.gl.attribute.old.local.DrawLocalFormat;
+import net.daporkchop.fp2.gl.attribute.old.local.DrawLocalWriter;
 import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureWriter2D;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayBuffer;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayFormat;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformBuffer;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
+import net.daporkchop.fp2.gl.attribute.old.uniform.UniformArrayBuffer;
+import net.daporkchop.fp2.gl.attribute.old.uniform.UniformArrayFormat;
+import net.daporkchop.fp2.gl.attribute.old.uniform.UniformBuffer;
+import net.daporkchop.fp2.gl.attribute.old.uniform.UniformFormat;
 import net.daporkchop.fp2.gl.bitset.GLBitSet;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.command.CommandBuffer;

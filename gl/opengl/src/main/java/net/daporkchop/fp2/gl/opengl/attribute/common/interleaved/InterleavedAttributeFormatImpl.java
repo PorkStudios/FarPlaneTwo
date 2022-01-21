@@ -22,8 +22,8 @@ package net.daporkchop.fp2.gl.opengl.attribute.common.interleaved;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
-import net.daporkchop.fp2.gl.attribute.common.AttributeBuffer;
-import net.daporkchop.fp2.gl.attribute.common.AttributeWriter;
+import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.AttributeWriter;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.common.AttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;

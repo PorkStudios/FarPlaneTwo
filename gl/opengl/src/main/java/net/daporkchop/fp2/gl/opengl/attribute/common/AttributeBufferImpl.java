@@ -22,8 +22,7 @@ package net.daporkchop.fp2.gl.opengl.attribute.common;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.BufferUsage;
-import net.daporkchop.fp2.gl.attribute.common.AttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 
 /**
