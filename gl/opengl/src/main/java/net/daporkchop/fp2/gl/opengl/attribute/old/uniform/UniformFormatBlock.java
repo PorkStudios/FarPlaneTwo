@@ -27,7 +27,7 @@ import net.daporkchop.fp2.gl.attribute.old.uniform.UniformFormat;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.common.UniformBlockFormat;
+import net.daporkchop.fp2.gl.opengl.attribute.old.common.UniformBlockFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLBlockMemoryLayout;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.StructInfo;
 

@@ -18,29 +18,11 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.uniform;
-
-import lombok.NonNull;
-import net.daporkchop.fp2.gl.opengl.GLAPI;
-import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
-import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttributeBufferImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
+package net.daporkchop.fp2.gl.opengl.attribute.old.common;
 
 /**
  * @author DaPorkchop_
  */
-public class InterleavedDrawGlobalAttributeBindingLocation<S> extends InterleavedDrawLocalAttributeBindingLocation<S> {
-    public InterleavedDrawGlobalAttributeBindingLocation(@NonNull InterleavedStructFormat<S> structFormat, @NonNull BindingLocationAssigner assigner) {
-        super(structFormat, assigner);
-    }
-
-    @Override
-    public void configureBuffer(@NonNull GLAPI api, @NonNull InterleavedAttributeBufferImpl<S, ?> buffer) {
-        super.configureBuffer(api, buffer);
-
-        //set attribute divisors
-        for (int attributeIndex : this.attributeIndices) {
-            api.glVertexAttribDivisor(attributeIndex, 1);
-        }
-    }
+public interface UniformBlockFormat {
+    String interfaceBlockLayout();
 }

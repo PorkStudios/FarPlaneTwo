@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,13 +18,30 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.common;
+package net.daporkchop.fp2.gl.opengl.attribute;
 
-import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureTarget;
+import lombok.Getter;
+import lombok.NonNull;
+import net.daporkchop.fp2.gl.opengl.OpenGL;
+
+import java.util.stream.Stream;
 
 /**
+ * Common parent class for attribute buffer implementations.
+ *
  * @author DaPorkchop_
  */
-public interface TextureFormat {
-    TextureTarget target();
+@Getter
+public abstract class BaseAttributeBufferImpl<S, F extends BaseAttributeFormatImpl<S>> {
+    protected final OpenGL gl;
+    private final F format;
+
+    public BaseAttributeBufferImpl(@NonNull F format) {
+        this.gl = format.gl();
+        this.format = format;
+    }
+
+    public Stream<BaseAttributeBufferImpl<?, ?>> selfAndChildren() {
+        return Stream.of(this);
+    }
 }

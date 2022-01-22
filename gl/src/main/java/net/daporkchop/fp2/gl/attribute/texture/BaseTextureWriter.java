@@ -27,9 +27,9 @@ import net.daporkchop.fp2.common.util.capability.CloseableResource;
  *
  * @author DaPorkchop_
  */
-public interface BaseTextureWriter<F extends BaseTextureFormat> extends CloseableResource {
+public interface BaseTextureWriter<S> extends CloseableResource {
     /**
      * @return the {@link BaseTextureFormat} used by this writer
      */
-    F format();
+    BaseTextureFormat<S> format();
 }

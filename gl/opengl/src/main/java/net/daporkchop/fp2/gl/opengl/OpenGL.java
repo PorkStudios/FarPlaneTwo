@@ -28,13 +28,9 @@ import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.gl.GL;
-import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
-import net.daporkchop.fp2.gl.attribute.old.global.DrawGlobalFormat;
-import net.daporkchop.fp2.gl.attribute.old.local.DrawLocalFormat;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
-import net.daporkchop.fp2.gl.attribute.old.uniform.UniformArrayFormat;
-import net.daporkchop.fp2.gl.attribute.old.uniform.UniformFormat;
+import net.daporkchop.fp2.gl.attribute.texture.TextureFormatBuilder;
 import net.daporkchop.fp2.gl.bitset.GLBitSetBuilder;
 import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
@@ -50,13 +46,9 @@ import net.daporkchop.fp2.gl.draw.shader.BaseDrawShader;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.draw.shader.FragmentShader;
 import net.daporkchop.fp2.gl.draw.shader.VertexShader;
-import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.old.global.DrawGlobalFormatVertexAttribute;
-import net.daporkchop.fp2.gl.opengl.attribute.old.local.DrawLocalFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.StructFormatGenerator;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureFormat2DImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.old.uniform.UniformArrayFormatShaderStorageBlock;
-import net.daporkchop.fp2.gl.opengl.attribute.old.uniform.UniformFormatBlock;
+import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureFormatBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.bitset.GLBitSetBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.opengl.command.CommandBufferBuilderImpl;
@@ -213,51 +205,11 @@ public class OpenGL implements GL {
     }
 
     @Override
-    public <S> AttributeFormatBuilder<TextureFormat2D<S>> createTextureFormat2D(@NonNull Class<S> clazz) {
-        return new AttributeFormatBuilderImpl<S>(this, clazz) {
+    public <S> TextureFormatBuilder<TextureFormat2D<S>> createTextureFormat2D(@NonNull Class<S> clazz) {
+        return new TextureFormatBuilderImpl<S, TextureFormat2D<S>>(this, clazz) {
             @Override
             public TextureFormat2D<S> build() {
                 return new TextureFormat2DImpl<>(this);
-            }
-        };
-    }
-
-    @Override
-    public <S> AttributeFormatBuilder<UniformFormat<S>> createUniformFormat(@NonNull Class<S> clazz) {
-        return new AttributeFormatBuilderImpl<S>(this, clazz) {
-            @Override
-            public UniformFormat<S> build() {
-                return new UniformFormatBlock<>(this);
-            }
-        };
-    }
-
-    @Override
-    public <S> AttributeFormatBuilder<UniformArrayFormat<S>> createUniformArrayFormat(@NonNull Class<S> clazz) {
-        return new AttributeFormatBuilderImpl<S>(this, clazz) {
-            @Override
-            public UniformArrayFormat<S> build() {
-                return new UniformArrayFormatShaderStorageBlock<>(this);
-            }
-        };
-    }
-
-    @Override
-    public <S> AttributeFormatBuilder<DrawGlobalFormat<S>> createDrawGlobalFormat(@NonNull Class<S> clazz) {
-        return new AttributeFormatBuilderImpl<S>(this, clazz) {
-            @Override
-            public DrawGlobalFormat<S> build() {
-                return new DrawGlobalFormatVertexAttribute<>(this);
-            }
-        };
-    }
-
-    @Override
-    public <S> AttributeFormatBuilder<DrawLocalFormat<S>> createDrawLocalFormat(@NonNull Class<S> clazz) {
-        return new AttributeFormatBuilderImpl<S>(this, clazz) {
-            @Override
-            public DrawLocalFormat<S> build() {
-                return new DrawLocalFormatImpl<>(this);
             }
         };
     }

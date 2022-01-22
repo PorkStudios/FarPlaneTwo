@@ -23,7 +23,7 @@ package net.daporkchop.fp2.gl.opengl.attribute.binding;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
-import net.daporkchop.fp2.gl.opengl.attribute.common.AttributeBufferImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
 
 /**
@@ -31,7 +31,7 @@ import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
  *
  * @author DaPorkchop_
  */
-public interface BindingLocation<B extends AttributeBufferImpl<?, ?>> {
+public interface BindingLocation<B extends BaseAttributeBufferImpl<?, ?>> {
     /**
      * @return the {@link InternalAttributeUsage} which this binding location fulfils
      */

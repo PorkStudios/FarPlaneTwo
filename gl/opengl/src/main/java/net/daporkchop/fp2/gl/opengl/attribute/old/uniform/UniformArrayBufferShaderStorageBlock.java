@@ -23,10 +23,9 @@ package net.daporkchop.fp2.gl.opengl.attribute.old.uniform;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.old.uniform.UniformArrayBuffer;
-import net.daporkchop.fp2.gl.attribute.old.uniform.UniformArrayFormat;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
-import net.daporkchop.fp2.gl.opengl.attribute.old.BaseAttributeBufferImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.common.ShaderStorageBlockBuffer;
+import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.old.common.ShaderStorageBlockBuffer;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
 import net.daporkchop.fp2.gl.opengl.buffer.GLBuffer;
 
@@ -34,7 +33,7 @@ import net.daporkchop.fp2.gl.opengl.buffer.GLBuffer;
  * @author DaPorkchop_
  */
 @Getter
-public class UniformArrayBufferShaderStorageBlock<S> extends BaseAttributeBufferImpl<S, UniformArrayFormatShaderStorageBlock<S>, UniformArrayFormat<S>> implements UniformArrayBuffer<S>, ShaderStorageBlockBuffer {
+public class UniformArrayBufferShaderStorageBlock<S> extends BaseAttributeBufferImpl<S, UniformArrayFormatShaderStorageBlock<S>> implements UniformArrayBuffer<S>, ShaderStorageBlockBuffer {
     protected final InterleavedStructFormat<S> structFormat;
 
     protected final GLBuffer internalBuffer;

@@ -29,6 +29,7 @@ import net.daporkchop.fp2.gl.attribute.old.local.DrawLocalFormat;
 import net.daporkchop.fp2.gl.attribute.old.uniform.UniformArrayFormat;
 import net.daporkchop.fp2.gl.attribute.old.uniform.UniformFormat;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
+import net.daporkchop.fp2.gl.attribute.texture.TextureFormatBuilder;
 import net.daporkchop.fp2.gl.bitset.GLBitSet;
 import net.daporkchop.fp2.gl.bitset.GLBitSetBuilder;
 import net.daporkchop.fp2.gl.command.CommandBuffer;
@@ -119,7 +120,7 @@ public interface GL extends AutoCloseable {
      * @param <S>   the struct type
      * @return a {@link TextureFormat2D}
      */
-    <S> AttributeFormatBuilder<TextureFormat2D<S>> createTextureFormat2D(@NonNull Class<S> clazz);
+    <S> TextureFormatBuilder<TextureFormat2D<S>> createTextureFormat2D(@NonNull Class<S> clazz);
 
     /**
      * Gets a {@link UniformFormat} for the given struct class.

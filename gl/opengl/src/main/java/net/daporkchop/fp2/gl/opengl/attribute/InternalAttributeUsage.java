@@ -40,6 +40,7 @@ public enum InternalAttributeUsage {
     DRAW_GLOBAL(AttributeUsage.DRAW_GLOBAL),
     TRANSFORM_INPUT(AttributeUsage.TRANSFORM_INPUT),
     TRANSFORM_OUTPUT(AttributeUsage.TRANSFORM_OUTPUT),
+    FRAGMENT_COLOR(null),
     TEXTURE(null);
 
     private static final InternalAttributeUsage[] VALUES = values();

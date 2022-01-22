@@ -18,41 +18,30 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.old;
+package net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.draw.global;
 
-import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.old.BaseAttributeBuffer;
-import net.daporkchop.fp2.gl.attribute.old.BaseAttributeFormat;
-import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
-
-import java.util.stream.Stream;
-
-import static net.daporkchop.lib.common.util.PorkUtil.*;
+import net.daporkchop.fp2.gl.opengl.GLAPI;
+import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
+import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttributeBufferImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.draw.local.InterleavedDrawLocalAttributeBindingLocation;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
 
 /**
- * Common parent class for attribute buffer implementations.
- *
  * @author DaPorkchop_
  */
-@Getter
-public abstract class BaseAttributeBufferImpl<S, F extends BaseAttributeFormatImpl<S>, F_EXTERNAL extends BaseAttributeFormat> implements BaseAttributeBuffer<F_EXTERNAL> {
-    protected final OpenGL gl;
-    private final F formatImpl;
-
-    public BaseAttributeBufferImpl(@NonNull F format) {
-        this.gl = format.gl();
-        this.formatImpl = format;
+public class InterleavedDrawGlobalAttributeBindingLocation<S> extends InterleavedDrawLocalAttributeBindingLocation<S> {
+    public InterleavedDrawGlobalAttributeBindingLocation(@NonNull InterleavedStructFormat<S> structFormat, @NonNull BindingLocationAssigner assigner) {
+        super(structFormat, assigner);
     }
 
     @Override
-    @Deprecated
-    public F_EXTERNAL format() {
-        return uncheckedCast(this.formatImpl);
-    }
+    public void configureBuffer(@NonNull GLAPI api, @NonNull InterleavedAttributeBufferImpl<S, ?> buffer) {
+        super.configureBuffer(api, buffer);
 
-    public Stream<BaseAttributeBufferImpl<?, ?, ?>> selfAndChildren() {
-        return Stream.of(this);
+        //set attribute divisors
+        for (int attributeIndex : this.attributeIndices) {
+            api.glVertexAttribDivisor(attributeIndex, 1);
+        }
     }
 }

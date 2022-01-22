@@ -18,19 +18,5 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.common;
-
-import lombok.Getter;
-import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
-import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
-
-/**
- * @author DaPorkchop_
- */
-@Getter
-public abstract class AttributeBufferImpl<S, F extends AttributeFormatImpl<S, ?>> extends BaseAttributeBufferImpl<S, F> implements AttributeBuffer<S> {
-    public AttributeBufferImpl(@NonNull F format) {
-        super(format);
-    }
-}
+@Deprecated
+package net.daporkchop.fp2.gl.opengl.attribute.old;

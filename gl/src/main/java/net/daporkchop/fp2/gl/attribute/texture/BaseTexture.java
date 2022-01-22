@@ -25,9 +25,9 @@ import net.daporkchop.fp2.gl.GLResource;
 /**
  * @author DaPorkchop_
  */
-public interface BaseTexture<F extends BaseTextureFormat> extends GLResource {
+public interface BaseTexture<S> extends GLResource {
     /**
      * @return the {@link BaseTextureFormat} used by this texture
      */
-    F format();
+    BaseTextureFormat<S> format();
 }

@@ -23,10 +23,9 @@ package net.daporkchop.fp2.gl.opengl.attribute.old.uniform;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.old.uniform.UniformBuffer;
-import net.daporkchop.fp2.gl.attribute.old.uniform.UniformFormat;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
-import net.daporkchop.fp2.gl.opengl.attribute.old.BaseAttributeBufferImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.common.UniformBlockBuffer;
+import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.old.common.UniformBlockBuffer;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
 import net.daporkchop.fp2.gl.opengl.buffer.GLBuffer;
 
@@ -34,7 +33,7 @@ import net.daporkchop.fp2.gl.opengl.buffer.GLBuffer;
  * @author DaPorkchop_
  */
 @Getter
-public class UniformBufferBlock<S> extends BaseAttributeBufferImpl<S, UniformFormatBlock<S>, UniformFormat<S>> implements UniformBuffer<S>, UniformBlockBuffer {
+public class UniformBufferBlock<S> extends BaseAttributeBufferImpl<S, UniformFormatBlock<S>> implements UniformBuffer<S>, UniformBlockBuffer {
     protected final InterleavedStructFormat<S> structFormat;
 
     protected final GLBuffer internalBuffer;

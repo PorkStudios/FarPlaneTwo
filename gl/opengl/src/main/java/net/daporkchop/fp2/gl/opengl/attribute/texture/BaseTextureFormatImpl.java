@@ -21,13 +21,12 @@
 package net.daporkchop.fp2.gl.opengl.attribute.texture;
 
 import com.google.common.collect.ImmutableSet;
-import jdk.nashorn.internal.runtime.logging.Logger;
+import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.texture.BaseTextureFormat;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
-import net.daporkchop.fp2.gl.opengl.attribute.common.TextureFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.TextureStructFormat;
 
@@ -38,8 +37,8 @@ import java.util.Set;
 /**
  * @author DaPorkchop_
  */
-@Logger
-public abstract class BaseTextureFormatImpl<S> extends BaseAttributeFormatImpl<S> implements BaseTextureFormat, TextureFormat {
+@Getter
+public abstract class BaseTextureFormatImpl<S> extends BaseAttributeFormatImpl<S> implements BaseTextureFormat<S> {
     public static final Set<InternalAttributeUsage> VALID_USAGES = ImmutableSet.copyOf(EnumSet.of(
             InternalAttributeUsage.TEXTURE
     ));

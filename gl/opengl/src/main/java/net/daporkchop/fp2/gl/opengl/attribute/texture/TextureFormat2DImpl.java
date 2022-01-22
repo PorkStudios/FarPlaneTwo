@@ -25,16 +25,27 @@ import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureWriter2D;
-import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
+import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
+import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.StructLayouts;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
 @Getter
 public class TextureFormat2DImpl<S> extends BaseTextureFormatImpl<S> implements TextureFormat2D<S> {
-    public TextureFormat2DImpl(@NonNull AttributeFormatBuilderImpl<S> builder) {
+    public TextureFormat2DImpl(@NonNull TextureFormatBuilderImpl<S, TextureFormat2D<S>> builder) {
         super(builder.gl(), builder.gl().structFormatGenerator().getTexture(StructLayouts.texture(builder.gl(), builder.structInfo())));
+    }
+
+    @Override
+    public BindingLocation<?> bindingLocation(@NonNull InternalAttributeUsage usage, @NonNull BindingLocationAssigner assigner) {
+        checkArg(usage == InternalAttributeUsage.TEXTURE, "unsupported usage: %s", usage);
+
+        return new TextureBindingLocation<S, Texture2DImpl<S>>(this.structFormat(), TextureTarget.TEXTURE_2D, assigner);
     }
 
     @Override
@@ -50,10 +61,5 @@ public class TextureFormat2DImpl<S> extends BaseTextureFormatImpl<S> implements 
     @Override
     public Texture2D<S> wrapExternalTexture(@NonNull Object id) throws UnsupportedOperationException {
         return new WrappedTexture2DImpl<>(this, (Integer) id);
-    }
-
-    @Override
-    public TextureTarget target() {
-        return TextureTarget.TEXTURE_2D;
     }
 }

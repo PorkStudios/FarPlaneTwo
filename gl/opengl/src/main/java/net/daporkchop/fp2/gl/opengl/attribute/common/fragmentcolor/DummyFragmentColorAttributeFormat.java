@@ -18,40 +18,54 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.old.uniform;
+package net.daporkchop.fp2.gl.opengl.attribute.common.fragmentcolor;
 
-import lombok.Getter;
+import com.google.common.collect.ImmutableSet;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.old.uniform.UniformArrayBuffer;
-import net.daporkchop.fp2.gl.attribute.old.uniform.UniformArrayFormat;
-import net.daporkchop.fp2.gl.attribute.BufferUsage;
-import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.old.common.ShaderStorageBlockFormat;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLBlockMemoryLayout;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.StructInfo;
+import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
+import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
+import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
+
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Set;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
-@Getter
-public class UniformArrayFormatShaderStorageBlock<S> extends BaseAttributeFormatImpl<S> implements UniformArrayFormat<S>, ShaderStorageBlockFormat {
-    public UniformArrayFormatShaderStorageBlock(@NonNull AttributeFormatBuilderImpl<S> builder) {
-        super(builder.gl(), builder.gl().structFormatGenerator().getInterleaved(GLSLBlockMemoryLayout.STD140.layout(new StructInfo<>(builder))));
+public final class DummyFragmentColorAttributeFormat extends BaseAttributeFormatImpl<Object> {
+    private static final Set<InternalAttributeUsage> VALID_USAGES = ImmutableSet.copyOf(EnumSet.of(
+            InternalAttributeUsage.FRAGMENT_COLOR
+    ));
+
+    public DummyFragmentColorAttributeFormat(@NonNull OpenGL gl) {
+        super(gl);
     }
 
     @Override
-    public UniformArrayBuffer<S> createBuffer(@NonNull BufferUsage usage) {
-        return new UniformArrayBufferShaderStorageBlock<>(this, usage);
+    public Set<InternalAttributeUsage> validUsages() {
+        return VALID_USAGES;
     }
 
     @Override
-    public boolean isArray() {
-        return true;
+    public BindingLocation<?> bindingLocation(@NonNull InternalAttributeUsage usage, @NonNull BindingLocationAssigner assigner) {
+        checkArg(usage == InternalAttributeUsage.TEXTURE, "unsupported usage: %s", usage);
+
+        return new DummyFragmentColorBinding();
     }
 
     @Override
-    public String interfaceBlockLayout() {
-        return this.structFormat.layoutName();
+    public String name() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public List<GLSLField> attributeFields() {
+        throw new UnsupportedOperationException();
     }
 }

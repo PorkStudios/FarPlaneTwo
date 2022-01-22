@@ -18,19 +18,13 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.common;
+package net.daporkchop.fp2.gl.opengl.attribute.old.common;
 
-import lombok.Getter;
-import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
-import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
+import net.daporkchop.fp2.gl.opengl.buffer.GLBuffer;
 
 /**
  * @author DaPorkchop_
  */
-@Getter
-public abstract class AttributeBufferImpl<S, F extends AttributeFormatImpl<S, ?>> extends BaseAttributeBufferImpl<S, F> implements AttributeBuffer<S> {
-    public AttributeBufferImpl(@NonNull F format) {
-        super(format);
-    }
+public interface UniformBlockBuffer {
+    GLBuffer internalBuffer();
 }

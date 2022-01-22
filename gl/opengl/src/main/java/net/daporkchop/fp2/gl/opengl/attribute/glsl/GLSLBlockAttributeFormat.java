@@ -27,10 +27,10 @@ import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
 import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttributeFormatImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.uniform.InterleavedDrawGlobalAttributeBindingLocation;
-import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.uniform.InterleavedDrawLocalAttributeBindingLocation;
-import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.uniform.InterleavedUniformArrayAttributeBindingLocation;
-import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.uniform.InterleavedUniformAttributeBindingLocation;
+import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.draw.global.InterleavedDrawGlobalAttributeBindingLocation;
+import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.draw.local.InterleavedDrawLocalAttributeBindingLocation;
+import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.uniform.array.InterleavedUniformArrayAttributeBindingLocation;
+import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.uniform.standard.InterleavedUniformAttributeBindingLocation;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLBlockMemoryLayout;
 
 import java.util.EnumSet;

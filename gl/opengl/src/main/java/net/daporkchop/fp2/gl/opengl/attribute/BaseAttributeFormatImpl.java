@@ -47,9 +47,9 @@ public abstract class BaseAttributeFormatImpl<S> {
 
     public abstract Set<InternalAttributeUsage> validUsages();
 
-    public Stream<? extends Map.Entry<InternalAttributeUsage, ? extends BaseAttributeFormatImpl<?>>> actualFormatsFor(@NonNull InternalAttributeUsage usage) {
+    public Stream<Map.Entry<? extends BaseAttributeFormatImpl<?>, InternalAttributeUsage>> actualFormatsFor(@NonNull InternalAttributeUsage usage) {
         checkArg(this.validUsages().contains(usage), "this format only supports %s, not %s", this.validUsages(), usage);
-        return Stream.of(new AbstractMap.SimpleEntry<>(usage, this));
+        return Stream.of(new AbstractMap.SimpleEntry<>(this, usage));
     }
 
     public abstract BindingLocation<?> bindingLocation(@NonNull InternalAttributeUsage usage, @NonNull BindingLocationAssigner assigner);

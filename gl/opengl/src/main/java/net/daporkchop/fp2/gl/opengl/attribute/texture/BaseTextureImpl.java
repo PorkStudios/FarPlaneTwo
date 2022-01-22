@@ -23,9 +23,8 @@ package net.daporkchop.fp2.gl.opengl.attribute.texture;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.texture.BaseTexture;
-import net.daporkchop.fp2.gl.attribute.texture.BaseTextureFormat;
-import net.daporkchop.fp2.gl.opengl.attribute.old.BaseAttributeBufferImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.common.TextureBuffer;
+import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.old.common.TextureBuffer;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.TextureStructFormat;
 
 import java.util.function.IntConsumer;
@@ -34,7 +33,7 @@ import java.util.function.IntConsumer;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class BaseTextureImpl<S, F extends BaseTextureFormatImpl<S>, F_EXTERNAL extends BaseTextureFormat> extends BaseAttributeBufferImpl<S, F, F_EXTERNAL> implements BaseTexture<F_EXTERNAL>, TextureBuffer {
+public abstract class BaseTextureImpl<S, F extends BaseTextureFormatImpl<S>> extends BaseAttributeBufferImpl<S, F> implements BaseTexture<S>, TextureBuffer {
     protected final TextureStructFormat<S> structFormat;
 
     protected final int id;

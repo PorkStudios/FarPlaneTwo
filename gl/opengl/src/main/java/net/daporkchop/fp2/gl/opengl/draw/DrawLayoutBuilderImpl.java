@@ -34,6 +34,7 @@ import net.daporkchop.fp2.gl.opengl.attribute.common.AttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.BaseTextureFormatImpl;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -49,54 +50,50 @@ public class DrawLayoutBuilderImpl implements DrawLayoutBuilder {
     @NonNull
     protected final OpenGL gl;
 
-    protected final List<AttributeFormatImpl<?, ?>> uniforms = new ArrayList<>();
-    protected final List<AttributeFormatImpl<?, ?>> uniformArrays = new ArrayList<>();
-    protected final List<AttributeFormatImpl<?, ?>> globals = new ArrayList<>();
-    protected final List<AttributeFormatImpl<?, ?>> locals = new ArrayList<>();
-    protected final List<BaseTextureFormatImpl<?>> textures = new ArrayList<>();
+    protected final Map<BaseAttributeFormatImpl<?>, InternalAttributeUsage> formatsUsages = new HashMap<>();
+
+    protected void with(@NonNull BaseAttributeFormatImpl<?> format, @NonNull InternalAttributeUsage usage) {
+        InternalAttributeUsage oldUsage = this.formatsUsages.putIfAbsent(format, usage);
+        checkState(oldUsage == null, "attempted to register attribute format %s multiple times (as %s, was %s)", format, usage, oldUsage);
+    }
 
     @Override
     public DrawLayoutBuilder withUniforms(@NonNull AttributeFormat<?> format) {
         checkArg(format.usage().contains(AttributeUsage.UNIFORM), "%s doesn't support %s", format, AttributeUsage.UNIFORM);
-        this.uniforms.add((AttributeFormatImpl<?, ?>) format);
+        this.with((AttributeFormatImpl<?, ?>) format, InternalAttributeUsage.UNIFORM);
         return this;
     }
 
     @Override
     public DrawLayoutBuilder withUniformArrays(@NonNull AttributeFormat<?> format) {
         checkArg(format.usage().contains(AttributeUsage.UNIFORM_ARRAY), "%s doesn't support %s", format, AttributeUsage.UNIFORM_ARRAY);
-        this.uniformArrays.add((AttributeFormatImpl<?, ?>) format);
+        this.with((AttributeFormatImpl<?, ?>) format, InternalAttributeUsage.UNIFORM_ARRAY);
         return this;
     }
 
     @Override
     public DrawLayoutBuilder withGlobals(@NonNull AttributeFormat<?> format) {
         checkArg(format.usage().contains(AttributeUsage.DRAW_GLOBAL), "%s doesn't support %s", format, AttributeUsage.DRAW_GLOBAL);
-        this.globals.add((AttributeFormatImpl<?, ?>) format);
+        this.with((AttributeFormatImpl<?, ?>) format, InternalAttributeUsage.DRAW_GLOBAL);
         return this;
     }
 
     @Override
     public DrawLayoutBuilder withLocals(@NonNull AttributeFormat<?> format) {
         checkArg(format.usage().contains(AttributeUsage.DRAW_LOCAL), "%s doesn't support %s", format, AttributeUsage.DRAW_LOCAL);
-        this.locals.add((AttributeFormatImpl<?, ?>) format);
+        this.with((AttributeFormatImpl<?, ?>) format, InternalAttributeUsage.DRAW_LOCAL);
         return this;
     }
 
     @Override
     public DrawLayoutBuilder withTexture(@NonNull TextureFormat2D<?> format) {
-        this.textures.add((BaseTextureFormatImpl<?>) format);
+        this.with((BaseTextureFormatImpl<?>) format, InternalAttributeUsage.TEXTURE);
         return this;
     }
 
     @Override
-    public DrawLayoutBuilder with(@NonNull DrawLayout _layout) {
-        DrawLayoutImpl layout = (DrawLayoutImpl) _layout;
-        this.uniforms.addAll(layout.uniformFormats);
-        this.uniformArrays.addAll(layout.uniformArrayFormats);
-        this.globals.addAll(layout.globalFormats);
-        this.locals.addAll(layout.localFormats);
-        this.textures.addAll(layout.textureFormats);
+    public DrawLayoutBuilder with(@NonNull DrawLayout layout) {
+        ((DrawLayoutImpl) layout).origFormatsUsages.forEach(this::with);
         return this;
     }
 
@@ -105,7 +102,7 @@ public class DrawLayoutBuilderImpl implements DrawLayoutBuilder {
         return new DrawLayoutImpl(this);
     }
 
-    public Stream<? extends Map.Entry<InternalAttributeUsage, ? extends BaseAttributeFormatImpl<?>>> allFormatsWithUsage() {
+    public Stream<Map.Entry<? extends BaseAttributeFormatImpl<?>, InternalAttributeUsage>> allFormatsWithUsage() {
         return Stream.of(
                 this.uniforms.stream().flatMap(format -> format.actualFormatsFor(InternalAttributeUsage.UNIFORM)),
                 this.uniformArrays.stream().flatMap(format -> format.actualFormatsFor(InternalAttributeUsage.UNIFORM_ARRAY)),

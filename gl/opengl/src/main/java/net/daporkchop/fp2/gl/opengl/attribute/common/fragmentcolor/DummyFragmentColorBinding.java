@@ -18,35 +18,21 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.uniform;
+package net.daporkchop.fp2.gl.opengl.attribute.common.fragmentcolor;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
-import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
-import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttributeBufferImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
-
-import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
-import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
-public class InterleavedUniformAttributeBindingLocation<S> implements BindingLocation<InterleavedAttributeBufferImpl<S, ?>> {
-    protected final InterleavedStructFormat<S> structFormat;
-    protected final int bindingIndex;
-
-    public InterleavedUniformAttributeBindingLocation(@NonNull InterleavedStructFormat<S> structFormat, @NonNull BindingLocationAssigner assigner) {
-        this.structFormat = structFormat;
-        this.bindingIndex = assigner.uniformBuffer();
-    }
-
+public final class DummyFragmentColorBinding implements BindingLocation<DummyFragmentColorAttributeBuffer> {
     @Override
     public InternalAttributeUsage usage() {
-        return InternalAttributeUsage.UNIFORM;
+        return InternalAttributeUsage.FRAGMENT_COLOR;
     }
 
     @Override
@@ -56,21 +42,20 @@ public class InterleavedUniformAttributeBindingLocation<S> implements BindingLoc
 
     @Override
     public void configureProgramPostLink(@NonNull GLAPI api, int program) {
-        int blockIndex = api.glGetUniformBlockIndex(program, "UNIFORM_" + this.structFormat.structName());
-        checkArg(blockIndex != GL_INVALID_INDEX, "unable to find uniform block: %s", this.structFormat.structName());
-
-        api.glUniformBlockBinding(program, blockIndex, this.bindingIndex);
+        //no-op
     }
 
     @Override
     public void generateGLSL(@NonNull ShaderType type, @NonNull StringBuilder builder) {
-        builder.append("layout(").append(this.structFormat.layoutName()).append(") uniform UNIFORM_").append(this.structFormat.structName()).append(" {\n");
-        this.structFormat.glslFields().forEach(field -> builder.append("    ").append(field.declaration()).append(";\n"));
-        builder.append("};\n");
+        if (type != ShaderType.FRAGMENT) {
+            return;
+        }
+
+        builder.append("out vec4 f_color;\n");
     }
 
     @Override
-    public void configureBuffer(@NonNull GLAPI api, @NonNull InterleavedAttributeBufferImpl<S, ?> buffer) {
+    public void configureBuffer(@NonNull GLAPI api, @NonNull DummyFragmentColorAttributeBuffer buffer) {
         //no-op
     }
 }

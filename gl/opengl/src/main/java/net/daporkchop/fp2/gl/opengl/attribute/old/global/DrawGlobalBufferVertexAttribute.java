@@ -23,11 +23,10 @@ package net.daporkchop.fp2.gl.opengl.attribute.old.global;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.old.global.DrawGlobalBuffer;
-import net.daporkchop.fp2.gl.attribute.old.global.DrawGlobalFormat;
 import net.daporkchop.fp2.gl.attribute.old.global.DrawGlobalWriter;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
-import net.daporkchop.fp2.gl.opengl.attribute.old.BaseAttributeBufferImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.common.VertexAttributeBuffer;
+import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.old.common.VertexAttributeBuffer;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
 import net.daporkchop.fp2.gl.opengl.buffer.BufferTarget;
 import net.daporkchop.fp2.gl.opengl.buffer.GLBuffer;
@@ -38,7 +37,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @Getter
-public class DrawGlobalBufferVertexAttribute<S> extends BaseAttributeBufferImpl<S, DrawGlobalFormatVertexAttribute<S>, DrawGlobalFormat<S>> implements DrawGlobalBuffer<S>, VertexAttributeBuffer {
+public class DrawGlobalBufferVertexAttribute<S> extends BaseAttributeBufferImpl<S, DrawGlobalFormatVertexAttribute<S>> implements DrawGlobalBuffer<S>, VertexAttributeBuffer {
     protected final InterleavedStructFormat<S> structFormat;
 
     protected final GLBuffer buffer;

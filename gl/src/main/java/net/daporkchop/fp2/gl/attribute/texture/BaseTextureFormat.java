@@ -23,7 +23,7 @@ package net.daporkchop.fp2.gl.attribute.texture;
 /**
  * @author DaPorkchop_
  */
-public interface BaseTextureFormat {
+public interface BaseTextureFormat<S> {
     /**
      * @return the number of bytes used by each texel
      */

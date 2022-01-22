@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.uniform;
+package net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.uniform.array;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.opengl.GLAPI;

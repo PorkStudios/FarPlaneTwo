@@ -28,7 +28,7 @@ import net.daporkchop.fp2.gl.attribute.old.local.DrawLocalWriter;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.common.VertexAttributeFormat;
+import net.daporkchop.fp2.gl.opengl.attribute.old.common.VertexAttributeFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.StructInfo;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.StructLayouts;
 

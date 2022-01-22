@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.uniform;
+package net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.draw.local;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
@@ -67,6 +67,10 @@ public class InterleavedDrawLocalAttributeBindingLocation<S> implements BindingL
 
     @Override
     public void generateGLSL(@NonNull ShaderType type, @NonNull StringBuilder builder) {
+        if (type != ShaderType.VERTEX) {
+            return;
+        }
+
         this.structFormat.glslFields().forEach(field -> builder.append("in ").append(field.declaration()).append(";\n"));
     }
 

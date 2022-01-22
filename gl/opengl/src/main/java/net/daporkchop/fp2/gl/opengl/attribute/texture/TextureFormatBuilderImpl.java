@@ -18,40 +18,46 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.old.uniform;
+package net.daporkchop.fp2.gl.opengl.attribute.texture;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.old.uniform.UniformArrayBuffer;
-import net.daporkchop.fp2.gl.attribute.old.uniform.UniformArrayFormat;
-import net.daporkchop.fp2.gl.attribute.BufferUsage;
-import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.old.common.ShaderStorageBlockFormat;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLBlockMemoryLayout;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
+import net.daporkchop.fp2.gl.attribute.AttributeUsage;
+import net.daporkchop.fp2.gl.attribute.texture.BaseTextureFormat;
+import net.daporkchop.fp2.gl.attribute.texture.TextureFormatBuilder;
+import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.StructInfo;
+
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
+@RequiredArgsConstructor
 @Getter
-public class UniformArrayFormatShaderStorageBlock<S> extends BaseAttributeFormatImpl<S> implements UniformArrayFormat<S>, ShaderStorageBlockFormat {
-    public UniformArrayFormatShaderStorageBlock(@NonNull AttributeFormatBuilderImpl<S> builder) {
-        super(builder.gl(), builder.gl().structFormatGenerator().getInterleaved(GLSLBlockMemoryLayout.STD140.layout(new StructInfo<>(builder))));
-    }
+public abstract class TextureFormatBuilderImpl<S, F extends BaseTextureFormat<S>> implements TextureFormatBuilder<F> {
+    @NonNull
+    protected final OpenGL gl;
+    @NonNull
+    protected final Class<S> clazz;
+
+    protected final Map<String, String> nameOverrides = new HashMap<>();
 
     @Override
-    public UniformArrayBuffer<S> createBuffer(@NonNull BufferUsage usage) {
-        return new UniformArrayBufferShaderStorageBlock<>(this, usage);
+    public TextureFormatBuilder<F> rename(@NonNull String originalName, @NonNull String newName) {
+        checkState(this.nameOverrides.putIfAbsent(originalName, newName) == null, "name %s cannot be overridden twice!", originalName);
+        return this;
     }
 
-    @Override
-    public boolean isArray() {
-        return true;
-    }
-
-    @Override
-    public String interfaceBlockLayout() {
-        return this.structFormat.layoutName();
+    public StructInfo<S> structInfo() {
+        return new StructInfo<>(this.clazz, this.nameOverrides);
     }
 }
