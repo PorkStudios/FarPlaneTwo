@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -33,7 +33,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class BaseTextureWriterImpl<S, F extends BaseTextureFormatImpl<S>, F_EXTERNAL extends BaseTextureFormat> implements BaseTextureWriter<F_EXTERNAL> {
+public abstract class BaseTextureWriterImpl<S, F extends BaseTextureFormatImpl<S>> implements BaseTextureWriter<S> {
     protected final OpenGL gl;
     protected final F formatImpl;
     protected final TextureStructFormat<S> structFormat;
@@ -45,7 +45,7 @@ public abstract class BaseTextureWriterImpl<S, F extends BaseTextureFormatImpl<S
     }
 
     @Override
-    public F_EXTERNAL format() {
+    public F format() {
         return uncheckedCast(this.formatImpl);
     }
 }

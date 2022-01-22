@@ -26,26 +26,20 @@ import net.daporkchop.fp2.common.util.Identifier;
 import net.daporkchop.fp2.common.util.exception.ResourceNotFoundException;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.attribute.Attribute;
-import net.daporkchop.fp2.gl.attribute.old.global.DrawGlobalBuffer;
-import net.daporkchop.fp2.gl.attribute.old.global.DrawGlobalFormat;
-import net.daporkchop.fp2.gl.attribute.old.global.DrawGlobalWriter;
-import net.daporkchop.fp2.gl.attribute.old.local.DrawLocalBuffer;
-import net.daporkchop.fp2.gl.attribute.old.local.DrawLocalFormat;
-import net.daporkchop.fp2.gl.attribute.old.local.DrawLocalWriter;
+import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeUsage;
+import net.daporkchop.fp2.gl.attribute.AttributeWriter;
+import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureWriter2D;
-import net.daporkchop.fp2.gl.attribute.old.uniform.UniformArrayBuffer;
-import net.daporkchop.fp2.gl.attribute.old.uniform.UniformArrayFormat;
-import net.daporkchop.fp2.gl.attribute.old.uniform.UniformBuffer;
-import net.daporkchop.fp2.gl.attribute.old.uniform.UniformFormat;
 import net.daporkchop.fp2.gl.bitset.GLBitSet;
-import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.command.CommandBuffer;
 import net.daporkchop.fp2.gl.command.FramebufferLayer;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
-import net.daporkchop.fp2.gl.draw.binding.DrawBindingIndexed;
 import net.daporkchop.fp2.gl.draw.DrawMode;
+import net.daporkchop.fp2.gl.draw.binding.DrawBindingIndexed;
 import net.daporkchop.fp2.gl.draw.index.IndexBuffer;
 import net.daporkchop.fp2.gl.draw.index.IndexFormat;
 import net.daporkchop.fp2.gl.draw.index.IndexType;
@@ -120,10 +114,10 @@ public class TestLWJGL2 {
 
     @SneakyThrows({ ShaderCompilationException.class, ShaderLinkageException.class })
     private static void run(@NonNull GL gl) {
-        UniformFormat<UniformAttribs> uniformFormat = gl.createUniformFormat(UniformAttribs.class).build();
-        UniformArrayFormat<UniformArrayAttribs> uniformArrayFormat = gl.createUniformArrayFormat(UniformArrayAttribs.class).build();
-        DrawGlobalFormat<GlobalAttribs> globalFormat = gl.createDrawGlobalFormat(GlobalAttribs.class).build();
-        DrawLocalFormat<LocalAttribs> localFormat = gl.createDrawLocalFormat(LocalAttribs.class)
+        AttributeFormat<UniformAttribs> uniformFormat = gl.createAttributeFormat(UniformAttribs.class).useFor(AttributeUsage.UNIFORM).build();
+        AttributeFormat<UniformArrayAttribs> uniformArrayFormat = gl.createAttributeFormat(UniformArrayAttribs.class).useFor(AttributeUsage.UNIFORM_ARRAY).build();
+        AttributeFormat<GlobalAttribs> globalFormat = gl.createAttributeFormat(GlobalAttribs.class).useFor(AttributeUsage.DRAW_GLOBAL).build();
+        AttributeFormat<LocalAttribs> localFormat = gl.createAttributeFormat(LocalAttribs.class).useFor(AttributeUsage.DRAW_LOCAL)
                 .rename("a_pos", "a_posRenamed")
                 .build();
         TextureFormat2D<TextureAttribs> textureFormat = gl.createTextureFormat2D(TextureAttribs.class).build();
@@ -151,10 +145,10 @@ public class TestLWJGL2 {
                 .addShader(fragmentShader)
                 .build();
 
-        DrawLocalBuffer<LocalAttribs> localBuffer = localFormat.createBuffer(BufferUsage.STATIC_DRAW);
+        AttributeBuffer<LocalAttribs> localBuffer = localFormat.createBuffer(BufferUsage.STATIC_DRAW);
         localBuffer.resize(4);
 
-        try (DrawLocalWriter<LocalAttribs> writer = localFormat.createWriter()) {
+        try (AttributeWriter<LocalAttribs> writer = localFormat.createWriter()) {
             writer.put(new LocalAttribs((byte) 16, (byte) 16));
             writer.put(new LocalAttribs((byte) 16, (byte) 32));
             writer.put(new LocalAttribs((byte) 32, (byte) 32));
@@ -172,30 +166,29 @@ public class TestLWJGL2 {
             indexBuffer.set(0, writer);
         }
 
-        DrawGlobalBuffer<GlobalAttribs> globalBuffer = globalFormat.createBuffer(BufferUsage.STATIC_DRAW);
+        AttributeBuffer<GlobalAttribs> globalBuffer = globalFormat.createBuffer(BufferUsage.STATIC_DRAW);
         globalBuffer.resize(4);
 
-        try (DrawGlobalWriter<GlobalAttribs> writer = globalFormat.createWriter()) {
+        try (AttributeWriter<GlobalAttribs> writer = globalFormat.createWriter()) {
             for (int i = 0, color = -1, x = 0; x < 2; x++) {
                 for (int y = 0; y < 2; y++, color = 0xFF << (i << 3), i++) {
-                    writer.set(new GlobalAttribs((byte) (x * 32), (byte) (y * 32), 0xFF000000 | color));
-                    globalBuffer.set(i, writer);
+                    writer.put(new GlobalAttribs((byte) (x * 32), (byte) (y * 32), 0xFF000000 | color));
                 }
             }
+            globalBuffer.set(0, writer);
         }
 
-        UniformArrayBuffer<UniformArrayAttribs> uniformArrayBuffer = uniformArrayFormat.createBuffer(BufferUsage.STATIC_DRAW);
-        uniformArrayBuffer.set(new UniformArrayAttribs[]{
+        AttributeBuffer<UniformArrayAttribs> uniformArrayBuffer = uniformArrayFormat.createBuffer(BufferUsage.STATIC_DRAW);
+        uniformArrayBuffer.setContents(
                 new UniformArrayAttribs(0.5f, 1.0f, 1.0f),
                 new UniformArrayAttribs(1.0f, 0.5f, 1.0f),
-                new UniformArrayAttribs(1.0f, 1.0f, 0.5f),
-        });
+                new UniformArrayAttribs(1.0f, 1.0f, 0.5f));
 
-        UniformBuffer<UniformAttribs> uniformBuffer0 = uniformFormat.createBuffer(BufferUsage.STATIC_DRAW);
-        uniformBuffer0.set(new UniformAttribs((byte) 32, (byte) 32));
+        AttributeBuffer<UniformAttribs> uniformBuffer0 = uniformFormat.createBuffer(BufferUsage.STATIC_DRAW);
+        uniformBuffer0.setContents(new UniformAttribs((byte) 32, (byte) 32));
 
-        UniformBuffer<UniformAttribs> uniformBuffer1 = uniformFormat.createBuffer(BufferUsage.STATIC_DRAW);
-        uniformBuffer1.set(new UniformAttribs((byte) -128, (byte) -128));
+        AttributeBuffer<UniformAttribs> uniformBuffer1 = uniformFormat.createBuffer(BufferUsage.STATIC_DRAW);
+        uniformBuffer1.setContents(new UniformAttribs((byte) -128, (byte) -128));
 
         Texture2D<TextureAttribs> texture = textureFormat.createTexture(512, 512, 1);
         try (TextureWriter2D<TextureAttribs> writer = textureFormat.createWriter(512, 512)) {

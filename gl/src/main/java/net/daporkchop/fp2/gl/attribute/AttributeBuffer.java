@@ -42,6 +42,15 @@ public interface AttributeBuffer<S> extends GLResource {
     /**
      * Sets the capacity of this buffer.
      * <p>
+     * After this method returns, the buffer's contents are undefined.
+     *
+     * @param capacity the new capacity
+     */
+    void capacity(int capacity);
+
+    /**
+     * Sets the capacity of this buffer.
+     * <p>
      * If the new capacity is less than the current capacity, the buffer's contents will be truncated. If greater than the current capacity, the
      * data will be extended with undefined contents.
      *
@@ -69,6 +78,26 @@ public interface AttributeBuffer<S> extends GLResource {
     void invalidate(int startIndex, int count);
 
     /**
+     * Sets this buffer's contents to exactly the given struct, discarding any existing data and modifying its capacity.
+     *
+     * @param struct the struct containing the element data
+     */
+    default void setContents(@NonNull S struct) {
+        this.capacity(1);
+        this.set(0, struct);
+    }
+
+    /**
+     * Sets this buffer's contents to exactly the given array of structs, discarding any existing data and modifying its capacity.
+     *
+     * @param structs the structs containing the element data
+     */
+    default void setContents(@NonNull S... structs) {
+        this.capacity(structs.length);
+        this.set(0, structs);
+    }
+
+    /**
      * Copies the attribute data from the given struct into this buffer.
      *
      * @param index  the index of the element to modify
@@ -78,6 +107,21 @@ public interface AttributeBuffer<S> extends GLResource {
         try (AttributeWriter<S> writer = this.format().createWriter()) {
             writer.put(struct);
             this.set(index, writer);
+        }
+    }
+
+    /**
+     * Copies the attribute data from the given structs into this buffer.
+     *
+     * @param startIndex the destination index for the first attribute data element
+     * @param structs    the structs containing the element data
+     */
+    default void set(int startIndex, @NonNull S... structs) {
+        try (AttributeWriter<S> writer = this.format().createWriter()) {
+            for (S struct : structs) {
+                writer.put(struct);
+            }
+            this.set(startIndex, writer);
         }
     }
 

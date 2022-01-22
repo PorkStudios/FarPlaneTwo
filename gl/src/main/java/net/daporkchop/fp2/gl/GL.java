@@ -24,10 +24,6 @@ import lombok.NonNull;
 import net.daporkchop.fp2.common.GlobalProperties;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
-import net.daporkchop.fp2.gl.attribute.old.global.DrawGlobalFormat;
-import net.daporkchop.fp2.gl.attribute.old.local.DrawLocalFormat;
-import net.daporkchop.fp2.gl.attribute.old.uniform.UniformArrayFormat;
-import net.daporkchop.fp2.gl.attribute.old.uniform.UniformFormat;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormatBuilder;
 import net.daporkchop.fp2.gl.bitset.GLBitSet;
@@ -111,7 +107,7 @@ public interface GL extends AutoCloseable {
      * @param <S>   the struct type
      * @return an {@link AttributeFormat}
      */
-    <S> AttributeFormatBuilder<AttributeFormat<S>> createAttributeFormat(@NonNull Class<S> clazz);
+    <S> AttributeFormatBuilder<S> createAttributeFormat(@NonNull Class<S> clazz);
 
     /**
      * Gets a {@link TextureFormat2D} for the given struct class.
@@ -121,46 +117,6 @@ public interface GL extends AutoCloseable {
      * @return a {@link TextureFormat2D}
      */
     <S> TextureFormatBuilder<TextureFormat2D<S>> createTextureFormat2D(@NonNull Class<S> clazz);
-
-    /**
-     * Gets a {@link UniformFormat} for the given struct class.
-     *
-     * @param clazz the struct class
-     * @param <S>   the struct type
-     * @return a {@link UniformFormat}
-     */
-    @Deprecated
-    <S> AttributeFormatBuilder<UniformFormat<S>> createUniformFormat(@NonNull Class<S> clazz);
-
-    /**
-     * Gets a {@link UniformArrayFormat} for the given struct class.
-     *
-     * @param clazz the struct class
-     * @param <S>   the struct type
-     * @return a {@link UniformArrayFormat}
-     */
-    @Deprecated
-    <S> AttributeFormatBuilder<UniformArrayFormat<S>> createUniformArrayFormat(@NonNull Class<S> clazz);
-
-    /**
-     * Gets a {@link DrawGlobalFormat} for the given struct class.
-     *
-     * @param clazz the struct class
-     * @param <S>   the struct type
-     * @return a {@link DrawGlobalFormat}
-     */
-    @Deprecated
-    <S> AttributeFormatBuilder<DrawGlobalFormat<S>> createDrawGlobalFormat(@NonNull Class<S> clazz);
-
-    /**
-     * Gets a {@link DrawLocalFormat} for the given struct class.
-     *
-     * @param clazz the struct class
-     * @param <S>   the struct type
-     * @return a {@link DrawLocalFormat}
-     */
-    @Deprecated
-    <S> AttributeFormatBuilder<DrawLocalFormat<S>> createDrawLocalFormat(@NonNull Class<S> clazz);
 
     //
     // DRAW

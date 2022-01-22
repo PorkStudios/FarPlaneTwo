@@ -61,6 +61,12 @@ public final class InterleavedAttributeBufferImpl<S, F extends InterleavedAttrib
     }
 
     @Override
+    public void capacity(int capacity) {
+        this.capacity = notNegative(capacity, "capacity");
+        this.buffer.capacity(capacity * this.stride);
+    }
+
+    @Override
     public void resize(int capacity) {
         this.capacity = notNegative(capacity, "capacity");
         this.buffer.resize(capacity * this.stride);

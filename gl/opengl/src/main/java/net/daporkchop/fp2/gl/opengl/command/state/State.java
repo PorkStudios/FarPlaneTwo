@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -24,6 +24,7 @@ import lombok.NonNull;
 
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 /**
  * A mapping of {@link StateValueProperty} to their current values.
@@ -86,4 +87,9 @@ public interface State {
      * @return a {@link State} with the value unset. Note that this may return a new instance
      */
     State unset(@NonNull StateValueProperty<?> property);
+
+    /**
+     * @return a {@link Stream} over all the properties in this state which have been set
+     */
+    Stream<StateValueProperty<?>> properties();
 }

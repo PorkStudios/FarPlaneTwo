@@ -18,35 +18,36 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.old.uniform;
+package net.daporkchop.fp2.gl.opengl.attribute;
 
-import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.old.uniform.UniformBuffer;
-import net.daporkchop.fp2.gl.attribute.old.uniform.UniformFormat;
-import net.daporkchop.fp2.gl.attribute.BufferUsage;
-import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.old.common.UniformBlockFormat;
+import net.daporkchop.fp2.gl.opengl.attribute.common.AttributeFormatImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.glsl.GLSLBlockAttributeFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLBlockMemoryLayout;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.StructInfo;
+
+import java.util.Optional;
 
 /**
+ * All of the supported types of {@link AttributeFormatImpl}.
+ *
  * @author DaPorkchop_
  */
-@Getter
-public class UniformFormatBlock<S> extends BaseAttributeFormatImpl<S> implements UniformFormat<S>, UniformBlockFormat {
-    public UniformFormatBlock(@NonNull AttributeFormatBuilderImpl<S> builder) {
-        super(builder.gl(), builder.gl().structFormatGenerator().getInterleaved(GLSLBlockMemoryLayout.STD140.layout(new StructInfo<>(builder))));
-    }
+public enum AttributeFormatType {
+    GLSL_BLOCK_STD140 {
+        @Override
+        public <S> Optional<AttributeFormatImpl<S, ?>> createFormat(@NonNull AttributeFormatBuilderImpl<S> builder) {
+            return GLSLBlockAttributeFormat.VALID_USAGES.containsAll(builder.usages()) //should always be supported
+                    ? Optional.of(new GLSLBlockAttributeFormat<>(builder, GLSLBlockMemoryLayout.STD140))
+                    : Optional.empty();
+        }
+    };
 
-    @Override
-    public UniformBuffer<S> createBuffer(@NonNull BufferUsage usage) {
-        return new UniformBufferBlock<>(this, usage);
-    }
-
-    @Override
-    public String interfaceBlockLayout() {
-        return this.structFormat.layoutName();
-    }
+    /**
+     * Creates an {@link AttributeFormatImpl} for the given {@link AttributeFormatBuilderImpl} using this format type if possible.
+     *
+     * @param builder the {@link AttributeFormatBuilderImpl}
+     * @param <S>     the struct type
+     * @return the created {@link AttributeFormatImpl}, or an empty {@link Optional} if this type cannot support the given {@link AttributeFormatBuilderImpl}'s options
+     */
+    public abstract <S> Optional<AttributeFormatImpl<S, ?>> createFormat(@NonNull AttributeFormatBuilderImpl<S> builder);
 }

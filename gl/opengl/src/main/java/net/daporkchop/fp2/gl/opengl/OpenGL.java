@@ -28,6 +28,7 @@ import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.gl.GL;
+import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormatBuilder;
@@ -46,6 +47,8 @@ import net.daporkchop.fp2.gl.draw.shader.BaseDrawShader;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.draw.shader.FragmentShader;
 import net.daporkchop.fp2.gl.draw.shader.VertexShader;
+import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.common.fragmentcolor.DummyFragmentColorAttributeFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.StructFormatGenerator;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureFormat2DImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureFormatBuilderImpl;
@@ -103,6 +106,8 @@ public class OpenGL implements GL {
     protected final Allocator directMemoryAllocator = new DirectMemoryAllocator();
 
     protected final StructFormatGenerator structFormatGenerator = new StructFormatGenerator();
+
+    protected final DummyFragmentColorAttributeFormat dummyFragmentColorAttributeFormat = new DummyFragmentColorAttributeFormat(this);
 
     protected final int vertexAttributeAlignment;
 
@@ -202,6 +207,11 @@ public class OpenGL implements GL {
     @Override
     public IndexFormatBuilder.TypeSelectionStage createIndexFormat() {
         return new IndexFormatBuilderImpl(this);
+    }
+
+    @Override
+    public <S> AttributeFormatBuilder<S> createAttributeFormat(@NonNull Class<S> clazz) {
+        return new AttributeFormatBuilderImpl<>(this, clazz);
     }
 
     @Override

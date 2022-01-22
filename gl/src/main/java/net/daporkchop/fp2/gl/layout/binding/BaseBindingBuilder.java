@@ -21,10 +21,9 @@
 package net.daporkchop.fp2.gl.layout.binding;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.old.local.DrawLocalBuffer;
 import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
-import net.daporkchop.fp2.gl.attribute.old.uniform.UniformArrayBuffer;
-import net.daporkchop.fp2.gl.attribute.old.uniform.UniformBuffer;
 
 /**
  * Generic builder type for {@link BaseBinding}s.
@@ -34,18 +33,18 @@ import net.daporkchop.fp2.gl.attribute.old.uniform.UniformBuffer;
  */
 public interface BaseBindingBuilder<BUILDER extends BaseBindingBuilder<BUILDER, B>, B extends BaseBinding> {
     /**
-     * Adds a {@link UniformBuffer} which contains uniform attributes.
+     * Adds a {@link AttributeBuffer} which contains uniform attributes.
      *
      * @param buffer the uniform attributes
      */
-    BUILDER withUniforms(@NonNull UniformBuffer<?> buffer);
+    BUILDER withUniforms(@NonNull AttributeBuffer<?> buffer);
 
     /**
-     * Adds a {@link UniformArrayBuffer} which contains uniform array attributes.
+     * Adds a {@link AttributeBuffer} which contains uniform array attributes.
      *
      * @param buffer the uniform attributes
      */
-    BUILDER withUniformArrays(@NonNull UniformArrayBuffer<?> buffer);
+    BUILDER withUniformArrays(@NonNull AttributeBuffer<?> buffer);
 
     /**
      * Adds a {@link DrawLocalBuffer} which contains a 2D texture.

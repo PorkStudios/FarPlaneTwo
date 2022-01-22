@@ -43,6 +43,8 @@ public final class DummyFragmentColorAttributeFormat extends BaseAttributeFormat
             InternalAttributeUsage.FRAGMENT_COLOR
     ));
 
+    private final DummyFragmentColorBindingLocation bindingLocation = new DummyFragmentColorBindingLocation();
+
     public DummyFragmentColorAttributeFormat(@NonNull OpenGL gl) {
         super(gl);
     }
@@ -54,9 +56,9 @@ public final class DummyFragmentColorAttributeFormat extends BaseAttributeFormat
 
     @Override
     public BindingLocation<?> bindingLocation(@NonNull InternalAttributeUsage usage, @NonNull BindingLocationAssigner assigner) {
-        checkArg(usage == InternalAttributeUsage.TEXTURE, "unsupported usage: %s", usage);
+        checkArg(usage == InternalAttributeUsage.FRAGMENT_COLOR, "unsupported usage: %s", usage);
 
-        return new DummyFragmentColorBinding();
+        return this.bindingLocation;
     }
 
     @Override

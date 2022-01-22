@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -22,14 +22,11 @@ package net.daporkchop.fp2.gl.opengl.layout;
 
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.GLResource;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureTarget;
-import net.daporkchop.fp2.gl.opengl.buffer.GLBuffer;
-
-import java.util.List;
+import net.daporkchop.fp2.gl.opengl.command.state.MutableState;
+import net.daporkchop.fp2.gl.opengl.command.state.State;
 
 /**
  * @author DaPorkchop_
@@ -44,44 +41,5 @@ public abstract class BaseBindingImpl implements GLResource {
         this.api = gl.api();
     }
 
-    public abstract int vao();
-
-    public abstract List<ShaderStorageBufferBinding> shaderStorageBuffers();
-
-    public abstract List<TextureBinding> textures();
-
-    public abstract List<UniformBufferBinding> uniformBuffers();
-
-    /**
-     * @author DaPorkchop_
-     */
-    @RequiredArgsConstructor
-    public static class ShaderStorageBufferBinding {
-        @NonNull
-        public final GLBuffer buffer;
-        public final int bindingIndex;
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    @RequiredArgsConstructor
-    public static class TextureBinding {
-        public final int unit;
-        @NonNull
-        public final TextureTarget target;
-        public final int id;
-
-        public int prevId = -1;
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    @RequiredArgsConstructor
-    public static class UniformBufferBinding {
-        @NonNull
-        public final GLBuffer buffer;
-        public final int bindingIndex;
-    }
+    public abstract void configureBoundState(@NonNull MutableState state);
 }

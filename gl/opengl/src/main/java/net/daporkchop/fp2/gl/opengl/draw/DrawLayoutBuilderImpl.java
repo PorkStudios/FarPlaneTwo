@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.gl.opengl.draw;
 
+import com.google.common.collect.ImmutableMap;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
@@ -33,9 +34,7 @@ import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
 import net.daporkchop.fp2.gl.opengl.attribute.common.AttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.BaseTextureFormatImpl;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -50,11 +49,10 @@ public class DrawLayoutBuilderImpl implements DrawLayoutBuilder {
     @NonNull
     protected final OpenGL gl;
 
-    protected final Map<BaseAttributeFormatImpl<?>, InternalAttributeUsage> formatsUsages = new HashMap<>();
+    protected final ImmutableMap.Builder<BaseAttributeFormatImpl<?>, InternalAttributeUsage> formatsUsages = ImmutableMap.builder();
 
     protected void with(@NonNull BaseAttributeFormatImpl<?> format, @NonNull InternalAttributeUsage usage) {
-        InternalAttributeUsage oldUsage = this.formatsUsages.putIfAbsent(format, usage);
-        checkState(oldUsage == null, "attempted to register attribute format %s multiple times (as %s, was %s)", format, usage, oldUsage);
+        this.formatsUsages.put(format, usage);
     }
 
     @Override
@@ -100,15 +98,5 @@ public class DrawLayoutBuilderImpl implements DrawLayoutBuilder {
     @Override
     public DrawLayout build() {
         return new DrawLayoutImpl(this);
-    }
-
-    public Stream<Map.Entry<? extends BaseAttributeFormatImpl<?>, InternalAttributeUsage>> allFormatsWithUsage() {
-        return Stream.of(
-                this.uniforms.stream().flatMap(format -> format.actualFormatsFor(InternalAttributeUsage.UNIFORM)),
-                this.uniformArrays.stream().flatMap(format -> format.actualFormatsFor(InternalAttributeUsage.UNIFORM_ARRAY)),
-                this.globals.stream().flatMap(format -> format.actualFormatsFor(InternalAttributeUsage.DRAW_GLOBAL)),
-                this.locals.stream().flatMap(format -> format.actualFormatsFor(InternalAttributeUsage.DRAW_LOCAL)),
-                this.textures.stream().flatMap(format -> format.actualFormatsFor(InternalAttributeUsage.TEXTURE)))
-                .flatMap(Function.identity());
     }
 }

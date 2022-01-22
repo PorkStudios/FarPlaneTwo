@@ -27,11 +27,13 @@ import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
 import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.attribute.common.AttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.StructInfo;
 
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -41,7 +43,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @RequiredArgsConstructor
 @Getter
-public abstract class AttributeFormatBuilderImpl<S> implements AttributeFormatBuilder<S> {
+public class AttributeFormatBuilderImpl<S> implements AttributeFormatBuilder<S> {
     @NonNull
     protected final OpenGL gl;
     @NonNull
@@ -68,6 +70,18 @@ public abstract class AttributeFormatBuilderImpl<S> implements AttributeFormatBu
             this.usages.add(InternalAttributeUsage.fromExternal(usage));
         }
         return this;
+    }
+
+    @Override
+    public AttributeFormat<S> build() {
+        for (AttributeFormatType type : AttributeFormatType.values()) {
+            Optional<AttributeFormatImpl<S, ?>> optionalFormat = type.createFormat(this);
+            if (optionalFormat.isPresent()) {
+                return optionalFormat.get();
+            }
+        }
+
+        throw new IllegalStateException(this.toString());
     }
 
     public StructInfo<S> structInfo() {

@@ -20,25 +20,22 @@
 
 package net.daporkchop.fp2.gl.opengl.draw.binding;
 
-import com.google.common.collect.ImmutableList;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.old.common.ShaderStorageBlockBuffer;
-import net.daporkchop.fp2.gl.opengl.attribute.old.common.TextureBuffer;
-import net.daporkchop.fp2.gl.opengl.attribute.old.common.UniformBlockBuffer;
+import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
+import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
+import net.daporkchop.fp2.gl.opengl.command.state.MutableState;
+import net.daporkchop.fp2.gl.opengl.command.state.StateProperties;
 import net.daporkchop.fp2.gl.opengl.draw.DrawLayoutImpl;
 import net.daporkchop.fp2.gl.opengl.layout.BaseBindingImpl;
 
-import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
@@ -47,75 +44,49 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 public class DrawBindingImpl extends BaseBindingImpl implements DrawBinding {
     protected final DrawLayoutImpl layout;
 
+    protected final Map<BaseAttributeBufferImpl<?, ?>, InternalAttributeUsage> origBuffersUsages;
+
     protected final int vao;
-    protected final List<ShaderStorageBufferBinding> shaderStorageBuffers;
-    protected final List<TextureBinding> textures;
-    protected final List<UniformBufferBinding> uniformBuffers;
 
     public DrawBindingImpl(@NonNull DrawBindingBuilderImpl builder) {
         super(builder.layout.gl());
 
         this.layout = builder.layout;
+        this.origBuffersUsages = builder.buffersUsages.build();
 
         //create a VAO
         this.vao = this.api.glGenVertexArray();
         this.gl.resourceArena().register(this, this.vao, this.api::glDeleteVertexArray);
 
-        //group attribute buffers by attribute format
-        Map<BaseAttributeFormatImpl<?>, BaseAttributeBufferImpl<?, ?>> buffersByFormat = builder.allBuffersAndChildren()
-                .collect(Collectors.toMap(BaseAttributeBufferImpl::format, Function.identity()));
+        //minus 1 to ignore dummy fragment color
+        checkArg(this.origBuffersUsages.size() == this.layout.bindingLocationsByFormat().size() - 1, "mismatch between layout formats and binding buffers (%s is incompatible with %s)", this.origBuffersUsages, this.layout.bindingLocationsByFormat());
 
         //configure all vertex attributes in the VAO
         int oldVao = this.api.glGetInteger(GL_VERTEX_ARRAY_BINDING);
         try {
             this.api.glBindVertexArray(this.vao);
 
-            this.layout.vertexAttributeBindingsByFormat().forEach((format, binding) -> {
-                BaseAttributeBufferImpl<?, ?> buffer = buffersByFormat.remove(format);
-                checkArg(buffer != null, format);
+            this.origBuffersUsages.forEach((buffer, usage) -> {
+                BindingLocation<?> location = this.layout.bindingLocationsByFormat().get(buffer.format());
+                checkArg(location != null, "layout %s does not include %s format %s", this.layout, usage, buffer.format());
+                checkArg(location.usage() == usage, "buffer %s cannot be used for %s when its binding location expects %s", buffer, usage, location.usage());
 
-                binding.enableAndBind(this.api, buffer);
+                location.configureBuffer(this.api(), uncheckedCast(buffer));
             });
         } finally {
             this.api.glBindVertexArray(oldVao);
         }
-
-        //configure shader storage buffers
-        this.shaderStorageBuffers = this.layout.shaderStorageBlockBindings().stream()
-                .map(blockBinding -> {
-                    BaseAttributeBufferImpl<?, ?> buffer = buffersByFormat.remove(blockBinding.format());
-                    checkArg(buffer != null, blockBinding.format());
-
-                    return new ShaderStorageBufferBinding(((ShaderStorageBlockBuffer) buffer).internalBuffer(), blockBinding.bindingIndex());
-                })
-                .collect(Collectors.collectingAndThen(Collectors.toList(), ImmutableList::copyOf));
-
-        //configure textures
-        this.textures = this.layout.textureBindings().stream()
-                .map(textureBinding -> {
-                    BaseAttributeBufferImpl<?, ?> buffer = buffersByFormat.remove(textureBinding.format());
-                    checkArg(buffer != null, textureBinding.format());
-
-                    return new TextureBinding(textureBinding.unit(), textureBinding.target(), ((TextureBuffer) buffer).textureId());
-                })
-                .collect(Collectors.collectingAndThen(Collectors.toList(), ImmutableList::copyOf));
-
-        //configure uniform buffers
-        this.uniformBuffers = this.layout.uniformBlockBindings().stream()
-                .map(blockBinding -> {
-                    BaseAttributeBufferImpl<?, ?> buffer = buffersByFormat.remove(blockBinding.format());
-                    checkArg(buffer != null, blockBinding.format());
-
-                    return new UniformBufferBinding(((UniformBlockBuffer) buffer).internalBuffer(), blockBinding.bindingIndex());
-                })
-                .collect(Collectors.collectingAndThen(Collectors.toList(), ImmutableList::copyOf));
-
-        //ensure every attribute has been used
-        checkArg(buffersByFormat.isEmpty(), "some buffers have not been bound to anything!", buffersByFormat.keySet());
     }
 
     @Override
     public void close() {
         this.gl.resourceArena().delete(this);
+    }
+
+    @Override
+    public void configureBoundState(@NonNull MutableState state) {
+        state.set(StateProperties.BOUND_VAO, this.vao);
+
+        this.origBuffersUsages.forEach((buffer, usage) -> this.layout.bindingLocationsByFormat().get(buffer.format()).configureState(state, uncheckedCast(buffer)));
     }
 }

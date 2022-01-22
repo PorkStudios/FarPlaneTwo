@@ -30,6 +30,7 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLType;
 import net.daporkchop.fp2.gl.opengl.buffer.BufferTarget;
+import net.daporkchop.fp2.gl.opengl.command.state.MutableState;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
 
 /**
@@ -50,7 +51,7 @@ public class InterleavedDrawLocalAttributeBindingLocation<S> implements BindingL
 
     @Override
     public InternalAttributeUsage usage() {
-        return InternalAttributeUsage.UNIFORM;
+        return InternalAttributeUsage.DRAW_LOCAL;
     }
 
     @Override
@@ -83,5 +84,10 @@ public class InterleavedDrawLocalAttributeBindingLocation<S> implements BindingL
 
         //configure attributes
         buffer.buffer().bind(BufferTarget.ARRAY_BUFFER, target -> this.structFormat.configureVAO(api, this.attributeIndices));
+    }
+
+    @Override
+    public void configureState(@NonNull MutableState state, @NonNull InterleavedAttributeBufferImpl<S, ?> buffer) {
+        //no-op
     }
 }

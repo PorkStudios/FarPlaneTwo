@@ -66,14 +66,8 @@ public abstract class Uop {
             MutableState state = stateIn.mutableSnapshot();
 
             state.set(StateProperties.BOUND_PROGRAM, shader.id());
-            if (binding.vao() > 0) {
-                state.set(StateProperties.BOUND_VAO, binding.vao());
-            }
 
-            binding.shaderStorageBuffers().forEach(ssboBinding -> state.set(StateProperties.BOUND_SSBO[ssboBinding.bindingIndex], ssboBinding.buffer.id()));
-            binding.uniformBuffers().forEach(uboBinding -> state.set(StateProperties.BOUND_UBO[uboBinding.bindingIndex], uboBinding.buffer.id()));
-
-            binding.textures().forEach(textureBinding -> state.set(StateProperties.BOUND_TEXTURE[textureBinding.unit].get(textureBinding.target), textureBinding.id));
+            binding.configureBoundState(state);
 
             PorkUtil.<Map<StateValueProperty<Object>, Object>>uncheckedCast(propertyValues).forEach(state::set);
 
@@ -93,14 +87,11 @@ public abstract class Uop {
 
         protected void buildDependsFirst(@NonNull ImmutableList.Builder<StateProperty> depends, @NonNull BaseBindingImpl binding) {
             depends.add(StateProperties.BOUND_PROGRAM);
-            if (binding.vao() > 0) {
-                depends.add(StateProperties.BOUND_VAO);
-            }
 
-            binding.shaderStorageBuffers().forEach(ssboBinding -> depends.add(StateProperties.BOUND_SSBO[ssboBinding.bindingIndex]));
-            binding.uniformBuffers().forEach(uboBinding -> depends.add(StateProperties.BOUND_UBO[uboBinding.bindingIndex]));
-
-            binding.textures().forEach(textureBinding -> depends.add(StateProperties.BOUND_TEXTURE[textureBinding.unit].get(textureBinding.target)));
+            //configure a new state and then all of the properties which are set
+            MutableState state = new MutableState();
+            binding.configureBoundState(state);
+            state.properties().forEach(depends::add);
         }
 
         @Override

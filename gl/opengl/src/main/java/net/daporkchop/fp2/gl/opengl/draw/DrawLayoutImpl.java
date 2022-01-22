@@ -44,16 +44,21 @@ public class DrawLayoutImpl extends BaseLayoutImpl implements DrawLayout {
 
     protected final Map<BaseAttributeFormatImpl<?>, BindingLocation<?>> bindingLocationsByFormat;
 
-    @SuppressWarnings("UnstableApiUsage")
     public DrawLayoutImpl(@NonNull DrawLayoutBuilderImpl builder) {
         super(builder.gl);
 
-        this.origFormatsUsages = ImmutableMap.copyOf(builder.formatsUsages);
+        this.origFormatsUsages = builder.formatsUsages.build();
 
+        ImmutableMap.Builder<BaseAttributeFormatImpl<?>, BindingLocation<?>> mapBuilder = ImmutableMap.builder();
+
+        //assign binding locations for all attribute formats
         BindingLocationAssigner assigner = new BindingLocationAssigner(this.gl, this.api);
-        this.bindingLocationsByFormat = this.origFormatsUsages.entrySet().stream()
-                .flatMap(entry -> entry.getKey().actualFormatsFor(entry.getValue()))
-                .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, entry -> entry.getKey().bindingLocation(entry.getValue(), assigner)));
+        this.origFormatsUsages.forEach((format, usage) -> mapBuilder.put(format, format.bindingLocation(usage, assigner)));
+
+        //add dummy fragment color format
+        mapBuilder.put(this.gl().dummyFragmentColorAttributeFormat(), this.gl().dummyFragmentColorAttributeFormat().bindingLocation(InternalAttributeUsage.FRAGMENT_COLOR, assigner));
+
+        this.bindingLocationsByFormat = mapBuilder.build();
     }
 
     @Override

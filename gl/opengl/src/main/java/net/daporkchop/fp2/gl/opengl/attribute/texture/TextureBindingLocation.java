@@ -27,6 +27,8 @@ import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.TextureStructFormat;
+import net.daporkchop.fp2.gl.opengl.command.state.MutableState;
+import net.daporkchop.fp2.gl.opengl.command.state.StateProperties;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
 
 import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
@@ -91,5 +93,10 @@ public class TextureBindingLocation<S, B extends BaseTextureImpl<S, ?>> implemen
     @Override
     public void configureBuffer(@NonNull GLAPI api, @NonNull B buffer) {
         //no-op
+    }
+
+    @Override
+    public void configureState(@NonNull MutableState state, @NonNull B buffer) {
+        state.set(StateProperties.BOUND_TEXTURE[this.unit].get(this.target), buffer.id());
     }
 }

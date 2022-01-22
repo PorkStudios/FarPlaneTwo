@@ -18,40 +18,50 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.old.uniform;
+package net.daporkchop.fp2.gl.opengl.attribute.common.fragmentcolor;
 
-import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.old.uniform.UniformArrayBuffer;
-import net.daporkchop.fp2.gl.attribute.old.uniform.UniformArrayFormat;
-import net.daporkchop.fp2.gl.attribute.BufferUsage;
-import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.old.common.ShaderStorageBlockFormat;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLBlockMemoryLayout;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.StructInfo;
+import net.daporkchop.fp2.gl.opengl.GLAPI;
+import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
+import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
+import net.daporkchop.fp2.gl.opengl.command.state.MutableState;
+import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
 
 /**
  * @author DaPorkchop_
  */
-@Getter
-public class UniformArrayFormatShaderStorageBlock<S> extends BaseAttributeFormatImpl<S> implements UniformArrayFormat<S>, ShaderStorageBlockFormat {
-    public UniformArrayFormatShaderStorageBlock(@NonNull AttributeFormatBuilderImpl<S> builder) {
-        super(builder.gl(), builder.gl().structFormatGenerator().getInterleaved(GLSLBlockMemoryLayout.STD140.layout(new StructInfo<>(builder))));
+public final class DummyFragmentColorBindingLocation implements BindingLocation<DummyFragmentColorAttributeBuffer> {
+    @Override
+    public InternalAttributeUsage usage() {
+        return InternalAttributeUsage.FRAGMENT_COLOR;
     }
 
     @Override
-    public UniformArrayBuffer<S> createBuffer(@NonNull BufferUsage usage) {
-        return new UniformArrayBufferShaderStorageBlock<>(this, usage);
+    public void configureProgramPreLink(@NonNull GLAPI api, int program) {
+        //no-op
     }
 
     @Override
-    public boolean isArray() {
-        return true;
+    public void configureProgramPostLink(@NonNull GLAPI api, int program) {
+        //no-op
     }
 
     @Override
-    public String interfaceBlockLayout() {
-        return this.structFormat.layoutName();
+    public void generateGLSL(@NonNull ShaderType type, @NonNull StringBuilder builder) {
+        if (type != ShaderType.FRAGMENT) {
+            return;
+        }
+
+        builder.append("out vec4 f_color;\n");
+    }
+
+    @Override
+    public void configureBuffer(@NonNull GLAPI api, @NonNull DummyFragmentColorAttributeBuffer buffer) {
+        //no-op
+    }
+
+    @Override
+    public void configureState(@NonNull MutableState state, @NonNull DummyFragmentColorAttributeBuffer buffer) {
+        //no-op
     }
 }

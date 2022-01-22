@@ -27,6 +27,8 @@ import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
 import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
+import net.daporkchop.fp2.gl.opengl.command.state.MutableState;
+import net.daporkchop.fp2.gl.opengl.command.state.StateProperties;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
 
 import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
@@ -57,7 +59,7 @@ public class InterleavedUniformAttributeBindingLocation<S> implements BindingLoc
     @Override
     public void configureProgramPostLink(@NonNull GLAPI api, int program) {
         int blockIndex = api.glGetUniformBlockIndex(program, "UNIFORM_" + this.structFormat.structName());
-        checkArg(blockIndex != GL_INVALID_INDEX, "unable to find uniform block: %s", this.structFormat.structName());
+        checkArg(blockIndex != GL_INVALID_INDEX, "unable to find uniform block: %s", "UNIFORM_" + this.structFormat.structName());
 
         api.glUniformBlockBinding(program, blockIndex, this.bindingIndex);
     }
@@ -72,5 +74,10 @@ public class InterleavedUniformAttributeBindingLocation<S> implements BindingLoc
     @Override
     public void configureBuffer(@NonNull GLAPI api, @NonNull InterleavedAttributeBufferImpl<S, ?> buffer) {
         //no-op
+    }
+
+    @Override
+    public void configureState(@NonNull MutableState state, @NonNull InterleavedAttributeBufferImpl<S, ?> buffer) {
+        state.set(StateProperties.BOUND_UBO[this.bindingIndex], buffer.buffer().id());
     }
 }

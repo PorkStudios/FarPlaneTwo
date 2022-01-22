@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -21,7 +21,6 @@
 package net.daporkchop.fp2.gl.opengl.attribute.texture;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureWriter2D;
 
 import static java.lang.Math.*;
@@ -30,7 +29,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public class TextureWriter2DImpl<S> extends BaseTextureWriterImpl<S, TextureFormat2DImpl<S>, TextureFormat2D<S>> implements TextureWriter2D<S> {
+public class TextureWriter2DImpl<S> extends BaseTextureWriterImpl<S, TextureFormat2DImpl<S>> implements TextureWriter2D<S> {
     protected final int width;
     protected final int height;
     protected final int stride;

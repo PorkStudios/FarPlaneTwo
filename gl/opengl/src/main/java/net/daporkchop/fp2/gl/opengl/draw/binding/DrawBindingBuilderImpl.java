@@ -20,29 +20,22 @@
 
 package net.daporkchop.fp2.gl.opengl.draw.binding;
 
+import com.google.common.collect.ImmutableMap;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.gl.attribute.old.global.DrawGlobalBuffer;
-import net.daporkchop.fp2.gl.attribute.old.local.DrawLocalBuffer;
+import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
-import net.daporkchop.fp2.gl.attribute.old.uniform.UniformArrayBuffer;
-import net.daporkchop.fp2.gl.attribute.old.uniform.UniformBuffer;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.fp2.gl.draw.binding.DrawBindingBuilder;
 import net.daporkchop.fp2.gl.draw.binding.DrawBindingIndexed;
 import net.daporkchop.fp2.gl.draw.index.IndexBuffer;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
+import net.daporkchop.fp2.gl.opengl.attribute.common.AttributeBufferImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.texture.BaseTextureImpl;
 import net.daporkchop.fp2.gl.opengl.draw.DrawLayoutImpl;
 import net.daporkchop.fp2.gl.opengl.draw.index.IndexBufferImpl;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
@@ -53,11 +46,7 @@ public class DrawBindingBuilderImpl implements DrawBindingBuilder.OptionallyInde
     @NonNull
     protected final DrawLayoutImpl layout;
 
-    protected final List<BaseAttributeBufferImpl<?, ?>> uniforms = new ArrayList<>();
-    protected final List<BaseAttributeBufferImpl<?, ?>> uniformArrays = new ArrayList<>();
-    protected final List<BaseAttributeBufferImpl<?, ?>> globals = new ArrayList<>();
-    protected final List<BaseAttributeBufferImpl<?, ?>> locals = new ArrayList<>();
-    protected final List<BaseAttributeBufferImpl<?, ?>> textures = new ArrayList<>();
+    protected final ImmutableMap.Builder<BaseAttributeBufferImpl<?, ?>, InternalAttributeUsage> buffersUsages = ImmutableMap.builder();
 
     protected IndexBufferImpl indices;
 
@@ -75,78 +64,44 @@ public class DrawBindingBuilderImpl implements DrawBindingBuilder.OptionallyInde
     // DrawBindingBuilder
     //
 
+    protected void with(@NonNull BaseAttributeBufferImpl<?, ?> buffer, @NonNull InternalAttributeUsage usage) {
+        this.buffersUsages.put(buffer, usage);
+    }
+
     @Override
-    public DrawBindingBuilder<DrawBinding> withUniforms(@NonNull UniformBuffer<?> buffer) {
-        this.uniforms.add((BaseAttributeBufferImpl<?, ?>) buffer);
+    public DrawBindingBuilder<DrawBinding> withUniforms(@NonNull AttributeBuffer<?> buffer) {
+        this.with((AttributeBufferImpl<?, ?>) buffer, InternalAttributeUsage.UNIFORM);
         return this;
     }
 
     @Override
-    public DrawBindingBuilder<DrawBinding> withUniformArrays(@NonNull UniformArrayBuffer<?> buffer) {
-        this.uniformArrays.add((BaseAttributeBufferImpl<?, ?>) buffer);
+    public DrawBindingBuilder<DrawBinding> withUniformArrays(@NonNull AttributeBuffer<?> buffer) {
+        this.with((AttributeBufferImpl<?, ?>) buffer, InternalAttributeUsage.UNIFORM_ARRAY);
         return this;
     }
 
     @Override
-    public DrawBindingBuilder<DrawBinding> withGlobals(@NonNull DrawGlobalBuffer<?> buffer) {
-        this.globals.add((BaseAttributeBufferImpl<?, ?>) buffer);
+    public DrawBindingBuilder<DrawBinding> withGlobals(@NonNull AttributeBuffer<?> buffer) {
+        this.with((AttributeBufferImpl<?, ?>) buffer, InternalAttributeUsage.DRAW_GLOBAL);
         return this;
     }
 
     @Override
-    public DrawBindingBuilder<DrawBinding> withLocals(@NonNull DrawLocalBuffer<?> buffer) {
-        this.locals.add((BaseAttributeBufferImpl<?, ?>) buffer);
+    public DrawBindingBuilder<DrawBinding> withLocals(@NonNull AttributeBuffer<?> buffer) {
+        this.with((AttributeBufferImpl<?, ?>) buffer, InternalAttributeUsage.DRAW_LOCAL);
         return this;
     }
 
     @Override
     public DrawBindingBuilder<DrawBinding> withTexture(@NonNull Texture2D<?> texture) {
-        this.textures.add((BaseAttributeBufferImpl<?, ?>) texture);
+        this.with((BaseTextureImpl<?, ?>) texture, InternalAttributeUsage.TEXTURE);
         return this;
     }
 
     @Override
     public DrawBinding build() {
-        { //uniforms
-            Set<BaseAttributeFormatImpl<?>> givenFormats = this.uniforms.stream().map(BaseAttributeBufferImpl::format).collect(Collectors.toSet());
-            Set<BaseAttributeFormatImpl<?>> expectedFormats = this.layout.uniformFormats().values();
-            checkArg(expectedFormats.equals(givenFormats), "attribute format mismatch: %s (given) != %s (expected)", givenFormats, expectedFormats);
-        }
-
-        { //uniform arrays
-            Set<BaseAttributeFormatImpl<?>> givenFormats = this.uniformArrays.stream().map(BaseAttributeBufferImpl::format).collect(Collectors.toSet());
-            Set<BaseAttributeFormatImpl<?>> expectedFormats = this.layout.uniformArrayFormats().values();
-            checkArg(expectedFormats.equals(givenFormats), "attribute format mismatch: %s (given) != %s (expected)", givenFormats, expectedFormats);
-        }
-
-        { //globals
-            Set<BaseAttributeFormatImpl<?>> givenFormats = this.globals.stream().map(BaseAttributeBufferImpl::format).collect(Collectors.toSet());
-            Set<BaseAttributeFormatImpl<?>> expectedFormats = this.layout.globalFormats().values();
-            checkArg(expectedFormats.equals(givenFormats), "attribute format mismatch: %s (given) != %s (expected)", givenFormats, expectedFormats);
-        }
-
-        { //locals
-            Set<BaseAttributeFormatImpl<?>> givenFormats = this.locals.stream().map(BaseAttributeBufferImpl::format).collect(Collectors.toSet());
-            Set<BaseAttributeFormatImpl<?>> expectedFormats = this.layout.localFormats().values();
-            checkArg(expectedFormats.equals(givenFormats), "attribute format mismatch: %s (given) != %s (expected)", givenFormats, expectedFormats);
-        }
-
-        { //textures
-            Set<BaseAttributeFormatImpl<?>> givenFormats = this.textures.stream().map(BaseAttributeBufferImpl::format).collect(Collectors.toSet());
-            Set<BaseAttributeFormatImpl<?>> expectedFormats = this.layout.textureFormats().values();
-            checkArg(expectedFormats.equals(givenFormats), "attribute format mismatch: %s (given) != %s (expected)", givenFormats, expectedFormats);
-        }
-
         return this.indices != null
                 ? new DrawBindingIndexedImpl(this)
                 : new DrawBindingImpl(this);
-    }
-
-    public Stream<BaseAttributeBufferImpl<?, ?>> allBuffers() {
-        return Stream.of(this.uniforms, this.uniformArrays, this.globals, this.locals, this.textures).flatMap(List::stream);
-    }
-
-    public Stream<BaseAttributeBufferImpl<?, ?>> allBuffersAndChildren() {
-        return this.allBuffers().flatMap(BaseAttributeBufferImpl::selfAndChildren);
     }
 }

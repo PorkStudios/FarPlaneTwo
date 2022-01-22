@@ -22,8 +22,9 @@ package net.daporkchop.fp2.gl.opengl.attribute.binding;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
-import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
+import net.daporkchop.fp2.gl.opengl.command.state.MutableState;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
 
 /**
@@ -68,4 +69,12 @@ public interface BindingLocation<B extends BaseAttributeBufferImpl<?, ?>> {
      * @param buffer the {@link B} to bind
      */
     void configureBuffer(@NonNull GLAPI api, @NonNull B buffer);
+
+    /**
+     * Configures the OpenGL state in order to bind the given {@link B} to this binding location.
+     *
+     * @param state  a {@link MutableState} to write state changes to
+     * @param buffer the {@link B} to bind
+     */
+    void configureState(@NonNull MutableState state, @NonNull B buffer);
 }

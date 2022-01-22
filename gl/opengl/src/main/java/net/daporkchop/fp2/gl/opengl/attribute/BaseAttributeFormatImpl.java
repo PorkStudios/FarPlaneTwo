@@ -28,13 +28,8 @@ import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
 
-import java.util.AbstractMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
-
-import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
@@ -46,11 +41,6 @@ public abstract class BaseAttributeFormatImpl<S> {
     protected final OpenGL gl;
 
     public abstract Set<InternalAttributeUsage> validUsages();
-
-    public Stream<Map.Entry<? extends BaseAttributeFormatImpl<?>, InternalAttributeUsage>> actualFormatsFor(@NonNull InternalAttributeUsage usage) {
-        checkArg(this.validUsages().contains(usage), "this format only supports %s, not %s", this.validUsages(), usage);
-        return Stream.of(new AbstractMap.SimpleEntry<>(this, usage));
-    }
 
     public abstract BindingLocation<?> bindingLocation(@NonNull InternalAttributeUsage usage, @NonNull BindingLocationAssigner assigner);
 
