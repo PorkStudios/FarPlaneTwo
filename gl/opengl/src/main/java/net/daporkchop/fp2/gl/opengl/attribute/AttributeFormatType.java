@@ -22,8 +22,9 @@ package net.daporkchop.fp2.gl.opengl.attribute;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.opengl.attribute.common.AttributeFormatImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.glsl.GLSLBlockAttributeFormat;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLBlockMemoryLayout;
+import net.daporkchop.fp2.gl.opengl.attribute.format.PackedAttributeFormat;
+import net.daporkchop.fp2.gl.opengl.attribute.format.PackedInstancedAttributeFormat;
+import net.daporkchop.fp2.gl.opengl.attribute.format.Std140BlockAttributeFormat;
 
 import java.util.Optional;
 
@@ -33,14 +34,48 @@ import java.util.Optional;
  * @author DaPorkchop_
  */
 public enum AttributeFormatType {
-    GLSL_BLOCK_STD140 {
+    PACKED_INSTANCED {
         @Override
         public <S> Optional<AttributeFormatImpl<S, ?>> createFormat(@NonNull AttributeFormatBuilderImpl<S> builder) {
-            return GLSLBlockAttributeFormat.VALID_USAGES.containsAll(builder.usages()) //should always be supported
-                    ? Optional.of(new GLSLBlockAttributeFormat<>(builder, GLSLBlockMemoryLayout.STD140))
+            return PackedInstancedAttributeFormat.supports(builder)
+                    ? Optional.of(new PackedInstancedAttributeFormat<>(builder))
+                    : Optional.empty();
+        }
+    },
+    PACKED {
+        @Override
+        public <S> Optional<AttributeFormatImpl<S, ?>> createFormat(@NonNull AttributeFormatBuilderImpl<S> builder) {
+            return PackedAttributeFormat.supports(builder)
+                    ? Optional.of(new PackedAttributeFormat<>(builder))
+                    : Optional.empty();
+        }
+    },
+    STD140_BLOCK {
+        @Override
+        public <S> Optional<AttributeFormatImpl<S, ?>> createFormat(@NonNull AttributeFormatBuilderImpl<S> builder) {
+            return Std140BlockAttributeFormat.supports(builder)
+                    ? Optional.of(new Std140BlockAttributeFormat<>(builder))
                     : Optional.empty();
         }
     };
+
+    /**
+     * Creates an {@link AttributeFormatImpl} for the given {@link AttributeFormatBuilderImpl} using the best compatible format type.
+     *
+     * @param builder the {@link AttributeFormatBuilderImpl}
+     * @param <S>     the struct type
+     * @return the created {@link AttributeFormatImpl}
+     */
+    public static <S> AttributeFormatImpl<S, ?> createBestFormat(@NonNull AttributeFormatBuilderImpl<S> builder) {
+        for (AttributeFormatType type : values()) {
+            Optional<AttributeFormatImpl<S, ?>> optionalFormat = type.createFormat(builder);
+            if (optionalFormat.isPresent()) {
+                return optionalFormat.get();
+            }
+        }
+
+        throw new IllegalStateException(builder.toString());
+    }
 
     /**
      * Creates an {@link AttributeFormatImpl} for the given {@link AttributeFormatBuilderImpl} using this format type if possible.

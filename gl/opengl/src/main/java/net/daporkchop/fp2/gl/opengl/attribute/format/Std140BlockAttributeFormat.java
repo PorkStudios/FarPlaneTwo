@@ -18,10 +18,11 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.glsl;
+package net.daporkchop.fp2.gl.opengl.attribute.format;
 
 import com.google.common.collect.ImmutableSet;
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.opengl.GLExtension;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
@@ -39,16 +40,21 @@ import java.util.Set;
 /**
  * @author DaPorkchop_
  */
-public final class GLSLBlockAttributeFormat<S> extends InterleavedAttributeFormatImpl<S> {
-    public static final Set<InternalAttributeUsage> VALID_USAGES = ImmutableSet.copyOf(EnumSet.of(
+public final class Std140BlockAttributeFormat<S> extends InterleavedAttributeFormatImpl<S> {
+    private static final Set<InternalAttributeUsage> VALID_USAGES = ImmutableSet.copyOf(EnumSet.of(
             InternalAttributeUsage.UNIFORM,
             InternalAttributeUsage.UNIFORM_ARRAY,
             InternalAttributeUsage.DRAW_LOCAL,
             InternalAttributeUsage.DRAW_GLOBAL
     ));
 
-    public GLSLBlockAttributeFormat(@NonNull AttributeFormatBuilderImpl<S> builder, @NonNull GLSLBlockMemoryLayout layout) {
-        super(builder.gl(), layout.layout(builder.structInfo()));
+    public static boolean supports(@NonNull AttributeFormatBuilderImpl<?> builder) {
+        return VALID_USAGES.containsAll(builder.usages())
+               && GLExtension.GL_ARB_uniform_buffer_object.supported(builder.gl());
+    }
+
+    public Std140BlockAttributeFormat(@NonNull AttributeFormatBuilderImpl<S> builder) {
+        super(builder.gl(), GLSLBlockMemoryLayout.STD140.layout(builder.structInfo()));
     }
 
     @Override
