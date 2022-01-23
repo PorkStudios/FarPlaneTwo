@@ -23,7 +23,7 @@ package net.daporkchop.fp2.mode.voxel.client;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.texture.TextureUVs;
 import net.daporkchop.fp2.compat.vanilla.FastRegistry;
-import net.daporkchop.fp2.gl.attribute.old.local.DrawLocalWriter;
+import net.daporkchop.fp2.gl.attribute.AttributeWriter;
 import net.daporkchop.fp2.gl.draw.index.IndexWriter;
 import net.daporkchop.fp2.mode.common.client.bake.IRenderBaker;
 import net.daporkchop.fp2.mode.common.client.bake.indexed.IndexedBakeOutput;
@@ -107,7 +107,7 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
         }
 
         //write globals
-        output.globals().set(new VoxelGlobalAttributes(pos.x(), pos.y(), pos.z(), pos.level()));
+        output.globals().put(new VoxelGlobalAttributes(pos.x(), pos.y(), pos.z(), pos.level()));
 
         ArrayAllocator<int[]> alloc = ALLOC_INT.get();
         int[] map = alloc.atLeast(cb(T_VERTS) * EDGE_COUNT);
@@ -124,7 +124,7 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
         }
     }
 
-    protected void writeVertices(VoxelTile[] srcs, int blockX, int blockY, int blockZ, int level, int[] map, DrawLocalWriter<VoxelLocalAttributes> verts) {
+    protected void writeVertices(VoxelTile[] srcs, int blockX, int blockY, int blockZ, int level, int[] map, AttributeWriter<VoxelLocalAttributes> verts) {
         final BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         final SingleBiomeBlockAccess biomeAccess = new SingleBiomeBlockAccess();
         final VoxelData data = new VoxelData();
@@ -154,7 +154,7 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
         }
     }
 
-    protected int writeVertex(int baseX, int baseY, int baseZ, int level, int x, int y, int z, VoxelData data, DrawLocalWriter<VoxelLocalAttributes> vertices, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess, VoxelLocalAttributes attributes, int[] map, int indexCounter) {
+    protected int writeVertex(int baseX, int baseY, int baseZ, int level, int x, int y, int z, VoxelData data, AttributeWriter<VoxelLocalAttributes> vertices, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess, VoxelLocalAttributes attributes, int[] map, int indexCounter) {
         baseX += (x & T_VOXELS) << level;
         baseY += (y & T_VOXELS) << level;
         baseZ += (z & T_VOXELS) << level;

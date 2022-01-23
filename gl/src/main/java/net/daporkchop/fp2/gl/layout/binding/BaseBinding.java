@@ -21,11 +21,12 @@
 package net.daporkchop.fp2.gl.layout.binding;
 
 import net.daporkchop.fp2.gl.GLResource;
-import net.daporkchop.fp2.gl.attribute.old.BaseAttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.texture.BaseTexture;
 import net.daporkchop.fp2.gl.shader.BaseShaderProgram;
 
 /**
- * Maps {@link BaseAttributeBuffer}s to {@link BaseShaderProgram} inputs.
+ * Maps {@link AttributeBuffer}s and {@link BaseTexture}s to {@link BaseShaderProgram} inputs.
  * <p>
  * A binding does not own any of the buffers or programs it references. The user is responsible for creating and disposing of them properly. Disposing of a resource belonging to a binding
  * before the binding is closed will result in undefined behavior.

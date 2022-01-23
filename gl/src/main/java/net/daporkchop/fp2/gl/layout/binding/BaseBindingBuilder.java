@@ -22,7 +22,6 @@ package net.daporkchop.fp2.gl.layout.binding;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
-import net.daporkchop.fp2.gl.attribute.old.local.DrawLocalBuffer;
 import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
 
 /**
@@ -47,7 +46,7 @@ public interface BaseBindingBuilder<BUILDER extends BaseBindingBuilder<BUILDER, 
     BUILDER withUniformArrays(@NonNull AttributeBuffer<?> buffer);
 
     /**
-     * Adds a {@link DrawLocalBuffer} which contains a 2D texture.
+     * Adds a {@link Texture2D} which contains a 2D texture.
      *
      * @param texture the texture
      */

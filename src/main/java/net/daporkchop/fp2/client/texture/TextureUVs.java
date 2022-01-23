@@ -28,8 +28,9 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.attribute.Attribute;
-import net.daporkchop.fp2.gl.attribute.old.uniform.UniformArrayBuffer;
-import net.daporkchop.fp2.gl.attribute.old.uniform.UniformArrayFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.primitive.map.ObjIntMap;
@@ -146,19 +147,19 @@ public class TextureUVs extends AbstractReleasable {
 
     protected final GL gl;
 
-    protected final UniformArrayFormat<QuadList> listsFormat;
-    protected final UniformArrayBuffer<QuadList> listsBuffer;
+    protected final AttributeFormat<QuadList> listsFormat;
+    protected final AttributeBuffer<QuadList> listsBuffer;
 
-    protected final UniformArrayFormat<PackedBakedQuad> quadsFormat;
-    protected final UniformArrayBuffer<PackedBakedQuad> quadsBuffer;
+    protected final AttributeFormat<PackedBakedQuad> quadsFormat;
+    protected final AttributeBuffer<PackedBakedQuad> quadsBuffer;
 
     public TextureUVs(@NonNull GL gl) {
         this.gl = gl;
 
-        this.listsFormat = gl.createUniformArrayFormat(QuadList.class).build();
+        this.listsFormat = gl.createAttributeFormat(QuadList.class).useFor(AttributeUsage.UNIFORM_ARRAY).build();
         this.listsBuffer = this.listsFormat.createBuffer(BufferUsage.STATIC_DRAW);
 
-        this.quadsFormat = gl.createUniformArrayFormat(PackedBakedQuad.class).build();
+        this.quadsFormat = gl.createAttributeFormat(PackedBakedQuad.class).useFor(AttributeUsage.UNIFORM_ARRAY).build();
         this.quadsBuffer = this.quadsFormat.createBuffer(BufferUsage.STATIC_DRAW);
 
         this.reloadUVs();
@@ -258,10 +259,10 @@ public class TextureUVs extends AbstractReleasable {
         List<PackedBakedQuad> quadsOut = new ArrayList<>(distinctQuadsById.size());
         for (int i = 0, len = distinctQuadsById.size(); i < len; i++) {
             List<PackedBakedQuad> quads = distinctQuadsById.get(i);
-            quadIdToList[i] =new QuadList(quadsOut.size(), quadsOut.size() + quads.size());
+            quadIdToList[i] = new QuadList(quadsOut.size(), quadsOut.size() + quads.size());
             quadsOut.addAll(quads);
         }
-        this.quadsBuffer.set(quadsOut.toArray(new PackedBakedQuad[0]));
+        this.quadsBuffer.setContents(quadsOut.toArray(new PackedBakedQuad[0]));
 
         List<QuadList> listsOut = new ArrayList<>(quadIdToList.length);
         for (int[] faceIds : distinctIndicesById) {
@@ -269,7 +270,7 @@ public class TextureUVs extends AbstractReleasable {
                 listsOut.add(quadIdToList[i]);
             }
         }
-        this.listsBuffer.set(listsOut.toArray(new QuadList[0]));
+        this.listsBuffer.setContents(listsOut.toArray(new QuadList[0]));
     }
 
     /**

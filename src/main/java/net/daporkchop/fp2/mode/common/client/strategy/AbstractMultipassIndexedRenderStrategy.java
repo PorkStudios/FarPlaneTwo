@@ -24,8 +24,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.client.GlStateUniformAttributes;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.gl.GL;
-import net.daporkchop.fp2.gl.attribute.old.global.DrawGlobalFormat;
-import net.daporkchop.fp2.gl.attribute.old.local.DrawLocalFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.command.CommandBuffer;
 import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
 import net.daporkchop.fp2.gl.draw.binding.DrawBindingBuilder;
@@ -61,9 +60,9 @@ public abstract class AbstractMultipassIndexedRenderStrategy<POS extends IFarPos
 
     public abstract IndexFormat indexFormat();
 
-    public abstract DrawGlobalFormat<SG> globalFormat();
+    public abstract AttributeFormat<SG> globalFormat();
 
-    public abstract DrawLocalFormat<SL> vertexFormat();
+    public abstract AttributeFormat<SL> vertexFormat();
 
     @Override
     public IRenderIndex<POS, IndexedBakeOutput<SG, SL>, DrawBindingIndexed, DrawCommandIndexed> createIndex() {
@@ -99,7 +98,7 @@ public abstract class AbstractMultipassIndexedRenderStrategy<POS extends IFarPos
     @Override
     public void render(@NonNull IRenderIndex<POS, IndexedBakeOutput<SG, SL>, DrawBindingIndexed, DrawCommandIndexed> index, @NonNull BlockRenderLayer layer, boolean pre) {
         if (layer == BlockRenderLayer.CUTOUT && !pre) {
-            this.uniformBuffer.set(new GlStateUniformAttributes().initFromGlState(MC.getRenderPartialTicks(), MC));
+            this.uniformBuffer.setContents(new GlStateUniformAttributes().initFromGlState(MC.getRenderPartialTicks(), MC));
 
             if (this.commandBuffer == null) {
                 this.rebuildCommandBuffer(index);

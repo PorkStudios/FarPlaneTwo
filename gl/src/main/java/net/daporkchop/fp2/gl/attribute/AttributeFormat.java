@@ -21,14 +21,13 @@
 package net.daporkchop.fp2.gl.attribute;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.old.BaseAttributeFormat;
 
 import java.util.Set;
 
 /**
  * @author DaPorkchop_
  */
-public interface AttributeFormat<S> extends BaseAttributeFormat {
+public interface AttributeFormat<S> {
     /**
      * @return the number of bytes used by each element in a {@link AttributeBuffer} using this format
      */

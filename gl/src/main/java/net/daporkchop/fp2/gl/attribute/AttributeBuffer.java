@@ -83,7 +83,9 @@ public interface AttributeBuffer<S> extends GLResource {
      * @param struct the struct containing the element data
      */
     default void setContents(@NonNull S struct) {
-        this.capacity(1);
+        if (this.capacity() != 1) {
+            this.capacity(1);
+        }
         this.set(0, struct);
     }
 
@@ -93,7 +95,9 @@ public interface AttributeBuffer<S> extends GLResource {
      * @param structs the structs containing the element data
      */
     default void setContents(@NonNull S... structs) {
-        this.capacity(structs.length);
+        if (this.capacity() != structs.length) {
+            this.capacity(structs.length);
+        }
         this.set(0, structs);
     }
 

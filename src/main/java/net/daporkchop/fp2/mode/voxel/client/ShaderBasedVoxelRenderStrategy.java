@@ -25,11 +25,11 @@ import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.shader.reload.ReloadableShaderProgram;
 import net.daporkchop.fp2.common.util.Identifier;
 import net.daporkchop.fp2.gl.GL;
-import net.daporkchop.fp2.gl.attribute.old.global.DrawGlobalFormat;
-import net.daporkchop.fp2.gl.attribute.old.local.DrawLocalFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeUsage;
+import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.draw.index.IndexFormat;
 import net.daporkchop.fp2.gl.draw.index.IndexType;
-import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.common.client.ICullingStrategy;
@@ -48,8 +48,8 @@ import static net.daporkchop.fp2.FP2.*;
  */
 @Getter
 public class ShaderBasedVoxelRenderStrategy extends AbstractMultipassIndexedRenderStrategy<VoxelPos, VoxelTile, VoxelGlobalAttributes, VoxelLocalAttributes> {
-    protected final DrawGlobalFormat<VoxelGlobalAttributes> globalFormat;
-    protected final DrawLocalFormat<VoxelLocalAttributes> vertexFormat;
+    protected final AttributeFormat<VoxelGlobalAttributes> globalFormat;
+    protected final AttributeFormat<VoxelLocalAttributes> vertexFormat;
 
     protected final IndexFormat indexFormat;
 
@@ -61,8 +61,8 @@ public class ShaderBasedVoxelRenderStrategy extends AbstractMultipassIndexedRend
     public ShaderBasedVoxelRenderStrategy(@NonNull IFarRenderMode<VoxelPos, VoxelTile> mode, @NonNull GL gl) {
         super(mode, gl);
 
-        this.globalFormat = gl.createDrawGlobalFormat(VoxelGlobalAttributes.class).build();
-        this.vertexFormat = gl.createDrawLocalFormat(VoxelLocalAttributes.class).build();
+        this.globalFormat = gl.createAttributeFormat(VoxelGlobalAttributes.class).useFor(AttributeUsage.DRAW_GLOBAL).build();
+        this.vertexFormat = gl.createAttributeFormat(VoxelLocalAttributes.class).useFor(AttributeUsage.DRAW_LOCAL).build();
 
         this.indexFormat = gl.createIndexFormat()
                 .type(IndexType.UNSIGNED_SHORT)

@@ -29,12 +29,13 @@ import net.daporkchop.fp2.client.texture.TextureUVs;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.gl.GL;
+import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeUsage;
+import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
-import net.daporkchop.fp2.gl.attribute.old.uniform.UniformBuffer;
-import net.daporkchop.fp2.gl.attribute.old.uniform.UniformFormat;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
-import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.draw.list.DrawCommand;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
@@ -60,8 +61,8 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
     protected final IFarRenderMode<POS, T> mode;
     protected final GL gl;
 
-    protected final UniformFormat<GlStateUniformAttributes> uniformFormat;
-    protected final UniformBuffer<GlStateUniformAttributes> uniformBuffer;
+    protected final AttributeFormat<GlStateUniformAttributes> uniformFormat;
+    protected final AttributeBuffer<GlStateUniformAttributes> uniformBuffer;
 
     protected final TextureFormat2D<TerrainTextureAttribute> textureFormatTerrain;
     protected final Texture2D<TerrainTextureAttribute> textureTerrain;
@@ -76,7 +77,7 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
         this.mode = mode;
         this.gl = gl;
 
-        this.uniformFormat = gl.createUniformFormat(GlStateUniformAttributes.class).build();
+        this.uniformFormat = gl.createAttributeFormat(GlStateUniformAttributes.class).useFor(AttributeUsage.UNIFORM).build();
         this.uniformBuffer = this.uniformFormat.createBuffer(BufferUsage.STATIC_DRAW);
 
         this.textureFormatTerrain = gl.createTextureFormat2D(TerrainTextureAttribute.class).build();

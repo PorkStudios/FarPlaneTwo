@@ -22,7 +22,7 @@ package net.daporkchop.fp2.mode.heightmap.client;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.client.texture.TextureUVs;
-import net.daporkchop.fp2.gl.attribute.old.local.DrawLocalWriter;
+import net.daporkchop.fp2.gl.attribute.AttributeWriter;
 import net.daporkchop.fp2.mode.common.client.bake.IRenderBaker;
 import net.daporkchop.fp2.mode.common.client.bake.indexed.IndexedBakeOutput;
 import net.daporkchop.fp2.mode.heightmap.HeightmapData;
@@ -91,7 +91,7 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
         }
 
         //write globals
-        output.globals().set(new HeightmapGlobalAttributes(pos.x(), pos.z(), pos.level()));
+        output.globals().put(new HeightmapGlobalAttributes(pos.x(), pos.z(), pos.level()));
 
         final int level = pos.level();
         final int blockX = pos.blockX();
@@ -192,7 +192,7 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
         }
     }
 
-    private int writeVertex(int baseX, int baseZ, int level, HeightmapTile tile, int x, int z, int layer, DrawLocalWriter<HeightmapLocalAttributes> out, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess, HeightmapData data, HeightmapLocalAttributes attributes) {
+    private int writeVertex(int baseX, int baseZ, int level, HeightmapTile tile, int x, int z, int layer, AttributeWriter<HeightmapLocalAttributes> out, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess, HeightmapData data, HeightmapLocalAttributes attributes) {
         baseX += (x & T_VOXELS) << level;
         baseZ += (z & T_VOXELS) << level;
 
