@@ -18,56 +18,44 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.common.fragmentcolor;
+package net.daporkchop.fp2.gl.opengl.transform;
 
-import com.google.common.collect.ImmutableSet;
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
-import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
-import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
-
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Set;
+import net.daporkchop.fp2.gl.opengl.attribute.common.AttributeFormatImpl;
+import net.daporkchop.fp2.gl.opengl.layout.BaseLayoutBuilderImpl;
+import net.daporkchop.fp2.gl.transform.TransformLayout;
+import net.daporkchop.fp2.gl.transform.TransformLayoutBuilder;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
-public final class DummyFragmentColorAttributeFormat extends BaseAttributeFormatImpl<Object> {
-    private static final Set<InternalAttributeUsage> VALID_USAGES = ImmutableSet.copyOf(EnumSet.of(
-            InternalAttributeUsage.FRAGMENT_COLOR
-    ));
-
-    private final DummyFragmentColorBindingLocation bindingLocation = new DummyFragmentColorBindingLocation();
-
-    public DummyFragmentColorAttributeFormat(@NonNull OpenGL gl) {
+public class TransformLayoutBuilderImpl extends BaseLayoutBuilderImpl<TransformLayoutBuilder, TransformLayout> implements TransformLayoutBuilder {
+    public TransformLayoutBuilderImpl(@NonNull OpenGL gl) {
         super(gl);
     }
 
     @Override
-    public Set<InternalAttributeUsage> validUsages() {
-        return VALID_USAGES;
+    public TransformLayoutBuilder withInputs(@NonNull AttributeFormat<?> format) {
+        checkArg(format.usage().contains(AttributeUsage.TRANSFORM_INPUT), "%s doesn't support %s", format, AttributeUsage.TRANSFORM_INPUT);
+        this.with((AttributeFormatImpl<?, ?>) format, InternalAttributeUsage.TRANSFORM_INPUT);
+        return this;
     }
 
     @Override
-    public BindingLocation<?> bindingLocation(@NonNull InternalAttributeUsage usage, @NonNull BindingLocationAssigner assigner) {
-        checkArg(usage == InternalAttributeUsage.FRAGMENT_COLOR, "unsupported usage: %s", usage);
-
-        return this.bindingLocation;
+    public TransformLayoutBuilder withOutputs(@NonNull AttributeFormat<?> format) {
+        checkArg(format.usage().contains(AttributeUsage.TRANSFORM_OUTPUT), "%s doesn't support %s", format, AttributeUsage.TRANSFORM_OUTPUT);
+        this.with((AttributeFormatImpl<?, ?>) format, InternalAttributeUsage.TRANSFORM_OUTPUT);
+        return this;
     }
 
     @Override
-    public String name() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public List<GLSLField> attributeFields() {
-        throw new UnsupportedOperationException();
+    public TransformLayout build() {
+        return new TransformLayoutImpl(this);
     }
 }

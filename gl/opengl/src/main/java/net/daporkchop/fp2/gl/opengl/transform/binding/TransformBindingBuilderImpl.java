@@ -18,44 +18,41 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.draw;
+package net.daporkchop.fp2.gl.opengl.transform.binding;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.AttributeFormat;
-import net.daporkchop.fp2.gl.attribute.AttributeUsage;
-import net.daporkchop.fp2.gl.draw.DrawLayout;
-import net.daporkchop.fp2.gl.draw.DrawLayoutBuilder;
-import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
-import net.daporkchop.fp2.gl.opengl.attribute.common.AttributeFormatImpl;
-import net.daporkchop.fp2.gl.opengl.layout.BaseLayoutBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.common.AttributeBufferImpl;
+import net.daporkchop.fp2.gl.opengl.layout.BaseBindingBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.transform.TransformLayoutImpl;
+import net.daporkchop.fp2.gl.transform.binding.TransformBinding;
+import net.daporkchop.fp2.gl.transform.binding.TransformBindingBuilder;
 
-import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
-public class DrawLayoutBuilderImpl extends BaseLayoutBuilderImpl<DrawLayoutBuilder, DrawLayout> implements DrawLayoutBuilder {
-    public DrawLayoutBuilderImpl(@NonNull OpenGL gl) {
-        super(gl);
+public class TransformBindingBuilderImpl extends BaseBindingBuilderImpl<TransformBindingBuilder, TransformBinding, TransformLayoutImpl> implements TransformBindingBuilder {
+    public TransformBindingBuilderImpl(@NonNull TransformLayoutImpl layout) {
+        super(layout);
     }
 
     @Override
-    public DrawLayoutBuilder withGlobals(@NonNull AttributeFormat<?> format) {
-        checkArg(format.usage().contains(AttributeUsage.DRAW_GLOBAL), "%s doesn't support %s", format, AttributeUsage.DRAW_GLOBAL);
-        this.with((AttributeFormatImpl<?, ?>) format, InternalAttributeUsage.DRAW_GLOBAL);
-        return this;
+    public TransformBindingBuilder withInputs(@NonNull AttributeBuffer<?> buffer) {
+        this.with((AttributeBufferImpl<?, ?>) buffer, InternalAttributeUsage.TRANSFORM_INPUT);
+        return uncheckedCast(this);
     }
 
     @Override
-    public DrawLayoutBuilder withLocals(@NonNull AttributeFormat<?> format) {
-        checkArg(format.usage().contains(AttributeUsage.DRAW_LOCAL), "%s doesn't support %s", format, AttributeUsage.DRAW_LOCAL);
-        this.with((AttributeFormatImpl<?, ?>) format, InternalAttributeUsage.DRAW_LOCAL);
-        return this;
+    public TransformBindingBuilder withOutputs(@NonNull AttributeBuffer<?> buffer) {
+        this.with((AttributeBufferImpl<?, ?>) buffer, InternalAttributeUsage.TRANSFORM_OUTPUT);
+        return uncheckedCast(this);
     }
 
     @Override
-    public DrawLayout build() {
-        return new DrawLayoutImpl(this);
+    public TransformBinding build() {
+        return new TransformBindingImpl(this);
     }
 }

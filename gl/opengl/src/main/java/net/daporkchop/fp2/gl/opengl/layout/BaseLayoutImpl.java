@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -20,12 +20,19 @@
 
 package net.daporkchop.fp2.gl.opengl.layout;
 
+import com.google.common.collect.ImmutableMap;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.layout.BaseLayout;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
+import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
+import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
+
+import java.util.Map;
 
 /**
  * @author DaPorkchop_
@@ -35,14 +42,39 @@ public abstract class BaseLayoutImpl implements BaseLayout {
     protected final OpenGL gl;
     protected final GLAPI api;
 
-    public BaseLayoutImpl(@NonNull OpenGL gl) {
-        this.gl = gl;
-        this.api = gl.api();
+    protected final Map<BaseAttributeFormatImpl<?>, InternalAttributeUsage> origFormatsUsages;
+
+    protected final Map<BaseAttributeFormatImpl<?>, BindingLocation<?>> bindingLocationsByFormat;
+
+    public BaseLayoutImpl(@NonNull BaseLayoutBuilderImpl<?, ?> builder) {
+        this.gl = builder.gl();
+        this.api = builder.gl().api();
+
+        this.origFormatsUsages = builder.formatsUsages.build();
+
+        ImmutableMap.Builder<BaseAttributeFormatImpl<?>, BindingLocation<?>> mapBuilder = ImmutableMap.builder();
+
+        //assign binding locations for all attribute formats
+        BindingLocationAssigner assigner = new BindingLocationAssigner(this.gl, this.api);
+        this.origFormatsUsages.forEach((format, usage) -> mapBuilder.put(format, format.bindingLocation(usage, assigner)));
+
+        this.bindingLocationsByFormat = mapBuilder.build();
     }
 
-    public abstract void prefixShaderSource(@NonNull ShaderType type, @NonNull StringBuilder builder);
+    @Override
+    public void close() {
+        //no-op
+    }
 
-    public abstract void configureProgramPreLink(int program);
+    public void prefixShaderSource(@NonNull ShaderType type, @NonNull StringBuilder builder) {
+        this.bindingLocationsByFormat.forEach((format, bindingLocation) -> bindingLocation.generateGLSL(type, builder));
+    }
 
-    public abstract void configureProgramPostLink(int program);
+    public void configureProgramPreLink(int program) {
+        this.bindingLocationsByFormat.forEach((format, bindingLocation) -> bindingLocation.configureProgramPreLink(this.api, program));
+    }
+
+    public void configureProgramPostLink(int program) {
+        this.bindingLocationsByFormat.forEach((format, bindingLocation) -> bindingLocation.configureProgramPostLink(this.api, program));
+    }
 }

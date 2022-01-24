@@ -18,51 +18,38 @@
  *
  */
 
-package net.daporkchop.fp2.gl.draw.list;
+package net.daporkchop.fp2.gl.draw.list.selection;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.GLResource;
 import net.daporkchop.fp2.gl.transform.TransformLayoutBuilder;
+import net.daporkchop.fp2.gl.transform.shader.TransformShaderBuilder;
+import net.daporkchop.fp2.gl.transform.shader.TransformShaderProgramBuilder;
 
 /**
  * @author DaPorkchop_
  */
-public interface DrawList<C extends DrawCommand> extends GLResource {
+public interface DrawListSelectionMode {
     /**
-     * @return the number of commands that this buffer can store
+     * Configures a {@link TransformLayoutBuilder} for being used for draw list command selection.
+     *
+     * @param builder the {@link TransformLayoutBuilder} to configure
+     * @return the configured {@link TransformLayoutBuilder}
      */
-    int capacity();
+    TransformLayoutBuilder configureTransformLayout(@NonNull TransformLayoutBuilder builder);
 
     /**
-     * Sets the capacity of this command buffer.
-     * <p>
-     * If the new capacity is less than the current capacity, the buffer's contents will be truncated. If greater than the current capacity, the
-     * data will be extended with empty commands.
+     * Configures a {@link TransformShaderBuilder} for being used for draw list command selection.
      *
-     * @param capacity the new capacity
+     * @param builder the {@link TransformShaderBuilder} to configure
+     * @return the configured {@link TransformShaderBuilder}
      */
-    void resize(int capacity);
+    TransformShaderBuilder configureTransformShader(@NonNull TransformShaderBuilder builder);
 
     /**
-     * Sets the command at the given index to the given command.
+     * Configures a {@link TransformShaderProgramBuilder} for being used for draw list command selection.
      *
-     * @param index   the command index
-     * @param command the command
+     * @param builder the {@link TransformShaderProgramBuilder} to configure
+     * @return the configured {@link TransformShaderProgramBuilder}
      */
-    void set(int index, @NonNull C command);
-
-    /**
-     * Gets the command at the given index.
-     *
-     * @param index the command index
-     * @return the command
-     */
-    C get(int index);
-
-    /**
-     * Sets the command at the given index to an empty command.
-     *
-     * @param index the command index
-     */
-    void clear(int index);
+    TransformShaderProgramBuilder configureTransformShaderProgram(@NonNull TransformShaderProgramBuilder builder);
 }

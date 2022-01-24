@@ -18,62 +18,53 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.draw.binding;
+package net.daporkchop.fp2.gl.opengl.layout;
 
+import com.google.common.collect.ImmutableMap;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
-import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
-import net.daporkchop.fp2.gl.draw.binding.DrawBindingBuilder;
-import net.daporkchop.fp2.gl.draw.binding.DrawBindingIndexed;
-import net.daporkchop.fp2.gl.draw.index.IndexBuffer;
+import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
+import net.daporkchop.fp2.gl.layout.binding.BaseBinding;
+import net.daporkchop.fp2.gl.layout.binding.BaseBindingBuilder;
+import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
 import net.daporkchop.fp2.gl.opengl.attribute.common.AttributeBufferImpl;
-import net.daporkchop.fp2.gl.opengl.draw.DrawLayoutImpl;
-import net.daporkchop.fp2.gl.opengl.draw.index.IndexBufferImpl;
-import net.daporkchop.fp2.gl.opengl.layout.BaseBindingBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.texture.BaseTextureImpl;
 
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
-public class DrawBindingBuilderImpl extends BaseBindingBuilderImpl<DrawBindingBuilder<DrawBinding>, DrawBinding, DrawLayoutImpl> implements DrawBindingBuilder.OptionallyIndexedStage {
-    protected IndexBufferImpl indices;
+@RequiredArgsConstructor
+@Getter
+public abstract class BaseBindingBuilderImpl<BUILDER extends BaseBindingBuilder<BUILDER, B>, B extends BaseBinding, L extends BaseLayoutImpl> implements BaseBindingBuilder<BUILDER, B> {
+    @NonNull
+    protected final L layout;
 
-    public DrawBindingBuilderImpl(@NonNull DrawLayoutImpl layout) {
-        super(layout);
+    protected final ImmutableMap.Builder<BaseAttributeBufferImpl<?, ?>, InternalAttributeUsage> buffersUsages = ImmutableMap.builder();
+
+    protected void with(@NonNull BaseAttributeBufferImpl<?, ?> buffer, @NonNull InternalAttributeUsage usage) {
+        this.buffersUsages.put(buffer, usage);
     }
 
-    //
-    // OptionallyIndexedStage
-    //
-
     @Override
-    public DrawBindingBuilder<DrawBindingIndexed> withIndexes(@NonNull IndexBuffer indices) {
-        this.indices = (IndexBufferImpl) indices;
+    public BUILDER withUniforms(@NonNull AttributeBuffer<?> buffer) {
+        this.with((AttributeBufferImpl<?, ?>) buffer, InternalAttributeUsage.UNIFORM);
         return uncheckedCast(this);
     }
 
-    //
-    // DrawBindingBuilder
-    //
-
     @Override
-    public DrawBindingBuilder<DrawBinding> withGlobals(@NonNull AttributeBuffer<?> buffer) {
-        this.with((AttributeBufferImpl<?, ?>) buffer, InternalAttributeUsage.DRAW_GLOBAL);
-        return this;
+    public BUILDER withUniformArrays(@NonNull AttributeBuffer<?> buffer) {
+        this.with((AttributeBufferImpl<?, ?>) buffer, InternalAttributeUsage.UNIFORM_ARRAY);
+        return uncheckedCast(this);
     }
 
     @Override
-    public DrawBindingBuilder<DrawBinding> withLocals(@NonNull AttributeBuffer<?> buffer) {
-        this.with((AttributeBufferImpl<?, ?>) buffer, InternalAttributeUsage.DRAW_LOCAL);
-        return this;
-    }
-
-    @Override
-    public DrawBinding build() {
-        return this.indices != null
-                ? new DrawBindingIndexedImpl(this)
-                : new DrawBindingImpl(this);
+    public BUILDER withTexture(@NonNull Texture2D<?> texture) {
+        this.with((BaseTextureImpl<?, ?>) texture, InternalAttributeUsage.TEXTURE);
+        return uncheckedCast(this);
     }
 }

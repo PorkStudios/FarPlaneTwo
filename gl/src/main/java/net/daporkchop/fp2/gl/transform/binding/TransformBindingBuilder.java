@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -20,6 +20,8 @@
 
 package net.daporkchop.fp2.gl.transform.binding;
 
+import lombok.NonNull;
+import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.fp2.gl.layout.binding.BaseBindingBuilder;
 
 /**
@@ -28,4 +30,17 @@ import net.daporkchop.fp2.gl.layout.binding.BaseBindingBuilder;
  * @author DaPorkchop_
  */
 public interface TransformBindingBuilder extends BaseBindingBuilder<TransformBindingBuilder, TransformBinding> {
+    /**
+     * Adds a {@link AttributeBuffer} which contains inputs.
+     *
+     * @param buffer the inputs
+     */
+    TransformBindingBuilder withInputs(@NonNull AttributeBuffer<?> buffer);
+
+    /**
+     * Adds a {@link AttributeBuffer} which contains outputs.
+     *
+     * @param buffer the outputs
+     */
+    TransformBindingBuilder withOutputs(@NonNull AttributeBuffer<?> buffer);
 }

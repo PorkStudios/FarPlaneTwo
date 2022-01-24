@@ -46,6 +46,12 @@ import net.daporkchop.fp2.gl.draw.shader.FragmentShader;
 import net.daporkchop.fp2.gl.draw.shader.VertexShader;
 import net.daporkchop.fp2.gl.shader.BaseShaderBuilder;
 import net.daporkchop.fp2.gl.shader.BaseShaderProgramBuilder;
+import net.daporkchop.fp2.gl.transform.TransformLayout;
+import net.daporkchop.fp2.gl.transform.TransformLayoutBuilder;
+import net.daporkchop.fp2.gl.transform.shader.TransformShader;
+import net.daporkchop.fp2.gl.transform.shader.TransformShaderBuilder;
+import net.daporkchop.fp2.gl.transform.shader.TransformShaderProgram;
+import net.daporkchop.fp2.gl.transform.shader.TransformShaderProgramBuilder;
 
 import java.util.function.Supplier;
 
@@ -151,4 +157,23 @@ public interface GL extends AutoCloseable {
      * @return a builder for constructing a new {@link DrawShaderProgram}
      */
     BaseShaderProgramBuilder<DrawShaderProgram, BaseDrawShader, DrawLayout> createDrawShaderProgram(@NonNull DrawLayout layout);
+
+    //
+    // TRANSFORM
+    //
+
+    /**
+     * @return a builder for constructing a new {@link TransformLayout}
+     */
+    TransformLayoutBuilder createTransformLayout();
+
+    /**
+     * @return a builder for constructing a new {@link TransformShader}
+     */
+    TransformShaderBuilder createTransformShader(@NonNull TransformLayout layout);
+
+    /**
+     * @return a builder for constructing a new {@link TransformShaderProgram}
+     */
+    TransformShaderProgramBuilder createTransformShaderProgram(@NonNull TransformLayout layout);
 }

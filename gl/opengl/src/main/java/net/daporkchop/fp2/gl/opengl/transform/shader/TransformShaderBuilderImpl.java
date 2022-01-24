@@ -18,16 +18,28 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.common.fragmentcolor;
+package net.daporkchop.fp2.gl.opengl.transform.shader;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
+import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.shader.BaseShaderBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
+import net.daporkchop.fp2.gl.opengl.shader.source.SourceLine;
+import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
+import net.daporkchop.fp2.gl.transform.TransformLayout;
+import net.daporkchop.fp2.gl.transform.shader.TransformShader;
+import net.daporkchop.fp2.gl.transform.shader.TransformShaderBuilder;
 
 /**
  * @author DaPorkchop_
  */
-public final class DummyFragmentColorAttributeBuffer extends BaseAttributeBufferImpl<Object, DummyFragmentColorAttributeFormat> {
-    public DummyFragmentColorAttributeBuffer(@NonNull DummyFragmentColorAttributeFormat format) {
-        super(format);
+public class TransformShaderBuilderImpl extends BaseShaderBuilderImpl<TransformShader, TransformLayout> implements TransformShaderBuilder {
+    public TransformShaderBuilderImpl(@NonNull OpenGL gl, @NonNull TransformLayout layout) {
+        super(gl, ShaderType.VERTEX, layout);
+    }
+
+    @Override
+    protected TransformShader compile(@NonNull SourceLine... lines) throws ShaderCompilationException {
+        return new TransformShaderImpl(this, lines);
     }
 }

@@ -18,50 +18,28 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.common.fragmentcolor;
+package net.daporkchop.fp2.gl.opengl.transform.shader;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.opengl.GLAPI;
-import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
-import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
-import net.daporkchop.fp2.gl.opengl.command.state.MutableState;
-import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
+import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.shader.BaseShaderProgramBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.transform.TransformLayoutImpl;
+import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
+import net.daporkchop.fp2.gl.transform.TransformLayout;
+import net.daporkchop.fp2.gl.transform.shader.TransformShader;
+import net.daporkchop.fp2.gl.transform.shader.TransformShaderProgram;
+import net.daporkchop.fp2.gl.transform.shader.TransformShaderProgramBuilder;
 
 /**
  * @author DaPorkchop_
  */
-public final class DummyFragmentColorBindingLocation implements BindingLocation<DummyFragmentColorAttributeBuffer> {
-    @Override
-    public InternalAttributeUsage usage() {
-        return InternalAttributeUsage.FRAGMENT_COLOR;
+public class TransformShaderProgramBuilderImpl extends BaseShaderProgramBuilderImpl<TransformShaderProgram, TransformShader, TransformLayoutImpl, TransformLayout> implements TransformShaderProgramBuilder {
+    public TransformShaderProgramBuilderImpl(@NonNull OpenGL gl, @NonNull TransformLayoutImpl layout) {
+        super(gl, layout);
     }
 
     @Override
-    public void configureProgramPreLink(@NonNull GLAPI api, int program) {
-        //no-op
-    }
-
-    @Override
-    public void configureProgramPostLink(@NonNull GLAPI api, int program) {
-        //no-op
-    }
-
-    @Override
-    public void generateGLSL(@NonNull ShaderType type, @NonNull StringBuilder builder) {
-        if (type != ShaderType.FRAGMENT) {
-            return;
-        }
-
-        builder.append("out vec4 f_color;\n");
-    }
-
-    @Override
-    public void configureBuffer(@NonNull GLAPI api, @NonNull DummyFragmentColorAttributeBuffer buffer) {
-        //no-op
-    }
-
-    @Override
-    public void configureState(@NonNull MutableState state, @NonNull DummyFragmentColorAttributeBuffer buffer) {
-        //no-op
+    public TransformShaderProgram build() throws ShaderLinkageException {
+        return new TransformShaderProgramImpl(this);
     }
 }

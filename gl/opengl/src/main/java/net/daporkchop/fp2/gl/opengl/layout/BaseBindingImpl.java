@@ -25,21 +25,70 @@ import lombok.NonNull;
 import net.daporkchop.fp2.gl.GLResource;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
+import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
 import net.daporkchop.fp2.gl.opengl.command.state.MutableState;
-import net.daporkchop.fp2.gl.opengl.command.state.State;
+import net.daporkchop.fp2.gl.opengl.command.state.StateProperties;
+
+import java.util.Map;
+
+import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
 @Getter
-public abstract class BaseBindingImpl implements GLResource {
+public abstract class BaseBindingImpl<L extends BaseLayoutImpl> implements GLResource {
     protected final OpenGL gl;
     protected final GLAPI api;
 
-    public BaseBindingImpl(@NonNull OpenGL gl) {
-        this.gl = gl;
-        this.api = gl.api();
+    protected final L layout;
+
+    protected final Map<BaseAttributeBufferImpl<?, ?>, InternalAttributeUsage> origBuffersUsages;
+
+    protected final int vao;
+
+    public BaseBindingImpl(@NonNull BaseBindingBuilderImpl<?, ?, L> builder) {
+        this.layout = builder.layout();
+
+        this.gl = this.layout.gl();
+        this.api = this.layout.gl().api();
+        this.origBuffersUsages = builder.buffersUsages.build();
+
+        //create a VAO
+        this.vao = this.api.glGenVertexArray();
+        this.gl.resourceArena().register(this, this.vao, this.api::glDeleteVertexArray);
+
+        checkArg(this.origBuffersUsages.size() == this.layout.bindingLocationsByFormat().size(), "mismatch between layout formats and binding buffers (%s is incompatible with %s)", this.origBuffersUsages, this.layout.bindingLocationsByFormat());
+
+        //configure all vertex attributes in the VAO
+        int oldVao = this.api.glGetInteger(GL_VERTEX_ARRAY_BINDING);
+        try {
+            this.api.glBindVertexArray(this.vao);
+
+            this.origBuffersUsages.forEach((buffer, usage) -> {
+                BindingLocation<?> location = this.layout.bindingLocationsByFormat().get(buffer.format());
+                checkArg(location != null, "layout %s does not include %s format %s", this.layout, usage, buffer.format());
+                checkArg(location.usage() == usage, "buffer %s cannot be used for %s when its binding location expects %s", buffer, usage, location.usage());
+
+                location.configureBuffer(this.api(), uncheckedCast(buffer));
+            });
+        } finally {
+            this.api.glBindVertexArray(oldVao);
+        }
     }
 
-    public abstract void configureBoundState(@NonNull MutableState state);
+    @Override
+    public void close() {
+        this.gl.resourceArena().delete(this);
+    }
+
+    public void configureBoundState(@NonNull MutableState state) {
+        state.set(StateProperties.BOUND_VAO, this.vao);
+
+        this.origBuffersUsages.forEach((buffer, usage) -> this.layout.bindingLocationsByFormat().get(buffer.format()).configureState(state, uncheckedCast(buffer)));
+    }
 }

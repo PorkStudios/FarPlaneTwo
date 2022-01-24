@@ -48,7 +48,6 @@ import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.draw.shader.FragmentShader;
 import net.daporkchop.fp2.gl.draw.shader.VertexShader;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.common.fragmentcolor.DummyFragmentColorAttributeFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.StructFormatGenerator;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureFormat2DImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureFormatBuilderImpl;
@@ -71,10 +70,18 @@ import net.daporkchop.fp2.gl.opengl.shader.BaseShaderBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.shader.BaseShaderProgramBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
 import net.daporkchop.fp2.gl.opengl.shader.source.SourceLine;
+import net.daporkchop.fp2.gl.opengl.transform.TransformLayoutBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.transform.TransformLayoutImpl;
+import net.daporkchop.fp2.gl.opengl.transform.shader.TransformShaderBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.transform.shader.TransformShaderProgramBuilderImpl;
 import net.daporkchop.fp2.gl.shader.BaseShaderBuilder;
 import net.daporkchop.fp2.gl.shader.BaseShaderProgramBuilder;
 import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
 import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
+import net.daporkchop.fp2.gl.transform.TransformLayout;
+import net.daporkchop.fp2.gl.transform.TransformLayoutBuilder;
+import net.daporkchop.fp2.gl.transform.shader.TransformShaderBuilder;
+import net.daporkchop.fp2.gl.transform.shader.TransformShaderProgramBuilder;
 
 import java.util.Set;
 import java.util.function.Supplier;
@@ -106,8 +113,6 @@ public class OpenGL implements GL {
     protected final Allocator directMemoryAllocator = new DirectMemoryAllocator();
 
     protected final StructFormatGenerator structFormatGenerator = new StructFormatGenerator();
-
-    protected final DummyFragmentColorAttributeFormat dummyFragmentColorAttributeFormat = new DummyFragmentColorAttributeFormat(this);
 
     protected final int vertexAttributeAlignment;
 
@@ -257,10 +262,6 @@ public class OpenGL implements GL {
         };
     }
 
-    //
-    // SHADERS
-    //
-
     @Override
     public BaseShaderBuilder<VertexShader> createVertexShader(@NonNull DrawLayout layout) {
         return new BaseShaderBuilderImpl<VertexShader, DrawLayout>(this, ShaderType.VERTEX, layout) {
@@ -289,5 +290,24 @@ public class OpenGL implements GL {
                 return new DrawShaderProgramImpl(this);
             }
         };
+    }
+
+    //
+    // TRANSFORM
+    //
+
+    @Override
+    public TransformLayoutBuilder createTransformLayout() {
+        return new TransformLayoutBuilderImpl(this);
+    }
+
+    @Override
+    public TransformShaderBuilder createTransformShader(@NonNull TransformLayout layout) {
+        return new TransformShaderBuilderImpl(this, layout);
+    }
+
+    @Override
+    public TransformShaderProgramBuilder createTransformShaderProgram(@NonNull TransformLayout layout) {
+        return new TransformShaderProgramBuilderImpl(this, (TransformLayoutImpl) layout);
     }
 }
