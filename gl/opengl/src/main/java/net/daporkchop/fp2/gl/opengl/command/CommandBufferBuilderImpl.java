@@ -32,8 +32,8 @@ import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
 import net.daporkchop.fp2.gl.command.Compare;
 import net.daporkchop.fp2.gl.command.FramebufferLayer;
 import net.daporkchop.fp2.gl.command.StencilOperation;
-import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.fp2.gl.draw.DrawMode;
+import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.fp2.gl.draw.list.DrawList;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
@@ -53,6 +53,8 @@ import net.daporkchop.fp2.gl.opengl.command.state.struct.Color4b;
 import net.daporkchop.fp2.gl.opengl.command.state.struct.Color4f;
 import net.daporkchop.fp2.gl.opengl.command.state.struct.StencilOp;
 import net.daporkchop.fp2.gl.opengl.draw.list.DrawListImpl;
+import net.daporkchop.fp2.gl.transform.binding.TransformBinding;
+import net.daporkchop.fp2.gl.transform.shader.TransformShaderProgram;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import org.objectweb.asm.ClassWriter;
@@ -78,6 +80,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.common.util.TypeSize.*;
+import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 import static org.objectweb.asm.Opcodes.*;
 import static org.objectweb.asm.Type.*;
@@ -99,7 +102,8 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
     protected final List<Object> fieldValues = new ArrayList<>();
     protected final ImmutableList.Builder<Uop> uops = ImmutableList.builder();
 
-    protected CowState state = new CowState();
+    protected CowState state = new CowState()
+            .set(StateProperties.RASTERIZER_DISCARD, false);
 
     public CommandBufferBuilderImpl(@NonNull OpenGL gl) {
         this.gl = gl;
@@ -361,6 +365,42 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
                     mv.visitVarInsn(ALOAD, 0);
                     mv.visitFieldInsn(GETFIELD, CLASS_NAME, maskFieldName, getDescriptor(mask.getClass()));
                     mv.visitMethodInsn(INVOKEVIRTUAL, getInternalName(list.getClass()), "draw0", getMethodDescriptor(VOID_TYPE, getType(GLAPI.class), INT_TYPE, getType(AbstractGLBitSet.class)), false);
+                });
+            }
+        });
+        return this;
+    }
+
+    @Override
+    public CommandBufferBuilder drawList(@NonNull DrawShaderProgram shader, @NonNull DrawMode mode, @NonNull DrawList<?> _list, @NonNull TransformShaderProgram selectionShader, @NonNull TransformBinding selectionBinding) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public CommandBufferBuilder transform(@NonNull TransformShaderProgram shader, @NonNull TransformBinding binding, int count) {
+        this.uops.add(new Uop.Transform(this.state, binding, shader, Collections.singletonMap(StateProperties.RASTERIZER_DISCARD, true)) {
+            @Override
+            public void emitCode(@NonNull CommandBufferBuilderImpl builder, @NonNull MethodWriter<CodegenArgs> writer) {
+                //glBeginTransformFeedback(GL_POINTS);
+                writer.write((mv, args) -> {
+                    mv.visitVarInsn(ALOAD, args.apiLvtIndex());
+                    mv.visitLdcInsn(GL_POINTS);
+                    mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glBeginTransformFeedback", getMethodDescriptor(VOID_TYPE, INT_TYPE), true);
+                });
+
+                //glDrawArrays(GL_POINTS, 0, count);
+                writer.write((mv, args) -> {
+                    mv.visitVarInsn(ALOAD, args.apiLvtIndex());
+                    mv.visitLdcInsn(GL_POINTS);
+                    mv.visitLdcInsn(0);
+                    mv.visitLdcInsn(count);
+                    mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glDrawArrays", getMethodDescriptor(VOID_TYPE, INT_TYPE, INT_TYPE, INT_TYPE), true);
+                });
+
+                //glEndTransformFeedback();
+                writer.write((mv, args) -> {
+                    mv.visitVarInsn(ALOAD, args.apiLvtIndex());
+                    mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glEndTransformFeedback", getMethodDescriptor(VOID_TYPE), true);
                 });
             }
         });

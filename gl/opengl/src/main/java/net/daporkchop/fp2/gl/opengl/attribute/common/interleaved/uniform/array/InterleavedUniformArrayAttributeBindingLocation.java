@@ -88,6 +88,6 @@ public class InterleavedUniformArrayAttributeBindingLocation<S> implements Bindi
 
     @Override
     public void configureState(@NonNull MutableState state, @NonNull InterleavedAttributeBufferImpl<S, ?> buffer) {
-        state.set(StateProperties.BOUND_SSBO[this.bindingIndex], buffer.buffer().id());
+        state.set(StateProperties.BOUND_SHADER_STORAGE_BUFFER[this.bindingIndex], buffer.buffer().id());
     }
 }

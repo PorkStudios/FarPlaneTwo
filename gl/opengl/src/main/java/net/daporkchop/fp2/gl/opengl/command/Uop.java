@@ -35,6 +35,8 @@ import net.daporkchop.fp2.gl.opengl.command.state.StateProperty;
 import net.daporkchop.fp2.gl.opengl.command.state.StateValueProperty;
 import net.daporkchop.fp2.gl.opengl.layout.BaseBindingImpl;
 import net.daporkchop.fp2.gl.opengl.shader.BaseShaderProgramImpl;
+import net.daporkchop.fp2.gl.transform.binding.TransformBinding;
+import net.daporkchop.fp2.gl.transform.shader.TransformShaderProgram;
 import net.daporkchop.lib.common.util.PorkUtil;
 
 import java.util.List;
@@ -113,6 +115,15 @@ public abstract class Uop {
             super.buildDependsFirst(depends, binding);
 
             depends.add(StateProperties.FIXED_FUNCTION_DRAW_PROPERTIES);
+        }
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    public static abstract class Transform extends Bound {
+        public Transform(@NonNull CowState state, @NonNull TransformBinding binding, @NonNull TransformShaderProgram shader, @NonNull Map<StateValueProperty<?>, Object> propertyValues) {
+            super(state, (BaseBindingImpl) binding, (BaseShaderProgramImpl<?, ?>) shader, propertyValues);
         }
     }
 }

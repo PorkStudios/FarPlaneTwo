@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -661,6 +661,21 @@ public class GLAPILWJGL2 implements GLAPI {
     @Override
     public void glBindBufferRange(int target, int index, int buffer, long offset, long size) {
         GL30.glBindBufferRange(target, index, buffer, offset, size);
+    }
+
+    @Override
+    public void glBeginTransformFeedback(int primitiveMode) {
+        GL30.glBeginTransformFeedback(primitiveMode);
+    }
+
+    @Override
+    public void glEndTransformFeedback() {
+        GL30.glEndTransformFeedback();
+    }
+
+    @Override
+    public void glTransformFeedbackVaryings(int program, @NonNull CharSequence[] varyings, int bufferMode) {
+        GL30.glTransformFeedbackVaryings(program, varyings, bufferMode);
     }
 
     //

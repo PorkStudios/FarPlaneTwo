@@ -36,11 +36,11 @@ import java.util.EnumSet;
 import java.util.Set;
 
 /**
- * Equivalent to {@link PackedAttributeFormat}, but is also able to support global draw attributes by using a vertex attribute divisor.
+ * Equivalent to {@link ArrayPackedAttributeFormat}, but is also able to support global draw attributes by using a vertex attribute divisor.
  *
  * @author DaPorkchop_
  */
-public final class PackedInstancedAttributeFormat<S> extends InterleavedAttributeFormatImpl<S> {
+public final class ArrayPackedInstancedAttributeFormat<S> extends InterleavedAttributeFormatImpl<S> {
     private static final Set<InternalAttributeUsage> VALID_USAGES = ImmutableSet.copyOf(EnumSet.of(
             InternalAttributeUsage.DRAW_LOCAL,
             InternalAttributeUsage.DRAW_GLOBAL
@@ -51,8 +51,8 @@ public final class PackedInstancedAttributeFormat<S> extends InterleavedAttribut
                && GLExtension.GL_ARB_instanced_arrays.supported(builder.gl());
     }
 
-    public PackedInstancedAttributeFormat(@NonNull AttributeFormatBuilderImpl<S> builder) {
-        super(builder.gl(), StructLayouts.vertexAttributesInterleaved(builder.gl(), builder.structInfo()));
+    public ArrayPackedInstancedAttributeFormat(@NonNull AttributeFormatBuilderImpl<S> builder) {
+        super(builder.gl(), StructLayouts.vertexAttributesInterleaved(builder.gl(), builder.structInfo(), false));
     }
 
     @Override

@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.uniform.standard;
+package net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.transform.output;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
@@ -26,6 +26,7 @@ import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
 import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttributeBufferImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
 import net.daporkchop.fp2.gl.opengl.command.state.MutableState;
 import net.daporkchop.fp2.gl.opengl.command.state.StateProperties;
@@ -37,38 +38,33 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public class InterleavedUniformAttributeBindingLocation<S> implements BindingLocation<InterleavedAttributeBufferImpl<S, ?>> {
+public class InterleavedTransformOutputAttributeBindingLocation<S> implements BindingLocation<InterleavedAttributeBufferImpl<S, ?>> {
     protected final InterleavedStructFormat<S> structFormat;
-    protected final int bindingIndex;
 
-    public InterleavedUniformAttributeBindingLocation(@NonNull InterleavedStructFormat<S> structFormat, @NonNull BindingLocationAssigner assigner) {
+    public InterleavedTransformOutputAttributeBindingLocation(@NonNull InterleavedStructFormat<S> structFormat, @NonNull BindingLocationAssigner assigner) {
         this.structFormat = structFormat;
-        this.bindingIndex = assigner.uniformBuffer();
     }
 
     @Override
     public InternalAttributeUsage usage() {
-        return InternalAttributeUsage.UNIFORM;
+        return InternalAttributeUsage.TRANSFORM_OUTPUT;
     }
 
     @Override
     public void configureProgramPreLink(@NonNull GLAPI api, int program) {
-        //no-op
+        api.glTransformFeedbackVaryings(program, this.structFormat.glslFields().stream().map(GLSLField::name).toArray(CharSequence[]::new), GL_INTERLEAVED_ATTRIBS);
     }
 
     @Override
     public void configureProgramPostLink(@NonNull GLAPI api, int program) {
-        int blockIndex = api.glGetUniformBlockIndex(program, "UNIFORM_" + this.structFormat.structName());
-        checkArg(blockIndex != GL_INVALID_INDEX, "unable to find uniform block: %s", "UNIFORM_" + this.structFormat.structName());
-
-        api.glUniformBlockBinding(program, blockIndex, this.bindingIndex);
+        //no-op
     }
 
     @Override
     public void generateGLSL(@NonNull ShaderType type, @NonNull StringBuilder builder) {
-        builder.append("layout(").append(this.structFormat.layoutName()).append(") uniform UNIFORM_").append(this.structFormat.structName()).append(" {\n");
-        this.structFormat.glslFields().forEach(field -> builder.append("    ").append(field.declaration()).append(";\n"));
-        builder.append("};\n");
+        checkArg(type == ShaderType.VERTEX, "transform output requires only a vertex shader!");
+
+        this.structFormat.glslFields().forEach(field -> builder.append("out ").append(field.declaration()).append(";\n"));
     }
 
     @Override
@@ -78,6 +74,6 @@ public class InterleavedUniformAttributeBindingLocation<S> implements BindingLoc
 
     @Override
     public void configureState(@NonNull MutableState state, @NonNull InterleavedAttributeBufferImpl<S, ?> buffer) {
-        state.set(StateProperties.BOUND_UNIFORM_BUFFER[this.bindingIndex], buffer.buffer().id());
+        state.set(StateProperties.BOUND_TRANSFORM_FEEDBACK_BUFFER[0], buffer.buffer().id());
     }
 }

@@ -18,50 +18,24 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.format;
+package net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.transform.input;
 
-import com.google.common.collect.ImmutableSet;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.opengl.GLExtension;
-import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
-import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
-import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.draw.local.InterleavedDrawLocalAttributeBindingLocation;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.StructLayouts;
-
-import java.util.EnumSet;
-import java.util.Set;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
 
 /**
  * @author DaPorkchop_
  */
-public final class PackedAttributeFormat<S> extends InterleavedAttributeFormatImpl<S> {
-    private static final Set<InternalAttributeUsage> VALID_USAGES = ImmutableSet.copyOf(EnumSet.of(
-            InternalAttributeUsage.DRAW_LOCAL
-    ));
-
-    public static boolean supports(@NonNull AttributeFormatBuilderImpl<?> builder) {
-        return VALID_USAGES.containsAll(builder.usages());
-    }
-
-    public PackedAttributeFormat(@NonNull AttributeFormatBuilderImpl<S> builder) {
-        super(builder.gl(), StructLayouts.vertexAttributesInterleaved(builder.gl(), builder.structInfo()));
+public class InterleavedTransformInputAttributeBindingLocation<S> extends InterleavedDrawLocalAttributeBindingLocation<S> {
+    public InterleavedTransformInputAttributeBindingLocation(@NonNull InterleavedStructFormat<S> structFormat, @NonNull BindingLocationAssigner assigner) {
+        super(structFormat, assigner);
     }
 
     @Override
-    public Set<InternalAttributeUsage> validUsages() {
-        return VALID_USAGES;
-    }
-
-    @Override
-    public BindingLocation<?> bindingLocation(@NonNull InternalAttributeUsage usage, @NonNull BindingLocationAssigner assigner) {
-        switch (usage) {
-            case DRAW_LOCAL:
-                return new InterleavedDrawLocalAttributeBindingLocation<>(this.structFormat(), assigner);
-            default:
-                throw new IllegalArgumentException("unsupported usage: " + usage);
-        }
+    public InternalAttributeUsage usage() {
+        return InternalAttributeUsage.TRANSFORM_INPUT;
     }
 }

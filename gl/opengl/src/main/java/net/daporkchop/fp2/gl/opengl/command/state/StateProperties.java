@@ -73,9 +73,17 @@ public class StateProperties {
     public final StateProperty FIXED_FUNCTION_DRAW_PROPERTIES = new StateProperty() {
         @Override
         public Stream<StateProperty> depends(@NonNull State state) {
-            return Stream.of(BLEND, COLOR_MASK, CULL, STENCIL).flatMap(property -> Stream.concat(Stream.of(property), property.depends(state)));
+            return state.getOrDef(RASTERIZER_DISCARD)
+                    ? Stream.empty() //none of these properties do anything if RASTERIZER_DISCARD is enabled
+                    : Stream.of(RASTERIZER_DISCARD, BLEND, COLOR_MASK, CULL, STENCIL).flatMap(property -> Stream.concat(Stream.of(property), property.depends(state)));
         }
     };
+
+    //
+    // PRIMITIVE ASSEMBLY
+    //
+
+    public final StateValueProperty<Boolean> RASTERIZER_DISCARD = new FixedFunctionStateEnableProperty(GL_RASTERIZER_DISCARD);
 
     //
     // BLENDING
@@ -239,9 +247,11 @@ public class StateProperties {
     // INDEXED BUFFER BINDINGS
     //
 
-    public final StateValueProperty<Integer>[] BOUND_SSBO = uncheckedCast(PArrays.filledBy(16, StateValueProperty[]::new, index -> new IndexedBufferBindingProperty(IndexedBufferTarget.SHADER_STORAGE_BUFFER, index)));
+    public final StateValueProperty<Integer>[] BOUND_SHADER_STORAGE_BUFFER = uncheckedCast(PArrays.filledBy(16, StateValueProperty[]::new, index -> new IndexedBufferBindingProperty(IndexedBufferTarget.SHADER_STORAGE_BUFFER, index)));
 
-    public final StateValueProperty<Integer>[] BOUND_UBO = uncheckedCast(PArrays.filledBy(16, StateValueProperty[]::new, index -> new IndexedBufferBindingProperty(IndexedBufferTarget.UNIFORM_BUFFER, index)));
+    public final StateValueProperty<Integer>[] BOUND_TRANSFORM_FEEDBACK_BUFFER = uncheckedCast(PArrays.filledBy(16, StateValueProperty[]::new, index -> new IndexedBufferBindingProperty(IndexedBufferTarget.TRANSFORM_FEEDBACK_BUFFER, index)));
+
+    public final StateValueProperty<Integer>[] BOUND_UNIFORM_BUFFER = uncheckedCast(PArrays.filledBy(16, StateValueProperty[]::new, index -> new IndexedBufferBindingProperty(IndexedBufferTarget.UNIFORM_BUFFER, index)));
 
     //
     // TEXTURE BINDINGS

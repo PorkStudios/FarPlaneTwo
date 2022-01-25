@@ -22,8 +22,9 @@ package net.daporkchop.fp2.gl.opengl.attribute;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.opengl.attribute.common.AttributeFormatImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.format.PackedAttributeFormat;
-import net.daporkchop.fp2.gl.opengl.attribute.format.PackedInstancedAttributeFormat;
+import net.daporkchop.fp2.gl.opengl.attribute.format.ArrayPackedAttributeFormat;
+import net.daporkchop.fp2.gl.opengl.attribute.format.ArrayPackedInstancedAttributeFormat;
+import net.daporkchop.fp2.gl.opengl.attribute.format.ArrayUnpackedAttributeFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.format.Std140BlockAttributeFormat;
 
 import java.util.Optional;
@@ -34,19 +35,27 @@ import java.util.Optional;
  * @author DaPorkchop_
  */
 public enum AttributeFormatType {
-    PACKED_INSTANCED {
+    ARRAY_PACKED_INSTANCED {
         @Override
         public <S> Optional<AttributeFormatImpl<S, ?>> createFormat(@NonNull AttributeFormatBuilderImpl<S> builder) {
-            return PackedInstancedAttributeFormat.supports(builder)
-                    ? Optional.of(new PackedInstancedAttributeFormat<>(builder))
+            return ArrayPackedInstancedAttributeFormat.supports(builder)
+                    ? Optional.of(new ArrayPackedInstancedAttributeFormat<>(builder))
                     : Optional.empty();
         }
     },
-    PACKED {
+    ARRAY_PACKED {
         @Override
         public <S> Optional<AttributeFormatImpl<S, ?>> createFormat(@NonNull AttributeFormatBuilderImpl<S> builder) {
-            return PackedAttributeFormat.supports(builder)
-                    ? Optional.of(new PackedAttributeFormat<>(builder))
+            return ArrayPackedAttributeFormat.supports(builder)
+                    ? Optional.of(new ArrayPackedAttributeFormat<>(builder))
+                    : Optional.empty();
+        }
+    },
+    ARRAY_UNPACKED {
+        @Override
+        public <S> Optional<AttributeFormatImpl<S, ?>> createFormat(@NonNull AttributeFormatBuilderImpl<S> builder) {
+            return ArrayUnpackedAttributeFormat.supports(builder)
+                    ? Optional.of(new ArrayUnpackedAttributeFormat<>(builder))
                     : Optional.empty();
         }
     },
