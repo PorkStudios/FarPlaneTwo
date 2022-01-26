@@ -160,9 +160,9 @@ public class IndexedBakeOutputStorage<SU, SG, SL> extends AbstractBakeOutputStor
     public DrawBindingBuilder<DrawBindingIndexed> createDrawBinding(@NonNull DrawLayout layout, int pass) {
         return layout.createBinding()
                 .withIndexes(this.indexBuffers[pass])
-                .withUniforms(this.uniformBuffer)
-                .withGlobals(this.globalBuffer)
-                .withLocals(this.vertexBuffer);
+                .withUniform(this.uniformBuffer)
+                .withGlobal(this.globalBuffer)
+                .withLocal(this.vertexBuffer);
     }
 
     @Override

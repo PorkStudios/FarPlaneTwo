@@ -21,15 +21,10 @@
 package net.daporkchop.fp2.gl.opengl.transform.binding;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
-import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
-import net.daporkchop.fp2.gl.opengl.attribute.common.AttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.layout.BaseBindingBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.transform.TransformLayoutImpl;
 import net.daporkchop.fp2.gl.transform.binding.TransformBinding;
 import net.daporkchop.fp2.gl.transform.binding.TransformBindingBuilder;
-
-import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
@@ -37,18 +32,6 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 public class TransformBindingBuilderImpl extends BaseBindingBuilderImpl<TransformBindingBuilder, TransformBinding, TransformLayoutImpl> implements TransformBindingBuilder {
     public TransformBindingBuilderImpl(@NonNull TransformLayoutImpl layout) {
         super(layout);
-    }
-
-    @Override
-    public TransformBindingBuilder withInputs(@NonNull AttributeBuffer<?> buffer) {
-        this.with((AttributeBufferImpl<?, ?>) buffer, InternalAttributeUsage.TRANSFORM_INPUT);
-        return uncheckedCast(this);
-    }
-
-    @Override
-    public TransformBindingBuilder withOutputs(@NonNull AttributeBuffer<?> buffer) {
-        this.with((AttributeBufferImpl<?, ?>) buffer, InternalAttributeUsage.TRANSFORM_OUTPUT);
-        return uncheckedCast(this);
     }
 
     @Override

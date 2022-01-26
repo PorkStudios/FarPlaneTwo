@@ -22,6 +22,7 @@ package net.daporkchop.fp2.gl.transform.binding;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.layout.binding.BaseBindingBuilder;
 
 /**
@@ -32,15 +33,25 @@ import net.daporkchop.fp2.gl.layout.binding.BaseBindingBuilder;
 public interface TransformBindingBuilder extends BaseBindingBuilder<TransformBindingBuilder, TransformBinding> {
     /**
      * Adds a {@link AttributeBuffer} which contains inputs.
+     * <p>
+     * Alias for {@code with(AttributeUsage.TRANSFORM_INPUT, buffer)}.
      *
-     * @param buffer the inputs
+     * @param buffer the {@link AttributeBuffer} containing the inputs
+     * @see #with(AttributeUsage, AttributeBuffer)
      */
-    TransformBindingBuilder withInputs(@NonNull AttributeBuffer<?> buffer);
+    default TransformBindingBuilder withInput(@NonNull AttributeBuffer<?> buffer) {
+        return this.with(AttributeUsage.TRANSFORM_INPUT, buffer);
+    }
 
     /**
      * Adds a {@link AttributeBuffer} which contains outputs.
+     * <p>
+     * Alias for {@code with(AttributeUsage.TRANSFORM_OUTPUT, buffer)}.
      *
-     * @param buffer the outputs
+     * @param buffer the {@link AttributeBuffer} containing the outputs
+     * @see #with(AttributeUsage, AttributeBuffer)
      */
-    TransformBindingBuilder withOutputs(@NonNull AttributeBuffer<?> buffer);
+    default TransformBindingBuilder withOutput(@NonNull AttributeBuffer<?> buffer) {
+        return this.with(AttributeUsage.TRANSFORM_OUTPUT, buffer);
+    }
 }

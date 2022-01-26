@@ -25,6 +25,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
 import net.daporkchop.fp2.gl.layout.binding.BaseBinding;
 import net.daporkchop.fp2.gl.layout.binding.BaseBindingBuilder;
@@ -51,14 +52,8 @@ public abstract class BaseBindingBuilderImpl<BUILDER extends BaseBindingBuilder<
     }
 
     @Override
-    public BUILDER withUniforms(@NonNull AttributeBuffer<?> buffer) {
-        this.with((AttributeBufferImpl<?, ?>) buffer, InternalAttributeUsage.UNIFORM);
-        return uncheckedCast(this);
-    }
-
-    @Override
-    public BUILDER withUniformArrays(@NonNull AttributeBuffer<?> buffer) {
-        this.with((AttributeBufferImpl<?, ?>) buffer, InternalAttributeUsage.UNIFORM_ARRAY);
+    public BUILDER with(@NonNull AttributeUsage usage, @NonNull AttributeBuffer<?> buffer) {
+        this.with((AttributeBufferImpl<?, ?>) buffer, InternalAttributeUsage.fromExternal(usage));
         return uncheckedCast(this);
     }
 

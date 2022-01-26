@@ -89,8 +89,8 @@ public abstract class AbstractMultipassIndexedRenderStrategy<POS extends IFarPos
     @Override
     public DrawBindingBuilder<DrawBindingIndexed> configureDrawBinding(@NonNull DrawBindingBuilder<DrawBindingIndexed> builder) {
         return builder
-                .withUniformArrays(this.textureUVs.listsBuffer())
-                .withUniformArrays(this.textureUVs.quadsBuffer())
+                .withUniformArray(this.textureUVs.listsBuffer())
+                .withUniformArray(this.textureUVs.quadsBuffer())
                 .withTexture(this.textureTerrain)
                 .withTexture(this.textureLightmap);
     }

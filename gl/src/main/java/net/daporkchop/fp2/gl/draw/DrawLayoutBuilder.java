@@ -34,18 +34,24 @@ public interface DrawLayoutBuilder extends BaseLayoutBuilder<DrawLayoutBuilder, 
     /**
      * Adds a {@link AttributeFormat} which will be used for global vertex attributes.
      * <p>
-     * The format must support {@link AttributeUsage#DRAW_GLOBAL}.
+     * Alias for {@code with(AttributeUsage.DRAW_GLOBAL, format)}.
      *
-     * @param format the format of the global attributes
+     * @param format the {@link AttributeFormat} of the global attributes
+     * @see #with(AttributeUsage, AttributeFormat)
      */
-    DrawLayoutBuilder withGlobals(@NonNull AttributeFormat<?> format);
+    default DrawLayoutBuilder withGlobal(@NonNull AttributeFormat<?> format) {
+        return this.with(AttributeUsage.DRAW_GLOBAL, format);
+    }
 
     /**
-     * Adds a {@link AttributeFormat} which will be used for global vertex attributes.
+     * Adds a {@link AttributeFormat} which will be used for local vertex attributes.
      * <p>
-     * The format must support {@link AttributeUsage#DRAW_LOCAL}.
+     * Alias for {@code with(AttributeUsage.DRAW_LOCAL, format)}.
      *
-     * @param format the format of the local attributes
+     * @param format the {@link AttributeFormat} of the local attributes
+     * @see #with(AttributeUsage, AttributeFormat)
      */
-    DrawLayoutBuilder withLocals(@NonNull AttributeFormat<?> format);
+    default DrawLayoutBuilder withLocal(@NonNull AttributeFormat<?> format) {
+        return this.with(AttributeUsage.DRAW_LOCAL, format);
+    }
 }

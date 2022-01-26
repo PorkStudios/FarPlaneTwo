@@ -20,38 +20,36 @@
 
 package net.daporkchop.fp2.gl.opengl.draw;
 
+import com.google.common.collect.ImmutableSet;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.AttributeFormat;
-import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.draw.DrawLayoutBuilder;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
-import net.daporkchop.fp2.gl.opengl.attribute.common.AttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.layout.BaseLayoutBuilderImpl;
 
-import static net.daporkchop.lib.common.util.PValidation.*;
+import java.util.EnumSet;
+import java.util.Set;
 
 /**
  * @author DaPorkchop_
  */
 public class DrawLayoutBuilderImpl extends BaseLayoutBuilderImpl<DrawLayoutBuilder, DrawLayout> implements DrawLayoutBuilder {
+    private static final Set<InternalAttributeUsage> VALID_USAGES = ImmutableSet.copyOf(EnumSet.of(
+            InternalAttributeUsage.UNIFORM,
+            InternalAttributeUsage.UNIFORM_ARRAY,
+            InternalAttributeUsage.DRAW_GLOBAL,
+            InternalAttributeUsage.DRAW_LOCAL,
+            InternalAttributeUsage.TEXTURE
+    ));
+
     public DrawLayoutBuilderImpl(@NonNull OpenGL gl) {
         super(gl);
     }
 
     @Override
-    public DrawLayoutBuilder withGlobals(@NonNull AttributeFormat<?> format) {
-        checkArg(format.usage().contains(AttributeUsage.DRAW_GLOBAL), "%s doesn't support %s", format, AttributeUsage.DRAW_GLOBAL);
-        this.with((AttributeFormatImpl<?, ?>) format, InternalAttributeUsage.DRAW_GLOBAL);
-        return this;
-    }
-
-    @Override
-    public DrawLayoutBuilder withLocals(@NonNull AttributeFormat<?> format) {
-        checkArg(format.usage().contains(AttributeUsage.DRAW_LOCAL), "%s doesn't support %s", format, AttributeUsage.DRAW_LOCAL);
-        this.with((AttributeFormatImpl<?, ?>) format, InternalAttributeUsage.DRAW_LOCAL);
-        return this;
+    protected Set<InternalAttributeUsage> validUsages() {
+        return VALID_USAGES;
     }
 
     @Override

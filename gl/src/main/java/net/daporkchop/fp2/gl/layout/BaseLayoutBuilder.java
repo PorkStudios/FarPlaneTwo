@@ -33,22 +33,38 @@ import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
  */
 public interface BaseLayoutBuilder<BUILDER extends BaseLayoutBuilder<BUILDER, L>, L extends BaseLayout> {
     /**
+     * Adds the given {@link AttributeFormat} to be used for attributes of the type defined by the given {@link AttributeUsage}.
+     *
+     * @param usage  the {@link AttributeUsage}
+     * @param format the {@link AttributeFormat}
+     * @throws IllegalArgumentException if the given {@link AttributeFormat} does not support the given {@link AttributeUsage}
+     * @throws IllegalArgumentException if this builder does not support the given {@link AttributeUsage}
+     */
+    BUILDER with(@NonNull AttributeUsage usage, @NonNull AttributeFormat<?> format);
+
+    /**
      * Adds a {@link AttributeFormat} which will be used for uniform attributes.
      * <p>
-     * The format must support {@link AttributeUsage#UNIFORM}.
+     * Alias for {@code with(AttributeUsage.UNIFORM, format)}.
      *
-     * @param format the format of the uniform attributes
+     * @param format the {@link AttributeFormat} of the uniform attributes
+     * @see #with(AttributeUsage, AttributeFormat)
      */
-    BUILDER withUniforms(@NonNull AttributeFormat<?> format);
+    default BUILDER withUniform(@NonNull AttributeFormat<?> format) {
+        return this.with(AttributeUsage.UNIFORM, format);
+    }
 
     /**
      * Adds a {@link AttributeFormat} which will be used for uniform array attributes.
      * <p>
-     * The format must support {@link AttributeUsage#UNIFORM_ARRAY}.
+     * Alias for {@code with(AttributeUsage.UNIFORM_ARRAY, format)}.
      *
-     * @param format the format of the uniform array attributes
+     * @param format the {@link AttributeFormat} of the uniform array attributes
+     * @see #with(AttributeUsage, AttributeFormat)
      */
-    BUILDER withUniformArrays(@NonNull AttributeFormat<?> format);
+    default BUILDER withUniformArray(@NonNull AttributeFormat<?> format) {
+        return this.with(AttributeUsage.UNIFORM_ARRAY, format);
+    }
 
     /**
      * Adds a {@link TextureFormat2D}.

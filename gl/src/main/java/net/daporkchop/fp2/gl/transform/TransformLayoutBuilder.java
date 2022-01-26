@@ -34,18 +34,24 @@ public interface TransformLayoutBuilder extends BaseLayoutBuilder<TransformLayou
     /**
      * Adds a {@link AttributeFormat} which will be used for inputs.
      * <p>
-     * The format must support {@link AttributeUsage#TRANSFORM_INPUT}.
+     * Alias for {@code with(AttributeUsage.TRANSFORM_INPUT, format)}.
      *
-     * @param format the format of the inputs
+     * @param format the {@link AttributeFormat} of the inputs
+     * @see #with(AttributeUsage, AttributeFormat)
      */
-    TransformLayoutBuilder withInputs(@NonNull AttributeFormat<?> format);
+    default TransformLayoutBuilder withInput(@NonNull AttributeFormat<?> format) {
+        return this.with(AttributeUsage.TRANSFORM_INPUT, format);
+    }
 
     /**
      * Adds a {@link AttributeFormat} which will be used for outputs.
      * <p>
-     * The format must support {@link AttributeUsage#TRANSFORM_OUTPUT}.
+     * Alias for {@code with(AttributeUsage.TRANSFORM_OUTPUT, format)}.
      *
-     * @param format the format of the outputs
+     * @param format the {@link AttributeFormat} of the outputs
+     * @see #with(AttributeUsage, AttributeFormat)
      */
-    TransformLayoutBuilder withOutputs(@NonNull AttributeFormat<?> format);
+    default TransformLayoutBuilder withOutput(@NonNull AttributeFormat<?> format) {
+        return this.with(AttributeUsage.TRANSFORM_OUTPUT, format);
+    }
 }

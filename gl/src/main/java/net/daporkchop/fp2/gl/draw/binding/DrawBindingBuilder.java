@@ -22,6 +22,7 @@ package net.daporkchop.fp2.gl.draw.binding;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.draw.index.IndexBuffer;
 import net.daporkchop.fp2.gl.layout.binding.BaseBindingBuilder;
 
@@ -34,17 +35,27 @@ import net.daporkchop.fp2.gl.layout.binding.BaseBindingBuilder;
 public interface DrawBindingBuilder<B extends DrawBinding> extends BaseBindingBuilder<DrawBindingBuilder<B>, B> {
     /**
      * Adds a {@link AttributeBuffer} which contains global attributes.
+     * <p>
+     * Alias for {@code with(AttributeUsage.DRAW_GLOBAL, buffer)}.
      *
-     * @param buffer the global attributes
+     * @param buffer the {@link AttributeBuffer} containing the global attributes
+     * @see #with(AttributeUsage, AttributeBuffer)
      */
-    DrawBindingBuilder<B> withGlobals(@NonNull AttributeBuffer<?> buffer);
+    default DrawBindingBuilder<B> withGlobal(@NonNull AttributeBuffer<?> buffer) {
+        return this.with(AttributeUsage.DRAW_GLOBAL, buffer);
+    }
 
     /**
      * Adds a {@link AttributeBuffer} which contains local attributes.
+     * <p>
+     * Alias for {@code with(AttributeUsage.DRAW_LOCAL, buffer)}.
      *
-     * @param buffer the local attributes
+     * @param buffer the {@link AttributeBuffer} containing the local attributes
+     * @see #with(AttributeUsage, AttributeBuffer)
      */
-    DrawBindingBuilder<B> withLocals(@NonNull AttributeBuffer<?> buffer);
+    default DrawBindingBuilder<B> withLocal(@NonNull AttributeBuffer<?> buffer) {
+        return this.with(AttributeUsage.DRAW_LOCAL, buffer);
+    }
 
     /**
      * @author DaPorkchop_

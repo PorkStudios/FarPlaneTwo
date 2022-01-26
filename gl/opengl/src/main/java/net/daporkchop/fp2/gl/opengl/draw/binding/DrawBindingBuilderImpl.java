@@ -21,13 +21,10 @@
 package net.daporkchop.fp2.gl.opengl.draw.binding;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.fp2.gl.draw.binding.DrawBindingBuilder;
 import net.daporkchop.fp2.gl.draw.binding.DrawBindingIndexed;
 import net.daporkchop.fp2.gl.draw.index.IndexBuffer;
-import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
-import net.daporkchop.fp2.gl.opengl.attribute.common.AttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.draw.DrawLayoutImpl;
 import net.daporkchop.fp2.gl.opengl.draw.index.IndexBufferImpl;
 import net.daporkchop.fp2.gl.opengl.layout.BaseBindingBuilderImpl;
@@ -57,18 +54,6 @@ public class DrawBindingBuilderImpl extends BaseBindingBuilderImpl<DrawBindingBu
     //
     // DrawBindingBuilder
     //
-
-    @Override
-    public DrawBindingBuilder<DrawBinding> withGlobals(@NonNull AttributeBuffer<?> buffer) {
-        this.with((AttributeBufferImpl<?, ?>) buffer, InternalAttributeUsage.DRAW_GLOBAL);
-        return this;
-    }
-
-    @Override
-    public DrawBindingBuilder<DrawBinding> withLocals(@NonNull AttributeBuffer<?> buffer) {
-        this.with((AttributeBufferImpl<?, ?>) buffer, InternalAttributeUsage.DRAW_LOCAL);
-        return this;
-    }
 
     @Override
     public DrawBinding build() {

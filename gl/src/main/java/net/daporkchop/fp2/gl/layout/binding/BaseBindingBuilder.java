@@ -22,6 +22,7 @@ package net.daporkchop.fp2.gl.layout.binding;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
 
 /**
@@ -32,18 +33,36 @@ import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
  */
 public interface BaseBindingBuilder<BUILDER extends BaseBindingBuilder<BUILDER, B>, B extends BaseBinding> {
     /**
-     * Adds a {@link AttributeBuffer} which contains uniform attributes.
+     * Adds the given {@link AttributeBuffer} which contains attributes of the type defined by the given {@link AttributeUsage}.
      *
-     * @param buffer the uniform attributes
+     * @param usage  the {@link AttributeUsage}
+     * @param buffer the {@link AttributeBuffer}
      */
-    BUILDER withUniforms(@NonNull AttributeBuffer<?> buffer);
+    BUILDER with(@NonNull AttributeUsage usage, @NonNull AttributeBuffer<?> buffer);
+
+    /**
+     * Adds a {@link AttributeBuffer} which contains uniform attributes.
+     * <p>
+     * Alias for {@code with(AttributeUsage.UNIFORM, buffer)}.
+     *
+     * @param buffer the {@link AttributeBuffer} containing the uniform attributes
+     * @see #with(AttributeUsage, AttributeBuffer)
+     */
+    default BUILDER withUniform(@NonNull AttributeBuffer<?> buffer) {
+        return this.with(AttributeUsage.UNIFORM, buffer);
+    }
 
     /**
      * Adds a {@link AttributeBuffer} which contains uniform array attributes.
+     * <p>
+     * Alias for {@code with(AttributeUsage.UNIFORM_ARRAY, buffer)}.
      *
-     * @param buffer the uniform attributes
+     * @param buffer the {@link AttributeBuffer} containing the uniform attributes
+     * @see #with(AttributeUsage, AttributeBuffer)
      */
-    BUILDER withUniformArrays(@NonNull AttributeBuffer<?> buffer);
+    default BUILDER withUniformArray(@NonNull AttributeBuffer<?> buffer) {
+        return this.with(AttributeUsage.UNIFORM_ARRAY, buffer);
+    }
 
     /**
      * Adds a {@link Texture2D} which contains a 2D texture.

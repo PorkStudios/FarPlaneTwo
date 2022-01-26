@@ -127,25 +127,25 @@ public class TestLWJGL2 {
         TextureFormat2D<TextureAttribs> textureFormat = gl.createTextureFormat2D(TextureAttribs.class).build();
 
         DrawLayout drawLayout = gl.createDrawLayout()
-                .withUniforms(uniformFormat)
-                .withUniformArrays(uniformArrayFormat)
-                .withGlobals(globalFormat)
-                .withLocals(localFormat_1)
+                .withUniform(uniformFormat)
+                .withUniformArray(uniformArrayFormat)
+                .withGlobal(globalFormat)
+                .withLocal(localFormat_1)
                 .withTexture(textureFormat)
                 .build();
 
         TransformLayout localTransformLayout_1to2 = gl.createTransformLayout()
-                .withUniforms(uniformFormat)
-                .withUniformArrays(uniformArrayFormat)
-                .withInputs(localFormat_1)
-                .withOutputs(localFormat_2)
+                .withUniform(uniformFormat)
+                .withUniformArray(uniformArrayFormat)
+                .withInput(localFormat_1)
+                .withOutput(localFormat_2)
                 .build();
 
         TransformLayout localTransformLayout_2to1 = gl.createTransformLayout()
-                .withUniforms(uniformFormat)
-                .withUniformArrays(uniformArrayFormat)
-                .withInputs(localFormat_2)
-                .withOutputs(localFormat_1)
+                .withUniform(uniformFormat)
+                .withUniformArray(uniformArrayFormat)
+                .withInput(localFormat_2)
+                .withOutput(localFormat_1)
                 .build();
 
         IndexFormat indexFormat = gl.createIndexFormat()
@@ -241,42 +241,42 @@ public class TestLWJGL2 {
 
         DrawBindingIndexed binding0 = drawLayout.createBinding()
                 .withIndexes(indexBuffer)
-                .withUniforms(uniformBuffer0)
-                .withUniformArrays(uniformArrayBuffer)
-                .withGlobals(globalBuffer)
-                .withLocals(localBuffer_1)
+                .withUniform(uniformBuffer0)
+                .withUniformArray(uniformArrayBuffer)
+                .withGlobal(globalBuffer)
+                .withLocal(localBuffer_1)
                 .withTexture(texture)
                 .build();
 
         DrawBindingIndexed binding1 = drawLayout.createBinding()
                 .withIndexes(indexBuffer)
-                .withUniforms(uniformBuffer1)
-                .withUniformArrays(uniformArrayBuffer)
-                .withGlobals(globalBuffer)
-                .withLocals(localBuffer_1)
+                .withUniform(uniformBuffer1)
+                .withUniformArray(uniformArrayBuffer)
+                .withGlobal(globalBuffer)
+                .withLocal(localBuffer_1)
                 .withTexture(texture)
                 .build();
 
         TransformBinding transformBinding2_1to2 = localTransformLayout_1to2.createBinding()
-                .withUniforms(uniformBuffer1)
-                .withUniformArrays(uniformArrayBuffer)
-                .withInputs(localBuffer_1)
-                .withOutputs(localBuffer_2)
+                .withUniform(uniformBuffer1)
+                .withUniformArray(uniformArrayBuffer)
+                .withInput(localBuffer_1)
+                .withOutput(localBuffer_2)
                 .build();
 
         TransformBinding transformBinding2_2to1 = localTransformLayout_2to1.createBinding()
-                .withUniforms(uniformBuffer1)
-                .withUniformArrays(uniformArrayBuffer)
-                .withInputs(localBuffer_2)
-                .withOutputs(localBuffer_3)
+                .withUniform(uniformBuffer1)
+                .withUniformArray(uniformArrayBuffer)
+                .withInput(localBuffer_2)
+                .withOutput(localBuffer_3)
                 .build();
 
         DrawBindingIndexed binding2 = drawLayout.createBinding()
                 .withIndexes(indexBuffer)
-                .withUniforms(uniformBuffer2)
-                .withUniformArrays(uniformArrayBuffer)
-                .withGlobals(globalBuffer)
-                .withLocals(localBuffer_3)
+                .withUniform(uniformBuffer2)
+                .withUniformArray(uniformArrayBuffer)
+                .withGlobal(globalBuffer)
+                .withLocal(localBuffer_3)
                 .withTexture(texture)
                 .build();
 

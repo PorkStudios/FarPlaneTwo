@@ -35,6 +35,8 @@ import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
 import net.daporkchop.fp2.gl.opengl.attribute.common.AttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.BaseTextureFormatImpl;
 
+import java.util.Set;
+
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
@@ -50,20 +52,16 @@ public abstract class BaseLayoutBuilderImpl<BUILDER extends BaseLayoutBuilder<BU
     protected final ImmutableMap.Builder<BaseAttributeFormatImpl<?>, InternalAttributeUsage> formatsUsages = ImmutableMap.builder();
 
     protected void with(@NonNull BaseAttributeFormatImpl<?> format, @NonNull InternalAttributeUsage usage) {
+        checkArg(this.validUsages().contains(usage), "%s doesn't support %s", usage);
         this.formatsUsages.put(format, usage);
     }
 
-    @Override
-    public BUILDER withUniforms(@NonNull AttributeFormat<?> format) {
-        checkArg(format.usage().contains(AttributeUsage.UNIFORM), "%s doesn't support %s", format, AttributeUsage.UNIFORM);
-        this.with((AttributeFormatImpl<?, ?>) format, InternalAttributeUsage.UNIFORM);
-        return uncheckedCast(this);
-    }
+    protected abstract Set<InternalAttributeUsage> validUsages();
 
     @Override
-    public BUILDER withUniformArrays(@NonNull AttributeFormat<?> format) {
-        checkArg(format.usage().contains(AttributeUsage.UNIFORM_ARRAY), "%s doesn't support %s", format, AttributeUsage.UNIFORM_ARRAY);
-        this.with((AttributeFormatImpl<?, ?>) format, InternalAttributeUsage.UNIFORM_ARRAY);
+    public BUILDER with(@NonNull AttributeUsage usage, @NonNull AttributeFormat<?> format) {
+        checkArg(format.usage().contains(usage), "%s doesn't support %s", format, usage);
+        this.with((AttributeFormatImpl<?, ?>) format, InternalAttributeUsage.fromExternal(usage));
         return uncheckedCast(this);
     }
 

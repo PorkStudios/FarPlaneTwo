@@ -20,38 +20,36 @@
 
 package net.daporkchop.fp2.gl.opengl.transform;
 
+import com.google.common.collect.ImmutableSet;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.AttributeFormat;
-import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
-import net.daporkchop.fp2.gl.opengl.attribute.common.AttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.layout.BaseLayoutBuilderImpl;
 import net.daporkchop.fp2.gl.transform.TransformLayout;
 import net.daporkchop.fp2.gl.transform.TransformLayoutBuilder;
 
-import static net.daporkchop.lib.common.util.PValidation.*;
+import java.util.EnumSet;
+import java.util.Set;
 
 /**
  * @author DaPorkchop_
  */
 public class TransformLayoutBuilderImpl extends BaseLayoutBuilderImpl<TransformLayoutBuilder, TransformLayout> implements TransformLayoutBuilder {
+    private static final Set<InternalAttributeUsage> VALID_USAGES = ImmutableSet.copyOf(EnumSet.of(
+            InternalAttributeUsage.UNIFORM,
+            InternalAttributeUsage.UNIFORM_ARRAY,
+            InternalAttributeUsage.TRANSFORM_INPUT,
+            InternalAttributeUsage.TRANSFORM_OUTPUT,
+            InternalAttributeUsage.TEXTURE
+    ));
+
     public TransformLayoutBuilderImpl(@NonNull OpenGL gl) {
         super(gl);
     }
 
     @Override
-    public TransformLayoutBuilder withInputs(@NonNull AttributeFormat<?> format) {
-        checkArg(format.usage().contains(AttributeUsage.TRANSFORM_INPUT), "%s doesn't support %s", format, AttributeUsage.TRANSFORM_INPUT);
-        this.with((AttributeFormatImpl<?, ?>) format, InternalAttributeUsage.TRANSFORM_INPUT);
-        return this;
-    }
-
-    @Override
-    public TransformLayoutBuilder withOutputs(@NonNull AttributeFormat<?> format) {
-        checkArg(format.usage().contains(AttributeUsage.TRANSFORM_OUTPUT), "%s doesn't support %s", format, AttributeUsage.TRANSFORM_OUTPUT);
-        this.with((AttributeFormatImpl<?, ?>) format, InternalAttributeUsage.TRANSFORM_OUTPUT);
-        return this;
+    protected Set<InternalAttributeUsage> validUsages() {
+        return VALID_USAGES;
     }
 
     @Override
