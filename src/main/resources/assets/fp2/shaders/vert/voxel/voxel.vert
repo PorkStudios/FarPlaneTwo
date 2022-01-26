@@ -25,8 +25,8 @@
 
 void main() {
     //convert position to vec3 afterwards to minimize precision loss
-    ivec3 relative_tile_position = (a_tilePos.xyz << a_tilePos.w << T_SHIFT) - u_positionFloor;
-    vec3 relativePos = vec3(relative_tile_position) + a_pos * float(1 << a_tilePos.w) / 8. - u_positionFrac;
+    ivec3 relative_tile_position = (dg_tilePos.xyz << dg_tilePos.w << T_SHIFT) - u_positionFloor;
+    vec3 relativePos = vec3(relative_tile_position) + dl_pos * float(1 << dg_tilePos.w) / 8. - u_positionFrac;
 
     //set fog depth based on vertex distance to camera
     setFog(relativePos);
@@ -38,7 +38,7 @@ void main() {
     vs_out.pos = vs_out.base_pos = vec3(relativePos);
 
     //copy trivial attributes
-    vs_out.light = a_light;
-    vs_out.state = a_state;
-    vs_out.color = computeVertexColor(a_color, a_tilePos);
+    vs_out.light = dl_light;
+    vs_out.state = dl_state;
+    vs_out.color = computeVertexColor(dl_color, dg_tilePos);
 }

@@ -67,7 +67,7 @@ public class InterleavedUniformArrayAttributeBindingLocation<S> implements Bindi
     @Override
     public void generateGLSL(@NonNull ShaderType type, @NonNull StringBuilder builder) {
         builder.append("struct STRUCT_").append(this.structFormat.structName()).append(" {\n");
-        this.structFormat.glslFields().forEach(field -> builder.append("    ").append(field.declaration()).append(";\n"));
+        this.structFormat.glslFields().forEach(field -> builder.append("    ").append(field.declaration(this.usage().glslPrefix())).append(";\n"));
         builder.append("};\n");
 
         builder.append("layout(").append(this.structFormat.layoutName()).append(") buffer BUFFER_").append(this.structFormat.structName()).append(" {\n");
@@ -75,8 +75,8 @@ public class InterleavedUniformArrayAttributeBindingLocation<S> implements Bindi
         builder.append("};\n");
 
         this.structFormat.glslFields().forEach(field -> {
-            builder.append(field.declaration()).append("(in uint index) {\n");
-            builder.append("    return buffer_").append(this.structFormat.structName()).append("[index].").append(field.name()).append(";\n");
+            builder.append(field.declaration(this.usage().glslPrefix())).append("(in uint index) {\n");
+            builder.append("    return buffer_").append(this.structFormat.structName()).append("[index].").append(this.usage().glslPrefix()).append(field.name()).append(";\n");
             builder.append("}\n");
         });
     }

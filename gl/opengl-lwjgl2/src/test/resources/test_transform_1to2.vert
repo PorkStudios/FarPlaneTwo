@@ -1,3 +1,3 @@
 void main() {
-    a_pos_2 = a_posRenamed;
+    to_pos_2 = ti_posRenamed;
 }

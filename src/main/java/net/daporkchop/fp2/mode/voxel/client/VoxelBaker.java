@@ -170,12 +170,12 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
 
         int blockLight = data.light & 0xF;
         int skyLight = data.light >> 4;
-        attributes.a_lightBlock = (byte) (blockLight | (blockLight << 4));
-        attributes.a_lightSky = (byte) (skyLight | (skyLight << 4));
+        attributes.lightBlock = (byte) (blockLight | (blockLight << 4));
+        attributes.lightSky = (byte) (skyLight | (skyLight << 4));
 
-        attributes.a_posX = (byte) ((x << POS_FRACT_SHIFT) + data.x);
-        attributes.a_posY = (byte) ((y << POS_FRACT_SHIFT) + data.y);
-        attributes.a_posZ = (byte) ((z << POS_FRACT_SHIFT) + data.z);
+        attributes.posX = (byte) ((x << POS_FRACT_SHIFT) + data.x);
+        attributes.posY = (byte) ((y << POS_FRACT_SHIFT) + data.y);
+        attributes.posZ = (byte) ((z << POS_FRACT_SHIFT) + data.z);
 
         EDGES:
         for (int edge = 0; edge < EDGE_COUNT; edge++) {
@@ -187,8 +187,8 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
             }
 
             IBlockState state = FastRegistry.getBlockState(data.states[edge]);
-            attributes.a_state = TextureUVs.STATEID_TO_INDEXID.get(state);
-            attributes.a_color = MC.getBlockColors().colorMultiplier(state, biomeAccess, pos, 0);
+            attributes.state = TextureUVs.STATEID_TO_INDEXID.get(state);
+            attributes.color = MC.getBlockColors().colorMultiplier(state, biomeAccess, pos, 0);
 
             map[baseMapIndex + edge] = vertices.put(attributes);
         }

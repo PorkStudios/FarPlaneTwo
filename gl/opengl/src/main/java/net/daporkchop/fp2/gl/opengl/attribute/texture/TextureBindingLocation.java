@@ -64,7 +64,7 @@ public class TextureBindingLocation<S, B extends BaseTextureImpl<S, ?>> implemen
         try {
             api.glUseProgram(program);
 
-            String name = "sampler_" + this.structFormat.glslFields().get(0).name();
+            String name = "sampler_" + this.usage().glslPrefix() + this.structFormat.glslFields().get(0).name();
             int location = api.glGetUniformLocation(program, name);
             if (location >= 0) { //sampler may have been optimized out, so only set it if it's present
                 api.glUniform(location, this.unit);
@@ -77,16 +77,16 @@ public class TextureBindingLocation<S, B extends BaseTextureImpl<S, ?>> implemen
     @Override
     public void generateGLSL(@NonNull ShaderType type, @NonNull StringBuilder builder) {
         GLSLField field = this.structFormat.glslFields().get(0);
-        builder.append("uniform ").append(this.target.glslSamplerName()).append(" sampler_").append(field.name()).append(";\n");
+        builder.append("uniform ").append(this.target.glslSamplerName()).append(" sampler_").append(this.usage().glslPrefix()).append(field.name()).append(";\n");
 
-        builder.append(field.declaration()).append("(in vec").append(this.target.coordVectorComponents()).append(" coord) {\n");
-        builder.append("    return texture(sampler_").append(field.name()).append(", coord);\n");
+        builder.append(field.declaration(this.usage().glslPrefix())).append("(in vec").append(this.target.coordVectorComponents()).append(" coord) {\n");
+        builder.append("    return texture(sampler_").append(this.usage().glslPrefix()).append(field.name()).append(", coord);\n");
         builder.append("}\n");
 
-        builder.append(field.declaration()).append("(in vec").append(this.target.coordVectorComponents()).append(" coord, ")
+        builder.append(field.declaration(this.usage().glslPrefix())).append("(in vec").append(this.target.coordVectorComponents()).append(" coord, ")
                 .append("in vec").append(this.target.gradientVectorComponents()).append(" gradX, ")
                 .append("in vec").append(this.target.gradientVectorComponents()).append(" gradY) {\n");
-        builder.append("    return textureGrad(sampler_").append(field.name()).append(", coord, gradX, gradY);\n");
+        builder.append("    return textureGrad(sampler_").append(this.usage().glslPrefix()).append(field.name()).append(", coord, gradX, gradY);\n");
         builder.append("}\n");
     }
 

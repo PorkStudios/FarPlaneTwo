@@ -296,8 +296,8 @@ public class TextureUVs extends AbstractReleasable {
     @EqualsAndHashCode
     public static class QuadList {
         @Attribute(vectorAxes = { "First", "Last" }, convert = Attribute.Conversion.TO_UNSIGNED)
-        public final int ua_texQuadListFirst;
-        public final int ua_texQuadListLast;
+        public final int texQuadListFirst;
+        public final int texQuadListLast;
     }
 
     /**
@@ -307,13 +307,13 @@ public class TextureUVs extends AbstractReleasable {
     @EqualsAndHashCode
     public static class PackedBakedQuad {
         @Attribute(vectorAxes = { "S", "T", "P", "Q" })
-        public final float ua_texQuadCoordS;
-        public final float ua_texQuadCoordT;
-        public final float ua_texQuadCoordP;
-        public final float ua_texQuadCoordQ;
+        public final float texQuadCoordS;
+        public final float texQuadCoordT;
+        public final float texQuadCoordP;
+        public final float texQuadCoordQ;
 
         @Attribute
-        public final float ua_texQuadTint;
+        public final float texQuadTint;
 
         public PackedBakedQuad(TextureAtlasSprite sprite, float tintFactor) {
             this(sprite.getMinU(), sprite.getMinV(), sprite.getMaxU(), sprite.getMaxV(), tintFactor);

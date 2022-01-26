@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -31,23 +31,23 @@ import net.daporkchop.fp2.gl.attribute.Attribute;
 @NoArgsConstructor
 public class VoxelLocalAttributes {
     @Attribute
-    public int a_state;
+    public int state;
 
     @Attribute(
             vectorAxes = { "Block", "Sky" },
             convert = { Attribute.Conversion.TO_UNSIGNED, Attribute.Conversion.TO_NORMALIZED_FLOAT })
-    public byte a_lightBlock;
-    public byte a_lightSky;
+    public byte lightBlock;
+    public byte lightSky;
 
     @Attribute(
             transform = Attribute.Transformation.INT_ARGB8_TO_BYTE_VECTOR_RGB,
             convert = Attribute.Conversion.TO_NORMALIZED_FLOAT)
-    public int a_color;
+    public int color;
 
     @Attribute(
             vectorAxes = { "X", "Y", "Z" },
             convert = { Attribute.Conversion.TO_UNSIGNED, Attribute.Conversion.TO_FLOAT })
-    public byte a_posX;
-    public byte a_posY;
-    public byte a_posZ;
+    public byte posX;
+    public byte posY;
+    public byte posZ;
 }

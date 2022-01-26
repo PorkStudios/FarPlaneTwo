@@ -34,14 +34,14 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @RequiredArgsConstructor
 @Getter
 public enum InternalAttributeUsage {
-    UNIFORM(AttributeUsage.UNIFORM),
-    UNIFORM_ARRAY(AttributeUsage.UNIFORM_ARRAY),
-    DRAW_LOCAL(AttributeUsage.DRAW_LOCAL),
-    DRAW_GLOBAL(AttributeUsage.DRAW_GLOBAL),
-    TRANSFORM_INPUT(AttributeUsage.TRANSFORM_INPUT),
-    TRANSFORM_OUTPUT(AttributeUsage.TRANSFORM_OUTPUT),
-    FRAGMENT_COLOR(null),
-    TEXTURE(null);
+    UNIFORM(AttributeUsage.UNIFORM, "u_"),
+    UNIFORM_ARRAY(AttributeUsage.UNIFORM_ARRAY, "ua_"),
+    DRAW_LOCAL(AttributeUsage.DRAW_LOCAL, "dl_"),
+    DRAW_GLOBAL(AttributeUsage.DRAW_GLOBAL, "dg_"),
+    TRANSFORM_INPUT(AttributeUsage.TRANSFORM_INPUT, "ti_"),
+    TRANSFORM_OUTPUT(AttributeUsage.TRANSFORM_OUTPUT, "to_"),
+    FRAGMENT_COLOR(null, "f_"),
+    TEXTURE(null, "t_");
 
     private static final InternalAttributeUsage[] VALUES = values();
 
@@ -66,4 +66,5 @@ public enum InternalAttributeUsage {
     }
 
     private final AttributeUsage external;
+    private final String glslPrefix;
 }

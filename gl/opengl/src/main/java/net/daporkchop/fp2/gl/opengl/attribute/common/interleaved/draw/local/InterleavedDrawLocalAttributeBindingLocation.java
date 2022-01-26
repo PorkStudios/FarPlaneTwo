@@ -57,7 +57,7 @@ public class InterleavedDrawLocalAttributeBindingLocation<S> implements BindingL
     @Override
     public void configureProgramPreLink(@NonNull GLAPI api, int program) {
         for (int i = 0; i < this.attributeIndices.length; i++) {
-            api.glBindAttribLocation(program, this.attributeIndices[i], this.structFormat.glslFields().get(i).name());
+            api.glBindAttribLocation(program, this.attributeIndices[i], this.usage().glslPrefix() + this.structFormat.glslFields().get(i).name());
         }
     }
 
@@ -72,7 +72,7 @@ public class InterleavedDrawLocalAttributeBindingLocation<S> implements BindingL
             return;
         }
 
-        this.structFormat.glslFields().forEach(field -> builder.append("in ").append(field.declaration()).append(";\n"));
+        this.structFormat.glslFields().forEach(field -> builder.append("in ").append(field.declaration(this.usage().glslPrefix())).append(";\n"));
     }
 
     @Override

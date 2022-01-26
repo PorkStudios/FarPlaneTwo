@@ -204,18 +204,18 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
         pos.setPos(blockX, data.height_int, blockZ);
         biomeAccess.biome(data.biome);
 
-        attributes.a_state = TextureUVs.STATEID_TO_INDEXID.get(data.state);
+        attributes.state = TextureUVs.STATEID_TO_INDEXID.get(data.state);
 
         int blockLight = data.light & 0xF;
         int skyLight = data.light >> 4;
-        attributes.a_lightBlock = (byte) (blockLight | (blockLight << 4));
-        attributes.a_lightSky = (byte) (skyLight | (skyLight << 4));
-        attributes.a_color = MC.getBlockColors().colorMultiplier(data.state, biomeAccess, pos, 0);
+        attributes.lightBlock = (byte) (blockLight | (blockLight << 4));
+        attributes.lightSky = (byte) (skyLight | (skyLight << 4));
+        attributes.color = MC.getBlockColors().colorMultiplier(data.state, biomeAccess, pos, 0);
 
-        attributes.a_posHorizX = (byte) x;
-        attributes.a_posHorizZ = (byte) z;
-        attributes.a_heightInt = data.height_int;
-        attributes.a_heightFrac = (byte) data.height_frac;
+        attributes.posHorizX = (byte) x;
+        attributes.posHorizZ = (byte) z;
+        attributes.heightInt = data.height_int;
+        attributes.heightFrac = (byte) data.height_frac;
 
         return out.put(attributes);
     }

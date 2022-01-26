@@ -67,7 +67,7 @@ public class InterleavedUniformAttributeBindingLocation<S> implements BindingLoc
     @Override
     public void generateGLSL(@NonNull ShaderType type, @NonNull StringBuilder builder) {
         builder.append("layout(").append(this.structFormat.layoutName()).append(") uniform UNIFORM_").append(this.structFormat.structName()).append(" {\n");
-        this.structFormat.glslFields().forEach(field -> builder.append("    ").append(field.declaration()).append(";\n"));
+        this.structFormat.glslFields().forEach(field -> builder.append("    ").append(field.declaration(this.usage().glslPrefix())).append(";\n"));
         builder.append("};\n");
     }
 

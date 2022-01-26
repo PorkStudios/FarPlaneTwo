@@ -121,7 +121,7 @@ public class TestLWJGL2 {
         AttributeFormat<UniformArrayAttribs> uniformArrayFormat = gl.createAttributeFormat(UniformArrayAttribs.class).useFor(AttributeUsage.UNIFORM_ARRAY).build();
         AttributeFormat<GlobalAttribs> globalFormat = gl.createAttributeFormat(GlobalAttribs.class).useFor(AttributeUsage.DRAW_GLOBAL).build();
         AttributeFormat<LocalAttribs_1> localFormat_1 = gl.createAttributeFormat(LocalAttribs_1.class).useFor(AttributeUsage.DRAW_LOCAL, AttributeUsage.TRANSFORM_INPUT)
-                .rename("a_pos", "a_posRenamed")
+                .rename("pos", "posRenamed")
                 .build();
         AttributeFormat<LocalAttribs_2> localFormat_2 = gl.createAttributeFormat(LocalAttribs_2.class).useFor(AttributeUsage.DRAW_LOCAL, AttributeUsage.TRANSFORM_OUTPUT).build();
         TextureFormat2D<TextureAttribs> textureFormat = gl.createTextureFormat2D(TextureAttribs.class).build();
@@ -323,45 +323,45 @@ public class TestLWJGL2 {
     @Data
     public static class UniformAttribs {
         @Attribute(vectorAxes = { "X", "Y" }, convert = Attribute.Conversion.TO_NORMALIZED_FLOAT)
-        public final byte u_scaleX;
-        public final byte u_scaleY;
+        public final byte scaleX;
+        public final byte scaleY;
     }
 
     @Data
     public static class UniformArrayAttribs {
         @Attribute(vectorAxes = { "R", "G", "B" })
-        public final float ua_colorFactorR;
-        public final float ua_colorFactorG;
-        public final float ua_colorFactorB;
+        public final float colorFactorR;
+        public final float colorFactorG;
+        public final float colorFactorB;
     }
 
     @Data
     public static class GlobalAttribs {
         @Attribute(vectorAxes = { "X", "Y" }, convert = Attribute.Conversion.TO_FLOAT)
-        public final byte a_offsetX;
-        public final byte a_offsetY;
+        public final byte offsetX;
+        public final byte offsetY;
 
         @Attribute(transform = Attribute.Transformation.INT_ARGB8_TO_BYTE_VECTOR_RGBA, convert = Attribute.Conversion.TO_NORMALIZED_FLOAT)
-        public final int a_color;
+        public final int color;
     }
 
     @Data
     public static class LocalAttribs_1 {
         @Attribute(vectorAxes = { "X", "Y" }, convert = Attribute.Conversion.TO_FLOAT)
-        public final byte a_posX;
-        public final byte a_posY;
+        public final byte posX;
+        public final byte posY;
     }
 
     @Data
     public static class LocalAttribs_2 {
         @Attribute(vectorAxes = { "X", "Y" }, convert = Attribute.Conversion.TO_FLOAT)
-        public final byte a_pos_2X;
-        public final byte a_pos_2Y;
+        public final byte pos_2X;
+        public final byte pos_2Y;
     }
 
     @Data
     public static class TextureAttribs {
         @Attribute(transform = Attribute.Transformation.INT_ARGB8_TO_BYTE_VECTOR_RGBA, convert = Attribute.Conversion.TO_NORMALIZED_FLOAT)
-        public final int t_colorFactor;
+        public final int colorFactor;
     }
 }

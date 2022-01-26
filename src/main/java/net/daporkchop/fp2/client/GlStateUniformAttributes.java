@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -46,35 +46,35 @@ public class GlStateUniformAttributes {
     @Attribute(
             transform = Attribute.Transformation.ARRAY_TO_MATRIX,
             matrixDimension = @Attribute.MatrixDimension(columns = 4, rows = 4))
-    public final float[] u_modelViewProjectionMatrix = new float[16];
+    public final float[] modelViewProjectionMatrix = new float[16];
 
     @Attribute(vectorAxes = { "X", "Y", "Z" })
-    public int u_positionFloorX;
-    public int u_positionFloorY;
-    public int u_positionFloorZ;
+    public int positionFloorX;
+    public int positionFloorY;
+    public int positionFloorZ;
 
     @Attribute(vectorAxes = { "X", "Y", "Z" })
-    public float u_positionFracX;
-    public float u_positionFracY;
-    public float u_positionFracZ;
+    public float positionFracX;
+    public float positionFracY;
+    public float positionFracZ;
 
     @Attribute(vectorAxes = { "R", "G", "B", "A" })
-    public float u_fogColorR;
-    public float u_fogColorG;
-    public float u_fogColorB;
-    public float u_fogColorA;
+    public float fogColorR;
+    public float fogColorG;
+    public float fogColorB;
+    public float fogColorA;
 
     @Attribute
-    public float u_fogDensity;
+    public float fogDensity;
 
     @Attribute
-    public float u_fogStart;
+    public float fogStart;
 
     @Attribute
-    public float u_fogEnd;
+    public float fogEnd;
 
     @Attribute
-    public float u_fogScale;
+    public float fogScale;
 
     public GlStateUniformAttributes initFromGlState(float partialTicks, @NonNull Minecraft mc) {
         //optifine compatibility: disable fog if it's turned off, because optifine only does this itself if no vanilla terrain is being rendered
@@ -91,22 +91,22 @@ public class GlStateUniformAttributes {
             double y = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * partialTicks;
             double z = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * partialTicks;
 
-            this.u_positionFloorX = floorI(x);
-            this.u_positionFloorY = floorI(y);
-            this.u_positionFloorZ = floorI(z);
+            this.positionFloorX = floorI(x);
+            this.positionFloorY = floorI(y);
+            this.positionFloorZ = floorI(z);
 
-            this.u_positionFracX = (float) frac(x);
-            this.u_positionFracY = (float) frac(y);
-            this.u_positionFracZ = (float) frac(z);
+            this.positionFracX = (float) frac(x);
+            this.positionFracY = (float) frac(y);
+            this.positionFracZ = (float) frac(z);
         }
 
         { //fog
             this.initFogColor();
 
-            this.u_fogDensity = glGetFloat(GL_FOG_DENSITY);
-            this.u_fogStart = glGetFloat(GL_FOG_START);
-            this.u_fogEnd = glGetFloat(GL_FOG_END);
-            this.u_fogScale = 1.0f / (this.u_fogEnd - this.u_fogStart);
+            this.fogDensity = glGetFloat(GL_FOG_DENSITY);
+            this.fogStart = glGetFloat(GL_FOG_START);
+            this.fogEnd = glGetFloat(GL_FOG_END);
+            this.fogScale = 1.0f / (this.fogEnd - this.fogStart);
         }
 
         return this;
@@ -123,10 +123,10 @@ public class GlStateUniformAttributes {
             MatrixHelper.getFloatMatrixFromGL(GL_PROJECTION_MATRIX, projection);
 
             //pre-multiply matrices on CPU to avoid having to do it per-vertex on GPU
-            MatrixHelper.multiply4x4(projection, modelView, this.u_modelViewProjectionMatrix);
+            MatrixHelper.multiply4x4(projection, modelView, this.modelViewProjectionMatrix);
 
             //offset the projected points' depth values to avoid z-fighting with vanilla terrain
-            MatrixHelper.offsetDepth(this.u_modelViewProjectionMatrix, ReversedZ.REVERSED ? -0.00001f : 0.00001f);
+            MatrixHelper.offsetDepth(this.modelViewProjectionMatrix, ReversedZ.REVERSED ? -0.00001f : 0.00001f);
         } finally {
             alloc.release(projection);
             alloc.release(modelView);
@@ -140,10 +140,10 @@ public class GlStateUniformAttributes {
             FloatBuffer buffer = DirectBufferHackery.wrapFloat(addr, 16);
             glGetFloat(GL_FOG_COLOR, buffer);
 
-            this.u_fogColorR = buffer.get(0);
-            this.u_fogColorG = buffer.get(1);
-            this.u_fogColorB = buffer.get(2);
-            this.u_fogColorA = buffer.get(3);
+            this.fogColorR = buffer.get(0);
+            this.fogColorG = buffer.get(1);
+            this.fogColorB = buffer.get(2);
+            this.fogColorA = buffer.get(3);
         } finally {
             PUnsafe.freeMemory(addr);
         }

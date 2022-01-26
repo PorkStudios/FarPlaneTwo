@@ -52,7 +52,12 @@ public class InterleavedTransformOutputAttributeBindingLocation<S> implements Bi
 
     @Override
     public void configureProgramPreLink(@NonNull GLAPI api, int program) {
-        api.glTransformFeedbackVaryings(program, this.structFormat.glslFields().stream().map(GLSLField::name).toArray(CharSequence[]::new), GL_INTERLEAVED_ATTRIBS);
+        api.glTransformFeedbackVaryings(program,
+                this.structFormat.glslFields().stream()
+                        .map(GLSLField::name)
+                        .map(this.usage().glslPrefix()::concat)
+                        .toArray(CharSequence[]::new),
+                GL_INTERLEAVED_ATTRIBS);
     }
 
     @Override
@@ -64,7 +69,7 @@ public class InterleavedTransformOutputAttributeBindingLocation<S> implements Bi
     public void generateGLSL(@NonNull ShaderType type, @NonNull StringBuilder builder) {
         checkArg(type == ShaderType.VERTEX, "transform output requires only a vertex shader!");
 
-        this.structFormat.glslFields().forEach(field -> builder.append("out ").append(field.declaration()).append(";\n"));
+        this.structFormat.glslFields().forEach(field -> builder.append("out ").append(field.declaration(this.usage().glslPrefix())).append(";\n"));
     }
 
     @Override
