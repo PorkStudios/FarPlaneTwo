@@ -22,21 +22,15 @@ package net.daporkchop.fp2.gl.attribute;
 
 import lombok.NonNull;
 
-import java.util.Set;
-
 /**
  * @author DaPorkchop_
  */
-public interface AttributeFormat<S> {
+public interface AttributeFormat<S> extends BaseAttributeFormat {
     /**
      * @return the number of bytes used by each element in a {@link AttributeBuffer} using this format
      */
+    @Override
     long size();
-
-    /**
-     * @return a {@link Set} of the {@link AttributeUsage}s valid for this {@link AttributeFormat}
-     */
-    Set<AttributeUsage> usage();
 
     AttributeWriter<S> createWriter();
 

@@ -22,7 +22,7 @@ package net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.transform.outp
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
-import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
+import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
 import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttributeBufferImpl;
@@ -46,16 +46,15 @@ public class InterleavedTransformOutputAttributeBindingLocation<S> implements Bi
     }
 
     @Override
-    public InternalAttributeUsage usage() {
-        return InternalAttributeUsage.TRANSFORM_OUTPUT;
+    public AttributeUsage usage() {
+        return AttributeUsage.TRANSFORM_OUTPUT;
     }
 
     @Override
     public void configureProgramPreLink(@NonNull GLAPI api, int program) {
         api.glTransformFeedbackVaryings(program,
                 this.structFormat.glslFields().stream()
-                        .map(GLSLField::name)
-                        .map(this.usage().glslPrefix()::concat)
+                        .map(field -> this.usage().defaultPrefix() + field.name() + this.usage().defaultSuffix())
                         .toArray(CharSequence[]::new),
                 GL_INTERLEAVED_ATTRIBS);
     }
@@ -69,7 +68,7 @@ public class InterleavedTransformOutputAttributeBindingLocation<S> implements Bi
     public void generateGLSL(@NonNull ShaderType type, @NonNull StringBuilder builder) {
         checkArg(type == ShaderType.VERTEX, "transform output requires only a vertex shader!");
 
-        this.structFormat.glslFields().forEach(field -> builder.append("out ").append(field.declaration(this.usage().glslPrefix())).append(";\n"));
+        this.structFormat.glslFields().forEach(field -> builder.append("out ").append(field.declaration(this.usage().defaultPrefix(), this.usage().defaultSuffix())).append(";\n"));
     }
 
     @Override

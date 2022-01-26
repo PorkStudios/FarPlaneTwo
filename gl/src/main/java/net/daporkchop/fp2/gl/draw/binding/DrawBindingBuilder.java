@@ -39,7 +39,7 @@ public interface DrawBindingBuilder<B extends DrawBinding> extends BaseBindingBu
      * Alias for {@code with(AttributeUsage.DRAW_GLOBAL, buffer)}.
      *
      * @param buffer the {@link AttributeBuffer} containing the global attributes
-     * @see #with(AttributeUsage, AttributeBuffer)
+     * @see BaseBindingBuilder#with(AttributeUsage, net.daporkchop.fp2.gl.attribute.BaseAttributeBuffer)
      */
     default DrawBindingBuilder<B> withGlobal(@NonNull AttributeBuffer<?> buffer) {
         return this.with(AttributeUsage.DRAW_GLOBAL, buffer);
@@ -51,7 +51,7 @@ public interface DrawBindingBuilder<B extends DrawBinding> extends BaseBindingBu
      * Alias for {@code with(AttributeUsage.DRAW_LOCAL, buffer)}.
      *
      * @param buffer the {@link AttributeBuffer} containing the local attributes
-     * @see #with(AttributeUsage, AttributeBuffer)
+     * @see BaseBindingBuilder#with(AttributeUsage, net.daporkchop.fp2.gl.attribute.BaseAttributeBuffer)
      */
     default DrawBindingBuilder<B> withLocal(@NonNull AttributeBuffer<?> buffer) {
         return this.with(AttributeUsage.DRAW_LOCAL, buffer);

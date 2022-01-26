@@ -20,12 +20,15 @@
 
 package net.daporkchop.fp2.gl.attribute.texture;
 
+import net.daporkchop.fp2.gl.attribute.BaseAttributeFormat;
+
 /**
  * @author DaPorkchop_
  */
-public interface BaseTextureFormat<S> {
+public interface BaseTextureFormat<S> extends BaseAttributeFormat {
     /**
      * @return the number of bytes used by each texel
      */
+    @Override
     long size();
 }

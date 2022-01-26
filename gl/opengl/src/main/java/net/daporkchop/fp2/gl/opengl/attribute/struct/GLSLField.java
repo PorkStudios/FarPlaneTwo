@@ -43,9 +43,10 @@ public final class GLSLField {
 
     /**
      * @param namePrefix an additional prefix to apply to the field name
+     * @param nameSuffix an additional suffix to apply to the field name
      * @return the GLSL declaration for this field
      */
-    public String declaration(@NonNull String namePrefix) {
-        return this.type.declaration(namePrefix + this.name);
+    public String declaration(@NonNull String namePrefix, @NonNull String nameSuffix) {
+        return this.type.declaration(namePrefix + this.name + nameSuffix);
     }
 }

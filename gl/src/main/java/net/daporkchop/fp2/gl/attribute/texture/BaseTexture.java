@@ -20,14 +20,15 @@
 
 package net.daporkchop.fp2.gl.attribute.texture;
 
-import net.daporkchop.fp2.gl.GLResource;
+import net.daporkchop.fp2.gl.attribute.BaseAttributeBuffer;
 
 /**
  * @author DaPorkchop_
  */
-public interface BaseTexture<S> extends GLResource {
+public interface BaseTexture<S> extends BaseAttributeBuffer {
     /**
      * @return the {@link BaseTextureFormat} used by this texture
      */
+    @Override
     BaseTextureFormat<S> format();
 }

@@ -37,7 +37,7 @@ public interface DrawLayoutBuilder extends BaseLayoutBuilder<DrawLayoutBuilder, 
      * Alias for {@code with(AttributeUsage.DRAW_GLOBAL, format)}.
      *
      * @param format the {@link AttributeFormat} of the global attributes
-     * @see #with(AttributeUsage, AttributeFormat)
+     * @see BaseLayoutBuilder#with(AttributeUsage, net.daporkchop.fp2.gl.attribute.BaseAttributeFormat)
      */
     default DrawLayoutBuilder withGlobal(@NonNull AttributeFormat<?> format) {
         return this.with(AttributeUsage.DRAW_GLOBAL, format);
@@ -49,7 +49,7 @@ public interface DrawLayoutBuilder extends BaseLayoutBuilder<DrawLayoutBuilder, 
      * Alias for {@code with(AttributeUsage.DRAW_LOCAL, format)}.
      *
      * @param format the {@link AttributeFormat} of the local attributes
-     * @see #with(AttributeUsage, AttributeFormat)
+     * @see BaseLayoutBuilder#with(AttributeUsage, net.daporkchop.fp2.gl.attribute.BaseAttributeFormat)
      */
     default DrawLayoutBuilder withLocal(@NonNull AttributeFormat<?> format) {
         return this.with(AttributeUsage.DRAW_LOCAL, format);

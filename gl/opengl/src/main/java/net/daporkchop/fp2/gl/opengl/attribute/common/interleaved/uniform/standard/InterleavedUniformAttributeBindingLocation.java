@@ -22,7 +22,7 @@ package net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.uniform.standa
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
-import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
+import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
 import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttributeBufferImpl;
@@ -47,8 +47,8 @@ public class InterleavedUniformAttributeBindingLocation<S> implements BindingLoc
     }
 
     @Override
-    public InternalAttributeUsage usage() {
-        return InternalAttributeUsage.UNIFORM;
+    public AttributeUsage usage() {
+        return AttributeUsage.UNIFORM;
     }
 
     @Override
@@ -67,7 +67,7 @@ public class InterleavedUniformAttributeBindingLocation<S> implements BindingLoc
     @Override
     public void generateGLSL(@NonNull ShaderType type, @NonNull StringBuilder builder) {
         builder.append("layout(").append(this.structFormat.layoutName()).append(") uniform UNIFORM_").append(this.structFormat.structName()).append(" {\n");
-        this.structFormat.glslFields().forEach(field -> builder.append("    ").append(field.declaration(this.usage().glslPrefix())).append(";\n"));
+        this.structFormat.glslFields().forEach(field -> builder.append("    ").append(field.declaration(this.usage().defaultPrefix(), this.usage().defaultSuffix())).append(";\n"));
         builder.append("};\n");
     }
 

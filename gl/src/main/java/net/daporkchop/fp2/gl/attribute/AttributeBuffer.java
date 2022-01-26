@@ -28,10 +28,11 @@ import net.daporkchop.fp2.gl.GLResource;
  *
  * @author DaPorkchop_
  */
-public interface AttributeBuffer<S> extends GLResource {
+public interface AttributeBuffer<S> extends BaseAttributeBuffer {
     /**
      * @return the {@link AttributeFormat} used by this buffer
      */
+    @Override
     AttributeFormat<S> format();
 
     /**

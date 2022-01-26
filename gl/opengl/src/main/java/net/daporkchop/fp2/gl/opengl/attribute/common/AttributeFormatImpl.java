@@ -23,17 +23,12 @@ package net.daporkchop.fp2.gl.opengl.attribute.common;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
-import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.StructFormat;
 
 import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * @author DaPorkchop_
@@ -46,11 +41,6 @@ public abstract class AttributeFormatImpl<S, SF extends StructFormat<S, ?>> exte
         super(gl);
 
         this.structFormat = structFormat;
-    }
-
-    @Override
-    public Set<AttributeUsage> usage() {
-        return this.validUsages().stream().map(InternalAttributeUsage::external).filter(Objects::nonNull).collect(Collectors.toSet());
     }
 
     @Override

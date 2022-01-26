@@ -23,6 +23,7 @@ package net.daporkchop.fp2.gl.layout;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeUsage;
+import net.daporkchop.fp2.gl.attribute.BaseAttributeFormat;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
 
 /**
@@ -33,14 +34,14 @@ import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
  */
 public interface BaseLayoutBuilder<BUILDER extends BaseLayoutBuilder<BUILDER, L>, L extends BaseLayout> {
     /**
-     * Adds the given {@link AttributeFormat} to be used for attributes of the type defined by the given {@link AttributeUsage}.
+     * Adds the given {@link BaseAttributeFormat} to be used for attributes of the type defined by the given {@link AttributeUsage}.
      *
      * @param usage  the {@link AttributeUsage}
-     * @param format the {@link AttributeFormat}
-     * @throws IllegalArgumentException if the given {@link AttributeFormat} does not support the given {@link AttributeUsage}
-     * @throws IllegalArgumentException if this builder does not support the given {@link AttributeUsage}
+     * @param format the {@link BaseAttributeFormat}
+     * @throws IllegalArgumentException if the given {@link BaseAttributeFormat} does not support the given {@link AttributeUsage}
+     * @throws IllegalArgumentException if this builder does not support the given {@link BaseAttributeFormat}
      */
-    BUILDER with(@NonNull AttributeUsage usage, @NonNull AttributeFormat<?> format);
+    BUILDER with(@NonNull AttributeUsage usage, @NonNull BaseAttributeFormat format);
 
     /**
      * Adds a {@link AttributeFormat} which will be used for uniform attributes.
@@ -48,7 +49,6 @@ public interface BaseLayoutBuilder<BUILDER extends BaseLayoutBuilder<BUILDER, L>
      * Alias for {@code with(AttributeUsage.UNIFORM, format)}.
      *
      * @param format the {@link AttributeFormat} of the uniform attributes
-     * @see #with(AttributeUsage, AttributeFormat)
      */
     default BUILDER withUniform(@NonNull AttributeFormat<?> format) {
         return this.with(AttributeUsage.UNIFORM, format);
@@ -60,7 +60,7 @@ public interface BaseLayoutBuilder<BUILDER extends BaseLayoutBuilder<BUILDER, L>
      * Alias for {@code with(AttributeUsage.UNIFORM_ARRAY, format)}.
      *
      * @param format the {@link AttributeFormat} of the uniform array attributes
-     * @see #with(AttributeUsage, AttributeFormat)
+     * @see #with(AttributeUsage, BaseAttributeFormat)
      */
     default BUILDER withUniformArray(@NonNull AttributeFormat<?> format) {
         return this.with(AttributeUsage.UNIFORM_ARRAY, format);
@@ -68,10 +68,15 @@ public interface BaseLayoutBuilder<BUILDER extends BaseLayoutBuilder<BUILDER, L>
 
     /**
      * Adds a {@link TextureFormat2D}.
+     * <p>
+     * Alias for {@code with(AttributeUsage.TEXTURE, format)}.
      *
      * @param format the format of the texture
+     * @see #with(AttributeUsage, BaseAttributeFormat)
      */
-    BUILDER withTexture(@NonNull TextureFormat2D<?> format);
+    default BUILDER withTexture(@NonNull TextureFormat2D<?> format) {
+        return this.with(AttributeUsage.TEXTURE, format);
+    }
 
     /**
      * Adds all the formats from the given {@link L}.

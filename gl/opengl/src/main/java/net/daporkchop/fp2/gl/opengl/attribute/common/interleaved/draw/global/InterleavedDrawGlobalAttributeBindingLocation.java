@@ -22,7 +22,7 @@ package net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.draw.global;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
-import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
+import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
 import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.draw.local.InterleavedDrawLocalAttributeBindingLocation;
@@ -37,8 +37,8 @@ public class InterleavedDrawGlobalAttributeBindingLocation<S> extends Interleave
     }
 
     @Override
-    public InternalAttributeUsage usage() {
-        return InternalAttributeUsage.DRAW_GLOBAL;
+    public AttributeUsage usage() {
+        return AttributeUsage.DRAW_GLOBAL;
     }
 
     @Override

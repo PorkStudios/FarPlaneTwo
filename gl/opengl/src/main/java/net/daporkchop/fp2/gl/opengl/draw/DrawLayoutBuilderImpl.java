@@ -25,7 +25,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.draw.DrawLayoutBuilder;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
+import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.opengl.layout.BaseLayoutBuilderImpl;
 
 import java.util.EnumSet;
@@ -35,12 +35,12 @@ import java.util.Set;
  * @author DaPorkchop_
  */
 public class DrawLayoutBuilderImpl extends BaseLayoutBuilderImpl<DrawLayoutBuilder, DrawLayout> implements DrawLayoutBuilder {
-    private static final Set<InternalAttributeUsage> VALID_USAGES = ImmutableSet.copyOf(EnumSet.of(
-            InternalAttributeUsage.UNIFORM,
-            InternalAttributeUsage.UNIFORM_ARRAY,
-            InternalAttributeUsage.DRAW_GLOBAL,
-            InternalAttributeUsage.DRAW_LOCAL,
-            InternalAttributeUsage.TEXTURE
+    private static final Set<AttributeUsage> VALID_USAGES = ImmutableSet.copyOf(EnumSet.of(
+            AttributeUsage.UNIFORM,
+            AttributeUsage.UNIFORM_ARRAY,
+            AttributeUsage.DRAW_GLOBAL,
+            AttributeUsage.DRAW_LOCAL,
+            AttributeUsage.TEXTURE
     ));
 
     public DrawLayoutBuilderImpl(@NonNull OpenGL gl) {
@@ -48,7 +48,7 @@ public class DrawLayoutBuilderImpl extends BaseLayoutBuilderImpl<DrawLayoutBuild
     }
 
     @Override
-    protected Set<InternalAttributeUsage> validUsages() {
+    protected Set<AttributeUsage> validUsages() {
         return VALID_USAGES;
     }
 

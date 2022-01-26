@@ -37,7 +37,7 @@ public interface TransformBindingBuilder extends BaseBindingBuilder<TransformBin
      * Alias for {@code with(AttributeUsage.TRANSFORM_INPUT, buffer)}.
      *
      * @param buffer the {@link AttributeBuffer} containing the inputs
-     * @see #with(AttributeUsage, AttributeBuffer)
+     * @see BaseBindingBuilder#with(AttributeUsage, net.daporkchop.fp2.gl.attribute.BaseAttributeBuffer)
      */
     default TransformBindingBuilder withInput(@NonNull AttributeBuffer<?> buffer) {
         return this.with(AttributeUsage.TRANSFORM_INPUT, buffer);
@@ -49,7 +49,7 @@ public interface TransformBindingBuilder extends BaseBindingBuilder<TransformBin
      * Alias for {@code with(AttributeUsage.TRANSFORM_OUTPUT, buffer)}.
      *
      * @param buffer the {@link AttributeBuffer} containing the outputs
-     * @see #with(AttributeUsage, AttributeBuffer)
+     * @see BaseBindingBuilder#with(AttributeUsage, net.daporkchop.fp2.gl.attribute.BaseAttributeBuffer)
      */
     default TransformBindingBuilder withOutput(@NonNull AttributeBuffer<?> buffer) {
         return this.with(AttributeUsage.TRANSFORM_OUTPUT, buffer);

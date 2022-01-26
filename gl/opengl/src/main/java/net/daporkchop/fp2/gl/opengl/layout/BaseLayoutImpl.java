@@ -27,7 +27,7 @@ import net.daporkchop.fp2.gl.layout.BaseLayout;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
+import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
@@ -42,7 +42,7 @@ public abstract class BaseLayoutImpl implements BaseLayout {
     protected final OpenGL gl;
     protected final GLAPI api;
 
-    protected final Map<BaseAttributeFormatImpl<?>, InternalAttributeUsage> origFormatsUsages;
+    protected final Map<BaseAttributeFormatImpl<?>, AttributeUsage> origFormatsUsages;
 
     protected final Map<BaseAttributeFormatImpl<?>, BindingLocation<?>> bindingLocationsByFormat;
 

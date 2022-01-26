@@ -25,7 +25,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureWriter2D;
-import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
+import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.StructLayouts;
@@ -42,8 +42,8 @@ public class TextureFormat2DImpl<S> extends BaseTextureFormatImpl<S> implements 
     }
 
     @Override
-    public BindingLocation<?> bindingLocation(@NonNull InternalAttributeUsage usage, @NonNull BindingLocationAssigner assigner) {
-        checkArg(usage == InternalAttributeUsage.TEXTURE, "unsupported usage: %s", usage);
+    public BindingLocation<?> bindingLocation(@NonNull AttributeUsage usage, @NonNull BindingLocationAssigner assigner) {
+        checkArg(usage == AttributeUsage.TEXTURE, "unsupported usage: %s", usage);
 
         return new TextureBindingLocation<S, Texture2DImpl<S>>(this.structFormat(), TextureTarget.TEXTURE_2D, assigner);
     }

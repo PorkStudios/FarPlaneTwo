@@ -23,6 +23,7 @@ package net.daporkchop.fp2.gl.layout.binding;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.AttributeUsage;
+import net.daporkchop.fp2.gl.attribute.BaseAttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
 
 /**
@@ -33,12 +34,12 @@ import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
  */
 public interface BaseBindingBuilder<BUILDER extends BaseBindingBuilder<BUILDER, B>, B extends BaseBinding> {
     /**
-     * Adds the given {@link AttributeBuffer} which contains attributes of the type defined by the given {@link AttributeUsage}.
+     * Adds the given {@link BaseAttributeBuffer} which contains attributes of the type defined by the given {@link AttributeUsage}.
      *
      * @param usage  the {@link AttributeUsage}
-     * @param buffer the {@link AttributeBuffer}
+     * @param buffer the {@link BaseAttributeBuffer}
      */
-    BUILDER with(@NonNull AttributeUsage usage, @NonNull AttributeBuffer<?> buffer);
+    BUILDER with(@NonNull AttributeUsage usage, @NonNull BaseAttributeBuffer buffer);
 
     /**
      * Adds a {@link AttributeBuffer} which contains uniform attributes.
@@ -46,7 +47,7 @@ public interface BaseBindingBuilder<BUILDER extends BaseBindingBuilder<BUILDER, 
      * Alias for {@code with(AttributeUsage.UNIFORM, buffer)}.
      *
      * @param buffer the {@link AttributeBuffer} containing the uniform attributes
-     * @see #with(AttributeUsage, AttributeBuffer)
+     * @see #with(AttributeUsage, BaseAttributeBuffer)
      */
     default BUILDER withUniform(@NonNull AttributeBuffer<?> buffer) {
         return this.with(AttributeUsage.UNIFORM, buffer);
@@ -58,7 +59,7 @@ public interface BaseBindingBuilder<BUILDER extends BaseBindingBuilder<BUILDER, 
      * Alias for {@code with(AttributeUsage.UNIFORM_ARRAY, buffer)}.
      *
      * @param buffer the {@link AttributeBuffer} containing the uniform attributes
-     * @see #with(AttributeUsage, AttributeBuffer)
+     * @see #with(AttributeUsage, BaseAttributeBuffer)
      */
     default BUILDER withUniformArray(@NonNull AttributeBuffer<?> buffer) {
         return this.with(AttributeUsage.UNIFORM_ARRAY, buffer);
@@ -66,10 +67,22 @@ public interface BaseBindingBuilder<BUILDER extends BaseBindingBuilder<BUILDER, 
 
     /**
      * Adds a {@link Texture2D} which contains a 2D texture.
+     * <p>
+     * Alias for {@code with(AttributeUsage.TEXTURE, buffer)}.
      *
      * @param texture the texture
+     * @see #with(AttributeUsage, BaseAttributeBuffer)
      */
-    BUILDER withTexture(@NonNull Texture2D<?> texture);
+    default BUILDER withTexture(@NonNull Texture2D<?> texture) {
+        return this.with(AttributeUsage.TEXTURE, texture);
+    }
+
+    /**
+     * Adds all the buffers from the given {@link B}.
+     *
+     * @param binding the {@link B}
+     */
+    BUILDER with(@NonNull B binding);
 
     /**
      * @return the constructed {@link B}

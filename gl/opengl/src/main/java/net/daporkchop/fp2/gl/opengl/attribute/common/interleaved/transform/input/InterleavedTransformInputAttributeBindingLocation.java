@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.transform.input;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
+import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
 import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.draw.local.InterleavedDrawLocalAttributeBindingLocation;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
@@ -35,7 +35,7 @@ public class InterleavedTransformInputAttributeBindingLocation<S> extends Interl
     }
 
     @Override
-    public InternalAttributeUsage usage() {
-        return InternalAttributeUsage.TRANSFORM_INPUT;
+    public AttributeUsage usage() {
+        return AttributeUsage.TRANSFORM_INPUT;
     }
 }

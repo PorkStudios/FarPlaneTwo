@@ -37,7 +37,7 @@ public interface TransformLayoutBuilder extends BaseLayoutBuilder<TransformLayou
      * Alias for {@code with(AttributeUsage.TRANSFORM_INPUT, format)}.
      *
      * @param format the {@link AttributeFormat} of the inputs
-     * @see #with(AttributeUsage, AttributeFormat)
+     * @see BaseLayoutBuilder#with(AttributeUsage, net.daporkchop.fp2.gl.attribute.BaseAttributeFormat)
      */
     default TransformLayoutBuilder withInput(@NonNull AttributeFormat<?> format) {
         return this.with(AttributeUsage.TRANSFORM_INPUT, format);
@@ -49,7 +49,7 @@ public interface TransformLayoutBuilder extends BaseLayoutBuilder<TransformLayou
      * Alias for {@code with(AttributeUsage.TRANSFORM_OUTPUT, format)}.
      *
      * @param format the {@link AttributeFormat} of the outputs
-     * @see #with(AttributeUsage, AttributeFormat)
+     * @see BaseLayoutBuilder#with(AttributeUsage, net.daporkchop.fp2.gl.attribute.BaseAttributeFormat)
      */
     default TransformLayoutBuilder withOutput(@NonNull AttributeFormat<?> format) {
         return this.with(AttributeUsage.TRANSFORM_OUTPUT, format);

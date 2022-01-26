@@ -18,42 +18,18 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.transform;
+package net.daporkchop.fp2.gl.attribute;
 
-import com.google.common.collect.ImmutableSet;
-import lombok.NonNull;
-import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.attribute.AttributeUsage;
-import net.daporkchop.fp2.gl.opengl.layout.BaseLayoutBuilderImpl;
-import net.daporkchop.fp2.gl.transform.TransformLayout;
-import net.daporkchop.fp2.gl.transform.TransformLayoutBuilder;
-
-import java.util.EnumSet;
-import java.util.Set;
+import net.daporkchop.fp2.gl.GLResource;
 
 /**
+ * Dummy interface which serves as a root type for all attribute buffer families.
+ *
  * @author DaPorkchop_
  */
-public class TransformLayoutBuilderImpl extends BaseLayoutBuilderImpl<TransformLayoutBuilder, TransformLayout> implements TransformLayoutBuilder {
-    private static final Set<AttributeUsage> VALID_USAGES = ImmutableSet.copyOf(EnumSet.of(
-            AttributeUsage.UNIFORM,
-            AttributeUsage.UNIFORM_ARRAY,
-            AttributeUsage.TRANSFORM_INPUT,
-            AttributeUsage.TRANSFORM_OUTPUT,
-            AttributeUsage.TEXTURE
-    ));
-
-    public TransformLayoutBuilderImpl(@NonNull OpenGL gl) {
-        super(gl);
-    }
-
-    @Override
-    protected Set<AttributeUsage> validUsages() {
-        return VALID_USAGES;
-    }
-
-    @Override
-    public TransformLayout build() {
-        return new TransformLayoutImpl(this);
-    }
+public interface BaseAttributeBuffer extends GLResource {
+    /**
+     * @return the {@link BaseAttributeFormat} used by this buffer
+     */
+    BaseAttributeFormat format();
 }

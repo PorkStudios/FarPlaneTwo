@@ -18,42 +18,23 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.transform;
+package net.daporkchop.fp2.gl.attribute;
 
-import com.google.common.collect.ImmutableSet;
-import lombok.NonNull;
-import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.attribute.AttributeUsage;
-import net.daporkchop.fp2.gl.opengl.layout.BaseLayoutBuilderImpl;
-import net.daporkchop.fp2.gl.transform.TransformLayout;
-import net.daporkchop.fp2.gl.transform.TransformLayoutBuilder;
-
-import java.util.EnumSet;
 import java.util.Set;
 
 /**
+ * Dummy interface which serves as a root type for all attribute format families.
+ *
  * @author DaPorkchop_
  */
-public class TransformLayoutBuilderImpl extends BaseLayoutBuilderImpl<TransformLayoutBuilder, TransformLayout> implements TransformLayoutBuilder {
-    private static final Set<AttributeUsage> VALID_USAGES = ImmutableSet.copyOf(EnumSet.of(
-            AttributeUsage.UNIFORM,
-            AttributeUsage.UNIFORM_ARRAY,
-            AttributeUsage.TRANSFORM_INPUT,
-            AttributeUsage.TRANSFORM_OUTPUT,
-            AttributeUsage.TEXTURE
-    ));
+public interface BaseAttributeFormat {
+    /**
+     * @return the number of bytes used by each element in a {@link BaseAttributeFormat} using this format
+     */
+    long size();
 
-    public TransformLayoutBuilderImpl(@NonNull OpenGL gl) {
-        super(gl);
-    }
-
-    @Override
-    protected Set<AttributeUsage> validUsages() {
-        return VALID_USAGES;
-    }
-
-    @Override
-    public TransformLayout build() {
-        return new TransformLayoutImpl(this);
-    }
+    /**
+     * @return a {@link Set} of the {@link AttributeUsage}s valid for this {@link BaseAttributeFormat}
+     */
+    Set<AttributeUsage> validUsages();
 }

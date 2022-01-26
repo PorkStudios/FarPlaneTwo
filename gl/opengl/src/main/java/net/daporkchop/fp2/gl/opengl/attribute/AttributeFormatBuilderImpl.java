@@ -29,6 +29,7 @@ import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.StructInfo;
 
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
@@ -47,7 +48,7 @@ public class AttributeFormatBuilderImpl<S> implements AttributeFormatBuilder<S> 
     @NonNull
     protected final Class<S> clazz;
 
-    protected final Set<InternalAttributeUsage> usages = EnumSet.noneOf(InternalAttributeUsage.class);
+    protected final Set<AttributeUsage> usages = EnumSet.noneOf(AttributeUsage.class);
     protected final Map<String, String> nameOverrides = new HashMap<>();
 
     @Override
@@ -58,15 +59,13 @@ public class AttributeFormatBuilderImpl<S> implements AttributeFormatBuilder<S> 
 
     @Override
     public AttributeFormatBuilder<S> useFor(@NonNull AttributeUsage usage) {
-        this.usages.add(InternalAttributeUsage.fromExternal(usage));
+        this.usages.add(usage);
         return this;
     }
 
     @Override
     public AttributeFormatBuilder<S> useFor(@NonNull AttributeUsage... usages) {
-        for (AttributeUsage usage : usages) {
-            this.usages.add(InternalAttributeUsage.fromExternal(usage));
-        }
+        this.usages.addAll(Arrays.asList(usages));
         return this;
     }
 

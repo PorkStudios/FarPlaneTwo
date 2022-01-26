@@ -23,6 +23,8 @@ package net.daporkchop.fp2.gl.opengl.attribute;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.gl.attribute.AttributeUsage;
+import net.daporkchop.fp2.gl.attribute.BaseAttributeFormat;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
@@ -36,13 +38,13 @@ import java.util.Set;
  */
 @RequiredArgsConstructor
 @Getter
-public abstract class BaseAttributeFormatImpl<S> {
+public abstract class BaseAttributeFormatImpl<S> implements BaseAttributeFormat {
     @NonNull
     protected final OpenGL gl;
 
-    public abstract Set<InternalAttributeUsage> validUsages();
+    public abstract Set<AttributeUsage> validUsages();
 
-    public abstract BindingLocation<?> bindingLocation(@NonNull InternalAttributeUsage usage, @NonNull BindingLocationAssigner assigner);
+    public abstract BindingLocation<?> bindingLocation(@NonNull AttributeUsage usage, @NonNull BindingLocationAssigner assigner);
 
     @Deprecated
     public abstract String name();

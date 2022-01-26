@@ -26,7 +26,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.texture.BaseTextureFormat;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
+import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.TextureStructFormat;
 
@@ -39,8 +39,8 @@ import java.util.Set;
  */
 @Getter
 public abstract class BaseTextureFormatImpl<S> extends BaseAttributeFormatImpl<S> implements BaseTextureFormat<S> {
-    public static final Set<InternalAttributeUsage> VALID_USAGES = ImmutableSet.copyOf(EnumSet.of(
-            InternalAttributeUsage.TEXTURE
+    public static final Set<AttributeUsage> VALID_USAGES = ImmutableSet.copyOf(EnumSet.of(
+            AttributeUsage.TEXTURE
     ));
 
     private final TextureStructFormat<S> structFormat;
@@ -52,7 +52,7 @@ public abstract class BaseTextureFormatImpl<S> extends BaseAttributeFormatImpl<S
     }
 
     @Override
-    public Set<InternalAttributeUsage> validUsages() {
+    public Set<AttributeUsage> validUsages() {
         return VALID_USAGES;
     }
 

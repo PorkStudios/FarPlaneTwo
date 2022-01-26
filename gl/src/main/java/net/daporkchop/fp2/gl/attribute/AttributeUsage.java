@@ -20,34 +20,53 @@
 
 package net.daporkchop.fp2.gl.attribute;
 
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+
 /**
  * All things which an attribute format may be used for.
  *
  * @author DaPorkchop_
  */
+@RequiredArgsConstructor
+@Getter
 public enum AttributeUsage {
     /**
      * Buffers using this attribute format contain data which may be used as uniforms.
      */
-    UNIFORM,
+    UNIFORM("u_", ""),
     /**
      * Buffers using this attribute format contain data which may be used as a uniform array.
      */
-    UNIFORM_ARRAY,
-    /**
-     * Buffers using this attribute format contain data which may be used as local vertex data when drawing.
-     */
-    DRAW_LOCAL,
+    UNIFORM_ARRAY("ua_", ""),
     /**
      * Buffers using this attribute format contain data which may be used as global vertex data when drawing.
      */
-    DRAW_GLOBAL,
+    DRAW_GLOBAL("dg_", ""),
+    /**
+     * Buffers using this attribute format contain data which may be used as local vertex data when drawing.
+     */
+    DRAW_LOCAL("dl_", ""),
     /**
      * Buffers using this attribute format may be used as the input for transform commands.
      */
-    TRANSFORM_INPUT,
+    TRANSFORM_INPUT("ti_", ""),
     /**
      * Buffers using this attribute format may be used as the output for transform commands.
      */
-    TRANSFORM_OUTPUT;
+    TRANSFORM_OUTPUT("to_", ""),
+    /**
+     * Buffers using this attribute format may be used as textures.
+     */
+    TEXTURE("t_", ""),
+    /**
+     * Buffers using this attribute format may be used as fragment colors.
+     */
+    FRAGMENT_COLOR("f_", "");
+
+    @NonNull
+    private final String defaultPrefix;
+    @NonNull
+    private final String defaultSuffix;
 }

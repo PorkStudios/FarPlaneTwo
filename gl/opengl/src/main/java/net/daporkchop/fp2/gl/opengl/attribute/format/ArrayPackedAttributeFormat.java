@@ -23,7 +23,7 @@ package net.daporkchop.fp2.gl.opengl.attribute.format;
 import com.google.common.collect.ImmutableSet;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
+import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
 import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttributeFormatImpl;
@@ -37,8 +37,8 @@ import java.util.Set;
  * @author DaPorkchop_
  */
 public final class ArrayPackedAttributeFormat<S> extends InterleavedAttributeFormatImpl<S> {
-    private static final Set<InternalAttributeUsage> VALID_USAGES = ImmutableSet.copyOf(EnumSet.of(
-            InternalAttributeUsage.DRAW_LOCAL
+    private static final Set<AttributeUsage> VALID_USAGES = ImmutableSet.copyOf(EnumSet.of(
+            AttributeUsage.DRAW_LOCAL
     ));
 
     public static boolean supports(@NonNull AttributeFormatBuilderImpl<?> builder) {
@@ -50,12 +50,12 @@ public final class ArrayPackedAttributeFormat<S> extends InterleavedAttributeFor
     }
 
     @Override
-    public Set<InternalAttributeUsage> validUsages() {
+    public Set<AttributeUsage> validUsages() {
         return VALID_USAGES;
     }
 
     @Override
-    public BindingLocation<?> bindingLocation(@NonNull InternalAttributeUsage usage, @NonNull BindingLocationAssigner assigner) {
+    public BindingLocation<?> bindingLocation(@NonNull AttributeUsage usage, @NonNull BindingLocationAssigner assigner) {
         switch (usage) {
             case DRAW_LOCAL:
                 return new InterleavedDrawLocalAttributeBindingLocation<>(this.structFormat(), assigner);

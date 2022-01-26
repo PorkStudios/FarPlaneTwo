@@ -22,7 +22,7 @@ package net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.draw.local;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
-import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
+import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
 import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttributeBufferImpl;
@@ -50,14 +50,14 @@ public class InterleavedDrawLocalAttributeBindingLocation<S> implements BindingL
     }
 
     @Override
-    public InternalAttributeUsage usage() {
-        return InternalAttributeUsage.DRAW_LOCAL;
+    public AttributeUsage usage() {
+        return AttributeUsage.DRAW_LOCAL;
     }
 
     @Override
     public void configureProgramPreLink(@NonNull GLAPI api, int program) {
         for (int i = 0; i < this.attributeIndices.length; i++) {
-            api.glBindAttribLocation(program, this.attributeIndices[i], this.usage().glslPrefix() + this.structFormat.glslFields().get(i).name());
+            api.glBindAttribLocation(program, this.attributeIndices[i], this.usage().defaultPrefix() + this.structFormat.glslFields().get(i).name() + this.usage().defaultSuffix());
         }
     }
 
@@ -72,7 +72,7 @@ public class InterleavedDrawLocalAttributeBindingLocation<S> implements BindingL
             return;
         }
 
-        this.structFormat.glslFields().forEach(field -> builder.append("in ").append(field.declaration(this.usage().glslPrefix())).append(";\n"));
+        this.structFormat.glslFields().forEach(field -> builder.append("in ").append(field.declaration(this.usage().defaultPrefix(), this.usage().defaultSuffix())).append(";\n"));
     }
 
     @Override

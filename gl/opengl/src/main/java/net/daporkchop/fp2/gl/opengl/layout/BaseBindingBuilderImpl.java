@@ -24,15 +24,11 @@ import com.google.common.collect.ImmutableMap;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.AttributeUsage;
-import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
+import net.daporkchop.fp2.gl.attribute.BaseAttributeBuffer;
 import net.daporkchop.fp2.gl.layout.binding.BaseBinding;
 import net.daporkchop.fp2.gl.layout.binding.BaseBindingBuilder;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
-import net.daporkchop.fp2.gl.opengl.attribute.common.AttributeBufferImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.texture.BaseTextureImpl;
 
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
@@ -45,21 +41,21 @@ public abstract class BaseBindingBuilderImpl<BUILDER extends BaseBindingBuilder<
     @NonNull
     protected final L layout;
 
-    protected final ImmutableMap.Builder<BaseAttributeBufferImpl<?, ?>, InternalAttributeUsage> buffersUsages = ImmutableMap.builder();
+    protected final ImmutableMap.Builder<BaseAttributeBufferImpl<?, ?>, AttributeUsage> buffersUsages = ImmutableMap.builder();
 
-    protected void with(@NonNull BaseAttributeBufferImpl<?, ?> buffer, @NonNull InternalAttributeUsage usage) {
+    protected void with(@NonNull BaseAttributeBufferImpl<?, ?> buffer, @NonNull AttributeUsage usage) {
         this.buffersUsages.put(buffer, usage);
     }
 
     @Override
-    public BUILDER with(@NonNull AttributeUsage usage, @NonNull AttributeBuffer<?> buffer) {
-        this.with((AttributeBufferImpl<?, ?>) buffer, InternalAttributeUsage.fromExternal(usage));
+    public BUILDER with(@NonNull AttributeUsage usage, @NonNull BaseAttributeBuffer buffer) {
+        this.with((BaseAttributeBufferImpl<?, ?>) buffer, usage);
         return uncheckedCast(this);
     }
 
     @Override
-    public BUILDER withTexture(@NonNull Texture2D<?> texture) {
-        this.with((BaseTextureImpl<?, ?>) texture, InternalAttributeUsage.TEXTURE);
+    public BUILDER with(@NonNull B binding) {
+        ((BaseBindingImpl<?>) binding).origBuffersUsages.forEach(this::with);
         return uncheckedCast(this);
     }
 }

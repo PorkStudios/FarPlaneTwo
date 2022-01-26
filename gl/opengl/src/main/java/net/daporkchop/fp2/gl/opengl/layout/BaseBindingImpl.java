@@ -26,7 +26,7 @@ import net.daporkchop.fp2.gl.GLResource;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
+import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
 import net.daporkchop.fp2.gl.opengl.command.state.MutableState;
 import net.daporkchop.fp2.gl.opengl.command.state.StateProperties;
@@ -47,7 +47,7 @@ public abstract class BaseBindingImpl<L extends BaseLayoutImpl> implements GLRes
 
     protected final L layout;
 
-    protected final Map<BaseAttributeBufferImpl<?, ?>, InternalAttributeUsage> origBuffersUsages;
+    protected final Map<BaseAttributeBufferImpl<?, ?>, AttributeUsage> origBuffersUsages;
 
     protected final int vao;
 

@@ -22,7 +22,7 @@ package net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.uniform.array;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
-import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
+import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
 import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttributeBufferImpl;
@@ -47,8 +47,8 @@ public class InterleavedUniformArrayAttributeBindingLocation<S> implements Bindi
     }
 
     @Override
-    public InternalAttributeUsage usage() {
-        return InternalAttributeUsage.UNIFORM_ARRAY;
+    public AttributeUsage usage() {
+        return AttributeUsage.UNIFORM_ARRAY;
     }
 
     @Override
@@ -67,7 +67,7 @@ public class InterleavedUniformArrayAttributeBindingLocation<S> implements Bindi
     @Override
     public void generateGLSL(@NonNull ShaderType type, @NonNull StringBuilder builder) {
         builder.append("struct STRUCT_").append(this.structFormat.structName()).append(" {\n");
-        this.structFormat.glslFields().forEach(field -> builder.append("    ").append(field.declaration(this.usage().glslPrefix())).append(";\n"));
+        this.structFormat.glslFields().forEach(field -> builder.append("    ").append(field.declaration(this.usage().defaultPrefix(), this.usage().defaultSuffix())).append(";\n"));
         builder.append("};\n");
 
         builder.append("layout(").append(this.structFormat.layoutName()).append(") buffer BUFFER_").append(this.structFormat.structName()).append(" {\n");
@@ -75,8 +75,8 @@ public class InterleavedUniformArrayAttributeBindingLocation<S> implements Bindi
         builder.append("};\n");
 
         this.structFormat.glslFields().forEach(field -> {
-            builder.append(field.declaration(this.usage().glslPrefix())).append("(in uint index) {\n");
-            builder.append("    return buffer_").append(this.structFormat.structName()).append("[index].").append(this.usage().glslPrefix()).append(field.name()).append(";\n");
+            builder.append(field.declaration(this.usage().defaultPrefix(), this.usage().defaultSuffix())).append("(in uint index) {\n");
+            builder.append("    return buffer_").append(this.structFormat.structName()).append("[index].").append(this.usage().defaultPrefix()).append(field.name()).append(this.usage().defaultSuffix()).append(";\n");
             builder.append("}\n");
         });
     }

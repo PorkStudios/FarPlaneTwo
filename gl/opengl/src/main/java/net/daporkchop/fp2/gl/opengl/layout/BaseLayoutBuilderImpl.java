@@ -24,14 +24,12 @@ import com.google.common.collect.ImmutableMap;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeUsage;
-import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
+import net.daporkchop.fp2.gl.attribute.BaseAttributeFormat;
 import net.daporkchop.fp2.gl.layout.BaseLayout;
 import net.daporkchop.fp2.gl.layout.BaseLayoutBuilder;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.InternalAttributeUsage;
 import net.daporkchop.fp2.gl.opengl.attribute.common.AttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.BaseTextureFormatImpl;
 
@@ -49,25 +47,36 @@ public abstract class BaseLayoutBuilderImpl<BUILDER extends BaseLayoutBuilder<BU
     @NonNull
     protected final OpenGL gl;
 
-    protected final ImmutableMap.Builder<BaseAttributeFormatImpl<?>, InternalAttributeUsage> formatsUsages = ImmutableMap.builder();
+    protected final ImmutableMap.Builder<BaseAttributeFormatImpl<?>, AttributeUsage> formatsUsages = ImmutableMap.builder();
 
-    protected void with(@NonNull BaseAttributeFormatImpl<?> format, @NonNull InternalAttributeUsage usage) {
+    protected void with(@NonNull BaseAttributeFormatImpl<?> format, @NonNull AttributeUsage usage) {
         checkArg(this.validUsages().contains(usage), "%s doesn't support %s", usage);
+
+        switch (usage) {
+            case UNIFORM:
+            case UNIFORM_ARRAY:
+            case DRAW_GLOBAL:
+            case DRAW_LOCAL:
+            case TRANSFORM_INPUT:
+            case TRANSFORM_OUTPUT:
+                checkArg(format instanceof AttributeFormatImpl, "format used as %s must be instance of %s, but found %s", usage, AttributeFormatImpl.class, format);
+                break;
+            case TEXTURE:
+                checkArg(format instanceof BaseTextureFormatImpl, "format used as %s must be instance of %s, but found %s", usage, BaseTextureFormatImpl.class, format);
+                break;
+            default:
+                throw new IllegalArgumentException("unknown usage: " + usage);
+        }
+
         this.formatsUsages.put(format, usage);
     }
 
-    protected abstract Set<InternalAttributeUsage> validUsages();
+    protected abstract Set<AttributeUsage> validUsages();
 
     @Override
-    public BUILDER with(@NonNull AttributeUsage usage, @NonNull AttributeFormat<?> format) {
-        checkArg(format.usage().contains(usage), "%s doesn't support %s", format, usage);
-        this.with((AttributeFormatImpl<?, ?>) format, InternalAttributeUsage.fromExternal(usage));
-        return uncheckedCast(this);
-    }
-
-    @Override
-    public BUILDER withTexture(@NonNull TextureFormat2D<?> format) {
-        this.with((BaseTextureFormatImpl<?>) format, InternalAttributeUsage.TEXTURE);
+    public BUILDER with(@NonNull AttributeUsage usage, @NonNull BaseAttributeFormat format) {
+        checkArg(format.validUsages().contains(usage), "%s doesn't support %s", format, usage);
+        this.with((BaseAttributeFormatImpl<?>) format, usage);
         return uncheckedCast(this);
     }
 
