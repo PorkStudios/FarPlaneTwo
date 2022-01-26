@@ -37,7 +37,7 @@ import java.util.Optional;
 public enum AttributeFormatType {
     ARRAY_PACKED_INSTANCED {
         @Override
-        public <S> Optional<AttributeFormatImpl<S, ?>> createFormat(@NonNull AttributeFormatBuilderImpl<S> builder) {
+        public <S> Optional<AttributeFormatImpl<?, S, ?>> createFormat(@NonNull AttributeFormatBuilderImpl<S> builder) {
             return ArrayPackedInstancedAttributeFormat.supports(builder)
                     ? Optional.of(new ArrayPackedInstancedAttributeFormat<>(builder))
                     : Optional.empty();
@@ -45,7 +45,7 @@ public enum AttributeFormatType {
     },
     ARRAY_PACKED {
         @Override
-        public <S> Optional<AttributeFormatImpl<S, ?>> createFormat(@NonNull AttributeFormatBuilderImpl<S> builder) {
+        public <S> Optional<AttributeFormatImpl<?, S, ?>> createFormat(@NonNull AttributeFormatBuilderImpl<S> builder) {
             return ArrayPackedAttributeFormat.supports(builder)
                     ? Optional.of(new ArrayPackedAttributeFormat<>(builder))
                     : Optional.empty();
@@ -53,7 +53,7 @@ public enum AttributeFormatType {
     },
     ARRAY_UNPACKED {
         @Override
-        public <S> Optional<AttributeFormatImpl<S, ?>> createFormat(@NonNull AttributeFormatBuilderImpl<S> builder) {
+        public <S> Optional<AttributeFormatImpl<?, S, ?>> createFormat(@NonNull AttributeFormatBuilderImpl<S> builder) {
             return ArrayUnpackedAttributeFormat.supports(builder)
                     ? Optional.of(new ArrayUnpackedAttributeFormat<>(builder))
                     : Optional.empty();
@@ -61,7 +61,7 @@ public enum AttributeFormatType {
     },
     STD140_BLOCK {
         @Override
-        public <S> Optional<AttributeFormatImpl<S, ?>> createFormat(@NonNull AttributeFormatBuilderImpl<S> builder) {
+        public <S> Optional<AttributeFormatImpl<?, S, ?>> createFormat(@NonNull AttributeFormatBuilderImpl<S> builder) {
             return Std140BlockAttributeFormat.supports(builder)
                     ? Optional.of(new Std140BlockAttributeFormat<>(builder))
                     : Optional.empty();
@@ -75,9 +75,9 @@ public enum AttributeFormatType {
      * @param <S>     the struct type
      * @return the created {@link AttributeFormatImpl}
      */
-    public static <S> AttributeFormatImpl<S, ?> createBestFormat(@NonNull AttributeFormatBuilderImpl<S> builder) {
+    public static <S> AttributeFormatImpl<?, S, ?> createBestFormat(@NonNull AttributeFormatBuilderImpl<S> builder) {
         for (AttributeFormatType type : values()) {
-            Optional<AttributeFormatImpl<S, ?>> optionalFormat = type.createFormat(builder);
+            Optional<AttributeFormatImpl<?, S, ?>> optionalFormat = type.createFormat(builder);
             if (optionalFormat.isPresent()) {
                 return optionalFormat.get();
             }
@@ -93,5 +93,5 @@ public enum AttributeFormatType {
      * @param <S>     the struct type
      * @return the created {@link AttributeFormatImpl}, or an empty {@link Optional} if this type cannot support the given {@link AttributeFormatBuilderImpl}'s options
      */
-    public abstract <S> Optional<AttributeFormatImpl<S, ?>> createFormat(@NonNull AttributeFormatBuilderImpl<S> builder);
+    public abstract <S> Optional<AttributeFormatImpl<?, S, ?>> createFormat(@NonNull AttributeFormatBuilderImpl<S> builder);
 }

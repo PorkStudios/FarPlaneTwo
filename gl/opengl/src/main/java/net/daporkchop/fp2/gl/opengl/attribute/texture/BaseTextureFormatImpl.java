@@ -23,10 +23,10 @@ package net.daporkchop.fp2.gl.opengl.attribute.texture;
 import com.google.common.collect.ImmutableSet;
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.attribute.texture.BaseTextureFormat;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
-import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.TextureStructFormat;
 
@@ -38,7 +38,7 @@ import java.util.Set;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class BaseTextureFormatImpl<S> extends BaseAttributeFormatImpl<S> implements BaseTextureFormat<S> {
+public abstract class BaseTextureFormatImpl<F extends BaseTextureFormatImpl<F, S>, S> extends BaseAttributeFormatImpl<F> implements BaseTextureFormat<S> {
     public static final Set<AttributeUsage> VALID_USAGES = ImmutableSet.copyOf(EnumSet.of(
             AttributeUsage.TEXTURE
     ));
@@ -62,12 +62,12 @@ public abstract class BaseTextureFormatImpl<S> extends BaseAttributeFormatImpl<S
     }
 
     @Override
-    public String name() {
+    public String rawName() {
         return this.structFormat.structName();
     }
 
     @Override
-    public List<GLSLField> attributeFields() {
+    public List<GLSLField> rawAttributeFields() {
         return this.structFormat.glslFields();
     }
 }

@@ -32,7 +32,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @Getter
-public final class InterleavedAttributeWriterImpl<S, F extends InterleavedAttributeFormatImpl<S>> implements AttributeWriter<S> {
+public final class InterleavedAttributeWriterImpl<F extends InterleavedAttributeFormatImpl<F, S>, S> implements AttributeWriter<S> {
     protected final OpenGL gl;
     protected final F format;
     protected final InterleavedStructFormat<S> structFormat;

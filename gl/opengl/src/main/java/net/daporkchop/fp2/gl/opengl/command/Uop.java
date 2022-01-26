@@ -33,7 +33,7 @@ import net.daporkchop.fp2.gl.opengl.command.state.State;
 import net.daporkchop.fp2.gl.opengl.command.state.StateProperties;
 import net.daporkchop.fp2.gl.opengl.command.state.StateProperty;
 import net.daporkchop.fp2.gl.opengl.command.state.StateValueProperty;
-import net.daporkchop.fp2.gl.opengl.layout.BaseBindingImpl;
+import net.daporkchop.fp2.gl.opengl.layout.binding.BaseBindingImpl;
 import net.daporkchop.fp2.gl.opengl.shader.BaseShaderProgramImpl;
 import net.daporkchop.fp2.gl.transform.binding.TransformBinding;
 import net.daporkchop.fp2.gl.transform.shader.TransformShaderProgram;

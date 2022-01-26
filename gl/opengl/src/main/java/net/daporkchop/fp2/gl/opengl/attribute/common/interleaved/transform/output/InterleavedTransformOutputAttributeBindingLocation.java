@@ -21,15 +21,16 @@
 package net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.transform.output;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.attribute.AttributeUsage;
+import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
 import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttributeBufferImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
 import net.daporkchop.fp2.gl.opengl.command.state.MutableState;
 import net.daporkchop.fp2.gl.opengl.command.state.StateProperties;
+import net.daporkchop.fp2.gl.opengl.layout.LayoutEntry;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
 
 import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
@@ -38,11 +39,11 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public class InterleavedTransformOutputAttributeBindingLocation<S> implements BindingLocation<InterleavedAttributeBufferImpl<S, ?>> {
-    protected final InterleavedStructFormat<S> structFormat;
+public class InterleavedTransformOutputAttributeBindingLocation<S> implements BindingLocation<InterleavedAttributeBufferImpl<?, S>> {
+    protected final LayoutEntry<? extends InterleavedAttributeFormatImpl<?, S>> layout;
 
-    public InterleavedTransformOutputAttributeBindingLocation(@NonNull InterleavedStructFormat<S> structFormat, @NonNull BindingLocationAssigner assigner) {
-        this.structFormat = structFormat;
+    public InterleavedTransformOutputAttributeBindingLocation(@NonNull LayoutEntry<? extends InterleavedAttributeFormatImpl<?, S>> layout, @NonNull BindingLocationAssigner assigner) {
+        this.layout = layout;
     }
 
     @Override
@@ -53,9 +54,7 @@ public class InterleavedTransformOutputAttributeBindingLocation<S> implements Bi
     @Override
     public void configureProgramPreLink(@NonNull GLAPI api, int program) {
         api.glTransformFeedbackVaryings(program,
-                this.structFormat.glslFields().stream()
-                        .map(field -> this.usage().defaultPrefix() + field.name() + this.usage().defaultSuffix())
-                        .toArray(CharSequence[]::new),
+                this.layout.attributeFields().map(GLSLField::name).toArray(CharSequence[]::new),
                 GL_INTERLEAVED_ATTRIBS);
     }
 
@@ -68,16 +67,16 @@ public class InterleavedTransformOutputAttributeBindingLocation<S> implements Bi
     public void generateGLSL(@NonNull ShaderType type, @NonNull StringBuilder builder) {
         checkArg(type == ShaderType.VERTEX, "transform output requires only a vertex shader!");
 
-        this.structFormat.glslFields().forEach(field -> builder.append("out ").append(field.declaration(this.usage().defaultPrefix(), this.usage().defaultSuffix())).append(";\n"));
+        this.layout.attributeFields().forEach(field -> builder.append("out ").append(field.declaration()).append(";\n"));
     }
 
     @Override
-    public void configureBuffer(@NonNull GLAPI api, @NonNull InterleavedAttributeBufferImpl<S, ?> buffer) {
+    public void configureBuffer(@NonNull GLAPI api, @NonNull InterleavedAttributeBufferImpl<?, S> buffer) {
         //no-op
     }
 
     @Override
-    public void configureState(@NonNull MutableState state, @NonNull InterleavedAttributeBufferImpl<S, ?> buffer) {
+    public void configureState(@NonNull MutableState state, @NonNull InterleavedAttributeBufferImpl<?, S> buffer) {
         state.set(StateProperties.BOUND_TRANSFORM_FEEDBACK_BUFFER[0], buffer.buffer().id());
     }
 }

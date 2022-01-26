@@ -29,6 +29,7 @@ import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
+import net.daporkchop.fp2.gl.opengl.layout.LayoutEntry;
 
 import java.util.List;
 import java.util.Set;
@@ -38,17 +39,15 @@ import java.util.Set;
  */
 @RequiredArgsConstructor
 @Getter
-public abstract class BaseAttributeFormatImpl<S> implements BaseAttributeFormat {
+public abstract class BaseAttributeFormatImpl<F extends BaseAttributeFormatImpl<F>> implements BaseAttributeFormat {
     @NonNull
     protected final OpenGL gl;
 
     public abstract Set<AttributeUsage> validUsages();
 
-    public abstract BindingLocation<?> bindingLocation(@NonNull AttributeUsage usage, @NonNull BindingLocationAssigner assigner);
+    public abstract BindingLocation<?> bindingLocation(@NonNull LayoutEntry<F> layout, @NonNull BindingLocationAssigner assigner);
 
-    @Deprecated
-    public abstract String name();
+    public abstract String rawName();
 
-    @Deprecated
-    public abstract List<GLSLField> attributeFields();
+    public abstract List<GLSLField> rawAttributeFields();
 }

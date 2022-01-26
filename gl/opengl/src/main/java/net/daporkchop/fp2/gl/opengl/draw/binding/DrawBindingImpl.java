@@ -24,7 +24,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.fp2.gl.opengl.draw.DrawLayoutImpl;
-import net.daporkchop.fp2.gl.opengl.layout.BaseBindingImpl;
+import net.daporkchop.fp2.gl.opengl.layout.binding.BaseBindingImpl;
 
 /**
  * @author DaPorkchop_

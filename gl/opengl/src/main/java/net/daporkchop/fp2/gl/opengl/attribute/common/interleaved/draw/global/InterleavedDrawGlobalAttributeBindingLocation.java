@@ -21,19 +21,20 @@
 package net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.draw.global;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.attribute.AttributeUsage;
+import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
 import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttributeBufferImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.draw.local.InterleavedDrawLocalAttributeBindingLocation;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
+import net.daporkchop.fp2.gl.opengl.layout.LayoutEntry;
 
 /**
  * @author DaPorkchop_
  */
 public class InterleavedDrawGlobalAttributeBindingLocation<S> extends InterleavedDrawLocalAttributeBindingLocation<S> {
-    public InterleavedDrawGlobalAttributeBindingLocation(@NonNull InterleavedStructFormat<S> structFormat, @NonNull BindingLocationAssigner assigner) {
-        super(structFormat, assigner);
+    public InterleavedDrawGlobalAttributeBindingLocation(@NonNull LayoutEntry<? extends InterleavedAttributeFormatImpl<?, S>> layout, @NonNull BindingLocationAssigner assigner) {
+        super(layout, assigner);
     }
 
     @Override
@@ -42,7 +43,7 @@ public class InterleavedDrawGlobalAttributeBindingLocation<S> extends Interleave
     }
 
     @Override
-    public void configureBuffer(@NonNull GLAPI api, @NonNull InterleavedAttributeBufferImpl<S, ?> buffer) {
+    public void configureBuffer(@NonNull GLAPI api, @NonNull InterleavedAttributeBufferImpl<?, S> buffer) {
         super.configureBuffer(api, buffer);
 
         //set attribute divisors

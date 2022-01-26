@@ -23,15 +23,16 @@ package net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.transform.inpu
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
+import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.draw.local.InterleavedDrawLocalAttributeBindingLocation;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
+import net.daporkchop.fp2.gl.opengl.layout.LayoutEntry;
 
 /**
  * @author DaPorkchop_
  */
 public class InterleavedTransformInputAttributeBindingLocation<S> extends InterleavedDrawLocalAttributeBindingLocation<S> {
-    public InterleavedTransformInputAttributeBindingLocation(@NonNull InterleavedStructFormat<S> structFormat, @NonNull BindingLocationAssigner assigner) {
-        super(structFormat, assigner);
+    public InterleavedTransformInputAttributeBindingLocation(@NonNull LayoutEntry<? extends InterleavedAttributeFormatImpl<?, S>> layout, @NonNull BindingLocationAssigner assigner) {
+        super(layout, assigner);
     }
 
     @Override

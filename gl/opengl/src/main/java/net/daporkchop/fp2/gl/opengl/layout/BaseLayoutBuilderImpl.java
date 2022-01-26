@@ -20,7 +20,7 @@
 
 package net.daporkchop.fp2.gl.opengl.layout;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableList;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -47,9 +47,13 @@ public abstract class BaseLayoutBuilderImpl<BUILDER extends BaseLayoutBuilder<BU
     @NonNull
     protected final OpenGL gl;
 
-    protected final ImmutableMap.Builder<BaseAttributeFormatImpl<?>, AttributeUsage> formatsUsages = ImmutableMap.builder();
+    protected final ImmutableList.Builder<LayoutEntry<?>> entries = ImmutableList.builder();
 
-    protected void with(@NonNull BaseAttributeFormatImpl<?> format, @NonNull AttributeUsage usage) {
+    protected abstract Set<AttributeUsage> validUsages();
+
+    @Override
+    public BUILDER with(@NonNull AttributeUsage usage, @NonNull BaseAttributeFormat format) {
+        checkArg(format.validUsages().contains(usage), "%s doesn't support %s", format, usage);
         checkArg(this.validUsages().contains(usage), "%s doesn't support %s", usage);
 
         switch (usage) {
@@ -68,21 +72,13 @@ public abstract class BaseLayoutBuilderImpl<BUILDER extends BaseLayoutBuilder<BU
                 throw new IllegalArgumentException("unknown usage: " + usage);
         }
 
-        this.formatsUsages.put(format, usage);
-    }
-
-    protected abstract Set<AttributeUsage> validUsages();
-
-    @Override
-    public BUILDER with(@NonNull AttributeUsage usage, @NonNull BaseAttributeFormat format) {
-        checkArg(format.validUsages().contains(usage), "%s doesn't support %s", format, usage);
-        this.with((BaseAttributeFormatImpl<?>) format, usage);
+        this.entries.add(new LayoutEntry<>(usage, (BaseAttributeFormatImpl<?>) format));
         return uncheckedCast(this);
     }
 
     @Override
     public BUILDER with(@NonNull L layout) {
-        ((BaseLayoutImpl) layout).origFormatsUsages.forEach(this::with);
+        ((BaseLayoutImpl) layout).entries().forEach(entry -> this.with(entry.usage(), entry.format()));
         return uncheckedCast(this);
     }
 }

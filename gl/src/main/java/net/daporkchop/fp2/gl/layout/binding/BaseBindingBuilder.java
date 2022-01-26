@@ -24,10 +24,15 @@ import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.attribute.BaseAttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.BaseAttributeFormat;
 import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
+import net.daporkchop.fp2.gl.layout.BaseLayout;
 
 /**
  * Generic builder type for {@link BaseBinding}s.
+ * <p>
+ * Each {@link BaseAttributeBuffer} added corresponds to exactly one {@link BaseAttributeFormat} in the corresponding {@link BaseLayout} that this binding is for. Buffers must be added in
+ * strictly the same order as their corresponding formats were added to the layout.
  *
  * @param <B> the type of {@link BaseBinding} to build
  * @author DaPorkchop_

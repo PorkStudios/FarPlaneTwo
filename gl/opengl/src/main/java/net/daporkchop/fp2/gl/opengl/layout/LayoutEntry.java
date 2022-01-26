@@ -20,42 +20,41 @@
 
 package net.daporkchop.fp2.gl.opengl.layout;
 
-import com.google.common.collect.ImmutableMap;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.attribute.AttributeUsage;
-import net.daporkchop.fp2.gl.attribute.BaseAttributeBuffer;
-import net.daporkchop.fp2.gl.layout.binding.BaseBinding;
-import net.daporkchop.fp2.gl.layout.binding.BaseBindingBuilder;
-import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
 
-import static net.daporkchop.lib.common.util.PorkUtil.*;
+import java.util.stream.Stream;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-@Getter
-public abstract class BaseBindingBuilderImpl<BUILDER extends BaseBindingBuilder<BUILDER, B>, B extends BaseBinding, L extends BaseLayoutImpl> implements BaseBindingBuilder<BUILDER, B> {
+@Data
+public final class LayoutEntry<F extends BaseAttributeFormatImpl<?>> {
     @NonNull
-    protected final L layout;
+    private final AttributeUsage usage;
+    @NonNull
+    private final F format;
 
-    protected final ImmutableMap.Builder<BaseAttributeBufferImpl<?, ?>, AttributeUsage> buffersUsages = ImmutableMap.builder();
+    private BindingLocation<?> location;
 
-    protected void with(@NonNull BaseAttributeBufferImpl<?, ?> buffer, @NonNull AttributeUsage usage) {
-        this.buffersUsages.put(buffer, usage);
+    public LayoutEntry<F> location(@NonNull BindingLocation<?> location) {
+        checkState(this.location == null, "location already set!");
+        this.location = location;
+        return this;
     }
 
-    @Override
-    public BUILDER with(@NonNull AttributeUsage usage, @NonNull BaseAttributeBuffer buffer) {
-        this.with((BaseAttributeBufferImpl<?, ?>) buffer, usage);
-        return uncheckedCast(this);
+    public String name() {
+        return this.usage.defaultPrefix() + this.format.rawName() + this.usage.defaultSuffix();
     }
 
-    @Override
-    public BUILDER with(@NonNull B binding) {
-        ((BaseBindingImpl<?>) binding).origBuffersUsages.forEach(this::with);
-        return uncheckedCast(this);
+    public Stream<GLSLField> attributeFields() {
+        return this.format.rawAttributeFields().stream()
+                .map(field -> new GLSLField(field.type(), this.usage.defaultPrefix() + field.name() + this.usage.defaultSuffix()));
     }
 }

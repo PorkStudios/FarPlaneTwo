@@ -22,8 +22,8 @@ package net.daporkchop.fp2.gl.opengl.attribute.format;
 
 import com.google.common.collect.ImmutableSet;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
 import net.daporkchop.fp2.gl.attribute.AttributeUsage;
+import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
 import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttributeFormatImpl;
@@ -31,6 +31,7 @@ import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.draw.local.Inte
 import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.transform.input.InterleavedTransformInputAttributeBindingLocation;
 import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.transform.output.InterleavedTransformOutputAttributeBindingLocation;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.StructLayouts;
+import net.daporkchop.fp2.gl.opengl.layout.LayoutEntry;
 
 import java.util.EnumSet;
 import java.util.Set;
@@ -38,7 +39,7 @@ import java.util.Set;
 /**
  * @author DaPorkchop_
  */
-public final class ArrayUnpackedAttributeFormat<S> extends InterleavedAttributeFormatImpl<S> {
+public final class ArrayUnpackedAttributeFormat<S> extends InterleavedAttributeFormatImpl<ArrayUnpackedAttributeFormat<S>, S> {
     private static final Set<AttributeUsage> VALID_USAGES = ImmutableSet.copyOf(EnumSet.of(
             AttributeUsage.DRAW_LOCAL,
             AttributeUsage.TRANSFORM_INPUT,
@@ -59,16 +60,16 @@ public final class ArrayUnpackedAttributeFormat<S> extends InterleavedAttributeF
     }
 
     @Override
-    public BindingLocation<?> bindingLocation(@NonNull AttributeUsage usage, @NonNull BindingLocationAssigner assigner) {
-        switch (usage) {
+    public BindingLocation<?> bindingLocation(@NonNull LayoutEntry<ArrayUnpackedAttributeFormat<S>> layout, @NonNull BindingLocationAssigner assigner) {
+        switch (layout.usage()) {
             case DRAW_LOCAL:
-                return new InterleavedDrawLocalAttributeBindingLocation<>(this.structFormat(), assigner);
+                return new InterleavedDrawLocalAttributeBindingLocation<>(layout, assigner);
             case TRANSFORM_INPUT:
-                return new InterleavedTransformInputAttributeBindingLocation<>(this.structFormat(), assigner);
+                return new InterleavedTransformInputAttributeBindingLocation<>(layout, assigner);
             case TRANSFORM_OUTPUT:
-                return new InterleavedTransformOutputAttributeBindingLocation<>(this.structFormat(), assigner);
+                return new InterleavedTransformOutputAttributeBindingLocation<>(layout, assigner);
             default:
-                throw new IllegalArgumentException("unsupported usage: " + usage);
+                throw new IllegalArgumentException("unsupported usage: " + layout.usage());
         }
     }
 }

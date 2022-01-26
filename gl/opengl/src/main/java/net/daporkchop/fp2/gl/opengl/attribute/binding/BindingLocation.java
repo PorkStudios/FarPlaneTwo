@@ -32,7 +32,7 @@ import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
  *
  * @author DaPorkchop_
  */
-public interface BindingLocation<B extends BaseAttributeBufferImpl<?, ?>> {
+public interface BindingLocation<B extends BaseAttributeBufferImpl<?>> {
     /**
      * @return the {@link AttributeUsage} which this binding location fulfils
      */

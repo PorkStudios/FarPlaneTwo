@@ -22,13 +22,14 @@ package net.daporkchop.fp2.gl.opengl.attribute.texture;
 
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureWriter2D;
-import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.StructLayouts;
+import net.daporkchop.fp2.gl.opengl.layout.LayoutEntry;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -36,16 +37,16 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @Getter
-public class TextureFormat2DImpl<S> extends BaseTextureFormatImpl<S> implements TextureFormat2D<S> {
+public class TextureFormat2DImpl<S> extends BaseTextureFormatImpl<TextureFormat2DImpl<S>, S> implements TextureFormat2D<S> {
     public TextureFormat2DImpl(@NonNull TextureFormatBuilderImpl<S, TextureFormat2D<S>> builder) {
         super(builder.gl(), builder.gl().structFormatGenerator().getTexture(StructLayouts.texture(builder.gl(), builder.structInfo())));
     }
 
     @Override
-    public BindingLocation<?> bindingLocation(@NonNull AttributeUsage usage, @NonNull BindingLocationAssigner assigner) {
-        checkArg(usage == AttributeUsage.TEXTURE, "unsupported usage: %s", usage);
+    public BindingLocation<?> bindingLocation(@NonNull LayoutEntry<TextureFormat2DImpl<S>> layout, @NonNull BindingLocationAssigner assigner) {
+        checkArg(layout.usage() == AttributeUsage.TEXTURE, "unsupported usage: %s", layout.usage());
 
-        return new TextureBindingLocation<S, Texture2DImpl<S>>(this.structFormat(), TextureTarget.TEXTURE_2D, assigner);
+        return new TextureBindingLocation<S, Texture2DImpl<S>>(layout, TextureTarget.TEXTURE_2D, assigner);
     }
 
     @Override

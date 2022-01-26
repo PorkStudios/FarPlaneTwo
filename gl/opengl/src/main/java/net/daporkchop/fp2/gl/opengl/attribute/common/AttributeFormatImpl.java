@@ -34,7 +34,7 @@ import java.util.List;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AttributeFormatImpl<S, SF extends StructFormat<S, ?>> extends BaseAttributeFormatImpl<S> implements AttributeFormat<S> {
+public abstract class AttributeFormatImpl<F extends AttributeFormatImpl<F, S, SF>, S, SF extends StructFormat<S, ?>> extends BaseAttributeFormatImpl<F> implements AttributeFormat<S> {
     private final SF structFormat;
 
     public AttributeFormatImpl(@NonNull OpenGL gl, @NonNull SF structFormat) {
@@ -49,12 +49,12 @@ public abstract class AttributeFormatImpl<S, SF extends StructFormat<S, ?>> exte
     }
 
     @Override
-    public String name() {
+    public String rawName() {
         return this.structFormat.structName();
     }
 
     @Override
-    public List<GLSLField> attributeFields() {
+    public List<GLSLField> rawAttributeFields() {
         return this.structFormat.glslFields();
     }
 }

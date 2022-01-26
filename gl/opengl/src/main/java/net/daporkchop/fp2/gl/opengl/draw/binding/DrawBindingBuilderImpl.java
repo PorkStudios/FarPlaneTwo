@@ -27,7 +27,7 @@ import net.daporkchop.fp2.gl.draw.binding.DrawBindingIndexed;
 import net.daporkchop.fp2.gl.draw.index.IndexBuffer;
 import net.daporkchop.fp2.gl.opengl.draw.DrawLayoutImpl;
 import net.daporkchop.fp2.gl.opengl.draw.index.IndexBufferImpl;
-import net.daporkchop.fp2.gl.opengl.layout.BaseBindingBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.layout.binding.BaseBindingBuilderImpl;
 
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 

@@ -20,19 +20,17 @@
 
 package net.daporkchop.fp2.gl.opengl.layout;
 
-import com.google.common.collect.ImmutableMap;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.layout.BaseLayout;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
-import net.daporkchop.fp2.gl.attribute.AttributeUsage;
-import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
 
-import java.util.Map;
+import java.util.List;
+
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
@@ -42,23 +40,18 @@ public abstract class BaseLayoutImpl implements BaseLayout {
     protected final OpenGL gl;
     protected final GLAPI api;
 
-    protected final Map<BaseAttributeFormatImpl<?>, AttributeUsage> origFormatsUsages;
-
-    protected final Map<BaseAttributeFormatImpl<?>, BindingLocation<?>> bindingLocationsByFormat;
+    protected final List<LayoutEntry<?>> entries;
 
     public BaseLayoutImpl(@NonNull BaseLayoutBuilderImpl<?, ?> builder) {
         this.gl = builder.gl();
         this.api = builder.gl().api();
 
-        this.origFormatsUsages = builder.formatsUsages.build();
-
-        ImmutableMap.Builder<BaseAttributeFormatImpl<?>, BindingLocation<?>> mapBuilder = ImmutableMap.builder();
+        //construct initial list
+        this.entries = builder.entries.build();
 
         //assign binding locations for all attribute formats
         BindingLocationAssigner assigner = new BindingLocationAssigner(this.gl, this.api);
-        this.origFormatsUsages.forEach((format, usage) -> mapBuilder.put(format, format.bindingLocation(usage, assigner)));
-
-        this.bindingLocationsByFormat = mapBuilder.build();
+        this.entries.forEach(entry -> entry.location(entry.format().bindingLocation(uncheckedCast(entry), assigner)));
     }
 
     @Override
@@ -67,14 +60,14 @@ public abstract class BaseLayoutImpl implements BaseLayout {
     }
 
     public void prefixShaderSource(@NonNull ShaderType type, @NonNull StringBuilder builder) {
-        this.bindingLocationsByFormat.forEach((format, bindingLocation) -> bindingLocation.generateGLSL(type, builder));
+        this.entries.forEach(entry -> entry.location().generateGLSL(type, builder));
     }
 
     public void configureProgramPreLink(int program) {
-        this.bindingLocationsByFormat.forEach((format, bindingLocation) -> bindingLocation.configureProgramPreLink(this.api, program));
+        this.entries.forEach(entry -> entry.location().configureProgramPreLink(this.api, program));
     }
 
     public void configureProgramPostLink(int program) {
-        this.bindingLocationsByFormat.forEach((format, bindingLocation) -> bindingLocation.configureProgramPostLink(this.api, program));
+        this.entries.forEach(entry -> entry.location().configureProgramPostLink(this.api, program));
     }
 }

@@ -21,29 +21,31 @@
 package net.daporkchop.fp2.gl.opengl.attribute.common.interleaved;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.AttributeWriter;
+import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.common.AttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.InterleavedStructLayout;
 
+import static net.daporkchop.lib.common.util.PorkUtil.*;
+
 /**
  * @author DaPorkchop_
  */
-public abstract class InterleavedAttributeFormatImpl<S> extends AttributeFormatImpl<S, InterleavedStructFormat<S>> {
+public abstract class InterleavedAttributeFormatImpl<F extends InterleavedAttributeFormatImpl<F, S>, S> extends AttributeFormatImpl<F, S, InterleavedStructFormat<S>> {
     public InterleavedAttributeFormatImpl(@NonNull OpenGL gl, @NonNull InterleavedStructLayout<S> structLayout) {
         super(gl, gl.structFormatGenerator().getInterleaved(structLayout));
     }
 
     @Override
     public AttributeWriter<S> createWriter() {
-        return new InterleavedAttributeWriterImpl<>(this);
+        return new InterleavedAttributeWriterImpl<F, S>(uncheckedCast(this));
     }
 
     @Override
     public AttributeBuffer<S> createBuffer(@NonNull BufferUsage usage) {
-        return new InterleavedAttributeBufferImpl<>(this, usage);
+        return new InterleavedAttributeBufferImpl<F, S>(uncheckedCast(this), usage);
     }
 }

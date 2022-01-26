@@ -21,28 +21,32 @@
 package net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.draw.local;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.attribute.AttributeUsage;
+import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
 import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttributeBufferImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLType;
 import net.daporkchop.fp2.gl.opengl.buffer.BufferTarget;
 import net.daporkchop.fp2.gl.opengl.command.state.MutableState;
+import net.daporkchop.fp2.gl.opengl.layout.LayoutEntry;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author DaPorkchop_
  */
-public class InterleavedDrawLocalAttributeBindingLocation<S> implements BindingLocation<InterleavedAttributeBufferImpl<S, ?>> {
-    protected final InterleavedStructFormat<S> structFormat;
+public class InterleavedDrawLocalAttributeBindingLocation<S> implements BindingLocation<InterleavedAttributeBufferImpl<?, S>> {
+    protected final LayoutEntry<? extends InterleavedAttributeFormatImpl<?, S>> layout;
     protected final int[] attributeIndices;
 
-    public InterleavedDrawLocalAttributeBindingLocation(@NonNull InterleavedStructFormat<S> structFormat, @NonNull BindingLocationAssigner assigner) {
-        this.structFormat = structFormat;
-        this.attributeIndices = structFormat.glslFields().stream()
+    public InterleavedDrawLocalAttributeBindingLocation(@NonNull LayoutEntry<? extends InterleavedAttributeFormatImpl<?, S>> layout, @NonNull BindingLocationAssigner assigner) {
+        this.layout = layout;
+        this.attributeIndices = this.layout.attributeFields()
                 .map(GLSLField::type)
                 .mapToInt(GLSLType::requiredVertexAttributeSlots)
                 .map(assigner::vertexAttribute)
@@ -56,8 +60,9 @@ public class InterleavedDrawLocalAttributeBindingLocation<S> implements BindingL
 
     @Override
     public void configureProgramPreLink(@NonNull GLAPI api, int program) {
+        List<GLSLField> fields = this.layout.attributeFields().collect(Collectors.toList());
         for (int i = 0; i < this.attributeIndices.length; i++) {
-            api.glBindAttribLocation(program, this.attributeIndices[i], this.usage().defaultPrefix() + this.structFormat.glslFields().get(i).name() + this.usage().defaultSuffix());
+            api.glBindAttribLocation(program, this.attributeIndices[i], fields.get(i).name());
         }
     }
 
@@ -72,22 +77,22 @@ public class InterleavedDrawLocalAttributeBindingLocation<S> implements BindingL
             return;
         }
 
-        this.structFormat.glslFields().forEach(field -> builder.append("in ").append(field.declaration(this.usage().defaultPrefix(), this.usage().defaultSuffix())).append(";\n"));
+        this.layout.attributeFields().forEach(field -> builder.append("in ").append(field.declaration()).append(";\n"));
     }
 
     @Override
-    public void configureBuffer(@NonNull GLAPI api, @NonNull InterleavedAttributeBufferImpl<S, ?> buffer) {
+    public void configureBuffer(@NonNull GLAPI api, @NonNull InterleavedAttributeBufferImpl<?, S> buffer) {
         //enable attributes
         for (int attributeIndex : this.attributeIndices) {
             api.glEnableVertexAttribArray(attributeIndex);
         }
 
         //configure attributes
-        buffer.buffer().bind(BufferTarget.ARRAY_BUFFER, target -> this.structFormat.configureVAO(api, this.attributeIndices));
+        buffer.buffer().bind(BufferTarget.ARRAY_BUFFER, target -> this.layout.format().structFormat().configureVAO(api, this.attributeIndices));
     }
 
     @Override
-    public void configureState(@NonNull MutableState state, @NonNull InterleavedAttributeBufferImpl<S, ?> buffer) {
+    public void configureState(@NonNull MutableState state, @NonNull InterleavedAttributeBufferImpl<?, S> buffer) {
         //no-op
     }
 }

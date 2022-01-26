@@ -22,7 +22,6 @@ package net.daporkchop.fp2.gl.opengl.attribute.texture;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
-import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureWriter2D;
 
 import java.util.function.IntConsumer;
@@ -32,7 +31,7 @@ import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
 /**
  * @author DaPorkchop_
  */
-public class WrappedTexture2DImpl<S> extends BaseTextureImpl<S, TextureFormat2DImpl<S>> implements Texture2D<S> {
+public class WrappedTexture2DImpl<S> extends BaseTextureImpl<TextureFormat2DImpl<S>, S> implements Texture2D<S> {
     public WrappedTexture2DImpl(@NonNull TextureFormat2DImpl<S> format, int id) {
         super(format, id);
     }

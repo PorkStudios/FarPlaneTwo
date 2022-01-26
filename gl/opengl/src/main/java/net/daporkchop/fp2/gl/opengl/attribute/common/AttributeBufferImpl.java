@@ -29,7 +29,7 @@ import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AttributeBufferImpl<S, F extends AttributeFormatImpl<S, ?>> extends BaseAttributeBufferImpl<S, F> implements AttributeBuffer<S> {
+public abstract class AttributeBufferImpl<F extends AttributeFormatImpl<F, S, ?>, S> extends BaseAttributeBufferImpl<F> implements AttributeBuffer<S> {
     public AttributeBufferImpl(@NonNull F format) {
         super(format);
     }

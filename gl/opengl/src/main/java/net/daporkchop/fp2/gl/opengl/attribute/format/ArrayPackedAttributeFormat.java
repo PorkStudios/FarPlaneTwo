@@ -22,13 +22,14 @@ package net.daporkchop.fp2.gl.opengl.attribute.format;
 
 import com.google.common.collect.ImmutableSet;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
 import net.daporkchop.fp2.gl.attribute.AttributeUsage;
+import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
 import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.draw.local.InterleavedDrawLocalAttributeBindingLocation;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.StructLayouts;
+import net.daporkchop.fp2.gl.opengl.layout.LayoutEntry;
 
 import java.util.EnumSet;
 import java.util.Set;
@@ -36,7 +37,7 @@ import java.util.Set;
 /**
  * @author DaPorkchop_
  */
-public final class ArrayPackedAttributeFormat<S> extends InterleavedAttributeFormatImpl<S> {
+public final class ArrayPackedAttributeFormat<S> extends InterleavedAttributeFormatImpl<ArrayPackedAttributeFormat<S>, S> {
     private static final Set<AttributeUsage> VALID_USAGES = ImmutableSet.copyOf(EnumSet.of(
             AttributeUsage.DRAW_LOCAL
     ));
@@ -55,12 +56,12 @@ public final class ArrayPackedAttributeFormat<S> extends InterleavedAttributeFor
     }
 
     @Override
-    public BindingLocation<?> bindingLocation(@NonNull AttributeUsage usage, @NonNull BindingLocationAssigner assigner) {
-        switch (usage) {
+    public BindingLocation<?> bindingLocation(@NonNull LayoutEntry<ArrayPackedAttributeFormat<S>> layout, @NonNull BindingLocationAssigner assigner) {
+        switch (layout.usage()) {
             case DRAW_LOCAL:
-                return new InterleavedDrawLocalAttributeBindingLocation<>(this.structFormat(), assigner);
+                return new InterleavedDrawLocalAttributeBindingLocation<>(layout, assigner);
             default:
-                throw new IllegalArgumentException("unsupported usage: " + usage);
+                throw new IllegalArgumentException("unsupported usage: " + layout.usage());
         }
     }
 }

@@ -34,7 +34,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @Getter
-public final class InterleavedAttributeBufferImpl<S, F extends InterleavedAttributeFormatImpl<S>> extends AttributeBufferImpl<S, F> {
+public final class InterleavedAttributeBufferImpl<F extends InterleavedAttributeFormatImpl<F, S>, S> extends AttributeBufferImpl<F, S> {
     protected final InterleavedStructFormat<S> structFormat;
 
     protected final GLBuffer buffer;
@@ -80,7 +80,7 @@ public final class InterleavedAttributeBufferImpl<S, F extends InterleavedAttrib
 
     @Override
     public void set(int startIndex, @NonNull AttributeWriter<S> _writer) {
-        InterleavedAttributeWriterImpl<S, F> writer = (InterleavedAttributeWriterImpl<S, F>) _writer;
+        InterleavedAttributeWriterImpl<F, S> writer = (InterleavedAttributeWriterImpl<F, S>) _writer;
         checkArg(writer.structFormat() == this.structFormat, "mismatched struct formats!");
         checkRangeLen(this.capacity, startIndex, writer.size());
 

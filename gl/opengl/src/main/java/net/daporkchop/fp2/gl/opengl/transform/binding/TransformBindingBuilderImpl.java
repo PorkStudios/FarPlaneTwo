@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.gl.opengl.transform.binding;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.opengl.layout.BaseBindingBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.layout.binding.BaseBindingBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.transform.TransformLayoutImpl;
 import net.daporkchop.fp2.gl.transform.binding.TransformBinding;
 import net.daporkchop.fp2.gl.transform.binding.TransformBindingBuilder;

@@ -29,7 +29,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public class TextureWriter2DImpl<S> extends BaseTextureWriterImpl<S, TextureFormat2DImpl<S>> implements TextureWriter2D<S> {
+public class TextureWriter2DImpl<S> extends BaseTextureWriterImpl<TextureFormat2DImpl<S>, S> implements TextureWriter2D<S> {
     protected final int width;
     protected final int height;
     protected final int stride;

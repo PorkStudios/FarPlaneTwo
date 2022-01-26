@@ -18,31 +18,20 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute;
+package net.daporkchop.fp2.gl.opengl.layout.binding;
 
-import lombok.Getter;
+import lombok.Data;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.BaseAttributeBuffer;
-import net.daporkchop.fp2.gl.opengl.OpenGL;
-
-import java.util.stream.Stream;
+import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
+import net.daporkchop.fp2.gl.opengl.layout.LayoutEntry;
 
 /**
- * Common parent class for attribute buffer implementations.
- *
  * @author DaPorkchop_
  */
-@Getter
-public abstract class BaseAttributeBufferImpl<F extends BaseAttributeFormatImpl<F>> implements BaseAttributeBuffer {
-    protected final OpenGL gl;
-    private final F format;
-
-    public BaseAttributeBufferImpl(@NonNull F format) {
-        this.gl = format.gl();
-        this.format = format;
-    }
-
-    public Stream<BaseAttributeBufferImpl<?>> selfAndChildren() {
-        return Stream.of(this);
-    }
+@Data
+public final class BindingEntry {
+    @NonNull
+    private final LayoutEntry<?> layoutEntry;
+    @NonNull
+    private final BaseAttributeBufferImpl<?> buffer;
 }

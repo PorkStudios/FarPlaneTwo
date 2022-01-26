@@ -22,9 +22,9 @@ package net.daporkchop.fp2.gl.opengl.attribute.format;
 
 import com.google.common.collect.ImmutableSet;
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.opengl.GLExtension;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
-import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
 import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttributeFormatImpl;
@@ -33,6 +33,7 @@ import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.draw.local.Inte
 import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.uniform.array.InterleavedUniformArrayAttributeBindingLocation;
 import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.uniform.standard.InterleavedUniformAttributeBindingLocation;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLBlockMemoryLayout;
+import net.daporkchop.fp2.gl.opengl.layout.LayoutEntry;
 
 import java.util.EnumSet;
 import java.util.Set;
@@ -40,7 +41,7 @@ import java.util.Set;
 /**
  * @author DaPorkchop_
  */
-public final class Std140BlockAttributeFormat<S> extends InterleavedAttributeFormatImpl<S> {
+public final class Std140BlockAttributeFormat<S> extends InterleavedAttributeFormatImpl<Std140BlockAttributeFormat<S>, S> {
     private static final Set<AttributeUsage> VALID_USAGES = ImmutableSet.copyOf(EnumSet.of(
             AttributeUsage.UNIFORM,
             AttributeUsage.UNIFORM_ARRAY,
@@ -63,18 +64,18 @@ public final class Std140BlockAttributeFormat<S> extends InterleavedAttributeFor
     }
 
     @Override
-    public BindingLocation<?> bindingLocation(@NonNull AttributeUsage usage, @NonNull BindingLocationAssigner assigner) {
-        switch (usage) {
+    public BindingLocation<?> bindingLocation(@NonNull LayoutEntry<Std140BlockAttributeFormat<S>> layout, @NonNull BindingLocationAssigner assigner) {
+        switch (layout.usage()) {
             case UNIFORM:
-                return new InterleavedUniformAttributeBindingLocation<>(this.structFormat(), assigner);
+                return new InterleavedUniformAttributeBindingLocation<>(layout, assigner);
             case UNIFORM_ARRAY:
-                return new InterleavedUniformArrayAttributeBindingLocation<>(this.structFormat(), assigner);
+                return new InterleavedUniformArrayAttributeBindingLocation<>(layout, assigner);
             case DRAW_LOCAL:
-                return new InterleavedDrawLocalAttributeBindingLocation<>(this.structFormat(), assigner);
+                return new InterleavedDrawLocalAttributeBindingLocation<>(layout, assigner);
             case DRAW_GLOBAL:
-                return new InterleavedDrawGlobalAttributeBindingLocation<>(this.structFormat(), assigner);
+                return new InterleavedDrawGlobalAttributeBindingLocation<>(layout, assigner);
             default:
-                throw new IllegalArgumentException("unsupported usage: " + usage);
+                throw new IllegalArgumentException("unsupported usage: " + layout.usage());
         }
     }
 }

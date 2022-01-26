@@ -18,20 +18,18 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.layout;
+package net.daporkchop.fp2.gl.opengl.layout.binding;
 
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.GLResource;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
-import net.daporkchop.fp2.gl.attribute.AttributeUsage;
-import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
 import net.daporkchop.fp2.gl.opengl.command.state.MutableState;
 import net.daporkchop.fp2.gl.opengl.command.state.StateProperties;
+import net.daporkchop.fp2.gl.opengl.layout.BaseLayoutImpl;
 
-import java.util.Map;
+import java.util.List;
 
 import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -47,8 +45,7 @@ public abstract class BaseBindingImpl<L extends BaseLayoutImpl> implements GLRes
 
     protected final L layout;
 
-    protected final Map<BaseAttributeBufferImpl<?, ?>, AttributeUsage> origBuffersUsages;
-
+    protected final List<BindingEntry> entries;
     protected final int vao;
 
     public BaseBindingImpl(@NonNull BaseBindingBuilderImpl<?, ?, L> builder) {
@@ -56,26 +53,20 @@ public abstract class BaseBindingImpl<L extends BaseLayoutImpl> implements GLRes
 
         this.gl = this.layout.gl();
         this.api = this.layout.gl().api();
-        this.origBuffersUsages = builder.buffersUsages.build();
+
+        this.entries = builder.entries.build();
+        checkArg(this.entries.size() == this.layout.entries().size(), "mismatch between layout formats and binding buffers (%s has fewer entries than %s)", this, this.layout);
 
         //create a VAO
         this.vao = this.api.glGenVertexArray();
         this.gl.resourceArena().register(this, this.vao, this.api::glDeleteVertexArray);
-
-        checkArg(this.origBuffersUsages.size() == this.layout.bindingLocationsByFormat().size(), "mismatch between layout formats and binding buffers (%s is incompatible with %s)", this.origBuffersUsages, this.layout.bindingLocationsByFormat());
 
         //configure all vertex attributes in the VAO
         int oldVao = this.api.glGetInteger(GL_VERTEX_ARRAY_BINDING);
         try {
             this.api.glBindVertexArray(this.vao);
 
-            this.origBuffersUsages.forEach((buffer, usage) -> {
-                BindingLocation<?> location = this.layout.bindingLocationsByFormat().get(buffer.format());
-                checkArg(location != null, "layout %s does not include %s format %s", this.layout, usage, buffer.format());
-                checkArg(location.usage() == usage, "buffer %s cannot be used for %s when its binding location expects %s", buffer, usage, location.usage());
-
-                location.configureBuffer(this.api(), uncheckedCast(buffer));
-            });
+            this.entries.forEach(entry -> entry.layoutEntry().location().configureBuffer(this.api, uncheckedCast(entry.buffer())));
         } finally {
             this.api.glBindVertexArray(oldVao);
         }
@@ -89,6 +80,6 @@ public abstract class BaseBindingImpl<L extends BaseLayoutImpl> implements GLRes
     public void configureBoundState(@NonNull MutableState state) {
         state.set(StateProperties.BOUND_VAO, this.vao);
 
-        this.origBuffersUsages.forEach((buffer, usage) -> this.layout.bindingLocationsByFormat().get(buffer.format()).configureState(state, uncheckedCast(buffer)));
+        this.entries.forEach(entry -> entry.layoutEntry().location().configureState(state, uncheckedCast(entry.buffer())));
     }
 }
