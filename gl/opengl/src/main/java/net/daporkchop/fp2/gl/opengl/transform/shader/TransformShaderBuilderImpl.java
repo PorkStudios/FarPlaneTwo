@@ -21,14 +21,18 @@
 package net.daporkchop.fp2.gl.opengl.transform.shader;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.common.util.Identifier;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.shader.BaseShaderBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
 import net.daporkchop.fp2.gl.opengl.shader.source.SourceLine;
+import net.daporkchop.fp2.gl.shader.BaseShaderBuilder;
 import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
 import net.daporkchop.fp2.gl.transform.TransformLayout;
 import net.daporkchop.fp2.gl.transform.shader.TransformShader;
 import net.daporkchop.fp2.gl.transform.shader.TransformShaderBuilder;
+
+import java.util.Map;
 
 /**
  * @author DaPorkchop_
@@ -36,6 +40,30 @@ import net.daporkchop.fp2.gl.transform.shader.TransformShaderBuilder;
 public class TransformShaderBuilderImpl extends BaseShaderBuilderImpl<TransformShader, TransformLayout> implements TransformShaderBuilder {
     public TransformShaderBuilderImpl(@NonNull OpenGL gl, @NonNull TransformLayout layout) {
         super(gl, ShaderType.VERTEX, layout);
+    }
+
+    @Override
+    public TransformShaderBuilder include(@NonNull Identifier id) {
+        super.include(id);
+        return this;
+    }
+
+    @Override
+    public TransformShaderBuilder include(@NonNull Identifier... ids) {
+        super.include(ids);
+        return this;
+    }
+
+    @Override
+    public TransformShaderBuilder define(@NonNull String key, @NonNull Object value) {
+        super.define(key, value);
+        return this;
+    }
+
+    @Override
+    public TransformShaderBuilder defineAll(@NonNull Map<String, Object> macros) {
+        super.defineAll(macros);
+        return this;
     }
 
     @Override

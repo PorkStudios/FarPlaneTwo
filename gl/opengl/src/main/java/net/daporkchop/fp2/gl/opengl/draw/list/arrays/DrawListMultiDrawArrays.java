@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -20,14 +20,28 @@
 
 package net.daporkchop.fp2.gl.opengl.draw.list.arrays;
 
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.common.util.Identifier;
+import net.daporkchop.fp2.gl.attribute.Attribute;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeUsage;
+import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.draw.list.DrawCommandArrays;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
+import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.attribute.common.AttributeBufferImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.bitset.AbstractGLBitSet;
 import net.daporkchop.fp2.gl.opengl.command.state.StateValueProperty;
 import net.daporkchop.fp2.gl.opengl.draw.binding.DrawBindingImpl;
 import net.daporkchop.fp2.gl.opengl.draw.list.DrawListBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.draw.list.DrawListImpl;
+import net.daporkchop.fp2.gl.transform.TransformLayoutBuilder;
+import net.daporkchop.fp2.gl.transform.binding.TransformBindingBuilder;
+import net.daporkchop.fp2.gl.transform.shader.TransformShaderBuilder;
+import net.daporkchop.fp2.gl.transform.shader.TransformShaderProgramBuilder;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.Collections;
@@ -42,6 +56,17 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 public class DrawListMultiDrawArrays extends DrawListImpl<DrawCommandArrays, DrawBindingImpl> {
     protected long firstAddr;
     protected long countAddr;
+
+    @Getter(lazy = true)
+    private final AttributeFormat<CountAttribute> format = this.gl.createAttributeFormat(CountAttribute.class)
+            .useFor(AttributeUsage.TRANSFORM_INPUT)
+            .useFor(AttributeUsage.TRANSFORM_OUTPUT)
+            .build();
+
+    @Getter(lazy = true)
+    private final InterleavedAttributeBufferImpl<?, CountAttribute> readBuffer = (InterleavedAttributeBufferImpl<?, CountAttribute>) this.format().createBuffer(BufferUsage.STREAM_DRAW);
+    @Getter(lazy = true)
+    private final InterleavedAttributeBufferImpl<?, CountAttribute> writeBuffer = (InterleavedAttributeBufferImpl<?, CountAttribute>) this.format().createBuffer(BufferUsage.STREAM_READ);
 
     public DrawListMultiDrawArrays(@NonNull DrawListBuilderImpl builder) {
         super(builder);
@@ -117,5 +142,42 @@ public class DrawListMultiDrawArrays extends DrawListImpl<DrawCommandArrays, Dra
         } finally {
             PUnsafe.freeMemory(dstCounts);
         }
+    }
+
+    @Override
+    public void drawSelected0_pre(GLAPI api, int mode) {
+        this.readBuffer().buffer().upload(this.countAddr, this.capacity * (long) INT_SIZE);
+        this.writeBuffer().buffer().capacity(this.capacity * (long) INT_SIZE);
+    }
+
+    @Override
+    public void drawSelected0_post(GLAPI api, int mode) {
+        this.writeBuffer().buffer().map(true, false, countsAddr -> api.glMultiDrawArrays(mode, this.firstAddr, countsAddr, this.capacity));
+    }
+
+    @Override
+    public TransformLayoutBuilder configureTransformLayoutForSelection(@NonNull TransformLayoutBuilder builder) {
+        return builder.withInput(this.format()).withOutput(this.format());
+    }
+
+    @Override
+    public TransformBindingBuilder configureTransformBindingForSelection(@NonNull TransformBindingBuilder builder) {
+        return builder.withInput(this.readBuffer()).withOutput(this.writeBuffer());
+    }
+
+    @Override
+    public TransformShaderBuilder configureTransformShaderForSelection(@NonNull TransformShaderBuilder builder) {
+        return builder.include(Identifier.from(OpenGL.OPENGL_NAMESPACE, "draw/list/arrays/DrawListMultiDrawArrays_selection.vert"));
+    }
+
+    @Override
+    public TransformShaderProgramBuilder configureTransformShaderProgramForSelection(@NonNull TransformShaderProgramBuilder builder) {
+        return builder;
+    }
+
+    @RequiredArgsConstructor
+    public static final class CountAttribute {
+        @Attribute
+        public final int count_internal;
     }
 }

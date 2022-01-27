@@ -39,6 +39,7 @@ import net.daporkchop.fp2.gl.command.CommandBuffer;
 import net.daporkchop.fp2.gl.command.FramebufferLayer;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.draw.DrawMode;
+import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.fp2.gl.draw.binding.DrawBindingIndexed;
 import net.daporkchop.fp2.gl.draw.index.IndexBuffer;
 import net.daporkchop.fp2.gl.draw.index.IndexFormat;
@@ -124,6 +125,7 @@ public class TestLWJGL2 {
                 .rename("pos", "posRenamed")
                 .build();
         TextureFormat2D<TextureAttribs> textureFormat = gl.createTextureFormat2D(TextureAttribs.class).build();
+        AttributeFormat<UniformSelectionAttribs> selectionUniformFormat = gl.createAttributeFormat(UniformSelectionAttribs.class).useFor(AttributeUsage.UNIFORM).build();
 
         DrawLayout drawLayout = gl.createDrawLayout()
                 .withUniform(uniformFormat)
@@ -225,8 +227,7 @@ public class TestLWJGL2 {
             texture.set(0, 0, 0, writer);
         }
 
-        DrawBindingIndexed binding0 = drawLayout.createBinding()
-                .withIndexes(indexBuffer)
+        DrawBinding binding0 = drawLayout.createBinding()
                 .withUniform(uniformBuffer0)
                 .withUniformArray(uniformArrayBuffer)
                 .withGlobal(globalBuffer)
@@ -260,12 +261,28 @@ public class TestLWJGL2 {
                 .withTexture(texture)
                 .build();
 
-        DrawList<DrawCommandArrays> listArrays = gl.createDrawListArrays(binding0).build();
+        DrawList<DrawCommandArrays> listArrays = gl.createDrawListArrays(binding0).optimizeForCpuSelection().build();
         listArrays.resize(4);
         listArrays.set(0, new DrawCommandArrays(0, 3));
         listArrays.set(1, new DrawCommandArrays(0, 3));
         listArrays.set(2, new DrawCommandArrays(0, 3));
         listArrays.set(3, new DrawCommandArrays(0, 3));
+
+        TransformLayout selectionLayout = listArrays.configureTransformLayoutForSelection(gl.createTransformLayout())
+                .withUniform(selectionUniformFormat)
+                .build();
+
+        AttributeBuffer<UniformSelectionAttribs> selectionUniformBuffer = selectionUniformFormat.createBuffer(BufferUsage.STREAM_DRAW);
+
+        TransformBinding selectionBinding = listArrays.configureTransformBindingForSelection(selectionLayout.createBinding())
+                .withUniform(selectionUniformBuffer)
+                .build();
+
+        TransformShaderProgram selectionProgram = listArrays.configureTransformShaderProgramForSelection(gl.createTransformShaderProgram(selectionLayout))
+                .addShader(listArrays.configureTransformShaderForSelection(gl.createTransformShader(selectionLayout))
+                        .include(Identifier.from("test_selection.vert"))
+                        .build())
+                .build();
 
         DrawList<DrawCommandIndexed> listElements = gl.createDrawListIndexed(binding1).build();
         listElements.resize(4);
@@ -283,13 +300,14 @@ public class TestLWJGL2 {
                 .blendDisable()
                 .framebufferClear(FramebufferLayer.COLOR)
                 .drawList(drawShaderProgram, DrawMode.TRIANGLES, listElements, bitSet)
-                .drawList(drawShaderProgram, DrawMode.TRIANGLES, listArrays)
-                .drawArrays(drawShaderProgram, DrawMode.TRIANGLES, binding0, 0, 3)
+                .drawList(drawShaderProgram, DrawMode.TRIANGLES, listArrays, selectionProgram, selectionBinding)
+                //.drawArrays(drawShaderProgram, DrawMode.TRIANGLES, binding0, 0, 3)
                 .transform(transformShaderProgram, binding2_transform, localBuffer_1.capacity())
                 .drawArrays(drawShaderProgram, DrawMode.TRIANGLES, binding2_draw, 0, 3)
                 .build()) {
             while (!Display.isCloseRequested()) {
                 bitSet.set(i -> ThreadLocalRandom.current().nextBoolean());
+                selectionUniformBuffer.setContents(new UniformSelectionAttribs(ThreadLocalRandom.current().nextInt() & 1));
 
                 cmdBuffer.execute();
 
@@ -335,5 +353,11 @@ public class TestLWJGL2 {
     public static class TextureAttribs {
         @Attribute(transform = Attribute.Transformation.INT_ARGB8_TO_BYTE_VECTOR_RGBA, convert = Attribute.Conversion.TO_NORMALIZED_FLOAT)
         public final int colorFactor;
+    }
+
+    @Data
+    public static class UniformSelectionAttribs {
+        @Attribute
+        public final int selectable;
     }
 }

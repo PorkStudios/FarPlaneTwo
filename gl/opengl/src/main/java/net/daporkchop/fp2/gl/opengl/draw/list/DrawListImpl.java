@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -74,4 +74,12 @@ public abstract class DrawListImpl<C extends DrawCommand, B extends DrawBinding>
     public abstract void draw0(GLAPI api, int mode);
 
     public abstract void draw0(GLAPI api, int mode, AbstractGLBitSet selectionMask);
+
+    public void drawSelected0_pre(GLAPI api, int mode) {
+        throw new UnsupportedOperationException(this.toString());
+    }
+
+    public void drawSelected0_post(GLAPI api, int mode) {
+        throw new UnsupportedOperationException(this.toString());
+    }
 }

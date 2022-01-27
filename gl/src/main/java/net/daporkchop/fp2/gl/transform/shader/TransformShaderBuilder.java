@@ -20,7 +20,11 @@
 
 package net.daporkchop.fp2.gl.transform.shader;
 
+import lombok.NonNull;
+import net.daporkchop.fp2.common.util.Identifier;
 import net.daporkchop.fp2.gl.shader.BaseShaderBuilder;
+
+import java.util.Map;
 
 /**
  * Builder for {@link TransformShader}s.
@@ -28,4 +32,15 @@ import net.daporkchop.fp2.gl.shader.BaseShaderBuilder;
  * @author DaPorkchop_
  */
 public interface TransformShaderBuilder extends BaseShaderBuilder<TransformShader> {
+    @Override
+    TransformShaderBuilder define(@NonNull String key, @NonNull Object value);
+
+    @Override
+    TransformShaderBuilder defineAll(@NonNull Map<String, Object> macros);
+
+    @Override
+    TransformShaderBuilder include(@NonNull Identifier id);
+
+    @Override
+    TransformShaderBuilder include(@NonNull Identifier... ids);
 }

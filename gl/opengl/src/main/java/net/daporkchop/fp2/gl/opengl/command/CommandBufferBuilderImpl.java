@@ -373,7 +373,74 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
 
     @Override
     public CommandBufferBuilder drawList(@NonNull DrawShaderProgram shader, @NonNull DrawMode mode, @NonNull DrawList<?> _list, @NonNull TransformShaderProgram selectionShader, @NonNull TransformBinding selectionBinding) {
-        throw new UnsupportedOperationException();
+        DrawListImpl<?, ?> list = (DrawListImpl<?, ?>) _list;
+
+        this.uops.add(new Uop(this.state) {
+            @Override
+            public void emitCode(@NonNull CommandBufferBuilderImpl builder, @NonNull MethodWriter<CodegenArgs> writer) {
+                String listFieldName = builder.makeField(getType(list.getClass()), list);
+
+                //this.list.drawSelected0_pre(api, mode);
+                writer.write((mv, args) -> {
+                    mv.visitVarInsn(ALOAD, 0);
+                    mv.visitFieldInsn(GETFIELD, CLASS_NAME, listFieldName, getDescriptor(list.getClass()));
+                    mv.visitVarInsn(ALOAD, args.apiLvtIndex());
+                    mv.visitLdcInsn(GLEnumUtil.from(mode));
+                    mv.visitMethodInsn(INVOKEVIRTUAL, getInternalName(list.getClass()), "drawSelected0_pre", getMethodDescriptor(VOID_TYPE, getType(GLAPI.class), INT_TYPE), false);
+                });
+            }
+
+            @Override
+            protected Stream<StateProperty> dependsFirst() {
+                return Stream.empty();
+            }
+        });
+        this.uops.add(new Uop.Transform(this.state, selectionBinding, selectionShader, Collections.singletonMap(StateProperties.RASTERIZER_DISCARD, true)) {
+            @Override
+            public void emitCode(@NonNull CommandBufferBuilderImpl builder, @NonNull MethodWriter<CodegenArgs> writer) {
+                String listFieldName = builder.makeField(getType(list.getClass()), list);
+
+                //glBeginTransformFeedback(GL_POINTS);
+                writer.write((mv, args) -> {
+                    mv.visitVarInsn(ALOAD, args.apiLvtIndex());
+                    mv.visitLdcInsn(GL_POINTS);
+                    mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glBeginTransformFeedback", getMethodDescriptor(VOID_TYPE, INT_TYPE), true);
+                });
+
+                //glDrawArrays(GL_POINTS, 0, this.list.capacity());
+                writer.write((mv, args) -> {
+                    mv.visitVarInsn(ALOAD, args.apiLvtIndex());
+                    mv.visitLdcInsn(GL_POINTS);
+                    mv.visitLdcInsn(0);
+                    mv.visitVarInsn(ALOAD, 0);
+                    mv.visitFieldInsn(GETFIELD, CLASS_NAME, listFieldName, getDescriptor(list.getClass()));
+                    mv.visitMethodInsn(INVOKEVIRTUAL, getInternalName(list.getClass()), "capacity", getMethodDescriptor(INT_TYPE), false);
+                    mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glDrawArrays", getMethodDescriptor(VOID_TYPE, INT_TYPE, INT_TYPE, INT_TYPE), true);
+                });
+
+                //glEndTransformFeedback();
+                writer.write((mv, args) -> {
+                    mv.visitVarInsn(ALOAD, args.apiLvtIndex());
+                    mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glEndTransformFeedback", getMethodDescriptor(VOID_TYPE), true);
+                });
+            }
+        });
+        this.uops.add(new Uop.Draw(this.state, list.binding(), shader, list.stateProperties0()) {
+            @Override
+            public void emitCode(@NonNull CommandBufferBuilderImpl builder, @NonNull MethodWriter<CodegenArgs> writer) {
+                String listFieldName = builder.makeField(getType(list.getClass()), list);
+
+                //this.list.drawSelected0_post(api, mode);
+                writer.write((mv, args) -> {
+                    mv.visitVarInsn(ALOAD, 0);
+                    mv.visitFieldInsn(GETFIELD, CLASS_NAME, listFieldName, getDescriptor(list.getClass()));
+                    mv.visitVarInsn(ALOAD, args.apiLvtIndex());
+                    mv.visitLdcInsn(GLEnumUtil.from(mode));
+                    mv.visitMethodInsn(INVOKEVIRTUAL, getInternalName(list.getClass()), "drawSelected0_post", getMethodDescriptor(VOID_TYPE, getType(GLAPI.class), INT_TYPE), false);
+                });
+            }
+        });
+        return this;
     }
 
     @Override
