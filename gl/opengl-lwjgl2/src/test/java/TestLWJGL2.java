@@ -120,32 +120,25 @@ public class TestLWJGL2 {
         AttributeFormat<UniformAttribs> uniformFormat = gl.createAttributeFormat(UniformAttribs.class).useFor(AttributeUsage.UNIFORM).build();
         AttributeFormat<UniformArrayAttribs> uniformArrayFormat = gl.createAttributeFormat(UniformArrayAttribs.class).useFor(AttributeUsage.UNIFORM_ARRAY).build();
         AttributeFormat<GlobalAttribs> globalFormat = gl.createAttributeFormat(GlobalAttribs.class).useFor(AttributeUsage.DRAW_GLOBAL).build();
-        AttributeFormat<LocalAttribs_1> localFormat_1 = gl.createAttributeFormat(LocalAttribs_1.class).useFor(AttributeUsage.DRAW_LOCAL, AttributeUsage.TRANSFORM_INPUT)
+        AttributeFormat<LocalAttribs> localFormat = gl.createAttributeFormat(LocalAttribs.class).useFor(AttributeUsage.DRAW_LOCAL, AttributeUsage.TRANSFORM_INPUT, AttributeUsage.TRANSFORM_OUTPUT)
                 .rename("pos", "posRenamed")
                 .build();
-        AttributeFormat<LocalAttribs_2> localFormat_2 = gl.createAttributeFormat(LocalAttribs_2.class).useFor(AttributeUsage.DRAW_LOCAL, AttributeUsage.TRANSFORM_OUTPUT).build();
         TextureFormat2D<TextureAttribs> textureFormat = gl.createTextureFormat2D(TextureAttribs.class).build();
 
         DrawLayout drawLayout = gl.createDrawLayout()
                 .withUniform(uniformFormat)
                 .withUniformArray(uniformArrayFormat)
                 .withGlobal(globalFormat)
-                .withLocal(localFormat_1)
+                .withLocal(localFormat)
                 .withTexture(textureFormat)
                 .build();
 
-        TransformLayout localTransformLayout_1to2 = gl.createTransformLayout()
+        TransformLayout transformLayout = gl.createTransformLayout()
                 .withUniform(uniformFormat)
                 .withUniformArray(uniformArrayFormat)
-                .withInput(localFormat_1)
-                .withOutput(localFormat_2)
-                .build();
-
-        TransformLayout localTransformLayout_2to1 = gl.createTransformLayout()
-                .withUniform(uniformFormat)
-                .withUniformArray(uniformArrayFormat)
-                .withInput(localFormat_2)
-                .withOutput(localFormat_1)
+                .withInput(localFormat)
+                .with(AttributeUsage.TRANSFORM_INPUT, localFormat, "ti_", "_prev")
+                .withOutput(localFormat)
                 .build();
 
         IndexFormat indexFormat = gl.createIndexFormat()
@@ -163,33 +156,26 @@ public class TestLWJGL2 {
                 .addShader(fragmentShader)
                 .build();
 
-        TransformShaderProgram transformShaderProgram_1to2 = gl.createTransformShaderProgram(localTransformLayout_1to2)
-                .addShader(gl.createTransformShader(localTransformLayout_1to2)
-                        .include(Identifier.from("test_transform_1to2.vert"))
-                        .build())
-                .build();
-        TransformShaderProgram transformShaderProgram_2to1 = gl.createTransformShaderProgram(localTransformLayout_2to1)
-                .addShader(gl.createTransformShader(localTransformLayout_2to1)
-                        .include(Identifier.from("test_transform_2to1.vert"))
+        TransformShaderProgram transformShaderProgram = gl.createTransformShaderProgram(transformLayout)
+                .addShader(gl.createTransformShader(transformLayout)
+                        .include(Identifier.from("test_transform.vert"))
                         .build())
                 .build();
 
-        AttributeBuffer<LocalAttribs_1> localBuffer_1 = localFormat_1.createBuffer(BufferUsage.STATIC_DRAW);
+        AttributeBuffer<LocalAttribs> localBuffer_1 = localFormat.createBuffer(BufferUsage.STATIC_DRAW);
         localBuffer_1.resize(4);
 
-        AttributeBuffer<LocalAttribs_2> localBuffer_2 = localFormat_2.createBuffer(BufferUsage.STREAM_COPY);
+        AttributeBuffer<LocalAttribs> localBuffer_2 = localFormat.createBuffer(BufferUsage.STREAM_COPY);
         localBuffer_2.resize(localBuffer_1.capacity());
 
-        AttributeBuffer<LocalAttribs_1> localBuffer_3 = localFormat_1.createBuffer(BufferUsage.STREAM_COPY);
-        localBuffer_3.resize(localBuffer_1.capacity());
-
-        try (AttributeWriter<LocalAttribs_1> writer = localFormat_1.createWriter()) {
-            writer.put(new LocalAttribs_1((byte) 16, (byte) 16));
-            writer.put(new LocalAttribs_1((byte) 16, (byte) 32));
-            writer.put(new LocalAttribs_1((byte) 32, (byte) 32));
-            writer.put(new LocalAttribs_1((byte) 32, (byte) 16));
+        try (AttributeWriter<LocalAttribs> writer = localFormat.createWriter()) {
+            writer.put(new LocalAttribs((byte) 16, (byte) 16));
+            writer.put(new LocalAttribs((byte) 16, (byte) 32));
+            writer.put(new LocalAttribs((byte) 32, (byte) 32));
+            writer.put(new LocalAttribs((byte) 32, (byte) 16));
 
             localBuffer_1.set(0, writer);
+            localBuffer_2.set(0, writer);
         }
 
         IndexBuffer indexBuffer = indexFormat.createBuffer(BufferUsage.STATIC_DRAW);
@@ -257,26 +243,20 @@ public class TestLWJGL2 {
                 .withTexture(texture)
                 .build();
 
-        TransformBinding transformBinding2_1to2 = localTransformLayout_1to2.createBinding()
+        TransformBinding binding2_transform = transformLayout.createBinding()
                 .withUniform(uniformBuffer1)
                 .withUniformArray(uniformArrayBuffer)
                 .withInput(localBuffer_1)
+                .withInput(localBuffer_2)
                 .withOutput(localBuffer_2)
                 .build();
 
-        TransformBinding transformBinding2_2to1 = localTransformLayout_2to1.createBinding()
-                .withUniform(uniformBuffer1)
-                .withUniformArray(uniformArrayBuffer)
-                .withInput(localBuffer_2)
-                .withOutput(localBuffer_3)
-                .build();
-
-        DrawBindingIndexed binding2 = drawLayout.createBinding()
+        DrawBindingIndexed binding2_draw = drawLayout.createBinding()
                 .withIndexes(indexBuffer)
                 .withUniform(uniformBuffer2)
                 .withUniformArray(uniformArrayBuffer)
                 .withGlobal(globalBuffer)
-                .withLocal(localBuffer_3)
+                .withLocal(localBuffer_2)
                 .withTexture(texture)
                 .build();
 
@@ -305,9 +285,8 @@ public class TestLWJGL2 {
                 .drawList(drawShaderProgram, DrawMode.TRIANGLES, listElements, bitSet)
                 .drawList(drawShaderProgram, DrawMode.TRIANGLES, listArrays)
                 .drawArrays(drawShaderProgram, DrawMode.TRIANGLES, binding0, 0, 3)
-                .transform(transformShaderProgram_1to2, transformBinding2_1to2, localBuffer_1.capacity())
-                .transform(transformShaderProgram_2to1, transformBinding2_2to1, localBuffer_1.capacity())
-                .drawArrays(drawShaderProgram, DrawMode.TRIANGLES, binding2, 0, 3)
+                .transform(transformShaderProgram, binding2_transform, localBuffer_1.capacity())
+                .drawArrays(drawShaderProgram, DrawMode.TRIANGLES, binding2_draw, 0, 3)
                 .build()) {
             while (!Display.isCloseRequested()) {
                 bitSet.set(i -> ThreadLocalRandom.current().nextBoolean());
@@ -346,17 +325,10 @@ public class TestLWJGL2 {
     }
 
     @Data
-    public static class LocalAttribs_1 {
+    public static class LocalAttribs {
         @Attribute(vectorAxes = { "X", "Y" }, convert = Attribute.Conversion.TO_FLOAT)
         public final byte posX;
         public final byte posY;
-    }
-
-    @Data
-    public static class LocalAttribs_2 {
-        @Attribute(vectorAxes = { "X", "Y" }, convert = Attribute.Conversion.TO_FLOAT)
-        public final byte pos_2X;
-        public final byte pos_2Y;
     }
 
     @Data

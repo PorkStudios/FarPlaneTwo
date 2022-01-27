@@ -38,10 +38,26 @@ public interface BaseLayoutBuilder<BUILDER extends BaseLayoutBuilder<BUILDER, L>
      *
      * @param usage  the {@link AttributeUsage}
      * @param format the {@link BaseAttributeFormat}
+     * @param prefix a prefix to be applied to the format's attribute variable names
+     * @param suffix a suffix to be applied to the format's attribute variable names
      * @throws IllegalArgumentException if the given {@link BaseAttributeFormat} does not support the given {@link AttributeUsage}
      * @throws IllegalArgumentException if this builder does not support the given {@link BaseAttributeFormat}
      */
-    BUILDER with(@NonNull AttributeUsage usage, @NonNull BaseAttributeFormat format);
+    BUILDER with(@NonNull AttributeUsage usage, @NonNull BaseAttributeFormat format, @NonNull String prefix, @NonNull String suffix);
+
+    /**
+     * Adds the given {@link BaseAttributeFormat} to be used for attributes of the type defined by the given {@link AttributeUsage}.
+     * <p>
+     * Alias for {@code with(usage, format, usage.defaultPrefix(), usage.defaultSuffix())}.
+     *
+     * @param usage  the {@link AttributeUsage}
+     * @param format the {@link BaseAttributeFormat}
+     * @throws IllegalArgumentException if the given {@link BaseAttributeFormat} does not support the given {@link AttributeUsage}
+     * @throws IllegalArgumentException if this builder does not support the given {@link BaseAttributeFormat}
+     */
+    default BUILDER with(@NonNull AttributeUsage usage, @NonNull BaseAttributeFormat format) {
+        return this.with(usage, format, usage.defaultPrefix(), usage.defaultSuffix());
+    }
 
     /**
      * Adds a {@link AttributeFormat} which will be used for uniform attributes.

@@ -41,6 +41,11 @@ public final class LayoutEntry<F extends BaseAttributeFormatImpl<?>> {
     @NonNull
     private final F format;
 
+    @NonNull
+    private final String prefix;
+    @NonNull
+    private final String suffix;
+
     private BindingLocation<?> location;
 
     public LayoutEntry<F> location(@NonNull BindingLocation<?> location) {
@@ -50,11 +55,11 @@ public final class LayoutEntry<F extends BaseAttributeFormatImpl<?>> {
     }
 
     public String name() {
-        return this.usage.defaultPrefix() + this.format.rawName() + this.usage.defaultSuffix();
+        return this.prefix + this.format.rawName() + this.suffix;
     }
 
     public Stream<GLSLField> attributeFields() {
         return this.format.rawAttributeFields().stream()
-                .map(field -> new GLSLField(field.type(), this.usage.defaultPrefix() + field.name() + this.usage.defaultSuffix()));
+                .map(field -> new GLSLField(field.type(), this.prefix + field.name() + this.suffix));
     }
 }

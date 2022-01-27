@@ -52,7 +52,7 @@ public abstract class BaseLayoutBuilderImpl<BUILDER extends BaseLayoutBuilder<BU
     protected abstract Set<AttributeUsage> validUsages();
 
     @Override
-    public BUILDER with(@NonNull AttributeUsage usage, @NonNull BaseAttributeFormat format) {
+    public BUILDER with(@NonNull AttributeUsage usage, @NonNull BaseAttributeFormat format, @NonNull String prefix, @NonNull String suffix) {
         checkArg(format.validUsages().contains(usage), "%s doesn't support %s", format, usage);
         checkArg(this.validUsages().contains(usage), "%s doesn't support %s", usage);
 
@@ -72,7 +72,7 @@ public abstract class BaseLayoutBuilderImpl<BUILDER extends BaseLayoutBuilder<BU
                 throw new IllegalArgumentException("unknown usage: " + usage);
         }
 
-        this.entries.add(new LayoutEntry<>(usage, (BaseAttributeFormatImpl<?>) format));
+        this.entries.add(new LayoutEntry<>(usage, (BaseAttributeFormatImpl<?>) format, prefix.intern(), suffix.intern()));
         return uncheckedCast(this);
     }
 
