@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -21,45 +21,25 @@
 package net.daporkchop.fp2.gl.opengl.draw.binding;
 
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.gl.attribute.global.DrawGlobalBuffer;
-import net.daporkchop.fp2.gl.attribute.local.DrawLocalBuffer;
-import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayBuffer;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformBuffer;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.fp2.gl.draw.binding.DrawBindingBuilder;
 import net.daporkchop.fp2.gl.draw.binding.DrawBindingIndexed;
 import net.daporkchop.fp2.gl.draw.index.IndexBuffer;
-import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.draw.DrawLayoutImpl;
 import net.daporkchop.fp2.gl.opengl.draw.index.IndexBufferImpl;
+import net.daporkchop.fp2.gl.opengl.layout.binding.BaseBindingBuilderImpl;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public class DrawBindingBuilderImpl implements DrawBindingBuilder.OptionallyIndexedStage {
-    @NonNull
-    protected final DrawLayoutImpl layout;
-
-    protected final List<BaseAttributeBufferImpl<?, ?, ?>> uniforms = new ArrayList<>();
-    protected final List<BaseAttributeBufferImpl<?, ?, ?>> uniformArrays = new ArrayList<>();
-    protected final List<BaseAttributeBufferImpl<?, ?, ?>> globals = new ArrayList<>();
-    protected final List<BaseAttributeBufferImpl<?, ?, ?>> locals = new ArrayList<>();
-    protected final List<BaseAttributeBufferImpl<?, ?, ?>> textures = new ArrayList<>();
-
+public class DrawBindingBuilderImpl extends BaseBindingBuilderImpl<DrawBindingBuilder<DrawBinding>, DrawBinding, DrawLayoutImpl> implements DrawBindingBuilder.OptionallyIndexedStage {
     protected IndexBufferImpl indices;
+
+    public DrawBindingBuilderImpl(@NonNull DrawLayoutImpl layout) {
+        super(layout);
+    }
 
     //
     // OptionallyIndexedStage
@@ -76,77 +56,9 @@ public class DrawBindingBuilderImpl implements DrawBindingBuilder.OptionallyInde
     //
 
     @Override
-    public DrawBindingBuilder<DrawBinding> withUniforms(@NonNull UniformBuffer<?> buffer) {
-        this.uniforms.add((BaseAttributeBufferImpl<?, ?, ?>) buffer);
-        return this;
-    }
-
-    @Override
-    public DrawBindingBuilder<DrawBinding> withUniformArrays(@NonNull UniformArrayBuffer<?> buffer) {
-        this.uniformArrays.add((BaseAttributeBufferImpl<?, ?, ?>) buffer);
-        return this;
-    }
-
-    @Override
-    public DrawBindingBuilder<DrawBinding> withGlobals(@NonNull DrawGlobalBuffer<?> buffer) {
-        this.globals.add((BaseAttributeBufferImpl<?, ?, ?>) buffer);
-        return this;
-    }
-
-    @Override
-    public DrawBindingBuilder<DrawBinding> withLocals(@NonNull DrawLocalBuffer<?> buffer) {
-        this.locals.add((BaseAttributeBufferImpl<?, ?, ?>) buffer);
-        return this;
-    }
-
-    @Override
-    public DrawBindingBuilder<DrawBinding> withTexture(@NonNull Texture2D<?> texture) {
-        this.textures.add((BaseAttributeBufferImpl<?, ?, ?>) texture);
-        return this;
-    }
-
-    @Override
     public DrawBinding build() {
-        { //uniforms
-            Set<BaseAttributeFormatImpl<?, ?>> givenFormats = this.uniforms.stream().map(BaseAttributeBufferImpl::formatImpl).collect(Collectors.toSet());
-            Set<BaseAttributeFormatImpl<?, ?>> expectedFormats = this.layout.uniformFormatsByName().values();
-            checkArg(expectedFormats.equals(givenFormats), "attribute format mismatch: %s (given) != %s (expected)", givenFormats, expectedFormats);
-        }
-
-        { //uniform arrays
-            Set<BaseAttributeFormatImpl<?, ?>> givenFormats = this.uniformArrays.stream().map(BaseAttributeBufferImpl::formatImpl).collect(Collectors.toSet());
-            Set<BaseAttributeFormatImpl<?, ?>> expectedFormats = this.layout.uniformArrayFormatsByName().values();
-            checkArg(expectedFormats.equals(givenFormats), "attribute format mismatch: %s (given) != %s (expected)", givenFormats, expectedFormats);
-        }
-
-        { //globals
-            Set<BaseAttributeFormatImpl<?, ?>> givenFormats = this.globals.stream().map(BaseAttributeBufferImpl::formatImpl).collect(Collectors.toSet());
-            Set<BaseAttributeFormatImpl<?, ?>> expectedFormats = this.layout.globalFormatsByName().values();
-            checkArg(expectedFormats.equals(givenFormats), "attribute format mismatch: %s (given) != %s (expected)", givenFormats, expectedFormats);
-        }
-
-        { //locals
-            Set<BaseAttributeFormatImpl<?, ?>> givenFormats = this.locals.stream().map(BaseAttributeBufferImpl::formatImpl).collect(Collectors.toSet());
-            Set<BaseAttributeFormatImpl<?, ?>> expectedFormats = this.layout.localFormatsByName().values();
-            checkArg(expectedFormats.equals(givenFormats), "attribute format mismatch: %s (given) != %s (expected)", givenFormats, expectedFormats);
-        }
-
-        { //textures
-            Set<BaseAttributeFormatImpl<?, ?>> givenFormats = this.textures.stream().map(BaseAttributeBufferImpl::formatImpl).collect(Collectors.toSet());
-            Set<BaseAttributeFormatImpl<?, ?>> expectedFormats = this.layout.textureFormatsByName().values();
-            checkArg(expectedFormats.equals(givenFormats), "attribute format mismatch: %s (given) != %s (expected)", givenFormats, expectedFormats);
-        }
-
         return this.indices != null
                 ? new DrawBindingIndexedImpl(this)
                 : new DrawBindingImpl(this);
-    }
-
-    public Stream<BaseAttributeBufferImpl<?, ?, ?>> allBuffers() {
-        return Stream.of(this.uniforms, this.uniformArrays, this.globals, this.locals, this.textures).flatMap(List::stream);
-    }
-
-    public Stream<BaseAttributeBufferImpl<?, ?, ?>> allBuffersAndChildren() {
-        return this.allBuffers().flatMap(BaseAttributeBufferImpl::selfAndChildren);
     }
 }

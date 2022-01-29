@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -21,12 +21,10 @@
 package net.daporkchop.fp2.gl.draw.binding;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.global.DrawGlobalBuffer;
-import net.daporkchop.fp2.gl.attribute.local.DrawLocalBuffer;
-import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayBuffer;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformBuffer;
+import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.draw.index.IndexBuffer;
+import net.daporkchop.fp2.gl.layout.binding.BaseBindingBuilder;
 
 /**
  * Builder for {@link DrawBinding}s.
@@ -34,46 +32,30 @@ import net.daporkchop.fp2.gl.draw.index.IndexBuffer;
  * @param <B> the type of {@link DrawBinding} to construct
  * @author DaPorkchop_
  */
-public interface DrawBindingBuilder<B extends DrawBinding> {
+public interface DrawBindingBuilder<B extends DrawBinding> extends BaseBindingBuilder<DrawBindingBuilder<B>, B> {
     /**
-     * Adds a {@link UniformBuffer} which contains uniform attributes.
+     * Adds a {@link AttributeBuffer} which contains global attributes.
+     * <p>
+     * Alias for {@code with(AttributeUsage.DRAW_GLOBAL, buffer)}.
      *
-     * @param buffer the uniform attributes
+     * @param buffer the {@link AttributeBuffer} containing the global attributes
+     * @see BaseBindingBuilder#with(AttributeUsage, net.daporkchop.fp2.gl.attribute.BaseAttributeBuffer)
      */
-    DrawBindingBuilder<B> withUniforms(@NonNull UniformBuffer<?> buffer);
+    default DrawBindingBuilder<B> withGlobal(@NonNull AttributeBuffer<?> buffer) {
+        return this.with(AttributeUsage.DRAW_GLOBAL, buffer);
+    }
 
     /**
-     * Adds a {@link UniformArrayBuffer} which contains uniform array attributes.
+     * Adds a {@link AttributeBuffer} which contains local attributes.
+     * <p>
+     * Alias for {@code with(AttributeUsage.DRAW_LOCAL, buffer)}.
      *
-     * @param buffer the uniform attributes
+     * @param buffer the {@link AttributeBuffer} containing the local attributes
+     * @see BaseBindingBuilder#with(AttributeUsage, net.daporkchop.fp2.gl.attribute.BaseAttributeBuffer)
      */
-    DrawBindingBuilder<B> withUniformArrays(@NonNull UniformArrayBuffer<?> buffer);
-
-    /**
-     * Adds a {@link DrawGlobalBuffer} which contains global attributes.
-     *
-     * @param buffer the global attributes
-     */
-    DrawBindingBuilder<B> withGlobals(@NonNull DrawGlobalBuffer<?> buffer);
-
-    /**
-     * Adds a {@link DrawLocalBuffer} which contains local attributes.
-     *
-     * @param buffer the local attributes
-     */
-    DrawBindingBuilder<B> withLocals(@NonNull DrawLocalBuffer<?> buffer);
-
-    /**
-     * Adds a {@link DrawLocalBuffer} which contains a 2D texture.
-     *
-     * @param texture the texture
-     */
-    DrawBindingBuilder<B> withTexture(@NonNull Texture2D<?> texture);
-
-    /**
-     * @return the constructed {@link B}
-     */
-    B build();
+    default DrawBindingBuilder<B> withLocal(@NonNull AttributeBuffer<?> buffer) {
+        return this.with(AttributeUsage.DRAW_LOCAL, buffer);
+    }
 
     /**
      * @author DaPorkchop_

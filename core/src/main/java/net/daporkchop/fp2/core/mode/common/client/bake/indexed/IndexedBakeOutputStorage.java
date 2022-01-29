@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -111,11 +111,11 @@ public class IndexedBakeOutputStorage<SU, SG, SL> extends AbstractBakeOutputStor
     protected final long slotSize;
     protected long slotsAddr;
 
-    protected final UniformBuffer<SU> uniformBuffer;
-    protected final DrawGlobalBuffer<SG> globalBuffer;
+    protected final AttributeBuffer<SU> uniformBuffer;
+    protected final AttributeBuffer<SG> globalBuffer;
 
     protected final Allocator vertexAlloc;
-    protected final DrawLocalBuffer<SL> vertexBuffer;
+    protected final AttributeBuffer<SL> vertexBuffer;
 
     protected final int indexSize;
     protected final Allocator[] indexAllocs;
@@ -124,7 +124,7 @@ public class IndexedBakeOutputStorage<SU, SG, SL> extends AbstractBakeOutputStor
     @Getter
     protected final int passes;
 
-    public IndexedBakeOutputStorage(@NonNull Allocator alloc, @NonNull UniformBuffer<SU> uniformBuffer, @NonNull DrawGlobalFormat<SG> globalFormat, @NonNull DrawLocalFormat<SL> vertexFormat, @NonNull IndexFormat indexFormat, int passes) {
+    public IndexedBakeOutputStorage(@NonNull Allocator alloc, @NonNull AttributeBuffer<SU> uniformBuffer, @NonNull AttributeFormat<SG> globalFormat, @NonNull AttributeFormat<SL> vertexFormat, @NonNull IndexFormat indexFormat, int passes) {
         this.alloc = alloc;
 
         this.passes = positive(passes, "passes");
@@ -162,9 +162,9 @@ public class IndexedBakeOutputStorage<SU, SG, SL> extends AbstractBakeOutputStor
     public DrawBindingBuilder<DrawBindingIndexed> createDrawBinding(@NonNull DrawLayout layout, int pass) {
         return layout.createBinding()
                 .withIndexes(this.indexBuffers[pass])
-                .withUniforms(this.uniformBuffer)
-                .withGlobals(this.globalBuffer)
-                .withLocals(this.vertexBuffer);
+                .withUniform(this.uniformBuffer)
+                .withGlobal(this.globalBuffer)
+                .withLocal(this.vertexBuffer);
     }
 
     @Override

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -27,6 +27,7 @@ import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
@@ -77,5 +78,10 @@ public final class MutableState implements State {
     public MutableState unset(@NonNull StateValueProperty<?> property) {
         this.values.remove(property);
         return this;
+    }
+
+    @Override
+    public Stream<StateValueProperty<?>> properties() {
+        return this.values.keySet().stream();
     }
 }

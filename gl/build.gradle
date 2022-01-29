@@ -21,6 +21,5 @@
 dependencies {
     implementationShade project(":common")
 
-    implementationProvided "org.ow2.asm:asm-debug-all:$asmVersion"
     implementationProvided "io.netty:netty-all:$nettyVersion"
 }

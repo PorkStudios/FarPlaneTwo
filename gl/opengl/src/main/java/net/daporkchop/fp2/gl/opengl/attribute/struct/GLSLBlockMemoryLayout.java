@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -142,7 +142,7 @@ public enum GLSLBlockMemoryLayout {
      * @param <S>        the struct type
      * @return the {@link InterleavedStructLayout}
      */
-    public abstract  <S> InterleavedStructLayout<S> layout(@NonNull StructInfo<S> structInfo);
+    public abstract <S> InterleavedStructLayout<S> layout(@NonNull StructInfo<S> structInfo);
 
     /**
      * A simple tuple containing a struct member's alignment and size.

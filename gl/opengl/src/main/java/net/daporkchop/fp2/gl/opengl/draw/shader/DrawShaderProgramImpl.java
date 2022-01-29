@@ -21,18 +21,18 @@
 package net.daporkchop.fp2.gl.opengl.draw.shader;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.draw.DrawLayout;
+import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.opengl.draw.DrawLayoutImpl;
-import net.daporkchop.fp2.gl.opengl.shader.BaseShaderImpl;
+import net.daporkchop.fp2.gl.opengl.shader.BaseShaderProgramBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.shader.BaseShaderProgramImpl;
 import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
-import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 
 /**
  * @author DaPorkchop_
  */
-public class DrawShaderProgramImpl extends BaseShaderProgramImpl implements DrawShaderProgram {
-    public DrawShaderProgramImpl(@NonNull OpenGL gl, @NonNull DrawLayoutImpl layout, @NonNull BaseShaderImpl... shaders) throws ShaderLinkageException {
-        super(gl, layout, shaders);
+public class DrawShaderProgramImpl extends BaseShaderProgramImpl<DrawLayoutImpl, DrawLayout> implements DrawShaderProgram {
+    public DrawShaderProgramImpl(@NonNull BaseShaderProgramBuilderImpl<?, ?, DrawLayoutImpl, DrawLayout> builder) throws ShaderLinkageException {
+        super(builder);
     }
 }

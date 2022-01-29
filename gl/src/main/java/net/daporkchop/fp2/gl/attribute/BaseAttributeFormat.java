@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -20,12 +20,21 @@
 
 package net.daporkchop.fp2.gl.attribute;
 
+import java.util.Set;
+
 /**
+ * Dummy interface which serves as a root type for all attribute format families.
+ *
  * @author DaPorkchop_
  */
 public interface BaseAttributeFormat {
     /**
-     * @return the number of bytes used by a single struct
+     * @return the number of bytes used by each element in a {@link BaseAttributeFormat} using this format
      */
     long size();
+
+    /**
+     * @return a {@link Set} of the {@link AttributeUsage}s valid for this {@link BaseAttributeFormat}
+     */
+    Set<AttributeUsage> validUsages();
 }

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -25,8 +25,9 @@ import lombok.NonNull;
 import net.daporkchop.fp2.common.util.Identifier;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;
-import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
-import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeUsage;
+import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.draw.index.IndexFormat;
 import net.daporkchop.fp2.gl.draw.index.IndexType;
@@ -46,8 +47,8 @@ import net.daporkchop.fp2.core.mode.voxel.client.struct.VoxelLocalAttributes;
  */
 @Getter
 public class ShaderBasedVoxelRenderStrategy extends AbstractMultipassIndexedRenderStrategy<VoxelPos, VoxelTile, VoxelGlobalAttributes, VoxelLocalAttributes> {
-    protected final DrawGlobalFormat<VoxelGlobalAttributes> globalFormat;
-    protected final DrawLocalFormat<VoxelLocalAttributes> vertexFormat;
+    protected final AttributeFormat<VoxelGlobalAttributes> globalFormat;
+    protected final AttributeFormat<VoxelLocalAttributes> vertexFormat;
 
     protected final IndexFormat indexFormat;
 
@@ -59,19 +60,19 @@ public class ShaderBasedVoxelRenderStrategy extends AbstractMultipassIndexedRend
     public ShaderBasedVoxelRenderStrategy(@NonNull AbstractFarRenderer<VoxelPos, VoxelTile> farRenderer) {
         super(farRenderer);
 
-        this.globalFormat = this.gl.createDrawGlobalFormat(VoxelGlobalAttributes.class).build();
-        this.vertexFormat = this.gl.createDrawLocalFormat(VoxelLocalAttributes.class).build();
+        this.globalFormat = this.gl.createAttributeFormat(VoxelGlobalAttributes.class).useFor(AttributeUsage.DRAW_GLOBAL).build();
+        this.vertexFormat = this.gl.createAttributeFormat(VoxelLocalAttributes.class).useFor(AttributeUsage.DRAW_LOCAL).build();
 
         this.indexFormat = this.gl.createIndexFormat()
                 .type(IndexType.UNSIGNED_SHORT)
                 .build();
 
         this.drawLayout = this.gl.createDrawLayout()
-                .withUniforms(this.uniformFormat)
-                .withUniformArrays(this.textureUVs.listsFormat())
-                .withUniformArrays(this.textureUVs.quadsFormat())
-                .withGlobals(this.globalFormat)
-                .withLocals(this.vertexFormat)
+                .withUniform(this.uniformFormat)
+                .withUniformArray(this.textureUVs.listsFormat())
+                .withUniformArray(this.textureUVs.quadsFormat())
+                .withGlobal(this.globalFormat)
+                .withLocal(this.vertexFormat)
                 .withTexture(this.textureFormatTerrain)
                 .withTexture(this.textureFormatLightmap)
                 .build();

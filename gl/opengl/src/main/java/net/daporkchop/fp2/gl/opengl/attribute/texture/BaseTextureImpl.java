@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -23,9 +23,7 @@ package net.daporkchop.fp2.gl.opengl.attribute.texture;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.texture.BaseTexture;
-import net.daporkchop.fp2.gl.attribute.texture.BaseTextureFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.common.TextureBuffer;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.TextureStructFormat;
 
 import java.util.function.IntConsumer;
@@ -34,7 +32,7 @@ import java.util.function.IntConsumer;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class BaseTextureImpl<S, F extends BaseTextureFormatImpl<S>, F_EXTERNAL extends BaseTextureFormat> extends BaseAttributeBufferImpl<S, F, F_EXTERNAL> implements BaseTexture<F_EXTERNAL>, TextureBuffer {
+public abstract class BaseTextureImpl<F extends BaseTextureFormatImpl<F, S>, S> extends BaseAttributeBufferImpl<F> implements BaseTexture<S> {
     protected final TextureStructFormat<S> structFormat;
 
     protected final int id;
@@ -73,10 +71,5 @@ public abstract class BaseTextureImpl<S, F extends BaseTextureFormatImpl<S>, F_E
         } finally {
             this.gl.api().glBindTexture(target.target(), oldBufferTexture);
         }
-    }
-
-    @Override
-    public int textureId() {
-        return this.id;
     }
 }

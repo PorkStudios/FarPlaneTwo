@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -34,8 +34,9 @@ import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapTile;
 import net.daporkchop.fp2.core.mode.heightmap.client.struct.HeightmapGlobalAttributes;
 import net.daporkchop.fp2.core.mode.heightmap.client.struct.HeightmapLocalAttributes;
-import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
-import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeUsage;
+import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.draw.index.IndexFormat;
 import net.daporkchop.fp2.gl.draw.index.IndexType;
@@ -46,8 +47,8 @@ import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
  */
 @Getter
 public class ShaderBasedHeightmapRenderStrategy extends AbstractMultipassIndexedRenderStrategy<HeightmapPos, HeightmapTile, HeightmapGlobalAttributes, HeightmapLocalAttributes> {
-    protected final DrawGlobalFormat<HeightmapGlobalAttributes> globalFormat;
-    protected final DrawLocalFormat<HeightmapLocalAttributes> vertexFormat;
+    protected final AttributeFormat<HeightmapGlobalAttributes> globalFormat;
+    protected final AttributeFormat<HeightmapLocalAttributes> vertexFormat;
 
     protected final IndexFormat indexFormat;
 
@@ -59,16 +60,16 @@ public class ShaderBasedHeightmapRenderStrategy extends AbstractMultipassIndexed
     public ShaderBasedHeightmapRenderStrategy(@NonNull AbstractFarRenderer<HeightmapPos, HeightmapTile> farRenderer) {
         super(farRenderer);
 
-        this.globalFormat = this.gl.createDrawGlobalFormat(HeightmapGlobalAttributes.class).build();
-        this.vertexFormat = this.gl.createDrawLocalFormat(HeightmapLocalAttributes.class).build();
+        this.globalFormat = this.gl.createAttributeFormat(HeightmapGlobalAttributes.class).useFor(AttributeUsage.DRAW_GLOBAL).build();
+        this.vertexFormat = this.gl.createAttributeFormat(HeightmapLocalAttributes.class).useFor(AttributeUsage.DRAW_LOCAL).build();
         this.indexFormat = this.gl.createIndexFormat().type(IndexType.UNSIGNED_SHORT).build();
 
         this.drawLayout = this.gl.createDrawLayout()
-                .withUniforms(this.uniformFormat)
-                .withUniformArrays(this.textureUVs.listsFormat())
-                .withUniformArrays(this.textureUVs.quadsFormat())
-                .withGlobals(this.globalFormat)
-                .withLocals(this.vertexFormat)
+                .withUniform(this.uniformFormat)
+                .withUniformArray(this.textureUVs.listsFormat())
+                .withUniformArray(this.textureUVs.quadsFormat())
+                .withGlobal(this.globalFormat)
+                .withLocal(this.vertexFormat)
                 .withTexture(this.textureFormatTerrain)
                 .withTexture(this.textureFormatLightmap)
                 .build();

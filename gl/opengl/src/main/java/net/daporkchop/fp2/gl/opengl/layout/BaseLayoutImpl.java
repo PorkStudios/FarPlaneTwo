@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -25,7 +25,12 @@ import lombok.NonNull;
 import net.daporkchop.fp2.gl.layout.BaseLayout;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
+
+import java.util.List;
+
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
@@ -35,14 +40,34 @@ public abstract class BaseLayoutImpl implements BaseLayout {
     protected final OpenGL gl;
     protected final GLAPI api;
 
-    public BaseLayoutImpl(@NonNull OpenGL gl) {
-        this.gl = gl;
-        this.api = gl.api();
+    protected final List<LayoutEntry<?>> entries;
+
+    public BaseLayoutImpl(@NonNull BaseLayoutBuilderImpl<?, ?> builder) {
+        this.gl = builder.gl();
+        this.api = builder.gl().api();
+
+        //construct initial list
+        this.entries = builder.entries.build();
+
+        //assign binding locations for all attribute formats
+        BindingLocationAssigner assigner = new BindingLocationAssigner(this.gl, this.api);
+        this.entries.forEach(entry -> entry.location(entry.format().bindingLocation(uncheckedCast(entry), assigner)));
     }
 
-    public abstract void prefixShaderSource(@NonNull ShaderType type, @NonNull StringBuilder builder);
+    @Override
+    public void close() {
+        //no-op
+    }
 
-    public abstract void configureProgramPreLink(int program);
+    public void prefixShaderSource(@NonNull ShaderType type, @NonNull StringBuilder builder) {
+        this.entries.forEach(entry -> entry.location().generateGLSL(type, builder));
+    }
 
-    public abstract void configureProgramPostLink(int program);
+    public void configureProgramPreLink(int program) {
+        this.entries.forEach(entry -> entry.location().configureProgramPreLink(this.api, program));
+    }
+
+    public void configureProgramPostLink(int program) {
+        this.entries.forEach(entry -> entry.location().configureProgramPostLink(this.api, program));
+    }
 }

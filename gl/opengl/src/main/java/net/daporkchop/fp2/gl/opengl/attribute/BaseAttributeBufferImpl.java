@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -23,12 +23,9 @@ package net.daporkchop.fp2.gl.opengl.attribute;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.BaseAttributeBuffer;
-import net.daporkchop.fp2.gl.attribute.BaseAttributeFormat;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 
 import java.util.stream.Stream;
-
-import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * Common parent class for attribute buffer implementations.
@@ -36,22 +33,16 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class BaseAttributeBufferImpl<S, F extends BaseAttributeFormatImpl<S, ?>, F_EXTERNAL extends BaseAttributeFormat> implements BaseAttributeBuffer<F_EXTERNAL> {
+public abstract class BaseAttributeBufferImpl<F extends BaseAttributeFormatImpl<F>> implements BaseAttributeBuffer {
     protected final OpenGL gl;
-    private final F formatImpl;
+    private final F format;
 
     public BaseAttributeBufferImpl(@NonNull F format) {
         this.gl = format.gl();
-        this.formatImpl = format;
+        this.format = format;
     }
 
-    @Override
-    @Deprecated
-    public F_EXTERNAL format() {
-        return uncheckedCast(this.formatImpl);
-    }
-
-    public Stream<BaseAttributeBufferImpl<?, ?, ?>> selfAndChildren() {
+    public Stream<BaseAttributeBufferImpl<?>> selfAndChildren() {
         return Stream.of(this);
     }
 }

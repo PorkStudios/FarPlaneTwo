@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -26,38 +26,36 @@ import net.daporkchop.fp2.common.util.Identifier;
 import net.daporkchop.fp2.common.util.exception.ResourceNotFoundException;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.attribute.Attribute;
-import net.daporkchop.fp2.gl.attribute.global.DrawGlobalBuffer;
-import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
-import net.daporkchop.fp2.gl.attribute.global.DrawGlobalWriter;
-import net.daporkchop.fp2.gl.attribute.local.DrawLocalBuffer;
-import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
-import net.daporkchop.fp2.gl.attribute.local.DrawLocalWriter;
+import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeUsage;
+import net.daporkchop.fp2.gl.attribute.AttributeWriter;
+import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureWriter2D;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayBuffer;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayFormat;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformBuffer;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
-import net.daporkchop.fp2.gl.bitset.GLBitSet;
-import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.command.CommandBuffer;
 import net.daporkchop.fp2.gl.command.FramebufferLayer;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
+import net.daporkchop.fp2.gl.draw.DrawMode;
+import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.fp2.gl.draw.binding.DrawBindingIndexed;
-import net.daporkchop.fp2.gl.draw.binding.DrawMode;
 import net.daporkchop.fp2.gl.draw.index.IndexBuffer;
 import net.daporkchop.fp2.gl.draw.index.IndexFormat;
 import net.daporkchop.fp2.gl.draw.index.IndexType;
 import net.daporkchop.fp2.gl.draw.index.IndexWriter;
 import net.daporkchop.fp2.gl.draw.list.DrawCommandArrays;
 import net.daporkchop.fp2.gl.draw.list.DrawCommandIndexed;
-import net.daporkchop.fp2.gl.draw.list.DrawList;
+import net.daporkchop.fp2.gl.draw.list.selected.JavaSelectedDrawList;
+import net.daporkchop.fp2.gl.draw.list.selected.ShaderSelectedDrawList;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.draw.shader.FragmentShader;
 import net.daporkchop.fp2.gl.draw.shader.VertexShader;
 import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
 import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
+import net.daporkchop.fp2.gl.transform.TransformLayout;
+import net.daporkchop.fp2.gl.transform.binding.TransformBinding;
+import net.daporkchop.fp2.gl.transform.shader.TransformShaderProgram;
 import org.lwjgl.LWJGLException;
 import org.lwjgl.opengl.ContextAttribs;
 import org.lwjgl.opengl.Display;
@@ -120,44 +118,66 @@ public class TestLWJGL2 {
 
     @SneakyThrows({ ShaderCompilationException.class, ShaderLinkageException.class })
     private static void run(@NonNull GL gl) {
-        UniformFormat<UniformAttribs> uniformFormat = gl.createUniformFormat(UniformAttribs.class).build();
-        UniformArrayFormat<UniformArrayAttribs> uniformArrayFormat = gl.createUniformArrayFormat(UniformArrayAttribs.class).build();
-        DrawGlobalFormat<GlobalAttribs> globalFormat = gl.createDrawGlobalFormat(GlobalAttribs.class).build();
-        DrawLocalFormat<LocalAttribs> localFormat = gl.createDrawLocalFormat(LocalAttribs.class)
-                .rename("a_pos", "a_posRenamed")
+        AttributeFormat<UniformAttribs> uniformFormat = gl.createAttributeFormat(UniformAttribs.class).useFor(AttributeUsage.UNIFORM).build();
+        AttributeFormat<UniformArrayAttribs> uniformArrayFormat = gl.createAttributeFormat(UniformArrayAttribs.class).useFor(AttributeUsage.UNIFORM_ARRAY).build();
+        AttributeFormat<GlobalAttribs> globalFormat = gl.createAttributeFormat(GlobalAttribs.class).useFor(AttributeUsage.DRAW_GLOBAL).build();
+        AttributeFormat<LocalAttribs> localFormat = gl.createAttributeFormat(LocalAttribs.class).useFor(AttributeUsage.DRAW_LOCAL, AttributeUsage.TRANSFORM_INPUT, AttributeUsage.TRANSFORM_OUTPUT)
+                .rename("pos", "posRenamed")
                 .build();
         TextureFormat2D<TextureAttribs> textureFormat = gl.createTextureFormat2D(TextureAttribs.class).build();
+        AttributeFormat<UniformSelectionAttribs> selectionUniformFormat = gl.createAttributeFormat(UniformSelectionAttribs.class).useFor(AttributeUsage.UNIFORM).build();
 
-        DrawLayout layout = gl.createDrawLayout()
-                .withUniforms(uniformFormat)
-                .withUniformArrays(uniformArrayFormat)
-                .withGlobals(globalFormat)
-                .withLocals(localFormat)
+        DrawLayout drawLayout = gl.createDrawLayout()
+                .withUniform(uniformFormat)
+                .withUniformArray(uniformArrayFormat)
+                .withGlobal(globalFormat)
+                .withLocal(localFormat)
                 .withTexture(textureFormat)
+                .build();
+
+        TransformLayout transformLayout = gl.createTransformLayout()
+                .withUniform(uniformFormat)
+                .withUniformArray(uniformArrayFormat)
+                .withInput(localFormat)
+                .with(AttributeUsage.TRANSFORM_INPUT, localFormat, "ti_", "_prev")
+                .withOutput(localFormat)
                 .build();
 
         IndexFormat indexFormat = gl.createIndexFormat()
                 .type(IndexType.UNSIGNED_SHORT)
                 .build();
 
-        VertexShader vertexShader = gl.createVertexShader(layout)
+        VertexShader vertexShader = gl.createVertexShader(drawLayout)
                 .include(Identifier.from("test.vert"))
                 .build();
-        FragmentShader fragmentShader = gl.createFragmentShader(layout)
+        FragmentShader fragmentShader = gl.createFragmentShader(drawLayout)
                 .include(Identifier.from("test.frag"))
                 .build();
-        DrawShaderProgram drawShaderProgram = gl.linkDrawShaderProgram(layout, vertexShader, fragmentShader);
+        DrawShaderProgram drawShaderProgram = gl.createDrawShaderProgram(drawLayout)
+                .addShader(vertexShader)
+                .addShader(fragmentShader)
+                .build();
 
-        DrawLocalBuffer<LocalAttribs> localBuffer = localFormat.createBuffer(BufferUsage.STATIC_DRAW);
-        localBuffer.resize(4);
+        TransformShaderProgram transformShaderProgram = gl.createTransformShaderProgram(transformLayout)
+                .addShader(gl.createTransformShader(transformLayout)
+                        .include(Identifier.from("test_transform.vert"))
+                        .build())
+                .build();
 
-        try (DrawLocalWriter<LocalAttribs> writer = localFormat.createWriter()) {
+        AttributeBuffer<LocalAttribs> localBuffer_1 = localFormat.createBuffer(BufferUsage.STATIC_DRAW);
+        localBuffer_1.resize(4);
+
+        AttributeBuffer<LocalAttribs> localBuffer_2 = localFormat.createBuffer(BufferUsage.STREAM_COPY);
+        localBuffer_2.resize(localBuffer_1.capacity());
+
+        try (AttributeWriter<LocalAttribs> writer = localFormat.createWriter()) {
             writer.put(new LocalAttribs((byte) 16, (byte) 16));
             writer.put(new LocalAttribs((byte) 16, (byte) 32));
             writer.put(new LocalAttribs((byte) 32, (byte) 32));
             writer.put(new LocalAttribs((byte) 32, (byte) 16));
 
-            localBuffer.set(0, writer);
+            localBuffer_1.set(0, writer);
+            localBuffer_2.set(0, writer);
         }
 
         IndexBuffer indexBuffer = indexFormat.createBuffer(BufferUsage.STATIC_DRAW);
@@ -169,30 +189,32 @@ public class TestLWJGL2 {
             indexBuffer.set(0, writer);
         }
 
-        DrawGlobalBuffer<GlobalAttribs> globalBuffer = globalFormat.createBuffer(BufferUsage.STATIC_DRAW);
+        AttributeBuffer<GlobalAttribs> globalBuffer = globalFormat.createBuffer(BufferUsage.STATIC_DRAW);
         globalBuffer.resize(4);
 
-        try (DrawGlobalWriter<GlobalAttribs> writer = globalFormat.createWriter()) {
+        try (AttributeWriter<GlobalAttribs> writer = globalFormat.createWriter()) {
             for (int i = 0, color = -1, x = 0; x < 2; x++) {
                 for (int y = 0; y < 2; y++, color = 0xFF << (i << 3), i++) {
-                    writer.set(new GlobalAttribs((byte) (x * 32), (byte) (y * 32), 0xFF000000 | color));
-                    globalBuffer.set(i, writer);
+                    writer.put(new GlobalAttribs((byte) (x * 32), (byte) (y * 32), 0xFF000000 | color));
                 }
             }
+            globalBuffer.set(0, writer);
         }
 
-        UniformArrayBuffer<UniformArrayAttribs> uniformArrayBuffer = uniformArrayFormat.createBuffer(BufferUsage.STATIC_DRAW);
-        uniformArrayBuffer.set(new UniformArrayAttribs[]{
+        AttributeBuffer<UniformArrayAttribs> uniformArrayBuffer = uniformArrayFormat.createBuffer(BufferUsage.STATIC_DRAW);
+        uniformArrayBuffer.setContents(
                 new UniformArrayAttribs(0.5f, 1.0f, 1.0f),
                 new UniformArrayAttribs(1.0f, 0.5f, 1.0f),
-                new UniformArrayAttribs(1.0f, 1.0f, 0.5f),
-        });
+                new UniformArrayAttribs(1.0f, 1.0f, 0.5f));
 
-        UniformBuffer<UniformAttribs> uniformBuffer0 = uniformFormat.createBuffer(BufferUsage.STATIC_DRAW);
-        uniformBuffer0.set(new UniformAttribs((byte) 32, (byte) 32));
+        AttributeBuffer<UniformAttribs> uniformBuffer0 = uniformFormat.createBuffer(BufferUsage.STATIC_DRAW);
+        uniformBuffer0.setContents(new UniformAttribs((byte) 32, (byte) 32));
 
-        UniformBuffer<UniformAttribs> uniformBuffer1 = uniformFormat.createBuffer(BufferUsage.STATIC_DRAW);
-        uniformBuffer1.set(new UniformAttribs((byte) -128, (byte) -128));
+        AttributeBuffer<UniformAttribs> uniformBuffer1 = uniformFormat.createBuffer(BufferUsage.STATIC_DRAW);
+        uniformBuffer1.setContents(new UniformAttribs((byte) -128, (byte) -128));
+
+        AttributeBuffer<UniformAttribs> uniformBuffer2 = uniformFormat.createBuffer(BufferUsage.STATIC_DRAW);
+        uniformBuffer2.setContents(new UniformAttribs((byte) -64, (byte) 32));
 
         Texture2D<TextureAttribs> texture = textureFormat.createTexture(512, 512, 1);
         try (TextureWriter2D<TextureAttribs> writer = textureFormat.createWriter(512, 512)) {
@@ -205,52 +227,81 @@ public class TestLWJGL2 {
             texture.set(0, 0, 0, writer);
         }
 
-        DrawBindingIndexed binding0 = layout.createBinding()
-                .withIndexes(indexBuffer)
-                .withUniforms(uniformBuffer0)
-                .withUniformArrays(uniformArrayBuffer)
-                .withGlobals(globalBuffer)
-                .withLocals(localBuffer)
+        DrawBinding binding0 = drawLayout.createBinding()
+                .withUniform(uniformBuffer0)
+                .withUniformArray(uniformArrayBuffer)
+                .withGlobal(globalBuffer)
+                .withLocal(localBuffer_1)
                 .withTexture(texture)
                 .build();
 
-        DrawBindingIndexed binding1 = layout.createBinding()
+        DrawBindingIndexed binding1 = drawLayout.createBinding()
                 .withIndexes(indexBuffer)
-                .withUniforms(uniformBuffer1)
-                .withUniformArrays(uniformArrayBuffer)
-                .withGlobals(globalBuffer)
-                .withLocals(localBuffer)
+                .withUniform(uniformBuffer1)
+                .withUniformArray(uniformArrayBuffer)
+                .withGlobal(globalBuffer)
+                .withLocal(localBuffer_1)
                 .withTexture(texture)
                 .build();
 
-        DrawList<DrawCommandArrays> listArrays = gl.createDrawListArrays(binding0).build();
+        TransformBinding binding2_transform = transformLayout.createBinding()
+                .withUniform(uniformBuffer1)
+                .withUniformArray(uniformArrayBuffer)
+                .withInput(localBuffer_1)
+                .withInput(localBuffer_1) //TODO: this should be localBuffer_2, but i can't bind the same buffer as an input and output at once (need to make it print an error, too)
+                .withOutput(localBuffer_2)
+                .build();
+
+        DrawBindingIndexed binding2_draw = drawLayout.createBinding()
+                .withIndexes(indexBuffer)
+                .withUniform(uniformBuffer2)
+                .withUniformArray(uniformArrayBuffer)
+                .withGlobal(globalBuffer)
+                .withLocal(localBuffer_2)
+                .withTexture(texture)
+                .build();
+
+        ShaderSelectedDrawList<DrawCommandArrays> listArrays = gl.createDrawListArrays(binding0).buildShaderSelected();
         listArrays.resize(4);
         listArrays.set(0, new DrawCommandArrays(0, 3));
         listArrays.set(1, new DrawCommandArrays(0, 3));
         listArrays.set(2, new DrawCommandArrays(0, 3));
         listArrays.set(3, new DrawCommandArrays(0, 3));
 
-        DrawList<DrawCommandIndexed> listElements = gl.createDrawListIndexed(binding1).optimizeForCpuSelection().build();
+        TransformLayout selectionLayout = listArrays.configureTransformLayoutForSelection(gl.createTransformLayout())
+                .withUniform(selectionUniformFormat)
+                .build();
+
+        AttributeBuffer<UniformSelectionAttribs> selectionUniformBuffer = selectionUniformFormat.createBuffer(BufferUsage.STREAM_DRAW);
+
+        TransformBinding selectionBinding = listArrays.configureTransformBindingForSelection(selectionLayout.createBinding())
+                .withUniform(selectionUniformBuffer)
+                .build();
+
+        TransformShaderProgram selectionProgram = listArrays.configureTransformShaderProgramForSelection(gl.createTransformShaderProgram(selectionLayout))
+                .addShader(listArrays.configureTransformShaderForSelection(gl.createTransformShader(selectionLayout))
+                        .include(Identifier.from("test_selection.vert"))
+                        .build())
+                .build();
+
+        JavaSelectedDrawList<DrawCommandIndexed> listElements = gl.createDrawListIndexed(binding1).buildJavaSelected();
         listElements.resize(4);
         listElements.set(0, new DrawCommandIndexed(0, 6, 0));
         listElements.set(1, new DrawCommandIndexed(0, 6, 0));
         listElements.set(2, new DrawCommandIndexed(0, 6, 0));
         listElements.set(3, new DrawCommandIndexed(0, 6, 0));
 
-        GLBitSet bitSet = gl.createBitSet()
-                .optimizeFor(listElements)
-                .build();
-        bitSet.resize(listElements.capacity());
-
         try (CommandBuffer cmdBuffer = gl.createCommandBuffer()
                 .blendDisable()
                 .framebufferClear(FramebufferLayer.COLOR)
-                .drawList(drawShaderProgram, DrawMode.TRIANGLES, listElements, bitSet)
-                .drawList(drawShaderProgram, DrawMode.TRIANGLES, listArrays)
-                .drawArrays(binding0, drawShaderProgram, DrawMode.TRIANGLES, 0, 3)
+                .drawSelectedList(drawShaderProgram, DrawMode.TRIANGLES, listElements, i -> ThreadLocalRandom.current().nextBoolean())
+                .drawSelectedList(drawShaderProgram, DrawMode.TRIANGLES, listArrays, selectionProgram, selectionBinding)
+                .drawArrays(drawShaderProgram, DrawMode.TRIANGLES, binding0, 0, 3)
+                .transform(transformShaderProgram, binding2_transform, localBuffer_1.capacity())
+                .drawArrays(drawShaderProgram, DrawMode.TRIANGLES, binding2_draw, 0, 3)
                 .build()) {
             while (!Display.isCloseRequested()) {
-                bitSet.set(i -> ThreadLocalRandom.current().nextBoolean());
+                selectionUniformBuffer.setContents(new UniformSelectionAttribs(ThreadLocalRandom.current().nextInt() & 1));
 
                 cmdBuffer.execute();
 
@@ -263,38 +314,44 @@ public class TestLWJGL2 {
     @Data
     public static class UniformAttribs {
         @Attribute(vectorAxes = { "X", "Y" }, convert = Attribute.Conversion.TO_NORMALIZED_FLOAT)
-        public final byte u_scaleX;
-        public final byte u_scaleY;
+        public final byte scaleX;
+        public final byte scaleY;
     }
 
     @Data
     public static class UniformArrayAttribs {
         @Attribute(vectorAxes = { "R", "G", "B" })
-        public final float ua_colorFactorR;
-        public final float ua_colorFactorG;
-        public final float ua_colorFactorB;
+        public final float colorFactorR;
+        public final float colorFactorG;
+        public final float colorFactorB;
     }
 
     @Data
     public static class GlobalAttribs {
         @Attribute(vectorAxes = { "X", "Y" }, convert = Attribute.Conversion.TO_FLOAT)
-        public final byte a_offsetX;
-        public final byte a_offsetY;
+        public final byte offsetX;
+        public final byte offsetY;
 
         @Attribute(transform = Attribute.Transformation.INT_ARGB8_TO_BYTE_VECTOR_RGBA, convert = Attribute.Conversion.TO_NORMALIZED_FLOAT)
-        public final int a_color;
+        public final int color;
     }
 
     @Data
     public static class LocalAttribs {
         @Attribute(vectorAxes = { "X", "Y" }, convert = Attribute.Conversion.TO_FLOAT)
-        public final byte a_posX;
-        public final byte a_posY;
+        public final byte posX;
+        public final byte posY;
     }
 
     @Data
     public static class TextureAttribs {
         @Attribute(transform = Attribute.Transformation.INT_ARGB8_TO_BYTE_VECTOR_RGBA, convert = Attribute.Conversion.TO_NORMALIZED_FLOAT)
-        public final int t_colorFactor;
+        public final int colorFactor;
+    }
+
+    @Data
+    public static class UniformSelectionAttribs {
+        @Attribute
+        public final int selectable;
     }
 }

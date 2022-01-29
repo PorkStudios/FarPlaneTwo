@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -26,10 +26,6 @@ import net.daporkchop.fp2.gl.draw.list.DrawCommand;
 import net.daporkchop.fp2.gl.draw.list.DrawListBuilder;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.draw.binding.DrawBindingImpl;
-import net.daporkchop.fp2.gl.opengl.draw.list.arrays.DrawListMultiDrawArrays;
-import net.daporkchop.fp2.gl.opengl.draw.list.arrays.DrawListMultiDrawArraysIndirect;
-import net.daporkchop.fp2.gl.opengl.draw.list.elements.DrawListMultiDrawElementsBaseVertex;
-import net.daporkchop.fp2.gl.opengl.draw.list.elements.DrawListMultiDrawElementsIndirect;
 
 /**
  * @author DaPorkchop_
@@ -40,12 +36,4 @@ public abstract class DrawListBuilderImpl<C extends DrawCommand> implements Draw
     protected final OpenGL gl;
     @NonNull
     protected final DrawBindingImpl binding;
-
-    protected boolean optimizeForCpuSelection;
-
-    @Override
-    public DrawListBuilder<C> optimizeForCpuSelection() {
-        this.optimizeForCpuSelection = true;
-        return this;
-    }
 }

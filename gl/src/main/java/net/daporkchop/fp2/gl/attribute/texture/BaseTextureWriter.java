@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -20,12 +20,16 @@
 
 package net.daporkchop.fp2.gl.attribute.texture;
 
-import net.daporkchop.fp2.gl.attribute.BaseAttributeWriter;
+import net.daporkchop.fp2.common.util.capability.CloseableResource;
 
 /**
  * A buffer in client memory for writing texture data.
  *
  * @author DaPorkchop_
  */
-public interface BaseTextureWriter<F extends BaseTextureFormat> extends BaseAttributeWriter<F> {
+public interface BaseTextureWriter<S> extends CloseableResource {
+    /**
+     * @return the {@link BaseTextureFormat} used by this writer
+     */
+    BaseTextureFormat<S> format();
 }

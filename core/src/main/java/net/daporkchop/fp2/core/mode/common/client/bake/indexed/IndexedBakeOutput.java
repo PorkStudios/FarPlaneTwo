@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -23,8 +23,7 @@ package net.daporkchop.fp2.core.mode.common.client.bake.indexed;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.gl.attribute.global.DrawGlobalWriter;
-import net.daporkchop.fp2.gl.attribute.local.DrawLocalWriter;
+import net.daporkchop.fp2.gl.attribute.AttributeWriter;
 import net.daporkchop.fp2.gl.draw.index.IndexWriter;
 import net.daporkchop.fp2.core.mode.common.client.bake.AbstractBakeOutput;
 import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutput;
@@ -39,11 +38,12 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 @Getter
 public class IndexedBakeOutput<SG, SL> extends AbstractBakeOutput {
+    //TODO: this will only store a single value, there's no reason to use an AttributeWriter...
     @NonNull
-    protected final DrawGlobalWriter<SG> globals;
+    protected final AttributeWriter<SG> globals;
 
     @NonNull
-    protected final DrawLocalWriter<SL> verts;
+    protected final AttributeWriter<SL> verts;
 
     @NonNull
     protected final IndexWriter[] indices;

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -24,8 +24,13 @@ import lombok.NonNull;
 import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
+import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
+import net.daporkchop.fp2.gl.draw.DrawMode;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.fp2.gl.draw.list.DrawCommand;
+import net.daporkchop.fp2.gl.draw.list.DrawListBuilder;
+import net.daporkchop.fp2.gl.draw.list.selected.ShaderSelectedDrawList;
+import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutput;
 import net.daporkchop.fp2.core.mode.common.client.strategy.IFarRenderStrategy;
 
@@ -34,7 +39,7 @@ import net.daporkchop.fp2.core.mode.common.client.strategy.IFarRenderStrategy;
  *
  * @author DaPorkchop_
  */
-public class GPUCulledRenderIndex<POS extends IFarPos, BO extends IBakeOutput, DB extends DrawBinding, DC extends DrawCommand> extends AbstractRenderIndex<POS, BO, DB, DC> {
+public class GPUCulledRenderIndex<POS extends IFarPos, BO extends IBakeOutput, DB extends DrawBinding, DC extends DrawCommand> extends AbstractRenderIndex<POS, BO, DB, DC, ShaderSelectedDrawList<DC>> {
     /**
      * The maximum permitted compute work group size.
      * <p>
@@ -61,7 +66,7 @@ public class GPUCulledRenderIndex<POS extends IFarPos, BO extends IBakeOutput, D
     }
 
     @Override
-    protected AbstractRenderIndex<POS, BO, DB, DC>.Level createLevel(int level) {
+    protected AbstractRenderIndex<POS, BO, DB, DC, ShaderSelectedDrawList<DC>>.Level createLevel(int level) {
         return new Level(level);
     }
 
@@ -81,7 +86,7 @@ public class GPUCulledRenderIndex<POS extends IFarPos, BO extends IBakeOutput, D
     /**
      * @author DaPorkchop_
      */
-    protected class Level extends AbstractRenderIndex<POS, BO, DB, DC>.Level {
+    protected class Level extends AbstractRenderIndex<POS, BO, DB, DC, ShaderSelectedDrawList<DC>>.Level {
         //protected final ComputeShaderProgram cullShader;
 
         public Level(int level) {
@@ -93,6 +98,11 @@ public class GPUCulledRenderIndex<POS extends IFarPos, BO extends IBakeOutput, D
                     .define("LEVEL_0", this.level == 0);*/
 
             //TODO: this.cullShader = this.commandBuffer.configureShader(cullShaderBuilder).link();
+        }
+
+        @Override
+        protected ShaderSelectedDrawList<DC> buildCommandBuffer(@NonNull DrawListBuilder<DC> builder) {
+            return builder.buildShaderSelected();
         }
 
         @Override
@@ -108,6 +118,11 @@ public class GPUCulledRenderIndex<POS extends IFarPos, BO extends IBakeOutput, D
             /*try (ComputeShaderProgram cullShader = this.cullShader.use()) { //do frustum culling
                 this.commandBuffer.select(cullShader);
             }*/
+        }
+
+        @Override
+        protected void draw(@NonNull CommandBufferBuilder builder, @NonNull DrawShaderProgram shader, @NonNull DrawMode mode, @NonNull ShaderSelectedDrawList<DC> list, int pass) {
+            throw new UnsupportedOperationException(); //TODO
         }
     }
 }

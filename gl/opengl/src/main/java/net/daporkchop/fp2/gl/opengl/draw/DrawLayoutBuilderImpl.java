@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -20,84 +20,40 @@
 
 package net.daporkchop.fp2.gl.opengl.draw;
 
+import com.google.common.collect.ImmutableSet;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
-import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
-import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayFormat;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.draw.DrawLayoutBuilder;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
+import net.daporkchop.fp2.gl.attribute.AttributeUsage;
+import net.daporkchop.fp2.gl.opengl.layout.BaseLayoutBuilderImpl;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Stream;
+import java.util.EnumSet;
+import java.util.Set;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public class DrawLayoutBuilderImpl implements DrawLayoutBuilder {
-    @NonNull
-    protected final OpenGL gl;
+public class DrawLayoutBuilderImpl extends BaseLayoutBuilderImpl<DrawLayoutBuilder, DrawLayout> implements DrawLayoutBuilder {
+    private static final Set<AttributeUsage> VALID_USAGES = ImmutableSet.copyOf(EnumSet.of(
+            AttributeUsage.UNIFORM,
+            AttributeUsage.UNIFORM_ARRAY,
+            AttributeUsage.DRAW_GLOBAL,
+            AttributeUsage.DRAW_LOCAL,
+            AttributeUsage.TEXTURE
+    ));
 
-    protected final List<BaseAttributeFormatImpl<?, ?>> uniforms = new ArrayList<>();
-    protected final List<BaseAttributeFormatImpl<?, ?>> uniformArrays = new ArrayList<>();
-    protected final List<BaseAttributeFormatImpl<?, ?>> globals = new ArrayList<>();
-    protected final List<BaseAttributeFormatImpl<?, ?>> locals = new ArrayList<>();
-    protected final List<BaseAttributeFormatImpl<?, ?>> textures = new ArrayList<>();
-
-    protected boolean selectionEnabled = false;
-
-    @Override
-    public DrawLayoutBuilder withUniforms(@NonNull UniformFormat<?> format) {
-        this.uniforms.add((BaseAttributeFormatImpl<?, ?>) format);
-        return this;
+    public DrawLayoutBuilderImpl(@NonNull OpenGL gl) {
+        super(gl);
     }
 
     @Override
-    public DrawLayoutBuilder withUniformArrays(@NonNull UniformArrayFormat<?> format) {
-        this.uniformArrays.add((BaseAttributeFormatImpl<?, ?>) format);
-        return this;
-    }
-
-    @Override
-    public DrawLayoutBuilder withGlobals(@NonNull DrawGlobalFormat<?> format) {
-        this.globals.add((BaseAttributeFormatImpl<?, ?>) format);
-        return this;
-    }
-
-    @Override
-    public DrawLayoutBuilder withLocals(@NonNull DrawLocalFormat<?> format) {
-        this.locals.add((BaseAttributeFormatImpl<?, ?>) format);
-        return this;
-    }
-
-    @Override
-    public DrawLayoutBuilder withTexture(@NonNull TextureFormat2D<?> format) {
-        this.textures.add((BaseAttributeFormatImpl<?, ?>) format);
-        return this;
-    }
-
-    @Override
-    public DrawLayoutBuilder enableSelection() {
-        this.selectionEnabled = true;
-        return this;
+    protected Set<AttributeUsage> validUsages() {
+        return VALID_USAGES;
     }
 
     @Override
     public DrawLayout build() {
         return new DrawLayoutImpl(this);
-    }
-
-    public Stream<BaseAttributeFormatImpl<?, ?>> allFormats() {
-        return Stream.of(this.uniforms, this.uniformArrays, this.globals, this.locals, this.textures).flatMap(List::stream);
-    }
-
-    public Stream<BaseAttributeFormatImpl<?, ?>> allFormatsAndChildren() {
-        return this.allFormats().flatMap(BaseAttributeFormatImpl::selfAndChildren);
     }
 }

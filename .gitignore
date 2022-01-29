@@ -23,3 +23,6 @@ logs/
 classes/
 
 /of_option_fields.txt
+
+#apitrace dumps
+*.trace

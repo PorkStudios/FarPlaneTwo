@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -24,7 +24,6 @@ import com.google.common.collect.ImmutableList;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.common.asm.ClassloadingUtils;
-import net.daporkchop.fp2.gl.bitset.GLBitSet;
 import net.daporkchop.fp2.gl.command.BlendFactor;
 import net.daporkchop.fp2.gl.command.BlendOp;
 import net.daporkchop.fp2.gl.command.CommandBuffer;
@@ -32,14 +31,19 @@ import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
 import net.daporkchop.fp2.gl.command.Compare;
 import net.daporkchop.fp2.gl.command.FramebufferLayer;
 import net.daporkchop.fp2.gl.command.StencilOperation;
+import net.daporkchop.fp2.gl.draw.DrawMode;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
-import net.daporkchop.fp2.gl.draw.binding.DrawMode;
 import net.daporkchop.fp2.gl.draw.list.DrawList;
+import net.daporkchop.fp2.gl.draw.list.selected.JavaSelectedDrawList;
+import net.daporkchop.fp2.gl.draw.list.selected.ShaderSelectedDrawList;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.bitset.AbstractGLBitSet;
+import net.daporkchop.fp2.gl.opengl.command.methodwriter.FieldHandle;
+import net.daporkchop.fp2.gl.opengl.command.methodwriter.MethodWriter;
+import net.daporkchop.fp2.gl.opengl.command.methodwriter.PassthroughMethodWriter;
+import net.daporkchop.fp2.gl.opengl.command.methodwriter.TreeMethodWriter;
 import net.daporkchop.fp2.gl.opengl.command.state.CowState;
 import net.daporkchop.fp2.gl.opengl.command.state.StateProperties;
 import net.daporkchop.fp2.gl.opengl.command.state.StateProperty;
@@ -50,8 +54,8 @@ import net.daporkchop.fp2.gl.opengl.command.state.struct.Color4b;
 import net.daporkchop.fp2.gl.opengl.command.state.struct.Color4f;
 import net.daporkchop.fp2.gl.opengl.command.state.struct.StencilOp;
 import net.daporkchop.fp2.gl.opengl.draw.list.DrawListImpl;
-import net.daporkchop.fp2.gl.opengl.layout.BaseBindingImpl;
-import net.daporkchop.fp2.gl.opengl.shader.BaseShaderProgramImpl;
+import net.daporkchop.fp2.gl.transform.binding.TransformBinding;
+import net.daporkchop.fp2.gl.transform.shader.TransformShaderProgram;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import org.objectweb.asm.ClassWriter;
@@ -67,7 +71,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.BitSet;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -75,9 +78,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.IntPredicate;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.common.util.TypeSize.*;
+import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 import static org.objectweb.asm.Opcodes.*;
 import static org.objectweb.asm.Type.*;
@@ -93,20 +99,14 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
     protected final OpenGL gl;
 
     protected final ClassWriter writer;
-
     protected final MethodVisitor ctorVisitor;
-
     protected final String apiFieldName;
 
-    protected final BitSet lvtAllocationTable = new BitSet();
     protected final List<Object> fieldValues = new ArrayList<>();
-
     protected final ImmutableList.Builder<Uop> uops = ImmutableList.builder();
 
-    protected CowState state = new CowState();
-
-    protected BaseBindingImpl binding;
-    protected BaseShaderProgramImpl shader;
+    protected CowState state = new CowState()
+            .set(StateProperties.RASTERIZER_DISCARD, false);
 
     public CommandBufferBuilderImpl(@NonNull OpenGL gl) {
         this.gl = gl;
@@ -143,8 +143,12 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
         return name;
     }
 
-    protected void releaseLocalVariable(int lvtIndex) {
-        this.lvtAllocationTable.clear(lvtIndex);
+    public <T> FieldHandle<T> makeFieldHandle(@NonNull Type type, @NonNull T value) {
+        String name = this.makeField(type, value);
+        return mv -> {
+            mv.visitVarInsn(ALOAD, 0);
+            mv.visitFieldInsn(GETFIELD, CLASS_NAME, name, type.getDescriptor());
+        };
     }
 
     @Override
@@ -167,10 +171,12 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
             }
 
             @Override
-            public void emitCode(@NonNull CommandBufferBuilderImpl builder, @NonNull MethodVisitor mv, int apiLvtIndex) {
-                mv.visitVarInsn(ALOAD, apiLvtIndex);
-                mv.visitLdcInsn(GLEnumUtil.from(layers));
-                mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glClear", getMethodDescriptor(VOID_TYPE, INT_TYPE), true);
+            public void emitCode(@NonNull CommandBufferBuilderImpl builder, @NonNull MethodWriter<CodegenArgs> writer) {
+                writer.write((mv, args) -> {
+                    mv.visitVarInsn(ALOAD, args.apiLvtIndex());
+                    mv.visitLdcInsn(GLEnumUtil.from(layers));
+                    mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glClear", getMethodDescriptor(VOID_TYPE, INT_TYPE), true);
+                });
             }
         });
         return this;
@@ -315,56 +321,78 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
     }
 
     @Override
-    public CommandBufferBuilder drawArrays(@NonNull DrawBinding binding, @NonNull DrawShaderProgram shader, @NonNull DrawMode mode, int first, int count) {
+    public CommandBufferBuilder drawArrays(@NonNull DrawShaderProgram shader, @NonNull DrawMode mode, @NonNull DrawBinding binding, int first, int count) {
         this.uops.add(new Uop.Draw(this.state, binding, shader, Collections.emptyMap()) {
             @Override
-            public void emitCode(@NonNull CommandBufferBuilderImpl builder, @NonNull MethodVisitor mv, int apiLvtIndex) {
-                mv.visitVarInsn(ALOAD, apiLvtIndex);
-                mv.visitLdcInsn(GLEnumUtil.from(mode));
-                mv.visitLdcInsn(first);
-                mv.visitLdcInsn(count);
-                mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glDrawArrays", getMethodDescriptor(VOID_TYPE, INT_TYPE, INT_TYPE, INT_TYPE), true);
+            public void emitCode(@NonNull CommandBufferBuilderImpl builder, @NonNull MethodWriter<CodegenArgs> writer) {
+                writer.write((mv, args) -> {
+                    mv.visitVarInsn(ALOAD, args.apiLvtIndex());
+                    mv.visitLdcInsn(GLEnumUtil.from(mode));
+                    mv.visitLdcInsn(first);
+                    mv.visitLdcInsn(count);
+                    mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glDrawArrays", getMethodDescriptor(VOID_TYPE, INT_TYPE, INT_TYPE, INT_TYPE), true);
+                });
             }
         });
         return this;
     }
 
     @Override
-    public CommandBufferBuilder drawList(@NonNull DrawShaderProgram shader, @NonNull DrawMode mode, @NonNull DrawList<?> _list) {
-        DrawListImpl<?, ?> list = (DrawListImpl<?, ?>) _list;
-
-        this.uops.add(new Uop.Draw(this.state, list.binding(), shader, list.stateProperties0()) {
-            @Override
-            public void emitCode(@NonNull CommandBufferBuilderImpl builder, @NonNull MethodVisitor mv, int apiLvtIndex) {
-                String fieldName = builder.makeField(getType(list.getClass()), list);
-                mv.visitVarInsn(ALOAD, 0);
-                mv.visitFieldInsn(GETFIELD, CLASS_NAME, fieldName, getDescriptor(list.getClass()));
-                mv.visitVarInsn(ALOAD, apiLvtIndex);
-                mv.visitLdcInsn(GLEnumUtil.from(mode));
-                mv.visitMethodInsn(INVOKEVIRTUAL, getInternalName(list.getClass()), "draw0", getMethodDescriptor(VOID_TYPE, getType(GLAPI.class), INT_TYPE), false);
-            }
-        });
+    public CommandBufferBuilder drawList(@NonNull DrawShaderProgram shader, @NonNull DrawMode mode, @NonNull DrawList<?> list) {
+        this.uops.addAll(((DrawListImpl<?>) list).draw(this.state, shader, GLEnumUtil.from(mode)));
         return this;
     }
 
     @Override
-    public CommandBufferBuilder drawList(@NonNull DrawShaderProgram shader, @NonNull DrawMode mode, @NonNull DrawList<?> _list, @NonNull GLBitSet _selectionMask) {
-        DrawListImpl<?, ?> list = (DrawListImpl<?, ?>) _list;
-        AbstractGLBitSet mask = (AbstractGLBitSet) _selectionMask;
+    public CommandBufferBuilder drawSelectedList(@NonNull DrawShaderProgram shader, @NonNull DrawMode mode, @NonNull JavaSelectedDrawList<?> list, @NonNull IntPredicate selector) {
+        FieldHandle<IntPredicate> field = this.makeFieldHandle(getType(IntPredicate.class), selector);
+        this.uops.addAll(((DrawListImpl.JavaSelected<?>) list).drawSelected(this.state, shader, GLEnumUtil.from(mode), field));
+        return this;
+    }
 
-        this.uops.add(new Uop.Draw(this.state, list.binding(), shader, list.stateProperties0()) {
+    @Override
+    public CommandBufferBuilder drawSelectedList(@NonNull DrawShaderProgram shader, @NonNull DrawMode mode, @NonNull JavaSelectedDrawList<?> list, @NonNull Supplier<IntPredicate> selectorProvider) {
+        FieldHandle<Supplier<IntPredicate>> field = this.makeFieldHandle(getType(Supplier.class), selectorProvider);
+        this.uops.addAll(((DrawListImpl.JavaSelected<?>) list).drawSelected(this.state, shader, GLEnumUtil.from(mode), mv -> {
+            field.get(mv);
+            mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(Supplier.class), "get", getMethodDescriptor(getType(Object.class)), true);
+            mv.visitTypeInsn(CHECKCAST, getInternalName(IntPredicate.class));
+        }));
+        return this;
+    }
+
+    @Override
+    public CommandBufferBuilder drawSelectedList(@NonNull DrawShaderProgram shader, @NonNull DrawMode mode, @NonNull ShaderSelectedDrawList<?> list, @NonNull TransformShaderProgram selectionShader, @NonNull TransformBinding selectionBinding) {
+        this.uops.addAll(((DrawListImpl.ShaderSelected<?>) list).drawSelected(this.state, shader, GLEnumUtil.from(mode), selectionShader, selectionBinding));
+        return this;
+    }
+
+    @Override
+    public CommandBufferBuilder transform(@NonNull TransformShaderProgram shader, @NonNull TransformBinding binding, int count) {
+        this.uops.add(new Uop.Transform(this.state, binding, shader, Collections.singletonMap(StateProperties.RASTERIZER_DISCARD, true)) {
             @Override
-            public void emitCode(@NonNull CommandBufferBuilderImpl builder, @NonNull MethodVisitor mv, int apiLvtIndex) {
-                String listFieldName = builder.makeField(getType(list.getClass()), list);
-                String maskFieldName = builder.makeField(getType(mask.getClass()), mask);
+            public void emitCode(@NonNull CommandBufferBuilderImpl builder, @NonNull MethodWriter<CodegenArgs> writer) {
+                //glBeginTransformFeedback(GL_POINTS);
+                writer.write((mv, args) -> {
+                    mv.visitVarInsn(ALOAD, args.apiLvtIndex());
+                    mv.visitLdcInsn(GL_POINTS);
+                    mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glBeginTransformFeedback", getMethodDescriptor(VOID_TYPE, INT_TYPE), true);
+                });
 
-                mv.visitVarInsn(ALOAD, 0);
-                mv.visitFieldInsn(GETFIELD, CLASS_NAME, listFieldName, getDescriptor(list.getClass()));
-                mv.visitVarInsn(ALOAD, apiLvtIndex);
-                mv.visitLdcInsn(GLEnumUtil.from(mode));
-                mv.visitVarInsn(ALOAD, 0);
-                mv.visitFieldInsn(GETFIELD, CLASS_NAME, maskFieldName, getDescriptor(mask.getClass()));
-                mv.visitMethodInsn(INVOKEVIRTUAL, getInternalName(list.getClass()), "draw0", getMethodDescriptor(VOID_TYPE, getType(GLAPI.class), INT_TYPE, getType(AbstractGLBitSet.class)), false);
+                //glDrawArrays(GL_POINTS, 0, count);
+                writer.write((mv, args) -> {
+                    mv.visitVarInsn(ALOAD, args.apiLvtIndex());
+                    mv.visitLdcInsn(GL_POINTS);
+                    mv.visitLdcInsn(0);
+                    mv.visitLdcInsn(count);
+                    mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glDrawArrays", getMethodDescriptor(VOID_TYPE, INT_TYPE, INT_TYPE, INT_TYPE), true);
+                });
+
+                //glEndTransformFeedback();
+                writer.write((mv, args) -> {
+                    mv.visitVarInsn(ALOAD, args.apiLvtIndex());
+                    mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glEndTransformFeedback", getMethodDescriptor(VOID_TYPE), true);
+                });
             }
         });
         return this;
@@ -392,8 +420,7 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
         entryVisitor.visitFieldInsn(GETFIELD, CLASS_NAME, this.apiFieldName, getDescriptor(GLAPI.class));
         entryVisitor.visitVarInsn(ASTORE, 1);
 
-        MethodVisitor codeVisitor = this.writer.visitMethod(ACC_PRIVATE | ACC_FINAL, "execute", getMethodDescriptor(VOID_TYPE, getType(GLAPI.class)), null, null);
-        codeVisitor.visitCode();
+        TreeMethodWriter<CodegenArgs> methodWriter = new TreeMethodWriter<>(this.writer, CLASS_NAME, "execute", new CodegenArgs(1), 4, true);
 
         List<Uop> uops = this.uops.build();
         Map<StateValueProperty<?>, Object> state = new IdentityHashMap<>();
@@ -405,13 +432,15 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
                     .forEach(property -> {
                         uop.state().get(property).ifPresent(value -> {
                             if (!Objects.equals(value, state.put(property, value))) {
-                                property.set(value, codeVisitor, 1);
+                                property.set(value, methodWriter);
                             }
                         });
                     });
 
-            uop.emitCode(this, codeVisitor, 1);
+            uop.emitCode(this, methodWriter);
         }
+
+        String executeMethodName = methodWriter.finish();
 
         if (this.gl.preserveInputGlState()) { //we want to preserve the current OpenGL state
             AtomicInteger lvtIndexAllocator = new AtomicInteger(2);
@@ -434,7 +463,7 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
             //invoke execute(GLAPI)
             entryVisitor.visitVarInsn(ALOAD, 0);
             entryVisitor.visitVarInsn(ALOAD, 1);
-            entryVisitor.visitMethodInsn(INVOKEVIRTUAL, CLASS_NAME, "execute", getMethodDescriptor(VOID_TYPE, getType(GLAPI.class)), false);
+            entryVisitor.visitMethodInsn(INVOKEVIRTUAL, CLASS_NAME, executeMethodName, getMethodDescriptor(VOID_TYPE, getType(GLAPI.class)), false);
 
             //restore all affected OpenGL properties from their saved values
             state.keySet().forEach(property -> {
@@ -444,12 +473,13 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
             //invoke execute(GLAPI)
             entryVisitor.visitVarInsn(ALOAD, 0);
             entryVisitor.visitVarInsn(ALOAD, 1);
-            entryVisitor.visitMethodInsn(INVOKEVIRTUAL, CLASS_NAME, "execute", getMethodDescriptor(VOID_TYPE, getType(GLAPI.class)), false);
+            entryVisitor.visitMethodInsn(INVOKEVIRTUAL, CLASS_NAME, executeMethodName, getMethodDescriptor(VOID_TYPE, getType(GLAPI.class)), false);
 
             //reset all properties to their default values
+            MethodWriter<CodegenArgs> passthroughWriter = new PassthroughMethodWriter<>(entryVisitor, new CodegenArgs(1));
             state.forEach((property, value) -> {
                 if (!Objects.equals(value, property.def())) {
-                    property.set(uncheckedCast(property.def()), entryVisitor, 1);
+                    property.set(uncheckedCast(property.def()), passthroughWriter);
                 }
             });
         }
@@ -457,10 +487,6 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
         this.ctorVisitor.visitInsn(RETURN);
         this.ctorVisitor.visitMaxs(0, 0);
         this.ctorVisitor.visitEnd();
-
-        codeVisitor.visitInsn(RETURN);
-        codeVisitor.visitMaxs(0, 0);
-        codeVisitor.visitEnd();
 
         entryVisitor.visitInsn(RETURN);
         entryVisitor.visitMaxs(0, 0);

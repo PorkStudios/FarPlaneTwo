@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -22,7 +22,6 @@ package net.daporkchop.fp2.gl.opengl.attribute.texture;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
-import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureWriter2D;
 
 import java.util.function.IntConsumer;
@@ -32,7 +31,7 @@ import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
 /**
  * @author DaPorkchop_
  */
-public class WrappedTexture2DImpl<S> extends BaseTextureImpl<S, TextureFormat2DImpl<S>, TextureFormat2D<S>> implements Texture2D<S> {
+public class WrappedTexture2DImpl<S> extends BaseTextureImpl<TextureFormat2DImpl<S>, S> implements Texture2D<S> {
     public WrappedTexture2DImpl(@NonNull TextureFormat2DImpl<S> format, int id) {
         super(format, id);
     }

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -22,19 +22,12 @@ package net.daporkchop.fp2.gl;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.common.GlobalProperties;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
-import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
-import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayFormat;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
-import net.daporkchop.fp2.gl.bitset.GLBitSet;
-import net.daporkchop.fp2.gl.bitset.GLBitSetBuilder;
-import net.daporkchop.fp2.gl.buffer.BufferUsage;
-import net.daporkchop.fp2.gl.buffer.GLBuffer;
+import net.daporkchop.fp2.gl.attribute.texture.TextureFormatBuilder;
 import net.daporkchop.fp2.gl.command.CommandBuffer;
 import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
-import net.daporkchop.fp2.gl.compute.GLCompute;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.draw.DrawLayoutBuilder;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
@@ -45,11 +38,18 @@ import net.daporkchop.fp2.gl.draw.list.DrawCommandArrays;
 import net.daporkchop.fp2.gl.draw.list.DrawCommandIndexed;
 import net.daporkchop.fp2.gl.draw.list.DrawList;
 import net.daporkchop.fp2.gl.draw.list.DrawListBuilder;
+import net.daporkchop.fp2.gl.draw.shader.BaseDrawShader;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.draw.shader.FragmentShader;
 import net.daporkchop.fp2.gl.draw.shader.VertexShader;
 import net.daporkchop.fp2.gl.shader.BaseShaderBuilder;
-import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
+import net.daporkchop.fp2.gl.shader.BaseShaderProgramBuilder;
+import net.daporkchop.fp2.gl.transform.TransformLayout;
+import net.daporkchop.fp2.gl.transform.TransformLayoutBuilder;
+import net.daporkchop.fp2.gl.transform.shader.TransformShader;
+import net.daporkchop.fp2.gl.transform.shader.TransformShaderBuilder;
+import net.daporkchop.fp2.gl.transform.shader.TransformShaderProgram;
+import net.daporkchop.fp2.gl.transform.shader.TransformShaderProgramBuilder;
 
 import java.util.function.Supplier;
 
@@ -86,22 +86,27 @@ public interface GL extends AutoCloseable {
     void close();
 
     /**
-     * Creates a new OpenGL buffer.
-     *
-     * @param usage the buffer's usage hint
-     * @return a new {@link GLBuffer}
+     * @return a builder for constructing a new {@link CommandBuffer}
      */
-    GLBuffer createBuffer(@NonNull BufferUsage usage);
+    CommandBufferBuilder createCommandBuffer();
 
-    /**
-     * @return a builder for constructing a new {@link GLBitSet}
-     */
-    GLBitSetBuilder createBitSet();
+    //
+    // FORMATS
+    //
 
     /**
      * @return a builder for constructing a new {@link IndexFormat}
      */
     IndexFormatBuilder.TypeSelectionStage createIndexFormat();
+
+    /**
+     * Gets an {@link AttributeFormat} for the given struct class.
+     *
+     * @param clazz the struct class
+     * @param <S>   the struct type
+     * @return an {@link AttributeFormat}
+     */
+    <S> AttributeFormatBuilder<S> createAttributeFormat(@NonNull Class<S> clazz);
 
     /**
      * Gets a {@link TextureFormat2D} for the given struct class.
@@ -110,43 +115,11 @@ public interface GL extends AutoCloseable {
      * @param <S>   the struct type
      * @return a {@link TextureFormat2D}
      */
-    <S> AttributeFormatBuilder<TextureFormat2D<S>> createTextureFormat2D(@NonNull Class<S> clazz);
+    <S> TextureFormatBuilder<TextureFormat2D<S>> createTextureFormat2D(@NonNull Class<S> clazz);
 
-    /**
-     * Gets a {@link UniformFormat} for the given struct class.
-     *
-     * @param clazz the struct class
-     * @param <S>   the struct type
-     * @return a {@link UniformFormat}
-     */
-    <S> AttributeFormatBuilder<UniformFormat<S>> createUniformFormat(@NonNull Class<S> clazz);
-
-    /**
-     * Gets a {@link UniformArrayFormat} for the given struct class.
-     *
-     * @param clazz the struct class
-     * @param <S>   the struct type
-     * @return a {@link UniformArrayFormat}
-     */
-    <S> AttributeFormatBuilder<UniformArrayFormat<S>> createUniformArrayFormat(@NonNull Class<S> clazz);
-
-    /**
-     * Gets a {@link DrawGlobalFormat} for the given struct class.
-     *
-     * @param clazz the struct class
-     * @param <S>   the struct type
-     * @return a {@link DrawGlobalFormat}
-     */
-    <S> AttributeFormatBuilder<DrawGlobalFormat<S>> createDrawGlobalFormat(@NonNull Class<S> clazz);
-
-    /**
-     * Gets a {@link DrawLocalFormat} for the given struct class.
-     *
-     * @param clazz the struct class
-     * @param <S>   the struct type
-     * @return a {@link DrawLocalFormat}
-     */
-    <S> AttributeFormatBuilder<DrawLocalFormat<S>> createDrawLocalFormat(@NonNull Class<S> clazz);
+    //
+    // DRAW
+    //
 
     /**
      * @return a builder for constructing a new {@link DrawLayout}
@@ -164,15 +137,6 @@ public interface GL extends AutoCloseable {
     DrawListBuilder<DrawCommandIndexed> createDrawListIndexed(@NonNull DrawBindingIndexed binding);
 
     /**
-     * @return a builder for constructing a new {@link CommandBuffer}
-     */
-    CommandBufferBuilder createCommandBuffer();
-
-    //
-    // SHADERS
-    //
-
-    /**
      * @return a builder for constructing a new {@link VertexShader}
      */
     BaseShaderBuilder<VertexShader> createVertexShader(@NonNull DrawLayout layout);
@@ -183,22 +147,26 @@ public interface GL extends AutoCloseable {
     BaseShaderBuilder<FragmentShader> createFragmentShader(@NonNull DrawLayout layout);
 
     /**
-     * Links a {@link DrawShaderProgram} from the given {@link VertexShader} and {@link FragmentShader}, tuned for rendering data formatted with the given {@link DrawLayout}.
-     *
-     * @param layout         the {@link DrawLayout}
-     * @param vertexShader   the {@link VertexShader}
-     * @param fragmentShader the {@link FragmentShader}
-     * @return the linked {@link DrawShaderProgram}
-     * @throws ShaderLinkageException if shader linkage fails
+     * @return a builder for constructing a new {@link DrawShaderProgram}
      */
-    DrawShaderProgram linkDrawShaderProgram(@NonNull DrawLayout layout, @NonNull VertexShader vertexShader, @NonNull FragmentShader fragmentShader) throws ShaderLinkageException;
+    BaseShaderProgramBuilder<DrawShaderProgram, BaseDrawShader, DrawLayout> createDrawShaderProgram(@NonNull DrawLayout layout);
 
     //
-    // MODULES
+    // TRANSFORM
     //
 
     /**
-     * @return the module for accessing compute shaders
+     * @return a builder for constructing a new {@link TransformLayout}
      */
-    GLCompute compute();
+    TransformLayoutBuilder createTransformLayout();
+
+    /**
+     * @return a builder for constructing a new {@link TransformShader}
+     */
+    TransformShaderBuilder createTransformShader(@NonNull TransformLayout layout);
+
+    /**
+     * @return a builder for constructing a new {@link TransformShaderProgram}
+     */
+    TransformShaderProgramBuilder createTransformShaderProgram(@NonNull TransformLayout layout);
 }

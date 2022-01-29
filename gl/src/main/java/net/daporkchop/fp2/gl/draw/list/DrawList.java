@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -22,11 +22,25 @@ package net.daporkchop.fp2.gl.draw.list;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.GLResource;
+import net.daporkchop.fp2.gl.draw.list.selected.SelectedDrawList;
 
 /**
+ * A list of multiple {@link DrawCommand}s which can be executed in a batch.
+ * <p>
+ * Using a {@link DrawList} makes it possible to efficiently issue many draw commands at once. Additionally, as {@link DrawList}s are only indirectly referenced in a command buffer,
+ * they can be modified and resized without the command buffer being rebuilt.
+ * <p>
+ * Drawing from a {@link DrawList}s is the only way in which global draw attributes can be accessed. The index of a draw command inside the list is used to retrieve the corresponding
+ * global draw attribute values from the bound buffer.
+ *
  * @author DaPorkchop_
+ * @see SelectedDrawList
  */
 public interface DrawList<C extends DrawCommand> extends GLResource {
+    //
+    // GENERAL
+    //
+
     /**
      * @return the number of commands that this buffer can store
      */

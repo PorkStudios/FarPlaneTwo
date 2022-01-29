@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -25,5 +25,10 @@ import net.daporkchop.fp2.gl.attribute.BaseAttributeFormat;
 /**
  * @author DaPorkchop_
  */
-public interface BaseTextureFormat extends BaseAttributeFormat {
+public interface BaseTextureFormat<S> extends BaseAttributeFormat {
+    /**
+     * @return the number of bytes used by each texel
+     */
+    @Override
+    long size();
 }

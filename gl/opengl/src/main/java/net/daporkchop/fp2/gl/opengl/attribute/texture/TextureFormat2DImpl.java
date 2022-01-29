@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -22,20 +22,31 @@ package net.daporkchop.fp2.gl.opengl.attribute.texture;
 
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureWriter2D;
-import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.StructInfo;
+import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
+import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.StructLayouts;
+import net.daporkchop.fp2.gl.opengl.layout.LayoutEntry;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
 @Getter
-public class TextureFormat2DImpl<S> extends BaseTextureFormatImpl<S> implements TextureFormat2D<S> {
-    public TextureFormat2DImpl(@NonNull AttributeFormatBuilderImpl<TextureFormat2D<S>, S> builder) {
-        super(builder.gl(), builder.gl().structFormatGenerator().getTexture(StructLayouts.texture(builder.gl(), new StructInfo<>(builder))));
+public class TextureFormat2DImpl<S> extends BaseTextureFormatImpl<TextureFormat2DImpl<S>, S> implements TextureFormat2D<S> {
+    public TextureFormat2DImpl(@NonNull TextureFormatBuilderImpl<S, TextureFormat2D<S>> builder) {
+        super(builder.gl(), builder.gl().structFormatGenerator().getTexture(StructLayouts.texture(builder.gl(), builder.structInfo())));
+    }
+
+    @Override
+    public BindingLocation<?> bindingLocation(@NonNull LayoutEntry<TextureFormat2DImpl<S>> layout, @NonNull BindingLocationAssigner assigner) {
+        checkArg(layout.usage() == AttributeUsage.TEXTURE, "unsupported usage: %s", layout.usage());
+
+        return new TextureBindingLocation<S, Texture2DImpl<S>>(layout, TextureTarget.TEXTURE_2D, assigner);
     }
 
     @Override
@@ -51,10 +62,5 @@ public class TextureFormat2DImpl<S> extends BaseTextureFormatImpl<S> implements 
     @Override
     public Texture2D<S> wrapExternalTexture(@NonNull Object id) throws UnsupportedOperationException {
         return new WrappedTexture2DImpl<>(this, (Integer) id);
-    }
-
-    @Override
-    public TextureTarget target() {
-        return TextureTarget.TEXTURE_2D;
     }
 }

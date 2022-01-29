@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -36,7 +36,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @UtilityClass
 public class StructLayouts {
-    public <S> InterleavedStructLayout<S> vertexAttributesInterleaved(@NonNull OpenGL gl, @NonNull StructInfo<S> structInfo) {
+    public <S> InterleavedStructLayout<S> vertexAttributesInterleaved(@NonNull OpenGL gl, @NonNull StructInfo<S> structInfo, boolean unpacked) {
         List<StructMember<S>> members = structInfo.members();
         int memberCount = structInfo.members().size();
 
@@ -47,7 +47,7 @@ public class StructLayouts {
 
         long offset = 0L;
         for (int i = 0; i < memberCount; i++) {
-            StructMember.Stage stage = members.get(i).packedStage;
+            StructMember.Stage stage = unpacked ? members.get(i).unpackedStage : members.get(i).packedStage;
 
             memberOffsets[i] = offset;
             offset += PMath.roundUp(stage.components() * (long) stage.componentType().stride(), alignment);
@@ -62,7 +62,7 @@ public class StructLayouts {
         return InterleavedStructLayout.<S>builder()
                 .structInfo(structInfo)
                 .layoutName("vertex_attribute_interleaved")
-                .unpacked(false)
+                .unpacked(unpacked)
                 .memberOffsets(memberOffsets)
                 .memberComponentOffsets(memberComponentOffsets)
                 .stride(offset)

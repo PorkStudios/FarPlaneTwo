@@ -20,17 +20,10 @@
 
 package net.daporkchop.fp2.gl.draw.binding;
 
-import net.daporkchop.fp2.gl.GLResource;
-import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
-import net.daporkchop.fp2.gl.attribute.local.DrawLocalBuffer;
+import net.daporkchop.fp2.gl.layout.binding.BaseBinding;
 
 /**
- * Maps {@link DrawLocalBuffer}s to {@link DrawShaderProgram} inputs.
- * <p>
- * A binding does not own any of the buffers or programs it references. The user is responsible for creating and disposing of them properly. Disposing of a resource belonging to a binding
- * before the binding is closed will result in undefined behavior.
- *
  * @author DaPorkchop_
  */
-public interface DrawBinding extends GLResource {
+public interface DrawBinding extends BaseBinding {
 }

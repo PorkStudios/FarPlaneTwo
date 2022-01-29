@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -31,11 +31,10 @@ import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.fp2.gl.draw.binding.DrawBindingBuilder;
-import net.daporkchop.fp2.gl.draw.binding.DrawMode;
-import net.daporkchop.fp2.gl.bitset.GLBitSet;
-import net.daporkchop.fp2.gl.bitset.GLBitSetBuilder;
+import net.daporkchop.fp2.gl.draw.DrawMode;
 import net.daporkchop.fp2.gl.draw.list.DrawCommand;
 import net.daporkchop.fp2.gl.draw.list.DrawList;
+import net.daporkchop.fp2.gl.draw.list.DrawListBuilder;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.core.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
@@ -46,6 +45,7 @@ import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutputStorage;
 import net.daporkchop.fp2.core.mode.common.client.strategy.IFarRenderStrategy;
 import net.daporkchop.fp2.core.util.datastructure.SimpleSet;
 import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
+import net.daporkchop.lib.common.util.GenericMatcher;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
 import java.lang.reflect.Array;
@@ -65,7 +65,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeOutput, DB extends DrawBinding, DC extends DrawCommand> extends AbstractRefCounted implements IRenderIndex<POS, BO, DB, DC> {
+public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeOutput, DB extends DrawBinding, DC extends DrawCommand, DL extends DrawList<DC>> extends AbstractRefCounted implements IRenderIndex<POS, BO, DB, DC> {
     protected final IFarRenderStrategy<POS, ?, BO, DB, DC> strategy;
     protected final ICullingStrategy cullingStrategy;
 
@@ -155,10 +155,7 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
 
         protected final IBakeOutputStorage<BO, DB, DC> storage;
         protected final List<DB> bindings;
-        protected final DrawList<DC>[] commandBuffers = uncheckedCast(new DrawList[RENDER_PASS_COUNT]);
-
-        protected final GLBitSet bitsValid;
-        protected final GLBitSet bitsSelection;
+        protected final DL[] commandBuffers = uncheckedCast(Array.newInstance(GenericMatcher.find(AbstractRenderIndex.this.getClass(), AbstractRenderIndex.class, "DL"), RENDER_PASS_COUNT));
 
         protected final Allocator.GrowFunction growFunction;
 
@@ -184,16 +181,13 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
                     .collect(Collectors.collectingAndThen(Collectors.toList(), ImmutableList::copyOf));
 
             for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
-                this.commandBuffers[pass] = AbstractRenderIndex.this.strategy.createCommandBuffer(this.bindings.get(pass));
+                this.commandBuffers[pass] = this.buildCommandBuffer(AbstractRenderIndex.this.strategy.createCommandBuffer(this.bindings.get(pass)));
             }
-
-            GLBitSetBuilder builder = AbstractRenderIndex.this.strategy.gl().createBitSet()
-                    .optimizeFor(this.commandBuffers[0]);
-            this.bitsValid = builder.build();
-            this.bitsSelection = builder.build();
 
             this.grow();
         }
+
+        protected abstract DL buildCommandBuffer(@NonNull DrawListBuilder<DC> builder);
 
         public void grow() {
             this.capacity = toInt(this.growFunction.grow(this.capacity, 1));
@@ -203,8 +197,6 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
             for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
                 this.commandBuffers[pass].resize(this.capacity);
             }
-            this.bitsValid.resize(this.capacity);
-            this.bitsSelection.resize(this.capacity);
 
             this.dirty = true;
         }
@@ -217,9 +209,6 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
 
                 //erase draw commands from the command buffer
                 this.eraseDrawCommands(handle);
-
-                //mark the index as invalid
-                this.bitsValid.clear(handle);
             }
 
             if (output != null) { //insertion
@@ -232,7 +221,6 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
                 }
 
                 this.positionsToHandles.put(pos, handle);
-                this.bitsValid.set(handle);
 
                 this.directPosAccess.storePos(pos, this.positionsAddr + handle * this.positionSize);
 
@@ -290,8 +278,10 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
         protected abstract void select0(@NonNull IFrustum frustum);
 
         public void draw(@NonNull CommandBufferBuilder builder, int pass, @NonNull DrawShaderProgram shader) {
-            builder.drawList(shader, DrawMode.QUADS, this.commandBuffers[pass], this.bitsSelection);
+            this.draw(builder, shader, DrawMode.QUADS, this.commandBuffers[pass], pass);
         }
+
+        protected abstract void draw(@NonNull CommandBufferBuilder builder, @NonNull DrawShaderProgram shader, @NonNull DrawMode mode, @NonNull DL list, int pass);
 
         protected void upload() {
             if (this.dirty) { //re-upload all data if needed
@@ -305,8 +295,6 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
             AbstractRenderIndex.this.directMemoryAlloc.free(this.positionsAddr);
 
             //delete all gl objects
-            this.bitsValid.close();
-            this.bitsSelection.close();
             Stream.of(this.commandBuffers).forEach(DrawList::close);
             this.bindings.forEach(DB::close);
             this.storage.release();

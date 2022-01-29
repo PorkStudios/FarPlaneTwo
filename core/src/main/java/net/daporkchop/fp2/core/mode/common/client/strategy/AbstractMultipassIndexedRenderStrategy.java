@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -30,15 +30,14 @@ import net.daporkchop.fp2.core.mode.common.client.bake.indexed.IndexedBakeOutput
 import net.daporkchop.fp2.core.mode.common.client.index.CPUCulledRenderIndex;
 import net.daporkchop.fp2.core.mode.common.client.index.GPUCulledRenderIndex;
 import net.daporkchop.fp2.core.mode.common.client.index.IRenderIndex;
-import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
-import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
 import net.daporkchop.fp2.gl.draw.binding.DrawBindingBuilder;
 import net.daporkchop.fp2.gl.draw.binding.DrawBindingIndexed;
 import net.daporkchop.fp2.gl.draw.index.IndexFormat;
 import net.daporkchop.fp2.gl.draw.index.IndexWriter;
 import net.daporkchop.fp2.gl.draw.list.DrawCommandIndexed;
-import net.daporkchop.fp2.gl.draw.list.DrawList;
+import net.daporkchop.fp2.gl.draw.list.DrawListBuilder;
 import net.daporkchop.lib.common.util.PArrays;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
@@ -54,9 +53,9 @@ public abstract class AbstractMultipassIndexedRenderStrategy<POS extends IFarPos
 
     public abstract IndexFormat indexFormat();
 
-    public abstract DrawGlobalFormat<SG> globalFormat();
+    public abstract AttributeFormat<SG> globalFormat();
 
-    public abstract DrawLocalFormat<SL> vertexFormat();
+    public abstract AttributeFormat<SL> vertexFormat();
 
     @Override
     public IRenderIndex<POS, IndexedBakeOutput<SG, SL>, DrawBindingIndexed, DrawCommandIndexed> createIndex() {
@@ -76,15 +75,15 @@ public abstract class AbstractMultipassIndexedRenderStrategy<POS extends IFarPos
     }
 
     @Override
-    public DrawList<DrawCommandIndexed> createCommandBuffer(@NonNull DrawBindingIndexed binding) {
-        return this.gl.createDrawListIndexed(binding).build();
+    public DrawListBuilder<DrawCommandIndexed> createCommandBuffer(@NonNull DrawBindingIndexed binding) {
+        return this.gl.createDrawListIndexed(binding);
     }
 
     @Override
     public DrawBindingBuilder<DrawBindingIndexed> configureDrawBinding(@NonNull DrawBindingBuilder<DrawBindingIndexed> builder) {
         return builder
-                .withUniformArrays(this.textureUVs.listsBuffer())
-                .withUniformArrays(this.textureUVs.quadsBuffer())
+                .withUniformArray(this.textureUVs.listsBuffer())
+                .withUniformArray(this.textureUVs.quadsBuffer())
                 .withTexture(this.textureTerrain)
                 .withTexture(this.textureLightmap);
     }

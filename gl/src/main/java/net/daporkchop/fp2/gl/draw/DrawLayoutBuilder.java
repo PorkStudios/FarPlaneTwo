@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -21,60 +21,37 @@
 package net.daporkchop.fp2.gl.draw;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
-import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
-import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayFormat;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeUsage;
+import net.daporkchop.fp2.gl.layout.BaseLayoutBuilder;
 
 /**
  * Builder for {@link DrawLayout}s.
  *
  * @author DaPorkchop_
  */
-public interface DrawLayoutBuilder {
+public interface DrawLayoutBuilder extends BaseLayoutBuilder<DrawLayoutBuilder, DrawLayout> {
     /**
-     * Adds a {@link UniformFormat}.
+     * Adds a {@link AttributeFormat} which will be used for global vertex attributes.
+     * <p>
+     * Alias for {@code with(AttributeUsage.DRAW_GLOBAL, format)}.
      *
-     * @param format the format of the uniform attributes
+     * @param format the {@link AttributeFormat} of the global attributes
+     * @see BaseLayoutBuilder#with(AttributeUsage, net.daporkchop.fp2.gl.attribute.BaseAttributeFormat)
      */
-    DrawLayoutBuilder withUniforms(@NonNull UniformFormat<?> format);
+    default DrawLayoutBuilder withGlobal(@NonNull AttributeFormat<?> format) {
+        return this.with(AttributeUsage.DRAW_GLOBAL, format);
+    }
 
     /**
-     * Adds a {@link UniformArrayFormat}.
+     * Adds a {@link AttributeFormat} which will be used for local vertex attributes.
+     * <p>
+     * Alias for {@code with(AttributeUsage.DRAW_LOCAL, format)}.
      *
-     * @param format the format of the uniform array attributes
+     * @param format the {@link AttributeFormat} of the local attributes
+     * @see BaseLayoutBuilder#with(AttributeUsage, net.daporkchop.fp2.gl.attribute.BaseAttributeFormat)
      */
-    DrawLayoutBuilder withUniformArrays(@NonNull UniformArrayFormat<?> format);
-
-    /**
-     * Adds a {@link DrawGlobalFormat}.
-     *
-     * @param format the format of the global attributes
-     */
-    DrawLayoutBuilder withGlobals(@NonNull DrawGlobalFormat<?> format);
-
-    /**
-     * Adds a {@link DrawLocalFormat}.
-     *
-     * @param format the format of the local attributes
-     */
-    DrawLayoutBuilder withLocals(@NonNull DrawLocalFormat<?> format);
-
-    /**
-     * Adds a {@link TextureFormat2D}.
-     *
-     * @param format the format of the texture
-     */
-    DrawLayoutBuilder withTexture(@NonNull TextureFormat2D<?> format);
-
-    /**
-     * Makes the {@link DrawLayout} support draw list selection.
-     */
-    DrawLayoutBuilder enableSelection(); //TODO: this does nothing
-
-    /**
-     * @return the constructed {@link DrawLayout}
-     */
-    DrawLayout build();
+    default DrawLayoutBuilder withLocal(@NonNull AttributeFormat<?> format) {
+        return this.with(AttributeUsage.DRAW_LOCAL, format);
+    }
 }

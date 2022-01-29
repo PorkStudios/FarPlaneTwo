@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -20,6 +20,9 @@
 
 package net.daporkchop.fp2.gl.draw.list;
 
+import net.daporkchop.fp2.gl.draw.list.selected.JavaSelectedDrawList;
+import net.daporkchop.fp2.gl.draw.list.selected.ShaderSelectedDrawList;
+
 /**
  * Builder for {@link DrawList}s.
  *
@@ -27,10 +30,18 @@ package net.daporkchop.fp2.gl.draw.list;
  * @author DaPorkchop_
  */
 public interface DrawListBuilder<C extends DrawCommand> {
-    DrawListBuilder<C> optimizeForCpuSelection();
-
     /**
      * @return the constructed {@link DrawList}
      */
-    DrawList<C> build();
+    DrawList<C> buildRegular();
+
+    /**
+     * @return the constructed {@link ShaderSelectedDrawList}
+     */
+    JavaSelectedDrawList<C> buildJavaSelected();
+
+    /**
+     * @return the constructed {@link ShaderSelectedDrawList}
+     */
+    ShaderSelectedDrawList<C> buildShaderSelected();
 }

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -21,7 +21,8 @@
 package net.daporkchop.fp2.gl.opengl.command.state;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.opengl.GLAPI;
+import net.daporkchop.fp2.gl.opengl.command.CodegenArgs;
+import net.daporkchop.fp2.gl.opengl.command.methodwriter.MethodWriter;
 import org.objectweb.asm.MethodVisitor;
 
 import java.util.Optional;
@@ -43,11 +44,10 @@ public interface StateValueProperty<T> extends StateProperty {
     /**
      * Generates JVM bytecode for setting the property to the given value.
      *
-     * @param value       the value
-     * @param mv          the {@link MethodVisitor} to which code should be written
-     * @param apiLvtIndex the index of the {@link GLAPI} instance in the LVT
+     * @param value  the value
+     * @param writer the {@link MethodWriter} to which code should be written
      */
-    void set(@NonNull T value, @NonNull MethodVisitor mv, int apiLvtIndex);
+    void set(@NonNull T value, @NonNull MethodWriter<CodegenArgs> writer);
 
     void backup(@NonNull MethodVisitor mv, int apiLvtIndex, int bufferLvtIndex, @NonNull AtomicInteger lvtIndexAllocator);
 

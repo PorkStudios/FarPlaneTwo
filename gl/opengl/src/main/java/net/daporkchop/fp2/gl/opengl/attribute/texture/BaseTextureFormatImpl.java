@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -20,18 +20,54 @@
 
 package net.daporkchop.fp2.gl.opengl.attribute.texture;
 
+import com.google.common.collect.ImmutableSet;
+import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.attribute.texture.BaseTextureFormat;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.common.TextureFormat;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.TextureStructFormat;
+
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * @author DaPorkchop_
  */
-public abstract class BaseTextureFormatImpl<S> extends BaseAttributeFormatImpl<S, TextureStructFormat<S>> implements BaseTextureFormat, TextureFormat {
+@Getter
+public abstract class BaseTextureFormatImpl<F extends BaseTextureFormatImpl<F, S>, S> extends BaseAttributeFormatImpl<F> implements BaseTextureFormat<S> {
+    public static final Set<AttributeUsage> VALID_USAGES = ImmutableSet.copyOf(EnumSet.of(
+            AttributeUsage.TEXTURE
+    ));
+
+    private final TextureStructFormat<S> structFormat;
+
     public BaseTextureFormatImpl(@NonNull OpenGL gl, @NonNull TextureStructFormat<S> structFormat) {
-        super(gl, structFormat);
+        super(gl);
+
+        this.structFormat = structFormat;
+    }
+
+    @Override
+    public Set<AttributeUsage> validUsages() {
+        return VALID_USAGES;
+    }
+
+    @Override
+    public long size() {
+        return this.structFormat.totalSize();
+    }
+
+    @Override
+    public String rawName() {
+        return this.structFormat.structName();
+    }
+
+    @Override
+    public List<GLSLField> rawAttributeFields() {
+        return this.structFormat.glslFields();
     }
 }

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -28,17 +28,11 @@ import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.gl.GL;
-import net.daporkchop.fp2.gl.GLModule;
 import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
-import net.daporkchop.fp2.gl.attribute.global.DrawGlobalFormat;
-import net.daporkchop.fp2.gl.attribute.local.DrawLocalFormat;
+import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayFormat;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
-import net.daporkchop.fp2.gl.bitset.GLBitSetBuilder;
-import net.daporkchop.fp2.gl.buffer.BufferUsage;
+import net.daporkchop.fp2.gl.attribute.texture.TextureFormatBuilder;
 import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
-import net.daporkchop.fp2.gl.compute.GLCompute;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.draw.DrawLayoutBuilder;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
@@ -48,38 +42,48 @@ import net.daporkchop.fp2.gl.draw.list.DrawCommandArrays;
 import net.daporkchop.fp2.gl.draw.list.DrawCommandIndexed;
 import net.daporkchop.fp2.gl.draw.list.DrawList;
 import net.daporkchop.fp2.gl.draw.list.DrawListBuilder;
+import net.daporkchop.fp2.gl.draw.list.selected.JavaSelectedDrawList;
+import net.daporkchop.fp2.gl.draw.list.selected.ShaderSelectedDrawList;
+import net.daporkchop.fp2.gl.draw.shader.BaseDrawShader;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.draw.shader.FragmentShader;
 import net.daporkchop.fp2.gl.draw.shader.VertexShader;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.global.DrawGlobalFormatVertexAttribute;
-import net.daporkchop.fp2.gl.opengl.attribute.local.DrawLocalFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.StructFormatGenerator;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureFormat2DImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.uniform.UniformArrayFormatShaderStorageBlock;
-import net.daporkchop.fp2.gl.opengl.attribute.uniform.UniformFormatBlock;
-import net.daporkchop.fp2.gl.opengl.bitset.GLBitSetBuilderImpl;
-import net.daporkchop.fp2.gl.opengl.buffer.GLBufferImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureFormatBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.opengl.command.CommandBufferBuilderImpl;
-import net.daporkchop.fp2.gl.opengl.compute.ComputeImpl;
 import net.daporkchop.fp2.gl.opengl.draw.DrawLayoutBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.draw.DrawLayoutImpl;
 import net.daporkchop.fp2.gl.opengl.draw.binding.DrawBindingImpl;
 import net.daporkchop.fp2.gl.opengl.draw.index.IndexFormatBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.draw.list.DrawListBuilderImpl;
-import net.daporkchop.fp2.gl.opengl.draw.list.arrays.DrawListMultiDrawArrays;
-import net.daporkchop.fp2.gl.opengl.draw.list.arrays.DrawListMultiDrawArraysIndirect;
-import net.daporkchop.fp2.gl.opengl.draw.list.elements.DrawListMultiDrawElementsBaseVertex;
-import net.daporkchop.fp2.gl.opengl.draw.list.elements.DrawListMultiDrawElementsIndirect;
+import net.daporkchop.fp2.gl.opengl.draw.list.arrays.multidrawindirect.DrawListMultiDrawArraysIndirect;
+import net.daporkchop.fp2.gl.opengl.draw.list.arrays.multidrawindirect.JavaSelectedDrawListMultiDrawArraysIndirect;
+import net.daporkchop.fp2.gl.opengl.draw.list.arrays.multidrawindirect.ShaderSelectedDrawListMultiDrawArraysIndirect;
+import net.daporkchop.fp2.gl.opengl.draw.list.elements.multidrawindirect.DrawListMultiDrawElementsIndirect;
+import net.daporkchop.fp2.gl.opengl.draw.list.elements.multidrawindirect.JavaSelectedDrawListMultiDrawElementsIndirect;
+import net.daporkchop.fp2.gl.opengl.draw.list.elements.multidrawindirect.ShaderSelectedDrawListMultiDrawElementsIndirect;
 import net.daporkchop.fp2.gl.opengl.draw.shader.DrawShaderProgramImpl;
 import net.daporkchop.fp2.gl.opengl.draw.shader.FragmentShaderImpl;
 import net.daporkchop.fp2.gl.opengl.draw.shader.VertexShaderImpl;
 import net.daporkchop.fp2.gl.opengl.shader.BaseShaderBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.shader.BaseShaderProgramBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
 import net.daporkchop.fp2.gl.opengl.shader.source.SourceLine;
+import net.daporkchop.fp2.gl.opengl.transform.TransformLayoutBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.transform.TransformLayoutImpl;
+import net.daporkchop.fp2.gl.opengl.transform.shader.TransformShaderBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.transform.shader.TransformShaderProgramBuilderImpl;
 import net.daporkchop.fp2.gl.shader.BaseShaderBuilder;
+import net.daporkchop.fp2.gl.shader.BaseShaderProgramBuilder;
 import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
 import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
+import net.daporkchop.fp2.gl.transform.TransformLayout;
+import net.daporkchop.fp2.gl.transform.TransformLayoutBuilder;
+import net.daporkchop.fp2.gl.transform.shader.TransformShaderBuilder;
+import net.daporkchop.fp2.gl.transform.shader.TransformShaderProgramBuilder;
 
 import java.util.Set;
 import java.util.function.Supplier;
@@ -107,8 +111,6 @@ public class OpenGL implements GL {
 
     protected final ResourceArena resourceArena = new ResourceArena();
     protected final ResourceProvider resourceProvider;
-
-    protected final GLCompute compute;
 
     protected final Allocator directMemoryAllocator = new DirectMemoryAllocator();
 
@@ -165,15 +167,6 @@ public class OpenGL implements GL {
             this.profile = !core && !forwards ? GLProfile.COMPAT : GLProfile.CORE;
         }
 
-        //
-        // create modules
-        //
-
-        //compute
-        this.compute = GLExtension.GL_ARB_compute_shader.supported(this)
-                ? new ComputeImpl(this)
-                : GLModule.unsupportedImplementation(GLCompute.class);
-
         //compatibility hacks
         this.vertexAttributeAlignment = this.isOfficialAmdDriver() ? INT_SIZE : 1;
     }
@@ -190,15 +183,28 @@ public class OpenGL implements GL {
         return (brand.contains("Intel")) && !brand.contains("Mesa");
     }
 
-    @Override
-    public GLBufferImpl createBuffer(@NonNull BufferUsage usage) {
-        return new GLBufferImpl(this, usage);
+    public GLBuffer createBuffer(@NonNull BufferUsage usage) {
+        return new GLBuffer(this, usage);
     }
 
     @Override
-    public GLBitSetBuilder createBitSet() {
-        return new GLBitSetBuilderImpl(this);
+    public void runCleanup() {
+        this.resourceArena.clean();
     }
+
+    @Override
+    public void close() {
+        this.resourceArena.release();
+    }
+
+    @Override
+    public CommandBufferBuilder createCommandBuffer() {
+        return new CommandBufferBuilderImpl(this);
+    }
+
+    //
+    // FORMATS
+    //
 
     @Override
     public IndexFormatBuilder.TypeSelectionStage createIndexFormat() {
@@ -206,8 +212,13 @@ public class OpenGL implements GL {
     }
 
     @Override
-    public <S> AttributeFormatBuilder<TextureFormat2D<S>> createTextureFormat2D(@NonNull Class<S> clazz) {
-        return new AttributeFormatBuilderImpl<TextureFormat2D<S>, S>(this, clazz) {
+    public <S> AttributeFormatBuilder<S> createAttributeFormat(@NonNull Class<S> clazz) {
+        return new AttributeFormatBuilderImpl<>(this, clazz);
+    }
+
+    @Override
+    public <S> TextureFormatBuilder<TextureFormat2D<S>> createTextureFormat2D(@NonNull Class<S> clazz) {
+        return new TextureFormatBuilderImpl<S, TextureFormat2D<S>>(this, clazz) {
             @Override
             public TextureFormat2D<S> build() {
                 return new TextureFormat2DImpl<>(this);
@@ -215,45 +226,9 @@ public class OpenGL implements GL {
         };
     }
 
-    @Override
-    public <S> AttributeFormatBuilder<UniformFormat<S>> createUniformFormat(@NonNull Class<S> clazz) {
-        return new AttributeFormatBuilderImpl<UniformFormat<S>, S>(this, clazz) {
-            @Override
-            public UniformFormat<S> build() {
-                return new UniformFormatBlock<>(this);
-            }
-        };
-    }
-
-    @Override
-    public <S> AttributeFormatBuilder<UniformArrayFormat<S>> createUniformArrayFormat(@NonNull Class<S> clazz) {
-        return new AttributeFormatBuilderImpl<UniformArrayFormat<S>, S>(this, clazz) {
-            @Override
-            public UniformArrayFormat<S> build() {
-                return new UniformArrayFormatShaderStorageBlock<>(this);
-            }
-        };
-    }
-
-    @Override
-    public <S> AttributeFormatBuilder<DrawGlobalFormat<S>> createDrawGlobalFormat(@NonNull Class<S> clazz) {
-        return new AttributeFormatBuilderImpl<DrawGlobalFormat<S>, S>(this, clazz) {
-            @Override
-            public DrawGlobalFormat<S> build() {
-                return new DrawGlobalFormatVertexAttribute<>(this);
-            }
-        };
-    }
-
-    @Override
-    public <S> AttributeFormatBuilder<DrawLocalFormat<S>> createDrawLocalFormat(@NonNull Class<S> clazz) {
-        return new AttributeFormatBuilderImpl<DrawLocalFormat<S>, S>(this, clazz) {
-            @Override
-            public DrawLocalFormat<S> build() {
-                return new DrawLocalFormatImpl<>(this);
-            }
-        };
-    }
+    //
+    // DRAW
+    //
 
     @Override
     public DrawLayoutBuilder createDrawLayout() {
@@ -264,10 +239,18 @@ public class OpenGL implements GL {
     public DrawListBuilder<DrawCommandArrays> createDrawListArrays(@NonNull DrawBinding binding) {
         return new DrawListBuilderImpl<DrawCommandArrays>(this, (DrawBindingImpl) binding) {
             @Override
-            public DrawList<DrawCommandArrays> build() {
-                return this.optimizeForCpuSelection
-                        ? new DrawListMultiDrawArrays(this)
-                        : new DrawListMultiDrawArraysIndirect(this);
+            public DrawList<DrawCommandArrays> buildRegular() {
+                return new DrawListMultiDrawArraysIndirect(this);
+            }
+
+            @Override
+            public JavaSelectedDrawList<DrawCommandArrays> buildJavaSelected() {
+                return new JavaSelectedDrawListMultiDrawArraysIndirect(this);
+            }
+
+            @Override
+            public ShaderSelectedDrawList<DrawCommandArrays> buildShaderSelected() {
+                return new ShaderSelectedDrawListMultiDrawArraysIndirect(this);
             }
         };
     }
@@ -276,22 +259,21 @@ public class OpenGL implements GL {
     public DrawListBuilder<DrawCommandIndexed> createDrawListIndexed(@NonNull DrawBindingIndexed binding) {
         return new DrawListBuilderImpl<DrawCommandIndexed>(this, (DrawBindingImpl) binding) {
             @Override
-            public DrawList<DrawCommandIndexed> build() {
-                return this.optimizeForCpuSelection
-                        ? new DrawListMultiDrawElementsBaseVertex(this)
-                        : new DrawListMultiDrawElementsIndirect(this);
+            public DrawList<DrawCommandIndexed> buildRegular() {
+                return new DrawListMultiDrawElementsIndirect(this);
+            }
+
+            @Override
+            public JavaSelectedDrawList<DrawCommandIndexed> buildJavaSelected() {
+                return new JavaSelectedDrawListMultiDrawElementsIndirect(this);
+            }
+
+            @Override
+            public ShaderSelectedDrawList<DrawCommandIndexed> buildShaderSelected() {
+                return new ShaderSelectedDrawListMultiDrawElementsIndirect(this);
             }
         };
     }
-
-    @Override
-    public CommandBufferBuilder createCommandBuffer() {
-        return new CommandBufferBuilderImpl(this);
-    }
-
-    //
-    // SHADERS
-    //
 
     @Override
     public BaseShaderBuilder<VertexShader> createVertexShader(@NonNull DrawLayout layout) {
@@ -314,17 +296,31 @@ public class OpenGL implements GL {
     }
 
     @Override
-    public DrawShaderProgram linkDrawShaderProgram(@NonNull DrawLayout layout, @NonNull VertexShader vertexShader, @NonNull FragmentShader fragmentShader) throws ShaderLinkageException {
-        return new DrawShaderProgramImpl(this, (DrawLayoutImpl) layout, (VertexShaderImpl) vertexShader, (FragmentShaderImpl) fragmentShader);
+    public BaseShaderProgramBuilder<DrawShaderProgram, BaseDrawShader, DrawLayout> createDrawShaderProgram(@NonNull DrawLayout layout) {
+        return new BaseShaderProgramBuilderImpl<DrawShaderProgram, BaseDrawShader, DrawLayoutImpl, DrawLayout>(this, (DrawLayoutImpl) layout) {
+            @Override
+            public DrawShaderProgram build() throws ShaderLinkageException {
+                return new DrawShaderProgramImpl(this);
+            }
+        };
+    }
+
+    //
+    // TRANSFORM
+    //
+
+    @Override
+    public TransformLayoutBuilder createTransformLayout() {
+        return new TransformLayoutBuilderImpl(this);
     }
 
     @Override
-    public void runCleanup() {
-        this.resourceArena.clean();
+    public TransformShaderBuilder createTransformShader(@NonNull TransformLayout layout) {
+        return new TransformShaderBuilderImpl(this, layout);
     }
 
     @Override
-    public void close() {
-        this.resourceArena.release();
+    public TransformShaderProgramBuilder createTransformShaderProgram(@NonNull TransformLayout layout) {
+        return new TransformShaderProgramBuilderImpl(this, (TransformLayoutImpl) layout);
     }
 }

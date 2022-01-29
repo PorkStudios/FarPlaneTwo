@@ -35,7 +35,7 @@ import static net.daporkchop.fp2.core.FP2Core.*;
  *
  * @author DaPorkchop_
  */
-abstract class AbstractReloadableShaderProgram<P extends BaseShaderProgram> implements ReloadableShaderProgram<P> {
+abstract class AbstractReloadableShaderProgram<P extends BaseShaderProgram<?>> implements ReloadableShaderProgram<P> {
     protected final ShaderMacros macros;
 
     protected ShaderMacros.Immutable macrosSnapshot;

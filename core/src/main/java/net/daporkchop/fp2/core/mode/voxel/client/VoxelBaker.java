@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -26,7 +26,7 @@ import net.daporkchop.fp2.api.world.BlockWorldConstants;
 import net.daporkchop.fp2.core.client.render.TextureUVs;
 import net.daporkchop.fp2.core.client.render.WorldRenderer;
 import net.daporkchop.fp2.core.util.GlobalAllocators;
-import net.daporkchop.fp2.gl.attribute.local.DrawLocalWriter;
+import net.daporkchop.fp2.gl.attribute.AttributeWriter;
 import net.daporkchop.fp2.gl.draw.index.IndexWriter;
 import net.daporkchop.fp2.core.mode.common.client.bake.IRenderBaker;
 import net.daporkchop.fp2.core.mode.common.client.bake.indexed.IndexedBakeOutput;
@@ -109,7 +109,7 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
         }
 
         //write globals
-        output.globals().set(new VoxelGlobalAttributes(pos.x(), pos.y(), pos.z(), pos.level()));
+        output.globals().put(new VoxelGlobalAttributes(pos.x(), pos.y(), pos.z(), pos.level()));
 
         ArrayAllocator<int[]> alloc = GlobalAllocators.ALLOC_INT.get();
         int[] map = alloc.atLeast(cb(VT_VERTS) * EDGE_COUNT);
@@ -126,7 +126,7 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
         }
     }
 
-    protected void writeVertices(VoxelTile[] srcs, int blockX, int blockY, int blockZ, int level, int[] map, DrawLocalWriter<VoxelLocalAttributes> verts) {
+    protected void writeVertices(VoxelTile[] srcs, int blockX, int blockY, int blockZ, int level, int[] map, AttributeWriter<VoxelLocalAttributes> verts) {
         final VoxelData data = new VoxelData();
         final VoxelLocalAttributes attributes = new VoxelLocalAttributes();
 
@@ -154,7 +154,7 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
         }
     }
 
-    protected int writeVertex(int baseX, int baseY, int baseZ, int level, int x, int y, int z, VoxelData data, DrawLocalWriter<VoxelLocalAttributes> vertices, VoxelLocalAttributes attributes, int[] map, int indexCounter) {
+    protected int writeVertex(int baseX, int baseY, int baseZ, int level, int x, int y, int z, VoxelData data, AttributeWriter<VoxelLocalAttributes> vertices, VoxelLocalAttributes attributes, int[] map, int indexCounter) {
         baseX += (x & VT_VOXELS) << level;
         baseY += (y & VT_VOXELS) << level;
         baseZ += (z & VT_VOXELS) << level;
@@ -167,12 +167,12 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
 
         int blockLight = BlockWorldConstants.unpackBlockLight(data.light);
         int skyLight = BlockWorldConstants.unpackSkyLight(data.light);
-        attributes.a_lightBlock = (byte) (blockLight | (blockLight << 4));
-        attributes.a_lightSky = (byte) (skyLight | (skyLight << 4));
+        attributes.lightBlock = (byte) (blockLight | (blockLight << 4));
+        attributes.lightSky = (byte) (skyLight | (skyLight << 4));
 
-        attributes.a_posX = (byte) ((x << POS_FRACT_SHIFT) + data.x);
-        attributes.a_posY = (byte) ((y << POS_FRACT_SHIFT) + data.y);
-        attributes.a_posZ = (byte) ((z << POS_FRACT_SHIFT) + data.z);
+        attributes.posX = (byte) ((x << POS_FRACT_SHIFT) + data.x);
+        attributes.posY = (byte) ((y << POS_FRACT_SHIFT) + data.y);
+        attributes.posZ = (byte) ((z << POS_FRACT_SHIFT) + data.z);
 
         EDGES:
         for (int edge = 0; edge < EDGE_COUNT; edge++) {
@@ -183,8 +183,8 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
                 }
             }
 
-            attributes.a_state = this.textureUVs.state2index(data.states[edge]);
-            attributes.a_color = this.worldRenderer.tintFactorForStateInBiomeAtPos(data.states[edge], data.biome, blockX, blockY, blockZ);
+            attributes.state = this.textureUVs.state2index(data.states[edge]);
+            attributes.color = this.worldRenderer.tintFactorForStateInBiomeAtPos(data.states[edge], data.biome, blockX, blockY, blockZ);
 
             map[baseMapIndex + edge] = vertices.put(attributes);
         }
