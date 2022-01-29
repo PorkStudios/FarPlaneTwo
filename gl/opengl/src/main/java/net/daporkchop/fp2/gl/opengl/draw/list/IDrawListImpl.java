@@ -20,20 +20,18 @@
 
 package net.daporkchop.fp2.gl.opengl.draw.list;
 
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.fp2.gl.draw.list.DrawCommand;
-import net.daporkchop.fp2.gl.draw.list.DrawListBuilder;
-import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.draw.binding.DrawBindingImpl;
+import net.daporkchop.fp2.gl.draw.list.DrawList;
+import net.daporkchop.fp2.gl.opengl.command.state.StateValueProperty;
+
+import java.util.Map;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public abstract class DrawListBuilderImpl<C extends DrawCommand> implements DrawListBuilder<C> {
-    @NonNull
-    protected final OpenGL gl;
-    @NonNull
-    protected final DrawBindingImpl binding;
+public interface IDrawListImpl<C extends DrawCommand> extends DrawList<C> {
+    DrawBinding binding();
+
+    Map<StateValueProperty<?>, Object> stateProperties0();
 }

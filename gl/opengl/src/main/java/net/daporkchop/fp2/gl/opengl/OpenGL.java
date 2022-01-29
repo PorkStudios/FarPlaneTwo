@@ -43,6 +43,8 @@ import net.daporkchop.fp2.gl.draw.list.DrawCommandArrays;
 import net.daporkchop.fp2.gl.draw.list.DrawCommandIndexed;
 import net.daporkchop.fp2.gl.draw.list.DrawList;
 import net.daporkchop.fp2.gl.draw.list.DrawListBuilder;
+import net.daporkchop.fp2.gl.draw.list.selected.JavaSelectedDrawList;
+import net.daporkchop.fp2.gl.draw.list.selected.ShaderSelectedDrawList;
 import net.daporkchop.fp2.gl.draw.shader.BaseDrawShader;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.draw.shader.FragmentShader;
@@ -59,10 +61,10 @@ import net.daporkchop.fp2.gl.opengl.draw.DrawLayoutImpl;
 import net.daporkchop.fp2.gl.opengl.draw.binding.DrawBindingImpl;
 import net.daporkchop.fp2.gl.opengl.draw.index.IndexFormatBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.draw.list.DrawListBuilderImpl;
-import net.daporkchop.fp2.gl.opengl.draw.list.arrays.DrawListMultiDrawArrays;
-import net.daporkchop.fp2.gl.opengl.draw.list.arrays.DrawListMultiDrawArraysIndirect;
-import net.daporkchop.fp2.gl.opengl.draw.list.elements.DrawListMultiDrawElementsBaseVertex;
-import net.daporkchop.fp2.gl.opengl.draw.list.elements.DrawListMultiDrawElementsIndirect;
+import net.daporkchop.fp2.gl.opengl.draw.list.arrays.multidrawindirect.DrawListMultiDrawArraysIndirect;
+import net.daporkchop.fp2.gl.opengl.draw.list.arrays.multidrawindirect.JavaSelectedDrawListMultiDrawArraysIndirect;
+import net.daporkchop.fp2.gl.opengl.draw.list.elements.multidrawindirect.DrawListMultiDrawElementsIndirect;
+import net.daporkchop.fp2.gl.opengl.draw.list.elements.multidrawindirect.JavaSelectedDrawListMultiDrawElementsIndirect;
 import net.daporkchop.fp2.gl.opengl.draw.shader.DrawShaderProgramImpl;
 import net.daporkchop.fp2.gl.opengl.draw.shader.FragmentShaderImpl;
 import net.daporkchop.fp2.gl.opengl.draw.shader.VertexShaderImpl;
@@ -242,10 +244,18 @@ public class OpenGL implements GL {
     public DrawListBuilder<DrawCommandArrays> createDrawListArrays(@NonNull DrawBinding binding) {
         return new DrawListBuilderImpl<DrawCommandArrays>(this, (DrawBindingImpl) binding) {
             @Override
-            public DrawList<DrawCommandArrays> build() {
-                return this.optimizeForCpuSelection
-                        ? new DrawListMultiDrawArrays(this)
-                        : new DrawListMultiDrawArraysIndirect(this);
+            public DrawList<DrawCommandArrays> buildRegular() {
+                return new DrawListMultiDrawArraysIndirect(this);
+            }
+
+            @Override
+            public JavaSelectedDrawList<DrawCommandArrays> buildJavaSelected() {
+                return new JavaSelectedDrawListMultiDrawArraysIndirect(this);
+            }
+
+            @Override
+            public ShaderSelectedDrawList<DrawCommandArrays> buildShaderSelected() {
+                throw new UnsupportedOperationException();
             }
         };
     }
@@ -254,10 +264,18 @@ public class OpenGL implements GL {
     public DrawListBuilder<DrawCommandIndexed> createDrawListIndexed(@NonNull DrawBindingIndexed binding) {
         return new DrawListBuilderImpl<DrawCommandIndexed>(this, (DrawBindingImpl) binding) {
             @Override
-            public DrawList<DrawCommandIndexed> build() {
-                return this.optimizeForCpuSelection
-                        ? new DrawListMultiDrawElementsBaseVertex(this)
-                        : new DrawListMultiDrawElementsIndirect(this);
+            public DrawList<DrawCommandIndexed> buildRegular() {
+                return new DrawListMultiDrawElementsIndirect(this);
+            }
+
+            @Override
+            public JavaSelectedDrawList<DrawCommandIndexed> buildJavaSelected() {
+                return new JavaSelectedDrawListMultiDrawElementsIndirect(this);
+            }
+
+            @Override
+            public ShaderSelectedDrawList<DrawCommandIndexed> buildShaderSelected() {
+                throw new UnsupportedOperationException();
             }
         };
     }

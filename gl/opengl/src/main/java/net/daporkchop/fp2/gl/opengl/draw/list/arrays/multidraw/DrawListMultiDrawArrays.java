@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,19 +18,23 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.draw.list.elements;
+package net.daporkchop.fp2.gl.opengl.draw.list.arrays.multidraw;
 
+import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.draw.list.DrawCommandIndexed;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.gl.attribute.Attribute;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeUsage;
+import net.daporkchop.fp2.gl.attribute.BufferUsage;
+import net.daporkchop.fp2.gl.draw.list.DrawCommandArrays;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
-import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
+import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.bitset.AbstractGLBitSet;
 import net.daporkchop.fp2.gl.opengl.command.state.StateValueProperty;
-import net.daporkchop.fp2.gl.opengl.draw.binding.DrawBindingIndexedImpl;
-import net.daporkchop.fp2.gl.opengl.draw.index.IndexFormatImpl;
+import net.daporkchop.fp2.gl.opengl.draw.binding.DrawBindingImpl;
 import net.daporkchop.fp2.gl.opengl.draw.list.DrawListBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.draw.list.DrawListImpl;
-import net.daporkchop.lib.common.math.BinMath;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.Collections;
@@ -42,62 +46,57 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public class DrawListMultiDrawElementsBaseVertex extends DrawListImpl<DrawCommandIndexed, DrawBindingIndexedImpl> {
+public class DrawListMultiDrawArrays extends DrawListImpl<DrawCommandArrays, DrawBindingImpl> {
+    protected long firstAddr;
     protected long countAddr;
-    protected long indicesAddr;
-    protected long basevertexAddr;
 
-    protected final int indexType;
-    protected final int indexShift;
+    @Getter(lazy = true)
+    private final AttributeFormat<CountAttribute> format = this.gl.createAttributeFormat(CountAttribute.class)
+            .useFor(AttributeUsage.TRANSFORM_INPUT)
+            .useFor(AttributeUsage.TRANSFORM_OUTPUT)
+            .build();
 
-    public DrawListMultiDrawElementsBaseVertex(@NonNull DrawListBuilderImpl builder) {
+    @Getter(lazy = true)
+    private final InterleavedAttributeBufferImpl<?, CountAttribute> readBuffer = (InterleavedAttributeBufferImpl<?, CountAttribute>) this.format().createBuffer(BufferUsage.STREAM_DRAW);
+    @Getter(lazy = true)
+    private final InterleavedAttributeBufferImpl<?, CountAttribute> writeBuffer = (InterleavedAttributeBufferImpl<?, CountAttribute>) this.format().createBuffer(BufferUsage.STREAM_READ);
+
+    public DrawListMultiDrawArrays(@NonNull DrawListBuilderImpl builder) {
         super(builder);
-
-        IndexFormatImpl format = this.binding.indices().format();
-        this.indexType = GLEnumUtil.from(format.type());
-
-        int indexSize = format.size();
-        checkArg(BinMath.isPow2(positive(indexSize, "indexSize")), "indexSize (%d) is not a power of two!", indexSize);
-        this.indexShift = Integer.numberOfTrailingZeros(indexSize);
     }
 
     @Override
     protected void resize0(int oldCapacity, int newCapacity) {
+        this.firstAddr = this.alloc.realloc(this.firstAddr, newCapacity * (long) INT_SIZE);
         this.countAddr = this.alloc.realloc(this.countAddr, newCapacity * (long) INT_SIZE);
-        this.indicesAddr = this.alloc.realloc(this.indicesAddr, newCapacity * (long) LONG_SIZE);
-        this.basevertexAddr = this.alloc.realloc(this.basevertexAddr, newCapacity * (long) INT_SIZE);
 
         if (newCapacity > oldCapacity) { //zero out the commands
+            PUnsafe.setMemory(this.firstAddr + oldCapacity * (long) INT_SIZE, (newCapacity - oldCapacity) * (long) INT_SIZE, (byte) 0);
             PUnsafe.setMemory(this.countAddr + oldCapacity * (long) INT_SIZE, (newCapacity - oldCapacity) * (long) INT_SIZE, (byte) 0);
-            PUnsafe.setMemory(this.indicesAddr + oldCapacity * (long) LONG_SIZE, (newCapacity - oldCapacity) * (long) LONG_SIZE, (byte) 0);
-            PUnsafe.setMemory(this.basevertexAddr + oldCapacity * (long) INT_SIZE, (newCapacity - oldCapacity) * (long) INT_SIZE, (byte) 0);
         }
     }
 
     @Override
     public void close() {
+        this.alloc.free(this.firstAddr);
         this.alloc.free(this.countAddr);
-        this.alloc.free(this.indicesAddr);
-        this.alloc.free(this.basevertexAddr);
     }
 
     @Override
-    public void set(int index, @NonNull DrawCommandIndexed command) {
+    public void set(int index, @NonNull DrawCommandArrays command) {
         checkIndex(this.capacity, index);
 
+        PUnsafe.putInt(this.firstAddr + index * (long) INT_SIZE, command.first());
         PUnsafe.putInt(this.countAddr + index * (long) INT_SIZE, command.count());
-        PUnsafe.putLong(this.indicesAddr + index * (long) INT_SIZE, (long) command.firstIndex() << this.indexShift);
-        PUnsafe.putInt(this.basevertexAddr + index * (long) INT_SIZE, command.baseVertex());
     }
 
     @Override
-    public DrawCommandIndexed get(int index) {
+    public DrawCommandArrays get(int index) {
         checkIndex(this.capacity, index);
 
-        return new DrawCommandIndexed(
-                toInt(PUnsafe.getLong(this.indicesAddr + index * (long) INT_SIZE) >>> this.indexShift),
-                PUnsafe.getInt(this.countAddr + index * (long) INT_SIZE),
-                PUnsafe.getInt(this.basevertexAddr + index * (long) INT_SIZE));
+        return new DrawCommandArrays(
+                PUnsafe.getInt(this.firstAddr + index * (long) INT_SIZE),
+                PUnsafe.getInt(this.countAddr + index * (long) INT_SIZE));
     }
 
     @Override
@@ -112,7 +111,7 @@ public class DrawListMultiDrawElementsBaseVertex extends DrawListImpl<DrawComman
 
     @Override
     public void draw0(GLAPI api, int mode) {
-        api.glMultiDrawElementsBaseVertex(mode, this.countAddr, this.indexType, this.indicesAddr, this.capacity, this.basevertexAddr);
+        api.glMultiDrawArrays(mode, this.firstAddr, this.countAddr, this.capacity);
     }
 
     @Override
@@ -127,13 +126,20 @@ public class DrawListMultiDrawElementsBaseVertex extends DrawListImpl<DrawComman
 
                     for (int mask = 1; mask != 0 && bitIndex < this.capacity; mask <<= 1, bitIndex++, srcCountAddr += INT_SIZE, dstCountAddr += INT_SIZE) {
                         PUnsafe.putInt(dstCountAddr, PUnsafe.getInt(srcCountAddr) & (-(word & mask) >> 31));
+                        PUnsafe.putInt(dstCountAddr, 3);
                     }
                 }
             });
 
-            api.glMultiDrawElementsBaseVertex(mode, dstCounts, this.indexType, this.indicesAddr, this.capacity, this.basevertexAddr);
+            api.glMultiDrawArrays(mode, this.firstAddr, dstCounts, this.capacity);
         } finally {
             PUnsafe.freeMemory(dstCounts);
         }
+    }
+
+    @RequiredArgsConstructor
+    public static final class CountAttribute {
+        @Attribute
+        public final int count_internal;
     }
 }

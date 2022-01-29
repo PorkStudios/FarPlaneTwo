@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,21 +18,19 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.draw.list.elements;
+package net.daporkchop.fp2.gl.opengl.draw.list.arrays.multidrawindirect;
 
 import com.google.common.collect.ImmutableMap;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
-import net.daporkchop.fp2.gl.draw.list.DrawCommandIndexed;
+import net.daporkchop.fp2.gl.draw.list.DrawCommandArrays;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
-import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
 import net.daporkchop.fp2.gl.opengl.bitset.AbstractGLBitSet;
 import net.daporkchop.fp2.gl.opengl.buffer.BufferTarget;
 import net.daporkchop.fp2.gl.opengl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.opengl.command.state.StateProperties;
 import net.daporkchop.fp2.gl.opengl.command.state.StateValueProperty;
-import net.daporkchop.fp2.gl.opengl.draw.binding.DrawBindingIndexedImpl;
-import net.daporkchop.fp2.gl.opengl.draw.index.IndexFormatImpl;
+import net.daporkchop.fp2.gl.opengl.draw.binding.DrawBindingImpl;
 import net.daporkchop.fp2.gl.opengl.draw.list.DrawListBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.draw.list.DrawListImpl;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -42,75 +40,21 @@ import java.util.Map;
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
+import static net.daporkchop.fp2.gl.opengl.draw.list.arrays.multidrawindirect.MultiDrawArraysIndirect.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
-public class DrawListMultiDrawElementsIndirect extends DrawListImpl<DrawCommandIndexed, DrawBindingIndexedImpl> {
-    public static final long _COUNT_OFFSET = 0L;
-    public static final long _INSTANCECOUNT_OFFSET = _COUNT_OFFSET + INT_SIZE;
-    public static final long _FIRSTINDEX_OFFSET = _INSTANCECOUNT_OFFSET + INT_SIZE;
-    public static final long _BASEVERTEX_OFFSET = _FIRSTINDEX_OFFSET + INT_SIZE;
-    public static final long _BASEINSTANCE_OFFSET = _BASEVERTEX_OFFSET + INT_SIZE;
-
-    public static final long _SIZE = _BASEINSTANCE_OFFSET + INT_SIZE;
-
-    public static int _count(long cmd) {
-        return PUnsafe.getInt(cmd + _COUNT_OFFSET);
-    }
-
-    public static void _count(long cmd, int count) {
-        PUnsafe.putInt(cmd + _COUNT_OFFSET, count);
-    }
-
-    public static int _instanceCount(long cmd) {
-        return PUnsafe.getInt(cmd + _INSTANCECOUNT_OFFSET);
-    }
-
-    public static void _instanceCount(long cmd, int instanceCount) {
-        PUnsafe.putInt(cmd + _INSTANCECOUNT_OFFSET, instanceCount);
-    }
-
-    public static int _firstIndex(long cmd) {
-        return PUnsafe.getInt(cmd + _FIRSTINDEX_OFFSET);
-    }
-
-    public static void _firstIndex(long cmd, int firstIndex) {
-        PUnsafe.putInt(cmd + _FIRSTINDEX_OFFSET, firstIndex);
-    }
-
-    public static int _baseVertex(long cmd) {
-        return PUnsafe.getInt(cmd + _BASEVERTEX_OFFSET);
-    }
-
-    public static void _baseVertex(long cmd, int baseVertex) {
-        PUnsafe.putInt(cmd + _BASEVERTEX_OFFSET, baseVertex);
-    }
-
-    public static int _baseInstance(long cmd) {
-        return PUnsafe.getInt(cmd + _BASEINSTANCE_OFFSET);
-    }
-
-    public static void _baseInstance(long cmd, int baseInstance) {
-        PUnsafe.putInt(cmd + _BASEINSTANCE_OFFSET, baseInstance);
-    }
-
+public class DrawListMultiDrawArraysIndirect extends DrawListImpl<DrawCommandArrays, DrawBindingImpl> {
     protected final GLBuffer buffer;
 
     protected long commandsAddr;
 
-    protected final int indexType;
-    protected final int indexSize;
-
-    public DrawListMultiDrawElementsIndirect(@NonNull DrawListBuilderImpl builder) {
+    public DrawListMultiDrawArraysIndirect(@NonNull DrawListBuilderImpl builder) {
         super(builder);
 
         this.buffer = this.gl().createBuffer(BufferUsage.STREAM_DRAW);
-
-        IndexFormatImpl format = this.binding.indices().format();
-        this.indexType = GLEnumUtil.from(format.type());
-        this.indexSize = format.size();
     }
 
     @Override
@@ -129,19 +73,20 @@ public class DrawListMultiDrawElementsIndirect extends DrawListImpl<DrawCommandI
     }
 
     @Override
-    public void set(int index, @NonNull DrawCommandIndexed command) {
+    public void set(int index, @NonNull DrawCommandArrays command) {
         long commandAddr = this.commandsAddr + checkIndex(this.capacity, index) * _SIZE;
-        _firstIndex(commandAddr, command.firstIndex());
+        _first(commandAddr, command.first());
         _count(commandAddr, command.count());
-        _baseVertex(commandAddr, command.baseVertex());
-        _baseInstance(commandAddr, index);
         _instanceCount(commandAddr, 1);
+        _baseInstance(commandAddr, index);
     }
 
     @Override
-    public DrawCommandIndexed get(int index) {
-        long commandAddr = this.commandsAddr + checkIndex(this.capacity, index) * _SIZE;
-        return new DrawCommandIndexed(_firstIndex(commandAddr), _count(commandAddr), _baseVertex(commandAddr));
+    public DrawCommandArrays get(int index) {
+        checkIndex(this.capacity, index);
+
+        long commandAddr = this.commandsAddr + index * _SIZE;
+        return new DrawCommandArrays(_first(commandAddr), _count(commandAddr));
     }
 
     @Override
@@ -157,7 +102,7 @@ public class DrawListMultiDrawElementsIndirect extends DrawListImpl<DrawCommandI
     @Override
     public void draw0(GLAPI api, int mode) {
         api.glBufferData(GL_DRAW_INDIRECT_BUFFER, this.capacity * _SIZE, this.commandsAddr, GL_STREAM_DRAW);
-        api.glMultiDrawElementsIndirect(mode, this.indexType, 0L, this.capacity, 0);
+        api.glMultiDrawArraysIndirect(mode, 0L, this.capacity, 0);
     }
 
     @Override
@@ -171,9 +116,8 @@ public class DrawListMultiDrawElementsIndirect extends DrawListImpl<DrawCommandI
                     int word = PUnsafe.getInt(bitsBase, bitsOffset);
 
                     for (int endBit = min(bitIndex + Integer.SIZE, this.capacity); bitIndex < endBit; bitIndex++, srcCommandAddr += _SIZE, dstCommandAddr += _SIZE) {
-                        _firstIndex(dstCommandAddr, _firstIndex(srcCommandAddr));
+                        _first(dstCommandAddr, _first(srcCommandAddr));
                         _count(dstCommandAddr, _count(srcCommandAddr));
-                        _baseVertex(dstCommandAddr, _baseVertex(srcCommandAddr));
                         _baseInstance(dstCommandAddr, _baseInstance(srcCommandAddr));
                         _instanceCount(dstCommandAddr, _instanceCount(srcCommandAddr) & (word >>> bitIndex));
                     }
@@ -181,7 +125,7 @@ public class DrawListMultiDrawElementsIndirect extends DrawListImpl<DrawCommandI
             });
 
             api.glBufferData(GL_DRAW_INDIRECT_BUFFER, this.capacity * _SIZE, dstCommands, GL_STREAM_DRAW);
-            api.glMultiDrawElementsIndirect(mode, this.indexType, 0L, this.capacity, 0);
+            api.glMultiDrawArraysIndirect(mode, 0L, this.capacity, 0);
         } finally {
             PUnsafe.freeMemory(dstCommands);
         }

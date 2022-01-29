@@ -24,7 +24,6 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
-import net.daporkchop.fp2.gl.bitset.GLBitSet;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.fp2.gl.draw.list.DrawCommand;
 import net.daporkchop.fp2.gl.draw.list.DrawList;
@@ -73,13 +72,6 @@ public abstract class DrawListImpl<C extends DrawCommand, B extends DrawBinding>
 
     public abstract void draw0(GLAPI api, int mode);
 
+    @Deprecated
     public abstract void draw0(GLAPI api, int mode, AbstractGLBitSet selectionMask);
-
-    public void drawSelected0_pre(GLAPI api, int mode) {
-        throw new UnsupportedOperationException(this.toString());
-    }
-
-    public void drawSelected0_post(GLAPI api, int mode) {
-        throw new UnsupportedOperationException(this.toString());
-    }
 }

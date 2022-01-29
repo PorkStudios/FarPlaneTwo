@@ -22,16 +22,7 @@ package net.daporkchop.fp2.gl.draw.list;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.GLResource;
-import net.daporkchop.fp2.gl.bitset.GLBitSet;
-import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
-import net.daporkchop.fp2.gl.draw.DrawMode;
-import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
-import net.daporkchop.fp2.gl.transform.TransformLayoutBuilder;
-import net.daporkchop.fp2.gl.transform.binding.TransformBinding;
-import net.daporkchop.fp2.gl.transform.binding.TransformBindingBuilder;
-import net.daporkchop.fp2.gl.transform.shader.TransformShaderBuilder;
-import net.daporkchop.fp2.gl.transform.shader.TransformShaderProgram;
-import net.daporkchop.fp2.gl.transform.shader.TransformShaderProgramBuilder;
+import net.daporkchop.fp2.gl.draw.list.selected.SelectedDrawList;
 
 /**
  * A list of multiple {@link DrawCommand}s which can be executed in a batch.
@@ -41,23 +32,9 @@ import net.daporkchop.fp2.gl.transform.shader.TransformShaderProgramBuilder;
  * <p>
  * Drawing from a {@link DrawList}s is the only way in which global draw attributes can be accessed. The index of a draw command inside the list is used to retrieve the corresponding
  * global draw attribute values from the bound buffer.
- * <p>
- * Draw lists can be <strong>selected</strong>. This allows commands to be conditionally disabled at draw time without the command buffer being rebuilt. Selection can be done
- * in one of two ways:<br>
- * <ol>
- *     <li>{@link CommandBufferBuilder#drawList(DrawShaderProgram, DrawMode, DrawList, GLBitSet)} selects commands using a {@link GLBitSet} with the same capacity as this draw
- *     list. A draw command at a given index will be disabled if the corresponding bit at the same index is {@code false}.</li>
- *     <li>{@link CommandBufferBuilder#drawList(DrawShaderProgram, DrawMode, DrawList, TransformShaderProgram, TransformBinding)} selects commands using a "selection shader", which
- *     is a special case of a transform shader. Selection shaders are constructed by the {@link DrawList} using the corresponding
- *     {@link #configureTransformLayoutForSelection(TransformLayoutBuilder)}, {@link #configureTransformBindingForSelection(TransformBindingBuilder)},
- *     {@link #configureTransformShaderForSelection(TransformShaderBuilder)} and {@link #configureTransformShaderProgramForSelection(TransformShaderProgramBuilder)} methods. Unlike
- *     typical transform shaders, which transform an array of source data into an array of destination data, selection shaders are special in that they transform an array of source
- *     data <i>where each element corresponds to a single draw command</i> into an array of {@code bool}s indicating whether or not the command should be drawn. Users must not supply
- *     their own {@code void main()} in the selection shader source, but must instead define a function {@code bool select()} which returns {@code false} if the current draw command
- *     should be disabled.</li>
- * </ol>
  *
  * @author DaPorkchop_
+ * @see SelectedDrawList
  */
 public interface DrawList<C extends DrawCommand> extends GLResource {
     //
@@ -101,48 +78,4 @@ public interface DrawList<C extends DrawCommand> extends GLResource {
      * @param index the command index
      */
     void clear(int index);
-
-    //
-    // SELECTION
-    //
-
-    /**
-     * Configures a {@link TransformLayoutBuilder} for being used for draw list command selection.
-     *
-     * @param builder the {@link TransformLayoutBuilder} to configure
-     * @return the configured {@link TransformLayoutBuilder}
-     */
-    default TransformLayoutBuilder configureTransformLayoutForSelection(@NonNull TransformLayoutBuilder builder) {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Configures a {@link TransformBindingBuilder} for being used for draw list command selection.
-     *
-     * @param builder the {@link TransformBindingBuilder} to configure
-     * @return the configured {@link TransformBindingBuilder}
-     */
-    default TransformBindingBuilder configureTransformBindingForSelection(@NonNull TransformBindingBuilder builder) {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Configures a {@link TransformShaderBuilder} for being used for draw list command selection.
-     *
-     * @param builder the {@link TransformShaderBuilder} to configure
-     * @return the configured {@link TransformShaderBuilder}
-     */
-    default TransformShaderBuilder configureTransformShaderForSelection(@NonNull TransformShaderBuilder builder) {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Configures a {@link TransformShaderProgramBuilder} for being used for draw list command selection.
-     *
-     * @param builder the {@link TransformShaderProgramBuilder} to configure
-     * @return the configured {@link TransformShaderProgramBuilder}
-     */
-    default TransformShaderProgramBuilder configureTransformShaderProgramForSelection(@NonNull TransformShaderProgramBuilder builder) {
-        throw new UnsupportedOperationException();
-    }
 }

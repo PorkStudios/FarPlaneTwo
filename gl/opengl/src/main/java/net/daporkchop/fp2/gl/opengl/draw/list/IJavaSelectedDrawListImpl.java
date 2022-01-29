@@ -20,20 +20,15 @@
 
 package net.daporkchop.fp2.gl.opengl.draw.list;
 
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.draw.list.DrawCommand;
-import net.daporkchop.fp2.gl.draw.list.DrawListBuilder;
-import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.draw.binding.DrawBindingImpl;
+import net.daporkchop.fp2.gl.draw.list.selected.JavaSelectedDrawList;
+import net.daporkchop.fp2.gl.opengl.GLAPI;
+
+import java.util.function.IntPredicate;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public abstract class DrawListBuilderImpl<C extends DrawCommand> implements DrawListBuilder<C> {
-    @NonNull
-    protected final OpenGL gl;
-    @NonNull
-    protected final DrawBindingImpl binding;
+public interface IJavaSelectedDrawListImpl<C extends DrawCommand> extends IDrawListImpl<C>, JavaSelectedDrawList<C> {
+    void drawSelected0(GLAPI api, int mode, IntPredicate selector);
 }

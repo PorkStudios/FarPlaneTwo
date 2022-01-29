@@ -35,6 +35,8 @@ import net.daporkchop.fp2.gl.command.StencilOperation;
 import net.daporkchop.fp2.gl.draw.DrawMode;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.fp2.gl.draw.list.DrawList;
+import net.daporkchop.fp2.gl.draw.list.selected.JavaSelectedDrawList;
+import net.daporkchop.fp2.gl.draw.list.selected.ShaderSelectedDrawList;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
@@ -53,6 +55,7 @@ import net.daporkchop.fp2.gl.opengl.command.state.struct.Color4b;
 import net.daporkchop.fp2.gl.opengl.command.state.struct.Color4f;
 import net.daporkchop.fp2.gl.opengl.command.state.struct.StencilOp;
 import net.daporkchop.fp2.gl.opengl.draw.list.DrawListImpl;
+import net.daporkchop.fp2.gl.opengl.draw.list.IJavaSelectedDrawListImpl;
 import net.daporkchop.fp2.gl.transform.binding.TransformBinding;
 import net.daporkchop.fp2.gl.transform.shader.TransformShaderProgram;
 import net.daporkchop.lib.common.misc.string.PStrings;
@@ -77,6 +80,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.IntPredicate;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.common.util.TypeSize.*;
@@ -372,7 +376,31 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
     }
 
     @Override
-    public CommandBufferBuilder drawList(@NonNull DrawShaderProgram shader, @NonNull DrawMode mode, @NonNull DrawList<?> _list, @NonNull TransformShaderProgram selectionShader, @NonNull TransformBinding selectionBinding) {
+    public CommandBufferBuilder drawSelectedList(@NonNull DrawShaderProgram shader, @NonNull DrawMode mode, @NonNull JavaSelectedDrawList<?> _list, @NonNull IntPredicate selector) {
+        IJavaSelectedDrawListImpl<?> list = (IJavaSelectedDrawListImpl<?>) _list;
+
+        this.uops.add(new Uop.Draw(this.state, list.binding(), shader, list.stateProperties0()) {
+            @Override
+            public void emitCode(@NonNull CommandBufferBuilderImpl builder, @NonNull MethodWriter<CodegenArgs> writer) {
+                String listFieldName = builder.makeField(getType(list.getClass()), list);
+                String selectorFieldName = builder.makeField(getType(IntPredicate.class), selector);
+
+                writer.write((mv, args) -> {
+                    mv.visitVarInsn(ALOAD, 0);
+                    mv.visitFieldInsn(GETFIELD, CLASS_NAME, listFieldName, getDescriptor(list.getClass()));
+                    mv.visitVarInsn(ALOAD, args.apiLvtIndex());
+                    mv.visitLdcInsn(GLEnumUtil.from(mode));
+                    mv.visitVarInsn(ALOAD, 0);
+                    mv.visitFieldInsn(GETFIELD, CLASS_NAME, selectorFieldName, getDescriptor(IntPredicate.class));
+                    mv.visitMethodInsn(INVOKEVIRTUAL, getInternalName(list.getClass()), "drawSelected0", getMethodDescriptor(VOID_TYPE, getType(GLAPI.class), INT_TYPE, getType(IntPredicate.class)), false);
+                });
+            }
+        });
+        return this;
+    }
+
+    @Override
+    public CommandBufferBuilder drawSelectedList(@NonNull DrawShaderProgram shader, @NonNull DrawMode mode, @NonNull ShaderSelectedDrawList<?> _list, @NonNull TransformShaderProgram selectionShader, @NonNull TransformBinding selectionBinding) {
         DrawListImpl<?, ?> list = (DrawListImpl<?, ?>) _list;
 
         this.uops.add(new Uop(this.state) {

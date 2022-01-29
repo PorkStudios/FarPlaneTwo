@@ -25,9 +25,13 @@ import net.daporkchop.fp2.gl.bitset.GLBitSet;
 import net.daporkchop.fp2.gl.draw.DrawMode;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.fp2.gl.draw.list.DrawList;
+import net.daporkchop.fp2.gl.draw.list.selected.JavaSelectedDrawList;
+import net.daporkchop.fp2.gl.draw.list.selected.ShaderSelectedDrawList;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.transform.binding.TransformBinding;
 import net.daporkchop.fp2.gl.transform.shader.TransformShaderProgram;
+
+import java.util.function.IntPredicate;
 
 /**
  * Builder for {@link CommandBuffer}s.
@@ -114,7 +118,9 @@ public interface CommandBufferBuilder {
 
     CommandBufferBuilder drawList(@NonNull DrawShaderProgram shader, @NonNull DrawMode mode, @NonNull DrawList<?> list, @NonNull GLBitSet selectionMask);
 
-    CommandBufferBuilder drawList(@NonNull DrawShaderProgram shader, @NonNull DrawMode mode, @NonNull DrawList<?> list, @NonNull TransformShaderProgram selectionShader, @NonNull TransformBinding selectionBinding);
+    CommandBufferBuilder drawSelectedList(@NonNull DrawShaderProgram shader, @NonNull DrawMode mode, @NonNull JavaSelectedDrawList<?> list, @NonNull IntPredicate selector);
+
+    CommandBufferBuilder drawSelectedList(@NonNull DrawShaderProgram shader, @NonNull DrawMode mode, @NonNull ShaderSelectedDrawList<?> list, @NonNull TransformShaderProgram selectionShader, @NonNull TransformBinding selectionBinding);
 
     //
     // TRANSFORMING

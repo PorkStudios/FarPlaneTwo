@@ -34,7 +34,6 @@ import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureWriter2D;
-import net.daporkchop.fp2.gl.bitset.GLBitSet;
 import net.daporkchop.fp2.gl.command.CommandBuffer;
 import net.daporkchop.fp2.gl.command.FramebufferLayer;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
@@ -47,7 +46,7 @@ import net.daporkchop.fp2.gl.draw.index.IndexType;
 import net.daporkchop.fp2.gl.draw.index.IndexWriter;
 import net.daporkchop.fp2.gl.draw.list.DrawCommandArrays;
 import net.daporkchop.fp2.gl.draw.list.DrawCommandIndexed;
-import net.daporkchop.fp2.gl.draw.list.DrawList;
+import net.daporkchop.fp2.gl.draw.list.selected.JavaSelectedDrawList;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.draw.shader.FragmentShader;
 import net.daporkchop.fp2.gl.draw.shader.VertexShader;
@@ -248,7 +247,7 @@ public class TestLWJGL2 {
                 .withUniform(uniformBuffer1)
                 .withUniformArray(uniformArrayBuffer)
                 .withInput(localBuffer_1)
-                .withInput(localBuffer_2)
+                .withInput(localBuffer_1) //TODO: this should be localBuffer_2, but i can't bind the same buffer as an input and output at once (need to make it print an error, too)
                 .withOutput(localBuffer_2)
                 .build();
 
@@ -261,14 +260,14 @@ public class TestLWJGL2 {
                 .withTexture(texture)
                 .build();
 
-        DrawList<DrawCommandArrays> listArrays = gl.createDrawListArrays(binding0).optimizeForCpuSelection().build();
+        JavaSelectedDrawList<DrawCommandArrays> listArrays = gl.createDrawListArrays(binding0).buildJavaSelected();
         listArrays.resize(4);
         listArrays.set(0, new DrawCommandArrays(0, 3));
         listArrays.set(1, new DrawCommandArrays(0, 3));
         listArrays.set(2, new DrawCommandArrays(0, 3));
         listArrays.set(3, new DrawCommandArrays(0, 3));
 
-        TransformLayout selectionLayout = listArrays.configureTransformLayoutForSelection(gl.createTransformLayout())
+        /*TransformLayout selectionLayout = listArrays.configureTransformLayoutForSelection(gl.createTransformLayout())
                 .withUniform(selectionUniformFormat)
                 .build();
 
@@ -282,32 +281,27 @@ public class TestLWJGL2 {
                 .addShader(listArrays.configureTransformShaderForSelection(gl.createTransformShader(selectionLayout))
                         .include(Identifier.from("test_selection.vert"))
                         .build())
-                .build();
+                .build();*/
 
-        DrawList<DrawCommandIndexed> listElements = gl.createDrawListIndexed(binding1).build();
+        JavaSelectedDrawList<DrawCommandIndexed> listElements = gl.createDrawListIndexed(binding1).buildJavaSelected();
         listElements.resize(4);
         listElements.set(0, new DrawCommandIndexed(0, 6, 0));
         listElements.set(1, new DrawCommandIndexed(0, 6, 0));
         listElements.set(2, new DrawCommandIndexed(0, 6, 0));
         listElements.set(3, new DrawCommandIndexed(0, 6, 0));
 
-        GLBitSet bitSet = gl.createBitSet()
-                .optimizeFor(listElements)
-                .build();
-        bitSet.resize(listElements.capacity());
-
         try (CommandBuffer cmdBuffer = gl.createCommandBuffer()
                 .blendDisable()
                 .framebufferClear(FramebufferLayer.COLOR)
-                .drawList(drawShaderProgram, DrawMode.TRIANGLES, listElements, bitSet)
-                .drawList(drawShaderProgram, DrawMode.TRIANGLES, listArrays, selectionProgram, selectionBinding)
-                //.drawArrays(drawShaderProgram, DrawMode.TRIANGLES, binding0, 0, 3)
+                .drawSelectedList(drawShaderProgram, DrawMode.TRIANGLES, listElements, i -> ThreadLocalRandom.current().nextBoolean())
+                //.drawList(drawShaderProgram, DrawMode.TRIANGLES, listArrays, selectionProgram, selectionBinding)
+                .drawList(drawShaderProgram, DrawMode.TRIANGLES, listArrays)
+                .drawArrays(drawShaderProgram, DrawMode.TRIANGLES, binding0, 0, 3)
                 .transform(transformShaderProgram, binding2_transform, localBuffer_1.capacity())
                 .drawArrays(drawShaderProgram, DrawMode.TRIANGLES, binding2_draw, 0, 3)
                 .build()) {
             while (!Display.isCloseRequested()) {
-                bitSet.set(i -> ThreadLocalRandom.current().nextBoolean());
-                selectionUniformBuffer.setContents(new UniformSelectionAttribs(ThreadLocalRandom.current().nextInt() & 1));
+                //selectionUniformBuffer.setContents(new UniformSelectionAttribs(ThreadLocalRandom.current().nextInt() & 1));
 
                 cmdBuffer.execute();
 

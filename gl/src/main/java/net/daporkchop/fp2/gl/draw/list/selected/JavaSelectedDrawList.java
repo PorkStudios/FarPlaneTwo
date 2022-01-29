@@ -18,22 +18,19 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.draw.list;
+package net.daporkchop.fp2.gl.draw.list.selected;
 
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.draw.list.DrawCommand;
-import net.daporkchop.fp2.gl.draw.list.DrawListBuilder;
-import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.draw.binding.DrawBindingImpl;
+import net.daporkchop.fp2.gl.draw.list.DrawList;
+
+import java.util.function.IntPredicate;
 
 /**
+ * A {@link DrawList} whose draw commands are selected by a Java {@link IntPredicate}.
+ * <p>
+ * The predicate is invoked using the index of the draw command to be tested. If it returns {@code false}, the command will be disabled for this draw.
+ *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public abstract class DrawListBuilderImpl<C extends DrawCommand> implements DrawListBuilder<C> {
-    @NonNull
-    protected final OpenGL gl;
-    @NonNull
-    protected final DrawBindingImpl binding;
+public interface JavaSelectedDrawList<C extends DrawCommand> extends SelectedDrawList<C> {
 }
