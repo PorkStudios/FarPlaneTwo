@@ -32,7 +32,7 @@ import net.daporkchop.fp2.gl.draw.binding.DrawBindingIndexed;
 import net.daporkchop.fp2.gl.draw.index.IndexFormat;
 import net.daporkchop.fp2.gl.draw.index.IndexWriter;
 import net.daporkchop.fp2.gl.draw.list.DrawCommandIndexed;
-import net.daporkchop.fp2.gl.draw.list.DrawList;
+import net.daporkchop.fp2.gl.draw.list.DrawListBuilder;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
@@ -82,8 +82,8 @@ public abstract class AbstractMultipassIndexedRenderStrategy<POS extends IFarPos
     }
 
     @Override
-    public DrawList<DrawCommandIndexed> createCommandBuffer(@NonNull DrawBindingIndexed binding) {
-        return this.gl.createDrawListIndexed(binding).buildRegular();
+    public DrawListBuilder<DrawCommandIndexed> createCommandBuffer(@NonNull DrawBindingIndexed binding) {
+        return this.gl.createDrawListIndexed(binding);
     }
 
     @Override

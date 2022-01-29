@@ -79,6 +79,7 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntPredicate;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.common.util.TypeSize.*;
@@ -346,6 +347,17 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
     public CommandBufferBuilder drawSelectedList(@NonNull DrawShaderProgram shader, @NonNull DrawMode mode, @NonNull JavaSelectedDrawList<?> list, @NonNull IntPredicate selector) {
         FieldHandle<IntPredicate> field = this.makeFieldHandle(getType(IntPredicate.class), selector);
         this.uops.addAll(((DrawListImpl.JavaSelected<?>) list).drawSelected(this.state, shader, GLEnumUtil.from(mode), field));
+        return this;
+    }
+
+    @Override
+    public CommandBufferBuilder drawSelectedList(@NonNull DrawShaderProgram shader, @NonNull DrawMode mode, @NonNull JavaSelectedDrawList<?> list, @NonNull Supplier<IntPredicate> selectorProvider) {
+        FieldHandle<Supplier<IntPredicate>> field = this.makeFieldHandle(getType(Supplier.class), selectorProvider);
+        this.uops.addAll(((DrawListImpl.JavaSelected<?>) list).drawSelected(this.state, shader, GLEnumUtil.from(mode), mv -> {
+            field.get(mv);
+            mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(Supplier.class), "get", getMethodDescriptor(getType(Object.class)), true);
+            mv.visitTypeInsn(CHECKCAST, getInternalName(IntPredicate.class));
+        }));
         return this;
     }
 

@@ -18,17 +18,10 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.draw.list;
-
-import net.daporkchop.fp2.gl.draw.list.DrawCommand;
-import net.daporkchop.fp2.gl.draw.list.selected.JavaSelectedDrawList;
-import net.daporkchop.fp2.gl.opengl.GLAPI;
-
-import java.util.function.IntPredicate;
+package net.daporkchop.fp2.gl.opengl.command.methodwriter;
 
 /**
  * @author DaPorkchop_
  */
-public interface IJavaSelectedDrawListImpl<C extends DrawCommand> extends IDrawListImpl<C>, JavaSelectedDrawList<C> {
-    void drawSelected0(GLAPI api, int mode, IntPredicate selector);
+public interface FieldHandle<T> extends GeneratedSupplier<T> {
 }
