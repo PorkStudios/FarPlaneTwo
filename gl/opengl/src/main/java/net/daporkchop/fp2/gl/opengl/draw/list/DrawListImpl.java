@@ -20,58 +20,42 @@
 
 package net.daporkchop.fp2.gl.opengl.draw.list;
 
-import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.common.util.alloc.Allocator;
-import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.fp2.gl.draw.list.DrawCommand;
 import net.daporkchop.fp2.gl.draw.list.DrawList;
+import net.daporkchop.fp2.gl.draw.list.selected.JavaSelectedDrawList;
+import net.daporkchop.fp2.gl.draw.list.selected.ShaderSelectedDrawList;
+import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
-import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.bitset.AbstractGLBitSet;
-import net.daporkchop.fp2.gl.opengl.command.state.StateValueProperty;
+import net.daporkchop.fp2.gl.opengl.command.Uop;
+import net.daporkchop.fp2.gl.opengl.command.methodwriter.GeneratedSupplier;
+import net.daporkchop.fp2.gl.opengl.command.state.State;
+import net.daporkchop.fp2.gl.transform.binding.TransformBinding;
+import net.daporkchop.fp2.gl.transform.shader.TransformShaderProgram;
 
-import java.util.Map;
-
-import static net.daporkchop.lib.common.util.PValidation.*;
-import static net.daporkchop.lib.common.util.PorkUtil.*;
+import java.util.List;
+import java.util.function.IntPredicate;
 
 /**
  * @author DaPorkchop_
  */
-@Getter
-public abstract class DrawListImpl<C extends DrawCommand, B extends DrawBinding> implements DrawList<C> {
-    protected final OpenGL gl;
-    protected final GLAPI api;
+public interface DrawListImpl<C extends DrawCommand> extends DrawList<C> {
+    DrawBinding binding();
 
-    protected final Allocator alloc = new DirectMemoryAllocator();
+    List<Uop> draw(@NonNull State state, @NonNull DrawShaderProgram drawShader, int mode);
 
-    protected final B binding;
-
-    protected int capacity = 0;
-
-    public DrawListImpl(@NonNull DrawListBuilderImpl builder) {
-        this.gl = builder.gl;
-        this.api = this.gl.api();
-
-        this.binding = uncheckedCast(builder.binding);
+    /**
+     * @author DaPorkchop_
+     */
+    interface JavaSelected<C extends DrawCommand> extends DrawListImpl<C>, JavaSelectedDrawList<C> {
+        List<Uop> drawSelected(@NonNull State state, @NonNull DrawShaderProgram drawShader, int mode, @NonNull GeneratedSupplier<IntPredicate> selector);
     }
 
-    @Override
-    public void resize(int capacity) {
-        if (this.capacity != notNegative(capacity, "capacity")) {
-            this.resize0(this.capacity, capacity);
-            this.capacity = capacity;
-        }
+    /**
+     * @author DaPorkchop_
+     */
+    interface ShaderSelected<C extends DrawCommand> extends DrawListImpl<C>, ShaderSelectedDrawList<C> {
+        List<Uop> drawSelected(@NonNull State state, @NonNull DrawShaderProgram drawShader, int mode, @NonNull TransformShaderProgram selectionShader, @NonNull TransformBinding selectionBinding);
     }
-
-    protected abstract void resize0(int oldCapacity, int newCapacity);
-
-    public abstract Map<StateValueProperty<?>, Object> stateProperties0();
-
-    public abstract void draw0(GLAPI api, int mode);
-
-    @Deprecated
-    public abstract void draw0(GLAPI api, int mode, AbstractGLBitSet selectionMask);
 }

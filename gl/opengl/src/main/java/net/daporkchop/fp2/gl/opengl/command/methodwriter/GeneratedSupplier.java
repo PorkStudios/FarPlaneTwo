@@ -18,20 +18,15 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.draw.list;
+package net.daporkchop.fp2.gl.opengl.command.methodwriter;
 
-import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
-import net.daporkchop.fp2.gl.draw.list.DrawCommand;
-import net.daporkchop.fp2.gl.draw.list.DrawList;
-import net.daporkchop.fp2.gl.opengl.command.state.StateValueProperty;
-
-import java.util.Map;
+import lombok.NonNull;
+import org.objectweb.asm.MethodVisitor;
 
 /**
  * @author DaPorkchop_
  */
-public interface IDrawListImpl<C extends DrawCommand> extends DrawList<C> {
-    DrawBinding binding();
-
-    Map<StateValueProperty<?>, Object> stateProperties0();
+@FunctionalInterface
+public interface GeneratedSupplier<T> {
+    void get(@NonNull MethodVisitor mv);
 }

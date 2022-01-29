@@ -32,7 +32,6 @@ import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormatBuilder;
-import net.daporkchop.fp2.gl.bitset.GLBitSetBuilder;
 import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.draw.DrawLayoutBuilder;
@@ -53,7 +52,6 @@ import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.StructFormatGenerator;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureFormat2DImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureFormatBuilderImpl;
-import net.daporkchop.fp2.gl.opengl.bitset.GLBitSetBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.opengl.command.CommandBufferBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.draw.DrawLayoutBuilderImpl;
@@ -66,6 +64,7 @@ import net.daporkchop.fp2.gl.opengl.draw.list.arrays.multidrawindirect.JavaSelec
 import net.daporkchop.fp2.gl.opengl.draw.list.arrays.multidrawindirect.ShaderSelectedDrawListMultiDrawArraysIndirect;
 import net.daporkchop.fp2.gl.opengl.draw.list.elements.multidrawindirect.DrawListMultiDrawElementsIndirect;
 import net.daporkchop.fp2.gl.opengl.draw.list.elements.multidrawindirect.JavaSelectedDrawListMultiDrawElementsIndirect;
+import net.daporkchop.fp2.gl.opengl.draw.list.elements.multidrawindirect.ShaderSelectedDrawListMultiDrawElementsIndirect;
 import net.daporkchop.fp2.gl.opengl.draw.shader.DrawShaderProgramImpl;
 import net.daporkchop.fp2.gl.opengl.draw.shader.FragmentShaderImpl;
 import net.daporkchop.fp2.gl.opengl.draw.shader.VertexShaderImpl;
@@ -199,11 +198,6 @@ public class OpenGL implements GL {
     }
 
     @Override
-    public GLBitSetBuilder createBitSet() {
-        return new GLBitSetBuilderImpl(this);
-    }
-
-    @Override
     public CommandBufferBuilder createCommandBuffer() {
         return new CommandBufferBuilderImpl(this);
     }
@@ -276,7 +270,7 @@ public class OpenGL implements GL {
 
             @Override
             public ShaderSelectedDrawList<DrawCommandIndexed> buildShaderSelected() {
-                throw new UnsupportedOperationException();
+                return new ShaderSelectedDrawListMultiDrawElementsIndirect(this);
             }
         };
     }

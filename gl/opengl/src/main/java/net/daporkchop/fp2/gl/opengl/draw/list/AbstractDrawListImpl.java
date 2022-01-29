@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,30 +18,48 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.bitset;
+package net.daporkchop.fp2.gl.opengl.draw.list;
 
+import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.gl.bitset.GLBitSet;
-import net.daporkchop.fp2.gl.bitset.GLBitSetBuilder;
-import net.daporkchop.fp2.gl.draw.list.DrawList;
+import net.daporkchop.fp2.common.util.alloc.Allocator;
+import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
+import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
+import net.daporkchop.fp2.gl.draw.list.DrawCommand;
+import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public class GLBitSetBuilderImpl implements GLBitSetBuilder {
-    @NonNull
+@Getter
+public abstract class AbstractDrawListImpl<C extends DrawCommand, B extends DrawBinding> implements DrawListImpl<C> {
     protected final OpenGL gl;
+    protected final GLAPI api;
 
-    @Override
-    public GLBitSetBuilder optimizeFor(@NonNull DrawList<?> commandBuffer) {
-        return this;
+    protected final Allocator alloc = new DirectMemoryAllocator();
+
+    protected final B binding;
+
+    protected int capacity = 0;
+
+    public AbstractDrawListImpl(@NonNull DrawListBuilderImpl builder) {
+        this.gl = builder.gl;
+        this.api = this.gl.api();
+
+        this.binding = uncheckedCast(builder.binding);
     }
 
     @Override
-    public GLBitSet build() {
-        return new GLBitSetHeap(this.gl);
+    public void resize(int capacity) {
+        if (this.capacity != notNegative(capacity, "capacity")) {
+            this.resize0(this.capacity, capacity);
+            this.capacity = capacity;
+        }
     }
+
+    protected abstract void resize0(int oldCapacity, int newCapacity);
 }

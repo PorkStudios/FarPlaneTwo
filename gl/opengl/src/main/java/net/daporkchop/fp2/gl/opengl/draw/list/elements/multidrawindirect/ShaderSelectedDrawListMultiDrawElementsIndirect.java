@@ -18,9 +18,8 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.draw.list.arrays.multidrawindirect;
+package net.daporkchop.fp2.gl.opengl.draw.list.elements.multidrawindirect;
 
-import com.google.common.collect.ImmutableMap;
 import lombok.Data;
 import lombok.NonNull;
 import net.daporkchop.fp2.common.util.Identifier;
@@ -28,7 +27,7 @@ import net.daporkchop.fp2.gl.attribute.Attribute;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
-import net.daporkchop.fp2.gl.draw.list.DrawCommandArrays;
+import net.daporkchop.fp2.gl.draw.list.DrawCommandIndexed;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttributeBufferImpl;
@@ -37,7 +36,6 @@ import net.daporkchop.fp2.gl.opengl.command.state.State;
 import net.daporkchop.fp2.gl.opengl.command.state.StateProperties;
 import net.daporkchop.fp2.gl.opengl.command.state.StateValueProperty;
 import net.daporkchop.fp2.gl.opengl.draw.list.DrawListBuilderImpl;
-import net.daporkchop.fp2.gl.opengl.draw.list.DrawListImpl;
 import net.daporkchop.fp2.gl.opengl.draw.list.SimpleDrawListImpl;
 import net.daporkchop.fp2.gl.transform.TransformLayoutBuilder;
 import net.daporkchop.fp2.gl.transform.binding.TransformBindingBuilder;
@@ -47,17 +45,17 @@ import net.daporkchop.fp2.gl.transform.shader.TransformShaderProgramBuilder;
 import java.util.Collections;
 import java.util.Map;
 
-import static net.daporkchop.fp2.gl.opengl.draw.list.arrays.multidrawindirect.MultiDrawArraysIndirect.*;
+import static net.daporkchop.fp2.gl.opengl.draw.list.elements.multidrawindirect.MultiDrawElementsIndirect.*;
 
 /**
  * @author DaPorkchop_
  */
-public class ShaderSelectedDrawListMultiDrawArraysIndirect extends DrawListMultiDrawArraysIndirect implements SimpleDrawListImpl.ShaderSelected<DrawCommandArrays> {
+public class ShaderSelectedDrawListMultiDrawElementsIndirect extends DrawListMultiDrawElementsIndirect implements SimpleDrawListImpl.ShaderSelected<DrawCommandIndexed> {
     protected final AttributeFormat<Command> format;
     protected final InterleavedAttributeBufferImpl<?, Command> srcBuffer;
     protected final InterleavedAttributeBufferImpl<?, Command> dstBuffer;
 
-    public ShaderSelectedDrawListMultiDrawArraysIndirect(@NonNull DrawListBuilderImpl builder) {
+    public ShaderSelectedDrawListMultiDrawElementsIndirect(@NonNull DrawListBuilderImpl builder) {
         super(builder);
 
         this.format = this.gl().createAttributeFormat(Command.class)
@@ -96,7 +94,7 @@ public class ShaderSelectedDrawListMultiDrawArraysIndirect extends DrawListMulti
 
     @Override
     public TransformShaderBuilder configureTransformShaderForSelection(@NonNull TransformShaderBuilder builder) {
-        return builder.include(Identifier.from(OpenGL.OPENGL_NAMESPACE, "draw/list/arrays/multidrawindirect/ShaderSelectedDrawListMultiDrawArraysIndirect_selection.vert"));
+        return builder.include(Identifier.from(OpenGL.OPENGL_NAMESPACE, "draw/list/elements/multidrawindirect/ShaderSelectedDrawListMultiDrawElementsIndirect_selection.vert"));
     }
 
     @Override
@@ -132,11 +130,11 @@ public class ShaderSelectedDrawListMultiDrawArraysIndirect extends DrawListMulti
 
     @Override
     public void drawSelected0(GLAPI api, int mode) {
-        api.glMultiDrawArraysIndirect(mode, 0L, this.capacity, 0);
+        api.glMultiDrawElementsIndirect(mode, this.indexType, 0L, this.capacity, 0);
     }
 
     /**
-     * A MultiDrawArraysIndirect command.
+     * A MultiDrawElementsIndirect command.
      *
      * @author DaPorkchop_
      */
@@ -149,9 +147,12 @@ public class ShaderSelectedDrawListMultiDrawArraysIndirect extends DrawListMulti
         public final int instanceCount;
 
         @Attribute(sort = 2)
-        public final int first;
+        public final int firstIndex;
 
         @Attribute(sort = 3)
+        public final int baseVertex;
+
+        @Attribute(sort = 4)
         public final int baseInstance;
     }
 }

@@ -23,10 +23,13 @@ package net.daporkchop.fp2.gl.opengl.draw.list.arrays.multidrawindirect;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.draw.list.DrawCommandArrays;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
+import net.daporkchop.fp2.gl.opengl.command.state.State;
+import net.daporkchop.fp2.gl.opengl.command.state.StateValueProperty;
 import net.daporkchop.fp2.gl.opengl.draw.list.DrawListBuilderImpl;
-import net.daporkchop.fp2.gl.opengl.draw.list.IJavaSelectedDrawListImpl;
+import net.daporkchop.fp2.gl.opengl.draw.list.SimpleDrawListImpl;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
+import java.util.Map;
 import java.util.function.IntPredicate;
 
 import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
@@ -35,9 +38,14 @@ import static net.daporkchop.fp2.gl.opengl.draw.list.arrays.multidrawindirect.Mu
 /**
  * @author DaPorkchop_
  */
-public class JavaSelectedDrawListMultiDrawArraysIndirect extends DrawListMultiDrawArraysIndirect implements IJavaSelectedDrawListImpl<DrawCommandArrays> {
+public class JavaSelectedDrawListMultiDrawArraysIndirect extends DrawListMultiDrawArraysIndirect implements SimpleDrawListImpl.JavaSelected<DrawCommandArrays> {
     public JavaSelectedDrawListMultiDrawArraysIndirect(@NonNull DrawListBuilderImpl builder) {
         super(builder);
+    }
+
+    @Override
+    public Map<StateValueProperty<?>, Object> configureStateForDrawSelected0(@NonNull State state) {
+        return this.configureStateForDraw0(state);
     }
 
     @Override

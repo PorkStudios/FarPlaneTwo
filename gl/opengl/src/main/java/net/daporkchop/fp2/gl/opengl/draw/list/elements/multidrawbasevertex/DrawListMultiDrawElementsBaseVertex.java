@@ -24,12 +24,13 @@ import lombok.NonNull;
 import net.daporkchop.fp2.gl.draw.list.DrawCommandIndexed;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
-import net.daporkchop.fp2.gl.opengl.bitset.AbstractGLBitSet;
+import net.daporkchop.fp2.gl.opengl.command.state.State;
 import net.daporkchop.fp2.gl.opengl.command.state.StateValueProperty;
 import net.daporkchop.fp2.gl.opengl.draw.binding.DrawBindingIndexedImpl;
 import net.daporkchop.fp2.gl.opengl.draw.index.IndexFormatImpl;
+import net.daporkchop.fp2.gl.opengl.draw.list.AbstractDrawListImpl;
 import net.daporkchop.fp2.gl.opengl.draw.list.DrawListBuilderImpl;
-import net.daporkchop.fp2.gl.opengl.draw.list.DrawListImpl;
+import net.daporkchop.fp2.gl.opengl.draw.list.SimpleDrawListImpl;
 import net.daporkchop.lib.common.math.BinMath;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
@@ -42,7 +43,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public class DrawListMultiDrawElementsBaseVertex extends DrawListImpl<DrawCommandIndexed, DrawBindingIndexedImpl> {
+public class DrawListMultiDrawElementsBaseVertex extends AbstractDrawListImpl<DrawCommandIndexed, DrawBindingIndexedImpl> implements SimpleDrawListImpl<DrawCommandIndexed> {
     protected long countAddr;
     protected long indicesAddr;
     protected long basevertexAddr;
@@ -106,34 +107,12 @@ public class DrawListMultiDrawElementsBaseVertex extends DrawListImpl<DrawComman
     }
 
     @Override
-    public Map<StateValueProperty<?>, Object> stateProperties0() {
+    public Map<StateValueProperty<?>, Object> configureStateForDraw0(@NonNull State state) {
         return Collections.emptyMap();
     }
 
     @Override
     public void draw0(GLAPI api, int mode) {
         api.glMultiDrawElementsBaseVertex(mode, this.countAddr, this.indexType, this.indicesAddr, this.capacity, this.basevertexAddr);
-    }
-
-    @Override
-    public void draw0(GLAPI api, int mode, AbstractGLBitSet selectionMask) {
-        long dstCounts = PUnsafe.allocateMemory(this.capacity * (long) INT_SIZE);
-        try {
-            selectionMask.mapClient(this.capacity, (bitsBase, bitsOffset) -> {
-                long srcCountAddr = this.countAddr;
-                long dstCountAddr = dstCounts;
-                for (int bitIndex = 0; bitIndex < this.capacity; bitsOffset += INT_SIZE) {
-                    int word = PUnsafe.getInt(bitsBase, bitsOffset);
-
-                    for (int mask = 1; mask != 0 && bitIndex < this.capacity; mask <<= 1, bitIndex++, srcCountAddr += INT_SIZE, dstCountAddr += INT_SIZE) {
-                        PUnsafe.putInt(dstCountAddr, PUnsafe.getInt(srcCountAddr) & (-(word & mask) >> 31));
-                    }
-                }
-            });
-
-            api.glMultiDrawElementsBaseVertex(mode, dstCounts, this.indexType, this.indicesAddr, this.capacity, this.basevertexAddr);
-        } finally {
-            PUnsafe.freeMemory(dstCounts);
-        }
     }
 }

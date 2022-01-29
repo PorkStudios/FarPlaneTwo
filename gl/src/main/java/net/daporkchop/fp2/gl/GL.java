@@ -26,8 +26,6 @@ import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormatBuilder;
-import net.daporkchop.fp2.gl.bitset.GLBitSet;
-import net.daporkchop.fp2.gl.bitset.GLBitSetBuilder;
 import net.daporkchop.fp2.gl.command.CommandBuffer;
 import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
@@ -86,11 +84,6 @@ public interface GL extends AutoCloseable {
      */
     @Override
     void close();
-
-    /**
-     * @return a builder for constructing a new {@link GLBitSet}
-     */
-    GLBitSetBuilder createBitSet();
 
     /**
      * @return a builder for constructing a new {@link CommandBuffer}

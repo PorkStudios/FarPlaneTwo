@@ -20,21 +20,15 @@
 
 package net.daporkchop.fp2.gl.opengl.draw.list.arrays.multidraw;
 
-import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.gl.attribute.Attribute;
-import net.daporkchop.fp2.gl.attribute.AttributeFormat;
-import net.daporkchop.fp2.gl.attribute.AttributeUsage;
-import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.draw.list.DrawCommandArrays;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
-import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttributeBufferImpl;
-import net.daporkchop.fp2.gl.opengl.bitset.AbstractGLBitSet;
+import net.daporkchop.fp2.gl.opengl.command.state.State;
 import net.daporkchop.fp2.gl.opengl.command.state.StateValueProperty;
 import net.daporkchop.fp2.gl.opengl.draw.binding.DrawBindingImpl;
+import net.daporkchop.fp2.gl.opengl.draw.list.AbstractDrawListImpl;
 import net.daporkchop.fp2.gl.opengl.draw.list.DrawListBuilderImpl;
-import net.daporkchop.fp2.gl.opengl.draw.list.DrawListImpl;
+import net.daporkchop.fp2.gl.opengl.draw.list.SimpleDrawListImpl;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.Collections;
@@ -46,20 +40,9 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public class DrawListMultiDrawArrays extends DrawListImpl<DrawCommandArrays, DrawBindingImpl> {
+public class DrawListMultiDrawArrays extends AbstractDrawListImpl<DrawCommandArrays, DrawBindingImpl> implements SimpleDrawListImpl<DrawCommandArrays> {
     protected long firstAddr;
     protected long countAddr;
-
-    @Getter(lazy = true)
-    private final AttributeFormat<CountAttribute> format = this.gl.createAttributeFormat(CountAttribute.class)
-            .useFor(AttributeUsage.TRANSFORM_INPUT)
-            .useFor(AttributeUsage.TRANSFORM_OUTPUT)
-            .build();
-
-    @Getter(lazy = true)
-    private final InterleavedAttributeBufferImpl<?, CountAttribute> readBuffer = (InterleavedAttributeBufferImpl<?, CountAttribute>) this.format().createBuffer(BufferUsage.STREAM_DRAW);
-    @Getter(lazy = true)
-    private final InterleavedAttributeBufferImpl<?, CountAttribute> writeBuffer = (InterleavedAttributeBufferImpl<?, CountAttribute>) this.format().createBuffer(BufferUsage.STREAM_READ);
 
     public DrawListMultiDrawArrays(@NonNull DrawListBuilderImpl builder) {
         super(builder);
@@ -105,41 +88,12 @@ public class DrawListMultiDrawArrays extends DrawListImpl<DrawCommandArrays, Dra
     }
 
     @Override
-    public Map<StateValueProperty<?>, Object> stateProperties0() {
+    public Map<StateValueProperty<?>, Object> configureStateForDraw0(@NonNull State state) {
         return Collections.emptyMap();
     }
 
     @Override
     public void draw0(GLAPI api, int mode) {
         api.glMultiDrawArrays(mode, this.firstAddr, this.countAddr, this.capacity);
-    }
-
-    @Override
-    public void draw0(GLAPI api, int mode, AbstractGLBitSet selectionMask) {
-        long dstCounts = PUnsafe.allocateMemory(this.capacity * (long) INT_SIZE);
-        try {
-            selectionMask.mapClient(this.capacity, (bitsBase, bitsOffset) -> {
-                long srcCountAddr = this.countAddr;
-                long dstCountAddr = dstCounts;
-                for (int bitIndex = 0; bitIndex < this.capacity; bitsOffset += INT_SIZE) {
-                    int word = PUnsafe.getInt(bitsBase, bitsOffset);
-
-                    for (int mask = 1; mask != 0 && bitIndex < this.capacity; mask <<= 1, bitIndex++, srcCountAddr += INT_SIZE, dstCountAddr += INT_SIZE) {
-                        PUnsafe.putInt(dstCountAddr, PUnsafe.getInt(srcCountAddr) & (-(word & mask) >> 31));
-                        PUnsafe.putInt(dstCountAddr, 3);
-                    }
-                }
-            });
-
-            api.glMultiDrawArrays(mode, this.firstAddr, dstCounts, this.capacity);
-        } finally {
-            PUnsafe.freeMemory(dstCounts);
-        }
-    }
-
-    @RequiredArgsConstructor
-    public static final class CountAttribute {
-        @Attribute
-        public final int count_internal;
     }
 }
