@@ -47,6 +47,7 @@ import net.daporkchop.fp2.gl.draw.index.IndexWriter;
 import net.daporkchop.fp2.gl.draw.list.DrawCommandArrays;
 import net.daporkchop.fp2.gl.draw.list.DrawCommandIndexed;
 import net.daporkchop.fp2.gl.draw.list.selected.JavaSelectedDrawList;
+import net.daporkchop.fp2.gl.draw.list.selected.ShaderSelectedDrawList;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.draw.shader.FragmentShader;
 import net.daporkchop.fp2.gl.draw.shader.VertexShader;
@@ -260,14 +261,14 @@ public class TestLWJGL2 {
                 .withTexture(texture)
                 .build();
 
-        JavaSelectedDrawList<DrawCommandArrays> listArrays = gl.createDrawListArrays(binding0).buildJavaSelected();
+        ShaderSelectedDrawList<DrawCommandArrays> listArrays = gl.createDrawListArrays(binding0).buildShaderSelected();
         listArrays.resize(4);
         listArrays.set(0, new DrawCommandArrays(0, 3));
         listArrays.set(1, new DrawCommandArrays(0, 3));
         listArrays.set(2, new DrawCommandArrays(0, 3));
         listArrays.set(3, new DrawCommandArrays(0, 3));
 
-        /*TransformLayout selectionLayout = listArrays.configureTransformLayoutForSelection(gl.createTransformLayout())
+        TransformLayout selectionLayout = listArrays.configureTransformLayoutForSelection(gl.createTransformLayout())
                 .withUniform(selectionUniformFormat)
                 .build();
 
@@ -281,7 +282,7 @@ public class TestLWJGL2 {
                 .addShader(listArrays.configureTransformShaderForSelection(gl.createTransformShader(selectionLayout))
                         .include(Identifier.from("test_selection.vert"))
                         .build())
-                .build();*/
+                .build();
 
         JavaSelectedDrawList<DrawCommandIndexed> listElements = gl.createDrawListIndexed(binding1).buildJavaSelected();
         listElements.resize(4);
@@ -294,14 +295,13 @@ public class TestLWJGL2 {
                 .blendDisable()
                 .framebufferClear(FramebufferLayer.COLOR)
                 .drawSelectedList(drawShaderProgram, DrawMode.TRIANGLES, listElements, i -> ThreadLocalRandom.current().nextBoolean())
-                //.drawList(drawShaderProgram, DrawMode.TRIANGLES, listArrays, selectionProgram, selectionBinding)
-                .drawList(drawShaderProgram, DrawMode.TRIANGLES, listArrays)
+                .drawSelectedList(drawShaderProgram, DrawMode.TRIANGLES, listArrays, selectionProgram, selectionBinding)
                 .drawArrays(drawShaderProgram, DrawMode.TRIANGLES, binding0, 0, 3)
                 .transform(transformShaderProgram, binding2_transform, localBuffer_1.capacity())
                 .drawArrays(drawShaderProgram, DrawMode.TRIANGLES, binding2_draw, 0, 3)
                 .build()) {
             while (!Display.isCloseRequested()) {
-                //selectionUniformBuffer.setContents(new UniformSelectionAttribs(ThreadLocalRandom.current().nextInt() & 1));
+                selectionUniformBuffer.setContents(new UniformSelectionAttribs(ThreadLocalRandom.current().nextInt() & 1));
 
                 cmdBuffer.execute();
 

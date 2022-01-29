@@ -414,7 +414,7 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
                     mv.visitFieldInsn(GETFIELD, CLASS_NAME, listFieldName, getDescriptor(list.getClass()));
                     mv.visitVarInsn(ALOAD, args.apiLvtIndex());
                     mv.visitLdcInsn(GLEnumUtil.from(mode));
-                    mv.visitMethodInsn(INVOKEVIRTUAL, getInternalName(list.getClass()), "drawSelected0_pre", getMethodDescriptor(VOID_TYPE, getType(GLAPI.class), INT_TYPE), false);
+                    mv.visitMethodInsn(INVOKEVIRTUAL, getInternalName(list.getClass()), "select0", getMethodDescriptor(VOID_TYPE, getType(GLAPI.class), INT_TYPE), false);
                 });
             }
 
@@ -464,7 +464,7 @@ public class CommandBufferBuilderImpl implements CommandBufferBuilder {
                     mv.visitFieldInsn(GETFIELD, CLASS_NAME, listFieldName, getDescriptor(list.getClass()));
                     mv.visitVarInsn(ALOAD, args.apiLvtIndex());
                     mv.visitLdcInsn(GLEnumUtil.from(mode));
-                    mv.visitMethodInsn(INVOKEVIRTUAL, getInternalName(list.getClass()), "drawSelected0_post", getMethodDescriptor(VOID_TYPE, getType(GLAPI.class), INT_TYPE), false);
+                    mv.visitMethodInsn(INVOKEVIRTUAL, getInternalName(list.getClass()), "drawSelected0", getMethodDescriptor(VOID_TYPE, getType(GLAPI.class), INT_TYPE), false);
                 });
             }
         });

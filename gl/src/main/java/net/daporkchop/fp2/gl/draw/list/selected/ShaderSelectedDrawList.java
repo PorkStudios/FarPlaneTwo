@@ -48,9 +48,7 @@ public interface ShaderSelectedDrawList<C extends DrawCommand> extends SelectedD
      * @param builder the {@link TransformLayoutBuilder} to configure
      * @return the configured {@link TransformLayoutBuilder}
      */
-    default TransformLayoutBuilder configureTransformLayoutForSelection(@NonNull TransformLayoutBuilder builder) {
-        throw new UnsupportedOperationException();
-    }
+    TransformLayoutBuilder configureTransformLayoutForSelection(@NonNull TransformLayoutBuilder builder);
 
     /**
      * Configures a {@link TransformBindingBuilder} for being used for draw list command selection.
@@ -58,9 +56,7 @@ public interface ShaderSelectedDrawList<C extends DrawCommand> extends SelectedD
      * @param builder the {@link TransformBindingBuilder} to configure
      * @return the configured {@link TransformBindingBuilder}
      */
-    default TransformBindingBuilder configureTransformBindingForSelection(@NonNull TransformBindingBuilder builder) {
-        throw new UnsupportedOperationException();
-    }
+    TransformBindingBuilder configureTransformBindingForSelection(@NonNull TransformBindingBuilder builder);
 
     /**
      * Configures a {@link TransformShaderBuilder} for being used for draw list command selection.
@@ -68,9 +64,7 @@ public interface ShaderSelectedDrawList<C extends DrawCommand> extends SelectedD
      * @param builder the {@link TransformShaderBuilder} to configure
      * @return the configured {@link TransformShaderBuilder}
      */
-    default TransformShaderBuilder configureTransformShaderForSelection(@NonNull TransformShaderBuilder builder) {
-        throw new UnsupportedOperationException();
-    }
+    TransformShaderBuilder configureTransformShaderForSelection(@NonNull TransformShaderBuilder builder);
 
     /**
      * Configures a {@link TransformShaderProgramBuilder} for being used for draw list command selection.
@@ -78,7 +72,5 @@ public interface ShaderSelectedDrawList<C extends DrawCommand> extends SelectedD
      * @param builder the {@link TransformShaderProgramBuilder} to configure
      * @return the configured {@link TransformShaderProgramBuilder}
      */
-    default TransformShaderProgramBuilder configureTransformShaderProgramForSelection(@NonNull TransformShaderProgramBuilder builder) {
-        throw new UnsupportedOperationException();
-    }
+    TransformShaderProgramBuilder configureTransformShaderProgramForSelection(@NonNull TransformShaderProgramBuilder builder);
 }

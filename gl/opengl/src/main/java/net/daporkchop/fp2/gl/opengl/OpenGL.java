@@ -63,6 +63,7 @@ import net.daporkchop.fp2.gl.opengl.draw.index.IndexFormatBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.draw.list.DrawListBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.draw.list.arrays.multidrawindirect.DrawListMultiDrawArraysIndirect;
 import net.daporkchop.fp2.gl.opengl.draw.list.arrays.multidrawindirect.JavaSelectedDrawListMultiDrawArraysIndirect;
+import net.daporkchop.fp2.gl.opengl.draw.list.arrays.multidrawindirect.ShaderSelectedDrawListMultiDrawArraysIndirect;
 import net.daporkchop.fp2.gl.opengl.draw.list.elements.multidrawindirect.DrawListMultiDrawElementsIndirect;
 import net.daporkchop.fp2.gl.opengl.draw.list.elements.multidrawindirect.JavaSelectedDrawListMultiDrawElementsIndirect;
 import net.daporkchop.fp2.gl.opengl.draw.shader.DrawShaderProgramImpl;
@@ -255,7 +256,7 @@ public class OpenGL implements GL {
 
             @Override
             public ShaderSelectedDrawList<DrawCommandArrays> buildShaderSelected() {
-                throw new UnsupportedOperationException();
+                return new ShaderSelectedDrawListMultiDrawArraysIndirect(this);
             }
         };
     }

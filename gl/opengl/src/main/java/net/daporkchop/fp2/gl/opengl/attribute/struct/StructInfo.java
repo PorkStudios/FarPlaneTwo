@@ -29,6 +29,9 @@ import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
 import net.daporkchop.lib.common.util.PorkUtil;
 
 import java.lang.reflect.Field;
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -57,7 +60,7 @@ public class StructInfo<S> {
         this.clazz = clazz;
         nameOverrides = new HashMap<>(nameOverrides);
 
-        ImmutableList.Builder<StructMember<S>> memberListBuilder = ImmutableList.builder();
+        List<StructMember<S>> memberListBuilder = new ArrayList<>();
         Map<String, Field> fieldsByName = Stream.of(this.clazz.getFields())
                 .collect(Collectors.toMap(Field::getName, Function.identity(), (a, b) -> {
                             throw new IllegalArgumentException(a + " " + b);
@@ -94,7 +97,8 @@ public class StructInfo<S> {
 
         nameOverrides.forEach((oldName, newName) -> checkArg(false, "cannot rename attribute %s to %s: no such attribute %1$s", oldName, newName));
 
-        this.members = memberListBuilder.build();
+        memberListBuilder.sort(Comparator.comparingInt(StructMember::sort));
+        this.members = ImmutableList.copyOf(memberListBuilder);
     }
 
     public String name() {
