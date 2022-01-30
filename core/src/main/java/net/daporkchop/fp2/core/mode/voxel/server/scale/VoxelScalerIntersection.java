@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -296,7 +296,7 @@ public class VoxelScalerIntersection extends AbstractFarGenerator implements IFa
         }
 
         protected static Vec3d crossProduct(Vec3d a, Vec3d b) {
-            return Vec3d.of(a.y() * b.z() - a.z() * b.y(), a.z() * b.x() - a.x() * b.z(), a.x() * b.y() - a.y() * b.z());
+            return Vec3d.of(a.y() * b.z() - a.z() * b.y(), a.z() * b.x() - a.x() * b.z(), a.x() * b.y() - a.y() * b.x());
         }
 
         protected static Vec3d intersect(Vec3d v0, Vec3d v1, Vec3d v2, Vec3d n, Vec3d p0, Vec3d p1) {
