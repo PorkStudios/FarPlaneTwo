@@ -32,7 +32,6 @@ import net.daporkchop.lib.common.math.PMath;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.stream.IntStream;
-import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.common.util.TypeSize.*;
@@ -89,7 +88,7 @@ public enum GLSLBlockMemoryLayout {
         }
 
         @Override
-        public <S> InterleavedStructLayout<S> layout(@NonNull StructInfo<S> structInfo) {
+        public <S> InterleavedStructLayout layout(@NonNull StructInfo<S> structInfo) {
             int memberCount = structInfo.members.size();
             long[] memberOffsets = new long[memberCount];
             long[][] memberComponentOffsets = new long[memberCount][];
@@ -128,8 +127,9 @@ public enum GLSLBlockMemoryLayout {
                     .structInfo(structInfo)
                     .layoutName(this.name().toLowerCase(Locale.ROOT).intern())
                     .unpacked(true)
-                    .memberOffsets(memberOffsets)
-                    .memberComponentOffsets(memberComponentOffsets)
+                    .members(IntStream.range(0, memberCount)
+                            .mapToObj(i -> new InterleavedStructLayout.RegularMember(memberOffsets[i], memberComponentOffsets[i]))
+                            .toArray(InterleavedStructLayout.Member[]::new))
                     .stride(stride)
                     .build();
         }
@@ -142,7 +142,7 @@ public enum GLSLBlockMemoryLayout {
      * @param <S>        the struct type
      * @return the {@link InterleavedStructLayout}
      */
-    public abstract <S> InterleavedStructLayout<S> layout(@NonNull StructInfo<S> structInfo);
+    public abstract <S> InterleavedStructLayout layout(@NonNull StructInfo<S> structInfo);
 
     /**
      * A simple tuple containing a struct member's alignment and size.

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -53,16 +53,18 @@ import static org.objectweb.asm.Type.*;
  * @author DaPorkchop_
  */
 public class StructFormatGenerator {
-    protected final Cache<StructLayout<?>, StructFormat<?, ?>> cache = CacheBuilder.newBuilder()
+    private static final boolean WRITE_CLASSES = true;
+
+    protected final Cache<StructLayout<?, ?>, StructFormat<?, ?>> cache = CacheBuilder.newBuilder()
             .weakValues()
             .build();
 
     @SneakyThrows(ExecutionException.class)
-    public <S> InterleavedStructFormat<S> getInterleaved(@NonNull InterleavedStructLayout<S> layout) {
+    public <S> InterleavedStructFormat<S> getInterleaved(@NonNull InterleavedStructLayout layout) {
         return uncheckedCast(this.cache.get(layout, () -> this.generateInterleaved(layout)));
     }
 
-    private <S> InterleavedStructFormat<S> generateInterleaved(@NonNull InterleavedStructLayout<S> layout) throws Exception {
+    private <S> InterleavedStructFormat<S> generateInterleaved(@NonNull InterleavedStructLayout layout) throws Exception {
         String baseClassName = getInternalName(InterleavedStructFormat.class);
         String className = baseClassName + '$' + layout.layoutName() + '$' + getInternalName(layout.structInfo().clazz()).replace("/", "__");
         String structName = getInternalName(layout.structInfo().clazz());
@@ -104,11 +106,11 @@ public class StructFormatGenerator {
             mv.visitVarInsn(ASTORE, 1);
 
             //copy each member type
-            List<StructMember<S>> members = layout.structInfo().members();
+            List<? extends StructMember<?>> members = layout.structInfo().members();
             for (int i = 0; i < members.size(); i++) {
-                StructMember<S> member = members.get(i);
+                StructMember<?> member = members.get(i);
                 StructMember.Stage stage = layout.unpacked() ? member.unpackedStage : member.packedStage;
-                member.storeStageOutput(mv, stage, 1, 2, 3, layout.memberOffsets()[i]);
+                member.storeStageOutput(mv, stage, 1, 2, 3, 5, layout.members()[i]);
             }
 
             mv.visitInsn(RETURN);
@@ -121,11 +123,11 @@ public class StructFormatGenerator {
             MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "copy", "(Ljava/lang/Object;JLjava/lang/Object;J)V", null, null);
 
             //copy each member type
-            List<StructMember<S>> members = layout.structInfo().members();
+            List<? extends StructMember<?>> members = layout.structInfo().members();
             for (int i = 0; i < members.size(); i++) {
-                StructMember<S> member = members.get(i);
+                StructMember<?> member = members.get(i);
                 StructMember.Stage stage = layout.unpacked() ? member.unpackedStage : member.packedStage;
-                member.copyStageOutput(mv, stage, 1, 2, 4, 5, layout.memberOffsets()[i]);
+                member.copyStageOutput(mv, stage, 1, 2, 4, 5, 7, layout.members()[i]);
             }
 
             mv.visitInsn(RETURN);
@@ -138,9 +140,9 @@ public class StructFormatGenerator {
             MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "configureVAO", '(' + Type.getDescriptor(GLAPI.class) + "[I)V", null, null);
 
             //configure attribute for each member
-            List<StructMember<S>> members = layout.structInfo().members();
+            List<? extends StructMember<?>> members = layout.structInfo().members();
             for (int i = 0; i < members.size(); i++) {
-                StructMember<S> member = members.get(i);
+                StructMember<?> member = members.get(i);
                 StructMember.Stage srcStage = layout.unpacked() ? member.unpackedStage : member.packedStage;
                 StructMember.Stage unpackedStage = member.unpackedStage;
 
@@ -169,7 +171,7 @@ public class StructFormatGenerator {
                     }
 
                     mv.visitLdcInsn(toInt(layout.stride(), "stride")); //GLsizei stride,
-                    mv.visitLdcInsn(layout.memberOffsets()[i] + layout.memberComponentOffsets()[i][column * rows]); //const void* pointer);
+                    mv.visitLdcInsn(layout.members()[i].component(column * rows).offset()); //const void* pointer);
 
                     if (unpackedStage.componentType().floatingPoint()) { //<method>
                         mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glVertexAttribPointer", "(IIIZIJ)V", true);
@@ -187,7 +189,7 @@ public class StructFormatGenerator {
 
         writer.visitEnd();
 
-        if (false) {
+        if (WRITE_CLASSES) {
             try {
                 java.nio.file.Files.write(java.nio.file.Paths.get(className.replace('/', '-') + ".class"), writer.toByteArray());
             } catch (java.io.IOException e) {
@@ -200,12 +202,12 @@ public class StructFormatGenerator {
     }
 
     @SneakyThrows(ExecutionException.class)
-    public <S> TextureStructFormat<S> getTexture(@NonNull TextureStructLayout<S> layout) {
+    public <S> TextureStructFormat<S> getTexture(@NonNull TextureStructLayout layout) {
         return uncheckedCast(this.cache.get(layout, () -> this.generateTexture(layout)));
     }
 
-    private <S> TextureStructFormat<S> generateTexture(@NonNull TextureStructLayout<S> layout) throws Exception {
-        StructMember<S> member = layout.structInfo().members().get(0);
+    private <S> TextureStructFormat<S> generateTexture(@NonNull TextureStructLayout layout) throws Exception {
+        StructMember<?> member = layout.structInfo().members().get(0);
         StructMember.Stage stage = layout.unpacked() ? member.unpackedStage : member.packedStage;
         StructMember.Stage unpackedStage = member.unpackedStage;
 
@@ -329,7 +331,7 @@ public class StructFormatGenerator {
 
         writer.visitEnd();
 
-        if (false) {
+        if (WRITE_CLASSES) {
             try {
                 java.nio.file.Files.write(java.nio.file.Paths.get(className.replace('/', '-') + ".class"), writer.toByteArray());
             } catch (java.io.IOException e) {

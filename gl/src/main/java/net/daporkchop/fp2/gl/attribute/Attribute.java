@@ -37,6 +37,8 @@ public @interface Attribute {
 
     MatrixDimension matrixDimension() default @MatrixDimension(_default = true, columns = -1, rows = -1);
 
+    VectorDimension vectorDimension() default @VectorDimension(_default = true, components = -1);
+
     Transformation transform() default Transformation.UNCHANGED;
 
     Conversion[] convert() default {};
@@ -66,7 +68,13 @@ public @interface Attribute {
          * <p>
          * It is interpreted as column-major matrix, with the matrix dimensions taken from the {@link #matrixDimension()} property (which must be set).
          */
-        ARRAY_TO_MATRIX;
+        ARRAY_TO_MATRIX,
+        /**
+         * The source type is a single primitive array with exactly {@code components} elements.
+         * <p>
+         * It is interpreted as vector, with the component count taken from the {@link #vectorDimension()} property (which must be set).
+         */
+        ARRAY_TO_VECTOR;
     }
 
     /**
@@ -108,5 +116,20 @@ public @interface Attribute {
          * @return the number of rows. Must be in range {@code [2, 4]}
          */
         int rows();
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target({})
+    @interface VectorDimension {
+        @Deprecated
+        boolean _default() default false;
+
+        /**
+         * @return the number of columns. Must be in range {@code [2, 4]}
+         */
+        int components();
     }
 }

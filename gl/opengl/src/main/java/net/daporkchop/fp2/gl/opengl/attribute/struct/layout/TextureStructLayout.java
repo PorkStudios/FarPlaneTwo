@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -31,8 +31,20 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @Getter
 @ToString(callSuper = true)
-@EqualsAndHashCode(callSuper = true)
-public class TextureStructLayout<S> extends StructLayout<S> {
+@EqualsAndHashCode(callSuper = true, cacheStrategy = EqualsAndHashCode.CacheStrategy.LAZY)
+public class TextureStructLayout extends StructLayout<TextureStructLayout.Member, TextureStructLayout.Component> {
     private final long componentStride;
     private final long stride;
+
+    /**
+     * @author DaPorkchop_
+     */
+    public interface Member extends StructLayout.Member<Member, Component> {
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    public interface Component extends StructLayout.Component {
+    }
 }

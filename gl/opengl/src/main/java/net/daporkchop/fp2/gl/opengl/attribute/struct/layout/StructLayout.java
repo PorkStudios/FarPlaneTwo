@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.gl.opengl.attribute.struct.layout;
 
 import lombok.Data;
+import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.StructInfo;
 
@@ -29,9 +30,32 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.StructInfo;
  */
 @SuperBuilder
 @Data
-public abstract class StructLayout<S> {
-    private final StructInfo<S> structInfo;
+public abstract class StructLayout<M extends StructLayout.Member<M, C>, C extends StructLayout.Component> {
+    private final StructInfo<?> structInfo;
     private final String layoutName;
 
     private final boolean unpacked;
+
+    @NonNull
+    private final M[] members;
+
+    /**
+     * @author DaPorkchop_
+     */
+    public interface Member<M extends Member<M, C>, C extends Component> {
+        int components();
+
+        C component(int componentIndex);
+
+        int children();
+
+        M child(int childIndex);
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    public interface Component {
+        long offset();
+    }
 }

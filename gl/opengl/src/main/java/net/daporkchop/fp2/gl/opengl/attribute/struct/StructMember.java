@@ -24,14 +24,17 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.attribute.Attribute;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.InterleavedStructLayout;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLPrimitiveType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLType;
 import net.daporkchop.lib.common.util.PorkUtil;
+import net.daporkchop.lib.primitive.lambda.IntIntConsumer;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 
 import java.lang.reflect.Field;
+import java.util.Collections;
 import java.util.List;
 
 import static net.daporkchop.fp2.common.util.TypeSize.*;
@@ -79,6 +82,17 @@ public class StructMember<S> {
                 checkArg(!_default, "matrixDimension must be set!");
 
                 packedStage = new MatrixInputStage(fields.get(0), matrixDimension.columns(), matrixDimension.rows());
+                break;
+            }
+            case ARRAY_TO_VECTOR: {
+                checkArg(fields.size() == 1, "%s requires exactly one field, but got %s", attribute.transform(), fields);
+
+                Attribute.VectorDimension vectorDimension = attribute.vectorDimension();
+                @SuppressWarnings("deprecation")
+                boolean _default = vectorDimension._default();
+                checkArg(!_default, "vectorDimension must be set!");
+
+                packedStage = new VectorFromArrayInputStage(fields.get(0), vectorDimension.components());
                 break;
             }
             default:
@@ -141,6 +155,55 @@ public class StructMember<S> {
 
             stage.componentType().unsafeGet(mv);
             stage.componentType().unsafePut(mv);
+        }
+    }
+
+    public void storeStageOutput(@NonNull MethodVisitor mv, @NonNull Stage stage, int structLvtIndexIn, int outputBaseLvtIndex, int outputOffsetLvtIndex, int lvtIndexAllocatorIn, @NonNull InterleavedStructLayout.Member member) {
+        stage.prepareLoad(mv, structLvtIndexIn, lvtIndexAllocatorIn, (structLvtIndex, lvtIndexAllocator) -> {
+            checkArg(stage.components() == member.components(), "stage %s has %d components, but member %s has only %d!", stage, stage.components(), member, member.components());
+            for (int componentIndex = 0; componentIndex < stage.components(); componentIndex++) {
+                InterleavedStructLayout.Component component = member.component(componentIndex);
+
+                mv.visitVarInsn(ALOAD, outputBaseLvtIndex);
+                mv.visitVarInsn(LLOAD, outputOffsetLvtIndex);
+                mv.visitLdcInsn(component.offset());
+                mv.visitInsn(LADD);
+
+                stage.loadComponent(mv, structLvtIndex, componentIndex);
+                stage.componentType().unsafePut(mv);
+            }
+
+            List<Stage> children = stage.children();
+            checkArg(children.size() == member.children(), "stage %s has %d children, but member %s has only %d!", stage, children.size(), member, member.children());
+            for (int childIndex = 0; childIndex < children.size(); childIndex++) {
+                this.storeStageOutput(mv, children.get(childIndex), structLvtIndex, outputBaseLvtIndex, outputOffsetLvtIndex, lvtIndexAllocator, member.child(childIndex));
+            }
+        });
+    }
+
+    public void copyStageOutput(@NonNull MethodVisitor mv, @NonNull Stage stage, int srcBaseLvtIndex, int srcOffsetLvtIndex, int dstBaseLvtIndex, int dstOffsetLvtIndex, int lvtIndexAllocator, @NonNull InterleavedStructLayout.Member member) {
+        checkArg(stage.components() == member.components(), "stage %s has %d components, but member %s has only %d!", stage, stage.components(), member, member.components());
+        for (int componentIndex = 0; componentIndex < stage.components(); componentIndex++) {
+            InterleavedStructLayout.Component component = member.component(componentIndex);
+
+            mv.visitVarInsn(ALOAD, dstBaseLvtIndex);
+            mv.visitVarInsn(LLOAD, dstOffsetLvtIndex);
+            mv.visitLdcInsn(component.offset());
+            mv.visitInsn(LADD);
+
+            mv.visitVarInsn(ALOAD, srcBaseLvtIndex);
+            mv.visitVarInsn(LLOAD, srcOffsetLvtIndex);
+            mv.visitLdcInsn(component.offset());
+            mv.visitInsn(LADD);
+
+            stage.componentType().unsafeGet(mv);
+            stage.componentType().unsafePut(mv);
+        }
+
+        List<Stage> children = stage.children();
+        checkArg(children.size() == member.children(), "stage %s has %d children, but member %s has only %d!", stage, children.size(), member, member.children());
+        for (int childIndex = 0; childIndex < children.size(); childIndex++) {
+            this.copyStageOutput(mv, children.get(childIndex), srcBaseLvtIndex, srcOffsetLvtIndex, dstBaseLvtIndex, dstOffsetLvtIndex, lvtIndexAllocator, member.child(childIndex));
         }
     }
 
@@ -407,6 +470,14 @@ public class StructMember<S> {
 
         GLSLType glslType();
 
+        default List<Stage> children() {
+            return Collections.emptyList();
+        }
+
+        default void prepareLoad(@NonNull MethodVisitor mv, int structLvtIndex, int lvtIndexAllocator, @NonNull IntIntConsumer callback) {
+            callback.accept(structLvtIndex, lvtIndexAllocator);
+        }
+
         void preLoadComponents(@NonNull MethodVisitor mv, int structLvtIndex);
 
         void loadComponent(@NonNull MethodVisitor mv, int structLvtIndex, int componentIndex);
@@ -556,6 +627,70 @@ public class StructMember<S> {
         @Override
         public GLSLType glslType() {
             return GLSLType.mat(this.componentType.glslPrimitive(), this.columns, this.rows);
+        }
+
+        @Override
+        public void preLoadComponents(@NonNull MethodVisitor mv, int structLvtIndex) {
+            Label label = new Label();
+
+            mv.visitVarInsn(ALOAD, structLvtIndex);
+            mv.visitFieldInsn(GETFIELD, getInternalName(this.field.getDeclaringClass()), this.field.getName(), Type.getDescriptor(this.field.getType()));
+            mv.visitInsn(ARRAYLENGTH);
+            mv.visitLdcInsn(this.components());
+            mv.visitJumpInsn(IF_ICMPEQ, label);
+
+            mv.visitTypeInsn(NEW, "java/lang/IllegalArgumentException");
+            mv.visitInsn(DUP);
+            mv.visitLdcInsn(this.field + ": array length must be " + this.components());
+            mv.visitMethodInsn(INVOKESPECIAL, "java/lang/IllegalArgumentException", "<init>", "(Ljava/lang/String;)V", false);
+            mv.visitInsn(ATHROW);
+
+            mv.visitLabel(label);
+        }
+
+        @Override
+        public void loadComponent(@NonNull MethodVisitor mv, int structLvtIndex, int componentIndex) {
+            checkIndex(this.components(), componentIndex);
+
+            mv.visitVarInsn(ALOAD, structLvtIndex);
+            mv.visitFieldInsn(GETFIELD, getInternalName(this.field.getDeclaringClass()), this.field.getName(), Type.getDescriptor(this.field.getType()));
+            mv.visitLdcInsn(componentIndex);
+            this.componentType.arrayLoad(mv);
+        }
+
+        @Override
+        public void cloneStruct(@NonNull MethodVisitor mv, int srcStructLvtIndex, int dstStructLvtIndex) {
+            mv.visitVarInsn(ALOAD, dstStructLvtIndex);
+            mv.visitVarInsn(ALOAD, srcStructLvtIndex);
+            mv.visitFieldInsn(GETFIELD, getInternalName(this.field.getDeclaringClass()), this.field.getName(), Type.getDescriptor(this.field.getType()));
+            mv.visitMethodInsn(INVOKEVIRTUAL, getInternalName(this.field.getType()), "clone", Type.getMethodDescriptor(Type.getType(this.field.getType())), false);
+            mv.visitFieldInsn(PUTFIELD, getInternalName(this.field.getDeclaringClass()), this.field.getName(), Type.getDescriptor(this.field.getType()));
+        }
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    protected static class VectorFromArrayInputStage extends InputStage {
+        @Getter
+        protected final ComponentType componentType;
+        protected final Field field;
+
+        @Getter
+        protected final int components;
+
+        public VectorFromArrayInputStage(@NonNull Field field, int components) {
+            checkArg(field.getType().isArray(), "not an array: %s", field);
+            checkArg(components >= 2 && components <= 4, "cannot create %d-component vector");
+
+            this.field = field;
+            this.componentType = ComponentType.from(field.getType().getComponentType());
+            this.components = components;
+        }
+
+        @Override
+        public GLSLType glslType() {
+            return GLSLType.vec(this.componentType.glslPrimitive(), this.components);
         }
 
         @Override

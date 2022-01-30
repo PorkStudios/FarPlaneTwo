@@ -28,6 +28,7 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.TextureStructLayout;
 import net.daporkchop.lib.common.math.PMath;
 
 import java.util.List;
+import java.util.stream.IntStream;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -36,7 +37,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @UtilityClass
 public class StructLayouts {
-    public <S> InterleavedStructLayout<S> vertexAttributesInterleaved(@NonNull OpenGL gl, @NonNull StructInfo<S> structInfo, boolean unpacked) {
+    public <S> InterleavedStructLayout vertexAttributesInterleaved(@NonNull OpenGL gl, @NonNull StructInfo<S> structInfo, boolean unpacked) {
         List<StructMember<S>> members = structInfo.members();
         int memberCount = structInfo.members().size();
 
@@ -59,28 +60,30 @@ public class StructLayouts {
             }
         }
 
-        return InterleavedStructLayout.<S>builder()
+        return InterleavedStructLayout.builder()
                 .structInfo(structInfo)
                 .layoutName("vertex_attribute_interleaved")
                 .unpacked(unpacked)
-                .memberOffsets(memberOffsets)
-                .memberComponentOffsets(memberComponentOffsets)
+                .members(IntStream.range(0, memberCount)
+                        .mapToObj(i -> new InterleavedStructLayout.RegularMember(memberOffsets[i], memberComponentOffsets[i]))
+                        .toArray(InterleavedStructLayout.Member[]::new))
                 .stride(offset)
                 .build();
     }
 
-    public <S> TextureStructLayout<S> texture(@NonNull OpenGL gl, @NonNull StructInfo<S> structInfo) {
+    public <S> TextureStructLayout texture(@NonNull OpenGL gl, @NonNull StructInfo<S> structInfo) {
         List<StructMember<S>> members = structInfo.members();
         checkArg(members.size() == 1, "expected exactly one attribute, but found %d! %s", members.size(), structInfo);
 
         StructMember.Stage stage = members.get(0).packedStage;
 
-        return TextureStructLayout.<S>builder()
+        return TextureStructLayout.builder()
                 .structInfo(structInfo)
                 .layoutName("texture")
                 .unpacked(false)
                 .componentStride(stage.componentType().stride())
                 .stride(stage.components() * (long) stage.componentType().stride())
+                .members(new TextureStructLayout.Member[0]) //TODO: this is wrong?
                 .build();
     }
 }

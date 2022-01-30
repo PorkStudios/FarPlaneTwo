@@ -316,6 +316,11 @@ public class TestLWJGL2 {
         @Attribute(vectorAxes = { "X", "Y" }, convert = Attribute.Conversion.TO_NORMALIZED_FLOAT)
         public final byte scaleX;
         public final byte scaleY;
+
+        @Attribute(transform = Attribute.Transformation.ARRAY_TO_VECTOR, convert = Attribute.Conversion.TO_NORMALIZED_FLOAT, vectorDimension = @Attribute.VectorDimension(components = 3))
+        public final byte[] bytesAsVector = new byte[3];
+
+        //@Attribute public final float[] array = new float[8];
     }
 
     @Data
