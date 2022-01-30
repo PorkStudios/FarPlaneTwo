@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -32,9 +32,10 @@ import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.fp2.core.client.render.TextureUVs;
 import net.daporkchop.fp2.core.util.Direction;
 import net.daporkchop.fp2.gl.GL;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayBuffer;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayFormat;
-import net.daporkchop.fp2.gl.buffer.BufferUsage;
+import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeUsage;
+import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.lib.primitive.map.ObjIntMap;
 import net.daporkchop.lib.primitive.map.open.ObjIntOpenHashMap;
 import net.daporkchop.lib.unsafe.util.AbstractReleasable;
@@ -54,21 +55,21 @@ import static net.daporkchop.fp2.core.FP2Core.*;
 public abstract class AbstractTextureUVs extends AbstractReleasable implements TextureUVs {
     protected final FGameRegistry registry;
 
-    protected final UniformArrayFormat<QuadList> listsFormat;
-    protected final UniformArrayBuffer<QuadList> listsBuffer;
+    protected final AttributeFormat<QuadList> listsFormat;
+    protected final AttributeBuffer<QuadList> listsBuffer;
 
-    protected final UniformArrayFormat<PackedBakedQuad> quadsFormat;
-    protected final UniformArrayBuffer<PackedBakedQuad> quadsBuffer;
+    protected final AttributeFormat<PackedBakedQuad> quadsFormat;
+    protected final AttributeBuffer<PackedBakedQuad> quadsBuffer;
 
     protected int[] stateIdToIndexId;
 
     public AbstractTextureUVs(@NonNull FGameRegistry registry, @NonNull GL gl) {
         this.registry = registry;
 
-        this.listsFormat = gl.createUniformArrayFormat(QuadList.class).build();
+        this.listsFormat = gl.createAttributeFormat(QuadList.class).useFor(AttributeUsage.UNIFORM_ARRAY).build();
         this.listsBuffer = this.listsFormat.createBuffer(BufferUsage.STATIC_DRAW);
 
-        this.quadsFormat = gl.createUniformArrayFormat(PackedBakedQuad.class).build();
+        this.quadsFormat = gl.createAttributeFormat(PackedBakedQuad.class).useFor(AttributeUsage.UNIFORM_ARRAY).build();
         this.quadsBuffer = this.quadsFormat.createBuffer(BufferUsage.STATIC_DRAW);
 
         fp2().eventBus().registerWeak(this);
@@ -149,7 +150,7 @@ public abstract class AbstractTextureUVs extends AbstractReleasable implements T
             quadIdToList[i] = new QuadList(quadsOut.size(), quadsOut.size() + quads.size());
             quadsOut.addAll(quads);
         }
-        this.quadsBuffer.set(quadsOut.toArray(new PackedBakedQuad[0]));
+        this.quadsBuffer.setContents(quadsOut.toArray(new PackedBakedQuad[0]));
 
         List<QuadList> listsOut = new ArrayList<>(quadIdToList.length);
         for (int[] faceIds : distinctIndicesById) {
@@ -157,7 +158,7 @@ public abstract class AbstractTextureUVs extends AbstractReleasable implements T
                 listsOut.add(quadIdToList[i]);
             }
         }
-        this.listsBuffer.set(listsOut.toArray(new QuadList[0]));
+        this.listsBuffer.setContents(listsOut.toArray(new QuadList[0]));
     }
 
     @Override

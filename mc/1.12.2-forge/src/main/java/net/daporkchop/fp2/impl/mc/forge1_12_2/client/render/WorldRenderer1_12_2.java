@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -138,24 +138,24 @@ public class WorldRenderer1_12_2 implements WorldRenderer, AutoCloseable {
             double y = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * partialTicks;
             double z = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * partialTicks;
 
-            attributes.u_positionFloorX = floorI(x);
-            attributes.u_positionFloorY = floorI(y);
-            attributes.u_positionFloorZ = floorI(z);
+            attributes.positionFloorX = floorI(x);
+            attributes.positionFloorY = floorI(y);
+            attributes.positionFloorZ = floorI(z);
 
-            attributes.u_positionFracX = (float) frac(x);
-            attributes.u_positionFracY = (float) frac(y);
-            attributes.u_positionFracZ = (float) frac(z);
+            attributes.positionFracX = (float) frac(x);
+            attributes.positionFracY = (float) frac(y);
+            attributes.positionFracZ = (float) frac(z);
         }
 
         { //fog
             this.initFogColor(attributes);
 
-            attributes.u_fogMode = glGetBoolean(GL_FOG) ? glGetInteger(GL_FOG_MODE) : 0;
+            attributes.fogMode = glGetBoolean(GL_FOG) ? glGetInteger(GL_FOG_MODE) : 0;
 
-            attributes.u_fogDensity = glGetFloat(GL_FOG_DENSITY);
-            attributes.u_fogStart = glGetFloat(GL_FOG_START);
-            attributes.u_fogEnd = glGetFloat(GL_FOG_END);
-            attributes.u_fogScale = 1.0f / (attributes.u_fogEnd - attributes.u_fogStart);
+            attributes.fogDensity = glGetFloat(GL_FOG_DENSITY);
+            attributes.fogStart = glGetFloat(GL_FOG_START);
+            attributes.fogEnd = glGetFloat(GL_FOG_END);
+            attributes.fogScale = 1.0f / (attributes.fogEnd - attributes.fogStart);
         }
 
         return attributes;
@@ -174,10 +174,10 @@ public class WorldRenderer1_12_2 implements WorldRenderer, AutoCloseable {
             this.tempMatrix.get(projection);
 
             //pre-multiply matrices on CPU to avoid having to do it per-vertex on GPU
-            MatrixHelper.multiply4x4(projection, modelView, attributes.u_modelViewProjectionMatrix);
+            MatrixHelper.multiply4x4(projection, modelView, attributes.modelViewProjectionMatrix);
 
             //offset the projected points' depth values to avoid z-fighting with vanilla terrain
-            MatrixHelper.offsetDepth(attributes.u_modelViewProjectionMatrix, fp2().client().isReverseZ() ? -0.00001f : 0.00001f);
+            MatrixHelper.offsetDepth(attributes.modelViewProjectionMatrix, fp2().client().isReverseZ() ? -0.00001f : 0.00001f);
         } finally {
             alloc.release(projection);
             alloc.release(modelView);
@@ -191,10 +191,10 @@ public class WorldRenderer1_12_2 implements WorldRenderer, AutoCloseable {
             FloatBuffer buffer = DirectBufferHackery.wrapFloat(addr, 16);
             glGetFloat(GL_FOG_COLOR, buffer);
 
-            attributes.u_fogColorR = buffer.get(0);
-            attributes.u_fogColorG = buffer.get(1);
-            attributes.u_fogColorB = buffer.get(2);
-            attributes.u_fogColorA = buffer.get(3);
+            attributes.fogColorR = buffer.get(0);
+            attributes.fogColorG = buffer.get(1);
+            attributes.fogColorB = buffer.get(2);
+            attributes.fogColorA = buffer.get(3);
         } finally {
             PUnsafe.freeMemory(addr);
         }

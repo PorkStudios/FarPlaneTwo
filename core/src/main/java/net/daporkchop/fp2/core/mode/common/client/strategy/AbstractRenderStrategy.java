@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -40,11 +40,12 @@ import net.daporkchop.fp2.core.mode.common.client.index.IRenderIndex;
 import net.daporkchop.fp2.core.mode.common.client.strategy.texture.LightmapTextureAttribute;
 import net.daporkchop.fp2.core.mode.common.client.strategy.texture.TerrainTextureAttribute;
 import net.daporkchop.fp2.gl.GL;
+import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeUsage;
+import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformBuffer;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformFormat;
-import net.daporkchop.fp2.gl.buffer.BufferUsage;
 import net.daporkchop.fp2.gl.command.CommandBuffer;
 import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
@@ -69,8 +70,8 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
     protected final IFarRenderMode<POS, T> mode;
     protected final GL gl;
 
-    protected final UniformFormat<GlobalUniformAttributes> uniformFormat;
-    protected final UniformBuffer<GlobalUniformAttributes> uniformBuffer;
+    protected final AttributeFormat<GlobalUniformAttributes> uniformFormat;
+    protected final AttributeBuffer<GlobalUniformAttributes> uniformBuffer;
 
     protected final TextureFormat2D<TerrainTextureAttribute> textureFormatTerrain;
     protected final Texture2D<TerrainTextureAttribute> textureTerrain;
@@ -90,7 +91,7 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
         this.mode = farRenderer.mode();
         this.gl = farRenderer.gl();
 
-        this.uniformFormat = this.gl.createUniformFormat(GlobalUniformAttributes.class).build();
+        this.uniformFormat = this.gl.createAttributeFormat(GlobalUniformAttributes.class).useFor(AttributeUsage.UNIFORM).build();
         this.uniformBuffer = this.uniformFormat.createBuffer(BufferUsage.STATIC_DRAW);
 
         this.textureFormatTerrain = this.gl.createTextureFormat2D(TerrainTextureAttribute.class).build();
@@ -130,7 +131,7 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
         }
 
         //update uniforms
-        this.uniformBuffer.set(this.worldRenderer.globalUniformAttributes());
+        this.uniformBuffer.setContents(this.worldRenderer.globalUniformAttributes());
 
         //execute command buffer
         this.commandBuffer.execute();

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -32,8 +32,8 @@ import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.fp2.core.event.AbstractReloadEvent;
 import net.daporkchop.fp2.core.util.Direction;
 import net.daporkchop.fp2.gl.attribute.Attribute;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayBuffer;
-import net.daporkchop.fp2.gl.attribute.uniform.UniformArrayFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 
 import java.util.List;
 
@@ -63,13 +63,13 @@ public interface TextureUVs {
         }.fire();
     }
 
-    UniformArrayFormat<QuadList> listsFormat();
+    AttributeFormat<QuadList> listsFormat();
 
-    UniformArrayBuffer<QuadList> listsBuffer();
+    AttributeBuffer<QuadList> listsBuffer();
 
-    UniformArrayFormat<PackedBakedQuad> quadsFormat();
+    AttributeFormat<PackedBakedQuad> quadsFormat();
 
-    UniformArrayBuffer<PackedBakedQuad> quadsBuffer();
+    AttributeBuffer<PackedBakedQuad> quadsBuffer();
 
     int state2index(int state);
 
@@ -80,8 +80,8 @@ public interface TextureUVs {
     @EqualsAndHashCode
     final class QuadList {
         @Attribute(vectorAxes = { "First", "Last" }, convert = Attribute.Conversion.TO_UNSIGNED)
-        public final int ua_texQuadListFirst;
-        public final int ua_texQuadListLast;
+        public final int texQuadListFirst;
+        public final int texQuadListLast;
     }
 
     /**
@@ -91,13 +91,13 @@ public interface TextureUVs {
     @EqualsAndHashCode
     final class PackedBakedQuad {
         @Attribute(vectorAxes = { "S", "T", "P", "Q" })
-        public final float ua_texQuadCoordS;
-        public final float ua_texQuadCoordT;
-        public final float ua_texQuadCoordP;
-        public final float ua_texQuadCoordQ;
+        public final float texQuadCoordS;
+        public final float texQuadCoordT;
+        public final float texQuadCoordP;
+        public final float texQuadCoordQ;
 
         @Attribute
-        public final float ua_texQuadTint;
+        public final float texQuadTint;
     }
 
     /**

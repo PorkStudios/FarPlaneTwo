@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -29,36 +29,36 @@ public class GlobalUniformAttributes {
     @Attribute(
             transform = Attribute.Transformation.ARRAY_TO_MATRIX,
             matrixDimension = @Attribute.MatrixDimension(columns = 4, rows = 4))
-    public final float[] u_modelViewProjectionMatrix = new float[16];
+    public final float[] modelViewProjectionMatrix = new float[16];
 
     @Attribute(vectorAxes = { "X", "Y", "Z" })
-    public int u_positionFloorX;
-    public int u_positionFloorY;
-    public int u_positionFloorZ;
+    public int positionFloorX;
+    public int positionFloorY;
+    public int positionFloorZ;
 
     @Attribute(vectorAxes = { "X", "Y", "Z" })
-    public float u_positionFracX;
-    public float u_positionFracY;
-    public float u_positionFracZ;
+    public float positionFracX;
+    public float positionFracY;
+    public float positionFracZ;
 
     @Attribute(vectorAxes = { "R", "G", "B", "A" })
-    public float u_fogColorR;
-    public float u_fogColorG;
-    public float u_fogColorB;
-    public float u_fogColorA;
+    public float fogColorR;
+    public float fogColorG;
+    public float fogColorB;
+    public float fogColorA;
 
     @Attribute
-    public int u_fogMode;
+    public int fogMode;
 
     @Attribute
-    public float u_fogDensity;
+    public float fogDensity;
 
     @Attribute
-    public float u_fogStart;
+    public float fogStart;
 
     @Attribute
-    public float u_fogEnd;
+    public float fogEnd;
 
     @Attribute
-    public float u_fogScale;
+    public float fogScale;
 }
