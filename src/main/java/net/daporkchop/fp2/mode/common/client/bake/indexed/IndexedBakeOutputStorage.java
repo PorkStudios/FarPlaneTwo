@@ -109,7 +109,6 @@ public class IndexedBakeOutputStorage<SU, SG, SL> extends AbstractBakeOutputStor
     protected final long slotSize;
     protected long slotsAddr;
 
-    protected final AttributeBuffer<SU> uniformBuffer;
     protected final AttributeBuffer<SG> globalBuffer;
 
     protected final Allocator vertexAlloc;
@@ -122,13 +121,12 @@ public class IndexedBakeOutputStorage<SU, SG, SL> extends AbstractBakeOutputStor
     @Getter
     protected final int passes;
 
-    public IndexedBakeOutputStorage(@NonNull Allocator alloc, @NonNull AttributeBuffer<SU> uniformBuffer, @NonNull AttributeFormat<SG> globalFormat, @NonNull AttributeFormat<SL> vertexFormat, @NonNull IndexFormat indexFormat, int passes) {
+    public IndexedBakeOutputStorage(@NonNull Allocator alloc, @NonNull AttributeFormat<SG> globalFormat, @NonNull AttributeFormat<SL> vertexFormat, @NonNull IndexFormat indexFormat, int passes) {
         this.alloc = alloc;
 
         this.passes = positive(passes, "passes");
         this.indexSize = indexFormat.size();
 
-        this.uniformBuffer = uniformBuffer;
         this.globalBuffer = globalFormat.createBuffer(BufferUsage.STATIC_DRAW);
 
         this.slotSize = _SLOT_SIZE(passes);
@@ -160,7 +158,6 @@ public class IndexedBakeOutputStorage<SU, SG, SL> extends AbstractBakeOutputStor
     public DrawBindingBuilder<DrawBindingIndexed> createDrawBinding(@NonNull DrawLayout layout, int pass) {
         return layout.createBinding()
                 .withIndexes(this.indexBuffers[pass])
-                .withUniform(this.uniformBuffer)
                 .withGlobal(this.globalBuffer)
                 .withLocal(this.vertexBuffer);
     }

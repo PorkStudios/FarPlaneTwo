@@ -69,11 +69,11 @@ public class ShaderBasedVoxelRenderStrategy extends AbstractMultipassIndexedRend
                 .build();
 
         this.drawLayout = gl.createDrawLayout()
+                .withGlobal(this.globalFormat)
+                .withLocal(this.vertexFormat)
                 .withUniform(this.uniformFormat)
                 .withUniformArray(this.textureUVs.listsFormat())
                 .withUniformArray(this.textureUVs.quadsFormat())
-                .withGlobal(this.globalFormat)
-                .withLocal(this.vertexFormat)
                 .withTexture(this.textureFormatTerrain)
                 .withTexture(this.textureFormatLightmap)
                 .build();
