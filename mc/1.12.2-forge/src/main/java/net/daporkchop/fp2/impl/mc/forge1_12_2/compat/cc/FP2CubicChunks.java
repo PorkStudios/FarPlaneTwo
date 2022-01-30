@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -24,11 +24,12 @@ import io.github.opencubicchunks.cubicchunks.api.world.CubeDataEvent;
 import io.github.opencubicchunks.cubicchunks.api.world.ICube;
 import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorld;
 import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorldServer;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import net.daporkchop.fp2.api.event.Constrain;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.api.world.FBlockWorld;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cc.asyncblockaccess.CCAsyncBlockAccessImpl;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorld;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
@@ -45,6 +46,7 @@ import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
 import net.daporkchop.fp2.core.server.event.GetCoordinateLimitsEvent;
 import net.daporkchop.fp2.core.server.event.GetExactFBlockWorldEvent;
 import net.daporkchop.fp2.core.server.event.GetTerrainGeneratorEvent;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cc.asyncblockaccess.CCAsyncBlockAccessImpl;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.server.world.FCube1_12_2;
 import net.daporkchop.lib.math.vector.Vec3i;
 import net.minecraft.world.WorldServer;
@@ -71,92 +73,97 @@ public class FP2CubicChunks {
             return;
         }
 
-        fp2().eventBus().register(this); //register self to receive fp2 events
-        MinecraftForge.EVENT_BUS.register(this); //register self to receive forge events
+        Events events = new Events();
+        fp2().eventBus().register(events); //register self to receive fp2 events
+        MinecraftForge.EVENT_BUS.register(events); //register self to receive forge events
     }
 
-    //
-    // all subsequent code can only be called if cubic chunks is present, and can therefore safely access the cubic chunks API
-    //
-
-    protected boolean isCubicWorld(IFarWorld world) {
-        return ((ICubicWorld) world.fp2_IFarWorld_implWorld()).isCubicWorld();
-    }
-
-    //forge events
-
-    @SubscribeEvent(priority = EventPriority.LOWEST)
-    public void onCubeDataSave(CubeDataEvent.Save event) {
-        ICube cube = event.getCube();
-        ((IFarWorldServer) cube.getWorld()).fp2_IFarWorldServer_eventBus().fire(new CubeSavedEvent(Vec3i.of(cube.getX(), cube.getY(), cube.getZ()), new FCube1_12_2(cube), event.getData()));
-    }
-
-    //world information providers
-
-    @FEventHandler(name = "cubicchunks_world_coordinate_limits",
-            constrain = @Constrain(before = "vanilla_world_coordinate_limits"))
-    public Optional<IntAxisAlignedBB> getCoordinateLimits(GetCoordinateLimitsEvent event) {
-        if (this.isCubicWorld(event.world())) {
-            ICubicWorld cubicWorld = (ICubicWorld) event.world().fp2_IFarWorld_implWorld();
-            int minY = cubicWorld.getMinHeight();
-            int maxY = cubicWorld.getMaxHeight() - 1;
-
-            final int HORIZONTAL_LIMIT = 30_000_000; //TODO: hard-coding this is probably a bad idea, but there don't seem to be any variables or methods i can use to get it
-            return Optional.of(new IntAxisAlignedBB(-HORIZONTAL_LIMIT, minY, -HORIZONTAL_LIMIT, HORIZONTAL_LIMIT, maxY, HORIZONTAL_LIMIT));
-        } else {
-            return Optional.empty();
+    /**
+     * Class containing events which will be registered to activate Cubic Chunks integration.
+     *
+     * @author DaPorkchop_
+     */
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
+    public static final class Events {
+        protected boolean isCubicWorld(IFarWorld world) {
+            return ((ICubicWorld) world.fp2_IFarWorld_implWorld()).isCubicWorld();
         }
-    }
 
-    @FEventHandler(name = "cubicchunks_world_exact_fblockworld",
-            constrain = @Constrain(before = "vanilla_world_exact_fblockworld"))
-    public Optional<FBlockWorld> getExactFBlockWorld(GetExactFBlockWorldEvent event) {
-        return this.isCubicWorld(event.world())
-                ? Optional.of(new CCAsyncBlockAccessImpl((WorldServer) event.world().fp2_IFarWorld_implWorld()))
-                : Optional.empty();
-    }
+        //forge events
 
-    @FEventHandler(name = "cubicchunks_world_terrain_generator",
-            constrain = @Constrain(before = "vanilla_world_terrain_generator"))
-    public Optional<Object> getTerrainGenerator(GetTerrainGeneratorEvent event) {
-        return this.isCubicWorld(event.world())
-                ? Optional.of(((ICubicWorldServer) event.world().fp2_IFarWorld_implWorld()).getCubeGenerator())
-                : Optional.empty();
-    }
+        @SubscribeEvent(priority = EventPriority.LOWEST)
+        public void onCubeDataSave(CubeDataEvent.Save event) {
+            ICube cube = event.getCube();
+            ((IFarWorldServer) cube.getWorld()).fp2_IFarWorldServer_eventBus().fire(new CubeSavedEvent(Vec3i.of(cube.getX(), cube.getY(), cube.getZ()), new FCube1_12_2(cube), event.getData()));
+        }
 
-    //exact generators
+        //world information providers
 
-    @FEventHandler(name = "cubicchunks_heightmap_generator_exact",
-            constrain = @Constrain(before = "vanilla_heightmap_generator_exact"))
-    public Optional<IFarGeneratorExact<HeightmapPos, HeightmapTile>> createHeightmapGeneratorExact(IFarGeneratorExact.CreationEvent<HeightmapPos, HeightmapTile> event) {
-        return this.isCubicWorld(event.world())
-                ? Optional.of(new CCHeightmapGenerator(event.world()))
-                : Optional.empty();
-    }
+        @FEventHandler(name = "cubicchunks_world_coordinate_limits",
+                constrain = @Constrain(before = "vanilla_world_coordinate_limits"))
+        public Optional<IntAxisAlignedBB> getCoordinateLimits(GetCoordinateLimitsEvent event) {
+            if (this.isCubicWorld(event.world())) {
+                ICubicWorld cubicWorld = (ICubicWorld) event.world().fp2_IFarWorld_implWorld();
+                int minY = cubicWorld.getMinHeight();
+                int maxY = cubicWorld.getMaxHeight() - 1;
 
-    @FEventHandler(name = "cubicchunks_voxel_generator_exact",
-            constrain = @Constrain(before = "vanilla_voxel_generator_exact"))
-    public Optional<IFarGeneratorExact<VoxelPos, VoxelTile>> createVoxelGeneratorExact(IFarGeneratorExact.CreationEvent<VoxelPos, VoxelTile> event) {
-        return this.isCubicWorld(event.world())
-                ? Optional.of(new CCVoxelGenerator(event.world()))
-                : Optional.empty();
-    }
+                final int HORIZONTAL_LIMIT = 30_000_000; //TODO: hard-coding this is probably a bad idea, but there don't seem to be any variables or methods i can use to get it
+                return Optional.of(new IntAxisAlignedBB(-HORIZONTAL_LIMIT, minY, -HORIZONTAL_LIMIT, HORIZONTAL_LIMIT, maxY, HORIZONTAL_LIMIT));
+            } else {
+                return Optional.empty();
+            }
+        }
 
-    //tile providers
+        @FEventHandler(name = "cubicchunks_world_exact_fblockworld",
+                constrain = @Constrain(before = "vanilla_world_exact_fblockworld"))
+        public Optional<FBlockWorld> getExactFBlockWorld(GetExactFBlockWorldEvent event) {
+            return this.isCubicWorld(event.world())
+                    ? Optional.of(new CCAsyncBlockAccessImpl((WorldServer) event.world().fp2_IFarWorld_implWorld()))
+                    : Optional.empty();
+        }
 
-    @FEventHandler(name = "cubicchunks_heightmap_tileprovider",
-            constrain = @Constrain(before = "vanilla_heightmap_tileprovider"))
-    public Optional<IFarTileProvider<HeightmapPos, HeightmapTile>> createHeightmapTileProvider(IFarTileProvider.CreationEvent<HeightmapPos, HeightmapTile> event) {
-        return this.isCubicWorld(event.world())
-                ? Optional.of(new HeightmapTileProvider.CubicChunks(event.world(), event.mode()))
-                : Optional.empty();
-    }
+        @FEventHandler(name = "cubicchunks_world_terrain_generator",
+                constrain = @Constrain(before = "vanilla_world_terrain_generator"))
+        public Optional<Object> getTerrainGenerator(GetTerrainGeneratorEvent event) {
+            return this.isCubicWorld(event.world())
+                    ? Optional.of(((ICubicWorldServer) event.world().fp2_IFarWorld_implWorld()).getCubeGenerator())
+                    : Optional.empty();
+        }
 
-    @FEventHandler(name = "cubicchunks_voxel_tileprovider",
-            constrain = @Constrain(before = "vanilla_voxel_tileprovider"))
-    public Optional<IFarTileProvider<VoxelPos, VoxelTile>> createVoxelTileProvider(IFarTileProvider.CreationEvent<VoxelPos, VoxelTile> event) {
-        return this.isCubicWorld(event.world())
-                ? Optional.of(new VoxelTileProvider.CubicChunks(event.world(), event.mode()))
-                : Optional.empty();
+        //exact generators
+
+        @FEventHandler(name = "cubicchunks_heightmap_generator_exact",
+                constrain = @Constrain(before = "vanilla_heightmap_generator_exact"))
+        public Optional<IFarGeneratorExact<HeightmapPos, HeightmapTile>> createHeightmapGeneratorExact(IFarGeneratorExact.CreationEvent<HeightmapPos, HeightmapTile> event) {
+            return this.isCubicWorld(event.world())
+                    ? Optional.of(new CCHeightmapGenerator(event.world()))
+                    : Optional.empty();
+        }
+
+        @FEventHandler(name = "cubicchunks_voxel_generator_exact",
+                constrain = @Constrain(before = "vanilla_voxel_generator_exact"))
+        public Optional<IFarGeneratorExact<VoxelPos, VoxelTile>> createVoxelGeneratorExact(IFarGeneratorExact.CreationEvent<VoxelPos, VoxelTile> event) {
+            return this.isCubicWorld(event.world())
+                    ? Optional.of(new CCVoxelGenerator(event.world()))
+                    : Optional.empty();
+        }
+
+        //tile providers
+
+        @FEventHandler(name = "cubicchunks_heightmap_tileprovider",
+                constrain = @Constrain(before = "vanilla_heightmap_tileprovider"))
+        public Optional<IFarTileProvider<HeightmapPos, HeightmapTile>> createHeightmapTileProvider(IFarTileProvider.CreationEvent<HeightmapPos, HeightmapTile> event) {
+            return this.isCubicWorld(event.world())
+                    ? Optional.of(new HeightmapTileProvider.CubicChunks(event.world(), event.mode()))
+                    : Optional.empty();
+        }
+
+        @FEventHandler(name = "cubicchunks_voxel_tileprovider",
+                constrain = @Constrain(before = "vanilla_voxel_tileprovider"))
+        public Optional<IFarTileProvider<VoxelPos, VoxelTile>> createVoxelTileProvider(IFarTileProvider.CreationEvent<VoxelPos, VoxelTile> event) {
+            return this.isCubicWorld(event.world())
+                    ? Optional.of(new VoxelTileProvider.CubicChunks(event.world(), event.mode()))
+                    : Optional.empty();
+        }
     }
 }
