@@ -28,12 +28,16 @@ import lombok.With;
  * @author DaPorkchop_
  */
 @Data
-public final class GLSLVectorType implements GLSLType {
+public final class GLSLVectorType implements GLSLBasicType {
     @With
     @NonNull
     private final GLSLPrimitiveType primitive;
 
     private final int components;
+
+    public GLSLBasicType withComponents(int components) {
+        return GLSLTypeUtil.vec(this.primitive, components);
+    }
 
     @Override
     public String declaration(@NonNull String fieldName) {
@@ -43,5 +47,11 @@ public final class GLSLVectorType implements GLSLType {
     @Override
     public int requiredVertexAttributeSlots() {
         return 1;
+    }
+
+    @Override
+    public GLSLVectorType ensureValid() {
+        GLSLBasicType.super.ensureValid();
+        return this;
     }
 }

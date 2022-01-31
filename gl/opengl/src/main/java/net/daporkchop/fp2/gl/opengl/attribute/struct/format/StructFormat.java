@@ -24,6 +24,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.StructLayout;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLType;
 
 import java.util.List;
 
@@ -35,7 +36,7 @@ public abstract class StructFormat<S, L extends StructLayout<?, ?>> {
     protected final String layoutName;
 
     protected final String structName;
-    protected final List<GLSLField> glslFields;
+    protected final List<GLSLField<?>> glslFields;
 
     public StructFormat(@NonNull L layout) {
         this.layoutName = layout.layoutName();

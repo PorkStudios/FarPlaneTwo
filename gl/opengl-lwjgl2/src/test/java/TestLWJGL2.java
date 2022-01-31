@@ -25,12 +25,13 @@ import lombok.SneakyThrows;
 import net.daporkchop.fp2.common.util.Identifier;
 import net.daporkchop.fp2.common.util.exception.ResourceNotFoundException;
 import net.daporkchop.fp2.gl.GL;
-import net.daporkchop.fp2.gl.attribute.Attribute;
+import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
 import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.attribute.AttributeWriter;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
+import net.daporkchop.fp2.gl.attribute.annotation.Transform;
 import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureWriter2D;
@@ -317,7 +318,9 @@ public class TestLWJGL2 {
         public final byte scaleX;
         public final byte scaleY;
 
-        @Attribute(transform = Attribute.Transformation.ARRAY_TO_VECTOR, convert = Attribute.Conversion.TO_NORMALIZED_FLOAT, vectorDimension = @Attribute.VectorDimension(components = 3))
+        @Attribute(
+                transform = @Transform(value = Transform.Type.ARRAY_TO_VECTOR, vectorComponents = 3),
+                convert = Attribute.Conversion.TO_NORMALIZED_FLOAT)
         public final byte[] bytesAsVector = new byte[3];
 
         //@Attribute public final float[] array = new float[8];
@@ -337,7 +340,9 @@ public class TestLWJGL2 {
         public final byte offsetX;
         public final byte offsetY;
 
-        @Attribute(transform = Attribute.Transformation.INT_ARGB8_TO_BYTE_VECTOR_RGBA, convert = Attribute.Conversion.TO_NORMALIZED_FLOAT)
+        @Attribute(
+                transform = @Transform(Transform.Type.INT_ARGB8_TO_BYTE_VECTOR_RGBA),
+                convert = Attribute.Conversion.TO_NORMALIZED_FLOAT)
         public final int color;
     }
 
@@ -350,7 +355,9 @@ public class TestLWJGL2 {
 
     @Data
     public static class TextureAttribs {
-        @Attribute(transform = Attribute.Transformation.INT_ARGB8_TO_BYTE_VECTOR_RGBA, convert = Attribute.Conversion.TO_NORMALIZED_FLOAT)
+        @Attribute(
+                transform = @Transform(Transform.Type.INT_ARGB8_TO_BYTE_VECTOR_RGBA),
+                convert = Attribute.Conversion.TO_NORMALIZED_FLOAT)
         public final int colorFactor;
     }
 

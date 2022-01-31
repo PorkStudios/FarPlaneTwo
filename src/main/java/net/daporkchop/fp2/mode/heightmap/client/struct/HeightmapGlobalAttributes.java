@@ -22,7 +22,7 @@ package net.daporkchop.fp2.mode.heightmap.client.struct;
 
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
-import net.daporkchop.fp2.gl.attribute.Attribute;
+import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
 
 /**
  * @author DaPorkchop_

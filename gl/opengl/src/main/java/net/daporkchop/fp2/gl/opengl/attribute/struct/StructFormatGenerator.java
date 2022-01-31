@@ -30,11 +30,14 @@ import net.daporkchop.fp2.gl.opengl.OpenGLConstants;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.StructFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.TextureStructFormat;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.info.StructInfo;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.InterleavedStructLayout;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.StructLayout;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.TextureStructLayout;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLBasicType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLMatrixType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLPrimitiveType;
+import net.daporkchop.lib.unsafe.PUnsafe;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
@@ -122,13 +125,13 @@ public class StructFormatGenerator {
         { //void copy(Object srcBase, long srcOffset, Object dstBase, long dstOffset)
             MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "copy", "(Ljava/lang/Object;JLjava/lang/Object;J)V", null, null);
 
-            //copy each member type
-            List<? extends StructMember<?>> members = layout.structInfo().members();
-            for (int i = 0; i < members.size(); i++) {
-                StructMember<?> member = members.get(i);
-                StructMember.Stage stage = layout.unpacked() ? member.unpackedStage : member.packedStage;
-                member.copyStageOutput(mv, stage, 1, 2, 4, 5, 7, layout.members()[i]);
-            }
+            //TODO: automatically generated memcpy sequence
+            mv.visitVarInsn(ALOAD, 1);
+            mv.visitVarInsn(LLOAD, 2);
+            mv.visitVarInsn(ALOAD, 4);
+            mv.visitVarInsn(LLOAD, 5);
+            mv.visitLdcInsn(layout.stride());
+            mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "copyMemory", getMethodDescriptor(VOID_TYPE, getType(Object.class), LONG_TYPE, getType(Object.class), LONG_TYPE, LONG_TYPE), false);
 
             mv.visitInsn(RETURN);
 
@@ -312,7 +315,7 @@ public class StructFormatGenerator {
                 mv.visitInsn(ISHR);
                 mv.visitLdcInsn(0xFF);
                 mv.visitInsn(IAND);
-                if (stage.glslType().primitive() == GLSLPrimitiveType.FLOAT) {
+                if (((GLSLBasicType) stage.glslType()).primitive() == GLSLPrimitiveType.FLOAT) {
                     mv.visitInsn(I2F);
                     if (stage.isNormalizedFloat()) {
                         mv.visitLdcInsn(1.0f / 256.0f);

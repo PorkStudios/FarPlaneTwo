@@ -23,10 +23,13 @@ package net.daporkchop.fp2.gl.opengl.attribute.struct;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.gl.attribute.Attribute;
+import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
+import net.daporkchop.fp2.gl.attribute.annotation.Transform;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.InterleavedStructLayout;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLBasicType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLPrimitiveType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLType;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLTypeUtil;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.primitive.lambda.IntIntConsumer;
 import org.objectweb.asm.Label;
@@ -45,6 +48,7 @@ import static org.objectweb.asm.Type.*;
 /**
  * @author DaPorkchop_
  */
+@Getter
 public class StructMember<S> {
     //what have i done
     //dear god this is horrible
@@ -55,7 +59,6 @@ public class StructMember<S> {
     protected final Stage packedStage;
     protected final Stage unpackedStage;
 
-    @Getter
     protected final int sort;
 
     public StructMember(@NonNull Class<S> clazz, @NonNull String name, @NonNull Attribute attribute, @NonNull List<Field> fields) {
@@ -64,39 +67,36 @@ public class StructMember<S> {
         this.sort = attribute.sort();
 
         Stage packedStage;
-        switch (attribute.transform()) {
-            case UNCHANGED:
-                packedStage = new VectorInputStage(fields.toArray(new Field[0]));
-                break;
-            case INT_ARGB8_TO_BYTE_VECTOR_RGB:
-            case INT_ARGB8_TO_BYTE_VECTOR_RGBA:
-                checkArg(fields.size() == 1, "%s requires exactly one field, but got %s", attribute.transform(), fields);
-                packedStage = new IntARGB8ToByteVectorInputStage(fields.get(0), attribute.transform() == Attribute.Transformation.INT_ARGB8_TO_BYTE_VECTOR_RGBA);
-                break;
-            case ARRAY_TO_MATRIX: {
-                checkArg(fields.size() == 1, "%s requires exactly one field, but got %s", attribute.transform(), fields);
+        if (attribute.transform().length == 0) {
+            packedStage = new VectorInputStage(fields.toArray(new Field[0]));
+        } else {
+            Transform transform = attribute.transform()[0];
+            switch (transform.value()) {
+                case INT_ARGB8_TO_BYTE_VECTOR_RGB:
+                case INT_ARGB8_TO_BYTE_VECTOR_RGBA:
+                    checkArg(fields.size() == 1, "%s requires exactly one field, but got %s", attribute.transform(), fields);
+                    packedStage = new IntARGB8ToByteVectorInputStage(fields.get(0), transform.value() == Transform.Type.INT_ARGB8_TO_BYTE_VECTOR_RGBA);
+                    break;
+                case ARRAY_TO_MATRIX: {
+                    checkArg(fields.size() == 1, "%s requires exactly one field, but got %s", attribute.transform(), fields);
 
-                Attribute.MatrixDimension matrixDimension = attribute.matrixDimension();
-                @SuppressWarnings("deprecation")
-                boolean _default = matrixDimension._default();
-                checkArg(!_default, "matrixDimension must be set!");
+                    checkArg(transform.matrixCols() >= 0, "matrixCols must be set!");
+                    checkArg(transform.matrixRows() >= 0, "matrixRows must be set!");
 
-                packedStage = new MatrixInputStage(fields.get(0), matrixDimension.columns(), matrixDimension.rows());
-                break;
+                    packedStage = new MatrixInputStage(fields.get(0), transform.matrixCols(), transform.matrixRows());
+                    break;
+                }
+                case ARRAY_TO_VECTOR: {
+                    checkArg(fields.size() == 1, "%s requires exactly one field, but got %s", attribute.transform(), fields);
+
+                    checkArg(transform.vectorComponents() >= 0, "vectorComponents must be set!");
+
+                    packedStage = new VectorFromArrayInputStage(fields.get(0), transform.vectorComponents());
+                    break;
+                }
+                default:
+                    throw new UnsupportedOperationException(attribute.transform().toString());
             }
-            case ARRAY_TO_VECTOR: {
-                checkArg(fields.size() == 1, "%s requires exactly one field, but got %s", attribute.transform(), fields);
-
-                Attribute.VectorDimension vectorDimension = attribute.vectorDimension();
-                @SuppressWarnings("deprecation")
-                boolean _default = vectorDimension._default();
-                checkArg(!_default, "vectorDimension must be set!");
-
-                packedStage = new VectorFromArrayInputStage(fields.get(0), vectorDimension.components());
-                break;
-            }
-            default:
-                throw new UnsupportedOperationException(attribute.transform().toString());
         }
 
         Stage prevStage = packedStage;
@@ -461,7 +461,7 @@ public class StructMember<S> {
     /**
      * @author DaPorkchop_
      */
-    protected interface Stage {
+    public interface Stage {
         ComponentType componentType();
 
         int components();
@@ -525,7 +525,7 @@ public class StructMember<S> {
 
         @Override
         public GLSLType glslType() {
-            return GLSLType.vec(this.componentType.glslPrimitive(), this.components());
+            return GLSLTypeUtil.vec(this.componentType.glslPrimitive(), this.components());
         }
 
         @Override
@@ -573,7 +573,7 @@ public class StructMember<S> {
 
         @Override
         public GLSLType glslType() {
-            return GLSLType.vec(GLSLPrimitiveType.UINT, this.components());
+            return GLSLTypeUtil.vec(GLSLPrimitiveType.UINT, this.components());
         }
 
         @Override
@@ -626,7 +626,7 @@ public class StructMember<S> {
 
         @Override
         public GLSLType glslType() {
-            return GLSLType.mat(this.componentType.glslPrimitive(), this.columns, this.rows);
+            return GLSLTypeUtil.mat(this.componentType.glslPrimitive(), this.columns, this.rows);
         }
 
         @Override
@@ -690,7 +690,7 @@ public class StructMember<S> {
 
         @Override
         public GLSLType glslType() {
-            return GLSLType.vec(this.componentType.glslPrimitive(), this.components);
+            return GLSLTypeUtil.vec(this.componentType.glslPrimitive(), this.components);
         }
 
         @Override
@@ -757,7 +757,7 @@ public class StructMember<S> {
 
         @Override
         public GLSLType glslType() {
-            return this.prev.glslType().withPrimitive(this.componentType().glslPrimitive());
+            return ((GLSLBasicType) this.prev.glslType()).withPrimitive(this.componentType().glslPrimitive());
         }
 
         @Override

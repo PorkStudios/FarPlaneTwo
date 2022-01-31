@@ -22,6 +22,7 @@ package net.daporkchop.fp2.gl.opengl.attribute.struct;
 
 import lombok.Data;
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.info.StructInfo;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.InterleavedStructLayout;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLMatrixType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLPrimitiveType;
@@ -89,11 +90,11 @@ public enum GLSLBlockMemoryLayout {
 
         @Override
         public <S> InterleavedStructLayout layout(@NonNull StructInfo<S> structInfo) {
-            int memberCount = structInfo.members.size();
+            int memberCount = structInfo.members().size();
             long[] memberOffsets = new long[memberCount];
             long[][] memberComponentOffsets = new long[memberCount][];
 
-            GLSLType[] types = structInfo.members.stream()
+            GLSLType[] types = structInfo.members().stream()
                     .map(member -> member.unpackedStage.glslType())
                     .toArray(GLSLType[]::new);
 

@@ -26,6 +26,7 @@ import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLType;
 
 import java.util.stream.Stream;
 
@@ -58,8 +59,8 @@ public final class LayoutEntry<F extends BaseAttributeFormatImpl<?>> {
         return this.prefix + this.format.rawName() + this.suffix;
     }
 
-    public Stream<GLSLField> attributeFields() {
+    public Stream<GLSLField<?>> attributeFields() {
         return this.format.rawAttributeFields().stream()
-                .map(field -> new GLSLField(field.type(), this.prefix + field.name() + this.suffix));
+                .map(field -> new GLSLField<>(field.type(), this.prefix + field.name() + this.suffix));
     }
 }

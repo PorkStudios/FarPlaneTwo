@@ -29,6 +29,7 @@ import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLType;
 import net.daporkchop.fp2.gl.opengl.layout.LayoutEntry;
 
 import java.util.List;
@@ -49,5 +50,5 @@ public abstract class BaseAttributeFormatImpl<F extends BaseAttributeFormatImpl<
 
     public abstract String rawName();
 
-    public abstract List<GLSLField> rawAttributeFields();
+    public abstract List<GLSLField<?>> rawAttributeFields();
 }

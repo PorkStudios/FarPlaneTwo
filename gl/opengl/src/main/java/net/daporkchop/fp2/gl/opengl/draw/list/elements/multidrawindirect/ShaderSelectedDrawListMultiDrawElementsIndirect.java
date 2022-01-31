@@ -23,7 +23,7 @@ package net.daporkchop.fp2.gl.opengl.draw.list.elements.multidrawindirect;
 import lombok.Data;
 import lombok.NonNull;
 import net.daporkchop.fp2.common.util.Identifier;
-import net.daporkchop.fp2.gl.attribute.Attribute;
+import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;

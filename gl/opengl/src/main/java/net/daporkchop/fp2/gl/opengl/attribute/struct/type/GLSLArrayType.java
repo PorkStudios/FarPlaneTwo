@@ -18,44 +18,48 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.common;
+package net.daporkchop.fp2.gl.opengl.attribute.struct.type;
 
-import lombok.Getter;
+import lombok.Data;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.AttributeFormat;
-import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
+import lombok.With;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.format.StructFormat;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLType;
 
-import java.util.List;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
-@Getter
-public abstract class AttributeFormatImpl<F extends AttributeFormatImpl<F, S, SF>, S, SF extends StructFormat<S, ?>> extends BaseAttributeFormatImpl<F> implements AttributeFormat<S> {
-    private final SF structFormat;
+@Data
+@With
+public final class GLSLArrayType implements GLSLType {
+    @NonNull
+    private final GLSLType elementType;
+    private final int size;
 
-    public AttributeFormatImpl(@NonNull OpenGL gl, @NonNull SF structFormat) {
-        super(gl);
-
-        this.structFormat = structFormat;
+    public GLSLArrayType(@NonNull GLSLType elementType, int size) {
+        this.elementType = elementType;
+        this.size = positive(size, "size");
     }
 
     @Override
-    public long size() {
-        return this.structFormat.totalSize();
+    public String declaration(@NonNull String fieldName) {
+        return this.elementType.declaration(fieldName + '[' + this.size + ']');
     }
 
     @Override
-    public String rawName() {
-        return this.structFormat.structName();
+    public GLSLArrayType ensureValid() {
+        this.elementType.ensureValid();
+        return this;
     }
 
     @Override
-    public List<GLSLField<?>> rawAttributeFields() {
-        return this.structFormat.glslFields();
+    public Stream<GLSLField<? extends GLSLBasicType>> basicFields(@NonNull String name) {
+        return IntStream.range(0, this.size)
+                .mapToObj(i -> name + '[' + i + ']')
+                .flatMap(this.elementType::basicFields);
     }
 }

@@ -26,6 +26,7 @@ import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLType;
 import net.daporkchop.fp2.gl.opengl.command.state.MutableState;
 import net.daporkchop.fp2.gl.opengl.command.state.StateProperties;
 import net.daporkchop.fp2.gl.opengl.layout.LayoutEntry;
@@ -76,7 +77,7 @@ public class TextureBindingLocation<S, B extends BaseTextureImpl<?, S>> implemen
 
     @Override
     public void generateGLSL(@NonNull ShaderType type, @NonNull StringBuilder builder) {
-        GLSLField field = this.layout.attributeFields().findFirst().get();
+        GLSLField<?> field = this.layout.attributeFields().findFirst().get();
         builder.append("uniform ").append(this.target.glslSamplerName()).append(" sampler_").append(field.name()).append(";\n");
 
         builder.append(field.declaration()).append("(in vec").append(this.target.coordVectorComponents()).append(" coord) {\n");

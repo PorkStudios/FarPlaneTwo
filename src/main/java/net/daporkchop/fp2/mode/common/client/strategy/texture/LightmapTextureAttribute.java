@@ -20,12 +20,13 @@
 
 package net.daporkchop.fp2.mode.common.client.strategy.texture;
 
-import net.daporkchop.fp2.gl.attribute.Attribute;
+import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
+import net.daporkchop.fp2.gl.attribute.annotation.Transform;
 
 /**
  * @author DaPorkchop_
  */
 public class LightmapTextureAttribute {
-    @Attribute(transform = Attribute.Transformation.INT_ARGB8_TO_BYTE_VECTOR_RGBA, convert = Attribute.Conversion.TO_NORMALIZED_FLOAT)
+    @Attribute(transform = Transform.Type.INT_ARGB8_TO_BYTE_VECTOR_RGBA, convert = Attribute.Conversion.TO_NORMALIZED_FLOAT)
     public final int lightmap = 0;
 }

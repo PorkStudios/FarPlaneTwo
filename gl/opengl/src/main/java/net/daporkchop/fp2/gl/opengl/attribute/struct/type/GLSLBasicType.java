@@ -18,44 +18,33 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.common;
+package net.daporkchop.fp2.gl.opengl.attribute.struct.type;
 
-import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.AttributeFormat;
-import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.format.StructFormat;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLType;
 
-import java.util.List;
+import java.util.stream.Stream;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
-@Getter
-public abstract class AttributeFormatImpl<F extends AttributeFormatImpl<F, S, SF>, S, SF extends StructFormat<S, ?>> extends BaseAttributeFormatImpl<F> implements AttributeFormat<S> {
-    private final SF structFormat;
+public interface GLSLBasicType extends GLSLType {
+    GLSLPrimitiveType primitive();
 
-    public AttributeFormatImpl(@NonNull OpenGL gl, @NonNull SF structFormat) {
-        super(gl);
+    GLSLBasicType withPrimitive(@NonNull GLSLPrimitiveType primitive);
 
-        this.structFormat = structFormat;
+    int requiredVertexAttributeSlots();
+
+    @Override
+    default GLSLBasicType ensureValid() {
+        checkArg(this.primitive() != GLSLPrimitiveType.INVALID, "invalid type: %s", this);
+        return this;
     }
 
     @Override
-    public long size() {
-        return this.structFormat.totalSize();
-    }
-
-    @Override
-    public String rawName() {
-        return this.structFormat.structName();
-    }
-
-    @Override
-    public List<GLSLField<?>> rawAttributeFields() {
-        return this.structFormat.glslFields();
+    default Stream<GLSLField<? extends GLSLBasicType>> basicFields(@NonNull String name) {
+        return Stream.of(new GLSLField<>(this, name));
     }
 }

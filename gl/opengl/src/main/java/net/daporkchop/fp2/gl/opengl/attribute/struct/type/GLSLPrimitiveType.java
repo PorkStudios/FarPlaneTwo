@@ -33,7 +33,7 @@ import static net.daporkchop.fp2.common.util.TypeSize.*;
  */
 @RequiredArgsConstructor
 @Getter
-public enum GLSLPrimitiveType implements GLSLType {
+public enum GLSLPrimitiveType implements GLSLBasicType {
     INVALID("<invalid>", -1) {
         @Override
         public String typePrefix() {
@@ -70,12 +70,23 @@ public enum GLSLPrimitiveType implements GLSLType {
     }
 
     @Override
-    public GLSLType withPrimitive(@NonNull GLSLPrimitiveType primitive) {
+    public GLSLPrimitiveType withPrimitive(@NonNull GLSLPrimitiveType primitive) {
         return primitive;
     }
 
     @Override
     public int requiredVertexAttributeSlots() {
         return 1;
+    }
+
+    @Override
+    public GLSLPrimitiveType ensureValid() {
+        GLSLBasicType.super.ensureValid();
+        return this;
+    }
+
+    @Override
+    public GLSLType intern() {
+        return this;
     }
 }

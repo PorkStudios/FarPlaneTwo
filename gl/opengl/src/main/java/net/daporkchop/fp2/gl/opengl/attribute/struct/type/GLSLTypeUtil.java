@@ -18,44 +18,42 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.common;
+package net.daporkchop.fp2.gl.opengl.attribute.struct.type;
 
-import lombok.Getter;
+import com.google.common.collect.Interner;
+import com.google.common.collect.Interners;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.AttributeFormat;
-import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.format.StructFormat;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLType;
+import lombok.experimental.UtilityClass;
 
-import java.util.List;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
-@Getter
-public abstract class AttributeFormatImpl<F extends AttributeFormatImpl<F, S, SF>, S, SF extends StructFormat<S, ?>> extends BaseAttributeFormatImpl<F> implements AttributeFormat<S> {
-    private final SF structFormat;
+@UtilityClass
+public class GLSLTypeUtil {
+    @SuppressWarnings("UnstableApiUsage")
+    static final Interner<GLSLType> GLSL_TYPE_INTERNER = Interners.newWeakInterner();
 
-    public AttributeFormatImpl(@NonNull OpenGL gl, @NonNull SF structFormat) {
-        super(gl);
-
-        this.structFormat = structFormat;
+    public static GLSLBasicType vec(@NonNull GLSLPrimitiveType primitive, int components) {
+        switch (components) {
+            case 1:
+                return primitive;
+            case 2:
+            case 3:
+            case 4:
+                return new GLSLVectorType(primitive, components);
+            default:
+                throw new IllegalArgumentException("cannot create vector with " + components + " components");
+        }
     }
 
-    @Override
-    public long size() {
-        return this.structFormat.totalSize();
+    public static GLSLMatrixType mat(@NonNull GLSLPrimitiveType primitive, int columns, int rows) {
+        checkArg(columns >= 2 && columns <= 4 && rows >= 2 && rows <= 4, "cannot create %dx%d matrix", columns, rows);
+        return new GLSLMatrixType(primitive, columns, rows);
     }
 
-    @Override
-    public String rawName() {
-        return this.structFormat.structName();
-    }
-
-    @Override
-    public List<GLSLField<?>> rawAttributeFields() {
-        return this.structFormat.glslFields();
+    public static GLSLArrayType array(@NonNull GLSLType elementType, int length) {
+        return new GLSLArrayType(elementType, length);
     }
 }

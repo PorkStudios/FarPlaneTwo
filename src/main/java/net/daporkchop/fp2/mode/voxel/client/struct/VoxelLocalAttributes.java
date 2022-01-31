@@ -22,7 +22,8 @@ package net.daporkchop.fp2.mode.voxel.client.struct;
 
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
-import net.daporkchop.fp2.gl.attribute.Attribute;
+import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
+import net.daporkchop.fp2.gl.attribute.annotation.Transform;
 
 /**
  * @author DaPorkchop_
@@ -40,7 +41,7 @@ public class VoxelLocalAttributes {
     public byte lightSky;
 
     @Attribute(
-            transform = Attribute.Transformation.INT_ARGB8_TO_BYTE_VECTOR_RGB,
+            transform = Transform.Type.INT_ARGB8_TO_BYTE_VECTOR_RGB,
             convert = Attribute.Conversion.TO_NORMALIZED_FLOAT)
     public int color;
 

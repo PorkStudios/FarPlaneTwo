@@ -23,7 +23,8 @@ package net.daporkchop.fp2.client;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.MatrixHelper;
 import net.daporkchop.fp2.common.util.DirectBufferHackery;
-import net.daporkchop.fp2.gl.attribute.Attribute;
+import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
+import net.daporkchop.fp2.gl.attribute.annotation.Transform;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
@@ -44,8 +45,8 @@ import static org.lwjgl.opengl.GL11.*;
  */
 public class GlStateUniformAttributes {
     @Attribute(
-            transform = Attribute.Transformation.ARRAY_TO_MATRIX,
-            matrixDimension = @Attribute.MatrixDimension(columns = 4, rows = 4))
+            transform = Transform.Type.ARRAY_TO_MATRIX,
+            matrixDimension = @Transform.MatrixDimension(columns = 4, rows = 4))
     public final float[] modelViewProjectionMatrix = new float[16];
 
     @Attribute(vectorAxes = { "X", "Y", "Z" })

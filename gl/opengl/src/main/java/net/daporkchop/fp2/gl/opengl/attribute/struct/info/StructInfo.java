@@ -18,18 +18,20 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.struct;
+package net.daporkchop.fp2.gl.opengl.attribute.struct.info;
 
 import com.google.common.collect.ImmutableList;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.Attribute;
+import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.StructMember;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLType;
 import net.daporkchop.lib.common.util.PorkUtil;
 
 import java.lang.reflect.Field;
-import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -105,15 +107,15 @@ public class StructInfo<S> {
         return this.clazz.getSimpleName();
     }
 
-    public List<GLSLField> memberFields() {
+    public List<GLSLField<?>> memberFields() {
         return this.members.stream()
-                .map(member -> new GLSLField(member.unpackedStage.glslType(), member.name))
+                .map(member -> new GLSLField<>(member.unpackedStage().glslType(), member.name()))
                 .collect(Collectors.collectingAndThen(Collectors.toList(), ImmutableList::copyOf));
     }
 
     public void glslStructDefinition(@NonNull StringBuilder builder) {
         builder.append("struct ").append(this.clazz.getSimpleName()).append(" {\n");
-        this.members.forEach(member -> builder.append("    ").append(member.unpackedStage.glslType().declaration(member.name)).append(";\n"));
+        this.members.forEach(member -> builder.append("    ").append(member.unpackedStage().glslType().declaration(member.name())).append(";\n"));
         builder.append("};\n");
     }
 }
