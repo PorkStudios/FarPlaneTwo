@@ -318,10 +318,10 @@ public class TestLWJGL2 {
         public final byte scaleX;
         public final byte scaleY;
 
-        @Attribute(
+        /*@Attribute(
                 transform = @Transform(value = Transform.Type.ARRAY_TO_VECTOR, vectorComponents = 3),
                 convert = Attribute.Conversion.TO_NORMALIZED_FLOAT)
-        public final byte[] bytesAsVector = new byte[3];
+        public final byte[] bytesAsVector = new byte[3];*/
 
         //@Attribute public final float[] array = new float[8];
     }

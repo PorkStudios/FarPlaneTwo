@@ -29,7 +29,7 @@ import java.lang.annotation.Target;
  * @author DaPorkchop_
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.FIELD})
+@Target({ ElementType.FIELD })
 public @interface Attribute {
     int sort() default 0;
 
@@ -47,6 +47,8 @@ public @interface Attribute {
     enum Conversion {
         /**
          * The source value is a 2's compliment signed integer, and is re-interpreted as an unsigned integer.
+         * <p>
+         * If used, this conversion must be the first element in {@link #convert()}.
          */
         TO_UNSIGNED,
         /**

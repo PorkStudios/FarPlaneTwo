@@ -18,49 +18,47 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.struct.layout;
+package net.daporkchop.fp2.gl.opengl.attribute.struct.info.property.convert;
 
-import lombok.Data;
 import lombok.NonNull;
-import lombok.experimental.SuperBuilder;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.info.StructInfo;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.info.property.StructProperty;
+import org.objectweb.asm.MethodVisitor;
+
+import static org.objectweb.asm.Opcodes.*;
 
 /**
  * @author DaPorkchop_
  */
-@SuperBuilder
-@Data
-public abstract class StructLayout<M extends StructLayout.Member<M, C>, C extends StructLayout.Component> {
-    private final StructInfo<?> structInfo;
-    private final String layoutName;
-
-    private final boolean unpacked;
-
-    @NonNull
-    private final M[] members;
-
-    public StructProperty structProperty() {
-        return this.unpacked() ? this.structInfo().unpackedProperty() : this.structInfo().packedProperty();
+public class IntegerToNormalizedFloatConversionProperty extends IntegerToFloatConversionProperty {
+    public IntegerToNormalizedFloatConversionProperty(@NonNull Components parent) {
+        super(parent);
     }
 
-    /**
-     * @author DaPorkchop_
-     */
-    public interface Member<M extends Member<M, C>, C extends Component> {
-        int components();
+    @Override
+    protected void convert(@NonNull MethodVisitor mv) {
+        super.convert(mv);
 
-        C component(int componentIndex);
-
-        int children();
-
-        M child(int childIndex);
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    public interface Component {
-        long offset();
+        switch (this.parent().componentType()) {
+            case UNSIGNED_BYTE:
+                mv.visitLdcInsn(1.0f / 0xFF);
+                break;
+            case BYTE:
+                mv.visitLdcInsn(1.0f / 0x80);
+                break;
+            case UNSIGNED_SHORT:
+                mv.visitLdcInsn(1.0f / 0xFFFF);
+                break;
+            case SHORT:
+                mv.visitLdcInsn(1.0f / 0x8000);
+                break;
+            case UNSIGNED_INT:
+                mv.visitLdcInsn(1.0f / 0xFFFFFFFFL);
+                break;
+            case INT:
+                mv.visitLdcInsn(1.0f / 0x80000000L);
+                break;
+            default:
+                throw new IllegalArgumentException("unknown component type: " + this.parent().componentType());
+        }
+        mv.visitInsn(FMUL);
     }
 }

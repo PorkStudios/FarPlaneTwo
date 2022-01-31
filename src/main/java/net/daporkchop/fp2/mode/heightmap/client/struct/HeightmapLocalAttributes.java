@@ -41,7 +41,7 @@ public class HeightmapLocalAttributes {
     public byte lightSky;
 
     @Attribute(
-            transform = Transform.Type.INT_ARGB8_TO_BYTE_VECTOR_RGB,
+            transform = @Transform(Transform.Type.INT_ARGB8_TO_BYTE_VECTOR_RGB),
             convert = Attribute.Conversion.TO_NORMALIZED_FLOAT)
     public int color;
 

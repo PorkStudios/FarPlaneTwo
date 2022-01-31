@@ -41,6 +41,10 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 public class InterleavedStructLayout extends StructLayout<InterleavedStructLayout.Member, InterleavedStructLayout.Component> {
     private final long stride;
 
+    public NestedMember member() {
+        return new NestedMember(this.members());
+    }
+
     /**
      * @author DaPorkchop_
      */

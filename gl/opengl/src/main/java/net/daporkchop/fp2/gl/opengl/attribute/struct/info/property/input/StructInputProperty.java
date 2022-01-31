@@ -18,49 +18,35 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.struct.layout;
+package net.daporkchop.fp2.gl.opengl.attribute.struct.info.property.input;
 
-import lombok.Data;
+import lombok.Getter;
 import lombok.NonNull;
-import lombok.experimental.SuperBuilder;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.info.StructInfo;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.info.property.StructProperty;
+import org.objectweb.asm.MethodVisitor;
 
 /**
  * @author DaPorkchop_
  */
-@SuperBuilder
-@Data
-public abstract class StructLayout<M extends StructLayout.Member<M, C>, C extends StructLayout.Component> {
-    private final StructInfo<?> structInfo;
-    private final String layoutName;
-
-    private final boolean unpacked;
-
+@RequiredArgsConstructor
+@Getter
+public class StructInputProperty implements StructProperty.Elements {
     @NonNull
-    private final M[] members;
+    private final StructProperty[] properties;
 
-    public StructProperty structProperty() {
-        return this.unpacked() ? this.structInfo().unpackedProperty() : this.structInfo().packedProperty();
+    @Override
+    public int elements() {
+        return this.properties.length;
     }
 
-    /**
-     * @author DaPorkchop_
-     */
-    public interface Member<M extends Member<M, C>, C extends Component> {
-        int components();
-
-        C component(int componentIndex);
-
-        int children();
-
-        M child(int childIndex);
+    @Override
+    public StructProperty element(int elementIndex) {
+        return this.properties[elementIndex];
     }
 
-    /**
-     * @author DaPorkchop_
-     */
-    public interface Component {
-        long offset();
+    @Override
+    public void load(@NonNull MethodVisitor mv, int structLvtIndex, int lvtIndexAllocator, @NonNull LoadCallback callback) {
+        callback.accept(structLvtIndex, lvtIndexAllocator);
     }
 }

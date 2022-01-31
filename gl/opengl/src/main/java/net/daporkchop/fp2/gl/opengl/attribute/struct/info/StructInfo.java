@@ -28,6 +28,8 @@ import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.StructMember;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.info.property.StructProperty;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.info.property.StructPropertyFactory;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLType;
 import net.daporkchop.lib.common.util.PorkUtil;
 
@@ -51,7 +53,11 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @EqualsAndHashCode(of = "clazz")
 public class StructInfo<S> {
     protected final Class<S> clazz;
+    @Deprecated
     protected final List<StructMember<S>> members;
+
+    protected final StructProperty packedProperty;
+    protected final StructProperty unpackedProperty;
 
     @Deprecated
     public StructInfo(@NonNull AttributeFormatBuilderImpl<S> builder) {
@@ -60,6 +66,9 @@ public class StructInfo<S> {
 
     public StructInfo(@NonNull Class<S> clazz, @NonNull Map<String, String> nameOverrides) {
         this.clazz = clazz;
+        this.packedProperty = StructPropertyFactory.struct(StructPropertyFactory.Options.builder().unpacked(false).build(), clazz);
+        this.unpackedProperty = StructPropertyFactory.struct(StructPropertyFactory.Options.builder().unpacked(true).build(), clazz);
+
         nameOverrides = new HashMap<>(nameOverrides);
 
         List<StructMember<S>> memberListBuilder = new ArrayList<>();

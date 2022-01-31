@@ -31,6 +31,7 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFor
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.StructFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.TextureStructFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.info.StructInfo;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.info.property.StructProperty;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.InterleavedStructLayout;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.StructLayout;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.TextureStructLayout;
@@ -108,13 +109,7 @@ public class StructFormatGenerator {
             mv.visitTypeInsn(CHECKCAST, structName);
             mv.visitVarInsn(ASTORE, 1);
 
-            //copy each member type
-            List<? extends StructMember<?>> members = layout.structInfo().members();
-            for (int i = 0; i < members.size(); i++) {
-                StructMember<?> member = members.get(i);
-                StructMember.Stage stage = layout.unpacked() ? member.unpackedStage : member.packedStage;
-                member.storeStageOutput(mv, stage, 1, 2, 3, 5, layout.members()[i]);
-            }
+            this.copyStruct2Buf(mv, layout.structProperty(), layout.member(), 1, 2, 3, 5);
 
             mv.visitInsn(RETURN);
 
@@ -202,6 +197,40 @@ public class StructFormatGenerator {
 
         Class<InterleavedStructFormat<S>> clazz = uncheckedCast(ClassloadingUtils.defineHiddenClass(InterleavedStructFormat.class.getClassLoader(), writer.toByteArray()));
         return clazz.getConstructor(InterleavedStructLayout.class).newInstance(layout);
+    }
+
+    private void copyStruct2Buf(@NonNull MethodVisitor mv, @NonNull StructProperty property, @NonNull InterleavedStructLayout.Member member, int structLvtIndexIn, int outputBaseLvtIndex, int outputOffsetLvtIndex, int lvtIndexAllocatorIn) {
+        property.with(new StructProperty.PropertyCallback() {
+            @Override
+            public void withComponents(@NonNull StructProperty.Components componentsProperty) {
+                checkArg(componentsProperty.components() == member.components(), "stage %s has %d components, but member %s has only %d!", componentsProperty, componentsProperty.components(), member, member.components());
+
+                componentsProperty.load(mv, structLvtIndexIn, lvtIndexAllocatorIn, (structLvtIndex, lvtIndexAllocator, loader) -> {
+                    for (int componentIndex = 0; componentIndex < componentsProperty.components(); componentIndex++) {
+                        InterleavedStructLayout.Component component = member.component(componentIndex);
+
+                        mv.visitVarInsn(ALOAD, outputBaseLvtIndex);
+                        mv.visitVarInsn(LLOAD, outputOffsetLvtIndex);
+                        mv.visitLdcInsn(component.offset());
+                        mv.visitInsn(LADD);
+
+                        loader.accept(componentIndex);
+                        componentsProperty.componentType().unsafePut(mv);
+                    }
+                });
+            }
+
+            @Override
+            public void withElements(@NonNull StructProperty.Elements elementsProperty) {
+                checkArg(elementsProperty.elements() == member.children(), "stage %s has %d elements, but member %s has only %d!", elementsProperty, elementsProperty.elements(), member, member.children());
+
+                elementsProperty.load(mv, structLvtIndexIn, lvtIndexAllocatorIn, (structLvtIndex, lvtIndexAllocator) -> {
+                    for (int elementIndex = 0; elementIndex < elementsProperty.elements(); elementIndex++) {
+                        StructFormatGenerator.this.copyStruct2Buf(mv, elementsProperty.element(elementIndex), member.child(elementIndex), structLvtIndex, outputBaseLvtIndex, outputOffsetLvtIndex, lvtIndexAllocator);
+                    }
+                });
+            }
+        });
     }
 
     @SneakyThrows(ExecutionException.class)
