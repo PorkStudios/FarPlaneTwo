@@ -18,12 +18,13 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.struct.info.property.input;
+package net.daporkchop.fp2.gl.opengl.attribute.struct.property.convert;
 
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.info.property.StructProperty;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.property.ComponentType;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
 import org.objectweb.asm.MethodVisitor;
 
 /**
@@ -31,22 +32,22 @@ import org.objectweb.asm.MethodVisitor;
  */
 @RequiredArgsConstructor
 @Getter
-public class StructInputProperty implements StructProperty.Elements {
+public abstract class AbstractFakeConversionProperty implements StructProperty.Components {
     @NonNull
-    private final StructProperty[] properties;
+    private final StructProperty.Components parent;
 
     @Override
-    public int elements() {
-        return this.properties.length;
+    public int components() {
+        return this.parent.components();
     }
 
     @Override
-    public StructProperty element(int elementIndex) {
-        return this.properties[elementIndex];
+    public ComponentType componentType() {
+        return this.parent.componentType();
     }
 
     @Override
     public void load(@NonNull MethodVisitor mv, int structLvtIndex, int lvtIndexAllocator, @NonNull LoadCallback callback) {
-        callback.accept(structLvtIndex, lvtIndexAllocator);
+        this.parent.load(mv, structLvtIndex, lvtIndexAllocator, callback);
     }
 }

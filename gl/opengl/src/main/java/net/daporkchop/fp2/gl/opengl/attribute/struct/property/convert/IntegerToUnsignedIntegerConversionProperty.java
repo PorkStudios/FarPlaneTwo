@@ -18,10 +18,10 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.struct.info.property.convert;
+package net.daporkchop.fp2.gl.opengl.attribute.struct.property.convert;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.info.ComponentType;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.property.ComponentType;
 import org.objectweb.asm.MethodVisitor;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -30,36 +30,43 @@ import static org.objectweb.asm.Opcodes.*;
 /**
  * @author DaPorkchop_
  */
-public class IntegerToFloatConversionProperty extends AbstractConversionProperty {
-    public IntegerToFloatConversionProperty(@NonNull Components parent) {
+public class IntegerToUnsignedIntegerConversionProperty extends AbstractConversionProperty {
+    public IntegerToUnsignedIntegerConversionProperty(@NonNull Components parent) {
         super(parent);
 
         checkArg(parent.componentType().integer(), "not an integer type: %s", parent.componentType());
+        checkArg(parent.componentType().signed(), "not a signed type: %s", parent.componentType());
     }
 
     @Override
     public ComponentType componentType() {
-        return ComponentType.FLOAT;
+        switch (this.parent().componentType()) {
+            case BYTE:
+                return ComponentType.UNSIGNED_BYTE;
+            case SHORT:
+                return ComponentType.UNSIGNED_SHORT;
+            case INT:
+                return ComponentType.UNSIGNED_INT;
+            default:
+                throw new IllegalArgumentException("unknown component type: " + this.parent().componentType());
+        }
     }
 
     @Override
     protected void convert(@NonNull MethodVisitor mv) {
         switch (this.parent().componentType()) {
-            case UNSIGNED_BYTE:
             case BYTE:
-            case UNSIGNED_SHORT:
+                mv.visitLdcInsn(0xFF);
+                break;
             case SHORT:
+                mv.visitLdcInsn(0xFFFF);
+                break;
             case INT:
-                mv.visitInsn(I2F);
-                break;
-            case UNSIGNED_INT: //unsigned integers need special handling because java doesn't support them...
-                mv.visitInsn(I2L);
-                mv.visitLdcInsn(0xFFFFFFFFL);
-                mv.visitInsn(LAND);
-                mv.visitInsn(L2F);
-                break;
+                //we can't convert to an unsigned integer in java...
+                return;
             default:
                 throw new IllegalArgumentException("unknown component type: " + this.parent().componentType());
         }
+        mv.visitInsn(IAND);
     }
 }

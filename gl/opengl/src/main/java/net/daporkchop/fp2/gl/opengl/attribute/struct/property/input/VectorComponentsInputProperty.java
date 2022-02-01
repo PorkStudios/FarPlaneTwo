@@ -18,12 +18,12 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.struct.info.property.input;
+package net.daporkchop.fp2.gl.opengl.attribute.struct.property.input;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.info.ComponentType;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.info.property.StructProperty;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.property.ComponentType;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
 import org.objectweb.asm.MethodVisitor;
 
 import java.lang.reflect.Field;

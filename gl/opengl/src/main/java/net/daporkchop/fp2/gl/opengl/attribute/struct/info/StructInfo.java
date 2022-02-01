@@ -28,9 +28,8 @@ import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.StructMember;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.info.property.StructProperty;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.info.property.StructPropertyFactory;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLType;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructPropertyFactory;
 import net.daporkchop.lib.common.util.PorkUtil;
 
 import java.lang.reflect.Field;

@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.struct.info;
+package net.daporkchop.fp2.gl.opengl.attribute.struct.property;
 
 import lombok.Getter;
 import lombok.NonNull;

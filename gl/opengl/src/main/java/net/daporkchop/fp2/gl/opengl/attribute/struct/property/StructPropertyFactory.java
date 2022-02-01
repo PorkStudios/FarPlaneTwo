@@ -18,12 +18,11 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.struct.info.property;
+package net.daporkchop.fp2.gl.opengl.attribute.struct.property;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
-import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NonNull;
@@ -31,12 +30,12 @@ import lombok.With;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
 import net.daporkchop.fp2.gl.attribute.annotation.Transform;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.info.property.convert.IntegerToFloatConversionProperty;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.info.property.convert.IntegerToNormalizedFloatConversionProperty;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.info.property.convert.IntegerToUnsignedIntegerConversionProperty;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.info.property.input.StructInputProperty;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.info.property.input.VectorComponentsInputProperty;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.info.property.transform.IntToARGBExpansionTransformProperty;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.property.convert.IntegerToFloatConversionProperty;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.property.convert.IntegerToNormalizedFloatConversionProperty;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.property.convert.IntegerToUnsignedIntegerConversionProperty;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.property.input.StructInputProperty;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.property.input.VectorComponentsInputProperty;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.property.transform.IntToARGBExpansionTransformProperty;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -136,12 +135,16 @@ public class StructPropertyFactory {
                     break;
                 case TO_FLOAT:
                     if (options.unpacked()) {
-                        convertProperty = new IntegerToFloatConversionProperty(convertProperty);
+                        convertProperty = new IntegerToFloatConversionProperty.Real(convertProperty);
+                    } else {
+                        convertProperty = new IntegerToFloatConversionProperty.Fake(convertProperty);
                     }
                     break;
                 case TO_NORMALIZED_FLOAT:
                     if (options.unpacked()) {
-                        convertProperty = new IntegerToNormalizedFloatConversionProperty(convertProperty);
+                        convertProperty = new IntegerToNormalizedFloatConversionProperty.Real(convertProperty);
+                    } else {
+                        convertProperty = new IntegerToNormalizedFloatConversionProperty.Fake(convertProperty);
                     }
                     break;
                 default:

@@ -18,10 +18,9 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.struct.info.property;
+package net.daporkchop.fp2.gl.opengl.attribute.struct.property;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.info.ComponentType;
 import org.objectweb.asm.MethodVisitor;
 
 import java.util.Iterator;
@@ -53,6 +52,10 @@ public interface StructProperty {
         }
 
         ComponentType componentType();
+
+        default ComponentInterpretation interpretation() {
+            return new ComponentInterpretation(this.componentType(), this.componentType().integer(), false);
+        }
 
         int components();
 

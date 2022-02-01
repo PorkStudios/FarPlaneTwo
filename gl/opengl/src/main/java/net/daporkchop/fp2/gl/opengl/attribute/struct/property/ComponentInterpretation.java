@@ -18,36 +18,19 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.struct.info.property.convert;
+package net.daporkchop.fp2.gl.opengl.attribute.struct.property;
 
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.info.property.StructProperty;
-import org.objectweb.asm.MethodVisitor;
+import lombok.Data;
+import lombok.With;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-@Getter
-public abstract class AbstractConversionProperty implements StructProperty.Components {
-    @NonNull
-    private final StructProperty.Components parent;
+@Data
+@With
+public final class ComponentInterpretation {
+    private final ComponentType inputType;
 
-    @Override
-    public int components() {
-        return this.parent.components();
-    }
-
-    @Override
-    public void load(@NonNull MethodVisitor mv, int structLvtIndexIn, int lvtIndexAllocatorIn, @NonNull LoadCallback callback) {
-        this.parent.load(mv, structLvtIndexIn, lvtIndexAllocatorIn, (structLvtIndex, lvtIndexAllocator, parentLoader) ->
-                callback.accept(structLvtIndex, lvtIndexAllocator, componentIndex -> {
-                    parentLoader.accept(componentIndex);
-                    this.convert(mv);
-                }));
-    }
-
-    protected abstract void convert(@NonNull MethodVisitor mv);
+    private final boolean integer;
+    private final boolean normalized;
 }

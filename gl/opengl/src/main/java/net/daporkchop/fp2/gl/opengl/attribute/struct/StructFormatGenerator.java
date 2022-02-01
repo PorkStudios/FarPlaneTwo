@@ -31,12 +31,12 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFor
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.StructFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.TextureStructFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.info.StructInfo;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.info.property.StructProperty;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.InterleavedStructLayout;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.StructLayout;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.TextureStructLayout;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.property.ComponentInterpretation;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLBasicType;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLMatrixType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLPrimitiveType;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import org.objectweb.asm.ClassVisitor;
@@ -45,9 +45,9 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.signature.SignatureWriter;
 
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 
+import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 import static org.objectweb.asm.Opcodes.*;
@@ -99,9 +99,11 @@ public class StructFormatGenerator {
             mv.visitEnd();
         }
 
-        this.generateClone(writer, layout.structInfo());
+        //this is never actually used...
+        //this.generateClone(writer, layout.structInfo());
 
-        { //void copy(Object struct, Object dstBase, long dstOffset)
+        //void copy(Object struct, Object dstBase, long dstOffset)
+        {
             MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "copy", "(Ljava/lang/Object;Ljava/lang/Object;J)V", null, null);
 
             //make sure struct can be cast to requested type
@@ -117,16 +119,45 @@ public class StructFormatGenerator {
             mv.visitEnd();
         }
 
-        { //void copy(Object srcBase, long srcOffset, Object dstBase, long dstOffset)
+        //void copy(Object srcBase, long srcOffset, Object dstBase, long dstOffset)
+        {
             MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "copy", "(Ljava/lang/Object;JLjava/lang/Object;J)V", null, null);
 
-            //TODO: automatically generated memcpy sequence
-            mv.visitVarInsn(ALOAD, 1);
-            mv.visitVarInsn(LLOAD, 2);
-            mv.visitVarInsn(ALOAD, 4);
-            mv.visitVarInsn(LLOAD, 5);
-            mv.visitLdcInsn(layout.stride());
-            mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "copyMemory", getMethodDescriptor(VOID_TYPE, getType(Object.class), LONG_TYPE, getType(Object.class), LONG_TYPE, LONG_TYPE), false);
+            //generate a sequence of instructions emulating a simply memcpy by copying one long at a time, and padding it with ints/shorts/bytes if not an exact multiple
+            for (long pos = 0L; pos < layout.stride(); ) {
+                //dst
+                mv.visitVarInsn(ALOAD, 4);
+                mv.visitVarInsn(LLOAD, 5);
+                mv.visitLdcInsn(pos);
+                mv.visitInsn(LADD);
+
+                //src
+                mv.visitVarInsn(ALOAD, 1);
+                mv.visitVarInsn(LLOAD, 2);
+                mv.visitLdcInsn(pos);
+                mv.visitInsn(LADD);
+
+                //find the biggest integer type <= the remaining size and copy exactly one of it
+                if (layout.stride() - pos >= LONG_SIZE) {
+                    mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "getLong", getMethodDescriptor(LONG_TYPE, getType(Object.class), LONG_TYPE), false);
+                    mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "putLong", getMethodDescriptor(VOID_TYPE, getType(Object.class), LONG_TYPE, LONG_TYPE), false);
+                    pos += LONG_SIZE;
+                } else if (layout.stride() - pos >= INT_SIZE) {
+                    mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "getInt", getMethodDescriptor(INT_TYPE, getType(Object.class), LONG_TYPE), false);
+                    mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "putInt", getMethodDescriptor(VOID_TYPE, getType(Object.class), LONG_TYPE, INT_TYPE), false);
+                    pos += INT_SIZE;
+                } else if (layout.stride() - pos >= SHORT_SIZE) {
+                    mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "getShort", getMethodDescriptor(SHORT_TYPE, getType(Object.class), LONG_TYPE), false);
+                    mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "putShort", getMethodDescriptor(VOID_TYPE, getType(Object.class), LONG_TYPE, SHORT_TYPE), false);
+                    pos += SHORT_SIZE;
+                } else if (layout.stride() - pos >= BYTE_SIZE) {
+                    mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "getByte", getMethodDescriptor(BYTE_TYPE, getType(Object.class), LONG_TYPE), false);
+                    mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "putByte", getMethodDescriptor(VOID_TYPE, getType(Object.class), LONG_TYPE, BYTE_TYPE), false);
+                    pos += BYTE_SIZE;
+                } else {
+                    throw new IllegalArgumentException(String.valueOf(layout.stride() - pos));
+                }
+            }
 
             mv.visitInsn(RETURN);
 
@@ -134,50 +165,15 @@ public class StructFormatGenerator {
             mv.visitEnd();
         }
 
-        { //void configureVAO(GLAPI api, int[] attributeIndices)
+        //void configureVAO(GLAPI api, int[] attributeIndices)
+        {
             MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "configureVAO", '(' + Type.getDescriptor(GLAPI.class) + "[I)V", null, null);
 
-            //configure attribute for each member
-            List<? extends StructMember<?>> members = layout.structInfo().members();
-            for (int i = 0; i < members.size(); i++) {
-                StructMember<?> member = members.get(i);
-                StructMember.Stage srcStage = layout.unpacked() ? member.unpackedStage : member.packedStage;
-                StructMember.Stage unpackedStage = member.unpackedStage;
+            //int i = 0;
+            mv.visitLdcInsn(0);
+            mv.visitVarInsn(ISTORE, 3);
 
-                int columns = 1;
-                int rows = unpackedStage.components();
-
-                if (unpackedStage.glslType() instanceof GLSLMatrixType) {
-                    GLSLMatrixType mat = (GLSLMatrixType) unpackedStage.glslType();
-                    columns = mat.columns();
-                    rows = mat.rows();
-                }
-
-                for (int column = 0; column < columns; column++) {
-                    mv.visitVarInsn(ALOAD, 1); //api.<method>(
-                    mv.visitVarInsn(ALOAD, 2); //GLuint index = attributeIndices[i] + column,
-                    mv.visitLdcInsn(i);
-                    mv.visitInsn(IALOAD);
-                    mv.visitLdcInsn(column);
-                    mv.visitInsn(IADD);
-
-                    mv.visitLdcInsn(rows); //GLint size,
-                    mv.visitFieldInsn(GETSTATIC, getInternalName(OpenGLConstants.class), "GL_" + srcStage.componentType(), "I"); //GLenum type,
-
-                    if (unpackedStage.componentType().floatingPoint()) { //GLboolean normalized,
-                        mv.visitLdcInsn(unpackedStage.isNormalizedFloat());
-                    }
-
-                    mv.visitLdcInsn(toInt(layout.stride(), "stride")); //GLsizei stride,
-                    mv.visitLdcInsn(layout.members()[i].component(column * rows).offset()); //const void* pointer);
-
-                    if (unpackedStage.componentType().floatingPoint()) { //<method>
-                        mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glVertexAttribPointer", "(IIIZIJ)V", true);
-                    } else {
-                        mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glVertexAttribIPointer", "(IIIIJ)V", true);
-                    }
-                }
-            }
+            this.configureVao(mv, layout, layout.structProperty(), layout.member(), 1, 2, 3);
 
             mv.visitInsn(RETURN);
 
@@ -229,6 +225,62 @@ public class StructFormatGenerator {
                         StructFormatGenerator.this.copyStruct2Buf(mv, elementsProperty.element(elementIndex), member.child(elementIndex), structLvtIndex, outputBaseLvtIndex, outputOffsetLvtIndex, lvtIndexAllocator);
                     }
                 });
+            }
+        });
+    }
+
+    private void configureVao(@NonNull MethodVisitor mv, @NonNull InterleavedStructLayout layout, @NonNull StructProperty property, @NonNull InterleavedStructLayout.Member member, int apiLvtIndex, int locationsLvtIndex, int iLvtIndex) {
+        property.with(new StructProperty.PropertyCallback() {
+            @Override
+            public void withComponents(@NonNull StructProperty.Components componentsProperty) {
+                checkArg(componentsProperty.components() == member.components(), "stage %s has %d components, but member %s has only %d!", componentsProperty, componentsProperty.components(), member, member.components());
+
+                ComponentInterpretation interpretation = componentsProperty.interpretation();
+
+                int columns = 1;
+                int rows = componentsProperty.components();
+
+                /*if (unpackedStage.glslType() instanceof GLSLMatrixType) {
+                    GLSLMatrixType mat = (GLSLMatrixType) unpackedStage.glslType();
+                    columns = mat.columns();
+                    rows = mat.rows();
+                }*/
+
+                for (int column = 0; column < columns; column++) {
+                    mv.visitVarInsn(ALOAD, apiLvtIndex); //api.<method>(
+                    mv.visitVarInsn(ALOAD, locationsLvtIndex); //GLuint index = attributeIndices[i] + column,
+                    mv.visitVarInsn(ILOAD, iLvtIndex);
+                    mv.visitInsn(IALOAD);
+                    mv.visitLdcInsn(column);
+                    mv.visitInsn(IADD);
+
+                    mv.visitLdcInsn(rows); //GLint size,
+                    mv.visitFieldInsn(GETSTATIC, getInternalName(OpenGLConstants.class), "GL_" + interpretation.inputType(), "I"); //GLenum type,
+
+                    if (!interpretation.integer()) { //GLboolean normalized,
+                        mv.visitLdcInsn(interpretation.normalized());
+                    }
+
+                    mv.visitLdcInsn(toInt(layout.stride(), "stride")); //GLsizei stride,
+                    mv.visitLdcInsn(member.component(column * rows).offset()); //const void* pointer);
+
+                    if (interpretation.integer()) { //<method>
+                        mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glVertexAttribIPointer", "(IIIIJ)V", true);
+                    } else {
+                        mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glVertexAttribPointer", "(IIIZIJ)V", true);
+                    }
+                }
+
+                mv.visitIincInsn(iLvtIndex, 1); //i++
+            }
+
+            @Override
+            public void withElements(@NonNull StructProperty.Elements elementsProperty) {
+                checkArg(elementsProperty.elements() == member.children(), "stage %s has %d elements, but member %s has only %d!", elementsProperty, elementsProperty.elements(), member, member.children());
+
+                for (int elementIndex = 0; elementIndex < elementsProperty.elements(); elementIndex++) {
+                    StructFormatGenerator.this.configureVao(mv, layout, elementsProperty.element(elementIndex), member.child(elementIndex), apiLvtIndex, locationsLvtIndex, iLvtIndex);
+                }
             }
         });
     }

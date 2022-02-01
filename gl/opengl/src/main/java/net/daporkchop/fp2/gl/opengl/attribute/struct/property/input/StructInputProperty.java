@@ -18,47 +18,35 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.struct.info.property.convert;
+package net.daporkchop.fp2.gl.opengl.attribute.struct.property.input;
 
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
 import org.objectweb.asm.MethodVisitor;
-
-import static org.objectweb.asm.Opcodes.*;
 
 /**
  * @author DaPorkchop_
  */
-public class IntegerToNormalizedFloatConversionProperty extends IntegerToFloatConversionProperty {
-    public IntegerToNormalizedFloatConversionProperty(@NonNull Components parent) {
-        super(parent);
+@RequiredArgsConstructor
+@Getter
+public class StructInputProperty implements StructProperty.Elements {
+    @NonNull
+    private final StructProperty[] properties;
+
+    @Override
+    public int elements() {
+        return this.properties.length;
     }
 
     @Override
-    protected void convert(@NonNull MethodVisitor mv) {
-        super.convert(mv);
+    public StructProperty element(int elementIndex) {
+        return this.properties[elementIndex];
+    }
 
-        switch (this.parent().componentType()) {
-            case UNSIGNED_BYTE:
-                mv.visitLdcInsn(1.0f / 0xFF);
-                break;
-            case BYTE:
-                mv.visitLdcInsn(1.0f / 0x80);
-                break;
-            case UNSIGNED_SHORT:
-                mv.visitLdcInsn(1.0f / 0xFFFF);
-                break;
-            case SHORT:
-                mv.visitLdcInsn(1.0f / 0x8000);
-                break;
-            case UNSIGNED_INT:
-                mv.visitLdcInsn(1.0f / 0xFFFFFFFFL);
-                break;
-            case INT:
-                mv.visitLdcInsn(1.0f / 0x80000000L);
-                break;
-            default:
-                throw new IllegalArgumentException("unknown component type: " + this.parent().componentType());
-        }
-        mv.visitInsn(FMUL);
+    @Override
+    public void load(@NonNull MethodVisitor mv, int structLvtIndex, int lvtIndexAllocator, @NonNull LoadCallback callback) {
+        callback.accept(structLvtIndex, lvtIndexAllocator);
     }
 }

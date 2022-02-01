@@ -18,57 +18,62 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.struct.info.property.convert;
+package net.daporkchop.fp2.gl.opengl.attribute.struct.property.transform;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.info.ComponentType;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.info.property.StructProperty;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.property.ComponentType;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
 import org.objectweb.asm.MethodVisitor;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
+import static org.objectweb.asm.Opcodes.*;
 
 /**
  * @author DaPorkchop_
  */
 @Getter
-public class CompositeConversionProperty implements StructProperty.Components {
+public class IntToARGBExpansionTransformProperty implements StructProperty.Components {
     private final Components parent;
-    private final Components tail;
+    private final boolean alpha;
 
-    public CompositeConversionProperty(@NonNull Components parent, @NonNull Attribute.Conversion[] conversions) {
+    public IntToARGBExpansionTransformProperty(@NonNull Components parent, boolean alpha) {
+        checkArg(parent.componentType() == ComponentType.INT, "parent component type must be %s (given: %s)", ComponentType.INT, parent.componentType());
+        checkArg(parent.components() == 1, "parent must have exactly one component (given: %d)", parent.components());
+
         this.parent = parent;
-
-        Components tail = parent;
-        for (Attribute.Conversion conversion : conversions) {
-            switch (conversion) {
-                case TO_UNSIGNED:
-                    tail = new IntegerToUnsignedIntegerConversionProperty(tail);
-                    break;
-                case TO_FLOAT:
-                    tail = new IntegerToFloatConversionProperty(tail);
-                    break;
-                case TO_NORMALIZED_FLOAT:
-                    tail = new IntegerToNormalizedFloatConversionProperty(tail);
-                    break;
-                default:
-                    throw new IllegalArgumentException("unknown conversion: " + conversion);
-            }
-        }
-        this.tail = tail;
+        this.alpha = alpha;
     }
 
     @Override
     public ComponentType componentType() {
-        return this.tail.componentType();
+        return ComponentType.UNSIGNED_BYTE;
     }
 
     @Override
     public int components() {
-        return this.tail.components();
+        return this.alpha ? 4 : 3;
     }
 
     @Override
     public void load(@NonNull MethodVisitor mv, int structLvtIndexIn, int lvtIndexAllocatorIn, @NonNull LoadCallback callback) {
-        this.tail.load(mv, structLvtIndexIn, lvtIndexAllocatorIn, callback);
+        this.parent.load(mv, structLvtIndexIn, lvtIndexAllocatorIn, (structLvtIndex, lvtIndexAllocator, loader) -> {
+            int argbLvtIndex = lvtIndexAllocator++;
+
+            //load the 0th component (which is an int) and store it in the LVT
+            loader.accept(0);
+            mv.visitVarInsn(ISTORE, argbLvtIndex);
+
+            callback.accept(argbLvtIndex, lvtIndexAllocator, componentIndex -> {
+                checkIndex(this.components(), componentIndex);
+
+                mv.visitVarInsn(ILOAD, argbLvtIndex);
+
+                mv.visitLdcInsn((((2 - componentIndex) & 3) << 3));
+                mv.visitInsn(ISHR);
+                mv.visitLdcInsn(0xFF);
+                mv.visitInsn(IAND);
+            });
+        });
     }
 }
