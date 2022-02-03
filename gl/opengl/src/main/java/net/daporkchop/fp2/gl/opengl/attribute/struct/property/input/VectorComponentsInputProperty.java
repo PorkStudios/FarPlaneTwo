@@ -24,6 +24,8 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.ComponentType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLBasicType;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLTypeUtil;
 import org.objectweb.asm.MethodVisitor;
 
 import java.lang.reflect.Field;
@@ -51,16 +53,26 @@ public class VectorComponentsInputProperty implements StructProperty.Components 
     }
 
     @Override
-    public int components() {
+    public GLSLBasicType glslType() {
+        return GLSLTypeUtil.vec(this.componentType().glslPrimitive(), this.components());
+    }
+
+    @Override
+    public int cols() {
+        return 1;
+    }
+
+    @Override
+    public int rows() {
         return this.fields.length;
     }
 
     @Override
-    public void load(@NonNull MethodVisitor mv, int structLvtIndex, int lvtIndexAllocator, @NonNull LoadCallback callback) {
-        callback.accept(structLvtIndex, lvtIndexAllocator, componentIndex -> {
+    public void load(@NonNull MethodVisitor mv, int structLvtIndexIn, int lvtIndexAllocatorIn, @NonNull LoadCallback callback) {
+        callback.accept(structLvtIndexIn, lvtIndexAllocatorIn, (structLvtIndex, lvtIndexAllocator, componentIndex) -> {
             Field field = this.fields[componentIndex];
 
-            mv.visitVarInsn(ALOAD, structLvtIndex);
+            mv.visitVarInsn(ALOAD, structLvtIndexIn);
             mv.visitFieldInsn(GETFIELD, getInternalName(field.getDeclaringClass()), field.getName(), getDescriptor(field.getType()));
         });
     }

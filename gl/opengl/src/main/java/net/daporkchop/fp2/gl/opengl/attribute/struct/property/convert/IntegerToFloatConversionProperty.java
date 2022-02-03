@@ -24,6 +24,7 @@ import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.ComponentType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.ComponentInterpretation;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLPrimitiveType;
 import org.objectweb.asm.MethodVisitor;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -50,8 +51,8 @@ public class IntegerToFloatConversionProperty {
         }
 
         @Override
-        public ComponentInterpretation interpretation() {
-            return super.interpretation().withInteger(false).withNormalized(false);
+        public ComponentInterpretation componentInterpretation() {
+            return super.componentInterpretation().withOutputType(GLSLPrimitiveType.FLOAT).withNormalized(false);
         }
 
         @Override
@@ -85,8 +86,8 @@ public class IntegerToFloatConversionProperty {
         }
 
         @Override
-        public ComponentInterpretation interpretation() {
-            return super.interpretation().withInteger(false).withNormalized(false);
+        public ComponentInterpretation componentInterpretation() {
+            return super.componentInterpretation().withOutputType(GLSLPrimitiveType.FLOAT).withNormalized(false);
         }
     }
 }

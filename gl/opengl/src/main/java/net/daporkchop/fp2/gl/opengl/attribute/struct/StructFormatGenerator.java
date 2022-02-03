@@ -30,7 +30,6 @@ import net.daporkchop.fp2.gl.opengl.OpenGLConstants;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.StructFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.TextureStructFormat;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.info.StructInfo;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.InterleavedStructLayout;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.StructLayout;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.TextureStructLayout;
@@ -210,7 +209,7 @@ public class StructFormatGenerator {
                         mv.visitLdcInsn(component.offset());
                         mv.visitInsn(LADD);
 
-                        loader.accept(componentIndex);
+                        loader.load(structLvtIndex, lvtIndexAllocator, componentIndex);
                         componentsProperty.componentType().unsafePut(mv);
                     }
                 });
@@ -226,6 +225,17 @@ public class StructFormatGenerator {
                     }
                 });
             }
+
+            @Override
+            public void withFields(@NonNull StructProperty.Fields fieldsProperty) {
+                checkArg(fieldsProperty.fields() == member.children(), "stage %s has %d fields, but member %s has only %d!", fieldsProperty, fieldsProperty.fields(), member, member.children());
+
+                fieldsProperty.load(mv, structLvtIndexIn, lvtIndexAllocatorIn, (structLvtIndex, lvtIndexAllocator) -> {
+                    for (int fieldIndex = 0; fieldIndex < fieldsProperty.fields(); fieldIndex++) {
+                        StructFormatGenerator.this.copyStruct2Buf(mv, fieldsProperty.fieldProperty(fieldIndex), member.child(fieldIndex), structLvtIndex, outputBaseLvtIndex, outputOffsetLvtIndex, lvtIndexAllocator);
+                    }
+                });
+            }
         });
     }
 
@@ -235,36 +245,30 @@ public class StructFormatGenerator {
             public void withComponents(@NonNull StructProperty.Components componentsProperty) {
                 checkArg(componentsProperty.components() == member.components(), "stage %s has %d components, but member %s has only %d!", componentsProperty, componentsProperty.components(), member, member.components());
 
-                ComponentInterpretation interpretation = componentsProperty.interpretation();
+                ComponentInterpretation interpretation = componentsProperty.componentInterpretation();
 
-                int columns = 1;
-                int rows = componentsProperty.components();
+                int cols = componentsProperty.cols();
+                int rows = componentsProperty.rows();
 
-                /*if (unpackedStage.glslType() instanceof GLSLMatrixType) {
-                    GLSLMatrixType mat = (GLSLMatrixType) unpackedStage.glslType();
-                    columns = mat.columns();
-                    rows = mat.rows();
-                }*/
-
-                for (int column = 0; column < columns; column++) {
+                for (int col = 0; col < cols; col++) {
                     mv.visitVarInsn(ALOAD, apiLvtIndex); //api.<method>(
                     mv.visitVarInsn(ALOAD, locationsLvtIndex); //GLuint index = attributeIndices[i] + column,
                     mv.visitVarInsn(ILOAD, iLvtIndex);
                     mv.visitInsn(IALOAD);
-                    mv.visitLdcInsn(column);
+                    mv.visitLdcInsn(col);
                     mv.visitInsn(IADD);
 
                     mv.visitLdcInsn(rows); //GLint size,
                     mv.visitFieldInsn(GETSTATIC, getInternalName(OpenGLConstants.class), "GL_" + interpretation.inputType(), "I"); //GLenum type,
 
-                    if (!interpretation.integer()) { //GLboolean normalized,
+                    if (!interpretation.outputType().integer()) { //GLboolean normalized,
                         mv.visitLdcInsn(interpretation.normalized());
                     }
 
                     mv.visitLdcInsn(toInt(layout.stride(), "stride")); //GLsizei stride,
-                    mv.visitLdcInsn(member.component(column * rows).offset()); //const void* pointer);
+                    mv.visitLdcInsn(member.component(col * rows).offset()); //const void* pointer);
 
-                    if (interpretation.integer()) { //<method>
+                    if (interpretation.outputType().integer()) { //<method>
                         mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glVertexAttribIPointer", "(IIIIJ)V", true);
                     } else {
                         mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glVertexAttribPointer", "(IIIZIJ)V", true);
@@ -280,6 +284,15 @@ public class StructFormatGenerator {
 
                 for (int elementIndex = 0; elementIndex < elementsProperty.elements(); elementIndex++) {
                     StructFormatGenerator.this.configureVao(mv, layout, elementsProperty.element(elementIndex), member.child(elementIndex), apiLvtIndex, locationsLvtIndex, iLvtIndex);
+                }
+            }
+
+            @Override
+            public void withFields(@NonNull StructProperty.Fields fieldsProperty) {
+                checkArg(fieldsProperty.fields() == member.children(), "stage %s has %d fields, but member %s has only %d!", fieldsProperty, fieldsProperty.fields(), member, member.children());
+
+                for (int fieldIndex = 0; fieldIndex < fieldsProperty.fields(); fieldIndex++) {
+                    StructFormatGenerator.this.configureVao(mv, layout, fieldsProperty.fieldProperty(fieldIndex), member.child(fieldIndex), apiLvtIndex, locationsLvtIndex, iLvtIndex);
                 }
             }
         });

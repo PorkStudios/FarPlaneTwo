@@ -26,7 +26,7 @@ import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.attribute.texture.BaseTextureFormat;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormatBuilder;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.info.StructInfo;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.StructInfo;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -49,6 +49,7 @@ import static org.objectweb.asm.Type.*;
  * @author DaPorkchop_
  */
 @Getter
+@Deprecated
 public class StructMember<S> {
     //what have i done
     //dear god this is horrible

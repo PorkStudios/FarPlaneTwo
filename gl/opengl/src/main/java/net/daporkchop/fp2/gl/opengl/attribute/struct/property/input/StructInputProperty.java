@@ -26,22 +26,24 @@ import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
 import org.objectweb.asm.MethodVisitor;
 
+import java.util.Map;
+
 /**
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
 @Getter
-public class StructInputProperty implements StructProperty.Elements {
+public class StructInputProperty implements StructProperty.Fields {
     @NonNull
-    private final StructProperty[] properties;
+    private final Map.Entry<String, StructProperty>[] properties;
 
     @Override
-    public int elements() {
+    public int fields() {
         return this.properties.length;
     }
 
     @Override
-    public StructProperty element(int elementIndex) {
+    public Map.Entry<String, StructProperty> field(int elementIndex) {
         return this.properties[elementIndex];
     }
 

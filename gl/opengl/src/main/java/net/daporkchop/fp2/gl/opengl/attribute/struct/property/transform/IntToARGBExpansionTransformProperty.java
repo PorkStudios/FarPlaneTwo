@@ -24,6 +24,8 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.ComponentType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLBasicType;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLTypeUtil;
 import org.objectweb.asm.MethodVisitor;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -51,20 +53,30 @@ public class IntToARGBExpansionTransformProperty implements StructProperty.Compo
     }
 
     @Override
-    public int components() {
+    public GLSLBasicType glslType() {
+        return GLSLTypeUtil.vec(this.componentType().glslPrimitive(), this.components());
+    }
+
+    @Override
+    public int cols() {
+        return 1;
+    }
+
+    @Override
+    public int rows() {
         return this.alpha ? 4 : 3;
     }
 
     @Override
     public void load(@NonNull MethodVisitor mv, int structLvtIndexIn, int lvtIndexAllocatorIn, @NonNull LoadCallback callback) {
-        this.parent.load(mv, structLvtIndexIn, lvtIndexAllocatorIn, (structLvtIndex, lvtIndexAllocator, loader) -> {
-            int argbLvtIndex = lvtIndexAllocator++;
+        this.parent.load(mv, structLvtIndexIn, lvtIndexAllocatorIn, (structLvtIndexFromParent, lvtIndexAllocatorFromParent, loader) -> {
+            int argbLvtIndex = lvtIndexAllocatorFromParent++;
 
             //load the 0th component (which is an int) and store it in the LVT
-            loader.accept(0);
+            loader.load(structLvtIndexFromParent, lvtIndexAllocatorFromParent, 0);
             mv.visitVarInsn(ISTORE, argbLvtIndex);
 
-            callback.accept(argbLvtIndex, lvtIndexAllocator, componentIndex -> {
+            callback.accept(argbLvtIndex, lvtIndexAllocatorFromParent, (structLvtIndex, lvtIndexAllocator, componentIndex) -> {
                 checkIndex(this.components(), componentIndex);
 
                 mv.visitVarInsn(ILOAD, argbLvtIndex);

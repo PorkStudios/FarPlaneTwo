@@ -24,6 +24,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLBasicType;
 import org.objectweb.asm.MethodVisitor;
 
 /**
@@ -33,7 +34,22 @@ import org.objectweb.asm.MethodVisitor;
 @Getter
 public abstract class AbstractConversionProperty implements StructProperty.Components {
     @NonNull
-    private final StructProperty.Components parent;
+    private final Components parent;
+
+    @Override
+    public GLSLBasicType glslType() {
+        return this.parent.glslType().withPrimitive(this.componentInterpretation().outputType());
+    }
+
+    @Override
+    public int cols() {
+        return this.parent.cols();
+    }
+
+    @Override
+    public int rows() {
+        return this.parent.rows();
+    }
 
     @Override
     public int components() {
@@ -42,9 +58,9 @@ public abstract class AbstractConversionProperty implements StructProperty.Compo
 
     @Override
     public void load(@NonNull MethodVisitor mv, int structLvtIndexIn, int lvtIndexAllocatorIn, @NonNull LoadCallback callback) {
-        this.parent.load(mv, structLvtIndexIn, lvtIndexAllocatorIn, (structLvtIndex, lvtIndexAllocator, parentLoader) ->
-                callback.accept(structLvtIndex, lvtIndexAllocator, componentIndex -> {
-                    parentLoader.accept(componentIndex);
+        this.parent.load(mv, structLvtIndexIn, lvtIndexAllocatorIn, (structLvtIndexFromParent, lvtIndexAllocatorFromParent, parentLoader) ->
+                callback.accept(structLvtIndexFromParent, lvtIndexAllocatorFromParent, (structLvtIndex, lvtIndexAllocator, componentIndex) -> {
+                    parentLoader.load(structLvtIndex, lvtIndexAllocator, componentIndex);
                     this.convert(mv);
                 }));
     }

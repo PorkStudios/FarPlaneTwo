@@ -21,7 +21,9 @@
 package net.daporkchop.fp2.gl.opengl.attribute.struct.property;
 
 import lombok.Data;
+import lombok.NonNull;
 import lombok.With;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLPrimitiveType;
 
 /**
  * @author DaPorkchop_
@@ -29,8 +31,10 @@ import lombok.With;
 @Data
 @With
 public final class ComponentInterpretation {
+    @NonNull
     private final ComponentType inputType;
+    @NonNull
+    private final GLSLPrimitiveType outputType;
 
-    private final boolean integer;
     private final boolean normalized;
 }

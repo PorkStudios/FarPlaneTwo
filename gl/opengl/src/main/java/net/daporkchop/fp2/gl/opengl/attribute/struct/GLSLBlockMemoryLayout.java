@@ -22,7 +22,6 @@ package net.daporkchop.fp2.gl.opengl.attribute.struct;
 
 import lombok.Data;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.info.StructInfo;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.InterleavedStructLayout;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLMatrixType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLPrimitiveType;
@@ -124,7 +123,7 @@ public enum GLSLBlockMemoryLayout {
                     FLOAT_SIZE * 4);
             long stride = PMath.roundUp(offset, structAlignment);
 
-            return InterleavedStructLayout.<S>builder()
+            return InterleavedStructLayout.builder()
                     .structInfo(structInfo)
                     .layoutName(this.name().toLowerCase(Locale.ROOT).intern())
                     .unpacked(true)

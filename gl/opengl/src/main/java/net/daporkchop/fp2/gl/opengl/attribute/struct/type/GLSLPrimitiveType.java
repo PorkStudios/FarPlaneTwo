@@ -34,7 +34,7 @@ import static net.daporkchop.fp2.common.util.TypeSize.*;
 @RequiredArgsConstructor
 @Getter
 public enum GLSLPrimitiveType implements GLSLBasicType {
-    INVALID("<invalid>", -1) {
+    INVALID("<invalid>", -1, false) {
         @Override
         public String typePrefix() {
             throw new UnsupportedOperationException(this.toString());
@@ -46,18 +46,24 @@ public enum GLSLPrimitiveType implements GLSLBasicType {
         }
 
         @Override
+        public boolean integer() {
+            throw new UnsupportedOperationException(this.toString());
+        }
+
+        @Override
         public String declaration(@NonNull String fieldName) {
             throw new UnsupportedOperationException(this.toString());
         }
     },
-    INT("i", INT_SIZE),
-    UINT("u", INT_SIZE),
-    FLOAT("", FLOAT_SIZE);
+    INT("i", INT_SIZE, true),
+    UINT("u", INT_SIZE, true),
+    FLOAT("", FLOAT_SIZE, false);
 
     @NonNull
     private final String typePrefix;
 
     private final int size;
+    private final boolean integer;
 
     @Override
     public String declaration(@NonNull String fieldName) {

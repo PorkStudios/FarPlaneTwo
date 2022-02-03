@@ -20,34 +20,30 @@
 
 package net.daporkchop.fp2.gl.opengl.attribute.struct.property.convert;
 
-import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.ComponentType;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
 import org.objectweb.asm.MethodVisitor;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-@Getter
-public abstract class AbstractFakeConversionProperty implements StructProperty.Components {
-    @NonNull
-    private final StructProperty.Components parent;
-
-    @Override
-    public int components() {
-        return this.parent.components();
+public abstract class AbstractFakeConversionProperty extends AbstractConversionProperty {
+    public AbstractFakeConversionProperty(@NonNull Components parent) {
+        super(parent);
     }
 
     @Override
     public ComponentType componentType() {
-        return this.parent.componentType();
+        return this.parent().componentType();
     }
 
     @Override
     public void load(@NonNull MethodVisitor mv, int structLvtIndex, int lvtIndexAllocator, @NonNull LoadCallback callback) {
-        this.parent.load(mv, structLvtIndex, lvtIndexAllocator, callback);
+        this.parent().load(mv, structLvtIndex, lvtIndexAllocator, callback);
+    }
+
+    @Override
+    protected void convert(@NonNull MethodVisitor mv) {
+        throw new UnsupportedOperationException();
     }
 }

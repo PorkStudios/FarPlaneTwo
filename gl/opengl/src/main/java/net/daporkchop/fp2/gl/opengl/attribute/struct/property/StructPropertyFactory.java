@@ -33,12 +33,16 @@ import net.daporkchop.fp2.gl.attribute.annotation.Transform;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.convert.IntegerToFloatConversionProperty;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.convert.IntegerToNormalizedFloatConversionProperty;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.convert.IntegerToUnsignedIntegerConversionProperty;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.property.input.SimplePrimitiveArrayInputProperty;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.input.StructInputProperty;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.input.VectorComponentsInputProperty;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.property.transform.ArrayToMatrixTransformProperty;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.transform.IntToARGBExpansionTransformProperty;
 
 import java.lang.reflect.Field;
+import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +52,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
@@ -61,7 +66,7 @@ public class StructPropertyFactory {
                         },
                         LinkedHashMap::new));
 
-        Multimap<Integer, StructProperty> propertiesSorted = Multimaps.newListMultimap(new TreeMap<>(), ArrayList::new);
+        Multimap<Integer, Map.Entry<String, StructProperty>> propertiesSorted = Multimaps.newListMultimap(new TreeMap<>(), ArrayList::new);
 
         while (!fieldsByName.isEmpty()) {
             Field field = fieldsByName.values().stream()
@@ -92,59 +97,115 @@ public class StructPropertyFactory {
                         .collect(Collectors.toList());
             }
 
-            propertiesSorted.put(attribute.sort(), attribute(options, struct, attributeName, attribute, fields));
+            propertiesSorted.put(attribute.sort(), new AbstractMap.SimpleEntry<>(attributeName, attribute(options, attribute, fields)));
         }
 
-        return new StructInputProperty(propertiesSorted.values().toArray(new StructProperty[0]));
+        return new StructInputProperty(propertiesSorted.values().toArray(uncheckedCast(new Map.Entry[0])));
     }
 
-    public static StructProperty attribute(@NonNull Options options, @NonNull Class<?> struct, @NonNull String name, @NonNull Attribute attribute, @NonNull List<Field> fields) {
+    public static StructProperty attribute(@NonNull Options options, @NonNull Attribute attribute, @NonNull List<Field> fields) {
         Class<?> type = fields.get(0).getType();
 
         //ensure all fields have the same type
         fields.forEach(field -> checkArg(field.getType() == type, "all fields must have the same type (expected: %s, mismatch at %s)", type, field));
 
         //input
-        StructProperty.Components initialProperty;
-        if (type.isPrimitive()) {
+        StructProperty initialProperty;
+        if (type.isPrimitive()) { //primitive
             initialProperty = new VectorComponentsInputProperty(fields.toArray(new Field[0]));
+        } else if (type.isArray() && type.getComponentType().isPrimitive()) {
+            checkArg(attribute.arrayLength().length > 0, "arrayLength must be set!");
+            checkArg(attribute.arrayLength().length == 1, "multi-dimensional arrays are not supported!");
+
+            initialProperty = new SimplePrimitiveArrayInputProperty(options, fields.get(0), attribute.arrayLength()[0]);
         } else {
             throw new IllegalArgumentException("don't know how to handle attribute of type " + type);
         }
 
-        //transform
-        StructProperty.Components transformProperty = initialProperty;
-        for (Transform transform : attribute.transform()) {
+        if (initialProperty instanceof StructProperty.Components) {
+            return convertComponents(options, attribute.convert(), (StructProperty.Components) transformComponents(options, attribute.transform(), (StructProperty.Components) initialProperty));
+        } else if (initialProperty instanceof StructProperty.Elements) {
+            //TODO: this can't deal with conversions
+            return transformElements(options, attribute.transform(), (StructProperty.Elements) initialProperty);
+        } else {
+            throw new IllegalStateException("don't know what to do with " + initialProperty);
+        }
+    }
+
+    public static StructProperty transformComponents(@NonNull Options options, @NonNull Transform[] transforms, @NonNull StructProperty.Components property) {
+        for (int i = 0; i < transforms.length; i++) {
+            Transform transform = transforms[i];
+
+            StructProperty transformedProperty;
             switch (transform.value()) {
                 case INT_ARGB8_TO_BYTE_VECTOR_RGB:
                 case INT_ARGB8_TO_BYTE_VECTOR_RGBA:
-                    transformProperty = new IntToARGBExpansionTransformProperty(transformProperty, transform.value() == Transform.Type.INT_ARGB8_TO_BYTE_VECTOR_RGBA);
+                    transformedProperty = new IntToARGBExpansionTransformProperty(property, transform.value() == Transform.Type.INT_ARGB8_TO_BYTE_VECTOR_RGBA);
                     break;
                 default:
-                    throw new UnsupportedOperationException("unknown transform: " + transform.value());
+                    throw new UnsupportedOperationException("transform unknown or not applicable to component type: " + transform.value());
+            }
+
+            if (transformedProperty instanceof StructProperty.Components) {
+                property = (StructProperty.Components) transformedProperty;
+            } else if (transformedProperty instanceof StructProperty.Elements) {
+                return transformElements(options, Arrays.copyOfRange(transforms, i + 1, transforms.length), (StructProperty.Elements) transformedProperty);
+            } else {
+                throw new IllegalStateException("don't know what to do with " + transformedProperty);
             }
         }
 
-        //convert
-        StructProperty.Components convertProperty = transformProperty;
-        for (Attribute.Conversion conversion : attribute.convert()) {
+        return property;
+    }
+
+    public static StructProperty transformElements(@NonNull Options options, @NonNull Transform[] transforms, @NonNull StructProperty.Elements property) {
+        for (int i = 0; i < transforms.length; i++) {
+            Transform transform = transforms[i];
+
+            StructProperty transformedProperty;
+            switch (transform.value()) {
+                case ARRAY_TO_MATRIX:
+                    checkArg(transform.matrixCols() >= 0, "matrixCols must be set!");
+                    checkArg(transform.matrixRows() >= 0, "matrixRows must be set!");
+
+                    transformedProperty = new ArrayToMatrixTransformProperty(property, transform.matrixCols(), transform.matrixRows());
+                    break;
+                default:
+                    throw new UnsupportedOperationException("transform unknown or not applicable to element type: " + transform.value());
+            }
+
+            if (transformedProperty instanceof StructProperty.Elements) {
+                property = (StructProperty.Elements) transformedProperty;
+            } else if (transformedProperty instanceof StructProperty.Components) {
+                return transformComponents(options, Arrays.copyOfRange(transforms, i + 1, transforms.length), (StructProperty.Components) transformedProperty);
+            } else {
+                throw new IllegalStateException("don't know what to do with " + transformedProperty);
+            }
+        }
+
+        return property;
+    }
+
+    public static StructProperty.Components convertComponents(@NonNull Options options, @NonNull Attribute.Conversion[] conversions, @NonNull StructProperty.Components inputProperty) {
+        StructProperty.Components convertedProperty = inputProperty;
+        for (Attribute.Conversion conversion : conversions) {
             switch (conversion) {
                 case TO_UNSIGNED:
                     //we still want to apply this stage even if the value is packed, and it's safe because it will always be the first conversion used
-                    convertProperty = new IntegerToUnsignedIntegerConversionProperty(convertProperty);
+                    convertedProperty = new IntegerToUnsignedIntegerConversionProperty(convertedProperty);
                     break;
                 case TO_FLOAT:
                     if (options.unpacked()) {
-                        convertProperty = new IntegerToFloatConversionProperty.Real(convertProperty);
+                        convertedProperty = new IntegerToFloatConversionProperty.Real(convertedProperty);
                     } else {
-                        convertProperty = new IntegerToFloatConversionProperty.Fake(convertProperty);
+                        convertedProperty = new IntegerToFloatConversionProperty.Fake(convertedProperty);
                     }
                     break;
                 case TO_NORMALIZED_FLOAT:
                     if (options.unpacked()) {
-                        convertProperty = new IntegerToNormalizedFloatConversionProperty.Real(convertProperty);
+                        convertedProperty = new IntegerToNormalizedFloatConversionProperty.Real(convertedProperty);
                     } else {
-                        convertProperty = new IntegerToNormalizedFloatConversionProperty.Fake(convertProperty);
+                        convertedProperty = new IntegerToNormalizedFloatConversionProperty.Fake(convertedProperty);
                     }
                     break;
                 default:
@@ -152,7 +213,7 @@ public class StructPropertyFactory {
             }
         }
 
-        return convertProperty;
+        return convertedProperty;
     }
 
     /**

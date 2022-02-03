@@ -23,7 +23,6 @@ package net.daporkchop.fp2.gl.opengl.attribute.struct;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.info.StructInfo;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.InterleavedStructLayout;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.TextureStructLayout;
 import net.daporkchop.lib.common.math.PMath;

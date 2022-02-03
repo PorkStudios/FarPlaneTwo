@@ -23,7 +23,7 @@ package net.daporkchop.fp2.gl.opengl.attribute.struct.layout;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.info.StructInfo;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.StructInfo;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
 
 /**
