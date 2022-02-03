@@ -36,7 +36,7 @@ public final class GLSLVectorType implements GLSLBasicType {
     private final int components;
 
     public GLSLBasicType withComponents(int components) {
-        return GLSLTypeUtil.vec(this.primitive, components);
+        return GLSLTypeFactory.vec(this.primitive, components);
     }
 
     @Override

@@ -35,10 +35,7 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.StructLayout;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.TextureStructLayout;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.ComponentInterpretation;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLBasicType;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLPrimitiveType;
 import net.daporkchop.lib.unsafe.PUnsafe;
-import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
@@ -122,42 +119,7 @@ public class StructFormatGenerator {
         {
             MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "copy", "(Ljava/lang/Object;JLjava/lang/Object;J)V", null, null);
 
-            //generate a sequence of instructions emulating a simply memcpy by copying one long at a time, and padding it with ints/shorts/bytes if not an exact multiple
-            for (long pos = 0L; pos < layout.stride(); ) {
-                //dst
-                mv.visitVarInsn(ALOAD, 4);
-                mv.visitVarInsn(LLOAD, 5);
-                mv.visitLdcInsn(pos);
-                mv.visitInsn(LADD);
-
-                //src
-                mv.visitVarInsn(ALOAD, 1);
-                mv.visitVarInsn(LLOAD, 2);
-                mv.visitLdcInsn(pos);
-                mv.visitInsn(LADD);
-
-                //find the biggest integer type <= the remaining size and copy exactly one of it
-                if (layout.stride() - pos >= LONG_SIZE) {
-                    mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "getLong", getMethodDescriptor(LONG_TYPE, getType(Object.class), LONG_TYPE), false);
-                    mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "putLong", getMethodDescriptor(VOID_TYPE, getType(Object.class), LONG_TYPE, LONG_TYPE), false);
-                    pos += LONG_SIZE;
-                } else if (layout.stride() - pos >= INT_SIZE) {
-                    mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "getInt", getMethodDescriptor(INT_TYPE, getType(Object.class), LONG_TYPE), false);
-                    mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "putInt", getMethodDescriptor(VOID_TYPE, getType(Object.class), LONG_TYPE, INT_TYPE), false);
-                    pos += INT_SIZE;
-                } else if (layout.stride() - pos >= SHORT_SIZE) {
-                    mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "getShort", getMethodDescriptor(SHORT_TYPE, getType(Object.class), LONG_TYPE), false);
-                    mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "putShort", getMethodDescriptor(VOID_TYPE, getType(Object.class), LONG_TYPE, SHORT_TYPE), false);
-                    pos += SHORT_SIZE;
-                } else if (layout.stride() - pos >= BYTE_SIZE) {
-                    mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "getByte", getMethodDescriptor(BYTE_TYPE, getType(Object.class), LONG_TYPE), false);
-                    mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "putByte", getMethodDescriptor(VOID_TYPE, getType(Object.class), LONG_TYPE, BYTE_TYPE), false);
-                    pos += BYTE_SIZE;
-                } else {
-                    throw new IllegalArgumentException(String.valueOf(layout.stride() - pos));
-                }
-            }
-
+            this.generateMemcpy(mv, 1, 2, 4, 5, layout.stride());
             mv.visitInsn(RETURN);
 
             mv.visitMaxs(0, 0);
@@ -251,6 +213,14 @@ public class StructFormatGenerator {
                 int rows = componentsProperty.rows();
 
                 for (int col = 0; col < cols; col++) {
+                    //ensure component offsets are sequential in memory
+                    long offset = member.component(col * rows).offset();
+                    for (int row = 0; row < rows; row++) {
+                        long componentOffset = member.component(col * rows + row).offset();
+                        long expectedOffset = offset + (long) interpretation.inputType().size() * row;
+                        checkArg(componentOffset == expectedOffset, "invalid offset for property: components need to be sequential in memory!");
+                    }
+
                     mv.visitVarInsn(ALOAD, apiLvtIndex); //api.<method>(
                     mv.visitVarInsn(ALOAD, locationsLvtIndex); //GLuint index = attributeIndices[i] + column,
                     mv.visitVarInsn(ILOAD, iLvtIndex);
@@ -304,9 +274,40 @@ public class StructFormatGenerator {
     }
 
     private <S> TextureStructFormat<S> generateTexture(@NonNull TextureStructLayout layout) throws Exception {
-        StructMember<?> member = layout.structInfo().members().get(0);
-        StructMember.Stage stage = layout.unpacked() ? member.unpackedStage : member.packedStage;
-        StructMember.Stage unpackedStage = member.unpackedStage;
+        TextureStructLayout.Member member = layout.member();
+
+        StructProperty.Components property = layout.structProperty().with(new StructProperty.TypedPropertyCallback<StructProperty.Components>() {
+            @Override
+            public StructProperty.Components withComponents(@NonNull StructProperty.Components componentsProperty) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public StructProperty.Components withElements(@NonNull StructProperty.Elements elementsProperty) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public StructProperty.Components withFields(@NonNull StructProperty.Fields fieldsProperty) {
+                return fieldsProperty.fieldProperty(0).with(new StructProperty.TypedPropertyCallback<StructProperty.Components>() {
+                    @Override
+                    public StructProperty.Components withComponents(@NonNull StructProperty.Components componentsProperty) {
+                        return componentsProperty;
+                    }
+
+                    @Override
+                    public StructProperty.Components withElements(@NonNull StructProperty.Elements elementsProperty) {
+                        throw new UnsupportedOperationException();
+                    }
+
+                    @Override
+                    public StructProperty.Components withFields(@NonNull StructProperty.Fields fieldsProperty) {
+                        throw new UnsupportedOperationException();
+                    }
+                });
+            }
+        });
+        ComponentInterpretation interpretation = property.componentInterpretation();
 
         String baseClassName = getInternalName(TextureStructFormat.class);
         String className = baseClassName + '$' + layout.layoutName() + '$' + getInternalName(layout.structInfo().clazz()).replace("/", "__");
@@ -333,13 +334,13 @@ public class StructFormatGenerator {
             mv.visitVarInsn(ALOAD, 1);
 
             { //int textureInternalFormat
-                String components = "RGBA".substring(0, unpackedStage.components());
-                int bitDepth = stage.componentType().stride() * Byte.SIZE;
+                String components = "RGBA".substring(0, property.components());
+                int bitDepth = property.componentType().size() * Byte.SIZE;
                 String suffix;
-                if (stage.componentType().integer()) {
-                    suffix = unpackedStage.isNormalizedFloat()
-                            ? ((StructMember.ComponentType.Int) stage.componentType()).unsigned() ? "" : "_SNORM"
-                            : ((StructMember.ComponentType.Int) stage.componentType()).unsigned() ? "UI" : "I";
+                if (property.componentType().integer()) {
+                    suffix = !interpretation.outputType().integer() && interpretation.normalized()
+                            ? interpretation.outputType().signed() ? "_SNORM" : ""
+                            : interpretation.outputType().signed() ? "I" : "UI";
                 } else {
                     suffix = "F";
                 }
@@ -347,13 +348,13 @@ public class StructFormatGenerator {
             }
 
             { //int textureFormat
-                String components = "RGBA".substring(0, unpackedStage.components());
-                String suffix = unpackedStage.componentType().integer() ? "_INTEGER" : "";
+                String components = "RGBA".substring(0, property.components());
+                String suffix = interpretation.outputType().integer() ? "_INTEGER" : "";
                 mv.visitFieldInsn(GETSTATIC, getInternalName(OpenGLConstants.class), "GL_" + components + suffix, "I");
             }
 
             { //int textureType
-                mv.visitFieldInsn(GETSTATIC, getInternalName(OpenGLConstants.class), "GL_" + stage.componentType(), "I");
+                mv.visitFieldInsn(GETSTATIC, getInternalName(OpenGLConstants.class), "GL_" + property.componentType(), "I");
             }
 
             mv.visitMethodInsn(INVOKESPECIAL, baseClassName, "<init>", Type.getMethodDescriptor(Type.VOID_TYPE, Type.getObjectType(getInternalName(TextureStructLayout.class)), Type.INT_TYPE, Type.INT_TYPE, Type.INT_TYPE), false);
@@ -363,8 +364,6 @@ public class StructFormatGenerator {
             mv.visitEnd();
         }
 
-        this.generateClone(writer, layout.structInfo());
-
         { //void copy(Object struct, Object dstBase, long dstOffset)
             MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "copy", "(Ljava/lang/Object;Ljava/lang/Object;J)V", null, null);
 
@@ -373,8 +372,20 @@ public class StructFormatGenerator {
             mv.visitTypeInsn(CHECKCAST, structName);
             mv.visitVarInsn(ASTORE, 1);
 
-            //copy each member type
-            member.storeStageOutput(mv, stage, 1, 2, 3, 0L);
+            //copy each component
+            property.load(mv, 1, 5, (structLvtIndex, lvtIndexAllocator, loader) -> {
+                for (int componentIndex = 0; componentIndex < property.components(); componentIndex++) {
+                    TextureStructLayout.Component component = member.component(componentIndex);
+
+                    mv.visitVarInsn(ALOAD, 2);
+                    mv.visitVarInsn(LLOAD, 3);
+                    mv.visitLdcInsn(component.offset());
+                    mv.visitInsn(LADD);
+
+                    loader.load(structLvtIndex, lvtIndexAllocator, componentIndex);
+                    property.componentType().unsafePut(mv);
+                }
+            });
 
             mv.visitInsn(RETURN);
 
@@ -385,9 +396,7 @@ public class StructFormatGenerator {
         { //void copy(Object srcBase, long srcOffset, Object dstBase, long dstOffset)
             MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "copy", "(Ljava/lang/Object;JLjava/lang/Object;J)V", null, null);
 
-            //copy each member type
-            member.copyStageOutput(mv, stage, 1, 2, 4, 5, 0L);
-
+            this.generateMemcpy(mv, 1, 2, 4, 5, layout.stride());
             mv.visitInsn(RETURN);
 
             mv.visitMaxs(0, 0);
@@ -398,10 +407,10 @@ public class StructFormatGenerator {
             MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "copyFromARGB", "(ILjava/lang/Object;J)V", null, null);
 
             //copy each member type
-            for (int componentIndex = 0; componentIndex < stage.components(); componentIndex++) {
+            for (int componentIndex = 0; componentIndex < property.components(); componentIndex++) {
                 mv.visitVarInsn(ALOAD, 2);
                 mv.visitVarInsn(LLOAD, 3);
-                mv.visitLdcInsn(componentIndex * (long) stage.componentType().stride());
+                mv.visitLdcInsn(componentIndex * (long) property.componentType().size());
                 mv.visitInsn(LADD);
 
                 mv.visitVarInsn(ILOAD, 1);
@@ -409,15 +418,17 @@ public class StructFormatGenerator {
                 mv.visitInsn(ISHR);
                 mv.visitLdcInsn(0xFF);
                 mv.visitInsn(IAND);
-                if (((GLSLBasicType) stage.glslType()).primitive() == GLSLPrimitiveType.FLOAT) {
-                    mv.visitInsn(I2F);
-                    if (stage.isNormalizedFloat()) {
+                if (!property.componentType().integer()) {
+                    //TODO: allow normalizing float textures
+                    throw new UnsupportedOperationException();
+                    /*mv.visitInsn(I2F);
+                    if (interpretation.normalized()) {
                         mv.visitLdcInsn(1.0f / 256.0f);
                         mv.visitInsn(FMUL);
-                    }
+                    }*/
                 }
 
-                stage.componentType().unsafePut(mv);
+                property.componentType().unsafePut(mv);
             }
 
             mv.visitInsn(RETURN);
@@ -440,33 +451,42 @@ public class StructFormatGenerator {
         return clazz.getConstructor(TextureStructLayout.class).newInstance(layout);
     }
 
-    private <S> void generateClone(@NonNull ClassVisitor cv, @NonNull StructInfo<S> structInfo) {
-        String structName = getInternalName(structInfo.clazz());
+    @SuppressWarnings("SameParameterValue")
+    private void generateMemcpy(@NonNull MethodVisitor mv, int srcBaseLvtIndex, int srcOffsetLvtIndex, int dstBaseLvtIndex, int dstOffsetLvtIndex, long size) {
+        //generate a sequence of instructions emulating a simply memcpy by copying one long at a time, and padding it with ints/shorts/bytes if not an exact multiple
+        for (long pos = 0L; pos < size; ) {
+            //dst
+            mv.visitVarInsn(ALOAD, dstBaseLvtIndex);
+            mv.visitVarInsn(LLOAD, dstOffsetLvtIndex);
+            mv.visitLdcInsn(pos);
+            mv.visitInsn(LADD);
 
-        { //Object clone(Object struct)
-            MethodVisitor mv = cv.visitMethod(ACC_PUBLIC, "clone", "(Ljava/lang/Object;)Ljava/lang/Object;", null, null);
+            //src
+            mv.visitVarInsn(ALOAD, srcBaseLvtIndex);
+            mv.visitVarInsn(LLOAD, srcOffsetLvtIndex);
+            mv.visitLdcInsn(pos);
+            mv.visitInsn(LADD);
 
-            //make sure struct can be cast to requested type
-            mv.visitVarInsn(ALOAD, 1);
-            mv.visitTypeInsn(CHECKCAST, structName);
-            mv.visitVarInsn(ASTORE, 1);
-
-            //allocate new instance
-            mv.visitLdcInsn(Type.getObjectType(structName));
-            mv.visitMethodInsn(INVOKESTATIC, "net/daporkchop/lib/unsafe/PUnsafe", "allocateInstance", "(Ljava/lang/Class;)Ljava/lang/Object;", false);
-            mv.visitTypeInsn(CHECKCAST, structName);
-            mv.visitVarInsn(ASTORE, 2);
-
-            //copy each field
-            for (StructMember<S> member : structInfo.members()) {
-                member.packedStage.cloneStruct(mv, 1, 2);
+            //find the biggest integer type <= the remaining size and copy exactly one of it
+            if (size - pos >= LONG_SIZE) {
+                mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "getLong", getMethodDescriptor(LONG_TYPE, getType(Object.class), LONG_TYPE), false);
+                mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "putLong", getMethodDescriptor(VOID_TYPE, getType(Object.class), LONG_TYPE, LONG_TYPE), false);
+                pos += LONG_SIZE;
+            } else if (size - pos >= INT_SIZE) {
+                mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "getInt", getMethodDescriptor(INT_TYPE, getType(Object.class), LONG_TYPE), false);
+                mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "putInt", getMethodDescriptor(VOID_TYPE, getType(Object.class), LONG_TYPE, INT_TYPE), false);
+                pos += INT_SIZE;
+            } else if (size - pos >= SHORT_SIZE) {
+                mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "getShort", getMethodDescriptor(SHORT_TYPE, getType(Object.class), LONG_TYPE), false);
+                mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "putShort", getMethodDescriptor(VOID_TYPE, getType(Object.class), LONG_TYPE, SHORT_TYPE), false);
+                pos += SHORT_SIZE;
+            } else if (size - pos >= BYTE_SIZE) {
+                mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "getByte", getMethodDescriptor(BYTE_TYPE, getType(Object.class), LONG_TYPE), false);
+                mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "putByte", getMethodDescriptor(VOID_TYPE, getType(Object.class), LONG_TYPE, BYTE_TYPE), false);
+                pos += BYTE_SIZE;
+            } else {
+                throw new IllegalArgumentException(String.valueOf(size - pos));
             }
-
-            mv.visitVarInsn(ALOAD, 2);
-            mv.visitInsn(ARETURN);
-
-            mv.visitMaxs(0, 0);
-            mv.visitEnd();
         }
     }
 }

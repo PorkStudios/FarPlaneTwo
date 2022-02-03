@@ -22,8 +22,11 @@ package net.daporkchop.fp2.gl.opengl.attribute.struct.property.input;
 
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.property.ComponentType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructPropertyFactory;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLBasicType;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLTypeFactory;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 
@@ -40,6 +43,8 @@ import static org.objectweb.asm.Type.*;
 public class SimplePrimitiveArrayInputProperty implements StructProperty.Elements {
     private final StructPropertyFactory.Options options;
 
+    private final ComponentType componentType;
+
     private final Field field;
     private final int length;
 
@@ -47,6 +52,8 @@ public class SimplePrimitiveArrayInputProperty implements StructProperty.Element
         this.options = options;
         this.field = field;
         this.length = length;
+
+        this.componentType = ComponentType.from(field.getType().getComponentType());
     }
 
     @Override
@@ -57,7 +64,40 @@ public class SimplePrimitiveArrayInputProperty implements StructProperty.Element
     @Override
     public StructProperty element(int elementIndex) {
         checkIndex(this.length, elementIndex);
-        return null;
+
+        return new StructProperty.Components() {
+            @Override
+            public ComponentType componentType() {
+                return SimplePrimitiveArrayInputProperty.this.componentType;
+            }
+
+            @Override
+            public GLSLBasicType glslType() {
+                return GLSLTypeFactory.vec(this.componentType().glslPrimitive(), this.components());
+            }
+
+            @Override
+            public int cols() {
+                return 1;
+            }
+
+            @Override
+            public int rows() {
+                return 1;
+            }
+
+            @Override
+            public void load(@NonNull MethodVisitor mv, int structLvtIndexIn, int lvtIndexAllocatorIn, @NonNull LoadCallback callback) {
+                callback.accept(structLvtIndexIn, lvtIndexAllocatorIn, (structLvtIndex, lvtIndexAllocator, componentIndex) -> {
+                    checkIndex(1, componentIndex);
+
+                    //array is stored at structLvtIndex, we want to load the elementIndex-th element from it
+                    mv.visitVarInsn(ALOAD, structLvtIndex);
+                    mv.visitLdcInsn(elementIndex);
+                    this.componentType().arrayLoad(mv);
+                });
+            }
+        };
     }
 
     @Override
@@ -84,6 +124,6 @@ public class SimplePrimitiveArrayInputProperty implements StructProperty.Element
 
         mv.visitLabel(label);
 
-        callback.accept(structLvtIndex, lvtIndexAllocator);
+        callback.accept(arrayLvtIndex, lvtIndexAllocator);
     }
 }

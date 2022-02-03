@@ -20,15 +20,17 @@
 
 package net.daporkchop.fp2.gl.opengl.attribute.struct;
 
+import lombok.Data;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.InterleavedStructLayout;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.TextureStructLayout;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
 import net.daporkchop.lib.common.math.PMath;
 
-import java.util.List;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -37,53 +39,116 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @UtilityClass
 public class StructLayouts {
-    public <S> InterleavedStructLayout vertexAttributesInterleaved(@NonNull OpenGL gl, @NonNull StructInfo<S> structInfo, boolean unpacked) {
-        List<StructMember<S>> members = structInfo.members();
-        int memberCount = structInfo.members().size();
-
-        long[] memberOffsets = new long[memberCount];
-        long[][] memberComponentOffsets = new long[memberCount][];
-
-        long alignment = gl.vertexAttributeAlignment();
-
-        long offset = 0L;
-        for (int i = 0; i < memberCount; i++) {
-            StructMember.Stage stage = unpacked ? members.get(i).unpackedStage : members.get(i).packedStage;
-
-            memberOffsets[i] = offset;
-            offset += PMath.roundUp(stage.components() * (long) stage.componentType().stride(), alignment);
-
-            long componentOffset = 0L;
-            long[] componentOffsets = memberComponentOffsets[i] = new long[stage.components()];
-            for (int component = 0; component < stage.components(); component++, componentOffset += stage.componentType().stride()) {
-                componentOffsets[component] = componentOffset;
+    private InterleavedStructLayout.Member interleaved(@NonNull MutableLong offset, long alignment, @NonNull StructProperty property) {
+        return property.with(new StructProperty.TypedPropertyCallback<InterleavedStructLayout.Member>() {
+            @Override
+            public InterleavedStructLayout.Member withComponents(@NonNull StructProperty.Components componentsProperty) {
+                long[] componentOffsets = new long[componentsProperty.components()];
+                for (int i = 0, col = 0; col < componentsProperty.cols(); col++) {
+                    for (int row = 0; row < componentsProperty.rows(); row++, i++) {
+                        componentOffsets[i] = offset.getAndAdd(componentsProperty.componentType().size());
+                    }
+                    offset.roundUp(alignment);
+                }
+                return new InterleavedStructLayout.RegularMember(0L, componentOffsets);
             }
-        }
+
+            @Override
+            public InterleavedStructLayout.Member withElements(@NonNull StructProperty.Elements elementsProperty) {
+                return this.withNested(IntStream.range(0, elementsProperty.elements()).mapToObj(elementsProperty::element));
+            }
+
+            @Override
+            public InterleavedStructLayout.Member withFields(@NonNull StructProperty.Fields fieldsProperty) {
+                return this.withNested(IntStream.range(0, fieldsProperty.fields()).mapToObj(fieldsProperty::fieldProperty));
+            }
+
+            private InterleavedStructLayout.Member withNested(@NonNull Stream<StructProperty> nestedProperty) {
+                return new InterleavedStructLayout.NestedMember(nestedProperty
+                        .map(property -> interleaved(offset, alignment, property))
+                        .toArray(InterleavedStructLayout.Member[]::new));
+            }
+        });
+    }
+
+    public <S> InterleavedStructLayout vertexAttributesInterleaved(@NonNull OpenGL gl, @NonNull StructInfo<S> structInfo, boolean unpacked) {
+        MutableLong offset = new MutableLong();
+        InterleavedStructLayout.Member member = interleaved(offset, gl.vertexAttributeAlignment(), unpacked ? structInfo.unpackedProperty() : structInfo.packedProperty());
 
         return InterleavedStructLayout.builder()
                 .structInfo(structInfo)
                 .layoutName("vertex_attribute_interleaved")
                 .unpacked(unpacked)
-                .members(IntStream.range(0, memberCount)
-                        .mapToObj(i -> new InterleavedStructLayout.RegularMember(memberOffsets[i], memberComponentOffsets[i]))
-                        .toArray(InterleavedStructLayout.Member[]::new))
-                .stride(offset)
+                .member(member)
+                .stride(offset.value)
                 .build();
     }
 
     public <S> TextureStructLayout texture(@NonNull OpenGL gl, @NonNull StructInfo<S> structInfo) {
-        List<StructMember<S>> members = structInfo.members();
-        checkArg(members.size() == 1, "expected exactly one attribute, but found %d! %s", members.size(), structInfo);
+        MutableLong stride = new MutableLong();
+        TextureStructLayout.Member member = structInfo.packedProperty().with(new StructProperty.TypedPropertyCallback<TextureStructLayout.Member>() {
+            @Override
+            public TextureStructLayout.Member withComponents(@NonNull StructProperty.Components componentsProperty) {
+                throw new UnsupportedOperationException();
+            }
 
-        StructMember.Stage stage = members.get(0).packedStage;
+            @Override
+            public TextureStructLayout.Member withElements(@NonNull StructProperty.Elements elementsProperty) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public TextureStructLayout.Member withFields(@NonNull StructProperty.Fields fieldsProperty) {
+                checkArg(fieldsProperty.fields() == 1, "expected exactly one field, but found %d! %s", fieldsProperty.fields(), structInfo);
+
+                return fieldsProperty.fieldProperty(0).with(new StructProperty.TypedPropertyCallback<TextureStructLayout.Member>() {
+                    @Override
+                    public TextureStructLayout.Member withComponents(@NonNull StructProperty.Components componentsProperty) {
+                        long[] componentOffsets = new long[componentsProperty.components()];
+                        for (int i = 0; i < componentsProperty.components(); i++) {
+                            componentOffsets[i] = stride.getAndAdd(componentsProperty.componentType().size());
+                        }
+                        return new TextureStructLayout.RegularMember(0L, componentOffsets);
+                    }
+
+                    @Override
+                    public TextureStructLayout.Member withElements(@NonNull StructProperty.Elements elementsProperty) {
+                        throw new UnsupportedOperationException();
+                    }
+
+                    @Override
+                    public TextureStructLayout.Member withFields(@NonNull StructProperty.Fields fieldsProperty) {
+                        throw new UnsupportedOperationException();
+                    }
+                });
+            }
+        });
 
         return TextureStructLayout.builder()
                 .structInfo(structInfo)
                 .layoutName("texture")
                 .unpacked(false)
-                .componentStride(stage.componentType().stride())
-                .stride(stage.components() * (long) stage.componentType().stride())
-                .members(new TextureStructLayout.Member[0]) //TODO: this is wrong?
+                .stride(stride.value)
+                .member(member)
                 .build();
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @Data
+    private static final class MutableLong {
+        private long value;
+
+        public MutableLong roundUp(long to) {
+            this.value = PMath.roundUp(this.value, to);
+            return this;
+        }
+
+        public long getAndAdd(long d) {
+            long old = this.value;
+            this.value += d;
+            return old;
+        }
     }
 }

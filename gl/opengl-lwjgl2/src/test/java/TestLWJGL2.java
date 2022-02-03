@@ -318,9 +318,9 @@ public class TestLWJGL2 {
         public final byte scaleX;
         public final byte scaleY;
 
-        /*@Attribute(
+        @Attribute(
                 arrayLength = 3)
-        public final float[] floatsAsVector = new float[3];*/
+        public final float[] floatsAsVector = new float[3];
 
         //@Attribute public final float[] array = new float[8];
     }

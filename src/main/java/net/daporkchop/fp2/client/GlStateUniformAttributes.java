@@ -45,8 +45,8 @@ import static org.lwjgl.opengl.GL11.*;
  */
 public class GlStateUniformAttributes {
     @Attribute(
-            transform = Transform.Type.ARRAY_TO_MATRIX,
-            matrixDimension = @Transform.MatrixDimension(columns = 4, rows = 4))
+            arrayLength = 16,
+            transform = @Transform(value = Transform.Type.ARRAY_TO_MATRIX, matrixCols = 4, matrixRows = 4))
     public final float[] modelViewProjectionMatrix = new float[16];
 
     @Attribute(vectorAxes = { "X", "Y", "Z" })

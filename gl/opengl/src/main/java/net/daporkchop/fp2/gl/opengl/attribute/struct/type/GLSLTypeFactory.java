@@ -31,7 +31,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @UtilityClass
-public class GLSLTypeUtil {
+public class GLSLTypeFactory {
     @SuppressWarnings("UnstableApiUsage")
     static final Interner<GLSLType> GLSL_TYPE_INTERNER = Interners.newWeakInterner();
 

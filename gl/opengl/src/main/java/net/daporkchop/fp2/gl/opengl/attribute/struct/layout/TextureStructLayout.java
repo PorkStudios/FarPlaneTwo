@@ -20,10 +20,14 @@
 
 package net.daporkchop.fp2.gl.opengl.attribute.struct.layout;
 
+import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
@@ -33,7 +37,6 @@ import lombok.experimental.SuperBuilder;
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true, cacheStrategy = EqualsAndHashCode.CacheStrategy.LAZY)
 public class TextureStructLayout extends StructLayout<TextureStructLayout.Member, TextureStructLayout.Component> {
-    private final long componentStride;
     private final long stride;
 
     /**
@@ -46,5 +49,65 @@ public class TextureStructLayout extends StructLayout<TextureStructLayout.Member
      * @author DaPorkchop_
      */
     public interface Component extends StructLayout.Component {
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @Data
+    public static final class RegularMember implements Member {
+        private final long offset;
+        @NonNull
+        private final long[] componentOffsets;
+
+        @Override
+        public int components() {
+            return this.componentOffsets.length;
+        }
+
+        @Override
+        public Component component(int componentIndex) {
+            checkIndex(this.componentOffsets.length, componentIndex);
+            return () -> this.offset + this.componentOffsets[componentIndex];
+        }
+
+        @Override
+        public int children() {
+            return 0;
+        }
+
+        @Override
+        public Member child(int childIndex) {
+            throw new IndexOutOfBoundsException(String.valueOf(childIndex));
+        }
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @Data
+    public static final class NestedMember implements Member {
+        @NonNull
+        private final Member[] children;
+
+        @Override
+        public int components() {
+            return 0;
+        }
+
+        @Override
+        public Component component(int componentIndex) {
+            throw new IndexOutOfBoundsException(String.valueOf(componentIndex));
+        }
+
+        @Override
+        public int children() {
+            return this.children.length;
+        }
+
+        @Override
+        public Member child(int childIndex) {
+            return this.children[childIndex];
+        }
     }
 }

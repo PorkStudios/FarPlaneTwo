@@ -25,7 +25,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.ComponentType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLBasicType;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLTypeUtil;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLTypeFactory;
 import org.objectweb.asm.MethodVisitor;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -92,7 +92,7 @@ public class ArrayToMatrixTransformProperty implements StructProperty.Components
 
     @Override
     public GLSLBasicType glslType() {
-        return GLSLTypeUtil.mat(this.componentType.glslPrimitive(), this.cols, this.rows);
+        return GLSLTypeFactory.mat(this.componentType.glslPrimitive(), this.cols, this.rows);
     }
 
     @Override

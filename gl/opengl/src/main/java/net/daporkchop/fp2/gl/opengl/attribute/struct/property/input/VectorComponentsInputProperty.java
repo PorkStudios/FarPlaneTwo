@@ -25,7 +25,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.ComponentType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLBasicType;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLTypeUtil;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLTypeFactory;
 import org.objectweb.asm.MethodVisitor;
 
 import java.lang.reflect.Field;
@@ -54,7 +54,7 @@ public class VectorComponentsInputProperty implements StructProperty.Components 
 
     @Override
     public GLSLBasicType glslType() {
-        return GLSLTypeUtil.vec(this.componentType().glslPrimitive(), this.components());
+        return GLSLTypeFactory.vec(this.componentType().glslPrimitive(), this.components());
     }
 
     @Override

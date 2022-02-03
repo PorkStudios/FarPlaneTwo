@@ -20,8 +20,13 @@
 
 package net.daporkchop.fp2.gl.opengl.attribute.struct.property;
 
+import com.google.common.collect.ImmutableMap;
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLArrayType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLBasicType;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLStructType;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLType;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLTypeFactory;
 import org.objectweb.asm.MethodVisitor;
 
 import java.util.Iterator;
@@ -35,6 +40,8 @@ public interface StructProperty {
     void with(@NonNull PropertyCallback callback);
 
     <T> T with(@NonNull TypedPropertyCallback<T> callback);
+
+    GLSLType glslType();
 
     /**
      * @author DaPorkchop_
@@ -138,6 +145,11 @@ public interface StructProperty {
         StructProperty element(int elementIndex);
 
         @Override
+        default GLSLArrayType glslType() {
+            return GLSLTypeFactory.array(this.element(0).glslType(), this.elements());
+        }
+
+        @Override
         default Iterator<StructProperty> iterator() {
             return IntStream.range(0, this.elements()).mapToObj(this::element).iterator();
         }
@@ -182,6 +194,17 @@ public interface StructProperty {
         @Override
         default Iterator<Map.Entry<String, StructProperty>> iterator() {
             return IntStream.range(0, this.fields()).mapToObj(this::field).iterator();
+        }
+
+        String structName();
+
+        @Override
+        default GLSLType glslType() {
+            ImmutableMap.Builder<String, GLSLType> fields = ImmutableMap.builder();
+            for (Map.Entry<String, StructProperty> entry : this) {
+                fields.put(entry.getKey(), entry.getValue().glslType());
+            }
+            return new GLSLStructType(this.structName(), fields.build());
         }
 
         void load(@NonNull MethodVisitor mv, int structLvtIndex, int lvtIndexAllocator, @NonNull LoadCallback callback);

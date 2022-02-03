@@ -23,10 +23,7 @@ package net.daporkchop.fp2.gl.opengl.attribute.struct.type;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
 
-import java.util.Map;
 import java.util.stream.Stream;
-
-import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
@@ -40,6 +37,6 @@ public interface GLSLType {
 
     @SuppressWarnings("UnstableApiUsage")
     default GLSLType intern() {
-        return GLSLTypeUtil.GLSL_TYPE_INTERNER.intern(this);
+        return GLSLTypeFactory.GLSL_TYPE_INTERNER.intern(this);
     }
 }

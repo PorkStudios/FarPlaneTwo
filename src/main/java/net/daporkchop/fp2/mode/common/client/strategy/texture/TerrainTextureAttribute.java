@@ -27,6 +27,8 @@ import net.daporkchop.fp2.gl.attribute.annotation.Transform;
  * @author DaPorkchop_
  */
 public class TerrainTextureAttribute {
-    @Attribute(transform = Transform.Type.INT_ARGB8_TO_BYTE_VECTOR_RGBA, convert = Attribute.Conversion.TO_NORMALIZED_FLOAT)
+    @Attribute(
+            transform = @Transform(Transform.Type.INT_ARGB8_TO_BYTE_VECTOR_RGBA),
+            convert = Attribute.Conversion.TO_NORMALIZED_FLOAT)
     public final int terrain = 0;
 }

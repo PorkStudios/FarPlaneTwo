@@ -35,6 +35,8 @@ import java.util.Map;
 @Getter
 public class StructInputProperty implements StructProperty.Fields {
     @NonNull
+    private final String structName;
+    @NonNull
     private final Map.Entry<String, StructProperty>[] properties;
 
     @Override

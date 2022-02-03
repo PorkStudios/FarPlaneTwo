@@ -27,8 +27,6 @@ import lombok.NonNull;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
-import java.util.Optional;
-
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -40,10 +38,6 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @EqualsAndHashCode(callSuper = true, cacheStrategy = EqualsAndHashCode.CacheStrategy.LAZY)
 public class InterleavedStructLayout extends StructLayout<InterleavedStructLayout.Member, InterleavedStructLayout.Component> {
     private final long stride;
-
-    public NestedMember member() {
-        return new NestedMember(this.members());
-    }
 
     /**
      * @author DaPorkchop_

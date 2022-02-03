@@ -38,11 +38,14 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.property.input.StructInputP
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.input.VectorComponentsInputProperty;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.transform.ArrayToMatrixTransformProperty;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.transform.IntToARGBExpansionTransformProperty;
+import net.daporkchop.lib.common.util.PorkUtil;
+import org.objectweb.asm.Type;
 
 import java.lang.reflect.Field;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,13 +62,14 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 @UtilityClass
 public class StructPropertyFactory {
-    public static StructProperty struct(@NonNull Options options, @NonNull Class<?> struct) {
+    public static StructProperty struct(@NonNull Options options, @NonNull Class<?> struct, @NonNull Map<String, String> nameOverrides) {
         Map<String, Field> fieldsByName = Stream.of(struct.getFields())
                 .collect(Collectors.toMap(Field::getName, Function.identity(), (a, b) -> {
                             throw new IllegalArgumentException(a + " " + b);
                         },
                         LinkedHashMap::new));
 
+        nameOverrides = new HashMap<>(nameOverrides);
         Multimap<Integer, Map.Entry<String, StructProperty>> propertiesSorted = Multimaps.newListMultimap(new TreeMap<>(), ArrayList::new);
 
         while (!fieldsByName.isEmpty()) {
@@ -82,11 +86,13 @@ public class StructPropertyFactory {
             if (attribute.vectorAxes().length == 0) {
                 fieldsByName.remove(name);
                 fields = ImmutableList.of(field);
+                attributeName = PorkUtil.fallbackIfNull(nameOverrides.remove(name), name);
             } else {
                 String[] vectorAxes = attribute.vectorAxes();
                 checkArg(name.endsWith(vectorAxes[0]), "name doesn't end in %s: %s", vectorAxes[0], field);
 
-                String baseName = attributeName = name.substring(0, name.length() - vectorAxes[0].length());
+                String baseName = name.substring(0, name.length() - vectorAxes[0].length());
+                attributeName = PorkUtil.fallbackIfNull(nameOverrides.remove(baseName), baseName);
 
                 fields = Stream.of(vectorAxes)
                         .map(axisSuffix -> {
@@ -100,7 +106,9 @@ public class StructPropertyFactory {
             propertiesSorted.put(attribute.sort(), new AbstractMap.SimpleEntry<>(attributeName, attribute(options, attribute, fields)));
         }
 
-        return new StructInputProperty(propertiesSorted.values().toArray(uncheckedCast(new Map.Entry[0])));
+        nameOverrides.forEach((oldName, newName) -> checkArg(false, "cannot rename attribute %s to %s: no such attribute %1$s", oldName, newName));
+
+        return new StructInputProperty(Type.getInternalName(struct), propertiesSorted.values().toArray(uncheckedCast(new Map.Entry[0])));
     }
 
     public static StructProperty attribute(@NonNull Options options, @NonNull Attribute attribute, @NonNull List<Field> fields) {
