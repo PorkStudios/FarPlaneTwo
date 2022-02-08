@@ -318,73 +318,74 @@ public class TestLWJGL2 {
     }
 
     @Data
-    @Attribute.New
     public static class UniformAttribs {
         @FieldsAsArrayAttribute(
-                names = { "scaleX", "scaleY" },
                 attribute = @Attribute(name = "scale"),
+                names = { "scaleX", "scaleY" },
+                scalarType = @ScalarType(convert = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true)),
                 transform = @ArrayTransform(ArrayTransform.Type.TO_VECTOR))
-        @ScalarType(convert = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true))
-        public final byte scaleX, scaleY;
+        public final byte scaleX;
+        public final byte scaleY;
 
         @Attribute
         public final float @ArrayType(length = 3, transform = @ArrayTransform(ArrayTransform.Type.TO_VECTOR)) [] floatsAsVector = new float[3];
+
+        @Attribute
+        @ScalarType(convert = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = false))
+        public final byte @ArrayType(length = 8, transform = @ArrayTransform(value = ArrayTransform.Type.TO_VECTOR_ARRAY, vectorComponents = 2)) [] vec2Array = new byte[8];
 
         //@Attribute public final float[] array = new float[8];
     }
 
     @Data
-    @Attribute.New
     public static class UniformArrayAttribs {
         @FieldsAsArrayAttribute(
-                names = { "colorFactorR", "colorFactorG", "colorFactorB" },
                 attribute = @Attribute(name = "colorFactor"),
+                names = { "colorFactorR", "colorFactorG", "colorFactorB" },
                 transform = @ArrayTransform(ArrayTransform.Type.TO_VECTOR))
-        public final float colorFactorR, colorFactorG, colorFactorB;
+        public final float colorFactorR;
+        public final float colorFactorG;
+        public final float colorFactorB;
     }
 
     @Data
-    @Attribute.New
     public static class GlobalAttribs {
         @FieldsAsArrayAttribute(
-                names = { "offsetX", "offsetY" },
                 attribute = @Attribute(name = "offset"),
+                names = { "offsetX", "offsetY" },
+                scalarType = @ScalarType(convert = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = false)),
                 transform = @ArrayTransform(ArrayTransform.Type.TO_VECTOR))
-        @ScalarType(convert = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = false))
-        public final byte offsetX, offsetY;
+        public final byte offsetX;
+        public final byte offsetY;
 
         @Attribute
-        @ScalarType(
-                expand = @ScalarExpand(
-                        value = ScalarExpand.Type.INT_ARGB8_TO_BYTE_VECTOR_RGBA,
-                        thenConvert = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true)))
+        @ScalarType(expand = @ScalarExpand(
+                value = ScalarExpand.Type.INT_ARGB8_TO_BYTE_VECTOR_RGBA,
+                thenConvert = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true)))
         public final int color;
     }
 
     @Data
-    @Attribute.New
     public static class LocalAttribs {
         @FieldsAsArrayAttribute(
-                names = { "posX", "posY" },
                 attribute = @Attribute(name = "pos"),
+                names = { "posX", "posY" },
+                scalarType = @ScalarType(convert = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = false)),
                 transform = @ArrayTransform(ArrayTransform.Type.TO_VECTOR))
-        @ScalarType(convert = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = false))
-        public final byte posX, posY;
+        public final byte posX;
+        public final byte posY;
     }
 
     @Data
-    @Attribute.New
     public static class TextureAttribs {
         @Attribute
-        @ScalarType(
-                expand = @ScalarExpand(
-                        value = ScalarExpand.Type.INT_ARGB8_TO_BYTE_VECTOR_RGBA,
-                        thenConvert = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true)))
+        @ScalarType(expand = @ScalarExpand(
+                value = ScalarExpand.Type.INT_ARGB8_TO_BYTE_VECTOR_RGBA,
+                thenConvert = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true)))
         public final int colorFactor;
     }
 
     @Data
-    @Attribute.New
     public static class UniformSelectionAttribs {
         @Attribute
         public final int selectable;

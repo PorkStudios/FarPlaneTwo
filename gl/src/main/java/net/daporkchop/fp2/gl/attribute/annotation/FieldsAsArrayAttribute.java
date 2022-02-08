@@ -26,14 +26,36 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
+ * Indicates that a group of named fields should be grouped together into a single virtual array attribute.
+ * <p>
+ * This allows defining primitive arrays and vectors without an indirection into an actual Java array.
+ *
  * @author DaPorkchop_
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface FieldsAsArrayAttribute {
-    String[] names();
-
+    /**
+     * @return the {@link Attribute} annotation to place on the virtual attribute. {@link Attribute#name()} <strong>must</strong> be set!
+     */
     Attribute attribute();
 
+    /**
+     * @return the names of the fields to interpret as array components, in order
+     */
+    String[] names();
+
+    /**
+     * An additional {@link ScalarType} annotation to be applied to every array component.
+     * <p>
+     * This value has no effect if the array's component type is not scalar.
+     * <p>
+     * If any array component's type is annotated as {@link ScalarType}, that annotation will take priority over this one.
+     */
+    ScalarType scalarType() default @ScalarType;
+
+    /**
+     * @return any additional {@link ArrayTransform}s to apply to the array after it has been assembled
+     */
     ArrayTransform[] transform() default {};
 }

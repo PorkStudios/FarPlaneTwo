@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.gl.opengl.attribute.struct.property.input;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.attribute.annotation.ScalarType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.ComponentInterpretation;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructPropertyFactory;
@@ -37,9 +38,12 @@ public class FieldsAsArrayInputProperty implements StructProperty.Elements {
     private final StructPropertyFactory.Options options;
     private final Field[] fields;
 
-    public FieldsAsArrayInputProperty(@NonNull StructPropertyFactory.Options options, @NonNull Field[] fields) {
+    private final ScalarType scalarType;
+
+    public FieldsAsArrayInputProperty(@NonNull StructPropertyFactory.Options options, @NonNull Field[] fields, @NonNull ScalarType scalarType) {
         this.options = options;
         this.fields = fields;
+        this.scalarType = scalarType;
 
         this.element(0).with(new PropertyCallback() {
             @Override
@@ -88,7 +92,22 @@ public class FieldsAsArrayInputProperty implements StructProperty.Elements {
 
     @Override
     public StructProperty element(int elementIndex) {
-        return StructPropertyFactory.attributeFromField(this.options, this.fields[elementIndex]);
+        return StructPropertyFactory.attributeFromField(this.options, this.fields[elementIndex]).with(new TypedPropertyCallback<StructProperty>() {
+            @Override
+            public StructProperty withComponents(@NonNull Components componentsProperty) {
+                return StructPropertyFactory.scalarType(FieldsAsArrayInputProperty.this.options, componentsProperty, FieldsAsArrayInputProperty.this.scalarType);
+            }
+
+            @Override
+            public StructProperty withElements(@NonNull Elements elementsProperty) {
+                return elementsProperty;
+            }
+
+            @Override
+            public StructProperty withFields(@NonNull Fields fieldsProperty) {
+                return fieldsProperty;
+            }
+        });
     }
 
     @Override

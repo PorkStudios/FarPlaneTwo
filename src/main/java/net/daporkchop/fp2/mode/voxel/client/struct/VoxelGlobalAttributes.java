@@ -22,7 +22,9 @@ package net.daporkchop.fp2.mode.voxel.client.struct;
 
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
+import net.daporkchop.fp2.gl.attribute.annotation.ArrayTransform;
 import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
+import net.daporkchop.fp2.gl.attribute.annotation.FieldsAsArrayAttribute;
 
 /**
  * @author DaPorkchop_
@@ -30,7 +32,10 @@ import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
 @AllArgsConstructor
 @NoArgsConstructor
 public class VoxelGlobalAttributes {
-    @Attribute(vectorAxes = { "X", "Y", "Z", "Level" })
+    @FieldsAsArrayAttribute(
+            attribute = @Attribute(name = "tilePos"),
+            names = { "tilePosX", "tilePosY", "tilePosZ", "tilePosLevel" },
+            transform = @ArrayTransform(ArrayTransform.Type.TO_VECTOR))
     public int tilePosX;
     public int tilePosY;
     public int tilePosZ;

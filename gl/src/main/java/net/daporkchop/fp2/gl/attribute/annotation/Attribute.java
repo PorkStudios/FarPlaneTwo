@@ -34,44 +34,4 @@ public @interface Attribute {
     int sort() default 0;
 
     String name() default "";
-
-    @Deprecated
-    String[] vectorAxes() default {};
-
-    @Deprecated
-    int[] arrayLength() default {};
-
-    @Deprecated
-    Transform[] transform() default {};
-
-    @Deprecated
-    Conversion[] convert() default {};
-
-    /**
-     * @author DaPorkchop_
-     */
-    enum Conversion {
-        /**
-         * The source value is a 2's compliment signed integer, and is re-interpreted as an unsigned integer.
-         * <p>
-         * If used, this conversion must be the first element in {@link #convert()}.
-         */
-        TO_UNSIGNED,
-        /**
-         * The value is an integer type, and is converted to a {@code float}.
-         */
-        TO_FLOAT,
-        /**
-         * The value is an integer type, and is converted to a normalized {@code float}.
-         * <p>
-         * If the value is a 2's compliment signed integer, the resulting {@code float} is normalized to the range {@code [-1, 1)}. If the value is an unsigned integer, the resulting {@code float} is normalized
-         * to the range {@code [0, 1]}.
-         */
-        TO_NORMALIZED_FLOAT;
-    }
-
-    @Retention(RetentionPolicy.RUNTIME)
-    @Target({ ElementType.TYPE })
-    @interface New {
-    }
 }

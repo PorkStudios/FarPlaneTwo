@@ -25,7 +25,10 @@ import com.google.common.collect.Interners;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.With;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLBasicType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLType;
+
+import java.util.stream.Stream;
 
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
@@ -52,5 +55,9 @@ public final class GLSLField<T extends GLSLType> {
 
     public GLSLField<T> intern() {
         return uncheckedCast(INTERNER.intern(this.withType(uncheckedCast(this.type.intern())).withName(this.name.intern())));
+    }
+
+    public Stream<GLSLField<? extends GLSLBasicType>> basicFields() {
+        return this.type.basicFields(this.name);
     }
 }

@@ -30,6 +30,7 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLTypeFactory;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 
+import java.lang.reflect.AnnotatedArrayType;
 import java.lang.reflect.Field;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -65,7 +66,7 @@ public class SimplePrimitiveArrayInputProperty implements StructProperty.Element
     public StructProperty element(int elementIndex) {
         checkIndex(this.length, elementIndex);
 
-        return new StructProperty.Components() {
+        return StructPropertyFactory.processAnnotated(this.options, new StructProperty.Components() {
             @Override
             public ComponentType componentType() {
                 return SimplePrimitiveArrayInputProperty.this.componentType;
@@ -97,7 +98,7 @@ public class SimplePrimitiveArrayInputProperty implements StructProperty.Element
                     this.componentType().arrayLoad(mv);
                 });
             }
-        };
+        }, ((AnnotatedArrayType) this.field.getAnnotatedType()).getAnnotatedGenericComponentType());
     }
 
     @Override

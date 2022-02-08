@@ -27,11 +27,15 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.GL;
-import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
 import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
+import net.daporkchop.fp2.gl.attribute.annotation.ArrayTransform;
+import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
+import net.daporkchop.fp2.gl.attribute.annotation.FieldsAsArrayAttribute;
+import net.daporkchop.fp2.gl.attribute.annotation.ScalarConvert;
+import net.daporkchop.fp2.gl.attribute.annotation.ScalarType;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.primitive.map.ObjIntMap;
 import net.daporkchop.lib.primitive.map.open.ObjIntOpenHashMap;
@@ -295,7 +299,11 @@ public class TextureUVs extends AbstractReleasable {
     @AllArgsConstructor
     @EqualsAndHashCode
     public static class QuadList {
-        @Attribute(vectorAxes = { "First", "Last" }, convert = Attribute.Conversion.TO_UNSIGNED)
+        @FieldsAsArrayAttribute(
+                attribute = @Attribute(name = "texQuadList"),
+                names = { "texQuadListFirst", "texQuadListLast" },
+                scalarType = @ScalarType(convert = @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED)),
+                transform = @ArrayTransform(ArrayTransform.Type.TO_VECTOR))
         public final int texQuadListFirst;
         public final int texQuadListLast;
     }
@@ -306,7 +314,10 @@ public class TextureUVs extends AbstractReleasable {
     @AllArgsConstructor
     @EqualsAndHashCode
     public static class PackedBakedQuad {
-        @Attribute(vectorAxes = { "S", "T", "P", "Q" })
+        @FieldsAsArrayAttribute(
+                attribute = @Attribute(name = "texQuadCoord"),
+                names = { "texQuadCoordS", "texQuadCoordT", "texQuadCoordP", "texQuadCoordQ" },
+                transform = @ArrayTransform(ArrayTransform.Type.TO_VECTOR))
         public final float texQuadCoordS;
         public final float texQuadCoordT;
         public final float texQuadCoordP;
