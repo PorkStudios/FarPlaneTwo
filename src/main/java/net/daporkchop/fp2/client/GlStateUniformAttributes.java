@@ -23,8 +23,10 @@ package net.daporkchop.fp2.client;
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.MatrixHelper;
 import net.daporkchop.fp2.common.util.DirectBufferHackery;
+import net.daporkchop.fp2.gl.attribute.annotation.ArrayTransform;
+import net.daporkchop.fp2.gl.attribute.annotation.ArrayType;
 import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
-import net.daporkchop.fp2.gl.attribute.annotation.Transform;
+import net.daporkchop.fp2.gl.attribute.annotation.FieldsAsArrayAttribute;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
@@ -43,23 +45,31 @@ import static org.lwjgl.opengl.GL11.*;
 /**
  * @author DaPorkchop_
  */
+@Attribute.New
 public class GlStateUniformAttributes {
-    @Attribute(
-            arrayLength = 16,
-            transform = @Transform(value = Transform.Type.ARRAY_TO_MATRIX, matrixCols = 4, matrixRows = 4))
-    public final float[] modelViewProjectionMatrix = new float[16];
+    @Attribute
+    public final float @ArrayType(length = 16, transform = @ArrayTransform(value = ArrayTransform.Type.TO_MATRIX, matrixCols = 4, matrixRows = 4)) [] modelViewProjectionMatrix = new float[16];
 
-    @Attribute(vectorAxes = { "X", "Y", "Z" })
+    @FieldsAsArrayAttribute(
+            names = { "positionFloorX", "positionFloorY", "positionFloorZ" },
+            attribute = @Attribute(name = "positionFloor"),
+            transform = @ArrayTransform(ArrayTransform.Type.TO_VECTOR))
     public int positionFloorX;
     public int positionFloorY;
     public int positionFloorZ;
 
-    @Attribute(vectorAxes = { "X", "Y", "Z" })
+    @FieldsAsArrayAttribute(
+            names = { "positionFracX", "positionFracY", "positionFracZ" },
+            attribute = @Attribute(name = "positionFrac"),
+            transform = @ArrayTransform(ArrayTransform.Type.TO_VECTOR))
     public float positionFracX;
     public float positionFracY;
     public float positionFracZ;
 
-    @Attribute(vectorAxes = { "R", "G", "B", "A" })
+    @FieldsAsArrayAttribute(
+            names = { "fogColorR", "fogColorG", "fogColorB", "fogColorA" },
+            attribute = @Attribute(name = "fogColor"),
+            transform = @ArrayTransform(ArrayTransform.Type.TO_VECTOR))
     public float fogColorR;
     public float fogColorG;
     public float fogColorB;

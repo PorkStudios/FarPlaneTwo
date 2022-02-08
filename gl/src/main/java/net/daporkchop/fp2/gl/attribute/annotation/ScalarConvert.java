@@ -20,7 +20,6 @@
 
 package net.daporkchop.fp2.gl.attribute.annotation;
 
-import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
@@ -29,49 +28,31 @@ import java.lang.annotation.Target;
  * @author DaPorkchop_
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.FIELD })
-public @interface Attribute {
-    int sort() default 0;
+@Target({})
+public @interface ScalarConvert {
+    Type value();
 
-    String name() default "";
-
-    @Deprecated
-    String[] vectorAxes() default {};
-
-    @Deprecated
-    int[] arrayLength() default {};
-
-    @Deprecated
-    Transform[] transform() default {};
-
-    @Deprecated
-    Conversion[] convert() default {};
+    boolean normalized() default false;
 
     /**
      * @author DaPorkchop_
      */
-    enum Conversion {
+    enum Type {
         /**
-         * The source value is a 2's compliment signed integer, and is re-interpreted as an unsigned integer.
+         * The source value is a 2's compliment signed integer, and is re-interpreted as an unsigned integer without modification.
          * <p>
          * If used, this conversion must be the first element in {@link #convert()}.
          */
         TO_UNSIGNED,
         /**
-         * The value is an integer type, and is converted to a {@code float}.
-         */
-        TO_FLOAT,
-        /**
-         * The value is an integer type, and is converted to a normalized {@code float}.
+         * The source value is an integer, and is converted to a {@code float}.
          * <p>
-         * If the value is a 2's compliment signed integer, the resulting {@code float} is normalized to the range {@code [-1, 1)}. If the value is an unsigned integer, the resulting {@code float} is normalized
-         * to the range {@code [0, 1]}.
+         * If {@link #normalized()} is {@code true}, the resulting values will be normalized. The range to which they are normalized depends on the source type:
+         * <ul>
+         *     <li>If the value is a 2's compliment signed integer, the resulting {@code float} is normalized to the range {@code [-1, 1)}.</li>
+         *     <li>If the value is an unsigned integer, the resulting {@code float} is normalized to the range {@code [0, 1]}.</li>
+         * </ul>
          */
-        TO_NORMALIZED_FLOAT;
-    }
-
-    @Retention(RetentionPolicy.RUNTIME)
-    @Target({ ElementType.TYPE })
-    @interface New {
+        TO_FLOAT;
     }
 }

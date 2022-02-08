@@ -20,7 +20,6 @@
 
 package net.daporkchop.fp2.gl.attribute.annotation;
 
-import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
@@ -29,49 +28,23 @@ import java.lang.annotation.Target;
  * @author DaPorkchop_
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.FIELD })
-public @interface Attribute {
-    int sort() default 0;
+@Target({})
+public @interface ScalarExpand {
+    Type value();
 
-    String name() default "";
+    boolean alpha() default true;
 
-    @Deprecated
-    String[] vectorAxes() default {};
-
-    @Deprecated
-    int[] arrayLength() default {};
-
-    @Deprecated
-    Transform[] transform() default {};
-
-    @Deprecated
-    Conversion[] convert() default {};
+    ScalarConvert[] thenConvert() default {};
 
     /**
      * @author DaPorkchop_
      */
-    enum Conversion {
+    enum Type {
         /**
-         * The source value is a 2's compliment signed integer, and is re-interpreted as an unsigned integer.
+         * The source type is a scalar integer, interpreted as an ARGB8 color.
          * <p>
-         * If used, this conversion must be the first element in {@link #convert()}.
+         * The RGB(A) components are extracted individually, resulting in a vector of unsigned {@code byte}s. The A channel is only included if {@link #alpha()} is {@code true}.
          */
-        TO_UNSIGNED,
-        /**
-         * The value is an integer type, and is converted to a {@code float}.
-         */
-        TO_FLOAT,
-        /**
-         * The value is an integer type, and is converted to a normalized {@code float}.
-         * <p>
-         * If the value is a 2's compliment signed integer, the resulting {@code float} is normalized to the range {@code [-1, 1)}. If the value is an unsigned integer, the resulting {@code float} is normalized
-         * to the range {@code [0, 1]}.
-         */
-        TO_NORMALIZED_FLOAT;
-    }
-
-    @Retention(RetentionPolicy.RUNTIME)
-    @Target({ ElementType.TYPE })
-    @interface New {
+        INT_ARGB8_TO_BYTE_VECTOR_RGBA
     }
 }

@@ -25,13 +25,18 @@ import lombok.SneakyThrows;
 import net.daporkchop.fp2.common.util.Identifier;
 import net.daporkchop.fp2.common.util.exception.ResourceNotFoundException;
 import net.daporkchop.fp2.gl.GL;
-import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
 import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.attribute.AttributeWriter;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
-import net.daporkchop.fp2.gl.attribute.annotation.Transform;
+import net.daporkchop.fp2.gl.attribute.annotation.ArrayTransform;
+import net.daporkchop.fp2.gl.attribute.annotation.ArrayType;
+import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
+import net.daporkchop.fp2.gl.attribute.annotation.FieldsAsArrayAttribute;
+import net.daporkchop.fp2.gl.attribute.annotation.ScalarConvert;
+import net.daporkchop.fp2.gl.attribute.annotation.ScalarExpand;
+import net.daporkchop.fp2.gl.attribute.annotation.ScalarType;
 import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureWriter2D;
@@ -122,10 +127,10 @@ public class TestLWJGL2 {
         AttributeFormat<UniformAttribs> uniformFormat = gl.createAttributeFormat(UniformAttribs.class).useFor(AttributeUsage.UNIFORM).build();
         AttributeFormat<UniformArrayAttribs> uniformArrayFormat = gl.createAttributeFormat(UniformArrayAttribs.class).useFor(AttributeUsage.UNIFORM_ARRAY).build();
         AttributeFormat<GlobalAttribs> globalFormat = gl.createAttributeFormat(GlobalAttribs.class).useFor(AttributeUsage.DRAW_GLOBAL).build();
+        TextureFormat2D<TextureAttribs> textureFormat = gl.createTextureFormat2D(TextureAttribs.class).build();
         AttributeFormat<LocalAttribs> localFormat = gl.createAttributeFormat(LocalAttribs.class).useFor(AttributeUsage.DRAW_LOCAL, AttributeUsage.TRANSFORM_INPUT, AttributeUsage.TRANSFORM_OUTPUT)
                 .rename("pos", "posRenamed")
                 .build();
-        TextureFormat2D<TextureAttribs> textureFormat = gl.createTextureFormat2D(TextureAttribs.class).build();
         AttributeFormat<UniformSelectionAttribs> selectionUniformFormat = gl.createAttributeFormat(UniformSelectionAttribs.class).useFor(AttributeUsage.UNIFORM).build();
 
         DrawLayout drawLayout = gl.createDrawLayout()
@@ -313,54 +318,73 @@ public class TestLWJGL2 {
     }
 
     @Data
+    @Attribute.New
     public static class UniformAttribs {
-        @Attribute(vectorAxes = { "X", "Y" }, convert = Attribute.Conversion.TO_NORMALIZED_FLOAT)
-        public final byte scaleX;
-        public final byte scaleY;
+        @FieldsAsArrayAttribute(
+                names = { "scaleX", "scaleY" },
+                attribute = @Attribute(name = "scale"),
+                transform = @ArrayTransform(ArrayTransform.Type.TO_VECTOR))
+        @ScalarType(convert = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true))
+        public final byte scaleX, scaleY;
 
-        @Attribute(
-                arrayLength = 3)
-        public final float[] floatsAsVector = new float[3];
+        @Attribute
+        public final float @ArrayType(length = 3, transform = @ArrayTransform(ArrayTransform.Type.TO_VECTOR)) [] floatsAsVector = new float[3];
 
         //@Attribute public final float[] array = new float[8];
     }
 
     @Data
+    @Attribute.New
     public static class UniformArrayAttribs {
-        @Attribute(vectorAxes = { "R", "G", "B" })
-        public final float colorFactorR;
-        public final float colorFactorG;
-        public final float colorFactorB;
+        @FieldsAsArrayAttribute(
+                names = { "colorFactorR", "colorFactorG", "colorFactorB" },
+                attribute = @Attribute(name = "colorFactor"),
+                transform = @ArrayTransform(ArrayTransform.Type.TO_VECTOR))
+        public final float colorFactorR, colorFactorG, colorFactorB;
     }
 
     @Data
+    @Attribute.New
     public static class GlobalAttribs {
-        @Attribute(vectorAxes = { "X", "Y" }, convert = Attribute.Conversion.TO_FLOAT)
-        public final byte offsetX;
-        public final byte offsetY;
+        @FieldsAsArrayAttribute(
+                names = { "offsetX", "offsetY" },
+                attribute = @Attribute(name = "offset"),
+                transform = @ArrayTransform(ArrayTransform.Type.TO_VECTOR))
+        @ScalarType(convert = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = false))
+        public final byte offsetX, offsetY;
 
-        @Attribute(
-                transform = @Transform(Transform.Type.INT_ARGB8_TO_BYTE_VECTOR_RGBA),
-                convert = Attribute.Conversion.TO_NORMALIZED_FLOAT)
+        @Attribute
+        @ScalarType(
+                expand = @ScalarExpand(
+                        value = ScalarExpand.Type.INT_ARGB8_TO_BYTE_VECTOR_RGBA,
+                        thenConvert = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true)))
         public final int color;
     }
 
     @Data
+    @Attribute.New
     public static class LocalAttribs {
-        @Attribute(vectorAxes = { "X", "Y" }, convert = Attribute.Conversion.TO_FLOAT)
-        public final byte posX;
-        public final byte posY;
+        @FieldsAsArrayAttribute(
+                names = { "posX", "posY" },
+                attribute = @Attribute(name = "pos"),
+                transform = @ArrayTransform(ArrayTransform.Type.TO_VECTOR))
+        @ScalarType(convert = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = false))
+        public final byte posX, posY;
     }
 
     @Data
+    @Attribute.New
     public static class TextureAttribs {
-        @Attribute(
-                transform = @Transform(Transform.Type.INT_ARGB8_TO_BYTE_VECTOR_RGBA),
-                convert = Attribute.Conversion.TO_NORMALIZED_FLOAT)
+        @Attribute
+        @ScalarType(
+                expand = @ScalarExpand(
+                        value = ScalarExpand.Type.INT_ARGB8_TO_BYTE_VECTOR_RGBA,
+                        thenConvert = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true)))
         public final int colorFactor;
     }
 
     @Data
+    @Attribute.New
     public static class UniformSelectionAttribs {
         @Attribute
         public final int selectable;

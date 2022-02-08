@@ -20,7 +20,6 @@
 
 package net.daporkchop.fp2.gl.attribute.annotation;
 
-import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
@@ -29,49 +28,50 @@ import java.lang.annotation.Target;
  * @author DaPorkchop_
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.FIELD })
-public @interface Attribute {
-    int sort() default 0;
+@Target({})
+public @interface ArrayTransform {
+    Type value();
 
-    String name() default "";
+    int matrixCols() default -1;
 
-    @Deprecated
-    String[] vectorAxes() default {};
+    int matrixRows() default -1;
 
-    @Deprecated
-    int[] arrayLength() default {};
-
-    @Deprecated
-    Transform[] transform() default {};
-
-    @Deprecated
-    Conversion[] convert() default {};
+    int vectorComponents() default -1;
 
     /**
      * @author DaPorkchop_
      */
-    enum Conversion {
+    enum Type {
         /**
-         * The source value is a 2's compliment signed integer, and is re-interpreted as an unsigned integer.
+         * The source type is an array of scalars.
          * <p>
-         * If used, this conversion must be the first element in {@link #convert()}.
-         */
-        TO_UNSIGNED,
-        /**
-         * The value is an integer type, and is converted to a {@code float}.
-         */
-        TO_FLOAT,
-        /**
-         * The value is an integer type, and is converted to a normalized {@code float}.
+         * It is interpreted as a single column-major matrix, with the matrix dimensions taken from the {@link #matrixCols()} and {@link #matrixRows()} properties (which must be
+         * set). The array length must be exactly {@code matrixCols() * matrixRows()}.
          * <p>
-         * If the value is a 2's compliment signed integer, the resulting {@code float} is normalized to the range {@code [-1, 1)}. If the value is an unsigned integer, the resulting {@code float} is normalized
-         * to the range {@code [0, 1]}.
+         * This transform, if used, must be the final transform in the chain.
          */
-        TO_NORMALIZED_FLOAT;
-    }
-
-    @Retention(RetentionPolicy.RUNTIME)
-    @Target({ ElementType.TYPE })
-    @interface New {
+        TO_MATRIX,
+        /**
+         * The source type is an array of scalars.
+         * <p>
+         * It is interpreted as an array of column-major matrices, with the matrix dimensions taken from the {@link #matrixCols()} and {@link #matrixRows()} properties (which must
+         * be set). The array length must be a multiple of {@code matrixCols() * matrixRows()}.
+         */
+        TO_MATRIX_ARRAY,
+        /**
+         * The source type is an array of scalars.
+         * <p>
+         * It is interpreted as a single vector, with the component count taken from the array length.
+         * <p>
+         * This transform, if used, must be the final transform in the chain.
+         */
+        TO_VECTOR,
+        /**
+         * The source type is an array of scalars.
+         * <p>
+         * It is interpreted as an array of vectors, with the component count taken from the {@link #vectorComponents()} property (which must be set). The array length must
+         * be a multiple of the component count.
+         */
+        TO_VECTOR_ARRAY;
     }
 }
