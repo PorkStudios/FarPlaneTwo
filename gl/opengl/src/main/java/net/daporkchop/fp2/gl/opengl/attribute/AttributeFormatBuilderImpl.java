@@ -20,9 +20,12 @@
 
 package net.daporkchop.fp2.gl.opengl.attribute;
 
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.ToString;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
 import net.daporkchop.fp2.gl.attribute.AttributeUsage;
@@ -36,14 +39,15 @@ import java.util.Map;
 import java.util.Set;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-@Getter
+@Data
 public class AttributeFormatBuilderImpl<S> implements AttributeFormatBuilder<S> {
     @NonNull
+    @EqualsAndHashCode.Exclude
     protected final OpenGL gl;
     @NonNull
     protected final Class<S> clazz;
@@ -71,7 +75,7 @@ public class AttributeFormatBuilderImpl<S> implements AttributeFormatBuilder<S> 
 
     @Override
     public AttributeFormat<S> build() {
-        return AttributeFormatType.createBestFormat(this);
+        return uncheckedCast(this.gl.attributeFormatCache().getUnchecked(this));
     }
 
     public StructInfo<S> structInfo() {

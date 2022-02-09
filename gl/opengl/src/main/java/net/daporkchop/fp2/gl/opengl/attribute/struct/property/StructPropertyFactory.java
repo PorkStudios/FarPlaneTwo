@@ -52,6 +52,7 @@ import org.objectweb.asm.Type;
 import java.lang.reflect.AnnotatedArrayType;
 import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -74,6 +75,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 public class StructPropertyFactory {
     public static StructProperty struct(@NonNull Options options, @NonNull Class<?> struct, @NonNull Map<String, String> nameOverrides) {
         Map<String, Field> fieldsByName = Stream.of(struct.getFields())
+                .filter(field -> (field.getModifiers() & Modifier.STATIC) == 0) //skip static fields
                 .collect(Collectors.toMap(Field::getName, Function.identity(), (a, b) -> {
                             throw new IllegalArgumentException(a + " " + b);
                         },
@@ -153,7 +155,7 @@ public class StructPropertyFactory {
             if (componentType.getType() instanceof Class && ((Class<?>) componentType.getType()).isPrimitive()) {
                 property = new SimplePrimitiveArrayInputProperty(options, field, arrayType.length());
             } else {
-                throw new UnsupportedOperationException("don't know how to process type: " + annotatedArrayType);
+                throw new UnsupportedOperationException("don't know how to process type: " + annotatedArrayType.getType());
             }
 
             return arrayTransform(options, property, arrayType.transform());
@@ -168,7 +170,7 @@ public class StructPropertyFactory {
 
     public static StructProperty processAnnotated(@NonNull Options options, @NonNull StructProperty property, @NonNull AnnotatedType annotatedType) {
         if (annotatedType instanceof AnnotatedArrayType) {
-            throw new UnsupportedOperationException("don't know how to process type: " + annotatedType);
+            throw new UnsupportedOperationException("don't know how to process type: " + annotatedType.getType());
         } else {
             return annotatedType.isAnnotationPresent(ScalarType.class)
                     ? scalarType(options, (StructProperty.Components) property, annotatedType.getAnnotation(ScalarType.class))
