@@ -54,7 +54,7 @@ public class InterleavedTransformOutputAttributeBindingLocation<S> implements Bi
     @Override
     public void configureProgramPreLink(@NonNull GLAPI api, int program) {
         api.glTransformFeedbackVaryings(program,
-                this.layout.attributeFields().map(GLSLField::name).toArray(CharSequence[]::new),
+                this.layout.attributeFields().flatMap(GLSLField::basicFields).map(GLSLField::name).toArray(CharSequence[]::new),
                 GL_INTERLEAVED_ATTRIBS);
     }
 

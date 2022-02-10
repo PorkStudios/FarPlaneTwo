@@ -28,7 +28,7 @@ import lombok.With;
  * @author DaPorkchop_
  */
 @Data
-public final class GLSLMatrixType implements GLSLType {
+public final class GLSLMatrixType implements GLSLBasicType {
     @With
     @NonNull
     private final GLSLPrimitiveType primitive;
@@ -44,5 +44,11 @@ public final class GLSLMatrixType implements GLSLType {
     @Override
     public int requiredVertexAttributeSlots() {
         return this.columns;
+    }
+
+    @Override
+    public GLSLMatrixType ensureValid() {
+        GLSLBasicType.super.ensureValid();
+        return this;
     }
 }

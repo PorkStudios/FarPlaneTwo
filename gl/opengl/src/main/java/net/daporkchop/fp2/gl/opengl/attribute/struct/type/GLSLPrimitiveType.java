@@ -33,8 +33,8 @@ import static net.daporkchop.fp2.common.util.TypeSize.*;
  */
 @RequiredArgsConstructor
 @Getter
-public enum GLSLPrimitiveType implements GLSLType {
-    INVALID("<invalid>", -1) {
+public enum GLSLPrimitiveType implements GLSLBasicType {
+    INVALID("<invalid>", -1, false, false) {
         @Override
         public String typePrefix() {
             throw new UnsupportedOperationException(this.toString());
@@ -46,18 +46,30 @@ public enum GLSLPrimitiveType implements GLSLType {
         }
 
         @Override
+        public boolean integer() {
+            throw new UnsupportedOperationException(this.toString());
+        }
+
+        @Override
+        public boolean signed() {
+            throw new UnsupportedOperationException(this.toString());
+        }
+
+        @Override
         public String declaration(@NonNull String fieldName) {
             throw new UnsupportedOperationException(this.toString());
         }
     },
-    INT("i", INT_SIZE),
-    UINT("u", INT_SIZE),
-    FLOAT("", FLOAT_SIZE);
+    INT("i", INT_SIZE, true, true),
+    UINT("u", INT_SIZE, true, false),
+    FLOAT("", FLOAT_SIZE, false,true);
 
     @NonNull
     private final String typePrefix;
 
     private final int size;
+    private final boolean integer;
+    private final boolean signed;
 
     @Override
     public String declaration(@NonNull String fieldName) {
@@ -70,12 +82,23 @@ public enum GLSLPrimitiveType implements GLSLType {
     }
 
     @Override
-    public GLSLType withPrimitive(@NonNull GLSLPrimitiveType primitive) {
+    public GLSLPrimitiveType withPrimitive(@NonNull GLSLPrimitiveType primitive) {
         return primitive;
     }
 
     @Override
     public int requiredVertexAttributeSlots() {
         return 1;
+    }
+
+    @Override
+    public GLSLPrimitiveType ensureValid() {
+        GLSLBasicType.super.ensureValid();
+        return this;
+    }
+
+    @Override
+    public GLSLType intern() {
+        return this;
     }
 }

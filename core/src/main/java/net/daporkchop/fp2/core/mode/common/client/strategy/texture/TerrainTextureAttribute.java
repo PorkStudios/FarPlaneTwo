@@ -20,12 +20,18 @@
 
 package net.daporkchop.fp2.core.mode.common.client.strategy.texture;
 
-import net.daporkchop.fp2.gl.attribute.Attribute;
+import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
+import net.daporkchop.fp2.gl.attribute.annotation.ScalarConvert;
+import net.daporkchop.fp2.gl.attribute.annotation.ScalarExpand;
+import net.daporkchop.fp2.gl.attribute.annotation.ScalarType;
 
 /**
  * @author DaPorkchop_
  */
 public class TerrainTextureAttribute {
-    @Attribute(transform = Attribute.Transformation.INT_ARGB8_TO_BYTE_VECTOR_RGBA, convert = Attribute.Conversion.TO_NORMALIZED_FLOAT)
+    @Attribute
+    @ScalarType(expand = @ScalarExpand(
+            value = ScalarExpand.Type.INT_ARGB8_TO_BYTE_VECTOR_RGBA,
+            thenConvert = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true)))
     public final int terrain = 0;
 }

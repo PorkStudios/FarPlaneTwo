@@ -21,41 +21,22 @@
 package net.daporkchop.fp2.gl.opengl.attribute.struct.type;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
 
-import static net.daporkchop.lib.common.util.PValidation.*;
+import java.util.stream.Stream;
 
 /**
  * @author DaPorkchop_
  */
 public interface GLSLType {
-    static GLSLType vec(@NonNull GLSLPrimitiveType primitive, int elements) {
-        switch (elements) {
-            case 1:
-                return primitive;
-            case 2:
-            case 3:
-            case 4:
-                return new GLSLVectorType(primitive, elements);
-            default:
-                throw new IllegalArgumentException("cannot create vector with " + elements + " elements");
-        }
-    }
-
-    static GLSLType mat(@NonNull GLSLPrimitiveType primitive, int columns, int rows) {
-        checkArg(columns >= 2 && columns <= 4 && rows >= 2 && rows <= 4, "cannot create %dx%d matrix", columns, rows);
-        return new GLSLMatrixType(primitive, columns, rows);
-    }
-
     String declaration(@NonNull String fieldName);
 
-    GLSLPrimitiveType primitive();
+    GLSLType ensureValid();
 
-    GLSLType withPrimitive(@NonNull GLSLPrimitiveType primitive);
+    Stream<GLSLField<? extends GLSLBasicType>> basicFields(@NonNull String name);
 
-    int requiredVertexAttributeSlots();
-
-    default GLSLType ensureValid() {
-        checkArg(this.primitive() != GLSLPrimitiveType.INVALID, "invalid type: %s", this);
-        return this;
+    @SuppressWarnings("UnstableApiUsage")
+    default GLSLType intern() {
+        return GLSLTypeFactory.GLSL_TYPE_INTERNER.intern(this);
     }
 }

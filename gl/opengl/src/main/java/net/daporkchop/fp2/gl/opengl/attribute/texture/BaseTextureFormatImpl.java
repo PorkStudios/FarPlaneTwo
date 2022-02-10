@@ -29,6 +29,7 @@ import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.TextureStructFormat;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLType;
 
 import java.util.EnumSet;
 import java.util.List;
@@ -67,7 +68,7 @@ public abstract class BaseTextureFormatImpl<F extends BaseTextureFormatImpl<F, S
     }
 
     @Override
-    public List<GLSLField> rawAttributeFields() {
+    public List<GLSLField<?>> rawAttributeFields() {
         return this.structFormat.glslFields();
     }
 }

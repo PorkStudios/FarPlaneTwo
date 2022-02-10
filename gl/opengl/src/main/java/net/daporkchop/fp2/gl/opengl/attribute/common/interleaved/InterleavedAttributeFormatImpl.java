@@ -35,7 +35,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 public abstract class InterleavedAttributeFormatImpl<F extends InterleavedAttributeFormatImpl<F, S>, S> extends AttributeFormatImpl<F, S, InterleavedStructFormat<S>> {
-    public InterleavedAttributeFormatImpl(@NonNull OpenGL gl, @NonNull InterleavedStructLayout<S> structLayout) {
+    public InterleavedAttributeFormatImpl(@NonNull OpenGL gl, @NonNull InterleavedStructLayout structLayout) {
         super(gl, gl.structFormatGenerator().getInterleaved(structLayout));
     }
 

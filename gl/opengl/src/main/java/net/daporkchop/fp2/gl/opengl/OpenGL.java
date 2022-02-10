@@ -20,6 +20,9 @@
 
 package net.daporkchop.fp2.gl.opengl;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableSet;
 import lombok.Getter;
 import lombok.NonNull;
@@ -28,6 +31,7 @@ import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.gl.GL;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
@@ -49,6 +53,8 @@ import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.draw.shader.FragmentShader;
 import net.daporkchop.fp2.gl.draw.shader.VertexShader;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatType;
+import net.daporkchop.fp2.gl.opengl.attribute.common.AttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.StructFormatGenerator;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureFormat2DImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureFormatBuilderImpl;
@@ -115,6 +121,10 @@ public class OpenGL implements GL {
     protected final Allocator directMemoryAllocator = new DirectMemoryAllocator();
 
     protected final StructFormatGenerator structFormatGenerator = new StructFormatGenerator();
+
+    protected final LoadingCache<AttributeFormatBuilderImpl<?>, AttributeFormat<?>> attributeFormatCache = CacheBuilder.newBuilder()
+            .weakValues()
+            .build(CacheLoader.from(AttributeFormatType::createBestFormat));
 
     protected final int vertexAttributeAlignment;
 

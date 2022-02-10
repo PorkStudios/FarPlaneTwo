@@ -20,28 +20,38 @@
 
 package net.daporkchop.fp2.core.client.render;
 
-import net.daporkchop.fp2.gl.attribute.Attribute;
+import net.daporkchop.fp2.gl.attribute.annotation.ArrayTransform;
+import net.daporkchop.fp2.gl.attribute.annotation.ArrayType;
+import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
+import net.daporkchop.fp2.gl.attribute.annotation.FieldsAsArrayAttribute;
 
 /**
  * @author DaPorkchop_
  */
 public class GlobalUniformAttributes {
-    @Attribute(
-            transform = Attribute.Transformation.ARRAY_TO_MATRIX,
-            matrixDimension = @Attribute.MatrixDimension(columns = 4, rows = 4))
-    public final float[] modelViewProjectionMatrix = new float[16];
+    @Attribute
+    public final float @ArrayType(length = 16, transform = @ArrayTransform(value = ArrayTransform.Type.TO_MATRIX, matrixCols = 4, matrixRows = 4)) [] modelViewProjectionMatrix = new float[16];
 
-    @Attribute(vectorAxes = { "X", "Y", "Z" })
+    @FieldsAsArrayAttribute(
+            attribute = @Attribute(name = "positionFloor"),
+            names = { "positionFloorX", "positionFloorY", "positionFloorZ" },
+            transform = @ArrayTransform(ArrayTransform.Type.TO_VECTOR))
     public int positionFloorX;
     public int positionFloorY;
     public int positionFloorZ;
 
-    @Attribute(vectorAxes = { "X", "Y", "Z" })
+    @FieldsAsArrayAttribute(
+            attribute = @Attribute(name = "positionFrac"),
+            names = { "positionFracX", "positionFracY", "positionFracZ" },
+            transform = @ArrayTransform(ArrayTransform.Type.TO_VECTOR))
     public float positionFracX;
     public float positionFracY;
     public float positionFracZ;
 
-    @Attribute(vectorAxes = { "R", "G", "B", "A" })
+    @FieldsAsArrayAttribute(
+            attribute = @Attribute(name = "fogColor"),
+            names = { "fogColorR", "fogColorG", "fogColorB", "fogColorA" },
+            transform = @ArrayTransform(ArrayTransform.Type.TO_VECTOR))
     public float fogColorR;
     public float fogColorG;
     public float fogColorB;

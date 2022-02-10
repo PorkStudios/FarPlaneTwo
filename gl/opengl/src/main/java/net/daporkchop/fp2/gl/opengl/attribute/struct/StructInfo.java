@@ -20,27 +20,16 @@
 
 package net.daporkchop.fp2.gl.opengl.attribute.struct;
 
-import com.google.common.collect.ImmutableList;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.Attribute;
-import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
-import net.daporkchop.lib.common.util.PorkUtil;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructPropertyFactory;
 
-import java.lang.reflect.Field;
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static net.daporkchop.lib.common.util.PValidation.*;
+import java.util.stream.IntStream;
 
 /**
  * @author DaPorkchop_
@@ -49,71 +38,38 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @EqualsAndHashCode(of = "clazz")
 public class StructInfo<S> {
     protected final Class<S> clazz;
-    protected final List<StructMember<S>> members;
 
-    @Deprecated
-    public StructInfo(@NonNull AttributeFormatBuilderImpl<S> builder) {
-        this(builder.clazz(), builder.nameOverrides());
-    }
+    protected final StructProperty packedProperty;
+    protected final StructProperty unpackedProperty;
 
     public StructInfo(@NonNull Class<S> clazz, @NonNull Map<String, String> nameOverrides) {
         this.clazz = clazz;
-        nameOverrides = new HashMap<>(nameOverrides);
-
-        List<StructMember<S>> memberListBuilder = new ArrayList<>();
-        Map<String, Field> fieldsByName = Stream.of(this.clazz.getFields())
-                .collect(Collectors.toMap(Field::getName, Function.identity(), (a, b) -> {
-                            throw new IllegalArgumentException(a + " " + b);
-                        },
-                        LinkedHashMap::new));
-
-        while (!fieldsByName.isEmpty()) {
-            Field field = fieldsByName.values().stream()
-                    .filter(f -> f.getAnnotation(Attribute.class) != null)
-                    .findAny()
-                    .orElseThrow(() -> new IllegalStateException("no annotated fields remain: " + fieldsByName));
-
-            String name = field.getName();
-            Attribute attribute = field.getAnnotation(Attribute.class);
-
-            if (attribute.vectorAxes().length == 0) {
-                fieldsByName.remove(name);
-                memberListBuilder.add(new StructMember<>(this.clazz, name, attribute, ImmutableList.of(field)));
-            } else {
-                String[] vectorAxes = attribute.vectorAxes();
-                checkArg(name.endsWith(vectorAxes[0]), "name doesn't end in %s: %s", vectorAxes[0], field);
-
-                String baseName = name.substring(0, name.length() - vectorAxes[0].length());
-
-                memberListBuilder.add(new StructMember<>(this.clazz, PorkUtil.fallbackIfNull(nameOverrides.remove(baseName), baseName), attribute, Stream.of(vectorAxes)
-                        .map(axisSuffix -> {
-                            Field componentField = fieldsByName.remove(baseName + axisSuffix);
-                            checkArg(componentField != null, "no such field: %s%s", baseName, axisSuffix);
-                            return componentField;
-                        })
-                        .collect(Collectors.toList())));
-            }
-        }
-
-        nameOverrides.forEach((oldName, newName) -> checkArg(false, "cannot rename attribute %s to %s: no such attribute %1$s", oldName, newName));
-
-        memberListBuilder.sort(Comparator.comparingInt(StructMember::sort));
-        this.members = ImmutableList.copyOf(memberListBuilder);
+        this.packedProperty = StructPropertyFactory.struct(StructPropertyFactory.Options.builder().unpacked(false).build(), clazz, nameOverrides);
+        this.unpackedProperty = StructPropertyFactory.struct(StructPropertyFactory.Options.builder().unpacked(true).build(), clazz, nameOverrides);
     }
 
     public String name() {
         return this.clazz.getSimpleName();
     }
 
-    public List<GLSLField> memberFields() {
-        return this.members.stream()
-                .map(member -> new GLSLField(member.unpackedStage.glslType(), member.name))
-                .collect(Collectors.collectingAndThen(Collectors.toList(), ImmutableList::copyOf));
-    }
+    public List<GLSLField<?>> memberFields() {
+        return this.unpackedProperty().with(new StructProperty.TypedPropertyCallback<List<GLSLField<?>>>() {
+            @Override
+            public List<GLSLField<?>> withComponents(@NonNull StructProperty.Components componentsProperty) {
+                throw new UnsupportedOperationException();
+            }
 
-    public void glslStructDefinition(@NonNull StringBuilder builder) {
-        builder.append("struct ").append(this.clazz.getSimpleName()).append(" {\n");
-        this.members.forEach(member -> builder.append("    ").append(member.unpackedStage.glslType().declaration(member.name)).append(";\n"));
-        builder.append("};\n");
+            @Override
+            public List<GLSLField<?>> withElements(@NonNull StructProperty.Elements elementsProperty) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public List<GLSLField<?>> withFields(@NonNull StructProperty.Fields fieldsProperty) {
+                return IntStream.range(0, fieldsProperty.fields()).mapToObj(fieldsProperty::field)
+                        .map(entry -> new GLSLField<>(entry.getValue().glslType(), entry.getKey()))
+                        .collect(Collectors.toList());
+            }
+        });
     }
 }

@@ -27,6 +27,7 @@ import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.StructFormat;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLType;
 
 import java.util.List;
 
@@ -54,7 +55,7 @@ public abstract class AttributeFormatImpl<F extends AttributeFormatImpl<F, S, SF
     }
 
     @Override
-    public List<GLSLField> rawAttributeFields() {
+    public List<GLSLField<?>> rawAttributeFields() {
         return this.structFormat.glslFields();
     }
 }

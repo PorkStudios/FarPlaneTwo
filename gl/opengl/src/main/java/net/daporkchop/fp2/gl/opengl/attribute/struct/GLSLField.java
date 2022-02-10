@@ -20,17 +20,29 @@
 
 package net.daporkchop.fp2.gl.opengl.attribute.struct;
 
+import com.google.common.collect.Interner;
+import com.google.common.collect.Interners;
 import lombok.Data;
 import lombok.NonNull;
+import lombok.With;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLBasicType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLType;
+
+import java.util.stream.Stream;
+
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
 @Data
-public final class GLSLField {
+@With
+@SuppressWarnings("UnstableApiUsage")
+public final class GLSLField<T extends GLSLType> {
+    private static final Interner<GLSLField<?>> INTERNER = Interners.newWeakInterner();
+
     @NonNull
-    protected final GLSLType type;
+    protected final T type;
     @NonNull
     protected final String name;
 
@@ -39,5 +51,13 @@ public final class GLSLField {
      */
     public String declaration() {
         return this.type.declaration(this.name);
+    }
+
+    public GLSLField<T> intern() {
+        return uncheckedCast(INTERNER.intern(this.withType(uncheckedCast(this.type.intern())).withName(this.name.intern())));
+    }
+
+    public Stream<GLSLField<? extends GLSLBasicType>> basicFields() {
+        return this.type.basicFields(this.name);
     }
 }

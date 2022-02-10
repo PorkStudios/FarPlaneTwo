@@ -22,7 +22,12 @@ package net.daporkchop.fp2.core.mode.heightmap.client.struct;
 
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
-import net.daporkchop.fp2.gl.attribute.Attribute;
+import net.daporkchop.fp2.gl.attribute.annotation.ArrayTransform;
+import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
+import net.daporkchop.fp2.gl.attribute.annotation.FieldsAsArrayAttribute;
+import net.daporkchop.fp2.gl.attribute.annotation.ScalarConvert;
+import net.daporkchop.fp2.gl.attribute.annotation.ScalarExpand;
+import net.daporkchop.fp2.gl.attribute.annotation.ScalarType;
 
 /**
  * @author DaPorkchop_
@@ -33,26 +38,39 @@ public class HeightmapLocalAttributes {
     @Attribute
     public int state;
 
-    @Attribute(
-            vectorAxes = { "Block", "Sky" },
-            convert = { Attribute.Conversion.TO_UNSIGNED, Attribute.Conversion.TO_NORMALIZED_FLOAT })
+    @FieldsAsArrayAttribute(
+            attribute = @Attribute(name = "light"),
+            names = { "lightBlock", "lightSky" },
+            scalarType = @ScalarType(convert = {
+                    @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED),
+                    @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true)
+            }),
+            transform = @ArrayTransform(ArrayTransform.Type.TO_VECTOR))
     public byte lightBlock;
     public byte lightSky;
 
-    @Attribute(
-            transform = Attribute.Transformation.INT_ARGB8_TO_BYTE_VECTOR_RGB,
-            convert = Attribute.Conversion.TO_NORMALIZED_FLOAT)
+    @Attribute
+    @ScalarType(expand = @ScalarExpand(
+            value = ScalarExpand.Type.INT_ARGB8_TO_BYTE_VECTOR_RGBA, alpha = false,
+            thenConvert = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true)))
     public int color;
 
-    @Attribute(
-            vectorAxes = { "X", "Z" },
-            convert = Attribute.Conversion.TO_UNSIGNED)
+    @FieldsAsArrayAttribute(
+            attribute = @Attribute(name = "posHoriz"),
+            names = { "posHorizX", "posHorizZ" },
+            scalarType = @ScalarType(convert = @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED)),
+            transform = @ArrayTransform(ArrayTransform.Type.TO_VECTOR))
     public byte posHorizX;
     public byte posHorizZ;
 
-    @Attribute(convert = Attribute.Conversion.TO_UNSIGNED)
+    @Attribute
+    @ScalarType(convert = @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED))
     public int heightInt;
 
-    @Attribute(convert = { Attribute.Conversion.TO_UNSIGNED, Attribute.Conversion.TO_FLOAT })
+    @Attribute
+    @ScalarType(convert = {
+            @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED),
+            @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = false)
+    })
     public byte heightFrac;
 }

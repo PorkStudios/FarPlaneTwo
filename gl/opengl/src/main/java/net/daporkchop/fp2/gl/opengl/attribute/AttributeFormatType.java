@@ -25,6 +25,7 @@ import net.daporkchop.fp2.gl.opengl.attribute.common.AttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.format.ArrayPackedAttributeFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.format.ArrayPackedInstancedAttributeFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.format.ArrayUnpackedAttributeFormat;
+import net.daporkchop.fp2.gl.opengl.attribute.format.ArrayUnpackedInstancedAttributeFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.format.Std140BlockAttributeFormat;
 
 import java.util.Optional;
@@ -48,6 +49,14 @@ public enum AttributeFormatType {
         public <S> Optional<AttributeFormatImpl<?, S, ?>> createFormat(@NonNull AttributeFormatBuilderImpl<S> builder) {
             return ArrayPackedAttributeFormat.supports(builder)
                     ? Optional.of(new ArrayPackedAttributeFormat<>(builder))
+                    : Optional.empty();
+        }
+    },
+    ARRAY_UNPACKED_INSTANCED {
+        @Override
+        public <S> Optional<AttributeFormatImpl<?, S, ?>> createFormat(@NonNull AttributeFormatBuilderImpl<S> builder) {
+            return ArrayUnpackedInstancedAttributeFormat.supports(builder)
+                    ? Optional.of(new ArrayUnpackedInstancedAttributeFormat<>(builder))
                     : Optional.empty();
         }
     },

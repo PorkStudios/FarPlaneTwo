@@ -28,6 +28,7 @@ import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
 import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLBasicType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLType;
 import net.daporkchop.fp2.gl.opengl.buffer.BufferTarget;
 import net.daporkchop.fp2.gl.opengl.command.state.MutableState;
@@ -47,8 +48,9 @@ public class InterleavedDrawLocalAttributeBindingLocation<S> implements BindingL
     public InterleavedDrawLocalAttributeBindingLocation(@NonNull LayoutEntry<? extends InterleavedAttributeFormatImpl<?, S>> layout, @NonNull BindingLocationAssigner assigner) {
         this.layout = layout;
         this.attributeIndices = this.layout.attributeFields()
+                .flatMap(GLSLField::basicFields)
                 .map(GLSLField::type)
-                .mapToInt(GLSLType::requiredVertexAttributeSlots)
+                .mapToInt(GLSLBasicType::requiredVertexAttributeSlots)
                 .map(assigner::vertexAttribute)
                 .toArray();
     }
@@ -60,7 +62,7 @@ public class InterleavedDrawLocalAttributeBindingLocation<S> implements BindingL
 
     @Override
     public void configureProgramPreLink(@NonNull GLAPI api, int program) {
-        List<GLSLField> fields = this.layout.attributeFields().collect(Collectors.toList());
+        List<GLSLField<? extends GLSLBasicType>> fields = this.layout.attributeFields().flatMap(GLSLField::basicFields).collect(Collectors.toList());
         for (int i = 0; i < this.attributeIndices.length; i++) {
             api.glBindAttribLocation(program, this.attributeIndices[i], fields.get(i).name());
         }

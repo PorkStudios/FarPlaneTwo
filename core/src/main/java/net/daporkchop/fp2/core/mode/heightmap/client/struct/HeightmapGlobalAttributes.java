@@ -22,7 +22,9 @@ package net.daporkchop.fp2.core.mode.heightmap.client.struct;
 
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
-import net.daporkchop.fp2.gl.attribute.Attribute;
+import net.daporkchop.fp2.gl.attribute.annotation.ArrayTransform;
+import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
+import net.daporkchop.fp2.gl.attribute.annotation.FieldsAsArrayAttribute;
 
 /**
  * @author DaPorkchop_
@@ -30,7 +32,10 @@ import net.daporkchop.fp2.gl.attribute.Attribute;
 @AllArgsConstructor
 @NoArgsConstructor
 public class HeightmapGlobalAttributes {
-    @Attribute(vectorAxes = { "X", "Z", "Level" })
+    @FieldsAsArrayAttribute(
+            attribute = @Attribute(name = "tilePos"),
+            names = { "tilePosX", "tilePosZ", "tilePosLevel" },
+            transform = @ArrayTransform(ArrayTransform.Type.TO_VECTOR))
     public int tilePosX;
     public int tilePosZ;
     public int tilePosLevel;

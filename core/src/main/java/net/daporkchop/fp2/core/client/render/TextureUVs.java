@@ -31,9 +31,13 @@ import net.daporkchop.fp2.api.event.ReturningEvent;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.fp2.core.event.AbstractReloadEvent;
 import net.daporkchop.fp2.core.util.Direction;
-import net.daporkchop.fp2.gl.attribute.Attribute;
 import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.annotation.ArrayTransform;
+import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
+import net.daporkchop.fp2.gl.attribute.annotation.FieldsAsArrayAttribute;
+import net.daporkchop.fp2.gl.attribute.annotation.ScalarConvert;
+import net.daporkchop.fp2.gl.attribute.annotation.ScalarType;
 
 import java.util.List;
 
@@ -79,7 +83,11 @@ public interface TextureUVs {
     @RequiredArgsConstructor
     @EqualsAndHashCode
     final class QuadList {
-        @Attribute(vectorAxes = { "First", "Last" }, convert = Attribute.Conversion.TO_UNSIGNED)
+        @FieldsAsArrayAttribute(
+                attribute = @Attribute(name = "texQuadList"),
+                names = { "texQuadListFirst", "texQuadListLast" },
+                scalarType = @ScalarType(convert = @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED)),
+                transform = @ArrayTransform(ArrayTransform.Type.TO_VECTOR))
         public final int texQuadListFirst;
         public final int texQuadListLast;
     }
@@ -90,7 +98,10 @@ public interface TextureUVs {
     @RequiredArgsConstructor
     @EqualsAndHashCode
     final class PackedBakedQuad {
-        @Attribute(vectorAxes = { "S", "T", "P", "Q" })
+        @FieldsAsArrayAttribute(
+                attribute = @Attribute(name = "texQuadCoord"),
+                names = { "texQuadCoordS", "texQuadCoordT", "texQuadCoordP", "texQuadCoordQ" },
+                transform = @ArrayTransform(ArrayTransform.Type.TO_VECTOR))
         public final float texQuadCoordS;
         public final float texQuadCoordT;
         public final float texQuadCoordP;

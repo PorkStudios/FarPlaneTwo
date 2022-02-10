@@ -20,11 +20,10 @@
 
 package net.daporkchop.fp2.gl.opengl.draw.list.arrays.multidrawindirect;
 
-import com.google.common.collect.ImmutableMap;
 import lombok.Data;
 import lombok.NonNull;
 import net.daporkchop.fp2.common.util.Identifier;
-import net.daporkchop.fp2.gl.attribute.Attribute;
+import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
@@ -37,7 +36,6 @@ import net.daporkchop.fp2.gl.opengl.command.state.State;
 import net.daporkchop.fp2.gl.opengl.command.state.StateProperties;
 import net.daporkchop.fp2.gl.opengl.command.state.StateValueProperty;
 import net.daporkchop.fp2.gl.opengl.draw.list.DrawListBuilderImpl;
-import net.daporkchop.fp2.gl.opengl.draw.list.DrawListImpl;
 import net.daporkchop.fp2.gl.opengl.draw.list.SimpleDrawListImpl;
 import net.daporkchop.fp2.gl.transform.TransformLayoutBuilder;
 import net.daporkchop.fp2.gl.transform.binding.TransformBindingBuilder;
