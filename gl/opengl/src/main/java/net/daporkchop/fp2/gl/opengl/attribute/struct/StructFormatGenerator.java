@@ -35,8 +35,10 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.StructLayout;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.TextureStructLayout;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.ComponentInterpretation;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
+import net.daporkchop.fp2.gl.opengl.buffer.GLBuffer;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.signature.SignatureWriter;
@@ -54,6 +56,33 @@ import static org.objectweb.asm.Type.*;
  */
 public class StructFormatGenerator {
     private static final boolean WRITE_CLASSES = true;
+
+    private static void tryFinally(@NonNull MethodVisitor mv, @NonNull Runnable tryGenerator, @NonNull Runnable finallyGenerator) {
+        Label start = new Label();
+        Label end = new Label();
+        Label handler = new Label();
+        Label tail = new Label();
+
+        mv.visitTryCatchBlock(start, end, handler, null);
+
+        //try
+        mv.visitLabel(start);
+        tryGenerator.run();
+        mv.visitLabel(end);
+
+        //finally
+        finallyGenerator.run();
+
+        //jump to tail
+        mv.visitJumpInsn(GOTO, tail);
+
+        //exception handler: finally, then re-throw exception
+        mv.visitLabel(handler);
+        finallyGenerator.run();
+        mv.visitInsn(ATHROW);
+
+        mv.visitLabel(tail);
+    }
 
     protected final Cache<StructLayout<?, ?>, StructFormat<?, ?>> cache = CacheBuilder.newBuilder()
             .weakValues()
@@ -100,14 +129,141 @@ public class StructFormatGenerator {
 
         //void copy(Object struct, Object dstBase, long dstOffset)
         {
-            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "copy", "(Ljava/lang/Object;Ljava/lang/Object;J)V", null, null);
+            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "copy", getMethodDescriptor(VOID_TYPE, getType(Object.class), getType(Object.class), LONG_TYPE), null, null);
 
-            //make sure struct can be cast to requested type
+            //cast object to struct type
             mv.visitVarInsn(ALOAD, 1);
             mv.visitTypeInsn(CHECKCAST, structName);
             mv.visitVarInsn(ASTORE, 1);
 
             this.copyStruct2Buf(mv, layout.structProperty(), layout.member(), 1, 2, 3, 5);
+
+            mv.visitInsn(RETURN);
+
+            mv.visitMaxs(0, 0);
+            mv.visitEnd();
+        }
+
+        //void upload(Object struct, GLBuffer dst)
+        {
+            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "upload", getMethodDescriptor(VOID_TYPE, getType(Object.class), getType(GLBuffer.class)), null, null);
+
+            //cast object to struct type
+            mv.visitVarInsn(ALOAD, 1);
+            mv.visitTypeInsn(CHECKCAST, structName);
+            mv.visitVarInsn(ASTORE, 1);
+
+            //add a dummy null field to the lvt, and put it at index 0 because we don't actually need a reference to this
+            mv.visitInsn(ACONST_NULL);
+            mv.visitVarInsn(ASTORE, 0);
+
+            //allocate direct buffer
+            mv.visitLdcInsn(layout.stride());
+            mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "allocateMemory", getMethodDescriptor(LONG_TYPE, LONG_TYPE), false);
+            mv.visitVarInsn(LSTORE, 3);
+
+            tryFinally(mv,
+                    () -> {
+                        //convert struct to bytes
+                        this.copyStruct2Buf(mv, layout.structProperty(), layout.member(), 1, 0, 3, 5);
+
+                        //upload to GLBuffer
+                        mv.visitVarInsn(ALOAD, 2);
+                        mv.visitVarInsn(LLOAD, 3);
+                        mv.visitLdcInsn(layout.stride());
+                        mv.visitMethodInsn(INVOKEVIRTUAL, getInternalName(GLBuffer.class), "upload", getMethodDescriptor(VOID_TYPE, LONG_TYPE, LONG_TYPE), false);
+                    },
+                    () -> {
+                        //free direct buffer
+                        mv.visitVarInsn(LLOAD, 3);
+                        mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "freeMemory", getMethodDescriptor(VOID_TYPE, LONG_TYPE), false);
+                    });
+
+            mv.visitInsn(RETURN);
+
+            mv.visitMaxs(0, 0);
+            mv.visitEnd();
+        }
+
+        //void upload(Object[] structs, GLBuffer dst)
+        {
+            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "upload", getMethodDescriptor(VOID_TYPE, getType(Object[].class), getType(GLBuffer.class)), null, null);
+
+            //cast object to struct array type
+            mv.visitVarInsn(ALOAD, 1);
+            mv.visitTypeInsn(CHECKCAST, "[L" + structName + ';');
+            mv.visitVarInsn(ASTORE, 1);
+
+            //add a dummy null field to the lvt, and put it at index 0 because we don't actually need a reference to this
+            mv.visitInsn(ACONST_NULL);
+            mv.visitVarInsn(ASTORE, 0);
+
+            //calculate buffer capacity
+            mv.visitLdcInsn(layout.stride());
+            mv.visitVarInsn(ALOAD, 1);
+            mv.visitInsn(ARRAYLENGTH);
+            mv.visitInsn(I2L);
+            mv.visitInsn(LMUL);
+            mv.visitVarInsn(LSTORE, 5);
+
+            //allocate direct buffer
+            mv.visitVarInsn(LLOAD, 5);
+            mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "allocateMemory", getMethodDescriptor(LONG_TYPE, LONG_TYPE), false);
+            mv.visitVarInsn(LSTORE, 3);
+
+            tryFinally(mv,
+                    () -> {
+                        final int iLvtIndex = 7;
+                        final int addrLvtIndex = 9;
+
+                        mv.visitInsn(ICONST_0);
+                        mv.visitVarInsn(ISTORE, iLvtIndex);
+
+                        mv.visitVarInsn(LLOAD, 3);
+                        mv.visitVarInsn(LSTORE, addrLvtIndex);
+
+                        Label cmp = new Label();
+                        Label tail = new Label();
+
+                        //if (i >= structs.length) goto tail;
+                        mv.visitLabel(cmp);
+                        mv.visitVarInsn(ILOAD, iLvtIndex);
+                        mv.visitVarInsn(ALOAD, 1);
+                        mv.visitInsn(ARRAYLENGTH);
+                        mv.visitJumpInsn(IF_ICMPGE, tail);
+
+                        //load struct from array
+                        mv.visitVarInsn(ALOAD, 1);
+                        mv.visitVarInsn(ILOAD, iLvtIndex);
+                        mv.visitInsn(AALOAD);
+                        mv.visitVarInsn(ASTORE, 8);
+
+                        //convert struct to bytes
+                        this.copyStruct2Buf(mv, layout.structProperty(), layout.member(), 8, 0, addrLvtIndex, 11);
+
+                        //addr += stride;
+                        mv.visitVarInsn(LLOAD, addrLvtIndex);
+                        mv.visitLdcInsn(layout.stride());
+                        mv.visitInsn(LADD);
+                        mv.visitVarInsn(LSTORE, addrLvtIndex);
+
+                        //i++;
+                        mv.visitIincInsn(iLvtIndex, 1);
+                        mv.visitJumpInsn(GOTO, cmp);
+
+                        mv.visitLabel(tail);
+
+                        //upload to GLBuffer
+                        mv.visitVarInsn(ALOAD, 2);
+                        mv.visitVarInsn(LLOAD, 3);
+                        mv.visitVarInsn(LLOAD, 5);
+                        mv.visitMethodInsn(INVOKEVIRTUAL, getInternalName(GLBuffer.class), "upload", getMethodDescriptor(VOID_TYPE, LONG_TYPE, LONG_TYPE), false);
+                    },
+                    () -> {
+                        //free direct buffer
+                        mv.visitVarInsn(LLOAD, 3);
+                        mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "freeMemory", getMethodDescriptor(VOID_TYPE, LONG_TYPE), false);
+                    });
 
             mv.visitInsn(RETURN);
 
