@@ -221,11 +221,14 @@ public enum GLSLBlockMemoryLayout {
 
                     long offset = 0L;
                     for (int i = 0; i < array.length; i++) {
+                        //pad to member alignment
+                        offset = PMath.roundUp(offset, array.elementLayout.alignment());
+
                         //noinspection UnqualifiedMethodAccess
                         children[i] = toInterleaved(baseOffset + offset, array.elementLayout);
 
-                        //pad to member alignment, offset by member size
-                        offset = PMath.roundUp(offset, array.elementLayout.alignment()) + array.elementLayout.size();
+                        //advance by member size
+                        offset += array.elementLayout.size();
                     }
 
                     return new InterleavedStructLayout.NestedMember(children);
@@ -239,11 +242,14 @@ public enum GLSLBlockMemoryLayout {
                     for (int i = 0; i < children.length; i++) {
                         MemberLayout fieldLayout = struct.fieldLayouts[i];
 
+                        //pad to member alignment
+                        offset = PMath.roundUp(offset, fieldLayout.alignment());
+
                         //noinspection UnqualifiedMethodAccess
                         children[i] = toInterleaved(baseOffset + offset, fieldLayout);
 
-                        //pad to member alignment, offset by member size
-                        offset = PMath.roundUp(offset, fieldLayout.alignment()) + fieldLayout.size();
+                        //advance by member size
+                        offset += fieldLayout.size();
                     }
 
                     return new InterleavedStructLayout.NestedMember(children);

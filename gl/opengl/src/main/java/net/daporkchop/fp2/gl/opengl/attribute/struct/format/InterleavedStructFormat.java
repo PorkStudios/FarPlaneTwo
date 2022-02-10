@@ -25,6 +25,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGLConstants;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.InterleavedStructLayout;
+import net.daporkchop.fp2.gl.opengl.buffer.GLBuffer;
 
 /**
  * @author DaPorkchop_
@@ -52,6 +53,22 @@ public abstract class InterleavedStructFormat<S> extends StructFormat<S, Interle
      * @param dstOffset the destination base offset
      */
     public abstract void copy(@NonNull S struct, Object dstBase, long dstOffset);
+
+    /**
+     * Loads the fields from the given struct instance, translates them to the layout format, and uploads them to the given destination buffer.
+     *
+     * @param struct the struct
+     * @param dst    the destination buffer
+     */
+    public abstract void upload(@NonNull S struct, @NonNull GLBuffer dst);
+
+    /**
+     * Loads the fields from the given struct instances, translates them to the layout format, and uploads them to the given destination buffer.
+     *
+     * @param structs the structs
+     * @param dst     the destination buffer
+     */
+    public abstract void upload(@NonNull S[] structs, @NonNull GLBuffer dst);
 
     /**
      * Copies fields in the layout format from the given source to the given destination.

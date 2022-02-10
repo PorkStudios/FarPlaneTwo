@@ -79,6 +79,18 @@ public final class InterleavedAttributeBufferImpl<F extends InterleavedAttribute
     }
 
     @Override
+    public void setContents(@NonNull S struct) {
+        this.structFormat.upload(struct, this.buffer);
+        this.capacity = 1;
+    }
+
+    @Override
+    public void setContents(@NonNull S... structs) {
+        this.structFormat.upload(structs, this.buffer);
+        this.capacity = structs.length;
+    }
+
+    @Override
     public void set(int startIndex, @NonNull AttributeWriter<S> _writer) {
         InterleavedAttributeWriterImpl<F, S> writer = (InterleavedAttributeWriterImpl<F, S>) _writer;
         checkArg(writer.structFormat() == this.structFormat, "mismatched struct formats!");
