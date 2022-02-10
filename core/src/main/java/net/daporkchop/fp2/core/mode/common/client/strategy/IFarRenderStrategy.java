@@ -35,6 +35,9 @@ import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutput;
 import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutputStorage;
 import net.daporkchop.fp2.core.mode.common.client.bake.IRenderBaker;
 import net.daporkchop.fp2.core.mode.common.client.index.IRenderIndex;
+import net.daporkchop.fp2.gl.transform.TransformLayoutBuilder;
+import net.daporkchop.fp2.gl.transform.binding.TransformBindingBuilder;
+import net.daporkchop.fp2.gl.transform.shader.TransformShaderBuilder;
 import net.daporkchop.lib.common.misc.refcount.RefCounted;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
@@ -61,6 +64,12 @@ public interface IFarRenderStrategy<POS extends IFarPos, T extends IFarTile, BO 
     DrawListBuilder<DC> createCommandBuffer(@NonNull DB binding);
 
     DrawBindingBuilder<DB> configureDrawBinding(@NonNull DrawBindingBuilder<DB> builder);
+
+    TransformLayoutBuilder configureSelectionLayout(@NonNull TransformLayoutBuilder builder, int level);
+
+    TransformBindingBuilder configureSelectionBinding(@NonNull TransformBindingBuilder builder, int level);
+
+    TransformShaderBuilder configureSelectionShader(@NonNull TransformShaderBuilder builder, int level);
 
     void render(@NonNull IRenderIndex<POS, BO, DB, DC> index, int layer, boolean pre);
 

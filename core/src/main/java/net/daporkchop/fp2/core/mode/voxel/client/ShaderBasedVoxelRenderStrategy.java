@@ -23,15 +23,7 @@ package net.daporkchop.fp2.core.mode.voxel.client;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.common.util.Identifier;
-import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;
-import net.daporkchop.fp2.gl.attribute.AttributeFormat;
-import net.daporkchop.fp2.gl.attribute.AttributeUsage;
-import net.daporkchop.fp2.gl.draw.DrawLayout;
-import net.daporkchop.fp2.gl.draw.DrawLayout;
-import net.daporkchop.fp2.gl.draw.index.IndexFormat;
-import net.daporkchop.fp2.gl.draw.index.IndexType;
-import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.core.mode.common.client.AbstractFarRenderer;
 import net.daporkchop.fp2.core.mode.common.client.ICullingStrategy;
 import net.daporkchop.fp2.core.mode.common.client.bake.IRenderBaker;
@@ -41,6 +33,17 @@ import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.core.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.core.mode.voxel.client.struct.VoxelGlobalAttributes;
 import net.daporkchop.fp2.core.mode.voxel.client.struct.VoxelLocalAttributes;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeUsage;
+import net.daporkchop.fp2.gl.draw.DrawLayout;
+import net.daporkchop.fp2.gl.draw.index.IndexFormat;
+import net.daporkchop.fp2.gl.draw.index.IndexType;
+import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
+import net.daporkchop.fp2.gl.transform.TransformLayoutBuilder;
+import net.daporkchop.fp2.gl.transform.binding.TransformBindingBuilder;
+import net.daporkchop.fp2.gl.transform.shader.TransformShaderBuilder;
+
+import static net.daporkchop.fp2.core.FP2Core.*;
 
 /**
  * @author DaPorkchop_
@@ -60,7 +63,7 @@ public class ShaderBasedVoxelRenderStrategy extends AbstractMultipassIndexedRend
     public ShaderBasedVoxelRenderStrategy(@NonNull AbstractFarRenderer<VoxelPos, VoxelTile> farRenderer) {
         super(farRenderer);
 
-        this.globalFormat = this.gl.createAttributeFormat(VoxelGlobalAttributes.class).useFor(AttributeUsage.DRAW_GLOBAL).build();
+        this.globalFormat = this.gl.createAttributeFormat(VoxelGlobalAttributes.class).useFor(AttributeUsage.DRAW_GLOBAL, AttributeUsage.TRANSFORM_INPUT).build();
         this.vertexFormat = this.gl.createAttributeFormat(VoxelLocalAttributes.class).useFor(AttributeUsage.DRAW_LOCAL).build();
 
         this.indexFormat = this.gl.createIndexFormat()
@@ -78,11 +81,11 @@ public class ShaderBasedVoxelRenderStrategy extends AbstractMultipassIndexedRend
                 .build();
 
         this.blockShader = ReloadableShaderProgram.draw(this.gl, this.drawLayout, this.macros,
-                Identifier.from(FP2Core.MODID, "shaders/vert/voxel/voxel.vert"),
-                Identifier.from(FP2Core.MODID, "shaders/frag/block.frag"));
+                Identifier.from(MODID, "shaders/vert/voxel/voxel.vert"),
+                Identifier.from(MODID, "shaders/frag/block.frag"));
         this.stencilShader = ReloadableShaderProgram.draw(this.gl, this.drawLayout, this.macros,
-                Identifier.from(FP2Core.MODID, "shaders/vert/voxel/voxel.vert"),
-                Identifier.from(FP2Core.MODID, "shaders/frag/stencil.frag"));
+                Identifier.from(MODID, "shaders/vert/voxel/voxel.vert"),
+                Identifier.from(MODID, "shaders/frag/stencil.frag"));
     }
 
     @Override
@@ -103,6 +106,24 @@ public class ShaderBasedVoxelRenderStrategy extends AbstractMultipassIndexedRend
     @Override
     public IRenderBaker<VoxelPos, VoxelTile, IndexedBakeOutput<VoxelGlobalAttributes, VoxelLocalAttributes>> createBaker() {
         return new VoxelBaker(this.worldRenderer, this.textureUVs);
+    }
+
+    @Override
+    public TransformLayoutBuilder configureSelectionLayout(@NonNull TransformLayoutBuilder builder, int level) {
+        return builder.withUniform(this.uniformFormat())
+                .withInput(this.globalFormat());
+    }
+
+    @Override
+    public TransformBindingBuilder configureSelectionBinding(@NonNull TransformBindingBuilder builder, int level) {
+        return builder.withUniform(this.uniformBuffer());
+        //globals are added afterwards by BakeOutputStorage
+    }
+
+    @Override
+    public TransformShaderBuilder configureSelectionShader(@NonNull TransformShaderBuilder builder, int level) {
+        return builder.include(Identifier.from(MODID, "shaders/select/voxel/voxel.glsl"))
+                .defineAll(this.macros.snapshot().macros());
     }
 
     @Override

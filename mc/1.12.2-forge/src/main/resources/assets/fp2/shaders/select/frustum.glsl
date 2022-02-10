@@ -18,36 +18,10 @@
  *
  */
 
-#ifndef COMP_FRUSTUM
-#define COMP_FRUSTUM
+#ifndef SELECT_FRUSTUM
+#define SELECT_FRUSTUM
 
-#include <"fp2:shaders/comp/common.comp">
-
-//
-//
-// MACROS
-//
-//
-
-#define CLIPPING_PLANES_FULL_OR (4)
-#define CLIPPING_PLANES_FULL_AND (2)
-#define MAX_CLIPPING_PLANES_PARTIAL (10)
-
-//
-//
-// UNIFORMS
-//
-//
-
-//Frustum
-
-layout(std140, binding = 2) uniform FRUSTUM {
-    vec4 fullPlanesOR[CLIPPING_PLANES_FULL_OR];
-    vec4 fullPlanesAND[CLIPPING_PLANES_FULL_AND];
-
-    uint partialCount;
-    vec4 partialPlanes[MAX_CLIPPING_PLANES_PARTIAL];
-} frustum;
+#include <"fp2:shaders/select/common.glsl">
 
 //
 //
@@ -55,7 +29,7 @@ layout(std140, binding = 2) uniform FRUSTUM {
 //
 //
 
-bool testOutsideClippingPlaneOR(in vec3 mn, in vec3 mx, in vec4 plane) {
+/*bool testOutsideClippingPlaneOR(in vec3 mn, in vec3 mx, in vec4 plane) {
     return 0.0 >= min(
                     min(
                         min(
@@ -71,7 +45,7 @@ bool testOutsideClippingPlaneOR(in vec3 mn, in vec3 mx, in vec4 plane) {
                         min(
                             dot(plane, vec4(mx.x, mx.y, mn.z, 1.0)),
                             dot(plane, vec4(mx.x, mx.y, mx.z, 1.0)))));
-}
+}*/
 
 bool testOutsideClippingPlaneAND(in vec3 mn, in vec3 mx, in vec4 plane) {
     return 0.0 >= max(
@@ -92,46 +66,17 @@ bool testOutsideClippingPlaneAND(in vec3 mn, in vec3 mx, in vec4 plane) {
 }
 
 /**
- * Checks to see whether or not the given AABB is totally contained by the frustum.
- *
- * @return false if any part of the AABB is outside of the frustum, true otherwise
- */
-bool isBoxInFrustumFully(in vec3 min, in vec3 max) {
-    for (uint i = 0; i < CLIPPING_PLANES_FULL_OR; i++) {
-        if (testOutsideClippingPlaneOR(min, max, frustum.fullPlanesOR[i])) {
-            return false;
-        }
-    }
-    for (uint i = 0; i < CLIPPING_PLANES_FULL_AND; i++) {
-        if (testOutsideClippingPlaneAND(min, max, frustum.fullPlanesAND[i])) {
-            return false;
-        }
-    }
-    return true;
-}
-
-/**
- * Checks to see whether or not the given AABB is partially contained by the frustum.
- *
- * @return false if the entire AABB is outside of the frustum, true otherwise
- * @see #isBoxInFrustum(vec3, vec3)
- */
-bool isBoxInFrustumPartial(in vec3 min, in vec3 max) {
-    for (uint planeIdx = 0, planeCount = frustum.partialCount; planeIdx < planeCount; planeIdx++) {
-        if (testOutsideClippingPlaneAND(min, max, frustum.partialPlanes[planeIdx])) {
-            return false;
-        }
-    }
-    return true;
-}
-
-/**
  * Checks to see whether or not the given AABB is partially contained by the frustum.
  *
  * @return false if the entire AABB is outside of the frustum, true otherwise
  */
 bool isBoxInFrustum(in vec3 min, in vec3 max) {
-    return isBoxInFrustumFully(min, max) || isBoxInFrustumPartial(min, max);
+    for (uint i = 0; i < u_clippingPlaneCount; i++) {
+        if (testOutsideClippingPlaneAND(min, max, u_clippingPlanes[i])) {
+            return false;
+        }
+    }
+    return true;
 }
 
-#endif //COMP_FRUSTUM
+#endif //SELECT_FRUSTUM

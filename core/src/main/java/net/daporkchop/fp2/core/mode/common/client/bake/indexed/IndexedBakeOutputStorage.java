@@ -22,25 +22,25 @@ package net.daporkchop.fp2.core.mode.common.client.bake.indexed;
 
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.common.util.alloc.Allocator;
+import net.daporkchop.fp2.common.util.alloc.SequentialFixedSizeAllocator;
+import net.daporkchop.fp2.common.util.alloc.SequentialVariableSizedAllocator;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
+import net.daporkchop.fp2.core.mode.common.client.bake.AbstractBakeOutputStorage;
+import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutputStorage;
 import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
-import net.daporkchop.fp2.gl.draw.list.DrawCommandIndexed;
+import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.draw.binding.DrawBindingBuilder;
 import net.daporkchop.fp2.gl.draw.binding.DrawBindingIndexed;
 import net.daporkchop.fp2.gl.draw.index.IndexBuffer;
 import net.daporkchop.fp2.gl.draw.index.IndexFormat;
 import net.daporkchop.fp2.gl.draw.index.IndexWriter;
-import net.daporkchop.fp2.gl.draw.DrawLayout;
-import net.daporkchop.fp2.core.mode.common.client.bake.AbstractBakeOutputStorage;
-import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutputStorage;
-import net.daporkchop.fp2.common.util.alloc.Allocator;
-import net.daporkchop.fp2.common.util.alloc.SequentialFixedSizeAllocator;
-import net.daporkchop.fp2.common.util.alloc.SequentialVariableSizedAllocator;
+import net.daporkchop.fp2.gl.draw.list.DrawCommandIndexed;
+import net.daporkchop.fp2.gl.transform.binding.TransformBindingBuilder;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
-import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.common.util.TypeSize.*;
@@ -160,6 +160,11 @@ public class IndexedBakeOutputStorage<SG, SL> extends AbstractBakeOutputStorage<
                 .withIndexes(this.indexBuffers[pass])
                 .withGlobal(this.globalBuffer)
                 .withLocal(this.vertexBuffer);
+    }
+
+    @Override
+    public TransformBindingBuilder createSelectionBinding(@NonNull TransformBindingBuilder builder) {
+        return builder.withInput(this.globalBuffer);
     }
 
     @Override

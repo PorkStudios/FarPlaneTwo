@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-$today.year DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,31 +18,28 @@
  *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.core.client.renderer.culling;
+#define SELECT_VOXEL_VOXEL
 
-import net.daporkchop.fp2.core.client.IFrustum;
-import net.minecraft.client.renderer.culling.ICamera;
-import net.minecraft.util.math.AxisAlignedBB;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
+#include <"fp2:shaders/select/common.glsl">
+#include <"fp2:shaders/select/frustum.glsl">
 
-/**
- * Makes {@link ICamera} extend {@link IFrustum}.
- *
- * @author DaPorkchop_
- */
-@Mixin(ICamera.class)
-public interface MixinICamera extends IFrustum {
-    @Override
-    default boolean containsPoint(double x, double y, double z) {
-        return this.isBoundingBoxInFrustum(new AxisAlignedBB(x, y, z, x, y, z));
-    }
+//
+//
+// CODE
+//
+//
 
-    @Override
-    default boolean intersectsBB(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
-        return this.isBoundingBoxInFrustum(new AxisAlignedBB(minX, minY, minZ, maxX, maxY, maxZ));
-    }
+bool select() {
+    ivec4 pos = ti_tilePos;
 
-    @Shadow
-    boolean isBoundingBoxInFrustum(AxisAlignedBB p_78546_1_);
+    ivec3 position_absolute = pos.xyz << (T_SHIFT + pos.w);
+    ivec3 position_relative = position_absolute - u_positionFloor;
+
+    return
+#if LEVEL_0
+        !isVanillaRenderableLevel0(pos.xyz) &&
+#endif
+        isBoxInFrustum(
+            vec3(position_relative) - u_positionFrac,
+            vec3(position_relative + ivec3((T_VOXELS + 1) << pos.w)) - u_positionFrac);
 }

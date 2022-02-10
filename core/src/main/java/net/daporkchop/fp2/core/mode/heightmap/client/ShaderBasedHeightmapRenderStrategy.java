@@ -41,6 +41,9 @@ import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.draw.index.IndexFormat;
 import net.daporkchop.fp2.gl.draw.index.IndexType;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
+import net.daporkchop.fp2.gl.transform.TransformLayoutBuilder;
+import net.daporkchop.fp2.gl.transform.binding.TransformBindingBuilder;
+import net.daporkchop.fp2.gl.transform.shader.TransformShaderBuilder;
 
 /**
  * @author DaPorkchop_
@@ -100,6 +103,21 @@ public class ShaderBasedHeightmapRenderStrategy extends AbstractMultipassIndexed
     @Override
     public IRenderBaker<HeightmapPos, HeightmapTile, IndexedBakeOutput<HeightmapGlobalAttributes, HeightmapLocalAttributes>> createBaker() {
         return new HeightmapBaker(this.worldRenderer, this.textureUVs);
+    }
+
+    @Override
+    public TransformLayoutBuilder configureSelectionLayout(@NonNull TransformLayoutBuilder builder, int level) {
+        throw new UnsupportedOperationException(); //TODO
+    }
+
+    @Override
+    public TransformBindingBuilder configureSelectionBinding(@NonNull TransformBindingBuilder builder, int level) {
+        throw new UnsupportedOperationException(); //TODO
+    }
+
+    @Override
+    public TransformShaderBuilder configureSelectionShader(@NonNull TransformShaderBuilder builder, int level) {
+        throw new UnsupportedOperationException(); //TODO
     }
 
     @Override

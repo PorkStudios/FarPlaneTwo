@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -21,9 +21,9 @@
 package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.core.client.renderer.culling;
 
 import net.daporkchop.fp2.core.client.IFrustum;
+import net.minecraft.client.renderer.culling.ClippingHelper;
 import net.minecraft.client.renderer.culling.Frustum;
-import org.spongepowered.asm.mixin.Implements;
-import org.spongepowered.asm.mixin.Interface;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 
@@ -33,10 +33,11 @@ import org.spongepowered.asm.mixin.Shadow;
  * @author DaPorkchop_
  */
 @Mixin(Frustum.class)
-@Implements({
-        @Interface(iface = IFrustum.class, prefix = "fp2_frustum$", unique = true)
-})
 public abstract class MixinFrustum implements IFrustum {
+    @Shadow
+    @Final
+    private ClippingHelper clippingHelper;
+
     @Override
     public boolean containsPoint(double x, double y, double z) {
         return this.isBoxInFrustum(x, y, z, x, y, z);
@@ -49,4 +50,16 @@ public abstract class MixinFrustum implements IFrustum {
 
     @Shadow
     public abstract boolean isBoxInFrustum(double p_78548_1_, double p_78548_3_, double p_78548_5_, double p_78548_7_, double p_78548_9_, double p_78548_11_);
+
+    @Override
+    public ClippingPlanes clippingPlanes() {
+        ClippingPlanes clippingPlanes = new ClippingPlanes();
+
+        //add all planes from the clipping helper to the ClippingPlanes instance
+        for (float[] plane : this.clippingHelper.frustum) {
+            clippingPlanes.put(plane);
+        }
+
+        return clippingPlanes;
+    }
 }

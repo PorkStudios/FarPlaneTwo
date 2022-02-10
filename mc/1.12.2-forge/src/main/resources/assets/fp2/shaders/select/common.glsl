@@ -18,40 +18,9 @@
  *
  */
 
-#define COMP_VOXEL_VOXEL_FRUSTUM_CULLING
+#ifndef SELECT_COMMON
+#define SELECT_COMMON
 
-#include <"fp2:shaders/comp/command_buffer_selection.comp">
-#include <"fp2:shaders/comp/frustum.comp">
+#include <"fp2:shaders/common.glsl">
 
-//
-//
-// BUFFERS
-//
-//
-
-//Positions
-
-layout(std430, binding = 3) readonly buffer POSITIONS {
-    ivec4 positions[];
-};
-
-//
-//
-// CODE
-//
-//
-
-bool select(uint index) { //implements method in comp/command_buffer_selection.comp
-    ivec4 pos = positions[index];
-
-    ivec3 position_absolute = pos.xyz << (T_SHIFT + pos.w);
-    ivec3 position_relative = position_absolute - glState.camera.position_floor;
-
-    return
-#if LEVEL_0
-        !isVanillaRenderableLevel0(pos.xyz) &&
-#endif
-        isBoxInFrustum(
-            vec3(position_relative) - glState.camera.position_fract,
-            vec3(position_relative + ivec3((T_VOXELS + 1) << pos.w)) - glState.camera.position_fract);
-}
+#endif //SELECT_COMMON
