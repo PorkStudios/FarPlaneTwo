@@ -72,7 +72,6 @@ public class GPUCulledRenderIndex<POS extends IFarPos, BO extends IBakeOutput, D
     @Override
     public void select(@NonNull IFrustum frustum) {
         //set clipping planes uniform
-        this.clippingPlanesUniformBuffer().capacity(0);
         this.clippingPlanesUniformBuffer().setContents(frustum.clippingPlanes());
 
         for (AbstractRenderIndex.Level level : this.levels) {
