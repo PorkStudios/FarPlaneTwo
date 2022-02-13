@@ -72,6 +72,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author DaPorkchop_
@@ -145,7 +146,6 @@ public class TestLWJGL2 {
                 .withUniform(uniformFormat)
                 .withUniformArray(uniformArrayFormat)
                 .withInput(localFormat)
-                .with(AttributeUsage.TRANSFORM_INPUT, localFormat, "ti_", "_prev")
                 .withOutput(localFormat)
                 .build();
 
@@ -173,8 +173,8 @@ public class TestLWJGL2 {
         AttributeBuffer<LocalAttribs> localBuffer_1 = localFormat.createBuffer(BufferUsage.STATIC_DRAW);
         localBuffer_1.resize(4);
 
-        AttributeBuffer<LocalAttribs> localBuffer_2 = localFormat.createBuffer(BufferUsage.STREAM_COPY);
-        localBuffer_2.resize(localBuffer_1.capacity());
+        AttributeBuffer<LocalAttribs> localBuffer_2_in = localFormat.createBuffer(BufferUsage.STREAM_COPY);
+        AttributeBuffer<LocalAttribs> localBuffer_2_out = localFormat.createBuffer(BufferUsage.STREAM_COPY);
 
         try (AttributeWriter<LocalAttribs> writer = localFormat.createWriter()) {
             writer.put(new LocalAttribs((byte) 16, (byte) 16));
@@ -183,7 +183,8 @@ public class TestLWJGL2 {
             writer.put(new LocalAttribs((byte) 32, (byte) 16));
 
             localBuffer_1.set(0, writer);
-            localBuffer_2.set(0, writer);
+            localBuffer_2_in.setContentsFrom(localBuffer_1);
+            localBuffer_2_out.setContentsFrom(localBuffer_1);
         }
 
         IndexBuffer indexBuffer = indexFormat.createBuffer(BufferUsage.STATIC_DRAW);
@@ -253,9 +254,8 @@ public class TestLWJGL2 {
         TransformBinding binding2_transform = transformLayout.createBinding()
                 .withUniform(uniformBuffer1)
                 .withUniformArray(uniformArrayBuffer)
-                .withInput(localBuffer_1)
-                .withInput(localBuffer_1) //TODO: this should be localBuffer_2, but i can't bind the same buffer as an input and output at once (need to make it print an error, too)
-                .withOutput(localBuffer_2)
+                .withInput(localBuffer_2_in)
+                .withOutput(localBuffer_2_out)
                 .build();
 
         DrawBindingIndexed binding2_draw = drawLayout.createBinding()
@@ -263,7 +263,7 @@ public class TestLWJGL2 {
                 .withUniform(uniformBuffer2)
                 .withUniformArray(uniformArrayBuffer)
                 .withGlobal(globalBuffer)
-                .withLocal(localBuffer_2)
+                .withLocal(localBuffer_2_in)
                 .withTexture(texture)
                 .build();
 
@@ -303,9 +303,12 @@ public class TestLWJGL2 {
                 .drawSelectedList(drawShaderProgram, DrawMode.TRIANGLES, listElements, i -> ThreadLocalRandom.current().nextBoolean())
                 .drawSelectedList(drawShaderProgram, DrawMode.TRIANGLES, listArrays, selectionProgram, selectionBinding)
                 .drawArrays(drawShaderProgram, DrawMode.TRIANGLES, binding0, 0, 3)
-                .transform(transformShaderProgram, binding2_transform, localBuffer_1.capacity())
                 .drawArrays(drawShaderProgram, DrawMode.TRIANGLES, binding2_draw, 0, 3)
-                .conditional(() -> false, builder -> builder.framebufferClear(FramebufferLayer.DEPTH))
+                .conditional(
+                        () -> (TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()) & 1) == 0L, //only move every other second
+                        builder -> builder
+                                .transform(transformShaderProgram, binding2_transform, localBuffer_1.capacity())
+                                .copy(localBuffer_2_out, localBuffer_2_in))
                 .build()) {
             while (!Display.isCloseRequested()) {
                 selectionUniformBuffer.setContents(new UniformSelectionAttribs(ThreadLocalRandom.current().nextInt() & 1));

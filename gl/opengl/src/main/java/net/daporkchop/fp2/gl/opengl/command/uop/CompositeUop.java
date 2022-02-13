@@ -24,10 +24,15 @@ import lombok.NonNull;
 import net.daporkchop.fp2.gl.opengl.command.AbstractCommandBufferBuilder;
 import net.daporkchop.fp2.gl.opengl.command.CodegenArgs;
 import net.daporkchop.fp2.gl.opengl.command.methodwriter.MethodWriter;
+import net.daporkchop.fp2.gl.opengl.command.state.MutableState;
 import net.daporkchop.fp2.gl.opengl.command.state.StateProperty;
+import net.daporkchop.fp2.gl.opengl.command.state.StateValueProperty;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Stream;
+
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
@@ -48,6 +53,30 @@ public class CompositeUop extends Uop {
 
     @Override
     public void emitCode(@NonNull AbstractCommandBufferBuilder builder, @NonNull MethodWriter<CodegenArgs> writer) {
-        this.children.forEach(uop -> uop.emitCode(builder, writer));
+        MutableState state = this.state().mutableSnapshot();
+
+        this.children.forEach(uop -> {
+            uop.depends()
+                    .filter(property -> property instanceof StateValueProperty)
+                    .map(property -> (StateValueProperty<?>) property)
+                    .distinct()
+                    .forEach(property -> {
+                        uop.state().get(property).ifPresent(value -> {
+                            if (!Objects.equals(value, state.getOrDef(property))) {
+                                state.set(property, uncheckedCast(value));
+                                property.set(value, writer);
+                            }
+                        });
+                    });
+
+            uop.emitCode(builder, writer);
+        });
+
+        //reset to initial state
+        this.state().properties().forEach(property -> {
+            if (!Objects.equals(this.state().getOrDef(property), state.getOrDef(property))) {
+                property.set(uncheckedCast(this.state().getOrDef(property)), writer);
+            }
+        });
     }
 }

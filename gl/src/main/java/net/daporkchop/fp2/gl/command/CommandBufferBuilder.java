@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.gl.command;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.fp2.gl.draw.DrawMode;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.fp2.gl.draw.list.DrawList;
@@ -129,6 +130,12 @@ public interface CommandBufferBuilder {
     //
 
     CommandBufferBuilder transform(@NonNull TransformShaderProgram shader, @NonNull TransformBinding binding, int count);
+
+    //
+    // BUFFER TRANSFERS
+    //
+
+    <S> CommandBufferBuilder copy(@NonNull AttributeBuffer<S> src, @NonNull AttributeBuffer<S> dst);
 
     //
     // MISC

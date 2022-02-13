@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -40,7 +40,7 @@ public enum GLExtension {
 
     //OpenGL 3.1
     GL_ARB_draw_instanced(GLVersion.OpenGL31, false),
-    GL_EXT_copy_buffer(GLVersion.OpenGL31, false),
+    GL_ARB_copy_buffer(GLVersion.OpenGL31, false),
     GL_NV_primitive_restart(GLVersion.OpenGL31, false),
     GL_ARB_texture_buffer_object(GLVersion.OpenGL31, false),
     GL_ARB_texture_rectangle(GLVersion.OpenGL31, false),

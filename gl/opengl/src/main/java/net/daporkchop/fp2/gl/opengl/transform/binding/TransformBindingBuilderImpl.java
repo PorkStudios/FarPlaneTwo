@@ -21,17 +21,53 @@
 package net.daporkchop.fp2.gl.opengl.transform.binding;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.attribute.AttributeUsage;
+import net.daporkchop.fp2.gl.attribute.BaseAttributeBuffer;
 import net.daporkchop.fp2.gl.opengl.layout.binding.BaseBindingBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.transform.TransformLayoutImpl;
 import net.daporkchop.fp2.gl.transform.binding.TransformBinding;
 import net.daporkchop.fp2.gl.transform.binding.TransformBindingBuilder;
 
+import java.util.Collections;
+import java.util.IdentityHashMap;
+import java.util.Set;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
+
 /**
  * @author DaPorkchop_
  */
 public class TransformBindingBuilderImpl extends BaseBindingBuilderImpl<TransformBindingBuilder, TransformBinding, TransformLayoutImpl> implements TransformBindingBuilder {
+    private final Set<BaseAttributeBuffer> inputs = Collections.newSetFromMap(new IdentityHashMap<>());
+    private final Set<BaseAttributeBuffer> outputs = Collections.newSetFromMap(new IdentityHashMap<>());
+
     public TransformBindingBuilderImpl(@NonNull TransformLayoutImpl layout) {
         super(layout);
+    }
+
+    @Override
+    public TransformBindingBuilder with(@NonNull AttributeUsage usage, @NonNull BaseAttributeBuffer buffer) {
+        switch (usage) {
+            case TRANSFORM_INPUT:
+                checkState(!this.outputs.contains(buffer), "cannot register %s as input when it is already used as an output!", buffer);
+                break;
+            case TRANSFORM_OUTPUT:
+                checkState(!this.inputs.contains(buffer), "cannot register %s as output when it is already used as an input!", buffer);
+                break;
+        }
+
+        super.with(usage, buffer);
+
+        switch (usage) {
+            case TRANSFORM_INPUT:
+                this.inputs.add(buffer);
+                break;
+            case TRANSFORM_OUTPUT:
+                this.outputs.add(buffer);
+                break;
+        }
+
+        return this;
     }
 
     @Override

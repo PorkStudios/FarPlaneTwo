@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.gl.opengl.command;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.fp2.gl.command.BlendFactor;
 import net.daporkchop.fp2.gl.command.BlendOp;
 import net.daporkchop.fp2.gl.command.CommandBuffer;
@@ -37,6 +38,7 @@ import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.attribute.common.AttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.command.methodwriter.FieldHandle;
 import net.daporkchop.fp2.gl.opengl.command.methodwriter.MethodWriter;
 import net.daporkchop.fp2.gl.opengl.command.state.CowState;
@@ -65,6 +67,8 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 import static org.objectweb.asm.Opcodes.*;
 import static org.objectweb.asm.Type.*;
 
@@ -341,6 +345,13 @@ public abstract class AbstractCommandBufferBuilder implements CommandBufferBuild
                 });
             }
         });
+        return this;
+    }
+
+    @Override
+    public <S> CommandBufferBuilder copy(@NonNull AttributeBuffer<S> src, @NonNull AttributeBuffer<S> dst) {
+        checkArg(src.format() == dst.format(), "incompatible formats: %s != %s", src.format(), dst.format());
+        this.uops.addAll(((AttributeBufferImpl<?, S>) src).copyTo(uncheckedCast(dst)));
         return this;
     }
 

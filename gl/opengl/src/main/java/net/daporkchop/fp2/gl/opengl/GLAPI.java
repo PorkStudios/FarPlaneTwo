@@ -282,6 +282,9 @@ public interface GLAPI {
     //
     //
 
+    //GL_ARB_copy_buffer
+    void glCopyBufferSubData(int readTarget, int writeTarget, long readOffset, long writeOffset, long size);
+
     //GL_ARB_texture_buffer_object
     void glTexBuffer(int target, int internalFormat, int buffer);
 
