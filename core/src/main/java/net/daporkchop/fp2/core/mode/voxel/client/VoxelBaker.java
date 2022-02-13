@@ -167,8 +167,8 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
 
         int blockLight = BlockWorldConstants.unpackBlockLight(data.light);
         int skyLight = BlockWorldConstants.unpackSkyLight(data.light);
-        attributes.lightBlock = (byte) (blockLight | (blockLight << 4));
-        attributes.lightSky = (byte) (skyLight | (skyLight << 4));
+        attributes.lightBlock = (byte) (blockLight << 4);
+        attributes.lightSky = (byte) (skyLight << 4);
 
         attributes.posX = (byte) ((x << POS_FRACT_SHIFT) + data.x);
         attributes.posY = (byte) ((y << POS_FRACT_SHIFT) + data.y);

@@ -207,8 +207,8 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
 
         int blockLight = data.light & 0xF;
         int skyLight = data.light >> 4;
-        attributes.lightBlock = (byte) (blockLight | (blockLight << 4));
-        attributes.lightSky = (byte) (skyLight | (skyLight << 4));
+        attributes.lightBlock = (byte) (blockLight << 4);
+        attributes.lightSky = (byte) (skyLight << 4);
         attributes.color = this.worldRenderer.tintFactorForStateInBiomeAtPos(data.state, data.biome, blockX, data.height_int, blockZ);
 
         attributes.posHorizX = (byte) x;
