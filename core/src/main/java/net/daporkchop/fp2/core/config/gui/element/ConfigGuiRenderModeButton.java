@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -34,7 +34,7 @@ import net.daporkchop.fp2.core.client.gui.element.GuiNoopPaddingElement;
 import net.daporkchop.fp2.core.client.gui.element.GuiTitle;
 import net.daporkchop.fp2.core.client.gui.element.properties.GuiElementProperties;
 import net.daporkchop.fp2.core.client.gui.element.properties.SimpleGuiElementProperties;
-import net.daporkchop.fp2.core.client.gui.screen.AbstractGuiScreen;
+import net.daporkchop.fp2.core.client.gui.screen.AbstractTitledGuiScreen;
 import net.daporkchop.fp2.core.client.gui.util.ComponentDimensions;
 import net.daporkchop.fp2.core.config.gui.access.ConfigGuiObjectAccess;
 import net.daporkchop.lib.common.util.PArrays;
@@ -68,7 +68,7 @@ public class ConfigGuiRenderModeButton extends AbstractGuiButton {
     @Override
     protected void handleClick(int button) {
         if (button == MOUSE_BUTTON_LEFT) {
-            fp2().openScreen(context -> new AbstractGuiScreen(context, this.properties.localeKey(),
+            fp2().openScreen(context -> new AbstractTitledGuiScreen(context, this.properties.localeKey(),
                     new ScrollingContainer(context, Collections.singletonList(
                             new ColumnsContainer(context, Arrays.asList(
                                     new DisabledContainer(context),

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -25,6 +25,7 @@ import net.daporkchop.fp2.core.client.gui.GuiContext;
 import net.daporkchop.fp2.core.client.gui.element.properties.GuiElementProperties;
 import net.daporkchop.fp2.core.client.gui.util.ComponentDimensions;
 
+import java.util.List;
 import java.util.stream.Stream;
 
 import static java.lang.Math.*;
@@ -45,7 +46,8 @@ public class GuiLabel extends AbstractGuiElement {
 
     @Override
     public Stream<ComponentDimensions> possibleDimensions(int totalSizeX, int totalSizeY) {
-        return Stream.of(new ComponentDimensions(totalSizeX, min(this.context.renderer().getStringWidth(this.properties.text()), totalSizeY)));
+        int lines = this.context.renderer().wrapStringToWidth(this.properties.text(), totalSizeX).size();
+        return Stream.of(new ComponentDimensions(totalSizeX, min(lines * this.context.renderer().getStringHeight(), totalSizeY)));
     }
 
     @Override
@@ -57,11 +59,16 @@ public class GuiLabel extends AbstractGuiElement {
     public void render(int mouseX, int mouseY) {
         super.render(mouseX, mouseY);
 
-        String text = this.properties.text();
-        this.context.renderer().drawString(text,
-                this.horizontalAlignment.align(this.bounds.x(), this.bounds.sizeX(), this.context.renderer().getStringWidth(text)),
-                this.verticalAlignment.align(this.bounds.y(), this.bounds.sizeY(), this.context.renderer().getStringHeight()),
-                -1, true);
+        List<CharSequence> lines = this.context.renderer().wrapStringToWidth(this.properties.text(), this.bounds.sizeX());
+        int textHeight = this.context.renderer().getStringHeight();
+
+        int y = this.verticalAlignment.align(this.bounds.y(), this.bounds.sizeY(), lines.size() * textHeight);
+        for (CharSequence text : lines) {
+            this.context.renderer().drawString(text,
+                    this.horizontalAlignment.align(this.bounds.x(), this.bounds.sizeX(), this.context.renderer().getStringWidth(text)),
+                    y, -1, true);
+            y += textHeight;
+        }
     }
 
     /**
@@ -72,12 +79,6 @@ public class GuiLabel extends AbstractGuiElement {
             @Override
             public int align(int boundsBase, int boundsSize, int textSize) {
                 return boundsBase;
-            }
-        },
-        TOP {
-            @Override
-            public int align(int boundsBase, int boundsSize, int textSize) {
-                return LEFT.align(boundsBase, boundsSize, textSize);
             }
         },
         CENTER {
@@ -91,13 +92,10 @@ public class GuiLabel extends AbstractGuiElement {
             public int align(int boundsBase, int boundsSize, int textSize) {
                 return boundsBase + boundsSize - textSize;
             }
-        },
-        BOTTOM {
-            @Override
-            public int align(int boundsBase, int boundsSize, int textSize) {
-                return RIGHT.align(boundsBase, boundsSize, textSize);
-            }
         };
+
+        public static final Alignment TOP = LEFT;
+        public static final Alignment BOTTOM = RIGHT;
 
         public abstract int align(int boundsBase, int boundsSize, int textSize);
     }

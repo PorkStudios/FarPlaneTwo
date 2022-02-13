@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -24,9 +24,10 @@ import lombok.NonNull;
 import net.daporkchop.fp2.core.client.gui.GuiContext;
 import net.daporkchop.fp2.core.client.gui.GuiElement;
 import net.daporkchop.fp2.core.client.gui.container.ScrollingContainer;
+import net.daporkchop.fp2.core.client.gui.element.GuiLabel;
 import net.daporkchop.fp2.core.client.gui.element.GuiTitle;
 import net.daporkchop.fp2.core.client.gui.element.properties.SimpleGuiElementProperties;
-import net.daporkchop.fp2.core.client.gui.screen.AbstractGuiScreen;
+import net.daporkchop.fp2.core.client.gui.screen.AbstractTitledGuiScreen;
 import net.daporkchop.fp2.core.config.Config;
 import net.daporkchop.fp2.core.config.ConfigHelper;
 import net.daporkchop.fp2.core.config.gui.access.ConfigGuiObjectAccess;
@@ -39,16 +40,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
-public class ConfigGuiScreen extends AbstractGuiScreen {
+public class ConfigGuiScreen extends AbstractTitledGuiScreen {
     protected final ConfigGuiObjectAccess<?> access;
 
     public ConfigGuiScreen(@NonNull GuiContext context, @NonNull String localeKey, @NonNull ConfigGuiObjectAccess<?> access) {
@@ -109,5 +112,48 @@ public class ConfigGuiScreen extends AbstractGuiScreen {
     @Override
     protected String localizedTitleString() {
         return fp2().i18n().format(this.localeKey + ".title");
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    public static class Root<V> extends ConfigGuiScreen {
+        protected final Consumer<V> callback;
+
+        public Root(@NonNull GuiContext context, @NonNull String localeKey, @NonNull ConfigGuiObjectAccess<V> access, @NonNull Consumer<V> callback) {
+            super(context, localeKey, access);
+
+            this.callback = callback;
+        }
+
+        @Override
+        public void close() {
+            super.close();
+
+            V currentConfig = uncheckedCast(this.access.getOld());
+            V newConfig = uncheckedCast(this.access.getCurrent());
+
+            if (!Objects.equals(currentConfig, newConfig)) { //config has changed!
+                this.callback.accept(newConfig);
+
+                Config.Requirement restartRequirement = ConfigHelper.restartRequirement(currentConfig, newConfig);
+                switch (restartRequirement) {
+                    case WORLD:
+                        if (!fp2().client().currentPlayer().isPresent()) { //no world is active, so we don't need to notify the player that a reload is required
+                            break;
+                        }
+                    case GAME:
+                        fp2().openScreen(context -> new AbstractTitledGuiScreen(context,
+                                MODID + ".config.restartRequired.dialog.title." + restartRequirement,
+                                MODID + ".config.restartRequired.dialog.confirm",
+                                new GuiLabel(context, new SimpleGuiElementProperties(MODID + ".config.restartRequired.dialog.message." + restartRequirement), GuiLabel.Alignment.CENTER, GuiLabel.Alignment.CENTER)) {
+                            @Override
+                            public void close() {
+                                //no-op
+                            }
+                        });
+                }
+            }
+        }
     }
 }

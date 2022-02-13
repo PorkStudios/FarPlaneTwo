@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -21,57 +21,27 @@
 package net.daporkchop.fp2.core.client.gui.screen;
 
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.core.client.gui.GuiContext;
-import net.daporkchop.fp2.core.client.gui.GuiElement;
+import net.daporkchop.fp2.core.client.gui.GuiEventHandler;
 import net.daporkchop.fp2.core.client.gui.GuiScreen;
-import net.daporkchop.fp2.core.client.gui.container.AbstractConfigGuiContainer;
-import net.daporkchop.fp2.core.client.gui.element.AbstractGuiButton;
-import net.daporkchop.fp2.core.client.gui.element.properties.SimpleGuiElementProperties;
 import net.daporkchop.fp2.core.client.gui.util.ComponentDimensions;
-import net.daporkchop.fp2.core.client.gui.util.ElementBounds;
 
-import java.util.Comparator;
-
-import static net.daporkchop.fp2.core.FP2Core.*;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Set;
 
 /**
- * Base implementation of {@link GuiScreen} which renders headers and footers, and then delegates all other rendering to a child {@link GuiElement}.
- *
  * @author DaPorkchop_
  */
+@RequiredArgsConstructor
 public abstract class AbstractGuiScreen implements GuiScreen {
-    public static final int PADDING = AbstractConfigGuiContainer.PADDING;
-
-    public static final int HEADER_HEIGHT = 30;
-    public static final int FOOTER_HEIGHT = 27;
-
+    @NonNull
     protected final GuiContext context;
-    protected final String localeKey;
-    protected final GuiElement child;
 
-    protected final GuiElement doneButton;
+    protected final Set<GuiEventHandler> handlers = Collections.newSetFromMap(new LinkedHashMap<>());
 
     protected ComponentDimensions dimensions;
-
-    public AbstractGuiScreen(@NonNull GuiContext context, @NonNull String localeKey, @NonNull GuiElement child) {
-        this.context = context;
-        this.localeKey = localeKey;
-        this.child = child;
-
-        this.doneButton = new AbstractGuiButton(context, new SimpleGuiElementProperties("gui.done")) {
-            @Override
-            protected void handleClick(int button) {
-                if (button == MOUSE_BUTTON_LEFT) {
-                    this.context.close();
-                }
-            }
-        };
-    }
-
-    @Override
-    public void init() {
-        this.child.init();
-    }
 
     @Override
     public void resized(int width, int height) {
@@ -79,51 +49,33 @@ public abstract class AbstractGuiScreen implements GuiScreen {
     }
 
     @Override
-    public void pack() {
-        ComponentDimensions dimensions = this.child.possibleDimensions(this.dimensions.sizeX() - (PADDING << 1), this.dimensions.sizeY() - (HEADER_HEIGHT + FOOTER_HEIGHT + (PADDING << 1)))
-                .min(Comparator.comparingInt(ComponentDimensions::sizeY)).get(); //find the shortest possible dimensions
-        this.child.bounds(new ElementBounds((this.dimensions.sizeX() - dimensions.sizeX()) >> 1, HEADER_HEIGHT + PADDING, dimensions.sizeX(), dimensions.sizeY()));
-
-        this.doneButton.bounds(new ElementBounds(
-                (this.dimensions.sizeX() - AbstractGuiButton.BUTTON_WIDTH) >> 1, this.dimensions.sizeY() - FOOTER_HEIGHT,
-                AbstractGuiButton.BUTTON_WIDTH, AbstractGuiButton.BUTTON_HEIGHT));
-    }
-
-    protected String localizedTitleString() {
-        return fp2().i18n().format(this.localeKey);
+    public void init() {
+        this.handlers.forEach(GuiEventHandler::init);
     }
 
     @Override
     public void render(int mouseX, int mouseY) {
-        this.context.renderer().drawCenteredString(this.localizedTitleString(), this.dimensions.sizeX() >> 1, HEADER_HEIGHT >> 1, -1, true, true, true);
-        this.context.renderer().drawDefaultBackground(0, HEADER_HEIGHT, this.dimensions.sizeX(), this.dimensions.sizeY() - HEADER_HEIGHT - FOOTER_HEIGHT - PADDING);
-
-        this.child.render(mouseX, mouseY);
-        this.doneButton.render(mouseX, mouseY);
+        this.handlers.forEach(handler -> handler.render(mouseX, mouseY));
     }
 
     @Override
     public void mouseDown(int mouseX, int mouseY, int button) {
-        this.child.mouseDown(mouseX, mouseY, button);
-        this.doneButton.mouseDown(mouseX, mouseY, button);
+        this.handlers.forEach(handler -> handler.mouseDown(mouseX, mouseY, button));
     }
 
     @Override
     public void mouseUp(int mouseX, int mouseY, int button) {
-        this.child.mouseUp(mouseX, mouseY, button);
-        this.doneButton.mouseUp(mouseX, mouseY, button);
+        this.handlers.forEach(handler -> handler.mouseUp(mouseX, mouseY, button));
     }
 
     @Override
     public void mouseScroll(int mouseX, int mouseY, int dWheel) {
-        this.child.mouseScroll(mouseX, mouseY, dWheel);
-        this.doneButton.mouseScroll(mouseX, mouseY, dWheel);
+        this.handlers.forEach(handler -> handler.mouseScroll(mouseX, mouseY, dWheel));
     }
 
     @Override
     public void mouseDragged(int oldMouseX, int oldMouseY, int newMouseX, int newMouseY, int button) {
-        this.child.mouseDragged(oldMouseX, oldMouseY, newMouseX, newMouseY, button);
-        this.doneButton.mouseDragged(oldMouseX, oldMouseY, newMouseX, newMouseY, button);
+        this.handlers.forEach(handler -> handler.mouseDragged(oldMouseX, oldMouseY, newMouseX, newMouseY, button));
     }
 
     @Override
@@ -133,7 +85,6 @@ public abstract class AbstractGuiScreen implements GuiScreen {
             return;
         }
 
-        this.child.keyPressed(typedChar, keyCode);
-        this.doneButton.keyPressed(typedChar, keyCode);
+        this.handlers.forEach(handler -> handler.keyPressed(typedChar, keyCode));
     }
 }

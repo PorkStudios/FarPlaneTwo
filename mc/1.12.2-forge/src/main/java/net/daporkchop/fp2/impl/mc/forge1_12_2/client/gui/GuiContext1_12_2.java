@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -60,10 +60,10 @@ public class GuiContext1_12_2 extends net.minecraft.client.gui.GuiScreen impleme
 
     @Override
     public void close() {
-        this.screen.close();
-
         checkState(this.mc.currentScreen == this, "context is not active!");
         this.mc.displayGuiScreen(this.previousScreen);
+
+        this.screen.close();
     }
 
     @Override

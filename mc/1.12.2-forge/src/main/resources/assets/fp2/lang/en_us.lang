@@ -6,11 +6,6 @@
 
 fp2.playerJoinWarningMessage=§c§lFarPlaneTwo pre-pre-pre-alpha build: use at your own risk!
 
-net.daporkchop.fp2.core.config.TestConfig$TestEnum#FIRST=First
-net.daporkchop.fp2.core.config.TestConfig$TestEnum#FIRST.tooltip=This is the first entry!
-net.daporkchop.fp2.core.config.TestConfig$TestEnum#SECOND=Second
-net.daporkchop.fp2.core.config.TestConfig$TestEnum#THIRD=Third
-
 #
 # Number formatting
 #

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -39,7 +39,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Consumer;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
@@ -59,18 +58,10 @@ public class ConfigGuiHelper {
      */
     public <V> void createAndDisplayGuiContext(@NonNull String menuName, @NonNull V defaultConfig, V serverConfig, @NonNull V currentConfig, @NonNull Consumer<V> callback) {
         V newConfig = ConfigHelper.cloneConfigObject(currentConfig);
-        fp2().openScreen(context -> new ConfigGuiScreen(context,
+        fp2().openScreen(context -> new ConfigGuiScreen.Root<>(context,
                 MODID + ".config." + menuName,
-                ConfigGuiObjectAccess.forValues(defaultConfig, serverConfig, currentConfig, newConfig)) {
-            @Override
-            public void close() {
-                super.close();
-
-                if (!Objects.equals(currentConfig, newConfig)) { //config has changed!
-                    callback.accept(newConfig);
-                }
-            }
-        });
+                ConfigGuiObjectAccess.forValues(defaultConfig, serverConfig, currentConfig, newConfig),
+                callback));
     }
 
     /**
