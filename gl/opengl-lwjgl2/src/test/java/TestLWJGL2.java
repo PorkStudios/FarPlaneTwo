@@ -103,8 +103,8 @@ public class TestLWJGL2 {
 
         Display.setDisplayMode(new DisplayMode(512, 512));
         Display.setTitle("title");
-        Display.create(new PixelFormat(), new ContextAttribs(3, 0, ContextAttribs.CONTEXT_CORE_PROFILE_BIT_ARB, ContextAttribs.CONTEXT_FORWARD_COMPATIBLE_BIT_ARB));
-        //Display.create(new PixelFormat(), new ContextAttribs(3, 3, ContextAttribs.CONTEXT_CORE_PROFILE_BIT_ARB, ContextAttribs.CONTEXT_FORWARD_COMPATIBLE_BIT_ARB));
+        //Display.create(new PixelFormat(), new ContextAttribs(3, 0, ContextAttribs.CONTEXT_CORE_PROFILE_BIT_ARB, ContextAttribs.CONTEXT_FORWARD_COMPATIBLE_BIT_ARB));
+        Display.create(new PixelFormat(), new ContextAttribs(3, 3, ContextAttribs.CONTEXT_CORE_PROFILE_BIT_ARB, ContextAttribs.CONTEXT_FORWARD_COMPATIBLE_BIT_ARB));
         //Display.create();
 
         try (GL gl = GL.builder()
@@ -305,6 +305,7 @@ public class TestLWJGL2 {
                 .drawArrays(drawShaderProgram, DrawMode.TRIANGLES, binding0, 0, 3)
                 .transform(transformShaderProgram, binding2_transform, localBuffer_1.capacity())
                 .drawArrays(drawShaderProgram, DrawMode.TRIANGLES, binding2_draw, 0, 3)
+                .conditional(() -> false, builder -> builder.framebufferClear(FramebufferLayer.DEPTH))
                 .build()) {
             while (!Display.isCloseRequested()) {
                 selectionUniformBuffer.setContents(new UniformSelectionAttribs(ThreadLocalRandom.current().nextInt() & 1));

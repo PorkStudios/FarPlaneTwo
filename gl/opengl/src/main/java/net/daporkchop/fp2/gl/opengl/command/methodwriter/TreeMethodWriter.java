@@ -26,17 +26,15 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 
-import java.util.function.BiConsumer;
-
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.objectweb.asm.Opcodes.*;
 import static org.objectweb.asm.Type.*;
 
 /**
- * Implementation of {@link MethodWriter} which groups code into smaller sub-functions every {@code N} calls to {@link #write(BiConsumer)}, and then gathers them together
+ * Implementation of {@link MethodWriter} which groups code into smaller sub-functions every {@code N} calls to {@link MethodWriter#write(WriteCallback)}, and then gathers them together
  * by generating a tree of methods which call their children in order.
  * <p>
- * Example decompiled output, where {@code N = 2} and each {@code userCode*} function is generated in a separate call to {@link #write(BiConsumer)}:
+ * Example decompiled output, where {@code N = 2} and each {@code userCode*} function is generated in a separate call to {@link MethodWriter#write(WriteCallback)}:
  * <pre>{@code
  * private void gen_0_0(Object arg) {
  *     userCode1();
@@ -72,7 +70,7 @@ import static org.objectweb.asm.Type.*;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public class TreeMethodWriter<T extends MethodWriter.Args> implements MethodWriter<T> {
+public class TreeMethodWriter<A extends MethodWriter.Args> implements MethodWriter<A> {
     @NonNull
     protected final ClassWriter writer;
     @NonNull
@@ -80,7 +78,7 @@ public class TreeMethodWriter<T extends MethodWriter.Args> implements MethodWrit
     @NonNull
     protected final String methodName;
     @NonNull
-    protected final T args;
+    protected final A args;
     protected final int n;
     protected final boolean instance;
 
@@ -88,8 +86,10 @@ public class TreeMethodWriter<T extends MethodWriter.Args> implements MethodWrit
     protected int currentMethodWrites;
     protected MethodVisitor mv;
 
+    protected int children;
+
     @Override
-    public void write(@NonNull BiConsumer<MethodVisitor, T> action) {
+    public void write(@NonNull WriteCallback<A> action) {
         if (this.mv != null && this.currentMethodWrites == this.n) { //current method is full, finish it
             this.finishMethod();
         }
@@ -99,6 +99,18 @@ public class TreeMethodWriter<T extends MethodWriter.Args> implements MethodWrit
 
         action.accept(this.mv, this.args);
         this.currentMethodWrites++;
+    }
+
+    @Override
+    public void makeChildAndCall(@NonNull WriteChildCallback<A> callback) {
+        TreeMethodWriter<A> childWriter = new TreeMethodWriter<>(this.writer, this.className, this.methodName + "_c" + this.children++, this.args, this.n, this.instance);
+        callback.accept(childWriter);
+        String childName = childWriter.finish();
+
+        this.write((mv, args) -> {
+            this.loadArgs(mv);
+            mv.visitMethodInsn(INVOKEVIRTUAL, this.className, childName, getMethodDescriptor(VOID_TYPE, args.argumentTypes()), false);
+        });
     }
 
     protected void startMethod() {

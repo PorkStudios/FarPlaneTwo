@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.command;
+package net.daporkchop.fp2.gl.opengl.command.uop;
 
 import com.google.common.collect.ImmutableList;
 import lombok.Getter;
@@ -26,8 +26,9 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
+import net.daporkchop.fp2.gl.opengl.command.AbstractCommandBufferBuilder;
+import net.daporkchop.fp2.gl.opengl.command.CodegenArgs;
 import net.daporkchop.fp2.gl.opengl.command.methodwriter.MethodWriter;
-import net.daporkchop.fp2.gl.opengl.command.state.CowState;
 import net.daporkchop.fp2.gl.opengl.command.state.MutableState;
 import net.daporkchop.fp2.gl.opengl.command.state.State;
 import net.daporkchop.fp2.gl.opengl.command.state.StateProperties;
@@ -58,7 +59,7 @@ public abstract class Uop {
 
     protected abstract Stream<StateProperty> dependsFirst();
 
-    public abstract void emitCode(@NonNull CommandBufferBuilderImpl builder, @NonNull MethodWriter<CodegenArgs> writer);
+    public abstract void emitCode(@NonNull AbstractCommandBufferBuilder builder, @NonNull MethodWriter<CodegenArgs> writer);
 
     /**
      * @author DaPorkchop_

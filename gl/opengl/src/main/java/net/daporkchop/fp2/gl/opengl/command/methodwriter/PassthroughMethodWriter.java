@@ -24,8 +24,6 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.objectweb.asm.MethodVisitor;
 
-import java.util.function.BiConsumer;
-
 /**
  * @author DaPorkchop_
  */
@@ -37,7 +35,12 @@ public class PassthroughMethodWriter<A extends MethodWriter.Args> implements Met
     protected final A args;
 
     @Override
-    public void write(@NonNull BiConsumer<MethodVisitor, A> action) {
+    public void write(@NonNull WriteCallback<A> action) {
         action.accept(this.mv, this.args);
+    }
+
+    @Override
+    public void makeChildAndCall(@NonNull WriteChildCallback<A> callback) {
+        throw new UnsupportedOperationException();
     }
 }

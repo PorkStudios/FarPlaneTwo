@@ -18,27 +18,36 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.command;
+package net.daporkchop.fp2.gl.opengl.command.uop;
 
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.gl.command.CommandBuffer;
-import net.daporkchop.fp2.gl.opengl.command.uop.Uop;
+import net.daporkchop.fp2.gl.opengl.command.AbstractCommandBufferBuilder;
+import net.daporkchop.fp2.gl.opengl.command.CodegenArgs;
+import net.daporkchop.fp2.gl.opengl.command.methodwriter.MethodWriter;
+import net.daporkchop.fp2.gl.opengl.command.state.StateProperty;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
- * Base implementation of {@link CommandBuffer}.
- *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public abstract class CommandBufferImpl implements CommandBuffer {
-    @NonNull
-    protected final List<Uop> uops;
+public class CompositeUop extends Uop {
+    protected final List<Uop> children;
+
+    public CompositeUop(@NonNull List<Uop> children) {
+        super(children.get(0).state());
+
+        this.children = children;
+    }
 
     @Override
-    public void close() {
-        //no-op
+    protected Stream<StateProperty> dependsFirst() {
+        return this.children.stream().flatMap(Uop::dependsFirst).distinct();
+    }
+
+    @Override
+    public void emitCode(@NonNull AbstractCommandBufferBuilder builder, @NonNull MethodWriter<CodegenArgs> writer) {
+        this.children.forEach(uop -> uop.emitCode(builder, writer));
     }
 }

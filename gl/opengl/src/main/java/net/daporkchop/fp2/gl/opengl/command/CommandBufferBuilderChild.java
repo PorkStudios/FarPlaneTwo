@@ -21,24 +21,28 @@
 package net.daporkchop.fp2.gl.opengl.command;
 
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.command.CommandBuffer;
-import net.daporkchop.fp2.gl.opengl.command.uop.Uop;
-
-import java.util.List;
+import org.objectweb.asm.Type;
 
 /**
- * Base implementation of {@link CommandBuffer}.
- *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public abstract class CommandBufferImpl implements CommandBuffer {
-    @NonNull
-    protected final List<Uop> uops;
+public class CommandBufferBuilderChild extends AbstractCommandBufferBuilder {
+    protected final AbstractCommandBufferBuilder parent;
+
+    public CommandBufferBuilderChild(@NonNull AbstractCommandBufferBuilder parent) {
+        super(parent.gl, parent.state);
+
+        this.parent = parent;
+    }
 
     @Override
-    public void close() {
-        //no-op
+    protected String makeField(@NonNull Type type, @NonNull Object value) {
+        return this.parent.makeField(type, value);
+    }
+
+    @Override
+    public CommandBuffer build() {
+        throw new UnsupportedOperationException();
     }
 }
