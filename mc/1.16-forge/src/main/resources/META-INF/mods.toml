@@ -1,0 +1,9 @@
+modLoader = "javafml"
+loaderVersion = "[36,)"
+license = "Adapted from the MIT License"
+
+[[mods]]
+modId = "fp2"
+version = "${file.jarVersion}"
+displayName = "FarPlaneTwo"
+authors = "DaPorkchop_"

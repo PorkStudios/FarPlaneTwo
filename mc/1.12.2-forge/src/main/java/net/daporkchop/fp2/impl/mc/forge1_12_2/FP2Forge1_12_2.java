@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -25,19 +25,18 @@ import net.daporkchop.fp2.api.FP2;
 import net.daporkchop.fp2.common.util.Identifier;
 import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.fp2.common.util.exception.ResourceNotFoundException;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.FastRegistry;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.x86.x86FeatureDetector;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.debug.FP2Debug;
-import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.util.I18n;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.util.I18n1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.client.FP2Client1_12_2;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.util.log.Log4jAsPorkLibLogger;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.server.FP2Server1_12_2;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.FastRegistry;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.x86.x86FeatureDetector;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.network.FP2Network1_12_2;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.server.FP2Server1_12_2;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.util.I18n1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.event.IdMappingsChangedEvent;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.util.log.Log4jAsPorkLibLogger;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.threading.futureexecutor.ServerThreadMarkedFutureExecutor;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.client.FMLClientHandler;
@@ -196,11 +195,6 @@ public class FP2Forge1_12_2 extends FP2Core implements ResourceProvider {
         } else {
             throw new UnsupportedOperationException();
         }
-    }
-
-    @Override
-    public String[] renderModeNames() {
-        return IFarRenderMode.REGISTRY.nameStream().toArray(String[]::new);
     }
 
     @Override
