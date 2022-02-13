@@ -20,22 +20,31 @@
 
 package net.daporkchop.fp2.gl.opengl.command.uop;
 
+import com.google.common.collect.ImmutableList;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.opengl.command.AbstractCommandBufferBuilder;
-import net.daporkchop.fp2.gl.opengl.command.CodegenArgs;
-import net.daporkchop.fp2.gl.opengl.command.methodwriter.MethodWriter;
+import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
+import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.opengl.command.state.State;
+import net.daporkchop.fp2.gl.opengl.command.state.StateProperties;
 import net.daporkchop.fp2.gl.opengl.command.state.StateProperty;
+import net.daporkchop.fp2.gl.opengl.command.state.StateValueProperty;
+import net.daporkchop.fp2.gl.opengl.layout.binding.BaseBindingImpl;
+import net.daporkchop.fp2.gl.opengl.shader.BaseShaderProgramImpl;
 
-import java.util.stream.Stream;
+import java.util.Map;
 
 /**
  * @author DaPorkchop_
  */
-public interface Uop {
-    State state();
+public abstract class AbstractDrawUop extends AbstractBoundUop {
+    public AbstractDrawUop(@NonNull State state, @NonNull DrawBinding binding, @NonNull DrawShaderProgram shader, @NonNull Map<StateValueProperty<?>, Object> propertyValues) {
+        super(state, (BaseBindingImpl) binding, (BaseShaderProgramImpl<?, ?>) shader, propertyValues);
+    }
 
-    Stream<StateProperty> depends();
+    @Override
+    protected void buildDependsFirst(@NonNull ImmutableList.Builder<StateProperty> depends, @NonNull BaseBindingImpl binding) {
+        super.buildDependsFirst(depends, binding);
 
-    void emitCode(@NonNull AbstractCommandBufferBuilder builder, @NonNull MethodWriter<CodegenArgs> writer);
+        depends.add(StateProperties.FIXED_FUNCTION_DRAW_PROPERTIES);
+    }
 }

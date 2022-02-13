@@ -21,10 +21,12 @@
 package net.daporkchop.fp2.gl.opengl.command.uop;
 
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.opengl.command.AbstractCommandBufferBuilder;
 import net.daporkchop.fp2.gl.opengl.command.CodegenArgs;
 import net.daporkchop.fp2.gl.opengl.command.methodwriter.FieldHandle;
 import net.daporkchop.fp2.gl.opengl.command.methodwriter.MethodWriter;
+import net.daporkchop.fp2.gl.opengl.command.state.State;
 import net.daporkchop.fp2.gl.opengl.command.state.StateProperty;
 import org.objectweb.asm.Label;
 
@@ -37,25 +39,21 @@ import static org.objectweb.asm.Type.*;
 /**
  * @author DaPorkchop_
  */
-public class ConditionalUop extends Uop {
+@RequiredArgsConstructor
+public class ConditionalUop implements Uop {
+    @NonNull
     protected final BooleanSupplier condition;
+    @NonNull
     protected final Uop child;
 
-    public ConditionalUop(@NonNull BooleanSupplier condition, @NonNull Uop child) {
-        super(child.state());
-
-        this.condition = condition;
-        this.child = child;
+    @Override
+    public State state() {
+        return this.child.state();
     }
 
     @Override
     public Stream<StateProperty> depends() {
         return this.child.depends();
-    }
-
-    @Override
-    protected Stream<StateProperty> dependsFirst() {
-        return this.child.dependsFirst();
     }
 
     @Override

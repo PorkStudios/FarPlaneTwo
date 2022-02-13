@@ -49,6 +49,9 @@ import net.daporkchop.fp2.gl.opengl.command.state.struct.BlendOps;
 import net.daporkchop.fp2.gl.opengl.command.state.struct.Color4b;
 import net.daporkchop.fp2.gl.opengl.command.state.struct.Color4f;
 import net.daporkchop.fp2.gl.opengl.command.state.struct.StencilOp;
+import net.daporkchop.fp2.gl.opengl.command.uop.AbstractDrawUop;
+import net.daporkchop.fp2.gl.opengl.command.uop.AbstractTransformUop;
+import net.daporkchop.fp2.gl.opengl.command.uop.BaseUop;
 import net.daporkchop.fp2.gl.opengl.command.uop.CompositeUop;
 import net.daporkchop.fp2.gl.opengl.command.uop.ConditionalUop;
 import net.daporkchop.fp2.gl.opengl.command.uop.Uop;
@@ -103,7 +106,7 @@ public abstract class AbstractCommandBufferBuilder implements CommandBufferBuild
 
     @Override
     public CommandBufferBuilder framebufferClear(@NonNull FramebufferLayer... layers) {
-        this.uops.add(new Uop(this.state) {
+        this.uops.add(new BaseUop(this.state) {
             @Override
             protected Stream<StateProperty> dependsFirst() {
                 return Stream.of(layers).flatMap(layer -> {
@@ -272,7 +275,7 @@ public abstract class AbstractCommandBufferBuilder implements CommandBufferBuild
 
     @Override
     public CommandBufferBuilder drawArrays(@NonNull DrawShaderProgram shader, @NonNull DrawMode mode, @NonNull DrawBinding binding, int first, int count) {
-        this.uops.add(new Uop.Draw(this.state, binding, shader, Collections.emptyMap()) {
+        this.uops.add(new AbstractDrawUop(this.state, binding, shader, Collections.emptyMap()) {
             @Override
             public void emitCode(@NonNull AbstractCommandBufferBuilder builder, @NonNull MethodWriter<CodegenArgs> writer) {
                 writer.write((mv, args) -> {
@@ -319,7 +322,7 @@ public abstract class AbstractCommandBufferBuilder implements CommandBufferBuild
 
     @Override
     public CommandBufferBuilder transform(@NonNull TransformShaderProgram shader, @NonNull TransformBinding binding, int count) {
-        this.uops.add(new Uop.Transform(this.state, binding, shader, Collections.singletonMap(StateProperties.RASTERIZER_DISCARD, true)) {
+        this.uops.add(new AbstractTransformUop(this.state, binding, shader, Collections.singletonMap(StateProperties.RASTERIZER_DISCARD, true)) {
             @Override
             public void emitCode(@NonNull AbstractCommandBufferBuilder builder, @NonNull MethodWriter<CodegenArgs> writer) {
                 //glBeginTransformFeedback(GL_POINTS);
@@ -366,7 +369,7 @@ public abstract class AbstractCommandBufferBuilder implements CommandBufferBuild
         CommandBufferBuilderChild childBuilder = new CommandBufferBuilderChild(this);
         callback.accept(childBuilder);
         if (!childBuilder.uops.isEmpty()) {
-            this.uops.add(new ConditionalUop(condition, new CompositeUop(childBuilder.uops)));
+            this.uops.add(new ConditionalUop(condition, new CompositeUop(this.state, childBuilder.uops)));
         }
         return this;
     }

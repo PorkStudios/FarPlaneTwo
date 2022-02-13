@@ -20,10 +20,9 @@
 
 package net.daporkchop.fp2.gl.opengl.command.uop;
 
+import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.opengl.command.AbstractCommandBufferBuilder;
-import net.daporkchop.fp2.gl.opengl.command.CodegenArgs;
-import net.daporkchop.fp2.gl.opengl.command.methodwriter.MethodWriter;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.opengl.command.state.State;
 import net.daporkchop.fp2.gl.opengl.command.state.StateProperty;
 
@@ -32,10 +31,16 @@ import java.util.stream.Stream;
 /**
  * @author DaPorkchop_
  */
-public interface Uop {
-    State state();
+@RequiredArgsConstructor
+@Getter
+public abstract class BaseUop implements Uop {
+    @NonNull
+    private final State state;
 
-    Stream<StateProperty> depends();
+    @Override
+    public Stream<StateProperty> depends() {
+        return this.dependsFirst().flatMap(property -> Stream.concat(Stream.of(property), property.depends(this.state()))).distinct();
+    }
 
-    void emitCode(@NonNull AbstractCommandBufferBuilder builder, @NonNull MethodWriter<CodegenArgs> writer);
+    protected abstract Stream<StateProperty> dependsFirst();
 }

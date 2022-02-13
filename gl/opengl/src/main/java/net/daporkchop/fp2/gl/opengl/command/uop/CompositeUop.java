@@ -20,11 +20,14 @@
 
 package net.daporkchop.fp2.gl.opengl.command.uop;
 
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.opengl.command.AbstractCommandBufferBuilder;
 import net.daporkchop.fp2.gl.opengl.command.CodegenArgs;
 import net.daporkchop.fp2.gl.opengl.command.methodwriter.MethodWriter;
 import net.daporkchop.fp2.gl.opengl.command.state.MutableState;
+import net.daporkchop.fp2.gl.opengl.command.state.State;
 import net.daporkchop.fp2.gl.opengl.command.state.StateProperty;
 import net.daporkchop.fp2.gl.opengl.command.state.StateValueProperty;
 
@@ -37,18 +40,17 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 /**
  * @author DaPorkchop_
  */
-public class CompositeUop extends Uop {
+@RequiredArgsConstructor
+@Getter
+public class CompositeUop implements Uop {
+    @NonNull
+    protected final State state;
+    @NonNull
     protected final List<Uop> children;
 
-    public CompositeUop(@NonNull List<Uop> children) {
-        super(children.get(0).state());
-
-        this.children = children;
-    }
-
     @Override
-    protected Stream<StateProperty> dependsFirst() {
-        return this.children.stream().flatMap(Uop::dependsFirst).distinct();
+    public Stream<StateProperty> depends() {
+        return Stream.empty();
     }
 
     @Override

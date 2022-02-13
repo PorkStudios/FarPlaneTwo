@@ -31,8 +31,8 @@ import net.daporkchop.fp2.gl.opengl.command.methodwriter.FieldHandle;
 import net.daporkchop.fp2.gl.opengl.command.methodwriter.MethodWriter;
 import net.daporkchop.fp2.gl.opengl.command.state.CowState;
 import net.daporkchop.fp2.gl.opengl.command.state.StateProperty;
+import net.daporkchop.fp2.gl.opengl.command.uop.BaseUop;
 import net.daporkchop.fp2.gl.opengl.command.uop.Uop;
-import org.objectweb.asm.Type;
 
 import java.util.List;
 import java.util.stream.Stream;
@@ -54,7 +54,7 @@ public abstract class AttributeBufferImpl<F extends AttributeFormatImpl<F, S, ?>
         //TODO: this could be FAR more optimized
         checkArg(this.getClass() == dst.getClass(), "cannot copy from %s to %s", this.getClass(), dst.getClass());
 
-        return ImmutableList.of(new Uop(new CowState()) {
+        return ImmutableList.of(new BaseUop(new CowState()) {
             @Override
             protected Stream<StateProperty> dependsFirst() {
                 return Stream.empty();

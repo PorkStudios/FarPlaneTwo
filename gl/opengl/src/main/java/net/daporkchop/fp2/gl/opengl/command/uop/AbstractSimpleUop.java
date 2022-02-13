@@ -20,22 +20,38 @@
 
 package net.daporkchop.fp2.gl.opengl.command.uop;
 
+import com.google.common.collect.ImmutableList;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.opengl.command.AbstractCommandBufferBuilder;
-import net.daporkchop.fp2.gl.opengl.command.CodegenArgs;
-import net.daporkchop.fp2.gl.opengl.command.methodwriter.MethodWriter;
+import net.daporkchop.fp2.gl.opengl.command.state.MutableState;
 import net.daporkchop.fp2.gl.opengl.command.state.State;
 import net.daporkchop.fp2.gl.opengl.command.state.StateProperty;
+import net.daporkchop.fp2.gl.opengl.command.state.StateValueProperty;
+import net.daporkchop.lib.common.util.PorkUtil;
 
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 /**
  * @author DaPorkchop_
  */
-public interface Uop {
-    State state();
+public abstract class AbstractSimpleUop extends BaseUop {
+    protected static State toState(@NonNull State stateIn, @NonNull Map<StateValueProperty<?>, Object> propertyValues) {
+        MutableState state = stateIn.mutableSnapshot();
+        PorkUtil.<Map<StateValueProperty<Object>, Object>>uncheckedCast(propertyValues).forEach(state::set);
+        return state.immutableSnapshot();
+    }
 
-    Stream<StateProperty> depends();
+    protected final List<StateProperty> depends;
 
-    void emitCode(@NonNull AbstractCommandBufferBuilder builder, @NonNull MethodWriter<CodegenArgs> writer);
+    public AbstractSimpleUop(@NonNull State state, @NonNull Map<StateValueProperty<?>, Object> propertyValues) {
+        super(toState(state, propertyValues));
+
+        this.depends = ImmutableList.copyOf(propertyValues.keySet());
+    }
+
+    @Override
+    protected Stream<StateProperty> dependsFirst() {
+        return this.depends.stream();
+    }
 }
