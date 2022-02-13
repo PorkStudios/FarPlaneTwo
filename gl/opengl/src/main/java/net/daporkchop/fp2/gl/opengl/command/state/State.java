@@ -22,7 +22,9 @@ package net.daporkchop.fp2.gl.opengl.command.state;
 
 import lombok.NonNull;
 
+import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -49,6 +51,17 @@ public interface State {
      * @return the value, or an empty {@link Optional} if we don't care what the current value is
      */
     <T> Optional<T> get(@NonNull StateValueProperty<T> property);
+
+    /**
+     * Gets the value which the given {@link StateValueProperty} is set to, falling back to the default value if unknown.
+     *
+     * @param property the {@link StateValueProperty}
+     * @return the value, or the property's {@link StateValueProperty#def()} if the property is unset
+     * @throws NoSuchElementException if the property is not set
+     */
+    default <T> T getExact(@NonNull StateValueProperty<T> property) throws NoSuchElementException {
+        return this.get(property).get();
+    }
 
     /**
      * Gets the value which the given {@link StateValueProperty} is set to, falling back to the default value if unknown.
@@ -92,4 +105,8 @@ public interface State {
      * @return a {@link Stream} over all the properties in this state which have been set
      */
     Stream<StateValueProperty<?>> properties();
+
+    default void forEach(@NonNull BiConsumer<StateValueProperty<?>, Object> callback) {
+        this.properties().forEach(property -> callback.accept(property, this.getExact(property)));
+    }
 }

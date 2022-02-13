@@ -30,6 +30,7 @@ import net.daporkchop.fp2.gl.opengl.command.CodegenArgs;
 import net.daporkchop.fp2.gl.opengl.command.methodwriter.FieldHandle;
 import net.daporkchop.fp2.gl.opengl.command.methodwriter.MethodWriter;
 import net.daporkchop.fp2.gl.opengl.command.state.CowState;
+import net.daporkchop.fp2.gl.opengl.command.state.State;
 import net.daporkchop.fp2.gl.opengl.command.state.StateProperty;
 import net.daporkchop.fp2.gl.opengl.command.uop.BaseUop;
 import net.daporkchop.fp2.gl.opengl.command.uop.Uop;
@@ -61,7 +62,7 @@ public abstract class AttributeBufferImpl<F extends AttributeFormatImpl<F, S, ?>
             }
 
             @Override
-            public void emitCode(@NonNull AbstractCommandBufferBuilder builder, @NonNull MethodWriter<CodegenArgs> writer) {
+            public void emitCode(@NonNull State effectiveState, @NonNull AbstractCommandBufferBuilder builder, @NonNull MethodWriter<CodegenArgs> writer) {
                 FieldHandle<AttributeBufferImpl<?, ?>> srcHandle = builder.makeFieldHandle(getType(dst.getClass()), AttributeBufferImpl.this);
                 FieldHandle<AttributeBufferImpl<?, ?>> dstHandle = builder.makeFieldHandle(getType(dst.getClass()), dst);
 

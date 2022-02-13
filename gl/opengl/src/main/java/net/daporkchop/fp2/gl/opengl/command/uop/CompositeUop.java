@@ -28,7 +28,6 @@ import net.daporkchop.fp2.gl.opengl.command.CodegenArgs;
 import net.daporkchop.fp2.gl.opengl.command.methodwriter.MethodWriter;
 import net.daporkchop.fp2.gl.opengl.command.state.MutableState;
 import net.daporkchop.fp2.gl.opengl.command.state.State;
-import net.daporkchop.fp2.gl.opengl.command.state.StateProperty;
 import net.daporkchop.fp2.gl.opengl.command.state.StateValueProperty;
 
 import java.util.List;
@@ -49,36 +48,35 @@ public class CompositeUop implements Uop {
     protected final List<Uop> children;
 
     @Override
-    public Stream<StateProperty> depends() {
+    public Stream<StateValueProperty<?>> depends() {
         return Stream.empty();
     }
 
     @Override
-    public void emitCode(@NonNull AbstractCommandBufferBuilder builder, @NonNull MethodWriter<CodegenArgs> writer) {
-        MutableState state = this.state().mutableSnapshot();
+    public void emitCode(@NonNull State effectiveState, @NonNull AbstractCommandBufferBuilder builder, @NonNull MethodWriter<CodegenArgs> writer) {
+        MutableState state = effectiveState.mutableSnapshot();
 
         this.children.forEach(uop -> {
-            uop.depends()
-                    .filter(property -> property instanceof StateValueProperty)
-                    .map(property -> (StateValueProperty<?>) property)
-                    .distinct()
-                    .forEach(property -> {
-                        uop.state().get(property).ifPresent(value -> {
-                            if (!Objects.equals(value, state.getOrDef(property))) {
-                                state.set(property, uncheckedCast(value));
-                                property.set(value, writer);
-                            }
-                        });
-                    });
+            uop.depends().distinct().forEach(property -> {
+                uop.state().get(property).ifPresent(value -> {
+                    if (!Objects.equals(value, state.get(property).orElse(null))) {
+                        property.set(uncheckedCast(value), writer);
+                        state.set(property, uncheckedCast(value));
+                    }
+                });
+            });
 
-            uop.emitCode(builder, writer);
+            uop.emitCode(state.immutableSnapshot(), builder, writer);
         });
 
         //reset to initial state
-        this.state().properties().forEach(property -> {
-            if (!Objects.equals(this.state().getOrDef(property), state.getOrDef(property))) {
-                property.set(uncheckedCast(this.state().getOrDef(property)), writer);
+        state.forEach((property, value) -> {
+            if (!Objects.equals(value, effectiveState.getOrDef(property))) {
+                property.set(uncheckedCast(effectiveState.getOrDef(property)), writer);
             }
         });
+
+        //TODO: it would be more efficient if we could simply notify the parent that the state values are now undefined, rather than having to reset every value to the default
+        //  even if it isn't used later
     }
 }

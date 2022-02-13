@@ -60,7 +60,7 @@ public interface SimpleDrawListImpl<C extends DrawCommand> extends DrawListImpl<
     default List<Uop> draw(@NonNull State state, @NonNull DrawShaderProgram drawShader, int mode) {
         return Collections.singletonList(new AbstractDrawUop(state, this.binding(), drawShader, this.configureStateForDraw0(state)) {
             @Override
-            public void emitCode(@NonNull AbstractCommandBufferBuilder builder, @NonNull MethodWriter<CodegenArgs> writer) {
+            public void emitCode(@NonNull State effectiveState, @NonNull AbstractCommandBufferBuilder builder, @NonNull MethodWriter<CodegenArgs> writer) {
                 FieldHandle field = builder.makeFieldHandle(getType(SimpleDrawListImpl.this.getClass()), SimpleDrawListImpl.this);
 
                 //<this>.draw0(api, mode);
@@ -86,7 +86,7 @@ public interface SimpleDrawListImpl<C extends DrawCommand> extends DrawListImpl<
         default List<Uop> drawSelected(@NonNull State state, @NonNull DrawShaderProgram drawShader, int mode, @NonNull GeneratedSupplier<IntPredicate> selector) {
             return Collections.singletonList(new AbstractDrawUop(state, this.binding(), drawShader, this.configureStateForDrawSelected0(state)) {
                 @Override
-                public void emitCode(@NonNull AbstractCommandBufferBuilder builder, @NonNull MethodWriter<CodegenArgs> writer) {
+                public void emitCode(@NonNull State effectiveState, @NonNull AbstractCommandBufferBuilder builder, @NonNull MethodWriter<CodegenArgs> writer) {
                     FieldHandle<SimpleDrawListImpl.JavaSelected> field = builder.makeFieldHandle(getType(SimpleDrawListImpl.JavaSelected.this.getClass()), SimpleDrawListImpl.JavaSelected.this);
 
                     //<this>.drawSelected0(api, mode, selector);
@@ -123,7 +123,7 @@ public interface SimpleDrawListImpl<C extends DrawCommand> extends DrawListImpl<
             return ImmutableList.of(
                     new AbstractSimpleUop(state, this.configureStateForPrepare0(state)) {
                         @Override
-                        public void emitCode(@NonNull AbstractCommandBufferBuilder builder, @NonNull MethodWriter<CodegenArgs> writer) {
+                        public void emitCode(@NonNull State effectiveState, @NonNull AbstractCommandBufferBuilder builder, @NonNull MethodWriter<CodegenArgs> writer) {
                             FieldHandle<SimpleDrawListImpl.ShaderSelected> field = builder.makeFieldHandle(getType(SimpleDrawListImpl.ShaderSelected.this.getClass()), SimpleDrawListImpl.ShaderSelected.this);
 
                             //<this>.prepare0(api, mode);
@@ -137,7 +137,7 @@ public interface SimpleDrawListImpl<C extends DrawCommand> extends DrawListImpl<
                     },
                     new AbstractTransformUop(state, selectionBinding, selectionShader, this.configureStateForTransform0(state)) {
                         @Override
-                        public void emitCode(@NonNull AbstractCommandBufferBuilder builder, @NonNull MethodWriter<CodegenArgs> writer) {
+                        public void emitCode(@NonNull State effectiveState, @NonNull AbstractCommandBufferBuilder builder, @NonNull MethodWriter<CodegenArgs> writer) {
                             FieldHandle<SimpleDrawListImpl.ShaderSelected> field = builder.makeFieldHandle(getType(SimpleDrawListImpl.ShaderSelected.this.getClass()), SimpleDrawListImpl.ShaderSelected.this);
 
                             //glBeginTransformFeedback(GL_POINTS);
@@ -166,7 +166,7 @@ public interface SimpleDrawListImpl<C extends DrawCommand> extends DrawListImpl<
                     },
                     new AbstractDrawUop(state, this.binding(), drawShader, this.configureStateForDrawSelected0(state)) {
                         @Override
-                        public void emitCode(@NonNull AbstractCommandBufferBuilder builder, @NonNull MethodWriter<CodegenArgs> writer) {
+                        public void emitCode(@NonNull State effectiveState, @NonNull AbstractCommandBufferBuilder builder, @NonNull MethodWriter<CodegenArgs> writer) {
                             FieldHandle<SimpleDrawListImpl.ShaderSelected> field = builder.makeFieldHandle(getType(SimpleDrawListImpl.ShaderSelected.this.getClass()), SimpleDrawListImpl.ShaderSelected.this);
 
                             //<this>.drawSelected0(api, mode);

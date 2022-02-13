@@ -42,6 +42,7 @@ import net.daporkchop.fp2.gl.opengl.attribute.common.AttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.command.methodwriter.FieldHandle;
 import net.daporkchop.fp2.gl.opengl.command.methodwriter.MethodWriter;
 import net.daporkchop.fp2.gl.opengl.command.state.CowState;
+import net.daporkchop.fp2.gl.opengl.command.state.State;
 import net.daporkchop.fp2.gl.opengl.command.state.StateProperties;
 import net.daporkchop.fp2.gl.opengl.command.state.StateProperty;
 import net.daporkchop.fp2.gl.opengl.command.state.struct.BlendFactors;
@@ -124,7 +125,7 @@ public abstract class AbstractCommandBufferBuilder implements CommandBufferBuild
             }
 
             @Override
-            public void emitCode(@NonNull AbstractCommandBufferBuilder builder, @NonNull MethodWriter<CodegenArgs> writer) {
+            public void emitCode(@NonNull State effectiveState, @NonNull AbstractCommandBufferBuilder builder, @NonNull MethodWriter<CodegenArgs> writer) {
                 writer.write((mv, args) -> {
                     mv.visitVarInsn(ALOAD, args.apiLvtIndex());
                     mv.visitLdcInsn(GLEnumUtil.from(layers));
@@ -277,7 +278,7 @@ public abstract class AbstractCommandBufferBuilder implements CommandBufferBuild
     public CommandBufferBuilder drawArrays(@NonNull DrawShaderProgram shader, @NonNull DrawMode mode, @NonNull DrawBinding binding, int first, int count) {
         this.uops.add(new AbstractDrawUop(this.state, binding, shader, Collections.emptyMap()) {
             @Override
-            public void emitCode(@NonNull AbstractCommandBufferBuilder builder, @NonNull MethodWriter<CodegenArgs> writer) {
+            public void emitCode(@NonNull State effectiveState, @NonNull AbstractCommandBufferBuilder builder, @NonNull MethodWriter<CodegenArgs> writer) {
                 writer.write((mv, args) -> {
                     mv.visitVarInsn(ALOAD, args.apiLvtIndex());
                     mv.visitLdcInsn(GLEnumUtil.from(mode));
@@ -324,7 +325,7 @@ public abstract class AbstractCommandBufferBuilder implements CommandBufferBuild
     public CommandBufferBuilder transform(@NonNull TransformShaderProgram shader, @NonNull TransformBinding binding, int count) {
         this.uops.add(new AbstractTransformUop(this.state, binding, shader, Collections.singletonMap(StateProperties.RASTERIZER_DISCARD, true)) {
             @Override
-            public void emitCode(@NonNull AbstractCommandBufferBuilder builder, @NonNull MethodWriter<CodegenArgs> writer) {
+            public void emitCode(@NonNull State effectiveState, @NonNull AbstractCommandBufferBuilder builder, @NonNull MethodWriter<CodegenArgs> writer) {
                 //glBeginTransformFeedback(GL_POINTS);
                 writer.write((mv, args) -> {
                     mv.visitVarInsn(ALOAD, args.apiLvtIndex());

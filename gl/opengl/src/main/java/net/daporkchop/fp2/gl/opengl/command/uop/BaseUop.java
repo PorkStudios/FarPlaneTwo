@@ -25,6 +25,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.opengl.command.state.State;
 import net.daporkchop.fp2.gl.opengl.command.state.StateProperty;
+import net.daporkchop.fp2.gl.opengl.command.state.StateValueProperty;
 
 import java.util.stream.Stream;
 
@@ -38,8 +39,8 @@ public abstract class BaseUop implements Uop {
     private final State state;
 
     @Override
-    public Stream<StateProperty> depends() {
-        return this.dependsFirst().flatMap(property -> Stream.concat(Stream.of(property), property.depends(this.state()))).distinct();
+    public Stream<StateValueProperty<?>> depends() {
+        return this.dependsFirst().flatMap(property -> property.depends(this.state()));
     }
 
     protected abstract Stream<StateProperty> dependsFirst();

@@ -27,13 +27,15 @@ import net.daporkchop.fp2.common.asm.ClassloadingUtils;
 import net.daporkchop.fp2.gl.command.CommandBuffer;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.command.uop.Uop;
 import net.daporkchop.fp2.gl.opengl.command.methodwriter.MethodWriter;
 import net.daporkchop.fp2.gl.opengl.command.methodwriter.PassthroughMethodWriter;
 import net.daporkchop.fp2.gl.opengl.command.methodwriter.TreeMethodWriter;
 import net.daporkchop.fp2.gl.opengl.command.state.CowState;
+import net.daporkchop.fp2.gl.opengl.command.state.MutableState;
+import net.daporkchop.fp2.gl.opengl.command.state.State;
 import net.daporkchop.fp2.gl.opengl.command.state.StateProperties;
 import net.daporkchop.fp2.gl.opengl.command.state.StateValueProperty;
+import net.daporkchop.fp2.gl.opengl.command.uop.Uop;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import org.objectweb.asm.ClassWriter;
@@ -123,21 +125,18 @@ public class CommandBufferBuilderImpl extends AbstractCommandBufferBuilder {
         TreeMethodWriter<CodegenArgs> methodWriter = new TreeMethodWriter<>(this.writer, CLASS_NAME, "execute", new CodegenArgs(1), 4, true);
 
         List<Uop> uops = ImmutableList.copyOf(this.uops);
-        Map<StateValueProperty<?>, Object> state = new IdentityHashMap<>();
+        MutableState state = new MutableState();
         for (Uop uop : uops) {
-            uop.depends()
-                    .filter(property -> property instanceof StateValueProperty)
-                    .map(property -> (StateValueProperty<?>) property)
-                    .distinct()
-                    .forEach(property -> {
-                        uop.state().get(property).ifPresent(value -> {
-                            if (!Objects.equals(value, state.put(property, value))) {
-                                property.set(value, methodWriter);
-                            }
-                        });
-                    });
+            uop.depends().distinct().forEach(property -> {
+                uop.state().get(property).ifPresent(value -> {
+                    if (!Objects.equals(value, state.get(property).orElse(null))) {
+                        property.set(uncheckedCast(value), methodWriter);
+                        state.set(property, uncheckedCast(value));
+                    }
+                });
+            });
 
-            uop.emitCode(this, methodWriter);
+            uop.emitCode(state.immutableSnapshot(), this, methodWriter);
         }
 
         String executeMethodName = methodWriter.finish();
@@ -155,7 +154,7 @@ public class CommandBufferBuilderImpl extends AbstractCommandBufferBuilder {
             entryVisitor.visitVarInsn(LSTORE, bufferLvtIndex);
 
             //back up all affected OpenGL properties into local variables
-            state.keySet().forEach(property -> {
+            state.properties().forEach(property -> {
                 baseLvts.add(lvtIndexAllocator.get());
                 property.backup(entryVisitor, 1, bufferLvtIndex, lvtIndexAllocator);
             });
@@ -166,7 +165,7 @@ public class CommandBufferBuilderImpl extends AbstractCommandBufferBuilder {
             entryVisitor.visitMethodInsn(INVOKEVIRTUAL, CLASS_NAME, executeMethodName, getMethodDescriptor(VOID_TYPE, getType(GLAPI.class)), false);
 
             //restore all affected OpenGL properties from their saved values
-            state.keySet().forEach(property -> {
+            state.properties().forEach(property -> {
                 property.restore(entryVisitor, 1, bufferLvtIndex, baseLvts.poll());
             });
         } else {

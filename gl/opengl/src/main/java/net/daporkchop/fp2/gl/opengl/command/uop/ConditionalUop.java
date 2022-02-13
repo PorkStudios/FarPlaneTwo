@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.gl.opengl.command.uop;
 
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.opengl.command.AbstractCommandBufferBuilder;
@@ -27,7 +28,7 @@ import net.daporkchop.fp2.gl.opengl.command.CodegenArgs;
 import net.daporkchop.fp2.gl.opengl.command.methodwriter.FieldHandle;
 import net.daporkchop.fp2.gl.opengl.command.methodwriter.MethodWriter;
 import net.daporkchop.fp2.gl.opengl.command.state.State;
-import net.daporkchop.fp2.gl.opengl.command.state.StateProperty;
+import net.daporkchop.fp2.gl.opengl.command.state.StateValueProperty;
 import org.objectweb.asm.Label;
 
 import java.util.function.BooleanSupplier;
@@ -40,6 +41,7 @@ import static org.objectweb.asm.Type.*;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
+@Getter
 public class ConditionalUop implements Uop {
     @NonNull
     protected final BooleanSupplier condition;
@@ -52,12 +54,12 @@ public class ConditionalUop implements Uop {
     }
 
     @Override
-    public Stream<StateProperty> depends() {
-        return this.child.depends();
+    public Stream<StateValueProperty<?>> depends() {
+        return Stream.empty();
     }
 
     @Override
-    public void emitCode(@NonNull AbstractCommandBufferBuilder builder, @NonNull MethodWriter<CodegenArgs> writer) {
+    public void emitCode(@NonNull State effectiveState, @NonNull AbstractCommandBufferBuilder builder, @NonNull MethodWriter<CodegenArgs> writer) {
         FieldHandle<BooleanSupplier> conditionField = builder.makeFieldHandle(getType(BooleanSupplier.class), this.condition);
 
         writer.write((mv, args) -> {
@@ -66,7 +68,7 @@ public class ConditionalUop implements Uop {
             conditionField.get(mv);
             mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(BooleanSupplier.class), "getAsBoolean", getMethodDescriptor(BOOLEAN_TYPE), true);
             mv.visitJumpInsn(IFEQ, tail);
-            writer.makeChildAndCall(childWriter -> this.child.emitCode(builder, childWriter));
+            writer.makeChildAndCall(childWriter -> this.child.emitCode(effectiveState, builder, childWriter));
             mv.visitLabel(tail);
         });
     }

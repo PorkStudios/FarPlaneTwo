@@ -72,10 +72,10 @@ import static org.objectweb.asm.Type.*;
 public class StateProperties {
     public final StateProperty FIXED_FUNCTION_DRAW_PROPERTIES = new StateProperty() {
         @Override
-        public Stream<StateProperty> depends(@NonNull State state) {
+        public Stream<StateValueProperty<?>> depends(@NonNull State state) {
             return state.getOrDef(RASTERIZER_DISCARD)
-                    ? Stream.empty() //none of these properties do anything if RASTERIZER_DISCARD is enabled
-                    : Stream.of(RASTERIZER_DISCARD, BLEND, COLOR_MASK, CULL, STENCIL).flatMap(property -> Stream.concat(Stream.of(property), property.depends(state)));
+                    ? RASTERIZER_DISCARD.depends(state) //none of these properties do anything if RASTERIZER_DISCARD is enabled
+                    : Stream.of(RASTERIZER_DISCARD, BLEND, COLOR_MASK, CULL, STENCIL).flatMap(property -> property.depends(state));
         }
     };
 
@@ -91,8 +91,8 @@ public class StateProperties {
 
     public final StateValueProperty<Boolean> BLEND = new FixedFunctionStateEnableProperty(GL_BLEND) {
         @Override
-        protected Stream<StateProperty> dependenciesWhenEnabled() {
-            return Stream.of(BLEND_FACTORS, BLEND_OPS);
+        protected Stream<StateValueProperty<?>> dependenciesWhenEnabled(@NonNull State state) {
+            return Stream.of(BLEND_FACTORS, BLEND_OPS).flatMap(property -> property.depends(state));
         }
     };
 
@@ -108,8 +108,10 @@ public class StateProperties {
         }
 
         @Override
-        public Stream<StateProperty> depends(@NonNull State state) {
-            return state.getOrDef(this).usesUserColor() ? Stream.of(BLEND_COLOR) : Stream.empty();
+        public Stream<StateValueProperty<?>> depends(@NonNull State state) {
+            return Stream.concat(
+                    Stream.of(this),
+                    state.getOrDef(this).usesUserColor() ? BLEND_COLOR.depends(state) : Stream.empty());
         }
     };
 
@@ -181,8 +183,8 @@ public class StateProperties {
 
     public final StateValueProperty<Boolean> DEPTH = new FixedFunctionStateEnableProperty(GL_DEPTH_TEST) {
         @Override
-        protected Stream<StateProperty> dependenciesWhenEnabled() {
-            return Stream.of(DEPTH_COMPARE, DEPTH_WRITE_MASK);
+        protected Stream<StateValueProperty<?>> dependenciesWhenEnabled(@NonNull State state) {
+            return Stream.of(DEPTH_COMPARE, DEPTH_WRITE_MASK).flatMap(property -> property.depends(state));
         }
     };
 
@@ -198,8 +200,8 @@ public class StateProperties {
 
     public final StateValueProperty<Boolean> STENCIL = new FixedFunctionStateEnableProperty(GL_STENCIL_TEST) {
         @Override
-        protected Stream<StateProperty> dependenciesWhenEnabled() {
-            return Stream.of(STENCIL_MASK, STENCIL_FUNC, STENCIL_OP);
+        protected Stream<StateValueProperty<?>> dependenciesWhenEnabled(@NonNull State state) {
+            return Stream.of(STENCIL_MASK, STENCIL_FUNC, STENCIL_OP).flatMap(property -> property.depends(state));
         }
     };
 
@@ -220,7 +222,7 @@ public class StateProperties {
 
     public final StateValueProperty<StencilOp> STENCIL_OP = new StructContainingMultipleIntegersProperty<StencilOp>(new StencilOp(StencilOperation.KEEP, StencilOperation.KEEP, StencilOperation.KEEP),
             "glStencilOp",
-            GL_STENCIL_FAIL, GL_STENCIL_PASS_DEPTH_PASS,  GL_STENCIL_PASS_DEPTH_FAIL) {
+            GL_STENCIL_FAIL, GL_STENCIL_PASS_DEPTH_PASS, GL_STENCIL_PASS_DEPTH_FAIL) {
         @Override
         protected void loadFromValue(@NonNull MethodVisitor mv, @NonNull StencilOp value) {
             visitGLConstant(mv, GLEnumUtil.from(value.fail()));
@@ -349,13 +351,11 @@ public class StateProperties {
         }
 
         @Override
-        public Stream<StateProperty> depends(@NonNull State state) {
-            return state.getOrDef(this)
-                    ? this.dependenciesWhenEnabled().flatMap(property -> Stream.concat(Stream.of(property), property.depends(state))).distinct()
-                    : Stream.empty();
+        public Stream<StateValueProperty<?>> depends(@NonNull State state) {
+            return Stream.concat(Stream.of(this), this.dependenciesWhenEnabled(state));
         }
 
-        protected Stream<StateProperty> dependenciesWhenEnabled() {
+        protected Stream<StateValueProperty<?>> dependenciesWhenEnabled(@NonNull State state) {
             return Stream.empty();
         }
     }
