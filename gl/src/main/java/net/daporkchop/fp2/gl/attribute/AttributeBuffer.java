@@ -21,7 +21,6 @@
 package net.daporkchop.fp2.gl.attribute;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.GLResource;
 
 /**
  * A resizeable array of attribute data in server memory.
@@ -103,6 +102,13 @@ public interface AttributeBuffer<S> extends BaseAttributeBuffer {
     }
 
     /**
+     * Sets this buffer's contents to a copy of the data from the given buffer, discarding any existing data and modifying its capacity.
+     *
+     * @param buffer the buffer containing the element data. Must use the same {@link AttributeFormat}
+     */
+    void setContentsFrom(@NonNull AttributeBuffer<S> buffer);
+
+    /**
      * Copies the attribute data from the given struct into this buffer.
      *
      * @param index  the index of the element to modify
@@ -137,4 +143,5 @@ public interface AttributeBuffer<S> extends BaseAttributeBuffer {
      * @param writer     a {@link AttributeWriter} containing the sequence of attribute data elements to copy
      */
     void set(int startIndex, @NonNull AttributeWriter<S> writer);
+
 }

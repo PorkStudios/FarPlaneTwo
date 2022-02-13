@@ -18,27 +18,40 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.command;
+package net.daporkchop.fp2.gl.opengl.command.uop;
 
+import com.google.common.collect.ImmutableList;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.gl.command.CommandBuffer;
-import net.daporkchop.fp2.gl.opengl.command.uop.Uop;
+import net.daporkchop.fp2.gl.opengl.command.state.MutableState;
+import net.daporkchop.fp2.gl.opengl.command.state.State;
+import net.daporkchop.fp2.gl.opengl.command.state.StateProperty;
+import net.daporkchop.fp2.gl.opengl.command.state.StateValueProperty;
+import net.daporkchop.lib.common.util.PorkUtil;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
 
 /**
- * Base implementation of {@link CommandBuffer}.
- *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public abstract class CommandBufferImpl implements CommandBuffer {
-    @NonNull
-    protected final List<Uop> uops;
+public abstract class AbstractSimpleUop extends BaseUop {
+    protected static State toState(@NonNull State stateIn, @NonNull Map<StateValueProperty<?>, Object> propertyValues) {
+        MutableState state = stateIn.mutableSnapshot();
+        PorkUtil.<Map<StateValueProperty<Object>, Object>>uncheckedCast(propertyValues).forEach(state::set);
+        return state.immutableSnapshot();
+    }
+
+    protected final List<StateProperty> depends;
+
+    public AbstractSimpleUop(@NonNull State state, @NonNull Map<StateValueProperty<?>, Object> propertyValues) {
+        super(toState(state, propertyValues));
+
+        this.depends = ImmutableList.copyOf(propertyValues.keySet());
+    }
 
     @Override
-    public void close() {
-        //no-op
+    protected Stream<StateProperty> dependsFirst() {
+        return this.depends.stream();
     }
 }

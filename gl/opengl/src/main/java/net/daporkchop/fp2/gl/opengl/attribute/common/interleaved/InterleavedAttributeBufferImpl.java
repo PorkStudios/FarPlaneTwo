@@ -22,8 +22,9 @@ package net.daporkchop.fp2.gl.opengl.attribute.common.interleaved;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.BufferUsage;
+import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.AttributeWriter;
+import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.opengl.attribute.common.AttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
 import net.daporkchop.fp2.gl.opengl.buffer.GLBuffer;
@@ -88,6 +89,16 @@ public final class InterleavedAttributeBufferImpl<F extends InterleavedAttribute
     public void setContents(@NonNull S... structs) {
         this.structFormat.upload(structs, this.buffer);
         this.capacity = structs.length;
+    }
+
+    @Override
+    public void setContentsFrom(@NonNull AttributeBuffer<S> _buffer) {
+        InterleavedAttributeBufferImpl<F, S> buffer = (InterleavedAttributeBufferImpl<F, S>) _buffer;
+        checkArg(buffer.structFormat() == this.structFormat, "mismatched struct formats!");
+
+        long size = buffer.buffer().capacity();
+        this.buffer.capacity(size);
+        this.buffer.copyRange(buffer.buffer, 0L, 0L, size);
     }
 
     @Override

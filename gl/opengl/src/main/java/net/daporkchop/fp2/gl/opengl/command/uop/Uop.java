@@ -18,27 +18,25 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.command;
+package net.daporkchop.fp2.gl.opengl.command.uop;
 
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.gl.command.CommandBuffer;
-import net.daporkchop.fp2.gl.opengl.command.uop.Uop;
+import net.daporkchop.fp2.gl.opengl.command.AbstractCommandBufferBuilder;
+import net.daporkchop.fp2.gl.opengl.command.CodegenArgs;
+import net.daporkchop.fp2.gl.opengl.command.methodwriter.MethodWriter;
+import net.daporkchop.fp2.gl.opengl.command.state.State;
+import net.daporkchop.fp2.gl.opengl.command.state.StateProperty;
+import net.daporkchop.fp2.gl.opengl.command.state.StateValueProperty;
 
-import java.util.List;
+import java.util.stream.Stream;
 
 /**
- * Base implementation of {@link CommandBuffer}.
- *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public abstract class CommandBufferImpl implements CommandBuffer {
-    @NonNull
-    protected final List<Uop> uops;
+public interface Uop {
+    State state();
 
-    @Override
-    public void close() {
-        //no-op
-    }
+    Stream<StateValueProperty<?>> depends();
+
+    void emitCode(@NonNull State effectiveState, @NonNull AbstractCommandBufferBuilder builder, @NonNull MethodWriter<CodegenArgs> writer);
 }

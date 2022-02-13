@@ -26,8 +26,11 @@ import net.daporkchop.fp2.gl.draw.list.DrawCommand;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.command.CodegenArgs;
-import net.daporkchop.fp2.gl.opengl.command.CommandBufferBuilderImpl;
-import net.daporkchop.fp2.gl.opengl.command.Uop;
+import net.daporkchop.fp2.gl.opengl.command.AbstractCommandBufferBuilder;
+import net.daporkchop.fp2.gl.opengl.command.uop.AbstractSimpleUop;
+import net.daporkchop.fp2.gl.opengl.command.uop.AbstractDrawUop;
+import net.daporkchop.fp2.gl.opengl.command.uop.AbstractTransformUop;
+import net.daporkchop.fp2.gl.opengl.command.uop.Uop;
 import net.daporkchop.fp2.gl.opengl.command.methodwriter.FieldHandle;
 import net.daporkchop.fp2.gl.opengl.command.methodwriter.GeneratedSupplier;
 import net.daporkchop.fp2.gl.opengl.command.methodwriter.MethodWriter;
@@ -55,9 +58,9 @@ public interface SimpleDrawListImpl<C extends DrawCommand> extends DrawListImpl<
 
     @Override
     default List<Uop> draw(@NonNull State state, @NonNull DrawShaderProgram drawShader, int mode) {
-        return Collections.singletonList(new Uop.Draw(state, this.binding(), drawShader, this.configureStateForDraw0(state)) {
+        return Collections.singletonList(new AbstractDrawUop(state, this.binding(), drawShader, this.configureStateForDraw0(state)) {
             @Override
-            public void emitCode(@NonNull CommandBufferBuilderImpl builder, @NonNull MethodWriter<CodegenArgs> writer) {
+            public void emitCode(@NonNull State effectiveState, @NonNull AbstractCommandBufferBuilder builder, @NonNull MethodWriter<CodegenArgs> writer) {
                 FieldHandle field = builder.makeFieldHandle(getType(SimpleDrawListImpl.this.getClass()), SimpleDrawListImpl.this);
 
                 //<this>.draw0(api, mode);
@@ -81,9 +84,9 @@ public interface SimpleDrawListImpl<C extends DrawCommand> extends DrawListImpl<
 
         @Override
         default List<Uop> drawSelected(@NonNull State state, @NonNull DrawShaderProgram drawShader, int mode, @NonNull GeneratedSupplier<IntPredicate> selector) {
-            return Collections.singletonList(new Uop.Draw(state, this.binding(), drawShader, this.configureStateForDrawSelected0(state)) {
+            return Collections.singletonList(new AbstractDrawUop(state, this.binding(), drawShader, this.configureStateForDrawSelected0(state)) {
                 @Override
-                public void emitCode(@NonNull CommandBufferBuilderImpl builder, @NonNull MethodWriter<CodegenArgs> writer) {
+                public void emitCode(@NonNull State effectiveState, @NonNull AbstractCommandBufferBuilder builder, @NonNull MethodWriter<CodegenArgs> writer) {
                     FieldHandle<SimpleDrawListImpl.JavaSelected> field = builder.makeFieldHandle(getType(SimpleDrawListImpl.JavaSelected.this.getClass()), SimpleDrawListImpl.JavaSelected.this);
 
                     //<this>.drawSelected0(api, mode, selector);
@@ -118,9 +121,9 @@ public interface SimpleDrawListImpl<C extends DrawCommand> extends DrawListImpl<
         @Override
         default List<Uop> drawSelected(@NonNull State state, @NonNull DrawShaderProgram drawShader, int mode, @NonNull TransformShaderProgram selectionShader, @NonNull TransformBinding selectionBinding) {
             return ImmutableList.of(
-                    new Uop.Simple(state, this.configureStateForPrepare0(state)) {
+                    new AbstractSimpleUop(state, this.configureStateForPrepare0(state)) {
                         @Override
-                        public void emitCode(@NonNull CommandBufferBuilderImpl builder, @NonNull MethodWriter<CodegenArgs> writer) {
+                        public void emitCode(@NonNull State effectiveState, @NonNull AbstractCommandBufferBuilder builder, @NonNull MethodWriter<CodegenArgs> writer) {
                             FieldHandle<SimpleDrawListImpl.ShaderSelected> field = builder.makeFieldHandle(getType(SimpleDrawListImpl.ShaderSelected.this.getClass()), SimpleDrawListImpl.ShaderSelected.this);
 
                             //<this>.prepare0(api, mode);
@@ -132,9 +135,9 @@ public interface SimpleDrawListImpl<C extends DrawCommand> extends DrawListImpl<
                             });
                         }
                     },
-                    new Uop.Transform(state, selectionBinding, selectionShader, this.configureStateForTransform0(state)) {
+                    new AbstractTransformUop(state, selectionBinding, selectionShader, this.configureStateForTransform0(state)) {
                         @Override
-                        public void emitCode(@NonNull CommandBufferBuilderImpl builder, @NonNull MethodWriter<CodegenArgs> writer) {
+                        public void emitCode(@NonNull State effectiveState, @NonNull AbstractCommandBufferBuilder builder, @NonNull MethodWriter<CodegenArgs> writer) {
                             FieldHandle<SimpleDrawListImpl.ShaderSelected> field = builder.makeFieldHandle(getType(SimpleDrawListImpl.ShaderSelected.this.getClass()), SimpleDrawListImpl.ShaderSelected.this);
 
                             //glBeginTransformFeedback(GL_POINTS);
@@ -161,9 +164,9 @@ public interface SimpleDrawListImpl<C extends DrawCommand> extends DrawListImpl<
                             });
                         }
                     },
-                    new Uop.Draw(state, this.binding(), drawShader, this.configureStateForDrawSelected0(state)) {
+                    new AbstractDrawUop(state, this.binding(), drawShader, this.configureStateForDrawSelected0(state)) {
                         @Override
-                        public void emitCode(@NonNull CommandBufferBuilderImpl builder, @NonNull MethodWriter<CodegenArgs> writer) {
+                        public void emitCode(@NonNull State effectiveState, @NonNull AbstractCommandBufferBuilder builder, @NonNull MethodWriter<CodegenArgs> writer) {
                             FieldHandle<SimpleDrawListImpl.ShaderSelected> field = builder.makeFieldHandle(getType(SimpleDrawListImpl.ShaderSelected.this.getClass()), SimpleDrawListImpl.ShaderSelected.this);
 
                             //<this>.drawSelected0(api, mode);

@@ -18,27 +18,30 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.command;
+package net.daporkchop.fp2.gl.opengl.command.uop;
 
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.gl.command.CommandBuffer;
-import net.daporkchop.fp2.gl.opengl.command.uop.Uop;
+import net.daporkchop.fp2.gl.opengl.command.state.State;
+import net.daporkchop.fp2.gl.opengl.command.state.StateProperty;
+import net.daporkchop.fp2.gl.opengl.command.state.StateValueProperty;
 
-import java.util.List;
+import java.util.stream.Stream;
 
 /**
- * Base implementation of {@link CommandBuffer}.
- *
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public abstract class CommandBufferImpl implements CommandBuffer {
+@Getter
+public abstract class BaseUop implements Uop {
     @NonNull
-    protected final List<Uop> uops;
+    private final State state;
 
     @Override
-    public void close() {
-        //no-op
+    public Stream<StateValueProperty<?>> depends() {
+        return this.dependsFirst().flatMap(property -> property.depends(this.state()));
     }
+
+    protected abstract Stream<StateProperty> dependsFirst();
 }

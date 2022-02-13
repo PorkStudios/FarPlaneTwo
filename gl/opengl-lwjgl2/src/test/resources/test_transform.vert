@@ -1,3 +1,3 @@
 void main() {
-    to_posRenamed = max(ti_posRenamed, ti_posRenamed_prev) + 0.1;
+    to_posRenamed = ti_posRenamed + 0.1;
 }

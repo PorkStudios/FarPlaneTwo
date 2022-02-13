@@ -28,6 +28,7 @@ import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.GLVersion;
 import net.daporkchop.lib.common.function.throwing.EPredicate;
 import net.daporkchop.lib.unsafe.PUnsafe;
+import org.lwjgl.opengl.ARBCopyBuffer;
 import org.lwjgl.opengl.ARBDrawElementsBaseVertex;
 import org.lwjgl.opengl.ARBInstancedArrays;
 import org.lwjgl.opengl.ARBMultiDrawIndirect;
@@ -65,6 +66,7 @@ public class GLAPILWJGL2 implements GLAPI {
     private final ExtraFunctions extraFunctions;
 
     // OpenGL 3.1
+    private final boolean GL_ARB_copy_buffer;
     private final boolean GL_ARB_texture_buffer_object;
     private final boolean GL_ARB_uniform_buffer_object;
 
@@ -88,6 +90,7 @@ public class GLAPILWJGL2 implements GLAPI {
         this.extraFunctions = ExtraFunctionsProvider.INSTANCE.get();
 
         // OpenGL 3.1
+        this.GL_ARB_copy_buffer = !capabilities.OpenGL31 && capabilities.GL_ARB_copy_buffer;
         this.GL_ARB_texture_buffer_object = !capabilities.OpenGL31 && capabilities.GL_ARB_texture_buffer_object;
         this.GL_ARB_uniform_buffer_object = !capabilities.OpenGL31 && capabilities.GL_ARB_uniform_buffer_object;
 
@@ -694,6 +697,15 @@ public class GLAPILWJGL2 implements GLAPI {
     // OpenGL 3.1
     //
     //
+
+    @Override
+    public void glCopyBufferSubData(int readTarget, int writeTarget, long readOffset, long writeOffset, long size) {
+        if (this.GL_ARB_copy_buffer) {
+            ARBCopyBuffer.glCopyBufferSubData(readTarget, writeTarget, readOffset, writeOffset, size);
+        } else {
+            GL31.glCopyBufferSubData(readTarget, writeTarget, readOffset, writeOffset, size);
+        }
+    }
 
     @Override
     public void glTexBuffer(int target, int internalFormat, int buffer) {

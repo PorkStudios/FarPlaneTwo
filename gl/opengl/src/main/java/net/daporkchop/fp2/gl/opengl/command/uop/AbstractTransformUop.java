@@ -18,27 +18,33 @@
  *
  */
 
-package net.daporkchop.fp2.gl.opengl.command;
+package net.daporkchop.fp2.gl.opengl.command.uop;
 
+import com.google.common.collect.ImmutableList;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.gl.command.CommandBuffer;
-import net.daporkchop.fp2.gl.opengl.command.uop.Uop;
+import net.daporkchop.fp2.gl.opengl.command.state.State;
+import net.daporkchop.fp2.gl.opengl.command.state.StateProperties;
+import net.daporkchop.fp2.gl.opengl.command.state.StateProperty;
+import net.daporkchop.fp2.gl.opengl.command.state.StateValueProperty;
+import net.daporkchop.fp2.gl.opengl.layout.binding.BaseBindingImpl;
+import net.daporkchop.fp2.gl.opengl.shader.BaseShaderProgramImpl;
+import net.daporkchop.fp2.gl.transform.binding.TransformBinding;
+import net.daporkchop.fp2.gl.transform.shader.TransformShaderProgram;
 
-import java.util.List;
+import java.util.Map;
 
 /**
- * Base implementation of {@link CommandBuffer}.
- *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public abstract class CommandBufferImpl implements CommandBuffer {
-    @NonNull
-    protected final List<Uop> uops;
+public abstract class AbstractTransformUop extends AbstractBoundUop {
+    public AbstractTransformUop(@NonNull State state, @NonNull TransformBinding binding, @NonNull TransformShaderProgram shader, @NonNull Map<StateValueProperty<?>, Object> propertyValues) {
+        super(state.immutableSnapshot().set(StateProperties.RASTERIZER_DISCARD, true), (BaseBindingImpl) binding, (BaseShaderProgramImpl<?, ?>) shader, propertyValues);
+    }
 
     @Override
-    public void close() {
-        //no-op
+    protected void buildDependsFirst(@NonNull ImmutableList.Builder<StateProperty> depends, @NonNull BaseBindingImpl binding) {
+        super.buildDependsFirst(depends, binding);
+
+        depends.add(StateProperties.RASTERIZER_DISCARD);
     }
 }

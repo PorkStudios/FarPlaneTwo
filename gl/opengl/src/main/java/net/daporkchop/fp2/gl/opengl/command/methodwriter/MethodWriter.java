@@ -24,19 +24,34 @@ import lombok.NonNull;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 
-import java.util.function.BiConsumer;
-
 /**
  * @author DaPorkchop_
  */
-@FunctionalInterface
 public interface MethodWriter<A extends MethodWriter.Args> {
-    void write(@NonNull BiConsumer<MethodVisitor, A> action);
+    void write(@NonNull WriteCallback<A> action);
+
+    void makeChildAndCall(@NonNull WriteChildCallback<A> callback);
 
     /**
      * @author DaPorkchop_
      */
     interface Args {
         Type[] argumentTypes();
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @FunctionalInterface
+    interface WriteCallback<A extends Args> {
+        void accept(@NonNull MethodVisitor mv, @NonNull A args);
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @FunctionalInterface
+    interface WriteChildCallback<A extends Args> {
+        void accept(@NonNull MethodWriter<A> childWriter);
     }
 }

@@ -26,6 +26,7 @@ import lombok.NonNull;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -83,5 +84,10 @@ public final class MutableState implements State {
     @Override
     public Stream<StateValueProperty<?>> properties() {
         return this.values.keySet().stream();
+    }
+
+    @Override
+    public void forEach(@NonNull BiConsumer<StateValueProperty<?>, Object> callback) {
+        this.values.forEach(callback);
     }
 }

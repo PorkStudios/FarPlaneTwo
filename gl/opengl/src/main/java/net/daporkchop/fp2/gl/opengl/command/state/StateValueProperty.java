@@ -27,6 +27,7 @@ import org.objectweb.asm.MethodVisitor;
 
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 /**
  * A {@link StateProperty} with an associated value.
@@ -36,6 +37,11 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author DaPorkchop_
  */
 public interface StateValueProperty<T> extends StateProperty {
+    @Override
+    default Stream<StateValueProperty<?>> depends(@NonNull State state) {
+        return Stream.of(this);
+    }
+
     /**
      * @return the property's default value
      */

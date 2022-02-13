@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.gl.command;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.fp2.gl.draw.DrawMode;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.fp2.gl.draw.list.DrawList;
@@ -30,6 +31,8 @@ import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.transform.binding.TransformBinding;
 import net.daporkchop.fp2.gl.transform.shader.TransformShaderProgram;
 
+import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
@@ -129,6 +132,12 @@ public interface CommandBufferBuilder {
     CommandBufferBuilder transform(@NonNull TransformShaderProgram shader, @NonNull TransformBinding binding, int count);
 
     //
+    // BUFFER TRANSFERS
+    //
+
+    <S> CommandBufferBuilder copy(@NonNull AttributeBuffer<S> src, @NonNull AttributeBuffer<S> dst);
+
+    //
     // MISC
     //
 
@@ -136,6 +145,14 @@ public interface CommandBufferBuilder {
      * Executes the given {@link CommandBuffer}.
      */
     CommandBufferBuilder execute(@NonNull CommandBuffer buffer);
+
+    /**
+     * Generates a sub-sequence of commands which is only executed if a given condition evaluates to {@code true}.
+     *
+     * @param condition the condition which will be evaluated to determine whether or not to execute the commands
+     * @param callback  a callback function which will be called with a {@link CommandBufferBuilder} to which the conditionally executed commands should be written to
+     */
+    CommandBufferBuilder conditional(@NonNull BooleanSupplier condition, @NonNull Consumer<CommandBufferBuilder> callback);
 
     /**
      * Places an ordering barrier at the current stage.

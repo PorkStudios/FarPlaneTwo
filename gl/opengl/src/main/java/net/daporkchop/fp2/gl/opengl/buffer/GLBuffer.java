@@ -59,6 +59,7 @@ public final class GLBuffer implements GLResource {
         this.id = this.api.glGenBuffer();
         this.gl.resourceArena().register(this, this.id, this.api::glDeleteBuffer);
 
+        //TODO: figure out if i can safely get rid of this
         this.capacity(0L);
     }
 
@@ -70,7 +71,7 @@ public final class GLBuffer implements GLResource {
     /**
      * Sets the capacity of this buffer.
      * <p>
-     * If the buffer already has the requested capacity, nothing is changed. Otherwise, the buffer is resized and its contents are now undefined.
+     * This will discard the buffer's previous contents, orphaning its previous storage and allocating a new one.
      *
      * @param capacity the new capacity
      */
@@ -255,6 +256,35 @@ public final class GLBuffer implements GLResource {
         this.bind(BufferTarget.ARRAY_BUFFER, target -> {
             this.api.glGetBufferSubData(target.id(), start, data);
         });
+    }
+
+    /**
+     * Copies a range of data from the given source buffer into this buffer.
+     *
+     * @param src       the buffer to copy the data from
+     * @param srcOffset the offset in the source buffer to begin copying from
+     * @param dstOffset the offset in this buffer to begin copying to
+     * @param size      the number of bytes to copy
+     */
+    public void copyRange(@NonNull GLBuffer src, long srcOffset, long dstOffset, long size) {
+        checkRangeLen(src.capacity(), srcOffset, size);
+        checkRangeLen(this.capacity, dstOffset, size);
+
+        src.bind(BufferTarget.COPY_READ_BUFFER, srcTarget -> this.bind(BufferTarget.COPY_WRITE_BUFFER, dstTarget -> {
+            this.api.glCopyBufferSubData(srcTarget.id(), dstTarget.id(), srcOffset, dstOffset, size);
+        }));
+    }
+
+    /**
+     * Copies a range of data from this buffer into the given destination buffer.
+     *
+     * @param srcOffset the offset in this buffer to begin copying from
+     * @param dst       the buffer to copy the data to
+     * @param dstOffset the offset in the destination buffer to begin copying to
+     * @param size      the number of bytes to copy
+     */
+    public void copyRange(long srcOffset, @NonNull GLBuffer dst, long dstOffset, long size) {
+        dst.copyRange(this, srcOffset, dstOffset, size);
     }
 
     public void bind(@NonNull BufferTarget target, @NonNull Consumer<BufferTarget> callback) {

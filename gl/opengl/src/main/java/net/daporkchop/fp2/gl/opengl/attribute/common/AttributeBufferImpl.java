@@ -20,10 +20,27 @@
 
 package net.daporkchop.fp2.gl.opengl.attribute.common;
 
+import com.google.common.collect.ImmutableList;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
+import net.daporkchop.fp2.gl.opengl.command.AbstractCommandBufferBuilder;
+import net.daporkchop.fp2.gl.opengl.command.CodegenArgs;
+import net.daporkchop.fp2.gl.opengl.command.methodwriter.FieldHandle;
+import net.daporkchop.fp2.gl.opengl.command.methodwriter.MethodWriter;
+import net.daporkchop.fp2.gl.opengl.command.state.CowState;
+import net.daporkchop.fp2.gl.opengl.command.state.State;
+import net.daporkchop.fp2.gl.opengl.command.state.StateProperty;
+import net.daporkchop.fp2.gl.opengl.command.uop.BaseUop;
+import net.daporkchop.fp2.gl.opengl.command.uop.Uop;
+
+import java.util.List;
+import java.util.stream.Stream;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
+import static org.objectweb.asm.Opcodes.*;
+import static org.objectweb.asm.Type.*;
 
 /**
  * @author DaPorkchop_
@@ -32,5 +49,29 @@ import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeBufferImpl;
 public abstract class AttributeBufferImpl<F extends AttributeFormatImpl<F, S, ?>, S> extends BaseAttributeBufferImpl<F> implements AttributeBuffer<S> {
     public AttributeBufferImpl(@NonNull F format) {
         super(format);
+    }
+
+    public List<Uop> copyTo(@NonNull AttributeBufferImpl<F, S> dst) {
+        //TODO: this could be FAR more optimized
+        checkArg(this.getClass() == dst.getClass(), "cannot copy from %s to %s", this.getClass(), dst.getClass());
+
+        return ImmutableList.of(new BaseUop(new CowState()) {
+            @Override
+            protected Stream<StateProperty> dependsFirst() {
+                return Stream.empty();
+            }
+
+            @Override
+            public void emitCode(@NonNull State effectiveState, @NonNull AbstractCommandBufferBuilder builder, @NonNull MethodWriter<CodegenArgs> writer) {
+                FieldHandle<AttributeBufferImpl<?, ?>> srcHandle = builder.makeFieldHandle(getType(dst.getClass()), AttributeBufferImpl.this);
+                FieldHandle<AttributeBufferImpl<?, ?>> dstHandle = builder.makeFieldHandle(getType(dst.getClass()), dst);
+
+                writer.write((mv, args) -> {
+                    dstHandle.get(mv);
+                    srcHandle.get(mv);
+                    mv.visitMethodInsn(INVOKEVIRTUAL, getInternalName(dst.getClass()), "setContentsFrom", getMethodDescriptor(VOID_TYPE, getType(AttributeBuffer.class)), false);
+                });
+            }
+        });
     }
 }
