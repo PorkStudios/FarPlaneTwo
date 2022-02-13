@@ -24,18 +24,10 @@ import com.google.common.collect.ImmutableList;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import lombok.NonNull;
-import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
+import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
-import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
-import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
-import net.daporkchop.fp2.gl.draw.binding.DrawBindingBuilder;
-import net.daporkchop.fp2.gl.draw.DrawMode;
-import net.daporkchop.fp2.gl.draw.list.DrawCommand;
-import net.daporkchop.fp2.gl.draw.list.DrawList;
-import net.daporkchop.fp2.gl.draw.list.DrawListBuilder;
-import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.core.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
@@ -44,6 +36,14 @@ import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutput;
 import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutputStorage;
 import net.daporkchop.fp2.core.mode.common.client.strategy.IFarRenderStrategy;
 import net.daporkchop.fp2.core.util.datastructure.SimpleSet;
+import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
+import net.daporkchop.fp2.gl.draw.DrawMode;
+import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
+import net.daporkchop.fp2.gl.draw.binding.DrawBindingBuilder;
+import net.daporkchop.fp2.gl.draw.list.DrawCommand;
+import net.daporkchop.fp2.gl.draw.list.DrawList;
+import net.daporkchop.fp2.gl.draw.list.DrawListBuilder;
+import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
 import net.daporkchop.lib.common.util.GenericMatcher;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
@@ -125,11 +125,15 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
     public void draw(@NonNull CommandBufferBuilder builder, int level, int pass, @NonNull DrawShaderProgram shader) {
         checkIndex(RENDER_PASS_COUNT, pass);
 
-        if (FP2_DEBUG && !fp2().globalConfig().debug().levelZeroRendering() && level == 0) { //debug mode: skip level-0 rendering if needed
-            return;
-        }
+        builder.conditional(
+                () -> {
+                    if (FP2_DEBUG && !fp2().globalConfig().debug().levelZeroRendering() && level == 0) { //debug mode: skip level-0 rendering if needed
+                        return false;
+                    }
 
-        this.levels[level].draw(builder, pass, shader);
+                    return !this.levels[level].positionsToHandles.isEmpty();
+                },
+                levelBuilder -> this.levels[level].draw(levelBuilder, pass, shader));
     }
 
     @Override
