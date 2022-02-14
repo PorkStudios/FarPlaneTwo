@@ -29,18 +29,29 @@ import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.gui.GuiContext;
 import net.daporkchop.fp2.core.client.gui.GuiScreen;
 import net.daporkchop.fp2.core.client.key.KeyCategory;
+import net.daporkchop.fp2.core.config.FP2Config;
+import net.daporkchop.fp2.core.config.gui.ConfigGuiHelper;
 import net.daporkchop.fp2.core.mode.api.player.IFarPlayerClient;
 import net.daporkchop.fp2.core.util.threading.futureexecutor.FutureExecutor;
 import net.daporkchop.fp2.impl.mc.forge1_16.FP2Forge1_16;
+import net.daporkchop.fp2.impl.mc.forge1_16.client.gui.GuiContext1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.util.ResourceProvider1_16;
+import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screen.IngameMenuScreen;
+import net.minecraft.client.gui.screen.MainMenuScreen;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screen.VideoSettingsScreen;
+import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.client.util.InputMappings;
+import net.minecraft.resources.IReloadableResourceManager;
+import net.minecraft.util.text.TranslationTextComponent;
+import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.client.event.InputEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.client.registry.ClientRegistry;
-import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL;
 
 import java.util.IdentityHashMap;
@@ -49,6 +60,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
+import static net.daporkchop.fp2.core.FP2Core.*;
+import static net.daporkchop.fp2.core.debug.FP2Debug.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL45.*;
@@ -76,6 +89,12 @@ public class FP2Client1_16 extends FP2Client {
 
         //register self to listen for events
         MinecraftForge.EVENT_BUS.register(this);
+
+        //enable stencil buffer
+        this.mc.getMainRenderTarget().enableStencil();
+
+        //register resource reload listener
+        ((IReloadableResourceManager) this.mc.getResourceManager()).registerReloadListener(new ResourceReloadListener1_16());
     }
 
     @Override
@@ -90,7 +109,7 @@ public class FP2Client1_16 extends FP2Client {
 
     @Override
     public <T extends GuiScreen> T openScreen(@NonNull Function<GuiContext, T> factory) {
-        throw new UnsupportedOperationException(); //TODO
+        return new GuiContext1_16().createScreenAndOpen(this.mc, factory);
     }
 
     @Override
@@ -105,7 +124,7 @@ public class FP2Client1_16 extends FP2Client {
 
     @Override
     public Optional<IFarPlayerClient> currentPlayer() {
-        throw new UnsupportedOperationException(); //TODO
+        return Optional.empty(); //TODO
     }
 
     @Override
@@ -141,6 +160,37 @@ public class FP2Client1_16 extends FP2Client {
     }
 
     //forge events
+
+    @SubscribeEvent
+    public void initGui(GuiScreenEvent.InitGuiEvent.Post event) {
+        Button button = new Button(0, 0, 40, 20, new TranslationTextComponent(MODID + ".gui.buttonFP2Options"), b -> {
+            FP2Config defaultConfig = FP2Config.DEFAULT_CONFIG;
+            FP2Config serverConfig = this.mc.isLocalServer() ? null : this.currentPlayer().map(IFarPlayerClient::fp2_IFarPlayerClient_serverConfig).orElse(null);
+            FP2Config clientConfig = this.fp2().globalConfig();
+
+            ConfigGuiHelper.createAndDisplayGuiContext("menu", defaultConfig, serverConfig, clientConfig, this.fp2()::globalConfig);
+        });
+
+        Screen gui = event.getGui();
+        if (gui instanceof VideoSettingsScreen) {
+            button.x = gui.width / 2 + 165;
+            button.y = gui.height / 6 - 12;
+            gui.buttons.add(button);
+            gui.children.add(button);
+        } else if (FP2_DEBUG) {
+            if (gui instanceof MainMenuScreen) {
+                button.x = gui.width / 2 + 104;
+                button.y = gui.height / 4 + 48;
+                gui.buttons.add(button);
+                gui.children.add(button);
+            } else if (gui instanceof IngameMenuScreen) {
+                button.x = gui.width / 2 + 104;
+                button.y = gui.height / 4 + 8;
+                gui.buttons.add(button);
+                gui.children.add(button);
+            }
+        }
+    }
 
     @SubscribeEvent
     public void keyInput(InputEvent.KeyInputEvent event) {
