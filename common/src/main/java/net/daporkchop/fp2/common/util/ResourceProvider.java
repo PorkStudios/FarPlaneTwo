@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -40,17 +40,17 @@ public interface ResourceProvider {
     static ResourceProvider selectingByNamespace(@NonNull String namespace, @NonNull ResourceProvider matches, @NonNull ResourceProvider notMatches) {
         return new ResourceProvider() {
             @Override
-            public InputStream provideResourceAsStream(@NonNull Identifier id) throws IOException {
+            public InputStream provideResourceAsStream(@NonNull Identifier id) throws IOException, ResourceNotFoundException {
                 return namespace.equals(id.namespace()) ? matches.provideResourceAsStream(id) : notMatches.provideResourceAsStream(id);
             }
 
             @Override
-            public Reader provideResourceAsReader(@NonNull Identifier id) throws IOException {
+            public Reader provideResourceAsReader(@NonNull Identifier id) throws IOException, ResourceNotFoundException {
                 return namespace.equals(id.namespace()) ? matches.provideResourceAsReader(id) : notMatches.provideResourceAsReader(id);
             }
 
             @Override
-            public Reader provideResourceAsReader(@NonNull Identifier id, @NonNull Charset charset) throws IOException {
+            public Reader provideResourceAsReader(@NonNull Identifier id, @NonNull Charset charset) throws IOException, ResourceNotFoundException {
                 return namespace.equals(id.namespace()) ? matches.provideResourceAsReader(id, charset) : notMatches.provideResourceAsReader(id, charset);
             }
         };
@@ -73,7 +73,7 @@ public interface ResourceProvider {
      * @return an {@link InputStream} containing the resource data
      * @throws ResourceNotFoundException if no resource with the given id could be found
      */
-    InputStream provideResourceAsStream(@NonNull Identifier id) throws IOException;
+    InputStream provideResourceAsStream(@NonNull Identifier id) throws IOException, ResourceNotFoundException;
 
     /**
      * Gets the resource with the provided {@link Identifier} as a {@link Reader} using the {@code UTF-8} charset.
@@ -82,7 +82,7 @@ public interface ResourceProvider {
      * @return a {@link Reader} containing the resource data
      * @throws ResourceNotFoundException if no resource with the given id could be found
      */
-    default Reader provideResourceAsReader(@NonNull Identifier id) throws IOException {
+    default Reader provideResourceAsReader(@NonNull Identifier id) throws IOException, ResourceNotFoundException {
         return this.provideResourceAsReader(id, StandardCharsets.UTF_8);
     }
 
@@ -94,7 +94,7 @@ public interface ResourceProvider {
      * @return a {@link Reader} containing the resource data
      * @throws ResourceNotFoundException if no resource with the given id could be found
      */
-    default Reader provideResourceAsReader(@NonNull Identifier id, @NonNull Charset charset) throws IOException {
+    default Reader provideResourceAsReader(@NonNull Identifier id, @NonNull Charset charset) throws IOException, ResourceNotFoundException {
         return new InputStreamReader(this.provideResourceAsStream(id), charset);
     }
 }

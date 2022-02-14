@@ -18,6 +18,10 @@
  *
  */
 
+if (ideaSyncActive.toBoolean()) {
+    idea.module.inheritOutputDirs = false
+}
+
 apply from: "${project.rootDir}/mc/forge.gradle"
 apply from: "${project.rootDir}/natives/natives.gradle"
 
@@ -30,10 +34,20 @@ minecraft {
 
     runs {
         client {
-            workingDirectory projectDir.absolutePath + "/run"
+            workingDirectory "${projectDir.absolutePath}/run"
+            ideaModule "${project.rootProject.name}${project.path.replace(':', '.')}.main"
 
-            property "forge.logging.markers", "SCAN,REGISTRIES,REGISTRYDUMP"
+            //property "forge.logging.markers", "SCAN,REGISTRIES,REGISTRYDUMP"
             property "forge.logging.console.level", "debug"
+
+            property "fp2.debug", "true"
+            property "fp2.gl.opengl.debug", "true"
+
+            mods {
+                fp2 {
+                    source sourceSets.main
+                }
+            }
         }
     }
 }
@@ -41,21 +55,7 @@ minecraft {
 dependencies {
     runtimeOnlyShade project(":gl:opengl-lwjgl2")
 
-    implementationShade("net.daporkchop.lib:compression-zstd:$porklibVersion") {
-        exclude group: "io.netty"
-    }
-    implementationShade("net.daporkchop.lib:concurrent:$porklibVersion") {
-        exclude group: "io.netty"
-    }
-    implementationShade("net.daporkchop.lib:logging:$porklibVersion") {
-        exclude group: "io.netty"
-    }
-    implementationShade("net.daporkchop.lib:math:$porklibVersion") {
-        exclude group: "io.netty"
-    }
-    implementationShade("net.daporkchop.lib:primitive:$porklibVersion") {
-        exclude group: "io.netty"
-    }
+    implementationShade project(":core:log4j")
 
     //implementationProvided "net.daporkchop:forgerocks:$rocksdbVersion-$minecraftVersion"
 }

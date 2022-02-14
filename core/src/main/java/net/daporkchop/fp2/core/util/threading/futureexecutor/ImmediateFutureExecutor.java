@@ -18,12 +18,35 @@
  *
  */
 
-include 'api'
-include 'common'
-include 'core'
-include 'core:log4j'
-include 'gl'
-include 'gl:opengl'
-include 'gl:opengl-lwjgl2'
-include 'mc:1.12.2-forge'
-include 'mc:1.16-forge'
+package net.daporkchop.fp2.core.util.threading.futureexecutor;
+
+import io.netty.util.concurrent.ImmediateExecutor;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
+
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
+
+/**
+ * @author DaPorkchop_
+ */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+public final class ImmediateFutureExecutor implements FutureExecutor {
+    public static final ImmediateFutureExecutor INSTANCE = new ImmediateFutureExecutor();
+
+    @Override
+    public CompletableFuture<Void> run(@NonNull Runnable runnable) {
+        return CompletableFuture.runAsync(runnable, ImmediateExecutor.INSTANCE);
+    }
+
+    @Override
+    public <V> CompletableFuture<V> supply(@NonNull Supplier<V> supplier) {
+        return CompletableFuture.supplyAsync(supplier, ImmediateExecutor.INSTANCE);
+    }
+
+    @Override
+    public void close() {
+        //no-op
+    }
+}

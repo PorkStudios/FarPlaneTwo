@@ -18,12 +18,30 @@
  *
  */
 
-include 'api'
-include 'common'
-include 'core'
-include 'core:log4j'
-include 'gl'
-include 'gl:opengl'
-include 'gl:opengl-lwjgl2'
-include 'mc:1.12.2-forge'
-include 'mc:1.16-forge'
+package net.daporkchop.fp2.impl.mc.forge1_16.server;
+
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.core.server.FP2Server;
+import net.daporkchop.fp2.core.util.threading.futureexecutor.FutureExecutor;
+import net.daporkchop.fp2.impl.mc.forge1_16.FP2Forge1_16;
+import net.minecraftforge.common.MinecraftForge;
+
+/**
+ * @author DaPorkchop_
+ */
+@RequiredArgsConstructor
+@Getter
+public class FP2Server1_16 extends FP2Server {
+    @NonNull
+    private final FP2Forge1_16 fp2;
+
+    @Override
+    public void init(@NonNull FutureExecutor serverThreadExecutor) {
+        super.init(serverThreadExecutor);
+
+        //register self to listen for events
+        MinecraftForge.EVENT_BUS.register(this);
+    }
+}

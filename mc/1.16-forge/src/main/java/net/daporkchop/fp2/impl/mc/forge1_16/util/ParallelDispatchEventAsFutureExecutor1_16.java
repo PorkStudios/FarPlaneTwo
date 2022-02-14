@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,46 +18,36 @@
  *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_12_2.util.log;
+package net.daporkchop.fp2.impl.mc.forge1_16.util;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.lib.logging.LogLevel;
-import net.minecraft.client.Minecraft;
-import net.minecraft.util.text.TextComponentString;
+import net.daporkchop.fp2.core.util.threading.futureexecutor.FutureExecutor;
+import net.minecraftforge.fml.event.lifecycle.ParallelDispatchEvent;
 
-import static net.daporkchop.fp2.core.FP2Core.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 
 /**
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public class ChatAsPorkLibLogger extends BaseProxyLogger {
-    protected static final String PRE = "§r§8§l[§r";
-    protected static final String POST = "§r§8§l]§r ";
-
-    protected static final String[] LEVEL_PREFIXES = {
-            PRE + "§9Info" + POST,
-            PRE + "§aSuccess" + POST,
-            PRE + "§4Error" + POST,
-            PRE + "§4§lFatal" + POST,
-            PRE + " §4§l§kI§r §4§lAlert§r §4§l§kI§r " + POST,
-            PRE + "§eWarn" + POST,
-            PRE + "§7§oTrace" + POST,
-            PRE + "§7§oDebug" + POST,
-    };
-
+public class ParallelDispatchEventAsFutureExecutor1_16 implements FutureExecutor {
     @NonNull
-    protected final Minecraft mc;
+    protected final ParallelDispatchEvent event;
 
     @Override
-    protected void log(@NonNull LogLevel level, String channel, @NonNull String message) {
-        message = PRE + "§9FarPlaneTwo" + POST + (channel != null ? PRE + channel + POST : "") + LEVEL_PREFIXES[level.ordinal()] + message;
+    public CompletableFuture<Void> run(@NonNull Runnable runnable) {
+        return this.event.enqueueWork(runnable);
+    }
 
-        if (this.mc.player != null) {
-            this.mc.player.sendMessage(new TextComponentString(message));
-        } else {
-            fp2().log().log(level, "[CHAT] " + message);
-        }
+    @Override
+    public <V> CompletableFuture<V> supply(@NonNull Supplier<V> supplier) {
+        return this.event.enqueueWork(supplier);
+    }
+
+    @Override
+    public void close() {
+        //no-op
     }
 }

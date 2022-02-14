@@ -18,12 +18,34 @@
  *
  */
 
-include 'api'
-include 'common'
-include 'core'
-include 'core:log4j'
-include 'gl'
-include 'gl:opengl'
-include 'gl:opengl-lwjgl2'
-include 'mc:1.12.2-forge'
-include 'mc:1.16-forge'
+package net.daporkchop.fp2.impl.mc.forge1_16.util;
+
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.common.util.Identifier;
+import net.daporkchop.fp2.common.util.ResourceProvider;
+import net.daporkchop.fp2.common.util.exception.ResourceNotFoundException;
+import net.minecraft.client.Minecraft;
+import net.minecraft.util.ResourceLocation;
+
+import java.io.IOException;
+import java.io.InputStream;
+
+/**
+ * @author DaPorkchop_
+ */
+@RequiredArgsConstructor
+public class ResourceProvider1_16 implements ResourceProvider {
+    @NonNull
+    protected final Minecraft mc;
+
+    @Override
+    public InputStream provideResourceAsStream(@NonNull Identifier id) throws IOException, ResourceNotFoundException {
+        ResourceLocation location = new ResourceLocation(id.toString());
+        if (this.mc.getResourceManager().hasResource(location)) {
+            return this.mc.getResourceManager().getResource(location).getInputStream();
+        } else {
+            throw new ResourceNotFoundException(id);
+        }
+    }
+}

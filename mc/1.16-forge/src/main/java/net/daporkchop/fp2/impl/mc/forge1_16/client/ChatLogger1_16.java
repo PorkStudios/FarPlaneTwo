@@ -18,36 +18,47 @@
  *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_12_2.util;
+package net.daporkchop.fp2.impl.mc.forge1_16.client;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.core.util.I18n;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.core.util.log.BaseProxyLogger;
+import net.daporkchop.lib.logging.LogLevel;
 import net.minecraft.client.Minecraft;
+import net.minecraft.util.text.StringTextComponent;
 
-import java.util.Locale;
+import static net.daporkchop.fp2.core.FP2Core.*;
 
 /**
  * @author DaPorkchop_
  */
-@SuppressWarnings("deprecation")
-public class I18n1_12_2 implements I18n {
-    @Override
-    public boolean hasKey(@NonNull String key) {
-        return net.minecraft.util.text.translation.I18n.canTranslate(key);
-    }
+@RequiredArgsConstructor
+public class ChatLogger1_16 extends BaseProxyLogger {
+    protected static final String PRE = "§r§8§l[§r";
+    protected static final String POST = "§r§8§l]§r ";
+
+    protected static final String[] LEVEL_PREFIXES = {
+            PRE + "§9Info" + POST,
+            PRE + "§aSuccess" + POST,
+            PRE + "§4Error" + POST,
+            PRE + "§4§lFatal" + POST,
+            PRE + " §4§l§kI§r §4§lAlert§r §4§l§kI§r " + POST,
+            PRE + "§eWarn" + POST,
+            PRE + "§7§oTrace" + POST,
+            PRE + "§7§oDebug" + POST,
+    };
+
+    @NonNull
+    protected final Minecraft mc;
 
     @Override
-    public String format(@NonNull String key) {
-        return net.minecraft.util.text.translation.I18n.translateToLocal(key);
-    }
+    protected void log(@NonNull LogLevel level, String channel, @NonNull String message) {
+        message = PRE + "§9FarPlaneTwo" + POST + (channel != null ? PRE + channel + POST : "") + LEVEL_PREFIXES[level.ordinal()] + message;
 
-    @Override
-    public String format(@NonNull String key, @NonNull Object... args) {
-        return net.minecraft.util.text.translation.I18n.translateToLocalFormatted(key, args);
-    }
-
-    @Override
-    public Locale javaLocale() {
-        return Minecraft.getMinecraft().getLanguageManager().getCurrentLanguage().getJavaLocale();
+        if (this.mc.player != null) {
+            this.mc.player.sendMessage(new StringTextComponent(message), null);
+        } else {
+            fp2().log().log(level, "[CHAT] " + message);
+        }
     }
 }

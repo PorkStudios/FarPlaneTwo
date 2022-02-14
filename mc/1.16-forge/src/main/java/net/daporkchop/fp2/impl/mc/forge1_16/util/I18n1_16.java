@@ -18,12 +18,36 @@
  *
  */
 
-include 'api'
-include 'common'
-include 'core'
-include 'core:log4j'
-include 'gl'
-include 'gl:opengl'
-include 'gl:opengl-lwjgl2'
-include 'mc:1.12.2-forge'
-include 'mc:1.16-forge'
+package net.daporkchop.fp2.impl.mc.forge1_16.util;
+
+import lombok.NonNull;
+import net.daporkchop.fp2.core.util.I18n;
+import net.minecraft.client.Minecraft;
+import net.minecraft.util.text.LanguageMap;
+
+import java.util.Locale;
+
+/**
+ * @author DaPorkchop_
+ */
+public class I18n1_16 implements I18n {
+    @Override
+    public boolean hasKey(@NonNull String key) {
+        return LanguageMap.getInstance().has(key);
+    }
+
+    @Override
+    public String format(@NonNull String key) {
+        return LanguageMap.getInstance().getOrDefault(key);
+    }
+
+    @Override
+    public String format(@NonNull String key, @NonNull Object... args) {
+        return String.format(LanguageMap.getInstance().getOrDefault(key), args);
+    }
+
+    @Override
+    public Locale javaLocale() {
+        return Minecraft.getInstance().getLanguageManager().getSelected().getJavaLocale();
+    }
+}

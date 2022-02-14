@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -41,9 +41,11 @@ public class FP2Debug {
     /**
      * Whether or not we are currently running in debug mode.
      */
-    public static final boolean FP2_DEBUG = Boolean.parseBoolean(System.getProperty("fp2.debug", "false"));
+    public static final boolean FP2_DEBUG = Boolean.getBoolean("fp2.debug");
 
     public void init(@NonNull FP2Core fp2) {
+        fp2.log().alert("FarPlaneTwo debug mode enabled!");
+
         if (fp2.hasClient()) {
             //register debug key bindings
             KeyCategory category = fp2.client().createKeyCategory(MODID + ".debug");

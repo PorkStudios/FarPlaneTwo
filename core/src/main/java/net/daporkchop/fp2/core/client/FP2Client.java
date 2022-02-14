@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -24,16 +24,25 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import net.daporkchop.fp2.api.event.ChangedEvent;
+import net.daporkchop.fp2.api.event.FEventHandler;
+import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.gui.GuiContext;
 import net.daporkchop.fp2.core.client.gui.GuiScreen;
 import net.daporkchop.fp2.core.client.key.KeyCategory;
 import net.daporkchop.fp2.core.client.shader.ShaderMacros;
+import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.player.IFarPlayerClient;
+import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
+import net.daporkchop.fp2.core.util.threading.futureexecutor.FutureExecutor;
 import net.daporkchop.lib.logging.Logger;
 
 import java.util.Optional;
 import java.util.function.Function;
+
+import static net.daporkchop.fp2.core.debug.FP2Debug.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
@@ -46,9 +55,52 @@ public abstract class FP2Client {
     private Logger chat;
 
     /**
+     * Initializes this instance.
+     * <p>
+     * The following properties must be accessible (set to a non-null value) before calling this method:
+     * <ul>
+     *     <li>{@link #fp2()}</li>
+     *     <li>{@link #chat()}</li>
+     * </ul>
+     *
+     * @param clientThreadExecutor a {@link FutureExecutor} for scheduling tasks to be executed on the client thread
+     */
+    public void init(@NonNull FutureExecutor clientThreadExecutor) {
+        checkState(this.fp2() != null, "fp2() must be set!");
+        checkState(this.chat() != null, "chat() must be set!");
+
+        //require at least OpenGL 4.5
+        clientThreadExecutor.run(() -> {
+            if (!this.checkGL45()) {
+                this.fp2().unsupported("Your system does not support OpenGL 4.5!\nRequired by FarPlaneTwo.");
+            }
+        });
+
+        //update debug color macros
+        if (FP2_DEBUG) {
+            this.updateDebugColorMacros(this.fp2().globalConfig());
+        }
+
+        //register self to listen for events
+        this.fp2().eventBus().register(this);
+    }
+
+    /**
+     * @return whether or not OpenGL 4.5 is supported
+     * @deprecated to be removed once {@code :gl} actually supports older OpenGL versions
+     */
+    @Deprecated
+    protected abstract boolean checkGL45();
+
+    /**
      * @return the {@link FP2Core} instance which this {@link FP2Client} is used for
      */
     public abstract FP2Core fp2();
+
+    /**
+     * @return a {@link ResourceProvider} which can load game resources
+     */
+    public abstract ResourceProvider resourceProvider();
 
     /**
      * Opens a new {@link GuiScreen}.
@@ -85,4 +137,27 @@ public abstract class FP2Client {
 
     @Deprecated
     public abstract int vanillaRenderDistanceChunks();
+
+    /**
+     * Updates the debug color macros to reflect the state from the given {@link FP2Config} instance.
+     *
+     * @param config the current {@link FP2Config} instance
+     */
+    protected void updateDebugColorMacros(@NonNull FP2Config config) {
+        this.globalShaderMacros()
+                .define("FP2_DEBUG_COLORS_ENABLED", config.debug().debugColors().enable())
+                .define("FP2_DEBUG_COLORS_MODE", config.debug().debugColors().ordinal());
+    }
+
+    //fp2 events
+
+    @FEventHandler
+    protected void onConfigChanged(ChangedEvent<FP2Config> event) {
+        if (FP2_DEBUG) {
+            this.updateDebugColorMacros(event.next());
+        }
+
+        //send updated config to server
+        this.currentPlayer().ifPresent(player -> player.fp2_IFarPlayerClient_send(new CPacketClientConfig().config(event.next())));
+    }
 }

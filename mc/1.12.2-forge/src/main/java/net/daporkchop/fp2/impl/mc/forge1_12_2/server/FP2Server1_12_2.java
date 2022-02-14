@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -22,22 +22,19 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.server;
 
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
 import net.daporkchop.fp2.api.event.ChangedEvent;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.core.mode.api.player.IFarPlayerServer;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketHandshake;
+import net.daporkchop.fp2.core.server.FP2Server;
 import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
 import net.daporkchop.fp2.core.server.event.TickEndEvent;
+import net.daporkchop.fp2.core.util.threading.futureexecutor.FutureExecutor;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.server.world.FColumn1_12_2;
-import net.daporkchop.lib.common.system.PlatformInfo;
-import net.daporkchop.lib.compression.zstd.Zstd;
 import net.daporkchop.lib.math.vector.Vec2i;
-import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.text.TextComponentTranslation;
@@ -59,34 +56,20 @@ import static net.daporkchop.fp2.core.FP2Core.*;
  *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
 @Getter
-public class FP2Server1_12_2 {
-    @NonNull
+public class FP2Server1_12_2 extends FP2Server {
     private final FP2Forge1_12_2 fp2;
 
-    public void preInit() {
-        if (!PlatformInfo.IS_64BIT) { //require 64-bit
-            this.fp2().unsupported("Your system or JVM is not 64-bit!\nRequired by FarPlaneTwo.");
-        } else if (!PlatformInfo.IS_LITTLE_ENDIAN) { //require little-endian
-            this.fp2().unsupported("Your system is not little-endian!\nRequired by FarPlaneTwo.");
-        }
+    public FP2Server1_12_2(@NonNull FP2Forge1_12_2 fp2) {
+        this.fp2 = fp2;
+    }
 
-        System.setProperty("porklib.native.printStackTraces", "true");
-        if (!Zstd.PROVIDER.isNative()) {
-            this.fp2().log().alert("Native ZSTD could not be loaded! This will have SERIOUS performance implications!");
-        }
+    @Override
+    public void init(@NonNull FutureExecutor serverThreadExecutor) {
+        super.init(serverThreadExecutor);
 
         //register self to listen for events
-        this.fp2().eventBus().register(this);
         MinecraftForge.EVENT_BUS.register(this);
-    }
-
-    public void init() {
-    }
-
-    public void postInit() {
-        PUnsafe.ensureClassInitialized(IFarRenderMode.class);
     }
 
     //fp2 events

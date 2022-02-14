@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -22,8 +22,14 @@ package net.daporkchop.fp2.core.server;
 
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import net.daporkchop.fp2.core.FP2Core;
+import net.daporkchop.fp2.core.util.threading.futureexecutor.FutureExecutor;
+import net.daporkchop.lib.common.system.PlatformInfo;
+import net.daporkchop.lib.compression.zstd.Zstd;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
@@ -31,6 +37,34 @@ import net.daporkchop.fp2.core.FP2Core;
 @Getter
 @Setter(AccessLevel.PROTECTED)
 public abstract class FP2Server {
+    /**
+     * Initializes this instance.
+     * <p>
+     * The following properties must be accessible (set to a non-null value) before calling this method:
+     * <ul>
+     *     <li>{@link #fp2()}</li>
+     * </ul>
+     *
+     * @param serverThreadExecutor a {@link FutureExecutor} for scheduling tasks to be executed on the server thread
+     */
+    public void init(@NonNull FutureExecutor serverThreadExecutor) {
+        checkState(this.fp2() != null, "fp2() must be set!");
+
+        if (!PlatformInfo.IS_64BIT) { //require 64-bit
+            this.fp2().unsupported("Your system or JVM is not 64-bit!\nRequired by FarPlaneTwo.");
+        } else if (!PlatformInfo.IS_LITTLE_ENDIAN) { //require little-endian
+            this.fp2().unsupported("Your system is not little-endian!\nRequired by FarPlaneTwo.");
+        }
+
+        System.setProperty("porklib.native.printStackTraces", "true");
+        if (!Zstd.PROVIDER.isNative()) {
+            this.fp2().log().alert("Native ZSTD could not be loaded! This will have SERIOUS performance implications!");
+        }
+
+        //register self to listen for events
+        this.fp2().eventBus().register(this);
+    }
+
     /**
      * @return the {@link FP2Core} instance which this {@link FP2Server} is used for
      */

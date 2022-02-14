@@ -18,12 +18,8 @@
  *
  */
 
-include 'api'
-include 'common'
-include 'core'
-include 'core:log4j'
-include 'gl'
-include 'gl:opengl'
-include 'gl:opengl-lwjgl2'
-include 'mc:1.12.2-forge'
-include 'mc:1.16-forge'
+dependencies {
+    apiShade project(":core")
+
+    compileOnly "org.apache.logging.log4j:log4j-api:$log4jVersion"
+}

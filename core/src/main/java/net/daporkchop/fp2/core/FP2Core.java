@@ -29,7 +29,6 @@ import net.daporkchop.fp2.api.FP2;
 import net.daporkchop.fp2.api.event.FEventBus;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.api.event.RegisterEvent;
-import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.gui.GuiContext;
 import net.daporkchop.fp2.core.client.gui.GuiScreen;
@@ -52,10 +51,12 @@ import net.daporkchop.fp2.core.network.packet.standard.server.SPacketTileData;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUnloadTile;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUnloadTiles;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUpdateConfig;
+import net.daporkchop.fp2.core.server.FP2Server;
 import net.daporkchop.fp2.core.util.I18n;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.logging.Logger;
 
+import javax.swing.JOptionPane;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.Objects;
@@ -100,7 +101,7 @@ public abstract class FP2Core implements FP2 {
      * <p>
      * The following properties must be set before calling this method:
      * <ul>
-     *     <li>{@link #log(Logger)}</li>
+     *     <li>{@link #log()}</li>
      * </ul>
      */
     protected void init() {
@@ -109,19 +110,26 @@ public abstract class FP2Core implements FP2 {
     }
 
     /**
-     * @return a {@link ResourceProvider} which can load game resources
-     */
-    public abstract ResourceProvider resourceProvider();
-
-    /**
      * @return whether or not the active game distribution contains a client
      */
     public abstract boolean hasClient();
 
     /**
+     * @return the {@link FP2Client} instance for interacting with client features
+     * @throws UnsupportedOperationException if the active game distribution does not contain a client
+     */
+    public abstract FP2Client client();
+
+    /**
      * @return whether or not the active game distribution contains a server
      */
     public abstract boolean hasServer();
+
+    /**
+     * @return the {@link FP2Server} instance for interacting with server features
+     * @throws UnsupportedOperationException if the active game distribution does not contain a server
+     */
+    public abstract FP2Server server();
 
     /**
      * @return the directory where fp2's config file is stored
@@ -131,13 +139,8 @@ public abstract class FP2Core implements FP2 {
     /**
      * @return the {@link I18n} instance used for localizing strings
      */
+    //TODO: this should probably be moved to FP2Client
     public abstract I18n i18n();
-
-    /**
-     * @return the {@link FP2Client} instance for interacting with client features
-     * @throws UnsupportedOperationException if the active game distribution does not contain a client
-     */
-    public abstract FP2Client client();
 
     /**
      * Opens a new {@link GuiScreen}.
@@ -178,7 +181,14 @@ public abstract class FP2Core implements FP2 {
      *
      * @param message the message
      */
-    public abstract void unsupported(@NonNull String message);
+    public void unsupported(@NonNull String message) {
+        this.log().alert(message);
+        if (this.hasClient()) {
+            JOptionPane.showMessageDialog(null, message, null, JOptionPane.ERROR_MESSAGE);
+        }
+
+        System.exit(1);
+    }
 
     @FEventHandler
     protected void registerDefaultRenderModes(RegisterEvent<IFarRenderMode<?, ?>> event) {

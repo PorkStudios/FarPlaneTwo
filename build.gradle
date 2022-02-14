@@ -157,6 +157,13 @@ subprojects {
         provided_.extendsFrom runtime
     }
 
+    configurations.all {
+        resolutionStrategy {
+            force "org.apache.logging.log4j:log4j-api:$log4jVersion"
+            force "org.apache.logging.log4j:log4j-core:$log4jVersion"
+        }
+    }
+
     repositories {
         maven {
             name = "DaPorkchop_"
