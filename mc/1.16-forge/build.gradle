@@ -43,6 +43,10 @@ minecraft {
             property "fp2.debug", "true"
             property "fp2.gl.opengl.debug", "true"
 
+            args "-mixin.config=mixins.fp2.core.json"
+            args "-mixin.config=mixins.fp2.fixes.json"
+            args "-mixin.config=mixins.fp2.debug.json"
+
             mods {
                 fp2 {
                     source sourceSets.main

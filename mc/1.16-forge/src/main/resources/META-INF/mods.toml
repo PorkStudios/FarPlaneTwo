@@ -1,9 +1,27 @@
 modLoader = "javafml"
 loaderVersion = "[36,)"
 license = "Adapted from the MIT License"
+logoFile = "fp2_logo.png"
 
 [[mods]]
 modId = "fp2"
 version = "${file.jarVersion}"
 displayName = "FarPlaneTwo"
 authors = "DaPorkchop_"
+displayURL = "https://daporkchop.net/"
+credits = "Barteks2x for making Cubic Chunks"
+description = "The successor to Foghrye4's CWGFarPlaneView"
+
+[[dependencies.fp2]]
+modId = "forge"
+mandatory = true
+versionRange = "[36,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.fp2]]
+modId = "minecraft"
+mandatory = true
+versionRange = "[1.16.5,1.17)"
+ordering = "NONE"
+side = "BOTH"
