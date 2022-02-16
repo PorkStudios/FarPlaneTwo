@@ -25,14 +25,15 @@ import lombok.NonNull;
 import net.daporkchop.fp2.api.event.ChangedEvent;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
-import net.daporkchop.fp2.core.mode.api.player.IFarPlayerServer;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketHandshake;
 import net.daporkchop.fp2.core.server.FP2Server;
 import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
 import net.daporkchop.fp2.core.server.event.TickEndEvent;
+import net.daporkchop.fp2.core.server.player.IFarPlayerServer;
 import net.daporkchop.fp2.core.util.threading.futureexecutor.FutureExecutor;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.network.IMixinNetHandlerPlayServer;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.world.IMixinWorldServer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.server.world.FColumn1_12_2;
 import net.daporkchop.lib.math.vector.Vec2i;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -78,7 +79,7 @@ public class FP2Server1_12_2 extends FP2Server {
     protected void onConfigChanged(ChangedEvent<FP2Config> event) {
         MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
         if (server != null) { //a server instance is currently present, update the serverConfig instance for every connected player
-            server.addScheduledTask(() -> server.playerList.getPlayers().forEach(player -> ((IFarPlayerServer) player.connection).fp2_IFarPlayer_serverConfig(this.fp2().globalConfig())));
+            server.addScheduledTask(() -> server.playerList.getPlayers().forEach(player -> ((IMixinNetHandlerPlayServer) player.connection).fp2_farPlayerServer().fp2_IFarPlayer_serverConfig(this.fp2().globalConfig())));
         }
     }
 
@@ -87,14 +88,14 @@ public class FP2Server1_12_2 extends FP2Server {
     @SubscribeEvent
     public void worldLoad(WorldEvent.Load event) {
         if (!event.getWorld().isRemote) {
-            ((IFarWorldServer) event.getWorld()).fp2_IFarWorld_init();
+            ((IMixinWorldServer) event.getWorld()).fp2_farWorldServer().fp2_IFarWorldServer_init();
         }
     }
 
     @SubscribeEvent
     public void worldUnload(WorldEvent.Unload event) {
         if (!event.getWorld().isRemote) {
-            ((IFarWorldServer) event.getWorld()).fp2_IFarWorld_close();
+            ((IMixinWorldServer) event.getWorld()).fp2_farWorldServer().fp2_IFarWorld_close();
         }
     }
 
@@ -103,7 +104,7 @@ public class FP2Server1_12_2 extends FP2Server {
         if (event.player instanceof EntityPlayerMP) {
             event.player.sendMessage(new TextComponentTranslation(MODID + ".playerJoinWarningMessage"));
 
-            IFarPlayerServer player = (IFarPlayerServer) ((EntityPlayerMP) event.player).connection;
+            IFarPlayerServer player = ((IMixinNetHandlerPlayServer) ((EntityPlayerMP) event.player).connection).fp2_farPlayerServer();
             player.fp2_IFarPlayer_serverConfig(this.fp2().globalConfig());
             player.fp2_IFarPlayer_sendPacket(new SPacketHandshake());
         }
@@ -112,17 +113,17 @@ public class FP2Server1_12_2 extends FP2Server {
     @SubscribeEvent
     public void onPlayerJoinWorld(EntityJoinWorldEvent event) {
         if (!event.getWorld().isRemote && event.getEntity() instanceof EntityPlayerMP) {
-            IFarPlayerServer player = (IFarPlayerServer) ((EntityPlayerMP) event.getEntity()).connection;
+            IFarPlayerServer player = ((IMixinNetHandlerPlayServer) ((EntityPlayerMP) event.getEntity()).connection).fp2_farPlayerServer();
 
             //cubic chunks world data information has already been sent
-            player.fp2_IFarPlayer_joinedWorld((IFarWorldServer) event.getWorld());
+            player.fp2_IFarPlayer_joinedWorld(((IMixinWorldServer) event.getWorld()).fp2_farWorldServer());
         }
     }
 
     @SubscribeEvent
     public void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.player instanceof EntityPlayerMP) {
-            IFarPlayerServer player = (IFarPlayerServer) ((EntityPlayerMP) event.player).connection;
+            IFarPlayerServer player = ((IMixinNetHandlerPlayServer) ((EntityPlayerMP) event.player).connection).fp2_farPlayerServer();
 
             if (player != null) { //can happen if the player is kicked during the login sequence
                 player.fp2_IFarPlayer_close();
@@ -133,15 +134,15 @@ public class FP2Server1_12_2 extends FP2Server {
     @SubscribeEvent
     public void onWorldTickEnd(TickEvent.WorldTickEvent event) {
         if (!event.world.isRemote && event.phase == TickEvent.Phase.END) {
-            ((IFarWorldServer) event.world).fp2_IFarWorldServer_eventBus().fire(new TickEndEvent());
+            ((IMixinWorldServer) event.world).fp2_farWorldServer().fp2_IFarWorldServer_eventBus().fire(new TickEndEvent());
 
-            event.world.playerEntities.forEach(player -> ((IFarPlayerServer) ((EntityPlayerMP) player).connection).fp2_IFarPlayer_update());
+            event.world.playerEntities.forEach(player -> ((IMixinNetHandlerPlayServer) ((EntityPlayerMP) player).connection).fp2_farPlayerServer().fp2_IFarPlayer_update());
         }
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public void onChunkDataSave(ChunkDataEvent.Save event) {
         Chunk chunk = event.getChunk();
-        ((IFarWorldServer) chunk.getWorld()).fp2_IFarWorldServer_eventBus().fire(new ColumnSavedEvent(Vec2i.of(chunk.x, chunk.z), new FColumn1_12_2(chunk), event.getData()));
+        ((IMixinWorldServer) event.getWorld()).fp2_farWorldServer().fp2_IFarWorldServer_eventBus().fire(new ColumnSavedEvent(Vec2i.of(chunk.x, chunk.z), new FColumn1_12_2(chunk), event.getData()));
     }
 }

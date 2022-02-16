@@ -22,7 +22,7 @@ package net.daporkchop.fp2.core.mode.voxel.server.scale;
 
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
-import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
+import net.daporkchop.fp2.core.server.world.IFarWorldServer;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.core.mode.common.server.gen.AbstractFarGenerator;
 import net.daporkchop.fp2.core.mode.voxel.VoxelData;

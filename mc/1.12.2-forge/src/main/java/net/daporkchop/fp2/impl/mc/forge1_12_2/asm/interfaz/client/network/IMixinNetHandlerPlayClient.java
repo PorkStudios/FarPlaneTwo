@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,25 +18,13 @@
  *
  */
 
-package net.daporkchop.fp2.core.mode.api.ctx;
+package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.client.network;
 
-import net.daporkchop.fp2.core.client.render.WorldRenderer;
-import net.daporkchop.fp2.core.util.annotation.CalledFromClientThread;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.client.player.FarPlayerClient1_12;
 
 /**
  * @author DaPorkchop_
  */
-public interface IFarWorldClient extends IFarWorld {
-    @CalledFromClientThread
-    @Override
-    void fp2_IFarWorld_init();
-
-    @CalledFromClientThread
-    @Override
-    void fp2_IFarWorld_close();
-
-    /**
-     * @return a {@link WorldRenderer} for rendering this world
-     */
-    WorldRenderer fp2_IFarWorldClient_renderer();
+public interface IMixinNetHandlerPlayClient {
+    FarPlayerClient1_12 fp2_farPlayerClient();
 }

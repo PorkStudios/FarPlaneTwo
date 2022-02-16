@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -22,9 +22,10 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.server;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
-import net.daporkchop.fp2.core.mode.api.ctx.TerrainGeneratorInfo;
 import net.daporkchop.fp2.core.server.event.GetTerrainGeneratorEvent;
+import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.server.world.TerrainGeneratorInfo;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.world.IMixinWorldServer;
 import net.minecraft.world.WorldServer;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
@@ -39,7 +40,7 @@ public class TerrainGeneratorInfo1_12_2 implements TerrainGeneratorInfo {
 
     @Override
     public IFarWorldServer world() {
-        return (IFarWorldServer) this.world;
+        return ((IMixinWorldServer) this.world).fp2_farWorldServer();
     }
 
     @Override

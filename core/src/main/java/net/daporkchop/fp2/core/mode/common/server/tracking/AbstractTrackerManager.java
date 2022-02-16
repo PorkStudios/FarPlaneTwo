@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -27,7 +27,6 @@ import lombok.ToString;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarServerContext;
-import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.storage.IFarStorage;
 import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTracker;
@@ -74,10 +73,10 @@ public abstract class AbstractTrackerManager<POS extends IFarPos, T extends IFar
         this.tileProvider = tileProvider;
 
         this.scheduler = new NoFutureScheduler<>(AbstractTracker::doUpdate,
-                ((IFarWorldServer) tileProvider.world()).fp2_IFarWorld_workerManager().createChildWorkerGroup()
+                tileProvider.world().fp2_IFarWorld_workerManager().createChildWorkerGroup()
                         .threads(fp2().globalConfig().performance().trackingThreads())
                         .threadFactory(PThreadFactories.builder().daemon().minPriority().collapsingId()
-                                .name(PStrings.fastFormat("FP2 %s DIM%d Tracker #%%d", tileProvider.mode().name(), ((IFarWorldServer) tileProvider.world()).fp2_IFarWorld_dimensionId())).build()));
+                                .name(PStrings.fastFormat("FP2 %s DIM%d Tracker #%%d", tileProvider.mode().name(), tileProvider.world().fp2_IFarWorld_dimensionId())).build()));
 
         tileProvider.storage().addListener(this);
     }

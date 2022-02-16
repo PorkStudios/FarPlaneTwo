@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,18 +18,19 @@
  *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_12_2.client;
+package net.daporkchop.fp2.impl.mc.forge1_12_2.client.world;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.core.client.render.WorldRenderer;
-import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldClient;
+import net.daporkchop.fp2.core.client.world.IFarWorldClient;
 import net.daporkchop.fp2.core.util.threading.futureexecutor.MarkedFutureExecutor;
 import net.daporkchop.fp2.core.util.threading.workergroup.DefaultWorkerManager;
 import net.daporkchop.fp2.core.util.threading.workergroup.WorkerManager;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.client.render.WorldRenderer1_12_2;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.world.registry.GameRegistry1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.threading.futureexecutor.ClientThreadMarkedFutureExecutor;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.world.AbstractFarWorld1_12;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 
@@ -38,16 +39,14 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public class FakeFarWorldClient1_12_2 implements IFarWorldClient {
-    protected final WorldClient parent;
-
+public class FarWorldClient1_12_2 extends AbstractFarWorld1_12<WorldClient> implements IFarWorldClient {
     protected final IntAxisAlignedBB coordLimits;
     protected final WorkerManager workerManager;
 
     protected WorldRenderer1_12_2 renderer;
 
-    public FakeFarWorldClient1_12_2(@NonNull WorldClient parent, @NonNull IntAxisAlignedBB coordLimits) {
-        this.parent = parent;
+    public FarWorldClient1_12_2(@NonNull FP2Forge1_12_2 fp2, @NonNull WorldClient world, @NonNull IntAxisAlignedBB coordLimits) {
+        super(fp2, world);
 
         this.coordLimits = coordLimits;
         this.workerManager = new DefaultWorkerManager(Minecraft.getMinecraft().thread, ClientThreadMarkedFutureExecutor.getFor(Minecraft.getMinecraft()));
@@ -56,18 +55,8 @@ public class FakeFarWorldClient1_12_2 implements IFarWorldClient {
     }
 
     @Override
-    public void fp2_IFarWorld_init() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public void fp2_IFarWorld_close() {
         this.workerManager.rootExecutor().run(MarkedFutureExecutor.DEFAULT_MARKER, this.renderer::close);
-    }
-
-    @Override
-    public WorldClient fp2_IFarWorld_implWorld() {
-        return this.parent;
     }
 
     @Override
@@ -81,23 +70,8 @@ public class FakeFarWorldClient1_12_2 implements IFarWorldClient {
     }
 
     @Override
-    public int fp2_IFarWorld_dimensionId() {
-        return this.parent.provider.getDimension();
-    }
-
-    @Override
-    public long fp2_IFarWorld_timestamp() {
-        return this.parent.getTotalWorldTime();
-    }
-
-    @Override
     public WorldRenderer fp2_IFarWorldClient_renderer() {
         checkState(this.renderer != null, "renderer hasn't been initialized!");
         return this.renderer;
-    }
-
-    @Override
-    public GameRegistry1_12_2 fp2_IFarWorld_registry() {
-        return GameRegistry1_12_2.get();
     }
 }

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,36 +18,41 @@
  *
  */
 
-package net.daporkchop.fp2.core.mode.api.ctx;
+package net.daporkchop.fp2.impl.mc.forge1_12_2.server.player;
+
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.core.network.IPacket;
+import net.daporkchop.fp2.core.server.player.AbstractFarPlayerServer;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.network.FP2Network1_12_2;
+import net.daporkchop.lib.math.vector.Vec3d;
+import net.minecraft.entity.player.EntityPlayerMP;
+
+import java.util.function.Supplier;
 
 /**
- * Provides information about the terrain generator used in a given {@link IFarWorldServer}.
- *
  * @author DaPorkchop_
  */
-public interface TerrainGeneratorInfo {
-    /**
-     * @return the {@link IFarWorldServer} which th
-     */
-    IFarWorldServer world();
+@RequiredArgsConstructor
+@Getter
+public class FarPlayerServer1_12 extends AbstractFarPlayerServer {
+    @NonNull
+    protected final FP2Forge1_12_2 fp2;
+    @NonNull
+    protected final Supplier<EntityPlayerMP> player;
 
-    /**
-     * @return the implementation-specific terrain generator instance
-     */
-    Object implGenerator();
+    @Override
+    public Vec3d fp2_IFarPlayer_position() {
+        EntityPlayerMP player = this.player.get();
+        return Vec3d.of(player.posX, player.posY, player.posZ);
+    }
 
-    /**
-     * @return the terrain generator name
-     */
-    String generator();
-
-    /**
-     * @return the terrain generator options
-     */
-    String options();
-
-    /**
-     * @return the terrain generator seed
-     */
-    long seed();
+    @Override
+    public void fp2_IFarPlayer_sendPacket(@NonNull IPacket packet) {
+        if (!this.closed) {
+            FP2Network1_12_2.sendToPlayer(packet, this.player.get());
+        }
+    }
 }

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,23 +18,26 @@
  *
  */
 
-package net.daporkchop.fp2.core.mode.api.player;
+package net.daporkchop.fp2.core.client.player;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.network.IPacket;
 import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromClientThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromNetworkThread;
-import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
 
 /**
  * @author DaPorkchop_
  */
 public interface IFarPlayerClient {
+    FP2Core fp2();
+
     @CalledFromNetworkThread
     void fp2_IFarPlayerClient_handle(@NonNull Object packet);
 
@@ -64,4 +67,10 @@ public interface IFarPlayerClient {
      */
     @CalledFromAnyThread
     <POS extends IFarPos, T extends IFarTile> IFarClientContext<POS, T> fp2_IFarPlayerClient_activeContext();
+
+    /**
+     * Closes this player, causing the active session (if any) to be closed.
+     */
+    @CalledFromAnyThread
+    void fp2_IFarPlayerClient_close();
 }

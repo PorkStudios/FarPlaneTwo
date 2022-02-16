@@ -24,7 +24,6 @@ import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.client.renderer.IMixi
 import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
-import net.daporkchop.fp2.core.mode.api.player.IFarPlayerClient;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.client.TerrainRenderingBlockedTracker1_12_2;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
@@ -42,6 +41,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
@@ -86,15 +86,17 @@ public abstract class MixinRenderGlobal implements IMixinRenderGlobal {
     @Inject(method = "Lnet/minecraft/client/renderer/RenderGlobal;setupTerrain(Lnet/minecraft/entity/Entity;DLnet/minecraft/client/renderer/culling/ICamera;IZ)V",
             at = @At("HEAD"))
     private void fp2_setupTerrain_prepare(Entity viewEntity, double partialTicks, ICamera camera, int frameCount, boolean playerSpectator, CallbackInfo ci) {
-        IFarClientContext<?, ?> context = ((IFarPlayerClient) this.mc.getConnection()).fp2_IFarPlayerClient_activeContext();
-        IFarRenderer renderer;
-        if (context != null && (renderer = context.renderer()) != null) {
-            this.fp2_vanillaRenderabilityTracker.update(uncheckedCast(this));
+        fp2().client().currentPlayer().ifPresent(player -> {
+            IFarClientContext<?, ?> context = player.fp2_IFarPlayerClient_activeContext();
+            IFarRenderer renderer;
+            if (context != null && (renderer = context.renderer()) != null) {
+                this.fp2_vanillaRenderabilityTracker.update(uncheckedCast(this));
 
-            this.mc.profiler.startSection("fp2_prepare");
-            renderer.prepare((IFrustum) camera);
-            this.mc.profiler.endSection();
-        }
+                this.mc.profiler.startSection("fp2_prepare");
+                renderer.prepare((IFrustum) camera);
+                this.mc.profiler.endSection();
+            }
+        });
     }
 
     @Unique
@@ -113,13 +115,15 @@ public abstract class MixinRenderGlobal implements IMixinRenderGlobal {
             return;
         }
 
-        IFarClientContext<?, ?> context = ((IFarPlayerClient) this.mc.getConnection()).fp2_IFarPlayerClient_activeContext();
-        IFarRenderer renderer;
-        if (context != null && (renderer = context.renderer()) != null) {
-            this.mc.profiler.startSection("fp2_render_pre");
-            renderer.render(this.toLayerIndex(layer), true);
-            this.mc.profiler.endSection();
-        }
+        fp2().client().currentPlayer().ifPresent(player -> {
+            IFarClientContext<?, ?> context = player.fp2_IFarPlayerClient_activeContext();
+            IFarRenderer renderer;
+            if (context != null && (renderer = context.renderer()) != null) {
+                this.mc.profiler.startSection("fp2_render_pre");
+                renderer.render(this.toLayerIndex(layer), true);
+                this.mc.profiler.endSection();
+            }
+        });
     }
 
     @Inject(method = "Lnet/minecraft/client/renderer/RenderGlobal;renderBlockLayer(Lnet/minecraft/util/BlockRenderLayer;DILnet/minecraft/entity/Entity;)I",
@@ -130,18 +134,20 @@ public abstract class MixinRenderGlobal implements IMixinRenderGlobal {
             return;
         }
 
-        IFarClientContext<?, ?> context = ((IFarPlayerClient) this.mc.getConnection()).fp2_IFarPlayerClient_activeContext();
-        IFarRenderer renderer;
-        if (context != null && (renderer = context.renderer()) != null) {
-            this.mc.profiler.startSection("fp2_render_post");
+        fp2().client().currentPlayer().ifPresent(player -> {
+            IFarClientContext<?, ?> context = player.fp2_IFarPlayerClient_activeContext();
+            IFarRenderer renderer;
+            if (context != null && (renderer = context.renderer()) != null) {
+                this.mc.profiler.startSection("fp2_render_post");
 
-            //TODO: reduce this down to a single call - the implementation shouldn't have to be aware of which vanilla render passes have completed
-            this.mc.textureMapBlocks.setBlurMipmapDirect(false, this.mc.gameSettings.mipmapLevels > 0);
-            renderer.render(this.toLayerIndex(layer), false);
-            this.mc.textureMapBlocks.restoreLastBlurMipmap();
+                //TODO: reduce this down to a single call - the implementation shouldn't have to be aware of which vanilla render passes have completed
+                this.mc.textureMapBlocks.setBlurMipmapDirect(false, this.mc.gameSettings.mipmapLevels > 0);
+                renderer.render(this.toLayerIndex(layer), false);
+                this.mc.textureMapBlocks.restoreLastBlurMipmap();
 
-            this.mc.profiler.endSection();
-        }
+                this.mc.profiler.endSection();
+            }
+        });
     }
 
     @Override

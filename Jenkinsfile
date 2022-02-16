@@ -59,6 +59,12 @@ pipeline {
         buildDiscarder(logRotator(artifactNumToKeepStr: '5'))
     }
     stages {
+        stage("Setup") {
+            steps {
+                //this will cause all projects to be configured, thereby forcing ForgeGradle to do all its expensive workspace setup
+                sh "./gradlew projects"
+            }
+        }
         stage("Natives") {
             steps {
                 sh "./gradlew natives -x test"
