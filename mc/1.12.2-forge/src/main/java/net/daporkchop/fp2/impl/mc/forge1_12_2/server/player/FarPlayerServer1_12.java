@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,36 +18,41 @@
  *
  */
 
-package net.daporkchop.fp2.core.mode.api.player;
+package net.daporkchop.fp2.impl.mc.forge1_12_2.server.player;
 
+import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.core.config.FP2Config;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.core.network.IPacket;
-import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
-import net.daporkchop.fp2.core.util.annotation.CalledFromNetworkThread;
-import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
+import net.daporkchop.fp2.core.server.player.AbstractFarPlayerServer;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.network.FP2Network1_12_2;
 import net.daporkchop.lib.math.vector.Vec3d;
+import net.minecraft.entity.player.EntityPlayerMP;
+
+import java.util.function.Supplier;
 
 /**
  * @author DaPorkchop_
  */
-public interface IFarPlayerServer {
-    Vec3d fp2_IFarPlayer_position();
+@RequiredArgsConstructor
+@Getter
+public class FarPlayerServer1_12 extends AbstractFarPlayerServer {
+    @NonNull
+    protected final FP2Forge1_12_2 fp2;
+    @NonNull
+    protected final Supplier<EntityPlayerMP> player;
 
-    @CalledFromNetworkThread
-    void fp2_IFarPlayerServer_handle(@NonNull Object packet);
+    @Override
+    public Vec3d fp2_IFarPlayer_position() {
+        EntityPlayerMP player = this.player.get();
+        return Vec3d.of(player.posX, player.posY, player.posZ);
+    }
 
-    @CalledFromServerThread
-    void fp2_IFarPlayer_serverConfig(FP2Config serverConfig);
-
-    @CalledFromServerThread
-    void fp2_IFarPlayer_joinedWorld(@NonNull IFarWorldServer world);
-
-    void fp2_IFarPlayer_sendPacket(@NonNull IPacket packet);
-
-    @CalledFromServerThread
-    void fp2_IFarPlayer_update();
-
-    @CalledFromServerThread
-    void fp2_IFarPlayer_close();
+    @Override
+    public void fp2_IFarPlayer_sendPacket(@NonNull IPacket packet) {
+        if (!this.closed) {
+            FP2Network1_12_2.sendToPlayer(packet, this.player.get());
+        }
+    }
 }

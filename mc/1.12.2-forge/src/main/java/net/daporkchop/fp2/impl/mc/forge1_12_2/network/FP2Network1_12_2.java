@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -26,8 +26,8 @@ import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.common.asm.ClassloadingUtils;
 import net.daporkchop.fp2.core.network.IPacket;
 import net.daporkchop.fp2.core.network.RegisterPacketsEvent;
-import net.daporkchop.fp2.core.mode.api.player.IFarPlayerClient;
-import net.daporkchop.fp2.core.mode.api.player.IFarPlayerServer;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.client.network.IMixinNetHandlerPlayClient;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.network.IMixinNetHandlerPlayServer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
@@ -80,7 +80,7 @@ public class FP2Network1_12_2 {
         class ServerboundHandler implements IMessageHandler<IMessage, IMessage> {
             @Override
             public IMessage onMessage(IMessage message, MessageContext ctx) {
-                ((IFarPlayerServer) ctx.getServerHandler()).fp2_IFarPlayerServer_handle(((Supplier) message).get());
+                ((IMixinNetHandlerPlayServer) ctx.getServerHandler()).fp2_farPlayerServer().fp2_IFarPlayerServer_handle(((Supplier) message).get());
                 return null;
             }
         }
@@ -88,7 +88,7 @@ public class FP2Network1_12_2 {
         class ClientboundHandler implements IMessageHandler<IMessage, IMessage> {
             @Override
             public IMessage onMessage(IMessage message, MessageContext ctx) {
-                ((IFarPlayerClient) ctx.getClientHandler()).fp2_IFarPlayerClient_handle(((Supplier) message).get());
+                ((IMixinNetHandlerPlayClient) ctx.getClientHandler()).fp2_farPlayerClient().fp2_IFarPlayerClient_handle(((Supplier) message).get());
                 return null;
             }
         }

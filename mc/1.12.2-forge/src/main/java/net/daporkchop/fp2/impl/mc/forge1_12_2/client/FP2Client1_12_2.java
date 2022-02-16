@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -31,7 +31,8 @@ import net.daporkchop.fp2.core.client.gui.GuiContext;
 import net.daporkchop.fp2.core.client.gui.GuiScreen;
 import net.daporkchop.fp2.core.client.key.KeyCategory;
 import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.core.mode.api.player.IFarPlayerClient;
+import net.daporkchop.fp2.core.client.player.IFarPlayerClient;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.client.network.IMixinNetHandlerPlayClient;
 import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.client.gui.GuiContext1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.log.ChatAsPorkLibLogger;
@@ -40,6 +41,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiIngameMenu;
 import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraft.client.gui.GuiVideoSettings;
+import net.minecraft.client.network.NetHandlerPlayClient;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraftforge.client.event.GuiScreenEvent;
@@ -127,8 +129,9 @@ public class FP2Client1_12_2 extends FP2Client {
 
     @Override
     public Optional<IFarPlayerClient> currentPlayer() {
-        return this.mc.player != null
-                ? Optional.of((IFarPlayerClient) this.mc.player.connection)
+        NetHandlerPlayClient connection = this.mc.getConnection();
+        return connection != null
+                ? Optional.of(((IMixinNetHandlerPlayClient) connection).fp2_farPlayerClient())
                 : Optional.empty();
     }
 
@@ -179,9 +182,7 @@ public class FP2Client1_12_2 extends FP2Client {
         }
 
         //send updated config to server
-        if (this.mc.player != null && this.mc.player.connection != null) {
-            ((IFarPlayerClient) this.mc.player.connection).fp2_IFarPlayerClient_send(new CPacketClientConfig().config(this.fp2().globalConfig()));
-        }
+        this.currentPlayer().ifPresent(player -> player.fp2_IFarPlayerClient_send(new CPacketClientConfig().config(this.fp2().globalConfig())));
     }
 
     //forge events

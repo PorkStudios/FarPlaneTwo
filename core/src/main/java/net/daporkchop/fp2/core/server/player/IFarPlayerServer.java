@@ -18,22 +18,39 @@
  *
  */
 
-package net.daporkchop.fp2.core.mode.voxel.ctx;
+package net.daporkchop.fp2.core.server.player;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.core.network.IPacket;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
-import net.daporkchop.fp2.core.mode.common.ctx.AbstractFarServerContext;
-import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
-import net.daporkchop.fp2.core.mode.voxel.VoxelTile;
-import net.daporkchop.fp2.core.server.player.IFarPlayerServer;
+import net.daporkchop.fp2.core.util.annotation.CalledFromNetworkThread;
+import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
+import net.daporkchop.lib.math.vector.Vec3d;
 
 /**
  * @author DaPorkchop_
  */
-public class VoxelServerContext extends AbstractFarServerContext<VoxelPos, VoxelTile> {
-    public VoxelServerContext(@NonNull IFarPlayerServer player, @NonNull IFarWorldServer world, @NonNull FP2Config config, @NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
-        super(player, world, config, mode);
-    }
+public interface IFarPlayerServer {
+    FP2Core fp2();
+
+    Vec3d fp2_IFarPlayer_position();
+
+    @CalledFromNetworkThread
+    void fp2_IFarPlayerServer_handle(@NonNull Object packet);
+
+    @CalledFromServerThread
+    void fp2_IFarPlayer_serverConfig(FP2Config serverConfig);
+
+    @CalledFromServerThread
+    void fp2_IFarPlayer_joinedWorld(@NonNull IFarWorldServer world);
+
+    void fp2_IFarPlayer_sendPacket(@NonNull IPacket packet);
+
+    @CalledFromServerThread
+    void fp2_IFarPlayer_update();
+
+    @CalledFromServerThread
+    void fp2_IFarPlayer_close();
 }

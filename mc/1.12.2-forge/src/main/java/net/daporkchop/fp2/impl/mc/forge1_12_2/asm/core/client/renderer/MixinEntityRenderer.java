@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -23,7 +23,7 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.core.client.renderer;
 import net.daporkchop.fp2.core.client.MatrixHelper;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
-import net.daporkchop.fp2.core.mode.api.player.IFarPlayerClient;
+import net.daporkchop.fp2.core.client.player.IFarPlayerClient;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.EntityRenderer;
 import org.lwjgl.BufferUtils;
@@ -83,13 +83,13 @@ public abstract class MixinEntityRenderer {
                     target = "Lnet/minecraft/client/renderer/EntityRenderer;farPlaneDistance:F",
                     opcode = Opcodes.PUTFIELD))
     private void fp2_setupCameraTransform_increaseFarPlaneDistance(EntityRenderer renderer, float farPlaneDistance) {
-        IFarClientContext<?, ?> context = ((IFarPlayerClient) this.mc.getConnection()).fp2_IFarPlayerClient_activeContext();
-
+        IFarClientContext<?, ?> context = fp2().client().currentPlayer().map(IFarPlayerClient::fp2_IFarPlayerClient_activeContext).orElse(null);
         if (context != null) {
             FP2Config config = context.config();
             farPlaneDistance = config.effectiveRenderDistanceBlocks();
             //TODO: i need a better system for computing this
         }
+
         this.farPlaneDistance = farPlaneDistance;
     }
 

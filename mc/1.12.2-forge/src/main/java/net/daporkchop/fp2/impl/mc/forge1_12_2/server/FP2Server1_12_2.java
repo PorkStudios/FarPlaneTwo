@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -29,10 +29,11 @@ import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
-import net.daporkchop.fp2.core.mode.api.player.IFarPlayerServer;
+import net.daporkchop.fp2.core.server.player.IFarPlayerServer;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketHandshake;
 import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
 import net.daporkchop.fp2.core.server.event.TickEndEvent;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.network.IMixinNetHandlerPlayServer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.server.world.FColumn1_12_2;
 import net.daporkchop.lib.common.system.PlatformInfo;
 import net.daporkchop.lib.compression.zstd.Zstd;
@@ -95,7 +96,7 @@ public class FP2Server1_12_2 {
     protected void onConfigChanged(ChangedEvent<FP2Config> event) {
         MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
         if (server != null) { //a server instance is currently present, update the serverConfig instance for every connected player
-            server.addScheduledTask(() -> server.playerList.getPlayers().forEach(player -> ((IFarPlayerServer) player.connection).fp2_IFarPlayer_serverConfig(this.fp2().globalConfig())));
+            server.addScheduledTask(() -> server.playerList.getPlayers().forEach(player -> ((IMixinNetHandlerPlayServer) player.connection).fp2_farPlayerServer().fp2_IFarPlayer_serverConfig(this.fp2().globalConfig())));
         }
     }
 
@@ -120,7 +121,7 @@ public class FP2Server1_12_2 {
         if (event.player instanceof EntityPlayerMP) {
             event.player.sendMessage(new TextComponentTranslation(MODID + ".playerJoinWarningMessage"));
 
-            IFarPlayerServer player = (IFarPlayerServer) ((EntityPlayerMP) event.player).connection;
+            IFarPlayerServer player = ((IMixinNetHandlerPlayServer) ((EntityPlayerMP) event.player).connection).fp2_farPlayerServer();
             player.fp2_IFarPlayer_serverConfig(this.fp2().globalConfig());
             player.fp2_IFarPlayer_sendPacket(new SPacketHandshake());
         }
@@ -129,7 +130,7 @@ public class FP2Server1_12_2 {
     @SubscribeEvent
     public void onPlayerJoinWorld(EntityJoinWorldEvent event) {
         if (!event.getWorld().isRemote && event.getEntity() instanceof EntityPlayerMP) {
-            IFarPlayerServer player = (IFarPlayerServer) ((EntityPlayerMP) event.getEntity()).connection;
+            IFarPlayerServer player = ((IMixinNetHandlerPlayServer) ((EntityPlayerMP) event.getEntity()).connection).fp2_farPlayerServer();
 
             //cubic chunks world data information has already been sent
             player.fp2_IFarPlayer_joinedWorld((IFarWorldServer) event.getWorld());
@@ -139,7 +140,7 @@ public class FP2Server1_12_2 {
     @SubscribeEvent
     public void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.player instanceof EntityPlayerMP) {
-            IFarPlayerServer player = (IFarPlayerServer) ((EntityPlayerMP) event.player).connection;
+            IFarPlayerServer player = ((IMixinNetHandlerPlayServer) ((EntityPlayerMP) event.player).connection).fp2_farPlayerServer();
 
             if (player != null) { //can happen if the player is kicked during the login sequence
                 player.fp2_IFarPlayer_close();
@@ -152,7 +153,7 @@ public class FP2Server1_12_2 {
         if (!event.world.isRemote && event.phase == TickEvent.Phase.END) {
             ((IFarWorldServer) event.world).fp2_IFarWorldServer_eventBus().fire(new TickEndEvent());
 
-            event.world.playerEntities.forEach(player -> ((IFarPlayerServer) ((EntityPlayerMP) player).connection).fp2_IFarPlayer_update());
+            event.world.playerEntities.forEach(player -> ((IMixinNetHandlerPlayServer) ((EntityPlayerMP) player).connection).fp2_farPlayerServer().fp2_IFarPlayer_update());
         }
     }
 

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -20,7 +20,7 @@
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.core.client;
 
-import net.daporkchop.fp2.core.mode.api.player.IFarPlayerClient;
+import net.daporkchop.fp2.core.client.player.IFarPlayerClient;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.threading.futureexecutor.ClientThreadMarkedFutureExecutor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
@@ -34,6 +34,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
@@ -89,8 +90,6 @@ public abstract class MixinMinecraft implements ClientThreadMarkedFutureExecutor
                     opcode = Opcodes.PUTFIELD,
                     shift = At.Shift.AFTER))
     private void fp2_notifyContextReady(CallbackInfo ci) { //gross hack to ensure that the client config packet isn't sent until the client is ready
-        if (this.player != null) {
-            ((IFarPlayerClient) this.player.connection).fp2_IFarPlayerClient_ready();
-        }
+        fp2().client().currentPlayer().ifPresent(IFarPlayerClient::fp2_IFarPlayerClient_ready);
     }
 }

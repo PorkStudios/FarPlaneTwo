@@ -18,22 +18,13 @@
  *
  */
 
-package net.daporkchop.fp2.core.mode.voxel.ctx;
+package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.client.network;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
-import net.daporkchop.fp2.core.mode.common.ctx.AbstractFarServerContext;
-import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
-import net.daporkchop.fp2.core.mode.voxel.VoxelTile;
-import net.daporkchop.fp2.core.server.player.IFarPlayerServer;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.client.player.FarPlayerClient1_12;
 
 /**
  * @author DaPorkchop_
  */
-public class VoxelServerContext extends AbstractFarServerContext<VoxelPos, VoxelTile> {
-    public VoxelServerContext(@NonNull IFarPlayerServer player, @NonNull IFarWorldServer world, @NonNull FP2Config config, @NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
-        super(player, world, config, mode);
-    }
+public interface IMixinNetHandlerPlayClient {
+    FarPlayerClient1_12 fp2_farPlayerClient();
 }
