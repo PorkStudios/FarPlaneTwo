@@ -30,7 +30,7 @@ import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
 import net.daporkchop.fp2.core.client.render.WorldRenderer;
 import net.daporkchop.fp2.core.util.GlobalAllocators;
 import net.daporkchop.fp2.gl.GL;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.client.FakeFarWorldClient1_12_2;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.client.world.FarWorldClient1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.ResourceProvider1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.world.registry.GameRegistry1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.SingleBiomeBlockAccess;
@@ -59,7 +59,7 @@ public class WorldRenderer1_12_2 implements WorldRenderer, AutoCloseable {
     protected final Minecraft mc;
     protected final GL gl;
 
-    protected final FakeFarWorldClient1_12_2 world;
+    protected final FarWorldClient1_12_2 world;
 
     protected final TextureUVs1_12_2 textureUVs;
 
@@ -68,7 +68,7 @@ public class WorldRenderer1_12_2 implements WorldRenderer, AutoCloseable {
 
     protected final FloatBuffer tempMatrix = BufferUtils.createFloatBuffer(MatrixHelper.MAT4_ELEMENTS);
 
-    public WorldRenderer1_12_2(@NonNull Minecraft mc, @NonNull FakeFarWorldClient1_12_2 world) {
+    public WorldRenderer1_12_2(@NonNull Minecraft mc, @NonNull FarWorldClient1_12_2 world) {
         this.mc = mc;
         this.world = world;
 

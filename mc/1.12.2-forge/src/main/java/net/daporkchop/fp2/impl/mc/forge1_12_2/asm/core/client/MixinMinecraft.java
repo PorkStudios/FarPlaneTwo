@@ -51,9 +51,6 @@ public abstract class MixinMinecraft implements ClientThreadMarkedFutureExecutor
     @Final
     public Profiler profiler;
 
-    @Shadow
-    public EntityPlayerSP player;
-
     @Unique
     private ClientThreadMarkedFutureExecutor fp2_executor;
 

@@ -23,17 +23,17 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.server;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
 import net.daporkchop.fp2.api.event.ChangedEvent;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
-import net.daporkchop.fp2.core.server.player.IFarPlayerServer;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketHandshake;
 import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
 import net.daporkchop.fp2.core.server.event.TickEndEvent;
+import net.daporkchop.fp2.core.server.player.IFarPlayerServer;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.network.IMixinNetHandlerPlayServer;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.world.IMixinWorldServer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.server.world.FColumn1_12_2;
 import net.daporkchop.lib.common.system.PlatformInfo;
 import net.daporkchop.lib.compression.zstd.Zstd;
@@ -105,14 +105,14 @@ public class FP2Server1_12_2 {
     @SubscribeEvent
     public void worldLoad(WorldEvent.Load event) {
         if (!event.getWorld().isRemote) {
-            ((IFarWorldServer) event.getWorld()).fp2_IFarWorld_init();
+            ((IMixinWorldServer) event.getWorld()).fp2_farWorldServer().fp2_IFarWorldServer_init();
         }
     }
 
     @SubscribeEvent
     public void worldUnload(WorldEvent.Unload event) {
         if (!event.getWorld().isRemote) {
-            ((IFarWorldServer) event.getWorld()).fp2_IFarWorld_close();
+            ((IMixinWorldServer) event.getWorld()).fp2_farWorldServer().fp2_IFarWorld_close();
         }
     }
 
@@ -133,7 +133,7 @@ public class FP2Server1_12_2 {
             IFarPlayerServer player = ((IMixinNetHandlerPlayServer) ((EntityPlayerMP) event.getEntity()).connection).fp2_farPlayerServer();
 
             //cubic chunks world data information has already been sent
-            player.fp2_IFarPlayer_joinedWorld((IFarWorldServer) event.getWorld());
+            player.fp2_IFarPlayer_joinedWorld(((IMixinWorldServer) event.getWorld()).fp2_farWorldServer());
         }
     }
 
@@ -151,7 +151,7 @@ public class FP2Server1_12_2 {
     @SubscribeEvent
     public void onWorldTickEnd(TickEvent.WorldTickEvent event) {
         if (!event.world.isRemote && event.phase == TickEvent.Phase.END) {
-            ((IFarWorldServer) event.world).fp2_IFarWorldServer_eventBus().fire(new TickEndEvent());
+            ((IMixinWorldServer) event.world).fp2_farWorldServer().fp2_IFarWorldServer_eventBus().fire(new TickEndEvent());
 
             event.world.playerEntities.forEach(player -> ((IMixinNetHandlerPlayServer) ((EntityPlayerMP) player).connection).fp2_farPlayerServer().fp2_IFarPlayer_update());
         }
@@ -160,6 +160,6 @@ public class FP2Server1_12_2 {
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public void onChunkDataSave(ChunkDataEvent.Save event) {
         Chunk chunk = event.getChunk();
-        ((IFarWorldServer) chunk.getWorld()).fp2_IFarWorldServer_eventBus().fire(new ColumnSavedEvent(Vec2i.of(chunk.x, chunk.z), new FColumn1_12_2(chunk), event.getData()));
+        ((IMixinWorldServer) event.getWorld()).fp2_farWorldServer().fp2_IFarWorldServer_eventBus().fire(new ColumnSavedEvent(Vec2i.of(chunk.x, chunk.z), new FColumn1_12_2(chunk), event.getData()));
     }
 }

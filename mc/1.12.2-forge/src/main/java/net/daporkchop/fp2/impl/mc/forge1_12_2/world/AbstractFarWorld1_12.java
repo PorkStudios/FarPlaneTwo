@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,72 +18,44 @@
  *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.core.world;
+package net.daporkchop.fp2.impl.mc.forge1_12_2.world;
 
-import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
-import net.daporkchop.fp2.api.world.registry.FGameRegistry;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorld;
-import net.daporkchop.fp2.core.server.event.GetCoordinateLimitsEvent;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.world.registry.GameRegistry1_12_2;
-import net.daporkchop.lib.common.util.PorkUtil;
 import net.minecraft.world.World;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
-
-import static net.daporkchop.fp2.core.FP2Core.*;
-import static net.daporkchop.lib.common.util.PValidation.*;
-import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
-@Mixin(World.class)
-public abstract class MixinWorld implements IFarWorld {
-    @Unique
-    protected IntAxisAlignedBB fp2_coordLimits;
-
-    @Unique
-    protected boolean isInitialized() {
-        return this.fp2_coordLimits != null;
-    }
+@RequiredArgsConstructor
+@Getter
+public abstract class AbstractFarWorld1_12<W extends World> implements IFarWorld {
+    @NonNull
+    protected final FP2Forge1_12_2 fp2;
+    @NonNull
+    protected final W world;
 
     @Override
     public Object fp2_IFarWorld_implWorld() {
-        return this;
-    }
-
-    @Override
-    public IntAxisAlignedBB fp2_IFarWorld_coordLimits() {
-        checkState(this.isInitialized(), "not initialized!");
-        return this.fp2_coordLimits;
-    }
-
-    @Override
-    public void fp2_IFarWorld_init() {
-        checkState(!this.isInitialized(), "already initialized!");
-
-        this.fp2_coordLimits = fp2().eventBus().fireAndGetFirst(new GetCoordinateLimitsEvent(uncheckedCast(this))).get();
+        return this.world;
     }
 
     @Override
     public int fp2_IFarWorld_dimensionId() {
-        return PorkUtil.<World>uncheckedCast(this).provider.getDimension();
+        return this.world.provider.getDimension();
     }
-
-    @Shadow
-    public abstract long getTotalWorldTime();
 
     @Override
     public long fp2_IFarWorld_timestamp() {
-        return this.getTotalWorldTime();
+        return this.world.getTotalWorldTime();
     }
 
     @Override
-    public FGameRegistry fp2_IFarWorld_registry() {
+    public GameRegistry1_12_2 fp2_IFarWorld_registry() {
         return GameRegistry1_12_2.get();
     }
-
-    @Shadow
-    public abstract int getSeaLevel();
 }

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -21,14 +21,12 @@
 package net.daporkchop.fp2.core.mode.common.server.tracking;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.mode.api.IFarCoordLimits;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarServerContext;
-import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTracker;
 import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
 import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
@@ -280,7 +278,7 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
                 this.updateWaiting();
             }
         } catch (Throwable t) {
-            ((IFarWorldServer) this.context.tileProvider().world()).fp2_IFarWorld_workerManager().handle(t);
+            this.context.tileProvider().world().fp2_IFarWorld_workerManager().handle(t);
             PUnsafe.throwException(t);
         }
     }

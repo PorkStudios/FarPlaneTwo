@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -29,6 +29,7 @@ import net.daporkchop.fp2.core.util.threading.workergroup.WorkerManager;
  *
  * @author DaPorkchop_
  */
+//TODO: find a more logical place to put this
 public interface IFarWorld {
     /**
      * @return the implementation-specific object corresponding to this world
@@ -39,16 +40,6 @@ public interface IFarWorld {
      * @return the block coordinate limits in this world
      */
     IntAxisAlignedBB fp2_IFarWorld_coordLimits();
-
-    /**
-     * Called when the world is being loaded.
-     */
-    void fp2_IFarWorld_init();
-
-    /**
-     * Called when the world is being unloaded.
-     */
-    void fp2_IFarWorld_close();
 
     /**
      * @return the {@link WorkerManager} used by this world
@@ -69,4 +60,9 @@ public interface IFarWorld {
      * @return the {@link FGameRegistry} used in this world
      */
     FGameRegistry fp2_IFarWorld_registry();
+
+    /**
+     * Called when the world is being unloaded.
+     */
+    void fp2_IFarWorld_close();
 }

@@ -24,13 +24,13 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.core.client.player.AbstractFarPlayerClient;
-import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldClient;
+import net.daporkchop.fp2.core.client.world.IFarWorldClient;
 import net.daporkchop.fp2.core.network.IPacket;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionBegin;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionEnd;
 import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.client.FakeFarWorldClient1_12_2;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.client.world.FarWorldClient1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.network.FP2Network1_12_2;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.network.NetworkManager;
@@ -50,7 +50,7 @@ public class FarPlayerClient1_12 extends AbstractFarPlayerClient {
 
     @Override
     protected IFarWorldClient createWorldClient(@NonNull SPacketSessionBegin packet) {
-        return new FakeFarWorldClient1_12_2(this.world, packet.coordLimits());
+        return new FarWorldClient1_12_2(this.fp2(), this.world, packet.coordLimits());
     }
 
     @CalledFromAnyThread

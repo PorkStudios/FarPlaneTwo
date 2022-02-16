@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,36 +18,22 @@
  *
  */
 
-package net.daporkchop.fp2.core.mode.api.ctx;
+package net.daporkchop.fp2.core.client.world;
+
+import net.daporkchop.fp2.core.client.render.WorldRenderer;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarWorld;
+import net.daporkchop.fp2.core.util.annotation.CalledFromClientThread;
 
 /**
- * Provides information about the terrain generator used in a given {@link IFarWorldServer}.
- *
  * @author DaPorkchop_
  */
-public interface TerrainGeneratorInfo {
-    /**
-     * @return the {@link IFarWorldServer} which th
-     */
-    IFarWorldServer world();
+public interface IFarWorldClient extends IFarWorld {
+    @CalledFromClientThread
+    @Override
+    void fp2_IFarWorld_close();
 
     /**
-     * @return the implementation-specific terrain generator instance
+     * @return a {@link WorldRenderer} for rendering this world
      */
-    Object implGenerator();
-
-    /**
-     * @return the terrain generator name
-     */
-    String generator();
-
-    /**
-     * @return the terrain generator options
-     */
-    String options();
-
-    /**
-     * @return the terrain generator seed
-     */
-    long seed();
+    WorldRenderer fp2_IFarWorldClient_renderer();
 }

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -23,9 +23,6 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.asyncblockaccess;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.api.event.FEventHandler;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.IBlockHeightAccess;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.region.ThreadSafeRegionFileCache;
-import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
 import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
 import net.daporkchop.fp2.core.util.datastructure.Datastructures;
@@ -33,6 +30,9 @@ import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSegtreeSet;
 import net.daporkchop.fp2.core.util.threading.futurecache.GenerationNotAllowedException;
 import net.daporkchop.fp2.core.util.threading.futurecache.IAsyncCache;
 import net.daporkchop.fp2.core.util.threading.lazy.LazyFutureTask;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.world.IMixinWorldServer;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.IBlockHeightAccess;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.region.ThreadSafeRegionFileCache;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.threading.asyncblockaccess.AsyncCacheNBTBase;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.threading.asyncblockaccess.IAsyncBlockAccess;
 import net.daporkchop.lib.common.function.throwing.ERunnable;
@@ -79,7 +79,7 @@ public class VanillaAsyncBlockAccessImpl implements IAsyncBlockAccess {
                         .parallel())
                 .build();
 
-        ((IFarWorldServer) world).fp2_IFarWorldServer_eventBus().registerWeak(this);
+        ((IMixinWorldServer) world).fp2_farWorldServer().fp2_IFarWorldServer_eventBus().registerWeak(this);
     }
 
     @Override
@@ -203,7 +203,7 @@ public class VanillaAsyncBlockAccessImpl implements IAsyncBlockAccess {
 
         @Override
         protected void triggerGeneration(@NonNull ChunkPos key, @NonNull Object param) {
-            ((IFarWorldServer) VanillaAsyncBlockAccessImpl.this.world).fp2_IFarWorld_workerManager().workExecutor().run((ERunnable) () -> {
+            ((IMixinWorldServer) VanillaAsyncBlockAccessImpl.this.world).fp2_farWorldServer().fp2_IFarWorld_workerManager().workExecutor().run((ERunnable) () -> {
                 int x = key.x;
                 int z = key.z;
 

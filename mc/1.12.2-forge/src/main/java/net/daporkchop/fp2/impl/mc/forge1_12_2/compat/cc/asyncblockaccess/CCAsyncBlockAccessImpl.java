@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -34,19 +34,20 @@ import io.github.opencubicchunks.cubicchunks.core.world.cube.Cube;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.api.event.FEventHandler;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cc.biome.Column2dBiomeAccessWrapper;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cc.biome.CubeBiomeAccessWrapper;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cc.cube.CubeWithoutWorld;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.IBiomeAccess;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.IBlockHeightAccess;
-import net.daporkchop.fp2.core.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
 import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
+import net.daporkchop.fp2.core.server.world.IFarWorldServer;
 import net.daporkchop.fp2.core.util.datastructure.Datastructures;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSegtreeSet;
 import net.daporkchop.fp2.core.util.threading.futurecache.GenerationNotAllowedException;
 import net.daporkchop.fp2.core.util.threading.futurecache.IAsyncCache;
 import net.daporkchop.fp2.core.util.threading.lazy.LazyFutureTask;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.world.IMixinWorldServer;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cc.biome.Column2dBiomeAccessWrapper;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cc.biome.CubeBiomeAccessWrapper;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cc.cube.CubeWithoutWorld;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.IBiomeAccess;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.IBlockHeightAccess;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.threading.asyncblockaccess.AsyncCacheNBTBase;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.threading.asyncblockaccess.IAsyncBlockAccess;
 import net.daporkchop.lib.common.util.PorkUtil;
@@ -95,7 +96,7 @@ public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess {
 
     public CCAsyncBlockAccessImpl(@NonNull WorldServer world) {
         this.world = world;
-        this.farWorld = (IFarWorldServer) world;
+        this.farWorld = ((IMixinWorldServer) world).fp2_farWorldServer();
 
         this.io = ((ICubeProviderInternal.Server) ((ICubicWorldInternal) world).getCubeCache()).getCubeIO();
         this.storage = PUnsafe.getObject(AsyncBatchingCubeIO.class.cast(this.io), ASYNCBATCHINGCUBEIO_STORAGE_OFFSET);
@@ -267,7 +268,7 @@ public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess {
         @Override
         protected void triggerGeneration(@NonNull ChunkPos key, @NonNull Object param) {
             //load and immediately save column on server thread
-            ((IFarWorldServer) CCAsyncBlockAccessImpl.this.world).fp2_IFarWorld_workerManager().workExecutor().run(() -> {
+            ((IMixinWorldServer) CCAsyncBlockAccessImpl.this.world).fp2_farWorldServer().fp2_IFarWorld_workerManager().workExecutor().run(() -> {
                 Chunk column = ((ICubicWorldServer) CCAsyncBlockAccessImpl.this.world)
                         .getCubeCache().getColumn(key.x, key.z, ICubeProviderServer.Requirement.POPULATE);
                 if (column != null && !column.isEmpty()) {
@@ -306,7 +307,7 @@ public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess {
 
         @Override
         protected void triggerGeneration(@NonNull CubePos key, @NonNull Chunk param) {
-            ((IFarWorldServer) CCAsyncBlockAccessImpl.this.world).fp2_IFarWorld_workerManager().workExecutor().run(() -> {
+            ((IMixinWorldServer) CCAsyncBlockAccessImpl.this.world).fp2_farWorldServer().fp2_IFarWorld_workerManager().workExecutor().run(() -> {
                 //TODO: save column as well if needed
                 ICube cube = ((ICubicWorldServer) CCAsyncBlockAccessImpl.this.world)
                         .getCubeCache().getCube(key.getX(), key.getY(), key.getZ(), ICubeProviderServer.Requirement.LIGHT);
