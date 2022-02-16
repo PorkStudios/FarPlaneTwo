@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -29,8 +29,6 @@ import org.spongepowered.asm.mixin.Mixins;
 import javax.annotation.Nullable;
 import java.util.Map;
 
-import static net.daporkchop.fp2.core.debug.FP2Debug.*;
-
 /**
  * @author DaPorkchop_
  */
@@ -39,12 +37,7 @@ public class FP2MixinLoader implements IFMLLoadingPlugin {
         FMLLog.log.info("\n\n\nFP2 Mixin init\n\n");
         MixinBootstrap.init();
 
-        Mixins.addConfiguration("mixins.fp2.core.json");
-        Mixins.addConfiguration("mixins.fp2.fixes.json");
-
-        if (FP2_DEBUG) { //we're in debug mode, add debug mixins
-            Mixins.addConfiguration("mixins.fp2.debug.json");
-        }
+        Mixins.addConfigurations("mixins.fp2.core.json", "mixins.fp2.fixes.json", "mixins.fp2.debug.json");
 
         FMLLog.log.info(MixinEnvironment.getDefaultEnvironment().getObfuscationContext());
     }

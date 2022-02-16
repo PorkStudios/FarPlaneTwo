@@ -19,7 +19,7 @@
  */
 
 dependencies {
-    apiShade project(":core")
+    implementationShade project(":core")
 
     compileOnly "org.apache.logging.log4j:log4j-api:$log4jVersion"
 }

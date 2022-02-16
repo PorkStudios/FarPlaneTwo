@@ -57,9 +57,15 @@ minecraft {
 }
 
 dependencies {
-    runtimeOnlyShade project(":gl:opengl-lwjgl2")
+    //:gl module, plus dependency-specific addon modules
+    implementationShade project(":gl")
+    //TODO: 1.16 uses LWJGL3...
+    // runtimeOnlyShade project(":gl:opengl-lwjgl2")
 
+    //:core module, plus dependency-specific addon modules
+    implementationShade project(":core")
     implementationShade project(":core:log4j")
+    implementationShade project(":core:mixin")
 
     //implementationProvided "net.daporkchop:forgerocks:$rocksdbVersion-$minecraftVersion"
 }
@@ -128,9 +134,10 @@ reobf {
 shadowJar.finalizedBy reobfShadowJar
 build.dependsOn shadowJar
 
-task preIntellijRuns {
+//mixin hot-swapping seems to be entirely non-functional on ModLauncher
+/*task preIntellijRuns {
     doFirst {
-        java.util.stream.StreamSupport.stream(configurations.annotationProcessor.spliterator(), false).filter({
+        java.util.stream.StreamSupport.stream(configurations.compileClasspath.spliterator(), false).filter({
             java.nio.file.Paths.get(it.absolutePath).getFileName().toString().matches("mixin-\\d+(\\.\\d+)*(-.*)?(?<!-processor)\\.jar")
         }).findAny().ifPresent({ file ->
             minecraft.runs.all { run ->
@@ -143,4 +150,4 @@ tasks.whenTaskAdded { task ->
     if ("genIntellijRuns".equals(task.name)) {
         task.dependsOn(preIntellijRuns)
     }
-}
+}*/

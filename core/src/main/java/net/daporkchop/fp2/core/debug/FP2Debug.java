@@ -27,7 +27,17 @@ import net.daporkchop.fp2.core.client.key.KeyCategory;
 import net.daporkchop.fp2.core.client.render.TextureUVs;
 import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;
 import net.daporkchop.fp2.core.config.FP2Config;
+import net.daporkchop.fp2.core.debug.util.DebugStats;
+import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
+import net.daporkchop.fp2.core.mode.api.client.IFarTileCache;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
+import net.daporkchop.fp2.core.util.I18n;
+
+import java.text.NumberFormat;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
 
@@ -87,5 +97,79 @@ public class FP2Debug {
                 fp2.client().chat().debug("§aSwitched debug color mode to §7" + fp2.globalConfig().debug().debugColors());
             });
         }
+    }
+
+    /**
+     * Gets a list of strings containing debug information to be displayed on the client.
+     *
+     * @param fp2 the active {@link FP2Core} instance
+     * @return list of strings containing debug information to be displayed on the client
+     */
+    public List<String> clientDebugInfo(@NonNull FP2Core fp2) {
+        return fp2.client().currentPlayer().map(player -> {
+            I18n i18n = fp2.i18n();
+
+            NumberFormat numberFormat = i18n.numberFormat();
+            NumberFormat percentFormat = i18n.percentFormat();
+
+            List<String> list = new ArrayList<>();
+
+            {
+                list.add("");
+                list.add("§lFarPlaneTwo (Client):");
+
+                IFarClientContext<?, ?> context = player.fp2_IFarPlayerClient_activeContext();
+                if (context != null) {
+                    IFarTileCache<?, ?> tileCache = context.tileCache();
+                    if (tileCache != null) {
+                        DebugStats.TileCache stats = tileCache.stats();
+                        list.add("TileCache: " + numberFormat.format(stats.tileCountWithData()) + '/' + numberFormat.format(stats.tileCount())
+                                 + ' ' + percentFormat.format((stats.allocatedSpace() | stats.totalSpace()) != 0L ? stats.allocatedSpace() / (double) stats.totalSpace() : 1.0d)
+                                 + ' ' + i18n.formatByteCount(stats.allocatedSpace()) + '/' + i18n.formatByteCount(stats.totalSpace())
+                                 + " (" + percentFormat.format((stats.allocatedSpace() | stats.uncompressedSize()) != 0L ? stats.allocatedSpace() / (double) stats.uncompressedSize() : 1.0d) + " -> " + i18n.formatByteCount(stats.uncompressedSize()) + ')');
+                    } else {
+                        list.add("§oNo TileCache active");
+                    }
+
+                    IFarRenderer renderer = context.renderer();
+                    if (renderer != null) {
+                        DebugStats.Renderer stats = renderer.stats();
+                        list.add("Baked Tiles: " + numberFormat.format(stats.bakedTiles()) + "T " + numberFormat.format(stats.bakedTilesWithData()) + "D "
+                                 + numberFormat.format(stats.bakedTiles() - stats.bakedTilesWithData()) + 'E');
+                        list.add("All VRAM: " + percentFormat.format(stats.allocatedVRAM() / (double) stats.totalVRAM())
+                                 + ' ' + i18n.formatByteCount(stats.allocatedVRAM()) + '/' + i18n.formatByteCount(stats.totalVRAM()));
+                        list.add("Indices: " + percentFormat.format(stats.allocatedIndices() / (double) stats.totalIndices())
+                                 + ' ' + numberFormat.format(stats.allocatedIndices()) + '/' + numberFormat.format(stats.totalIndices())
+                                 + '@' + i18n.formatByteCount(stats.indexSize())
+                                 + " (" + i18n.formatByteCount(stats.allocatedIndices() * stats.indexSize()) + '/' + i18n.formatByteCount(stats.totalIndices() * stats.indexSize()) + ')');
+                        list.add("Vertices: " + percentFormat.format(stats.allocatedVertices() / (double) stats.totalVertices())
+                                 + ' ' + numberFormat.format(stats.allocatedVertices()) + '/' + numberFormat.format(stats.totalVertices())
+                                 + '@' + i18n.formatByteCount(stats.vertexSize())
+                                 + " (" + i18n.formatByteCount(stats.allocatedVertices() * stats.vertexSize()) + '/' + i18n.formatByteCount(stats.totalVertices() * stats.vertexSize()) + ')');
+                    } else {
+                        list.add("§oNo renderer active");
+                    }
+                } else {
+                    list.add("§oNo context active");
+                }
+            }
+
+            {
+                list.add("");
+                list.add("§lFarPlaneTwo (Server):");
+
+                DebugStats.Tracking trackingStats = player.fp2_IFarPlayerClient_debugServerStats();
+                if (trackingStats != null) {
+                    list.add("Tracker: " + numberFormat.format(trackingStats.tilesTrackedGlobal()) + "G "
+                             + numberFormat.format(trackingStats.tilesTotal()) + "T " + numberFormat.format(trackingStats.tilesLoaded()) + "L "
+                             + numberFormat.format(trackingStats.tilesLoading()) + "P " + numberFormat.format(trackingStats.tilesQueued()) + 'Q');
+                    list.add("Updates: " + i18n.formatDuration(trackingStats.avgUpdateDuration()) + " avg, " + i18n.formatDuration(trackingStats.lastUpdateDuration()) + " last");
+                } else {
+                    list.add("§oTracking data not available");
+                }
+            }
+
+            return list;
+        }).orElse(Collections.emptyList());
     }
 }

@@ -18,29 +18,29 @@
  *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_16.asm.core.client.gui.screen;
+package net.daporkchop.fp2.impl.mc.forge1_16.asm.debug.client.gui.overlay;
 
-import net.minecraft.client.gui.screen.MainMenuScreen;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.util.Splashes;
+import net.daporkchop.fp2.core.debug.FP2Debug;
+import net.minecraft.client.gui.AbstractGui;
+import net.minecraft.client.gui.overlay.DebugOverlayGui;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+
+import java.util.List;
+
+import static net.daporkchop.fp2.core.FP2Core.*;
 
 /**
  * @author DaPorkchop_
  */
-@Mixin(MainMenuScreen.class)
-public abstract class MixinMainMenuScreen extends Screen {
-    protected MixinMainMenuScreen() {
-        super(null);
-    }
-
-    @Redirect(
-            method = "Lnet/minecraft/client/gui/screen/MainMenuScreen;init()V",
-            at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/client/util/Splashes;getSplash()Ljava/lang/String;"))
-    private String fp2_init_changeSplash(Splashes splashes) {
-        return "jeff";
+@Mixin(DebugOverlayGui.class)
+public abstract class MixinDebugOverlayGui1_16 extends AbstractGui {
+    @Inject(method = "Lnet/minecraft/client/gui/overlay/DebugOverlayGui;getSystemInformation()Ljava/util/List;",
+            at = @At("RETURN"),
+            require = 2)
+    private void fp2_getSystemInformation_injectFP2DebugInfo(CallbackInfoReturnable<List<String>> ci) {
+        ci.getReturnValue().addAll(FP2Debug.clientDebugInfo(fp2()));
     }
 }

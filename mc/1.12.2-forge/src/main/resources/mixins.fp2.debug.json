@@ -3,6 +3,7 @@
   "compatibilityLevel": "JAVA_8",
   "package": "net.daporkchop.fp2.impl.mc.forge1_12_2.asm.debug",
   "refmap": "mixins.fp2.refmap.json",
+  "plugin": "net.daporkchop.fp2.core.mixin.debug.DebugMixinConfigPlugin",
   "client": [
     "client.gui.MixinGuiOverlayDebug",
     "client.renderer.MixinRenderGlobal"

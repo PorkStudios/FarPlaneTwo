@@ -70,9 +70,14 @@ repositories {
 }
 
 dependencies {
+    //:gl module, plus dependency-specific addon modules
+    implementationShade project(":gl")
     runtimeOnlyShade project(":gl:opengl-lwjgl2")
 
+    //core module, plus dependency-specific addon modules
+    implementationShade project(":core")
     implementationShade project(":core:log4j")
+    implementationShade project(":core:mixin")
 
     implementationProvided "net.daporkchop:forgerocks:$rocksdbVersion-$minecraftVersion"
 
