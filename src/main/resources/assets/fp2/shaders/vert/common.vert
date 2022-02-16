@@ -46,7 +46,7 @@ out VS_OUT {
 
     flat vec3 color;
     flat vec3 base_pos;
-    flat int state;
+    flat uint state;
 } vs_out;
 
 //

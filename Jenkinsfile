@@ -59,29 +59,24 @@ pipeline {
         buildDiscarder(logRotator(artifactNumToKeepStr: '5'))
     }
     stages {
-        stage("Prepare workspace") {
-            steps {
-                sh "./gradlew setupCiWorkspace"
-            }
-        }
         stage("Natives") {
             steps {
-                sh "./gradlew compileNatives -x test -x publish"
+                sh "./gradlew compileNatives -x test"
             }
         }
         stage("Build") {
             steps {
-                sh "./gradlew build -x compileNatives -x test -x publish"
+                sh "./gradlew build -x compileNatives -x test"
             }
             post {
                 success {
-                    archiveArtifacts artifacts: "build/libs/*.jar", fingerprint: true
+                    archiveArtifacts artifacts: "mc/*/build/libs/*.jar", fingerprint: true
                 }
             }
         }
         stage("Test") {
             steps {
-                sh "./gradlew test -x compileNatives -x publish"
+                sh "./gradlew test -x compileNatives"
             }
             post {
                 success {
@@ -89,14 +84,14 @@ pipeline {
                 }
             }
         }
-        stage("Publish") {
+        /*stage("Publish") {
             when {
                 branch "master"
             }
             steps {
                 sh "./gradlew publish -x compileNatives -x test -x publishToMavenLocal"
             }
-        }
+        }*/
     }
 
     post {

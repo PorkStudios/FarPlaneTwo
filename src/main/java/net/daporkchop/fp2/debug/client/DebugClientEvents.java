@@ -21,12 +21,13 @@
 package net.daporkchop.fp2.debug.client;
 
 import net.daporkchop.fp2.asm.core.client.gui.IGuiScreen;
-import net.daporkchop.fp2.client.TexUVs;
-import net.daporkchop.fp2.client.gl.shader.ShaderManager;
+import net.daporkchop.fp2.client.texture.ReloadTextureUVsEvent;
+import net.daporkchop.fp2.client.texture.TextureUVs;
+import net.daporkchop.fp2.client.gl.shader.reload.ReloadShadersEvent;
 import net.daporkchop.fp2.client.gui.GuiButtonFP2Options;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.debug.util.DebugUtils;
-import net.daporkchop.fp2.net.packet.debug.client.CPacketDebugDropAllTiles;
+import net.daporkchop.fp2.net.packet.standard.client.CPacketClientConfig;
 import net.minecraft.client.gui.GuiIngameMenu;
 import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraft.client.gui.GuiScreen;
@@ -47,15 +48,15 @@ public class DebugClientEvents {
     @SubscribeEvent
     public void keyInput(InputEvent.KeyInputEvent event) {
         if (DebugKeyBindings.RELOAD_SHADERS.isPressed()) {
-            ShaderManager.reload(true);
+            ReloadShadersEvent.fire();
         }
         if (DebugKeyBindings.DROP_TILES.isPressed()) {
-            PROTOCOL_DEBUG.sendToServer(new CPacketDebugDropAllTiles());
-            DebugUtils.clientMsg("§aReloading all tiles");
+            PROTOCOL_FP2.sendToServer(new CPacketClientConfig().config(null));
+            PROTOCOL_FP2.sendToServer(new CPacketClientConfig().config(FP2Config.global()));
+            DebugUtils.clientMsg("§aReloading session");
         }
         if (DebugKeyBindings.REBUILD_UVS.isPressed()) {
-            TexUVs.reloadUVs();
-            DebugUtils.clientMsg("§aRebuilt texture UVs");
+            ReloadTextureUVsEvent.fire();
         }
 
         FP2Config oldConfig = FP2Config.global();

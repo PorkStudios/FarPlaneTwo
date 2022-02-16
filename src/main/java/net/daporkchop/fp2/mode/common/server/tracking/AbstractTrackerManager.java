@@ -90,6 +90,8 @@ public abstract class AbstractTrackerManager<POS extends IFarPos, T extends IFar
     @Override
     public void close() {
         this.tileProvider.storage().removeListener(this);
+
+        this.scheduler.close();
     }
 
     @CalledFromServerThread

@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.client;
 
+import net.daporkchop.fp2.client.texture.TextureUVs;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.OpenGlHelper;
 
@@ -37,11 +38,6 @@ public enum DrawMode implements AutoCloseable {
         @Override
         public DrawMode begin() {
             super.begin();
-
-            TexUVs.bind();
-
-            ShaderGlStateHelper.update(MC.getRenderPartialTicks(), MC);
-            ShaderGlStateHelper.bind();
 
             return this;
         }

@@ -112,7 +112,7 @@ public class GuiRenderModeButton extends GuiSubmenuButton<String[]> {
                                     },
                                     new SquareButton(this.context, this.access, "listUp") {
                                         {
-                                            if (PArrays.indexOf(modes, mode) == 0) {
+                                            if (PArrays.linearSearch(modes, mode) == 0) {
                                                 this.button.enabled = false;
                                             }
                                         }
@@ -120,7 +120,7 @@ public class GuiRenderModeButton extends GuiSubmenuButton<String[]> {
                                         @Override
                                         protected void handleClick(int button) {
                                             if (button == 0) { //left-click
-                                                int oldIndex = PArrays.indexOf(modes, mode);
+                                                int oldIndex = PArrays.linearSearch(modes, mode);
                                                 PArrays.swap(modes, oldIndex, max(oldIndex - 1, 0));
 
                                                 this.context.pack();
@@ -129,7 +129,7 @@ public class GuiRenderModeButton extends GuiSubmenuButton<String[]> {
                                     },
                                     new SquareButton(this.context, this.access, "listDown") {
                                         {
-                                            if (PArrays.indexOf(modes, mode) == modes.length - 1) {
+                                            if (PArrays.linearSearch(modes, mode) == modes.length - 1) {
                                                 this.button.enabled = false;
                                             }
                                         }
@@ -137,7 +137,7 @@ public class GuiRenderModeButton extends GuiSubmenuButton<String[]> {
                                         @Override
                                         protected void handleClick(int button) {
                                             if (button == 0) { //left-click
-                                                int oldIndex = PArrays.indexOf(modes, mode);
+                                                int oldIndex = PArrays.linearSearch(modes, mode);
                                                 PArrays.swap(modes, oldIndex, min(oldIndex + 1, modes.length - 1));
 
                                                 this.context.pack();

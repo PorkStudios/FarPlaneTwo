@@ -21,11 +21,10 @@
 package net.daporkchop.fp2.client;
 
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.client.gl.shader.ShaderManager;
+import net.daporkchop.fp2.client.gl.shader.reload.ShaderMacros;
+import net.daporkchop.fp2.client.texture.TextureUVs;
 import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.config.listener.ConfigListenerManager;
-import net.daporkchop.fp2.mode.heightmap.client.HeightmapShaders;
-import net.daporkchop.fp2.mode.voxel.client.VoxelShaders;
 import net.daporkchop.fp2.net.packet.standard.client.CPacketClientConfig;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -51,6 +50,8 @@ import static org.lwjgl.opengl.GL43.*;
 @UtilityClass
 @SideOnly(Side.CLIENT)
 public class FP2Client {
+    public static final ShaderMacros.Mutable GLOBAL_SHADER_MACROS = new ShaderMacros.Mutable();
+
     /**
      * Called during {@link FMLPreInitializationEvent}.
      */
@@ -89,17 +90,12 @@ public class FP2Client {
      * Called during {@link FMLPostInitializationEvent}.
      */
     public void postInit() {
-        ShaderManager.changeDefines()
+        GLOBAL_SHADER_MACROS
                 .define("T_SHIFT", T_SHIFT)
-                .define("RENDER_PASS_COUNT", RENDER_PASS_COUNT)
-                .apply();
+                .define("RENDER_PASS_COUNT", RENDER_PASS_COUNT);
 
-        TexUVs.initDefault();
+        TextureUVs.initDefault();
 
         MC.resourceManager.registerReloadListener(new FP2ResourceReloadListener());
-
-        //load shader classes on client thread
-        PUnsafe.ensureClassInitialized(HeightmapShaders.class);
-        PUnsafe.ensureClassInitialized(VoxelShaders.class);
     }
 }

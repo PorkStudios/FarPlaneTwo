@@ -21,17 +21,14 @@
 package net.daporkchop.fp2.mode.voxel.server.gen.rough;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.mode.common.server.gen.AbstractFarGenerator;
 import net.daporkchop.fp2.mode.voxel.VoxelData;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.mode.voxel.server.gen.AbstractVoxelGenerator;
 import net.daporkchop.fp2.util.math.Vector3d;
 import net.daporkchop.fp2.util.math.qef.QefSolver;
-import net.daporkchop.lib.common.ref.Ref;
-import net.daporkchop.lib.common.ref.ThreadRef;
+import net.daporkchop.lib.common.reference.ReferenceStrength;
+import net.daporkchop.lib.common.reference.cache.Cached;
 import net.minecraft.world.WorldServer;
-
-import java.util.Arrays;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.mode.voxel.VoxelConstants.*;
@@ -45,7 +42,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 public abstract class AbstractRoughVoxelGenerator<PARAM> extends AbstractVoxelGenerator {
-    protected final Ref<double[][]> densityMapCache = ThreadRef.soft(() -> new double[2][cb(CACHE_SIZE)]);
+    protected final Cached<double[][]> densityMapCache = Cached.threadLocal(() -> new double[2][cb(CACHE_SIZE)], ReferenceStrength.WEAK);
 
     public AbstractRoughVoxelGenerator(@NonNull WorldServer world) {
         super(world);

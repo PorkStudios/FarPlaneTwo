@@ -23,7 +23,7 @@ package net.daporkchop.fp2.client.gl;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.client.ReversedZ;
-import net.daporkchop.fp2.util.DirectBufferReuse;
+import net.daporkchop.fp2.common.util.DirectBufferHackery;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
@@ -33,7 +33,6 @@ import java.nio.FloatBuffer;
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
 import static net.daporkchop.fp2.util.Constants.*;
-import static net.daporkchop.fp2.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.lwjgl.opengl.GL11.*;
 
@@ -74,11 +73,11 @@ public class MatrixHelper {
             PUnsafe.putFloat(TEMP_MATRIX + matrixOffset(2, 3), -1.0f);
         }
 
-        glMultMatrix(DirectBufferReuse.wrapFloat(TEMP_MATRIX, MAT4_ELEMENTS));
+        glMultMatrix(DirectBufferHackery.wrapFloat(TEMP_MATRIX, MAT4_ELEMENTS));
     }
 
     public FloatBuffer getFloatMatrixFromGL(int id) {
-        FloatBuffer buffer = DirectBufferReuse.wrapFloat(TEMP_MATRIX, MAT4_ELEMENTS);
+        FloatBuffer buffer = DirectBufferHackery.wrapFloat(TEMP_MATRIX, MAT4_ELEMENTS);
         glGetFloat(id, buffer);
         return buffer;
     }
@@ -88,7 +87,7 @@ public class MatrixHelper {
     }
 
     public DoubleBuffer getDoubleMatrixFromGL(int id) {
-        DoubleBuffer buffer = DirectBufferReuse.wrapDouble(TEMP_MATRIX, MAT4_ELEMENTS);
+        DoubleBuffer buffer = DirectBufferHackery.wrapDouble(TEMP_MATRIX, MAT4_ELEMENTS);
         glGetDouble(id, buffer);
         return buffer;
     }

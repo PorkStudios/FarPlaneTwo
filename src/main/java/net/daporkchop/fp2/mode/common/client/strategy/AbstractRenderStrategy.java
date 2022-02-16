@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -22,48 +22,86 @@ package net.daporkchop.fp2.mode.common.client.strategy;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.command.IDrawCommand;
-import net.daporkchop.fp2.client.gl.vertex.attribute.VertexFormat;
-import net.daporkchop.fp2.client.gl.vertex.buffer.IVertexLayout;
-import net.daporkchop.fp2.client.gl.vertex.buffer.interleaved.InterleavedVertexLayout;
+import net.daporkchop.fp2.client.FP2Client;
+import net.daporkchop.fp2.client.GlStateUniformAttributes;
+import net.daporkchop.fp2.client.gl.shader.reload.ShaderMacros;
+import net.daporkchop.fp2.client.texture.TextureUVs;
+import net.daporkchop.fp2.common.util.alloc.Allocator;
+import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
+import net.daporkchop.fp2.gl.GL;
+import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeUsage;
+import net.daporkchop.fp2.gl.attribute.BufferUsage;
+import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
+import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
+import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
+import net.daporkchop.fp2.gl.draw.list.DrawCommand;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
-import net.daporkchop.fp2.util.alloc.Allocator;
-import net.daporkchop.fp2.util.alloc.DirectMemoryAllocator;
+import net.daporkchop.fp2.mode.common.client.strategy.texture.LightmapTextureAttribute;
+import net.daporkchop.fp2.mode.common.client.strategy.texture.TerrainTextureAttribute;
 import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
+
+import static net.daporkchop.fp2.util.Constants.*;
+import static org.lwjgl.opengl.GL11.*;
 
 /**
  * Base implementation of {@link IFarRenderStrategy}.
  *
  * @author DaPorkchop_
  */
-public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFarTile, B extends IBakeOutput, C extends IDrawCommand> extends AbstractRefCounted implements IFarRenderStrategy<POS, T, B, C> {
+@Getter
+public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFarTile, BO extends IBakeOutput, DB extends DrawBinding, DC extends DrawCommand> extends AbstractRefCounted implements IFarRenderStrategy<POS, T, BO, DB, DC> {
     protected final Allocator alloc = new DirectMemoryAllocator();
 
-    @Getter
     protected final IFarRenderMode<POS, T> mode;
+    protected final GL gl;
 
-    protected final VertexFormat vertexFormat;
-    protected final IVertexLayout vertexLayout;
+    protected final AttributeFormat<GlStateUniformAttributes> uniformFormat;
+    protected final AttributeBuffer<GlStateUniformAttributes> uniformBuffer;
 
-    public AbstractRenderStrategy(@NonNull IFarRenderMode<POS, T> mode, @NonNull VertexFormat vertexFormat) {
+    protected final TextureFormat2D<TerrainTextureAttribute> textureFormatTerrain;
+    protected final Texture2D<TerrainTextureAttribute> textureTerrain;
+    protected final TextureFormat2D<LightmapTextureAttribute> textureFormatLightmap;
+    protected final Texture2D<LightmapTextureAttribute> textureLightmap;
+
+    protected final TextureUVs textureUVs;
+
+    protected final ShaderMacros.Mutable macros = new ShaderMacros.Mutable(FP2Client.GLOBAL_SHADER_MACROS);
+
+    public AbstractRenderStrategy(@NonNull IFarRenderMode<POS, T> mode, @NonNull GL gl) {
         this.mode = mode;
+        this.gl = gl;
 
-        this.vertexFormat = vertexFormat;
-        this.vertexLayout = new InterleavedVertexLayout(this.alloc, vertexFormat);
+        this.uniformFormat = gl.createAttributeFormat(GlStateUniformAttributes.class).useFor(AttributeUsage.UNIFORM).build();
+        this.uniformBuffer = this.uniformFormat.createBuffer(BufferUsage.STATIC_DRAW);
+
+        this.textureFormatTerrain = gl.createTextureFormat2D(TerrainTextureAttribute.class).build();
+        this.textureTerrain = this.textureFormatTerrain.wrapExternalTexture(MC.getTextureMapBlocks().getGlTextureId());
+        this.textureFormatLightmap = gl.createTextureFormat2D(LightmapTextureAttribute.class).build();
+        this.textureLightmap = this.textureFormatLightmap.wrapExternalTexture(MC.getTextureManager().getTexture(MC.entityRenderer.locationLightMap).getGlTextureId());
+
+        this.textureUVs = new TextureUVs(gl);
     }
 
     @Override
-    public IFarRenderStrategy<POS, T, B, C> retain() throws AlreadyReleasedException {
+    public IFarRenderStrategy<POS, T, BO, DB, DC> retain() throws AlreadyReleasedException {
         super.retain();
         return this;
     }
 
     @Override
     protected void doRelease() {
-        this.vertexLayout.release();
+        this.textureUVs.close();
+        this.uniformBuffer.close();
+    }
+
+    protected void preRender() { //TODO: this is never called
+        this.macros.define("FP2_FOG_ENABLED", glGetBoolean(GL_FOG));
+        this.macros.define("FP2_FOG_MODE", glGetInteger(GL_FOG_MODE));
     }
 }

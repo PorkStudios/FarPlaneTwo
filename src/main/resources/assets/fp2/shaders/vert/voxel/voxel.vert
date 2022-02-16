@@ -23,24 +23,10 @@
 #include <"fp2:shaders/vert/common.vert">
 #include <"fp2:shaders/vert/fog.vert">
 
-//
-//
-// VERTEX ATTRIBUTES
-//
-//
-
-layout(location = 0) in ivec4 tile_position;
-
-layout(location = 1) in int in_state;
-layout(location = 2) in vec2 in_light;
-layout(location = 3) in vec3 in_color;
-
-layout(location = 4) in vec3 in_pos;
-
 void main() {
     //convert position to vec3 afterwards to minimize precision loss
-    ivec3 relative_tile_position = (tile_position.xyz << tile_position.w << T_SHIFT) - glState.camera.position_floor;
-    vec3 relativePos = vec3(relative_tile_position) + in_pos * float(1 << tile_position.w) / 8. - glState.camera.position_fract;
+    ivec3 relative_tile_position = (dg_tilePos.xyz << dg_tilePos.w << T_SHIFT) - u_positionFloor;
+    vec3 relativePos = vec3(relative_tile_position) + dl_pos * float(1 << dg_tilePos.w) / 8. - u_positionFrac;
 
     //set fog depth based on vertex distance to camera
     setFog(relativePos);
@@ -52,7 +38,7 @@ void main() {
     vs_out.pos = vs_out.base_pos = vec3(relativePos);
 
     //copy trivial attributes
-    vs_out.light = in_light;
-    vs_out.state = in_state;
-    vs_out.color = computeVertexColor(in_color, tile_position);
+    vs_out.light = dl_light;
+    vs_out.state = dl_state;
+    vs_out.color = computeVertexColor(dl_color, dg_tilePos);
 }

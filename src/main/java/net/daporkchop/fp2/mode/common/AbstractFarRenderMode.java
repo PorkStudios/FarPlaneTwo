@@ -33,15 +33,15 @@ import net.daporkchop.fp2.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
 import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
+import net.daporkchop.fp2.mode.api.player.IFarPlayerServer;
 import net.daporkchop.fp2.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.mode.api.server.gen.IFarGeneratorRough;
-import net.daporkchop.fp2.mode.api.player.IFarPlayerServer;
 import net.daporkchop.fp2.util.SimpleRecycler;
 import net.daporkchop.fp2.util.event.AbstractOrderedRegistryEvent;
 import net.daporkchop.lib.common.misc.string.PStrings;
-import net.daporkchop.lib.common.ref.Ref;
-import net.daporkchop.lib.common.ref.ThreadRef;
+import net.daporkchop.lib.common.reference.ReferenceStrength;
+import net.daporkchop.lib.common.reference.cache.Cached;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -59,7 +59,7 @@ public abstract class AbstractFarRenderMode<POS extends IFarPos, T extends IFarT
     protected final IFarGeneratorExact.Factory<POS, T>[] exactGeneratorFactories = this.exactGeneratorFactoryEvent().fire().collectValues();
     protected final IFarGeneratorRough.Factory<POS, T>[] roughGeneratorFactories = this.roughGeneratorFactoryEvent().fire().collectValues();
 
-    protected final Ref<SimpleRecycler<T>> recyclerRef = ThreadRef.soft(() -> new SimpleRecycler.OfReusablePersistent<>(this::newTile));
+    protected final Cached<SimpleRecycler<T>> recyclerRef = Cached.threadLocal(() -> new SimpleRecycler.OfReusablePersistent<>(this::newTile), ReferenceStrength.SOFT);
 
     @Getter(lazy = true)
     private final String name = REGISTRY.getName(this);

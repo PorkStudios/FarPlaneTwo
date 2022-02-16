@@ -18,265 +18,134 @@
  *
  */
 
-import java.util.stream.StreamSupport
+import org.gradle.api.internal.artifacts.dependencies.DefaultProjectDependency
 
-buildscript {
+//this can't be set in gradle.properties since it's dynamic
+System.setProperty("fp2Version", "$fp2VersionMajor." + ('git rev-list --count HEAD'.execute().text.trim()))
+allprojects {
+    ext {
+        fp2Version = System.getProperty("fp2Version")
+
+        ideaSyncActive = "true".equalsIgnoreCase(System.getProperty("idea.sync.active"))
+    }
+}
+
+subprojects {
+    apply plugin: "java"
+    apply plugin: "java-library"
+
+    if (ideaSyncActive.toBoolean()) {
+        apply plugin: "idea"
+    }
+
+    version = "$fp2Version"
+    group = "net.daporkchop.fp2"
+
+    if (ideaSyncActive.toBoolean()) {
+        idea.module.inheritOutputDirs = true
+    }
+
+    java.toolchain.languageVersion = JavaLanguageVersion.of(8)
+    compileJava.sourceCompatibility = compileJava.targetCompatibility = "$javaVersion"
+
+    tasks.withType(JavaCompile) {
+        options.encoding = "UTF-8"
+        options.headerOutputDirectory.convention(null) // https://github.com/gradle/gradle/issues/12904
+    }
+
+    ext.inherit0 = { Object... args ->
+        if (args[0] instanceof Project) {
+            String path = ((Project) args[0]).path
+            dependencies {
+                provided_ project(path: path, configuration: "provided_")
+            }
+        }
+    }
+
+    ext.shade = { Object... args ->
+        if (args.length == 1 && args[0] instanceof DefaultProjectDependency) {
+            String path = ((DefaultProjectDependency) args[0]).dependencyProject.path
+            dependencies {
+                inherit0 args
+                shade_ args {
+                    transitive = false
+                }
+                shade_ project(path: path, configuration: "shade_")
+            }
+        } else {
+            dependencies {
+                shade_ args
+            }
+        }
+    }
+
+    ext.apiShade = { Object... args ->
+        dependencies {
+            inherit0 args
+            api args
+            shade args
+        }
+    }
+
+    ext.implementationProvided = { Object... args ->
+        dependencies {
+            inherit0 args
+            compileOnly args
+            provided_ args
+        }
+    }
+
+    ext.implementationShade = { Object... args ->
+        dependencies {
+            inherit0 args
+            implementation args
+            shade args
+        }
+    }
+
+    ext.runtimeOnlyProvided = { Object... args ->
+        dependencies {
+            inherit0 args
+            runtimeOnly args
+            provided_ args
+        }
+    }
+
+    ext.runtimeOnlyShade = { Object... args ->
+        dependencies {
+            inherit0 args
+            runtimeOnly args
+            shade args
+        }
+    }
+
+    configurations {
+        shade_
+        provided_
+
+        provided_.extendsFrom runtime
+    }
+
     repositories {
-        jcenter()
         maven {
             name = "DaPorkchop_"
             url = "https://maven.daporkchop.net/"
         }
         maven {
             name = "SpongePowered"
-            url = "https://repo.spongepowered.org/maven"
+            url = "https://repo.spongepowered.org/maven/"
         }
+        mavenCentral()
     }
+
     dependencies {
-        classpath "net.minecraftforge.gradle:ForgeGradle:2.3-SNAPSHOT"
-        classpath "org.spongepowered:mixingradle:0.6-SNAPSHOT"
+        compileOnly "org.projectlombok:lombok:$lombokVersion"
+        annotationProcessor "org.projectlombok:lombok:$lombokVersion"
+
+        testImplementation project(path: project.path, configuration: "provided_")
+
+        testImplementation "junit:junit:$junitVersion"
+        testCompileOnly "org.projectlombok:lombok:$lombokVersion"
+        testAnnotationProcessor "org.projectlombok:lombok:$lombokVersion"
     }
 }
-
-apply plugin: "net.minecraftforge.gradle.forge"
-apply plugin: "org.spongepowered.mixin"
-apply plugin: "maven-publish"
-
-ext {
-    //general things
-    javaVersion = "1.8"
-    fp2VersionMajor = "0.0.1"
-    fp2Version = "$fp2VersionMajor." + ('git rev-list --count HEAD'.execute().text.trim())
-
-    //minecraft things
-    mcpmappingsVersion = "stable_39"
-    minecraftforgeVersion = "14.23.5.2847"
-    minecraftVersion = "1.12.2"
-
-    //dependency things
-    forgerocksVersion = "6.20.3-1.12.2"
-    guavaVersion = "21.0"
-    junitVersion = "4.12"
-    lombokVersion = "1.18.20"
-    mixinVersion = "0.8.1-SNAPSHOT"
-    porklibVersion = "0.5.5-SNAPSHOT"
-}
-
-version = "$fp2Version"
-group = "net.daporkchop"
-
-compileJava {
-    sourceCompatibility = targetCompatibility = "$javaVersion"
-}
-
-tasks.withType(JavaCompile) {
-    options.encoding = "UTF-8"
-}
-
-repositories {
-    maven {
-        name = "DaPorkchop_"
-        url = "https://maven.daporkchop.net/"
-    }
-    maven {
-        name = "SpongePowered"
-        url = "https://repo.spongepowered.org/maven/"
-    }
-    maven {
-        name = "elytradev"
-        url = "https://repo.elytradev.com"
-    }
-    mavenCentral()
-}
-
-configurations {
-    shade
-    compile.extendsFrom shade
-}
-
-dependencies {
-    shade("net.daporkchop.lib:compression-zstd:$porklibVersion") {
-        exclude group: "io.netty"
-    }
-    shade("net.daporkchop.lib:concurrent:$porklibVersion") {
-        exclude group: "io.netty"
-    }
-    shade("net.daporkchop.lib:noise:$porklibVersion") {
-        exclude group: "io.netty"
-    }
-    shade("net.daporkchop.lib:primitive:$porklibVersion") {
-        exclude group: "io.netty"
-    }
-
-    compile "net.daporkchop:forgerocks:$forgerocksVersion"
-
-    deobfCompile "io.github.opencubicchunks:cubicchunks:1.12.2-0.0-SNAPSHOT"
-    deobfCompile "io.github.opencubicchunks:cubicworldgen:1.12.2-0.0-SNAPSHOT"
-
-    if ("true".equalsIgnoreCase(System.getProperty("idea.sync.active"))) {
-        //intellij is present - we don't want it to register mixin as an annotation processor, so we just add it as a standard dependency.
-        //  if we don't do this, the intellij annotation processors will get totally screwed up
-        compile "org.spongepowered:mixin:$mixinVersion"
-    } else {
-        //register mixin as a standard annotation processor
-        annotationProcessor "org.spongepowered:mixin:$mixinVersion:processor"
-    }
-
-    compileOnly "org.projectlombok:lombok:$lombokVersion"
-    annotationProcessor "org.projectlombok:lombok:$lombokVersion"
-
-    testCompile "junit:junit:$junitVersion"
-    testCompileOnly "org.projectlombok:lombok:$lombokVersion"
-    testAnnotationProcessor "org.projectlombok:lombok:$lombokVersion"
-}
-
-minecraft {
-    version = "$minecraftVersion-$minecraftforgeVersion"
-    runDir = "run"
-    mappings = "$mcpmappingsVersion"
-    makeObfSourceJar = false
-
-    coreMod = "net.daporkchop.fp2.asm.FP2MixinLoader"
-
-    def args = [
-            "-Dmixin.checks.interfaces=true",
-            "-Dmixin.debug.export=true",
-            "-Dmixin.debug.verbose=true",
-            "-Dmixin.hotSwap=true",
-            "-Dfp2.debug=true",
-            "-Xmx2G",
-            "-XX:+UseG1GC",
-            "-ea",
-            "-da:io.netty..."
-    ]
-    clientJvmArgs += args
-    serverJvmArgs += args
-}
-
-processResources {
-    // this will ensure that this task is redone when the versions change.
-    inputs.property "version", project.version
-    inputs.property "mcversion", project.minecraft.version
-
-    // replace stuff in mcmod.info, nothing else
-    from(sourceSets.main.resources.srcDirs) {
-        include "mcmod.info"
-
-        // replace version and mcversion
-        expand "version": project.version, "mcversion": project.minecraft.version
-    }
-
-    // copy everything else except the mcmod.info
-    from(sourceSets.main.resources.srcDirs) {
-        exclude "mcmod.info"
-    }
-}
-
-mixin {
-    defaultObfuscationEnv searge
-    add sourceSets.main, "mixins.fp2.refmap.json"
-}
-
-reobf.jar {
-    mappingType = "SEARGE"
-    classpath = sourceSets.main.compileClasspath
-}
-
-jar {
-    String branchName = System.getenv("BRANCH_NAME") //suffix jar name with branch name, if present and not the master branch
-    branchName = branchName != null && !branchName.isEmpty() && !"master".equals(branchName) ? '-' + branchName.replaceAll("[^a-zA-Z0-9.-]", "_") : "";
-    archiveName "fp2-$fp2Version-$minecraftVersion" + branchName + ".jar"
-
-    from {
-        configurations.shade.collect {
-            it.isDirectory() ? it : zipTree(it)
-        }.unique()
-    } {
-        exclude "META-INF/**"
-        exclude sourceSets.main.output.asFileTree.collect {
-            return it.getPath().split("java/main/").last()
-        }
-    }
-
-    manifest {
-        attributes(
-                "MixinConfigs": "mixins.fp2.core.json",
-                "tweakClass": "org.spongepowered.asm.launch.MixinTweaker",
-                "TweakOrder": 0,
-                "FMLCorePluginContainsFMLMod": "true",
-                "FMLCorePlugin": "net.daporkchop.fp2.asm.FP2MixinLoader",
-                "ForceLoadAsMod": "true",
-                "FMLAT": "fp2_at.cfg"
-        )
-    }
-}
-
-if (System.getProperty("os.name", "").toLowerCase().replaceAll("[^a-z0-9]+", "").startsWith("windows")) {
-    System.out.println("You are running Windows, which is bad and you should feel bad.\nThis means that native libraries will not be built.")
-} else {
-    task compileNatives(type: Exec) {
-        workingDir "$projectDir"
-        commandLine "make",
-                "-f", "src/main/native/project.mk",
-                String.format("-j%d", Runtime.getRuntime().availableProcessors())
-    }
-
-    compileJava.dependsOn(compileNatives)
-
-    task cleanNatives(type: Exec) {
-        workingDir "$projectDir"
-        commandLine "make", "clean"
-    }
-
-    clean.dependsOn(cleanNatives)
-}
-
-task sourceJar2(type: Jar) { //workaround for srg2sourge bug
-    from sourceSets.main.allSource
-}
-
-publishing {
-    repositories {
-        if (project.hasProperty("daporkchopMavenUsername") && project.hasProperty("daporkchopMavenPassword")) {
-            maven {
-                credentials {
-                    username = "$daporkchopMavenUsername"
-                    password = "$daporkchopMavenPassword"
-                }
-
-                name = "DaPorkchop_"
-                url = version.endsWith("SNAPSHOT") ? "https://maven.daporkchop.net/snapshot/" : "https://maven.daporkchop.net/release/"
-            }
-        }
-    }
-
-    publications {
-        maven(MavenPublication) {
-            groupId = "net.daporkchop"
-            artifactId = "fp2"
-            version = "$fp2VersionMajor-$minecraftVersion-SNAPSHOT"
-
-            from components.java
-
-            artifacts.clear()
-            artifact jar {
-                classifier null
-            }
-            artifact sourceJar2 {
-                classifier "sources"
-            }
-        }
-    }
-}
-
-task preIntellijRuns {
-    doFirst {
-        StreamSupport.stream(configurations.annotationProcessor.spliterator(), false).filter({
-            java.nio.file.Paths.get(it.absolutePath).getFileName().toString().matches("mixin-\\d+(\\.\\d+)*\\.jar")
-        }).findAny().ifPresent({
-            minecraft.clientJvmArgs += "-javaagent:" + it.absolutePath
-            minecraft.serverJvmArgs += "-javaagent:" + it.absolutePath
-        })
-    }
-}
-genIntellijRuns.dependsOn(preIntellijRuns)

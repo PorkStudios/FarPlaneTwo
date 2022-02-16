@@ -25,7 +25,7 @@ import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.util.DirectBufferReuse;
+import net.daporkchop.fp2.common.util.DirectBufferHackery;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import org.lwjgl.opengl.GL15;
 
@@ -128,7 +128,7 @@ public class GLBuffer extends GLObject implements IGLBuffer {
      */
     public void upload(long addr, long size) {
         checkState(this.target >= 0, "not bound!");
-        glBufferData(this.target, DirectBufferReuse.wrapByte(addr, toInt(size, "size")), this.usage);
+        glBufferData(this.target, DirectBufferHackery.wrapByte(addr, toInt(size, "size")), this.usage);
         this.capacity = size;
     }
 
@@ -197,7 +197,7 @@ public class GLBuffer extends GLObject implements IGLBuffer {
         //LWJGL doesn't expose glBufferSubData with a direct memory pointer, so we'll upload the data in increments of Integer.MAX_VALUE
         for (long offset = 0L, blockSize; offset < size; offset += blockSize) {
             blockSize = min(size - offset, Integer.MAX_VALUE);
-            glBufferSubData(this.target, start + offset, DirectBufferReuse.wrapByte(addr + offset, toInt(blockSize)));
+            glBufferSubData(this.target, start + offset, DirectBufferHackery.wrapByte(addr + offset, toInt(blockSize)));
         }
     }
 
@@ -247,7 +247,7 @@ public class GLBuffer extends GLObject implements IGLBuffer {
         //LWJGL doesn't expose glGetBufferSubData with a direct memory pointer, so we'll download the data in increments of Integer.MAX_VALUE
         for (long offset = 0L, blockSize; offset < size; offset += blockSize) {
             blockSize = min(size - offset, Integer.MAX_VALUE);
-            glGetBufferSubData(this.target, start + offset, DirectBufferReuse.wrapByte(addr + offset, toInt(blockSize)));
+            glGetBufferSubData(this.target, start + offset, DirectBufferHackery.wrapByte(addr + offset, toInt(blockSize)));
         }
     }
 
@@ -275,7 +275,7 @@ public class GLBuffer extends GLObject implements IGLBuffer {
     public long map(int access) {
         checkState(this.target >= 0, "not bound!");
         checkState(this.capacity >= 0L, "capacity is unset!");
-        return PUnsafe.pork_directBufferAddress(glMapBuffer(this.target, access, this.capacity, DirectBufferReuse._BYTE));
+        return PUnsafe.pork_directBufferAddress(glMapBuffer(this.target, access, this.capacity, DirectBufferHackery.emptyByte()));
     }
 
     /**

@@ -38,7 +38,7 @@ void main() {
     frag_color = sampleTerrain(normal);
 
     //block/sky light
-    frag_color *= texture(lightmap_texture, fs_in.light);
+    frag_color *= t_lightmap(fs_in.light);
 
     //shading
     frag_color.rgb *= diffuseLight(normal);

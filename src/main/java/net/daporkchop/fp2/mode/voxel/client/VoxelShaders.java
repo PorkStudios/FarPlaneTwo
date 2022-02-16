@@ -22,10 +22,9 @@ package net.daporkchop.fp2.mode.voxel.client;
 
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.client.gl.shader.ComputeShaderBuilder;
-import net.daporkchop.fp2.client.gl.shader.RenderShaderProgram;
 import net.daporkchop.fp2.client.gl.shader.ShaderManager;
+import net.daporkchop.fp2.common.util.Identifier;
 import net.minecraft.util.EnumFacing;
-import net.minecraft.util.ResourceLocation;
 
 import java.util.EnumSet;
 
@@ -36,19 +35,19 @@ import static net.daporkchop.fp2.FP2.*;
  */
 @UtilityClass
 public class VoxelShaders {
-    public static final RenderShaderProgram BLOCK_SHADER = ShaderManager.renderShaderBuilder("voxel/block")
-            .withVertexShader(new ResourceLocation(MODID, "shaders/vert/voxel/voxel.vert"))
-            .withFragmentShader(new ResourceLocation(MODID, "shaders/frag/block.frag"))
-            .link();
+    /*public static final RenderShaderProgram BLOCK_SHADER = ShaderManager.renderShaderBuilder("voxel/block")
+            .withVertexShader(Identifier.from(MODID, "shaders/vert/voxel/voxel.vert"))
+            .withFragmentShader(Identifier.from(MODID, "shaders/frag/block.frag"))
+            .link();*/
 
     //public static final RenderShaderProgram BLOCK_SHADER_TRANSFORM_FEEDBACK = ShaderManager.get("voxel/xfb/block");
 
-    public static final RenderShaderProgram STENCIL_SHADER = ShaderManager.renderShaderBuilder("voxel/stencil")
-            .withVertexShader(new ResourceLocation(MODID, "shaders/vert/voxel/voxel.vert"))
-            .withFragmentShader(new ResourceLocation(MODID, "shaders/frag/stencil.frag"))
-            .link();
+    /*public static final RenderShaderProgram STENCIL_SHADER = ShaderManager.renderShaderBuilder("voxel/stencil")
+            .withVertexShader(Identifier.from(MODID, "shaders/vert/voxel/voxel.vert"))
+            .withFragmentShader(Identifier.from(MODID, "shaders/frag/stencil.frag"))
+            .link();*/
 
     public static final ComputeShaderBuilder CULL_SHADER = ShaderManager.computeShaderBuilder("voxel/cull")
-            .withComputeShader(new ResourceLocation(MODID, "shaders/comp/voxel/voxel_frustum_culling.comp"))
+            .withComputeShader(Identifier.from(MODID, "shaders/comp/voxel/voxel_frustum_culling.comp"))
             .withGlobalEnableAxes(EnumSet.of(EnumFacing.Axis.X, EnumFacing.Axis.Y));
 }

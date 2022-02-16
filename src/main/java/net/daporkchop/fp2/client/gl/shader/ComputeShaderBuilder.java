@@ -27,9 +27,9 @@ import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.With;
-import net.daporkchop.fp2.client.gl.WorkGroupSize;
+import net.daporkchop.fp2.common.util.Identifier;
+import net.daporkchop.fp2.gl.compute.ComputeLocalSize;
 import net.minecraft.util.EnumFacing;
-import net.minecraft.util.ResourceLocation;
 
 import java.util.Collections;
 import java.util.EnumSet;
@@ -48,9 +48,9 @@ public final class ComputeShaderBuilder extends ShaderManager.AbstractShaderBuil
     @NonNull
     protected final String programName;
 
-    protected final ResourceLocation computeShader;
+    protected final Identifier computeShader;
 
-    protected final WorkGroupSize workGroupSize;
+    protected final ComputeLocalSize workGroupSize;
 
     @NonNull
     protected final Set<EnumFacing.Axis> localEnableAxes;
@@ -100,7 +100,7 @@ public final class ComputeShaderBuilder extends ShaderManager.AbstractShaderBuil
                 .put("COMPUTE_SHADER_LOCAL_SIZE_X", this.workGroupSize.x())
                 .put("COMPUTE_SHADER_LOCAL_SIZE_Y", this.workGroupSize.y())
                 .put("COMPUTE_SHADER_LOCAL_SIZE_Z", this.workGroupSize.z())
-                .put("COMPUTE_SHADER_LOCAL_SIZE_TOTAL", this.workGroupSize.totalSize())
+                .put("COMPUTE_SHADER_LOCAL_SIZE_TOTAL", this.workGroupSize.count())
                 .put("COMPUTE_SHADER_LOCAL_ENABLE_X", this.localEnableAxes.contains(EnumFacing.Axis.X))
                 .put("COMPUTE_SHADER_LOCAL_ENABLE_Y", this.localEnableAxes.contains(EnumFacing.Axis.Y))
                 .put("COMPUTE_SHADER_LOCAL_ENABLE_Z", this.localEnableAxes.contains(EnumFacing.Axis.Z))

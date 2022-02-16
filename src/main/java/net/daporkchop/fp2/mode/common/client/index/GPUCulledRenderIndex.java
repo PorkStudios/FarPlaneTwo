@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -23,16 +23,22 @@ package net.daporkchop.fp2.mode.common.client.index;
 import lombok.NonNull;
 import net.daporkchop.fp2.asm.interfaz.client.renderer.IMixinRenderGlobal;
 import net.daporkchop.fp2.client.ShaderClippingStateHelper;
-import net.daporkchop.fp2.client.gl.WorkGroupSize;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
-import net.daporkchop.fp2.client.gl.command.IDrawCommand;
 import net.daporkchop.fp2.client.gl.shader.ComputeShaderBuilder;
 import net.daporkchop.fp2.client.gl.shader.ComputeShaderProgram;
+import net.daporkchop.fp2.common.util.alloc.Allocator;
+import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
+import net.daporkchop.fp2.gl.draw.DrawMode;
+import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
+import net.daporkchop.fp2.gl.draw.list.DrawCommand;
+import net.daporkchop.fp2.gl.compute.ComputeLocalSize;
+import net.daporkchop.fp2.gl.draw.list.DrawListBuilder;
+import net.daporkchop.fp2.gl.draw.list.selected.ShaderSelectedDrawList;
+import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
 import net.daporkchop.fp2.mode.common.client.strategy.IFarRenderStrategy;
-import net.daporkchop.fp2.util.alloc.Allocator;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.client.gl.OpenGL.*;
@@ -45,7 +51,7 @@ import static org.lwjgl.opengl.GL43.*;
  *
  * @author DaPorkchop_
  */
-public class GPUCulledRenderIndex<POS extends IFarPos, B extends IBakeOutput, C extends IDrawCommand> extends AbstractRenderIndex<POS, B, C> {
+public class GPUCulledRenderIndex<POS extends IFarPos, BO extends IBakeOutput, DB extends DrawBinding, DC extends DrawCommand> extends AbstractRenderIndex<POS, BO, DB, DC, ShaderSelectedDrawList<DC>> {
     /**
      * The maximum permitted compute work group size.
      * <p>
@@ -61,18 +67,18 @@ public class GPUCulledRenderIndex<POS extends IFarPos, B extends IBakeOutput, C 
      */
     protected static final long MIN_CAPACITY = 1024L;
 
-    protected static final WorkGroupSize WORK_GROUP_SIZE = getOptimalComputeWorkSizePow2(null, MAX_COMPUTE_WORK_GROUP_SIZE);
-    protected static final Allocator.GrowFunction GROW_FUNCTION = Allocator.GrowFunction.pow2(max(WORK_GROUP_SIZE.totalSize(), MIN_CAPACITY));
+    protected static final ComputeLocalSize WORK_GROUP_SIZE = getOptimalComputeWorkSizePow2(null, MAX_COMPUTE_WORK_GROUP_SIZE);
+    protected static final Allocator.GrowFunction GROW_FUNCTION = Allocator.GrowFunction.pow2(max(WORK_GROUP_SIZE.count(), MIN_CAPACITY));
 
     protected static final int POSITIONS_BUFFER_BINDING_INDEX = 3;
     protected static final int COMMANDS_BUFFER_BINDING_INDEX = 4;
 
-    public <T extends IFarTile> GPUCulledRenderIndex(@NonNull IFarRenderStrategy<POS, T, B, C> strategy) {
+    public <T extends IFarTile> GPUCulledRenderIndex(@NonNull IFarRenderStrategy<POS, T, BO, DB, DC> strategy) {
         super(strategy);
     }
 
     @Override
-    protected AbstractRenderIndex<POS, B, C>.Level createLevel(int level) {
+    protected AbstractRenderIndex<POS, BO, DB, DC, ShaderSelectedDrawList<DC>>.Level createLevel(int level) {
         return new Level(level);
     }
 
@@ -92,7 +98,7 @@ public class GPUCulledRenderIndex<POS extends IFarPos, B extends IBakeOutput, C 
     /**
      * @author DaPorkchop_
      */
-    protected class Level extends AbstractRenderIndex<POS, B, C>.Level {
+    protected class Level extends AbstractRenderIndex<POS, BO, DB, DC, ShaderSelectedDrawList<DC>>.Level {
         protected final ComputeShaderProgram cullShader;
 
         public Level(int level) {
@@ -102,21 +108,31 @@ public class GPUCulledRenderIndex<POS extends IFarPos, B extends IBakeOutput, C 
                     .withWorkGroupSize(WORK_GROUP_SIZE)
                     .define("LEVEL_0", this.level == 0);
 
-            this.cullShader = this.commandBuffer.configureShader(cullShaderBuilder).link();
+            this.cullShader = null;//TODO: this.commandBuffer.configureShader(cullShaderBuilder).link();
+        }
+
+        @Override
+        protected ShaderSelectedDrawList<DC> buildCommandBuffer(@NonNull DrawListBuilder<DC> builder) {
+            return builder.buildShaderSelected();
         }
 
         @Override
         protected void select0(@NonNull IFrustum frustum, float partialTicks) {
             //bind SSBOs
-            this.positionsBuffer.bindBase(GL_SHADER_STORAGE_BUFFER, POSITIONS_BUFFER_BINDING_INDEX);
+            //TODO: this.positionsBuffer.bindBase(GL_SHADER_STORAGE_BUFFER, POSITIONS_BUFFER_BINDING_INDEX);
 
             if (this.level == 0) { //level-0: we should bind the vanilla renderability info (for use in shader) and use the level-0 shader
                 ((IMixinRenderGlobal) MC.renderGlobal).fp2_vanillaRenderabilityTracker().bindForShaderUse();
             }
 
             try (ComputeShaderProgram cullShader = this.cullShader.use()) { //do frustum culling
-                this.commandBuffer.select(cullShader);
+                //TODO: this.commandBuffer.select(cullShader);
             }
+        }
+
+        @Override
+        protected void draw(@NonNull CommandBufferBuilder builder, @NonNull DrawShaderProgram shader, @NonNull DrawMode mode, @NonNull ShaderSelectedDrawList<DC> list, int pass) {
+            throw new UnsupportedOperationException(); //TODO
         }
     }
 }

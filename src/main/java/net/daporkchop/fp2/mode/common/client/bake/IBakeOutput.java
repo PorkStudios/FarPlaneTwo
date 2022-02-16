@@ -24,7 +24,7 @@ import net.daporkchop.lib.common.misc.refcount.RefCounted;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
 /**
- * Stores data produced during tile baking while enqueued for insertion into a compatible {@link IMultipassBakeOutputStorage}.
+ * Stores data produced during tile baking while enqueued for insertion into a compatible {@link IBakeOutputStorage}.
  *
  * @author DaPorkchop_
  */

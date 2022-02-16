@@ -47,16 +47,16 @@ vec4 addFog(in vec4 color) {
     float fogFactor;
 
 #if FP2_FOG_MODE == FP2_FOG_MODE_LINEAR
-    fogFactor = (glState.fog.end - fog_in.depth) * glState.fog.scale;
+    fogFactor = (u_fogEnd - fog_in.depth) * u_fogScale;
 #elif FP2_FOG_MODE == FP2_FOG_MODE_EXP
-    fogFactor = exp(-glState.fog.density * fog_in.depth);
+    fogFactor = exp(-u_fogDensity * fog_in.depth);
 #elif FP2_FOG_MODE == FP2_FOG_MODE_EXP2
     float depth = fog_in.depth;
-    fogFactor = exp(-glState.fog.density * (depth * depth));
+    fogFactor = exp(-u_fogDensity * (depth * depth));
 #endif
 
     //mix fog colors
-    return mix(glState.fog.color, color, clamp(fogFactor, 0., 1.));
+    return mix(u_fogColor, color, clamp(fogFactor, 0., 1.));
 #else
     //fog is disabled, don't modify the fragment color
     return color;

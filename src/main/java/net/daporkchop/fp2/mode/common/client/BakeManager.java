@@ -26,7 +26,6 @@ import net.daporkchop.fp2.config.FP2Config;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarTile;
 import net.daporkchop.fp2.mode.api.client.IFarTileCache;
-import net.daporkchop.fp2.mode.api.ctx.IFarWorldClient;
 import net.daporkchop.fp2.mode.api.tile.ITileSnapshot;
 import net.daporkchop.fp2.mode.common.client.bake.IBakeOutput;
 import net.daporkchop.fp2.mode.common.client.bake.IRenderBaker;
@@ -63,11 +62,11 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 @Getter
 public class BakeManager<POS extends IFarPos, T extends IFarTile> extends AbstractReleasable implements IFarTileCache.Listener<POS, T>, Consumer<POS>, Runnable {
     protected final AbstractFarRenderer<POS, T> renderer;
-    protected final IFarRenderStrategy<POS, T, ?, ?> strategy;
+    protected final IFarRenderStrategy<POS, T, ?, ?, ?> strategy;
 
     protected final IFarTileCache<POS, T> tileCache;
 
-    protected final IRenderIndex<POS, ?, ?> index;
+    protected final IRenderIndex<POS, ?, ?, ?> index;
     protected final IRenderBaker<POS, T, ?> baker;
 
     protected final Scheduler<POS, Void> bakeScheduler;

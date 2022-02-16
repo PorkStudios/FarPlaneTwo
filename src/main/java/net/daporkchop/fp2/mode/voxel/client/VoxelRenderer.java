@@ -41,8 +41,8 @@ public abstract class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelT
         }
 
         @Override
-        protected IFarRenderStrategy<VoxelPos, VoxelTile, ?, ?> strategy0() {
-            return new ShaderBasedVoxelRenderStrategy(this.mode);
+        protected IFarRenderStrategy<VoxelPos, VoxelTile, ?, ?, ?> strategy0() {
+            return new ShaderBasedVoxelRenderStrategy(this.mode, this.gl);
         }
     }
 }

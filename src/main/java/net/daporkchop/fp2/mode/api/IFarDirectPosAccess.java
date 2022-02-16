@@ -22,8 +22,6 @@ package net.daporkchop.fp2.mode.api;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.client.gl.camera.IFrustum;
-import net.daporkchop.fp2.client.gl.object.IGLBuffer;
-import net.daporkchop.fp2.client.gl.object.VertexArrayObject;
 import net.daporkchop.fp2.util.datastructure.SimpleSet;
 import net.daporkchop.fp2.util.math.geometry.Volume;
 import net.minecraftforge.fml.relauncher.Side;
@@ -135,15 +133,6 @@ public interface IFarDirectPosAccess<POS extends IFarPos> {
      */
     @SideOnly(Side.CLIENT)
     boolean inFrustum(long addr, @NonNull IFrustum frustum);
-
-    /**
-     * Adds some number of vertex attributes to the given {@link VertexArrayObject} in order to be able to represent a position supported by this {@link IFarDirectPosAccess}.
-     *
-     * @see VertexArrayObject#attrI(IGLBuffer, int, int, int, long, int)
-     * @see VertexArrayObject#attrF(IGLBuffer, int, int, boolean, int, long, int)
-     */
-    @SideOnly(Side.CLIENT)
-    void configureVAO(@NonNull VertexArrayObject vao, @NonNull IGLBuffer buffer, int stride, int offset, int divisor);
 
     /**
      * @return a new {@link SimpleSet} which can store positions of type {@link POS}

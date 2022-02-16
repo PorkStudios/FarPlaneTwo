@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -20,24 +20,80 @@
 
 package net.daporkchop.fp2.mode.voxel.client;
 
+import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.command.elements.DrawElementsCommand;
-import net.daporkchop.fp2.client.gl.shader.RenderShaderProgram;
+import net.daporkchop.fp2.client.gl.shader.reload.ReloadableShaderProgram;
+import net.daporkchop.fp2.common.util.Identifier;
+import net.daporkchop.fp2.gl.GL;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeUsage;
+import net.daporkchop.fp2.gl.draw.DrawLayout;
+import net.daporkchop.fp2.gl.draw.index.IndexFormat;
+import net.daporkchop.fp2.gl.draw.index.IndexType;
+import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.common.client.ICullingStrategy;
 import net.daporkchop.fp2.mode.common.client.bake.IRenderBaker;
-import net.daporkchop.fp2.mode.common.client.bake.indexed.MultipassIndexedBakeOutput;
-import net.daporkchop.fp2.mode.common.client.strategy.IShaderBasedMultipassRenderStrategy;
+import net.daporkchop.fp2.mode.common.client.bake.indexed.IndexedBakeOutput;
 import net.daporkchop.fp2.mode.common.client.strategy.AbstractMultipassIndexedRenderStrategy;
 import net.daporkchop.fp2.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.mode.voxel.VoxelTile;
+import net.daporkchop.fp2.mode.voxel.client.struct.VoxelGlobalAttributes;
+import net.daporkchop.fp2.mode.voxel.client.struct.VoxelLocalAttributes;
+
+import static net.daporkchop.fp2.FP2.*;
 
 /**
  * @author DaPorkchop_
  */
-public class ShaderBasedVoxelRenderStrategy extends AbstractMultipassIndexedRenderStrategy<VoxelPos, VoxelTile> implements IShaderBasedMultipassRenderStrategy<VoxelPos, VoxelTile, MultipassIndexedBakeOutput, DrawElementsCommand> {
-    public ShaderBasedVoxelRenderStrategy(@NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
-        super(mode, VoxelBaker.VERTEX_FORMAT);
+@Getter
+public class ShaderBasedVoxelRenderStrategy extends AbstractMultipassIndexedRenderStrategy<VoxelPos, VoxelTile, VoxelGlobalAttributes, VoxelLocalAttributes> {
+    protected final AttributeFormat<VoxelGlobalAttributes> globalFormat;
+    protected final AttributeFormat<VoxelLocalAttributes> vertexFormat;
+
+    protected final IndexFormat indexFormat;
+
+    protected final DrawLayout drawLayout;
+
+    protected final ReloadableShaderProgram<DrawShaderProgram> blockShader;
+    protected final ReloadableShaderProgram<DrawShaderProgram> stencilShader;
+
+    public ShaderBasedVoxelRenderStrategy(@NonNull IFarRenderMode<VoxelPos, VoxelTile> mode, @NonNull GL gl) {
+        super(mode, gl);
+
+        this.globalFormat = gl.createAttributeFormat(VoxelGlobalAttributes.class).useFor(AttributeUsage.DRAW_GLOBAL).build();
+        this.vertexFormat = gl.createAttributeFormat(VoxelLocalAttributes.class).useFor(AttributeUsage.DRAW_LOCAL).build();
+
+        this.indexFormat = gl.createIndexFormat()
+                .type(IndexType.UNSIGNED_SHORT)
+                .build();
+
+        this.drawLayout = gl.createDrawLayout()
+                .withGlobal(this.globalFormat)
+                .withLocal(this.vertexFormat)
+                .withUniform(this.uniformFormat)
+                .withUniformArray(this.textureUVs.listsFormat())
+                .withUniformArray(this.textureUVs.quadsFormat())
+                .withTexture(this.textureFormatTerrain)
+                .withTexture(this.textureFormatLightmap)
+                .build();
+
+        this.blockShader = ReloadableShaderProgram.draw(gl, this.drawLayout, this.macros,
+                Identifier.from(MODID, "shaders/vert/voxel/voxel.vert"),
+                Identifier.from(MODID, "shaders/frag/block.frag"));
+        this.stencilShader = ReloadableShaderProgram.draw(gl, this.drawLayout, this.macros,
+                Identifier.from(MODID, "shaders/vert/voxel/voxel.vert"),
+                Identifier.from(MODID, "shaders/frag/stencil.frag"));
+    }
+
+    @Override
+    public DrawShaderProgram blockShader() {
+        return this.blockShader.get();
+    }
+
+    @Override
+    public DrawShaderProgram stencilShader() {
+        return this.stencilShader.get();
     }
 
     @Override
@@ -46,17 +102,15 @@ public class ShaderBasedVoxelRenderStrategy extends AbstractMultipassIndexedRend
     }
 
     @Override
-    public IRenderBaker<VoxelPos, VoxelTile, MultipassIndexedBakeOutput> createBaker() {
+    public IRenderBaker<VoxelPos, VoxelTile, IndexedBakeOutput<VoxelGlobalAttributes, VoxelLocalAttributes>> createBaker() {
         return new VoxelBaker();
     }
 
     @Override
-    public RenderShaderProgram blockShader() {
-        return VoxelShaders.BLOCK_SHADER;
-    }
+    protected void doRelease() {
+        super.doRelease();
 
-    @Override
-    public RenderShaderProgram stencilShader() {
-        return VoxelShaders.STENCIL_SHADER;
+        this.blockShader.close();
+        this.stencilShader.close();
     }
 }

@@ -26,7 +26,7 @@ import net.daporkchop.fp2.mode.api.ctx.IFarWorldServer;
 import net.daporkchop.fp2.util.annotation.CalledFromNetworkThread;
 import net.daporkchop.fp2.util.annotation.CalledFromServerThread;
 import net.daporkchop.fp2.util.annotation.DebugOnly;
-import net.daporkchop.lib.math.vector.d.Vec3d;
+import net.daporkchop.lib.math.vector.Vec3d;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 
 /**

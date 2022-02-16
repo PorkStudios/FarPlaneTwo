@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -20,62 +20,104 @@
 
 package net.daporkchop.fp2.mode.common.client.strategy;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 import lombok.NonNull;
-import net.daporkchop.fp2.client.gl.DrawMode;
-import net.daporkchop.fp2.client.gl.ElementType;
-import net.daporkchop.fp2.client.gl.command.IMultipassDrawCommandBuffer;
-import net.daporkchop.fp2.client.gl.command.elements.DrawElementsCommand;
-import net.daporkchop.fp2.client.gl.command.elements.buffer.MultidrawIndirectMultipassDrawElementsCommandBuffer;
-import net.daporkchop.fp2.client.gl.command.elements.buffer.SingleDrawIndirectMultipassDrawElementsCommandBuffer;
-import net.daporkchop.fp2.client.gl.vertex.attribute.VertexFormat;
+import net.daporkchop.fp2.client.GlStateUniformAttributes;
 import net.daporkchop.fp2.config.FP2Config;
+import net.daporkchop.fp2.gl.GL;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.command.CommandBuffer;
+import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
+import net.daporkchop.fp2.gl.draw.binding.DrawBindingBuilder;
+import net.daporkchop.fp2.gl.draw.binding.DrawBindingIndexed;
+import net.daporkchop.fp2.gl.draw.index.IndexFormat;
+import net.daporkchop.fp2.gl.draw.index.IndexWriter;
+import net.daporkchop.fp2.gl.draw.list.DrawCommandIndexed;
+import net.daporkchop.fp2.gl.draw.list.DrawListBuilder;
 import net.daporkchop.fp2.mode.api.IFarPos;
 import net.daporkchop.fp2.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.mode.api.IFarTile;
-import net.daporkchop.fp2.mode.common.client.bake.IMultipassBakeOutputStorage;
-import net.daporkchop.fp2.mode.common.client.bake.indexed.MultipassIndexedBakeOutput;
-import net.daporkchop.fp2.mode.common.client.bake.indexed.MultipassIndexedBakeOutputStorage;
+import net.daporkchop.fp2.mode.common.client.bake.IBakeOutputStorage;
+import net.daporkchop.fp2.mode.common.client.bake.indexed.IndexedBakeOutput;
+import net.daporkchop.fp2.mode.common.client.bake.indexed.IndexedBakeOutputStorage;
 import net.daporkchop.fp2.mode.common.client.index.CPUCulledRenderIndex;
 import net.daporkchop.fp2.mode.common.client.index.GPUCulledRenderIndex;
 import net.daporkchop.fp2.mode.common.client.index.IRenderIndex;
 import net.daporkchop.lib.common.util.PArrays;
+import net.minecraft.util.BlockRenderLayer;
 
-import java.util.function.Supplier;
-
-import static net.daporkchop.fp2.client.gl.GLCompatibilityHelper.*;
 import static net.daporkchop.fp2.mode.common.client.RenderConstants.*;
+import static net.daporkchop.fp2.util.Constants.*;
 
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractMultipassIndexedRenderStrategy<POS extends IFarPos, T extends IFarTile> extends AbstractRenderStrategy<POS, T, MultipassIndexedBakeOutput, DrawElementsCommand> {
-    public AbstractMultipassIndexedRenderStrategy(@NonNull IFarRenderMode<POS, T> mode, @NonNull VertexFormat vertexFormat) {
-        super(mode, vertexFormat);
+public abstract class AbstractMultipassIndexedRenderStrategy<POS extends IFarPos, T extends IFarTile, SG, SL> extends AbstractRenderStrategy<POS, T, IndexedBakeOutput<SG, SL>, DrawBindingIndexed, DrawCommandIndexed> implements IMultipassRenderStrategy<POS, T, IndexedBakeOutput<SG, SL>, DrawBindingIndexed, DrawCommandIndexed> {
+    protected CommandBuffer commandBuffer;
+
+    public AbstractMultipassIndexedRenderStrategy(@NonNull IFarRenderMode<POS, T> mode, @NonNull GL gl) {
+        super(mode, gl);
     }
 
+    public abstract IndexFormat indexFormat();
+
+    public abstract AttributeFormat<SG> globalFormat();
+
+    public abstract AttributeFormat<SL> vertexFormat();
+
     @Override
-    public IRenderIndex<POS, MultipassIndexedBakeOutput, DrawElementsCommand> createIndex() {
-        return FP2Config.global().performance().gpuFrustumCulling()
+    public IRenderIndex<POS, IndexedBakeOutput<SG, SL>, DrawBindingIndexed, DrawCommandIndexed> createIndex() {
+        return false && FP2Config.global().performance().gpuFrustumCulling()
                 ? new GPUCulledRenderIndex<>(this)
                 : new CPUCulledRenderIndex<>(this);
     }
 
     @Override
-    public MultipassIndexedBakeOutput createBakeOutput() {
-        return new MultipassIndexedBakeOutput(this.vertexLayout.createBuilder(), PArrays.filled(RENDER_PASS_COUNT, ByteBuf[]::new, (Supplier<ByteBuf>) ByteBufAllocator.DEFAULT::directBuffer));
+    public IndexedBakeOutput<SG, SL> createBakeOutput() {
+        return new IndexedBakeOutput<>(this.globalFormat().createWriter(), this.vertexFormat().createWriter(), PArrays.filledFrom(RENDER_PASS_COUNT, IndexWriter[]::new, this.indexFormat()::createWriter));
     }
 
     @Override
-    public IMultipassBakeOutputStorage<MultipassIndexedBakeOutput, DrawElementsCommand> createBakeOutputStorage() {
-        return new MultipassIndexedBakeOutputStorage(this.alloc, this.vertexLayout, ElementType.UNSIGNED_SHORT, RENDER_PASS_COUNT);
+    public IBakeOutputStorage<IndexedBakeOutput<SG, SL>, DrawBindingIndexed, DrawCommandIndexed> createBakeOutputStorage() {
+        return new IndexedBakeOutputStorage<>(this.alloc, this.globalFormat(), this.vertexFormat(), this.indexFormat(), RENDER_PASS_COUNT);
     }
 
     @Override
-    public IMultipassDrawCommandBuffer<DrawElementsCommand> createCommandBuffer() {
-        return WORKAROUND_INTEL_MULTIDRAW_NOT_WORKING
-                ? new SingleDrawIndirectMultipassDrawElementsCommandBuffer(this.alloc, RENDER_PASS_COUNT, DrawMode.QUADS, ElementType.UNSIGNED_SHORT)
-                : new MultidrawIndirectMultipassDrawElementsCommandBuffer(this.alloc, RENDER_PASS_COUNT, DrawMode.QUADS, ElementType.UNSIGNED_SHORT);
+    public DrawListBuilder<DrawCommandIndexed> createCommandBuffer(@NonNull DrawBindingIndexed binding) {
+        return this.gl.createDrawListIndexed(binding);
+    }
+
+    @Override
+    public DrawBindingBuilder<DrawBindingIndexed> configureDrawBinding(@NonNull DrawBindingBuilder<DrawBindingIndexed> builder) {
+        return builder
+                .withUniform(this.uniformBuffer)
+                .withUniformArray(this.textureUVs.listsBuffer())
+                .withUniformArray(this.textureUVs.quadsBuffer())
+                .withTexture(this.textureTerrain)
+                .withTexture(this.textureLightmap);
+    }
+
+    @Override
+    public void render(@NonNull IRenderIndex<POS, IndexedBakeOutput<SG, SL>, DrawBindingIndexed, DrawCommandIndexed> index, @NonNull BlockRenderLayer layer, boolean pre) {
+        if (layer == BlockRenderLayer.CUTOUT && !pre) {
+            this.uniformBuffer.setContents(new GlStateUniformAttributes().initFromGlState(MC.getRenderPartialTicks(), MC));
+
+            if (this.commandBuffer == null) {
+                this.rebuildCommandBuffer(index);
+            }
+
+            MC.textureMapBlocks.setBlurMipmapDirect(false, MC.gameSettings.mipmapLevels > 0);
+            MC.entityRenderer.enableLightmap();
+            this.commandBuffer.execute();
+            MC.entityRenderer.disableLightmap();
+            MC.textureMapBlocks.restoreLastBlurMipmap();
+        }
+    }
+
+    protected void rebuildCommandBuffer(@NonNull IRenderIndex<POS, IndexedBakeOutput<SG, SL>, DrawBindingIndexed, DrawCommandIndexed> index) {
+        this.preRender();
+
+        CommandBufferBuilder builder = this.gl.createCommandBuffer();
+        this.render(builder, index);
+        this.commandBuffer = builder.build();
     }
 }

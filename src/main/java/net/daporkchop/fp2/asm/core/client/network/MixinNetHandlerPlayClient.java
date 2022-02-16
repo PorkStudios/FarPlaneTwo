@@ -43,8 +43,14 @@ import net.daporkchop.fp2.util.annotation.CalledFromNetworkThread;
 import net.daporkchop.fp2.util.annotation.DebugOnly;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.minecraft.client.network.NetHandlerPlayClient;
+import net.minecraft.network.NetworkManager;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.Objects;
 
@@ -58,6 +64,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 @Mixin(NetHandlerPlayClient.class)
 public abstract class MixinNetHandlerPlayClient implements IFarPlayerClient {
+    @Shadow @Final public NetworkManager netManager;
     @Unique
     private FP2Config fp2_serverConfig;
     @Unique
@@ -244,5 +251,16 @@ public abstract class MixinNetHandlerPlayClient implements IFarPlayerClient {
     @Override
     public <POS extends IFarPos, T extends IFarTile> IFarClientContext<POS, T> fp2_IFarPlayerClient_activeContext() {
         return uncheckedCast(this.fp2_context);
+    }
+
+    @Inject(method = "Lnet/minecraft/client/network/NetHandlerPlayClient;cleanup()V",
+            at = @At("HEAD"),
+            require = 1, allow = 1)
+    private void fp2_cleanup_closeContext(CallbackInfo ci) {
+        this.netManager.channel().eventLoop().execute(() -> {
+            if (this.sessionOpen) {
+                this.handle(new SPacketSessionEnd());
+            }
+        });
     }
 }

@@ -80,7 +80,7 @@ public class ColumnsContainer<T> extends AbstractConfigGuiContainer<T> {
                     .filter(d -> d.sizeX() == columnSizeX)
                     .min(Comparator.comparingInt(ComponentDimensions::sizeY)).get();
 
-            int column = PArrays.indexOf(heights, IntStream.of(heights).min().getAsInt());
+            int column = PArrays.linearSearch(heights, IntStream.of(heights).min().getAsInt());
             out.add(new ElementBounds(column * (columnSizeX + PADDING), heights[column], columnSizeX, dimensions.sizeY()));
             heights[column] += dimensions.sizeY() + PADDING;
         }

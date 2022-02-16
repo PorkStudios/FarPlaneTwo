@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -21,18 +21,15 @@
 package net.daporkchop.fp2.mode.heightmap.client;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.client.TexUVs;
-import net.daporkchop.fp2.client.gl.vertex.attribute.IVertexAttribute;
-import net.daporkchop.fp2.client.gl.vertex.attribute.VertexAttributeInterpretation;
-import net.daporkchop.fp2.client.gl.vertex.attribute.VertexAttributeType;
-import net.daporkchop.fp2.client.gl.vertex.attribute.VertexFormat;
-import net.daporkchop.fp2.client.gl.vertex.buffer.IVertexBuilder;
-import net.daporkchop.fp2.mode.common.client.RenderConstants;
+import net.daporkchop.fp2.client.texture.TextureUVs;
+import net.daporkchop.fp2.gl.attribute.AttributeWriter;
 import net.daporkchop.fp2.mode.common.client.bake.IRenderBaker;
-import net.daporkchop.fp2.mode.common.client.bake.indexed.MultipassIndexedBakeOutput;
+import net.daporkchop.fp2.mode.common.client.bake.indexed.IndexedBakeOutput;
 import net.daporkchop.fp2.mode.heightmap.HeightmapData;
 import net.daporkchop.fp2.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.mode.heightmap.HeightmapTile;
+import net.daporkchop.fp2.mode.heightmap.client.struct.HeightmapGlobalAttributes;
+import net.daporkchop.fp2.mode.heightmap.client.struct.HeightmapLocalAttributes;
 import net.daporkchop.fp2.util.SingleBiomeBlockAccess;
 import net.minecraft.util.math.BlockPos;
 
@@ -50,46 +47,7 @@ import static net.daporkchop.fp2.util.Constants.*;
  *
  * @author DaPorkchop_
  */
-public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile, MultipassIndexedBakeOutput> {
-    protected static final IVertexAttribute.Int1 ATTRIB_STATE = IVertexAttribute.Int1.builder()
-            .name("state")
-            .type(VertexAttributeType.UNSIGNED_INT)
-            .interpretation(VertexAttributeInterpretation.INTEGER)
-            .build();
-
-    protected static final IVertexAttribute.Int2 ATTRIB_LIGHT = IVertexAttribute.Int2.builder(ATTRIB_STATE)
-            .name("light")
-            .type(VertexAttributeType.UNSIGNED_BYTE)
-            .interpretation(VertexAttributeInterpretation.NORMALIZED_FLOAT)
-            .build();
-
-    protected static final IVertexAttribute.Int3 ATTRIB_COLOR = IVertexAttribute.Int3.builder(ATTRIB_LIGHT)
-            .name("color")
-            .reportedComponents(4)
-            .type(VertexAttributeType.UNSIGNED_BYTE)
-            .interpretation(VertexAttributeInterpretation.NORMALIZED_FLOAT)
-            .build();
-
-    protected static final IVertexAttribute.Int2 ATTRIB_POS_HORIZ = IVertexAttribute.Int2.builder(ATTRIB_COLOR)
-            .name("pos_horiz")
-            .type(VertexAttributeType.UNSIGNED_BYTE)
-            .interpretation(VertexAttributeInterpretation.INTEGER)
-            .build();
-
-    protected static final IVertexAttribute.Int1 ATTRIB_HEIGHT_INT = IVertexAttribute.Int1.builder(ATTRIB_POS_HORIZ)
-            .name("height_int")
-            .type(VertexAttributeType.INT)
-            .interpretation(VertexAttributeInterpretation.INTEGER)
-            .build();
-
-    protected static final IVertexAttribute.Int1 ATTRIB_HEIGHT_FRAC = IVertexAttribute.Int1.builder(ATTRIB_HEIGHT_INT)
-            .name("height_frac")
-            .type(VertexAttributeType.UNSIGNED_BYTE)
-            .interpretation(VertexAttributeInterpretation.FLOAT)
-            .build();
-
-    protected static final VertexFormat VERTEX_FORMAT = new VertexFormat("heightmap", ATTRIB_HEIGHT_FRAC);
-
+public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile, IndexedBakeOutput<HeightmapGlobalAttributes, HeightmapLocalAttributes>> {
     protected static int vertexMapIndex(int x, int z, int layer) {
         return (x * T_VERTS + z) * MAX_LAYERS + layer;
     }
@@ -127,10 +85,13 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
     }
 
     @Override
-    public void bake(@NonNull HeightmapPos pos, @NonNull HeightmapTile[] srcs, @NonNull MultipassIndexedBakeOutput output) {
+    public void bake(@NonNull HeightmapPos pos, @NonNull HeightmapTile[] srcs, @NonNull IndexedBakeOutput<HeightmapGlobalAttributes, HeightmapLocalAttributes> output) {
         if (srcs[0] == null) {
             return;
         }
+
+        //write globals
+        output.globals().put(new HeightmapGlobalAttributes(pos.x(), pos.z(), pos.level()));
 
         final int level = pos.level();
         final int blockX = pos.blockX();
@@ -139,12 +100,13 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
         final BlockPos.MutableBlockPos blockPos = new BlockPos.MutableBlockPos();
         final SingleBiomeBlockAccess biomeAccess = new SingleBiomeBlockAccess();
         final HeightmapData data = new HeightmapData();
+        final HeightmapLocalAttributes attributes = new HeightmapLocalAttributes();
 
         final int[] map = new int[T_VERTS * T_VERTS * MAX_LAYERS];
         Arrays.fill(map, -1);
 
         //write vertices and build index
-        for (int indexCounter = 0, i = 0; i < 4; i++) {
+        for (int i = 0; i < 4; i++) {
             HeightmapTile src = srcs[i];
             if (src == null) {
                 continue;
@@ -163,8 +125,7 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
                         int x = dx + (((i >> 1) & 1) << T_SHIFT);
                         int z = dz + ((i & 1) << T_SHIFT);
 
-                        writeVertex(blockX, blockZ, level, src, x, z, layer, output.verts(), blockPos, biomeAccess, data);
-                        map[vertexMapIndex(x, z, layer)] = indexCounter++;
+                        map[vertexMapIndex(x, z, layer)] = this.writeVertex(blockX, blockZ, level, src, x, z, layer, output.verts(), blockPos, biomeAccess, data, attributes);
                     }
                 }
             }
@@ -189,7 +150,7 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
                         continue; //skip if any of the vertices are missing
                     }
 
-                    RenderConstants.emitQuad(output.indices()[renderType(data.state)], oppositeCorner, c1, c0, provoking);
+                    output.indices()[renderType(data.state)].appendQuad(oppositeCorner, c1, c0, provoking);
                     rendered.set(vertexMapIndex(x, z, layer));
                 }
             }
@@ -223,7 +184,7 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
                                 continue; //skip if any of the vertices are missing
                             }
 
-                            RenderConstants.emitQuad(output.indices()[renderType(data.state)], oppositeCorner, c1, c0, provoking);
+                            output.indices()[renderType(data.state)].appendQuad(oppositeCorner, c1, c0, provoking);
                         }
                     }
                 }
@@ -231,7 +192,7 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
         }
     }
 
-    private void writeVertex(int baseX, int baseZ, int level, HeightmapTile tile, int x, int z, int layer, IVertexBuilder out, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess, HeightmapData data) {
+    private int writeVertex(int baseX, int baseZ, int level, HeightmapTile tile, int x, int z, int layer, AttributeWriter<HeightmapLocalAttributes> out, BlockPos.MutableBlockPos pos, SingleBiomeBlockAccess biomeAccess, HeightmapData data, HeightmapLocalAttributes attributes) {
         baseX += (x & T_VOXELS) << level;
         baseZ += (z & T_VOXELS) << level;
 
@@ -243,17 +204,19 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
         pos.setPos(blockX, data.height_int, blockZ);
         biomeAccess.biome(data.biome);
 
-        int vertexBase = out.appendVertex();
-
-        ATTRIB_STATE.set(out, vertexBase, TexUVs.STATEID_TO_INDEXID.get(data.state));
+        attributes.state = TextureUVs.STATEID_TO_INDEXID.get(data.state);
 
         int blockLight = data.light & 0xF;
         int skyLight = data.light >> 4;
-        ATTRIB_LIGHT.set(out, vertexBase, blockLight | (blockLight << 4), skyLight | (skyLight << 4));
-        ATTRIB_COLOR.setRGB(out, vertexBase, MC.getBlockColors().colorMultiplier(data.state, biomeAccess, pos, 0));
+        attributes.lightBlock = (byte) (blockLight | (blockLight << 4));
+        attributes.lightSky = (byte) (skyLight | (skyLight << 4));
+        attributes.color = MC.getBlockColors().colorMultiplier(data.state, biomeAccess, pos, 0);
 
-        ATTRIB_POS_HORIZ.set(out, vertexBase, x, z);
-        ATTRIB_HEIGHT_INT.set(out, vertexBase, data.height_int);
-        ATTRIB_HEIGHT_FRAC.set(out, vertexBase, data.height_frac);
+        attributes.posHorizX = (byte) x;
+        attributes.posHorizZ = (byte) z;
+        attributes.heightInt = data.height_int;
+        attributes.heightFrac = (byte) data.height_frac;
+
+        return out.put(attributes);
     }
 }
