@@ -26,6 +26,7 @@ import io.github.opencubicchunks.cubicchunks.api.world.ICube;
 import io.github.opencubicchunks.cubicchunks.api.world.ICubeProviderServer;
 import io.github.opencubicchunks.cubicchunks.api.world.ICubicWorldServer;
 import io.github.opencubicchunks.cubicchunks.api.world.storage.ICubicStorage;
+import io.github.opencubicchunks.cubicchunks.api.worldgen.ICubeGenerator;
 import io.github.opencubicchunks.cubicchunks.core.asm.mixin.ICubicWorldInternal;
 import io.github.opencubicchunks.cubicchunks.core.server.chunkio.AsyncBatchingCubeIO;
 import io.github.opencubicchunks.cubicchunks.core.server.chunkio.ICubeIO;
@@ -36,6 +37,7 @@ import lombok.SneakyThrows;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
 import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
+import net.daporkchop.fp2.core.server.event.TickEndEvent;
 import net.daporkchop.fp2.core.server.world.IFarWorldServer;
 import net.daporkchop.fp2.core.util.datastructure.Datastructures;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSegtreeSet;
@@ -62,11 +64,13 @@ import net.minecraft.world.WorldServer;
 import net.minecraft.world.WorldType;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.IChunkProvider;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -85,6 +89,7 @@ public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess {
 
     protected final ICubeIO io;
     protected final ICubicStorage storage;
+    protected final ICubeGenerator generator;
 
     protected final ColumnCache columns = new ColumnCache();
     protected final CubeCache cubes = new CubeCache();
@@ -94,12 +99,15 @@ public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess {
     protected final NDimensionalIntSegtreeSet columnsExistCache;
     protected final NDimensionalIntSegtreeSet cubesExistCache;
 
+    protected final AtomicInteger generatedCount = new AtomicInteger();
+
     public CCAsyncBlockAccessImpl(@NonNull WorldServer world) {
         this.world = world;
         this.farWorld = ((IMixinWorldServer) world).fp2_farWorldServer();
 
         this.io = ((ICubeProviderInternal.Server) ((ICubicWorldInternal) world).getCubeCache()).getCubeIO();
         this.storage = PUnsafe.getObject(AsyncBatchingCubeIO.class.cast(this.io), ASYNCBATCHINGCUBEIO_STORAGE_OFFSET);
+        this.generator = ((ICubicWorldServer) world).getCubeGenerator();
 
         this.emptyStorage = new ExtendedBlockStorage(0, world.provider.hasSkyLight());
 
@@ -169,15 +177,27 @@ public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess {
     }
 
     @FEventHandler
-    private void onColumnSaved(@NonNull ColumnSavedEvent event) {
+    private void onColumnSaved(ColumnSavedEvent event) {
         this.columnsExistCache.add(event.pos().x(), event.pos().y());
         this.columns.notifyUpdate(new ChunkPos(event.pos().x(), event.pos().y()), (NBTTagCompound) event.data());
     }
 
     @FEventHandler
-    private void onCubeSaved(@NonNull CubeSavedEvent event) {
+    private void onCubeSaved(CubeSavedEvent event) {
         this.cubesExistCache.add(event.pos().x(), event.pos().y(), event.pos().z());
         this.cubes.notifyUpdate(new CubePos(event.pos().x(), event.pos().y(), event.pos().z()), (NBTTagCompound) event.data());
+    }
+
+    @FEventHandler
+    private void onTickEnd(TickEndEvent event) {
+        //if 8192 things have been generated, run a full chunk gc!
+        //  if we don't do this, the gc will only be triggered when a player has been moving for more than some number of ticks. the player might just be standing still
+        //  while waiting for terrain to load in, so we need to do this to prevent a memory leak.
+        if (this.generatedCount.get() >= 8192) {
+            this.generatedCount.lazySet(0);
+
+            ((ICubicWorldServer) this.world).unloadOldCubes();
+        }
     }
 
     @Override
@@ -267,12 +287,18 @@ public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess {
 
         @Override
         protected void triggerGeneration(@NonNull ChunkPos key, @NonNull Object param) {
+            //spin until the generator reports that it's ready
+            while (CCAsyncBlockAccessImpl.this.generator.pollAsyncColumnGenerator(key.x, key.z) != ICubeGenerator.GeneratorReadyState.READY) {
+                PorkUtil.sleep(1L);
+            }
+
             //load and immediately save column on server thread
             ((IMixinWorldServer) CCAsyncBlockAccessImpl.this.world).fp2_farWorldServer().fp2_IFarWorld_workerManager().workExecutor().run(() -> {
                 Chunk column = ((ICubicWorldServer) CCAsyncBlockAccessImpl.this.world)
                         .getCubeCache().getColumn(key.x, key.z, ICubeProviderServer.Requirement.POPULATE);
                 if (column != null && !column.isEmpty()) {
                     CCAsyncBlockAccessImpl.this.io.saveColumn(column);
+                    CCAsyncBlockAccessImpl.this.generatedCount.incrementAndGet();
                 }
             }).join();
         }
@@ -307,12 +333,19 @@ public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess {
 
         @Override
         protected void triggerGeneration(@NonNull CubePos key, @NonNull Chunk param) {
+            //spin until the generator reports that it's ready
+            while (CCAsyncBlockAccessImpl.this.generator.pollAsyncCubeGenerator(key.getX(), key.getY(), key.getZ()) != ICubeGenerator.GeneratorReadyState.READY
+                   || CCAsyncBlockAccessImpl.this.generator.pollAsyncCubePopulator(key.getX(), key.getY(), key.getZ()) != ICubeGenerator.GeneratorReadyState.READY) {
+                PorkUtil.sleep(1L);
+            }
+
             ((IMixinWorldServer) CCAsyncBlockAccessImpl.this.world).fp2_farWorldServer().fp2_IFarWorld_workerManager().workExecutor().run(() -> {
                 //TODO: save column as well if needed
                 ICube cube = ((ICubicWorldServer) CCAsyncBlockAccessImpl.this.world)
                         .getCubeCache().getCube(key.getX(), key.getY(), key.getZ(), ICubeProviderServer.Requirement.LIGHT);
                 if (cube != null && cube.isInitialLightingDone()) {
                     CCAsyncBlockAccessImpl.this.io.saveCube((Cube) cube);
+                    CCAsyncBlockAccessImpl.this.generatedCount.incrementAndGet();
                 }
             }).join();
         }
