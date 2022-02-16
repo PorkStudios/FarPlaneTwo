@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -258,7 +258,7 @@ public abstract class MixinNetHandlerPlayClient implements IFarPlayerClient {
             require = 1, allow = 1)
     private void fp2_cleanup_closeContext(CallbackInfo ci) {
         this.netManager.channel().eventLoop().execute(() -> {
-            if (this.sessionOpen) {
+            if (this.fp2_sessionOpen) {
                 this.handle(new SPacketSessionEnd());
             }
         });
