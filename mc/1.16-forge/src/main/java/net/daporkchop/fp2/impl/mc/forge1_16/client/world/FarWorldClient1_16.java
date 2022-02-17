@@ -18,48 +18,46 @@
  *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_12_2.client.player;
+package net.daporkchop.fp2.impl.mc.forge1_16.client.world;
 
-import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.core.client.player.AbstractFarPlayerClient;
+import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
+import net.daporkchop.fp2.core.client.render.WorldRenderer;
 import net.daporkchop.fp2.core.client.world.IFarWorldClient;
-import net.daporkchop.fp2.core.network.IPacket;
-import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionBegin;
-import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.client.world.FarWorldClient1_12_2;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.network.FP2Network1_12_2;
-import net.minecraft.client.multiplayer.WorldClient;
-import net.minecraft.network.NetworkManager;
+import net.daporkchop.fp2.core.util.threading.workergroup.WorkerManager;
+import net.daporkchop.fp2.impl.mc.forge1_16.FP2Forge1_16;
+import net.daporkchop.fp2.impl.mc.forge1_16.world.AbstractFarWorld1_16;
+import net.minecraft.client.world.ClientWorld;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-@Getter
-public class FarPlayerClient1_12 extends AbstractFarPlayerClient {
-    @NonNull
-    protected final FP2Forge1_12_2 fp2;
-    @NonNull
-    protected final NetworkManager networkManager;
-    @NonNull
-    protected final WorldClient world;
+public class FarWorldClient1_16 extends AbstractFarWorld1_16<ClientWorld> implements IFarWorldClient {
+    protected final IntAxisAlignedBB coordLimits;
 
-    @Override
-    protected IFarWorldClient createWorldClient(@NonNull SPacketSessionBegin packet) {
-        return new FarWorldClient1_12_2(this.fp2(), this.world, packet.coordLimits());
-    }
+    public FarWorldClient1_16(@NonNull FP2Forge1_16 fp2, @NonNull ClientWorld world, @NonNull IntAxisAlignedBB coordLimits) {
+        super(fp2, world);
 
-    @CalledFromAnyThread
-    @Override
-    public void fp2_IFarPlayerClient_send(@NonNull IPacket packet) {
-        FP2Network1_12_2.sendToServer(packet); //yuck, a *static* context?
+        this.coordLimits = coordLimits;
     }
 
     @Override
-    protected void scheduleOnNetworkThread(@NonNull Runnable action) {
-        this.networkManager.channel().eventLoop().execute(action);
+    public void fp2_IFarWorld_close() {
+        //TODO: close renderer
+    }
+
+    @Override
+    public WorldRenderer fp2_IFarWorldClient_renderer() {
+        throw new UnsupportedOperationException(); //TODO
+    }
+
+    @Override
+    public IntAxisAlignedBB fp2_IFarWorld_coordLimits() {
+        return this.coordLimits;
+    }
+
+    @Override
+    public WorkerManager fp2_IFarWorld_workerManager() {
+        throw new UnsupportedOperationException(); //TODO
     }
 }

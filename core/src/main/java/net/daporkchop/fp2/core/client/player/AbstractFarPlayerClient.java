@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.core.client.player;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.core.client.world.IFarWorldClient;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
@@ -28,7 +29,6 @@ import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.client.IFarTileCache;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
-import net.daporkchop.fp2.core.client.world.IFarWorldClient;
 import net.daporkchop.fp2.core.network.packet.debug.server.SPacketDebugUpdateStatistics;
 import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketHandshake;
@@ -215,4 +215,16 @@ public abstract class AbstractFarPlayerClient implements IFarPlayerClient {
     public <POS extends IFarPos, T extends IFarTile> IFarClientContext<POS, T> fp2_IFarPlayerClient_activeContext() {
         return uncheckedCast(this.context);
     }
+
+    @CalledFromAnyThread
+    @Override
+    public void fp2_IFarPlayerClient_close() {
+        this.scheduleOnNetworkThread(() -> {
+            if (this.sessionOpen) {
+                this.handle(new SPacketSessionEnd());
+            }
+        });
+    }
+
+    protected abstract void scheduleOnNetworkThread(@NonNull Runnable action);
 }

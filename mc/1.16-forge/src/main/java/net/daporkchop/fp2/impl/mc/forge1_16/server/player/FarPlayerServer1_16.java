@@ -18,48 +18,39 @@
  *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_12_2.client.player;
+package net.daporkchop.fp2.impl.mc.forge1_16.server.player;
 
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.core.client.player.AbstractFarPlayerClient;
-import net.daporkchop.fp2.core.client.world.IFarWorldClient;
 import net.daporkchop.fp2.core.network.IPacket;
-import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionBegin;
-import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.client.world.FarWorldClient1_12_2;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.network.FP2Network1_12_2;
-import net.minecraft.client.multiplayer.WorldClient;
-import net.minecraft.network.NetworkManager;
+import net.daporkchop.fp2.core.server.player.AbstractFarPlayerServer;
+import net.daporkchop.fp2.impl.mc.forge1_16.FP2Forge1_16;
+import net.daporkchop.lib.math.vector.Vec3d;
+import net.minecraft.network.play.ServerPlayNetHandler;
+import net.minecraft.util.math.vector.Vector3d;
 
 /**
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
 @Getter
-public class FarPlayerClient1_12 extends AbstractFarPlayerClient {
+public class FarPlayerServer1_16 extends AbstractFarPlayerServer {
     @NonNull
-    protected final FP2Forge1_12_2 fp2;
+    protected final FP2Forge1_16 fp2;
     @NonNull
-    protected final NetworkManager networkManager;
-    @NonNull
-    protected final WorldClient world;
+    protected final ServerPlayNetHandler netHandler;
 
     @Override
-    protected IFarWorldClient createWorldClient(@NonNull SPacketSessionBegin packet) {
-        return new FarWorldClient1_12_2(this.fp2(), this.world, packet.coordLimits());
-    }
-
-    @CalledFromAnyThread
-    @Override
-    public void fp2_IFarPlayerClient_send(@NonNull IPacket packet) {
-        FP2Network1_12_2.sendToServer(packet); //yuck, a *static* context?
+    public Vec3d fp2_IFarPlayer_position() {
+        Vector3d position = this.netHandler.player.position();
+        return Vec3d.of(position.x(), position.y(), position.z());
     }
 
     @Override
-    protected void scheduleOnNetworkThread(@NonNull Runnable action) {
-        this.networkManager.channel().eventLoop().execute(action);
+    public void fp2_IFarPlayer_sendPacket(@NonNull IPacket packet) {
+        if (!this.closed) {
+            throw new UnsupportedOperationException(); //TODO
+        }
     }
 }

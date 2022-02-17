@@ -29,14 +29,14 @@ import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.gui.GuiContext;
 import net.daporkchop.fp2.core.client.gui.GuiScreen;
 import net.daporkchop.fp2.core.client.key.KeyCategory;
+import net.daporkchop.fp2.core.client.player.IFarPlayerClient;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.config.gui.ConfigGuiHelper;
-import net.daporkchop.fp2.core.mode.api.player.IFarPlayerClient;
 import net.daporkchop.fp2.core.util.threading.futureexecutor.FutureExecutor;
 import net.daporkchop.fp2.impl.mc.forge1_16.FP2Forge1_16;
+import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.gui.screen.ATScreen1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.client.gui.GuiContext1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.util.ResourceProvider1_16;
-import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.IngameMenuScreen;
 import net.minecraft.client.gui.screen.MainMenuScreen;
@@ -170,25 +170,25 @@ public class FP2Client1_16 extends FP2Client {
 
             ConfigGuiHelper.createAndDisplayGuiContext("menu", defaultConfig, serverConfig, clientConfig, this.fp2()::globalConfig);
         });
+        boolean addButton = true;
 
         Screen gui = event.getGui();
         if (gui instanceof VideoSettingsScreen) {
             button.x = gui.width / 2 + 165;
             button.y = gui.height / 6 - 12;
-            gui.buttons.add(button);
-            gui.children.add(button);
-        } else if (FP2_DEBUG) {
-            if (gui instanceof MainMenuScreen) {
-                button.x = gui.width / 2 + 104;
-                button.y = gui.height / 4 + 48;
-                gui.buttons.add(button);
-                gui.children.add(button);
-            } else if (gui instanceof IngameMenuScreen) {
-                button.x = gui.width / 2 + 104;
-                button.y = gui.height / 4 + 8;
-                gui.buttons.add(button);
-                gui.children.add(button);
-            }
+        } else if (FP2_DEBUG && gui instanceof MainMenuScreen) {
+            button.x = gui.width / 2 + 104;
+            button.y = gui.height / 4 + 48;
+        } else if (FP2_DEBUG && gui instanceof IngameMenuScreen) {
+            button.x = gui.width / 2 + 104;
+            button.y = gui.height / 4 + 8;
+        } else {
+            addButton = false;
+        }
+
+        if (addButton) { //add the button to the gui
+            ((ATScreen1_16) gui).getButtons().add(button);
+            ((ATScreen1_16) gui).getChildren().add(button);
         }
     }
 

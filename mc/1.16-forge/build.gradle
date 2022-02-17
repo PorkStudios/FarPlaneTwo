@@ -30,8 +30,6 @@ java.toolchain.languageVersion = JavaLanguageVersion.of(8)
 minecraft {
     mappings mappingsChannel, mappingsVersion
 
-    accessTransformer = file("src/main/resources/META-INF/fp2_at.cfg")
-
     runs {
         client {
             workingDirectory "${projectDir.absolutePath}/run"
@@ -43,6 +41,7 @@ minecraft {
             property "fp2.debug", "true"
             property "fp2.gl.opengl.debug", "true"
 
+            args "-mixin.config=mixins.fp2.at.json"
             args "-mixin.config=mixins.fp2.core.json"
             args "-mixin.config=mixins.fp2.fixes.json"
             args "-mixin.config=mixins.fp2.debug.json"

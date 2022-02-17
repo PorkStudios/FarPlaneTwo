@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_12_2.client.player;
+package net.daporkchop.fp2.impl.mc.forge1_16.client.player;
 
 import lombok.Getter;
 import lombok.NonNull;
@@ -28,38 +28,34 @@ import net.daporkchop.fp2.core.client.world.IFarWorldClient;
 import net.daporkchop.fp2.core.network.IPacket;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionBegin;
 import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.client.world.FarWorldClient1_12_2;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.network.FP2Network1_12_2;
-import net.minecraft.client.multiplayer.WorldClient;
-import net.minecraft.network.NetworkManager;
+import net.daporkchop.fp2.impl.mc.forge1_16.FP2Forge1_16;
+import net.daporkchop.fp2.impl.mc.forge1_16.client.world.FarWorldClient1_16;
+import net.minecraft.client.network.play.ClientPlayNetHandler;
 
 /**
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
 @Getter
-public class FarPlayerClient1_12 extends AbstractFarPlayerClient {
+public class FarPlayerClient1_16 extends AbstractFarPlayerClient {
     @NonNull
-    protected final FP2Forge1_12_2 fp2;
+    protected final FP2Forge1_16 fp2;
     @NonNull
-    protected final NetworkManager networkManager;
-    @NonNull
-    protected final WorldClient world;
+    protected final ClientPlayNetHandler netHandler;
 
     @Override
     protected IFarWorldClient createWorldClient(@NonNull SPacketSessionBegin packet) {
-        return new FarWorldClient1_12_2(this.fp2(), this.world, packet.coordLimits());
+        return new FarWorldClient1_16(this.fp2, this.netHandler.getLevel(), packet.coordLimits());
     }
 
     @CalledFromAnyThread
     @Override
     public void fp2_IFarPlayerClient_send(@NonNull IPacket packet) {
-        FP2Network1_12_2.sendToServer(packet); //yuck, a *static* context?
+        throw new UnsupportedOperationException(); //TODO
     }
 
     @Override
     protected void scheduleOnNetworkThread(@NonNull Runnable action) {
-        this.networkManager.channel().eventLoop().execute(action);
+        this.netHandler.getConnection().channel().eventLoop().execute(action);
     }
 }

@@ -18,48 +18,44 @@
  *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_12_2.client.player;
+package net.daporkchop.fp2.impl.mc.forge1_16.world;
 
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.core.client.player.AbstractFarPlayerClient;
-import net.daporkchop.fp2.core.client.world.IFarWorldClient;
-import net.daporkchop.fp2.core.network.IPacket;
-import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionBegin;
-import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.client.world.FarWorldClient1_12_2;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.network.FP2Network1_12_2;
-import net.minecraft.client.multiplayer.WorldClient;
-import net.minecraft.network.NetworkManager;
+import net.daporkchop.fp2.api.world.registry.FGameRegistry;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarWorld;
+import net.daporkchop.fp2.impl.mc.forge1_16.FP2Forge1_16;
+import net.minecraft.world.World;
 
 /**
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
 @Getter
-public class FarPlayerClient1_12 extends AbstractFarPlayerClient {
+public abstract class AbstractFarWorld1_16<W extends World> implements IFarWorld {
     @NonNull
-    protected final FP2Forge1_12_2 fp2;
+    protected final FP2Forge1_16 fp2;
     @NonNull
-    protected final NetworkManager networkManager;
-    @NonNull
-    protected final WorldClient world;
+    protected final W world;
 
     @Override
-    protected IFarWorldClient createWorldClient(@NonNull SPacketSessionBegin packet) {
-        return new FarWorldClient1_12_2(this.fp2(), this.world, packet.coordLimits());
-    }
-
-    @CalledFromAnyThread
-    @Override
-    public void fp2_IFarPlayerClient_send(@NonNull IPacket packet) {
-        FP2Network1_12_2.sendToServer(packet); //yuck, a *static* context?
+    public Object fp2_IFarWorld_implWorld() {
+        return this.world;
     }
 
     @Override
-    protected void scheduleOnNetworkThread(@NonNull Runnable action) {
-        this.networkManager.channel().eventLoop().execute(action);
+    public int fp2_IFarWorld_dimensionId() {
+        return this.world.dimension().location().hashCode(); //TODO: use an Identifier for the dimension ID
+    }
+
+    @Override
+    public long fp2_IFarWorld_timestamp() {
+        return this.world.getGameTime();
+    }
+
+    @Override
+    public FGameRegistry fp2_IFarWorld_registry() {
+        throw new UnsupportedOperationException(); //TODO
     }
 }
