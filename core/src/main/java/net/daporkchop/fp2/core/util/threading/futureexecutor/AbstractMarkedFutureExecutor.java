@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -69,7 +69,11 @@ public abstract class AbstractMarkedFutureExecutor implements MarkedFutureExecut
         checkState(this.running, "not running");
 
         Task<Void> task = new Task<>(marker, runnable);
-        this.queue.add(task);
+        if (this.thread == Thread.currentThread()) {
+            task.run();
+        } else {
+            this.queue.add(task);
+        }
         return task;
     }
 
@@ -78,7 +82,11 @@ public abstract class AbstractMarkedFutureExecutor implements MarkedFutureExecut
         checkState(this.running, "not running");
 
         Task<V> task = new Task<>(marker, supplier);
-        this.queue.add(task);
+        if (this.thread == Thread.currentThread()) {
+            task.run();
+        } else {
+            this.queue.add(task);
+        }
         return task;
     }
 

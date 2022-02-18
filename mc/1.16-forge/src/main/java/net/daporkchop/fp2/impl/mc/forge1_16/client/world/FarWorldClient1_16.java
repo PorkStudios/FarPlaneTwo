@@ -24,11 +24,13 @@ import lombok.NonNull;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.core.client.render.WorldRenderer;
 import net.daporkchop.fp2.core.client.world.IFarWorldClient;
+import net.daporkchop.fp2.core.util.threading.futureexecutor.MarkedFutureExecutor;
 import net.daporkchop.fp2.core.util.threading.workergroup.DefaultWorkerManager;
 import net.daporkchop.fp2.core.util.threading.workergroup.WorkerManager;
 import net.daporkchop.fp2.impl.mc.forge1_16.FP2Forge1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.ATMinecraft1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.world.ATClientWorld1_16;
+import net.daporkchop.fp2.impl.mc.forge1_16.client.render.WorldRenderer1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.util.threading.futureexecutor.ClientThreadMarkedFutureExecutor1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.world.AbstractFarWorld1_16;
 import net.minecraft.client.Minecraft;
@@ -41,6 +43,8 @@ public class FarWorldClient1_16 extends AbstractFarWorld1_16<ClientWorld> implem
     protected final IntAxisAlignedBB coordLimits;
     protected final WorkerManager workerManager;
 
+    protected WorldRenderer1_16 renderer;
+
     public FarWorldClient1_16(@NonNull FP2Forge1_16 fp2, @NonNull ClientWorld world, @NonNull IntAxisAlignedBB coordLimits) {
         super(fp2, world);
 
@@ -48,17 +52,18 @@ public class FarWorldClient1_16 extends AbstractFarWorld1_16<ClientWorld> implem
 
         Minecraft mc = ((ATClientWorld1_16) world).getMinecraft();
         this.workerManager = new DefaultWorkerManager(((ATMinecraft1_16) mc).getGameThread(), ClientThreadMarkedFutureExecutor1_16.getFor(mc));
+
+        this.workerManager.rootExecutor().run(MarkedFutureExecutor.DEFAULT_MARKER, () -> this.renderer = new WorldRenderer1_16(mc, this)).join();
     }
 
     @Override
     public void fp2_IFarWorld_close() {
-        //TODO:
-        // this.workerManager.rootExecutor().run(MarkedFutureExecutor.DEFAULT_MARKER, this.renderer::close);
+        this.workerManager.rootExecutor().run(MarkedFutureExecutor.DEFAULT_MARKER, this.renderer::close);
     }
 
     @Override
     public WorldRenderer fp2_IFarWorldClient_renderer() {
-        throw new UnsupportedOperationException(); //TODO
+        return this.renderer;
     }
 
     @Override

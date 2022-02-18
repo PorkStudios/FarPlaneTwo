@@ -18,49 +18,18 @@
  *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_16.world;
+package net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.renderer;
 
-import lombok.Getter;
-import lombok.NonNull;
-import net.daporkchop.fp2.core.mode.api.ctx.IFarWorld;
-import net.daporkchop.fp2.impl.mc.forge1_16.FP2Forge1_16;
-import net.daporkchop.fp2.impl.mc.forge1_16.world.registry.GameRegistry1_16;
-import net.minecraft.world.World;
+import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.client.renderer.texture.DynamicTexture;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.gen.Accessor;
 
 /**
  * @author DaPorkchop_
  */
-@Getter
-public abstract class AbstractFarWorld1_16<W extends World> implements IFarWorld {
-    protected final FP2Forge1_16 fp2;
-    protected final W world;
-
-    protected final GameRegistry1_16 registry;
-
-    public AbstractFarWorld1_16(@NonNull FP2Forge1_16 fp2, @NonNull W world) {
-        this.fp2 = fp2;
-        this.world = world;
-
-        this.registry = new GameRegistry1_16(world);
-    }
-
-    @Override
-    public Object fp2_IFarWorld_implWorld() {
-        return this.world;
-    }
-
-    @Override
-    public int fp2_IFarWorld_dimensionId() {
-        return this.world.dimension().location().hashCode(); //TODO: use an Identifier for the dimension ID
-    }
-
-    @Override
-    public long fp2_IFarWorld_timestamp() {
-        return this.world.getGameTime();
-    }
-
-    @Override
-    public GameRegistry1_16 fp2_IFarWorld_registry() {
-        return this.registry;
-    }
+@Mixin(LightTexture.class)
+public interface ATLightTexture1_16 {
+    @Accessor
+    DynamicTexture getLightTexture();
 }

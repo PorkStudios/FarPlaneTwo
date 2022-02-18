@@ -18,49 +18,38 @@
  *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_16.world;
+package net.daporkchop.fp2.impl.mc.forge1_16.client.render;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.core.mode.api.ctx.IFarWorld;
-import net.daporkchop.fp2.impl.mc.forge1_16.FP2Forge1_16;
+import net.daporkchop.fp2.core.client.render.common.AbstractTextureUVs;
+import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.impl.mc.forge1_16.world.registry.GameRegistry1_16;
-import net.minecraft.world.World;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.texture.MissingTextureSprite;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.inventory.container.PlayerContainer;
+
+import java.util.Collections;
+import java.util.List;
 
 /**
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractFarWorld1_16<W extends World> implements IFarWorld {
-    protected final FP2Forge1_16 fp2;
-    protected final W world;
+public class TextureUVs1_16 extends AbstractTextureUVs {
+    protected final Minecraft mc;
 
-    protected final GameRegistry1_16 registry;
+    public TextureUVs1_16(@NonNull GameRegistry1_16 registry, @NonNull GL gl, @NonNull Minecraft mc) {
+        super(registry, gl);
+        this.mc = mc;
 
-    public AbstractFarWorld1_16(@NonNull FP2Forge1_16 fp2, @NonNull W world) {
-        this.fp2 = fp2;
-        this.world = world;
-
-        this.registry = new GameRegistry1_16(world);
+        this.reloadUVs();
     }
 
     @Override
-    public Object fp2_IFarWorld_implWorld() {
-        return this.world;
-    }
-
-    @Override
-    public int fp2_IFarWorld_dimensionId() {
-        return this.world.dimension().location().hashCode(); //TODO: use an Identifier for the dimension ID
-    }
-
-    @Override
-    public long fp2_IFarWorld_timestamp() {
-        return this.world.getGameTime();
-    }
-
-    @Override
-    public GameRegistry1_16 fp2_IFarWorld_registry() {
-        return this.registry;
+    protected List<PackedBakedQuad> missingTextureQuads() {
+        TextureAtlasSprite sprite = this.mc.getModelManager().getAtlas(PlayerContainer.BLOCK_ATLAS).getSprite(MissingTextureSprite.getLocation());
+        return Collections.singletonList(new PackedBakedQuad(sprite.getU0(), sprite.getV0(), sprite.getU1(), sprite.getV1(), 1.0f));
     }
 }
