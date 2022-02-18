@@ -58,7 +58,7 @@ import static net.daporkchop.fp2.core.debug.FP2Debug.*;
  */
 @Mod(modid = FP2.MODID,
         useMetadata = true,
-        dependencies = "required-after:forgerocks@[6.20.3-1.12.2,);after:cubicchunks@[1.12.2-0.0.1188.0,)",
+        dependencies = "required-after:forgerocks@[6.20.3,);after:cubicchunks@[1.12.2-0.0.1188.0,)",
         acceptedMinecraftVersions = "1.12.2")
 public final class FP2Forge1_12_2 extends FP2Core {
     private FP2Client1_12_2 client;

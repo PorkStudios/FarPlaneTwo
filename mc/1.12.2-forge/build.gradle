@@ -79,8 +79,6 @@ dependencies {
     implementationShade project(":core:log4j")
     implementationShade project(":core:mixin")
 
-    implementationProvided "net.daporkchop:forgerocks:$rocksdbVersion-$minecraftVersion"
-
     implementationProvided fg.deobf(fp2.deleteMixin("io.github.opencubicchunks:cubicchunks:1.12.2-0.0-SNAPSHOT"))
     implementationProvided fg.deobf("io.github.opencubicchunks:cubicworldgen:1.12.2-0.0-SNAPSHOT")
 }
