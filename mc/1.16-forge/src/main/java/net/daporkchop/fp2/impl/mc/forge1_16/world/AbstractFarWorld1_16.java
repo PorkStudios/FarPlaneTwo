@@ -28,8 +28,6 @@ import net.daporkchop.fp2.impl.mc.forge1_16.FP2Forge1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.world.registry.GameRegistry1_16;
 import net.minecraft.world.World;
 
-import java.util.UUID;
-
 /**
  * @author DaPorkchop_
  */
@@ -45,8 +43,6 @@ public abstract class AbstractFarWorld1_16<W extends World> implements IFarWorld
         this.world = world;
 
         this.registry = new GameRegistry1_16(world);
-
-        fp2.log().error("%s registry: %s", this, this.registry.registryToken().map(UUID::nameUUIDFromBytes));
     }
 
     @Override

@@ -82,8 +82,7 @@ public class FarWorldServer1_16 extends AbstractFarWorld1_16<ServerWorld> implem
         this.exactFBlockWorld = this.fp2.eventBus().fireAndGetFirst(new GetExactFBlockWorldEvent(this)).get();
 
         ImmutableMap.Builder<IFarRenderMode, IFarTileProvider> builder = ImmutableMap.builder();
-        //TODO: uncomment this
-        // IFarRenderMode.REGISTRY.forEachEntry((name, mode) -> builder.put(mode, mode.tileProvider(uncheckedCast(this))));
+        IFarRenderMode.REGISTRY.forEachEntry((name, mode) -> builder.put(mode, mode.tileProvider(uncheckedCast(this))));
         this.tileProvidersByMode = builder.build();
     }
 
@@ -132,7 +131,7 @@ public class FarWorldServer1_16 extends AbstractFarWorld1_16<ServerWorld> implem
 
     @Override
     public FBlockWorld fp2_IFarWorldServer_fblockWorld() {
-        throw new UnsupportedOperationException(); //TODO
+        return this.exactFBlockWorld;
     }
 
     @Override

@@ -27,11 +27,18 @@ versionRange = "[1.16.5,1.17)"
 ordering = "NONE"
 side = "BOTH"
 
+[[dependencies.fp2]]
+modId = "forgerocks"
+mandatory = true
+versionRange = "[6.28.2,)"
+ordering = "AFTER"
+side = "BOTH"
+
 # fp2_vanilla
 [[mods]]
 modId ="fp2_vanilla"
 version = "${file.jarVersion}"
-displayName = "FarPlaneTwo (Vanilla Integration)"
+displayName = "FarPlaneTwo Integration - Vanilla"
 authors = "DaPorkchop_"
 displayURL = "https://daporkchop.net/"
 description = "Integrates FarPlaneTwo with vanilla Minecraft."

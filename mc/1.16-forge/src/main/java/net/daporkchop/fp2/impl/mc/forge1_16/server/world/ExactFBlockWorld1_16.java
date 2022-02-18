@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.impl.mc.forge1_16.server.world;
 
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.api.world.BlockWorldConstants;
@@ -33,6 +34,7 @@ import net.minecraft.world.server.ServerWorld;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
+@Getter
 public class ExactFBlockWorld1_16 implements FBlockWorld {
     @NonNull
     protected final ServerWorld world;
@@ -45,24 +47,20 @@ public class ExactFBlockWorld1_16 implements FBlockWorld {
     }
 
     @Override
-    public FGameRegistry registry() {
-        throw new UnsupportedOperationException(); //TODO
-    }
-
-    @Override
     public boolean containsAnyData(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
-        throw new UnsupportedOperationException(); //TODO
+        return true; //TODO: this means exact generation will always be used!!!
     }
 
     @Override
     public int getState(int x, int y, int z) {
-        //this.world.registryAccess().registryOrThrow(ForgeRegistries.BLOCKS);
-        throw new UnsupportedOperationException(); //TODO
+        //TODO: this will internally block on a CompletableFuture not managed by the world's worker manager, which could cause a deadlock!
+        return this.registry.state2id(this.world.getBlockState(new BlockPos(x, y, z)));
     }
 
     @Override
     public int getBiome(int x, int y, int z) {
-        throw new UnsupportedOperationException(); //TODO
+        //TODO: i'm fairly certain this will not use the biome data from disk if the chunk isn't loaded
+        return this.registry.biome2id(this.world.getBiome(new BlockPos(x, y, z)));
     }
 
     @Override
