@@ -124,10 +124,7 @@ public class FP2Server1_12_2 extends FP2Server {
     public void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.player instanceof EntityPlayerMP) {
             IFarPlayerServer player = ((IMixinNetHandlerPlayServer) ((EntityPlayerMP) event.player).connection).fp2_farPlayerServer();
-
-            if (player != null) { //can happen if the player is kicked during the login sequence
-                player.fp2_IFarPlayer_close();
-            }
+            player.fp2_IFarPlayer_close();
         }
     }
 

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -49,7 +49,7 @@ public final class ExtendedStateRegistryData1_12_2 implements FExtendedStateRegi
     public ExtendedStateRegistryData1_12_2(@NonNull GameRegistry1_12_2 registry) {
         this.registry = registry;
 
-        this.types = new byte[registry.states().max().getAsInt() + 1];
+        this.types = new byte[registry.statesCount()];
         registry.states().forEach(state -> this.types[state] = (byte) type(registry.id2state(state)));
     }
 

@@ -30,6 +30,7 @@ import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionBegi
 import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 import net.daporkchop.fp2.impl.mc.forge1_16.FP2Forge1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.client.world.FarWorldClient1_16;
+import net.daporkchop.fp2.impl.mc.forge1_16.network.FP2Network1_16;
 import net.minecraft.client.network.play.ClientPlayNetHandler;
 
 /**
@@ -51,7 +52,7 @@ public class FarPlayerClient1_16 extends AbstractFarPlayerClient {
     @CalledFromAnyThread
     @Override
     public void fp2_IFarPlayerClient_send(@NonNull IPacket packet) {
-        throw new UnsupportedOperationException(); //TODO
+        FP2Network1_16.sendToServer(packet);
     }
 
     @Override

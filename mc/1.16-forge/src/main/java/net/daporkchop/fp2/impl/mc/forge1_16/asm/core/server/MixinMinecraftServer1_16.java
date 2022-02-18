@@ -18,40 +18,36 @@
  *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_16.server.player;
+package net.daporkchop.fp2.impl.mc.forge1_16.asm.core.server;
 
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.core.network.IPacket;
-import net.daporkchop.fp2.core.server.player.AbstractFarPlayerServer;
-import net.daporkchop.fp2.impl.mc.forge1_16.FP2Forge1_16;
-import net.daporkchop.fp2.impl.mc.forge1_16.network.FP2Network1_16;
-import net.daporkchop.lib.math.vector.Vec3d;
-import net.minecraft.network.play.ServerPlayNetHandler;
-import net.minecraft.util.math.vector.Vector3d;
+import net.daporkchop.fp2.impl.mc.forge1_16.util.threading.futureexecutor.ServerThreadMarkedFutureExecutor1_16;
+import net.minecraft.server.MinecraftServer;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-@Getter
-public class FarPlayerServer1_16 extends AbstractFarPlayerServer {
-    @NonNull
-    protected final FP2Forge1_16 fp2;
-    @NonNull
-    protected final ServerPlayNetHandler netHandler;
+@Mixin(MinecraftServer.class)
+@SuppressWarnings("deprecation")
+public abstract class MixinMinecraftServer1_16 implements ServerThreadMarkedFutureExecutor1_16.Holder {
+    @Unique
+    private ServerThreadMarkedFutureExecutor1_16 fp2_executor;
 
-    @Override
-    public Vec3d fp2_IFarPlayer_position() {
-        Vector3d position = this.netHandler.player.position();
-        return Vec3d.of(position.x(), position.y(), position.z());
+    @Inject(method = "Lnet/minecraft/server/MinecraftServer;<init>*",
+            at = @At("RETURN"),
+            require = 1)
+    private void fp2_$init$_constructMarkedExecutor(CallbackInfo ci) {
+        this.fp2_executor = new ServerThreadMarkedFutureExecutor1_16(uncheckedCast(this));
     }
 
     @Override
-    public void fp2_IFarPlayer_sendPacket(@NonNull IPacket packet) {
-        if (!this.closed) {
-            FP2Network1_16.sendToPlayer(packet, this.netHandler.getConnection());
-        }
+    public ServerThreadMarkedFutureExecutor1_16 fp2_ServerThreadMarkedFutureExecutor1_16$Holder_get() {
+        return this.fp2_executor;
     }
 }

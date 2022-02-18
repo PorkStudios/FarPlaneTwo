@@ -18,35 +18,52 @@
  *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_16.asm.core.world.server;
+package net.daporkchop.fp2.impl.mc.forge1_16.asm.core.client;
 
-import lombok.Getter;
-import net.daporkchop.fp2.impl.mc.forge1_16.FP2Forge1_16;
-import net.daporkchop.fp2.impl.mc.forge1_16.asm.interfaz.world.server.IMixinServerWorld1_16;
-import net.daporkchop.fp2.impl.mc.forge1_16.server.world.FarWorldServer1_16;
-import net.minecraft.world.server.ServerWorld;
+import net.daporkchop.fp2.impl.mc.forge1_16.util.threading.futureexecutor.ClientThreadMarkedFutureExecutor1_16;
+import net.minecraft.client.Minecraft;
+import net.minecraft.profiler.IProfiler;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
-@Mixin(ServerWorld.class)
-public abstract class MixinServerWorld1_16 implements IMixinServerWorld1_16 {
-    @Getter
-    @Unique
-    protected FarWorldServer1_16 fp2_farWorldServer;
+@Mixin(Minecraft.class)
+@SuppressWarnings("deprecation")
+public abstract class MixinMinecraft1_16 implements ClientThreadMarkedFutureExecutor1_16.Holder {
+    @Shadow
+    private IProfiler profiler;
 
-    @Inject(method = "Lnet/minecraft/world/server/ServerWorld;<init>*",
+    @Unique
+    private ClientThreadMarkedFutureExecutor1_16 fp2_executor;
+
+    @Inject(method = "Lnet/minecraft/client/Minecraft;<init>*",
             at = @At("RETURN"),
             require = 1)
-    private void fp2_$init$_constructFarWorldServer(CallbackInfo ci) {
-        this.fp2_farWorldServer = new FarWorldServer1_16((FP2Forge1_16) fp2(), uncheckedCast(this));
+    private void fp2_$init$_constructMarkedExecutor(CallbackInfo ci) {
+        this.fp2_executor = new ClientThreadMarkedFutureExecutor1_16(uncheckedCast(this));
+    }
+
+    @Override
+    public ClientThreadMarkedFutureExecutor1_16 fp2_ClientThreadMarkedFutureExecutor1_16$Holder_get() {
+        return this.fp2_executor;
+    }
+
+    @Inject(method = "Lnet/minecraft/client/Minecraft;runTick(Z)V",
+            at = @At(value = "INVOKE",
+                    target = "Lnet/minecraft/client/MouseHelper;turnPlayer()V",
+                    shift = At.Shift.BEFORE),
+            require = 1, allow = 1)
+    private void fp2_runTick_runScheduledClientTasks(CallbackInfo ci) {
+        this.profiler.push("fp2_scheduled_tasks");
+        this.fp2_executor.doAllWork();
+        this.profiler.pop();
     }
 }

@@ -3,6 +3,7 @@ loaderVersion = "[36,)"
 license = "Adapted from the MIT License"
 logoFile = "fp2_logo.png"
 
+# fp2
 [[mods]]
 modId = "fp2"
 version = "${file.jarVersion}"
@@ -24,4 +25,20 @@ modId = "minecraft"
 mandatory = true
 versionRange = "[1.16.5,1.17)"
 ordering = "NONE"
+side = "BOTH"
+
+# fp2_vanilla
+[[mods]]
+modId ="fp2_vanilla"
+version = "${file.jarVersion}"
+displayName = "FarPlaneTwo (Vanilla Integration)"
+authors = "DaPorkchop_"
+displayURL = "https://daporkchop.net/"
+description = "Integrates FarPlaneTwo with vanilla Minecraft."
+
+[[dependencies.fp2_vanilla]]
+modId = "fp2"
+mandatory = true
+versionRange = "${file.jarVersion}"
+ordering = "AFTER"
 side = "BOTH"

@@ -18,40 +18,42 @@
  *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_16.server.player;
+package net.daporkchop.fp2.impl.mc.forge1_16.util.threading.futureexecutor;
 
-import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.core.network.IPacket;
-import net.daporkchop.fp2.core.server.player.AbstractFarPlayerServer;
-import net.daporkchop.fp2.impl.mc.forge1_16.FP2Forge1_16;
-import net.daporkchop.fp2.impl.mc.forge1_16.network.FP2Network1_16;
-import net.daporkchop.lib.math.vector.Vec3d;
-import net.minecraft.network.play.ServerPlayNetHandler;
-import net.minecraft.util.math.vector.Vector3d;
+import net.daporkchop.fp2.core.util.threading.futureexecutor.AbstractMarkedFutureExecutor;
+import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.ATMinecraft1_16;
+import net.minecraft.client.Minecraft;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-@Getter
-public class FarPlayerServer1_16 extends AbstractFarPlayerServer {
-    @NonNull
-    protected final FP2Forge1_16 fp2;
-    @NonNull
-    protected final ServerPlayNetHandler netHandler;
-
-    @Override
-    public Vec3d fp2_IFarPlayer_position() {
-        Vector3d position = this.netHandler.player.position();
-        return Vec3d.of(position.x(), position.y(), position.z());
+public class ClientThreadMarkedFutureExecutor1_16 extends AbstractMarkedFutureExecutor {
+    /**
+     * Gets the {@link ClientThreadMarkedFutureExecutor1_16} for the given {@link Minecraft} instance.
+     *
+     * @param mc the {@link Minecraft} instance
+     * @return the corresponding {@link ClientThreadMarkedFutureExecutor1_16}
+     */
+    public static ClientThreadMarkedFutureExecutor1_16 getFor(@NonNull Minecraft mc) {
+        return ((Holder) mc).fp2_ClientThreadMarkedFutureExecutor1_16$Holder_get();
     }
 
-    @Override
-    public void fp2_IFarPlayer_sendPacket(@NonNull IPacket packet) {
-        if (!this.closed) {
-            FP2Network1_16.sendToPlayer(packet, this.netHandler.getConnection());
-        }
+    /**
+     * @deprecated internal API, do not touch!
+     */
+    @Deprecated
+    public ClientThreadMarkedFutureExecutor1_16(@NonNull Minecraft mc) {
+        super(((ATMinecraft1_16) mc).getGameThread());
+        this.start();
+    }
+
+    /**
+     * @author DaPorkchop_
+     * @deprecated internal API, do not touch!
+     */
+    @Deprecated
+    public interface Holder {
+        ClientThreadMarkedFutureExecutor1_16 fp2_ClientThreadMarkedFutureExecutor1_16$Holder_get();
     }
 }

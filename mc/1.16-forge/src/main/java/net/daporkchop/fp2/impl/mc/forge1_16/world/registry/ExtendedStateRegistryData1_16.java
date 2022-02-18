@@ -18,40 +18,45 @@
  *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_16.server.player;
+package net.daporkchop.fp2.impl.mc.forge1_16.world.registry;
 
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.core.network.IPacket;
-import net.daporkchop.fp2.core.server.player.AbstractFarPlayerServer;
-import net.daporkchop.fp2.impl.mc.forge1_16.FP2Forge1_16;
-import net.daporkchop.fp2.impl.mc.forge1_16.network.FP2Network1_16;
-import net.daporkchop.lib.math.vector.Vec3d;
-import net.minecraft.network.play.ServerPlayNetHandler;
-import net.minecraft.util.math.vector.Vector3d;
+import net.daporkchop.fp2.api.world.registry.FExtendedStateRegistryData;
+import net.minecraft.block.BlockState;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.EmptyBlockReader;
+
+import static net.daporkchop.fp2.api.world.BlockWorldConstants.*;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
 @Getter
-public class FarPlayerServer1_16 extends AbstractFarPlayerServer {
-    @NonNull
-    protected final FP2Forge1_16 fp2;
-    @NonNull
-    protected final ServerPlayNetHandler netHandler;
+public final class ExtendedStateRegistryData1_16 implements FExtendedStateRegistryData {
+    private static int type(BlockState state) {
+        if (state.isSolidRender(EmptyBlockReader.INSTANCE, BlockPos.ZERO)) { //should be the same as 1.12.2's isOpaqueCube()
+            return BLOCK_TYPE_OPAQUE;
+        } else if (state.getMaterial().isSolid() || state.getMaterial().isLiquid()) {
+            return BLOCK_TYPE_TRANSPARENT;
+        } else {
+            return BLOCK_TYPE_INVISIBLE;
+        }
+    }
 
-    @Override
-    public Vec3d fp2_IFarPlayer_position() {
-        Vector3d position = this.netHandler.player.position();
-        return Vec3d.of(position.x(), position.y(), position.z());
+    private final GameRegistry1_16 registry;
+
+    private final byte[] types;
+
+    public ExtendedStateRegistryData1_16(@NonNull GameRegistry1_16 registry) {
+        this.registry = registry;
+
+        this.types = new byte[registry.statesCount()];
+        registry.states().forEach(state -> this.types[state] = (byte) type(registry.id2state(state)));
     }
 
     @Override
-    public void fp2_IFarPlayer_sendPacket(@NonNull IPacket packet) {
-        if (!this.closed) {
-            FP2Network1_16.sendToPlayer(packet, this.netHandler.getConnection());
-        }
+    public int type(int state) throws IndexOutOfBoundsException {
+        return this.types[state] & 0xFF;
     }
 }

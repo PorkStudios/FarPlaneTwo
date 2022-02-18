@@ -18,40 +18,18 @@
  *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_16.server.player;
+package net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.world;
 
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.core.network.IPacket;
-import net.daporkchop.fp2.core.server.player.AbstractFarPlayerServer;
-import net.daporkchop.fp2.impl.mc.forge1_16.FP2Forge1_16;
-import net.daporkchop.fp2.impl.mc.forge1_16.network.FP2Network1_16;
-import net.daporkchop.lib.math.vector.Vec3d;
-import net.minecraft.network.play.ServerPlayNetHandler;
-import net.minecraft.util.math.vector.Vector3d;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.world.ClientWorld;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.gen.Accessor;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-@Getter
-public class FarPlayerServer1_16 extends AbstractFarPlayerServer {
-    @NonNull
-    protected final FP2Forge1_16 fp2;
-    @NonNull
-    protected final ServerPlayNetHandler netHandler;
-
-    @Override
-    public Vec3d fp2_IFarPlayer_position() {
-        Vector3d position = this.netHandler.player.position();
-        return Vec3d.of(position.x(), position.y(), position.z());
-    }
-
-    @Override
-    public void fp2_IFarPlayer_sendPacket(@NonNull IPacket packet) {
-        if (!this.closed) {
-            FP2Network1_16.sendToPlayer(packet, this.netHandler.getConnection());
-        }
-    }
+@Mixin(ClientWorld.class)
+public interface ATClientWorld1_16 {
+    @Accessor
+    Minecraft getMinecraft();
 }

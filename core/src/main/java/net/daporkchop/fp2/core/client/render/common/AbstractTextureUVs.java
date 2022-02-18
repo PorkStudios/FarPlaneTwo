@@ -139,7 +139,7 @@ public abstract class AbstractTextureUVs extends AbstractReleasable implements T
             erroredStates.forEach(state -> stateIdToIndexId.put((int) state, id));
         }
 
-        int[] realStateIdToIndexId = new int[this.registry.states().max().getAsInt() + 1];
+        int[] realStateIdToIndexId = new int[this.registry.statesCount()];
         stateIdToIndexId.forEach((state, indexId) -> realStateIdToIndexId[state] = indexId);
         this.stateIdToIndexId = realStateIdToIndexId;
 

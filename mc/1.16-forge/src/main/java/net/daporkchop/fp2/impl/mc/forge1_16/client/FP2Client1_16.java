@@ -35,6 +35,7 @@ import net.daporkchop.fp2.core.config.gui.ConfigGuiHelper;
 import net.daporkchop.fp2.core.util.threading.futureexecutor.FutureExecutor;
 import net.daporkchop.fp2.impl.mc.forge1_16.FP2Forge1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.gui.screen.ATScreen1_16;
+import net.daporkchop.fp2.impl.mc.forge1_16.asm.interfaz.client.network.play.IMixinClientPlayNetHandler1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.client.gui.GuiContext1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.util.ResourceProvider1_16;
 import net.minecraft.client.Minecraft;
@@ -43,12 +44,14 @@ import net.minecraft.client.gui.screen.MainMenuScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.VideoSettingsScreen;
 import net.minecraft.client.gui.widget.button.Button;
+import net.minecraft.client.network.play.ClientPlayNetHandler;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.client.util.InputMappings;
 import net.minecraft.resources.IReloadableResourceManager;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.client.event.InputEvent;
+import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.client.registry.ClientRegistry;
@@ -124,7 +127,8 @@ public class FP2Client1_16 extends FP2Client {
 
     @Override
     public Optional<IFarPlayerClient> currentPlayer() {
-        return Optional.empty(); //TODO
+        ClientPlayNetHandler netHandler = this.mc.getConnection();
+        return netHandler != null ? Optional.of(((IMixinClientPlayNetHandler1_16) netHandler).fp2_farPlayerClient()) : Optional.empty();
     }
 
     @Override
@@ -199,5 +203,10 @@ public class FP2Client1_16 extends FP2Client {
                 handler.run();
             }
         });
+    }
+
+    @SubscribeEvent
+    public void renderWorldLast(RenderWorldLastEvent event) {
+        this.disableReverseZ();
     }
 }

@@ -75,7 +75,7 @@ public class WorldRenderer1_12_2 implements WorldRenderer, AutoCloseable {
         this.registry = world.fp2_IFarWorld_registry();
 
         //look up and cache the render type for each block state
-        this.renderTypeLookup = new byte[this.registry.states().max().getAsInt() + 1];
+        this.renderTypeLookup = new byte[this.registry.statesCount()];
         this.registry.states().forEach(state -> {
             //TODO: i need to do something about this: grass is rendered as CUTOUT_MIPPED, which makes it always render both faces
 

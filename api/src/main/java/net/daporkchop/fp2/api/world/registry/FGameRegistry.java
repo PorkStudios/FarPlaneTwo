@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -63,9 +63,16 @@ public interface FGameRegistry {
     //
 
     /**
+     * @return the number of biomes in this registry
+     */
+    int biomesCount();
+
+    /**
      * @return an {@link IntStream} over all the biomes in this registry
      */
-    IntStream biomes();
+    default IntStream biomes() {
+        return IntStream.range(0, this.biomesCount());
+    }
 
     /**
      * Gets the unique ID corresponding to the biome described by the given {@link Object}.
@@ -96,9 +103,16 @@ public interface FGameRegistry {
     //
 
     /**
+     * @return the number of states in this registry
+     */
+    int statesCount();
+
+    /**
      * @return an {@link IntStream} over all the states in this registry
      */
-    IntStream states();
+    default IntStream states() {
+        return IntStream.range(0, this.statesCount());
+    }
 
     /**
      * Gets the unique ID corresponding to the state described by the given {@link Object}.
@@ -111,15 +125,6 @@ public interface FGameRegistry {
     int state2id(@NonNull Object state) throws UnsupportedOperationException, ClassCastException;
 
     /**
-     * Gets the {@link Object} corresponding to the given state ID.
-     *
-     * @param state a state's unique ID
-     * @return an {@link Object} which describes the state
-     * @throws UnsupportedOperationException if the implementation cannot describe a state using a single {@link Object}
-     */
-    Object id2state(int state) throws UnsupportedOperationException;
-
-    /**
      * Gets the unique ID corresponding to the state described by the given {@link Object} and the given {@code int}.
      *
      * @param block an {@link Object} which can be combined with {@code meta} to describe a state
@@ -129,6 +134,15 @@ public interface FGameRegistry {
      * @throws ClassCastException            if {@code block} is not of the type used by the implementation to describe a state
      */
     int state2id(@NonNull Object block, int meta) throws UnsupportedOperationException, ClassCastException;
+
+    /**
+     * Gets the {@link Object} corresponding to the given state ID.
+     *
+     * @param state a state's unique ID
+     * @return an {@link Object} which describes the state
+     * @throws UnsupportedOperationException if the implementation cannot describe a state using a single {@link Object}
+     */
+    Object id2state(int state) throws UnsupportedOperationException;
 
     /**
      * @return a {@link FExtendedStateRegistryData} instance for the states in this registry

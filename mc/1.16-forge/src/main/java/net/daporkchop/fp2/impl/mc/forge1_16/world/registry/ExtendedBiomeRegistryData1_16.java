@@ -18,40 +18,20 @@
  *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_16.server.player;
+package net.daporkchop.fp2.impl.mc.forge1_16.world.registry;
 
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.core.network.IPacket;
-import net.daporkchop.fp2.core.server.player.AbstractFarPlayerServer;
-import net.daporkchop.fp2.impl.mc.forge1_16.FP2Forge1_16;
-import net.daporkchop.fp2.impl.mc.forge1_16.network.FP2Network1_16;
-import net.daporkchop.lib.math.vector.Vec3d;
-import net.minecraft.network.play.ServerPlayNetHandler;
-import net.minecraft.util.math.vector.Vector3d;
+import net.daporkchop.fp2.api.world.registry.FExtendedBiomeRegistryData;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
 @Getter
-public class FarPlayerServer1_16 extends AbstractFarPlayerServer {
-    @NonNull
-    protected final FP2Forge1_16 fp2;
-    @NonNull
-    protected final ServerPlayNetHandler netHandler;
+public final class ExtendedBiomeRegistryData1_16 implements FExtendedBiomeRegistryData {
+    private final GameRegistry1_16 registry;
 
-    @Override
-    public Vec3d fp2_IFarPlayer_position() {
-        Vector3d position = this.netHandler.player.position();
-        return Vec3d.of(position.x(), position.y(), position.z());
-    }
-
-    @Override
-    public void fp2_IFarPlayer_sendPacket(@NonNull IPacket packet) {
-        if (!this.closed) {
-            FP2Network1_16.sendToPlayer(packet, this.netHandler.getConnection());
-        }
+    public ExtendedBiomeRegistryData1_16(@NonNull GameRegistry1_16 registry) {
+        this.registry = registry;
     }
 }

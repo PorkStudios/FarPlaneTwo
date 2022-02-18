@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_12_2.world.registry;
+package net.daporkchop.fp2.impl.mc.forge1_16.world.registry;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
@@ -26,75 +26,61 @@ import it.unimi.dsi.fastutil.objects.Reference2IntMap;
 import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.util.event.IdMappingsChangedEvent;
-import net.minecraft.block.Block;
-import net.minecraft.block.state.IBlockState;
+import net.minecraft.block.BlockState;
+import net.minecraft.util.registry.Registry;
+import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
+import net.minecraftforge.registries.ForgeRegistries;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.stream.IntStream;
 import java.util.stream.StreamSupport;
 
-import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
-public final class GameRegistry1_12_2 implements FGameRegistry {
-    private static GameRegistry1_12_2 INSTANCE = new GameRegistry1_12_2();
-
-    static {
-        fp2().eventBus().registerStatic(GameRegistry1_12_2.class);
-    }
-
-    public static GameRegistry1_12_2 get() {
-        return INSTANCE;
-    }
-
-    @FEventHandler
-    private static void recreateWhenChanged(IdMappingsChangedEvent event) {
-        INSTANCE = new GameRegistry1_12_2();
-    }
-
+public final class GameRegistry1_16 implements FGameRegistry {
     private final Biome[] idsToBiomes;
     private final Reference2IntMap<Biome> biomesToIds;
 
-    private final IBlockState[] idsToStates;
-    private final Reference2IntMap<IBlockState> statesToIds;
+    private final BlockState[] idsToStates;
+    private final Reference2IntMap<BlockState> statesToIds;
 
     @Getter
-    private final ExtendedBiomeRegistryData1_12_2 extendedBiomeRegistryData;
+    private final ExtendedBiomeRegistryData1_16 extendedBiomeRegistryData;
     @Getter
-    private final ExtendedStateRegistryData1_12_2 extendedStateRegistryData;
+    private final ExtendedStateRegistryData1_16 extendedStateRegistryData;
 
-    private GameRegistry1_12_2() {
+    public GameRegistry1_16(@NonNull World world) {
         //ids -> biomes
-        this.idsToBiomes = StreamSupport.stream(Biome.REGISTRY.spliterator(), false).toArray(Biome[]::new);
+        this.idsToBiomes = world.registryAccess().registryOrThrow(Registry.BIOME_REGISTRY).stream().toArray(Biome[]::new);
 
         //biomes -> ids
         this.biomesToIds = new Reference2IntOpenHashMap<>(this.idsToBiomes.length);
         this.biomesToIds.defaultReturnValue(-1);
-        IntStream.range(0, this.idsToBiomes.length).forEach(id -> checkState(this.biomesToIds.put(this.idsToBiomes[id], id) < 0, "duplicate biome: %s", this.idsToBiomes[id]));
+        IntStream.range(0, this.idsToBiomes.length).forEach(id -> checkState(this.biomesToIds.putIfAbsent(this.idsToBiomes[id], id) < 0, "duplicate biome: %s", this.idsToBiomes[id]));
 
         //extended registry information
-        this.extendedBiomeRegistryData = new ExtendedBiomeRegistryData1_12_2(this);
+        this.extendedBiomeRegistryData = new ExtendedBiomeRegistryData1_16(this);
 
         //ids -> states
-        this.idsToStates = StreamSupport.stream(Block.REGISTRY.spliterator(), false)
-                .flatMap(block -> block.getBlockState().getValidStates().stream())
-                .toArray(IBlockState[]::new);
+        //  ForgeRegistry#spliterator() wraps iterator(), which iterates in ID order using BitSet#nextSetBit. if i were using something like values().stream(), it would be a stream
+        //  over a guava HashBiMap, which would obviously be bad because its order is unpredictable
+        this.idsToStates = StreamSupport.stream(ForgeRegistries.BLOCKS.spliterator(), false)
+                .flatMap(block -> block.getStateDefinition().getPossibleStates().stream())
+                .toArray(BlockState[]::new);
 
         //states -> ids
         this.statesToIds = new Reference2IntOpenHashMap<>(this.idsToStates.length);
         this.statesToIds.defaultReturnValue(-1);
-        IntStream.range(0, this.idsToStates.length).forEach(id -> checkState(this.statesToIds.put(this.idsToStates[id], id) < 0, "duplicate state: %s", this.idsToStates[id]));
+        IntStream.range(0, this.idsToStates.length).forEach(id -> checkState(this.statesToIds.putIfAbsent(this.idsToStates[id], id) < 0, "duplicate state: %s", this.idsToStates[id]));
 
         //extended registry information
-        this.extendedStateRegistryData = new ExtendedStateRegistryData1_12_2(this);
+        this.extendedStateRegistryData = new ExtendedStateRegistryData1_16(this);
     }
 
     @Override
@@ -107,7 +93,7 @@ public final class GameRegistry1_12_2 implements FGameRegistry {
                 buf.writeCharSequence(biome.getRegistryName().toString(), StandardCharsets.UTF_8);
                 buf.writeByte(0);
             }
-            for (IBlockState state : this.idsToStates) { //states
+            for (BlockState state : this.idsToStates) { //states
                 buf.writeCharSequence(state.toString(), StandardCharsets.UTF_8);
                 buf.writeByte(0);
             }
@@ -132,7 +118,7 @@ public final class GameRegistry1_12_2 implements FGameRegistry {
     }
 
     @Override
-    public Biome id2biome(int biome) {
+    public Biome id2biome(int biome) throws UnsupportedOperationException {
         return this.idsToBiomes[biome];
     }
 
@@ -143,17 +129,16 @@ public final class GameRegistry1_12_2 implements FGameRegistry {
 
     @Override
     public int state2id(@NonNull Object state) throws UnsupportedOperationException, ClassCastException {
-        return this.statesToIds.getInt((IBlockState) state);
+        return this.statesToIds.getInt((BlockState) state);
     }
 
     @Override
-    @SuppressWarnings("deprecation")
     public int state2id(@NonNull Object block, int meta) throws UnsupportedOperationException, ClassCastException {
-        return this.statesToIds.getInt(((Block) block).getStateFromMeta(meta));
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public IBlockState id2state(int state) {
+    public BlockState id2state(int state) throws UnsupportedOperationException {
         return this.idsToStates[state];
     }
 }

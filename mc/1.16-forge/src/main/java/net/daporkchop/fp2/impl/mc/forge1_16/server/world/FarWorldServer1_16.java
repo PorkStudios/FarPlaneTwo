@@ -39,6 +39,7 @@ import net.daporkchop.fp2.core.util.threading.workergroup.DefaultWorkerManager;
 import net.daporkchop.fp2.core.util.threading.workergroup.WorkerManager;
 import net.daporkchop.fp2.impl.mc.forge1_16.FP2Forge1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.server.ATMinecraftServer1_16;
+import net.daporkchop.fp2.impl.mc.forge1_16.util.threading.futureexecutor.ServerThreadMarkedFutureExecutor1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.world.AbstractFarWorld1_16;
 import net.minecraft.world.server.ServerWorld;
 
@@ -76,14 +77,13 @@ public class FarWorldServer1_16 extends AbstractFarWorld1_16<ServerWorld> implem
 
         this.coordLimits = this.fp2.eventBus().fireAndGetFirst(new GetCoordinateLimitsEvent(this)).get();
 
-        //TODO:
-        // this.workerManager = new DefaultWorkerManager(this.world.getServer().getRunningThread(), ServerThreadMarkedFutureExecutor.getFor(this.world.getMinecraftServer()));
+        this.workerManager = new DefaultWorkerManager(this.world.getServer().getRunningThread(), ServerThreadMarkedFutureExecutor1_16.getFor(this.world.getServer()));
 
-        //TODO: add an ExactFBlockWorld implementation
         this.exactFBlockWorld = this.fp2.eventBus().fireAndGetFirst(new GetExactFBlockWorldEvent(this)).get();
 
         ImmutableMap.Builder<IFarRenderMode, IFarTileProvider> builder = ImmutableMap.builder();
-        IFarRenderMode.REGISTRY.forEachEntry((name, mode) -> builder.put(mode, mode.tileProvider(uncheckedCast(this))));
+        //TODO: uncomment this
+        // IFarRenderMode.REGISTRY.forEachEntry((name, mode) -> builder.put(mode, mode.tileProvider(uncheckedCast(this))));
         this.tileProvidersByMode = builder.build();
     }
 

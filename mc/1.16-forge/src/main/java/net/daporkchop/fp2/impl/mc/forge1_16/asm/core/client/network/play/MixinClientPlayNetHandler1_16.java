@@ -21,12 +21,17 @@
 package net.daporkchop.fp2.impl.mc.forge1_16.asm.core.client.network.play;
 
 import lombok.Getter;
+import net.daporkchop.fp2.core.client.player.IFarPlayerClient;
 import net.daporkchop.fp2.impl.mc.forge1_16.FP2Forge1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.interfaz.client.network.play.IMixinClientPlayNetHandler1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.client.player.FarPlayerClient1_16;
 import net.minecraft.client.network.play.ClientPlayNetHandler;
+import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
@@ -39,4 +44,17 @@ public abstract class MixinClientPlayNetHandler1_16 implements IMixinClientPlayN
     @Getter
     @Unique
     protected final FarPlayerClient1_16 fp2_farPlayerClient = new FarPlayerClient1_16((FP2Forge1_16) fp2(), uncheckedCast(this));
+
+    @Inject(
+            method = {
+                    "Lnet/minecraft/client/network/play/ClientPlayNetHandler;handleLogin(Lnet/minecraft/network/play/server/SJoinGamePacket;)V",
+                    "Lnet/minecraft/client/network/play/ClientPlayNetHandler;handleRespawn(Lnet/minecraft/network/play/server/SRespawnPacket;)V"
+            },
+            at = @At(value = "FIELD",
+                    target = "Lnet/minecraft/client/Minecraft;player:Lnet/minecraft/client/entity/player/ClientPlayerEntity;",
+                    opcode = Opcodes.PUTFIELD,
+                    shift = At.Shift.AFTER))
+    private void fp2_notifyContextReady(CallbackInfo ci) {
+        fp2().client().currentPlayer().ifPresent(IFarPlayerClient::fp2_IFarPlayerClient_ready);
+    }
 }

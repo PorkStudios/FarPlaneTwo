@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.impl.mc.forge1_16;
 
+import net.daporkchop.fp2.api.event.FEventBus;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.debug.FP2Debug;
@@ -27,6 +28,7 @@ import net.daporkchop.fp2.core.log4j.Log4jAsPorkLibLogger;
 import net.daporkchop.fp2.core.server.FP2Server;
 import net.daporkchop.fp2.core.util.I18n;
 import net.daporkchop.fp2.impl.mc.forge1_16.client.FP2Client1_16;
+import net.daporkchop.fp2.impl.mc.forge1_16.network.FP2Network1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.server.FP2Server1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.util.I18n1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.util.ParallelDispatchEventAsFutureExecutor1_16;
@@ -44,6 +46,7 @@ import net.minecraftforge.fml.loading.FMLPaths;
 import org.apache.logging.log4j.LogManager;
 
 import java.nio.file.Path;
+import java.util.function.Consumer;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.fp2.core.debug.FP2Debug.*;
@@ -67,6 +70,8 @@ public final class FP2Forge1_16 extends FP2Core {
 
     @SubscribeEvent
     public void commonSetup(FMLCommonSetupEvent event) {
+        event.getIMCStream("early_register_events"::equals).forEach(msg -> msg.<Consumer<? super FEventBus>>getMessageSupplier().get().accept(this.eventBus()));
+
         this.init();
     }
 
@@ -91,7 +96,7 @@ public final class FP2Forge1_16 extends FP2Core {
         this.server = new FP2Server1_16(this);
         this.server.init(new ParallelDispatchEventAsFutureExecutor1_16(event));
 
-        //TODO: network stuff goes here
+        FP2Network1_16.init(this);
 
         if (FP2_DEBUG) {
             FP2Debug.init(this);

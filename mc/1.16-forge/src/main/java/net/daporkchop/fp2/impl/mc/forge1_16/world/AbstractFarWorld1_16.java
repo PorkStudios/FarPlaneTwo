@@ -22,22 +22,32 @@ package net.daporkchop.fp2.impl.mc.forge1_16.world;
 
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorld;
 import net.daporkchop.fp2.impl.mc.forge1_16.FP2Forge1_16;
+import net.daporkchop.fp2.impl.mc.forge1_16.world.registry.GameRegistry1_16;
 import net.minecraft.world.World;
+
+import java.util.UUID;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
 @Getter
 public abstract class AbstractFarWorld1_16<W extends World> implements IFarWorld {
-    @NonNull
     protected final FP2Forge1_16 fp2;
-    @NonNull
     protected final W world;
+
+    protected final GameRegistry1_16 registry;
+
+    public AbstractFarWorld1_16(@NonNull FP2Forge1_16 fp2, @NonNull W world) {
+        this.fp2 = fp2;
+        this.world = world;
+
+        this.registry = new GameRegistry1_16(world);
+
+        fp2.log().error("%s registry: %s", this, this.registry.registryToken().map(UUID::nameUUIDFromBytes));
+    }
 
     @Override
     public Object fp2_IFarWorld_implWorld() {
@@ -56,6 +66,6 @@ public abstract class AbstractFarWorld1_16<W extends World> implements IFarWorld
 
     @Override
     public FGameRegistry fp2_IFarWorld_registry() {
-        throw new UnsupportedOperationException(); //TODO
+        return this.registry;
     }
 }

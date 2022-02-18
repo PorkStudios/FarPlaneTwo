@@ -25,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.core.util.log.BaseProxyLogger;
 import net.daporkchop.lib.logging.LogLevel;
 import net.minecraft.client.Minecraft;
+import net.minecraft.util.Util;
 import net.minecraft.util.text.StringTextComponent;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
@@ -56,7 +57,7 @@ public class ChatLogger1_16 extends BaseProxyLogger {
         message = PRE + "§9FarPlaneTwo" + POST + (channel != null ? PRE + channel + POST : "") + LEVEL_PREFIXES[level.ordinal()] + message;
 
         if (this.mc.player != null) {
-            this.mc.player.sendMessage(new StringTextComponent(message), null);
+            this.mc.player.sendMessage(new StringTextComponent(message), Util.NIL_UUID);
         } else {
             fp2().log().log(level, "[CHAT] " + message);
         }

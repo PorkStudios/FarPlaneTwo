@@ -18,40 +18,56 @@
  *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_16.server.player;
+package net.daporkchop.fp2.impl.mc.forge1_16.server.world;
 
-import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.core.network.IPacket;
-import net.daporkchop.fp2.core.server.player.AbstractFarPlayerServer;
-import net.daporkchop.fp2.impl.mc.forge1_16.FP2Forge1_16;
-import net.daporkchop.fp2.impl.mc.forge1_16.network.FP2Network1_16;
-import net.daporkchop.lib.math.vector.Vec3d;
-import net.minecraft.network.play.ServerPlayNetHandler;
-import net.minecraft.util.math.vector.Vector3d;
+import net.daporkchop.fp2.api.world.BlockWorldConstants;
+import net.daporkchop.fp2.api.world.FBlockWorld;
+import net.daporkchop.fp2.api.world.registry.FGameRegistry;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.LightType;
+import net.minecraft.world.server.ServerWorld;
 
 /**
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-@Getter
-public class FarPlayerServer1_16 extends AbstractFarPlayerServer {
+public class ExactFBlockWorld1_16 implements FBlockWorld {
     @NonNull
-    protected final FP2Forge1_16 fp2;
+    protected final ServerWorld world;
     @NonNull
-    protected final ServerPlayNetHandler netHandler;
+    protected final FGameRegistry registry;
 
     @Override
-    public Vec3d fp2_IFarPlayer_position() {
-        Vector3d position = this.netHandler.player.position();
-        return Vec3d.of(position.x(), position.y(), position.z());
+    public void close() {
+        //no-op
     }
 
     @Override
-    public void fp2_IFarPlayer_sendPacket(@NonNull IPacket packet) {
-        if (!this.closed) {
-            FP2Network1_16.sendToPlayer(packet, this.netHandler.getConnection());
-        }
+    public FGameRegistry registry() {
+        throw new UnsupportedOperationException(); //TODO
+    }
+
+    @Override
+    public boolean containsAnyData(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+        throw new UnsupportedOperationException(); //TODO
+    }
+
+    @Override
+    public int getState(int x, int y, int z) {
+        //this.world.registryAccess().registryOrThrow(ForgeRegistries.BLOCKS);
+        throw new UnsupportedOperationException(); //TODO
+    }
+
+    @Override
+    public int getBiome(int x, int y, int z) {
+        throw new UnsupportedOperationException(); //TODO
+    }
+
+    @Override
+    public byte getLight(int x, int y, int z) {
+        BlockPos pos = new BlockPos(x, y, z);
+        return BlockWorldConstants.packLight(this.world.getBrightness(LightType.SKY, pos), this.world.getBrightness(LightType.BLOCK, pos));
     }
 }
