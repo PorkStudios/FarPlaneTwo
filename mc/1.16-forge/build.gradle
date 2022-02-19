@@ -58,8 +58,7 @@ minecraft {
 dependencies {
     //:gl module, plus dependency-specific addon modules
     implementationShade project(":gl")
-    //TODO: 1.16 uses LWJGL3...
-    // runtimeOnlyShade project(":gl:opengl-lwjgl2")
+    runtimeOnlyShade project(":gl:opengl-lwjgl3")
 
     //:core module, plus dependency-specific addon modules
     implementationShade project(":core")

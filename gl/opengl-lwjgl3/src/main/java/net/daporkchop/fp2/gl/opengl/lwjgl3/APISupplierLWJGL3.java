@@ -18,14 +18,21 @@
  *
  */
 
-include 'api'
-include 'common'
-include 'core'
-include 'core:log4j'
-include 'core:mixin'
-include 'gl'
-include 'gl:opengl'
-include 'gl:opengl-lwjgl2'
-include 'gl:opengl-lwjgl3'
-include 'mc:1.12.2-forge'
-include 'mc:1.16-forge'
+package net.daporkchop.fp2.gl.opengl.lwjgl3;
+
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+import net.daporkchop.fp2.gl.opengl.GLAPI;
+
+import java.util.function.Supplier;
+
+/**
+ * @author DaPorkchop_
+ */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+class APISupplierLWJGL3 implements Supplier<GLAPI> {
+    @Override
+    public GLAPI get() {
+        return new GLAPILWJGL3();
+    }
+}

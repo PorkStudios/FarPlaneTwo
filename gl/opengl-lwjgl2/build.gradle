@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -28,10 +28,11 @@ dependencies {
     implementationProvided "org.lwjgl.lwjgl:lwjgl:$lwjgl2Version"
     implementationProvided "org.lwjgl.lwjgl:lwjgl_util:$lwjgl2Version"
 
-    implementationProvided "org.lwjgl.lwjgl:lwjgl-platform:$lwjgl2Version:natives-linux"
-    implementationProvided "org.lwjgl.lwjgl:lwjgl-platform:$lwjgl2Version:natives-windows"
-
     implementationProvided "org.ow2.asm:asm-debug-all:$asmVersion"
+
+    testImplementation project(":gl:opengl").sourceSets.test.output
+
+    testImplementation "org.lwjgl.lwjgl:lwjgl-platform:$lwjgl2Version:natives-linux"
 }
 
 natives.modules {
