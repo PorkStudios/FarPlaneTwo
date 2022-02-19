@@ -11,7 +11,7 @@
       "DaPorkchop_"
     ],
     "credits": "Barteks2x for making Cubic Chunks",
-    "logoFile": "/assets/fp2/textures/logo.png",
+    "logoFile": "fp2_logo.png",
     "screenshots": [],
     "dependencies": []
   }
