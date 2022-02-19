@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -35,7 +35,7 @@ public final class DeleteMixin {
     @NonNull
     protected final Project project;
 
-    public void register() {
+    public DeleteMixin register() {
         this.project.getDependencies().getAttributesSchema().attribute(ATTRIBUTE);
         this.project.getDependencies().registerTransform(DeleteMixinTransform.class, spec -> {
             spec.getFrom().attribute(ATTRIBUTE, false);
@@ -43,7 +43,6 @@ public final class DeleteMixin {
         });
 
         this.project.getDependencies().getArtifactTypes().getByName("jar").getAttributes().attribute(ATTRIBUTE, false);
-
-        this.project.getExtensions().create("fp2", DeleteMixinExtension.class, this.project);
+        return this;
     }
 }

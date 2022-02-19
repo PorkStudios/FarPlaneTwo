@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,12 +18,15 @@
  *
  */
 
-package net.daporkchop.fp2.gradle.deletemixin;
+package net.daporkchop.fp2.gradle;
 
 import groovy.lang.Closure;
 import groovy.lang.GroovyObjectSupport;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.gradle.deletemixin.DeleteMixin;
+import net.daporkchop.fp2.gradle.translateresources.struct.TranslateResourcesOptions;
+import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ModuleDependency;
@@ -32,15 +35,30 @@ import org.gradle.api.artifacts.ModuleDependency;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public class DeleteMixinExtension extends GroovyObjectSupport {
+public class FP2GradleExtension extends GroovyObjectSupport {
     @NonNull
     protected final Project project;
+    @NonNull
+    protected final FP2GradlePlugin plugin;
+
+    //
+    // deletemixin
+    //
 
     public Dependency deleteMixin(Object dependency) {
         return this.deleteMixin(dependency, null);
     }
 
     public Dependency deleteMixin(Object dependency, Closure<?> closure) {
-        return ((ModuleDependency) this.project.getDependencies().create(dependency, closure)).attributes(attributeContainer -> attributeContainer.attribute(DeleteMixin.ATTRIBUTE, true));
+        return ((ModuleDependency) this.project.getDependencies().create(dependency, closure))
+                .attributes(attributeContainer -> attributeContainer.attribute(DeleteMixin.ATTRIBUTE, true));
+    }
+
+    //
+    // translateresources
+    //
+
+    public void translateResources(Action<? super TranslateResourcesOptions.TranslateResourcesOptionsBuilder> configureAction) {
+        this.plugin.translateResources().translateResources(TranslateResourcesOptions.buildFrom(configureAction));
     }
 }

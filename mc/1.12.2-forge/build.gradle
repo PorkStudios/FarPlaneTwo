@@ -83,25 +83,9 @@ dependencies {
     implementationProvided fg.deobf("io.github.opencubicchunks:cubicworldgen:1.12.2-0.0-SNAPSHOT")
 }
 
-processResources {
-    duplicatesStrategy DuplicatesStrategy.INCLUDE
-
-    // this will ensure that this task is redone when the versions change.
-    inputs.property "version", project.version
-    inputs.property "mcversion", project.minecraftVersion
-
-    // replace stuff in mcmod.info, nothing else
-    from(sourceSets.main.resources.srcDirs) {
-        include "mcmod.info"
-
-        // replace version and mcversion
-        expand "version": project.version, "mcversion": project.minecraftVersion
-    }
-
-    // copy everything else except the mcmod.info
-    from(sourceSets.main.resources.srcDirs) {
-        exclude "mcmod.info"
-    }
+fp2.translateResources {
+    targetVersion = "minecraft_pack_format_v3"
+    sourceSet = sourceSets.main
 }
 
 mixin {

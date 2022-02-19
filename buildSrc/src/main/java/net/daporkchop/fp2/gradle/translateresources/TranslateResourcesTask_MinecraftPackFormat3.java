@@ -18,32 +18,17 @@
  *
  */
 
-apply plugin: "com.github.johnrengelman.shadow"
+package net.daporkchop.fp2.gradle.translateresources;
 
-dependencies {
-    apiShade project(":api")
+import java.util.Collections;
+import java.util.List;
 
-    implementationShade project(":core")
-    implementationProvided project(":gl")
-}
-
-processResources {
-    duplicatesStrategy DuplicatesStrategy.INCLUDE
-
-    //this will ensure that this task is redone when the versions change.
-    inputs.property "version", "${project.version}"
-    inputs.property "mcversion", "${minecraftVersion}"
-
-    //replace stuff in mcmod.info, nothing else
-    from(sourceSets.main.resources.srcDirs) {
-        include "mcmod.info"
-
-        // replace version and mcversion
-        expand "version": "${project.version}", "mcversion": "${minecraftVersion}"
-    }
-
-    //copy everything else except the mcmod.info
-    from(sourceSets.main.resources.srcDirs) {
-        exclude "mcmod.info"
+/**
+ * @author DaPorkchop_
+ */
+public abstract class TranslateResourcesTask_MinecraftPackFormat3 extends TranslateResourcesTask {
+    @Override
+    protected List<Transformation<?>> transformations() {
+        return Collections.singletonList(new CopyTransformation());
     }
 }

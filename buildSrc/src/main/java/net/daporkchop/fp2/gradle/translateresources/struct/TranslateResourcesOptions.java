@@ -18,32 +18,31 @@
  *
  */
 
-apply plugin: "com.github.johnrengelman.shadow"
+package net.daporkchop.fp2.gradle.translateresources.struct;
 
-dependencies {
-    apiShade project(":api")
+import lombok.Builder;
+import lombok.Data;
+import lombok.NonNull;
+import lombok.experimental.Accessors;
+import org.gradle.api.Action;
+import org.gradle.api.tasks.SourceSet;
 
-    implementationShade project(":core")
-    implementationProvided project(":gl")
-}
-
-processResources {
-    duplicatesStrategy DuplicatesStrategy.INCLUDE
-
-    //this will ensure that this task is redone when the versions change.
-    inputs.property "version", "${project.version}"
-    inputs.property "mcversion", "${minecraftVersion}"
-
-    //replace stuff in mcmod.info, nothing else
-    from(sourceSets.main.resources.srcDirs) {
-        include "mcmod.info"
-
-        // replace version and mcversion
-        expand "version": "${project.version}", "mcversion": "${minecraftVersion}"
+/**
+ * @author DaPorkchop_
+ */
+@Data
+@Builder
+@Accessors(fluent = false)
+public final class TranslateResourcesOptions {
+    public static TranslateResourcesOptions buildFrom(Action<? super TranslateResourcesOptionsBuilder> configureAction) {
+        TranslateResourcesOptionsBuilder builder = builder();
+        configureAction.execute(builder);
+        return builder.build();
     }
 
-    //copy everything else except the mcmod.info
-    from(sourceSets.main.resources.srcDirs) {
-        exclude "mcmod.info"
-    }
+    @NonNull
+    protected final String targetVersion;
+
+    @NonNull
+    protected final SourceSet sourceSet;
 }

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -78,9 +78,9 @@ public final class Natives {
     @NonNull
     protected final Project project;
 
-    public void register() {
+    public Natives register() {
         if (!CLANG_PATH.isPresent() || !TAR_PATH.isPresent()) { //do nothing
-            return;
+            return this;
         }
 
         NativesExtension extension = this.project.getExtensions().create("natives", NativesExtension.class);
@@ -111,6 +111,8 @@ public final class Natives {
                 });
             });
         });
+
+        return this;
     }
 
     private TaskProvider<? extends Task> registerBuild(NativeSpec spec, NativeModule module, Provider<Directory> linkOutputDir) {

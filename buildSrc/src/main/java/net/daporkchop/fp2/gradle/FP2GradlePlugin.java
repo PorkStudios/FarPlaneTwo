@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -24,6 +24,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.gradle.deletemixin.DeleteMixin;
 import net.daporkchop.fp2.gradle.natives.Natives;
+import net.daporkchop.fp2.gradle.translateresources.TranslateResources;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 
@@ -55,9 +56,16 @@ public class FP2GradlePlugin implements Plugin<Project> {
         return Optional.empty();
     }
 
+    private DeleteMixin deleteMixin;
+    private Natives natives;
+    private TranslateResources translateResources;
+
     @Override
     public void apply(@NonNull Project project) {
-        new DeleteMixin(project).register();
-        new Natives(project).register();
+        this.deleteMixin = new DeleteMixin(project).register();
+        this.natives = new Natives(project).register();
+        this.translateResources = new TranslateResources(project).register();
+
+        project.getExtensions().create("fp2", FP2GradleExtension.class, project, this);
     }
 }
