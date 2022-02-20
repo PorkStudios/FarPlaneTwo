@@ -22,9 +22,11 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.server;
 
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.SneakyThrows;
 import net.daporkchop.fp2.api.event.ChangedEvent;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.core.config.FP2Config;
+import net.daporkchop.fp2.core.debug.resources.DebugResources;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketHandshake;
 import net.daporkchop.fp2.core.server.FP2Server;
 import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
@@ -39,6 +41,7 @@ import net.daporkchop.lib.math.vector.Vec2i;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.text.TextComponentTranslation;
+import net.minecraft.util.text.translation.LanguageMap;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
@@ -49,8 +52,15 @@ import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.PlayerEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
+import net.minecraftforge.fml.relauncher.FMLLaunchHandler;
+import net.minecraftforge.fml.relauncher.Side;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Paths;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
+import static net.daporkchop.fp2.core.debug.FP2Debug.*;
 
 /**
  * Manages initialization of FP2 on the server.
@@ -66,11 +76,19 @@ public class FP2Server1_12_2 extends FP2Server {
     }
 
     @Override
+    @SneakyThrows(IOException.class)
     public void init(@NonNull FutureExecutor serverThreadExecutor) {
         super.init(serverThreadExecutor);
 
         //register self to listen for events
         MinecraftForge.EVENT_BUS.register(this);
+
+        //if we're in debug mode in a dev environment on the dedicated server, inject locale data into the language map
+        if (FP2_DEBUG && FMLLaunchHandler.isDeobfuscatedEnvironment() && FMLCommonHandler.instance().getSide() == Side.SERVER) {
+            try (InputStream in = DebugResources.findStream(Paths.get("assets/" + MODID + "/lang/en_us.lang")).get()) {
+                LanguageMap.inject(in);
+            }
+        }
     }
 
     //fp2 events

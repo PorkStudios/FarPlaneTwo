@@ -9,5 +9,6 @@
     "client.renderer.MixinWorldRenderer1_16"
   ],
   "mixins": [
+    "resources.MixinResourcePackList1_16"
   ]
 }
