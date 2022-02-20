@@ -56,6 +56,8 @@ import static net.daporkchop.fp2.core.debug.FP2Debug.*;
  */
 @Mod(MODID)
 public final class FP2Forge1_16 extends FP2Core {
+    public static boolean INITIALIZED = false; //TODO: this is a nasty hack
+
     private FP2Client1_16 client;
     private FP2Server1_16 server;
 
@@ -101,6 +103,8 @@ public final class FP2Forge1_16 extends FP2Core {
         if (FP2_DEBUG) {
             FP2Debug.init(this);
         }
+
+        INITIALIZED = true;
     }
 
     @SubscribeEvent

@@ -26,6 +26,7 @@ import net.daporkchop.fp2.core.client.player.IFarPlayerClient;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
+import net.daporkchop.fp2.impl.mc.forge1_16.client.render.WorldRenderer1_16;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ActiveRenderInfo;
 import net.minecraft.client.renderer.GameRenderer;
@@ -51,8 +52,6 @@ import static net.daporkchop.fp2.core.FP2Core.*;
 public abstract class MixinWorldRenderer1_16 {
     @Shadow
     private ClientWorld level;
-
-    @Shadow @Final private Minecraft minecraft;
 
     @Inject(method = "Lnet/minecraft/client/renderer/WorldRenderer;setupRender(Lnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/culling/ClippingHelper;ZIZ)V",
             at = @At("HEAD"),
@@ -101,6 +100,7 @@ public abstract class MixinWorldRenderer1_16 {
             IFarRenderer renderer;
             if (context != null && (renderer = context.renderer()) != null) {
                 this.level.getProfiler().push("fp2_render_pre");
+                WorldRenderer1_16.ACTIVE_MATRIX_STACK = matrixStack;
                 renderer.render(layer, true);
                 this.level.getProfiler().pop();
             }
@@ -121,6 +121,7 @@ public abstract class MixinWorldRenderer1_16 {
             IFarRenderer renderer;
             if (context != null && (renderer = context.renderer()) != null) {
                 this.level.getProfiler().push("fp2_render_post");
+                WorldRenderer1_16.ACTIVE_MATRIX_STACK = matrixStack;
                 renderer.render(layer, false);
                 this.level.getProfiler().pop();
             }

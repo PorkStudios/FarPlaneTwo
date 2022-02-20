@@ -29,7 +29,7 @@ import java.util.function.Consumer;
 /**
  * @author DaPorkchop_
  */
-public class DebugResourcePackFinder1_16 implements IPackFinder { //TODO: IPackFinder is being found in the wrong classloader
+public class DebugResourcePackFinder1_16 implements IPackFinder {
     @Override
     public void loadPacks(Consumer<ResourcePackInfo> callback, ResourcePackInfo.IFactory infoFactory) {
         callback.accept(ResourcePackInfo.create("fp2_debug", true, DebugResourcePack1_16::new, infoFactory, ResourcePackInfo.Priority.BOTTOM, IPackNameDecorator.DEFAULT));

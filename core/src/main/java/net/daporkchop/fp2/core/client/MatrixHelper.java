@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -43,6 +43,12 @@ public class MatrixHelper {
 
     public int matrixIndex(int x, int y) {
         return x * 4 + y;
+    }
+
+    private void swap(float[] arr, int i0, int i1) {
+        float t = arr[i0];
+        arr[i0] = arr[i1];
+        arr[i1] = t;
     }
 
     public long matrixOffset(int x, int y) {
@@ -135,5 +141,18 @@ public class MatrixHelper {
         //multiply offset by w to work around division by w on GPU
         float w = (mat[3] + mat[7]) + (mat[11] + mat[15]);
         mat[14] += offset * abs(w);
+    }
+
+    public void flip(float[] mat) {
+        //check array length at head to allow JIT to optimize array bounds checks out in method body
+        checkArg(mat.length >= MAT4_ELEMENTS);
+
+        //swap opposite pairs
+        swap(mat, matrixIndex(0, 1), matrixIndex(1, 0));
+        swap(mat, matrixIndex(0, 2), matrixIndex(2, 0));
+        swap(mat, matrixIndex(0, 3), matrixIndex(3, 0));
+        swap(mat, matrixIndex(1, 2), matrixIndex(2, 1));
+        swap(mat, matrixIndex(1, 3), matrixIndex(3, 1));
+        swap(mat, matrixIndex(2, 3), matrixIndex(3, 2));
     }
 }

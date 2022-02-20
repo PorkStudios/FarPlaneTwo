@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.impl.mc.forge1_16.client.render;
 
+import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -53,6 +54,8 @@ import static org.lwjgl.opengl.GL11.*;
 @RequiredArgsConstructor
 @Getter
 public class WorldRenderer1_16 implements WorldRenderer, AutoCloseable {
+    public static MatrixStack ACTIVE_MATRIX_STACK; //TODO: this is extremely gross, add the current matrix as a parameter to IFarRenderer#render
+
     protected final Minecraft mc;
     protected final GL gl;
 
@@ -142,8 +145,7 @@ public class WorldRenderer1_16 implements WorldRenderer, AutoCloseable {
         float[] projection = alloc.atLeast(MatrixHelper.MAT4_ELEMENTS);
         try {
             //load both matrices into arrays
-            glGetFloatv(GL_MODELVIEW_MATRIX, (FloatBuffer) this.tempMatrix.clear());
-            this.tempMatrix.get(modelView);
+            ACTIVE_MATRIX_STACK.last().pose().store(FloatBuffer.wrap(modelView));
             glGetFloatv(GL_PROJECTION_MATRIX, (FloatBuffer) this.tempMatrix.clear());
             this.tempMatrix.get(projection);
 
