@@ -18,29 +18,43 @@
  *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_16.asm.debug.client.renderer;
+package net.daporkchop.fp2.impl.mc.forge1_16.asm.core.client.renderer.culling;
 
-import net.minecraft.client.renderer.WorldRenderer;
-import net.minecraft.client.renderer.vertex.VertexBuffer;
-import net.minecraft.util.math.vector.Matrix4f;
+import net.daporkchop.fp2.core.client.IFrustum;
+import net.minecraft.client.renderer.culling.ClippingHelper;
+import net.minecraft.util.math.vector.Vector4f;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Redirect;
-
-import static net.daporkchop.fp2.core.FP2Core.*;
+import org.spongepowered.asm.mixin.Shadow;
 
 /**
  * @author DaPorkchop_
  */
-@Mixin(WorldRenderer.class)
-public abstract class MixinWorldRenderer1_16 {
-    @Redirect(method = "Lnet/minecraft/client/renderer/WorldRenderer;renderChunkLayer(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/matrix/MatrixStack;DDD)V",
-            at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/client/renderer/vertex/VertexBuffer;draw(Lnet/minecraft/util/math/vector/Matrix4f;I)V"),
-            require = 1, allow = 1)
-    private void fp2_debug_renderLevel_disableVanillaTerrain(VertexBuffer buffer, Matrix4f matrix, int mode) {
-        if (fp2().globalConfig().debug().vanillaTerrainRendering()) {
-            buffer.draw(matrix, mode);
+@Mixin(ClippingHelper.class)
+public abstract class MixinClippingHelper1_16 implements IFrustum {
+    @Shadow
+    @Final
+    private Vector4f[] frustumData;
+
+    @Shadow
+    protected abstract boolean cubeInFrustum(double minX, double minY, double minZ, double maxX, double maxY, double maxZ);
+
+    @Override
+    public boolean containsPoint(double x, double y, double z) {
+        return this.cubeInFrustum(x, y, z, x, y, z);
+    }
+
+    @Override
+    public boolean intersectsBB(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
+        return this.cubeInFrustum(minX, minY, minZ, maxX, maxY, maxZ);
+    }
+
+    @Override
+    public ClippingPlanes clippingPlanes() {
+        ClippingPlanes clippingPlanes = new ClippingPlanes();
+        for (Vector4f plane : this.frustumData) {
+            clippingPlanes.put(plane.x(), plane.y(), plane.z(), plane.w());
         }
+        return clippingPlanes;
     }
 }

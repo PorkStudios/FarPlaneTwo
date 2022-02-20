@@ -5,6 +5,7 @@
   "refmap": "mixins.fp2.refmap.json",
   "client": [
     "client.network.play.MixinClientPlayNetHandler1_16",
+    "client.renderer.culling.MixinClippingHelper1_16",
     "client.renderer.MixinWorldRenderer1_16",
     "client.MixinMinecraft1_16"
   ],

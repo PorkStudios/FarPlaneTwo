@@ -22,22 +22,27 @@ package net.daporkchop.fp2.impl.mc.forge1_16.asm.core.client.renderer;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
 import net.daporkchop.fp2.core.client.IFrustum;
+import net.daporkchop.fp2.core.client.player.IFarPlayerClient;
+import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ActiveRenderInfo;
+import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.renderer.culling.ClippingHelper;
 import net.minecraft.client.world.ClientWorld;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
-import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
@@ -46,6 +51,8 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 public abstract class MixinWorldRenderer1_16 {
     @Shadow
     private ClientWorld level;
+
+    @Shadow @Final private Minecraft minecraft;
 
     @Inject(method = "Lnet/minecraft/client/renderer/WorldRenderer;setupRender(Lnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/culling/ClippingHelper;ZIZ)V",
             at = @At("HEAD"),
@@ -118,5 +125,20 @@ public abstract class MixinWorldRenderer1_16 {
                 this.level.getProfiler().pop();
             }
         });
+    }
+
+    @Redirect(method = "Lnet/minecraft/client/renderer/WorldRenderer;renderLevel(Lcom/mojang/blaze3d/matrix/MatrixStack;FJZLnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/GameRenderer;Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/util/math/vector/Matrix4f;)V",
+            at = @At(value = "INVOKE",
+                    target = "Lnet/minecraft/client/renderer/GameRenderer;getRenderDistance()F"),
+            require = 1, allow = 1)
+    private float fp2_renderLevel_increaseFogDistance(GameRenderer renderer) {
+        IFarClientContext<?, ?> context = fp2().client().currentPlayer().map(IFarPlayerClient::fp2_IFarPlayerClient_activeContext).orElse(null);
+        if (context != null) {
+            FP2Config config = context.config();
+            return config.effectiveRenderDistanceBlocks();
+            //TODO: i need a better system for computing this
+        }
+
+        return renderer.getRenderDistance();
     }
 }
