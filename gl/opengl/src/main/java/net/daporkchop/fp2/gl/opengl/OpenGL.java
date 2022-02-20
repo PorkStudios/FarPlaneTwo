@@ -24,6 +24,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableSet;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.common.GlobalProperties;
@@ -98,6 +99,7 @@ import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
@@ -129,12 +131,21 @@ public class OpenGL implements GL {
 
     protected final boolean preserveInputGlState;
 
+    @Getter(AccessLevel.NONE)
+    protected boolean closed = false;
+
     protected OpenGL(@NonNull OpenGLBuilder builder) {
         this.resourceProvider = ResourceProvider.selectingByNamespace(OPENGL_NAMESPACE, ResourceProvider.loadingClassResources(OpenGL.class), builder.resourceProvider);
 
-        this.api = GlobalProperties.find(OpenGL.class, "opengl")
-                .<Supplier<GLAPI>>getInstance("api.supplier")
-                .get();
+        {
+            GLAPI api = GlobalProperties.find(OpenGL.class, "opengl")
+                    .<Supplier<GLAPI>>getInstance("api.supplier")
+                    .get();
+            if (DEBUG) { //debug mode is enabled, check for errors
+                api = ErrorCheckingWrapperGLAPI.wrap(this, api);
+            }
+            this.api = api;
+        }
 
         this.version = this.api.version();
         this.preserveInputGlState = true;
@@ -203,7 +214,9 @@ public class OpenGL implements GL {
 
     @Override
     public void close() {
+        this.ensureOpen();
         this.resourceArena.release();
+        this.closed = true;
     }
 
     @Override
@@ -331,5 +344,13 @@ public class OpenGL implements GL {
     @Override
     public TransformShaderProgramBuilder createTransformShaderProgram(@NonNull TransformLayout layout) {
         return new TransformShaderProgramBuilderImpl(this, (TransformLayoutImpl) layout);
+    }
+
+    //
+    // INTERNAL
+    //
+
+    public void ensureOpen() {
+        checkState(!this.closed, "context closed!");
     }
 }
