@@ -28,8 +28,6 @@ dependencies {
     implementationProvided "org.lwjgl.lwjgl:lwjgl:$lwjgl2Version"
     implementationProvided "org.lwjgl.lwjgl:lwjgl_util:$lwjgl2Version"
 
-    implementationProvided "org.ow2.asm:asm-debug-all:$asmVersion"
-
     testImplementation project(":gl:opengl").sourceSets.test.output
 
     testImplementation "org.lwjgl.lwjgl:lwjgl-platform:$lwjgl2Version:natives-linux"
