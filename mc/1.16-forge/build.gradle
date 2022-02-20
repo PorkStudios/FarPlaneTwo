@@ -65,6 +65,8 @@ dependencies {
     implementationShade project(":core:log4j")
     implementationShade project(":core:mixin")
 
+    implementationShade project(":resources")
+
     //implementationProvided "net.daporkchop:forgerocks:$rocksdbVersion-$minecraftVersion"
 }
 

@@ -18,21 +18,32 @@
  *
  */
 
-plugins {
-    id "java-gradle-plugin"
+allprojects {
+    apply plugin: "java"
+
+    repositories {
+        mavenCentral()
+        maven {
+            name = "DaPorkchop_"
+            url = "https://maven.daporkchop.net/"
+        }
+    }
+
+    dependencies {
+        compileOnly "org.projectlombok:lombok:$lombokVersion"
+        annotationProcessor "org.projectlombok:lombok:$lombokVersion"
+    }
 }
 
-repositories {
-    mavenCentral()
-}
+apply plugin: "java-gradle-plugin"
 
 dependencies {
     implementation gradleApi()
+    implementation project(":resources")
+
+    implementation "net.daporkchop.lib:common:$porklibVersion"
 
     implementation "com.google.code.gson:gson:$gsonVersion"
-
-    compileOnly "org.projectlombok:lombok:$lombokVersion"
-    annotationProcessor "org.projectlombok:lombok:$lombokVersion"
 }
 
 gradlePlugin {

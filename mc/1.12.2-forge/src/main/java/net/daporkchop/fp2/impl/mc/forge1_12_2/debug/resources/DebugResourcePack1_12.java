@@ -21,8 +21,7 @@
 package net.daporkchop.fp2.impl.mc.forge1_12_2.debug.resources;
 
 import com.google.common.collect.ImmutableSet;
-import lombok.SneakyThrows;
-import net.daporkchop.fp2.core.debug.resources.DebugResources;
+import net.daporkchop.fp2.resources.FResources;
 import net.minecraft.client.resources.IResourcePack;
 import net.minecraft.client.resources.data.IMetadataSection;
 import net.minecraft.client.resources.data.MetadataSerializer;
@@ -42,15 +41,18 @@ import static net.daporkchop.fp2.core.FP2Core.*;
  * @author DaPorkchop_
  */
 public class DebugResourcePack1_12 implements IResourcePack {
-    @Override
-    public InputStream getInputStream(ResourceLocation location) throws IOException {
-        return DebugResources.findStream(Paths.get("assets/" + location.getNamespace() + '/' + location.getPath()))
-                .orElseThrow(() -> new FileNotFoundException(location.getPath()));
-    }
+    protected final FResources resources = FResources.findForDebug("minecraft_pack_format_v3");
 
     @Override
     public boolean resourceExists(ResourceLocation location) {
-        return DebugResources.findPath(Paths.get("assets/" + location.getNamespace() + '/' + location.getPath())).isPresent();
+        return this.resources.getResource(Paths.get("assets/" + location.getNamespace() + '/' + location.getPath())).isPresent();
+    }
+
+    @Override
+    public InputStream getInputStream(ResourceLocation location) throws IOException {
+        return this.resources.getResource(Paths.get("assets/" + location.getNamespace() + '/' + location.getPath()))
+                .orElseThrow(() -> new FileNotFoundException(location.getPath()))
+                .getThrowing();
     }
 
     @Override

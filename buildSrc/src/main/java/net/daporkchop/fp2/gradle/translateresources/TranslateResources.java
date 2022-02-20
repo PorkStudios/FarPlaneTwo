@@ -64,21 +64,9 @@ public final class TranslateResources {
     }
 
     public void translateResources(TranslateResourcesOptions options) {
-        Class<? extends TranslateResourcesTask> clazz;
-        switch (options.getTargetVersion()) {
-            case "minecraft_pack_format_v3":
-                clazz = TranslateResourcesTask_MinecraftPackFormat3.class;
-                break;
-            case "minecraft_pack_format_v6":
-                clazz = TranslateResourcesTask_MinecraftPackFormat6.class;
-                break;
-            default:
-                throw new IllegalArgumentException("unknown target version: " + options.getTargetVersion());
-        }
-
-        this.project.getTasks().register(ROOT_TASK_NAME + '_' + options.getSourceSet().getName() + '_' + options.getTargetVersion(), clazz, task -> {
+        this.project.getTasks().register(ROOT_TASK_NAME + '_' + options.getSourceSet().getName() + '_' + options.getTargetVersion(), TranslateResourcesTask.class, task -> {
+            task.getTargetFormat().set(options.getTargetVersion());
             task.getInputDirectory().set(this.project.getRootDir().toPath().resolve("core/resources/").toFile());
-            //task.getDestinationDirectory().set(options.getSourceSet().getOutput().getResourcesDir());
             task.getOutputDirectory().set(this.resourceOutputDir(options.getSourceSet()));
 
             this.rootTask.get().dependsOn(task);

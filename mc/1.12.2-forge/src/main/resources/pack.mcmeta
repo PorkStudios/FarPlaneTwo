@@ -1,6 +1,7 @@
 {
   "pack": {
-    "description": "FarPlaneTwo resources",
+    "description": "debug resources",
+    "_comment": "this should not be packaged into the runtime jar - if it does, that's a bug!",
     "pack_format": 3
   }
 }

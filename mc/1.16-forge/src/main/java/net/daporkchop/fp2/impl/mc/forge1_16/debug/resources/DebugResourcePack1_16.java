@@ -22,7 +22,7 @@ package net.daporkchop.fp2.impl.mc.forge1_16.debug.resources;
 
 import com.google.common.collect.ImmutableSet;
 import lombok.SneakyThrows;
-import net.daporkchop.fp2.core.debug.resources.DebugResources;
+import net.daporkchop.fp2.resources.FResources;
 import net.minecraft.resources.IResourcePack;
 import net.minecraft.resources.ResourcePackFileNotFoundException;
 import net.minecraft.resources.ResourcePackType;
@@ -44,10 +44,18 @@ import static net.daporkchop.fp2.core.FP2Core.*;
  * @author DaPorkchop_
  */
 public class DebugResourcePack1_16 implements IResourcePack {
+    protected final FResources resources = FResources.findForDebug("minecraft_pack_format_v6");
+
+    @Override
+    public boolean hasResource(ResourcePackType type, ResourceLocation location) {
+        return this.resources.getResource(Paths.get(type.getDirectory() + '/' + location.getNamespace() + '/' + location.getPath())).isPresent();
+    }
+
     @Override
     public InputStream getRootResource(String path) throws IOException {
-        return DebugResources.findStream(Paths.get(path))
-                .orElseThrow(() -> new ResourcePackFileNotFoundException(Paths.get(path).toFile(), path));
+        return this.resources.getResource(Paths.get(path))
+                .orElseThrow(() -> new ResourcePackFileNotFoundException(Paths.get(path).toFile(), path))
+                .getThrowing();
     }
 
     @Override
@@ -56,14 +64,9 @@ public class DebugResourcePack1_16 implements IResourcePack {
     }
 
     @Override
-    public boolean hasResource(ResourcePackType type, ResourceLocation location) {
-        return DebugResources.findPath(Paths.get(type.getDirectory() + '/' + location.getNamespace() + '/' + location.getPath())).isPresent();
-    }
-
-    @Override
     @SneakyThrows(IOException.class)
     public Collection<ResourceLocation> getResources(ResourcePackType type, String namespace, String category, int maxDepth, Predicate<String> filter) {
-        return DebugResources.list(Paths.get(type.getDirectory() + '/' + namespace + '/' + category), maxDepth).stream()
+        return this.resources.listResources(Paths.get(type.getDirectory() + '/' + namespace + '/' + category), maxDepth).getThrowing()
                 .filter(path -> filter.test(path.getFileName().toString()))
                 .map(path -> new ResourceLocation(namespace, path.toString().substring((type.getDirectory() + '/' + namespace + '/').length())))
                 .collect(Collectors.toList());

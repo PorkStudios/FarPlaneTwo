@@ -20,45 +20,42 @@
 
 package net.daporkchop.fp2.gradle.translateresources;
 
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import org.gradle.api.Action;
+import net.daporkchop.fp2.resources.FResources;
+import net.daporkchop.fp2.resources.simple.DirectoryFResources;
+import net.daporkchop.lib.common.function.io.IOConsumer;
+import net.daporkchop.lib.common.function.io.IOSupplier;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.FileType;
-import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskAction;
-import org.gradle.work.ChangeType;
-import org.gradle.work.FileChange;
 import org.gradle.work.Incremental;
 import org.gradle.work.InputChanges;
-import org.gradle.workers.WorkAction;
-import org.gradle.workers.WorkParameters;
-import org.gradle.workers.WorkQueue;
-import org.gradle.workers.WorkerExecutor;
 
-import javax.inject.Inject;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.Iterator;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
-
-import static org.gradle.internal.Cast.*;
 
 /**
  * @author DaPorkchop_
  */
 public abstract class TranslateResourcesTask extends DefaultTask {
-    @Inject
-    public abstract WorkerExecutor getExecutor();
+    @Input
+    public abstract Property<String> getTargetFormat();
 
     @Incremental
     @PathSensitive(PathSensitivity.RELATIVE)
@@ -69,22 +66,19 @@ public abstract class TranslateResourcesTask extends DefaultTask {
     public abstract DirectoryProperty getOutputDirectory();
 
     @TaskAction
+    @SneakyThrows(IOException.class)
     public void execute(InputChanges changes) {
-        Iterator<? extends FileChange> fileChanges = changes.getFileChanges(this.getInputDirectory()).iterator();
-
         if (!changes.isIncremental()) {
             System.out.println("not an incremental build, nuking output directory...");
             this.getProject().delete(this.getOutputDirectory().getAsFileTree());
         }
 
-        List<Transformation<WorkParameters>> transformations = uncheckedNonnullCast(this.transformations());
-
         Path inputDir = this.getInputDirectory().getAsFile().get().toPath();
         Path outputDir = this.getOutputDirectory().getAsFile().get().toPath();
 
-        WorkQueue workQueue = this.getExecutor().noIsolation();
-
-        fileChanges.forEachRemaining(fileChange -> {
+        Set<Path> removedPaths = new HashSet<>();
+        Set<Path> changedPaths = new HashSet<>();
+        changes.getFileChanges(this.getInputDirectory()).iterator().forEachRemaining(fileChange -> {
             if (fileChange.getFileType() == FileType.DIRECTORY) { //we don't care about folders
                 return;
             }
@@ -92,106 +86,55 @@ public abstract class TranslateResourcesTask extends DefaultTask {
             Path absoluteInput = fileChange.getFile().toPath();
             Path relativeInput = inputDir.relativize(absoluteInput);
 
-            for (Transformation<WorkParameters> transformation : transformations) {
-                Optional<Stream<Action<WorkParameters>>> optionalConfigurators = transformation.tryTransform(fileChange.getChangeType(), absoluteInput, relativeInput, outputDir);
-                if (optionalConfigurators.isPresent()) {
-                    optionalConfigurators.get().forEach(configurator -> workQueue.submit(transformation.actionClass(), configurator));
-                    return;
-                }
+            switch (fileChange.getChangeType()) {
+                case MODIFIED:
+                case ADDED:
+                    changedPaths.add(relativeInput);
+                    break;
+                case REMOVED:
+                    removedPaths.add(relativeInput);
+                    break;
             }
-
-            throw new IllegalStateException("no transformation will handle " + absoluteInput);
         });
 
-        for (Transformation<WorkParameters> transformation : transformations) {
-            transformation.additionalTransforms(outputDir).forEach(configurator -> workQueue.submit(transformation.actionClass(), configurator));
+        //translate removed sources to target format and delete corresponding files in output
+        try (Stream<Path> stream = FResources.translateResources(new SetEnumeratingResources(removedPaths), this.getTargetFormat().get()).listResources().getThrowing()) {
+            stream.map(outputDir::resolve).forEach((IOConsumer<Path>) Files::deleteIfExists);
+        }
+
+        //translate changed sources to target format and modify corresponding files in output
+        try (Stream<Path> stream = FResources.translateResources(new SetEnumeratingResources(changedPaths), this.getTargetFormat().get()).listResources().getThrowing()) {
+            FResources changedResources = FResources.translateResources(new DirectoryFResources(inputDir), this.getTargetFormat().get());
+
+            stream.forEach((IOConsumer<Path>) relativeOutput -> {
+                Path absoluteOutput = outputDir.resolve(relativeOutput);
+
+                Files.createDirectories(absoluteOutput.getParent());
+                try (InputStream in = changedResources.getResource(relativeOutput).get().getThrowing()) {
+                    Files.copy(in, absoluteOutput, StandardCopyOption.REPLACE_EXISTING);
+                }
+            });
         }
     }
 
-    protected abstract List<Transformation<?>> transformations();
-
     /**
      * @author DaPorkchop_
      */
-    interface Transformation<P extends WorkParameters> {
-        Optional<Stream<Action<P>>> tryTransform(ChangeType changeType, Path absoluteInput, Path relativeInput, Path outputDir);
+    @RequiredArgsConstructor
+    protected static class SetEnumeratingResources implements FResources {
+        @NonNull
+        protected final Set<Path> paths;
 
-        default Stream<Action<P>> additionalTransforms(Path outputDir) {
-            return Stream.empty();
-        }
-
-        Class<? extends WorkAction<P>> actionClass();
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    public interface TransformParameters extends WorkParameters {
-        Property<ChangeType> getChangeType();
-
-        RegularFileProperty getInputFile();
-
-        RegularFileProperty getOutputFile();
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    public static abstract class AbstractTransformAction<T extends TransformParameters> implements WorkAction<T> {
         @Override
-        @SneakyThrows(IOException.class)
-        public void execute() {
-            T parameters = this.getParameters();
-
-            switch (parameters.getChangeType().get()) {
-                case ADDED:
-                case MODIFIED:
-                    System.out.println("transforming " + parameters.getInputFile().getAsFile().getOrNull() + " -> " + parameters.getOutputFile().getAsFile().get());
-                    Files.createDirectories(parameters.getOutputFile().getAsFile().get().toPath().getParent());
-                    this.transform(parameters);
-                    return;
-                case REMOVED:
-                    System.out.println("deleting " + parameters.getOutputFile().getAsFile().get());
-                    Files.deleteIfExists(parameters.getOutputFile().getAsFile().get().toPath());
-                    return;
-                default:
-                    throw new IllegalArgumentException(parameters.getChangeType().get().name());
-            }
-        }
-
-        protected abstract void transform(T parameters) throws IOException;
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    public static final class CopyTransformation implements Transformation<TransformParameters> {
-        @Override
-        public Optional<Stream<Action<TransformParameters>>> tryTransform(ChangeType changeType, Path absoluteInput, Path relativeInput, Path outputDir) {
-            return Optional.of(Stream.of(parameters -> {
-                parameters.getChangeType().set(changeType);
-                parameters.getInputFile().set(absoluteInput.toFile());
-                parameters.getOutputFile().set(outputDir.resolve(relativeInput).toFile());
-            }));
+        public Optional<IOSupplier<InputStream>> getResource(@NonNull Path path) {
+            return !this.paths.contains(path) ? Optional.empty() : Optional.of(() -> {
+                throw new UnsupportedOperationException();
+            });
         }
 
         @Override
-        public Class<? extends WorkAction<TransformParameters>> actionClass() {
-            return CopyAction.class;
-        }
-
-        /**
-         * @author DaPorkchop_
-         */
-        public static abstract class CopyAction extends AbstractTransformAction<TransformParameters> {
-            @Override
-            protected void transform(TransformParameters parameters) throws IOException {
-                Path input = parameters.getInputFile().getAsFile().get().toPath();
-                Path output = parameters.getOutputFile().getAsFile().get().toPath();
-
-                Files.createDirectories(output.getParent());
-                Files.copy(input, output, StandardCopyOption.REPLACE_EXISTING);
-            }
+        public IOSupplier<Stream<Path>> listResources() {
+            return this.paths::stream;
         }
     }
 }

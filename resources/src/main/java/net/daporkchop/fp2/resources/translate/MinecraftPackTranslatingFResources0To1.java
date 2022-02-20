@@ -18,15 +18,16 @@
  *
  */
 
-include 'api'
-include 'common'
-include 'core'
-include 'core:log4j'
-include 'core:mixin'
-include 'resources'
-include 'gl'
-include 'gl:opengl'
-include 'gl:opengl-lwjgl2'
-include 'gl:opengl-lwjgl3'
-include 'mc:1.12.2-forge'
-include 'mc:1.16-forge'
+package net.daporkchop.fp2.resources.translate;
+
+import lombok.NonNull;
+import net.daporkchop.fp2.resources.FResources;
+
+/**
+ * @author DaPorkchop_
+ */
+public class MinecraftPackTranslatingFResources0To1 extends AbstractMinecraftPackTranslatingFResources {
+    public MinecraftPackTranslatingFResources0To1(@NonNull FResources next) {
+        super(next, 1);
+    }
+}

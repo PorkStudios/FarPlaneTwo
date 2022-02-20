@@ -74,10 +74,12 @@ dependencies {
     implementationShade project(":gl")
     runtimeOnlyShade project(":gl:opengl-lwjgl2")
 
-    //core module, plus dependency-specific addon modules
+    //:core module, plus dependency-specific addon modules
     implementationShade project(":core")
     implementationShade project(":core:log4j")
     implementationShade project(":core:mixin")
+
+    implementationShade project(":resources")
 
     implementationProvided fg.deobf(fp2.deleteMixin("io.github.opencubicchunks:cubicchunks:1.12.2-0.0-SNAPSHOT"))
     implementationProvided fg.deobf("io.github.opencubicchunks:cubicworldgen:1.12.2-0.0-SNAPSHOT")

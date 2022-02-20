@@ -26,7 +26,6 @@ import lombok.SneakyThrows;
 import net.daporkchop.fp2.api.event.ChangedEvent;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.core.debug.resources.DebugResources;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketHandshake;
 import net.daporkchop.fp2.core.server.FP2Server;
 import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
@@ -37,6 +36,7 @@ import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.network.IMixinNetHandlerPlayServer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.world.IMixinWorldServer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.server.world.FColumn1_12_2;
+import net.daporkchop.fp2.resources.FResources;
 import net.daporkchop.lib.math.vector.Vec2i;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
@@ -85,7 +85,7 @@ public class FP2Server1_12_2 extends FP2Server {
 
         //if we're in debug mode in a dev environment on the dedicated server, inject locale data into the language map
         if (FP2_DEBUG && FMLLaunchHandler.isDeobfuscatedEnvironment() && FMLCommonHandler.instance().getSide() == Side.SERVER) {
-            try (InputStream in = DebugResources.findStream(Paths.get("assets/" + MODID + "/lang/en_us.lang")).get()) {
+            try (InputStream in = FResources.findForDebug("minecraft_pack_format_v3").getResource(Paths.get("assets/" + MODID + "/lang/en_us.lang")).get().getThrowing()) {
                 LanguageMap.inject(in);
             }
         }
