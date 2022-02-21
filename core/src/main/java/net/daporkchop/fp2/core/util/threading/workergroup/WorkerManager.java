@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -49,4 +49,12 @@ public interface WorkerManager {
      * @param t the exception
      */
     void handle(@NonNull Throwable t);
+
+    /**
+     * Checks whether or not the given thread belongs to any worker group owned by this manager.
+     *
+     * @param t the thread to check
+     * @return whether or not the given thread belongs to any worker group owned by this manager
+     */
+    boolean belongsToWorkerGroup(@NonNull Thread t);
 }
