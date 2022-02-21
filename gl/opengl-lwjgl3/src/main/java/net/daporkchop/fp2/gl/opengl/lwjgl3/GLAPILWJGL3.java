@@ -426,7 +426,7 @@ public class GLAPILWJGL3 implements GLAPI {
 
     @Override
     public void glGetBufferSubData(int target, long offset, long data_size, long data) {
-        GL15.nglBufferSubData(target, offset, data_size, data);
+        GL15.nglGetBufferSubData(target, offset, data_size, data);
     }
 
     @Override

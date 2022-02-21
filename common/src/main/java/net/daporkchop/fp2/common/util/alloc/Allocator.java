@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -79,7 +79,12 @@ public interface Allocator {
      */
     @FunctionalInterface
     interface GrowFunction {
-        GrowFunction DEFAULT = sqrt2(4L << 10L); // 4Ki
+        /**
+         * @return the default {@link GrowFunction}
+         */
+        static GrowFunction def() {
+            return sqrt2(4L << 10L); // 4Ki
+        }
 
         /**
          * Gets a simple {@link GrowFunction} which grows the heap by multiples of {@code sqrt(2)}, rounded up to a given step.
