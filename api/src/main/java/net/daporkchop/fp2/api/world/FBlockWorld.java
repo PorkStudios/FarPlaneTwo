@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -20,7 +20,10 @@
 
 package net.daporkchop.fp2.api.world;
 
+import lombok.NonNull;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * A read-only world consisting of voxels at integer coordinates, where each voxel contains the following information:<br>
@@ -86,6 +89,19 @@ public interface FBlockWorld extends AutoCloseable {
      */
     int getState(int x, int y, int z);
 
+    default void getStates(@NonNull int[] dst, int dstOff, int dstStride,
+                           int x, int y, int z, int sizeX, int sizeY, int sizeZ, int strideX, int strideY, int strideZ) {
+        this.getData(dst, dstOff, dstStride, null, 0, 0, null, 0, 0, x, y, z, sizeX, sizeY, sizeZ, strideX, strideY, strideZ);
+    }
+
+    default void getStates(@NonNull int[] dst, int dstOff, int dstStride,
+                           @NonNull int[] xs, int xOff, int xStride,
+                           @NonNull int[] ys, int yOff, int yStride,
+                           @NonNull int[] zs, int zOff, int zStride,
+                           int count) {
+        this.getData(dst, dstOff, dstStride, null, 0, 0, null, 0, 0, xs, xOff, xStride, ys, yOff, yStride, zs, zOff, zStride, count);
+    }
+
     /**
      * Gets the biome at the position described by the given coordinates.
      *
@@ -96,6 +112,19 @@ public interface FBlockWorld extends AutoCloseable {
      */
     int getBiome(int x, int y, int z);
 
+    default void getBiomes(@NonNull int[] dst, int dstOff, int dstStride,
+                           int x, int y, int z, int sizeX, int sizeY, int sizeZ, int strideX, int strideY, int strideZ) {
+        this.getData(null, 0, 0, dst, dstOff, dstStride, null, 0, 0, x, y, z, sizeX, sizeY, sizeZ, strideX, strideY, strideZ);
+    }
+
+    default void getBiomes(@NonNull int[] dst, int dstOff, int dstStride,
+                           @NonNull int[] xs, int xOff, int xStride,
+                           @NonNull int[] ys, int yOff, int yStride,
+                           @NonNull int[] zs, int zOff, int zStride,
+                           int count) {
+        this.getData(null, 0, 0, dst, dstOff, dstStride, null, 0, 0, xs, xOff, xStride, ys, yOff, yStride, zs, zOff, zStride, count);
+    }
+
     /**
      * Gets the packed block/sky light at the position described by the given coordinates.
      *
@@ -105,4 +134,85 @@ public interface FBlockWorld extends AutoCloseable {
      * @return the packed light levels
      */
     byte getLight(int x, int y, int z);
+
+    default void getLights(@NonNull byte[] dst, int dstOff, int dstStride,
+                           int x, int y, int z, int sizeX, int sizeY, int sizeZ, int strideX, int strideY, int strideZ) {
+        this.getData(null, 0, 0, null, 0, 0, dst, dstOff, dstStride, x, y, z, sizeX, sizeY, sizeZ, strideX, strideY, strideZ);
+    }
+
+    default void getLights(@NonNull byte[] dst, int dstOff, int dstStride,
+                           @NonNull int[] xs, int xOff, int xStride,
+                           @NonNull int[] ys, int yOff, int yStride,
+                           @NonNull int[] zs, int zOff, int zStride,
+                           int count) {
+        this.getData(null, 0, 0, null, 0, 0, dst, dstOff, dstStride, xs, xOff, xStride, ys, yOff, yStride, zs, zOff, zStride, count);
+    }
+
+    default void getData(int[] states, int statesOff, int statesStride,
+                         int[] biomes, int biomesOff, int biomesStride,
+                         byte[] light, int lightOff, int lightStride,
+                         int x, int y, int z, int sizeX, int sizeY, int sizeZ, int strideX, int strideY, int strideZ) {
+        int count = positive(sizeX, "sizeX") * positive(sizeY, "sizeY") * positive(sizeZ, "sizeZ");
+        if (states != null) {
+            checkRangeLen(states.length, statesOff, positive(statesStride, "statesStride") * count);
+        }
+        if (biomes != null) {
+            checkRangeLen(biomes.length, biomesOff, positive(biomesStride, "biomesStride") * count);
+        }
+        if (light != null) {
+            checkRangeLen(light.length, lightOff, positive(lightStride, "lightStride") * count);
+        }
+        positive(strideX, "strideX");
+        positive(strideY, "strideY");
+        positive(strideZ, "strideZ");
+
+        for (int statesIndex = statesOff, biomesIndex = biomesOff, lightIndex = lightOff, dx = 0; dx < sizeX * strideX; dx++) {
+            for (int dy = 0; dy < sizeY * strideY; dy++) {
+                for (int dz = 0; dz < sizeZ * strideZ; dz++, statesIndex += statesStride, biomesIndex += biomesStride, lightIndex += lightStride) {
+                    if (states != null) {
+                        states[statesIndex] = this.getState(x + dx, y + dy, z + dz);
+                    }
+                    if (biomes != null) {
+                        biomes[biomesIndex] = this.getBiome(x + dx, y + dy, z + dz);
+                    }
+                    if (light != null) {
+                        light[lightIndex] = this.getLight(x + dx, y + dy, z + dz);
+                    }
+                }
+            }
+        }
+    }
+
+    default void getData(int[] states, int statesOff, int statesStride,
+                         int[] biomes, int biomesOff, int biomesStride,
+                         byte[] light, int lightOff, int lightStride,
+                         @NonNull int[] xs, int xOff, int xStride,
+                         @NonNull int[] ys, int yOff, int yStride,
+                         @NonNull int[] zs, int zOff, int zStride,
+                         int count) {
+        if (states != null) {
+            checkRangeLen(states.length, statesOff, positive(statesStride, "statesStride") * count);
+        }
+        if (biomes != null) {
+            checkRangeLen(biomes.length, biomesOff, positive(biomesStride, "biomesStride") * count);
+        }
+        if (light != null) {
+            checkRangeLen(light.length, lightOff, positive(lightStride, "lightStride") * count);
+        }
+        checkRangeLen(xs.length, xOff, positive(xStride, "xStride") * count);
+        checkRangeLen(ys.length, yOff, positive(yStride, "yStride") * count);
+        checkRangeLen(zs.length, zOff, positive(zStride, "zStride") * count);
+
+        for (int i = 0, statesIndex = statesOff, biomesIndex = biomesOff, lightIndex = lightOff, xIndex = xOff, yIndex = yOff, zIndex = zStride; i < count; i++, statesIndex += statesStride, biomesIndex += biomesStride, lightIndex += lightStride, xIndex += xStride, yIndex += yStride, zIndex += zStride) {
+            if (states != null) {
+                states[statesIndex] = this.getState(xs[xIndex], ys[yIndex], zs[zIndex]);
+            }
+            if (biomes != null) {
+                biomes[biomesIndex] = this.getBiome(xs[xIndex], ys[yIndex], zs[zIndex]);
+            }
+            if (light != null) {
+                light[lightIndex] = this.getLight(xs[xIndex], ys[yIndex], zs[zIndex]);
+            }
+        }
+    }
 }

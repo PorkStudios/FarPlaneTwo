@@ -22,70 +22,54 @@ package net.daporkchop.fp2.core.mode.voxel.server.gen.exact;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.api.world.FBlockWorld;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.core.mode.voxel.VoxelData;
 import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.core.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.core.mode.voxel.server.gen.AbstractVoxelGenerator;
-import net.daporkchop.lib.common.reference.ReferenceStrength;
-import net.daporkchop.lib.common.reference.cache.Cached;
+import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.util.GlobalAllocators;
+import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.api.world.BlockWorldConstants.*;
-import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.fp2.core.mode.voxel.VoxelConstants.*;
+import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
 public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator implements IFarGeneratorExact<VoxelPos, VoxelTile> {
-    protected final Cached<int[]> stateMapCache = Cached.threadLocal(() -> new int[cb(CACHE_SIZE)], ReferenceStrength.WEAK);
-
     public AbstractExactVoxelGenerator(@NonNull IFarWorldServer world) {
         super(world);
     }
 
-    protected int[] populateStateMapFromWorld(@NonNull FBlockWorld world, int baseX, int baseY, int baseZ) {
-        int[] stateMap = this.stateMapCache.get();
-
-        //range check here to allow JIT to avoid range checking inside the loop
-        checkArg(stateMap.length >= cb(CACHE_SIZE));
-
-        for (int i = 0, dx = CACHE_MIN; dx < CACHE_MAX; dx++) { //set each type flag depending on the block state at the corresponding position
-            for (int dy = CACHE_MIN; dy < CACHE_MAX; dy++) {
-                for (int dz = CACHE_MIN; dz < CACHE_MAX; dz++, i++) {
-                    stateMap[i] = world.getState(baseX + dx, baseY + dy, baseZ + dz);
-                }
-            }
-        }
-
-        return stateMap;
-    }
-
-    protected byte[] populateTypeMapFromStateMap(@NonNull int[] stateMap) {
-        byte[] typeMap = this.typeMapCache.get();
-
+    protected void populateTypeMapFromStateMap(@NonNull int[] stateMap, @NonNull byte[] typeMap) {
         //range check here to allow JIT to avoid range checking inside the loop
         checkArg(typeMap.length >= cb(CACHE_SIZE) && stateMap.length >= cb(CACHE_SIZE));
 
         for (int i = 0; i < cb(CACHE_SIZE); i++) { //set each type flag depending on the block state at the corresponding position
             typeMap[i] = (byte) this.extendedStateRegistryData.type(stateMap[i]);
         }
-
-        return typeMap;
     }
 
     @Override
     public void generate(@NonNull FBlockWorld world, @NonNull VoxelPos posIn, @NonNull VoxelTile tile) {
-        final int baseX = posIn.blockX();
-        final int baseY = posIn.blockY();
-        final int baseZ = posIn.blockZ();
+        ArrayAllocator<int[]> intAlloc = GlobalAllocators.ALLOC_INT.get();
+        ArrayAllocator<byte[]> byteAlloc = GlobalAllocators.ALLOC_BYTE.get();
 
-        int[] stateMap = this.populateStateMapFromWorld(world, baseX, baseY, baseZ);
+        int[] stateCache = intAlloc.atLeast(cb(CACHE_SIZE));
+        int[] biomeCache = intAlloc.atLeast(cb(CACHE_SIZE));
+        byte[] lightCache = byteAlloc.atLeast(cb(CACHE_SIZE));
+        byte[] typeCache = byteAlloc.atLeast(cb(CACHE_SIZE));
+
+        //query all world data at once
+        world.getData(stateCache, 0, 1, biomeCache, 0, 1, lightCache, 0, 1,
+                posIn.blockX() + CACHE_MIN, posIn.blockY() + CACHE_MIN, posIn.blockZ() + CACHE_MIN, CACHE_SIZE, CACHE_SIZE, CACHE_SIZE, 1, 1, 1);
+
         //use bit flags to identify voxel types rather than reading from the world each time to keep innermost loop head tight and cache-friendly
-        byte[] CACHE = this.populateTypeMapFromStateMap(stateMap);
+        this.populateTypeMapFromStateMap(stateCache, typeCache);
 
         VoxelData data = new VoxelData();
 
@@ -96,7 +80,7 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
                 for (int dz = 0; dz < VT_VOXELS; dz++) {
                     int corners = 0;
                     for (int ciCache = cacheIndex(dx, dy, dz), i = 0; i < 8; i++) {
-                        corners |= (CACHE[ciCache + CACHE_INDEX_ADD[i]] & 0xFF) << (i << 1);
+                        corners |= (typeCache[ciCache + CACHE_INDEX_ADD[i]] & 0xFF) << (i << 1);
                     }
 
                     if (corners == 0 || corners == 0x5555 || corners == 0xAAAA) { //if all corners are the same type, this voxel can be safely skipped
@@ -125,11 +109,11 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
                         if ((edges & (EDGE_DIR_MASK << (edge << 1))) != EDGE_DIR_NONE) {
                             //((edges >> (edge << 1) >> 1) & 1) is 1 if the face is negative, 0 otherwise
                             int i = EDGE_VERTEX_MAP[(edge << 1) | ((edges >> (edge << 1) >> 1) & 1)];
-                            data.states[edge] = world.getState(baseX + dx + ((i >> 2) & 1), baseY + dy + ((i >> 1) & 1), baseZ + dz + (i & 1));
+                            data.states[edge] = stateCache[cacheIndex(dx + ((i >> 2) & 1), dy + ((i >> 1) & 1), dz + (i & 1))];
                         }
                     }
 
-                    data.biome = world.getBiome(baseX + dx, baseY + dy, baseZ + dz);
+                    data.biome = biomeCache[cacheIndex(dx, dy, dz)];
 
                     int skyLight = 0;
                     int blockLight = 0;
@@ -144,7 +128,7 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
 
                         for (int i = 0; i < 8; i++) {
                             if (((corners >> (i << 1)) & 3) == type) {
-                                byte packedLight = world.getLight(baseX + dx + ((i >> 2) & 1), baseY + dy + ((i >> 1) & 1), baseZ + dz + (i & 1));
+                                byte packedLight = lightCache[cacheIndex(dx + ((i >> 2) & 1), dy + ((i >> 1) & 1), dz + (i & 1))];
                                 skyLight += unpackSkyLight(packedLight);
                                 blockLight += unpackBlockLight(packedLight);
                                 samples++;
@@ -155,7 +139,7 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
                         for (int edge = 0; edge < EDGE_COUNT; edge++) {
                             if ((edges & (EDGE_DIR_MASK << (edge << 1))) != EDGE_DIR_NONE) {
                                 int i = EDGE_VERTEX_MAP[(edge << 1) | (~(edges >> (edge << 1) >> 1) & 1)];
-                                byte packedLight = world.getLight(baseX + dx + ((i >> 2) & 1), baseY + dy + ((i >> 1) & 1), baseZ + dz + (i & 1));
+                                byte packedLight = lightCache[cacheIndex(dx + ((i >> 2) & 1), dy + ((i >> 1) & 1), dz + (i & 1))];
                                 skyLight += unpackSkyLight(packedLight);
                                 blockLight += unpackBlockLight(packedLight);
                                 samples++;
@@ -172,6 +156,11 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
                 }
             }
         }
+
+        byteAlloc.release(typeCache);
+        byteAlloc.release(lightCache);
+        intAlloc.release(biomeCache);
+        intAlloc.release(stateCache);
 
         //TODO: compute neighbor connections
         tile.extra(0L);

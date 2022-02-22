@@ -54,6 +54,10 @@ public abstract class AbstractVoxelGenerator extends AbstractFarGenerator {
     };
 
     protected static int cacheIndex(int x, int y, int z) {
+        assert x >= CACHE_MIN && x < CACHE_MAX : "x=" + x;
+        assert y >= CACHE_MIN && y < CACHE_MAX : "y=" + y;
+        assert z >= CACHE_MIN && z < CACHE_MAX : "z=" + z;
+
         return ((x - CACHE_MIN) * CACHE_SIZE + y - CACHE_MIN) * CACHE_SIZE + z - CACHE_MIN;
     }
 
