@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -79,7 +79,9 @@ public class HeightmapTile implements IFarTile {
     }
 
     static int entryOffset(int x, int z) {
-        checkArg(x >= 0 && x < HT_VOXELS && z >= 0 && z < HT_VOXELS, "coordinates out of bounds (x=%d, z=%d)", x, z);
+        assert x >= 0 && x < HT_VOXELS: "x=" + x;
+        assert z >= 0 && z < HT_VOXELS: "z=" + z;
+        
         return (x * HT_VOXELS + z) * ENTRY_SIZE_BYTES;
     }
 

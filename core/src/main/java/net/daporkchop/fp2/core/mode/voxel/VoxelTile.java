@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -57,7 +57,10 @@ public class VoxelTile implements IFarTile {
     public static final int TILE_SIZE = INDEX_SIZE + ENTRY_FULL_SIZE_BYTES * ENTRY_COUNT;
 
     static int index(int x, int y, int z) {
-        checkArg(x >= 0 && x < VT_VOXELS && y >= 0 && y < VT_VOXELS && z >= 0 && z < VT_VOXELS, "coordinates out of bounds (x=%d, y=%d, z=%d)", x, y, z);
+        assert x >= 0 && x < VT_VOXELS : "x=" + x;
+        assert y >= 0 && y < VT_VOXELS : "y=" + y;
+        assert z >= 0 && z < VT_VOXELS : "z=" + z;
+
         return (x * VT_VOXELS + y) * VT_VOXELS + z;
     }
 
@@ -116,8 +119,8 @@ public class VoxelTile implements IFarTile {
     /**
      * Gets the voxel at the given index.
      *
-     * @param index  the index of the voxel to get
-     * @param data the {@link VoxelData} instance to store the data into
+     * @param index the index of the voxel to get
+     * @param data  the {@link VoxelData} instance to store the data into
      * @return the relative offset of the voxel (combined XYZ coords)
      */
     public int get(int index, VoxelData data) {
@@ -203,7 +206,7 @@ public class VoxelTile implements IFarTile {
         dst.writeIntLE(-1);
 
         int count = 0;
-        for (int i = 0; i < VoxelTile.ENTRY_COUNT; i++)  { //iterate through the index and search for set voxels
+        for (int i = 0; i < VoxelTile.ENTRY_COUNT; i++) { //iterate through the index and search for set voxels
             int index = PUnsafe.getShort(this.addr + i * 2L);
             if (index >= 0) { //voxel is set
                 dst.writeShortLE(i); //write position
@@ -219,9 +222,9 @@ public class VoxelTile implements IFarTile {
         return false;
     }
 
-    public int getOnlyPosAndReturnEdges(int x, int y, int z, double[] dst, int dstOff)   {
+    public int getOnlyPosAndReturnEdges(int x, int y, int z, double[] dst, int dstOff) {
         int index = PUnsafe.getShort(this.addr + index(x, y, z) * 2L);
-        if (index < 0)  { //index is unset, don't read data
+        if (index < 0) { //index is unset, don't read data
             return -1;
         }
 
