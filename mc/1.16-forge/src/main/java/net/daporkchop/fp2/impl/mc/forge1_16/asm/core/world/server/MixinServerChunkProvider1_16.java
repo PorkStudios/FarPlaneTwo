@@ -20,8 +20,10 @@
 
 package net.daporkchop.fp2.impl.mc.forge1_16.asm.core.world.server;
 
+import lombok.SneakyThrows;
 import net.daporkchop.fp2.core.util.threading.workergroup.WorkerManager;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.interfaz.world.server.IMixinServerWorld1_16;
+import net.minecraft.util.concurrent.ThreadTaskExecutor;
 import net.minecraft.world.chunk.IChunk;
 import net.minecraft.world.server.ServerChunkProvider;
 import net.minecraft.world.server.ServerWorld;
@@ -30,13 +32,17 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.lang.reflect.Field;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
@@ -49,6 +55,24 @@ public abstract class MixinServerChunkProvider1_16 {
     @Shadow
     @Final
     public ServerWorld level;
+
+    @Unique
+    private ThreadTaskExecutor<Runnable> fp2_mainThreadProcessor;
+
+    @Inject(method = "Lnet/minecraft/world/server/ServerChunkProvider;<init>*",
+            at = @At("RETURN"),
+            require = 1, allow = 1)
+    @SneakyThrows({ IllegalAccessException.class, NoSuchFieldException.class })
+    private void fp2_$init$_copyMainThreadProcessor(CallbackInfo ci) {
+        //gross hack: access the field reflectively because its type is a package-private class and i don't want to use an AT
+        Field field;
+        try {
+            field = this.getClass().getDeclaredField("field_217243_i");
+        } catch (NoSuchFieldException e) {
+            field = this.getClass().getDeclaredField("mainThreadProcessor");
+        }
+        this.fp2_mainThreadProcessor = uncheckedCast(field.get(this));
+    }
 
     @Redirect(method = "Lnet/minecraft/world/server/ServerChunkProvider;getChunk(IILnet/minecraft/world/chunk/ChunkStatus;Z)Lnet/minecraft/world/chunk/IChunk;",
             at = @At(value = "INVOKE",

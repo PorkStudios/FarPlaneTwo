@@ -20,21 +20,27 @@
 
 package net.daporkchop.fp2.impl.mc.forge1_16.server.world;
 
+import com.mojang.datafixers.util.Either;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.api.world.BlockWorldConstants;
 import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
+import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.world.server.ATServerChunkProvider1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.interfaz.world.server.IMixinServerWorld1_16;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.LightType;
+import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.chunk.IChunk;
+import net.minecraft.world.server.ChunkHolder;
 import net.minecraft.world.server.ServerWorld;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.IntConsumer;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -109,10 +115,23 @@ public class ExactFBlockWorld1_16 implements FBlockWorld {
 
         //prefetch all chunks on server thread
         IChunk[] chunks = ((IMixinServerWorld1_16) this.world).fp2_farWorldServer().fp2_IFarWorld_workerManager().workExecutor().supply(() -> {
-            List<IChunk> tmp = new ArrayList<>();
-            //TODO: world.getChunk() is blocking, which makes it quite annoying since it has to repeatedly block the server thread for no reason...
-            chunkXSupplier.accept(chunkX -> chunkZSupplier.accept(chunkZ -> tmp.add(this.world.getChunk(chunkX, chunkZ))));
-            return tmp.toArray(new IChunk[0]);
+            List<CompletableFuture<Either<IChunk, ChunkHolder.IChunkLoadingError>>> tmp = new ArrayList<>();
+
+            //get all the futures
+            chunkXSupplier.accept(chunkX -> chunkZSupplier.accept(chunkZ -> {
+                ATServerChunkProvider1_16 serverChunkProvider = (ATServerChunkProvider1_16) this.world.getChunkSource();
+                tmp.add(serverChunkProvider.invokeGetChunkFutureMainThread(chunkX, chunkZ, ChunkStatus.FULL, true));
+            }));
+
+            //block on all the futures
+            return tmp.stream()
+                    .map(future -> {
+                        ((ATServerChunkProvider1_16) this.world.getChunkSource()).getFp2_MainThreadProcessor().managedBlock(future::isDone);
+                        return future.join().map(Function.identity(), error -> {
+                            throw new IllegalStateException("Chunk not there when requested: " + error);
+                        });
+                    })
+                    .toArray(IChunk[]::new);
         }).join();
 
         //delegate to PrefetchedChunksFBlockWorld1_16

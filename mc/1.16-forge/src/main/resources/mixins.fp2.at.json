@@ -10,6 +10,7 @@
     "client.ATMinecraft1_16"
   ],
   "mixins": [
-    "server.ATMinecraftServer1_16"
+    "server.ATMinecraftServer1_16",
+    "world.server.ATServerChunkProvider1_16"
   ]
 }
