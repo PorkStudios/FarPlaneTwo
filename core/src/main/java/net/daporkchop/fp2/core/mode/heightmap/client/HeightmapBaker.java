@@ -207,8 +207,13 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
 
         int blockLight = data.light & 0xF;
         int skyLight = data.light >> 4;
-        attributes.lightBlock = (byte) (blockLight << 4);
-        attributes.lightSky = (byte) (skyLight << 4);
+        //sky and block light are one unsigned byte each, and are interpreted as normalized floats. since the lightmap texture is 16x16, using
+        //  the upper 4 bits for the regular light level (which is in range [0,15]) results in a float range of [0,15/16]. additionally, we set
+        //  the bottom 4 bits to 0b1000. this is equivalent to an offset of 0.5 texels, which prevents blending artifacts when sampling right along
+        //  the edge of a texture.
+        attributes.lightBlock = (byte) ((blockLight << 4) | 8);
+        attributes.lightSky = (byte) ((skyLight << 4) | 8);
+
         attributes.color = this.worldRenderer.tintFactorForStateInBiomeAtPos(data.state, data.biome, blockX, data.height_int, blockZ);
 
         attributes.posHorizX = (byte) x;
