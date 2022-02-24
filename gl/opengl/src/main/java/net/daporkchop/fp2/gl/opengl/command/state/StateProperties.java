@@ -75,7 +75,7 @@ public class StateProperties {
         public Stream<StateValueProperty<?>> depends(@NonNull State state) {
             return state.getOrDef(RASTERIZER_DISCARD)
                     ? RASTERIZER_DISCARD.depends(state) //none of these properties do anything if RASTERIZER_DISCARD is enabled
-                    : Stream.of(RASTERIZER_DISCARD, BLEND, COLOR_MASK, CULL, STENCIL).flatMap(property -> property.depends(state));
+                    : Stream.of(RASTERIZER_DISCARD, BLEND, COLOR_MASK, CULL, DEPTH, STENCIL).flatMap(property -> property.depends(state));
         }
     };
 
