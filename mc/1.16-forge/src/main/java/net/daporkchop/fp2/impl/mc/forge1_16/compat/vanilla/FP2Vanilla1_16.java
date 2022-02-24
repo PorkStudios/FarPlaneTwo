@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.impl.mc.forge1_16.compat.vanilla;
 
 import net.daporkchop.fp2.api.FP2;
+import net.daporkchop.fp2.api.event.Constrain;
 import net.daporkchop.fp2.api.event.FEventBus;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
@@ -40,19 +41,33 @@ import net.daporkchop.fp2.core.server.event.GetCoordinateLimitsEvent;
 import net.daporkchop.fp2.core.server.event.GetExactFBlockWorldEvent;
 import net.daporkchop.fp2.core.server.event.GetTerrainGeneratorEvent;
 import net.daporkchop.fp2.impl.mc.forge1_16.server.world.ExactFBlockWorld1_16;
+import net.daporkchop.fp2.impl.mc.forge1_16.util.Util1_16;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.BlockModelShapes;
+import net.minecraft.client.renderer.BlockRendererDispatcher;
+import net.minecraft.client.renderer.model.BakedQuad;
+import net.minecraft.client.renderer.model.IBakedModel;
+import net.minecraft.client.renderer.model.ModelBakery;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.util.Direction;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.client.model.data.EmptyModelData;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.InterModComms;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLConstructModEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 
 /**
@@ -118,12 +133,81 @@ public class FP2Vanilla1_16 {
 
     //texture UVs
 
+    @SuppressWarnings("deprecation")
+    @OnlyIn(Dist.CLIENT)
+    @FEventHandler(name = "vanilla_texuvs_renderquads_water",
+            constrain = @Constrain(before = "vanilla_texuvs_renderquads_default"))
+    public Optional<List<TextureUVs.PackedBakedQuad>> texUVsRenderQuadsWater(TextureUVs.StateFaceQuadRenderEvent event) {
+        BlockState state = (BlockState) event.registry().id2state(event.state());
+        if (state.getBlock() == Blocks.WATER) {
+            TextureAtlasSprite sprite;
+            double spriteFactor;
+            if (event.direction().vector().y() != 0) { //(POSITIVE|NEGATIVE)_Y
+                sprite = Minecraft.getInstance().getModelManager().getBlockModelShaper().getBlockModel(Blocks.WATER.defaultBlockState()).getParticleIcon();
+                spriteFactor = 16.0d;
+            } else {
+                sprite = ModelBakery.WATER_FLOW.sprite();
+                spriteFactor = 8.0d;
+            }
+
+            return Optional.of(Collections.singletonList(new TextureUVs.PackedBakedQuad(
+                    sprite.getU(0.0d), sprite.getV(0.0d), sprite.getU(spriteFactor), sprite.getV(spriteFactor), 0.0f)));
+        }
+
+        return Optional.empty();
+    }
+
+    @SuppressWarnings("deprecation")
+    @OnlyIn(Dist.CLIENT)
+    @FEventHandler(name = "vanilla_texuvs_renderquads_lava",
+            constrain = @Constrain(before = "vanilla_texuvs_renderquads_default"))
+    public Optional<List<TextureUVs.PackedBakedQuad>> texUVsRenderQuadsLava(TextureUVs.StateFaceQuadRenderEvent event) {
+        BlockState state = (BlockState) event.registry().id2state(event.state());
+        if (state.getBlock() == Blocks.LAVA) {
+            TextureAtlasSprite sprite;
+            double spriteFactor;
+            if (event.direction().vector().y() != 0) { //(POSITIVE|NEGATIVE)_Y
+                sprite = Minecraft.getInstance().getModelManager().getBlockModelShaper().getBlockModel(Blocks.LAVA.defaultBlockState()).getParticleIcon();
+                spriteFactor = 16.0d;
+            } else {
+                sprite = ModelBakery.LAVA_FLOW.sprite();
+                spriteFactor = 8.0d;
+            }
+
+            return Optional.of(Collections.singletonList(new TextureUVs.PackedBakedQuad(
+                    sprite.getU(0.0d), sprite.getV(0.0d), sprite.getU(spriteFactor), sprite.getV(spriteFactor), 0.0f)));
+        }
+
+        return Optional.empty();
+    }
+
     @OnlyIn(Dist.CLIENT)
     @FEventHandler(name = "vanilla_texuvs_renderquads_default")
     public Optional<List<TextureUVs.PackedBakedQuad>> texUVsRenderQuadsDefault(TextureUVs.StateFaceQuadRenderEvent event) {
-        //BlockState state = (BlockState) event.registry().id2state(event.state());
+        BlockState state = (BlockState) event.registry().id2state(event.state());
+        Direction direction = Util1_16.directionToFacing(event.direction());
+        IBakedModel model = Minecraft.getInstance().getModelManager().getBlockModelShaper().getBlockModel(state);
 
-        //TODO: this
+        //TODO: probably just want a null random tbh
+        List<BakedQuad> quads = model.getQuads(state, direction, ThreadLocalRandom.current(), EmptyModelData.INSTANCE);
+        if (quads.isEmpty()) { //the model has no cullfaces for the given facing direction, try to find a matching non-cullface
+            for (BakedQuad quad : model.getQuads(state, null, ThreadLocalRandom.current(), EmptyModelData.INSTANCE)) {
+                if (quad.getDirection() == direction) {
+                    quads = Collections.singletonList(quad);
+                    break;
+                }
+            }
+        }
+
+        if (!quads.isEmpty()) {
+            List<TextureUVs.PackedBakedQuad> out = new ArrayList<>(quads.size());
+            for (BakedQuad quad : quads) {
+                TextureAtlasSprite sprite = quad.getSprite();
+                float tintFactor = quad.getTintIndex() < 0 ? 1.0f : 0.0f;
+                out.add(new TextureUVs.PackedBakedQuad(sprite.getU0(), sprite.getV0(), sprite.getU1(), sprite.getV1(), tintFactor));
+            }
+            return Optional.of(out);
+        }
 
         return Optional.empty();
     }
