@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -37,6 +37,7 @@ public class OpenGLConstants {
     public static final int GL_COLOR_BUFFER_BIT = 0x00004000;
     public static final int GL_FALSE = 0;
     public static final int GL_TRUE = 1;
+    public static final int GL_ALL_ATTRIB_BITS = 0xFFFFF;
     public static final int GL_POINTS = 0x0000;
     public static final int GL_LINES = 0x0001;
     public static final int GL_LINE_LOOP = 0x0002;
@@ -207,6 +208,7 @@ public class OpenGLConstants {
     public static final int GL_REPEAT = 0x2901;
     public static final int GL_VERSION_1_1 = 1;
     public static final int GL_COLOR_LOGIC_OP = 0x0BF2;
+    public static final int GL_ALL_CLIENT_ATTRIB_BITS = 0xFFFFFFFF;
     public static final int GL_POLYGON_OFFSET_UNITS = 0x2A00;
     public static final int GL_POLYGON_OFFSET_POINT = 0x2A01;
     public static final int GL_POLYGON_OFFSET_LINE = 0x2A02;

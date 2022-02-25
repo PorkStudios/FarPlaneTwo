@@ -94,6 +94,11 @@ public class StateProperties {
         protected Stream<StateValueProperty<?>> dependenciesWhenEnabled(@NonNull State state) {
             return Stream.of(BLEND_FACTORS, BLEND_OPS).flatMap(property -> property.depends(state));
         }
+
+        @Override
+        public boolean canBackupRestoreToLegacyAttributeStack() {
+            return true;
+        }
     };
 
     public final StateValueProperty<BlendFactors> BLEND_FACTORS = new StructContainingMultipleIntegersProperty<BlendFactors>(new BlendFactors(BlendFactor.ONE, BlendFactor.ONE, BlendFactor.ZERO, BlendFactor.ZERO),
@@ -113,6 +118,11 @@ public class StateProperties {
                     Stream.of(this),
                     state.getOrDef(this).usesUserColor() ? BLEND_COLOR.depends(state) : Stream.empty());
         }
+
+        @Override
+        public boolean canBackupRestoreToLegacyAttributeStack() {
+            return true;
+        }
     };
 
     public final StateValueProperty<BlendOps> BLEND_OPS = new StructContainingMultipleIntegersProperty<BlendOps>(new BlendOps(BlendOp.ADD, BlendOp.ADD),
@@ -123,15 +133,30 @@ public class StateProperties {
             visitGLConstant(mv, GLEnumUtil.from(value.rgb()));
             visitGLConstant(mv, GLEnumUtil.from(value.a()));
         }
+
+        @Override
+        public boolean canBackupRestoreToLegacyAttributeStack() {
+            return true;
+        }
     };
 
-    public final StateValueProperty<Color4f> BLEND_COLOR = new ColorProperty("glBlendColor", GL_BLEND_COLOR);
+    public final StateValueProperty<Color4f> BLEND_COLOR = new ColorProperty("glBlendColor", GL_BLEND_COLOR) {
+        @Override
+        public boolean canBackupRestoreToLegacyAttributeStack() {
+            return true;
+        }
+    };
 
     //
     // COLOR
     //
 
-    public final StateValueProperty<Color4f> CLEAR_COLOR = new ColorProperty("glClearColor", GL_COLOR_CLEAR_VALUE);
+    public final StateValueProperty<Color4f> CLEAR_COLOR = new ColorProperty("glClearColor", GL_COLOR_CLEAR_VALUE) {
+        @Override
+        public boolean canBackupRestoreToLegacyAttributeStack() {
+            return true;
+        }
+    };
 
     public final StateValueProperty<Color4b> COLOR_MASK = new SimpleStateValueProperty<Color4b>(new Color4b(true, true, true, true)) {
         @Override
@@ -169,13 +194,23 @@ public class StateProperties {
                 mv.visitVarInsn(ILOAD, lvtIndexBase + i);
             }
         }
+
+        @Override
+        public boolean canBackupRestoreToLegacyAttributeStack() {
+            return true;
+        }
     };
 
     //
     // BACKFACE CULLING
     //
 
-    public final StateValueProperty<Boolean> CULL = new FixedFunctionStateEnableProperty(GL_CULL_FACE);
+    public final StateValueProperty<Boolean> CULL = new FixedFunctionStateEnableProperty(GL_CULL_FACE){
+        @Override
+        public boolean canBackupRestoreToLegacyAttributeStack() {
+            return true;
+        }
+    };
 
     //
     // DEPTH
@@ -186,13 +221,33 @@ public class StateProperties {
         protected Stream<StateValueProperty<?>> dependenciesWhenEnabled(@NonNull State state) {
             return Stream.of(DEPTH_COMPARE, DEPTH_WRITE_MASK).flatMap(property -> property.depends(state));
         }
+
+        @Override
+        public boolean canBackupRestoreToLegacyAttributeStack() {
+            return true;
+        }
     };
 
-    public final StateValueProperty<Double> DEPTH_CLEAR = new DoubleSimpleStateValueProperty(0.0d, "glClearDepth", GL_DEPTH_CLEAR_VALUE);
+    public final StateValueProperty<Double> DEPTH_CLEAR = new DoubleSimpleStateValueProperty(0.0d, "glClearDepth", GL_DEPTH_CLEAR_VALUE) {
+        @Override
+        public boolean canBackupRestoreToLegacyAttributeStack() {
+            return true;
+        }
+    };
 
-    public final StateValueProperty<Compare> DEPTH_COMPARE = new IntegerSimpleStateValueProperty<>(Compare.LESS, GLEnumUtil::from, "glDepthFunc", GL_DEPTH_FUNC);
+    public final StateValueProperty<Compare> DEPTH_COMPARE = new IntegerSimpleStateValueProperty<Compare>(Compare.LESS, GLEnumUtil::from, "glDepthFunc", GL_DEPTH_FUNC) {
+        @Override
+        public boolean canBackupRestoreToLegacyAttributeStack() {
+            return true;
+        }
+    };
 
-    public final StateValueProperty<Boolean> DEPTH_WRITE_MASK = new BooleanSimpleStateValueProperty(true, "glDepthMask", GL_DEPTH_WRITEMASK);
+    public final StateValueProperty<Boolean> DEPTH_WRITE_MASK = new BooleanSimpleStateValueProperty(true, "glDepthMask", GL_DEPTH_WRITEMASK) {
+        @Override
+        public boolean canBackupRestoreToLegacyAttributeStack() {
+            return true;
+        }
+    };
 
     //
     // STENCIL
@@ -203,11 +258,26 @@ public class StateProperties {
         protected Stream<StateValueProperty<?>> dependenciesWhenEnabled(@NonNull State state) {
             return Stream.of(STENCIL_MASK, STENCIL_FUNC, STENCIL_OP).flatMap(property -> property.depends(state));
         }
+
+        @Override
+        public boolean canBackupRestoreToLegacyAttributeStack() {
+            return true;
+        }
     };
 
-    public final StateValueProperty<Integer> STENCIL_CLEAR = new IntegerSimpleStateValueProperty<>(0, Function.identity(), "glClearStencil", GL_STENCIL_CLEAR_VALUE);
+    public final StateValueProperty<Integer> STENCIL_CLEAR = new IntegerSimpleStateValueProperty<Integer>(0, Function.identity(), "glClearStencil", GL_STENCIL_CLEAR_VALUE) {
+        @Override
+        public boolean canBackupRestoreToLegacyAttributeStack() {
+            return true;
+        }
+    };
 
-    public final StateValueProperty<Integer> STENCIL_MASK = new IntegerSimpleStateValueProperty<>(0, Function.identity(), "glStencilMask", GL_STENCIL_WRITEMASK);
+    public final StateValueProperty<Integer> STENCIL_MASK = new IntegerSimpleStateValueProperty<Integer>(0, Function.identity(), "glStencilMask", GL_STENCIL_WRITEMASK) {
+        @Override
+        public boolean canBackupRestoreToLegacyAttributeStack() {
+            return true;
+        }
+    };
 
     public final StateValueProperty<StencilFunc> STENCIL_FUNC = new StructContainingMultipleIntegersProperty<StencilFunc>(new StencilFunc(Compare.ALWAYS, 0, -1),
             "glStencilFunc",
@@ -217,6 +287,11 @@ public class StateProperties {
             visitGLConstant(mv, GLEnumUtil.from(value.compare()));
             mv.visitLdcInsn(value.reference());
             mv.visitLdcInsn(value.mask());
+        }
+
+        @Override
+        public boolean canBackupRestoreToLegacyAttributeStack() {
+            return true;
         }
     };
 
@@ -228,6 +303,11 @@ public class StateProperties {
             visitGLConstant(mv, GLEnumUtil.from(value.fail()));
             visitGLConstant(mv, GLEnumUtil.from(value.pass()));
             visitGLConstant(mv, GLEnumUtil.from(value.depthFail()));
+        }
+
+        @Override
+        public boolean canBackupRestoreToLegacyAttributeStack() {
+            return true;
         }
     };
 

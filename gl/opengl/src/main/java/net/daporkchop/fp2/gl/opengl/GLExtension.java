@@ -33,8 +33,20 @@ import lombok.RequiredArgsConstructor;
 public enum GLExtension {
     GL_ARB_compatibility(GLVersion.OpenGL30, false) {
         @Override
+        protected boolean core(@NonNull OpenGL gl) {
+            //all the compatibility features were removed in 3.1
+            return gl.version().compareTo(GLVersion.OpenGL31) < 0;
+        }
+
+        @Override
         public boolean supported(@NonNull OpenGL gl) {
-            return gl.extensions().contains(this);
+            if (gl.version().compareTo(GLVersion.OpenGL30) <= 0) { //3.0: compatibility features are all available on 3.0
+                return true;
+            } else if (gl.version().compareTo(GLVersion.OpenGL31) <= 0) { //3.1: compatibility features only available if ARB_compatibility is present
+                return gl.extensions().contains(this);
+            } else { //3.2+: compatibility features only available in compat profile
+                return gl.profile() == GLProfile.COMPAT || gl.extensions().contains(this);
+            }
         }
     },
 
@@ -177,7 +189,7 @@ public enum GLExtension {
      *
      * @param gl the context
      */
-    public boolean core(@NonNull OpenGL gl) {
+    protected boolean core(@NonNull OpenGL gl) {
         return this.coreVersion != null && gl.version().compareTo(this.coreVersion) >= 0;
     }
 

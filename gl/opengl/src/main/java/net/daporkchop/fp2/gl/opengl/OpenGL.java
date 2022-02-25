@@ -115,6 +115,7 @@ public class OpenGL implements GL {
     protected final GLVersion version;
     protected final GLProfile profile;
     protected final Set<GLExtension> extensions;
+    protected final boolean forwardCompatibility;
 
     protected final ResourceArena resourceArena = new ResourceArena();
     protected final ResourceProvider resourceProvider;
@@ -181,10 +182,15 @@ public class OpenGL implements GL {
 
             boolean compat = (contextProfileMask & GL_CONTEXT_COMPATIBILITY_PROFILE_BIT) != 0;
             boolean core = (contextProfileMask & GL_CONTEXT_CORE_PROFILE_BIT) != 0;
-            boolean forwards = this.version.compareTo(GLVersion.OpenGL31) >= 0
-                               && !(this.extensions.contains(GLExtension.GL_ARB_compatibility) || (contextFlags & GL_CONTEXT_FLAG_FORWARD_COMPATIBLE_BIT) != 0);
+            this.forwardCompatibility = (contextFlags & GL_CONTEXT_FLAG_FORWARD_COMPATIBLE_BIT) != 0;
 
-            this.profile = !core && !forwards ? GLProfile.COMPAT : GLProfile.CORE;
+            if (this.version.compareTo(GLVersion.OpenGL31) <= 0) { // <= 3.1, only compat profile exists
+                this.profile = GLProfile.COMPAT;
+            } else { // >= 3.2
+                assert compat || core : "at least one of compat or core must be set!";
+
+                this.profile = compat ? GLProfile.COMPAT : GLProfile.CORE;
+            }
         }
 
         //compatibility hacks

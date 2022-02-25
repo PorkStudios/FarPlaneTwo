@@ -26,15 +26,15 @@ import lombok.SneakyThrows;
 import net.daporkchop.fp2.common.asm.ClassloadingUtils;
 import net.daporkchop.fp2.gl.command.CommandBuffer;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
+import net.daporkchop.fp2.gl.opengl.GLExtension;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.OpenGLConstants;
 import net.daporkchop.fp2.gl.opengl.command.methodwriter.MethodWriter;
 import net.daporkchop.fp2.gl.opengl.command.methodwriter.PassthroughMethodWriter;
 import net.daporkchop.fp2.gl.opengl.command.methodwriter.TreeMethodWriter;
 import net.daporkchop.fp2.gl.opengl.command.state.CowState;
 import net.daporkchop.fp2.gl.opengl.command.state.MutableState;
-import net.daporkchop.fp2.gl.opengl.command.state.State;
 import net.daporkchop.fp2.gl.opengl.command.state.StateProperties;
-import net.daporkchop.fp2.gl.opengl.command.state.StateValueProperty;
 import net.daporkchop.fp2.gl.opengl.command.uop.Uop;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -51,9 +51,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.IdentityHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -153,11 +151,24 @@ public class CommandBufferBuilderImpl extends AbstractCommandBufferBuilder {
             int bufferLvtIndex = lvtIndexAllocator.getAndAdd(2);
             entryVisitor.visitVarInsn(LSTORE, bufferLvtIndex);
 
-            //back up all affected OpenGL properties into local variables
-            state.properties().forEach(property -> {
-                baseLvts.add(lvtIndexAllocator.get());
-                property.backup(entryVisitor, 1, bufferLvtIndex, lvtIndexAllocator);
-            });
+            //back up all affected OpenGL properties
+            if (GLExtension.GL_ARB_compatibility.supported(this.gl)) { //back up old attribute to the legacy attribute stack, if possible
+                //api.glPushClientAttrib(GL_ALL_CLIENT_ATTRIB_BITS);
+                entryVisitor.visitVarInsn(ALOAD, 1);
+                entryVisitor.visitLdcInsn(OpenGLConstants.GL_ALL_CLIENT_ATTRIB_BITS);
+                entryVisitor.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glPushClientAttrib", getMethodDescriptor(VOID_TYPE, INT_TYPE), true);
+
+                //api.glPushAttrib(GL_ALL_ATTRIB_BITS);
+                entryVisitor.visitVarInsn(ALOAD, 1);
+                entryVisitor.visitLdcInsn(OpenGLConstants.GL_ALL_ATTRIB_BITS);
+                entryVisitor.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glPushAttrib", getMethodDescriptor(VOID_TYPE, INT_TYPE), true);
+            }
+            state.properties() //back up remaining attributes to the regular java stack
+                    .filter(property -> !GLExtension.GL_ARB_compatibility.supported(this.gl) || !property.canBackupRestoreToLegacyAttributeStack())
+                    .forEach(property -> {
+                        baseLvts.add(lvtIndexAllocator.get());
+                        property.backup(entryVisitor, 1, bufferLvtIndex, lvtIndexAllocator);
+                    });
 
             //invoke execute(GLAPI)
             entryVisitor.visitVarInsn(ALOAD, 0);
@@ -165,9 +176,18 @@ public class CommandBufferBuilderImpl extends AbstractCommandBufferBuilder {
             entryVisitor.visitMethodInsn(INVOKEVIRTUAL, CLASS_NAME, executeMethodName, getMethodDescriptor(VOID_TYPE, getType(GLAPI.class)), false);
 
             //restore all affected OpenGL properties from their saved values
-            state.properties().forEach(property -> {
-                property.restore(entryVisitor, 1, bufferLvtIndex, baseLvts.poll());
-            });
+            if (GLExtension.GL_ARB_compatibility.supported(this.gl)) { //restore old attributes from the legacy attribute stack, if possible
+                //api.glPopClientAttrib();
+                entryVisitor.visitVarInsn(ALOAD, 1);
+                entryVisitor.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glPopClientAttrib", getMethodDescriptor(VOID_TYPE), true);
+
+                //api.glPopAttrib();
+                entryVisitor.visitVarInsn(ALOAD, 1);
+                entryVisitor.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glPopAttrib", getMethodDescriptor(VOID_TYPE), true);
+            }
+            state.properties()
+                    .filter(property -> !GLExtension.GL_ARB_compatibility.supported(this.gl) || !property.canBackupRestoreToLegacyAttributeStack())
+                    .forEach(property -> property.restore(entryVisitor, 1, bufferLvtIndex, baseLvts.poll()));
         } else {
             //invoke execute(GLAPI)
             entryVisitor.visitVarInsn(ALOAD, 0);
