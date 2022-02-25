@@ -22,6 +22,7 @@ package net.daporkchop.fp2.impl.mc.forge1_16.asm.core.world.server;
 
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.core.util.threading.workergroup.WorkerManager;
+import net.daporkchop.fp2.impl.mc.forge1_16.asm.interfaz.world.server.IMixinServerChunkProvider;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.interfaz.world.server.IMixinServerWorld1_16;
 import net.minecraft.util.concurrent.ThreadTaskExecutor;
 import net.minecraft.world.chunk.IChunk;
@@ -48,7 +49,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @Mixin(ServerChunkProvider.class)
-public abstract class MixinServerChunkProvider1_16 {
+public abstract class MixinServerChunkProvider1_16 implements IMixinServerChunkProvider {
     @Unique
     private static boolean FP2_WORKERTHREAD_GETCHUNK_WARNING = false;
 
@@ -72,6 +73,11 @@ public abstract class MixinServerChunkProvider1_16 {
             field = this.getClass().getDeclaredField("mainThreadProcessor");
         }
         this.fp2_mainThreadProcessor = uncheckedCast(field.get(this));
+    }
+
+    @Override
+    public ThreadTaskExecutor<Runnable> fp2_IMixinServerChunkProvider_mainThreadProcessor() {
+        return this.fp2_mainThreadProcessor;
     }
 
     @Redirect(method = "Lnet/minecraft/world/server/ServerChunkProvider;getChunk(IILnet/minecraft/world/chunk/ChunkStatus;Z)Lnet/minecraft/world/chunk/IChunk;",

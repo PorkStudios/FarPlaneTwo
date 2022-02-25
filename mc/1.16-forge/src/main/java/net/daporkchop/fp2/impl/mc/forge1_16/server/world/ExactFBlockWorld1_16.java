@@ -28,6 +28,7 @@ import net.daporkchop.fp2.api.world.BlockWorldConstants;
 import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.world.server.ATServerChunkProvider1_16;
+import net.daporkchop.fp2.impl.mc.forge1_16.asm.interfaz.world.server.IMixinServerChunkProvider;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.interfaz.world.server.IMixinServerWorld1_16;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.LightType;
@@ -126,7 +127,7 @@ public class ExactFBlockWorld1_16 implements FBlockWorld {
             //block on all the futures
             return tmp.stream()
                     .map(future -> {
-                        ((ATServerChunkProvider1_16) this.world.getChunkSource()).getFp2_MainThreadProcessor().managedBlock(future::isDone);
+                        ((IMixinServerChunkProvider) this.world.getChunkSource()).fp2_IMixinServerChunkProvider_mainThreadProcessor().managedBlock(future::isDone);
                         return future.join().map(Function.identity(), error -> {
                             throw new IllegalStateException("Chunk not there when requested: " + error);
                         });

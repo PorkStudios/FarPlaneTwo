@@ -18,23 +18,13 @@
  *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_16.asm.at.world.server;
+package net.daporkchop.fp2.impl.mc.forge1_16.asm.interfaz.world.server;
 
-import com.mojang.datafixers.util.Either;
-import net.minecraft.world.chunk.ChunkStatus;
-import net.minecraft.world.chunk.IChunk;
-import net.minecraft.world.server.ChunkHolder;
-import net.minecraft.world.server.ServerChunkProvider;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.gen.Invoker;
-
-import java.util.concurrent.CompletableFuture;
+import net.minecraft.util.concurrent.ThreadTaskExecutor;
 
 /**
  * @author DaPorkchop_
  */
-@Mixin(ServerChunkProvider.class)
-public interface ATServerChunkProvider1_16 {
-    @Invoker
-    CompletableFuture<Either<IChunk, ChunkHolder.IChunkLoadingError>> invokeGetChunkFutureMainThread(int chunkX, int chunkZ, ChunkStatus status, boolean generate);
+public interface IMixinServerChunkProvider {
+    ThreadTaskExecutor<Runnable> fp2_IMixinServerChunkProvider_mainThreadProcessor();
 }
