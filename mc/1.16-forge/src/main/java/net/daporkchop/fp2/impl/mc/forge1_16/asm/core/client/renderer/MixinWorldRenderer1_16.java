@@ -33,6 +33,7 @@ import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.renderer.culling.ClippingHelper;
+import net.minecraft.client.renderer.texture.AtlasTexture;
 import net.minecraft.client.world.ClientWorld;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -52,6 +53,8 @@ import static net.daporkchop.fp2.core.FP2Core.*;
 public abstract class MixinWorldRenderer1_16 {
     @Shadow
     private ClientWorld level;
+
+    @Shadow @Final private Minecraft minecraft;
 
     @Inject(method = "Lnet/minecraft/client/renderer/WorldRenderer;setupRender(Lnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/culling/ClippingHelper;ZIZ)V",
             at = @At("HEAD"),
@@ -84,6 +87,7 @@ public abstract class MixinWorldRenderer1_16 {
         }
     }
 
+    @SuppressWarnings("deprecation")
     @Inject(method = "Lnet/minecraft/client/renderer/WorldRenderer;renderChunkLayer(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/matrix/MatrixStack;DDD)V",
             at = @At(value = "INVOKE",
                     target = "Lnet/minecraft/client/renderer/RenderType;setupRenderState()V",
@@ -101,12 +105,17 @@ public abstract class MixinWorldRenderer1_16 {
             if (context != null && (renderer = context.renderer()) != null) {
                 this.level.getProfiler().push("fp2_render_pre");
                 WorldRenderer1_16.ACTIVE_MATRIX_STACK = matrixStack;
+
+                this.minecraft.getModelManager().getAtlas(AtlasTexture.LOCATION_BLOCKS).setBlurMipmap(false, this.minecraft.options.mipmapLevels > 0);
                 renderer.render(layer, true);
+                this.minecraft.getModelManager().getAtlas(AtlasTexture.LOCATION_BLOCKS).restoreLastBlurMipmap();
+
                 this.level.getProfiler().pop();
             }
         });
     }
 
+    @SuppressWarnings("deprecation")
     @Inject(method = "Lnet/minecraft/client/renderer/WorldRenderer;renderChunkLayer(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/matrix/MatrixStack;DDD)V",
             at = @At("RETURN"),
             require = 1, allow = 2)
@@ -122,7 +131,11 @@ public abstract class MixinWorldRenderer1_16 {
             if (context != null && (renderer = context.renderer()) != null) {
                 this.level.getProfiler().push("fp2_render_post");
                 WorldRenderer1_16.ACTIVE_MATRIX_STACK = matrixStack;
+
+                this.minecraft.getModelManager().getAtlas(AtlasTexture.LOCATION_BLOCKS).setBlurMipmap(false, this.minecraft.options.mipmapLevels > 0);
                 renderer.render(layer, false);
+                this.minecraft.getModelManager().getAtlas(AtlasTexture.LOCATION_BLOCKS).restoreLastBlurMipmap();
+
                 this.level.getProfiler().pop();
             }
         });

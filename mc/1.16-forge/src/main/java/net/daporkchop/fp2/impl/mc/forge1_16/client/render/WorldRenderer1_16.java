@@ -33,8 +33,10 @@ import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.renderer.ATLightTexture1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.client.world.FarWorldClient1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.util.ResourceProvider1_16;
+import net.daporkchop.fp2.impl.mc.forge1_16.util.BiomeColorBlockDisplayReader1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.world.registry.GameRegistry1_16;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
+import net.minecraft.block.Blocks;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ActiveRenderInfo;
 import net.minecraft.inventory.container.PlayerContainer;
@@ -100,8 +102,7 @@ public class WorldRenderer1_16 implements WorldRenderer, AutoCloseable {
 
     @Override
     public int tintFactorForStateInBiomeAtPos(int state, int biome, int x, int y, int z) {
-        //TODO: world is null (it should contain the biome)
-        return this.mc.getBlockColors().getColor(this.registry.id2state(state), null, new BlockPos(x, y, z), 0);
+        return this.mc.getBlockColors().getColor(this.registry.id2state(state), new BiomeColorBlockDisplayReader1_16(this.registry.id2biome(biome)), new BlockPos(x, y, z), 0);
     }
 
     @Override

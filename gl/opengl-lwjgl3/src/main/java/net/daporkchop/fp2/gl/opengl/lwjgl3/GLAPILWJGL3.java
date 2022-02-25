@@ -320,6 +320,26 @@ public class GLAPILWJGL3 implements GLAPI {
         GL11.glStencilOp(sfail, dpfail, dppass);
     }
 
+    @Override
+    public void glPushClientAttrib(int mask) {
+        GL11.glPushClientAttrib(mask);
+    }
+
+    @Override
+    public void glPopClientAttrib() {
+        GL11.glPopClientAttrib();
+    }
+
+    @Override
+    public void glPushAttrib(int mask) {
+        GL11.glPushAttrib(mask);
+    }
+
+    @Override
+    public void glPopAttrib() {
+        GL11.glPopAttrib();
+    }
+
     //
     //
     // OpenGL 1.2
