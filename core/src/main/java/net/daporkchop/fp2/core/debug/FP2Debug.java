@@ -22,17 +22,20 @@ package net.daporkchop.fp2.core.debug;
 
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.api.event.ReloadCompleteEvent;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.key.KeyCategory;
 import net.daporkchop.fp2.core.client.render.TextureUVs;
 import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
+import net.daporkchop.fp2.core.event.AbstractReloadEvent;
 import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.core.mode.api.client.IFarTileCache;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
 import net.daporkchop.fp2.core.util.I18n;
+import net.daporkchop.fp2.gl.command.CommandBuffer;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -95,6 +98,25 @@ public class FP2Debug {
                 FP2Config.Debug.DebugColorMode[] modes = FP2Config.Debug.DebugColorMode.values();
                 fp2.globalConfig(config.withDebug(config.debug().withDebugColors(modes[(config.debug().debugColors().ordinal() + 1) % modes.length])));
                 fp2.client().chat().debug("§aSwitched debug color mode to §7" + fp2.globalConfig().debug().debugColors());
+            });
+            category.addBinding("rebuildCommandBuffer", "2", () -> {
+                new AbstractReloadEvent<CommandBuffer>() {
+                    @Override
+                    protected void handleSuccess(int total) {
+                        fp2().client().chat().success("§arebuilt %d command buffer(s)", total);
+                    }
+
+                    @Override
+                    protected void handleFailure(int failed, int total, @NonNull Throwable cause) {
+                        fp2().log().error("command buffer rebuild failed", cause);
+                        fp2().client().chat().error("§c%d/%d command buffer(s) failed to rebuild (check log for info)", failed, total);
+                    }
+
+                    @Override
+                    protected ReloadCompleteEvent<CommandBuffer> completeEvent() {
+                        return new ReloadCompleteEvent<CommandBuffer>() {};
+                    }
+                }.fire();
             });
         }
     }

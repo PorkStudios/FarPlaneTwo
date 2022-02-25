@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.gl.opengl.command.state;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.command.CodegenArgs;
 import net.daporkchop.fp2.gl.opengl.command.methodwriter.MethodWriter;
 import org.objectweb.asm.MethodVisitor;
@@ -58,4 +59,15 @@ public interface StateValueProperty<T> extends StateProperty {
     void backup(@NonNull MethodVisitor mv, int apiLvtIndex, int bufferLvtIndex, @NonNull AtomicInteger lvtIndexAllocator);
 
     void restore(@NonNull MethodVisitor mv, int apiLvtIndex, int bufferLvtIndex, int lvtIndexBase);
+
+    /**
+     * Checks whether or not this property's value can be backed up to and restored from the legacy OpenGL attribute stack using {@link GLAPI#glPushAttrib(int)}/{@link GLAPI#glPushClientAttrib(int)}
+     * and {@link GLAPI#glPopAttrib()}/{@link GLAPI#glPopClientAttrib()}. This is used as an optimization to avoid having to manually back up and restore property values to the Java stack using
+     * {@link #backup(MethodVisitor, int, int, AtomicInteger)} and {@link #restore(MethodVisitor, int, int, int)} when the legacy attribute stack is available.
+     *
+     * @return whether or not this property's value can be backed up to and restored from the legacy OpenGL attribute stack
+     */
+    default boolean canBackupRestoreToLegacyAttributeStack() {
+        return false;
+    }
 }

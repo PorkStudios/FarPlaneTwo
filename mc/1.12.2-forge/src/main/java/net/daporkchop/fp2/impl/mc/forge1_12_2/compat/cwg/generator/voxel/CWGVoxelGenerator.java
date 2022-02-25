@@ -23,13 +23,13 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cwg.generator.voxel;
 import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.IBiomeBlockReplacer;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.world.BlockWorldConstants;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cwg.CWGContext;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.core.mode.voxel.VoxelData;
 import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.core.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.core.mode.voxel.server.gen.rough.AbstractRoughVoxelGenerator;
+import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cwg.CWGContext;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.reference.cache.Cached;
 import net.minecraft.block.state.IBlockState;
@@ -68,7 +68,10 @@ public class CWGVoxelGenerator extends AbstractRoughVoxelGenerator<CWGContext> i
         double scaleFactor = 1.0d / (1 << level);
         for (int x = CACHE_MIN; x < CACHE_MAX; x++) {
             for (int y = CACHE_MIN; y < CACHE_MAX; y++) {
-                Arrays.fill(densityMap[0], cacheIndex(x, y, CACHE_MIN), cacheIndex(x, y, CACHE_MAX), ((this.seaLevel - 0.125d) - (baseY + (y << level))) * scaleFactor);
+                assert cacheIndex(0, 0, 1) == 1 : "cache coordinate order must be z-minor";
+
+                final int idx = cacheIndex(x, y, CACHE_MIN);
+                Arrays.fill(densityMap[0], idx, idx + CACHE_MAX, ((this.seaLevel - 0.125d) - (baseY + (y << level))) * scaleFactor);
             }
         }
 

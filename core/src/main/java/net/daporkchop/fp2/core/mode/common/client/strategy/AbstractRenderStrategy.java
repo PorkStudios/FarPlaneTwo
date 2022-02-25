@@ -22,8 +22,10 @@ package net.daporkchop.fp2.core.mode.common.client.strategy;
 
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.api.event.ChangedEvent;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.api.event.ReloadCompleteEvent;
+import net.daporkchop.fp2.api.event.ReloadEvent;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.core.client.render.GlobalUniformAttributes;
@@ -31,6 +33,7 @@ import net.daporkchop.fp2.core.client.render.TextureUVs;
 import net.daporkchop.fp2.core.client.render.WorldRenderer;
 import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;
 import net.daporkchop.fp2.core.client.shader.ShaderMacros;
+import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
@@ -55,6 +58,7 @@ import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.fp2.core.mode.api.client.IFarRenderer.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * Base implementation of {@link IFarRenderStrategy}.
@@ -155,5 +159,16 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
     @FEventHandler
     protected void onShaderReloadComplete(ReloadCompleteEvent<ReloadableShaderProgram<?>> event) {
         this.lastMacrosSnapshot = null; //force command buffer rebuild on next frame
+    }
+
+    @FEventHandler
+    protected void onConfigChanged(ChangedEvent<FP2Config> event) {
+        this.lastMacrosSnapshot = null; //reversed-z settings may have changed, force command buffer rebuild on next frame
+    }
+
+    @FEventHandler
+    protected void onReloadCommandBuffer(ReloadEvent<CommandBuffer> event) {
+        //command buffer rebuild was explicitly requested, do it immediately (this assumes we're on the client thread...)
+        event.doReload(() -> this.rebuildCommandBuffer(uncheckedCast(this.farRenderer.bakeManager().index())));
     }
 }

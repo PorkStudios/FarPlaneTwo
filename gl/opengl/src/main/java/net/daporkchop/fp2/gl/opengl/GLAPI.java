@@ -122,6 +122,14 @@ public interface GLAPI {
 
     void glStencilOp(int sfail, int dpfail, int dppass);
 
+    void glPushClientAttrib(int mask);
+
+    void glPopClientAttrib();
+
+    void glPushAttrib(int mask);
+
+    void glPopAttrib();
+
     //
     //
     // OpenGL 1.2

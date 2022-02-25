@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -78,7 +78,7 @@ public abstract class AbstractGuiSlider extends AbstractGuiElement {
         this.drawBackground(mouseX, mouseY);
 
         //draw control
-        this.context.renderer().drawButtonBackground(this.bounds.x() + (int) (this.value / (this.max - this.min) * (this.bounds.sizeX() - CONTROL_WIDTH)), this.bounds.y(), CONTROL_WIDTH, this.bounds.sizeY(), this.bounds.contains(mouseX, mouseY), true);
+        this.context.renderer().drawButtonBackground(this.bounds.x() + (int) ((this.value - this.min) / (this.max - this.min) * (this.bounds.sizeX() - CONTROL_WIDTH)), this.bounds.y(), CONTROL_WIDTH, this.bounds.sizeY(), this.bounds.contains(mouseX, mouseY), true);
 
         //get text
         String text = this.properties.text();
