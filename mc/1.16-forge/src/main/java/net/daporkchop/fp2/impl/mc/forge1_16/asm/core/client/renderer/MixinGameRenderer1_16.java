@@ -50,23 +50,21 @@ public abstract class MixinGameRenderer1_16 {
                     target = "Lnet/minecraft/util/math/vector/Matrix4f;perspective(DFFF)Lnet/minecraft/util/math/vector/Matrix4f;"),
             require = 1, allow = 1)
     private Matrix4f fp2_getProjectionMatrix_useReversedZ(double fov, float aspect, float zNear, float zFar) {
-        if (fp2().client().isReverseZ()) {
-            //use reversed-z projection instead of regular perspective projection
-            ArrayAllocator<float[]> alloc = GlobalAllocators.ALLOC_FLOAT.get();
+        //use reversed-z projection instead of regular perspective projection
+        ArrayAllocator<float[]> alloc = GlobalAllocators.ALLOC_FLOAT.get();
 
-            float[] matrix = alloc.atLeast(MatrixHelper.MAT4_ELEMENTS);
-            try {
-                //generate matrix into array
-                MatrixHelper.reversedZ(matrix, (float) fov, aspect, zNear);
+        float[] matrix = alloc.atLeast(MatrixHelper.MAT4_ELEMENTS);
+        try {
+            //generate matrix into array
+            MatrixHelper.reversedZ(matrix, (float) fov, aspect, zNear);
 
-                //load into Matrix4f
-                return new Matrix4f(matrix);
-            } finally {
-                alloc.release(matrix);
-            }
-        } else {
-            //use regular perspective projection
-            return Matrix4f.perspective(fov, aspect, zNear, zFar);
+            //column-major -> row-major
+            MatrixHelper.flip(matrix);
+
+            //load into Matrix4f
+            return new Matrix4f(matrix);
+        } finally {
+            alloc.release(matrix);
         }
     }
 }
