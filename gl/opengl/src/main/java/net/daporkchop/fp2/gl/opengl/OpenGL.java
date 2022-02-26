@@ -184,12 +184,18 @@ public class OpenGL implements GL {
             boolean core = (contextProfileMask & GL_CONTEXT_CORE_PROFILE_BIT) != 0;
             this.forwardCompatibility = (contextFlags & GL_CONTEXT_FLAG_FORWARD_COMPATIBLE_BIT) != 0;
 
-            if (this.version.compareTo(GLVersion.OpenGL31) <= 0) { // <= 3.1, only compat profile exists
-                this.profile = GLProfile.COMPAT;
+            if (this.version.compareTo(GLVersion.OpenGL31) <= 0) { // <= 3.1, profiles don't exist yet
+                this.profile = GLProfile.UNKNOWN;
             } else { // >= 3.2
-                assert compat || core : "at least one of compat or core must be set!";
+                assert !(compat && core) : "a context can't be using both core and compatibility profiles at once!";
 
-                this.profile = compat ? GLProfile.COMPAT : GLProfile.CORE;
+                if (compat) {
+                    this.profile = GLProfile.COMPAT;
+                } else if (core) {
+                    this.profile = GLProfile.CORE;
+                } else {
+                    this.profile = GLProfile.UNKNOWN;
+                }
             }
         }
 
