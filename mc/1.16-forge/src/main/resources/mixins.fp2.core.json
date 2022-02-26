@@ -8,6 +8,7 @@
     "client.network.play.MixinClientPlayNetHandler1_16",
     "client.renderer.culling.MixinClippingHelper1_16",
     "client.renderer.MixinGameRenderer1_16",
+    "client.renderer.MixinLightTexture1_16",
     "client.renderer.MixinWorldRenderer1_16",
     "client.MixinMinecraft1_16"
   ],
