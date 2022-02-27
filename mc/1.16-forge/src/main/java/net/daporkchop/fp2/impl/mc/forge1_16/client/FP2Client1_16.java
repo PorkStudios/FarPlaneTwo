@@ -179,7 +179,7 @@ public class FP2Client1_16 extends FP2Client {
         Screen gui = event.getGui();
         if (gui instanceof VideoSettingsScreen) {
             button.x = gui.width / 2 + 165;
-            button.y = gui.height / 6 - 12;
+            button.y = 32 + 4;
         } else if (FP2_DEBUG && gui instanceof MainMenuScreen) {
             button.x = gui.width / 2 + 104;
             button.y = gui.height / 4 + 48;
@@ -191,8 +191,8 @@ public class FP2Client1_16 extends FP2Client {
         }
 
         if (addButton) { //add the button to the gui
-            ((ATScreen1_16) gui).getButtons().add(button);
-            ((ATScreen1_16) gui).getChildren().add(button);
+            ((ATScreen1_16) gui).getButtons().add(0, button);
+            ((ATScreen1_16) gui).getChildren().add(0, button);
         }
     }
 
