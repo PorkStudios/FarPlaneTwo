@@ -23,16 +23,15 @@ package net.daporkchop.fp2.impl.mc.forge1_16.server.world;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.api.world.BlockWorldConstants;
 import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
-import net.minecraft.util.math.BlockPos;
+import net.daporkchop.fp2.core.util.datastructure.Datastructures;
+import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSet;
+import net.daporkchop.lib.primitive.list.LongList;
+import net.daporkchop.lib.primitive.list.array.LongArrayList;
 import net.minecraft.util.math.SectionPos;
-import net.minecraft.world.LightType;
 import net.minecraft.world.server.ServerWorld;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 
@@ -65,20 +64,26 @@ public class ExactFBlockWorld1_16 implements FBlockWorld {
 
     @Override
     public int getState(int x, int y, int z) {
-        //TODO: this will internally block on a CompletableFuture not managed by the world's worker manager, which could cause a deadlock!
-        return this.registry.state2id(this.world.getBlockState(new BlockPos(x, y, z)));
+        //delegate to bulk getter because it'll delegate to the server thread using fp2's WorkerManager, avoiding a potential deadlock when shutting down
+        int[] buf = new int[1];
+        this.getStates(buf, 0, 1, x, y, z, 1, 1, 1, 1, 1, 1);
+        return buf[0];
     }
 
     @Override
     public int getBiome(int x, int y, int z) {
-        //TODO: i'm fairly certain this will not use the biome data from disk if the chunk isn't loaded
-        return this.registry.biome2id(this.world.getBiome(new BlockPos(x, y, z)));
+        //delegate to bulk getter because it'll delegate to the server thread using fp2's WorkerManager, avoiding a potential deadlock when shutting down
+        int[] buf = new int[1];
+        this.getBiomes(buf, 0, 1, x, y, z, 1, 1, 1, 1, 1, 1);
+        return buf[0];
     }
 
     @Override
     public byte getLight(int x, int y, int z) {
-        BlockPos pos = new BlockPos(x, y, z);
-        return BlockWorldConstants.packLight(this.world.getBrightness(LightType.SKY, pos), this.world.getBrightness(LightType.BLOCK, pos));
+        //delegate to bulk getter because it'll delegate to the server thread using fp2's WorkerManager, avoiding a potential deadlock when shutting down
+        byte[] buf = new byte[1];
+        this.getLights(buf, 0, 1, x, y, z, 1, 1, 1, 1, 1, 1);
+        return buf[0];
     }
 
     @Override
@@ -105,8 +110,8 @@ public class ExactFBlockWorld1_16 implements FBlockWorld {
         Consumer<IntConsumer> sectionYSupplier = this.chunkCoordSupplier(y, sizeY, strideY);
         Consumer<IntConsumer> chunkZSupplier = this.chunkCoordSupplier(z, sizeZ, strideZ);
 
-        List<SectionPos> sectionPositions = new ArrayList<>();
-        chunkXSupplier.accept(chunkX -> sectionYSupplier.accept(sectionY -> chunkZSupplier.accept(chunkZ -> sectionPositions.add(SectionPos.of(chunkX, sectionY, chunkZ)))));
+        LongList sectionPositions = new LongArrayList();
+        chunkXSupplier.accept(chunkX -> sectionYSupplier.accept(sectionY -> chunkZSupplier.accept(chunkZ -> sectionPositions.add(SectionPos.asLong(chunkX, sectionY, chunkZ)))));
 
         //delegate to PrefetchedChunksFBlockWorld1_16
         PrefetchedChunksFBlockWorld1_16.prefetchSections(this.world, this.registry, sectionPositions)
@@ -127,6 +132,37 @@ public class ExactFBlockWorld1_16 implements FBlockWorld {
                     callback.accept(chunk);
                 }
             };
+        }
+    }
+
+    @Override
+    public void getData(int[] states, int statesOff, int statesStride,
+                        int[] biomes, int biomesOff, int biomesStride,
+                        byte[] light, int lightOff, int lightStride,
+                        @NonNull int[] xs, int xOff, int xStride, @NonNull int[] ys, int yOff, int yStride, @NonNull int[] zs, int zOff, int zStride, int count) {
+        if (states != null) {
+            checkRangeLen(states.length, statesOff, positive(statesStride, "statesStride") * count);
+        }
+        if (biomes != null) {
+            checkRangeLen(biomes.length, biomesOff, positive(biomesStride, "biomesStride") * count);
+        }
+        if (light != null) {
+            checkRangeLen(light.length, lightOff, positive(lightStride, "lightStride") * count);
+        }
+        checkRangeLen(xs.length, xOff, positive(xStride, "xStride") * count);
+        checkRangeLen(ys.length, yOff, positive(yStride, "yStride") * count);
+        checkRangeLen(zs.length, zOff, positive(zStride, "zStride") * count);
+
+        //find unique section positions intersected by this query
+        try (NDimensionalIntSet sectionPositions = Datastructures.INSTANCE.nDimensionalIntSet().dimensions(3).build()) {
+            for (int i = 0, xIndex = xOff, yIndex = yOff, zIndex = zStride; i < count; i++, xIndex += xStride, yIndex += yStride, zIndex += zStride) {
+                sectionPositions.add(xs[xIndex] >> CHUNK_SHIFT, ys[yIndex] >> CHUNK_SHIFT, zs[zIndex] >> CHUNK_SHIFT);
+            }
+
+            //delegate to PrefetchedChunksFBlockWorld1_16
+            PrefetchedChunksFBlockWorld1_16.prefetchSections(this.world, this.registry, sectionPositions)
+                    .join()
+                    .getData(states, statesOff, statesStride, biomes, biomesOff, biomesStride, light, lightOff, lightStride, xs, xOff, xStride, ys, yOff, yStride, zs, zOff, zStride, count);
         }
     }
 }
