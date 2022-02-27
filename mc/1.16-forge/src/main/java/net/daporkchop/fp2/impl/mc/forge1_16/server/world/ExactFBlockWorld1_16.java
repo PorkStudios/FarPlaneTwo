@@ -20,28 +20,20 @@
 
 package net.daporkchop.fp2.impl.mc.forge1_16.server.world;
 
-import com.mojang.datafixers.util.Either;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.api.world.BlockWorldConstants;
 import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
-import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.world.server.ATServerChunkProvider1_16;
-import net.daporkchop.fp2.impl.mc.forge1_16.asm.interfaz.world.server.IMixinServerChunkProvider;
-import net.daporkchop.fp2.impl.mc.forge1_16.asm.interfaz.world.server.IMixinServerWorld1_16;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.SectionPos;
 import net.minecraft.world.LightType;
-import net.minecraft.world.chunk.ChunkStatus;
-import net.minecraft.world.chunk.IChunk;
-import net.minecraft.world.server.ChunkHolder;
 import net.minecraft.world.server.ServerWorld;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.IntConsumer;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -108,35 +100,17 @@ public class ExactFBlockWorld1_16 implements FBlockWorld {
         positive(strideY, "strideY");
         positive(strideZ, "strideZ");
 
-        //prefetch all affected chunks
-        //int chunkCountX = strideX >= CHUNK_SIZE ? sizeX : (x >> CHUNK_SHIFT) - ((x + sizeX * strideX) >> CHUNK_SHIFT);
-        //int chunkCountZ = strideZ >= CHUNK_SIZE ? sizeZ : (z >> CHUNK_SHIFT) - ((z + sizeZ * strideZ) >> CHUNK_SHIFT);
+        //prefetch all affected sections
         Consumer<IntConsumer> chunkXSupplier = this.chunkCoordSupplier(x, sizeX, strideX);
+        Consumer<IntConsumer> sectionYSupplier = this.chunkCoordSupplier(y, sizeY, strideY);
         Consumer<IntConsumer> chunkZSupplier = this.chunkCoordSupplier(z, sizeZ, strideZ);
 
-        //prefetch all chunks on server thread
-        IChunk[] chunks = ((IMixinServerWorld1_16) this.world).fp2_farWorldServer().fp2_IFarWorld_workerManager().workExecutor().supply(() -> {
-            List<CompletableFuture<Either<IChunk, ChunkHolder.IChunkLoadingError>>> tmp = new ArrayList<>();
-
-            //get all the futures
-            chunkXSupplier.accept(chunkX -> chunkZSupplier.accept(chunkZ -> {
-                ATServerChunkProvider1_16 serverChunkProvider = (ATServerChunkProvider1_16) this.world.getChunkSource();
-                tmp.add(serverChunkProvider.invokeGetChunkFutureMainThread(chunkX, chunkZ, ChunkStatus.FULL, true));
-            }));
-
-            //block on all the futures
-            return tmp.stream()
-                    .map(future -> {
-                        ((IMixinServerChunkProvider) this.world.getChunkSource()).fp2_IMixinServerChunkProvider_mainThreadProcessor().managedBlock(future::isDone);
-                        return future.join().map(Function.identity(), error -> {
-                            throw new IllegalStateException("Chunk not there when requested: " + error);
-                        });
-                    })
-                    .toArray(IChunk[]::new);
-        }).join();
+        List<SectionPos> sectionPositions = new ArrayList<>();
+        chunkXSupplier.accept(chunkX -> sectionYSupplier.accept(sectionY -> chunkZSupplier.accept(chunkZ -> sectionPositions.add(SectionPos.of(chunkX, sectionY, chunkZ)))));
 
         //delegate to PrefetchedChunksFBlockWorld1_16
-        new PrefetchedChunksFBlockWorld1_16(this.registry, chunks)
+        PrefetchedChunksFBlockWorld1_16.prefetchSections(this.world, this.registry, sectionPositions)
+                .join()
                 .getData(states, statesOff, statesStride, biomes, biomesOff, biomesStride, light, lightOff, lightStride, x, y, z, sizeX, sizeY, sizeZ, strideX, strideY, strideZ);
     }
 
