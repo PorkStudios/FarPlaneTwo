@@ -34,17 +34,17 @@ public enum GLExtension {
     GL_ARB_compatibility(GLVersion.OpenGL30, false) {
         @Override
         protected boolean core(@NonNull OpenGL gl) {
-            //all the compatibility features were removed in 3.1
-            return gl.version().compareTo(GLVersion.OpenGL31) < 0;
+            return false;
         }
 
         @Override
         public boolean supported(@NonNull OpenGL gl) {
             if (gl.version().compareTo(GLVersion.OpenGL30) <= 0) { //3.0: compatibility features are all available on 3.0
-                return true;
+                //they may be removed if forward compatibility is enabled, however that would still be overridden by the presence of ARB_compatibility
+                return !gl.forwardCompatibility() || gl.extensions().contains(this);
             } else if (gl.version().compareTo(GLVersion.OpenGL31) <= 0) { //3.1: compatibility features only available if ARB_compatibility is present
                 return gl.extensions().contains(this);
-            } else { //3.2+: compatibility features only available in compat profile
+            } else { //3.2+: compatibility features only available in compat profile, or if ARB_compatibility is present
                 return gl.profile() == GLProfile.COMPAT || gl.extensions().contains(this);
             }
         }
