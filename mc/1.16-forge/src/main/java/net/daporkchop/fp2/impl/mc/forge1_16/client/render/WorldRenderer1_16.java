@@ -30,13 +30,13 @@ import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
 import net.daporkchop.fp2.core.client.render.WorldRenderer;
 import net.daporkchop.fp2.core.util.GlobalAllocators;
 import net.daporkchop.fp2.gl.GL;
+import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.renderer.ATFogRenderer1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.renderer.ATLightTexture1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.client.world.FarWorldClient1_16;
-import net.daporkchop.fp2.impl.mc.forge1_16.util.ResourceProvider1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.util.BiomeColorBlockDisplayReader1_16;
+import net.daporkchop.fp2.impl.mc.forge1_16.util.ResourceProvider1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.world.registry.GameRegistry1_16;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
-import net.minecraft.block.Blocks;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ActiveRenderInfo;
 import net.minecraft.inventory.container.PlayerContainer;
@@ -133,7 +133,24 @@ public class WorldRenderer1_16 implements WorldRenderer, AutoCloseable {
         }
 
         { //fog
-            //TODO
+            attributes.fogColorR = ATFogRenderer1_16.getFogRed();
+            attributes.fogColorG = ATFogRenderer1_16.getFogGreen();
+            attributes.fogColorB = ATFogRenderer1_16.getFogBlue();
+            attributes.fogColorA = 1.0f;
+
+            attributes.fogMode = glGetInteger(GL_FOG_MODE);
+
+            attributes.fogDensity = glGetFloat(GL_FOG_DENSITY);
+            attributes.fogStart = glGetFloat(GL_FOG_START);
+            attributes.fogEnd = glGetFloat(GL_FOG_END);
+            attributes.fogScale = 1.0f / (attributes.fogEnd - attributes.fogStart);
+
+            //i can't use glGetBoolean(GL_FOG) to check if fog is enabled because 1.16 turns it on and off again for every chunk section.
+            //  instead, i check if fog mode is EXP2 and density is 0, because that's what is configured by FogRenderer.setupNoFog().
+            //TODO: figure out if this will still work with OptiFine's option to disable fog
+            if (attributes.fogMode == GL_EXP2 && attributes.fogDensity == 0.0f) {
+                attributes.fogMode = 0;
+            }
         }
 
         return attributes;
