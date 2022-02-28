@@ -28,6 +28,7 @@ import net.daporkchop.fp2.core.client.MatrixHelper;
 import net.daporkchop.fp2.core.client.render.GlobalUniformAttributes;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
 import net.daporkchop.fp2.core.client.render.WorldRenderer;
+import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.core.util.GlobalAllocators;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.renderer.ATFogRenderer1_16;
@@ -37,11 +38,16 @@ import net.daporkchop.fp2.impl.mc.forge1_16.util.BiomeColorBlockDisplayReader1_1
 import net.daporkchop.fp2.impl.mc.forge1_16.util.ResourceProvider1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.world.registry.GameRegistry1_16;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
+import net.minecraft.block.BlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ActiveRenderInfo;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.RenderTypeLookup;
+import net.minecraft.fluid.Fluids;
 import net.minecraft.inventory.container.PlayerContainer;
 import net.minecraft.util.math.BlockPos;
 import org.lwjgl.BufferUtils;
+import org.spongepowered.asm.mixin.Unique;
 
 import java.nio.FloatBuffer;
 
@@ -58,6 +64,18 @@ import static org.lwjgl.opengl.GL11.*;
 public class WorldRenderer1_16 implements WorldRenderer, AutoCloseable {
     public static MatrixStack ACTIVE_MATRIX_STACK; //TODO: this is extremely gross, add the current matrix as a parameter to IFarRenderer#render
 
+    private static int toLayerIndex(RenderType type) {
+        if (type == RenderType.solid()) {
+            return IFarRenderer.LAYER_SOLID;
+        } else if (type == RenderType.cutout() || type == RenderType.cutoutMipped()) {
+            return IFarRenderer.LAYER_CUTOUT; //TODO: cutout needs alpha testing (i may need discard; ...)
+        } else if (type == RenderType.translucent()) {
+            return IFarRenderer.LAYER_TRANSPARENT;
+        } else {
+            return IFarRenderer.LAYER_SOLID;
+        }
+    }
+
     protected final Minecraft mc;
     protected final GL gl;
 
@@ -70,6 +88,7 @@ public class WorldRenderer1_16 implements WorldRenderer, AutoCloseable {
 
     protected final FloatBuffer tempMatrix = BufferUtils.createFloatBuffer(MatrixHelper.MAT4_ELEMENTS);
 
+    @SuppressWarnings("deprecation")
     public WorldRenderer1_16(@NonNull Minecraft mc, @NonNull FarWorldClient1_16 world) {
         this.mc = mc;
         this.world = world;
@@ -78,8 +97,14 @@ public class WorldRenderer1_16 implements WorldRenderer, AutoCloseable {
 
         this.renderTypeLookup = new byte[this.registry.statesCount()];
         this.registry.states().forEach(state -> {
-            //TODO: this is wrong, obviously
-            this.renderTypeLookup[state] = 0; //solid
+            BlockState blockState = this.registry.id2state(state);
+            RenderType renderType;
+            if (blockState.getFluidState().isEmpty()) {
+                renderType = RenderTypeLookup.getChunkRenderType(blockState);
+            } else {
+                renderType = RenderTypeLookup.getRenderLayer(blockState.getFluidState());
+            }
+            this.renderTypeLookup[state] = (byte) toLayerIndex(renderType);
         });
 
         this.gl = GL.builder()
