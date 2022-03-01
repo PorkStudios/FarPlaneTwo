@@ -27,7 +27,7 @@ import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
 import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
 import net.daporkchop.fp2.core.util.datastructure.Datastructures;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSegtreeSet;
-import net.daporkchop.fp2.core.util.threading.futurecache.GenerationNotAllowedException;
+import net.daporkchop.fp2.api.world.GenerationNotAllowedException;
 import net.daporkchop.fp2.core.util.threading.futurecache.IAsyncCache;
 import net.daporkchop.fp2.core.util.threading.lazy.LazyFutureTask;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.world.IMixinWorldServer;
@@ -118,6 +118,11 @@ public class VanillaAsyncBlockAccessImpl implements IAsyncBlockAccess {
     @FEventHandler
     private void onCubeSaved(@NonNull CubeSavedEvent event) {
         throw new UnsupportedOperationException("vanilla world shouldn't have cubes!");
+    }
+
+    @Override
+    public boolean generationAllowed() {
+        return true;
     }
 
     @Override

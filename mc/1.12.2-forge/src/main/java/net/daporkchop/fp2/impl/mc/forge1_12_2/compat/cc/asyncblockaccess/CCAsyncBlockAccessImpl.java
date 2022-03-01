@@ -41,7 +41,7 @@ import net.daporkchop.fp2.core.server.event.TickEndEvent;
 import net.daporkchop.fp2.core.server.world.IFarWorldServer;
 import net.daporkchop.fp2.core.util.datastructure.Datastructures;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSegtreeSet;
-import net.daporkchop.fp2.core.util.threading.futurecache.GenerationNotAllowedException;
+import net.daporkchop.fp2.api.world.GenerationNotAllowedException;
 import net.daporkchop.fp2.core.util.threading.futurecache.IAsyncCache;
 import net.daporkchop.fp2.core.util.threading.lazy.LazyFutureTask;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.world.IMixinWorldServer;
@@ -64,7 +64,6 @@ import net.minecraft.world.WorldServer;
 import net.minecraft.world.WorldType;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.chunk.IChunkProvider;
 import net.minecraft.world.chunk.storage.ExtendedBlockStorage;
 
 import java.io.IOException;
@@ -198,6 +197,11 @@ public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess {
 
             ((ICubicWorldServer) this.world).unloadOldCubes();
         }
+    }
+
+    @Override
+    public boolean generationAllowed() {
+        return true;
     }
 
     @Override

@@ -22,6 +22,7 @@ package net.daporkchop.fp2.core.mode.voxel.server.gen.exact;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.api.world.FBlockWorld;
+import net.daporkchop.fp2.api.world.GenerationNotAllowedException;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.core.mode.voxel.VoxelData;
 import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
@@ -55,7 +56,7 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
     }
 
     @Override
-    public void generate(@NonNull FBlockWorld world, @NonNull VoxelPos posIn, @NonNull VoxelTile tile) {
+    public void generate(@NonNull FBlockWorld world, @NonNull VoxelPos posIn, @NonNull VoxelTile tile) throws GenerationNotAllowedException {
         ArrayAllocator<int[]> intAlloc = GlobalAllocators.ALLOC_INT.get();
         ArrayAllocator<byte[]> byteAlloc = GlobalAllocators.ALLOC_BYTE.get();
 

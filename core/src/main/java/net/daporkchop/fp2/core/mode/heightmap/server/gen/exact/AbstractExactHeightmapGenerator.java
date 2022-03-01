@@ -22,6 +22,7 @@ package net.daporkchop.fp2.core.mode.heightmap.server.gen.exact;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.api.world.FBlockWorld;
+import net.daporkchop.fp2.api.world.GenerationNotAllowedException;
 import net.daporkchop.fp2.core.server.world.IFarWorldServer;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.core.mode.common.server.gen.AbstractFarGenerator;
@@ -44,7 +45,7 @@ public abstract class AbstractExactHeightmapGenerator extends AbstractFarGenerat
     protected abstract void computeElevations(@NonNull FBlockWorld world, @NonNull int[] elevations, int blockX, int blockZ);
 
     @Override
-    public void generate(@NonNull FBlockWorld world, @NonNull HeightmapPos posIn, @NonNull HeightmapTile tile) {
+    public void generate(@NonNull FBlockWorld world, @NonNull HeightmapPos posIn, @NonNull HeightmapTile tile) throws GenerationNotAllowedException {
         int tileX = posIn.x();
         int tileZ = posIn.z();
 

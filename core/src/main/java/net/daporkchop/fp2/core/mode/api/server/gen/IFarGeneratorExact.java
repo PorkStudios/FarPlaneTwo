@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -22,13 +22,10 @@ package net.daporkchop.fp2.core.mode.api.server.gen;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.api.world.FBlockWorld;
+import net.daporkchop.fp2.api.world.GenerationNotAllowedException;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.server.IFarServerResourceCreationEvent;
-import net.daporkchop.lib.math.vector.Vec2i;
-import net.daporkchop.lib.math.vector.Vec3i;
-
-import java.util.stream.Stream;
 
 /**
  * Type of {@link IFarGenerator} which generates tile data based on block data in the world.
@@ -39,32 +36,14 @@ import java.util.stream.Stream;
  */
 public interface IFarGeneratorExact<POS extends IFarPos, T extends IFarTile> extends IFarGenerator {
     /**
-     * Gets the positions of all of the columns that need to be loaded in order for this generator to generate the tile at the given position.
-     *
-     * @param pos the position of the tile to generate
-     * @return the positions of all of the columns that need to be loaded in order for this generator to generate the tile at the given position
-     */
-    Stream<Vec2i> neededColumns(@NonNull POS pos);
-
-    /**
-     * Gets the positions of all of the cubes that need to be loaded in order for this generator to generate the tile at the given position.
-     * <p>
-     * Note that this method is only guaranteed to be called in cubic chunks worlds.
-     *
-     * @param world the {@link FBlockWorld} providing access to block/height data in the world
-     * @param pos   the position of the tile to generate
-     * @return the positions of all of the cubes that need to be loaded in order for this generator to generate the tile at the given position
-     */
-    Stream<Vec3i> neededCubes(@NonNull FBlockWorld world, @NonNull POS pos);
-
-    /**
      * Generates the terrain in the given tile.
      *
      * @param world the {@link FBlockWorld} providing access to block/height data in the world
      * @param pos   the position of the tile to generate
      * @param tile  the tile to generate
+     * @throws GenerationNotAllowedException if the generator attempts to access terrain which is not generated, and the given {@link FBlockWorld} does not allow generation
      */
-    void generate(@NonNull FBlockWorld world, @NonNull POS pos, @NonNull T tile);
+    void generate(@NonNull FBlockWorld world, @NonNull POS pos, @NonNull T tile) throws GenerationNotAllowedException;
 
     /**
      * Fired to create a new {@link IFarGeneratorExact}.

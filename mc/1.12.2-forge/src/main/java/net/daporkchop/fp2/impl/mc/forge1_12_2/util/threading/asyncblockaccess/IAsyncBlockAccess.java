@@ -22,7 +22,7 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.util.threading.asyncblockaccess;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.IBlockHeightAccess;
-import net.daporkchop.fp2.core.util.threading.futurecache.GenerationNotAllowedException;
+import net.daporkchop.fp2.api.world.GenerationNotAllowedException;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumFacing;

@@ -113,6 +113,11 @@ public abstract class AbstractPrefetchedAsyncBlockAccess<P extends IAsyncBlockAc
     }
 
     @Override
+    public boolean generationAllowed() {
+        return this.parent.generationAllowed();
+    }
+
+    @Override
     public boolean containsAnyData(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
         return this.parent.containsAnyData(minX, minY, minZ, maxX, maxY, maxZ);
     }

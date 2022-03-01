@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -23,22 +23,17 @@ package net.daporkchop.fp2.core.mode.common.server;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.api.world.FBlockWorld;
+import net.daporkchop.fp2.api.world.GenerationNotAllowedException;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.core.mode.api.tile.ITileMetadata;
 import net.daporkchop.fp2.core.util.SimpleRecycler;
-import net.daporkchop.fp2.core.util.threading.futurecache.GenerationNotAllowedException;
 import net.daporkchop.fp2.core.util.threading.scheduler.Scheduler;
-import net.daporkchop.lib.math.vector.Vec2i;
-import net.daporkchop.lib.math.vector.Vec3i;
 
 import java.util.List;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.fp2.core.debug.FP2Debug.*;
@@ -140,14 +135,7 @@ public abstract class AbstractTileTask<POS extends IFarPos, T extends IFarTile> 
         SimpleRecycler<T> tileRecycler = this.world.mode().tileRecycler();
         T tile = tileRecycler.allocate();
         try {
-            //prefetch terrain
-            Stream<Vec2i> columns = this.world.generatorExact().neededColumns(this.pos);
-            Function<FBlockWorld, Stream<Vec3i>> cubesMappingFunction = world -> this.world.generatorExact().neededCubes(world, this.pos);
-
-            //TODO: prefetching?
-            /*FBlockWorld access = allowGeneration
-                    ? this.world.world().fp2_IFarWorldServer_fblockWorld().prefetch(columns, cubesMappingFunction)
-                    : this.world.world().fp2_IFarWorldServer_fblockWorld().prefetchWithoutGenerating(columns, cubesMappingFunction);*/
+            //TODO: use allowGeneration parameter
 
             //generate tile
             this.world.generatorExact().generate(this.world.world().fp2_IFarWorldServer_fblockWorld(), this.pos, tile);
