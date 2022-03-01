@@ -22,14 +22,24 @@ package net.daporkchop.fp2.impl.mc.forge1_16.server.world;
 
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
+import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
+import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
+import net.daporkchop.fp2.core.server.world.IFarWorldServer;
 import net.daporkchop.fp2.core.util.datastructure.Datastructures;
+import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSegtreeSet;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSet;
+import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.world.chunk.storage.ATChunkLoader1_16;
+import net.daporkchop.fp2.impl.mc.forge1_16.asm.interfaz.world.chunk.storage.IMixinIOWorker1_16;
+import net.daporkchop.fp2.impl.mc.forge1_16.asm.interfaz.world.server.IMixinServerWorld1_16;
+import net.daporkchop.lib.common.math.BinMath;
 import net.daporkchop.lib.primitive.list.LongList;
 import net.daporkchop.lib.primitive.list.array.LongArrayList;
 import net.minecraft.util.math.SectionPos;
+import net.minecraft.world.chunk.ChunkStatus;
+import net.minecraft.world.chunk.storage.ChunkSerializer;
 import net.minecraft.world.server.ServerWorld;
 
 import java.util.function.Consumer;
@@ -40,26 +50,68 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
 @Getter
 public class ExactFBlockWorld1_16 implements FBlockWorld {
     public static final int CHUNK_SHIFT = 4;
     public static final int CHUNK_SIZE = 1 << CHUNK_SHIFT;
     public static final int CHUNK_MASK = CHUNK_SIZE - 1;
 
-    @NonNull
     protected final ServerWorld world;
-    @NonNull
+    protected final IFarWorldServer farWorld;
+
     protected final FGameRegistry registry;
+
+    protected final NDimensionalIntSegtreeSet chunksExistCache;
+
+    public ExactFBlockWorld1_16(@NonNull ServerWorld world) {
+        this.world = world;
+        this.farWorld = ((IMixinServerWorld1_16) world).fp2_farWorldServer();
+
+        this.registry = this.farWorld.fp2_IFarWorld_registry();
+
+        this.chunksExistCache = Datastructures.INSTANCE.nDimensionalIntSegtreeSet()
+                .dimensions(2)
+                .threadSafe(true)
+                .initialPoints(() -> ((IMixinIOWorker1_16) ((ATChunkLoader1_16) world.getChunkSource().chunkMap).getWorker()).fp2_IOWorker_listChunksWithData()
+                        //TODO: i should probably run datafixers here
+                        .filter(entry -> ChunkSerializer.getChunkTypeFromTag(entry.getValue()) == ChunkStatus.Type.LEVELCHUNK)
+                        .map(entry -> new int[]{ entry.getKey().x, entry.getKey().z })
+                        .parallel())
+                .build();
+
+        this.farWorld.fp2_IFarWorldServer_eventBus().registerWeak(this);
+    }
 
     @Override
     public void close() {
-        //no-op
+        this.farWorld.fp2_IFarWorldServer_eventBus().unregister(this);
+    }
+
+    @FEventHandler
+    private void onColumnSaved(@NonNull ColumnSavedEvent event) {
+        if (event.column().isFullyPopulated()) {
+            this.chunksExistCache.add(event.pos().x(), event.pos().y());
+            //TODO: maintain my own chunk cache?
+            // this.chunks.notifyUpdate(new ChunkPos(event.pos().x(), event.pos().y()), (NBTTagCompound) event.data());
+        }
+    }
+
+    @FEventHandler
+    private void onCubeSaved(@NonNull CubeSavedEvent event) {
+        throw new UnsupportedOperationException("vanilla world shouldn't have cubes!");
     }
 
     @Override
     public boolean containsAnyData(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
-        return true; //TODO: this means exact generation will always be used!!!
+        assert maxX - minX == maxY - minY && maxX - minX == maxZ - minZ : "only cubic AABBs are supported!";
+        assert BinMath.isPow2(maxX - minX) : "only cubic AABBs with a side length of a power of two are supported!";
+
+        int level = Integer.numberOfTrailingZeros(maxX - minX);
+        return this.anyCubeIntersects(minX >> level, minY >> level, minZ >> level, level);
+    }
+
+    private boolean anyCubeIntersects(int tileX, int tileY, int tileZ, int level) {
+        return tileY < 16 && level >= 0 && this.chunksExistCache.containsAny(level, tileX, tileZ);
     }
 
     @Override

@@ -15,6 +15,8 @@
   "mixins": [
     "network.play.MixinServerPlayNetHandler1_16",
     "server.MixinMinecraftServer1_16",
+    "world.chunk.storage.MixinIOWorker1_16",
+    "world.chunk.storage.MixinRegionFileCache1_16",
     "world.server.MixinServerChunkProvider1_16",
     "world.server.MixinServerWorld1_16"
   ]

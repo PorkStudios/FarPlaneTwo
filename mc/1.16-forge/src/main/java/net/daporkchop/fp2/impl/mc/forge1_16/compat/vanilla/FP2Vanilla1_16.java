@@ -45,8 +45,6 @@ import net.daporkchop.fp2.impl.mc.forge1_16.util.Util1_16;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.BlockModelShapes;
-import net.minecraft.client.renderer.BlockRendererDispatcher;
 import net.minecraft.client.renderer.model.BakedQuad;
 import net.minecraft.client.renderer.model.IBakedModel;
 import net.minecraft.client.renderer.model.ModelBakery;
@@ -99,7 +97,7 @@ public class FP2Vanilla1_16 {
 
     @FEventHandler(name = "vanilla_world_exact_fblockworld")
     public FBlockWorld getExactFBlockWorld(GetExactFBlockWorldEvent event) {
-        return new ExactFBlockWorld1_16((ServerWorld) event.world().fp2_IFarWorld_implWorld(), event.world().fp2_IFarWorld_registry());
+        return new ExactFBlockWorld1_16((ServerWorld) event.world().fp2_IFarWorld_implWorld());
     }
 
     @FEventHandler(name = "vanilla_world_terrain_generator")

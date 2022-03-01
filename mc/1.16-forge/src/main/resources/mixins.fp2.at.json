@@ -12,6 +12,8 @@
   ],
   "mixins": [
     "server.ATMinecraftServer1_16",
+    "world.chunk.storage.ATChunkLoader1_16",
+    "world.chunk.storage.ATIOWorker__Entry1_16",
     "world.server.ATServerChunkProvider1_16"
   ]
 }
