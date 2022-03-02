@@ -21,15 +21,17 @@
 package net.daporkchop.fp2.core.mode.heightmap.server;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
 import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTrackerManager;
-import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
-import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
 import net.daporkchop.fp2.core.mode.common.server.AbstractFarTileProvider;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapTile;
 import net.daporkchop.fp2.core.mode.heightmap.server.tracking.HeightmapTrackerManager;
+import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
+import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
+import net.daporkchop.fp2.core.server.world.ExactFBlockWorldHolder;
+import net.daporkchop.fp2.core.server.world.IFarWorldServer;
 
 /**
  * @author DaPorkchop_
@@ -49,7 +51,9 @@ public abstract class HeightmapTileProvider extends AbstractFarTileProvider<Heig
         int x = pos.x();
         int z = pos.z();
         int level = pos.level();
-        return this.world().fp2_IFarWorldServer_fblockWorld().containsAnyData(x << level, Integer.MIN_VALUE, z << level, (x + 1) << level, Integer.MAX_VALUE, (z + 1) << level);
+        try (FBlockWorld world = this.world().fp2_IFarWorldServer_exactBlockWorldHolder().worldFor(ExactFBlockWorldHolder.AllowGenerationRequirement.DONT_CARE)) {
+            return world.containsAnyData(x << level, Integer.MIN_VALUE, z << level, (x + 1) << level, Integer.MAX_VALUE, (z + 1) << level);
+        }
     }
 
     @Override

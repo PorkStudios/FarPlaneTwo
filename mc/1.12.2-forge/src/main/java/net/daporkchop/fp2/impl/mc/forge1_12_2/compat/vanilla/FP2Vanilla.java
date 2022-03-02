@@ -23,11 +23,7 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla;
 import net.daporkchop.fp2.api.event.Constrain;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
-import net.daporkchop.fp2.api.world.FBlockWorld;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.asyncblockaccess.VanillaAsyncBlockAccessImpl;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.generator.heightmap.FlatHeightmapGenerator;
 import net.daporkchop.fp2.core.client.render.TextureUVs;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
@@ -42,6 +38,10 @@ import net.daporkchop.fp2.core.mode.voxel.server.gen.exact.VanillaVoxelGenerator
 import net.daporkchop.fp2.core.server.event.GetCoordinateLimitsEvent;
 import net.daporkchop.fp2.core.server.event.GetExactFBlockWorldEvent;
 import net.daporkchop.fp2.core.server.event.GetTerrainGeneratorEvent;
+import net.daporkchop.fp2.core.server.world.ExactFBlockWorldHolder;
+import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.exactfblockworld.VanillaExactFBlockWorldHolder1_12;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.generator.heightmap.FlatHeightmapGenerator;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.Util1_12_2;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
@@ -87,8 +87,8 @@ public class FP2Vanilla {
     }
 
     @FEventHandler(name = "vanilla_world_exact_fblockworld")
-    public FBlockWorld getExactFBlockWorld(GetExactFBlockWorldEvent event) {
-        return new VanillaAsyncBlockAccessImpl((WorldServer) event.world().fp2_IFarWorld_implWorld());
+    public ExactFBlockWorldHolder getExactFBlockWorld(GetExactFBlockWorldEvent event) {
+        return new VanillaExactFBlockWorldHolder1_12((WorldServer) event.world().fp2_IFarWorld_implWorld());
     }
 
     @FEventHandler(name = "vanilla_world_terrain_generator")

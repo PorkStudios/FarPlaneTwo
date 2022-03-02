@@ -146,7 +146,7 @@ public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess {
         LazyFutureTask<IColumn>[] columnFutures = uncheckedCast(columns.map(pos -> this.columns.get(pos, false)).toArray(LazyFutureTask[]::new));
 
         return new PrefetchedColumnsCCAsyncBlockAccess(this, this.world, false, LazyFutureTask.scatterGather(columnFutures).stream()
-                .peek(GenerationNotAllowedException.throwIfNull()));
+                .peek(GenerationNotAllowedException.uncheckedThrowIfNull()));
     }
 
     @Override
@@ -166,13 +166,13 @@ public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess {
         //collect all futures into a list first in order to issue all tasks at once before blocking, thus ensuring maximum parallelism
         LazyFutureTask<IColumn>[] columnFutures = uncheckedCast(columns.map(pos -> this.columns.get(pos, false)).toArray(LazyFutureTask[]::new));
         List<IColumn> columnList = LazyFutureTask.scatterGather(columnFutures);
-        columnList.forEach(GenerationNotAllowedException.throwIfNull());
+        columnList.forEach(GenerationNotAllowedException.uncheckedThrowIfNull());
 
         LazyFutureTask<ICube>[] cubeFutures = uncheckedCast(cubesMappingFunction.apply(new PrefetchedColumnsCCAsyncBlockAccess(this, this.world, false, columnList.stream()))
                 .map(vec -> new CubePos(vec.getX(), vec.getY(), vec.getZ())).map(pos -> this.cubes.get(pos, false)).toArray(LazyFutureTask[]::new));
 
         return new PrefetchedCubesCCAsyncBlockAccess(this, this.world, false, columnList.stream(), LazyFutureTask.scatterGather(cubeFutures).stream()
-                .peek(GenerationNotAllowedException.throwIfNull()));
+                .peek(GenerationNotAllowedException.uncheckedThrowIfNull()));
     }
 
     @FEventHandler
@@ -215,7 +215,7 @@ public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess {
     }
 
     protected IColumn getColumn(int columnX, int columnZ, boolean allowGeneration) {
-        return GenerationNotAllowedException.throwIfNull(this.columns.get(new ChunkPos(columnX, columnZ), allowGeneration).join());
+        return GenerationNotAllowedException.uncheckedThrowIfNull(this.columns.get(new ChunkPos(columnX, columnZ), allowGeneration).join());
     }
 
     @Override
@@ -230,7 +230,7 @@ public class CCAsyncBlockAccessImpl implements IAsyncBlockAccess {
     }
 
     protected ICube getCube(int cubeX, int cubeY, int cubeZ, boolean allowGeneration) {
-        return GenerationNotAllowedException.throwIfNull(this.cubes.get(new CubePos(cubeX, cubeY, cubeZ), allowGeneration).join());
+        return GenerationNotAllowedException.uncheckedThrowIfNull(this.cubes.get(new CubePos(cubeX, cubeY, cubeZ), allowGeneration).join());
     }
 
     @Override

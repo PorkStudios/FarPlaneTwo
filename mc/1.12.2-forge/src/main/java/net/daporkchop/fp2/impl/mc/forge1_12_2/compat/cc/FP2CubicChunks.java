@@ -29,7 +29,6 @@ import lombok.NoArgsConstructor;
 import net.daporkchop.fp2.api.event.Constrain;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
-import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorld;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
@@ -45,6 +44,7 @@ import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
 import net.daporkchop.fp2.core.server.event.GetCoordinateLimitsEvent;
 import net.daporkchop.fp2.core.server.event.GetExactFBlockWorldEvent;
 import net.daporkchop.fp2.core.server.event.GetTerrainGeneratorEvent;
+import net.daporkchop.fp2.core.server.world.ExactFBlockWorldHolder;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.world.IMixinWorldServer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cc.asyncblockaccess.CCAsyncBlockAccessImpl;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.server.world.FCube1_12_2;
@@ -116,9 +116,9 @@ public class FP2CubicChunks {
 
         @FEventHandler(name = "cubicchunks_world_exact_fblockworld",
                 constrain = @Constrain(before = "vanilla_world_exact_fblockworld"))
-        public Optional<FBlockWorld> getExactFBlockWorld(GetExactFBlockWorldEvent event) {
+        public Optional<ExactFBlockWorldHolder> getExactFBlockWorld(GetExactFBlockWorldEvent event) {
             return this.isCubicWorld(event.world())
-                    ? Optional.of(new CCAsyncBlockAccessImpl((WorldServer) event.world().fp2_IFarWorld_implWorld()))
+                    ? Optional.empty() //TODO: Optional.of(new CCAsyncBlockAccessImpl((WorldServer) event.world().fp2_IFarWorld_implWorld()))
                     : Optional.empty();
         }
 

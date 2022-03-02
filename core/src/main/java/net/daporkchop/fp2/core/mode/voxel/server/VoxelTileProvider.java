@@ -21,15 +21,17 @@
 package net.daporkchop.fp2.core.mode.voxel.server;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
 import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTrackerManager;
-import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
-import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
 import net.daporkchop.fp2.core.mode.common.server.AbstractFarTileProvider;
 import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.core.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.core.mode.voxel.server.tracking.VoxelTrackerManager;
+import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
+import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
+import net.daporkchop.fp2.core.server.world.ExactFBlockWorldHolder;
+import net.daporkchop.fp2.core.server.world.IFarWorldServer;
 
 /**
  * @author DaPorkchop_
@@ -50,7 +52,9 @@ public abstract class VoxelTileProvider extends AbstractFarTileProvider<VoxelPos
         int y = pos.y();
         int z = pos.z();
         int level = pos.level();
-        return this.world().fp2_IFarWorldServer_fblockWorld().containsAnyData(x << level, y << level, z << level, (x + 1) << level, (y + 1) << level, (z + 1) << level);
+        try (FBlockWorld world = this.world().fp2_IFarWorldServer_exactBlockWorldHolder().worldFor(ExactFBlockWorldHolder.AllowGenerationRequirement.DONT_CARE)) {
+            return world.containsAnyData(x << level, y << level, z << level, (x + 1) << level, (y + 1) << level, (z + 1) << level);
+        }
     }
 
     /**

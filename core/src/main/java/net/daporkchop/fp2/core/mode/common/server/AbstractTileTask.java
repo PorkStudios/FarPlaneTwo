@@ -23,11 +23,13 @@ package net.daporkchop.fp2.core.mode.common.server;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.api.world.GenerationNotAllowedException;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.core.mode.api.tile.ITileMetadata;
+import net.daporkchop.fp2.core.server.world.ExactFBlockWorldHolder;
 import net.daporkchop.fp2.core.util.SimpleRecycler;
 import net.daporkchop.fp2.core.util.threading.scheduler.Scheduler;
 
@@ -134,11 +136,9 @@ public abstract class AbstractTileTask<POS extends IFarPos, T extends IFarTile> 
     protected void generateExact(long minimumTimestamp, boolean allowGeneration) throws GenerationNotAllowedException {
         SimpleRecycler<T> tileRecycler = this.world.mode().tileRecycler();
         T tile = tileRecycler.allocate();
-        try {
-            //TODO: use allowGeneration parameter
-
+        try (FBlockWorld exactWorld = this.world.world().fp2_IFarWorldServer_exactBlockWorldHolder().worldFor(allowGeneration ? ExactFBlockWorldHolder.AllowGenerationRequirement.ALLOWED : ExactFBlockWorldHolder.AllowGenerationRequirement.NOT_ALLOWED)) {
             //generate tile
-            this.world.generatorExact().generate(this.world.world().fp2_IFarWorldServer_fblockWorld(), this.pos, tile);
+            this.world.generatorExact().generate(exactWorld, this.pos, tile);
 
             this.handle.set(ITileMetadata.ofTimestamp(minimumTimestamp), tile);
         } finally {

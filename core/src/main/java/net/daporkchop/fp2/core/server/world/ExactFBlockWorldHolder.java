@@ -18,24 +18,42 @@
  *
  */
 
-package net.daporkchop.fp2.core.server.event;
+package net.daporkchop.fp2.core.server.world;
 
-import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.api.event.ReturningEvent;
 import net.daporkchop.fp2.api.world.FBlockWorld;
-import net.daporkchop.fp2.core.server.world.ExactFBlockWorldHolder;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.common.util.capability.CloseableResource;
 
 /**
- * Fired in order to retrieve the exact {@link FBlockWorld} for accessing the real block data in a given {@link IFarWorldServer}.
+ * A container which provides instances of {@link FBlockWorld} given a
  *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-@Getter
-public class GetExactFBlockWorldEvent implements ReturningEvent<ExactFBlockWorldHolder> {
-    @NonNull
-    protected final IFarWorldServer world;
+public interface ExactFBlockWorldHolder extends CloseableResource {
+    /**
+     * Gets an {@link FBlockWorld} instance for given requirement of whether or not generation should be allowed.
+     *
+     * @param requirement whether or not generation should be allowed
+     * @return an {@link FBlockWorld} instance matching the given requirement
+     */
+    FBlockWorld worldFor(@NonNull AllowGenerationRequirement requirement);
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * When this holder is closed, all the {@link FBlockWorld} instances created by it will produce undefined behavior, even if not yet closed.
+     */
+    @Override
+    void close();
+
+    /**
+     * Controls whether or not generation should be allowed when requesting an {@link FBlockWorld} instance.
+     *
+     * @author DaPorkchop_
+     */
+    enum AllowGenerationRequirement {
+        ALLOWED,
+        NOT_ALLOWED,
+        DONT_CARE;
+    }
 }

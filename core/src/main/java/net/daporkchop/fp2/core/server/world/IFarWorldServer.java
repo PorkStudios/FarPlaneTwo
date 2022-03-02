@@ -62,9 +62,9 @@ public interface IFarWorldServer extends IFarWorld {
     TerrainGeneratorInfo fp2_IFarWorldServer_terrainGeneratorInfo();
 
     /**
-     * @return a {@link FBlockWorld} for accessing this world's data
+     * @return an {@link ExactFBlockWorldHolder} for accessing this world's exact {@link FBlockWorld}
      */
-    FBlockWorld fp2_IFarWorldServer_fblockWorld();
+    ExactFBlockWorldHolder fp2_IFarWorldServer_exactBlockWorldHolder();
 
     /**
      * @return the sea level
