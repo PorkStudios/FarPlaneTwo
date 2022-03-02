@@ -46,9 +46,10 @@ import net.daporkchop.fp2.core.server.event.GetExactFBlockWorldEvent;
 import net.daporkchop.fp2.core.server.event.GetTerrainGeneratorEvent;
 import net.daporkchop.fp2.core.server.world.ExactFBlockWorldHolder;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.world.IMixinWorldServer;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cc.asyncblockaccess.CCAsyncBlockAccessImpl;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cc.exactfblockworld.CCExactFBlockWorldHolder1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.server.world.FCube1_12_2;
 import net.daporkchop.lib.math.vector.Vec3i;
+import net.minecraft.world.World;
 import net.minecraft.world.WorldServer;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Loader;
@@ -66,9 +67,16 @@ import static net.daporkchop.fp2.api.FP2.*;
  */
 @Mod(modid = "fp2_cubicchunks", useMetadata = true, dependencies = "required-after:fp2;after:cubicchunks@[1.12.2-0.0.1188.0,)")
 public class FP2CubicChunks {
+    private static boolean CC;
+
+    public static boolean isCubicWorld(World world) {
+        return CC && world instanceof ICubicWorld && ((ICubicWorld) world).isCubicWorld();
+    }
+
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
-        if (!Loader.isModLoaded("cubicchunks")) {
+        CC = Loader.isModLoaded("cubicchunks");
+        if (!CC) {
             event.getModLog().info("Cubic Chunks not detected, not enabling integration");
             return;
         }
@@ -118,7 +126,7 @@ public class FP2CubicChunks {
                 constrain = @Constrain(before = "vanilla_world_exact_fblockworld"))
         public Optional<ExactFBlockWorldHolder> getExactFBlockWorld(GetExactFBlockWorldEvent event) {
             return this.isCubicWorld(event.world())
-                    ? Optional.empty() //TODO: Optional.of(new CCAsyncBlockAccessImpl((WorldServer) event.world().fp2_IFarWorld_implWorld()))
+                    ? Optional.of(new CCExactFBlockWorldHolder1_12((WorldServer) event.world().fp2_IFarWorld_implWorld()))
                     : Optional.empty();
         }
 

@@ -118,6 +118,11 @@ public abstract class AbstractFarRenderMode<POS extends IFarPos, T extends IFarT
     @Override
     public abstract T[] tileArray(int length);
 
+    @Override
+    public String toString() {
+        return this.name();
+    }
+
     /**
      * @author DaPorkchop_
      */
