@@ -23,30 +23,21 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.core.client.network;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.client.network.IMixinNetHandlerPlayClient;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.client.player.FarPlayerClient1_12;
-import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.network.NetHandlerPlayClient;
-import net.minecraft.network.NetworkManager;
-import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
 @Mixin(NetHandlerPlayClient.class)
 public abstract class MixinNetHandlerPlayClient implements IMixinNetHandlerPlayClient {
-    @Shadow
-    @Final
-    public NetworkManager netManager;
-    @Shadow
-    public WorldClient world;
-
     @Unique
     protected FarPlayerClient1_12 fp2_farPlayerClient;
 
@@ -55,7 +46,7 @@ public abstract class MixinNetHandlerPlayClient implements IMixinNetHandlerPlayC
         if (this.fp2_farPlayerClient == null) {
             synchronized (this) {
                 if (this.fp2_farPlayerClient == null) {
-                    this.fp2_farPlayerClient = new FarPlayerClient1_12((FP2Forge1_12_2) fp2(), this.netManager, this.world);
+                    this.fp2_farPlayerClient = new FarPlayerClient1_12((FP2Forge1_12_2) fp2(), uncheckedCast(this));
                 }
             }
         }
