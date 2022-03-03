@@ -48,11 +48,11 @@ public abstract class HeightmapTileProvider extends AbstractFarTileProvider<Heig
 
     @Override
     protected boolean anyVanillaTerrainExistsAt(@NonNull HeightmapPos pos) {
-        int x = pos.x();
-        int z = pos.z();
-        int level = pos.level();
+        int x = pos.blockX();
+        int z = pos.blockZ();
+        int sideLength = pos.sideLength();
         try (FBlockWorld world = this.world().fp2_IFarWorldServer_exactBlockWorldHolder().worldFor(ExactFBlockWorldHolder.AllowGenerationRequirement.DONT_CARE)) {
-            return world.containsAnyData(x << level, Integer.MIN_VALUE, z << level, (x + 1) << level, Integer.MAX_VALUE, (z + 1) << level);
+            return world.containsAnyData(x, Integer.MIN_VALUE, z, x + sideLength, Integer.MAX_VALUE, z + sideLength);
         }
     }
 

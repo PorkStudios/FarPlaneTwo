@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -86,11 +86,6 @@ public class SynchronizedNDimensionalIntSegtreeSet implements NDimensionalIntSeg
     }
 
     @Override
-    public synchronized boolean containsAny(int shift, @NonNull int... point) {
-        return this.delegate.containsAny(shift, point);
-    }
-
-    @Override
     public synchronized boolean add(int x) {
         return this.delegate.add(x);
     }
@@ -151,18 +146,18 @@ public class SynchronizedNDimensionalIntSegtreeSet implements NDimensionalIntSeg
     }
 
     @Override
-    public synchronized boolean containsAny(int shift, int x) {
-        return this.delegate.containsAny(shift, x);
+    public synchronized boolean containsAny(int x0, int x1) {
+        return this.delegate.containsAny(x0, x1);
     }
 
     @Override
-    public synchronized boolean containsAny(int shift, int x, int y) {
-        return this.delegate.containsAny(shift, x, y);
+    public synchronized boolean containsAny(int x0, int y0, int x1, int y1) {
+        return this.delegate.containsAny(x0, y0, x1, y1);
     }
 
     @Override
-    public synchronized boolean containsAny(int shift, int x, int y, int z) {
-        return this.delegate.containsAny(shift, x, y, z);
+    public synchronized boolean containsAny(int x0, int y0, int z0, int x1, int y1, int z1) {
+        return this.delegate.containsAny(x0, y0, z0, x1, y1, z1);
     }
 
     @Override

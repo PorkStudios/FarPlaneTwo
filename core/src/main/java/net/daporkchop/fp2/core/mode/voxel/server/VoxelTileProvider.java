@@ -48,12 +48,12 @@ public abstract class VoxelTileProvider extends AbstractFarTileProvider<VoxelPos
 
     @Override
     protected boolean anyVanillaTerrainExistsAt(@NonNull VoxelPos pos) {
-        int x = pos.x();
-        int y = pos.y();
-        int z = pos.z();
-        int level = pos.level();
+        int x = pos.blockX();
+        int y = pos.blockY();
+        int z = pos.blockZ();
+        int sideLength = pos.sideLength();
         try (FBlockWorld world = this.world().fp2_IFarWorldServer_exactBlockWorldHolder().worldFor(ExactFBlockWorldHolder.AllowGenerationRequirement.DONT_CARE)) {
-            return world.containsAnyData(x << level, y << level, z << level, (x + 1) << level, (y + 1) << level, (z + 1) << level);
+            return world.containsAnyData(x, y, z, x + sideLength, y + sideLength, z + sideLength);
         }
     }
 

@@ -36,7 +36,6 @@ import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.world.IMixinWorldServ
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.region.ThreadSafeRegionFileCache;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.threading.asyncblockaccess.AsyncCacheNBTBase;
 import net.daporkchop.lib.common.function.throwing.ERunnable;
-import net.daporkchop.lib.common.math.BinMath;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.WorldServer;
@@ -44,8 +43,6 @@ import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.storage.AnvilChunkLoader;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
 import static net.daporkchop.lib.common.util.PorkUtil.*;
@@ -100,15 +97,14 @@ public class VanillaExactFBlockWorldHolder1_12 implements ExactFBlockWorldHolder
     }
 
     public boolean containsAnyData(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
-        //TODO: support arbitrary AABBs
-        assert maxX - minX == maxY - minY && maxX - minX == maxZ - minZ : "only cubic AABBs are supported!";
-        assert BinMath.isPow2(maxX - minX) : "only cubic AABBs with a side length of a power of two are supported!";
+        int minSectionX = minX >> 4;
+        int minSectionY = minY >> 4;
+        int minSectionZ = minZ >> 4;
+        int maxSectionX = (maxX >> 4) + 1; //rounded up because maximum positions are inclusive
+        int maxSectionY = (maxY >> 4) + 1;
+        int maxSectionZ = (maxZ >> 4) + 1;
 
-        int level = Integer.numberOfTrailingZeros(maxX - minX);
-        int tileX = minX >> level;
-        int tileY = minY >> level;
-        int tileZ = minZ >> level;
-        return tileY < 16 && this.chunksExistCache.containsAny(level, tileX, tileZ);
+        return this.chunksExistCache.containsAny(minSectionX, minSectionY, minSectionZ, maxSectionX, maxSectionY, maxSectionZ);
     }
 
     protected Chunk getChunk(int chunkX, int chunkZ, boolean allowGeneration) throws GenerationNotAllowedException {

@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cc.exactfblockworld;
 
+import io.github.opencubicchunks.cubicchunks.api.util.Coords;
 import io.github.opencubicchunks.cubicchunks.api.util.CubePos;
 import io.github.opencubicchunks.cubicchunks.api.world.IColumn;
 import io.github.opencubicchunks.cubicchunks.api.world.ICube;
@@ -52,7 +53,6 @@ import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cc.biome.CubeBiomeAccessWra
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cc.cube.CubeWithoutWorld;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.IBiomeAccess;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.threading.asyncblockaccess.AsyncCacheNBTBase;
-import net.daporkchop.lib.common.math.BinMath;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.nbt.NBTTagCompound;
@@ -162,15 +162,14 @@ public class CCExactFBlockWorldHolder1_12 implements ExactFBlockWorldHolder {
     }
 
     public boolean containsAnyData(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
-        //TODO: support arbitrary AABBs
-        assert maxX - minX == maxY - minY && maxX - minX == maxZ - minZ : "only cubic AABBs are supported!";
-        assert BinMath.isPow2(maxX - minX) : "only cubic AABBs with a side length of a power of two are supported!";
+        int minCubeX = Coords.blockToCube(minX);
+        int minCubeY = Coords.blockToCube(minY);
+        int minCubeZ = Coords.blockToCube(minZ);
+        int maxCubeX = Coords.blockToCube(maxX) + 1; //rounded up because maximum positions are inclusive
+        int maxCubeY = Coords.blockToCube(maxY) + 1;
+        int maxCubeZ = Coords.blockToCube(maxZ) + 1;
 
-        int level = Integer.numberOfTrailingZeros(maxX - minX);
-        int tileX = minX >> level;
-        int tileY = minY >> level;
-        int tileZ = minZ >> level;
-        return this.cubesExistCache.containsAny(level, tileX, tileY, tileZ);
+        return this.cubesExistCache.containsAny(minCubeX, minCubeY, minCubeZ, maxCubeX, maxCubeY, maxCubeZ);
     }
 
     protected ICube getCube(int cubeX, int cubeY, int cubeZ, boolean allowGeneration) throws GenerationNotAllowedException {
