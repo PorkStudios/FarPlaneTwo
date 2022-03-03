@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -52,61 +52,56 @@ public interface NDimensionalIntSegtreeSet extends NDimensionalIntSet {
      */
     boolean containsAny(@NonNull int[] a, @NonNull int[] b);
 
-    /**
-     * Checks whether or not this set contains any points in the AABB defined by the given point left-shifted by the given amount (inclusive), and
-     * the given point, incremented by 1 and then left-shifted by the given amount (exclusive).
-     *
-     * @param shift the number of bits to shift by
-     * @param point the origin point
-     * @return whether or not this set contains any points in the given AABB
-     * @throws IllegalArgumentException if this set's dimensionality is not equal to the dimensionality of the given point
-     */
-    boolean containsAny(int shift, @NonNull int... point);
-
     //
     // special cases
     //
 
     /**
-     * Checks whether or not this set contains any points in the AABB defined by the given point left-shifted by the given amount (inclusive), and
-     * the given point, incremented by 1 and then left-shifted by the given amount (exclusive).
+     * Checks whether or not this set contains any points in the AABB defined by the two given points.
+     * <p>
+     * Both points are inclusive.
      *
-     * @param shift the number of bits to shift by
-     * @param x     the origin point's X coordinate
+     * @param x0 the X coordinate of one of the bounding box's corners
+     * @param x1 the X coordinate of one of the bounding box's corners
      * @return whether or not this set contains any points in the given AABB
      * @throws IllegalArgumentException if this set's dimensionality is not equal to 1
      */
-    default boolean containsAny(int shift, int x) {
-        return this.containsAny(shift, new int[]{ x });
+    default boolean containsAny(int x0, int x1) {
+        return this.containsAny(new int[]{ x0 }, new int[]{ x1 });
     }
 
     /**
-     * Checks whether or not this set contains any points in the AABB defined by the given point left-shifted by the given amount (inclusive), and
-     * the given point, incremented by 1 and then left-shifted by the given amount (exclusive).
+     * Checks whether or not this set contains any points in the AABB defined by the two given points.
+     * <p>
+     * Both points are inclusive.
      *
-     * @param shift the number of bits to shift by
-     * @param x     the origin point's X coordinate
-     * @param y     the origin point's Y coordinate
+     * @param x0 the X coordinate of one of the bounding box's corners
+     * @param y0 the Y coordinate of one of the bounding box's corners
+     * @param x1 the X coordinate of one of the bounding box's corners
+     * @param y1 the Y coordinate of one of the bounding box's corners
      * @return whether or not this set contains any points in the given AABB
      * @throws IllegalArgumentException if this set's dimensionality is not equal to 2
      */
-    default boolean containsAny(int shift, int x, int y) {
-        return this.containsAny(shift, new int[]{ x, y });
+    default boolean containsAny(int x0, int y0, int x1, int y1) {
+        return this.containsAny(new int[]{ x0, y0 }, new int[]{ x1, y1 });
     }
 
     /**
-     * Checks whether or not this set contains any points in the AABB defined by the given point left-shifted by the given amount (inclusive), and
-     * the given point, incremented by 1 and then left-shifted by the given amount (exclusive).
+     * Checks whether or not this set contains any points in the AABB defined by the two given points.
+     * <p>
+     * Both points are inclusive.
      *
-     * @param shift the number of bits to shift by
-     * @param x the origin point's X coordinate
-     * @param y the origin point's Y coordinate
-     * @param z the origin point's Z coordinate
+     * @param x0 the X coordinate of one of the bounding box's corners
+     * @param y0 the Y coordinate of one of the bounding box's corners
+     * @param z0 the Z coordinate of one of the bounding box's corners
+     * @param x1 the X coordinate of one of the bounding box's corners
+     * @param y1 the Y coordinate of one of the bounding box's corners
+     * @param z1 the Z coordinate of one of the bounding box's corners
      * @return whether or not this set contains any points in the given AABB
-     * @throws IllegalArgumentException if this set's dimensionality is not equal to 3
+     * @throws IllegalArgumentException if this set's dimensionality is not equal to 2
      */
-    default boolean containsAny(int shift, int x, int y, int z) {
-        return this.containsAny(shift, new int[]{ x, y, z });
+    default boolean containsAny(int x0, int y0, int z0, int x1, int y1, int z1) {
+        return this.containsAny(new int[]{ x0, y0, z0 }, new int[]{ x1, y1, z1 });
     }
 
     @Override

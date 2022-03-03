@@ -25,6 +25,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.api.event.ReturningEvent;
 import net.daporkchop.fp2.api.world.FBlockWorld;
+import net.daporkchop.fp2.core.server.world.ExactFBlockWorldHolder;
 import net.daporkchop.fp2.core.server.world.IFarWorldServer;
 
 /**
@@ -34,7 +35,7 @@ import net.daporkchop.fp2.core.server.world.IFarWorldServer;
  */
 @RequiredArgsConstructor
 @Getter
-public class GetExactFBlockWorldEvent implements ReturningEvent<FBlockWorld> {
+public class GetExactFBlockWorldEvent implements ReturningEvent<ExactFBlockWorldHolder> {
     @NonNull
     protected final IFarWorldServer world;
 }

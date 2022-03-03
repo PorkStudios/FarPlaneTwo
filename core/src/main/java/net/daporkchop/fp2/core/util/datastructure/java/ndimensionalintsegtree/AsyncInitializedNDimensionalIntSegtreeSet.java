@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -123,12 +123,6 @@ public class AsyncInitializedNDimensionalIntSegtreeSet implements NDimensionalIn
     }
 
     @Override
-    public boolean containsAny(int shift, @NonNull int... point) {
-        this.handleRead();
-        return this.delegate.containsAny(shift, point);
-    }
-
-    @Override
     public boolean add(int x) {
         this.handleWrite();
         return this.delegate.add(x);
@@ -201,21 +195,21 @@ public class AsyncInitializedNDimensionalIntSegtreeSet implements NDimensionalIn
     }
 
     @Override
-    public boolean containsAny(int shift, int x) {
+    public boolean containsAny(int x0, int x1) {
         this.handleRead();
-        return this.delegate.containsAny(shift, x);
+        return this.delegate.containsAny(x0, x1);
     }
 
     @Override
-    public boolean containsAny(int shift, int x, int y) {
+    public boolean containsAny(int x0, int y0, int x1, int y1) {
         this.handleRead();
-        return this.delegate.containsAny(shift, x, y);
+        return this.delegate.containsAny(x0, y0, x1, y1);
     }
 
     @Override
-    public boolean containsAny(int shift, int x, int y, int z) {
+    public boolean containsAny(int x0, int y0, int z0, int x1, int y1, int z1) {
         this.handleRead();
-        return this.delegate.containsAny(shift, x, y, z);
+        return this.delegate.containsAny(x0, y0, z0, x1, y1, z1);
     }
 
     @Override

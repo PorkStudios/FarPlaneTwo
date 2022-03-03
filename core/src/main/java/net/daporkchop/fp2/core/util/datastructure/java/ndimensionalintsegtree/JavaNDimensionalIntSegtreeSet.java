@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -33,13 +33,56 @@ import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static java.lang.Math.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
 public class JavaNDimensionalIntSegtreeSet extends AbstractRefCounted implements NDimensionalIntSegtreeSet {
-    protected static Stream<int[]> allLSBPermutations(@NonNull int[] srcCoords) {
+    //this class is confusing because most ranges are inclusive. sorry about that...
+
+    protected static final int LEVELS = Integer.SIZE;
+
+    protected static int toMinAtLevel(int coord, int level) {
+        if (level == LEVELS) {
+            assert coord == 0 : "max-level coordinate must be zero: " + coord;
+
+            return Integer.MIN_VALUE;
+        } else {
+            return coord << level;
+        }
+    }
+
+    protected static int toMaxAtLevel(int coord, int level) {
+        if (level == LEVELS) {
+            assert coord == 0 : "max-level coordinate must be zero: " + coord;
+
+            return Integer.MAX_VALUE;
+        } else {
+            return ((coord + 1) << level) - 1;
+        }
+    }
+
+    protected static Stream<int[]> allLSBPermutations(int[] srcCoords) {
+        if (srcCoords.length >= Integer.SIZE - 1) {
+            //more bits would be required than could fit in an int, we have to take the (very) slow path.
+            //  i don't care that this will literally never be used, it allows my implementation to work with any number of dimensions!
+            return allLSBPermutations_slowPath(srcCoords);
+        }
+
+        return IntStream.range(0, 1 << srcCoords.length).mapToObj(bits -> {
+            //duplicate source array
+            int[] coords = srcCoords.clone();
+            for (int i = 0; i < coords.length; i++) {
+                //for each coordinate, extract the i-th bit from our counter and replace the coordinate's LSB with it
+                coords[i] = (coords[i] & ~1) | ((bits >>> i) & 1);
+            }
+            return coords;
+        });
+    }
+
+    protected static Stream<int[]> allLSBPermutations_slowPath(int[] srcCoords) {
         Stream<int[]> stream = Stream.of(new int[0]);
         for (int coord : srcCoords) {
             stream = stream.flatMap(coords -> {
@@ -62,7 +105,7 @@ public class JavaNDimensionalIntSegtreeSet extends AbstractRefCounted implements
         this.dimensions = positive(dimensions, "dimensions");
 
         NDimensionalIntSet.Builder delegateBuilder = datastructures.nDimensionalIntSet().dimensions(dimensions);
-        this.delegates = IntStream.range(0, Integer.SIZE - 1)
+        this.delegates = IntStream.rangeClosed(0, LEVELS)
                 .mapToObj(i -> delegateBuilder.build())
                 .toArray(NDimensionalIntSet[]::new);
     }
@@ -100,18 +143,52 @@ public class JavaNDimensionalIntSegtreeSet extends AbstractRefCounted implements
     @Override
     public boolean containsAny(@NonNull int[] a, @NonNull int[] b) {
         checkArg(a.length == this.dimensions && b.length == this.dimensions, this.dimensions);
-        throw new UnsupportedOperationException(); //TODO: implement this
+
+        //make a the minimum and b the maximum point, component-wise
+        int[] queryMin = new int[this.dimensions]; //clone to avoid mutating input arrays (i don't care that this is slow)
+        int[] queryMax = new int[this.dimensions];
+        for (int i = 0; i < this.dimensions; i++) {
+            int ai = a[i];
+            int bi = b[i];
+            queryMin[i] = min(ai, bi);
+            queryMax[i] = max(ai, bi);
+        }
+
+        return this.containsAnyAABB0(LEVELS, new int[this.dimensions], queryMin, queryMax);
     }
 
-    @Override
-    public boolean containsAny(int shift, @NonNull int... point) {
-        checkArg(point.length == this.dimensions, this.dimensions);
+    protected boolean containsAnyAABB0(int level, int[] point, int[] queryMin, int[] queryMax) {
+        checkArg(queryMin.length == this.dimensions && queryMax.length == this.dimensions && point.length == this.dimensions, this.dimensions);
 
-        if (shift < this.delegates.length) {
-            return this.delegates[shift].contains(point);
-        } else { //high levels will be 0 in any case, so we don't bother storing it
-            return !this.isEmpty();
+        //make sure we're not outside the query AABB
+        if (IntStream.range(0, this.dimensions).anyMatch(i -> queryMin[i] > toMaxAtLevel(point[i], level) || queryMax[i] < toMinAtLevel(point[i], level))) {
+            return false;
         }
+
+        //get value at current position
+        boolean value = this.delegates[level].contains(point);
+
+        //if we're entirely within the query AABB, return the value
+        if (IntStream.range(0, this.dimensions).allMatch(i -> queryMin[i] <= toMinAtLevel(point[i], level) && queryMax[i] >= toMaxAtLevel(point[i], level))) {
+            return value;
+        }
+
+        assert level != 0 : "tried to recurse lower than level 0!";
+
+        //while a higher level's value might be a false positive, it can never be a false negative. therefore, if the value is already false, we can be sure
+        //  that recursing any further would never return true, and therefore we can break out now.
+        if (!value) {
+            return false;
+        }
+
+        //shift the point coordinates left by one
+        int[] shiftedPoint = point.clone();
+        for (int i = 0; i < this.dimensions; i++) {
+            shiftedPoint[i] <<= 1;
+        }
+
+        //recurse into every child point at the level below
+        return allLSBPermutations(shiftedPoint).anyMatch(nextPoint -> this.containsAnyAABB0(level - 1, nextPoint, queryMin, queryMax));
     }
 
     @Override
@@ -123,9 +200,9 @@ public class JavaNDimensionalIntSegtreeSet extends AbstractRefCounted implements
             int lvl = 1;
             do {
                 for (int i = 0; i < this.dimensions; i++) {
-                    point[i] >>= 1;
+                    point[i] >>>= 1;
                 }
-            } while (lvl < this.delegates.length && this.delegates[lvl++].add(point));
+            } while (lvl <= LEVELS && this.delegates[lvl++].add(point));
             return true;
         } else {
             return false;
@@ -139,11 +216,11 @@ public class JavaNDimensionalIntSegtreeSet extends AbstractRefCounted implements
         if (this.delegates[0].remove(point)) {
             point = point.clone();
             int lvl = 1;
-            while (lvl < this.delegates.length && allLSBPermutations(point).noneMatch(this.delegates[lvl]::contains)) {
+            while (lvl <= LEVELS && allLSBPermutations(point).noneMatch(this.delegates[lvl - 1]::contains)) {
                 for (int i = 0; i < this.dimensions; i++) {
-                    point[i] >>= 1;
+                    point[i] >>>= 1;
                 }
-                this.delegates[lvl++].remove(point);
+                checkState(this.delegates[lvl++].remove(point));
             }
             return true;
         } else {

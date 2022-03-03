@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -20,8 +20,11 @@
 
 package net.daporkchop.fp2.api.world;
 
+import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.api.world.registry.FExtendedStateRegistryData;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
@@ -78,5 +81,60 @@ public class BlockWorldConstants {
      */
     public static int unpackBlockLight(byte packedLight) {
         return packedLight & 0xF;
+    }
+
+    /**
+     * Validates the arguments for a call to {@link FBlockWorld#getData(int[], int, int, int[], int, int, byte[], int, int, int, int, int, int, int, int, int, int, int)},
+     * throwing an exception if the parameters are invalid.
+     *
+     * @see FBlockWorld#getData(int[], int, int, int[], int, int, byte[], int, int, int, int, int, int, int, int, int, int, int)
+     */
+    public static void validateArgsForGetData(
+            int[] states, int statesOff, int statesStride,
+            int[] biomes, int biomesOff, int biomesStride,
+            byte[] light, int lightOff, int lightStride,
+            int x, int y, int z, int sizeX, int sizeY, int sizeZ, int strideX, int strideY, int strideZ) {
+        int count = positive(sizeX, "sizeX") * positive(sizeY, "sizeY") * positive(sizeZ, "sizeZ");
+        if (states != null) {
+            checkRangeLen(states.length, statesOff, positive(statesStride, "statesStride") * count);
+        }
+        if (biomes != null) {
+            checkRangeLen(biomes.length, biomesOff, positive(biomesStride, "biomesStride") * count);
+        }
+        if (light != null) {
+            checkRangeLen(light.length, lightOff, positive(lightStride, "lightStride") * count);
+        }
+        positive(strideX, "strideX");
+        positive(strideY, "strideY");
+        positive(strideZ, "strideZ");
+    }
+
+    /**
+     * Validates the arguments for a call to {@link FBlockWorld#getData(int[], int, int, int[], int, int, byte[], int, int, int[], int, int, int[], int, int, int[], int, int, int)},
+     * throwing an exception if the parameters are invalid.
+     *
+     * @see FBlockWorld#getData(int[], int, int, int[], int, int, byte[], int, int, int[], int, int, int[], int, int, int[], int, int, int)
+     */
+    public static void validateArgsForGetData(
+            int[] states, int statesOff, int statesStride,
+            int[] biomes, int biomesOff, int biomesStride,
+            byte[] light, int lightOff, int lightStride,
+            @NonNull int[] xs, int xOff, int xStride,
+            @NonNull int[] ys, int yOff, int yStride,
+            @NonNull int[] zs, int zOff, int zStride,
+            int count) {
+        notNegative(count, "count");
+        if (states != null) {
+            checkRangeLen(states.length, statesOff, positive(statesStride, "statesStride") * count);
+        }
+        if (biomes != null) {
+            checkRangeLen(biomes.length, biomesOff, positive(biomesStride, "biomesStride") * count);
+        }
+        if (light != null) {
+            checkRangeLen(light.length, lightOff, positive(lightStride, "lightStride") * count);
+        }
+        checkRangeLen(xs.length, xOff, positive(xStride, "xStride") * count);
+        checkRangeLen(ys.length, yOff, positive(yStride, "yStride") * count);
+        checkRangeLen(zs.length, zOff, positive(zStride, "zStride") * count);
     }
 }

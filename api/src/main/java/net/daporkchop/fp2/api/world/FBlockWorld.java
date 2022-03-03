@@ -67,7 +67,15 @@ public interface FBlockWorld extends AutoCloseable {
     FGameRegistry registry();
 
     /**
+     * @return whether or not this world allows generating data which is not known
+     */
+    boolean generationAllowed();
+
+    /**
      * Checks whether or not <strong>any</strong> data in the given AABB is known.
+     * <p>
+     * For worlds which allow generating unknown data, data which could be generated on-demand does not count (as it would always return {@code null}, and therefore be
+     * rather useless).
      *
      * @param minX the minimum X coordinate (inclusive)
      * @param minY the minimum Y coordinate (inclusive)
@@ -86,19 +94,22 @@ public interface FBlockWorld extends AutoCloseable {
      * @param y the Y coordinate
      * @param z the Z coordinate
      * @return the state
+     * @throws GenerationNotAllowedException if the data at the given coordinates is not generated and this world doesn't allow generation
      */
-    int getState(int x, int y, int z);
+    int getState(int x, int y, int z) throws GenerationNotAllowedException;
 
-    default void getStates(@NonNull int[] dst, int dstOff, int dstStride,
-                           int x, int y, int z, int sizeX, int sizeY, int sizeZ, int strideX, int strideY, int strideZ) {
+    default void getStates(
+            @NonNull int[] dst, int dstOff, int dstStride,
+            int x, int y, int z, int sizeX, int sizeY, int sizeZ, int strideX, int strideY, int strideZ) throws GenerationNotAllowedException {
         this.getData(dst, dstOff, dstStride, null, 0, 0, null, 0, 0, x, y, z, sizeX, sizeY, sizeZ, strideX, strideY, strideZ);
     }
 
-    default void getStates(@NonNull int[] dst, int dstOff, int dstStride,
-                           @NonNull int[] xs, int xOff, int xStride,
-                           @NonNull int[] ys, int yOff, int yStride,
-                           @NonNull int[] zs, int zOff, int zStride,
-                           int count) {
+    default void getStates(
+            @NonNull int[] dst, int dstOff, int dstStride,
+            @NonNull int[] xs, int xOff, int xStride,
+            @NonNull int[] ys, int yOff, int yStride,
+            @NonNull int[] zs, int zOff, int zStride,
+            int count) throws GenerationNotAllowedException {
         this.getData(dst, dstOff, dstStride, null, 0, 0, null, 0, 0, xs, xOff, xStride, ys, yOff, yStride, zs, zOff, zStride, count);
     }
 
@@ -109,19 +120,22 @@ public interface FBlockWorld extends AutoCloseable {
      * @param y the Y coordinate
      * @param z the Z coordinate
      * @return the biome
+     * @throws GenerationNotAllowedException if the data at the given coordinates is not generated and this world doesn't allow generation
      */
-    int getBiome(int x, int y, int z);
+    int getBiome(int x, int y, int z) throws GenerationNotAllowedException;
 
-    default void getBiomes(@NonNull int[] dst, int dstOff, int dstStride,
-                           int x, int y, int z, int sizeX, int sizeY, int sizeZ, int strideX, int strideY, int strideZ) {
+    default void getBiomes(
+            @NonNull int[] dst, int dstOff, int dstStride,
+            int x, int y, int z, int sizeX, int sizeY, int sizeZ, int strideX, int strideY, int strideZ) throws GenerationNotAllowedException {
         this.getData(null, 0, 0, dst, dstOff, dstStride, null, 0, 0, x, y, z, sizeX, sizeY, sizeZ, strideX, strideY, strideZ);
     }
 
-    default void getBiomes(@NonNull int[] dst, int dstOff, int dstStride,
-                           @NonNull int[] xs, int xOff, int xStride,
-                           @NonNull int[] ys, int yOff, int yStride,
-                           @NonNull int[] zs, int zOff, int zStride,
-                           int count) {
+    default void getBiomes(
+            @NonNull int[] dst, int dstOff, int dstStride,
+            @NonNull int[] xs, int xOff, int xStride,
+            @NonNull int[] ys, int yOff, int yStride,
+            @NonNull int[] zs, int zOff, int zStride,
+            int count) throws GenerationNotAllowedException {
         this.getData(null, 0, 0, dst, dstOff, dstStride, null, 0, 0, xs, xOff, xStride, ys, yOff, yStride, zs, zOff, zStride, count);
     }
 
@@ -132,39 +146,31 @@ public interface FBlockWorld extends AutoCloseable {
      * @param y the Y coordinate
      * @param z the Z coordinate
      * @return the packed light levels
+     * @throws GenerationNotAllowedException if the data at the given coordinates is not generated and this world doesn't allow generation
      */
-    byte getLight(int x, int y, int z);
+    byte getLight(int x, int y, int z) throws GenerationNotAllowedException;
 
-    default void getLights(@NonNull byte[] dst, int dstOff, int dstStride,
-                           int x, int y, int z, int sizeX, int sizeY, int sizeZ, int strideX, int strideY, int strideZ) {
+    default void getLights(
+            @NonNull byte[] dst, int dstOff, int dstStride,
+            int x, int y, int z, int sizeX, int sizeY, int sizeZ, int strideX, int strideY, int strideZ) throws GenerationNotAllowedException {
         this.getData(null, 0, 0, null, 0, 0, dst, dstOff, dstStride, x, y, z, sizeX, sizeY, sizeZ, strideX, strideY, strideZ);
     }
 
-    default void getLights(@NonNull byte[] dst, int dstOff, int dstStride,
-                           @NonNull int[] xs, int xOff, int xStride,
-                           @NonNull int[] ys, int yOff, int yStride,
-                           @NonNull int[] zs, int zOff, int zStride,
-                           int count) {
+    default void getLights(
+            @NonNull byte[] dst, int dstOff, int dstStride,
+            @NonNull int[] xs, int xOff, int xStride,
+            @NonNull int[] ys, int yOff, int yStride,
+            @NonNull int[] zs, int zOff, int zStride,
+            int count) throws GenerationNotAllowedException {
         this.getData(null, 0, 0, null, 0, 0, dst, dstOff, dstStride, xs, xOff, xStride, ys, yOff, yStride, zs, zOff, zStride, count);
     }
 
-    default void getData(int[] states, int statesOff, int statesStride,
-                         int[] biomes, int biomesOff, int biomesStride,
-                         byte[] light, int lightOff, int lightStride,
-                         int x, int y, int z, int sizeX, int sizeY, int sizeZ, int strideX, int strideY, int strideZ) {
-        int count = positive(sizeX, "sizeX") * positive(sizeY, "sizeY") * positive(sizeZ, "sizeZ");
-        if (states != null) {
-            checkRangeLen(states.length, statesOff, positive(statesStride, "statesStride") * count);
-        }
-        if (biomes != null) {
-            checkRangeLen(biomes.length, biomesOff, positive(biomesStride, "biomesStride") * count);
-        }
-        if (light != null) {
-            checkRangeLen(light.length, lightOff, positive(lightStride, "lightStride") * count);
-        }
-        positive(strideX, "strideX");
-        positive(strideY, "strideY");
-        positive(strideZ, "strideZ");
+    default void getData(
+            int[] states, int statesOff, int statesStride,
+            int[] biomes, int biomesOff, int biomesStride,
+            byte[] light, int lightOff, int lightStride,
+            int x, int y, int z, int sizeX, int sizeY, int sizeZ, int strideX, int strideY, int strideZ) throws GenerationNotAllowedException {
+        BlockWorldConstants.validateArgsForGetData(states, statesOff, statesStride, biomes, biomesOff, biomesStride, light, lightOff, lightStride, x, y, z, sizeX, sizeY, sizeZ, strideX, strideY, strideZ);
 
         for (int statesIndex = statesOff, biomesIndex = biomesOff, lightIndex = lightOff, dx = 0; dx < sizeX * strideX; dx++) {
             for (int dy = 0; dy < sizeY * strideY; dy++) {
@@ -183,25 +189,15 @@ public interface FBlockWorld extends AutoCloseable {
         }
     }
 
-    default void getData(int[] states, int statesOff, int statesStride,
-                         int[] biomes, int biomesOff, int biomesStride,
-                         byte[] light, int lightOff, int lightStride,
-                         @NonNull int[] xs, int xOff, int xStride,
-                         @NonNull int[] ys, int yOff, int yStride,
-                         @NonNull int[] zs, int zOff, int zStride,
-                         int count) {
-        if (states != null) {
-            checkRangeLen(states.length, statesOff, positive(statesStride, "statesStride") * count);
-        }
-        if (biomes != null) {
-            checkRangeLen(biomes.length, biomesOff, positive(biomesStride, "biomesStride") * count);
-        }
-        if (light != null) {
-            checkRangeLen(light.length, lightOff, positive(lightStride, "lightStride") * count);
-        }
-        checkRangeLen(xs.length, xOff, positive(xStride, "xStride") * count);
-        checkRangeLen(ys.length, yOff, positive(yStride, "yStride") * count);
-        checkRangeLen(zs.length, zOff, positive(zStride, "zStride") * count);
+    default void getData(
+            int[] states, int statesOff, int statesStride,
+            int[] biomes, int biomesOff, int biomesStride,
+            byte[] light, int lightOff, int lightStride,
+            @NonNull int[] xs, int xOff, int xStride,
+            @NonNull int[] ys, int yOff, int yStride,
+            @NonNull int[] zs, int zOff, int zStride,
+            int count) throws GenerationNotAllowedException {
+        BlockWorldConstants.validateArgsForGetData(states, statesOff, statesStride, biomes, biomesOff, biomesStride, light, lightOff, lightStride, xs, xOff, xStride, ys, yOff, yStride, zs, zOff, zStride, count);
 
         for (int i = 0, statesIndex = statesOff, biomesIndex = biomesOff, lightIndex = lightOff, xIndex = xOff, yIndex = yOff, zIndex = zStride; i < count; i++, statesIndex += statesStride, biomesIndex += biomesStride, lightIndex += lightStride, xIndex += xStride, yIndex += yStride, zIndex += zStride) {
             if (states != null) {

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -22,10 +22,11 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.client;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.old.client.gl.object.GLBuffer;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cc.FP2CubicChunks;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.old.client.gl.object.GLBuffer;
 import net.daporkchop.lib.common.math.PMath;
 import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -96,7 +97,7 @@ public class TerrainRenderingBlockedTracker1_12_2 extends AbstractRefCounted imp
     public void update(@NonNull RenderGlobal renderGlobal) {
         //figure out the maximum extents of all of the renderChunks in the current ViewFrustum
         ViewFrustum viewFrustum = renderGlobal.viewFrustum;
-        boolean cubic = false; //TODO: Constants.isCubicWorld(viewFrustum.world);
+        boolean cubic = FP2CubicChunks.isCubicWorld(viewFrustum.world);
         int sizeX = viewFrustum.countChunksX + 2;
         int sizeY = viewFrustum.countChunksY + 2;
         int sizeZ = viewFrustum.countChunksZ + 2;

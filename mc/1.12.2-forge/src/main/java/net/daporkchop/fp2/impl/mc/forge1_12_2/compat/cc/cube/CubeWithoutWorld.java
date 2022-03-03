@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -68,6 +68,11 @@ public class CubeWithoutWorld implements ICube {
         return this.getBlockState(pos.getX(), pos.getY(), pos.getZ());
     }
 
+    @Override
+    public IBlockState getBlockState(int blockX, int localOrBlockY, int blockZ) {
+        return this.storage.get(blockX & 0xF, localOrBlockY & 0xF, blockZ & 0xF);
+    }
+
     @Nullable
     @Override
     public IBlockState setBlockState(BlockPos pos, IBlockState newstate) {
@@ -75,15 +80,19 @@ public class CubeWithoutWorld implements ICube {
     }
 
     @Override
-    public IBlockState getBlockState(int blockX, int localOrBlockY, int blockZ) {
-        return this.storage.get(blockX & 0xF, localOrBlockY & 0xF, blockZ & 0xF);
-    }
-
-    @Override
     public int getLightFor(EnumSkyBlock lightType, BlockPos pos) {
-        return lightType == EnumSkyBlock.SKY
-                ? this.storage.getSkyLight(pos.getX() & 0xF, pos.getY() & 0xF, pos.getZ() & 0xF)
-                : this.storage.getBlockLight(pos.getX() & 0xF, pos.getY() & 0xF, pos.getZ() & 0xF);
+        int x = pos.getX() & 0xF;
+        int y = pos.getY();
+        int z = pos.getZ() & 0xF;
+
+        switch (lightType) {
+            case SKY: //Chunk#getLightFor: 'return !this.world.provider.hasSkyLight() ? 0 : extendedblockstorage.getSkyLight(i, j & 15, k);'
+                return this.storage.getSkyLight() == null ? 0 : this.storage.getSkyLight(x, y & 0xF, z);
+            case BLOCK: //Chunk#getLightFor: 'return type == EnumSkyBlock.BLOCK ? extendedblockstorage.getBlockLight(i, j & 15, k) : type.defaultLightValue;'
+                return this.storage.getSkyLight(x, y & 0xF, z);
+            default:
+                return lightType.defaultLightValue;
+        }
     }
 
     @Override

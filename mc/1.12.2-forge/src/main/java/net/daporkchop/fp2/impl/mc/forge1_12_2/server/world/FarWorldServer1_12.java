@@ -24,7 +24,6 @@ import com.google.common.collect.ImmutableMap;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.event.FEventBus;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
-import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.core.event.EventBus;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
@@ -32,6 +31,7 @@ import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.server.event.GetCoordinateLimitsEvent;
 import net.daporkchop.fp2.core.server.event.GetExactFBlockWorldEvent;
+import net.daporkchop.fp2.core.server.world.ExactFBlockWorldHolder;
 import net.daporkchop.fp2.core.server.world.IFarWorldServer;
 import net.daporkchop.fp2.core.server.world.TerrainGeneratorInfo;
 import net.daporkchop.fp2.core.util.threading.workergroup.DefaultWorkerManager;
@@ -57,7 +57,7 @@ public class FarWorldServer1_12 extends AbstractFarWorld1_12<WorldServer> implem
     protected IFarTileProvider[] tileProviders;
 
     protected WorkerManager workerManager;
-    protected FBlockWorld exactFBlockWorld;
+    protected ExactFBlockWorldHolder exactFBlockWorldHolder;
     protected FEventBus eventBus = new EventBus();
 
     protected IntAxisAlignedBB coordLimits;
@@ -80,7 +80,7 @@ public class FarWorldServer1_12 extends AbstractFarWorld1_12<WorldServer> implem
 
         this.workerManager = new DefaultWorkerManager(this.world.getMinecraftServer().serverThread, ServerThreadMarkedFutureExecutor.getFor(this.world.getMinecraftServer()));
 
-        this.exactFBlockWorld = this.fp2().eventBus().fireAndGetFirst(new GetExactFBlockWorldEvent(this)).get();
+        this.exactFBlockWorldHolder = this.fp2().eventBus().fireAndGetFirst(new GetExactFBlockWorldEvent(this)).get();
 
         ImmutableMap.Builder<IFarRenderMode, IFarTileProvider> builder = ImmutableMap.builder();
         IFarRenderMode.REGISTRY.forEachEntry((name, mode) -> builder.put(mode, mode.tileProvider(uncheckedCast(this))));
@@ -92,6 +92,7 @@ public class FarWorldServer1_12 extends AbstractFarWorld1_12<WorldServer> implem
     @Override
     public void fp2_IFarWorld_close() {
         this.fp2_IFarWorldServer_forEachTileProvider(IFarTileProvider::close);
+        this.exactFBlockWorldHolder.close();
     }
 
     @Override
@@ -124,8 +125,8 @@ public class FarWorldServer1_12 extends AbstractFarWorld1_12<WorldServer> implem
     }
 
     @Override
-    public FBlockWorld fp2_IFarWorldServer_fblockWorld() {
-        return this.exactFBlockWorld;
+    public ExactFBlockWorldHolder fp2_IFarWorldServer_exactBlockWorldHolder() {
+        return this.exactFBlockWorldHolder;
     }
 
     @Override

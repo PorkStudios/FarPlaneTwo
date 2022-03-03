@@ -7,5 +7,6 @@
     "client.renderer.texture.MixinTextureUtil"
   ],
   "mixins": [
+    "block.MixinBlockShulkerBox1_12"
   ]
 }

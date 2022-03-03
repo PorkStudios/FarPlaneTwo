@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,28 +18,24 @@
  *
  */
 
-package net.daporkchop.fp2.core.util.threading.futurecache;
+package net.daporkchop.fp2.api.world;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
 
 import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.stream.Stream;
 
-import static net.daporkchop.fp2.core.debug.FP2Debug.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
- * Thrown by {@link IAsyncBlockAccess#prefetchWithoutGenerating(Stream)} and {@link IAsyncBlockAccess#prefetchWithoutGenerating(Stream, Function)} if an attempt is made to
- * prefetch terrain that would need to be generated in order to be loaded successfully.
+ * Thrown by accessor methods in {@link FBlockWorld} if an attempt is made to access terrain that does not exist and terrain generation is disallowed.
  *
  * @author DaPorkchop_
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class GenerationNotAllowedException extends Exception {
-    private static final GenerationNotAllowedException INSTANCE = new GenerationNotAllowedException();
+    private static final GenerationNotAllowedException INSTANCE = GenerationNotAllowedException.class.desiredAssertionStatus() ? new GenerationNotAllowedException() : null;
 
     private static final Consumer<?> THROW_IF_NULL = new Consumer<Object>() {
         @Override
@@ -55,13 +51,13 @@ public final class GenerationNotAllowedException extends Exception {
      * @return an instance of {@link GenerationNotAllowedException}
      */
     public static GenerationNotAllowedException get() {
-        return FP2_DEBUG ? new GenerationNotAllowedException() : INSTANCE;
+        return INSTANCE != null ? INSTANCE : new GenerationNotAllowedException();
     }
 
     /**
      * @return a {@link Consumer} which will throw {@link GenerationNotAllowedException} if called with a {@code null} argument
      */
-    public static <T> Consumer<T> throwIfNull() {
+    public static <T> Consumer<T> uncheckedThrowIfNull() {
         return uncheckedCast(THROW_IF_NULL);
     }
 
@@ -72,7 +68,20 @@ public final class GenerationNotAllowedException extends Exception {
      * @return the value
      */
     @SneakyThrows(GenerationNotAllowedException.class)
-    public static <T> T throwIfNull(T value) {
+    public static <T> T uncheckedThrowIfNull(T value) {
+        if (value == null) {
+            throw get();
+        }
+        return value;
+    }
+
+    /**
+     * Throws {@link GenerationNotAllowedException} if the given value is null.
+     *
+     * @param value the value
+     * @return the value
+     */
+    public static <T> T throwIfNull(T value) throws GenerationNotAllowedException {
         if (value == null) {
             throw get();
         }

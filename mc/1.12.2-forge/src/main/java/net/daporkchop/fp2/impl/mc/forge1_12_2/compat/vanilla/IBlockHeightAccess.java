@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -22,6 +22,7 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla;
 
 import net.daporkchop.fp2.api.world.BlockWorldConstants;
 import net.daporkchop.fp2.api.world.FBlockWorld;
+import net.daporkchop.fp2.api.world.GenerationNotAllowedException;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.fp2.core.util.IHeightMap;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.world.registry.GameRegistry1_12_2;
@@ -63,18 +64,18 @@ public interface IBlockHeightAccess extends IBlockAccess, IHeightMap, FBlockWorl
     }
 
     @Override
-    default int getState(int x, int y, int z) {
+    default int getState(int x, int y, int z) throws GenerationNotAllowedException {
         BlockPos pos = new BlockPos(x, y, z);
         return GameRegistry1_12_2.get().state2id(this.getBlockState(pos).getActualState(this, pos));
     }
 
     @Override
-    default int getBiome(int x, int y, int z) {
+    default int getBiome(int x, int y, int z) throws GenerationNotAllowedException {
         return GameRegistry1_12_2.get().biome2id(this.getBiome(new BlockPos(x, y, z)));
     }
 
     @Override
-    default byte getLight(int x, int y, int z) {
+    default byte getLight(int x, int y, int z) throws GenerationNotAllowedException {
         int combinedLight = this.getCombinedLight(new BlockPos(x, y, z), 0);
         return BlockWorldConstants.packLight(combinedLight >> 20, combinedLight >> 4);
     }

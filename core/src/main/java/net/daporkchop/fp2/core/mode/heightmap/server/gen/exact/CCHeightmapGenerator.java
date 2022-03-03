@@ -23,11 +23,6 @@ package net.daporkchop.fp2.core.mode.heightmap.server.gen.exact;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.core.server.world.IFarWorldServer;
-import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
-import net.daporkchop.lib.math.vector.Vec2i;
-import net.daporkchop.lib.math.vector.Vec3i;
-
-import java.util.stream.Stream;
 
 /**
  * @author DaPorkchop_
@@ -37,25 +32,6 @@ public class CCHeightmapGenerator extends AbstractExactHeightmapGenerator {
 
     public CCHeightmapGenerator(@NonNull IFarWorldServer world) {
         super(world);
-    }
-
-    @Override
-    public Stream<Vec2i> neededColumns(@NonNull HeightmapPos pos) {
-        return Stream.of(pos.flooredChunkPos());
-    }
-
-    @Override
-    public Stream<Vec3i> neededCubes(@NonNull FBlockWorld world, @NonNull HeightmapPos pos) {
-        throw new UnsupportedOperationException(); //TODO
-        /*return IntStream.range(0, T_VOXELS * T_VOXELS)
-                .map(packed -> {
-                    int blockX = pos.blockX() + (packed & T_MASK);
-                    int blockZ = pos.blockZ() + ((packed >> T_SHIFT) & T_MASK);
-                    return Coords.blockToCube(world.getTopBlockY(blockX, blockZ));
-                })
-                .distinct() //we don't want a bunch of identical cube Y coordinates
-                .filter(cubeY -> cubeY > Coords.blockToCube(Y_LIMIT))
-                .mapToObj(cubeY -> Vec3i.of(pos.flooredChunkX(), cubeY, pos.flooredChunkZ()));*/
     }
 
     @Override

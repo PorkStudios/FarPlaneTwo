@@ -94,6 +94,8 @@ public abstract class AbstractFarPlayerClient implements IFarPlayerClient {
         checkState(!this.handshakeReceived, "handshake packet has already been received!");
         this.handshakeReceived = true;
 
+        this.fp2().log().info("received server handshake");
+
         this.trySendInitialConfig();
     }
 
@@ -102,6 +104,8 @@ public abstract class AbstractFarPlayerClient implements IFarPlayerClient {
         this.sessionOpen = true;
 
         IFarRenderMode<?, ?> mode = this.modeFor(this.config);
+        this.fp2().log().info("beginning session with mode %s", mode);
+
         if (mode != null) {
             this.context = mode.clientContext(this.createWorldClient(packet), this.config);
         }
@@ -112,6 +116,8 @@ public abstract class AbstractFarPlayerClient implements IFarPlayerClient {
     protected void handle(@NonNull SPacketSessionEnd packet) {
         checkState(this.sessionOpen, "no session is currently open!");
         this.sessionOpen = false;
+
+        this.fp2().log().info("ending session");
 
         if (this.context != null) {
             this.context.close();
@@ -149,6 +155,7 @@ public abstract class AbstractFarPlayerClient implements IFarPlayerClient {
         }
 
         this.config = packet.config();
+        this.fp2().log().info("server notified merged config update: %s", this.config);
 
         if (this.context != null) {
             if (this.modeFor(this.config) == this.context.mode()) {
@@ -161,6 +168,7 @@ public abstract class AbstractFarPlayerClient implements IFarPlayerClient {
 
     protected void handle(@NonNull SPacketUpdateConfig.Server packet) {
         this.serverConfig = packet.config();
+        this.fp2().log().info("server notified remote config update: %s", this.serverConfig);
     }
 
     protected void handleDebug(@NonNull SPacketDebugUpdateStatistics packet) {

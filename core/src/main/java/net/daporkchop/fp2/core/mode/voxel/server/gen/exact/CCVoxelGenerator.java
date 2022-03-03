@@ -21,13 +21,7 @@
 package net.daporkchop.fp2.core.mode.voxel.server.gen.exact;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.core.server.world.IFarWorldServer;
-import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
-import net.daporkchop.lib.math.vector.Vec2i;
-import net.daporkchop.lib.math.vector.Vec3i;
-
-import java.util.stream.Stream;
 
 /**
  * @author DaPorkchop_
@@ -35,23 +29,5 @@ import java.util.stream.Stream;
 public class CCVoxelGenerator extends AbstractExactVoxelGenerator {
     public CCVoxelGenerator(@NonNull IFarWorldServer world) {
         super(world);
-    }
-
-    @Override
-    public Stream<Vec2i> neededColumns(@NonNull VoxelPos pos) {
-        return Stream.empty();
-    }
-
-    @Override
-    public Stream<Vec3i> neededCubes(@NonNull FBlockWorld world, @NonNull VoxelPos pos) {
-        Vec3i[] arr = new Vec3i[8];
-        for (int i = 0, dx = 0; dx < 2; dx++) {
-            for (int dy = 0; dy < 2; dy++) {
-                for (int dz = 0; dz < 2; dz++) {
-                    arr[i++] = Vec3i.of(pos.x() + dx, pos.y() + dy, pos.z() + dz);
-                }
-            }
-        }
-        return Stream.of(arr);
     }
 }

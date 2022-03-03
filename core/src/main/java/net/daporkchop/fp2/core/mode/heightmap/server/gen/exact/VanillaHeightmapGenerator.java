@@ -23,11 +23,6 @@ package net.daporkchop.fp2.core.mode.heightmap.server.gen.exact;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.core.server.world.IFarWorldServer;
-import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
-import net.daporkchop.lib.math.vector.Vec2i;
-import net.daporkchop.lib.math.vector.Vec3i;
-
-import java.util.stream.Stream;
 
 /**
  * @author DaPorkchop_
@@ -37,16 +32,6 @@ public class VanillaHeightmapGenerator extends AbstractExactHeightmapGenerator {
 
     public VanillaHeightmapGenerator(@NonNull IFarWorldServer world) {
         super(world);
-    }
-
-    @Override
-    public Stream<Vec2i> neededColumns(@NonNull HeightmapPos pos) {
-        return Stream.of(pos.flooredChunkPos());
-    }
-
-    @Override
-    public Stream<Vec3i> neededCubes(@NonNull FBlockWorld world, @NonNull HeightmapPos pos) {
-        return Stream.empty(); //assume that all relevant data is loaded with the chunk
     }
 
     @Override

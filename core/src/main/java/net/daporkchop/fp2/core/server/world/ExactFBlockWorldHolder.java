@@ -18,38 +18,42 @@
  *
  */
 
-package net.daporkchop.fp2.core.mode.api.server.gen;
+package net.daporkchop.fp2.core.server.world;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.api.world.FBlockWorld;
-import net.daporkchop.fp2.api.world.GenerationNotAllowedException;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
-import net.daporkchop.fp2.core.mode.api.server.IFarServerResourceCreationEvent;
+import net.daporkchop.fp2.common.util.capability.CloseableResource;
 
 /**
- * Type of {@link IFarGenerator} which generates tile data based on block data in the world.
- * <p>
- * Exact generators only operate on tiles at level 0.
+ * A container which provides instances of {@link FBlockWorld} given a
  *
  * @author DaPorkchop_
  */
-public interface IFarGeneratorExact<POS extends IFarPos, T extends IFarTile> extends IFarGenerator {
+public interface ExactFBlockWorldHolder extends CloseableResource {
     /**
-     * Generates the terrain in the given tile.
+     * Gets an {@link FBlockWorld} instance for given requirement of whether or not generation should be allowed.
      *
-     * @param world the {@link FBlockWorld} providing access to block/height data in the world
-     * @param pos   the position of the tile to generate
-     * @param tile  the tile to generate
-     * @throws GenerationNotAllowedException if the generator attempts to access terrain which is not generated, and the given {@link FBlockWorld} does not allow generation
+     * @param requirement whether or not generation should be allowed
+     * @return an {@link FBlockWorld} instance matching the given requirement
      */
-    void generate(@NonNull FBlockWorld world, @NonNull POS pos, @NonNull T tile) throws GenerationNotAllowedException;
+    FBlockWorld worldFor(@NonNull AllowGenerationRequirement requirement);
 
     /**
-     * Fired to create a new {@link IFarGeneratorExact}.
+     * {@inheritDoc}
+     * <p>
+     * When this holder is closed, all the {@link FBlockWorld} instances created by it will produce undefined behavior, even if not yet closed.
+     */
+    @Override
+    void close();
+
+    /**
+     * Controls whether or not generation should be allowed when requesting an {@link FBlockWorld} instance.
      *
      * @author DaPorkchop_
      */
-    interface CreationEvent<POS extends IFarPos, T extends IFarTile> extends IFarServerResourceCreationEvent<POS, T, IFarGeneratorExact<POS, T>> {
+    enum AllowGenerationRequirement {
+        ALLOWED,
+        NOT_ALLOWED,
+        DONT_CARE;
     }
 }
