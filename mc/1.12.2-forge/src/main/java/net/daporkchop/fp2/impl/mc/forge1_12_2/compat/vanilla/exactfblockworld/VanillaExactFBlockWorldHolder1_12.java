@@ -82,6 +82,7 @@ public class VanillaExactFBlockWorldHolder1_12 implements ExactFBlockWorldHolder
 
     @Override
     public void close() {
+        ((IMixinWorldServer) this.world).fp2_farWorldServer().fp2_IFarWorldServer_eventBus().unregister(this);
         this.chunksExistCache.release();
     }
 
@@ -98,13 +99,11 @@ public class VanillaExactFBlockWorldHolder1_12 implements ExactFBlockWorldHolder
 
     public boolean containsAnyData(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
         int minSectionX = minX >> 4;
-        int minSectionY = minY >> 4;
         int minSectionZ = minZ >> 4;
         int maxSectionX = (maxX >> 4) + 1; //rounded up because maximum positions are inclusive
-        int maxSectionY = (maxY >> 4) + 1;
         int maxSectionZ = (maxZ >> 4) + 1;
 
-        return this.chunksExistCache.containsAny(minSectionX, minSectionY, minSectionZ, maxSectionX, maxSectionY, maxSectionZ);
+        return maxY >= 0 && minY < this.world.getHeight() && this.chunksExistCache.containsAny(minSectionX, minSectionZ, maxSectionX, maxSectionZ);
     }
 
     protected Chunk getChunk(int chunkX, int chunkZ, boolean allowGeneration) throws GenerationNotAllowedException {
