@@ -59,6 +59,10 @@ public abstract class MixinRegionFileCache1_16 implements IMixinRegionFileCache1
     public Stream<Vec2i> fp2_RegionFileCache_listRegions() throws IOException {
         //see WorldOptimizer#getAllChunkPos
 
+        if (!Files.exists(this.folder.toPath())) {
+            return Stream.empty();
+        }
+
         return Files.list(this.folder.toPath())
                 .map(path -> path.getFileName().toString())
                 .map(Pattern.compile("^r\\.(-?\\d+)\\.(-?\\d+)\\.mca$")::matcher)

@@ -25,7 +25,6 @@ import net.daporkchop.fp2.api.event.Constrain;
 import net.daporkchop.fp2.api.event.FEventBus;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
-import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.core.client.render.TextureUVs;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
@@ -40,7 +39,8 @@ import net.daporkchop.fp2.core.mode.voxel.server.gen.exact.VanillaVoxelGenerator
 import net.daporkchop.fp2.core.server.event.GetCoordinateLimitsEvent;
 import net.daporkchop.fp2.core.server.event.GetExactFBlockWorldEvent;
 import net.daporkchop.fp2.core.server.event.GetTerrainGeneratorEvent;
-import net.daporkchop.fp2.impl.mc.forge1_16.server.world.ExactFBlockWorld1_16;
+import net.daporkchop.fp2.core.server.world.ExactFBlockWorldHolder;
+import net.daporkchop.fp2.impl.mc.forge1_16.compat.vanilla.exactfblockworld.VanillaExactFBlockWorldHolder1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.util.Util1_16;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -96,8 +96,8 @@ public class FP2Vanilla1_16 {
     }
 
     @FEventHandler(name = "vanilla_world_exact_fblockworld")
-    public FBlockWorld getExactFBlockWorld(GetExactFBlockWorldEvent event) {
-        return new ExactFBlockWorld1_16((ServerWorld) event.world().fp2_IFarWorld_implWorld());
+    public ExactFBlockWorldHolder getExactFBlockWorld(GetExactFBlockWorldEvent event) {
+        return new VanillaExactFBlockWorldHolder1_16((ServerWorld) event.world().fp2_IFarWorld_implWorld());
     }
 
     @FEventHandler(name = "vanilla_world_terrain_generator")
