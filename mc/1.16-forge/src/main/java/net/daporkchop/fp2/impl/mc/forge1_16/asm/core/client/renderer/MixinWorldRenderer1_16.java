@@ -181,6 +181,11 @@ public abstract class MixinWorldRenderer1_16 {
             }
         }
 
+        { //misc. GL state
+            //both RenderType.CUTOUT and RenderType.CUTOUT_MIPPED are created with setAlphaState(MIDWAY_ALPHA)
+            attributes.alphaRefCutout = 0.5f;
+        }
+
         return attributes;
     }
 
