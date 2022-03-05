@@ -81,6 +81,7 @@ public abstract class MixinEntityRenderer {
     @Inject(method = "Lnet/minecraft/client/renderer/EntityRenderer;renderWorldPass(IFJ)V",
             at = @At(value = "INVOKE",
                     target = "Lnet/minecraft/client/renderer/texture/ITextureObject;restoreLastBlurMipmap()V",
+                    shift = At.Shift.AFTER,
                     ordinal = 1),
             require = 1, allow = 1)
     private void fp2_renderWorldPass_doFP2Render(int pass, float partialTicks, long finishTimeNano, CallbackInfo ci) {
@@ -142,6 +143,10 @@ public abstract class MixinEntityRenderer {
             attributes.fogStart = glGetFloat(GL_FOG_START);
             attributes.fogEnd = glGetFloat(GL_FOG_END);
             attributes.fogScale = 1.0f / (attributes.fogEnd - attributes.fogStart);
+        }
+
+        { //misc GL state
+            attributes.alphaRefCutout = 0.1f;
         }
 
         return attributes;
