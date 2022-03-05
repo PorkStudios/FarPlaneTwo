@@ -22,6 +22,7 @@ package net.daporkchop.fp2.core.mode.api.client;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.client.IFrustum;
+import net.daporkchop.fp2.core.client.render.GlobalUniformAttributes;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.lib.unsafe.capability.Releasable;
 
@@ -37,7 +38,7 @@ public interface IFarRenderer extends Releasable {
 
     void prepare(@NonNull IFrustum frustum);
 
-    void render(@NonNull float[] modelViewProjectionMatrix);
+    void render(@NonNull GlobalUniformAttributes globalUniformAttributes);
 
     DebugStats.Renderer stats();
 }

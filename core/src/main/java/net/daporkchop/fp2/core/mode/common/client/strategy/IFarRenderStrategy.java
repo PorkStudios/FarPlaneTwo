@@ -21,12 +21,7 @@
 package net.daporkchop.fp2.core.mode.common.client.strategy;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.GL;
-import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
-import net.daporkchop.fp2.gl.draw.binding.DrawBindingBuilder;
-import net.daporkchop.fp2.gl.draw.list.DrawCommand;
-import net.daporkchop.fp2.gl.draw.DrawLayout;
-import net.daporkchop.fp2.gl.draw.list.DrawListBuilder;
+import net.daporkchop.fp2.core.client.render.GlobalUniformAttributes;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
@@ -35,6 +30,12 @@ import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutput;
 import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutputStorage;
 import net.daporkchop.fp2.core.mode.common.client.bake.IRenderBaker;
 import net.daporkchop.fp2.core.mode.common.client.index.IRenderIndex;
+import net.daporkchop.fp2.gl.GL;
+import net.daporkchop.fp2.gl.draw.DrawLayout;
+import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
+import net.daporkchop.fp2.gl.draw.binding.DrawBindingBuilder;
+import net.daporkchop.fp2.gl.draw.list.DrawCommand;
+import net.daporkchop.fp2.gl.draw.list.DrawListBuilder;
 import net.daporkchop.fp2.gl.transform.TransformLayoutBuilder;
 import net.daporkchop.fp2.gl.transform.binding.TransformBindingBuilder;
 import net.daporkchop.fp2.gl.transform.shader.TransformShaderBuilder;
@@ -71,7 +72,7 @@ public interface IFarRenderStrategy<POS extends IFarPos, T extends IFarTile, BO 
 
     TransformShaderBuilder configureSelectionShader(@NonNull TransformShaderBuilder builder, int level);
 
-    void render(@NonNull IRenderIndex<POS, BO, DB, DC> index, @NonNull float[] modelViewProjectionMatrix);
+    void render(@NonNull IRenderIndex<POS, BO, DB, DC> index, @NonNull GlobalUniformAttributes globalUniformAttributes);
 
     @Override
     int refCnt();

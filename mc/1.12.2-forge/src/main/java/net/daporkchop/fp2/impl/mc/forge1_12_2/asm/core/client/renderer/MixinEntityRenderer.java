@@ -20,16 +20,20 @@
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.core.client.renderer;
 
+import net.daporkchop.fp2.common.util.DirectBufferHackery;
 import net.daporkchop.fp2.core.client.MatrixHelper;
 import net.daporkchop.fp2.core.client.player.IFarPlayerClient;
+import net.daporkchop.fp2.core.client.render.GlobalUniformAttributes;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.util.GlobalAllocators;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
+import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.EntityRenderer;
 import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.entity.Entity;
 import org.lwjgl.BufferUtils;
 import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Final;
@@ -45,7 +49,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.nio.FloatBuffer;
 
+import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.fp2.core.FP2Core.*;
+import static net.daporkchop.fp2.impl.mc.forge1_12_2.compat.of.OFHelper.*;
+import static net.daporkchop.lib.common.math.PMath.*;
+import static net.minecraft.util.math.MathHelper.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL12.*;
 
@@ -87,31 +95,8 @@ public abstract class MixinEntityRenderer {
                 GlStateManager.disableAlpha();
                 this.mc.textureMapBlocks.setBlurMipmapDirect(false, this.mc.gameSettings.mipmapLevels > 0);
 
-                ArrayAllocator<float[]> alloc = GlobalAllocators.ALLOC_FLOAT.get();
-
-                float[] modelView = alloc.atLeast(MatrixHelper.MAT4_ELEMENTS);
-                float[] projection = alloc.atLeast(MatrixHelper.MAT4_ELEMENTS);
-                float[] modelViewProjection = alloc.atLeast(MatrixHelper.MAT4_ELEMENTS);
-                try {
-                    //load both matrices into arrays
-                    glGetFloat(GL_MODELVIEW_MATRIX, (FloatBuffer) this.fp2_tempMatrix.clear());
-                    this.fp2_tempMatrix.get(modelView);
-                    glGetFloat(GL_PROJECTION_MATRIX, (FloatBuffer) this.fp2_tempMatrix.clear());
-                    this.fp2_tempMatrix.get(projection);
-
-                    //pre-multiply matrices on CPU to avoid having to do it per-vertex on GPU
-                    MatrixHelper.multiply4x4(projection, modelView, modelViewProjection);
-
-                    //offset the projected points' depth values to avoid z-fighting with vanilla terrain
-                    MatrixHelper.offsetDepth(modelViewProjection, fp2().client().isReverseZ() ? -0.00001f : 0.00001f);
-
-                    //actually render stuff!
-                    renderer.render(modelViewProjection);
-                } finally {
-                    alloc.release(modelViewProjection);
-                    alloc.release(projection);
-                    alloc.release(modelView);
-                }
+                //actually render stuff!
+                renderer.render(this.fp2_globalUniformAttributes(partialTicks));
 
                 this.mc.textureMapBlocks.restoreLastBlurMipmap();
                 GlStateManager.enableAlpha();
@@ -119,6 +104,88 @@ public abstract class MixinEntityRenderer {
                 this.mc.profiler.endSection();
             }
         });
+    }
+
+    @Unique
+    private GlobalUniformAttributes fp2_globalUniformAttributes(float partialTicks) {
+        GlobalUniformAttributes attributes = new GlobalUniformAttributes();
+
+        //optifine compatibility: disable fog if it's turned off, because optifine only does this itself if no vanilla terrain is being rendered
+        //  (e.g. it's all being discarded in frustum culling)
+        if (OF && (PUnsafe.getInt(this.mc.gameSettings, OF_FOGTYPE_OFFSET) == OF_OFF && PUnsafe.getBoolean(this.mc.entityRenderer, OF_ENTITYRENDERER_FOGSTANDARD_OFFSET))) {
+            GlStateManager.disableFog();
+        }
+
+        { //camera
+            this.fp2_initModelViewProjectionMatrix(attributes);
+
+            Entity entity = this.mc.getRenderViewEntity();
+            double x = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * partialTicks;
+            double y = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * partialTicks;
+            double z = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * partialTicks;
+
+            attributes.positionFloorX = floorI(x);
+            attributes.positionFloorY = floorI(y);
+            attributes.positionFloorZ = floorI(z);
+
+            attributes.positionFracX = (float) frac(x);
+            attributes.positionFracY = (float) frac(y);
+            attributes.positionFracZ = (float) frac(z);
+        }
+
+        { //fog
+            this.fp2_initFogColor(attributes);
+
+            attributes.fogMode = glGetBoolean(GL_FOG) ? glGetInteger(GL_FOG_MODE) : 0;
+
+            attributes.fogDensity = glGetFloat(GL_FOG_DENSITY);
+            attributes.fogStart = glGetFloat(GL_FOG_START);
+            attributes.fogEnd = glGetFloat(GL_FOG_END);
+            attributes.fogScale = 1.0f / (attributes.fogEnd - attributes.fogStart);
+        }
+
+        return attributes;
+    }
+
+    @Unique
+    private void fp2_initModelViewProjectionMatrix(GlobalUniformAttributes attributes) {
+        ArrayAllocator<float[]> alloc = GlobalAllocators.ALLOC_FLOAT.get();
+
+        float[] modelView = alloc.atLeast(MatrixHelper.MAT4_ELEMENTS);
+        float[] projection = alloc.atLeast(MatrixHelper.MAT4_ELEMENTS);
+        try {
+            //load both matrices into arrays
+            glGetFloat(GL_MODELVIEW_MATRIX, (FloatBuffer) this.fp2_tempMatrix.clear());
+            this.fp2_tempMatrix.get(modelView);
+            glGetFloat(GL_PROJECTION_MATRIX, (FloatBuffer) this.fp2_tempMatrix.clear());
+            this.fp2_tempMatrix.get(projection);
+
+            //pre-multiply matrices on CPU to avoid having to do it per-vertex on GPU
+            MatrixHelper.multiply4x4(projection, modelView, attributes.modelViewProjectionMatrix);
+
+            //offset the projected points' depth values to avoid z-fighting with vanilla terrain
+            MatrixHelper.offsetDepth(attributes.modelViewProjectionMatrix, fp2().client().isReverseZ() ? -0.00001f : 0.00001f);
+        } finally {
+            alloc.release(projection);
+            alloc.release(modelView);
+        }
+    }
+
+    @Unique
+    private void fp2_initFogColor(GlobalUniformAttributes attributes) {
+        //buffer needs to fit 16 elements, but only the first 4 will be used
+        long addr = PUnsafe.allocateMemory(16 * FLOAT_SIZE);
+        try {
+            FloatBuffer buffer = DirectBufferHackery.wrapFloat(addr, 16);
+            glGetFloat(GL_FOG_COLOR, buffer);
+
+            attributes.fogColorR = buffer.get(0);
+            attributes.fogColorG = buffer.get(1);
+            attributes.fogColorB = buffer.get(2);
+            attributes.fogColorA = buffer.get(3);
+        } finally {
+            PUnsafe.freeMemory(addr);
+        }
     }
 
     //use reversed-z projection with infinite zFar everywhere

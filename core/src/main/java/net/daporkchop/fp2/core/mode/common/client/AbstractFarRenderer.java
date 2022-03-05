@@ -23,6 +23,7 @@ package net.daporkchop.fp2.core.mode.common.client;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.client.IFrustum;
+import net.daporkchop.fp2.core.client.render.GlobalUniformAttributes;
 import net.daporkchop.fp2.core.client.render.WorldRenderer;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
@@ -81,8 +82,8 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTil
     }
 
     @Override
-    public void render(@NonNull float[] modelViewProjectionMatrix) {
-        this.strategy.render(uncheckedCast(this.bakeManager.index), modelViewProjectionMatrix);
+    public void render(@NonNull GlobalUniformAttributes globalUniformAttributes) {
+        this.strategy.render(uncheckedCast(this.bakeManager.index), globalUniformAttributes);
     }
 
     @Override

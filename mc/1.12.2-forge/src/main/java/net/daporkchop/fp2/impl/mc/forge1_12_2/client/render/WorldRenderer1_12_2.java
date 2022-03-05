@@ -22,9 +22,6 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.client.render;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.common.util.DirectBufferHackery;
-import net.daporkchop.fp2.core.client.MatrixHelper;
-import net.daporkchop.fp2.core.client.render.GlobalUniformAttributes;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
 import net.daporkchop.fp2.core.client.render.WorldRenderer;
 import net.daporkchop.fp2.gl.GL;
@@ -33,19 +30,8 @@ import net.daporkchop.fp2.impl.mc.forge1_12_2.client.world.FarWorldClient1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.ResourceProvider1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.SingleBiomeBlockAccess;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.world.registry.GameRegistry1_12_2;
-import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GlStateManager;
-import net.minecraft.entity.Entity;
 import net.minecraft.util.math.BlockPos;
-
-import java.nio.FloatBuffer;
-
-import static net.daporkchop.fp2.common.util.TypeSize.*;
-import static net.daporkchop.fp2.impl.mc.forge1_12_2.compat.of.OFHelper.*;
-import static net.daporkchop.lib.common.math.PMath.*;
-import static net.minecraft.util.math.MathHelper.*;
-import static org.lwjgl.opengl.GL11.*;
 
 /**
  * @author DaPorkchop_
@@ -111,64 +97,6 @@ public class WorldRenderer1_12_2 implements WorldRenderer, AutoCloseable {
     @Override
     public TerrainRenderingBlockedTracker blockedTracker() {
         return ((IMixinRenderGlobal) this.mc.renderGlobal).fp2_vanillaRenderabilityTracker();
-    }
-
-    @Override
-    public GlobalUniformAttributes globalUniformAttributes(@NonNull float[] modelViewProjectionMatrix) {
-        GlobalUniformAttributes attributes = new GlobalUniformAttributes();
-
-        //optifine compatibility: disable fog if it's turned off, because optifine only does this itself if no vanilla terrain is being rendered
-        //  (e.g. it's all being discarded in frustum culling)
-        if (OF && (PUnsafe.getInt(this.mc.gameSettings, OF_FOGTYPE_OFFSET) == OF_OFF && PUnsafe.getBoolean(this.mc.entityRenderer, OF_ENTITYRENDERER_FOGSTANDARD_OFFSET))) {
-            GlStateManager.disableFog();
-        }
-
-        { //camera
-            System.arraycopy(modelViewProjectionMatrix, 0, attributes.modelViewProjectionMatrix, 0, MatrixHelper.MAT4_ELEMENTS);
-
-            float partialTicks = this.mc.getRenderPartialTicks();
-            Entity entity = this.mc.getRenderViewEntity();
-            double x = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * partialTicks;
-            double y = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * partialTicks;
-            double z = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * partialTicks;
-
-            attributes.positionFloorX = floorI(x);
-            attributes.positionFloorY = floorI(y);
-            attributes.positionFloorZ = floorI(z);
-
-            attributes.positionFracX = (float) frac(x);
-            attributes.positionFracY = (float) frac(y);
-            attributes.positionFracZ = (float) frac(z);
-        }
-
-        { //fog
-            this.initFogColor(attributes);
-
-            attributes.fogMode = glGetBoolean(GL_FOG) ? glGetInteger(GL_FOG_MODE) : 0;
-
-            attributes.fogDensity = glGetFloat(GL_FOG_DENSITY);
-            attributes.fogStart = glGetFloat(GL_FOG_START);
-            attributes.fogEnd = glGetFloat(GL_FOG_END);
-            attributes.fogScale = 1.0f / (attributes.fogEnd - attributes.fogStart);
-        }
-
-        return attributes;
-    }
-
-    private void initFogColor(GlobalUniformAttributes attributes) {
-        //buffer needs to fit 16 elements, but only the first 4 will be used
-        long addr = PUnsafe.allocateMemory(16 * FLOAT_SIZE);
-        try {
-            FloatBuffer buffer = DirectBufferHackery.wrapFloat(addr, 16);
-            glGetFloat(GL_FOG_COLOR, buffer);
-
-            attributes.fogColorR = buffer.get(0);
-            attributes.fogColorG = buffer.get(1);
-            attributes.fogColorB = buffer.get(2);
-            attributes.fogColorA = buffer.get(3);
-        } finally {
-            PUnsafe.freeMemory(addr);
-        }
     }
 
     @Override

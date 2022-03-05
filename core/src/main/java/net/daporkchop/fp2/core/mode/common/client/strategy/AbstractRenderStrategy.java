@@ -57,7 +57,6 @@ import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
-import static net.daporkchop.fp2.core.mode.api.client.IFarRenderer.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
@@ -124,14 +123,14 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
     }
 
     @Override
-    public void render(@NonNull IRenderIndex<POS, BO, DB, DC> index, @NonNull float[] modelViewProjectionMatrix) {
+    public void render(@NonNull IRenderIndex<POS, BO, DB, DC> index, @NonNull GlobalUniformAttributes globalUniformAttributes) {
         //rebuild command buffer if needed
         if (this.commandBuffer == null || this.lastMacrosSnapshot != this.macros.snapshot()) {
             this.rebuildCommandBuffer(index);
         }
 
         //update uniforms
-        this.uniformBuffer.setContents(this.worldRenderer.globalUniformAttributes(modelViewProjectionMatrix));
+        this.uniformBuffer.setContents(globalUniformAttributes);
 
         //execute command buffer
         this.commandBuffer.execute();
