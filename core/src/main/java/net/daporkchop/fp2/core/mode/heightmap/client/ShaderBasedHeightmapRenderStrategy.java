@@ -86,12 +86,12 @@ public class ShaderBasedHeightmapRenderStrategy extends AbstractMultipassIndexed
     }
 
     @Override
-    public DrawShaderProgram blockShader() {
-        return this.blockShader.get();
+    public DrawShaderProgram blockShader(int level, int layer) {
+        return this.blockShader.get(); //TODO: this doesn't support CUTOUT
     }
 
     @Override
-    public DrawShaderProgram stencilShader() {
+    public DrawShaderProgram stencilShader(int level, int layer) {
         return this.stencilShader.get();
     }
 

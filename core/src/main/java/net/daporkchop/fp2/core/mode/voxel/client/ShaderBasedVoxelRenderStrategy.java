@@ -24,6 +24,8 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.common.util.Identifier;
 import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;
+import net.daporkchop.fp2.core.client.shader.ShaderMacros;
+import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.core.mode.common.client.AbstractFarRenderer;
 import net.daporkchop.fp2.core.mode.common.client.ICullingStrategy;
 import net.daporkchop.fp2.core.mode.common.client.bake.IRenderBaker;
@@ -58,6 +60,7 @@ public class ShaderBasedVoxelRenderStrategy extends AbstractMultipassIndexedRend
     protected final DrawLayout drawLayout;
 
     protected final ReloadableShaderProgram<DrawShaderProgram> blockShader;
+    protected final ReloadableShaderProgram<DrawShaderProgram> blockShaderCutout;
     protected final ReloadableShaderProgram<DrawShaderProgram> stencilShader;
 
     public ShaderBasedVoxelRenderStrategy(@NonNull AbstractFarRenderer<VoxelPos, VoxelTile> farRenderer) {
@@ -83,18 +86,29 @@ public class ShaderBasedVoxelRenderStrategy extends AbstractMultipassIndexedRend
         this.blockShader = ReloadableShaderProgram.draw(this.gl, this.drawLayout, this.macros,
                 Identifier.from(MODID, "shaders/vert/voxel/voxel.vert"),
                 Identifier.from(MODID, "shaders/frag/block.frag"));
+        this.blockShaderCutout = ReloadableShaderProgram.draw(this.gl, this.drawLayout, new ShaderMacros.Mutable(this.macros).define("FP2_CUTOUT"),
+                Identifier.from(MODID, "shaders/vert/voxel/voxel.vert"),
+                Identifier.from(MODID, "shaders/frag/block.frag"));
         this.stencilShader = ReloadableShaderProgram.draw(this.gl, this.drawLayout, this.macros,
                 Identifier.from(MODID, "shaders/vert/voxel/voxel.vert"),
                 Identifier.from(MODID, "shaders/frag/stencil.frag"));
     }
 
     @Override
-    public DrawShaderProgram blockShader() {
-        return this.blockShader.get();
+    public DrawShaderProgram blockShader(int level, int layer) {
+        switch (layer) {
+            case IFarRenderer.LAYER_SOLID:
+            case IFarRenderer.LAYER_TRANSPARENT:
+                return this.blockShader.get();
+            case IFarRenderer.LAYER_CUTOUT:
+                return this.blockShaderCutout.get();
+            default:
+                throw new IllegalArgumentException("invalid layer: " + layer);
+        }
     }
 
     @Override
-    public DrawShaderProgram stencilShader() {
+    public DrawShaderProgram stencilShader(int level, int layer) {
         return this.stencilShader.get();
     }
 
@@ -131,6 +145,7 @@ public class ShaderBasedVoxelRenderStrategy extends AbstractMultipassIndexedRend
         super.doRelease();
 
         this.blockShader.close();
+        this.blockShaderCutout.close();
         this.stencilShader.close();
     }
 }

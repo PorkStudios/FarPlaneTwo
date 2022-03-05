@@ -61,11 +61,6 @@ public interface WorldRenderer {
      */
     TerrainRenderingBlockedTracker blockedTracker();
 
-    /**
-     * @return an instance of {@link GlobalUniformAttributes} configured for rendering the current frame
-     */
-    GlobalUniformAttributes globalUniformAttributes();
-
     TextureUVs textureUVs();
 
     /**

@@ -18,6 +18,8 @@
  *
  */
 
+rootProject.name = 'FarPlaneTwo'
+
 include 'api'
 include 'common'
 include 'core'
