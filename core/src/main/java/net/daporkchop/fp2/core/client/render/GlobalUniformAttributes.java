@@ -29,6 +29,10 @@ import net.daporkchop.fp2.gl.attribute.annotation.FieldsAsArrayAttribute;
  * @author DaPorkchop_
  */
 public class GlobalUniformAttributes {
+    //
+    // camera
+    //
+
     @Attribute
     public final float @ArrayType(length = 16, transform = @ArrayTransform(value = ArrayTransform.Type.TO_MATRIX, matrixCols = 4, matrixRows = 4)) [] modelViewProjectionMatrix = new float[16];
 
@@ -47,6 +51,10 @@ public class GlobalUniformAttributes {
     public float positionFracX;
     public float positionFracY;
     public float positionFracZ;
+
+    //
+    // fog
+    //
 
     @FieldsAsArrayAttribute(
             attribute = @Attribute(name = "fogColor"),
@@ -71,4 +79,11 @@ public class GlobalUniformAttributes {
 
     @Attribute
     public float fogScale;
+
+    //
+    // misc. GL state
+    //
+
+    @Attribute
+    public float alphaRefCutout;
 }

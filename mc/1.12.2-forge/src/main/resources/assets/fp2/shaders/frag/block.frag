@@ -39,7 +39,7 @@ void main() {
 
 #ifdef FP2_CUTOUT
     //this is the cutout pass, emulate legacy opengl alpha testing
-    if (frag_color.a <= 0.1) {
+    if (frag_color.a <= u_alphaRefCutout) {
         discard;
     }
 #endif
