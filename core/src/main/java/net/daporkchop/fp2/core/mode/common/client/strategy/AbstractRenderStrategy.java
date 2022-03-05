@@ -124,18 +124,14 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
     }
 
     @Override
-    public void render(@NonNull IRenderIndex<POS, BO, DB, DC> index, int layer, boolean pre) {
-        if (layer != LAYER_CUTOUT || pre) { //only render after the CUTOUT pass
-            return;
-        }
-
+    public void render(@NonNull IRenderIndex<POS, BO, DB, DC> index, @NonNull float[] modelViewProjectionMatrix) {
         //rebuild command buffer if needed
         if (this.commandBuffer == null || this.lastMacrosSnapshot != this.macros.snapshot()) {
             this.rebuildCommandBuffer(index);
         }
 
         //update uniforms
-        this.uniformBuffer.setContents(this.worldRenderer.globalUniformAttributes());
+        this.uniformBuffer.setContents(this.worldRenderer.globalUniformAttributes(modelViewProjectionMatrix));
 
         //execute command buffer
         this.commandBuffer.execute();

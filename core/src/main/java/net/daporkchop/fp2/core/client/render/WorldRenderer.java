@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.core.client.render;
 
+import lombok.NonNull;
 import net.daporkchop.fp2.core.client.world.IFarWorldClient;
 import net.daporkchop.fp2.gl.GL;
 
@@ -64,7 +65,7 @@ public interface WorldRenderer {
     /**
      * @return an instance of {@link GlobalUniformAttributes} configured for rendering the current frame
      */
-    GlobalUniformAttributes globalUniformAttributes();
+    GlobalUniformAttributes globalUniformAttributes(@NonNull float[] modelViewProjectionMatrix);
 
     TextureUVs textureUVs();
 

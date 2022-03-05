@@ -22,31 +22,27 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.client.render;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.client.renderer.IMixinRenderGlobal;
-import net.daporkchop.fp2.core.client.MatrixHelper;
 import net.daporkchop.fp2.common.util.DirectBufferHackery;
+import net.daporkchop.fp2.core.client.MatrixHelper;
 import net.daporkchop.fp2.core.client.render.GlobalUniformAttributes;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
 import net.daporkchop.fp2.core.client.render.WorldRenderer;
-import net.daporkchop.fp2.core.util.GlobalAllocators;
 import net.daporkchop.fp2.gl.GL;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.client.renderer.IMixinRenderGlobal;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.client.world.FarWorldClient1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.ResourceProvider1_12_2;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.world.registry.GameRegistry1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.SingleBiomeBlockAccess;
-import net.daporkchop.lib.common.pool.array.ArrayAllocator;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.world.registry.GameRegistry1_12_2;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.BlockPos;
-import org.lwjgl.BufferUtils;
 
 import java.nio.FloatBuffer;
 
 import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.fp2.impl.mc.forge1_12_2.compat.of.OFHelper.*;
-import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 import static net.minecraft.util.math.MathHelper.*;
 import static org.lwjgl.opengl.GL11.*;
@@ -65,8 +61,6 @@ public class WorldRenderer1_12_2 implements WorldRenderer, AutoCloseable {
 
     protected final GameRegistry1_12_2 registry;
     protected final byte[] renderTypeLookup;
-
-    protected final FloatBuffer tempMatrix = BufferUtils.createFloatBuffer(MatrixHelper.MAT4_ELEMENTS);
 
     public WorldRenderer1_12_2(@NonNull Minecraft mc, @NonNull FarWorldClient1_12_2 world) {
         this.mc = mc;
@@ -120,7 +114,7 @@ public class WorldRenderer1_12_2 implements WorldRenderer, AutoCloseable {
     }
 
     @Override
-    public GlobalUniformAttributes globalUniformAttributes() {
+    public GlobalUniformAttributes globalUniformAttributes(@NonNull float[] modelViewProjectionMatrix) {
         GlobalUniformAttributes attributes = new GlobalUniformAttributes();
 
         //optifine compatibility: disable fog if it's turned off, because optifine only does this itself if no vanilla terrain is being rendered
@@ -130,7 +124,7 @@ public class WorldRenderer1_12_2 implements WorldRenderer, AutoCloseable {
         }
 
         { //camera
-            this.initModelViewProjectionMatrix(attributes);
+            System.arraycopy(modelViewProjectionMatrix, 0, attributes.modelViewProjectionMatrix, 0, MatrixHelper.MAT4_ELEMENTS);
 
             float partialTicks = this.mc.getRenderPartialTicks();
             Entity entity = this.mc.getRenderViewEntity();
@@ -159,29 +153,6 @@ public class WorldRenderer1_12_2 implements WorldRenderer, AutoCloseable {
         }
 
         return attributes;
-    }
-
-    private void initModelViewProjectionMatrix(GlobalUniformAttributes attributes) {
-        ArrayAllocator<float[]> alloc = GlobalAllocators.ALLOC_FLOAT.get();
-
-        float[] modelView = alloc.atLeast(MatrixHelper.MAT4_ELEMENTS);
-        float[] projection = alloc.atLeast(MatrixHelper.MAT4_ELEMENTS);
-        try {
-            //load both matrices into arrays
-            glGetFloat(GL_MODELVIEW_MATRIX, (FloatBuffer) this.tempMatrix.clear());
-            this.tempMatrix.get(modelView);
-            glGetFloat(GL_PROJECTION_MATRIX, (FloatBuffer) this.tempMatrix.clear());
-            this.tempMatrix.get(projection);
-
-            //pre-multiply matrices on CPU to avoid having to do it per-vertex on GPU
-            MatrixHelper.multiply4x4(projection, modelView, attributes.modelViewProjectionMatrix);
-
-            //offset the projected points' depth values to avoid z-fighting with vanilla terrain
-            MatrixHelper.offsetDepth(attributes.modelViewProjectionMatrix, fp2().client().isReverseZ() ? -0.00001f : 0.00001f);
-        } finally {
-            alloc.release(projection);
-            alloc.release(modelView);
-        }
     }
 
     private void initFogColor(GlobalUniformAttributes attributes) {

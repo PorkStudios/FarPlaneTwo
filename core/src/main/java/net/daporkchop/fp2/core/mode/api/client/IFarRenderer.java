@@ -37,7 +37,7 @@ public interface IFarRenderer extends Releasable {
 
     void prepare(@NonNull IFrustum frustum);
 
-    void render(int layer, boolean pre);
+    void render(@NonNull float[] modelViewProjectionMatrix);
 
     DebugStats.Renderer stats();
 }

@@ -71,7 +71,7 @@ public interface IFarRenderStrategy<POS extends IFarPos, T extends IFarTile, BO 
 
     TransformShaderBuilder configureSelectionShader(@NonNull TransformShaderBuilder builder, int level);
 
-    void render(@NonNull IRenderIndex<POS, BO, DB, DC> index, int layer, boolean pre);
+    void render(@NonNull IRenderIndex<POS, BO, DB, DC> index, @NonNull float[] modelViewProjectionMatrix);
 
     @Override
     int refCnt();

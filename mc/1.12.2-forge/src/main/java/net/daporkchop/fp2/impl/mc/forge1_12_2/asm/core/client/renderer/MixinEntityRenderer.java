@@ -25,6 +25,8 @@ import net.daporkchop.fp2.core.client.player.IFarPlayerClient;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
+import net.daporkchop.fp2.core.util.GlobalAllocators;
+import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.EntityRenderer;
 import net.minecraft.client.renderer.GlStateManager;
@@ -85,7 +87,31 @@ public abstract class MixinEntityRenderer {
                 GlStateManager.disableAlpha();
                 this.mc.textureMapBlocks.setBlurMipmapDirect(false, this.mc.gameSettings.mipmapLevels > 0);
 
-                renderer.render(IFarRenderer.LAYER_CUTOUT, false);
+                ArrayAllocator<float[]> alloc = GlobalAllocators.ALLOC_FLOAT.get();
+
+                float[] modelView = alloc.atLeast(MatrixHelper.MAT4_ELEMENTS);
+                float[] projection = alloc.atLeast(MatrixHelper.MAT4_ELEMENTS);
+                float[] modelViewProjection = alloc.atLeast(MatrixHelper.MAT4_ELEMENTS);
+                try {
+                    //load both matrices into arrays
+                    glGetFloat(GL_MODELVIEW_MATRIX, (FloatBuffer) this.fp2_tempMatrix.clear());
+                    this.fp2_tempMatrix.get(modelView);
+                    glGetFloat(GL_PROJECTION_MATRIX, (FloatBuffer) this.fp2_tempMatrix.clear());
+                    this.fp2_tempMatrix.get(projection);
+
+                    //pre-multiply matrices on CPU to avoid having to do it per-vertex on GPU
+                    MatrixHelper.multiply4x4(projection, modelView, modelViewProjection);
+
+                    //offset the projected points' depth values to avoid z-fighting with vanilla terrain
+                    MatrixHelper.offsetDepth(modelViewProjection, fp2().client().isReverseZ() ? -0.00001f : 0.00001f);
+
+                    //actually render stuff!
+                    renderer.render(modelViewProjection);
+                } finally {
+                    alloc.release(modelViewProjection);
+                    alloc.release(projection);
+                    alloc.release(modelView);
+                }
 
                 this.mc.textureMapBlocks.restoreLastBlurMipmap();
                 GlStateManager.enableAlpha();
@@ -101,7 +127,7 @@ public abstract class MixinEntityRenderer {
             at = @At(value = "INVOKE",
                     target = "Lorg/lwjgl/util/glu/Project;gluPerspective(FFFF)V"))
     private void fp2_$everything$_dontUseGluPerspective(float fov, float aspect, float zNear, float zFar) {
-        MatrixHelper.reversedZ(this.fp2_tempMatrix, fov, aspect, zNear);
+        MatrixHelper.reversedZ((FloatBuffer) this.fp2_tempMatrix.clear(), fov, aspect, zNear);
         glMultMatrix(this.fp2_tempMatrix);
     }
 
