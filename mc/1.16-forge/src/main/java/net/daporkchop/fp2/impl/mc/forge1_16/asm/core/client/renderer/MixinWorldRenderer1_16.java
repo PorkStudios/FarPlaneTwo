@@ -22,19 +22,25 @@ package net.daporkchop.fp2.impl.mc.forge1_16.asm.core.client.renderer;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
 import net.daporkchop.fp2.core.client.IFrustum;
+import net.daporkchop.fp2.core.client.MatrixHelper;
 import net.daporkchop.fp2.core.client.player.IFarPlayerClient;
+import net.daporkchop.fp2.core.client.render.GlobalUniformAttributes;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
-import net.daporkchop.fp2.impl.mc.forge1_16.client.render.WorldRenderer1_16;
+import net.daporkchop.fp2.core.util.GlobalAllocators;
+import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.renderer.ATFogRenderer1_16;
+import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ActiveRenderInfo;
 import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.renderer.culling.ClippingHelper;
 import net.minecraft.client.renderer.texture.AtlasTexture;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.util.math.vector.Matrix4f;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -44,7 +50,12 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.nio.FloatBuffer;
+
 import static net.daporkchop.fp2.core.FP2Core.*;
+import static net.daporkchop.lib.common.math.PMath.*;
+import static net.minecraft.util.math.MathHelper.*;
+import static org.lwjgl.opengl.GL11.*;
 
 /**
  * @author DaPorkchop_
@@ -54,7 +65,9 @@ public abstract class MixinWorldRenderer1_16 {
     @Shadow
     private ClientWorld level;
 
-    @Shadow @Final private Minecraft minecraft;
+    @Shadow
+    @Final
+    private Minecraft minecraft;
 
     @Inject(method = "Lnet/minecraft/client/renderer/WorldRenderer;setupRender(Lnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/culling/ClippingHelper;ZIZ)V",
             at = @At("HEAD"),
@@ -87,60 +100,6 @@ public abstract class MixinWorldRenderer1_16 {
         }
     }
 
-    @SuppressWarnings("deprecation")
-    @Inject(method = "Lnet/minecraft/client/renderer/WorldRenderer;renderChunkLayer(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/matrix/MatrixStack;DDD)V",
-            at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/client/renderer/RenderType;setupRenderState()V",
-                    shift = At.Shift.AFTER),
-            require = 1, allow = 1)
-    private void fp2_renderChunkLayer_pre(RenderType type, MatrixStack matrixStack, double cameraX, double cameraY, double cameraZ, CallbackInfo ci) {
-        int layer = this.fp2_toLayerIndex(type);
-        if (layer < 0) {
-            return;
-        }
-
-        fp2().client().currentPlayer().ifPresent(player -> {
-            IFarClientContext<?, ?> context = player.fp2_IFarPlayerClient_activeContext();
-            IFarRenderer renderer;
-            if (context != null && (renderer = context.renderer()) != null) {
-                this.level.getProfiler().push("fp2_render_pre");
-                WorldRenderer1_16.ACTIVE_MATRIX_STACK = matrixStack;
-
-                this.minecraft.getModelManager().getAtlas(AtlasTexture.LOCATION_BLOCKS).setBlurMipmap(false, this.minecraft.options.mipmapLevels > 0);
-                renderer.render(layer, true);
-                this.minecraft.getModelManager().getAtlas(AtlasTexture.LOCATION_BLOCKS).restoreLastBlurMipmap();
-
-                this.level.getProfiler().pop();
-            }
-        });
-    }
-
-    @SuppressWarnings("deprecation")
-    @Inject(method = "Lnet/minecraft/client/renderer/WorldRenderer;renderChunkLayer(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/matrix/MatrixStack;DDD)V",
-            at = @At("RETURN"),
-            require = 1, allow = 2)
-    private void fp2_renderChunkLayer_post(RenderType type, MatrixStack matrixStack, double cameraX, double cameraY, double cameraZ, CallbackInfo ci) {
-        int layer = this.fp2_toLayerIndex(type);
-        if (layer < 0) {
-            return;
-        }
-
-        fp2().client().currentPlayer().ifPresent(player -> {
-            IFarClientContext<?, ?> context = player.fp2_IFarPlayerClient_activeContext();
-            IFarRenderer renderer;
-            if (context != null && (renderer = context.renderer()) != null) {
-                this.level.getProfiler().push("fp2_render_post");
-                WorldRenderer1_16.ACTIVE_MATRIX_STACK = matrixStack;
-
-                this.minecraft.getModelManager().getAtlas(AtlasTexture.LOCATION_BLOCKS).setBlurMipmap(false, this.minecraft.options.mipmapLevels > 0);
-                renderer.render(layer, false);
-                this.minecraft.getModelManager().getAtlas(AtlasTexture.LOCATION_BLOCKS).restoreLastBlurMipmap();
-
-                this.level.getProfiler().pop();
-            }
-        });
-    }
-
     @Redirect(method = "Lnet/minecraft/client/renderer/WorldRenderer;renderLevel(Lcom/mojang/blaze3d/matrix/MatrixStack;FJZLnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/GameRenderer;Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/util/math/vector/Matrix4f;)V",
             at = @At(value = "INVOKE",
                     target = "Lnet/minecraft/client/renderer/GameRenderer;getRenderDistance()F"),
@@ -154,5 +113,96 @@ public abstract class MixinWorldRenderer1_16 {
         }
 
         return renderer.getRenderDistance();
+    }
+
+    @SuppressWarnings("deprecation")
+    @Inject(method = "Lnet/minecraft/client/renderer/WorldRenderer;renderLevel(Lcom/mojang/blaze3d/matrix/MatrixStack;FJZLnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/GameRenderer;Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/util/math/vector/Matrix4f;)V",
+            at = @At(value = "INVOKE",
+                    target = "Lnet/minecraft/client/renderer/WorldRenderer;renderChunkLayer(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/matrix/MatrixStack;DDD)V",
+                    shift = At.Shift.AFTER,
+                    ordinal = 2),
+            require = 1, allow = 1)
+    private void fp2_renderLevel_doFP2Render(MatrixStack matrixStack, float partialTicks, long finishTimeNanos, boolean shouldRenderBlockOutline, ActiveRenderInfo activeRenderInfo, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f projectionMatrix, CallbackInfo ci) {
+        //immediately after vanilla cutout() layer
+
+        fp2().client().currentPlayer().ifPresent(player -> {
+            IFarClientContext<?, ?> context = player.fp2_IFarPlayerClient_activeContext();
+            IFarRenderer renderer;
+            if (context != null && (renderer = context.renderer()) != null) {
+                this.level.getProfiler().push("fp2_render_post");
+
+                this.minecraft.getModelManager().getAtlas(AtlasTexture.LOCATION_BLOCKS).setBlurMipmap(false, this.minecraft.options.mipmapLevels > 0);
+                renderer.render(this.globalUniformAttributes(activeRenderInfo, matrixStack, projectionMatrix));
+                this.minecraft.getModelManager().getAtlas(AtlasTexture.LOCATION_BLOCKS).restoreLastBlurMipmap();
+
+                this.level.getProfiler().pop();
+            }
+        });
+    }
+
+    @Unique
+    private GlobalUniformAttributes globalUniformAttributes(ActiveRenderInfo activeRenderInfo, MatrixStack matrixStack, Matrix4f projectionMatrix) {
+        GlobalUniformAttributes attributes = new GlobalUniformAttributes();
+
+        { //camera
+            this.initModelViewProjectionMatrix(attributes, matrixStack, projectionMatrix);
+
+            double x = activeRenderInfo.getPosition().x();
+            double y = activeRenderInfo.getPosition().y();
+            double z = activeRenderInfo.getPosition().z();
+
+            attributes.positionFloorX = floorI(x);
+            attributes.positionFloorY = floorI(y);
+            attributes.positionFloorZ = floorI(z);
+
+            attributes.positionFracX = (float) frac(x);
+            attributes.positionFracY = (float) frac(y);
+            attributes.positionFracZ = (float) frac(z);
+        }
+
+        { //fog
+            attributes.fogColorR = ATFogRenderer1_16.getFogRed();
+            attributes.fogColorG = ATFogRenderer1_16.getFogGreen();
+            attributes.fogColorB = ATFogRenderer1_16.getFogBlue();
+            attributes.fogColorA = 1.0f;
+
+            attributes.fogMode = glGetInteger(GL_FOG_MODE);
+
+            attributes.fogDensity = glGetFloat(GL_FOG_DENSITY);
+            attributes.fogStart = glGetFloat(GL_FOG_START);
+            attributes.fogEnd = glGetFloat(GL_FOG_END);
+            attributes.fogScale = 1.0f / (attributes.fogEnd - attributes.fogStart);
+
+            //i can't use glGetBoolean(GL_FOG) to check if fog is enabled because 1.16 turns it on and off again for every chunk section.
+            //  instead, i check if fog mode is EXP2 and density is 0, because that's what is configured by FogRenderer.setupNoFog().
+            //TODO: figure out if this will still work with OptiFine's option to disable fog
+            if (attributes.fogMode == GL_EXP2 && attributes.fogDensity == 0.0f) {
+                attributes.fogMode = 0;
+            }
+        }
+
+        return attributes;
+    }
+
+    @Unique
+    private void initModelViewProjectionMatrix(GlobalUniformAttributes attributes, MatrixStack matrixStack, Matrix4f projectionMatrix) {
+        ArrayAllocator<float[]> alloc = GlobalAllocators.ALLOC_FLOAT.get();
+
+        float[] modelView = alloc.atLeast(MatrixHelper.MAT4_ELEMENTS);
+        float[] projection = alloc.atLeast(MatrixHelper.MAT4_ELEMENTS);
+        try {
+            //load both matrices into arrays
+            matrixStack.last().pose().store(FloatBuffer.wrap(modelView));
+            projectionMatrix.store(FloatBuffer.wrap(projection));
+
+            //pre-multiply matrices on CPU to avoid having to do it per-vertex on GPU
+            MatrixHelper.multiply4x4(projection, modelView, attributes.modelViewProjectionMatrix);
+
+            //offset the projected points' depth values to avoid z-fighting with vanilla terrain
+            MatrixHelper.offsetDepth(attributes.modelViewProjectionMatrix, fp2().client().isReverseZ() ? -0.00001f : 0.00001f);
+        } finally {
+            alloc.release(projection);
+            alloc.release(modelView);
+        }
     }
 }

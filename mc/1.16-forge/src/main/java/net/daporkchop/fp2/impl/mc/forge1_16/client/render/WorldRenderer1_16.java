@@ -20,41 +20,24 @@
 
 package net.daporkchop.fp2.impl.mc.forge1_16.client.render;
 
-import com.mojang.blaze3d.matrix.MatrixStack;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.core.client.MatrixHelper;
-import net.daporkchop.fp2.core.client.render.GlobalUniformAttributes;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
 import net.daporkchop.fp2.core.client.render.WorldRenderer;
 import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
-import net.daporkchop.fp2.core.util.GlobalAllocators;
 import net.daporkchop.fp2.gl.GL;
-import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.renderer.ATFogRenderer1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.renderer.ATLightTexture1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.client.world.FarWorldClient1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.util.BiomeColorBlockDisplayReader1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.util.ResourceProvider1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.world.registry.GameRegistry1_16;
-import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.ActiveRenderInfo;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.RenderTypeLookup;
-import net.minecraft.fluid.Fluids;
 import net.minecraft.inventory.container.PlayerContainer;
 import net.minecraft.util.math.BlockPos;
-import org.lwjgl.BufferUtils;
-import org.spongepowered.asm.mixin.Unique;
-
-import java.nio.FloatBuffer;
-
-import static net.daporkchop.fp2.core.FP2Core.*;
-import static net.daporkchop.lib.common.math.PMath.*;
-import static net.minecraft.util.math.MathHelper.*;
-import static org.lwjgl.opengl.GL11.*;
 
 /**
  * @author DaPorkchop_
@@ -62,8 +45,6 @@ import static org.lwjgl.opengl.GL11.*;
 @RequiredArgsConstructor
 @Getter
 public class WorldRenderer1_16 implements WorldRenderer, AutoCloseable {
-    public static MatrixStack ACTIVE_MATRIX_STACK; //TODO: this is extremely gross, add the current matrix as a parameter to IFarRenderer#render
-
     private static int toLayerIndex(RenderType type) {
         if (type == RenderType.solid()) {
             return IFarRenderer.LAYER_SOLID;
@@ -85,8 +66,6 @@ public class WorldRenderer1_16 implements WorldRenderer, AutoCloseable {
 
     protected final GameRegistry1_16 registry;
     protected final byte[] renderTypeLookup;
-
-    protected final FloatBuffer tempMatrix = BufferUtils.createFloatBuffer(MatrixHelper.MAT4_ELEMENTS);
 
     @SuppressWarnings("deprecation")
     public WorldRenderer1_16(@NonNull Minecraft mc, @NonNull FarWorldClient1_16 world) {
@@ -134,73 +113,6 @@ public class WorldRenderer1_16 implements WorldRenderer, AutoCloseable {
     public TerrainRenderingBlockedTracker blockedTracker() {
         //TODO
         return (chunkX, chunkY, chunkZ) -> false;
-    }
-
-    @Override
-    public GlobalUniformAttributes globalUniformAttributes() {
-        GlobalUniformAttributes attributes = new GlobalUniformAttributes();
-
-        { //camera
-            this.initModelViewProjectionMatrix(attributes);
-
-            ActiveRenderInfo info = this.mc.gameRenderer.getMainCamera();
-            double x = info.getPosition().x();
-            double y = info.getPosition().y();
-            double z = info.getPosition().z();
-
-            attributes.positionFloorX = floorI(x);
-            attributes.positionFloorY = floorI(y);
-            attributes.positionFloorZ = floorI(z);
-
-            attributes.positionFracX = (float) frac(x);
-            attributes.positionFracY = (float) frac(y);
-            attributes.positionFracZ = (float) frac(z);
-        }
-
-        { //fog
-            attributes.fogColorR = ATFogRenderer1_16.getFogRed();
-            attributes.fogColorG = ATFogRenderer1_16.getFogGreen();
-            attributes.fogColorB = ATFogRenderer1_16.getFogBlue();
-            attributes.fogColorA = 1.0f;
-
-            attributes.fogMode = glGetInteger(GL_FOG_MODE);
-
-            attributes.fogDensity = glGetFloat(GL_FOG_DENSITY);
-            attributes.fogStart = glGetFloat(GL_FOG_START);
-            attributes.fogEnd = glGetFloat(GL_FOG_END);
-            attributes.fogScale = 1.0f / (attributes.fogEnd - attributes.fogStart);
-
-            //i can't use glGetBoolean(GL_FOG) to check if fog is enabled because 1.16 turns it on and off again for every chunk section.
-            //  instead, i check if fog mode is EXP2 and density is 0, because that's what is configured by FogRenderer.setupNoFog().
-            //TODO: figure out if this will still work with OptiFine's option to disable fog
-            if (attributes.fogMode == GL_EXP2 && attributes.fogDensity == 0.0f) {
-                attributes.fogMode = 0;
-            }
-        }
-
-        return attributes;
-    }
-
-    private void initModelViewProjectionMatrix(GlobalUniformAttributes attributes) {
-        ArrayAllocator<float[]> alloc = GlobalAllocators.ALLOC_FLOAT.get();
-
-        float[] modelView = alloc.atLeast(MatrixHelper.MAT4_ELEMENTS);
-        float[] projection = alloc.atLeast(MatrixHelper.MAT4_ELEMENTS);
-        try {
-            //load both matrices into arrays
-            ACTIVE_MATRIX_STACK.last().pose().store(FloatBuffer.wrap(modelView));
-            glGetFloatv(GL_PROJECTION_MATRIX, (FloatBuffer) this.tempMatrix.clear());
-            this.tempMatrix.get(projection);
-
-            //pre-multiply matrices on CPU to avoid having to do it per-vertex on GPU
-            MatrixHelper.multiply4x4(projection, modelView, attributes.modelViewProjectionMatrix);
-
-            //offset the projected points' depth values to avoid z-fighting with vanilla terrain
-            MatrixHelper.offsetDepth(attributes.modelViewProjectionMatrix, fp2().client().isReverseZ() ? -0.00001f : 0.00001f);
-        } finally {
-            alloc.release(projection);
-            alloc.release(modelView);
-        }
     }
 
     @Override
