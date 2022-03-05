@@ -37,6 +37,13 @@ void main() {
     //initial block texture sample
     frag_color = sampleTerrain(normal);
 
+#ifdef FP2_CUTOUT
+    //this is the cutout pass, emulate legacy opengl alpha testing
+    if (frag_color.a <= 0.1) {
+        discard;
+    }
+#endif
+
     //block/sky light
     frag_color *= t_lightmap(fs_in.light);
 

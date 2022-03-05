@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -67,7 +67,7 @@ public abstract class ShaderMacros {
             this.parents = ImmutableList.copyOf(parents);
 
             //register this as a child of all of the parents
-            this.parents.forEach(parent -> {
+            this.parentsFlattened().forEach(parent -> {
                 if (parent instanceof Mutable) {
                     ((Mutable) parent).children.add(this);
                 }
@@ -127,7 +127,7 @@ public abstract class ShaderMacros {
             Immutable cachedSnapshot = this.cachedSnapshot;
             if (cachedSnapshot == null) { //re-compute cached snapshot
                 ImmutableMap.Builder<String, Object> builder = ImmutableMap.builder();
-                this.parentsFlattened().forEach(macros -> builder.putAll(macros.snapshot().macros));
+                this.parents().forEach(parent -> builder.putAll(parent.snapshot().macros));
                 builder.putAll(this.macros);
                 this.cachedSnapshot = cachedSnapshot = new Immutable(builder.build());
             }

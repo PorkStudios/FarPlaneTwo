@@ -21,11 +21,13 @@
 package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.core.client.renderer;
 
 import net.daporkchop.fp2.core.client.MatrixHelper;
-import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.client.player.IFarPlayerClient;
+import net.daporkchop.fp2.core.config.FP2Config;
+import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.EntityRenderer;
+import net.minecraft.client.renderer.GlStateManager;
 import org.lwjgl.BufferUtils;
 import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Final;
@@ -64,6 +66,33 @@ public abstract class MixinEntityRenderer {
             at = @At("HEAD"))
     private void fp2_renderWorldPass_pre(int pass, float partialTicks, long finishTimeNano, CallbackInfo ci) {
         fp2().client().enableReverseZ();
+    }
+
+    @Inject(method = "Lnet/minecraft/client/renderer/EntityRenderer;renderWorldPass(IFJ)V",
+            at = @At(value = "INVOKE",
+                    target = "Lnet/minecraft/client/renderer/texture/ITextureObject;restoreLastBlurMipmap()V",
+                    ordinal = 1),
+            require = 1, allow = 1)
+    private void fp2_renderWorldPass_doFP2Render(int pass, float partialTicks, long finishTimeNano, CallbackInfo ci) {
+        //directly after vanilla CUTOUT pass
+
+        fp2().client().currentPlayer().ifPresent(player -> {
+            IFarClientContext<?, ?> context = player.fp2_IFarPlayerClient_activeContext();
+            IFarRenderer renderer;
+            if (context != null && (renderer = context.renderer()) != null) {
+                this.mc.profiler.startSection("fp2_render");
+
+                GlStateManager.disableAlpha();
+                this.mc.textureMapBlocks.setBlurMipmapDirect(false, this.mc.gameSettings.mipmapLevels > 0);
+
+                renderer.render(IFarRenderer.LAYER_CUTOUT, false);
+
+                this.mc.textureMapBlocks.restoreLastBlurMipmap();
+                GlStateManager.enableAlpha();
+
+                this.mc.profiler.endSection();
+            }
+        });
     }
 
     //use reversed-z projection with infinite zFar everywhere

@@ -99,57 +99,6 @@ public abstract class MixinRenderGlobal implements IMixinRenderGlobal {
         });
     }
 
-    @Unique
-    private int toLayerIndex(BlockRenderLayer layer) {
-        int ordinal = layer.ordinal();
-        return ordinal + ((-ordinal) >> 31);
-    }
-
-    @Inject(method = "Lnet/minecraft/client/renderer/RenderGlobal;renderBlockLayer(Lnet/minecraft/util/BlockRenderLayer;DILnet/minecraft/entity/Entity;)I",
-            at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/client/renderer/RenderHelper;disableStandardItemLighting()V",
-                    shift = At.Shift.AFTER),
-            allow = 1, require = 1)
-    private void fp2_renderBlockLayer_pre(BlockRenderLayer layer, double partialTicks, int pass, Entity entity, CallbackInfoReturnable<Integer> ci) {
-        if (layer == BlockRenderLayer.CUTOUT_MIPPED) {
-            return;
-        }
-
-        fp2().client().currentPlayer().ifPresent(player -> {
-            IFarClientContext<?, ?> context = player.fp2_IFarPlayerClient_activeContext();
-            IFarRenderer renderer;
-            if (context != null && (renderer = context.renderer()) != null) {
-                this.mc.profiler.startSection("fp2_render_pre");
-                renderer.render(this.toLayerIndex(layer), true);
-                this.mc.profiler.endSection();
-            }
-        });
-    }
-
-    @Inject(method = "Lnet/minecraft/client/renderer/RenderGlobal;renderBlockLayer(Lnet/minecraft/util/BlockRenderLayer;DILnet/minecraft/entity/Entity;)I",
-            at = @At(value = "RETURN"),
-            allow = 2, require = 1)
-    private void fp2_renderBlockLayer_post(BlockRenderLayer layer, double partialTicks, int pass, Entity entity, CallbackInfoReturnable<Integer> ci) {
-        if (layer == BlockRenderLayer.CUTOUT_MIPPED) {
-            return;
-        }
-
-        fp2().client().currentPlayer().ifPresent(player -> {
-            IFarClientContext<?, ?> context = player.fp2_IFarPlayerClient_activeContext();
-            IFarRenderer renderer;
-            if (context != null && (renderer = context.renderer()) != null) {
-                this.mc.profiler.startSection("fp2_render_post");
-
-                //TODO: reduce this down to a single call - the implementation shouldn't have to be aware of which vanilla render passes have completed
-                this.mc.textureMapBlocks.setBlurMipmapDirect(false, this.mc.gameSettings.mipmapLevels > 0);
-                renderer.render(this.toLayerIndex(layer), false);
-                this.mc.textureMapBlocks.restoreLastBlurMipmap();
-
-                this.mc.profiler.endSection();
-            }
-        });
-    }
-
     @Override
     public TerrainRenderingBlockedTracker1_12_2 fp2_vanillaRenderabilityTracker() {
         return this.fp2_vanillaRenderabilityTracker;

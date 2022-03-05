@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -23,6 +23,7 @@ package net.daporkchop.fp2.core.mode.common.client.strategy;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
+import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.gl.command.BlendFactor;
 import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
 import net.daporkchop.fp2.gl.command.Compare;
@@ -96,7 +97,7 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
                 .stencilCompare(Compare.LESS_OR_EQUAL)
                 .stencilReference(level)
                 .stencilCompareMask(0x7F);
-        index.draw(builder, level, 0, this.blockShader());
+        index.draw(builder, level, 0, this.blockShader(level, IFarRenderer.LAYER_SOLID));
 
         //GlStateManager.enableAlpha();
     }
@@ -108,7 +109,7 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
                 .stencilCompare(Compare.LESS_OR_EQUAL)
                 .stencilReference(level)
                 .stencilCompareMask(0x7F);
-        index.draw(builder, level, 1, this.blockShader());
+        index.draw(builder, level, 1, this.blockShader(level, IFarRenderer.LAYER_CUTOUT));
 
         //MC.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
     }
@@ -131,7 +132,7 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
                 .stencilCompareMask(0xFF);
         for (int level = 0; level < this.mode().maxLevels(); level++) {
             builder.stencilReference(0x80 | (this.mode().maxLevels() - level));
-            index.draw(builder, level, 2, this.stencilShader());
+            index.draw(builder, level, 2, this.stencilShader(level, IFarRenderer.LAYER_TRANSPARENT));
         }
 
         builder.depthWrite(true);
@@ -150,7 +151,7 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
                 .stencilCompareMask(0xFF);
         for (int level = 0; level < this.mode().maxLevels(); level++) {
             builder.stencilReference(0x80 | (this.mode().maxLevels() - level));
-            index.draw(builder, level, 2, this.blockShaderTransparent());
+            index.draw(builder, level, 2, this.blockShader(level, IFarRenderer.LAYER_TRANSPARENT));
         }
 
         builder.blendDisable();
@@ -159,17 +160,10 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
     /**
      * @return the shader used for rendering blocks
      */
-    DrawShaderProgram blockShader();
-
-    /**
-     * @return the shader used for rendering blocks
-     */
-    default DrawShaderProgram blockShaderTransparent() {
-        return this.blockShader();
-    }
+    DrawShaderProgram blockShader(int level, int layer);
 
     /**
      * @return the shader used for preparing the stencil buffer
      */
-    DrawShaderProgram stencilShader();
+    DrawShaderProgram stencilShader(int level, int layer);
 }

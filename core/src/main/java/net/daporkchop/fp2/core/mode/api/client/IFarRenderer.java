@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -30,8 +30,10 @@ import net.daporkchop.lib.unsafe.capability.Releasable;
  */
 public interface IFarRenderer extends Releasable {
     int LAYER_SOLID = 0;
-    int LAYER_CUTOUT = 1;
-    int LAYER_TRANSPARENT = 2;
+    int LAYER_CUTOUT = LAYER_SOLID + 1;
+    int LAYER_TRANSPARENT = LAYER_CUTOUT + 1;
+
+    int LAYERS = LAYER_TRANSPARENT + 1;
 
     void prepare(@NonNull IFrustum frustum);
 
