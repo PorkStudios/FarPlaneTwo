@@ -50,7 +50,7 @@ public class WorldRenderer1_16 implements WorldRenderer, AutoCloseable {
         if (type == RenderType.solid()) {
             return IFarRenderer.LAYER_SOLID;
         } else if (type == RenderType.cutout() || type == RenderType.cutoutMipped()) {
-            return IFarRenderer.LAYER_CUTOUT; //TODO: cutout needs alpha testing (i may need discard; ...)
+            return IFarRenderer.LAYER_CUTOUT;
         } else if (type == RenderType.translucent()) {
             return IFarRenderer.LAYER_TRANSPARENT;
         } else {

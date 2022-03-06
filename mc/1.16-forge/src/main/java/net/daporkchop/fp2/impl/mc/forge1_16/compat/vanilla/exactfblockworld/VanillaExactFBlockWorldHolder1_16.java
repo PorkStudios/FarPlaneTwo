@@ -145,7 +145,9 @@ public class VanillaExactFBlockWorldHolder1_16 implements ExactFBlockWorldHolder
             //load the raw NBT data from the IOWorker
             //  ((damn) that's a (lot) of ((casts) !)))
             CompoundNBT nbt = ((IMixinIOWorker1_16) ((ATChunkLoader1_16) VanillaExactFBlockWorldHolder1_16.this.world.getChunkSource().chunkMap).getWorker()).fp2_IOWorker_loadFuture(key).join();
-            return this.parseNBT(key, param, nbt);
+            return nbt != null
+                    ? this.parseNBT(key, param, nbt) //we were able to read the data, delegate to parseNBT to do the actual parsing
+                    : null; //chunk doesn't exist on disk
         }
 
         @Override

@@ -66,56 +66,6 @@ public final class PrefetchedChunksFBlockWorld1_16 implements FBlockWorld {
             long chunkPos = chunkPositions.get(i);
             return new ChunkPos(ChunkPos.getX(chunkPos), ChunkPos.getZ(chunkPos));
         }), generationAllowed));
-
-        /*return ((IMixinServerWorld1_16) holder).fp2_farWorldServer().fp2_IFarWorld_workerManager().workExecutor().supply(() -> {
-            //get all the futures
-            List<CompletableFuture<Either<IChunk, ChunkHolder.IChunkLoadingError>>> chunkFutures = new ArrayList<>(chunkPositions.size());
-            chunkPositions.forEach((LongConsumer) chunkPos -> {
-                //getChunkFuture doesn't exist on the dedicated server for some reason, so in order to get a chunk future without blocking we have to
-                //  access the private getChunkFutureMainThread method while on the server thread.
-                ATServerChunkProvider1_16 serverChunkProvider = (ATServerChunkProvider1_16) holder.getChunkSource();
-                chunkFutures.add(serverChunkProvider.invokeGetChunkFutureMainThread(ChunkPos.getX(chunkPos), ChunkPos.getZ(chunkPos), ChunkStatus.FULL, true));
-            });
-
-            //join the futures and store their results in the chunks map
-            LongObjMap<IChunk> chunks = new LongObjOpenHashMap<>(chunkPositions.size());
-            for (CompletableFuture<Either<IChunk, ChunkHolder.IChunkLoadingError>> chunkFuture : chunkFutures) {
-                ((IMixinServerChunkProvider) holder.getChunkSource()).fp2_IMixinServerChunkProvider_mainThreadProcessor().managedBlock(chunkFuture::isDone);
-
-                IChunk chunk = chunkFuture.join().map(Function.identity(), error -> {
-                    throw new IllegalStateException("Chunk not there when requested: " + error);
-                });
-                chunks.put(chunk.getPos().toLong(), chunk);
-            }
-
-            //extract lighting info from world and store it in lighting maps
-            LongObjMap<NibbleArray> skyLight = new LongObjOpenHashMap<>(sectionPositions.size());
-            LongObjMap<NibbleArray> blockLight = new LongObjOpenHashMap<>(sectionPositions.size());
-            boolean hasSkyLight = holder.dimensionType().hasSkyLight();
-            sectionPositions.forEach((LongConsumer) sectionPos -> {
-                NibbleArray skyLightArray;
-                NibbleArray blockLightArray;
-
-                if ((SectionPos.y(sectionPos) & ~0xF) != 0) { //section position is outside y coordinate limits
-                    skyLightArray = hasSkyLight && SectionPos.y(sectionPos) > 0 ? NIBBLE_ARRAY_15 : NIBBLE_ARRAY_0;
-                    blockLightArray = NIBBLE_ARRAY_0;
-                } else {
-                    if (hasSkyLight) {
-                        //TODO: figure out if falling back to 0 light is a safe assumption to make
-                        skyLightArray = PorkUtil.fallbackIfNull(holder.getLightEngine().getLayerListener(LightType.SKY).getDataLayerData(SectionPos.of(sectionPos)), NIBBLE_ARRAY_0);
-                    } else {
-                        skyLightArray = NIBBLE_ARRAY_0;
-                    }
-
-                    blockLightArray = PorkUtil.fallbackIfNull(holder.getLightEngine().getLayerListener(LightType.BLOCK).getDataLayerData(SectionPos.of(sectionPos)), NIBBLE_ARRAY_0);
-                }
-
-                skyLight.put(sectionPos, skyLightArray);
-                blockLight.put(sectionPos, blockLightArray);
-            });
-
-            return new PrefetchedChunksFBlockWorld1_16(registry, chunks, skyLight, blockLight);
-        });*/
     }
 
     private final VanillaExactFBlockWorldHolder1_16 holder;
