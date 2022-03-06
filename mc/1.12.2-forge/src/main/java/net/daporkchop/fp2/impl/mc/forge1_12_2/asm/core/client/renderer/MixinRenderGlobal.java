@@ -20,17 +20,16 @@
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.core.client.renderer;
 
-import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.client.renderer.IMixinRenderGlobal;
 import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.client.renderer.IMixinRenderGlobal;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.client.TerrainRenderingBlockedTracker1_12_2;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.RenderGlobal;
 import net.minecraft.client.renderer.culling.ICamera;
 import net.minecraft.entity.Entity;
-import net.minecraft.util.BlockRenderLayer;
 import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -38,8 +37,8 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Slice;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
@@ -77,21 +76,40 @@ public abstract class MixinRenderGlobal implements IMixinRenderGlobal {
                     shift = At.Shift.BEFORE),
             require = 1)
     private void fp2_loadRenderers_onCreateViewFrustum(CallbackInfo ci) {
-        if (this.fp2_vanillaRenderabilityTracker != null) {
-            this.fp2_vanillaRenderabilityTracker.release();
+        //only create a new renderability tracker if none existed before.
+        //  we don't want multiple instances lying around!
+        if (this.fp2_vanillaRenderabilityTracker == null) {
+            this.fp2_vanillaRenderabilityTracker = new TerrainRenderingBlockedTracker1_12_2();
         }
-        this.fp2_vanillaRenderabilityTracker = new TerrainRenderingBlockedTracker1_12_2();
     }
 
     @Inject(method = "Lnet/minecraft/client/renderer/RenderGlobal;setupTerrain(Lnet/minecraft/entity/Entity;DLnet/minecraft/client/renderer/culling/ICamera;IZ)V",
-            at = @At("HEAD"))
+            at = @At(value = "INVOKE",
+                    target = "Lnet/minecraft/profiler/Profiler;endSection()V"),
+            slice = @Slice(
+                    from = @At(value = "INVOKE_STRING",
+                            target = "Lnet/minecraft/profiler/Profiler;startSection(Ljava/lang/String;)V",
+                            args = "ldc=iteration"),
+                    to = @At(value = "INVOKE_STRING",
+                            target = "Lnet/minecraft/profiler/Profiler;endStartSection(Ljava/lang/String;)V",
+                            args = "ldc=captureFrustum")),
+            require = 1, allow = 1)
+    private void fp2_setupTerrain_updateVanillaRenderability(Entity viewEntity, double partialTicks, ICamera camera, int frameCount, boolean playerSpectator, CallbackInfo ci) {
+        this.mc.profiler.startSection("fp2_vanillaRenderabilityTracker_update");
+        this.fp2_vanillaRenderabilityTracker.update(uncheckedCast(this), frameCount);
+        this.mc.profiler.endSection();
+    }
+
+    @Inject(method = "Lnet/minecraft/client/renderer/RenderGlobal;setupTerrain(Lnet/minecraft/entity/Entity;DLnet/minecraft/client/renderer/culling/ICamera;IZ)V",
+            at = @At(value = "INVOKE_STRING",
+                    target = "Lnet/minecraft/profiler/Profiler;endStartSection(Ljava/lang/String;)V",
+                    args = "ldc=captureFrustum"),
+            require = 1, allow = 1)
     private void fp2_setupTerrain_prepare(Entity viewEntity, double partialTicks, ICamera camera, int frameCount, boolean playerSpectator, CallbackInfo ci) {
         fp2().client().currentPlayer().ifPresent(player -> {
             IFarClientContext<?, ?> context = player.fp2_IFarPlayerClient_activeContext();
             IFarRenderer renderer;
             if (context != null && (renderer = context.renderer()) != null) {
-                this.fp2_vanillaRenderabilityTracker.update(uncheckedCast(this));
-
                 this.mc.profiler.startSection("fp2_prepare");
                 renderer.prepare((IFrustum) camera);
                 this.mc.profiler.endSection();
