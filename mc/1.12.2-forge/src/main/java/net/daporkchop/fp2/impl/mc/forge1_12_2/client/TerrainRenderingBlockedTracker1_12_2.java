@@ -26,6 +26,7 @@ import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cc.FP2CubicChunks;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.old.client.gl.object.GLBuffer;
 import net.daporkchop.lib.common.math.BinMath;
 import net.daporkchop.lib.common.math.PMath;
 import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
@@ -42,7 +43,10 @@ import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
+import static net.daporkchop.fp2.impl.mc.forge1_12_2.compat.of.OFHelper.*;
 import static net.daporkchop.lib.common.math.PMath.*;
+import static org.lwjgl.opengl.GL15.*;
+import static org.lwjgl.opengl.GL43.*;
 
 /**
  * @author DaPorkchop_
@@ -94,7 +98,15 @@ public class TerrainRenderingBlockedTracker1_12_2 extends AbstractRefCounted imp
     }
 
     protected static long renderDirectionFlags(RenderGlobal.ContainerLocalRenderInformation containerLocalRenderInformation) {
-        return (containerLocalRenderInformation.setFacing & 0xFFL) << SHIFT_RENDER_DIRECTIONS;
+        long flags = 0L;
+        int shift = SHIFT_RENDER_DIRECTIONS;
+        for (EnumFacing inFace : EnumFacing.VALUES) {
+            if (containerLocalRenderInformation.hasDirection(inFace)) {
+                flags |= 1L << shift;
+            }
+            shift++;
+        }
+        return flags;
     }
 
     protected static boolean hasRenderDirection(long flags, int face) {
@@ -114,6 +126,7 @@ public class TerrainRenderingBlockedTracker1_12_2 extends AbstractRefCounted imp
     }
 
     protected final Allocator alloc = new DirectMemoryAllocator();
+    protected final GLBuffer glBuffer = new GLBuffer(GL_STREAM_DRAW);
 
     protected int offsetX;
     protected int offsetY;
@@ -124,8 +137,6 @@ public class TerrainRenderingBlockedTracker1_12_2 extends AbstractRefCounted imp
 
     protected long sizeBytes;
     protected long addr;
-
-    protected boolean dirty;
 
     @Override
     public TerrainRenderingBlockedTracker1_12_2 retain() throws AlreadyReleasedException {
@@ -138,6 +149,7 @@ public class TerrainRenderingBlockedTracker1_12_2 extends AbstractRefCounted imp
         if (this.addr != 0L) {
             this.alloc.free(this.addr);
         }
+        this.glBuffer.delete();
     }
 
     /**
@@ -242,9 +254,12 @@ public class TerrainRenderingBlockedTracker1_12_2 extends AbstractRefCounted imp
         long addr = this.alloc.alloc(sizeBytes);
         PUnsafe.setMemory(addr, sizeBytes, (byte) 0);
 
-        for (int x = 1; x < factorChunkX - 2; x++) {
-            for (int y = 1; y < factorChunkY - 2; y++) {
-                for (int z = 1; z < factorChunkZ - 2; z++) {
+        //optifine is kinda weird and i can't be bothered at this point to figure out what the difference is. my shitty workaround is
+        //  just to increase the overlap radius :P
+        final int PADDING_RADIUS = OF ? 3 : 2;
+        for (int x = 1 + PADDING_RADIUS; x < factorChunkX - (2 + PADDING_RADIUS); x++) {
+            for (int y = 1 + PADDING_RADIUS; y < factorChunkY - (2 + PADDING_RADIUS); y++) {
+                for (int z = 1 + PADDING_RADIUS; z < factorChunkZ - (2 + PADDING_RADIUS); z++) {
                     int idx = (x * factorChunkY + y) * factorChunkZ + z;
                     long centerFlags = srcFlags[idx];
 
@@ -320,7 +335,11 @@ public class TerrainRenderingBlockedTracker1_12_2 extends AbstractRefCounted imp
         this.sizeZ = factorChunkZ;
         this.sizeBytes = sizeBytes;
         this.addr = addr;
-        this.dirty = true;
+
+        try (GLBuffer buffer = this.glBuffer.bind(GL_SHADER_STORAGE_BUFFER)) {
+            buffer.upload(addr, sizeBytes);
+        }
+        this.glBuffer.bindBase(GL_SHADER_STORAGE_BUFFER, 7);
     }
 
     @Override

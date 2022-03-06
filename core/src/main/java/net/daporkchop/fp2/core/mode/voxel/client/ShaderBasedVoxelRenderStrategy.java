@@ -136,6 +136,10 @@ public class ShaderBasedVoxelRenderStrategy extends AbstractMultipassIndexedRend
 
     @Override
     public TransformShaderBuilder configureSelectionShader(@NonNull TransformShaderBuilder builder, int level) {
+        if (level == 0) {
+            builder = builder.define("LEVEL_0", true);
+        }
+
         return builder.include(Identifier.from(MODID, "shaders/select/voxel/voxel.glsl"))
                 .defineAll(this.macros.snapshot().macros());
     }

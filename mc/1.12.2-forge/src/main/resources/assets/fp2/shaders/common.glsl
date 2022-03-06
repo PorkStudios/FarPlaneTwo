@@ -102,7 +102,8 @@
 #if LEVEL_0
 // Vanilla renderability index
 
-layout(std430, binding = 6) readonly buffer VANILLA_RENDERABILITY {
+//TODO: find a non-hacky way of implementing this
+layout(std430, binding = 7) readonly buffer VANILLA_RENDERABILITY {
     ivec3 offset;
     ivec3 size;
 
