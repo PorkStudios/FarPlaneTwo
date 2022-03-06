@@ -28,6 +28,7 @@ import net.daporkchop.fp2.core.client.render.WorldRenderer;
 import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.renderer.ATLightTexture1_16;
+import net.daporkchop.fp2.impl.mc.forge1_16.asm.interfaz.client.renderer.IMixinWorldRenderer1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.client.world.FarWorldClient1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.util.BiomeColorBlockDisplayReader1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.util.ResourceProvider1_16;
@@ -111,8 +112,7 @@ public class WorldRenderer1_16 implements WorldRenderer, AutoCloseable {
 
     @Override
     public TerrainRenderingBlockedTracker blockedTracker() {
-        //TODO
-        return (chunkX, chunkY, chunkZ) -> false;
+        return ((IMixinWorldRenderer1_16) this.mc.levelRenderer).fp2_vanillaRenderabilityTracker();
     }
 
     @Override

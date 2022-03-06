@@ -5,8 +5,12 @@
   "refmap": "mixins.fp2.refmap.json",
   "client": [
     "client.gui.screen.ATScreen1_16",
+    "client.renderer.chunk.ATChunkRenderDispatcher__ChunkRender1_16",
     "client.renderer.ATFogRenderer1_16",
     "client.renderer.ATLightTexture1_16",
+    "client.renderer.ATViewFrustum1_16",
+    "client.renderer.ATWorldRenderer1_16",
+    "client.renderer.ATWorldRenderer__LocalRenderInformationContainer1_16",
     "client.world.ATClientWorld1_16",
     "client.ATMinecraft1_16"
   ],

@@ -30,6 +30,8 @@ import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.util.GlobalAllocators;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.renderer.ATFogRenderer1_16;
+import net.daporkchop.fp2.impl.mc.forge1_16.asm.interfaz.client.renderer.IMixinWorldRenderer1_16;
+import net.daporkchop.fp2.impl.mc.forge1_16.client.TerrainRenderingBlockedTracker1_16;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ActiveRenderInfo;
@@ -41,6 +43,7 @@ import net.minecraft.client.renderer.culling.ClippingHelper;
 import net.minecraft.client.renderer.texture.AtlasTexture;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.vector.Matrix4f;
+import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -48,12 +51,14 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.Slice;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.nio.FloatBuffer;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.lib.common.math.PMath.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 import static net.minecraft.util.math.MathHelper.*;
 import static org.lwjgl.opengl.GL11.*;
 
@@ -61,7 +66,7 @@ import static org.lwjgl.opengl.GL11.*;
  * @author DaPorkchop_
  */
 @Mixin(WorldRenderer.class)
-public abstract class MixinWorldRenderer1_16 {
+public abstract class MixinWorldRenderer1_16 implements IMixinWorldRenderer1_16 {
     @Shadow
     private ClientWorld level;
 
@@ -69,19 +74,63 @@ public abstract class MixinWorldRenderer1_16 {
     @Final
     private Minecraft minecraft;
 
-    @Inject(method = "Lnet/minecraft/client/renderer/WorldRenderer;setupRender(Lnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/culling/ClippingHelper;ZIZ)V",
-            at = @At("HEAD"),
+    @Unique
+    protected TerrainRenderingBlockedTracker1_16 fp2_vanillaRenderabilityTracker;
+
+    @Inject(method = "Lnet/minecraft/client/renderer/WorldRenderer;setLevel(Lnet/minecraft/client/world/ClientWorld;)V",
+            at = @At(value = "FIELD",
+                    target = "Lnet/minecraft/client/renderer/WorldRenderer;viewArea:Lnet/minecraft/client/renderer/ViewFrustum;",
+                    opcode = Opcodes.PUTFIELD,
+                    shift = At.Shift.AFTER),
             require = 1)
+    private void fp2_setLevel_onDestroyViewFrustum(CallbackInfo ci) {
+        this.fp2_vanillaRenderabilityTracker.release();
+        this.fp2_vanillaRenderabilityTracker = null;
+    }
+
+    @Inject(method = "Lnet/minecraft/client/renderer/WorldRenderer;allChanged()V",
+            at = @At(value = "FIELD",
+                    target = "Lnet/minecraft/client/renderer/WorldRenderer;viewArea:Lnet/minecraft/client/renderer/ViewFrustum;",
+                    opcode = Opcodes.PUTFIELD,
+                    shift = At.Shift.BEFORE),
+            require = 1)
+    private void fp2_allChanged_onCreateViewFrustum(CallbackInfo ci) {
+        //only create a new renderability tracker if none existed before.
+        //  we don't want multiple instances lying around!
+        if (this.fp2_vanillaRenderabilityTracker == null) {
+            this.fp2_vanillaRenderabilityTracker = new TerrainRenderingBlockedTracker1_16();
+        }
+    }
+
+    @Inject(method = "Lnet/minecraft/client/renderer/WorldRenderer;setupRender(Lnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/culling/ClippingHelper;ZIZ)V",
+            at = @At(value = "INVOKE",
+                    target = "Lnet/minecraft/profiler/IProfiler;pop()V"),
+            slice = @Slice(
+                    from = @At(value = "INVOKE_STRING",
+                            target = "Lnet/minecraft/profiler/IProfiler;push(Ljava/lang/String;)V",
+                            args = "ldc=iteration"),
+                    to = @At(value = "INVOKE_STRING",
+                            target = "Lnet/minecraft/profiler/IProfiler;popPush(Ljava/lang/String;)V",
+                            args = "ldc=rebuildNear")),
+            require = 1, allow = 1)
+    private void fp2_setupRender_updateVanillaRenderability(ActiveRenderInfo info, ClippingHelper clippingHelper, boolean useCapturedFrustum, int frameCount, boolean playerSpectator, CallbackInfo ci) {
+        this.minecraft.getProfiler().push("fp2_vanillaRenderabilityTracker_update");
+        this.fp2_vanillaRenderabilityTracker.update(uncheckedCast(this), frameCount);
+        this.minecraft.getProfiler().pop();
+    }
+
+    @Inject(method = "Lnet/minecraft/client/renderer/WorldRenderer;setupRender(Lnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/culling/ClippingHelper;ZIZ)V",
+            at = @At(value = "INVOKE_STRING",
+                    target = "Lnet/minecraft/profiler/IProfiler;popPush(Ljava/lang/String;)V",
+                    args = "ldc=rebuildNear"),
+            require = 1, allow = 1)
     private void fp2_setupRender_prepare(ActiveRenderInfo info, ClippingHelper clippingHelper, boolean useCapturedFrustum, int frameCount, boolean playerSpectator, CallbackInfo ci) {
         fp2().client().currentPlayer().ifPresent(player -> {
             IFarClientContext<?, ?> context = player.fp2_IFarPlayerClient_activeContext();
             IFarRenderer renderer;
             if (context != null && (renderer = context.renderer()) != null) {
-                //TODO: update renderability tracker
-                // this.fp2_vanillaRenderabilityTracker.update(uncheckedCast(this));
-
                 this.level.getProfiler().push("fp2_prepare");
-                renderer.prepare((IFrustum) clippingHelper); //TODO: this doesn't work
+                renderer.prepare((IFrustum) clippingHelper);
                 this.level.getProfiler().pop();
             }
         });
@@ -209,5 +258,10 @@ public abstract class MixinWorldRenderer1_16 {
             alloc.release(projection);
             alloc.release(modelView);
         }
+    }
+
+    @Override
+    public TerrainRenderingBlockedTracker1_16 fp2_vanillaRenderabilityTracker() {
+        return this.fp2_vanillaRenderabilityTracker;
     }
 }
