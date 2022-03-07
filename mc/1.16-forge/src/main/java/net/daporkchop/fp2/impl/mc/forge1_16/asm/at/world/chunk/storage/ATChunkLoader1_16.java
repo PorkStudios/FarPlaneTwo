@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.impl.mc.forge1_16.asm.at.world.chunk.storage;
 
+import com.mojang.datafixers.DataFixer;
 import net.minecraft.world.chunk.storage.ChunkLoader;
 import net.minecraft.world.chunk.storage.IOWorker;
 import org.spongepowered.asm.mixin.Mixin;
@@ -32,4 +33,7 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 public interface ATChunkLoader1_16 {
     @Accessor
     IOWorker getWorker();
+
+    @Accessor
+    DataFixer getFixerUpper();
 }

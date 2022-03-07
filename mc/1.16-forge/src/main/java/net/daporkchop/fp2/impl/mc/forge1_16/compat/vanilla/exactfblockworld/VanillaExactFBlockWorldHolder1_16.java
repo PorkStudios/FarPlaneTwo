@@ -40,9 +40,13 @@ import net.daporkchop.fp2.impl.mc.forge1_16.asm.interfaz.world.server.IMixinServ
 import net.daporkchop.fp2.impl.mc.forge1_16.util.threading.AsyncCacheNBT1_16;
 import net.daporkchop.lib.common.function.throwing.ERunnable;
 import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.NBTUtil;
+import net.minecraft.util.SharedConstants;
+import net.minecraft.util.datafix.DefaultTypeReferences;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkStatus;
+import net.minecraft.world.chunk.storage.ChunkLoader;
 import net.minecraft.world.chunk.storage.ChunkSerializer;
 import net.minecraft.world.server.ServerWorld;
 
@@ -73,8 +77,7 @@ public class VanillaExactFBlockWorldHolder1_16 implements ExactFBlockWorldHolder
                 .dimensions(2)
                 .threadSafe(true)
                 .initialPoints(() -> ((IMixinIOWorker1_16) ((ATChunkLoader1_16) world.getChunkSource().chunkMap).getWorker()).fp2_IOWorker_listChunksWithData()
-                        //TODO: i should probably run datafixers here
-                        .filter(entry -> ChunkSerializer.getChunkTypeFromTag(entry.getValue()) == ChunkStatus.Type.LEVELCHUNK)
+                        .filter(entry -> ChunkSerializer.getChunkTypeFromTag(this.dfu(entry.getValue())) == ChunkStatus.Type.LEVELCHUNK)
                         .map(entry -> new int[]{ entry.getKey().x, entry.getKey().z })
                         .parallel())
                 .build();
@@ -127,6 +130,15 @@ public class VanillaExactFBlockWorldHolder1_16 implements ExactFBlockWorldHolder
                 .peek(GenerationNotAllowedException.uncheckedThrowIfNull());
     }
 
+    protected CompoundNBT dfu(@NonNull CompoundNBT nbt) {
+        int version = ChunkLoader.getVersion(nbt);
+        if (version < SharedConstants.getCurrentVersion().getWorldVersion()) {
+            nbt = NBTUtil.update(((ATChunkLoader1_16) this.world.getChunkSource().chunkMap).getFixerUpper(), DefaultTypeReferences.CHUNK, nbt, version);
+            nbt.putInt("DataVersion", SharedConstants.getCurrentVersion().getWorldVersion());
+        }
+        return nbt;
+    }
+
     /**
      * {@link IAsyncCache} for chunks.
      *
@@ -135,6 +147,9 @@ public class VanillaExactFBlockWorldHolder1_16 implements ExactFBlockWorldHolder
     protected class ChunkCache extends AsyncCacheNBT1_16<ChunkPos, Object, OffThreadChunk1_16> {
         @Override
         protected OffThreadChunk1_16 parseNBT(@NonNull ChunkPos key, @NonNull Object param, @NonNull CompoundNBT nbt) {
+            //upgrade chunk data if it's outdated
+            nbt = VanillaExactFBlockWorldHolder1_16.this.dfu(nbt);
+
             return ChunkSerializer.getChunkTypeFromTag(nbt) == ChunkStatus.Type.LEVELCHUNK
                     ? new OffThreadChunk1_16(VanillaExactFBlockWorldHolder1_16.this.world, nbt)
                     : null; //chunk isn't fully populated, pretend it doesn't exist
