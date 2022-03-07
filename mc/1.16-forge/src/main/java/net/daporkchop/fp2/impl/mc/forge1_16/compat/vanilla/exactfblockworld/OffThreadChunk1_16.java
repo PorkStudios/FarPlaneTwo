@@ -37,6 +37,7 @@ import net.minecraft.world.lighting.WorldLightManager;
 import net.minecraft.world.server.ServerWorld;
 
 import java.util.Arrays;
+import java.util.stream.IntStream;
 
 /**
  * A container around all the data in a chunk which is relevant to the exact {@link FBlockWorld} implementation.
@@ -99,7 +100,7 @@ public class OffThreadChunk1_16 {
 
         if (hasSkyLight) {
             this.defaultSkyLightPositiveY = 15;
-            this.skyLight = PArrays.filled(SECTION_INDEX_COUNT, NibbleArray[]::new, NIBBLE_ARRAY_15); //assumes all section coordinate are positive
+            this.skyLight = new NibbleArray[SECTION_INDEX_COUNT];
         } else {
             this.defaultSkyLightPositiveY = 0; //sky light disabled, assume level 0 everywhere
             this.skyLight = null;
@@ -130,6 +131,21 @@ public class OffThreadChunk1_16 {
                 }
             }
         });
+
+        //sky light exists, fill in unset elements
+        if (this.skyLight != null) {
+            //determine the highest section index which actually contains a chunk section to determine where the light level cutoff point should be.
+            //  i'm not sure if this is entirely correct, but it seems to work well enough.
+            int highestSectionIndex = IntStream.range(0, this.sections.length)
+                    .filter(i -> this.sections[i] != null)
+                    .max().orElse(0);
+
+            for (int sectionIndex = 0; sectionIndex < this.sections.length; sectionIndex++) {
+                if (this.skyLight[sectionIndex] == null) {
+                    this.skyLight[sectionIndex] = sectionIndex <= highestSectionIndex ? NIBBLE_ARRAY_0 : NIBBLE_ARRAY_15;
+                }
+            }
+        }
     }
 
     public long getPositionAsLong() {
