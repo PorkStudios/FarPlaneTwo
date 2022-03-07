@@ -20,12 +20,13 @@
 
 package net.daporkchop.fp2.impl.mc.forge1_16.asm.debug.client.renderer;
 
+import com.mojang.blaze3d.matrix.MatrixStack;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.WorldRenderer;
-import net.minecraft.client.renderer.vertex.VertexBuffer;
-import net.minecraft.util.math.vector.Matrix4f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
 
@@ -34,13 +35,13 @@ import static net.daporkchop.fp2.core.FP2Core.*;
  */
 @Mixin(WorldRenderer.class)
 public abstract class MixinWorldRenderer1_16 {
-    @Redirect(method = "Lnet/minecraft/client/renderer/WorldRenderer;renderChunkLayer(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/matrix/MatrixStack;DDD)V",
-            at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/client/renderer/vertex/VertexBuffer;draw(Lnet/minecraft/util/math/vector/Matrix4f;I)V"),
+    @Inject(method = "Lnet/minecraft/client/renderer/WorldRenderer;renderChunkLayer(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/matrix/MatrixStack;DDD)V",
+            at = @At("HEAD"),
+            cancellable = true,
             require = 1, allow = 1)
-    private void fp2_debug_renderLevel_disableVanillaTerrain(VertexBuffer buffer, Matrix4f matrix, int mode) {
-        if (fp2().globalConfig().debug().vanillaTerrainRendering()) {
-            buffer.draw(matrix, mode);
+    private void fp2_debug_renderChunkLayer_disableVanillaTerrain(RenderType renderType, MatrixStack matrixStack, double cameraX, double cameraY, double cameraZ, CallbackInfo ci) {
+        if (!fp2().globalConfig().debug().vanillaTerrainRendering()) {
+            ci.cancel();
         }
     }
 }
