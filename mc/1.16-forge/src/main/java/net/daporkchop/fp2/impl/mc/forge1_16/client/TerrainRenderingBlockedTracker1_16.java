@@ -28,6 +28,7 @@ import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.renderer.ATViewFrustum
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.renderer.ATWorldRenderer1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.renderer.ATWorldRenderer__LocalRenderInformationContainer1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.renderer.chunk.ATChunkRenderDispatcher__ChunkRender1_16;
+import net.daporkchop.fp2.impl.mc.forge1_16.compat.of.OFHelper1_16;
 import net.daporkchop.lib.common.math.BinMath;
 import net.daporkchop.lib.common.math.PMath;
 import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
@@ -253,7 +254,9 @@ public class TerrainRenderingBlockedTracker1_16 extends AbstractRefCounted imple
         long addr = this.alloc.alloc(sizeBytes);
         PUnsafe.setMemory(addr, sizeBytes, (byte) 0);
 
-        final int PADDING_RADIUS = 2;
+        //optifine is kinda weird and i can't be bothered at this point to figure out what the difference is. my shitty workaround is
+        //  just to increase the overlap radius :P
+        final int PADDING_RADIUS = OFHelper1_16.OF ? 3 : 2;
         for (int x = 1 + PADDING_RADIUS; x < factorChunkX - (2 + PADDING_RADIUS); x++) {
             for (int y = 1 + PADDING_RADIUS; y < factorChunkY - (2 + PADDING_RADIUS); y++) {
                 for (int z = 1 + PADDING_RADIUS; z < factorChunkZ - (2 + PADDING_RADIUS); z++) {
