@@ -32,6 +32,7 @@ import net.daporkchop.fp2.core.util.GlobalAllocators;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.renderer.ATFogRenderer1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.interfaz.client.renderer.IMixinWorldRenderer1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.client.TerrainRenderingBlockedTracker1_16;
+import net.daporkchop.fp2.impl.mc.forge1_16.compat.of.OFHelper1_16;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ActiveRenderInfo;
@@ -231,8 +232,11 @@ public abstract class MixinWorldRenderer1_16 implements IMixinWorldRenderer1_16 
         }
 
         { //misc. GL state
-            //both RenderType.CUTOUT and RenderType.CUTOUT_MIPPED are created with setAlphaState(MIDWAY_ALPHA)
-            attributes.alphaRefCutout = 0.5f;
+            //in vanilla, both RenderType.CUTOUT and RenderType.CUTOUT_MIPPED are created with setAlphaState(MIDWAY_ALPHA), which corresponds
+            //  to an alpha test reference value of 0.5.
+            //in OptiFine, both RenderType.CUTOUT and RenderType.CUTOUT_MIPPED are created with setAlphaState(CUTOUT_MIPPED_ALPHA), which
+            //  corresponds to an alpha test reference value of 0.1.
+            attributes.alphaRefCutout = OFHelper1_16.OF ? 0.1f : 0.5f;
         }
 
         return attributes;

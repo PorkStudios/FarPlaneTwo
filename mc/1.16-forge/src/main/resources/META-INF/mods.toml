@@ -49,3 +49,19 @@ mandatory = true
 versionRange = "${file.jarVersion}"
 ordering = "AFTER"
 side = "BOTH"
+
+# fp2_optifine
+[[mods]]
+modId ="fp2_optifine"
+version = "${file.jarVersion}"
+displayName = "FarPlaneTwo Integration - OptiFine"
+authors = "DaPorkchop_"
+displayURL = "https://daporkchop.net/"
+description = "Integrates FarPlaneTwo with OptiFine."
+
+[[dependencies.fp2_optifine]]
+modId = "fp2"
+mandatory = true
+versionRange = "${file.jarVersion}"
+ordering = "AFTER"
+side = "BOTH"
