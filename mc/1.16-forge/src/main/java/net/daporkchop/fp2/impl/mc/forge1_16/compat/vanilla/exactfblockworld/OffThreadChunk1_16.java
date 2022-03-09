@@ -39,6 +39,8 @@ import net.minecraft.world.server.ServerWorld;
 import java.util.Arrays;
 import java.util.stream.IntStream;
 
+import static net.daporkchop.lib.common.util.PValidation.*;
+
 /**
  * A container around all the data in a chunk which is relevant to the exact {@link FBlockWorld} implementation.
  * <p>
@@ -93,7 +95,7 @@ public class OffThreadChunk1_16 {
                 world.getChunkSource().getGenerator().getBiomeSource(),
                 levelTag.contains("Biomes", 11) ? levelTag.getIntArray("Biomes") : null);
 
-        boolean isLightOn = levelTag.getBoolean("isLightOn");
+        checkState(levelTag.getBoolean("isLightOn"), "isLightOn is false!");
         boolean hasSkyLight = world.dimensionType().hasSkyLight();
 
         Arrays.fill(this.blockLight, NIBBLE_ARRAY_0);
@@ -121,14 +123,12 @@ public class OffThreadChunk1_16 {
             }
 
             //lighting
-            if (isLightOn) {
-                if (sectionTag.contains("BlockLight", 7)) {
-                    this.blockLight[section2index(sectionY)] = new NibbleArray(sectionTag.getByteArray("BlockLight"));
-                }
+            if (sectionTag.contains("BlockLight", 7)) {
+                this.blockLight[section2index(sectionY)] = new NibbleArray(sectionTag.getByteArray("BlockLight"));
+            }
 
-                if (hasSkyLight && sectionTag.contains("SkyLight", 7)) {
-                    this.skyLight[section2index(sectionY)] = new NibbleArray(sectionTag.getByteArray("SkyLight"));
-                }
+            if (hasSkyLight && sectionTag.contains("SkyLight", 7)) {
+                this.skyLight[section2index(sectionY)] = new NibbleArray(sectionTag.getByteArray("SkyLight"));
             }
         });
 

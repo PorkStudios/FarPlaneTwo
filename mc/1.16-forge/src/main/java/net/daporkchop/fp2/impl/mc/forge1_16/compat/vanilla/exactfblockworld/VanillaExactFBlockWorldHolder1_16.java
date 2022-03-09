@@ -139,6 +139,20 @@ public class VanillaExactFBlockWorldHolder1_16 implements ExactFBlockWorldHolder
         return nbt;
     }
 
+    protected boolean isFullyGeneratedChunkData(@NonNull CompoundNBT nbt) {
+        if (ChunkSerializer.getChunkTypeFromTag(nbt) != ChunkStatus.Type.LEVELCHUNK) { //chunk status isn't FULL
+            return false;
+        }
+
+        CompoundNBT levelTag = nbt.getCompound("Level");
+        if (!levelTag.getBoolean("isLightOn")) { //this field is poorly named, it should be called "isLightValid". if it's false, we want to delegate to the server thread in
+            //  order to force lighting to be re-calculated (can happen on e.g. worldpainter worlds)
+            return false;
+        }
+
+        return true;
+    }
+
     /**
      * {@link IAsyncCache} for chunks.
      *
@@ -150,9 +164,9 @@ public class VanillaExactFBlockWorldHolder1_16 implements ExactFBlockWorldHolder
             //upgrade chunk data if it's outdated
             nbt = VanillaExactFBlockWorldHolder1_16.this.dfu(nbt);
 
-            return ChunkSerializer.getChunkTypeFromTag(nbt) == ChunkStatus.Type.LEVELCHUNK
+            return VanillaExactFBlockWorldHolder1_16.this.isFullyGeneratedChunkData(nbt)
                     ? new OffThreadChunk1_16(VanillaExactFBlockWorldHolder1_16.this.world, nbt)
-                    : null; //chunk isn't fully populated, pretend it doesn't exist
+                    : null; //chunk isn't fully generated, pretend it doesn't exist
         }
 
         @Override
