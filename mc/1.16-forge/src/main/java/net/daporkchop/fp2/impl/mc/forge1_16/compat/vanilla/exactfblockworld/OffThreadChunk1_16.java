@@ -177,7 +177,7 @@ public class OffThreadChunk1_16 {
 
     public int getSkyLight(int x, int y, int z) {
         int sectionY = y >> 4;
-        if (isSectionValid(sectionY)) { //y coordinate is in range
+        if (this.skyLight != null && isSectionValid(sectionY)) { //y coordinate is in range
             return this.skyLight[section2index(sectionY)].get(x & 0xF, y & 0xF, z & 0xF);
         }
 
