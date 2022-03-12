@@ -76,9 +76,11 @@ public class VanillaExactFBlockWorldHolder1_16 implements ExactFBlockWorldHolder
         this.chunksExistCache = Datastructures.INSTANCE.nDimensionalIntSegtreeSet()
                 .dimensions(2)
                 .threadSafe(true)
-                .initialPoints(() -> ((IMixinIOWorker1_16) ((ATChunkLoader1_16) world.getChunkSource().chunkMap).getWorker()).fp2_IOWorker_listChunksWithData()
-                        .filter(entry -> ChunkSerializer.getChunkTypeFromTag(this.dfu(entry.getValue())) == ChunkStatus.Type.LEVELCHUNK)
-                        .map(entry -> new int[]{ entry.getKey().x, entry.getKey().z })
+                .initialPoints(() -> ((IMixinIOWorker1_16) ((ATChunkLoader1_16) world.getChunkSource().chunkMap).getWorker()).fp2_IOWorker_listChunks()
+                        //this doesn't filter out chunks that aren't fully generated, but including those would make iteration massively slower. i'll just take the performance
+                        //  hit of having to try to load a bunch of not-quite-fully-generated chunks into the cache during runtime, at least until i make the segment tree lazily
+                        //  initialized.
+                        .map(pos -> new int[]{ pos.x, pos.z })
                         .parallel())
                 .build();
 

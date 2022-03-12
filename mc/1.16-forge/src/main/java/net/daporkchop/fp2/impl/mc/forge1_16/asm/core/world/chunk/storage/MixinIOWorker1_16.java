@@ -25,7 +25,6 @@ import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.world.chunk.storage.ATIOWorke
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.interfaz.world.chunk.storage.IMixinIOWorker1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.interfaz.world.chunk.storage.IMixinRegionFileCache1_16;
 import net.daporkchop.lib.common.util.PorkUtil;
-import net.daporkchop.lib.math.vector.Vec2i;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.chunk.storage.IOWorker;
@@ -89,8 +88,8 @@ public abstract class MixinIOWorker1_16 implements IMixinIOWorker1_16 {
         //  i could also just include the keys from pendingWrites in the stream and allow duplicates, but i'm too lazy to solve this same problem yet again, especially
         //  when i'll probably just end up replacing the whole thing with regionlib in the not too distant future
         return this.synchronize().thenCompose(unused -> this.submitTask(() -> {
-            try (Stream<Vec2i> regionPositions = PorkUtil.<IMixinRegionFileCache1_16>uncheckedCast(this.storage).fp2_RegionFileCache_listRegions()) {
-                return Either.left(regionPositions
+            try {
+                return Either.left(PorkUtil.<IMixinRegionFileCache1_16>uncheckedCast(this.storage).fp2_RegionFileCache_listRegions().stream()
                         .map(regionPos -> this.submitTask(() -> {
                             try {
                                 return Either.left(PorkUtil.<IMixinRegionFileCache1_16>uncheckedCast(this.storage).fp2_RegionFileCache_listChunksInRegion(regionPos));

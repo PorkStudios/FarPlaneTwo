@@ -25,7 +25,6 @@ import net.minecraft.util.math.ChunkPos;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.stream.Stream;
 
 /**
  * @author DaPorkchop_
@@ -40,13 +39,11 @@ public interface IMixinRegionFileCache1_16 {
     boolean fp2_RegionFileCache_hasChunk(ChunkPos pos) throws IOException;
 
     /**
-     * Gets a {@link Stream} over the positions of all regions that exist.
-     * <p>
-     * Note that the returned {@link Stream} <strong>must</strong> be closed!
+     * Gets a {@link List} containing the positions of all regions that exist.
      *
-     * @return a {@link Stream} over the positions of all regions that exist
+     * @return a {@link List} containing the positions of all regions that exist
      */
-    Stream<Vec2i> fp2_RegionFileCache_listRegions() throws IOException;
+    List<Vec2i> fp2_RegionFileCache_listRegions() throws IOException;
 
     /**
      * Gets a {@link List} containing the positions of all chunks that exist in the given region.

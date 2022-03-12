@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.impl.mc.forge1_16.asm.core.world.chunk.storage;
 
+import com.google.common.collect.ImmutableList;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.interfaz.world.chunk.storage.IMixinRegionFileCache1_16;
 import net.daporkchop.lib.math.vector.Vec2i;
 import net.minecraft.util.math.ChunkPos;
@@ -36,6 +37,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -56,18 +58,22 @@ public abstract class MixinRegionFileCache1_16 implements IMixinRegionFileCache1
     }
 
     @Override
-    public Stream<Vec2i> fp2_RegionFileCache_listRegions() throws IOException {
+    public List<Vec2i> fp2_RegionFileCache_listRegions() throws IOException {
         //see WorldOptimizer#getAllChunkPos
 
         if (!Files.exists(this.folder.toPath())) {
-            return Stream.empty();
+            //if the directory doesn't exist, return an empty list to avoid throwing an exception when listing files in a non-existent directory
+            return ImmutableList.of();
         }
 
-        return Files.list(this.folder.toPath())
+        //list all the files in the folder, skip everything that isn't a region file and aggregate them into a list
+        try (Stream<Vec2i> regionPositions = Files.list(this.folder.toPath())
                 .map(path -> path.getFileName().toString())
                 .map(Pattern.compile("^r\\.(-?\\d+)\\.(-?\\d+)\\.mca$")::matcher)
                 .filter(Matcher::matches)
-                .map(matcher -> Vec2i.of(Integer.parseInt(matcher.group(1)), Integer.parseInt(matcher.group(2))));
+                .map(matcher -> Vec2i.of(Integer.parseInt(matcher.group(1)), Integer.parseInt(matcher.group(2))))) {
+            return regionPositions.collect(Collectors.toList());
+        }
     }
 
     @Override
@@ -77,7 +83,7 @@ public abstract class MixinRegionFileCache1_16 implements IMixinRegionFileCache1
         for (int dx = 0; dx < 32; dx++) {
             for (int dz = 0; dz < 32; dz++) {
                 ChunkPos chunkPos = new ChunkPos((regionPos.x() << 5) + dx, (regionPos.y() << 5) + dz);
-                if (region.doesChunkExist(chunkPos)) {
+                if (region.hasChunk(chunkPos)) {
                     positions.add(chunkPos);
                 }
             }
