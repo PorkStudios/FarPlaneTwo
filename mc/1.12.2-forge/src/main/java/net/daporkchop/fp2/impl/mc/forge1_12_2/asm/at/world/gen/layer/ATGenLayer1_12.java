@@ -33,5 +33,8 @@ public interface ATGenLayer1_12 {
     long getWorldGenSeed();
 
     @Accessor
+    void setWorldGenSeed(long worldGenSeed);
+
+    @Accessor
     GenLayer getParent();
 }

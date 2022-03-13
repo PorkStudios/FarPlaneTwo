@@ -24,6 +24,7 @@ import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.world.gen.layer.ATGenLayer1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.world.gen.layer.ATGenLayerBiome1_12;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.world.gen.layer.ATGenLayerEdge1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.world.gen.layer.ATGenLayerHills1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.world.gen.layer.ATGenLayerRiverMix1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.FastRegistry;
@@ -81,6 +82,7 @@ import net.minecraftforge.fml.common.Mod;
 
 import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import static java.lang.Math.*;
@@ -101,6 +103,7 @@ public class BiomeHelper {
     //gets all direct children of a GenLayer
     public static final Map<Class<? extends GenLayer>, Function<GenLayer, GenLayer[]>> GET_PARENTS = new IdentityHashMap<>();
     public static final Map<Class<? extends GenLayer>, Function<GenLayer, IFastLayer>> LAYER_CONVERTERS = new IdentityHashMap<>();
+    public static final Map<Class<? extends GenLayer>, BiFunction<GenLayer, GenLayer[], GenLayer>> LAYER_CLONERS = new IdentityHashMap<>();
 
     static {
         Function<GenLayer, GenLayer[]> parent = genLayer -> new GenLayer[]{ ((ATGenLayer1_12) genLayer).getParent() };
@@ -158,6 +161,30 @@ public class BiomeHelper {
         LAYER_CONVERTERS.put(GenLayerRandomValues.class, layer -> new JavaFastLayerRandomValues(((ATGenLayer1_12) layer).getWorldGenSeed(), ((GenLayerRandomValues) layer).limit()));
     }
 
+    static {
+        LAYER_CLONERS.put(GenLayerAddIsland.class, (layer, parents) -> new GenLayerAddIsland(((ATGenLayer1_12) layer).getWorldGenSeed(), parents[0]));
+        LAYER_CLONERS.put(GenLayerAddMushroomIsland.class, (layer, parents) -> new GenLayerAddMushroomIsland(((ATGenLayer1_12) layer).getWorldGenSeed(), parents[0]));
+        LAYER_CLONERS.put(GenLayerAddSnow.class, (layer, parents) -> new GenLayerAddSnow(((ATGenLayer1_12) layer).getWorldGenSeed(), parents[0]));
+        LAYER_CLONERS.put(GenLayerBiome.class, (layer, parents) -> new GenLayerBiome(((ATGenLayer1_12) layer).getWorldGenSeed(), parents[0], null, ((ATGenLayerBiome1_12) layer).getSettings()));
+        LAYER_CLONERS.put(GenLayerBiomeEdge.class, (layer, parents) -> new GenLayerBiomeEdge(((ATGenLayer1_12) layer).getWorldGenSeed(), parents[0]));
+        LAYER_CLONERS.put(GenLayerDeepOcean.class, (layer, parents) -> new GenLayerDeepOcean(((ATGenLayer1_12) layer).getWorldGenSeed(), parents[0]));
+        LAYER_CLONERS.put(GenLayerEdge.class, (layer, parents) -> new GenLayerEdge(((ATGenLayer1_12) layer).getWorldGenSeed(), parents[0], ((ATGenLayerEdge1_12) layer).getMode()));
+        LAYER_CLONERS.put(GenLayerFuzzyZoom.class, (layer, parents) -> new GenLayerFuzzyZoom(((ATGenLayer1_12) layer).getWorldGenSeed(), parents[0]));
+        LAYER_CLONERS.put(GenLayerHills.class, (layer, parents) -> new GenLayerHills(((ATGenLayer1_12) layer).getWorldGenSeed(), parents[0], parents[1]));
+        LAYER_CLONERS.put(GenLayerIsland.class, (layer, parents) -> new GenLayerIsland(((ATGenLayer1_12) layer).getWorldGenSeed()));
+        LAYER_CLONERS.put(GenLayerRareBiome.class, (layer, parents) -> new GenLayerRareBiome(((ATGenLayer1_12) layer).getWorldGenSeed(), parents[0]));
+        LAYER_CLONERS.put(GenLayerRemoveTooMuchOcean.class, (layer, parents) -> new GenLayerRemoveTooMuchOcean(((ATGenLayer1_12) layer).getWorldGenSeed(), parents[0]));
+        LAYER_CLONERS.put(GenLayerRiver.class, (layer, parents) -> new GenLayerRiver(((ATGenLayer1_12) layer).getWorldGenSeed(), parents[0]));
+        LAYER_CLONERS.put(GenLayerRiverInit.class, (layer, parents) -> new GenLayerRiverInit(((ATGenLayer1_12) layer).getWorldGenSeed(), parents[0]));
+        LAYER_CLONERS.put(GenLayerRiverMix.class, (layer, parents) -> new GenLayerRiverMix(((ATGenLayer1_12) layer).getWorldGenSeed(), parents[0], parents[1]));
+        LAYER_CLONERS.put(GenLayerShore.class, (layer, parents) -> new GenLayerShore(((ATGenLayer1_12) layer).getWorldGenSeed(), parents[0]));
+        LAYER_CLONERS.put(GenLayerSmooth.class, (layer, parents) -> new GenLayerSmooth(((ATGenLayer1_12) layer).getWorldGenSeed(), parents[0]));
+        LAYER_CLONERS.put(GenLayerVoronoiZoom.class, (layer, parents) -> new GenLayerVoronoiZoom(((ATGenLayer1_12) layer).getWorldGenSeed(), parents[0]));
+        LAYER_CLONERS.put(GenLayerZoom.class, (layer, parents) -> new GenLayerZoom(((ATGenLayer1_12) layer).getWorldGenSeed(), parents[0]));
+
+        LAYER_CLONERS.put(GenLayerRandomValues.class, (layer, parents) -> new GenLayerRandomValues(((ATGenLayer1_12) layer).getWorldGenSeed(), ((GenLayerRandomValues) layer).limit()));
+    }
+
     public static double weightFactor(double baseHeight) {
         return abs(1.0d / (baseHeight + 2.0d));
     }
@@ -195,6 +222,50 @@ public class BiomeHelper {
         Function<GenLayer, IFastLayer> converter = LAYER_CONVERTERS.get(layer.getClass());
         checkArg(converter != null, "invalid GenLayer class: %s", layer.getClass().getCanonicalName());
         return converter.apply(layer);
+    }
+
+    /**
+     * Clones the given {@link GenLayer}.
+     * <p>
+     * This is an internal method, you probably shouldn't touch this.
+     *
+     * @param layer   the {@link GenLayer}
+     * @param parents the layer's new parents
+     * @return the {@link GenLayer}
+     */
+    public GenLayer cloneLayer(@NonNull GenLayer layer, @NonNull GenLayer[] parents) {
+        BiFunction<GenLayer, GenLayer[], GenLayer> cloner = LAYER_CLONERS.get(layer.getClass());
+        checkArg(cloner != null, "invalid GenLayer class: %s", layer.getClass().getCanonicalName());
+        GenLayer cloned = cloner.apply(layer, parents);
+        ((ATGenLayer1_12) cloned).setWorldGenSeed(((ATGenLayer1_12) layer).getWorldGenSeed());
+        return cloned;
+    }
+
+    /**
+     * Clones the given {@link GenLayer}.
+     *
+     * @param layer the {@link GenLayer} to clone
+     * @return the cloned {@link GenLayer}
+     */
+    public GenLayer cloneLayer(@NonNull GenLayer layer) {
+        return clone0(layer, new IdentityHashMap<>());
+    }
+
+    private GenLayer clone0(@NonNull GenLayer layer, @NonNull Map<GenLayer, GenLayer> cache) {
+        GenLayer cloned = cache.get(layer);
+        if (cloned != null) { //return value from cache if present
+            return cloned;
+        }
+
+        GenLayer[] origParents = getParents(layer);
+        GenLayer[] clonedParents = new GenLayer[origParents.length];
+        for (int i = 0; i < origParents.length; i++) {
+            clonedParents[i] = clone0(origParents[i], cache);
+        }
+
+        cloned = cloneLayer(layer, clonedParents);
+        checkArg(cache.putIfAbsent(layer, cloned) == null, "duplicate layer %s", layer);
+        return cloned;
     }
 
     /**
