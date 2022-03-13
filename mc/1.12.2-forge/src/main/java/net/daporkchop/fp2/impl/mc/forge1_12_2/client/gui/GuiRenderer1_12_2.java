@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -23,9 +23,9 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.client.gui;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.core.client.gui.GuiRenderer;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.gui.ATGuiButton1_12;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.Tessellator;
@@ -159,7 +159,7 @@ public class GuiRenderer1_12_2 implements GuiRenderer {
     @Override
     public void drawButtonBackground(int x, int y, int width, int height, boolean hovered, boolean enabled) {
         int buttonIndex = enabled ? hovered ? 2 : 1 : 0;
-        GuiUtils.drawContinuousTexturedBox(GuiButton.BUTTON_TEXTURES, x, y, 0, buttonIndex * 20 + 46, width, height, 200, 20, 2, 3, 2, 2, 0);
+        GuiUtils.drawContinuousTexturedBox(ATGuiButton1_12.getBUTTON_TEXTURES(), x, y, 0, buttonIndex * 20 + 46, width, height, 200, 20, 2, 3, 2, 2, 0);
     }
 
     @Override

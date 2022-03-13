@@ -37,6 +37,7 @@ import net.daporkchop.fp2.core.server.world.TerrainGeneratorInfo;
 import net.daporkchop.fp2.core.util.threading.workergroup.DefaultWorkerManager;
 import net.daporkchop.fp2.core.util.threading.workergroup.WorkerManager;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.server.ATMinecraftServer1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.server.TerrainGeneratorInfo1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.threading.futureexecutor.ServerThreadMarkedFutureExecutor;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.world.AbstractFarWorld1_12;
@@ -78,7 +79,7 @@ public class FarWorldServer1_12 extends AbstractFarWorld1_12<WorldServer> implem
 
         this.coordLimits = this.fp2().eventBus().fireAndGetFirst(new GetCoordinateLimitsEvent(this)).get();
 
-        this.workerManager = new DefaultWorkerManager(this.world.getMinecraftServer().serverThread, ServerThreadMarkedFutureExecutor.getFor(this.world.getMinecraftServer()));
+        this.workerManager = new DefaultWorkerManager(((ATMinecraftServer1_12) this.world.getMinecraftServer()).getServerThread(), ServerThreadMarkedFutureExecutor.getFor(this.world.getMinecraftServer()));
 
         this.exactFBlockWorldHolder = this.fp2().eventBus().fireAndGetFirst(new GetExactFBlockWorldEvent(this)).get();
 

@@ -18,37 +18,20 @@
  *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_12_2.util;
+package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.world.gen.layer;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.core.util.I18n;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.ATMinecraft1_12;
-import net.minecraft.client.Minecraft;
-
-import java.util.Locale;
+import net.minecraft.world.gen.layer.GenLayer;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.gen.Accessor;
 
 /**
  * @author DaPorkchop_
  */
-@SuppressWarnings("deprecation")
-public class I18n1_12_2 implements I18n {
-    @Override
-    public boolean hasKey(@NonNull String key) {
-        return net.minecraft.util.text.translation.I18n.canTranslate(key);
-    }
+@Mixin(GenLayer.class)
+public interface ATGenLayer1_12 {
+    @Accessor
+    long getWorldGenSeed();
 
-    @Override
-    public String format(@NonNull String key) {
-        return net.minecraft.util.text.translation.I18n.translateToLocal(key);
-    }
-
-    @Override
-    public String format(@NonNull String key, @NonNull Object... args) {
-        return net.minecraft.util.text.translation.I18n.translateToLocalFormatted(key, args);
-    }
-
-    @Override
-    public Locale javaLocale() {
-        return ((ATMinecraft1_12) Minecraft.getMinecraft()).getLanguageManager().getCurrentLanguage().getJavaLocale();
-    }
+    @Accessor
+    GenLayer getParent();
 }

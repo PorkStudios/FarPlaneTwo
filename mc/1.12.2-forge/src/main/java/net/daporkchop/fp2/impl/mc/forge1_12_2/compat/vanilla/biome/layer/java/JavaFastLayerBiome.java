@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -21,6 +21,8 @@
 package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.world.gen.layer.ATGenLayer1_12;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.world.gen.layer.ATGenLayerBiome1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.AbstractFastLayer;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -43,7 +45,7 @@ public class JavaFastLayerBiome extends AbstractFastLayer implements IJavaTransl
     protected static final long GENLAYERBIOME_BIOMES_OFFSET = PUnsafe.pork_getOffset(GenLayerBiome.class, "biomes"); //i can't use an access transformer for this since the field is added by Forge
 
     public static boolean isConstant(@NonNull GenLayerBiome vanilla) {
-        return vanilla.settings != null && vanilla.settings.fixedBiome >= 0;
+        return ((ATGenLayerBiome1_12) vanilla).getSettings() != null && ((ATGenLayerBiome1_12) vanilla).getSettings().fixedBiome >= 0;
     }
 
     protected static int selectWeightedRandom(long state, int[] type) {
@@ -53,7 +55,7 @@ public class JavaFastLayerBiome extends AbstractFastLayer implements IJavaTransl
     protected final int[][] types;
 
     public JavaFastLayerBiome(@NonNull GenLayerBiome vanilla) {
-        super(vanilla.worldGenSeed);
+        super(((ATGenLayer1_12) vanilla).getWorldGenSeed());
         checkArg(!isConstant(vanilla), "cannot construct FastLayerBiome with fixed biome output!");
 
         BiomeManager.BiomeType[] types = BiomeManager.BiomeType.values();
@@ -64,7 +66,8 @@ public class JavaFastLayerBiome extends AbstractFastLayer implements IJavaTransl
             List<BiomeManager.BiomeEntry> biomes = typeBiomes[type.ordinal()];
             boolean modded = BiomeManager.isTypeListModded(type);
 
-            return biomes.stream().flatMapToInt(entry -> {
+            return biomes.stream()
+                    .flatMapToInt(entry -> {
                         int biomeId = FastRegistry.getId(entry.biome);
                         return IntStream.range(0, modded ? entry.itemWeight : entry.itemWeight / 10).map(i -> biomeId);
                     })

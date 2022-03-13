@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -25,6 +25,7 @@ import io.github.opencubicchunks.cubicchunks.cubicgen.ConversionUtils;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomGeneratorSettings;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cwg.noise.CWGNoiseProvider;
 import net.daporkchop.lib.common.misc.string.PStrings;
+import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.world.gen.NoiseGeneratorImproved;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
@@ -67,11 +68,17 @@ public class TestCwgNoiseGen {
     @BeforeClass
     public static void bbb_initFlowNoiseHack() {
         SplittableRandom random = new SplittableRandom(123456789);
+
+        PUnsafe.ensureClassInitialized(NoiseGeneratorImproved.class);
+        double[] GRAD_X = PUnsafe.pork_getStaticField(NoiseGeneratorImproved.class, "GRAD_X").getObject();
+        double[] GRAD_Y = PUnsafe.pork_getStaticField(NoiseGeneratorImproved.class, "GRAD_Y").getObject();
+        double[] GRAD_Z = PUnsafe.pork_getStaticField(NoiseGeneratorImproved.class, "GRAD_Z").getObject();
+
         for (int i = 0; i < Utils.RANDOM_VECTORS.length / 4; i++) {
-            int j = random.nextInt(NoiseGeneratorImproved.GRAD_X.length);
-            Utils.RANDOM_VECTORS[i * 4] = NoiseGeneratorImproved.GRAD_X[j] / 2;
-            Utils.RANDOM_VECTORS[i * 4 + 1] = NoiseGeneratorImproved.GRAD_Y[j] / 2;
-            Utils.RANDOM_VECTORS[i * 4 + 2] = NoiseGeneratorImproved.GRAD_Z[j] / 2;
+            int j = random.nextInt(GRAD_X.length);
+            Utils.RANDOM_VECTORS[i * 4] = GRAD_X[j] / 2;
+            Utils.RANDOM_VECTORS[i * 4 + 1] = GRAD_Y[j] / 2;
+            Utils.RANDOM_VECTORS[i * 4 + 2] = GRAD_Z[j] / 2;
         }
     }
 

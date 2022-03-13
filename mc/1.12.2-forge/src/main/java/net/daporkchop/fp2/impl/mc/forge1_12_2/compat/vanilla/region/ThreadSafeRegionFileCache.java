@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -23,6 +23,7 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.region;
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.util.FastByteArrayOutputStream;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.world.chunk.storage.ATRegionFile1_12;
 import net.daporkchop.lib.common.function.io.IOBiFunction;
 import net.daporkchop.lib.common.function.io.IOFunction;
 import net.daporkchop.lib.common.misc.string.PStrings;
@@ -136,7 +137,7 @@ public class ThreadSafeRegionFileCache {
 
         try {
             //write compressed data to region
-            region.write(chunkX & 0x1F, chunkZ & 0x1F, baos.buf(), baos.size());
+            ((ATRegionFile1_12) region).invokeWrite(chunkX & 0x1F, chunkZ & 0x1F, baos.buf(), baos.size());
         } finally {
             PUnsafe.monitorExit(region);
         }

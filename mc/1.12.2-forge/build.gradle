@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -24,14 +24,21 @@ apply from: "${project.rootDir}/natives/natives.gradle"
 minecraft {
     mappings mappingsChannel, mappingsVersion
 
-    accessTransformer = file("src/main/resources/META-INF/fp2_at.cfg")
-
     runs {
         client {
             workingDirectory "../../run"
+            ideaModule "${project.rootProject.name}${project.path.replace(':', '.')}.main"
 
-            property "forge.logging.markers", "SCAN,REGISTRIES,REGISTRYDUMP"
             property "forge.logging.console.level", "debug"
+
+            property "fp2.debug", "true"
+            property "fp2.gl.opengl.debug", "true"
+
+            mods {
+                fp2 {
+                    source sourceSets.main
+                }
+            }
         }
     }
 }
@@ -157,13 +164,12 @@ shadowJar {
 
     manifest {
         attributes(
-                "MixinConfigs": "mixins.fp2.core.json",
+                "MixinConfigs": "mixins.fp2.at.json,mixins.fp2.core.json,mixins.fp2.fixes.json,mixins.fp2.debug.json",
                 "tweakClass": "org.spongepowered.asm.launch.MixinTweaker",
                 "TweakOrder": 0,
                 "FMLCorePluginContainsFMLMod": "true",
                 "FMLCorePlugin": "net.daporkchop.fp2.impl.mc.forge1_12_2.asm.FP2MixinLoader",
-                "ForceLoadAsMod": "true",
-                "FMLAT": "fp2_at.cfg"
+                "ForceLoadAsMod": "true"
         )
     }
 }

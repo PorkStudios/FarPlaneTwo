@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -21,15 +21,16 @@
 package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.core.util.GlobalAllocators;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.world.biome.ATBiomeProvider1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.FastLayerProvider;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.IFastLayer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.weight.BiomeWeightHelper;
-import net.daporkchop.fp2.core.util.GlobalAllocators;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.minecraft.world.biome.BiomeProvider;
 
-import static net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.VanillaTerrainGenConstants.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
+import static net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.VanillaTerrainGenConstants.*;
 
 /**
  * @author DaPorkchop_
@@ -39,7 +40,7 @@ public class FastThreadSafeBiomeProvider implements IBiomeProvider {
     protected final IFastLayer generationLayer;
 
     public FastThreadSafeBiomeProvider(@NonNull BiomeProvider provider) {
-        IFastLayer[] fastLayers = FastLayerProvider.INSTANCE.makeFast(provider.genBiomes, provider.biomeIndexLayer);
+        IFastLayer[] fastLayers = FastLayerProvider.INSTANCE.makeFast(((ATBiomeProvider1_12) provider).getGenBiomes(), ((ATBiomeProvider1_12) provider).getBiomeIndexLayer());
         this.biomeLayer = fastLayers[1];
         this.generationLayer = fastLayers[0];
     }

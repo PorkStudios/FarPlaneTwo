@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -22,6 +22,7 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.util.threading.futureexecutor;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.util.threading.futureexecutor.AbstractMarkedFutureExecutor;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.server.ATMinecraftServer1_12;
 import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.common.WorldWorkerManager;
 
@@ -44,7 +45,7 @@ public class ServerThreadMarkedFutureExecutor extends AbstractMarkedFutureExecut
      */
     @Deprecated
     public ServerThreadMarkedFutureExecutor(@NonNull MinecraftServer server) {
-        super(server.serverThread);
+        super(((ATMinecraftServer1_12) server).getServerThread());
         this.start();
     }
 

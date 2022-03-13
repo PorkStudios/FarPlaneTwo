@@ -32,6 +32,8 @@ import net.daporkchop.fp2.core.client.gui.GuiScreen;
 import net.daporkchop.fp2.core.client.key.KeyCategory;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.client.player.IFarPlayerClient;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.ATMinecraft1_12;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.gui.ATGuiScreen1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.client.network.IMixinNetHandlerPlayClient;
 import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.client.gui.GuiContext1_12_2;
@@ -110,7 +112,7 @@ public class FP2Client1_12_2 extends FP2Client {
     }
 
     public void postInit() {
-        this.mc.resourceManager.registerReloadListener(new ResourceReloadListener1_12_2());
+        ((ATMinecraft1_12) this.mc).getResourceManager().registerReloadListener(new ResourceReloadListener1_12_2());
     }
 
     @Override
@@ -191,12 +193,12 @@ public class FP2Client1_12_2 extends FP2Client {
     public void initGuiEvent(GuiScreenEvent.InitGuiEvent.Post event) {
         net.minecraft.client.gui.GuiScreen gui = event.getGui();
         if (gui instanceof GuiVideoSettings) { //add fp2 button to video settings menu
-            gui.buttonList.add(new GuiButtonFP2Options1_12_2(0xBEEF, gui.width / 2 + 165, gui.height / 6 - 12, gui));
+            ((ATGuiScreen1_12) gui).getButtonList().add(new GuiButtonFP2Options1_12_2(0xBEEF, gui.width / 2 + 165, gui.height / 6 - 12, gui));
         } else if (FP2_DEBUG) { //we're in debug mode, also add it to the main menu and pause menu
             if (gui instanceof GuiMainMenu) {
-                gui.buttonList.add(new GuiButtonFP2Options1_12_2(0xBEEF, gui.width / 2 + 104, gui.height / 4 + 48, gui));
+                ((ATGuiScreen1_12) gui).getButtonList().add(new GuiButtonFP2Options1_12_2(0xBEEF, gui.width / 2 + 104, gui.height / 4 + 48, gui));
             } else if (gui instanceof GuiIngameMenu) {
-                gui.buttonList.add(new GuiButtonFP2Options1_12_2(0xBEEF, gui.width / 2 + 104, gui.height / 4 + 8, gui));
+                ((ATGuiScreen1_12) gui).getButtonList().add(new GuiButtonFP2Options1_12_2(0xBEEF, gui.width / 2 + 104, gui.height / 4 + 8, gui));
             }
         }
     }

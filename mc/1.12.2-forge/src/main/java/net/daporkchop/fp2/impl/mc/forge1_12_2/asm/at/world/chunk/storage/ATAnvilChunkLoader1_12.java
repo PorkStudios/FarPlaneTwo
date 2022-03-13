@@ -18,37 +18,23 @@
  *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_12_2.util;
+package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.world.chunk.storage;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.core.util.I18n;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.ATMinecraft1_12;
-import net.minecraft.client.Minecraft;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.world.World;
+import net.minecraft.world.chunk.Chunk;
+import net.minecraft.world.chunk.storage.AnvilChunkLoader;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.gen.Invoker;
 
-import java.util.Locale;
+import javax.annotation.Nullable;
 
 /**
  * @author DaPorkchop_
  */
-@SuppressWarnings("deprecation")
-public class I18n1_12_2 implements I18n {
-    @Override
-    public boolean hasKey(@NonNull String key) {
-        return net.minecraft.util.text.translation.I18n.canTranslate(key);
-    }
-
-    @Override
-    public String format(@NonNull String key) {
-        return net.minecraft.util.text.translation.I18n.translateToLocal(key);
-    }
-
-    @Override
-    public String format(@NonNull String key, @NonNull Object... args) {
-        return net.minecraft.util.text.translation.I18n.translateToLocalFormatted(key, args);
-    }
-
-    @Override
-    public Locale javaLocale() {
-        return ((ATMinecraft1_12) Minecraft.getMinecraft()).getLanguageManager().getCurrentLanguage().getJavaLocale();
-    }
+@Mixin(AnvilChunkLoader.class)
+public interface ATAnvilChunkLoader1_12 {
+    @Nullable
+    @Invoker
+    Chunk invokeCheckedReadChunkFromNBT(World world, int x, int z, NBTTagCompound nbt);
 }

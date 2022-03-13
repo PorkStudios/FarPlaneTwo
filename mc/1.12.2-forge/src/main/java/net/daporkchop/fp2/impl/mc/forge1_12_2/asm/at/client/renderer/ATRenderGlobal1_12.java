@@ -18,37 +18,32 @@
  *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_12_2.util;
+package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.renderer;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.core.util.I18n;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.ATMinecraft1_12;
-import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.RenderGlobal;
+import net.minecraft.client.renderer.ViewFrustum;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.gen.Accessor;
 
-import java.util.Locale;
+import java.util.List;
 
 /**
  * @author DaPorkchop_
  */
-@SuppressWarnings("deprecation")
-public class I18n1_12_2 implements I18n {
-    @Override
-    public boolean hasKey(@NonNull String key) {
-        return net.minecraft.util.text.translation.I18n.canTranslate(key);
-    }
+@Mixin(RenderGlobal.class)
+public interface ATRenderGlobal1_12 {
+    @Accessor
+    List<ATRenderGlobal__ContainerLocalRenderInformation1_12> getRenderInfos();
 
-    @Override
-    public String format(@NonNull String key) {
-        return net.minecraft.util.text.translation.I18n.translateToLocal(key);
-    }
+    @Accessor
+    ViewFrustum getViewFrustum();
 
-    @Override
-    public String format(@NonNull String key, @NonNull Object... args) {
-        return net.minecraft.util.text.translation.I18n.translateToLocalFormatted(key, args);
-    }
+    @Accessor
+    double getFrustumUpdatePosX();
 
-    @Override
-    public Locale javaLocale() {
-        return ((ATMinecraft1_12) Minecraft.getMinecraft()).getLanguageManager().getCurrentLanguage().getJavaLocale();
-    }
+    @Accessor
+    double getFrustumUpdatePosY();
+
+    @Accessor
+    double getFrustumUpdatePosZ();
 }

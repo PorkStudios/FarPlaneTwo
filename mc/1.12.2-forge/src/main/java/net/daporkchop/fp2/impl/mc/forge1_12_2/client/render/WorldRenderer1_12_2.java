@@ -25,6 +25,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
 import net.daporkchop.fp2.core.client.render.WorldRenderer;
 import net.daporkchop.fp2.gl.GL;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.renderer.ATEntityRenderer1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.client.renderer.IMixinRenderGlobal;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.client.world.FarWorldClient1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.ResourceProvider1_12_2;
@@ -106,7 +107,7 @@ public class WorldRenderer1_12_2 implements WorldRenderer, AutoCloseable {
 
     @Override
     public Object lightmapTextureId() {
-        return this.mc.entityRenderer.lightmapTexture.getGlTextureId();
+        return ((ATEntityRenderer1_12) this.mc.entityRenderer).getLightmapTexture().getGlTextureId();
     }
 
     @Override

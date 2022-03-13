@@ -28,6 +28,7 @@ import net.daporkchop.fp2.core.util.threading.futureexecutor.MarkedFutureExecuto
 import net.daporkchop.fp2.core.util.threading.workergroup.DefaultWorkerManager;
 import net.daporkchop.fp2.core.util.threading.workergroup.WorkerManager;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.ATMinecraft1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.client.render.WorldRenderer1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.threading.futureexecutor.ClientThreadMarkedFutureExecutor;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.world.AbstractFarWorld1_12;
@@ -49,7 +50,7 @@ public class FarWorldClient1_12_2 extends AbstractFarWorld1_12<WorldClient> impl
         super(fp2, world);
 
         this.coordLimits = coordLimits;
-        this.workerManager = new DefaultWorkerManager(Minecraft.getMinecraft().thread, ClientThreadMarkedFutureExecutor.getFor(Minecraft.getMinecraft()));
+        this.workerManager = new DefaultWorkerManager(((ATMinecraft1_12) Minecraft.getMinecraft()).getThread(), ClientThreadMarkedFutureExecutor.getFor(Minecraft.getMinecraft()));
 
         this.workerManager.rootExecutor().run(MarkedFutureExecutor.DEFAULT_MARKER, () -> this.renderer = new WorldRenderer1_12_2(Minecraft.getMinecraft(), this)).join();
     }

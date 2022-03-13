@@ -30,6 +30,7 @@ import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionBegi
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionEnd;
 import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.network.ATNetHandlerPlayClient1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.client.world.FarWorldClient1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.network.FP2Network1_12_2;
 import net.minecraft.client.network.NetHandlerPlayClient;
@@ -47,7 +48,7 @@ public class FarPlayerClient1_12 extends AbstractFarPlayerClient {
 
     @Override
     protected IFarWorldClient createWorldClient(@NonNull SPacketSessionBegin packet) {
-        return new FarWorldClient1_12_2(this.fp2(), this.netHandlerPlayClient.world, packet.coordLimits());
+        return new FarWorldClient1_12_2(this.fp2(), ((ATNetHandlerPlayClient1_12) this.netHandlerPlayClient).getWorld(), packet.coordLimits());
     }
 
     @CalledFromAnyThread
@@ -59,7 +60,7 @@ public class FarPlayerClient1_12 extends AbstractFarPlayerClient {
     @CalledFromAnyThread
     @Override
     public void fp2_IFarPlayerClient_close() {
-        this.netHandlerPlayClient.netManager.channel().eventLoop().execute(() -> {
+        ((ATNetHandlerPlayClient1_12) this.netHandlerPlayClient).getNetManager().channel().eventLoop().execute(() -> {
             if (this.sessionOpen) {
                 this.handle(new SPacketSessionEnd());
             }
