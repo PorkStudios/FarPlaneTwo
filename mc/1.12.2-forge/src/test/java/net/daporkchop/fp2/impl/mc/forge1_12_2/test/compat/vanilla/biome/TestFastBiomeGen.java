@@ -18,16 +18,18 @@
  *
  */
 
-package compat.vanilla.biome;
+package net.daporkchop.fp2.impl.mc.forge1_12_2.test.compat.vanilla.biome;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.core.util.GlobalAllocators;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.FastLayerProvider;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.IFastLayer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.IPaddedLayer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.IZoomingLayer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.vanilla.GenLayerRandomValues;
-import net.daporkchop.fp2.core.util.GlobalAllocators;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.test.FP2Test;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.test.mixin.JUnitMixinRedirectorExtension;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.minecraft.world.WorldType;
@@ -52,11 +54,11 @@ import net.minecraft.world.gen.layer.GenLayerSmooth;
 import net.minecraft.world.gen.layer.GenLayerVoronoiZoom;
 import net.minecraft.world.gen.layer.GenLayerZoom;
 import net.minecraft.world.gen.layer.IntCache;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
-import util.FP2Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Arrays;
 import java.util.List;
@@ -71,15 +73,16 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@ExtendWith(JUnitMixinRedirectorExtension.class)
+@TestMethodOrder(MethodOrderer.MethodName.class)
 public class TestFastBiomeGen {
-    @BeforeClass
-    public static void init() {
+    @BeforeAll
+    public static void aaa_init() {
         FP2Test.init();
     }
 
-    @BeforeClass
-    public static void ensureNativeBiomeGenIsAvailable() {
+    @BeforeAll
+    public static void bbb_ensureNativeBiomeGenIsAvailable() {
         checkState(FastLayerProvider.INSTANCE.isNative(), "native biome generation must be available for testing!");
     }
 
@@ -211,13 +214,6 @@ public class TestFastBiomeGen {
     }
 
     private void testLayers(GenLayer vanilla, boolean testSingle) {
-        if (true) {
-            //TODO: make biome generation tests work in test environment!
-            // currently they will all fail because it relies on mixin accessors, which obviously aren't being applied here. need to figure out how to make them work anyway
-            System.err.println("biome generation tests are disabled!");
-            return;
-        }
-
         SplittableRandom r = new SplittableRandom(12345L);
 
         vanilla.initWorldGenSeed(r.nextLong());

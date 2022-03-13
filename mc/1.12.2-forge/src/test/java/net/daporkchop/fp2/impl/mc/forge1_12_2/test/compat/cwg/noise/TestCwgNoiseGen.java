@@ -18,20 +18,20 @@
  *
  */
 
-package compat.cwg.noise;
+package net.daporkchop.fp2.impl.mc.forge1_12_2.test.compat.cwg.noise;
 
 import com.flowpowered.noise.Utils;
 import io.github.opencubicchunks.cubicchunks.cubicgen.ConversionUtils;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomGeneratorSettings;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cwg.noise.CWGNoiseProvider;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.test.FP2Test;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.world.gen.NoiseGeneratorImproved;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
-import util.FP2Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
 import java.util.SplittableRandom;
 import java.util.concurrent.CompletableFuture;
@@ -43,29 +43,22 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 /**
  * @author DaPorkchop_
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodOrderer.MethodName.class)
 @SuppressWarnings("deprecation")
 public class TestCwgNoiseGen {
     protected static CWGNoiseProvider.Configured CONFIGURED_JAVA;
     protected static CWGNoiseProvider.Configured CONFIGURED_NATIVE;
 
-    @BeforeClass
-    public static void aaa_ensureNativeNoiseGenIsAvailable() {
+    @BeforeAll
+    public static void aaa_init() {
         FP2Test.init();
-
-        checkState(CWGNoiseProvider.INSTANCE.isNative(), "native noise generation must be available for testing!");
-
-        CustomGeneratorSettings settings = new CustomGeneratorSettings();
-        long seed = 102978420983752L;
-        CONFIGURED_JAVA = CWGNoiseProvider.JAVA_INSTANCE.forSettings(settings, seed);
-        CONFIGURED_NATIVE = CWGNoiseProvider.INSTANCE.forSettings(settings, seed);
     }
 
     /**
      * Copypasta of {@link ConversionUtils#initFlowNoiseHack()}, but accessing the gradient fields in {@link NoiseGeneratorImproved} directly (since the accessor mixin obviously
      * isn't being applied in a unit test environment).
      */
-    @BeforeClass
+    @BeforeAll
     public static void bbb_initFlowNoiseHack() {
         SplittableRandom random = new SplittableRandom(123456789);
 
@@ -80,6 +73,16 @@ public class TestCwgNoiseGen {
             Utils.RANDOM_VECTORS[i * 4 + 1] = GRAD_Y[j] / 2;
             Utils.RANDOM_VECTORS[i * 4 + 2] = GRAD_Z[j] / 2;
         }
+    }
+
+    @BeforeAll
+    public static void ccc_ensureNativeNoiseGenIsAvailable() {
+        checkState(CWGNoiseProvider.INSTANCE.isNative(), "native noise generation must be available for testing!");
+
+        CustomGeneratorSettings settings = new CustomGeneratorSettings();
+        long seed = 102978420983752L;
+        CONFIGURED_JAVA = CWGNoiseProvider.JAVA_INSTANCE.forSettings(settings, seed);
+        CONFIGURED_NATIVE = CWGNoiseProvider.INSTANCE.forSettings(settings, seed);
     }
 
     protected static boolean approxEquals(double a, double b) {
