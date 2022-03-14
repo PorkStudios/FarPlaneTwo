@@ -32,6 +32,7 @@ import net.daporkchop.fp2.core.util.datastructure.Datastructures;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSegtreeSet;
 import net.daporkchop.fp2.core.util.threading.futurecache.IAsyncCache;
 import net.daporkchop.fp2.core.util.threading.lazy.LazyFutureTask;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.world.chunk.storage.ATAnvilChunkLoader1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.world.IMixinWorldServer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.region.ThreadSafeRegionFileCache;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.threading.asyncblockaccess.AsyncCacheNBTBase;
@@ -128,7 +129,7 @@ public class VanillaExactFBlockWorldHolder1_12 implements ExactFBlockWorldHolder
 
         @Override
         protected Chunk parseNBT(@NonNull ChunkPos key, @NonNull Object param, @NonNull NBTTagCompound nbt) {
-            Chunk chunk = VanillaExactFBlockWorldHolder1_12.this.io.checkedReadChunkFromNBT(VanillaExactFBlockWorldHolder1_12.this.world, key.x, key.z, nbt);
+            Chunk chunk = ((ATAnvilChunkLoader1_12) VanillaExactFBlockWorldHolder1_12.this.io).invokeCheckedReadChunkFromNBT(VanillaExactFBlockWorldHolder1_12.this.world, key.x, key.z, nbt);
             return chunk.isTerrainPopulated() ? chunk : null;
         }
 

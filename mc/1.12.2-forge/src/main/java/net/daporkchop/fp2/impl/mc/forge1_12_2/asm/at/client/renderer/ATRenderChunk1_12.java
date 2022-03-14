@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,30 +18,17 @@
  *
  */
 
-package util;
+package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.renderer;
 
-import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.CubicBiome;
-import lombok.experimental.UtilityClass;
-import net.minecraft.init.Bootstrap;
+import net.minecraft.client.renderer.chunk.RenderChunk;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.gen.Accessor;
 
 /**
- * Helper methods used by all FP2 unit tests.
- *
  * @author DaPorkchop_
  */
-@UtilityClass
-public class FP2Test {
-    static {
-        System.setProperty("fp2.test", "true");
-
-        Bootstrap.register();
-        CubicBiome.init();
-    }
-
-    /**
-     * Sets up the environment for running unit tests.
-     */
-    public static void init() {
-        //this method does nothing, but calling it will force this class to be loaded and initialized!
-    }
+@Mixin(RenderChunk.class)
+public interface ATRenderChunk1_12 {
+    @Accessor
+    int getFrameIndex();
 }

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -22,6 +22,8 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.java;
 
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.world.gen.layer.ATGenLayer1_12;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.world.gen.layer.ATGenLayerEdge1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.AbstractFastLayer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.IFastLayer;
 import net.minecraft.world.gen.layer.GenLayerEdge;
@@ -35,15 +37,15 @@ import static net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.BiomeH
 @UtilityClass
 public class JavaFastLayerEdge {
     public static IFastLayer makeFast(@NonNull GenLayerEdge vanilla) {
-        switch (vanilla.mode) {
+        switch (((ATGenLayerEdge1_12) vanilla).getMode()) {
             case COOL_WARM:
-                return new CoolWarm(vanilla.worldGenSeed);
+                return new CoolWarm(((ATGenLayer1_12) vanilla).getWorldGenSeed());
             case HEAT_ICE:
-                return new HeatIce(vanilla.worldGenSeed);
+                return new HeatIce(((ATGenLayer1_12) vanilla).getWorldGenSeed());
             case SPECIAL:
-                return new Special(vanilla.worldGenSeed);
+                return new Special(((ATGenLayer1_12) vanilla).getWorldGenSeed());
             default:
-                throw new IllegalStateException(vanilla.mode.toString());
+                throw new IllegalArgumentException("unknown mode: " + ((ATGenLayerEdge1_12) vanilla).getMode().toString());
         }
     }
 

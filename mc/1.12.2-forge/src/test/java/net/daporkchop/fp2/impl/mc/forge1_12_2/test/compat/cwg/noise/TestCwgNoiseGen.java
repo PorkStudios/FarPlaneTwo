@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,19 +18,20 @@
  *
  */
 
-package compat.cwg.noise;
+package net.daporkchop.fp2.impl.mc.forge1_12_2.test.compat.cwg.noise;
 
 import com.flowpowered.noise.Utils;
 import io.github.opencubicchunks.cubicchunks.cubicgen.ConversionUtils;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomGeneratorSettings;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cwg.noise.CWGNoiseProvider;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.test.FP2Test;
 import net.daporkchop.lib.common.misc.string.PStrings;
+import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.world.gen.NoiseGeneratorImproved;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
-import util.FP2Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
 import java.util.SplittableRandom;
 import java.util.concurrent.CompletableFuture;
@@ -42,37 +43,46 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 /**
  * @author DaPorkchop_
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodOrderer.MethodName.class)
 @SuppressWarnings("deprecation")
 public class TestCwgNoiseGen {
     protected static CWGNoiseProvider.Configured CONFIGURED_JAVA;
     protected static CWGNoiseProvider.Configured CONFIGURED_NATIVE;
 
-    @BeforeClass
-    public static void aaa_ensureNativeNoiseGenIsAvailable() {
+    @BeforeAll
+    public static void aaa_init() {
         FP2Test.init();
-
-        checkState(CWGNoiseProvider.INSTANCE.isNative(), "native noise generation must be available for testing!");
-
-        CustomGeneratorSettings settings = new CustomGeneratorSettings();
-        long seed = 102978420983752L;
-        CONFIGURED_JAVA = CWGNoiseProvider.JAVA_INSTANCE.forSettings(settings, seed);
-        CONFIGURED_NATIVE = CWGNoiseProvider.INSTANCE.forSettings(settings, seed);
     }
 
     /**
      * Copypasta of {@link ConversionUtils#initFlowNoiseHack()}, but accessing the gradient fields in {@link NoiseGeneratorImproved} directly (since the accessor mixin obviously
      * isn't being applied in a unit test environment).
      */
-    @BeforeClass
+    @BeforeAll
     public static void bbb_initFlowNoiseHack() {
         SplittableRandom random = new SplittableRandom(123456789);
+
+        PUnsafe.ensureClassInitialized(NoiseGeneratorImproved.class);
+        double[] GRAD_X = PUnsafe.pork_getStaticField(NoiseGeneratorImproved.class, "GRAD_X").getObject();
+        double[] GRAD_Y = PUnsafe.pork_getStaticField(NoiseGeneratorImproved.class, "GRAD_Y").getObject();
+        double[] GRAD_Z = PUnsafe.pork_getStaticField(NoiseGeneratorImproved.class, "GRAD_Z").getObject();
+
         for (int i = 0; i < Utils.RANDOM_VECTORS.length / 4; i++) {
-            int j = random.nextInt(NoiseGeneratorImproved.GRAD_X.length);
-            Utils.RANDOM_VECTORS[i * 4] = NoiseGeneratorImproved.GRAD_X[j] / 2;
-            Utils.RANDOM_VECTORS[i * 4 + 1] = NoiseGeneratorImproved.GRAD_Y[j] / 2;
-            Utils.RANDOM_VECTORS[i * 4 + 2] = NoiseGeneratorImproved.GRAD_Z[j] / 2;
+            int j = random.nextInt(GRAD_X.length);
+            Utils.RANDOM_VECTORS[i * 4] = GRAD_X[j] / 2;
+            Utils.RANDOM_VECTORS[i * 4 + 1] = GRAD_Y[j] / 2;
+            Utils.RANDOM_VECTORS[i * 4 + 2] = GRAD_Z[j] / 2;
         }
+    }
+
+    @BeforeAll
+    public static void ccc_ensureNativeNoiseGenIsAvailable() {
+        checkState(CWGNoiseProvider.INSTANCE.isNative(), "native noise generation must be available for testing!");
+
+        CustomGeneratorSettings settings = new CustomGeneratorSettings();
+        long seed = 102978420983752L;
+        CONFIGURED_JAVA = CWGNoiseProvider.JAVA_INSTANCE.forSettings(settings, seed);
+        CONFIGURED_NATIVE = CWGNoiseProvider.INSTANCE.forSettings(settings, seed);
     }
 
     protected static boolean approxEquals(double a, double b) {

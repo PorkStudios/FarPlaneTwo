@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -21,6 +21,8 @@
 package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.c;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.world.gen.layer.ATGenLayer1_12;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.world.gen.layer.ATGenLayerBiome1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.BiomeHelperCached;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.java.JavaFastLayerFixedBiome;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.java.JavaLayerProvider;
@@ -57,30 +59,30 @@ public class NativeLayerProvider extends JavaLayerProvider implements BiomeHelpe
     @Deprecated
     public NativeLayerProvider() {
         //vanilla layers
-        this.fastMapperOverrides.put(GenLayerAddIsland.class, layer -> new NativeFastLayerAddIsland(layer.worldGenSeed));
-        this.fastMapperOverrides.put(GenLayerAddMushroomIsland.class, layer -> new NativeFastLayerAddMushroomIsland(layer.worldGenSeed));
-        this.fastMapperOverrides.put(GenLayerAddSnow.class, layer -> new NativeFastLayerAddSnow(layer.worldGenSeed));
+        this.fastMapperOverrides.put(GenLayerAddIsland.class, layer -> new NativeFastLayerAddIsland(((ATGenLayer1_12) layer).getWorldGenSeed()));
+        this.fastMapperOverrides.put(GenLayerAddMushroomIsland.class, layer -> new NativeFastLayerAddMushroomIsland(((ATGenLayer1_12) layer).getWorldGenSeed()));
+        this.fastMapperOverrides.put(GenLayerAddSnow.class, layer -> new NativeFastLayerAddSnow(((ATGenLayer1_12) layer).getWorldGenSeed()));
         this.fastMapperOverrides.put(GenLayerBiome.class, layer -> NativeFastLayerBiome.isConstant((GenLayerBiome) layer)
-                ? new JavaFastLayerFixedBiome(((GenLayerBiome) layer).settings.fixedBiome)
+                ? new JavaFastLayerFixedBiome(((ATGenLayerBiome1_12) layer).getSettings().fixedBiome)
                 : new NativeFastLayerBiome((GenLayerBiome) layer));
-        this.fastMapperOverrides.put(GenLayerBiomeEdge.class, layer -> new NativeFastLayerBiomeEdge(layer.worldGenSeed));
-        this.fastMapperOverrides.put(GenLayerDeepOcean.class, layer -> new NativeFastLayerDeepOcean(layer.worldGenSeed));
+        this.fastMapperOverrides.put(GenLayerBiomeEdge.class, layer -> new NativeFastLayerBiomeEdge(((ATGenLayer1_12) layer).getWorldGenSeed()));
+        this.fastMapperOverrides.put(GenLayerDeepOcean.class, layer -> new NativeFastLayerDeepOcean(((ATGenLayer1_12) layer).getWorldGenSeed()));
         this.fastMapperOverrides.put(GenLayerEdge.class, layer -> NativeFastLayerEdge.makeFast((GenLayerEdge) layer));
-        this.fastMapperOverrides.put(GenLayerFuzzyZoom.class, layer -> new NativeFastLayerFuzzyZoom(layer.worldGenSeed));
-        this.fastMapperOverrides.put(GenLayerHills.class, layer -> new NativeFastLayerHills(layer.worldGenSeed));
-        this.fastMapperOverrides.put(GenLayerIsland.class, layer -> new NativeFastLayerIsland(layer.worldGenSeed));
-        this.fastMapperOverrides.put(GenLayerRareBiome.class, layer -> new NativeFastLayerRareBiome(layer.worldGenSeed));
-        this.fastMapperOverrides.put(GenLayerRemoveTooMuchOcean.class, layer -> new NativeFastLayerRemoveTooMuchOcean(layer.worldGenSeed));
-        this.fastMapperOverrides.put(GenLayerRiver.class, layer -> new NativeFastLayerRiver(layer.worldGenSeed));
-        this.fastMapperOverrides.put(GenLayerRiverInit.class, layer -> new NativeFastLayerRiverInit(layer.worldGenSeed));
-        this.fastMapperOverrides.put(GenLayerRiverMix.class, layer -> new NativeFastLayerRiverMix(layer.worldGenSeed));
-        this.fastMapperOverrides.put(GenLayerShore.class, layer -> new NativeFastLayerShore(layer.worldGenSeed));
-        this.fastMapperOverrides.put(GenLayerSmooth.class, layer -> new NativeFastLayerSmooth(layer.worldGenSeed));
-        this.fastMapperOverrides.put(GenLayerVoronoiZoom.class, layer -> new NativeFastLayerVoronoiZoom(layer.worldGenSeed));
-        this.fastMapperOverrides.put(GenLayerZoom.class, layer -> new NativeFastLayerZoom(layer.worldGenSeed));
+        this.fastMapperOverrides.put(GenLayerFuzzyZoom.class, layer -> new NativeFastLayerFuzzyZoom(((ATGenLayer1_12) layer).getWorldGenSeed()));
+        this.fastMapperOverrides.put(GenLayerHills.class, layer -> new NativeFastLayerHills(((ATGenLayer1_12) layer).getWorldGenSeed()));
+        this.fastMapperOverrides.put(GenLayerIsland.class, layer -> new NativeFastLayerIsland(((ATGenLayer1_12) layer).getWorldGenSeed()));
+        this.fastMapperOverrides.put(GenLayerRareBiome.class, layer -> new NativeFastLayerRareBiome(((ATGenLayer1_12) layer).getWorldGenSeed()));
+        this.fastMapperOverrides.put(GenLayerRemoveTooMuchOcean.class, layer -> new NativeFastLayerRemoveTooMuchOcean(((ATGenLayer1_12) layer).getWorldGenSeed()));
+        this.fastMapperOverrides.put(GenLayerRiver.class, layer -> new NativeFastLayerRiver(((ATGenLayer1_12) layer).getWorldGenSeed()));
+        this.fastMapperOverrides.put(GenLayerRiverInit.class, layer -> new NativeFastLayerRiverInit(((ATGenLayer1_12) layer).getWorldGenSeed()));
+        this.fastMapperOverrides.put(GenLayerRiverMix.class, layer -> new NativeFastLayerRiverMix(((ATGenLayer1_12) layer).getWorldGenSeed()));
+        this.fastMapperOverrides.put(GenLayerShore.class, layer -> new NativeFastLayerShore(((ATGenLayer1_12) layer).getWorldGenSeed()));
+        this.fastMapperOverrides.put(GenLayerSmooth.class, layer -> new NativeFastLayerSmooth(((ATGenLayer1_12) layer).getWorldGenSeed()));
+        this.fastMapperOverrides.put(GenLayerVoronoiZoom.class, layer -> new NativeFastLayerVoronoiZoom(((ATGenLayer1_12) layer).getWorldGenSeed()));
+        this.fastMapperOverrides.put(GenLayerZoom.class, layer -> new NativeFastLayerZoom(((ATGenLayer1_12) layer).getWorldGenSeed()));
 
         //custom layers
-        this.fastMapperOverrides.put(GenLayerRandomValues.class, layer -> new NativeFastLayerRandomValues(layer.worldGenSeed, ((GenLayerRandomValues) layer).limit()));
+        this.fastMapperOverrides.put(GenLayerRandomValues.class, layer -> new NativeFastLayerRandomValues(((ATGenLayer1_12) layer).getWorldGenSeed(), ((GenLayerRandomValues) layer).limit()));
 
         //register self as a BiomeHelperCached reload listener
         BiomeHelperCached.addReloadListener(this);

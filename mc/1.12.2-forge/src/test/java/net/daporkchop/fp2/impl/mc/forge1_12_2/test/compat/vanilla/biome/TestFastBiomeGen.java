@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,16 +18,19 @@
  *
  */
 
-package compat.vanilla.biome;
+package net.daporkchop.fp2.impl.mc.forge1_12_2.test.compat.vanilla.biome;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.core.util.GlobalAllocators;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.BiomeHelper;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.FastLayerProvider;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.IFastLayer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.IPaddedLayer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.IZoomingLayer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.vanilla.GenLayerRandomValues;
-import net.daporkchop.fp2.core.util.GlobalAllocators;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.test.FP2Test;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.test.mixin.JUnitMixinRedirectorExtension;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.minecraft.world.WorldType;
@@ -52,12 +55,13 @@ import net.minecraft.world.gen.layer.GenLayerSmooth;
 import net.minecraft.world.gen.layer.GenLayerVoronoiZoom;
 import net.minecraft.world.gen.layer.GenLayerZoom;
 import net.minecraft.world.gen.layer.IntCache;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
-import util.FP2Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.SplittableRandom;
@@ -71,15 +75,16 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@ExtendWith(JUnitMixinRedirectorExtension.class)
+@TestMethodOrder(MethodOrderer.MethodName.class)
 public class TestFastBiomeGen {
-    @BeforeClass
-    public static void init() {
+    @BeforeAll
+    public static void aaa_init() {
         FP2Test.init();
     }
 
-    @BeforeClass
-    public static void ensureNativeBiomeGenIsAvailable() {
+    @BeforeAll
+    public static void bbb_ensureNativeBiomeGenIsAvailable() {
         checkState(FastLayerProvider.INSTANCE.isNative(), "native biome generation must be available for testing!");
     }
 
@@ -226,33 +231,38 @@ public class TestFastBiomeGen {
             layers = Arrays.copyOf(layers, 1);
         }
 
-        this.testLayers(0, 0, 2, 2, testSingle, vanilla, layers);
-        this.testLayers(-1, -1, 2, 2, testSingle, vanilla, layers);
-        this.testLayers(-10, -10, 21, 21, testSingle, vanilla, layers);
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+
+        futures.add(this.testLayers(0, 0, 2, 2, testSingle, vanilla, layers));
+        futures.add(this.testLayers(-1, -1, 2, 2, testSingle, vanilla, layers));
+        futures.add(this.testLayers(-10, -10, 21, 21, testSingle, vanilla, layers));
 
         for (int i = 0; i < 256; i++) {
-            this.testLayers(r.nextInt(-1000000, 1000000), r.nextInt(-1000000, 1000000),
+            futures.add(this.testLayers(r.nextInt(-1000000, 1000000), r.nextInt(-1000000, 1000000),
                     //workaround for a vanilla bug in GenLayerVoronoiZoom
                     vanilla instanceof GenLayerVoronoiZoom ? 16 : r.nextInt(256) + 1, vanilla instanceof GenLayerVoronoiZoom ? 16 : r.nextInt(256) + 1,
-                    testSingle, vanilla, layers);
+                    testSingle, vanilla, layers));
         }
 
-        this.testLayersMultiGrid(-3, -3, 5, 16, 16, vanilla, layers);
-        this.testLayersMultiGrid((-5664 >> 2) - 2, (-5664 >> 2) - 2, 5, 1 << 3, 21, vanilla, layers);
+        futures.add(this.testLayersMultiGrid(-3, -3, 5, 16, 16, vanilla, layers));
+        futures.add(this.testLayersMultiGrid((-5664 >> 2) - 2, (-5664 >> 2) - 2, 5, 1 << 3, 21, vanilla, layers));
 
         NamedLayer[] paddedLayers = Stream.of(layers).filter(l -> l.layer instanceof IPaddedLayer).toArray(NamedLayer[]::new);
         NamedLayer[] zoomingLayers = Stream.of(layers).filter(l -> l.layer instanceof IZoomingLayer).toArray(NamedLayer[]::new);
         if (paddedLayers.length > 0) { //multigrid for padded layers
-            this.testLayersMultiGrid(-3, -3, 5, 7, 16, vanilla, paddedLayers);
+            futures.add(this.testLayersMultiGrid(-3, -3, 5, 7, 16, vanilla, paddedLayers));
         } else if (zoomingLayers.length > 0) { //multigrid for zooming layers
             int shift = Stream.of(zoomingLayers).mapToInt(l -> ((IZoomingLayer) l.layer).shift()).findAny().getAsInt();
-            this.testLayersMultiGrid(-3, -3, 5, 5 + 2 + (1 << shift), 5, vanilla, zoomingLayers);
+            futures.add(this.testLayersMultiGrid(-3, -3, 5, 5 + 2 + (1 << shift), 5, vanilla, zoomingLayers));
         }
+
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
     }
 
-    private void testLayers(int x, int z, int sizeX, int sizeZ, boolean testSingle, GenLayer vanilla, @NonNull NamedLayer... layers) {
+    private CompletableFuture<Void> testLayers(int x, int z, int sizeX, int sizeZ, boolean testSingle, GenLayer vanilla, @NonNull NamedLayer... layers) {
+        //vanilla reference values
         CompletableFuture<int[]> futureReference = CompletableFuture.supplyAsync(() -> {
-            int[] reference = vanilla.getInts(x, z, sizeX, sizeZ);
+            int[] reference = BiomeHelper.cloneLayer(vanilla).getInts(x, z, sizeX, sizeZ);
             IntCache.resetIntCache();
 
             int[] swapped = new int[sizeX * sizeZ];
@@ -264,12 +274,14 @@ public class TestFastBiomeGen {
             return swapped;
         });
 
+        //fp2 grid queries
         List<CompletableFuture<int[]>> gridFutures = Stream.of(layers).map(layer -> CompletableFuture.supplyAsync(() -> {
             int[] grid = new int[sizeX * sizeZ];
             layer.layer.getGrid(GlobalAllocators.ALLOC_INT.get(), x, z, sizeX, sizeZ, grid);
             return grid;
         })).collect(Collectors.toList());
 
+        //fp2 individual queries
         List<CompletableFuture<int[]>> singleFutures = !testSingle ? null : Stream.of(layers).map(layer -> CompletableFuture.supplyAsync(() -> {
             int[] grid = new int[sizeX * sizeZ];
             IntStream.range(0, sizeX).parallel().forEach(dx -> {
@@ -281,43 +293,52 @@ public class TestFastBiomeGen {
             return grid;
         })).collect(Collectors.toList());
 
-        int[] reference = futureReference.join();
-        for (int j = 0; j < layers.length; j++) {
-            String name = layers[j].name;
+        List<CompletableFuture<?>> outFutures = new ArrayList<>(layers.length << 1);
+        for (int layer = 0; layer < layers.length; layer++) {
+            String name = layers[layer].name;
 
-            int[] grid = gridFutures.get(j).join();
-            for (int i = 0, dx = 0; dx < sizeX; dx++) {
-                for (int dz = 0; dz < sizeZ; dz++, i++) {
-                    int referenceValue = reference[i];
-                    int fastValue = grid[i];
-                    if (referenceValue != fastValue) {
-                        throw new IllegalStateException(PStrings.fastFormat("grid: at (%d, %d): fast (%s): %d != expected: %d", x + dx, z + dz, name, fastValue, referenceValue));
+            outFutures.add(futureReference.thenCombineAsync(gridFutures.get(layer), (reference, grid) -> {
+                for (int i = 0, dx = 0; dx < sizeX; dx++) {
+                    for (int dz = 0; dz < sizeZ; dz++, i++) {
+                        int referenceValue = reference[i];
+                        int fastValue = grid[i];
+                        if (referenceValue != fastValue) {
+                            throw new IllegalStateException(PStrings.fastFormat("grid: at (%d, %d): fast (%s): %d != expected: %d", x + dx, z + dz, name, fastValue, referenceValue));
+                        }
                     }
                 }
-            }
+                return null;
+            }));
         }
-        for (int j = 0; testSingle && j < layers.length; j++) {
-            String name = layers[j].name;
 
-            int[] grid = singleFutures.get(j).join();
-            for (int i = 0, dx = 0; dx < sizeX; dx++) {
-                for (int dz = 0; dz < sizeZ; dz++, i++) {
-                    int referenceValue = reference[i];
-                    int fastValue = grid[i];
-                    if (referenceValue != fastValue) {
-                        throw new IllegalStateException(PStrings.fastFormat("single: at (%d, %d): fast (%s): %d != expected: %d", x + dx, z + dz, name, fastValue, referenceValue));
+        for (int layer = 0; testSingle && layer < layers.length; layer++) {
+            String name = layers[layer].name;
+
+            outFutures.add(futureReference.thenCombineAsync(singleFutures.get(layer), (reference, grid) -> {
+                for (int i = 0, dx = 0; dx < sizeX; dx++) {
+                    for (int dz = 0; dz < sizeZ; dz++, i++) {
+                        int referenceValue = reference[i];
+                        int fastValue = grid[i];
+                        if (referenceValue != fastValue) {
+                            throw new IllegalStateException(PStrings.fastFormat("single: at (%d, %d): fast (%s): %d != expected: %d", x + dx, z + dz, name, fastValue, referenceValue));
+                        }
                     }
                 }
-            }
+                return null;
+            }));
         }
+
+        return CompletableFuture.allOf(outFutures.toArray(new CompletableFuture[0]));
     }
 
-    private void testLayersMultiGrid(int x, int z, int size, int dist, int count, GenLayer vanilla, @NonNull NamedLayer... layers) {
+    private CompletableFuture<Void> testLayersMultiGrid(int x, int z, int size, int dist, int count, GenLayer vanilla, @NonNull NamedLayer... layers) {
+        //vanilla reference values
         CompletableFuture<int[]> futureReference = CompletableFuture.supplyAsync(() -> {
             int[] out = new int[count * count * size * size];
+            GenLayer vanillaCloned = BiomeHelper.cloneLayer(vanilla);
             for (int i = 0, tileX = 0; tileX < count; tileX++) {
                 for (int tileZ = 0; tileZ < count; tileZ++) {
-                    int[] reference = vanilla.getInts(x + tileX * dist, z + tileZ * dist, size, size);
+                    int[] reference = vanillaCloned.getInts(x + tileX * dist, z + tileZ * dist, size, size);
                     IntCache.resetIntCache();
 
                     for (int dx = 0; dx < size; dx++) {
@@ -330,31 +351,36 @@ public class TestFastBiomeGen {
             return out;
         });
 
+        //fp2 multiget queries
         List<CompletableFuture<int[]>> fastFutures = Stream.of(layers).map(layer -> CompletableFuture.supplyAsync(() -> {
             int[] grids = new int[count * count * size * size];
             layer.layer.multiGetGrids(GlobalAllocators.ALLOC_INT.get(), x, z, size, dist, 0, count, grids);
             return grids;
         })).collect(Collectors.toList());
 
-        int[] reference = futureReference.join();
-        for (int j = 0; j < layers.length; j++) {
-            String name = layers[j].name;
+        List<CompletableFuture<?>> outFutures = new ArrayList<>(layers.length);
+        for (int layer = 0; layer < layers.length; layer++) {
+            String name = layers[layer].name;
 
-            int[] grids = fastFutures.get(j).join();
-            for (int i = 0, tileX = 0; tileX < count; tileX++) {
-                for (int tileZ = 0; tileZ < count; tileZ++) {
-                    for (int dx = 0; dx < size; dx++) {
-                        for (int dz = 0; dz < size; dz++, i++) {
-                            int referenceValue = reference[i];
-                            int fastValue = grids[i];
-                            if (referenceValue != fastValue) {
-                                throw new IllegalStateException(PStrings.fastFormat("multigrid: at (%d, %d): fast (%s): %d != expected: %d", x + tileX * dist + dx, z + tileZ * dist + dz, name, fastValue, referenceValue));
+            outFutures.add(futureReference.thenCombineAsync(fastFutures.get(layer), (reference, grids) -> {
+                for (int i = 0, tileX = 0; tileX < count; tileX++) {
+                    for (int tileZ = 0; tileZ < count; tileZ++) {
+                        for (int dx = 0; dx < size; dx++) {
+                            for (int dz = 0; dz < size; dz++, i++) {
+                                int referenceValue = reference[i];
+                                int fastValue = grids[i];
+                                if (referenceValue != fastValue) {
+                                    throw new IllegalStateException(PStrings.fastFormat("multigrid: at (%d, %d): fast (%s): %d != expected: %d", x + tileX * dist + dx, z + tileZ * dist + dz, name, fastValue, referenceValue));
+                                }
                             }
                         }
                     }
                 }
-            }
+                return null;
+            }));
         }
+
+        return CompletableFuture.allOf(outFutures.toArray(new CompletableFuture[0]));
     }
 
     @RequiredArgsConstructor

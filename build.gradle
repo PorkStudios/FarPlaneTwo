@@ -182,8 +182,15 @@ subprojects {
 
         testImplementation project(path: project.path, configuration: "provided_")
 
-        testImplementation "junit:junit:$junitVersion"
+        testImplementation "org.junit.jupiter:junit-jupiter:$junitVersion"
         testCompileOnly "org.projectlombok:lombok:$lombokVersion"
         testAnnotationProcessor "org.projectlombok:lombok:$lombokVersion"
+    }
+
+    test {
+        useJUnitPlatform()
+        testLogging {
+            events "passed", "skipped", "failed"
+        }
     }
 }

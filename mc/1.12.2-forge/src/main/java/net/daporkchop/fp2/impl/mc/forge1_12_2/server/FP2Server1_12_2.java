@@ -33,6 +33,7 @@ import net.daporkchop.fp2.core.server.event.TickEndEvent;
 import net.daporkchop.fp2.core.server.player.IFarPlayerServer;
 import net.daporkchop.fp2.core.util.threading.futureexecutor.FutureExecutor;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.server.ATMinecraftServer1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.network.IMixinNetHandlerPlayServer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.world.IMixinWorldServer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.server.world.FColumn1_12_2;
@@ -97,7 +98,7 @@ public class FP2Server1_12_2 extends FP2Server {
     protected void onConfigChanged(ChangedEvent<FP2Config> event) {
         MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
         if (server != null) { //a server instance is currently present, update the serverConfig instance for every connected player
-            server.addScheduledTask(() -> server.playerList.getPlayers().forEach(player -> ((IMixinNetHandlerPlayServer) player.connection).fp2_farPlayerServer().fp2_IFarPlayer_serverConfig(this.fp2().globalConfig())));
+            server.addScheduledTask(() -> ((ATMinecraftServer1_12) server).getPlayerList().getPlayers().forEach(player -> ((IMixinNetHandlerPlayServer) player.connection).fp2_farPlayerServer().fp2_IFarPlayer_serverConfig(this.fp2().globalConfig())));
         }
     }
 

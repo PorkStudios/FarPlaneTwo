@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -22,6 +22,11 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome;
 
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.world.gen.layer.ATGenLayer1_12;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.world.gen.layer.ATGenLayerBiome1_12;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.world.gen.layer.ATGenLayerEdge1_12;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.world.gen.layer.ATGenLayerHills1_12;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.world.gen.layer.ATGenLayerRiverMix1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.FastLayerProvider;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.IFastLayer;
@@ -77,11 +82,12 @@ import net.minecraftforge.fml.common.Mod;
 
 import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import static java.lang.Math.*;
-import static net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.BiomeHelperCached.*;
 import static net.daporkchop.fp2.core.FP2Core.*;
+import static net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.BiomeHelperCached.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -97,9 +103,10 @@ public class BiomeHelper {
     //gets all direct children of a GenLayer
     public static final Map<Class<? extends GenLayer>, Function<GenLayer, GenLayer[]>> GET_PARENTS = new IdentityHashMap<>();
     public static final Map<Class<? extends GenLayer>, Function<GenLayer, IFastLayer>> LAYER_CONVERTERS = new IdentityHashMap<>();
+    public static final Map<Class<? extends GenLayer>, BiFunction<GenLayer, GenLayer[], GenLayer>> LAYER_CLONERS = new IdentityHashMap<>();
 
     static {
-        Function<GenLayer, GenLayer[]> parent = genLayer -> new GenLayer[]{ genLayer.parent };
+        Function<GenLayer, GenLayer[]> parent = genLayer -> new GenLayer[]{ ((ATGenLayer1_12) genLayer).getParent() };
         Function<GenLayer, GenLayer[]> none = genLayer -> new GenLayer[0];
 
         GET_PARENTS.put(GenLayerAddIsland.class, parent);
@@ -110,15 +117,15 @@ public class BiomeHelper {
         GET_PARENTS.put(GenLayerDeepOcean.class, parent);
         GET_PARENTS.put(GenLayerEdge.class, parent);
         GET_PARENTS.put(GenLayerFuzzyZoom.class, parent);
-        GET_PARENTS.put(GenLayerHills.class, genLayer -> new GenLayer[]{ genLayer.parent, ((GenLayerHills) genLayer).riverLayer });
+        GET_PARENTS.put(GenLayerHills.class, genLayer -> new GenLayer[]{ ((ATGenLayer1_12) genLayer).getParent(), ((ATGenLayerHills1_12) genLayer).getRiverLayer() });
         GET_PARENTS.put(GenLayerIsland.class, none);
         GET_PARENTS.put(GenLayerRareBiome.class, parent);
         GET_PARENTS.put(GenLayerRemoveTooMuchOcean.class, parent);
         GET_PARENTS.put(GenLayerRiver.class, parent);
         GET_PARENTS.put(GenLayerRiverInit.class, parent);
         GET_PARENTS.put(GenLayerRiverMix.class, genLayer -> {
-            GenLayerRiverMix l = (GenLayerRiverMix) genLayer;
-            return new GenLayer[]{ l.biomePatternGeneratorChain, l.riverPatternGeneratorChain };
+            ATGenLayerRiverMix1_12 l = (ATGenLayerRiverMix1_12) genLayer;
+            return new GenLayer[]{ l.getBiomePatternGeneratorChain(), l.getRiverPatternGeneratorChain() };
         });
         GET_PARENTS.put(GenLayerShore.class, parent);
         GET_PARENTS.put(GenLayerSmooth.class, parent);
@@ -129,29 +136,53 @@ public class BiomeHelper {
     }
 
     static {
-        LAYER_CONVERTERS.put(GenLayerAddIsland.class, layer -> new JavaFastLayerAddIsland(layer.worldGenSeed));
-        LAYER_CONVERTERS.put(GenLayerAddMushroomIsland.class, layer -> new JavaFastLayerAddMushroomIsland(layer.worldGenSeed));
-        LAYER_CONVERTERS.put(GenLayerAddSnow.class, layer -> new JavaFastLayerAddSnow(layer.worldGenSeed));
+        LAYER_CONVERTERS.put(GenLayerAddIsland.class, layer -> new JavaFastLayerAddIsland(((ATGenLayer1_12) layer).getWorldGenSeed()));
+        LAYER_CONVERTERS.put(GenLayerAddMushroomIsland.class, layer -> new JavaFastLayerAddMushroomIsland(((ATGenLayer1_12) layer).getWorldGenSeed()));
+        LAYER_CONVERTERS.put(GenLayerAddSnow.class, layer -> new JavaFastLayerAddSnow(((ATGenLayer1_12) layer).getWorldGenSeed()));
         LAYER_CONVERTERS.put(GenLayerBiome.class, layer -> JavaFastLayerBiome.isConstant((GenLayerBiome) layer)
-                ? new JavaFastLayerFixedBiome(((GenLayerBiome) layer).settings.fixedBiome)
+                ? new JavaFastLayerFixedBiome(((ATGenLayerBiome1_12) layer).getSettings().fixedBiome)
                 : new JavaFastLayerBiome((GenLayerBiome) layer));
-        LAYER_CONVERTERS.put(GenLayerBiomeEdge.class, layer -> new JavaFastLayerBiomeEdge(layer.worldGenSeed));
-        LAYER_CONVERTERS.put(GenLayerDeepOcean.class, layer -> new JavaFastLayerDeepOcean(layer.worldGenSeed));
+        LAYER_CONVERTERS.put(GenLayerBiomeEdge.class, layer -> new JavaFastLayerBiomeEdge(((ATGenLayer1_12) layer).getWorldGenSeed()));
+        LAYER_CONVERTERS.put(GenLayerDeepOcean.class, layer -> new JavaFastLayerDeepOcean(((ATGenLayer1_12) layer).getWorldGenSeed()));
         LAYER_CONVERTERS.put(GenLayerEdge.class, layer -> JavaFastLayerEdge.makeFast((GenLayerEdge) layer));
-        LAYER_CONVERTERS.put(GenLayerFuzzyZoom.class, layer -> new JavaFastLayerFuzzyZoom(layer.worldGenSeed));
-        LAYER_CONVERTERS.put(GenLayerHills.class, layer -> new JavaFastLayerHills(layer.worldGenSeed));
-        LAYER_CONVERTERS.put(GenLayerIsland.class, layer -> new JavaFastLayerIsland(layer.worldGenSeed));
-        LAYER_CONVERTERS.put(GenLayerRareBiome.class, layer -> new JavaFastLayerRareBiome(layer.worldGenSeed));
-        LAYER_CONVERTERS.put(GenLayerRemoveTooMuchOcean.class, layer -> new JavaFastLayerRemoveTooMuchOcean(layer.worldGenSeed));
-        LAYER_CONVERTERS.put(GenLayerRiver.class, layer -> new JavaFastLayerRiver(layer.worldGenSeed));
-        LAYER_CONVERTERS.put(GenLayerRiverInit.class, layer -> new JavaFastLayerRiverInit(layer.worldGenSeed));
-        LAYER_CONVERTERS.put(GenLayerRiverMix.class, layer -> new JavaFastLayerRiverMix(layer.worldGenSeed));
-        LAYER_CONVERTERS.put(GenLayerShore.class, layer -> new JavaFastLayerShore(layer.worldGenSeed));
-        LAYER_CONVERTERS.put(GenLayerSmooth.class, layer -> new JavaFastLayerSmooth(layer.worldGenSeed));
-        LAYER_CONVERTERS.put(GenLayerVoronoiZoom.class, layer -> new JavaFastLayerVoronoiZoom(layer.worldGenSeed));
-        LAYER_CONVERTERS.put(GenLayerZoom.class, layer -> new JavaFastLayerZoom(layer.worldGenSeed));
+        LAYER_CONVERTERS.put(GenLayerFuzzyZoom.class, layer -> new JavaFastLayerFuzzyZoom(((ATGenLayer1_12) layer).getWorldGenSeed()));
+        LAYER_CONVERTERS.put(GenLayerHills.class, layer -> new JavaFastLayerHills(((ATGenLayer1_12) layer).getWorldGenSeed()));
+        LAYER_CONVERTERS.put(GenLayerIsland.class, layer -> new JavaFastLayerIsland(((ATGenLayer1_12) layer).getWorldGenSeed()));
+        LAYER_CONVERTERS.put(GenLayerRareBiome.class, layer -> new JavaFastLayerRareBiome(((ATGenLayer1_12) layer).getWorldGenSeed()));
+        LAYER_CONVERTERS.put(GenLayerRemoveTooMuchOcean.class, layer -> new JavaFastLayerRemoveTooMuchOcean(((ATGenLayer1_12) layer).getWorldGenSeed()));
+        LAYER_CONVERTERS.put(GenLayerRiver.class, layer -> new JavaFastLayerRiver(((ATGenLayer1_12) layer).getWorldGenSeed()));
+        LAYER_CONVERTERS.put(GenLayerRiverInit.class, layer -> new JavaFastLayerRiverInit(((ATGenLayer1_12) layer).getWorldGenSeed()));
+        LAYER_CONVERTERS.put(GenLayerRiverMix.class, layer -> new JavaFastLayerRiverMix(((ATGenLayer1_12) layer).getWorldGenSeed()));
+        LAYER_CONVERTERS.put(GenLayerShore.class, layer -> new JavaFastLayerShore(((ATGenLayer1_12) layer).getWorldGenSeed()));
+        LAYER_CONVERTERS.put(GenLayerSmooth.class, layer -> new JavaFastLayerSmooth(((ATGenLayer1_12) layer).getWorldGenSeed()));
+        LAYER_CONVERTERS.put(GenLayerVoronoiZoom.class, layer -> new JavaFastLayerVoronoiZoom(((ATGenLayer1_12) layer).getWorldGenSeed()));
+        LAYER_CONVERTERS.put(GenLayerZoom.class, layer -> new JavaFastLayerZoom(((ATGenLayer1_12) layer).getWorldGenSeed()));
 
-        LAYER_CONVERTERS.put(GenLayerRandomValues.class, layer -> new JavaFastLayerRandomValues(layer.worldGenSeed, ((GenLayerRandomValues) layer).limit()));
+        LAYER_CONVERTERS.put(GenLayerRandomValues.class, layer -> new JavaFastLayerRandomValues(((ATGenLayer1_12) layer).getWorldGenSeed(), ((GenLayerRandomValues) layer).limit()));
+    }
+
+    static {
+        LAYER_CLONERS.put(GenLayerAddIsland.class, (layer, parents) -> new GenLayerAddIsland(((ATGenLayer1_12) layer).getWorldGenSeed(), parents[0]));
+        LAYER_CLONERS.put(GenLayerAddMushroomIsland.class, (layer, parents) -> new GenLayerAddMushroomIsland(((ATGenLayer1_12) layer).getWorldGenSeed(), parents[0]));
+        LAYER_CLONERS.put(GenLayerAddSnow.class, (layer, parents) -> new GenLayerAddSnow(((ATGenLayer1_12) layer).getWorldGenSeed(), parents[0]));
+        LAYER_CLONERS.put(GenLayerBiome.class, (layer, parents) -> new GenLayerBiome(((ATGenLayer1_12) layer).getWorldGenSeed(), parents[0], null, ((ATGenLayerBiome1_12) layer).getSettings()));
+        LAYER_CLONERS.put(GenLayerBiomeEdge.class, (layer, parents) -> new GenLayerBiomeEdge(((ATGenLayer1_12) layer).getWorldGenSeed(), parents[0]));
+        LAYER_CLONERS.put(GenLayerDeepOcean.class, (layer, parents) -> new GenLayerDeepOcean(((ATGenLayer1_12) layer).getWorldGenSeed(), parents[0]));
+        LAYER_CLONERS.put(GenLayerEdge.class, (layer, parents) -> new GenLayerEdge(((ATGenLayer1_12) layer).getWorldGenSeed(), parents[0], ((ATGenLayerEdge1_12) layer).getMode()));
+        LAYER_CLONERS.put(GenLayerFuzzyZoom.class, (layer, parents) -> new GenLayerFuzzyZoom(((ATGenLayer1_12) layer).getWorldGenSeed(), parents[0]));
+        LAYER_CLONERS.put(GenLayerHills.class, (layer, parents) -> new GenLayerHills(((ATGenLayer1_12) layer).getWorldGenSeed(), parents[0], parents[1]));
+        LAYER_CLONERS.put(GenLayerIsland.class, (layer, parents) -> new GenLayerIsland(((ATGenLayer1_12) layer).getWorldGenSeed()));
+        LAYER_CLONERS.put(GenLayerRareBiome.class, (layer, parents) -> new GenLayerRareBiome(((ATGenLayer1_12) layer).getWorldGenSeed(), parents[0]));
+        LAYER_CLONERS.put(GenLayerRemoveTooMuchOcean.class, (layer, parents) -> new GenLayerRemoveTooMuchOcean(((ATGenLayer1_12) layer).getWorldGenSeed(), parents[0]));
+        LAYER_CLONERS.put(GenLayerRiver.class, (layer, parents) -> new GenLayerRiver(((ATGenLayer1_12) layer).getWorldGenSeed(), parents[0]));
+        LAYER_CLONERS.put(GenLayerRiverInit.class, (layer, parents) -> new GenLayerRiverInit(((ATGenLayer1_12) layer).getWorldGenSeed(), parents[0]));
+        LAYER_CLONERS.put(GenLayerRiverMix.class, (layer, parents) -> new GenLayerRiverMix(((ATGenLayer1_12) layer).getWorldGenSeed(), parents[0], parents[1]));
+        LAYER_CLONERS.put(GenLayerShore.class, (layer, parents) -> new GenLayerShore(((ATGenLayer1_12) layer).getWorldGenSeed(), parents[0]));
+        LAYER_CLONERS.put(GenLayerSmooth.class, (layer, parents) -> new GenLayerSmooth(((ATGenLayer1_12) layer).getWorldGenSeed(), parents[0]));
+        LAYER_CLONERS.put(GenLayerVoronoiZoom.class, (layer, parents) -> new GenLayerVoronoiZoom(((ATGenLayer1_12) layer).getWorldGenSeed(), parents[0]));
+        LAYER_CLONERS.put(GenLayerZoom.class, (layer, parents) -> new GenLayerZoom(((ATGenLayer1_12) layer).getWorldGenSeed(), parents[0]));
+
+        LAYER_CLONERS.put(GenLayerRandomValues.class, (layer, parents) -> new GenLayerRandomValues(((ATGenLayer1_12) layer).getWorldGenSeed(), ((GenLayerRandomValues) layer).limit()));
     }
 
     public static double weightFactor(double baseHeight) {
@@ -191,6 +222,50 @@ public class BiomeHelper {
         Function<GenLayer, IFastLayer> converter = LAYER_CONVERTERS.get(layer.getClass());
         checkArg(converter != null, "invalid GenLayer class: %s", layer.getClass().getCanonicalName());
         return converter.apply(layer);
+    }
+
+    /**
+     * Clones the given {@link GenLayer}.
+     * <p>
+     * This is an internal method, you probably shouldn't touch this.
+     *
+     * @param layer   the {@link GenLayer}
+     * @param parents the layer's new parents
+     * @return the {@link GenLayer}
+     */
+    public GenLayer cloneLayer(@NonNull GenLayer layer, @NonNull GenLayer[] parents) {
+        BiFunction<GenLayer, GenLayer[], GenLayer> cloner = LAYER_CLONERS.get(layer.getClass());
+        checkArg(cloner != null, "invalid GenLayer class: %s", layer.getClass().getCanonicalName());
+        GenLayer cloned = cloner.apply(layer, parents);
+        ((ATGenLayer1_12) cloned).setWorldGenSeed(((ATGenLayer1_12) layer).getWorldGenSeed());
+        return cloned;
+    }
+
+    /**
+     * Clones the given {@link GenLayer}.
+     *
+     * @param layer the {@link GenLayer} to clone
+     * @return the cloned {@link GenLayer}
+     */
+    public GenLayer cloneLayer(@NonNull GenLayer layer) {
+        return clone0(layer, new IdentityHashMap<>());
+    }
+
+    private GenLayer clone0(@NonNull GenLayer layer, @NonNull Map<GenLayer, GenLayer> cache) {
+        GenLayer cloned = cache.get(layer);
+        if (cloned != null) { //return value from cache if present
+            return cloned;
+        }
+
+        GenLayer[] origParents = getParents(layer);
+        GenLayer[] clonedParents = new GenLayer[origParents.length];
+        for (int i = 0; i < origParents.length; i++) {
+            clonedParents[i] = clone0(origParents[i], cache);
+        }
+
+        cloned = cloneLayer(layer, clonedParents);
+        checkArg(cache.putIfAbsent(layer, cloned) == null, "duplicate layer %s", layer);
+        return cloned;
     }
 
     /**

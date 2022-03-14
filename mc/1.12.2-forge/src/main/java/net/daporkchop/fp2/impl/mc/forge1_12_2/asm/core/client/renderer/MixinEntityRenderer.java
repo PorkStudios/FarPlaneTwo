@@ -28,6 +28,7 @@ import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.util.GlobalAllocators;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.ATMinecraft1_12;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
@@ -94,12 +95,12 @@ public abstract class MixinEntityRenderer {
                 this.mc.profiler.startSection("fp2_render");
 
                 GlStateManager.disableAlpha();
-                this.mc.textureMapBlocks.setBlurMipmapDirect(false, this.mc.gameSettings.mipmapLevels > 0);
+                ((ATMinecraft1_12) this.mc).getTextureMapBlocks().setBlurMipmapDirect(false, this.mc.gameSettings.mipmapLevels > 0);
 
                 //actually render stuff!
                 renderer.render(this.fp2_globalUniformAttributes(partialTicks));
 
-                this.mc.textureMapBlocks.restoreLastBlurMipmap();
+                ((ATMinecraft1_12) this.mc).getTextureMapBlocks().restoreLastBlurMipmap();
                 GlStateManager.enableAlpha();
 
                 this.mc.profiler.endSection();

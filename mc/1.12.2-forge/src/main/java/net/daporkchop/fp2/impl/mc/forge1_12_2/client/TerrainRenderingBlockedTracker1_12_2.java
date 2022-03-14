@@ -25,6 +25,10 @@ import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.renderer.ATRenderChunk1_12;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.renderer.ATRenderGlobal1_12;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.renderer.ATRenderGlobal__ContainerLocalRenderInformation1_12;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.renderer.ATViewFrustum1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cc.FP2CubicChunks;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.old.client.gl.object.GLBuffer;
 import net.daporkchop.lib.common.math.BinMath;
@@ -97,11 +101,11 @@ public class TerrainRenderingBlockedTracker1_12_2 extends AbstractRefCounted imp
         return (flags & ((1L << SHIFT_VISIBILITY) << (inFace * FACE_COUNT + outFace))) != 0L;
     }
 
-    protected static long renderDirectionFlags(RenderGlobal.ContainerLocalRenderInformation containerLocalRenderInformation) {
+    protected static long renderDirectionFlags(ATRenderGlobal__ContainerLocalRenderInformation1_12 containerLocalRenderInformation) {
         long flags = 0L;
         int shift = SHIFT_RENDER_DIRECTIONS;
         for (EnumFacing inFace : EnumFacing.VALUES) {
-            if (containerLocalRenderInformation.hasDirection(inFace)) {
+            if (containerLocalRenderInformation.invokeHasDirection(inFace)) {
                 flags |= 1L << shift;
             }
             shift++;
@@ -113,8 +117,8 @@ public class TerrainRenderingBlockedTracker1_12_2 extends AbstractRefCounted imp
         return (flags & ((1L << SHIFT_RENDER_DIRECTIONS) << face)) != 0L;
     }
 
-    protected static long inFaceFlags(RenderGlobal.ContainerLocalRenderInformation containerLocalRenderInformation) {
-        return ((long) PorkUtil.fallbackIfNull(containerLocalRenderInformation.facing, EnumFacing.DOWN).ordinal()) << SHIFT_INFACE;
+    protected static long inFaceFlags(ATRenderGlobal__ContainerLocalRenderInformation1_12 containerLocalRenderInformation) {
+        return ((long) PorkUtil.fallbackIfNull(containerLocalRenderInformation.getFacing(), EnumFacing.DOWN).ordinal()) << SHIFT_INFACE;
     }
 
     protected static int getInFace(long flags) {
@@ -157,19 +161,19 @@ public class TerrainRenderingBlockedTracker1_12_2 extends AbstractRefCounted imp
      */
     public void update(@NonNull RenderGlobal renderGlobal, int frameCount) {
         //figure out the maximum extents of all of the renderChunks in the current ViewFrustum
-        ViewFrustum viewFrustum = renderGlobal.viewFrustum;
-        boolean cubic = FP2CubicChunks.isCubicWorld(viewFrustum.world);
-        int sizeX = viewFrustum.countChunksX + 2;
-        int sizeY = viewFrustum.countChunksY + 2;
-        int sizeZ = viewFrustum.countChunksZ + 2;
+        ViewFrustum viewFrustum = ((ATRenderGlobal1_12) renderGlobal).getViewFrustum();
+        boolean cubic = FP2CubicChunks.isCubicWorld(((ATViewFrustum1_12) viewFrustum).getWorld());
+        int sizeX = ((ATViewFrustum1_12) viewFrustum).getCountChunksX() + 2;
+        int sizeY = ((ATViewFrustum1_12) viewFrustum).getCountChunksY() + 2;
+        int sizeZ = ((ATViewFrustum1_12) viewFrustum).getCountChunksZ() + 2;
 
         int radiusX = (sizeX - 1) >> 1;
         int radiusY = (sizeY - 1) >> 1;
         int radiusZ = (sizeZ - 1) >> 1;
 
-        int renderPosX = floorI(renderGlobal.frustumUpdatePosX) - 8;
-        int renderPosY = floorI(renderGlobal.frustumUpdatePosY) - 8;
-        int renderPosZ = floorI(renderGlobal.frustumUpdatePosZ) - 8;
+        int renderPosX = floorI(((ATRenderGlobal1_12) renderGlobal).getFrustumUpdatePosX()) - 8;
+        int renderPosY = floorI(((ATRenderGlobal1_12) renderGlobal).getFrustumUpdatePosY()) - 8;
+        int renderPosZ = floorI(((ATRenderGlobal1_12) renderGlobal).getFrustumUpdatePosZ()) - 8;
 
         int minChunkX = (renderPosX >> 4) - radiusX;
         int maxChunkX = (renderPosX >> 4) + radiusX;
@@ -197,14 +201,14 @@ public class TerrainRenderingBlockedTracker1_12_2 extends AbstractRefCounted imp
         //iterate over all the ContainerLocalRenderInformation instances, because they indicate:
         // - which direction to enter a RenderChunk from
         // - whether or not a RenderChunk is actually selected to be rendered
-        renderGlobal.renderInfos.forEach(containerLocalRenderInformation -> {
+        ((ATRenderGlobal1_12) renderGlobal).getRenderInfos().forEach(containerLocalRenderInformation -> {
             long flags = 0L;
             flags |= renderDirectionFlags(containerLocalRenderInformation);
             flags |= inFaceFlags(containerLocalRenderInformation);
 
             flags |= FLAG_SELECTED;
 
-            BlockPos pos = containerLocalRenderInformation.renderChunk.getPosition();
+            BlockPos pos = containerLocalRenderInformation.getRenderChunk().getPosition();
             int chunkX = pos.getX() >> 4;
             int chunkY = pos.getY() >> 4;
             int chunkZ = pos.getZ() >> 4;
@@ -218,7 +222,7 @@ public class TerrainRenderingBlockedTracker1_12_2 extends AbstractRefCounted imp
         Stream.of(viewFrustum.renderChunks).forEach(renderChunk -> {
             long flags = 0L;
 
-            if (renderChunk.frameIndex == frameCount) {
+            if (((ATRenderChunk1_12) renderChunk).getFrameIndex() == frameCount) {
                 flags |= FLAG_RENDERABLE;
             }
 

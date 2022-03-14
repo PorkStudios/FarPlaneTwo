@@ -22,6 +22,7 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.util;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.util.I18n;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.ATMinecraft1_12;
 import net.minecraft.client.Minecraft;
 
 import java.util.Locale;
@@ -48,6 +49,6 @@ public class I18n1_12_2 implements I18n {
 
     @Override
     public Locale javaLocale() {
-        return Minecraft.getMinecraft().getLanguageManager().getCurrentLanguage().getJavaLocale();
+        return ((ATMinecraft1_12) Minecraft.getMinecraft()).getLanguageManager().getCurrentLanguage().getJavaLocale();
     }
 }
