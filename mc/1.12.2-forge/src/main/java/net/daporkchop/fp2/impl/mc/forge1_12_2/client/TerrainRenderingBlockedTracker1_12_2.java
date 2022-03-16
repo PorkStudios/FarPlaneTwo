@@ -40,6 +40,7 @@ import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 import net.minecraft.client.renderer.RenderGlobal;
 import net.minecraft.client.renderer.ViewFrustum;
 import net.minecraft.client.renderer.chunk.CompiledChunk;
+import net.minecraft.client.renderer.culling.ICamera;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
 
@@ -74,7 +75,11 @@ public class TerrainRenderingBlockedTracker1_12_2 extends AbstractRefCounted imp
     protected static final int SIZE_SELECTED = 1;
     protected static final long FLAG_SELECTED = 1L << SHIFT_SELECTED;
 
-    protected static final int SHIFT_VISIBILITY = SHIFT_SELECTED + SIZE_SELECTED;
+    protected static final int SHIFT_INFRUSTUM = SHIFT_SELECTED + SIZE_SELECTED;
+    protected static final int SIZE_INFRUSTUM = 1;
+    protected static final long FLAG_INFRUSTUM = 1L << SHIFT_INFRUSTUM;
+
+    protected static final int SHIFT_VISIBILITY = SHIFT_INFRUSTUM + SIZE_INFRUSTUM;
     protected static final int SIZE_VISIBILITY = sq(FACE_COUNT);
 
     protected static final int SHIFT_RENDER_DIRECTIONS = SHIFT_VISIBILITY + SIZE_VISIBILITY;
@@ -159,7 +164,7 @@ public class TerrainRenderingBlockedTracker1_12_2 extends AbstractRefCounted imp
     /**
      * Updates this tracker instance based on the state of the given {@link RenderGlobal}.
      */
-    public void update(@NonNull RenderGlobal renderGlobal, int frameCount) {
+    public void update(@NonNull RenderGlobal renderGlobal, @NonNull ICamera camera, int frameCount) {
         //figure out the maximum extents of all of the renderChunks in the current ViewFrustum
         ViewFrustum viewFrustum = ((ATRenderGlobal1_12) renderGlobal).getViewFrustum();
         boolean cubic = FP2CubicChunks.isCubicWorld(((ATViewFrustum1_12) viewFrustum).getWorld());
@@ -226,6 +231,10 @@ public class TerrainRenderingBlockedTracker1_12_2 extends AbstractRefCounted imp
                 flags |= FLAG_RENDERABLE;
             }
 
+            if (camera.isBoundingBoxInFrustum(renderChunk.boundingBox)) {
+                flags |= FLAG_INFRUSTUM;
+            }
+
             CompiledChunk compiledChunk = renderChunk.getCompiledChunk();
             if (compiledChunk != CompiledChunk.DUMMY) {
                 flags |= FLAG_BAKED;
@@ -258,12 +267,9 @@ public class TerrainRenderingBlockedTracker1_12_2 extends AbstractRefCounted imp
         long addr = this.alloc.alloc(sizeBytes);
         PUnsafe.setMemory(addr, sizeBytes, (byte) 0);
 
-        //optifine is kinda weird and i can't be bothered at this point to figure out what the difference is. my shitty workaround is
-        //  just to increase the overlap radius :P
-        final int PADDING_RADIUS = OF ? 3 : 2;
-        for (int x = 1 + PADDING_RADIUS; x < factorChunkX - (2 + PADDING_RADIUS); x++) {
-            for (int y = 1 + PADDING_RADIUS; y < factorChunkY - (2 + PADDING_RADIUS); y++) {
-                for (int z = 1 + PADDING_RADIUS; z < factorChunkZ - (2 + PADDING_RADIUS); z++) {
+        for (int x = 1; x < factorChunkX - 1; x++) {
+            for (int y = 1; y < factorChunkY - 1; y++) {
+                for (int z = 1; z < factorChunkZ - 1; z++) {
                     int idx = (x * factorChunkY + y) * factorChunkZ + z;
                     long centerFlags = srcFlags[idx];
 
@@ -291,7 +297,7 @@ public class TerrainRenderingBlockedTracker1_12_2 extends AbstractRefCounted imp
 
                             //if the neighboring RenderChunk is renderable but neither baked nor selected, it means that the tile would be a valid neighbor except it hasn't yet been baked
                             //  because it's never passed the frustum check. skip these to avoid fp2 terrain drawing over vanilla along the edges of the screen when first loading a world.
-                            if ((neighborFlags & (FLAG_BAKED | FLAG_RENDERABLE | FLAG_SELECTED)) == (FLAG_RENDERABLE)) {
+                            if ((neighborFlags & (FLAG_BAKED | FLAG_RENDERABLE | FLAG_SELECTED | FLAG_INFRUSTUM)) == (FLAG_RENDERABLE)) {
                                 continue;
                             }
 
