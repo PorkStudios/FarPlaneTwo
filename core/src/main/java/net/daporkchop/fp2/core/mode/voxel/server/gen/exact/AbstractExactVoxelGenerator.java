@@ -67,14 +67,14 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
 
         //query all world data at once
         world.getData(stateCache, 0, 1, biomeCache, 0, 1, lightCache, 0, 1,
-                posIn.blockX() + CACHE_MIN, posIn.blockY() + CACHE_MIN, posIn.blockZ() + CACHE_MIN, CACHE_SIZE, CACHE_SIZE, CACHE_SIZE, 1, 1, 1);
+                posIn.blockX() + CACHE_MIN - 1, posIn.blockY() + CACHE_MIN - 1, posIn.blockZ() + CACHE_MIN - 1, CACHE_SIZE, CACHE_SIZE, CACHE_SIZE, 1, 1, 1);
 
         //use bit flags to identify voxel types rather than reading from the world each time to keep innermost loop head tight and cache-friendly
         this.populateTypeMapFromStateMap(stateCache, typeCache);
 
         VoxelData data = new VoxelData();
 
-        data.x = data.y = data.z = POS_ONE;
+        data.x = data.y = data.z = 0;
 
         for (int dx = 0; dx < VT_VOXELS; dx++) {
             for (int dy = 0; dy < VT_VOXELS; dy++) {
