@@ -72,7 +72,7 @@ public abstract class AbstractFarRenderMode<POS extends IFarPos, T extends IFarT
     public IFarGeneratorExact<POS, T> exactGenerator(@NonNull IFarWorldServer world) {
         return fp2().eventBus().fireAndGetFirst(this.exactGeneratorCreationEvent(world))
                 .orElseThrow(() -> new IllegalStateException(PStrings.fastFormat(
-                        "No exact generator available for world %d, mode:%s",
+                        "No exact generator available for world '%s', mode:%s",
                         world.fp2_IFarWorld_dimensionId(),
                         this.name()
                 )));
@@ -89,7 +89,7 @@ public abstract class AbstractFarRenderMode<POS extends IFarPos, T extends IFarT
     public IFarTileProvider<POS, T> tileProvider(@NonNull IFarWorldServer world) {
         return fp2().eventBus().fireAndGetFirst(this.tileProviderCreationEvent(world))
                 .orElseThrow(() -> new IllegalStateException(PStrings.fastFormat(
-                        "No tile provider available for world %d, mode:%s",
+                        "No tile provider available for world '%s', mode:%s",
                         world.fp2_IFarWorld_dimensionId(),
                         this.name()
                 )));

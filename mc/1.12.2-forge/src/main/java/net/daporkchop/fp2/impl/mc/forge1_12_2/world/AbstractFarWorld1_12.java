@@ -23,10 +23,14 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.world;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.common.util.Identifier;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorld;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.world.registry.GameRegistry1_12_2;
+import net.minecraft.world.DimensionType;
 import net.minecraft.world.World;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
@@ -45,8 +49,14 @@ public abstract class AbstractFarWorld1_12<W extends World> implements IFarWorld
     }
 
     @Override
-    public int fp2_IFarWorld_dimensionId() {
-        return this.world.provider.getDimension();
+    public Identifier fp2_IFarWorld_dimensionId() {
+        int dimensionId = this.world.provider.getDimension();
+        DimensionType dimensionType = this.world.provider.getDimensionType();
+
+        //sanity check because i'm not entirely sure what kind of crazy shit mods do with dimension types, and i want to be sure not to screw anything up
+        checkState(dimensionId == dimensionType.getId(), "dimension #%d has invalid ID: '%s' is expected to have ID %d", dimensionId, dimensionType.getName(), dimensionType.getId());
+
+        return Identifier.fromLenient("minecraft", dimensionType.getName());
     }
 
     @Override

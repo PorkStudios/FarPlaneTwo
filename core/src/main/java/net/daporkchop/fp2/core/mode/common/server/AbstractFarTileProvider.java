@@ -96,7 +96,7 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
         this.generatorExact = this.mode().exactGenerator(world);
 
         if (this.generatorRough == null) {
-            fp2().log().warn("no rough %s generator exists for DIM%d (generator=%s)! Falling back to exact generator, this will have serious performance implications.", mode.name(), world.fp2_IFarWorld_dimensionId(), world.fp2_IFarWorldServer_terrainGeneratorInfo().implGenerator());
+            fp2().log().warn("no rough %s generator exists for world '%s' (generator=%s)! Falling back to exact generator, this will have serious performance implications.", mode.name(), world.fp2_IFarWorld_dimensionId(), world.fp2_IFarWorldServer_terrainGeneratorInfo().implGenerator());
             //TODO: make the fallback generator smart! rather than simply getting the chunks from the world, do generation and population in
             // a volatile, in-memory world clone to prevent huge numbers of chunks/cubes from potentially being generated (and therefore saved)
         }
@@ -122,7 +122,7 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
                 this.world.fp2_IFarWorld_workerManager().createChildWorkerGroup()
                         .threads(fp2().globalConfig().performance().terrainThreads())
                         .threadFactory(PThreadFactories.builder().daemon().minPriority().collapsingId()
-                                .name(PStrings.fastFormat("FP2 %s DIM%d Worker #%%d", mode.name(), world.fp2_IFarWorld_dimensionId())).build()),
+                                .name(PStrings.fastFormat("FP2 %s %s Worker #%%d", mode.name(), world.fp2_IFarWorld_dimensionId())).build()),
                 PriorityTask.approxComparator());
 
         this.trackerManager = this.createTracker();
@@ -218,7 +218,7 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
         this.onTickEnd(null);
         this.shutdownUpdateQueue();
 
-        fp2().log().trace("Shutting down storage in DIM%d", this.world.fp2_IFarWorld_dimensionId());
+        fp2().log().trace("Shutting down storage in world '%s'", this.world.fp2_IFarWorld_dimensionId());
         this.storage.close();
     }
 }
