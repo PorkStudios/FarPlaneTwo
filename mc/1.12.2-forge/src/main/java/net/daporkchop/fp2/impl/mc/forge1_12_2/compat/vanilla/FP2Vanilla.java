@@ -80,10 +80,10 @@ public class FP2Vanilla {
     @FEventHandler(name = "vanilla_world_coordinate_limits")
     public IntAxisAlignedBB getCoordinateLimits(GetCoordinateLimitsEvent event) {
         int minY = 0;
-        int maxY = ((World) event.world().fp2_IFarWorld_implWorld()).getHeight() - 1;
+        int maxY = ((World) event.world().fp2_IFarWorld_implWorld()).getHeight();
 
         final int HORIZONTAL_LIMIT = 30_000_000; //TODO: hard-coding this is probably a bad idea, but there don't seem to be any variables or methods i can use to get it
-        return new IntAxisAlignedBB(-HORIZONTAL_LIMIT, minY, -HORIZONTAL_LIMIT, HORIZONTAL_LIMIT, maxY, HORIZONTAL_LIMIT);
+        return new IntAxisAlignedBB(-HORIZONTAL_LIMIT, minY, -HORIZONTAL_LIMIT, HORIZONTAL_LIMIT + 1, maxY, HORIZONTAL_LIMIT + 1);
     }
 
     @FEventHandler(name = "vanilla_world_exact_fblockworld")
