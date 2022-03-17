@@ -96,7 +96,7 @@ public abstract class MixinRenderGlobal implements IMixinRenderGlobal {
             require = 1, allow = 1)
     private void fp2_setupTerrain_updateVanillaRenderability(Entity viewEntity, double partialTicks, ICamera camera, int frameCount, boolean playerSpectator, CallbackInfo ci) {
         this.mc.profiler.startSection("fp2_vanillaRenderabilityTracker_update");
-        this.fp2_vanillaRenderabilityTracker.update(uncheckedCast(this), frameCount);
+        this.fp2_vanillaRenderabilityTracker.update(uncheckedCast(this), camera, frameCount);
         this.mc.profiler.endSection();
     }
 
