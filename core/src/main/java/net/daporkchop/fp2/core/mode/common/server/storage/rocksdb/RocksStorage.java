@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -36,6 +36,9 @@ import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.core.mode.common.server.AbstractFarTileProvider;
 import net.daporkchop.lib.common.misc.file.PFiles;
 import net.daporkchop.lib.common.system.PlatformInfo;
+import net.daporkchop.lib.compression.context.PDeflater;
+import net.daporkchop.lib.compression.context.PInflater;
+import net.daporkchop.lib.compression.zstd.Zstd;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
@@ -177,10 +180,10 @@ public class RocksStorage<POS extends IFarPos, T extends IFarTile> implements IF
         this.world = world;
         this.version = world.mode().storageVersion();
 
-        byte[] token = world.world().fp2_IFarWorld_registry().registryToken().orElseGet(() -> new byte[0]);
+        byte[] token = this.token();
 
-        Path markerFile = storageRoot.resolve("registry_v5");
-        if (PFiles.checkDirectoryExists(storageRoot) && (!PFiles.checkFileExists(markerFile) || !Arrays.equals(token, Files.readAllBytes(markerFile)))) {
+        Path markerFile = storageRoot.resolve("marker_v6");
+        if (PFiles.checkDirectoryExists(storageRoot) && (!PFiles.checkFileExists(markerFile) || !Arrays.equals(token, this.decompress(Files.readAllBytes(markerFile))))) {
             //storage was created with a different registry
             PFiles.rmContentsParallel(storageRoot);
         }
@@ -201,7 +204,52 @@ public class RocksStorage<POS extends IFarPos, T extends IFarTile> implements IF
         this.cfTileData = this.handles.get(3);
         this.cfAnyVanillaExists = this.handles.get(4);
 
-        Files.write(markerFile, token);
+        Files.write(markerFile, this.compress(token));
+    }
+
+    protected byte[] token() {
+        ByteBuf buf = ByteBufAllocator.DEFAULT.buffer();
+        try {
+            buf.writeCharSequence(this.getClass().getTypeName(), StandardCharsets.UTF_8); //class name
+            buf.writeByte(0);
+
+            buf.writeIntLE(6); //storage format version
+            buf.writeIntLE(this.version); //tile format version
+
+            { //registry
+                byte[] registryToken = this.world.world().fp2_IFarWorld_registry().registryToken();
+                buf.writeIntLE(registryToken.length).writeBytes(registryToken);
+            }
+
+            //copy buffer contents to a byte[]
+            byte[] arr = new byte[buf.readableBytes()];
+            buf.readBytes(arr);
+            return arr;
+        } finally {
+            buf.release();
+        }
+    }
+
+    protected byte[] compress(@NonNull byte[] content) {
+        ByteBuf compressed = ByteBufAllocator.DEFAULT.buffer(Zstd.PROVIDER.compressBound(content.length));
+        try (PDeflater deflater = Zstd.PROVIDER.deflater()) {
+            checkState(deflater.compress(Unpooled.wrappedBuffer(content), compressed), "failed to decompress data");
+
+            //copy buffer contents to a byte[]
+            byte[] arr = new byte[compressed.readableBytes()];
+            compressed.readBytes(arr);
+            return arr;
+        } finally {
+            compressed.release();
+        }
+    }
+
+    protected byte[] decompress(@NonNull byte[] content) {
+        byte[] decompressed = new byte[Zstd.PROVIDER.frameContentSize(Unpooled.wrappedBuffer(content))];
+        try (PInflater inflater = Zstd.PROVIDER.inflater()) {
+            checkState(inflater.decompress(Unpooled.wrappedBuffer(content), Unpooled.wrappedBuffer(decompressed).clear()));
+        }
+        return decompressed;
     }
 
     @Override

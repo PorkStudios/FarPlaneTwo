@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -34,7 +34,6 @@ import net.minecraft.block.state.IBlockState;
 import net.minecraft.world.biome.Biome;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Optional;
 import java.util.stream.IntStream;
 import java.util.stream.StreamSupport;
 
@@ -98,11 +97,13 @@ public final class GameRegistry1_12_2 implements FGameRegistry {
     }
 
     @Override
-    public Optional<byte[]> registryToken() {
+    public byte[] registryToken() {
         ByteBuf buf = ByteBufAllocator.DEFAULT.buffer();
         try {
             //serialize the registry
             buf.writeCharSequence(this.getClass().getTypeName(), StandardCharsets.UTF_8); //class name
+            buf.writeByte(0);
+
             for (Biome biome : this.idsToBiomes) { //biomes
                 buf.writeCharSequence(biome.getRegistryName().toString(), StandardCharsets.UTF_8);
                 buf.writeByte(0);
@@ -115,7 +116,7 @@ public final class GameRegistry1_12_2 implements FGameRegistry {
             //copy buffer contents to a byte[]
             byte[] arr = new byte[buf.readableBytes()];
             buf.readBytes(arr);
-            return Optional.of(arr);
+            return arr;
         } finally {
             buf.release();
         }
