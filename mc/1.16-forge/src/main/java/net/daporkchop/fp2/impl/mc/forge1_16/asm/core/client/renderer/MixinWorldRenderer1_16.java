@@ -116,7 +116,7 @@ public abstract class MixinWorldRenderer1_16 implements IMixinWorldRenderer1_16 
             require = 1, allow = 1)
     private void fp2_setupRender_updateVanillaRenderability(ActiveRenderInfo info, ClippingHelper clippingHelper, boolean useCapturedFrustum, int frameCount, boolean playerSpectator, CallbackInfo ci) {
         this.minecraft.getProfiler().push("fp2_vanillaRenderabilityTracker_update");
-        this.fp2_vanillaRenderabilityTracker.update(uncheckedCast(this), frameCount);
+        this.fp2_vanillaRenderabilityTracker.update(uncheckedCast(this), clippingHelper, frameCount);
         this.minecraft.getProfiler().pop();
     }
 

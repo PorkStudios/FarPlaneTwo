@@ -38,6 +38,7 @@ import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 import net.minecraft.client.renderer.ViewFrustum;
 import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
+import net.minecraft.client.renderer.culling.ClippingHelper;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 
@@ -71,7 +72,11 @@ public class TerrainRenderingBlockedTracker1_16 extends AbstractRefCounted imple
     protected static final int SIZE_SELECTED = 1;
     protected static final long FLAG_SELECTED = 1L << SHIFT_SELECTED;
 
-    protected static final int SHIFT_VISIBILITY = SHIFT_SELECTED + SIZE_SELECTED;
+    protected static final int SHIFT_INFRUSTUM = SHIFT_SELECTED + SIZE_SELECTED;
+    protected static final int SIZE_INFRUSTUM = 1;
+    protected static final long FLAG_INFRUSTUM = 1L << SHIFT_INFRUSTUM;
+
+    protected static final int SHIFT_VISIBILITY = SHIFT_INFRUSTUM + SIZE_INFRUSTUM;
     protected static final int SIZE_VISIBILITY = sq(FACE_COUNT);
 
     protected static final int SHIFT_RENDER_DIRECTIONS = SHIFT_VISIBILITY + SIZE_VISIBILITY;
@@ -156,7 +161,7 @@ public class TerrainRenderingBlockedTracker1_16 extends AbstractRefCounted imple
     /**
      * Updates this tracker instance based on the state of the given {@link WorldRenderer}.
      */
-    public void update(@NonNull WorldRenderer worldRenderer, int frameCount) {
+    public void update(@NonNull WorldRenderer worldRenderer, @NonNull ClippingHelper clippingHelper, int frameCount) {
         //figure out the maximum extents of all of the renderChunks in the current ViewFrustum
         ViewFrustum viewFrustum = ((ATWorldRenderer1_16) worldRenderer).getViewArea();
         int sizeX = ((ATViewFrustum1_16) viewFrustum).getChunkGridSizeX() + 2;
@@ -222,6 +227,10 @@ public class TerrainRenderingBlockedTracker1_16 extends AbstractRefCounted imple
                 flags |= FLAG_RENDERABLE;
             }
 
+            if (clippingHelper.isVisible(renderChunk.bb)) {
+                flags |= FLAG_INFRUSTUM;
+            }
+
             ChunkRenderDispatcher.CompiledChunk compiledChunk = renderChunk.getCompiledChunk();
             if (compiledChunk != ChunkRenderDispatcher.CompiledChunk.UNCOMPILED) {
                 flags |= FLAG_BAKED;
@@ -256,10 +265,9 @@ public class TerrainRenderingBlockedTracker1_16 extends AbstractRefCounted imple
 
         //optifine is kinda weird and i can't be bothered at this point to figure out what the difference is. my shitty workaround is
         //  just to increase the overlap radius :P
-        final int PADDING_RADIUS = OFHelper1_16.OF ? 3 : 2;
-        for (int x = 1 + PADDING_RADIUS; x < factorChunkX - (2 + PADDING_RADIUS); x++) {
-            for (int y = 1 + PADDING_RADIUS; y < factorChunkY - (2 + PADDING_RADIUS); y++) {
-                for (int z = 1 + PADDING_RADIUS; z < factorChunkZ - (2 + PADDING_RADIUS); z++) {
+        for (int x = 1; x < factorChunkX - 1; x++) {
+            for (int y = 1; y < factorChunkY - 1; y++) {
+                for (int z = 1; z < factorChunkZ - 1; z++) {
                     int idx = (x * factorChunkY + y) * factorChunkZ + z;
                     long centerFlags = srcFlags[idx];
 
@@ -287,7 +295,7 @@ public class TerrainRenderingBlockedTracker1_16 extends AbstractRefCounted imple
 
                             //if the neighboring RenderChunk is renderable but neither baked nor selected, it means that the tile would be a valid neighbor except it hasn't yet been baked
                             //  because it's never passed the frustum check. skip these to avoid fp2 terrain drawing over vanilla along the edges of the screen when first loading a world.
-                            if ((neighborFlags & (FLAG_BAKED | FLAG_RENDERABLE | FLAG_SELECTED)) == (FLAG_RENDERABLE)) {
+                            if ((neighborFlags & (FLAG_BAKED | FLAG_RENDERABLE | FLAG_SELECTED | FLAG_INFRUSTUM)) == (FLAG_RENDERABLE)) {
                                 continue;
                             }
 
