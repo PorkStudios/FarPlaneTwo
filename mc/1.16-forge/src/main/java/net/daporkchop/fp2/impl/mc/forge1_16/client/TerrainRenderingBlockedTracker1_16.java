@@ -42,6 +42,7 @@ import net.minecraft.client.renderer.culling.ClippingHelper;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.common.util.TypeSize.*;
@@ -59,6 +60,10 @@ public class TerrainRenderingBlockedTracker1_16 extends AbstractRefCounted imple
 
     protected static final Direction[] DIRECTIONS = Direction.values();
     protected static final int FACE_COUNT = DIRECTIONS.length;
+
+    protected static final int[] FACE_OFFSETS = Stream.of(DIRECTIONS)
+            .flatMapToInt(direction -> IntStream.of(direction.getStepX(), direction.getStepY(), direction.getStepZ()))
+            .toArray();
 
     protected static final int SHIFT_BAKED = 0;
     protected static final int SIZE_BAKED = 1;
@@ -83,13 +88,13 @@ public class TerrainRenderingBlockedTracker1_16 extends AbstractRefCounted imple
     protected static final int SIZE_RENDER_DIRECTIONS = FACE_COUNT;
 
     protected static final int SHIFT_INFACE = SHIFT_RENDER_DIRECTIONS + SIZE_RENDER_DIRECTIONS;
-    protected static final int SIZE_INFACE = BinMath.getNumBitsNeededFor(FACE_COUNT - 1);
+    protected static final int SIZE_INFACE = BinMath.getNumBitsNeededFor((FACE_COUNT + 1) - 1);
 
     protected static long visibilityFlags(ChunkRenderDispatcher.CompiledChunk compiledChunk) {
         long flags = 0L;
         int shift = SHIFT_VISIBILITY;
-        for (Direction inFace : DIRECTIONS) {
-            for (Direction outFace : DIRECTIONS) {
+        for (Direction outFace : DIRECTIONS) {
+            for (Direction inFace : DIRECTIONS) {
                 if (compiledChunk.facesCanSeeEachother(inFace, outFace)) {
                     flags |= 1L << shift;
                 }
@@ -99,8 +104,16 @@ public class TerrainRenderingBlockedTracker1_16 extends AbstractRefCounted imple
         return flags;
     }
 
-    protected static boolean isVisible(long flags, int inFace, int outFace) {
-        return (flags & ((1L << SHIFT_VISIBILITY) << (inFace * FACE_COUNT + outFace))) != 0L;
+    protected static boolean isVisible(long flags, int inFace, int outFace, int chunkX, int chunkY, int chunkZ, int minChunkX, int maxChunkX, int minChunkY, int maxChunkY, int minChunkZ, int maxChunkZ) {
+        //if the neighbor would be outside the renderable area, it isn't visible even if the flags indicate that it would be
+        if (chunkX + FACE_OFFSETS[outFace * 3 + 0] < minChunkX || chunkX + FACE_OFFSETS[outFace * 3 + 0] >= maxChunkX
+            || chunkY + FACE_OFFSETS[outFace * 3 + 1] < minChunkY || chunkY + FACE_OFFSETS[outFace * 3 + 1] >= maxChunkY
+            || chunkZ + FACE_OFFSETS[outFace * 3 + 2] < minChunkZ || chunkZ + FACE_OFFSETS[outFace * 3 + 2] >= maxChunkZ) {
+            return false;
+        }
+
+        return inFace < -100 //if inFace is invalid (i.e. sourceDirection was null), all directions are visible
+               || (flags & ((1L << SHIFT_VISIBILITY) << (outFace * FACE_COUNT + inFace))) != 0L;
     }
 
     protected static long renderDirectionFlags(ATWorldRenderer__LocalRenderInformationContainer1_16 containerLocalRenderInformation) {
@@ -120,11 +133,16 @@ public class TerrainRenderingBlockedTracker1_16 extends AbstractRefCounted imple
     }
 
     protected static long inFaceFlags(ATWorldRenderer__LocalRenderInformationContainer1_16 containerLocalRenderInformation) {
-        return ((long) PorkUtil.fallbackIfNull(containerLocalRenderInformation.getSourceDirection(), Direction.DOWN).ordinal()) << SHIFT_INFACE;
+        Direction direction = containerLocalRenderInformation.getSourceDirection();
+        if (direction != null) {
+            return (direction.ordinal() + 1L) << SHIFT_INFACE;
+        } else { //direction is null, meaning this is the origin chunk section
+            return 0L; //return an invalid face index, which will become negative when decoded
+        }
     }
 
     protected static int getInFace(long flags) {
-        return ((int) (flags >>> SHIFT_INFACE)) & ((1 << SIZE_INFACE) - 1);
+        return (((int) (flags >>> SHIFT_INFACE)) & ((1 << SIZE_INFACE) - 1)) - 1;
     }
 
     protected static int getOppositeFace(int face) {
@@ -164,39 +182,36 @@ public class TerrainRenderingBlockedTracker1_16 extends AbstractRefCounted imple
     public void update(@NonNull WorldRenderer worldRenderer, @NonNull ClippingHelper clippingHelper, int frameCount) {
         //figure out the maximum extents of all of the renderChunks in the current ViewFrustum
         ViewFrustum viewFrustum = ((ATWorldRenderer1_16) worldRenderer).getViewArea();
-        int sizeX = ((ATViewFrustum1_16) viewFrustum).getChunkGridSizeX() + 2;
-        int sizeY = ((ATViewFrustum1_16) viewFrustum).getChunkGridSizeY() + 2;
-        int sizeZ = ((ATViewFrustum1_16) viewFrustum).getChunkGridSizeZ() + 2;
-
-        int radiusX = (sizeX - 1) >> 1;
-        int radiusY = (sizeY - 1) >> 1;
-        int radiusZ = (sizeZ - 1) >> 1;
+        boolean cubic = false;
+        int sizeX = ((ATViewFrustum1_16) viewFrustum).getChunkGridSizeX();
+        int sizeY = ((ATViewFrustum1_16) viewFrustum).getChunkGridSizeY();
+        int sizeZ = ((ATViewFrustum1_16) viewFrustum).getChunkGridSizeZ();
 
         int renderPosX = floorI(((ATWorldRenderer1_16) worldRenderer).getLastCameraX()) - 8;
         int renderPosY = floorI(((ATWorldRenderer1_16) worldRenderer).getLastCameraY()) - 8;
         int renderPosZ = floorI(((ATWorldRenderer1_16) worldRenderer).getLastCameraZ()) - 8;
 
-        int minChunkX = (renderPosX >> 4) - radiusX;
-        int maxChunkX = (renderPosX >> 4) + radiusX;
+        int minChunkX = asrCeil(renderPosX - (sizeX << 4 >> 1), 4);
+        int maxChunkX = asrCeil(renderPosX + (sizeX << 4 >> 1), 4);
         int minChunkY;
         int maxChunkY;
-        int minChunkZ = (renderPosZ >> 4) - radiusZ;
-        int maxChunkZ = (renderPosZ >> 4) + radiusZ;
+        int minChunkZ = asrCeil(renderPosZ - (sizeZ << 4 >> 1), 4);
+        int maxChunkZ = asrCeil(renderPosZ + (sizeZ << 4 >> 1), 4);
 
-        if (false) { //cubic chunks
-            minChunkY = (renderPosY >> 4) - radiusY;
-            maxChunkY = (renderPosY >> 4) + radiusY;
+        if (cubic) {
+            minChunkY = asrCeil(renderPosY - (sizeY << 4 >> 1), 4);
+            maxChunkY = asrCeil(renderPosY + (sizeY << 4 >> 1), 4);
         } else {
             minChunkY = 0;
             maxChunkY = 16;
         }
 
-        int offsetChunkX = -minChunkX + 1;
-        int offsetChunkY = -minChunkY + 1;
-        int offsetChunkZ = -minChunkZ + 1;
-        int factorChunkX = maxChunkX - minChunkX + 3;
-        int factorChunkY = maxChunkY - minChunkY + 3;
-        int factorChunkZ = maxChunkZ - minChunkZ + 3;
+        int offsetChunkX = -minChunkX;
+        int offsetChunkY = -minChunkY;
+        int offsetChunkZ = -minChunkZ;
+        int factorChunkX = maxChunkX - minChunkX;
+        int factorChunkY = maxChunkY - minChunkY;
+        int factorChunkZ = maxChunkZ - minChunkZ;
 
         long[] srcFlags = new long[factorChunkX * factorChunkY * factorChunkZ];
         //iterate over all the ContainerLocalRenderInformation instances, because they indicate:
@@ -263,11 +278,24 @@ public class TerrainRenderingBlockedTracker1_16 extends AbstractRefCounted imple
         long addr = this.alloc.alloc(sizeBytes);
         PUnsafe.setMemory(addr, sizeBytes, (byte) 0);
 
-        //optifine is kinda weird and i can't be bothered at this point to figure out what the difference is. my shitty workaround is
-        //  just to increase the overlap radius :P
-        for (int x = 1; x < factorChunkX - 1; x++) {
-            for (int y = 1; y < factorChunkY - 1; y++) {
-                for (int z = 1; z < factorChunkZ - 1; z++) {
+        int scanMinX = 1;
+        int scanMaxX = factorChunkX - 1;
+        int scanMinY;
+        int scanMaxY;
+        int scanMinZ = 1;
+        int scanMaxZ = factorChunkZ - 1;
+
+        if (cubic) {
+            scanMinY = 1;
+            scanMaxY = factorChunkY - 1;
+        } else {
+            scanMinY = 0;
+            scanMaxY = 16;
+        }
+
+        for (int x = scanMinX; x < scanMaxX; x++) {
+            for (int y = scanMinY; y < scanMaxY; y++) {
+                for (int z = scanMinZ; z < scanMaxZ; z++) {
                     int idx = (x * factorChunkY + y) * factorChunkZ + z;
                     long centerFlags = srcFlags[idx];
 
@@ -287,7 +315,7 @@ public class TerrainRenderingBlockedTracker1_16 extends AbstractRefCounted imple
                             }
 
                             //the neighboring RenderChunk isn't visible from the direction that the current RenderChunk was entered from, skip it
-                            if (!isVisible(centerFlags, getOppositeFace(inFace), outFace)) {
+                            if (!isVisible(centerFlags, getOppositeFace(inFace), outFace, x - offsetChunkX, y - offsetChunkY, z - offsetChunkZ, minChunkX, maxChunkX, minChunkY, maxChunkY, minChunkZ, maxChunkZ)) {
                                 continue;
                             }
 
