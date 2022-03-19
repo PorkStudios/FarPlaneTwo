@@ -21,9 +21,10 @@
 package net.daporkchop.fp2.api.world;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 
-import static net.daporkchop.lib.common.util.PValidation.*;
+import java.util.stream.Stream;
 
 /**
  * A read-only world consisting of voxels at integer coordinates, where each voxel contains the following information:<br>
@@ -61,6 +62,10 @@ public interface FBlockWorld extends AutoCloseable {
     @Override
     void close();
 
+    //
+    // STATIC WORLD INFORMATION
+    //
+
     /**
      * @return the {@link FGameRegistry} instance used by this world
      */
@@ -72,10 +77,26 @@ public interface FBlockWorld extends AutoCloseable {
     boolean generationAllowed();
 
     /**
+     * Gets the AABB in which this world contains data.
+     * <p>
+     * This is not the volume in which queries may be made, but rather the volume in which valid data may be returned. Queries may be made at any valid 32-bit integer coordinates,
+     * however all queries outside of the data limits will return some predetermined value.
+     *
+     * @return the AABB in which this world contains data
+     */
+    IntAxisAlignedBB dataLimits();
+
+    //
+    // DATA AVAILABILITY
+    //
+
+    /**
      * Checks whether or not <strong>any</strong> data in the given AABB is known.
      * <p>
      * For worlds which allow generating unknown data, data which could be generated on-demand does not count (as it would always return {@code null}, and therefore be
      * rather useless).
+     * <p>
+     * Any points in the given AABB which extend outside of the world's data limits (as defined by {@link #dataLimits()}) are ignored.
      *
      * @param minX the minimum X coordinate (inclusive)
      * @param minY the minimum Y coordinate (inclusive)
@@ -88,6 +109,65 @@ public interface FBlockWorld extends AutoCloseable {
     boolean containsAnyData(int minX, int minY, int minZ, int maxX, int maxY, int maxZ);
 
     /**
+     * Checks whether or not <strong>any</strong> data in the given AABB is known.
+     *
+     * @see #containsAnyData(int, int, int, int, int, int)
+     */
+    default boolean containsAnyData(@NonNull IntAxisAlignedBB bb) {
+        return this.containsAnyData(bb.minX(), bb.minY(), bb.minZ(), bb.maxX(), bb.maxY(), bb.maxZ());
+    }
+
+    /**
+     * Checks whether or not <strong>any</strong> data in any of the given AABBs is known.
+     *
+     * @see #containsAnyData(int, int, int, int, int, int)
+     */
+    default boolean containsAnyData(@NonNull Stream<IntAxisAlignedBB> bbs) {
+        return bbs.anyMatch(this::containsAnyData);
+    }
+
+    /**
+     * Gets the AABB in which block data is guaranteed to be known if all the block data in the given AABB is known.
+     * <p>
+     * What this method actually does is return the volume which is guaranteed to be generated if every point in the given AABB is generated. In other words, if generation is
+     * disallowed and a query to every point in the given AABB would succeed (i.e. wouldn't throw {@link GenerationNotAllowedException}), it is safe to assume that a query to
+     * any point in the AABB(s) returned by this method would succeed.
+     * <p>
+     * If the world is broken up into smaller pieces (chunks/cubes/columns/shards/whatever-you-want-to-call-them), accessing block data requires these pieces to be loaded
+     * into memory. Depending on the size of pieces, the size of the query, and the query's alignment relative to the pieces it would load, much of the loaded data could
+     * end up unused. This method provides a way for users to retrieve the volume of data which would actually be accessible for a given query, therefore allowing users to
+     * increase their query size to minimize wasted resources. Since a single block in a piece being generated means that all of the data in the piece has been generated,
+     * it is obviously safe to issue a query anywhere in the piece without causing issues.
+     * <p>
+     * Note that the AABB(s) returned by this method may extend beyond the world's {@link #dataLimits() data limits}.
+     *
+     * @param minX the minimum X coordinate (inclusive)
+     * @param minY the minimum Y coordinate (inclusive)
+     * @param minZ the minimum Z coordinate (inclusive)
+     * @param maxX the maximum X coordinate (exclusive)
+     * @param maxY the maximum Y coordinate (exclusive)
+     * @param maxZ the maximum Z coordinate (exclusive)
+     * @return the volume intersecting the given AABB which are guaranteed to be known if all the block data in the given AABB is known
+     */
+    default IntAxisAlignedBB guaranteedDataAvailableVolume(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+        //default: make no assumptions about internal data representation, return exactly the queried bounding box
+        return new IntAxisAlignedBB(minX, minY, minZ, maxX, maxY, maxZ);
+    }
+
+    /**
+     * Gets the AABB in which block data is guaranteed to be known if all the block data in the given AABB is known.
+     *
+     * @see #guaranteedDataAvailableVolume(int, int, int, int, int, int)
+     */
+    default IntAxisAlignedBB guaranteedDataAvailableVolume(@NonNull IntAxisAlignedBB bb) {
+        return this.guaranteedDataAvailableVolume(bb.minX(), bb.minY(), bb.minZ(), bb.maxX(), bb.maxY(), bb.maxZ());
+    }
+
+    //
+    // TYPE-SPECIFIC DATA QUERIES: STATES
+    //
+
+    /**
      * Gets the state at the position described by the given coordinates.
      *
      * @param x the X coordinate
@@ -97,6 +177,12 @@ public interface FBlockWorld extends AutoCloseable {
      * @throws GenerationNotAllowedException if the data at the given coordinates is not generated and this world doesn't allow generation
      */
     int getState(int x, int y, int z) throws GenerationNotAllowedException;
+
+    default void getStates(
+            @NonNull int[] dst, int dstOff, int dstStride,
+            int minX, int minY, int minZ, int maxX, int maxY, int maxZ) throws GenerationNotAllowedException {
+        this.getData(dst, dstOff, dstStride, null, 0, 0, null, 0, 0, minX, minY, minZ, maxX, maxY, maxZ);
+    }
 
     default void getStates(
             @NonNull int[] dst, int dstOff, int dstStride,
@@ -113,6 +199,10 @@ public interface FBlockWorld extends AutoCloseable {
         this.getData(dst, dstOff, dstStride, null, 0, 0, null, 0, 0, xs, xOff, xStride, ys, yOff, yStride, zs, zOff, zStride, count);
     }
 
+    //
+    // TYPE-SPECIFIC DATA QUERIES: BIOMES
+    //
+
     /**
      * Gets the biome at the position described by the given coordinates.
      *
@@ -123,6 +213,12 @@ public interface FBlockWorld extends AutoCloseable {
      * @throws GenerationNotAllowedException if the data at the given coordinates is not generated and this world doesn't allow generation
      */
     int getBiome(int x, int y, int z) throws GenerationNotAllowedException;
+
+    default void getBiomes(
+            @NonNull int[] dst, int dstOff, int dstStride,
+            int minX, int minY, int minZ, int maxX, int maxY, int maxZ) throws GenerationNotAllowedException {
+        this.getData(null, 0, 0, dst, dstOff, dstStride, null, 0, 0, minX, minY, minZ, maxX, maxY, maxZ);
+    }
 
     default void getBiomes(
             @NonNull int[] dst, int dstOff, int dstStride,
@@ -139,6 +235,10 @@ public interface FBlockWorld extends AutoCloseable {
         this.getData(null, 0, 0, dst, dstOff, dstStride, null, 0, 0, xs, xOff, xStride, ys, yOff, yStride, zs, zOff, zStride, count);
     }
 
+    //
+    // TYPE-SPECIFIC DATA QUERIES: LIGHT
+    //
+
     /**
      * Gets the packed block/sky light at the position described by the given coordinates.
      *
@@ -149,6 +249,12 @@ public interface FBlockWorld extends AutoCloseable {
      * @throws GenerationNotAllowedException if the data at the given coordinates is not generated and this world doesn't allow generation
      */
     byte getLight(int x, int y, int z) throws GenerationNotAllowedException;
+
+    default void getLights(
+            @NonNull byte[] dst, int dstOff, int dstStride,
+            int minX, int minY, int minZ, int maxX, int maxY, int maxZ) throws GenerationNotAllowedException {
+        this.getData(null, 0, 0, null, 0, 0, dst, dstOff, dstStride, minX, minY, minZ, maxX, maxY, maxZ);
+    }
 
     default void getLights(
             @NonNull byte[] dst, int dstOff, int dstStride,
@@ -163,6 +269,34 @@ public interface FBlockWorld extends AutoCloseable {
             @NonNull int[] zs, int zOff, int zStride,
             int count) throws GenerationNotAllowedException {
         this.getData(null, 0, 0, null, 0, 0, dst, dstOff, dstStride, xs, xOff, xStride, ys, yOff, yStride, zs, zOff, zStride, count);
+    }
+
+    //
+    // BULK DATA QUERIES
+    //
+
+    default void getData(
+            int[] states, int statesOff, int statesStride,
+            int[] biomes, int biomesOff, int biomesStride,
+            byte[] light, int lightOff, int lightStride,
+            int minX, int minY, int minZ, int maxX, int maxY, int maxZ) throws GenerationNotAllowedException {
+        BlockWorldConstants.validateArgsForGetData(states, statesOff, statesStride, biomes, biomesOff, biomesStride, light, lightOff, lightStride, minX, minY, minZ, maxX, maxY, maxZ);
+
+        for (int statesIndex = statesOff, biomesIndex = biomesOff, lightIndex = lightOff, x = minX; x < maxX; x++) {
+            for (int y = minY; y < maxY; y++) {
+                for (int z = minZ; z < maxZ; z++, statesIndex += statesStride, biomesIndex += biomesStride, lightIndex += lightStride) {
+                    if (states != null) {
+                        states[statesIndex] = this.getState(x, y, z);
+                    }
+                    if (biomes != null) {
+                        biomes[biomesIndex] = this.getBiome(x, y, z);
+                    }
+                    if (light != null) {
+                        light[lightIndex] = this.getLight(x, y, z);
+                    }
+                }
+            }
+        }
     }
 
     default void getData(

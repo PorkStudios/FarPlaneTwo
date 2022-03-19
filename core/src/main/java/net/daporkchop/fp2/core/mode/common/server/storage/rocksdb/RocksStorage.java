@@ -29,7 +29,6 @@ import io.netty.buffer.Unpooled;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.server.storage.IFarStorage;
 import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
@@ -49,7 +48,6 @@ import org.rocksdb.FlushOptions;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
-import org.rocksdb.RocksIterator;
 import org.rocksdb.Transaction;
 import org.rocksdb.TransactionDB;
 import org.rocksdb.TransactionDBOptions;
@@ -65,7 +63,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -258,18 +255,6 @@ public class RocksStorage<POS extends IFarPos, T extends IFarTile> implements IF
     }
 
     @Override
-    public void forEachDirtyPos(@NonNull Consumer<POS> callback) {
-        IFarRenderMode<POS, T> mode = this.world.mode();
-
-        try (RocksIterator itr = this.db.newIterator(this.cfTileDirtyTimestamp)) {
-            for (itr.seekToFirst(); itr.isValid(); itr.next()) {
-                byte[] key = itr.key();
-                callback.accept(mode.readPos(Unpooled.wrappedBuffer(key)));
-            }
-        }
-    }
-
-    @Override
     @SneakyThrows(RocksDBException.class)
     public Stream<POS> markAllDirty(@NonNull Stream<POS> positionsIn, long dirtyTimestamp) {
         //we'll buffer all the positions, lock all of them at once, compare each one and then commit as many as needed. the logic here is identical to
@@ -361,60 +346,6 @@ public class RocksStorage<POS extends IFarPos, T extends IFarTile> implements IF
             }
         }
     }
-
-    /*@Override
-    @SneakyThrows(RocksDBException.class)
-    public void markVanillaRenderable(@NonNull Stream<POS> positionsIn) {
-        List<POS> positions = positionsIn.distinct()
-                .peek(pos -> checkArg(pos.level() == 0, "%s is not at level 0!", pos))
-                .collect(Collectors.toList());
-        int length = positions.size();
-
-        if (length == 0) { //nothing to do!
-            return;
-        }
-
-        try (Transaction txn = this.db.beginTransaction(WRITE_OPTIONS)) {
-            {
-                byte[][] keys = positions.stream().map(POS::toBytes).toArray(byte[][]::new);
-
-                ColumnFamilyHandle[] handles = new ColumnFamilyHandle[length];
-                Arrays.fill(handles, this.cfAnyVanillaExists);
-
-                byte[][] get = txn.multiGetForUpdate(READ_OPTIONS, Arrays.asList(handles), keys);
-
-                List<POS> oldPositions = positions;
-                positions = new ArrayList<>(length);
-                for (int i = 0; i < length; i++) {
-                    if (get[i] == null) {
-                        positions.add(oldPositions.get(i));
-                        txn.put(this.cfAnyVanillaExists, keys[i], new byte[0]);
-                    }
-                }
-            }
-
-            for (int lvl = 1; lvl < MAX_LODS; lvl++) {
-                positions = positions.stream().flatMap(this.world.scaler()::outputs).distinct().collect(Collectors.toList());
-                length = positions.size();
-
-                byte[][] keys = positions.stream().map(POS::toBytes).toArray(byte[][]::new);
-
-                ColumnFamilyHandle[] handles = new ColumnFamilyHandle[length];
-                Arrays.fill(handles, this.cfAnyVanillaExists);
-
-                byte[][] get = txn.multiGetForUpdate(READ_OPTIONS, Arrays.asList(handles), keys);
-
-                List<POS> oldPositions = positions;
-                positions = new ArrayList<>(length);
-                for (int i = 0; i < length; i++) {
-                    if (get[i] == null) {
-                        positions.add(oldPositions.get(i));
-                        txn.put(this.cfAnyVanillaExists, keys[i], new byte[0]);
-                    }
-                }
-            }
-        }
-    }*/
 
     @Override
     public void close() throws IOException {

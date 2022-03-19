@@ -23,11 +23,13 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.exactfblockworld;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.SneakyThrows;
+import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.api.world.BlockWorldConstants;
 import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.api.world.GenerationNotAllowedException;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSet;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.world.IMixinWorldServer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.world.registry.GameRegistry1_12_2;
 import net.daporkchop.lib.common.math.BinMath;
 import net.daporkchop.lib.primitive.list.LongList;
@@ -101,6 +103,11 @@ public class PrefetchedChunksFBlockWorld1_12 implements FBlockWorld, IBlockAcces
     @Override
     public FGameRegistry registry() {
         return GameRegistry1_12_2.get();
+    }
+
+    @Override
+    public IntAxisAlignedBB dataLimits() {
+        return ((IMixinWorldServer) this.holder.world).fp2_farWorldServer().fp2_IFarWorld_coordLimits();
     }
 
     @Override

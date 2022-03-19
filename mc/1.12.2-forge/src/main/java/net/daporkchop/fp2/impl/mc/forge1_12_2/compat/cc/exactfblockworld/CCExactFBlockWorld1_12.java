@@ -25,6 +25,7 @@ import io.github.opencubicchunks.cubicchunks.api.util.CubePos;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.api.world.BlockWorldConstants;
 import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.api.world.GenerationNotAllowedException;
@@ -63,6 +64,11 @@ public class CCExactFBlockWorld1_12 implements FBlockWorld {
     }
 
     @Override
+    public IntAxisAlignedBB dataLimits() {
+        return this.holder.farWorld.fp2_IFarWorld_coordLimits();
+    }
+
+    @Override
     public boolean containsAnyData(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
         return this.holder.containsAnyData(minX, minY, minZ, maxX, maxY, maxZ);
     }
@@ -92,6 +98,15 @@ public class CCExactFBlockWorld1_12 implements FBlockWorld {
         byte[] buf = new byte[1];
         this.getLights(buf, 0, 1, x, y, z, 1, 1, 1, 1, 1, 1);
         return buf[0];
+    }
+
+    @Override
+    public void getData(int[] states, int statesOff, int statesStride, int[] biomes, int biomesOff, int biomesStride, byte[] light, int lightOff, int lightStride, int minX, int minY, int minZ, int maxX, int maxY, int maxZ) throws GenerationNotAllowedException {
+        BlockWorldConstants.validateArgsForGetData(states, statesOff, statesStride, biomes, biomesOff, biomesStride, light, lightOff, lightStride, minX, minY, minZ, maxX, maxY, maxZ);
+
+        //delegate to getData with stride
+        this.getData(states, statesOff, statesStride, biomes, biomesOff, biomesStride, light, lightOff, lightStride,
+                minX, minY, minZ, maxX - minX, maxY - minY, maxZ - minZ, 1, 1, 1);
     }
 
     @Override

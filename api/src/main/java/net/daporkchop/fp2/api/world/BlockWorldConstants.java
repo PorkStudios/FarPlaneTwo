@@ -84,6 +84,32 @@ public class BlockWorldConstants {
     }
 
     /**
+     * Validates the arguments for a call to {@link FBlockWorld#getData(int[], int, int, int[], int, int, byte[], int, int, int, int, int, int, int, int)},
+     * throwing an exception if the parameters are invalid.
+     *
+     * @see FBlockWorld#getData(int[], int, int, int[], int, int, byte[], int, int, int, int, int, int, int, int)
+     */
+    public static void validateArgsForGetData(
+            int[] states, int statesOff, int statesStride,
+            int[] biomes, int biomesOff, int biomesStride,
+            byte[] light, int lightOff, int lightStride,
+            int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+        checkArg(minX <= maxX, "minX (%d) is greater than maxX (%d)!", minX, maxX);
+        checkArg(minY <= maxY, "minY (%d) is greater than maxY (%d)!", minY, maxY);
+        checkArg(minZ <= maxZ, "minZ (%d) is greater than maxZ (%d)!", minZ, maxZ);
+        int count = (maxX - minX) * (maxY - minY) * (maxZ - minZ);
+        if (states != null) {
+            checkRangeLen(states.length, statesOff, positive(statesStride, "statesStride") * count);
+        }
+        if (biomes != null) {
+            checkRangeLen(biomes.length, biomesOff, positive(biomesStride, "biomesStride") * count);
+        }
+        if (light != null) {
+            checkRangeLen(light.length, lightOff, positive(lightStride, "lightStride") * count);
+        }
+    }
+
+    /**
      * Validates the arguments for a call to {@link FBlockWorld#getData(int[], int, int, int[], int, int, byte[], int, int, int, int, int, int, int, int, int, int, int)},
      * throwing an exception if the parameters are invalid.
      *

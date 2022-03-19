@@ -27,6 +27,8 @@ import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.server.IFarServerResourceCreationEvent;
 
+import java.util.stream.Stream;
+
 /**
  * Type of {@link IFarGenerator} which generates tile data based on block data in the world.
  * <p>
@@ -36,9 +38,22 @@ import net.daporkchop.fp2.core.mode.api.server.IFarServerResourceCreationEvent;
  */
 public interface IFarGeneratorExact<POS extends IFarPos, T extends IFarTile> extends IFarGenerator {
     /**
+     * Gets a {@link Stream} of all the tile positions which may be generated at the same time as the tile at the given position to potentially achieve better performance.
+     * <p>
+     * The input position must be included in the resulting {@link Stream}.
+     *
+     * @param world the {@link FBlockWorld} instance providing access to block data in the world
+     * @param pos   the position of the tile to generate
+     * @return a {@link Stream} of all the tile positions which may be generated at the same time
+     */
+    default Stream<POS> bulkGenerationGroup(@NonNull FBlockWorld world, @NonNull POS pos) {
+        return Stream.of(pos); //don't do bulk generation by default
+    }
+
+    /**
      * Generates the terrain in the given tile.
      *
-     * @param world the {@link FBlockWorld} providing access to block/height data in the world
+     * @param world the {@link FBlockWorld} instance providing access to block data in the world
      * @param pos   the position of the tile to generate
      * @param tile  the tile to generate
      * @throws GenerationNotAllowedException if the generator attempts to access terrain which is not generated, and the given {@link FBlockWorld} does not allow generation

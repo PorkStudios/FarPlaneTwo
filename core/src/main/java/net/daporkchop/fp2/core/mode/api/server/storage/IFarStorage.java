@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -27,7 +27,6 @@ import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 /**
@@ -43,8 +42,6 @@ public interface IFarStorage<POS extends IFarPos, T extends IFarTile> extends Cl
      * @return an {@link ITileHandle}
      */
     ITileHandle<POS, T> handleFor(@NonNull POS pos);
-
-    void forEachDirtyPos(@NonNull Consumer<POS> callback);
 
     /**
      * Atomically marks multiple positions as dirty as of the given timestamp.
@@ -65,8 +62,6 @@ public interface IFarStorage<POS extends IFarPos, T extends IFarTile> extends Cl
         return positions.distinct()
                 .filter(pos -> this.handleFor(pos).markDirty(dirtyTimestamp));
     }
-
-    //void markVanillaRenderable(@NonNull Stream<POS> positions);
 
     /**
      * Closes this storage.

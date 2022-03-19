@@ -27,6 +27,7 @@ import io.github.opencubicchunks.cubicchunks.api.world.ICube;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.SneakyThrows;
+import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.api.world.BlockWorldConstants;
 import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.api.world.GenerationNotAllowedException;
@@ -94,6 +95,11 @@ public class PrefetchedCubesCCFBlockWorld1_12 implements FBlockWorld, IBlockAcce
     @Override
     public FGameRegistry registry() {
         return GameRegistry1_12_2.get();
+    }
+
+    @Override
+    public IntAxisAlignedBB dataLimits() {
+        return this.holder.farWorld.fp2_IFarWorld_coordLimits();
     }
 
     @Override
