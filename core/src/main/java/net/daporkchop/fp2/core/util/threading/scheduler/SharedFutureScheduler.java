@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -68,15 +68,48 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
 
     protected final Cached<Deque<Task>> recursionStack = Cached.threadLocal(this.recursionStackFactory());
 
-    protected final Function<P, V> function;
+    protected final WorkFunction<P, V> function;
 
     protected final WorkerGroup group;
     protected volatile boolean running = true;
 
-    public SharedFutureScheduler(@NonNull Function<Scheduler<P, V>, Function<P, V>> functionFactory, @NonNull WorkerGroupBuilder builder) {
+    public SharedFutureScheduler(@NonNull Function<? super SharedFutureScheduler<P, V>, WorkFunction<P, V>> functionFactory, @NonNull WorkerGroupBuilder builder) {
         this.function = functionFactory.apply(this);
 
         this.group = builder.build(this);
+    }
+
+    /**
+     * Checks whether or not a worker is allowed to recurse into execution of a task with the given destination parameter from the given source parameter.
+     *
+     * @param from the parameter of the task currently being executed by the worker
+     * @param to   the parameter to recurse to
+     * @return whether or not the recursion is allowed
+     */
+    protected boolean canRecurse(@NonNull P from, @NonNull P to) {
+        return true;
+    }
+
+    /**
+     * Checks whether or not a worker is allowed to recurse into execution of a batch task with the given destination parameters from the given source parameter.
+     *
+     * @param from the parameter of the task currently being executed by the worker
+     * @param tos   the parameters of the batch to recurse to
+     * @return whether or not the recursion is allowed
+     */
+    protected boolean canRecurseToBatch(@NonNull P from, @NonNull List<P> tos) {
+        return tos.stream().allMatch(to -> this.canRecurse(from, to));
+    }
+
+    /**
+     * Checks whether or not all of the parameters in the given list are allowed to be executed in the same batch.
+     *
+     * @param parameters the list of parameters in the batch. It is safe to assume that there are no duplicate elements in the list.
+     * @return whether or not all of the parameters in the given list are allowed to be executed in the same batch
+     */
+    protected boolean canExecuteInBatch(@NonNull List<P> parameters) {
+        checkArg(!parameters.isEmpty(), "a batch must consist of at least one parameter!");
+        return true;
     }
 
     protected Supplier<Deque<Task>> recursionStackFactory() {
@@ -312,10 +345,41 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
         }
 
         Deque<Task> recursionStack = this.recursionStack.get();
+        if (!recursionStack.isEmpty()) { //ensure that this recursion is actually legal
+            P from = recursionStack.peekFirst().param;
+            checkState(this.canRecurse(from, task.param), "recursion from %s to %s is not permitted!", from, task.param);
+        }
+
+        //begin recursion into task
         recursionStack.push(task);
 
         try { //execute the task and complete future accordingly
-            task.complete(this.function.apply(task.param));
+            class CallbackImpl implements Callback<P, V> {
+                V value;
+
+                @Override
+                public synchronized void complete(@NonNull P param, @NonNull V value) {
+                    checkArg(param.equals(task.param), "completed wrong parameter! got %s, expected %s", param, task.param);
+                    checkState(this.value == null, "parameter %s was already completed!", param);
+
+                    this.value = value;
+                }
+
+                @Override
+                public synchronized void promoteToBatch(@NonNull P param, @NonNull List<P> batchParameters) {
+                    throw new UnsupportedOperationException("promote");
+                }
+
+                private void finish() {
+                    checkState(this.value != null, "parameter %s was not completed!", task.param);
+
+                    task.complete(this.value);
+                }
+            }
+
+            CallbackImpl callback = new CallbackImpl();
+            this.function.applySingle(task.param, callback);
+            callback.finish();
         } catch (SchedulerClosedError e) { //catch and rethrow this separately to prevent it from being used to complete the future
             task.cancel0(); //cancel the future to make sure it has a return value
             throw e;
@@ -329,10 +393,14 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
             if (this.running) { //only handle the exception if we aren't already shutting the scheduler down
                 this.group.manager().handle(t);
             }
-        } finally { //the task's been executed, remove it from the map
-            this.deleteTask(task);
+        } finally {
+            { //recursion is complete, so pop the top off the recursion stack
+                Task popped = recursionStack.pollFirst();
+                checkState(task == popped, "recursion stack is in invalid state: popped %s, but expected %s!", popped, task);
+            }
 
-            checkState(task == recursionStack.pop());
+            //the task's been executed, remove it from the map
+            this.deleteTask(task);
         }
     }
 
@@ -497,7 +565,82 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
 
         @Override
         public String toString() {
-            return this.getClass().getCanonicalName() + '@' + Integer.toHexString(this.hashCode()) + ",param=" + this.param;
+            return this.getClass().getTypeName() + '@' + Integer.toHexString(this.hashCode()) + ",param=" + this.param;
         }
+    }
+
+    /**
+     * A user-defined function which computes a value based on a given parameter.
+     *
+     * @author DaPorkchop_
+     */
+    public interface WorkFunction<P, V> {
+        /**
+         * Wraps a regular {@link Function} into a {@link WorkFunction}.
+         *
+         * @param function the {@link Function} to wrap
+         * @return the wrapped {@link Function}
+         */
+        static <P, V> WorkFunction<P, V> wrap(@NonNull Function<P, V> function) {
+            return new WorkFunction<P, V>() {
+                @Override
+                public void applySingle(@NonNull P param, @NonNull Callback<P, V> callback) {
+                    callback.complete(param, function.apply(param));
+                }
+
+                @Override
+                public void applyBatch(@NonNull List<P> params, @NonNull Callback<P, V> callback) {
+                    for (P param : params) {
+                        callback.complete(param, function.apply(param));
+                    }
+                }
+            };
+        }
+
+        /**
+         * Calls the function with the given parameter.
+         * <p>
+         * Either {@link Callback#complete(Object, Object)} or {@link Callback#promoteToBatch(Object, List)} <strong>must</strong> be called with the given key as a parameter before the method returns.
+         *
+         * @param param    the parameter
+         * @param callback the {@link Callback} instance to notify with the task result
+         */
+        void applySingle(@NonNull P param, @NonNull Callback<P, V> callback);
+
+        /**
+         * Calls the function with the given parameter batch.
+         * <p>
+         * Either {@link Callback#complete(Object, Object)} or {@link Callback#promoteToBatch(Object, List)} <strong>must</strong> be called with each of the given keys as a parameter before the method
+         * returns.
+         *
+         * @param params   the parameters
+         * @param callback the {@link Callback} instance to notify with the task results
+         */
+        void applyBatch(@NonNull List<P> params, @NonNull Callback<P, V> callback);
+    }
+
+    /**
+     * A callback to which will be accessed by a {@link WorkFunction} to notify task completion results.
+     *
+     * @author DaPorkchop_
+     */
+    public interface Callback<P, V> {
+        /**
+         * Sets the result value for the given parameter.
+         *
+         * @param param the parameter
+         * @param value the result value
+         */
+        void complete(@NonNull P param, @NonNull V value);
+
+        /**
+         * Promotes the task for the given parameter into a batch. The parameter will not be given a result value, instead the worker function will be invoked again with all of the parameters in the batch.
+         *
+         * @param param           the parameter
+         * @param batchParameters the parameters to include in the batch.<br>
+         *                        Note: {@code param} must be present in the list!<br>
+         *                        Note: the list must not contain any duplicate elements!
+         */
+        void promoteToBatch(@NonNull P param, @NonNull List<P> batchParameters);
     }
 }
