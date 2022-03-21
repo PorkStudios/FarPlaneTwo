@@ -49,6 +49,7 @@ import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Set;
 import java.util.Spliterators;
 import java.util.concurrent.CompletableFuture;
@@ -185,8 +186,7 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
         checkState(this.lastCompletedTick >= 0L, "flushed update queue before any game ticks were completed?!?");
 
         if (!this.updatesPending.isEmpty()) {
-            this.storage.markAllDirty(StreamSupport.stream(Spliterators.spliterator(this.updatesPending, DISTINCT | NONNULL), false), this.lastCompletedTick)
-                    .count(); //arbitrary lightweight terminal operation
+            this.storage.multiMarkDirty(new ArrayList<>(this.updatesPending), this.lastCompletedTick);
             this.updatesPending.clear();
         }
     }
