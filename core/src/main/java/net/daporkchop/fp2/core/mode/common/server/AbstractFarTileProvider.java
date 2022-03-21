@@ -44,7 +44,6 @@ import net.daporkchop.fp2.core.server.event.TickEndEvent;
 import net.daporkchop.fp2.core.util.threading.scheduler.ApproximatelyPrioritizedSharedFutureScheduler;
 import net.daporkchop.fp2.core.util.threading.scheduler.Scheduler;
 import net.daporkchop.fp2.core.mode.common.server.storage.rocksdb.RocksStorage;
-import net.daporkchop.fp2.core.util.threading.scheduler.SharedFutureScheduler;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
 
@@ -110,16 +109,7 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
         this.storage = new RocksStorage<>(this, this.root);
 
         this.scheduler = new ApproximatelyPrioritizedSharedFutureScheduler<>(
-                scheduler -> SharedFutureScheduler.WorkFunction.wrap(task -> {
-                    switch (task.stage()) {
-                        case LOAD:
-                            return new AbstractTileTask.Load<>(this, scheduler, task.pos()).get();
-                        case UPDATE:
-                            return new AbstractTileTask.Update<>(this, scheduler, task.pos()).get();
-                        default:
-                            throw new IllegalArgumentException("unknown or stage in task: " + task);
-                    }
-                }),
+                scheduler -> new TileWorker<>(this, scheduler),
                 this.world.fp2_IFarWorld_workerManager().createChildWorkerGroup()
                         .threads(fp2().globalConfig().performance().terrainThreads())
                         .threadFactory(PThreadFactories.builder().daemon().minPriority().collapsingId()

@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.core.util.threading.scheduler;
 
+import com.google.common.collect.ImmutableList;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -28,6 +29,7 @@ import net.daporkchop.fp2.core.util.threading.workergroup.WorkerGroup;
 import net.daporkchop.fp2.core.util.threading.workergroup.WorkerGroupBuilder;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.reference.cache.Cached;
+import net.daporkchop.lib.primitive.map.open.ObjObjOpenHashMap;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.ArrayDeque;
@@ -94,7 +96,7 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
      * Checks whether or not a worker is allowed to recurse into execution of a batch task with the given destination parameters from the given source parameter.
      *
      * @param from the parameter of the task currently being executed by the worker
-     * @param tos   the parameters of the batch to recurse to
+     * @param tos  the parameters of the batch to recurse to
      * @return whether or not the recursion is allowed
      */
     protected boolean canRecurseToBatch(@NonNull P from, @NonNull List<P> tos) {
@@ -282,6 +284,7 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
                     task.refCnt = -1;
                     this.started = true;
 
+                    //remove task from execution queue to prevent another thread from trying to start it
                     SharedFutureScheduler.this.unqueue(task);
                 }
                 return task;
@@ -316,6 +319,66 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
                 return task;
             }
         });
+    }
+
+    /**
+     * Attempts to acquire a task in order to execute it as part of a batch.
+     * <p>
+     * If no matching task exists, a new one will be created and begun. If a task already exists and has not yet begun, it will be started. If a task exists and is already started,
+     * the acquisition will fail.
+     *
+     * @param _param the parameter to acquire a task for
+     * @return the acquired task, or {@code null} if acquisition failed
+     */
+    protected Task acquireTaskForBatch(@NonNull P _param) {
+        class State implements BiFunction<P, Task, Task> {
+            Task task;
+
+            @Override
+            public Task apply(@NonNull P param, Task task) {
+                if (task == null) { //task doesn't exist, create new one
+                    if (DEBUG_PRINTS_ENABLED) {
+                        fp2().log().info("acquire: creating new task at %s, was previously null", param);
+                    }
+
+                    task = SharedFutureScheduler.this.createTask(param);
+
+                    //set reference count to -1 to indicate that it's started execution
+                    task.refCnt = -1;
+
+                    //save task instance to return from outer method
+                    this.task = task;
+                } else if (task.refCnt < 0) { //task is currently being executed, acquisition failed
+                    if (DEBUG_PRINTS_ENABLED) {
+                        fp2().log().info("acquire: failed to acquire task at %s", param);
+                    }
+
+                    //return null from outer method
+                    this.task = null;
+                } else { //task is currently still queued, begin executing it
+                    checkState(task.refCnt != 0);
+
+                    if (DEBUG_PRINTS_ENABLED) {
+                        fp2().log().info("acquire: began executing task at %s", param);
+                    }
+
+                    //set reference count to -1 to indicate that it's started execution
+                    task.refCnt = -1;
+
+                    //remove task from execution queue to prevent another thread from trying to start it
+                    SharedFutureScheduler.this.unqueue(task);
+
+                    //save task instance to return from outer method
+                    this.task = task;
+                }
+
+                return task;
+            }
+        }
+
+        State state = new State();
+        this.tasks.compute(_param, state);
+        return state.task;
     }
 
     protected void pollAndExecuteSingleTask() {
@@ -356,30 +419,42 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
         try { //execute the task and complete future accordingly
             class CallbackImpl implements Callback<P, V> {
                 V value;
+                List<P> batchParameters;
 
                 @Override
                 public synchronized void complete(@NonNull P param, @NonNull V value) {
                     checkArg(param.equals(task.param), "completed wrong parameter! got %s, expected %s", param, task.param);
-                    checkState(this.value == null, "parameter %s was already completed!", param);
+                    checkState(this.value == null && this.batchParameters == null, "parameter %s was already completed!", param);
 
                     this.value = value;
                 }
 
                 @Override
                 public synchronized void promoteToBatch(@NonNull P param, @NonNull List<P> batchParameters) {
-                    throw new UnsupportedOperationException("promote");
-                }
+                    checkArg(param.equals(task.param), "completed wrong parameter! got %s, expected %s", param, task.param);
+                    checkState(this.value == null && this.batchParameters == null, "parameter %s was already completed!", param);
 
-                private void finish() {
-                    checkState(this.value != null, "parameter %s was not completed!", task.param);
+                    checkArg(batchParameters.contains(param), "parameter key %s not present in batch promotion parameter list: %s", param, batchParameters);
+                    checkState(SharedFutureScheduler.this.canExecuteInBatch(batchParameters), "given parameters may not be used in the same batch: %s", batchParameters);
 
-                    task.complete(this.value);
+                    this.batchParameters = ImmutableList.copyOf(batchParameters);
                 }
             }
 
             CallbackImpl callback = new CallbackImpl();
             this.function.applySingle(task.param, callback);
-            callback.finish();
+
+            if (callback.value != null) { //task was completed normally, set the future's result value
+                task.complete(callback.value);
+            } else if (callback.batchParameters != null) { //task was promoted to a batch
+                if (DEBUG_PRINTS_ENABLED) {
+                    fp2().log().info("execute: parameter %s was promoted to batch %s", task.param, callback.batchParameters);
+                }
+
+                this.executeBatch(task, callback.batchParameters);
+            } else {
+                throw new IllegalStateException("parameter " + task.param + " was not completed!");
+            }
         } catch (SchedulerClosedError e) { //catch and rethrow this separately to prevent it from being used to complete the future
             task.cancel0(); //cancel the future to make sure it has a return value
             throw e;
@@ -401,6 +476,78 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
 
             //the task's been executed, remove it from the map
             this.deleteTask(task);
+        }
+    }
+
+    protected void executeBatch(@NonNull Task rootTask, @NonNull List<P> batchParameters) {
+        if (!this.running) {
+            throw new SchedulerClosedError();
+        }
+
+        List<Task> batchTasks = new ArrayList<>(batchParameters.size());
+        List<P> effectiveBatchParams = new ArrayList<>(batchParameters.size());
+        try {
+            //acquire as many tasks in the batch as possible
+            for (P param : batchParameters) {
+                if (rootTask.param.equals(param)) { //add the root task
+                    batchTasks.add(rootTask);
+                    effectiveBatchParams.add(param);
+                } else { //try to acquire the task
+                    Task acquired = this.acquireTaskForBatch(param);
+                    if (acquired != null) { //acquire was successful, add it to batch
+                        batchTasks.add(acquired);
+                        effectiveBatchParams.add(param);
+                    }
+                }
+            }
+
+            if (DEBUG_PRINTS_ENABLED && effectiveBatchParams.size() != batchParameters.size()) {
+                fp2().log().info("executeBatch: only acquired %d/%d tasks (%s/%s)", effectiveBatchParams.size(), batchParameters.size(), effectiveBatchParams, batchParameters);
+            }
+
+            //add map entries for each parameter
+            final Map<P, V> values = new ObjObjOpenHashMap<>(batchParameters.size());
+            for (P param : effectiveBatchParams) {
+                values.put(param, null);
+            }
+
+            //execute the tasks
+            this.function.applyBatch(effectiveBatchParams, new Callback<P, V>() {
+                @Override
+                public synchronized void complete(@NonNull P param, @NonNull V value) {
+                    checkArg(values.containsKey(param), "completed invalid parameter! got %s, expected one of %s", param, values.keySet());
+                    checkState(values.replace(param, null, value), "parameter %s was already completed!", param);
+                }
+
+                @Override
+                public synchronized void promoteToBatch(@NonNull P param, @NonNull List<P> batchParameters) {
+                    throw new UnsupportedOperationException("batch task cannot promote its children to batches");
+                }
+            });
+
+            //complete the futures
+            for (Task task : batchTasks) {
+                V value = values.get(task.param);
+                checkState(value != null, "parameter %s was not completed!", task.param);
+
+                //task was completed normally, set the future's result value
+                task.complete(value);
+            }
+        } catch (SchedulerClosedError e) { //catch and rethrow this separately to prevent it from being used to complete the future
+            batchTasks.forEach(Task::cancel0); //cancel the futures to make sure it has a return value
+            throw e;
+        } catch (RecursiveTaskCancelledError e) { //a dependent task was cancelled, which likely means this one was too (but we need to make sure of it)
+            batchTasks.forEach(task -> {
+                if (!task.isCancelled()) { //this should be impossible
+                    task.completeExceptionally(e);
+                    this.group.manager().handle(e);
+                }
+            });
+        } catch (Throwable t) {
+            batchTasks.forEach(task -> task.completeExceptionally(t));
+            if (this.running) { //only handle the exception if we aren't already shutting the scheduler down
+                this.group.manager().handle(t);
+            }
         }
     }
 
