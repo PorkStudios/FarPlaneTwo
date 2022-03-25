@@ -27,7 +27,8 @@ import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.server.IFarServerResourceCreationEvent;
 
-import java.util.stream.Stream;
+import java.util.List;
+import java.util.Optional;
 
 /**
  * Type of {@link IFarGenerator} which generates tile data based on block data in the world.
@@ -38,16 +39,16 @@ import java.util.stream.Stream;
  */
 public interface IFarGeneratorExact<POS extends IFarPos, T extends IFarTile> extends IFarGenerator {
     /**
-     * Gets a {@link Stream} of all the tile positions which may be generated at the same time as the tile at the given position to potentially achieve better performance.
+     * Gets an {@link Optional} {@link List} of all the tile positions which may be generated at the same time as the tile at the given position to potentially achieve better performance.
      * <p>
-     * The input position must be included in the resulting {@link Stream}.
+     * The input position must be included in the resulting {@link List}.
      *
      * @param world the {@link FBlockWorld} instance providing access to block data in the world
      * @param pos   the position of the tile to generate
-     * @return a {@link Stream} of all the tile positions which may be generated at the same time
+     * @return an {@link Optional} {@link List} of all the tile positions which may be generated at the same time
      */
-    default Stream<POS> bulkGenerationGroup(@NonNull FBlockWorld world, @NonNull POS pos) {
-        return Stream.of(pos); //don't do bulk generation by default
+    default Optional<List<POS>> batchGenerationGroup(@NonNull FBlockWorld world, @NonNull POS pos) {
+        return Optional.empty(); //don't do batch generation by default
     }
 
     /**

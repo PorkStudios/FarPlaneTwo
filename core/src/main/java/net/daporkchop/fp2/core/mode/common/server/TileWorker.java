@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.core.mode.common.server;
 
+import com.google.common.collect.ImmutableList;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.api.world.FBlockWorld;
@@ -80,8 +81,7 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
     @Override
     public void applySingle(@NonNull PriorityTask<POS> task, @NonNull SharedFutureScheduler.Callback<PriorityTask<POS>, ITileHandle<POS, T>> callback) {
         TaskStage stage = task.stage();
-        POS pos = task.pos();
-        ITileHandle<POS, T> handle = this.provider.storage().handleFor(pos);
+        ITileHandle<POS, T> handle = this.provider.storage().handleFor(task.pos());
 
         long minimumTimestamp = this.minimumTimestamp(stage, handle);
         long worldTimestamp = this.provider.lastCompletedTick;
@@ -92,31 +92,25 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
             return;
         }
 
-        if (!(FP2_DEBUG && !fp2().globalConfig().debug().exactGeneration()) && this.provider.anyVanillaTerrainExistsAt(pos)) {
+        if (!(FP2_DEBUG && !fp2().globalConfig().debug().exactGeneration()) && this.provider.anyVanillaTerrainExistsAt(task.pos())) {
             //there's some terrain at the given position, let's try to generate something with it
-            if (pos.level() == 0) {
+            if (task.pos().level() == 0) {
                 //the position is at detail level 0, do exact generation
                 try {
-                    this.generateExact(stage, pos, handle, worldTimestamp, false);
-
-                    callback.complete(task, handle);
+                    this.generateExactSingle(task, handle, worldTimestamp, false, callback);
                     return;
                 } catch (GenerationNotAllowedException e) {
                     //the terrain existed, but wasn't populated so we don't want to use it
                 }
             } else {
                 //force the tile to be scaled, which will cause this to be executed recursively
-                this.generateScale(stage, pos, handle, worldTimestamp);
-
-                callback.complete(task, handle);
+                this.generateScaleSingle(task, handle, worldTimestamp, callback);
                 return;
             }
         }
 
-        if (this.provider.canGenerateRough(pos)) { //the tile can be generated using the rough generator
-            this.generateRough(stage, pos, handle, worldTimestamp);
-
-            callback.complete(task, handle);
+        if (this.provider.canGenerateRough(task.pos())) { //the tile can be generated using the rough generator
+            this.generateRoughSingle(task, handle, worldTimestamp, callback);
             return;
         }
 
@@ -130,21 +124,15 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
         }
 
         //rough generation isn't available...
-        if (pos.level() == 0) {
+        if (task.pos().level() == 0) {
             //do exact generation, allowing it to generate vanilla terrain if needed
             try {
-                this.generateExact(stage, pos, handle, worldTimestamp, true);
-
-                callback.complete(task, handle);
-                return;
+                this.generateExactSingle(task, handle, worldTimestamp, true, callback);
             } catch (GenerationNotAllowedException e) { //impossible
-                throw new IllegalArgumentException("generation blocked while processing tile at " + pos, e);
+                throw new IllegalArgumentException("generation blocked while processing tile at " + task.pos(), e);
             }
         } else { //this will generate the tile and all tiles below it down to level 0 until the tile can be "generated" from scaled data
-            this.generateScale(stage, pos, handle, worldTimestamp);
-
-            callback.complete(task, handle);
-            return;
+            this.generateScaleSingle(task, handle, worldTimestamp, callback);
         }
     }
 
@@ -153,38 +141,60 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
         throw new UnsupportedOperationException("batch");
     }
 
-    protected void generateRough(@NonNull TaskStage stage, @NonNull POS pos, @NonNull ITileHandle<POS, T> handle, long minimumTimestamp) {
-        checkArg(pos.level() == 0 || this.provider.canGenerateRough(pos), "cannot do rough generation at %s!", pos);
+    protected void generateRoughSingle(@NonNull PriorityTask<POS> task, @NonNull ITileHandle<POS, T> handle, long minimumTimestamp, @NonNull SharedFutureScheduler.Callback<PriorityTask<POS>, ITileHandle<POS, T>> callback) {
+        checkArg(task.pos().level() == 0 || this.provider.canGenerateRough(task.pos()), "cannot do rough generation at %s!", task.pos());
 
         SimpleRecycler<T> tileRecycler = this.provider.mode().tileRecycler();
         T tile = tileRecycler.allocate();
         try {
-            this.provider.generatorRough().generate(pos, tile);
-
-            handle.set(ITileMetadata.ofTimestamp(minimumTimestamp), tile);
-        } finally {
-            tileRecycler.release(tile);
-        }
-    }
-
-    protected void generateExact(@NonNull TaskStage stage, @NonNull POS pos, @NonNull ITileHandle<POS, T> handle, long minimumTimestamp, boolean allowGeneration) throws GenerationNotAllowedException {
-        SimpleRecycler<T> tileRecycler = this.provider.mode().tileRecycler();
-        T tile = tileRecycler.allocate();
-        try (FBlockWorld exactWorld = this.provider.world().fp2_IFarWorldServer_exactBlockWorldHolder().worldFor(allowGeneration ? ExactFBlockWorldHolder.AllowGenerationRequirement.ALLOWED : ExactFBlockWorldHolder.AllowGenerationRequirement.NOT_ALLOWED)) {
             //generate tile
-            this.provider.generatorExact().generate(exactWorld, pos, tile);
+            this.provider.generatorRough().generate(task.pos(), tile);
 
+            //update handle contents
             handle.set(ITileMetadata.ofTimestamp(minimumTimestamp), tile);
         } finally {
             tileRecycler.release(tile);
         }
+
+        //notify callback
+        callback.complete(task, handle);
     }
 
-    protected void generateScale(@NonNull TaskStage stage, @NonNull POS pos, @NonNull ITileHandle<POS, T> handle, long minimumTimestamp) {
+    protected void generateExactSingle(@NonNull PriorityTask<POS> task, @NonNull ITileHandle<POS, T> handle, long minimumTimestamp, boolean allowGeneration, @NonNull SharedFutureScheduler.Callback<PriorityTask<POS>, ITileHandle<POS, T>> callback) throws GenerationNotAllowedException {
+        try (FBlockWorld exactWorld = this.provider.world().fp2_IFarWorldServer_exactBlockWorldHolder().worldFor(allowGeneration ? ExactFBlockWorldHolder.AllowGenerationRequirement.ALLOWED : ExactFBlockWorldHolder.AllowGenerationRequirement.NOT_ALLOWED)) {
+            { //consider promotion to a batch
+                //noinspection ExplicitArgumentCanBeLambda
+                List<POS> batchPositions = this.provider.generatorExact().batchGenerationGroup(exactWorld, task.pos()).orElse(ImmutableList.of());
+
+                if (!batchPositions.isEmpty()) { //some positions were given, let's promote this to a batch!
+                    callback.promoteToBatch(task, batchPositions.stream().map(pos -> this.taskFor(task.stage(), pos)).collect(Collectors.toList()));
+                    return;
+                }
+            }
+
+            SimpleRecycler<T> tileRecycler = this.provider.mode().tileRecycler();
+            T tile = tileRecycler.allocate();
+            try {
+                //generate tile
+                this.provider.generatorExact().generate(exactWorld, task.pos(), tile);
+
+                //update handle contents
+                handle.set(ITileMetadata.ofTimestamp(minimumTimestamp), tile);
+            } finally {
+                tileRecycler.release(tile);
+            }
+
+            //notify callback
+            callback.complete(task, handle);
+        }
+    }
+
+    protected void generateScaleSingle(@NonNull PriorityTask<POS> task, @NonNull ITileHandle<POS, T> handle, long minimumTimestamp, @NonNull SharedFutureScheduler.Callback<PriorityTask<POS>, ITileHandle<POS, T>> callback) {
         //generate scale inputs
-        List<ITileHandle<POS, T>> srcHandles = this.scheduler.scatterGather(this.provider.scaler().inputs(pos).map(srcPos -> this.taskFor(stage, srcPos)).collect(Collectors.toList()));
+        List<ITileHandle<POS, T>> srcHandles = this.scheduler.scatterGather(this.provider.scaler().inputs(task.pos()).map(srcPos -> this.taskFor(task.stage(), srcPos)).collect(Collectors.toList()));
 
         if (handle.timestamp() >= minimumTimestamp) { //break out early if tile is already done
+            callback.complete(task, handle);
             return;
         }
 
@@ -196,6 +206,7 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
         }
 
         if (handle.timestamp() >= minimumTimestamp) { //break out early if tile is already done
+            callback.complete(task, handle);
             return;
         }
 
@@ -204,6 +215,7 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
             //actually do scaling
             this.provider.scaler().scale(srcs, dst);
 
+            //update handle contents
             handle.set(ITileMetadata.ofTimestamp(minimumTimestamp), dst);
         } finally {
             tileRecycler.release(dst);
@@ -213,5 +225,8 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
                 }
             }
         }
+
+        //notify callback
+        callback.complete(task, handle);
     }
 }

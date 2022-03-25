@@ -781,7 +781,7 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
         void complete(@NonNull P param, @NonNull V value);
 
         /**
-         * Promotes the task for the given parameter into a batch. The parameter will not be given a result value, instead the worker function will be invoked again with all of the parameters in the batch.
+         * Promotes the task for the given parameter into a batch. The parameter will not be given a result value, instead the worker function will be invoked again with a subset of the parameters in the batch.
          *
          * @param param           the parameter
          * @param batchParameters the parameters to include in the batch.<br>
