@@ -28,6 +28,7 @@ import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.core.mode.api.tile.ITileMetadata;
+import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
 import net.daporkchop.fp2.core.server.world.ExactFBlockWorldHolder;
 import net.daporkchop.fp2.core.util.SimpleRecycler;
 import net.daporkchop.fp2.core.util.threading.scheduler.Scheduler;
@@ -84,6 +85,8 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
     public void work(@NonNull PriorityTask<POS> task, @NonNull SharedFutureScheduler.Callback<PriorityTask<POS>, ITileHandle<POS, T>> callback) {
         TaskStage stage = task.stage();
         POS pos = task.pos();
+
+        checkArg(this.provider.coordLimits().contains(pos), "tile position is outside coordinate limits: %s", pos);
 
         ITileHandle<POS, T> handle = this.provider.storage().handleFor(pos);
 
@@ -223,8 +226,14 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
     }
 
     protected void generateScale(@NonNull PriorityTask<POS> task, @NonNull POS pos, @NonNull ITileHandle<POS, T> handle, long minimumTimestamp, @NonNull SharedFutureScheduler.Callback<PriorityTask<POS>, ITileHandle<POS, T>> callback) {
-        //generate scale inputs
-        List<ITileHandle<POS, T>> srcHandles = this.scheduler.scatterGather(this.provider.scaler().inputs(pos).map(srcPos -> this.taskFor(task.stage(), srcPos)).collect(Collectors.toList()));
+        //find input positions
+        List<POS> srcPositions = this.provider.scaler().inputs(pos).collect(Collectors.toList());
+
+        //wait for all source tiles to be generated
+        this.scheduler.scatterGather(srcPositions.stream()
+                .filter(this.provider.coordLimits()::contains) //don't bother generating tiles which are outside the coordinate limits
+                .map(srcPos -> this.taskFor(task.stage(), srcPos))
+                .collect(Collectors.toList()));
 
         if (handle.timestamp() >= minimumTimestamp) { //break out early if tile is already done
             callback.complete(task, handle);
@@ -233,24 +242,35 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
 
         //inflate sources
         SimpleRecycler<T> tileRecycler = this.provider.mode().tileRecycler();
-        T[] srcs = this.provider.mode().tileArray(srcHandles.size());
-        for (int i = 0; i < srcHandles.size(); i++) {
-            srcs[i] = srcHandles.get(i).snapshot().loadTile(tileRecycler);
-        }
-
-        if (handle.timestamp() >= minimumTimestamp) { //break out early if tile is already done
-            callback.complete(task, handle);
-            return;
-        }
-
+        T[] srcs = this.provider.mode().tileArray(srcPositions.size());
         T dst = tileRecycler.allocate();
         try {
+            {
+                //snapshot tile data for all source positions
+                List<ITileSnapshot<POS, T>> snapshots = this.provider.storage().multiSnapshot(srcPositions);
+
+                //inflate tile snapshots where necessary
+                for (int i = 0; i < srcPositions.size(); i++) {
+                    //tile is only guaranteed to have been generated if it's at a valid position (we filter out invalid
+                    // positions above in the scatterGather call)
+                    if (this.provider.coordLimits().contains(srcPositions.get(i))) {
+                        srcs[i] = snapshots.get(i).loadTile(tileRecycler);
+                    }
+                }
+            }
+
+            if (handle.timestamp() >= minimumTimestamp) { //break out early if tile is already done
+                callback.complete(task, handle);
+                return;
+            }
+
             //actually do scaling
             this.provider.scaler().scale(srcs, dst);
 
             //update handle contents
             handle.set(ITileMetadata.ofTimestamp(minimumTimestamp), dst);
         } finally {
+            //release all allocated tile instances
             tileRecycler.release(dst);
             for (T src : srcs) {
                 if (src != null) {

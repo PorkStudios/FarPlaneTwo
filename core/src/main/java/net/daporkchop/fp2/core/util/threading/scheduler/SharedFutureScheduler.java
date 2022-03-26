@@ -156,7 +156,7 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
             public Task apply(@NonNull P param, Task task) {
                 if (task == null) { //task doesn't exist, create new one
                     if (DEBUG_PRINTS_ENABLED) {
-                        fp2().log().info("creating new task at %s, was previously null", param);
+                        fp2().log().info("retain: creating new task at %s, was previously null", param);
                     }
 
                     task = SharedFutureScheduler.this.createTask(param);
@@ -165,7 +165,7 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
                     SharedFutureScheduler.this.enqueue(task);
                 } else if (task.refCnt < 0) { //task is currently being executed, we want to replace it to force it to be re-enqueued later
                     if (DEBUG_PRINTS_ENABLED) {
-                        fp2().log().info("creating new task at %s, was previously %s", param, task);
+                        fp2().log().info("retain: creating new task at %s, was previously %s", param, task);
                     }
 
                     Task previousTask = task;
@@ -177,7 +177,7 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
                     task.refCnt = incrementExact(task.refCnt);
 
                     if (DEBUG_PRINTS_ENABLED) {
-                        fp2().log().info("retaining existing task at %s, reference count is now %d", param, task.refCnt);
+                        fp2().log().info("retain: retained existing task at %s, reference count is now %d", param, task.refCnt);
                     }
                 }
 
@@ -200,7 +200,7 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
             public Task apply(@NonNull P param, Task task) {
                 if (task != expectedTask) { //tasks don't match, do nothing
                     if (DEBUG_PRINTS_ENABLED) {
-                        fp2().log().info("failed to release task at %s, %s != %s", param, task, expectedTask);
+                        fp2().log().info("release: failed to release task at %s, %s != %s", param, task, expectedTask);
                     }
 
                     this.released = false;
@@ -212,12 +212,12 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
                 if (task.refCnt > 0) { //the task isn't being actively executed
                     if (--task.refCnt != 0) { //reference count is non-zero, the task is still live
                         if (DEBUG_PRINTS_ENABLED) {
-                            fp2().log().info("partially released task at %s, reference count is now %d", param, task.refCnt);
+                            fp2().log().info("release: partially released task at %s, reference count is now %d", param, task.refCnt);
                         }
                         return task;
                     } else { //the reference count reached zero! cancel the task, unqueue it and remove it from the map
                         if (DEBUG_PRINTS_ENABLED) {
-                            fp2().log().info("totally released task at %s, replacing with %d", param, task.previous);
+                            fp2().log().info("release: totally released task at %s, replacing with %d", param, task.previous);
                         }
 
                         SharedFutureScheduler.this.unqueue(task);
@@ -265,9 +265,9 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
                     || task.refCnt < 0) { //task is currently being executed, we can't start executing it
                     if (DEBUG_PRINTS_ENABLED) {
                         if (task != expectedTask) {
-                            fp2().log().info("couldn't begin task at %s (mismatch)", param);
+                            fp2().log().info("begin: couldn't begin task at %s (mismatch)", param);
                         } else {
-                            fp2().log().info("couldn't begin task at %s (already executing)", param);
+                            fp2().log().info("begin: couldn't begin task at %s (already executing)", param);
                         }
                     }
 
@@ -276,7 +276,7 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
                     checkState(task.refCnt != 0);
 
                     if (DEBUG_PRINTS_ENABLED) {
-                        fp2().log().info("began executing task at %s", param);
+                        fp2().log().info("begin: began executing task at %s", param);
                     }
 
                     //set reference count to -1 to indicate that it's started execution
@@ -297,20 +297,20 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
 
     protected void deleteTask(@NonNull Task expectedTask) {
         this.tasks.compute(expectedTask.param, (param, task) -> {
-            checkState(task != null);
+            checkState(task != null, "task for %s was already removed!", param);
 
             if (task == expectedTask) { //task remains unchanged, delete it
                 if (DEBUG_PRINTS_ENABLED) {
-                    fp2().log().info("removed completed task at %s", param);
+                    fp2().log().info("delete: removed completed task at %s", param);
                 }
                 return null;
             } else { //tasks don't match, meaning the task has been re-scheduled
                 if (DEBUG_PRINTS_ENABLED) {
-                    fp2().log().info("task at %s (%s) was re-scheduled during execution, adding %s to queue", param, expectedTask, task);
+                    fp2().log().info("delete: task at %s (%s) was re-scheduled during execution, adding %s to queue", param, expectedTask, task);
                 }
 
                 //new task must reference the task which was completed, let's clear that reference
-                checkState(task.previous == expectedTask);
+                checkState(task.previous == expectedTask, "previous task for %s is not the expected task!", param);
                 task.previous = null;
 
                 //enqueue the new task and leave it in the map
@@ -356,6 +356,16 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
                     this.task = null;
                 } else { //task is currently still queued, begin executing it
                     checkState(task.refCnt != 0);
+
+                    //the previous task is non-null, therefore it's still running and we aren't allowed to start this one yet
+                    if (task.previous != null) {
+                        if (DEBUG_PRINTS_ENABLED) {
+                            fp2().log().info("acquire: previous task at %s is still active", param);
+                        }
+
+                        //exit and keep existing value without changing anything
+                        return task;
+                    }
 
                     if (DEBUG_PRINTS_ENABLED) {
                         fp2().log().info("acquire: began executing task at %s", param);

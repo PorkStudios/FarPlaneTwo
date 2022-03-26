@@ -74,6 +74,10 @@ public class HeightmapScalerMinMax extends AbstractFarGenerator<HeightmapPos, He
         for (int subX = 0; subX < 2; subX++) {
             for (int subZ = 0; subZ < 2; subZ++) {
                 HeightmapTile src = srcs[subX * 2 + subZ];
+                if (src == null) { //null source tiles are treated as effectively empty
+                    continue;
+                }
+
                 int baseX = subX * (HT_VOXELS >> 1);
                 int baseZ = subZ * (HT_VOXELS >> 1);
 

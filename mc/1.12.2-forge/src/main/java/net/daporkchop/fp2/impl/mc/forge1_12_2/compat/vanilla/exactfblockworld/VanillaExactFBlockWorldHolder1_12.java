@@ -23,6 +23,7 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.exactfblockworld;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.api.event.FEventHandler;
+import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.api.world.GenerationNotAllowedException;
 import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
@@ -46,6 +47,8 @@ import net.minecraft.world.chunk.storage.AnvilChunkLoader;
 import java.io.IOException;
 import java.util.stream.Stream;
 
+import static net.daporkchop.fp2.core.mode.voxel.VoxelConstants.*;
+import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
@@ -105,6 +108,13 @@ public class VanillaExactFBlockWorldHolder1_12 implements ExactFBlockWorldHolder
         int maxSectionZ = (maxZ >> 4) + 1;
 
         return maxY >= 0 && minY < this.world.getHeight() && this.chunksExistCache.containsAny(minSectionX, minSectionZ, maxSectionX, maxSectionZ);
+    }
+
+    public IntAxisAlignedBB guaranteedDataAvailableVolume(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+        //round X,Z up/down to next chunk boundary, Y is infinite
+        return new IntAxisAlignedBB(
+                minX & ~VT_MASK, Integer.MIN_VALUE, minZ & ~VT_MASK,
+                asrCeil(maxX, VT_SHIFT) << VT_SHIFT, Integer.MAX_VALUE, asrCeil(maxZ, VT_SHIFT) << VT_SHIFT);
     }
 
     protected Chunk getChunk(int chunkX, int chunkZ, boolean allowGeneration) throws GenerationNotAllowedException {

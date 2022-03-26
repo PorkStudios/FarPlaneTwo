@@ -289,11 +289,11 @@ public class RocksStorage<POS extends IFarPos, T extends IFarTile> implements IF
             byte[][] keys = new byte[doubleLength][];
 
             for (int i = 0; i < doubleLength; ) {
-                byte[] keyBytes = positions.get(i).toBytes();
+                byte[] keyBytes = positions.get(i >> 1).toBytes();
 
                 handles[i] = this.cfTileTimestamp;
                 keys[i++] = keyBytes;
-                handles[i] = this.cfTileDirtyTimestamp;
+                handles[i] = this.cfTileData;
                 keys[i++] = keyBytes;
             }
 
@@ -349,7 +349,7 @@ public class RocksStorage<POS extends IFarPos, T extends IFarTile> implements IF
                 byte[][] keys = new byte[doubleLength][];
 
                 for (int i = 0; i < doubleLength; ) {
-                    byte[] keyBytes = positions.get(i).toBytes();
+                    byte[] keyBytes = positions.get(i >> 1).toBytes();
 
                     handles[i] = this.cfTileTimestamp;
                     keys[i++] = keyBytes;

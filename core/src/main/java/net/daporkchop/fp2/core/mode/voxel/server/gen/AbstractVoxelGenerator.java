@@ -36,7 +36,7 @@ import static net.daporkchop.fp2.core.util.math.MathUtil.*;
  * @author DaPorkchop_
  */
 public abstract class AbstractVoxelGenerator extends AbstractFarGenerator<VoxelPos, VoxelTile> {
-    public static final int CACHE_MIN = 0;
+    public static final int CACHE_MIN = -1;
     public static final int CACHE_MAX = VT_VOXELS + 1;
     public static final int CACHE_SIZE = CACHE_MAX - CACHE_MIN;
 

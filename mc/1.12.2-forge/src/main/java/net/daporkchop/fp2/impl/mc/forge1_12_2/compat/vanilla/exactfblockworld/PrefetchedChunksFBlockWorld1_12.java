@@ -116,6 +116,11 @@ public class PrefetchedChunksFBlockWorld1_12 implements FBlockWorld, IBlockAcces
     }
 
     @Override
+    public IntAxisAlignedBB guaranteedDataAvailableVolume(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+        return this.holder.guaranteedDataAvailableVolume(minX, minY, minZ, maxX, maxY, maxZ);
+    }
+
+    @Override
     public int getState(int x, int y, int z) throws GenerationNotAllowedException {
         Chunk chunk = this.chunks.get(ChunkPos.asLong(x >> CHUNK_SHIFT, z >> CHUNK_SHIFT));
         assert chunk != null : "position outside prefetched area: " + x + ',' + y + ',' + z;

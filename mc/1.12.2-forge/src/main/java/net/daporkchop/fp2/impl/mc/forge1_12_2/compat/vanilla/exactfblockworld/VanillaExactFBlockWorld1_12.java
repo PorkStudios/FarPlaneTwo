@@ -74,6 +74,11 @@ public class VanillaExactFBlockWorld1_12 implements FBlockWorld {
     }
 
     @Override
+    public IntAxisAlignedBB guaranteedDataAvailableVolume(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+        return this.holder.guaranteedDataAvailableVolume(minX, minY, minZ, maxX, maxY, maxZ);
+    }
+
+    @Override
     public int getState(int x, int y, int z) throws GenerationNotAllowedException {
         //delegate to bulk getter because it'll delegate to PrefetchedChunksFBlockWorld1_12, which can access neighboring chunks if Block#getActualState accesses a
         //  state which goes over a chunk border

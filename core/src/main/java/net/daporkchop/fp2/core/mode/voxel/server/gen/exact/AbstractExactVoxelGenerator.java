@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.core.mode.voxel.server.gen.exact;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.api.world.GenerationNotAllowedException;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
@@ -32,6 +33,10 @@ import net.daporkchop.fp2.core.mode.voxel.server.gen.AbstractVoxelGenerator;
 import net.daporkchop.fp2.core.server.world.IFarWorldServer;
 import net.daporkchop.fp2.core.util.GlobalAllocators;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.api.world.BlockWorldConstants.*;
@@ -47,6 +52,36 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
         super(world, provider);
     }
 
+    @Override
+    public Optional<List<VoxelPos>> batchGenerationGroup(@NonNull FBlockWorld world, @NonNull VoxelPos pos) {
+        checkArg(pos.level() == 0, "can only exact generate at level 0, not %d!", pos.level());
+
+        IntAxisAlignedBB initialBB = new IntAxisAlignedBB(
+                pos.blockX() + CACHE_MIN, pos.blockY() + CACHE_MIN, pos.blockZ() + CACHE_MIN,
+                pos.blockX() + CACHE_MAX, pos.blockY() + CACHE_MAX, pos.blockZ() + CACHE_MAX);
+        IntAxisAlignedBB dataAvailableBB = world.guaranteedDataAvailableVolume(initialBB);
+
+        //the bounding boxes are identical, so there's no point in batching
+        if (initialBB.equals(dataAvailableBB)) {
+            return Optional.empty();
+        }
+
+        VoxelPos min = this.provider.coordLimits().min(0);
+        VoxelPos max = this.provider.coordLimits().max(0);
+
+        //TODO: figure out whether or not this is actually correct? i don't think this properly accounts for every possible edge case, rather it just happens to work for the current
+        // values of CACHE_MIN/CACHE_MAX...
+        List<VoxelPos> out = new ArrayList<>();
+        for (int tileX = max(asrCeil(dataAvailableBB.minX() - CACHE_MIN, VT_SHIFT), min.x()); tileX < min(asrCeil(dataAvailableBB.maxX() - CACHE_MAX, VT_SHIFT), max.x()); tileX++) {
+            for (int tileY = max(asrCeil(dataAvailableBB.minY() - CACHE_MIN, VT_SHIFT), min.y()); tileY < min(asrCeil(dataAvailableBB.maxY() - CACHE_MAX, VT_SHIFT), max.y()); tileY++) {
+                for (int tileZ = max(asrCeil(dataAvailableBB.minZ() - CACHE_MIN, VT_SHIFT), min.z()); tileZ < min(asrCeil(dataAvailableBB.maxZ() - CACHE_MAX, VT_SHIFT), max.z()); tileZ++) {
+                    out.add(new VoxelPos(0, tileX, tileY, tileZ));
+                }
+            }
+        }
+        return Optional.of(out);
+    }
+
     protected void populateTypeMapFromStateMap(@NonNull int[] stateMap, @NonNull byte[] typeMap) {
         //range check here to allow JIT to avoid range checking inside the loop
         checkArg(typeMap.length >= cb(CACHE_SIZE) && stateMap.length >= cb(CACHE_SIZE));
@@ -58,6 +93,8 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
 
     @Override
     public void generate(@NonNull FBlockWorld world, @NonNull VoxelPos posIn, @NonNull VoxelTile tile) throws GenerationNotAllowedException {
+        checkArg(posIn.level() == 0, "can only exact generate at level 0, not %d!", posIn.level());
+
         ArrayAllocator<int[]> intAlloc = GlobalAllocators.ALLOC_INT.get();
         ArrayAllocator<byte[]> byteAlloc = GlobalAllocators.ALLOC_BYTE.get();
 
@@ -68,7 +105,7 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
 
         //query all world data at once
         world.getData(stateCache, 0, 1, biomeCache, 0, 1, lightCache, 0, 1,
-                posIn.blockX() + CACHE_MIN - 1, posIn.blockY() + CACHE_MIN - 1, posIn.blockZ() + CACHE_MIN - 1, CACHE_SIZE, CACHE_SIZE, CACHE_SIZE, 1, 1, 1);
+                posIn.blockX() + CACHE_MIN, posIn.blockY() + CACHE_MIN, posIn.blockZ() + CACHE_MIN, CACHE_SIZE, CACHE_SIZE, CACHE_SIZE, 1, 1, 1);
 
         //use bit flags to identify voxel types rather than reading from the world each time to keep innermost loop head tight and cache-friendly
         this.populateTypeMapFromStateMap(stateCache, typeCache);
