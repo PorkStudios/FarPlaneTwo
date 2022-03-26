@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -47,7 +47,7 @@ public interface IFarCoordLimits<POS extends IFarPos> {
     /**
      * Gets the position at the minimum corner of the limit's AABB at the given level.
      * <p>
-     * The position's coordinates are inclusive.
+     * The position's coordinates are exclusive.
      *
      * @param level the level
      * @return the position at the minimum corner of the limit's AABB at the given level

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -24,6 +24,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.core.mode.api.IFarCoordLimits;
 
+import static java.lang.Math.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.fp2.core.mode.voxel.VoxelConstants.*;
 
@@ -50,11 +51,17 @@ public class VoxelCoordLimits implements IFarCoordLimits<VoxelPos> {
 
     @Override
     public VoxelPos min(int level) {
-        return new VoxelPos(level, asrFloor(this.minX, VT_SHIFT + level), asrFloor(this.minY, VT_SHIFT + level), asrFloor(this.minZ, VT_SHIFT + level));
+        return new VoxelPos(level,
+                asrFloor(this.minX, VT_SHIFT + level),
+                asrFloor(this.minY, VT_SHIFT + level),
+                asrFloor(this.minZ, VT_SHIFT + level));
     }
 
     @Override
     public VoxelPos max(int level) {
-        return new VoxelPos(level, asrCeil(this.maxX, VT_SHIFT + level), asrCeil(this.maxY, VT_SHIFT + level), asrCeil(this.maxZ, VT_SHIFT + level));
+        return new VoxelPos(level,
+                incrementExact(asrCeil(this.maxX, VT_SHIFT + level)),
+                incrementExact(asrCeil(this.maxY, VT_SHIFT + level)),
+                incrementExact(asrCeil(this.maxZ, VT_SHIFT + level)));
     }
 }
