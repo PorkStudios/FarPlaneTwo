@@ -30,6 +30,8 @@ import net.daporkchop.fp2.core.mode.api.server.IFarServerResourceCreationEvent;
 import java.util.List;
 import java.util.Optional;
 
+import static net.daporkchop.lib.common.util.PValidation.*;
+
 /**
  * Type of {@link IFarGenerator} which generates tile data based on block data in the world.
  * <p>
@@ -41,7 +43,7 @@ public interface IFarGeneratorExact<POS extends IFarPos, T extends IFarTile> ext
     /**
      * Gets an {@link Optional} {@link List} of all the tile positions which may be generated at the same time as the tile at the given position to potentially achieve better performance.
      * <p>
-     * The input position must be included in the resulting {@link List}.
+     * If present, the input position must be included in the resulting {@link List}.
      *
      * @param world the {@link FBlockWorld} instance providing access to block data in the world
      * @param pos   the position of the tile to generate
@@ -60,6 +62,22 @@ public interface IFarGeneratorExact<POS extends IFarPos, T extends IFarTile> ext
      * @throws GenerationNotAllowedException if the generator attempts to access terrain which is not generated, and the given {@link FBlockWorld} does not allow generation
      */
     void generate(@NonNull FBlockWorld world, @NonNull POS pos, @NonNull T tile) throws GenerationNotAllowedException;
+
+    /**
+     * Generates the terrain in the given tiles.
+     *
+     * @param world     the {@link FBlockWorld} instance providing access to block data in the world
+     * @param positions the positions of the tiles to generate
+     * @param tiles     the tiles to generate
+     * @throws GenerationNotAllowedException if the generator attempts to access terrain which is not generated, and the given {@link FBlockWorld} does not allow generation
+     */
+    default void generate(@NonNull FBlockWorld world, @NonNull POS[] positions, @NonNull T[] tiles) throws GenerationNotAllowedException {
+        checkArg(positions.length == tiles.length, "positions (%d) and tiles (%d) must have same number of elements!", positions.length, tiles.length);
+
+        for (int i = 0; i < positions.length; i++) {
+            this.generate(world, positions[i], tiles[i]);
+        }
+    }
 
     /**
      * Fired to create a new {@link IFarGeneratorExact}.

@@ -20,7 +20,6 @@
 
 package net.daporkchop.fp2.core.util.threading.scheduler;
 
-import com.google.common.collect.ImmutableList;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -402,7 +401,7 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
         return this.queue.poll(1L, TimeUnit.SECONDS);
     }
 
-    protected void executeTask(@NonNull Task task) {
+    protected void executeTask(@NonNull Task initialTask) {
         if (!this.running) {
             throw new SchedulerClosedError();
         }
@@ -410,123 +409,59 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
         Deque<Task> recursionStack = this.recursionStack.get();
         if (!recursionStack.isEmpty()) { //ensure that this recursion is actually legal
             P from = recursionStack.peekFirst().param;
-            checkState(this.canRecurse(from, task.param), "recursion from %s to %s is not permitted!", from, task.param);
+            checkState(this.canRecurse(from, initialTask.param), "recursion from %s to %s is not permitted!", from, initialTask.param);
         }
 
         //begin recursion into task
-        recursionStack.push(task);
+        recursionStack.push(initialTask);
+
+        //keep track of all the tasks being executed
+        List<Task> allTasks = new ArrayList<>();
+        allTasks.add(initialTask);
 
         try { //execute the task and complete future accordingly
-            class CallbackImpl implements Callback<P, V> {
-                V value;
-                List<P> batchParameters;
+            Map<P, V> values = new ObjObjOpenHashMap<>();
+            values.put(initialTask.param, null);
 
+            this.function.work(initialTask.param, new Callback<P, V>() {
                 @Override
-                public synchronized void complete(@NonNull P param, @NonNull V value) {
-                    checkArg(param.equals(task.param), "completed wrong parameter! got %s, expected %s", param, task.param);
-                    checkState(this.value == null && this.batchParameters == null, "parameter %s was already completed!", param);
-
-                    this.value = value;
-                }
-
-                @Override
-                public synchronized void promoteToBatch(@NonNull P param, @NonNull List<P> batchParameters) {
-                    checkArg(param.equals(task.param), "completed wrong parameter! got %s, expected %s", param, task.param);
-                    checkState(this.value == null && this.batchParameters == null, "parameter %s was already completed!", param);
-
-                    checkArg(batchParameters.contains(param), "parameter key %s not present in batch promotion parameter list: %s", param, batchParameters);
-                    checkState(SharedFutureScheduler.this.canExecuteInBatch(batchParameters), "given parameters may not be used in the same batch: %s", batchParameters);
-
-                    this.batchParameters = ImmutableList.copyOf(batchParameters);
-                }
-            }
-
-            CallbackImpl callback = new CallbackImpl();
-            this.function.applySingle(task.param, callback);
-
-            if (callback.value != null) { //task was completed normally, set the future's result value
-                task.complete(callback.value);
-            } else if (callback.batchParameters != null) { //task was promoted to a batch
-                if (DEBUG_PRINTS_ENABLED) {
-                    fp2().log().info("execute: parameter %s was promoted to batch %s", task.param, callback.batchParameters);
-                }
-
-                this.executeBatch(task, callback.batchParameters);
-            } else {
-                throw new IllegalStateException("parameter " + task.param + " was not completed!");
-            }
-        } catch (SchedulerClosedError e) { //catch and rethrow this separately to prevent it from being used to complete the future
-            task.cancel0(); //cancel the future to make sure it has a return value
-            throw e;
-        } catch (RecursiveTaskCancelledError e) { //a dependent task was cancelled, which likely means this one was too (but we need to make sure of it)
-            if (!task.isCancelled()) { //this should be impossible
-                task.completeExceptionally(e);
-                this.group.manager().handle(e);
-            }
-        } catch (Throwable t) {
-            task.completeExceptionally(t);
-            if (this.running) { //only handle the exception if we aren't already shutting the scheduler down
-                this.group.manager().handle(t);
-            }
-        } finally {
-            { //recursion is complete, so pop the top off the recursion stack
-                Task popped = recursionStack.pollFirst();
-                checkState(task == popped, "recursion stack is in invalid state: popped %s, but expected %s!", popped, task);
-            }
-
-            //the task's been executed, remove it from the map
-            this.deleteTask(task);
-        }
-    }
-
-    protected void executeBatch(@NonNull Task rootTask, @NonNull List<P> batchParameters) {
-        if (!this.running) {
-            throw new SchedulerClosedError();
-        }
-
-        List<Task> batchTasks = new ArrayList<>(batchParameters.size());
-        List<P> effectiveBatchParams = new ArrayList<>(batchParameters.size());
-        try {
-            //acquire as many tasks in the batch as possible
-            for (P param : batchParameters) {
-                if (rootTask.param.equals(param)) { //add the root task
-                    batchTasks.add(rootTask);
-                    effectiveBatchParams.add(param);
-                } else { //try to acquire the task
-                    Task acquired = this.acquireTaskForBatch(param);
-                    if (acquired != null) { //acquire was successful, add it to batch
-                        batchTasks.add(acquired);
-                        effectiveBatchParams.add(param);
-                    }
-                }
-            }
-
-            if (DEBUG_PRINTS_ENABLED && effectiveBatchParams.size() != batchParameters.size()) {
-                fp2().log().info("executeBatch: only acquired %d/%d tasks (%s/%s)", effectiveBatchParams.size(), batchParameters.size(), effectiveBatchParams, batchParameters);
-            }
-
-            //add map entries for each parameter
-            final Map<P, V> values = new ObjObjOpenHashMap<>(batchParameters.size());
-            for (P param : effectiveBatchParams) {
-                values.put(param, null);
-            }
-
-            //execute the tasks
-            this.function.applyBatch(effectiveBatchParams, new Callback<P, V>() {
-                @Override
-                public synchronized void complete(@NonNull P param, @NonNull V value) {
+                public void complete(@NonNull P param, @NonNull V value) {
                     checkArg(values.containsKey(param), "completed invalid parameter! got %s, expected one of %s", param, values.keySet());
-                    checkState(values.replace(param, null, value), "parameter %s was already completed!", param);
+                    checkState(values.put(param, value) == null, "parameter %s was already completed!", param);
                 }
 
                 @Override
-                public synchronized void promoteToBatch(@NonNull P param, @NonNull List<P> batchParameters) {
-                    throw new UnsupportedOperationException("batch task cannot promote its children to batches");
+                public List<P> acquire(@NonNull List<P> params, @NonNull AcquisitionStrategy strategy) {
+                    List<P> acquired = new ArrayList<>();
+
+                    for (P param : params) {
+                        Task task;
+                        switch (strategy) {
+                            default: //the strategy is a hint, so fall back to any approach
+                            case TRY_STEAL_EXISTING_OR_CREATE:
+                                task = SharedFutureScheduler.this.acquireTaskForBatch(param);
+                                break;
+                        }
+
+                        if (task != null) { //we were able to successfully acquire the task
+                            checkState(!values.containsKey(task.param), "parameter %s was acquired twice?!?", param);
+
+                            values.put(task.param, null);
+                            allTasks.add(task);
+                            acquired.add(param);
+                        }
+                    }
+
+                    if (DEBUG_PRINTS_ENABLED) {
+                        fp2().log().info("callback acquire: acquired %d/%d tasks using %s (%s/%s, total %s)", acquired.size(), params.size(), strategy, acquired, params, values.keySet());
+                    }
+
+                    return acquired;
                 }
             });
 
             //complete the futures
-            for (Task task : batchTasks) {
+            for (Task task : allTasks) {
                 V value = values.get(task.param);
                 checkState(value != null, "parameter %s was not completed!", task.param);
 
@@ -534,20 +469,26 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
                 task.complete(value);
             }
         } catch (SchedulerClosedError e) { //catch and rethrow this separately to prevent it from being used to complete the future
-            batchTasks.forEach(Task::cancel0); //cancel the futures to make sure it has a return value
+            allTasks.forEach(Task::cancel0); //cancel the futures to make sure they are all completed
             throw e;
         } catch (RecursiveTaskCancelledError e) { //a dependent task was cancelled, which likely means this one was too (but we need to make sure of it)
-            batchTasks.forEach(task -> {
-                if (!task.isCancelled()) { //this should be impossible
-                    task.completeExceptionally(e);
-                    this.group.manager().handle(e);
-                }
-            });
+            if (allTasks.stream().noneMatch(Task::isCancelled)) { //this should be impossible
+                allTasks.forEach(task -> task.completeExceptionally(e));
+                this.group.manager().handle(e);
+            }
         } catch (Throwable t) {
-            batchTasks.forEach(task -> task.completeExceptionally(t));
+            allTasks.forEach(task -> task.completeExceptionally(t));
             if (this.running) { //only handle the exception if we aren't already shutting the scheduler down
                 this.group.manager().handle(t);
             }
+        } finally {
+            { //recursion is complete, so pop the top off the recursion stack
+                Task popped = recursionStack.pollFirst();
+                checkState(initialTask == popped, "recursion stack is in invalid state: popped %s, but expected %s!", popped, initialTask);
+            }
+
+            //the task's been executed, remove it from the map
+            allTasks.forEach(this::deleteTask);
         }
     }
 
@@ -721,6 +662,7 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
      *
      * @author DaPorkchop_
      */
+    @FunctionalInterface
     public interface WorkFunction<P, V> {
         /**
          * Wraps a regular {@link Function} into a {@link WorkFunction}.
@@ -729,41 +671,23 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
          * @return the wrapped {@link Function}
          */
         static <P, V> WorkFunction<P, V> wrap(@NonNull Function<P, V> function) {
-            return new WorkFunction<P, V>() {
-                @Override
-                public void applySingle(@NonNull P param, @NonNull Callback<P, V> callback) {
-                    callback.complete(param, function.apply(param));
-                }
-
-                @Override
-                public void applyBatch(@NonNull List<P> params, @NonNull Callback<P, V> callback) {
-                    for (P param : params) {
-                        callback.complete(param, function.apply(param));
-                    }
-                }
-            };
+            return (param, callback) -> callback.complete(param, function.apply(param));
         }
 
         /**
          * Calls the function with the given parameter.
          * <p>
-         * Either {@link Callback#complete(Object, Object)} or {@link Callback#promoteToBatch(Object, List)} <strong>must</strong> be called with the given key as a parameter before the method returns.
+         * <strong>Parameter ownership:</strong><br>
+         * Every {@link WorkFunction} invocation "owns" one or more parameters. The function is responsible for {@link Callback#complete(Object, Object) providing a result value} for
+         * every parameter it owns before the invocation returns. Initially, an invocation owns only a single parameter; the one which the function receives as a method argument.
+         * Invocations can acquire ownership of additional parameters using {@link Callback#acquire(List, AcquisitionStrategy) the given callback}.
+         * <p>
+         * The scheduler will ensure that no single parameter is owned by more than one invocation at a time.
          *
          * @param param    the parameter
          * @param callback the {@link Callback} instance to notify with the task result
          */
-        void applySingle(@NonNull P param, @NonNull Callback<P, V> callback);
-
-        /**
-         * Calls the function with the given parameter batch.
-         * <p>
-         * Either {@link Callback#complete(Object, Object)} or {@link Callback#promoteToBatch(Object, List)} <strong>must</strong> be called with each of the given keys as a parameter before the method
-         * returns.
-         *
-         * @param params   the parameters
-         * @param callback the {@link Callback} instance to notify with the task results
-         */
-        void applyBatch(@NonNull List<P> params, @NonNull Callback<P, V> callback);
+        void work(@NonNull P param, @NonNull Callback<P, V> callback);
     }
 
     /**
@@ -781,13 +705,36 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
         void complete(@NonNull P param, @NonNull V value);
 
         /**
-         * Promotes the task for the given parameter into a batch. The parameter will not be given a result value, instead the worker function will be invoked again with a subset of the parameters in the batch.
+         * Tries to acquire ownership of the given parameters.
          *
-         * @param param           the parameter
-         * @param batchParameters the parameters to include in the batch.<br>
-         *                        Note: {@code param} must be present in the list!<br>
-         *                        Note: the list must not contain any duplicate elements!
+         * @param params   the parameters to try to acquire ownership of
+         * @param strategy the strategy to use for acquiring the parameters' ownership. Note that this is merely a hint, the implementation is free to handle this any way it chooses.
+         * @return the parameters that were actually acquired
          */
-        void promoteToBatch(@NonNull P param, @NonNull List<P> batchParameters);
+        List<P> acquire(@NonNull List<P> params, @NonNull AcquisitionStrategy strategy);
+    }
+
+    /**
+     * Defines the strategies a {@link WorkFunction} invocation may use for acquiring additional parameters through {@link Callback#acquire(List, AcquisitionStrategy)}.
+     *
+     * @author DaPorkchop_
+     */
+    public enum AcquisitionStrategy {
+        /**
+         * Ownership of a parameter will be acquired according to the following rules:
+         * <ul>
+         *     <li>if the parameter is already scheduled, ownership will only be acquired if the parameter has not yet begun execution by any other thread.</li>
+         *     <li>if the parameter is not already scheduled, ownership will not be acquired.</li>
+         * </ul>
+         */
+        TRY_STEAL_EXISTING,
+        /**
+         * Ownership of a parameter will be acquired according to the following rules:
+         * <ul>
+         *     <li>if the parameter is already scheduled, ownership will only be acquired if the parameter has not yet begun execution by any other thread.</li>
+         *     <li>if the parameter is not already scheduled, ownership will be acquired in any case.</li>
+         * </ul>
+         */
+        TRY_STEAL_EXISTING_OR_CREATE;
     }
 }
