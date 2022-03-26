@@ -22,12 +22,13 @@ package net.daporkchop.fp2.core.mode.voxel.server.scale;
 
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.core.mode.common.server.gen.AbstractFarGenerator;
 import net.daporkchop.fp2.core.mode.voxel.VoxelData;
 import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.core.mode.voxel.VoxelTile;
+import net.daporkchop.fp2.core.server.world.IFarWorldServer;
 import net.daporkchop.fp2.core.util.math.Vector3d;
 import net.daporkchop.fp2.core.util.math.qef.QefSolver;
 import net.daporkchop.lib.math.vector.Vec3d;
@@ -49,7 +50,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 //TODO: this needs a LOT of work
 //TODO: re-implement using something based on https://www.researchgate.net/publication/220792145_Model_Simplification_Using_Vertex-Clustering
-public class VoxelScalerIntersection extends AbstractFarGenerator implements IFarScaler<VoxelPos, VoxelTile> {
+public class VoxelScalerIntersection extends AbstractFarGenerator<VoxelPos, VoxelTile> implements IFarScaler<VoxelPos, VoxelTile> {
     public static final int SRC_MIN = -4;
     public static final int SRC_MAX = (VT_VOXELS << 1) + 4;
     //public static final int SRC_MIN = 0;
@@ -87,8 +88,8 @@ public class VoxelScalerIntersection extends AbstractFarGenerator implements IFa
         return Vec3d.of(x + ((c >> 2) & 1) + 0.5d, y + ((c >> 1) & 1) + 0.5d, z + (c & 1) + 0.5d);
     }
 
-    public VoxelScalerIntersection(@NonNull IFarWorldServer world) {
-        super(world);
+    public VoxelScalerIntersection(@NonNull IFarWorldServer world, @NonNull IFarTileProvider<VoxelPos, VoxelTile> provider) {
+        super(world, provider);
     }
 
     @Override

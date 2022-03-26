@@ -93,8 +93,8 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
 
         this.coordLimits = mode.tileCoordLimits(world.fp2_IFarWorld_coordLimits());
 
-        this.generatorRough = this.mode().roughGenerator(world);
-        this.generatorExact = this.mode().exactGenerator(world);
+        this.generatorRough = this.mode().roughGenerator(world, this);
+        this.generatorExact = this.mode().exactGenerator(world, this);
 
         if (this.generatorRough == null) {
             fp2().log().warn("no rough %s generator exists for world '%s' (generator=%s)! Falling back to exact generator, this will have serious performance implications.", mode.name(), world.fp2_IFarWorld_dimensionId(), world.fp2_IFarWorldServer_terrainGeneratorInfo().implGenerator());
@@ -104,7 +104,7 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
 
         this.lowResolution = this.generatorRough != null && this.generatorRough.supportsLowResolution();
 
-        this.scaler = mode.scaler(world);
+        this.scaler = mode.scaler(world, this);
 
         this.root = world.fp2_IFarWorldServer_worldDirectory().resolve(MODID).resolve(this.mode().name().toLowerCase());
         this.storage = new RocksStorage<>(this, this.root);

@@ -26,6 +26,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
+import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.util.math.MathUtil;
 
@@ -34,8 +35,8 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static java.lang.Math.*;
-import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.fp2.core.mode.voxel.VoxelConstants.*;
+import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -105,6 +106,12 @@ public class VoxelPos implements IFarPos {
 
     public int flooredChunkZ() {
         return this.blockZ() >> 4;
+    }
+
+    public IntAxisAlignedBB bb() {
+        return new IntAxisAlignedBB(
+                this.x << (VT_SHIFT + this.level), this.y << (VT_SHIFT + this.level), this.z << (VT_SHIFT + this.level),
+                (this.x + 1) << (VT_SHIFT + this.level), (this.y + 1) << (VT_SHIFT + this.level), (this.z + 1) << (VT_SHIFT + this.level));
     }
 
     @Override

@@ -62,25 +62,25 @@ public abstract class AbstractFarRenderMode<POS extends IFarPos, T extends IFarT
     @Getter
     protected final int tileShift;
 
-    protected abstract AbstractExactGeneratorCreationEvent exactGeneratorCreationEvent(@NonNull IFarWorldServer world);
+    protected abstract AbstractExactGeneratorCreationEvent exactGeneratorCreationEvent(@NonNull IFarWorldServer world, @NonNull IFarTileProvider<POS, T> provider);
 
-    protected abstract AbstractRoughGeneratorCreationEvent roughGeneratorCreationEvent(@NonNull IFarWorldServer world);
+    protected abstract AbstractRoughGeneratorCreationEvent roughGeneratorCreationEvent(@NonNull IFarWorldServer world, @NonNull IFarTileProvider<POS, T> provider);
 
     protected abstract T newTile();
 
     @Override
-    public IFarGeneratorExact<POS, T> exactGenerator(@NonNull IFarWorldServer world) {
-        return fp2().eventBus().fireAndGetFirst(this.exactGeneratorCreationEvent(world))
+    public IFarGeneratorExact<POS, T> exactGenerator(@NonNull IFarWorldServer world, @NonNull IFarTileProvider<POS, T> provider) {
+        return fp2().eventBus().fireAndGetFirst(this.exactGeneratorCreationEvent(world, provider))
                 .orElseThrow(() -> new IllegalStateException(PStrings.fastFormat(
-                        "No exact generator available for world '%s', mode:%s",
+                        "no exact generator available for world '%s', mode:%s",
                         world.fp2_IFarWorld_dimensionId(),
                         this.name()
                 )));
     }
 
     @Override
-    public IFarGeneratorRough<POS, T> roughGenerator(@NonNull IFarWorldServer world) {
-        return fp2().eventBus().fireAndGetFirst(this.roughGeneratorCreationEvent(world)).orElse(null);
+    public IFarGeneratorRough<POS, T> roughGenerator(@NonNull IFarWorldServer world, @NonNull IFarTileProvider<POS, T> provider) {
+        return fp2().eventBus().fireAndGetFirst(this.roughGeneratorCreationEvent(world, provider)).orElse(null);
     }
 
     protected abstract AbstractTileProviderCreationEvent tileProviderCreationEvent(@NonNull IFarWorldServer world);
@@ -131,6 +131,8 @@ public abstract class AbstractFarRenderMode<POS extends IFarPos, T extends IFarT
     protected abstract class AbstractExactGeneratorCreationEvent implements IFarGeneratorExact.CreationEvent<POS, T> {
         @NonNull
         protected final IFarWorldServer world;
+        @NonNull
+        protected final IFarTileProvider<POS, T> provider;
 
         @Override
         public IFarRenderMode<POS, T> mode() {
@@ -146,6 +148,8 @@ public abstract class AbstractFarRenderMode<POS extends IFarPos, T extends IFarT
     protected abstract class AbstractRoughGeneratorCreationEvent implements IFarGeneratorRough.CreationEvent<POS, T> {
         @NonNull
         protected final IFarWorldServer world;
+        @NonNull
+        protected final IFarTileProvider<POS, T> provider;
 
         @Override
         public IFarRenderMode<POS, T> mode() {

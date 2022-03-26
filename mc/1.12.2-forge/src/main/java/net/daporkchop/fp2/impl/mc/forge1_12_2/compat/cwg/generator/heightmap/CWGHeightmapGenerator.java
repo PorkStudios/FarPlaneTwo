@@ -23,20 +23,21 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cwg.generator.heightmap;
 import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.IBiomeBlockReplacer;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.world.BlockWorldConstants;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cwg.CWGContext;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapData;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapTile;
 import net.daporkchop.fp2.core.mode.heightmap.server.gen.rough.AbstractRoughHeightmapGenerator;
+import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cwg.CWGContext;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.reference.cache.Cached;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
 import net.minecraft.world.WorldServer;
 
-import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.fp2.core.mode.heightmap.HeightmapConstants.*;
+import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 
 /**
@@ -65,8 +66,8 @@ public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
     protected final Cached<CWGContext> ctx;
     protected final Cached<double[]> hmapCache = Cached.threadLocal(() -> new double[sq(HMAP_SIZE)], ReferenceStrength.WEAK);
 
-    public CWGHeightmapGenerator(@NonNull IFarWorldServer world) {
-        super(world);
+    public CWGHeightmapGenerator(@NonNull IFarWorldServer world, @NonNull IFarTileProvider<HeightmapPos, HeightmapTile> provider) {
+        super(world, provider);
 
         this.ctx = Cached.threadLocal(() -> new CWGContext(this.registry, (WorldServer) world.fp2_IFarWorld_implWorld(), HMAP_SIZE, 2, HT_SHIFT), ReferenceStrength.WEAK);
     }

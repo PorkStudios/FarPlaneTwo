@@ -26,6 +26,7 @@ import net.daporkchop.fp2.api.world.GenerationNotAllowedException;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.server.IFarServerResourceCreationEvent;
+import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 
 import java.util.List;
 import java.util.Optional;
@@ -85,5 +86,9 @@ public interface IFarGeneratorExact<POS extends IFarPos, T extends IFarTile> ext
      * @author DaPorkchop_
      */
     interface CreationEvent<POS extends IFarPos, T extends IFarTile> extends IFarServerResourceCreationEvent<POS, T, IFarGeneratorExact<POS, T>> {
+        /**
+         * @return the {@link IFarTileProvider} which the {@link IFarGeneratorExact} will be created for
+         */
+        IFarTileProvider<POS, T> provider();
     }
 }

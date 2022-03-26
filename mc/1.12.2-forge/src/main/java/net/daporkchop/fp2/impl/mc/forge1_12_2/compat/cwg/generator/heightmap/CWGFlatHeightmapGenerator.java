@@ -22,8 +22,11 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cwg.generator.heightmap;
 
 import io.github.opencubicchunks.cubicchunks.cubicgen.preset.FlatGeneratorSettings;
 import lombok.NonNull;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.generator.heightmap.FlatHeightmapGenerator;
+import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
+import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
+import net.daporkchop.fp2.core.mode.heightmap.HeightmapTile;
 import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.generator.heightmap.FlatHeightmapGenerator;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Biomes;
 import net.minecraft.world.WorldServer;
@@ -38,8 +41,8 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 public class CWGFlatHeightmapGenerator extends FlatHeightmapGenerator {
-    public CWGFlatHeightmapGenerator(@NonNull IFarWorldServer world) {
-        super(world);
+    public CWGFlatHeightmapGenerator(@NonNull IFarWorldServer world, @NonNull IFarTileProvider<HeightmapPos, HeightmapTile> provider) {
+        super(world, provider);
     }
 
     @Override

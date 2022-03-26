@@ -21,30 +21,33 @@
 package net.daporkchop.fp2.core.mode.voxel.server.gen.rough;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
+import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
+import net.daporkchop.fp2.core.mode.voxel.VoxelData;
+import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
+import net.daporkchop.fp2.core.mode.voxel.VoxelTile;
+import net.daporkchop.fp2.core.mode.voxel.server.gen.AbstractVoxelGenerator;
 import net.daporkchop.fp2.core.server.world.IFarWorldServer;
 import net.daporkchop.fp2.core.util.math.Vector3d;
 import net.daporkchop.fp2.core.util.math.qef.QefSolver;
-import net.daporkchop.fp2.core.mode.voxel.VoxelData;
-import net.daporkchop.fp2.core.mode.voxel.VoxelTile;
-import net.daporkchop.fp2.core.mode.voxel.server.gen.AbstractVoxelGenerator;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.reference.cache.Cached;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.api.world.BlockWorldConstants.*;
-import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.fp2.core.mode.voxel.VoxelConstants.*;
+import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractRoughVoxelGenerator<PARAM> extends AbstractVoxelGenerator {
+public abstract class AbstractRoughVoxelGenerator<PARAM> extends AbstractVoxelGenerator implements IFarGeneratorRough<VoxelPos, VoxelTile> {
     protected final Cached<double[][]> densityMapCache = Cached.threadLocal(() -> new double[2][cb(CACHE_SIZE)], ReferenceStrength.WEAK);
 
-    public AbstractRoughVoxelGenerator(@NonNull IFarWorldServer world) {
-        super(world);
+    public AbstractRoughVoxelGenerator(@NonNull IFarWorldServer world, @NonNull IFarTileProvider<VoxelPos, VoxelTile> provider) {
+        super(world, provider);
     }
 
     protected byte[] populateTypeMapFromDensityMap(@NonNull double[][] densityMap) {

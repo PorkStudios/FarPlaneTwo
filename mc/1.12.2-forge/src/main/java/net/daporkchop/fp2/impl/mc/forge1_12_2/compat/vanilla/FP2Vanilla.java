@@ -100,12 +100,12 @@ public class FP2Vanilla {
 
     @FEventHandler(name = "vanilla_heightmap_generator_exact")
     public IFarGeneratorExact<HeightmapPos, HeightmapTile> createHeightmapGeneratorExact(IFarGeneratorExact.CreationEvent<HeightmapPos, HeightmapTile> event) {
-        return new VanillaHeightmapGenerator(event.world());
+        return new VanillaHeightmapGenerator(event.world(), event.provider());
     }
 
     @FEventHandler(name = "vanilla_voxel_generator_exact")
     public IFarGeneratorExact<VoxelPos, VoxelTile> createVoxelGeneratorExact(IFarGeneratorExact.CreationEvent<VoxelPos, VoxelTile> event) {
-        return new VanillaVoxelGenerator(event.world());
+        return new VanillaVoxelGenerator(event.world(), event.provider());
     }
 
     //Superflat rough generators
@@ -117,7 +117,7 @@ public class FP2Vanilla {
     @FEventHandler(name = "vanilla_heightmap_generator_rough_superflat")
     public Optional<IFarGeneratorRough<HeightmapPos, HeightmapTile>> createHeightmapGeneratorRoughSuperflat(IFarGeneratorRough.CreationEvent<HeightmapPos, HeightmapTile> event) {
         return this.isSuperflatWorld(event.world())
-                ? Optional.of(new FlatHeightmapGenerator(event.world()))
+                ? Optional.of(new FlatHeightmapGenerator(event.world(), event.provider()))
                 : Optional.empty();
     }
 

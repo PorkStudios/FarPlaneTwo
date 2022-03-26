@@ -144,7 +144,7 @@ public class FP2CubicChunks {
                 constrain = @Constrain(before = "vanilla_heightmap_generator_exact"))
         public Optional<IFarGeneratorExact<HeightmapPos, HeightmapTile>> createHeightmapGeneratorExact(IFarGeneratorExact.CreationEvent<HeightmapPos, HeightmapTile> event) {
             return this.isCubicWorld(event.world())
-                    ? Optional.of(new CCHeightmapGenerator(event.world()))
+                    ? Optional.of(new CCHeightmapGenerator(event.world(), event.provider()))
                     : Optional.empty();
         }
 
@@ -152,7 +152,7 @@ public class FP2CubicChunks {
                 constrain = @Constrain(before = "vanilla_voxel_generator_exact"))
         public Optional<IFarGeneratorExact<VoxelPos, VoxelTile>> createVoxelGeneratorExact(IFarGeneratorExact.CreationEvent<VoxelPos, VoxelTile> event) {
             return this.isCubicWorld(event.world())
-                    ? Optional.of(new CCVoxelGenerator(event.world()))
+                    ? Optional.of(new CCVoxelGenerator(event.world(), event.provider()))
                     : Optional.empty();
         }
 
