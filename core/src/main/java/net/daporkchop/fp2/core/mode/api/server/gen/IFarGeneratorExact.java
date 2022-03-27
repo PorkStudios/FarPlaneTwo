@@ -23,6 +23,7 @@ package net.daporkchop.fp2.core.mode.api.server.gen;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.api.world.GenerationNotAllowedException;
+import net.daporkchop.fp2.core.mode.api.IFarCoordLimits;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.server.IFarServerResourceCreationEvent;
@@ -44,7 +45,17 @@ public interface IFarGeneratorExact<POS extends IFarPos, T extends IFarTile> ext
     /**
      * Gets an {@link Optional} {@link List} of all the tile positions which may be generated at the same time as the tile at the given position to potentially achieve better performance.
      * <p>
-     * If present, the input position must be included in the resulting {@link List}.
+     * If an empty {@link Optional} is returned, no batching will be done and the tile will be generated individually.
+     * <p>
+     * Otherwise, the following restrictions apply to the positions which may be returned:
+     * <ul>
+     *     <li>the input position must be present in the list</li>
+     *     <li>all of the positions must be valid (i.e. within the provider's {@link IFarCoordLimits coordinate limits})</li>
+     *     <li>the positions must be chosen such that generation can only fail with a {@link GenerationNotAllowedException} if the input position would have failed. Conversely,
+     *     if the input position would have been able to be generated successfully, generation for the whole batch <strong>must</strong> succeed. As thi is entirely dependent
+     *     on the world's internal data representation, it is recommended to use {@link FBlockWorld#guaranteedDataAvailableVolume} to determine which data is guaranteed
+     *     to be available if the data necessary for generating the input position is.</li>
+     * </ul>
      *
      * @param world the {@link FBlockWorld} instance providing access to block data in the world
      * @param pos   the position of the tile to generate

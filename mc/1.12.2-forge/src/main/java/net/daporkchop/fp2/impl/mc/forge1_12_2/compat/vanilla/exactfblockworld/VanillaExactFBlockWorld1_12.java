@@ -81,37 +81,28 @@ public class VanillaExactFBlockWorld1_12 implements FBlockWorld {
     @Override
     public int getState(int x, int y, int z) throws GenerationNotAllowedException {
         //delegate to bulk getter because it'll delegate to PrefetchedChunksFBlockWorld1_12, which can access neighboring chunks if Block#getActualState accesses a
-        //  state which goes over a chunk border
+        //  state which goes over a cube/column border
         int[] buf = new int[1];
-        this.getStates(buf, 0, 1, x, y, z, 1, 1, 1, 1, 1, 1);
+        this.getData(buf, 0, 1, null, 0, 0, null, 0, 0, x, y, z, 1, 1, 1, 1, 1, 1);
         return buf[0];
     }
 
     @Override
     public int getBiome(int x, int y, int z) throws GenerationNotAllowedException {
         //delegate to bulk getter because it'll delegate to PrefetchedChunksFBlockWorld1_12, which can access neighboring chunks if Block#getActualState accesses a
-        //  state which goes over a chunk border
+        //  state which goes over a cube/column border
         int[] buf = new int[1];
-        this.getBiomes(buf, 0, 1, x, y, z, 1, 1, 1, 1, 1, 1);
+        this.getData(null, 0, 0, buf, 0, 1, null, 0, 0, x, y, z, 1, 1, 1, 1, 1, 1);
         return buf[0];
     }
 
     @Override
     public byte getLight(int x, int y, int z) throws GenerationNotAllowedException {
         //delegate to bulk getter because it'll delegate to PrefetchedChunksFBlockWorld1_12, which can access neighboring chunks if Block#getActualState accesses a
-        //  state which goes over a chunk border
+        //  state which goes over a cube/column border
         byte[] buf = new byte[1];
-        this.getLights(buf, 0, 1, x, y, z, 1, 1, 1, 1, 1, 1);
+        this.getData(null, 0, 0, null, 0, 0, buf, 0, 1, x, y, z, 1, 1, 1, 1, 1, 1);
         return buf[0];
-    }
-
-    @Override
-    public void getData(int[] states, int statesOff, int statesStride, int[] biomes, int biomesOff, int biomesStride, byte[] light, int lightOff, int lightStride, int minX, int minY, int minZ, int maxX, int maxY, int maxZ) throws GenerationNotAllowedException {
-        BlockWorldConstants.validateArgsForGetData(states, statesOff, statesStride, biomes, biomesOff, biomesStride, light, lightOff, lightStride, minX, minY, minZ, maxX, maxY, maxZ);
-
-        //delegate to getData with stride
-        this.getData(states, statesOff, statesStride, biomes, biomesOff, biomesStride, light, lightOff, lightStride,
-                minX, minY, minZ, maxX - minX, maxY - minY, maxZ - minZ, 1, 1, 1);
     }
 
     @Override
