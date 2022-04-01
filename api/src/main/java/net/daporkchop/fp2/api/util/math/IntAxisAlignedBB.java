@@ -44,7 +44,7 @@ public final class IntAxisAlignedBB {
     public int sizeX() {
         return this.maxX - this.minX;
     }
-    
+
     /**
      * @return the size of this AABB along the Y axis
      */
@@ -57,5 +57,17 @@ public final class IntAxisAlignedBB {
      */
     public int sizeZ() {
         return this.maxZ - this.minZ;
+    }
+
+    /**
+     * Checks whether or not the given point is contained by this bounding box.
+     *
+     * @param x the point's X coordinate
+     * @param y the point's Y coordinate
+     * @param z the point's Z coordinate
+     * @return whether or not the given point is contained by this bounding box
+     */
+    public boolean contains(int x, int y, int z) {
+        return x >= this.minX && x < this.maxX && y >= this.minY && y < this.maxY && z >= this.minZ && z < this.maxZ;
     }
 }

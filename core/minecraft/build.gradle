@@ -18,13 +18,6 @@
  *
  */
 
-rootProject.name = 'FarPlaneTwo'
-
-include 'api'
-include 'common'
-include 'core'
-include 'core:minecraft'
-include 'gl'
-include 'gl:opengl'
-include 'gl:opengl-lwjgl2'
-include 'mc:1.12.2-forge'
+dependencies {
+    implementationShade project(":core")
+}

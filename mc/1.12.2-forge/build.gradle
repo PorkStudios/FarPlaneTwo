@@ -79,6 +79,8 @@ repositories {
 dependencies {
     runtimeOnlyShade project(":gl:opengl-lwjgl2")
 
+    implementationShade project(":core:minecraft")
+
     implementationShade("net.daporkchop.lib:compression-zstd:$porklibVersion") {
         exclude group: "io.netty"
     }
