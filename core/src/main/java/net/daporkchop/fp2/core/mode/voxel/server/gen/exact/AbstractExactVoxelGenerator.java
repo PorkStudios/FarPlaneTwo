@@ -112,7 +112,7 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
 
         VoxelData data = new VoxelData();
 
-        data.x = data.y = data.z = 0;
+        data.x = data.y = data.z = POS_ONE;
 
         for (int dx = 0; dx < VT_VOXELS; dx++) {
             for (int dy = 0; dy < VT_VOXELS; dy++) {
