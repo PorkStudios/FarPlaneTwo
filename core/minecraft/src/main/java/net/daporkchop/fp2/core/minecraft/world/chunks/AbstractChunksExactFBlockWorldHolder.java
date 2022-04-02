@@ -26,8 +26,8 @@ import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.api.world.GenerationNotAllowedException;
-import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.fp2.core.minecraft.util.threading.asynccache.AsyncCacheNBT;
+import net.daporkchop.fp2.core.minecraft.world.AbstractExactFBlockWorldHolder;
 import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
 import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
 import net.daporkchop.fp2.core.server.world.ExactFBlockWorldHolder;
@@ -43,7 +43,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
-import java.util.function.Supplier;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
@@ -58,39 +57,49 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractChunksExactFBlockWorldHolder<CHUNK> implements ExactFBlockWorldHolder {
-    private final IFarWorldServer world;
-
+public abstract class AbstractChunksExactFBlockWorldHolder<CHUNK> extends AbstractExactFBlockWorldHolder {
     private final NDimensionalIntSegtreeSet chunksExistIndex;
     private final AsyncCacheNBT<Vec2i, ?, CHUNK, ?> chunkCache;
 
-    private final FGameRegistry registry;
-
     private final int chunkShift;
 
-    private final IntAxisAlignedBB bounds;
     private final int minHeight;
     private final int maxHeight;
 
-    public AbstractChunksExactFBlockWorldHolder(@NonNull IFarWorldServer world, int chunkShift,
-                                                @NonNull Supplier<NDimensionalIntSegtreeSet> chunksExistIndexFactory,
-                                                @NonNull Supplier<AsyncCacheNBT<Vec2i, ?, CHUNK, ?>> chunkCacheFactory) {
-        this.world = world;
+    public AbstractChunksExactFBlockWorldHolder(@NonNull IFarWorldServer world, int chunkShift) {
+        super(world);
 
         this.chunkShift = positive(chunkShift, "chunkShift");
 
-        this.bounds = world.fp2_IFarWorld_coordLimits();
-        this.minHeight = this.bounds.minY();
-        this.maxHeight = this.bounds.maxY();
+        this.minHeight = this.bounds().minY();
+        this.maxHeight = this.bounds().maxY();
 
-        this.chunksExistIndex = chunksExistIndexFactory.get();
-        this.chunkCache = chunkCacheFactory.get();
-
-        this.registry = world.fp2_IFarWorld_registry();
+        this.chunksExistIndex = this.createChunksExistIndex(world);
+        this.chunkCache = this.createChunkCache(world);
 
         //register self to listen for events
-        this.world.fp2_IFarWorldServer_eventBus().registerWeak(this);
+        this.world().fp2_IFarWorldServer_eventBus().registerWeak(this);
     }
+
+    /**
+     * Creates the {@link #chunksExistIndex}.
+     * <p>
+     * Note that this is called by {@link AbstractChunksExactFBlockWorldHolder}'s constructor. Accessing any internal state inside of this method will likely cause unexpected behavior.
+     *
+     * @param world the {@link IFarWorldServer} instanced passed to the constructor
+     * @return the {@link #chunksExistIndex} to use
+     */
+    protected abstract NDimensionalIntSegtreeSet createChunksExistIndex(@NonNull IFarWorldServer world);
+
+    /**
+     * Creates the {@link #chunkCache}.
+     * <p>
+     * Note that this is called by {@link AbstractChunksExactFBlockWorldHolder}'s constructor. Accessing any internal state inside of this method will likely cause unexpected behavior.
+     *
+     * @param world the {@link IFarWorldServer} instanced passed to the constructor
+     * @return the {@link #chunkCache} to use
+     */
+    protected abstract AsyncCacheNBT<Vec2i, ?, CHUNK, ?> createChunkCache(@NonNull IFarWorldServer world);
 
     public int chunkSize() {
         return 1 << this.chunkShift;
@@ -131,42 +140,7 @@ public abstract class AbstractChunksExactFBlockWorldHolder<CHUNK> implements Exa
         throw new UnsupportedOperationException("vanilla world shouldn't have cubes!");
     }
 
-    /**
-     * Checks whether or not the given Y coordinate is within the world's height limits.
-     *
-     * @param y the Y coordinate to check
-     * @return whether or not the Y coordinate is valid
-     */
-    public boolean isValidY(int y) {
-        return y >= this.minHeight() && y < this.maxHeight();
-    }
-
-    /**
-     * Checks whether or not the given X,Z coordinates are within the world's horizontal limits.
-     *
-     * @param x the X coordinate of the position to check
-     * @param z the Z coordinate of the position to check
-     * @return whether or not the X,Z coordinates are valid
-     */
-    public boolean isValidXZ(int x, int z) {
-        return this.bounds.contains(x, this.bounds.minY(), z);
-    }
-
-    /**
-     * Checks whether or not the given point is within the world's limits.
-     *
-     * @param x the point's X coordinate
-     * @param y the point's Y coordinate
-     * @param z the point's Z coordinate
-     * @return whether or not the given point is valid
-     */
-    public boolean isValidPosition(int x, int y, int z) {
-        return this.bounds.contains(x, y, z);
-    }
-
-    /**
-     * @see FBlockWorld#containsAnyData
-     */
+    @Override
     public boolean containsAnyData(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
         int minChunkX = minX >> this.chunkShift();
         int minChunkZ = minZ >> this.chunkShift();
@@ -176,9 +150,7 @@ public abstract class AbstractChunksExactFBlockWorldHolder<CHUNK> implements Exa
         return maxY >= this.minHeight() && minY < this.maxHeight() && this.chunksExistIndex.containsAny(minChunkX, minChunkZ, maxChunkX, maxChunkZ);
     }
 
-    /**
-     * @see FBlockWorld#guaranteedDataAvailableVolume
-     */
+    @Override
     public IntAxisAlignedBB guaranteedDataAvailableVolume(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
         //round X,Z up/down to next chunk boundary, Y is infinite
         return new IntAxisAlignedBB(
@@ -213,10 +185,52 @@ public abstract class AbstractChunksExactFBlockWorldHolder<CHUNK> implements Exa
             return this.getChunkPositionsToPrefetch((FBlockWorld.SinglePointQueryShape) shape);
         } else if (shape instanceof FBlockWorld.OriginSizeStrideQueryShape) {
             return this.getChunkPositionsToPrefetch((FBlockWorld.OriginSizeStrideQueryShape) shape);
-        } else if (shape instanceof FBlockWorld.CoordinateArraysQueryShape) {
-            return this.getChunkPositionsToPrefetch((FBlockWorld.CoordinateArraysQueryShape) shape);
+        } else if (shape instanceof FBlockWorld.MultiPointsQueryShape) {
+            return this.getChunkPositionsToPrefetch((FBlockWorld.MultiPointsQueryShape) shape);
         } else {
             return this.getChunkPositionsToPrefetchGeneric(shape);
+        }
+    }
+
+    /**
+     * Gets a {@link List} of the chunk positions which need to be prefetched in order to respond to a group of queries with the given shapes.
+     *
+     * @param shapes the {@link FBlockWorld.QueryShape queries' shapes}
+     * @return the positions of the chunks to prefetch
+     */
+    public List<Vec2i> getChunkPositionsToPrefetch(@NonNull FBlockWorld.QueryShape... shapes) {
+        switch (shapes.length) {
+            case 0: //there are no shapes, we don't need to prefetch anything
+                return Collections.emptyList();
+            case 1: //there is only a single shape, prefetch it individually
+                return this.getChunkPositionsToPrefetch(shapes[0]);
+        }
+
+        //collect all the positions into an NDimensionalIntSet
+        try (NDimensionalIntSet set = Datastructures.INSTANCE.nDimensionalIntSet().dimensions(2).threadSafe(false).build()) {
+            //add the positions for each shape to the set
+            for (FBlockWorld.QueryShape shape : shapes) {
+                this.getChunkPositionsToPrefetch(set, shape);
+            }
+
+            //now that the shapes have been reduced to a set of unique positions, convert it to a list of Vec2i
+            List<Vec2i> positions = new ArrayList<>(toIntExact(set.count()));
+            set.forEach2D((x, z) -> positions.add(Vec2i.of(x, z)));
+            return positions;
+        }
+    }
+
+    protected void getChunkPositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull FBlockWorld.QueryShape shape) {
+        if (shape.count() == 0) { //the shape contains no points, we don't need to prefetch anything
+            //no-op
+        } else if (shape instanceof FBlockWorld.SinglePointQueryShape) {
+            this.getChunkPositionsToPrefetch(set, (FBlockWorld.SinglePointQueryShape) shape);
+        } else if (shape instanceof FBlockWorld.OriginSizeStrideQueryShape) {
+            this.getChunkPositionsToPrefetch(set, (FBlockWorld.OriginSizeStrideQueryShape) shape);
+        } else if (shape instanceof FBlockWorld.MultiPointsQueryShape) {
+            this.getChunkPositionsToPrefetch(set, (FBlockWorld.MultiPointsQueryShape) shape);
+        } else {
+            this.getChunkPositionsToPrefetchGeneric(set, shape);
         }
     }
 
@@ -224,6 +238,12 @@ public abstract class AbstractChunksExactFBlockWorldHolder<CHUNK> implements Exa
         return this.isValidPosition(shape.x(), shape.y(), shape.z())
                 ? Collections.singletonList(Vec2i.of(shape.x() >> this.chunkShift(), shape.z() >> this.chunkShift()))
                 : Collections.emptyList();
+    }
+
+    protected void getChunkPositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull FBlockWorld.SinglePointQueryShape shape) {
+        if (this.isValidPosition(shape.x(), shape.y(), shape.z())) {
+            set.add(shape.x() >> this.chunkShift(), shape.z() >> this.chunkShift());
+        }
     }
 
     protected List<Vec2i> getChunkPositionsToPrefetch(@NonNull FBlockWorld.OriginSizeStrideQueryShape shape) {
@@ -238,22 +258,16 @@ public abstract class AbstractChunksExactFBlockWorldHolder<CHUNK> implements Exa
         }
     }
 
-    protected boolean isAnyPointValid(@NonNull FBlockWorld.OriginSizeStrideQueryShape shape) {
-        return this.isAnyPointValid(shape.originX(), shape.sizeX(), shape.strideX(), this.bounds().minX(), this.bounds.maxX())
-               && this.isAnyPointValid(shape.originY(), shape.sizeY(), shape.strideY(), this.bounds().minY(), this.bounds.maxY())
-               && this.isAnyPointValid(shape.originZ(), shape.sizeZ(), shape.strideZ(), this.bounds().minZ(), this.bounds.maxZ());
-    }
+    protected void getChunkPositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull FBlockWorld.OriginSizeStrideQueryShape shape) {
+        shape.validate();
 
-    protected boolean isAnyPointValid(int origin, int size, int stride, int min, int max) {
-        //this could probably be implemented way faster, but i really don't care because this will never be called with a size larger than like 20
-
-        for (int i = 0, pos = origin; i < size; i++, pos += stride) {
-            if (pos >= min && pos < max) { //the point is valid
-                return true;
-            }
+        if (!this.isAnyPointValid(shape)) { //no points are valid, there's no reason to check anything
+            //no-op
+        } else if (shape.strideX() == 1 && shape.strideY() == 1 && shape.strideZ() == 1) { //shape is an ordinary AABB
+            this.getChunkPositionsToPrefetchRegularAABB(set, shape);
+        } else {
+            this.getChunkPositionsToPrefetchSparseAABB(set, shape);
         }
-
-        return false; //no points were valid
     }
 
     protected List<Vec2i> getChunkPositionsToPrefetchRegularAABB(@NonNull FBlockWorld.OriginSizeStrideQueryShape shape) {
@@ -262,10 +276,10 @@ public abstract class AbstractChunksExactFBlockWorldHolder<CHUNK> implements Exa
         //we assume that at least one Y coordinate is valid, meaning that the entire chunk needs to be prefetched as long as the horizontal coordinates are valid
 
         //find min and max chunk coordinates (upper bound is inclusive)
-        int minX = max(shape.originX(), this.bounds.minX()) >> this.chunkShift();
-        int minZ = max(shape.originZ(), this.bounds.minZ()) >> this.chunkShift();
-        int maxX = min(shape.originX() + shape.sizeX() - 1, this.bounds.maxX() - 1) >> this.chunkShift();
-        int maxZ = min(shape.originZ() + shape.sizeZ() - 1, this.bounds.maxZ() - 1) >> this.chunkShift();
+        int minX = max(shape.originX(), this.bounds().minX()) >> this.chunkShift();
+        int minZ = max(shape.originZ(), this.bounds().minZ()) >> this.chunkShift();
+        int maxX = min(shape.originX() + shape.sizeX() - 1, this.bounds().maxX() - 1) >> this.chunkShift();
+        int maxZ = min(shape.originZ() + shape.sizeZ() - 1, this.bounds().maxZ() - 1) >> this.chunkShift();
 
         //collect all positions to a list
         List<Vec2i> positions = new ArrayList<>(multiplyExact(maxX - minX + 1, maxZ - minZ + 1));
@@ -277,14 +291,33 @@ public abstract class AbstractChunksExactFBlockWorldHolder<CHUNK> implements Exa
         return positions;
     }
 
+    protected void getChunkPositionsToPrefetchRegularAABB(@NonNull NDimensionalIntSet set, @NonNull FBlockWorld.OriginSizeStrideQueryShape shape) {
+        shape.validate();
+
+        //we assume that at least one Y coordinate is valid, meaning that the entire chunk needs to be prefetched as long as the horizontal coordinates are valid
+
+        //find min and max chunk coordinates (upper bound is inclusive)
+        int minX = max(shape.originX(), this.bounds().minX()) >> this.chunkShift();
+        int minZ = max(shape.originZ(), this.bounds().minZ()) >> this.chunkShift();
+        int maxX = min(shape.originX() + shape.sizeX() - 1, this.bounds().maxX() - 1) >> this.chunkShift();
+        int maxZ = min(shape.originZ() + shape.sizeZ() - 1, this.bounds().maxZ() - 1) >> this.chunkShift();
+
+        //add all positions to the set
+        for (int chunkX = minX; chunkX <= maxX; chunkX++) {
+            for (int chunkZ = minZ; chunkZ <= maxZ; chunkZ++) {
+                set.add(chunkX, chunkZ);
+            }
+        }
+    }
+
     protected List<Vec2i> getChunkPositionsToPrefetchSparseAABB(@NonNull FBlockWorld.OriginSizeStrideQueryShape shape) {
         shape.validate();
 
         //we assume that at least one Y coordinate is valid, meaning that the entire chunk needs to be prefetched as long as the horizontal coordinates are valid
 
         //find chunk X,Z coordinates
-        Consumer<IntConsumer> chunkXSupplier = this.chunkCoordSupplier(shape.originX(), shape.sizeX(), shape.strideX(), this.bounds.minX(), this.bounds.maxX());
-        Consumer<IntConsumer> chunkZSupplier = this.chunkCoordSupplier(shape.originZ(), shape.sizeZ(), shape.strideZ(), this.bounds.minZ(), this.bounds.maxZ());
+        Consumer<IntConsumer> chunkXSupplier = this.chunkCoordSupplier(shape.originX(), shape.sizeX(), shape.strideX(), this.bounds().minX(), this.bounds().maxX(), this.chunkShift(), this.chunkSize());
+        Consumer<IntConsumer> chunkZSupplier = this.chunkCoordSupplier(shape.originZ(), shape.sizeZ(), shape.strideZ(), this.bounds().minZ(), this.bounds().maxZ(), this.chunkShift(), this.chunkSize());
 
         //collect all positions to a list
         List<Vec2i> positions = new ArrayList<>();
@@ -292,27 +325,27 @@ public abstract class AbstractChunksExactFBlockWorldHolder<CHUNK> implements Exa
         return positions;
     }
 
-    protected Consumer<IntConsumer> chunkCoordSupplier(int origin, int size, int stride, int min, int max) {
-        if (stride >= this.chunkSize()) {
-            return callback -> {
-                for (int i = 0, block = origin; i < size && block < max; i++, block += stride) {
-                    if (block >= min) {
-                        callback.accept(block >> this.chunkShift());
-                    }
-                }
-            };
-        } else {
-            return callback -> {
-                for (int chunk = max(origin, min) >> this.chunkShift(), limit = min(origin + (size - 1) * stride, max) >> this.chunkShift(); chunk <= limit; chunk++) {
-                    callback.accept(chunk);
-                }
-            };
-        }
+    protected void getChunkPositionsToPrefetchSparseAABB(@NonNull NDimensionalIntSet set, @NonNull FBlockWorld.OriginSizeStrideQueryShape shape) {
+        shape.validate();
+
+        //we assume that at least one Y coordinate is valid, meaning that the entire chunk needs to be prefetched as long as the horizontal coordinates are valid
+
+        //find chunk X,Z coordinates
+        Consumer<IntConsumer> chunkXSupplier = this.chunkCoordSupplier(shape.originX(), shape.sizeX(), shape.strideX(), this.bounds().minX(), this.bounds().maxX(), this.chunkShift(), this.chunkSize());
+        Consumer<IntConsumer> chunkZSupplier = this.chunkCoordSupplier(shape.originZ(), shape.sizeZ(), shape.strideZ(), this.bounds().minZ(), this.bounds().maxZ(), this.chunkShift(), this.chunkSize());
+
+        //add all positions to the set
+        chunkXSupplier.accept(chunkX -> chunkZSupplier.accept(chunkZ -> set.add(chunkX, chunkZ)));
     }
 
-    protected List<Vec2i> getChunkPositionsToPrefetch(@NonNull FBlockWorld.CoordinateArraysQueryShape shape) {
+    protected List<Vec2i> getChunkPositionsToPrefetch(@NonNull FBlockWorld.MultiPointsQueryShape shape) {
         //delegate to generic method, it's already the fastest possible approach for this shape implementation
         return this.getChunkPositionsToPrefetchGeneric(shape);
+    }
+
+    protected void getChunkPositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull FBlockWorld.MultiPointsQueryShape shape) {
+        //delegate to generic method, it's already the fastest possible approach for this shape implementation
+        this.getChunkPositionsToPrefetchGeneric(set, shape);
     }
 
     protected List<Vec2i> getChunkPositionsToPrefetchGeneric(@NonNull FBlockWorld.QueryShape shape) {
@@ -331,5 +364,16 @@ public abstract class AbstractChunksExactFBlockWorldHolder<CHUNK> implements Exa
             set.forEach2D((x, z) -> positions.add(Vec2i.of(x, z)));
             return positions;
         }
+    }
+
+    protected void getChunkPositionsToPrefetchGeneric(@NonNull NDimensionalIntSet set, @NonNull FBlockWorld.QueryShape shape) {
+        shape.validate();
+
+        //iterate over every position, recording all the ones which are valid
+        shape.forEach((index, x, y, z) -> {
+            if (this.isValidPosition(x, y, z)) {
+                set.add(x >> this.chunkShift(), z >> this.chunkShift());
+            }
+        });
     }
 }

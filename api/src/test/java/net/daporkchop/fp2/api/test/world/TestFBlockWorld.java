@@ -39,6 +39,38 @@ public class TestFBlockWorld {
     //
 
     @Test
+    public void testQueryShape_SinglePoint() {
+        IntStream.range(0, 1024).parallel().forEach(_unused -> {
+            int x = ThreadLocalRandom.current().nextInt(Integer.MIN_VALUE, Integer.MAX_VALUE);
+            int y = ThreadLocalRandom.current().nextInt(Integer.MIN_VALUE, Integer.MAX_VALUE);
+            int z = ThreadLocalRandom.current().nextInt(Integer.MIN_VALUE, Integer.MAX_VALUE);
+
+            this.testQueryShape(new FBlockWorld.SinglePointQueryShape(x, y, z));
+        });
+    }
+
+    @Test
+    public void testQueryShape_MultiPoints() {
+        //separate
+        IntStream.range(0, 1024).parallel().forEach(_unused -> {
+            int count = ThreadLocalRandom.current().nextInt(4096);
+            int[] x = ThreadLocalRandom.current().ints(count).toArray();
+            int[] y = ThreadLocalRandom.current().ints(count).toArray();
+            int[] z = ThreadLocalRandom.current().ints(count).toArray();
+
+            this.testQueryShape(new FBlockWorld.MultiPointsQueryShape(x, 0, 1, y, 0, 1, z, 0, 1, count));
+        });
+
+        //interleaved
+        IntStream.range(0, 1024).parallel().forEach(_unused -> {
+            int count = ThreadLocalRandom.current().nextInt(4096);
+            int[] positions = ThreadLocalRandom.current().ints(count * 3).toArray();
+
+            this.testQueryShape(new FBlockWorld.MultiPointsQueryShape(positions, 0, 3, positions, 1, 3, positions, 2, 3, count));
+        });
+    }
+
+    @Test
     public void testQueryShape_OriginSizeStride() {
         IntStream.range(0, 1024).parallel().forEach(_unused -> {
             int originX = ThreadLocalRandom.current().nextInt(Integer.MIN_VALUE >> 1, Integer.MAX_VALUE >> 1);
@@ -52,27 +84,6 @@ public class TestFBlockWorld {
             int strideZ = ThreadLocalRandom.current().nextInt(65536);
 
             this.testQueryShape(new FBlockWorld.OriginSizeStrideQueryShape(originX, originY, originZ, sizeX, sizeY, sizeZ, strideX, strideY, strideZ));
-        });
-    }
-
-    @Test
-    public void testQueryShape_CoordinateArrays() {
-        //separate
-        IntStream.range(0, 1024).parallel().forEach(_unused -> {
-            int count = ThreadLocalRandom.current().nextInt(4096);
-            int[] x = ThreadLocalRandom.current().ints(count).toArray();
-            int[] y = ThreadLocalRandom.current().ints(count).toArray();
-            int[] z = ThreadLocalRandom.current().ints(count).toArray();
-
-            this.testQueryShape(new FBlockWorld.CoordinateArraysQueryShape(x, 0, 1, y, 0, 1, z, 0, 1, count));
-        });
-
-        //interleaved
-        IntStream.range(0, 1024).parallel().forEach(_unused -> {
-            int count = ThreadLocalRandom.current().nextInt(4096);
-            int[] positions = ThreadLocalRandom.current().ints(count * 3).toArray();
-
-            this.testQueryShape(new FBlockWorld.CoordinateArraysQueryShape(positions, 0, 3, positions, 1, 3, positions, 2, 3, count));
         });
     }
 

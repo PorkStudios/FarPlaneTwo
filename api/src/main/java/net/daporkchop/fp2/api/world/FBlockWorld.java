@@ -266,7 +266,7 @@ public interface FBlockWorld extends AutoCloseable {
             int count) throws GenerationNotAllowedException {
         //translate to new query api
         this.query(Query.of(
-                new CoordinateArraysQueryShape(xs, xOff, xStride, ys, yOff, yStride, zs, zOff, zStride, count),
+                new MultiPointsQueryShape(xs, xOff, xStride, ys, yOff, yStride, zs, zOff, zStride, count),
                 new BandArraysQueryOutput(states, statesOffset, statesStride, biomes, biomesOffset, biomesStride, light, lightOffset, lightStride, count)));
     }
 
@@ -479,6 +479,77 @@ public interface FBlockWorld extends AutoCloseable {
     }
 
     /**
+     * A simple {@link QueryShape} which consists of multiple positions. Positions are defined by three user-provided arrays, one for each axis.
+     * <p>
+     * Positions are returned in the order they are present in the arrays.
+     *
+     * @author DaPorkchop_
+     */
+    @Data
+    final class MultiPointsQueryShape implements QueryShape {
+        @NonNull
+        private final int[] x;
+        private final int xOffset;
+        private final int xStride;
+
+        @NonNull
+        private final int[] y;
+        private final int yOffset;
+        private final int yStride;
+
+        @NonNull
+        private final int[] z;
+        private final int zOffset;
+        private final int zStride;
+
+        private final int count;
+
+        @Override
+        public void validate() throws RuntimeException {
+            //make sure count is valid
+            notNegative(this.count, "count");
+
+            //make sure all the indices fit within the given arrays for the provided offset and stride
+            if (this.count != 0) {
+                checkRangeLen(this.x.length, this.xOffset, multiplyExact(positive(this.xStride, "xStride"), this.count) - this.xOffset);
+                checkRangeLen(this.y.length, this.yOffset, multiplyExact(positive(this.yStride, "yStride"), this.count) - this.yOffset);
+                checkRangeLen(this.z.length, this.zOffset, multiplyExact(positive(this.zStride, "zStride"), this.count) - this.zOffset);
+            }
+        }
+
+        @Override
+        public int x(int index) {
+            checkIndex(this.count, index);
+            //we assume our state is valid, and since we know that the index is valid we can be sure there will be no overflows here
+            return this.x[this.xOffset + index * this.xStride];
+        }
+
+        @Override
+        public int y(int index) {
+            checkIndex(this.count, index);
+            //we assume our state is valid, and since we know that the index is valid we can be sure there will be no overflows here
+            return this.y[this.yOffset + index * this.yStride];
+        }
+
+        @Override
+        public int z(int index) {
+            checkIndex(this.count, index);
+            //we assume our state is valid, and since we know that the index is valid we can be sure there will be no overflows here
+            return this.z[this.zOffset + index * this.zStride];
+        }
+
+        @Override
+        public <T extends Throwable> void forEach(@NonNull VoxelPositionConsumer<T> action) throws T {
+            this.validate();
+
+            //iterate over every position
+            for (int index = 0, xIndex = this.xOffset, yIndex = this.yOffset, zIndex = this.zOffset; index < this.count; index++, xIndex += this.xStride, yIndex += this.yStride, zIndex += this.zStride) {
+                action.accept(index, this.x[xIndex], this.y[yIndex], this.z[zIndex]);
+            }
+        }
+    }
+
+    /**
      * A simple {@link QueryShape} which consists of an origin position, and per-axis sample counts and strides.
      * <p>
      * Positions are returned in XYZ order.
@@ -545,77 +616,6 @@ public interface FBlockWorld extends AutoCloseable {
                         action.accept(index, this.originX + dx * this.strideX, this.originY + dy * this.strideY, this.originZ + dz * this.strideZ);
                     }
                 }
-            }
-        }
-    }
-
-    /**
-     * A simple {@link QueryShape} which is defined by three user-provided arrays, one for each axis.
-     * <p>
-     * Positions are returned in the order they are present in the arrays.
-     *
-     * @author DaPorkchop_
-     */
-    @Data
-    final class CoordinateArraysQueryShape implements QueryShape {
-        @NonNull
-        private final int[] x;
-        private final int xOffset;
-        private final int xStride;
-
-        @NonNull
-        private final int[] y;
-        private final int yOffset;
-        private final int yStride;
-
-        @NonNull
-        private final int[] z;
-        private final int zOffset;
-        private final int zStride;
-
-        private final int count;
-
-        @Override
-        public void validate() throws RuntimeException {
-            //make sure count is valid
-            notNegative(this.count, "count");
-
-            //make sure all the indices fit within the given arrays for the provided offset and stride
-            if (this.count != 0) {
-                checkRangeLen(this.x.length, this.xOffset, multiplyExact(positive(this.xStride, "xStride"), this.count) - this.xOffset);
-                checkRangeLen(this.y.length, this.yOffset, multiplyExact(positive(this.yStride, "yStride"), this.count) - this.yOffset);
-                checkRangeLen(this.z.length, this.zOffset, multiplyExact(positive(this.zStride, "zStride"), this.count) - this.zOffset);
-            }
-        }
-
-        @Override
-        public int x(int index) {
-            checkIndex(this.count, index);
-            //we assume our state is valid, and since we know that the index is valid we can be sure there will be no overflows here
-            return this.x[this.xOffset + index * this.xStride];
-        }
-
-        @Override
-        public int y(int index) {
-            checkIndex(this.count, index);
-            //we assume our state is valid, and since we know that the index is valid we can be sure there will be no overflows here
-            return this.y[this.yOffset + index * this.yStride];
-        }
-
-        @Override
-        public int z(int index) {
-            checkIndex(this.count, index);
-            //we assume our state is valid, and since we know that the index is valid we can be sure there will be no overflows here
-            return this.z[this.zOffset + index * this.zStride];
-        }
-
-        @Override
-        public <T extends Throwable> void forEach(@NonNull VoxelPositionConsumer<T> action) throws T {
-            this.validate();
-
-            //iterate over every position
-            for (int index = 0, xIndex = this.xOffset, yIndex = this.yOffset, zIndex = this.zOffset; index < this.count; index++, xIndex += this.xStride, yIndex += this.yStride, zIndex += this.zStride) {
-                action.accept(index, this.x[xIndex], this.y[yIndex], this.z[zIndex]);
             }
         }
     }

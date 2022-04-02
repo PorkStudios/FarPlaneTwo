@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.core.minecraft.world.chunks;
+package net.daporkchop.fp2.core.minecraft.world.cubes;
 
 import lombok.Getter;
 import lombok.NonNull;
@@ -27,53 +27,54 @@ import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.api.world.GenerationNotAllowedException;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.lib.common.math.BinMath;
-import net.daporkchop.lib.primitive.map.LongObjMap;
-import net.daporkchop.lib.primitive.map.open.LongObjOpenHashMap;
+import net.daporkchop.lib.math.vector.Vec3i;
+import net.daporkchop.lib.primitive.map.open.ObjObjOpenHashMap;
 
 import java.util.List;
+import java.util.Map;
 
 /**
- * Base implementation of an {@link FBlockWorld} which serves a Minecraft-style world made up of chunk columns.
+ * Base implementation of an {@link FBlockWorld} which serves a Minecraft-style world made up of cubes.
  * <p>
- * This forms the internal API implementation used by {@link AbstractChunksExactFBlockWorldHolder}. It contains a group of chunks which have been prefetched and can be quickly accessed
+ * This forms the internal API implementation used by {@link AbstractCubesExactFBlockWorldHolder}. It contains a group of chunks which have been prefetched and can be quickly accessed
  * without blocking.
  *
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractPrefetchedChunksExactFBlockWorld<CHUNK> implements FBlockWorld {
-    private final AbstractChunksExactFBlockWorldHolder<CHUNK> holder;
+public abstract class AbstractPrefetchedCubesExactFBlockWorld<CUBE> implements FBlockWorld {
+    private final AbstractCubesExactFBlockWorldHolder<CUBE> holder;
     private final boolean generationAllowed;
 
-    private final int chunkShift;
+    private final int cubeShift;
 
-    private final LongObjMap<CHUNK> chunks;
+    private final Map<Vec3i, CUBE> cubes; //TODO: some kind of 3int -> obj hashmap
 
     private final FGameRegistry registry;
 
-    public AbstractPrefetchedChunksExactFBlockWorld(@NonNull AbstractChunksExactFBlockWorldHolder<CHUNK> holder, boolean generationAllowed, @NonNull List<CHUNK> chunks) {
+    public AbstractPrefetchedCubesExactFBlockWorld(@NonNull AbstractCubesExactFBlockWorldHolder<CUBE> holder, boolean generationAllowed, @NonNull List<CUBE> cubes) {
         this.holder = holder;
         this.generationAllowed = generationAllowed;
 
-        this.chunkShift = holder.chunkShift();
+        this.cubeShift = holder.cubeShift();
 
         this.registry = holder.registry();
 
-        this.chunks = new LongObjOpenHashMap<>(chunks.size());
-        chunks.forEach(chunk -> this.chunks.put(this.packedChunkPosition(chunk), chunk));
+        this.cubes = new ObjObjOpenHashMap<>(cubes.size());
+        cubes.forEach(cube -> this.cubes.put(this.cubePosition(cube), cube));
     }
 
     /**
-     * Gets the X,Z coordinates of the given {@link CHUNK}, packed into a single {@code long} using {@link BinMath#packXY(int, int)}.
+     * Gets the given {@link CUBE}'s position.
      *
-     * @param chunk the {@link CHUNK}
-     * @return the {@link CHUNK}'s packed coordinates
+     * @param cube the {@link CUBE}
+     * @return the {@link CUBE}'s position
      */
-    protected abstract long packedChunkPosition(@NonNull CHUNK chunk);
+    protected abstract Vec3i cubePosition(@NonNull CUBE cube);
 
     @Override
     public void close() {
-        //no-op, all resources are owned by AbstractChunksExactFBlockWorldHolder
+        //no-op, all resources are owned by AbstractCubesExactFBlockWorldHolder
     }
 
     @Override
@@ -92,34 +93,34 @@ public abstract class AbstractPrefetchedChunksExactFBlockWorld<CHUNK> implements
     }
 
     /**
-     * Gets the prefetched {@link CHUNK} which contains the given voxel position.
+     * Gets the prefetched {@link CUBE} which contains the given voxel position.
      *
      * @param x the voxel position's X coordinate
      * @param y the voxel position's Y coordinate
      * @param z the voxel position's Z coordinate
-     * @return the prefetched {@link CHUNK}, or {@code null} if the chunk at the given position wasn't prefetched
+     * @return the prefetched {@link CUBE}, or {@code null} if the chunk at the given position wasn't prefetched
      */
-    protected CHUNK getPrefetchedChunk(int x, @SuppressWarnings("unused") int y, int z) {
-        return this.chunks().get(BinMath.packXY(x >> this.chunkShift(), z >> this.chunkShift()));
+    protected CUBE getPrefetchedCube(int x, int y, int z) {
+        return this.cubes().get(Vec3i.of(x >> this.cubeShift(), y >> this.cubeShift(), z >> this.cubeShift()));
     }
 
     /**
-     * Gets the {@link CHUNK} which contains the given voxel position, and attempts to load it from the parent {@link AbstractChunksExactFBlockWorldHolder holder} if it isn't prefetched.
+     * Gets the {@link CUBE} which contains the given voxel position, and attempts to load it from the parent {@link AbstractCubesExactFBlockWorldHolder holder} if it isn't prefetched.
      *
      * @param x the voxel position's X coordinate
      * @param y the voxel position's Y coordinate
      * @param z the voxel position's Z coordinate
-     * @return the {@link CHUNK}
-     * @throws GenerationNotAllowedException if the chunk wasn't prefetched, generation is disallowed and the chunk is ungenerated
+     * @return the {@link CUBE}
+     * @throws GenerationNotAllowedException if the cube wasn't prefetched, generation is disallowed and the cube is ungenerated
      */
-    protected CHUNK getOrLoadChunk(int x, @SuppressWarnings("unused") int y, int z) throws GenerationNotAllowedException {
-        CHUNK chunk = this.chunks().get(BinMath.packXY(x >> this.chunkShift(), z >> this.chunkShift()));
+    protected CUBE getOrLoadCube(int x, int y, int z) throws GenerationNotAllowedException {
+        CUBE chunk = this.cubes().get(Vec3i.of(x >> this.cubeShift(), y >> this.cubeShift(), z >> this.cubeShift()));
 
         if (chunk == null) {
-            //this instance doesn't have the chunk prefetched, try to retrieve it from the holder...
-            chunk = this.holder().getChunk(x >> this.chunkShift(), z >> this.chunkShift(), this.generationAllowed());
+            //this instance doesn't have the cube prefetched, try to retrieve it from the holder...
+            chunk = this.holder().getCube(x >> this.cubeShift(), y >> this.cubeShift(), z >> this.cubeShift(), this.generationAllowed());
 
-            //don't bother saving the loaded chunk into the cache:
+            //don't bother saving the loaded cube into the cache:
             //- we don't want to modify this instance's state, in order to avoid causing future regular block accesses to be succeed when the would otherwise have failed
             //- this is very much an edge case which doesn't necessarily need to be fast
         }
@@ -133,13 +134,13 @@ public abstract class AbstractPrefetchedChunksExactFBlockWorld<CHUNK> implements
             return 0;
         }
 
-        CHUNK chunk = this.getPrefetchedChunk(x, y, z);
-        assert chunk != null : "position outside prefetched area: " + x + ',' + y + ',' + z;
+        CUBE cube = this.getPrefetchedCube(x, y, z);
+        assert cube != null : "position outside prefetched area: " + x + ',' + y + ',' + z;
 
-        return this.getState(x, y, z, chunk);
+        return this.getState(x, y, z, cube);
     }
 
-    protected abstract int getState(int x, int y, int z, CHUNK chunk) throws GenerationNotAllowedException;
+    protected abstract int getState(int x, int y, int z, CUBE cube) throws GenerationNotAllowedException;
 
     @Override
     public int getBiome(int x, int y, int z) throws GenerationNotAllowedException {
@@ -147,13 +148,13 @@ public abstract class AbstractPrefetchedChunksExactFBlockWorld<CHUNK> implements
             return 0;
         }
 
-        CHUNK chunk = this.getPrefetchedChunk(x, y, z);
-        assert chunk != null : "position outside prefetched area: " + x + ',' + y + ',' + z;
+        CUBE cube = this.getPrefetchedCube(x, y, z);
+        assert cube != null : "position outside prefetched area: " + x + ',' + y + ',' + z;
 
-        return this.getBiome(x, y, z, chunk);
+        return this.getBiome(x, y, z, cube);
     }
 
-    protected abstract int getBiome(int x, int y, int z, CHUNK chunk) throws GenerationNotAllowedException;
+    protected abstract int getBiome(int x, int y, int z, CUBE cube) throws GenerationNotAllowedException;
 
     @Override
     public byte getLight(int x, int y, int z) throws GenerationNotAllowedException {
@@ -161,11 +162,11 @@ public abstract class AbstractPrefetchedChunksExactFBlockWorld<CHUNK> implements
             return 0;
         }
 
-        CHUNK chunk = this.getPrefetchedChunk(x, y, z);
-        assert chunk != null : "position outside prefetched area: " + x + ',' + y + ',' + z;
+        CUBE cube = this.getPrefetchedCube(x, y, z);
+        assert cube != null : "position outside prefetched area: " + x + ',' + y + ',' + z;
 
-        return this.getLight(x, y, z, chunk);
+        return this.getLight(x, y, z, cube);
     }
 
-    protected abstract byte getLight(int x, int y, int z, CHUNK chunk) throws GenerationNotAllowedException;
+    protected abstract byte getLight(int x, int y, int z, CUBE cube) throws GenerationNotAllowedException;
 }

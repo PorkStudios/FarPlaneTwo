@@ -25,6 +25,9 @@ import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.api.world.registry.FExtendedStateRegistryData;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 
+import java.util.function.Consumer;
+import java.util.function.Function;
+
 import static java.lang.Math.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -234,5 +237,88 @@ public class BlockWorldConstants {
         checkRangeLen(xs.length, xOff, multiplyExact(positive(xStride, "xStride"), count));
         checkRangeLen(ys.length, yOff, multiplyExact(positive(yStride, "yStride"), count));
         checkRangeLen(zs.length, zOff, multiplyExact(positive(zStride, "zStride"), count));
+    }
+
+    /**
+     * Invokes a {@link TypedQueryShapeConsumer} with the given {@link FBlockWorld.QueryShape} as a parameter, automatically calling a type-specific method variant if possible.
+     *
+     * @param shape  the {@link FBlockWorld.QueryShape}
+     * @param action the {@link TypedQueryShapeConsumer}
+     */
+    public static void withQueryShape(@NonNull FBlockWorld.QueryShape shape, @NonNull TypedQueryShapeConsumer action) {
+        if (shape instanceof FBlockWorld.SinglePointQueryShape) {
+            action.acceptPoint((FBlockWorld.SinglePointQueryShape) shape);
+        } else if (shape instanceof FBlockWorld.MultiPointsQueryShape) {
+            action.acceptPoints((FBlockWorld.MultiPointsQueryShape) shape);
+        } else if (shape instanceof FBlockWorld.OriginSizeStrideQueryShape) {
+            action.acceptOriginSizeStride((FBlockWorld.OriginSizeStrideQueryShape) shape);
+        } else {
+            action.acceptGeneric(shape);
+        }
+    }
+
+    /**
+     * Invokes a {@link TypedQueryShapeFunction} with the given {@link FBlockWorld.QueryShape} as a parameter, automatically calling a type-specific method variant if possible.
+     *
+     * @param shape  the {@link FBlockWorld.QueryShape}
+     * @param action the {@link TypedQueryShapeFunction}
+     * @return the {@link TypedQueryShapeFunction}'s return value
+     */
+    public static <R> R fromQueryShape(@NonNull FBlockWorld.QueryShape shape, @NonNull TypedQueryShapeFunction<R> action) {
+        if (shape instanceof FBlockWorld.SinglePointQueryShape) {
+            return action.applyPoint((FBlockWorld.SinglePointQueryShape) shape);
+        } else if (shape instanceof FBlockWorld.MultiPointsQueryShape) {
+            return action.applyPoints((FBlockWorld.MultiPointsQueryShape) shape);
+        } else if (shape instanceof FBlockWorld.OriginSizeStrideQueryShape) {
+            return action.applyOriginSizeStride((FBlockWorld.OriginSizeStrideQueryShape) shape);
+        } else {
+            return action.applyGeneric(shape);
+        }
+    }
+
+    /**
+     * A {@link Consumer}-syle callback function which accepts a {@link FBlockWorld.QueryShape}. Multiple methods are provided in order to allow optimized implementations for specific
+     * {@link FBlockWorld.QueryShape} implementations.
+     *
+     * @author DaPorkchop_
+     */
+    @FunctionalInterface
+    public interface TypedQueryShapeConsumer {
+        default void acceptPoint(@NonNull FBlockWorld.SinglePointQueryShape shape) {
+            this.acceptGeneric(shape);
+        }
+
+        default void acceptPoints(@NonNull FBlockWorld.MultiPointsQueryShape shape) {
+            this.acceptGeneric(shape);
+        }
+
+        default void acceptOriginSizeStride(@NonNull FBlockWorld.OriginSizeStrideQueryShape shape) {
+            this.acceptGeneric(shape);
+        }
+
+        void acceptGeneric(@NonNull FBlockWorld.QueryShape shape);
+    }
+
+    /**
+     * A {@link Function}-syle callback function which accepts a {@link FBlockWorld.QueryShape}. Multiple methods are provided in order to allow optimized implementations for specific
+     * {@link FBlockWorld.QueryShape} implementations.
+     *
+     * @author DaPorkchop_
+     */
+    @FunctionalInterface
+    public interface TypedQueryShapeFunction<R> {
+        default R applyPoint(@NonNull FBlockWorld.SinglePointQueryShape shape) {
+            return this.applyGeneric(shape);
+        }
+
+        default R applyPoints(@NonNull FBlockWorld.MultiPointsQueryShape shape) {
+            return this.applyGeneric(shape);
+        }
+
+        default R applyOriginSizeStride(@NonNull FBlockWorld.OriginSizeStrideQueryShape shape) {
+            return this.applyGeneric(shape);
+        }
+
+        R applyGeneric(@NonNull FBlockWorld.QueryShape shape);
     }
 }

@@ -27,7 +27,6 @@ import net.daporkchop.fp2.api.world.BlockWorldConstants;
 import net.daporkchop.fp2.api.world.GenerationNotAllowedException;
 import net.daporkchop.fp2.core.minecraft.world.chunks.AbstractChunksExactFBlockWorldHolder;
 import net.daporkchop.fp2.core.minecraft.world.chunks.AbstractPrefetchedChunksExactFBlockWorld;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.world.registry.GameRegistry1_12_2;
 import net.daporkchop.lib.common.math.BinMath;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
@@ -62,12 +61,12 @@ public class PrefetchedChunksFBlockWorld1_12 extends AbstractPrefetchedChunksExa
     @Override
     protected int getState(int x, int y, int z, Chunk chunk) throws GenerationNotAllowedException {
         BlockPos pos = new BlockPos(x, y, z);
-        return GameRegistry1_12_2.get().state2id(chunk.getBlockState(pos).getActualState(this, pos));
+        return this.registry().state2id(chunk.getBlockState(pos).getActualState(this, pos));
     }
 
     @Override
     protected int getBiome(int x, int y, int z, Chunk chunk) throws GenerationNotAllowedException {
-        return GameRegistry1_12_2.get().biome2id(chunk.getBiome(new BlockPos(x, y, z), null));
+        return this.registry().biome2id(chunk.getBiome(new BlockPos(x, y, z), null));
     }
 
     @Override
@@ -90,20 +89,9 @@ public class PrefetchedChunksFBlockWorld1_12 extends AbstractPrefetchedChunksExa
         if (!this.holder().isValidPosition(pos.getX(), pos.getY(), pos.getZ())) { //position is outside world, return air
             return Blocks.AIR.getDefaultState();
         } else {
-            Chunk chunk = this.chunks().get(BinMath.packXY(pos.getX() >> this.chunkShift(), pos.getZ() >> this.chunkShift()));
-
-            //this is gross, i'd rather have it throw an exception. unfortunately, Block#getActualBlockState may have to access the state of a neighboring block, which may
-            //  not have been prefetched. however, since we NEED to know the real block state at the position, we're forced to load the chunk...
-            if (chunk == null) {
-                //this instance doesn't have the chunk prefetched, try to retrieve it from the holder...
-                chunk = this.holder().getChunk(pos.getX() >> this.chunkShift(), pos.getZ() >> this.chunkShift(), this.generationAllowed());
-
-                //don't bother saving the loaded chunk into the cache:
-                //- we don't want to modify this instance's state, in order to avoid causing future regular block accesses to be succeed when the would otherwise have failed
-                //- this is very much an edge case which doesn't necessarily need to be fast
-            }
-
-            return chunk.getBlockState(pos);
+            //this is gross, i'd rather have it throw an exception than having to load the chunk. unfortunately, Block#getActualBlockState may have to access the state of
+            //  a neighboring block, which may not have been prefetched. however, since we NEED to know the real block state at the position, we're forced to load the chunk...
+            return this.getOrLoadChunk(pos.getX(), pos.getY(), pos.getZ()).getBlockState(pos);
         }
     }
 

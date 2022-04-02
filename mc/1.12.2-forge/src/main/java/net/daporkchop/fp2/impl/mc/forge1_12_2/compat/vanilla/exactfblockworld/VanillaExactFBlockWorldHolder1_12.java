@@ -25,11 +25,12 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.core.minecraft.util.threading.asynccache.AsyncCacheNBT;
-import net.daporkchop.fp2.core.minecraft.world.chunks.AbstractChunksExactFBlockWorld;
 import net.daporkchop.fp2.core.minecraft.world.chunks.AbstractChunksExactFBlockWorldHolder;
 import net.daporkchop.fp2.core.minecraft.world.chunks.AbstractPrefetchedChunksExactFBlockWorld;
 import net.daporkchop.fp2.core.server.world.ExactFBlockWorldHolder;
+import net.daporkchop.fp2.core.server.world.IFarWorldServer;
 import net.daporkchop.fp2.core.util.datastructure.Datastructures;
+import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSegtreeSet;
 import net.daporkchop.fp2.core.util.threading.futurecache.IAsyncCache;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.world.chunk.storage.ATAnvilChunkLoader1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.world.IMixinWorldServer;
@@ -51,18 +52,24 @@ import java.util.List;
  */
 public class VanillaExactFBlockWorldHolder1_12 extends AbstractChunksExactFBlockWorldHolder<Chunk> {
     public VanillaExactFBlockWorldHolder1_12(@NonNull WorldServer world) {
-        super(((IMixinWorldServer) world).fp2_farWorldServer(), 4,
-                () -> {
-                    AnvilChunkLoader io = (AnvilChunkLoader) world.getChunkProvider().chunkLoader;
-                    return Datastructures.INSTANCE.nDimensionalIntSegtreeSet()
-                            .dimensions(2)
-                            .threadSafe(true)
-                            .initialPoints(() -> ThreadSafeRegionFileCache.INSTANCE.allChunks(io.chunkSaveLocation.toPath().resolve("region"))
-                                    .map(pos -> new int[]{ pos.x, pos.z })
-                                    .parallel())
-                            .build();
-                },
-                () -> new ChunkCache(world, (AnvilChunkLoader) world.getChunkProvider().chunkLoader));
+        super(((IMixinWorldServer) world).fp2_farWorldServer(), 4);
+    }
+
+    @Override
+    protected NDimensionalIntSegtreeSet createChunksExistIndex(@NonNull IFarWorldServer world) {
+        AnvilChunkLoader io = (AnvilChunkLoader) ((WorldServer) world.fp2_IFarWorld_implWorld()).getChunkProvider().chunkLoader;
+        return Datastructures.INSTANCE.nDimensionalIntSegtreeSet()
+                .dimensions(2)
+                .threadSafe(true)
+                .initialPoints(() -> ThreadSafeRegionFileCache.INSTANCE.allChunks(io.chunkSaveLocation.toPath().resolve("region"))
+                        .map(pos -> new int[]{ pos.x, pos.z })
+                        .parallel())
+                .build();
+    }
+
+    @Override
+    protected AsyncCacheNBT<Vec2i, ?, Chunk, ?> createChunkCache(@NonNull IFarWorldServer world) {
+        return new ChunkCache((WorldServer) world.fp2_IFarWorld_implWorld(), (AnvilChunkLoader) ((WorldServer) world.fp2_IFarWorld_implWorld()).getChunkProvider().chunkLoader);
     }
 
     @Override

@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.core.minecraft.world.chunks;
+package net.daporkchop.fp2.core.minecraft.world.cubes;
 
 import lombok.Getter;
 import lombok.NonNull;
@@ -27,7 +27,7 @@ import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.api.world.GenerationNotAllowedException;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
-import net.daporkchop.lib.math.vector.Vec2i;
+import net.daporkchop.lib.math.vector.Vec3i;
 
 import java.util.List;
 import java.util.stream.Stream;
@@ -35,10 +35,10 @@ import java.util.stream.Stream;
 import static java.util.Objects.*;
 
 /**
- * Base implementation of an {@link FBlockWorld} which serves a Minecraft-style world made up of chunk columns.
+ * Base implementation of an {@link FBlockWorld} which serves a Minecraft-style world made up of cubes.
  * <p>
- * This forms the user-facing API implementation used by {@link AbstractChunksExactFBlockWorldHolder}. It does not do anything by itself, but rather prefetches the chunks which need to be
- * accessed before delegating to {@link AbstractPrefetchedChunksExactFBlockWorld}.
+ * This forms the user-facing API implementation used by {@link AbstractCubesExactFBlockWorldHolder}. It does not do anything by itself, but rather prefetches the cubes which need to be
+ * accessed before delegating to {@link AbstractPrefetchedCubesExactFBlockWorld}.
  * <p>
  * You have been epicly trolled by this class' name: because there's no actual implementation-specific logic going on here, I didn't actually make it abstract! Ha! I bet you feel
  * really stupid right now.
@@ -47,9 +47,9 @@ import static java.util.Objects.*;
  */
 @RequiredArgsConstructor
 @Getter
-public class AbstractChunksExactFBlockWorld<CHUNK> implements FBlockWorld {
+public class AbstractCubesExactFBlockWorld<CUBE> implements FBlockWorld {
     @NonNull
-    private final AbstractChunksExactFBlockWorldHolder<CHUNK> holder;
+    private final AbstractCubesExactFBlockWorldHolder<CUBE> holder;
     private final boolean generationAllowed;
 
     @Override
@@ -79,7 +79,7 @@ public class AbstractChunksExactFBlockWorld<CHUNK> implements FBlockWorld {
 
     @Override
     public int getState(int x, int y, int z) throws GenerationNotAllowedException {
-        //delegate to a query because it'll delegate to AbstractPrefetchedChunksExactFBlockWorld, which can access neighboring chunks if Block#getActualState accesses a
+        //delegate to a query because it'll delegate to AbstractPrefetchedCubesExactFBlockWorld, which can access neighboring chunks if Block#getActualState accesses a
         //  state which goes over a cube/column border. this is slow, but i don't care because the single getter methods are dumb and bad anyway.
         int[] buf = new int[1];
         this.query(Query.of(new SinglePointQueryShape(x, y, z), new BandArraysQueryOutput(buf, 0, 1, null, 0, 0, null, 0, 0, 1)));
@@ -88,7 +88,7 @@ public class AbstractChunksExactFBlockWorld<CHUNK> implements FBlockWorld {
 
     @Override
     public int getBiome(int x, int y, int z) throws GenerationNotAllowedException {
-        //delegate to a query because it'll delegate to AbstractPrefetchedChunksExactFBlockWorld, which can access neighboring chunks if Block#getActualState accesses a
+        //delegate to a query because it'll delegate to AbstractPrefetchedCubesExactFBlockWorld, which can access neighboring chunks if Block#getActualState accesses a
         //  state which goes over a cube/column border. this is slow, but i don't care because the single getter methods are dumb and bad anyway.
         int[] buf = new int[1];
         this.query(Query.of(new SinglePointQueryShape(x, y, z), new BandArraysQueryOutput(null, 0, 0, buf, 0, 1, null, 0, 0, 1)));
@@ -97,7 +97,7 @@ public class AbstractChunksExactFBlockWorld<CHUNK> implements FBlockWorld {
 
     @Override
     public byte getLight(int x, int y, int z) throws GenerationNotAllowedException {
-        //delegate to a query because it'll delegate to AbstractPrefetchedChunksExactFBlockWorld, which can access neighboring chunks if Block#getActualState accesses a
+        //delegate to a query because it'll delegate to AbstractPrefetchedCubesExactFBlockWorld, which can access neighboring chunks if Block#getActualState accesses a
         //  state which goes over a cube/column border. this is slow, but i don't care because the single getter methods are dumb and bad anyway.
         byte[] buf = new byte[1];
         this.query(Query.of(new SinglePointQueryShape(x, y, z), new BandArraysQueryOutput(null, 0, 0, null, 0, 0, buf, 0, 1, 1)));
@@ -109,11 +109,11 @@ public class AbstractChunksExactFBlockWorld<CHUNK> implements FBlockWorld {
         //ensure query is valid
         query.validate();
 
-        //figure out which chunks need to be prefetched
-        List<Vec2i> prefetchPositions = this.holder.getChunkPositionsToPrefetch(query.shape());
+        //figure out which cubes need to be prefetched
+        List<Vec3i> prefetchPositions = this.holder.getCubePositionsToPrefetch(query.shape());
 
-        //prefetch all the chunks, then delegate the actual query execution to AbstractPrefetchedChunksExactFBlockWorld
-        this.holder.prefetchedWorld(this.generationAllowed, this.holder.multiGetChunks(prefetchPositions, this.generationAllowed)).query(query);
+        //prefetch all the cubes, then delegate the actual query execution to AbstractPrefetchedCubesExactFBlockWorld
+        this.holder.prefetchedWorld(this.generationAllowed, this.holder.multiGetCubes(prefetchPositions, this.generationAllowed)).query(query);
     }
 
     @Override
@@ -123,10 +123,10 @@ public class AbstractChunksExactFBlockWorld<CHUNK> implements FBlockWorld {
             requireNonNull(query, "query").validate();
         }
 
-        //figure out which chunks need to be prefetched
-        List<Vec2i> prefetchPositions = this.holder.getChunkPositionsToPrefetch(Stream.of(queries).map(Query::shape).toArray(QueryShape[]::new));
+        //figure out which cubes need to be prefetched
+        List<Vec3i> prefetchPositions = this.holder.getCubePositionsToPrefetch(Stream.of(queries).map(Query::shape).toArray(QueryShape[]::new));
 
-        //prefetch all the chunks, then delegate the actual query execution to AbstractPrefetchedChunksExactFBlockWorld
-        this.holder.prefetchedWorld(this.generationAllowed, this.holder.multiGetChunks(prefetchPositions, this.generationAllowed)).query(queries);
+        //prefetch all the cubes, then delegate the actual query execution to AbstractPrefetchedCubesExactFBlockWorld
+        this.holder.prefetchedWorld(this.generationAllowed, this.holder.multiGetCubes(prefetchPositions, this.generationAllowed)).query(queries);
     }
 }
