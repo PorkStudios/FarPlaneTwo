@@ -221,56 +221,6 @@ public interface FBlockWorld extends AutoCloseable {
     //
 
     /**
-     * @deprecated legacy API, use {@link #query}
-     */
-    @Deprecated
-    default void getData(
-            int[] states, int statesOffset, int statesStride,
-            int[] biomes, int biomesOffset, int biomesStride,
-            byte[] light, int lightOffset, int lightStride,
-            int minX, int minY, int minZ, int maxX, int maxY, int maxZ) throws GenerationNotAllowedException {
-        //emulate AABB query as OriginSizeStrideQueryShape with stride 1
-        this.getData(
-                states, statesOffset, statesStride,
-                biomes, biomesOffset, biomesStride,
-                light, lightOffset, lightStride,
-                minX, minY, minZ, maxX - minX, maxY - minY, maxZ - minZ, 1, 1, 1);
-    }
-
-    /**
-     * @deprecated legacy API, use {@link #query}
-     */
-    @Deprecated
-    default void getData(
-            int[] states, int statesOffset, int statesStride,
-            int[] biomes, int biomesOffset, int biomesStride,
-            byte[] light, int lightOffset, int lightStride,
-            int x, int y, int z, int sizeX, int sizeY, int sizeZ, int strideX, int strideY, int strideZ) throws GenerationNotAllowedException {
-        //translate to new query api
-        this.query(Query.of(
-                new OriginSizeStrideQueryShape(x, y, z, sizeX, sizeY, sizeZ, strideX, strideY, strideZ),
-                new BandArraysQueryOutput(states, statesOffset, statesStride, biomes, biomesOffset, biomesStride, light, lightOffset, lightStride, sizeX * sizeY * sizeZ)));
-    }
-
-    /**
-     * @deprecated legacy API, use {@link #query}
-     */
-    @Deprecated
-    default void getData(
-            int[] states, int statesOffset, int statesStride,
-            int[] biomes, int biomesOffset, int biomesStride,
-            byte[] light, int lightOffset, int lightStride,
-            @NonNull int[] xs, int xOff, int xStride,
-            @NonNull int[] ys, int yOff, int yStride,
-            @NonNull int[] zs, int zOff, int zStride,
-            int count) throws GenerationNotAllowedException {
-        //translate to new query api
-        this.query(Query.of(
-                new MultiPointsQueryShape(xs, xOff, xStride, ys, yOff, yStride, zs, zOff, zStride, count),
-                new BandArraysQueryOutput(states, statesOffset, statesStride, biomes, biomesOffset, biomesStride, light, lightOffset, lightStride, count)));
-    }
-
-    /**
      * Issues a bulk data retrieval query.
      *
      * @param query the {@link Query query} which describes the position(s) to query the data from, which data bands should be accessed, and where the retrieved data should be stored
