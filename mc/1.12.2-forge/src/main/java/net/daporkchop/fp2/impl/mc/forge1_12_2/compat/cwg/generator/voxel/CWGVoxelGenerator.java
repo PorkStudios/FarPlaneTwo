@@ -65,11 +65,11 @@ public class CWGVoxelGenerator extends AbstractRoughVoxelGenerator<CWGContext> {
         double[][] densityMap = this.densityMapCache.get();
 
         //water
+        assert cacheIndex(0, 0, 1) - cacheIndex(0, 0, 0) == 1 : "cache coordinate order must be z-minor";
+
         double scaleFactor = 1.0d / (1 << level);
         for (int x = CACHE_MIN; x < CACHE_MAX; x++) {
             for (int y = CACHE_MIN; y < CACHE_MAX; y++) {
-                assert cacheIndex(0, 0, 1) == 1 : "cache coordinate order must be z-minor";
-
                 final int idx = cacheIndex(x, y, CACHE_MIN);
                 Arrays.fill(densityMap[0], idx, idx + CACHE_MAX, ((this.seaLevel - 0.125d) - (baseY + (y << level))) * scaleFactor);
             }
