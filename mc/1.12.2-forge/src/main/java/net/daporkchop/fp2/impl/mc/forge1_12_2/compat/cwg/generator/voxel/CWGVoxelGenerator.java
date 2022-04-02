@@ -23,7 +23,7 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cwg.generator.voxel;
 import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.IBiomeBlockReplacer;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.world.BlockWorldConstants;
-import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
+import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.voxel.VoxelData;
 import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.core.mode.voxel.VoxelTile;
@@ -44,11 +44,11 @@ import static net.daporkchop.fp2.core.mode.voxel.VoxelConstants.*;
 /**
  * @author DaPorkchop_
  */
-public class CWGVoxelGenerator extends AbstractRoughVoxelGenerator<CWGContext> implements IFarGeneratorRough<VoxelPos, VoxelTile> {
+public class CWGVoxelGenerator extends AbstractRoughVoxelGenerator<CWGContext> {
     protected final Cached<CWGContext> ctx;
 
-    public CWGVoxelGenerator(@NonNull IFarWorldServer world) {
-        super(world);
+    public CWGVoxelGenerator(@NonNull IFarWorldServer world, @NonNull IFarTileProvider<VoxelPos, VoxelTile> provider) {
+        super(world, provider);
 
         this.ctx = Cached.threadLocal(() -> new CWGContext(this.registry, (WorldServer) world.fp2_IFarWorld_implWorld(), CACHE_SIZE, 2, VT_SHIFT), ReferenceStrength.WEAK);
     }
@@ -65,11 +65,11 @@ public class CWGVoxelGenerator extends AbstractRoughVoxelGenerator<CWGContext> i
         double[][] densityMap = this.densityMapCache.get();
 
         //water
+        assert cacheIndex(0, 0, 1) - cacheIndex(0, 0, 0) == 1 : "cache coordinate order must be z-minor";
+
         double scaleFactor = 1.0d / (1 << level);
         for (int x = CACHE_MIN; x < CACHE_MAX; x++) {
             for (int y = CACHE_MIN; y < CACHE_MAX; y++) {
-                assert cacheIndex(0, 0, 1) == 1 : "cache coordinate order must be z-minor";
-
                 final int idx = cacheIndex(x, y, CACHE_MIN);
                 Arrays.fill(densityMap[0], idx, idx + CACHE_MAX, ((this.seaLevel - 0.125d) - (baseY + (y << level))) * scaleFactor);
             }

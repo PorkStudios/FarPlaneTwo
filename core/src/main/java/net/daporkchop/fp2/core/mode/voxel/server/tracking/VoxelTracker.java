@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -87,9 +87,9 @@ public class VoxelTracker extends AbstractTracker<VoxelPos, VoxelTile, TrackingS
             int minX = max(baseX - state.cutoff(), min.x());
             int minY = max(baseY - state.cutoff(), min.y());
             int minZ = max(baseZ - state.cutoff(), min.z());
-            int maxX = min(baseX + state.cutoff(), max.x());
-            int maxY = min(baseY + state.cutoff(), max.y());
-            int maxZ = min(baseZ + state.cutoff(), max.z());
+            int maxX = min(baseX + state.cutoff(), max.x() - 1);
+            int maxY = min(baseY + state.cutoff(), max.y() - 1);
+            int maxZ = min(baseZ + state.cutoff(), max.z() - 1);
 
             for (int x = minX; x <= maxX; x++) {
                 for (int y = minY; y <= maxY; y++) {
@@ -131,9 +131,9 @@ public class VoxelTracker extends AbstractTracker<VoxelPos, VoxelTile, TrackingS
                 int minX = max(oldBaseX - oldState.cutoff(), min.x());
                 int minY = max(oldBaseY - oldState.cutoff(), min.y());
                 int minZ = max(oldBaseZ - oldState.cutoff(), min.z());
-                int maxX = min(oldBaseX + oldState.cutoff(), max.x());
-                int maxY = min(oldBaseY + oldState.cutoff(), max.y());
-                int maxZ = min(oldBaseZ + oldState.cutoff(), max.z());
+                int maxX = min(oldBaseX + oldState.cutoff(), max.x() - 1);
+                int maxY = min(oldBaseY + oldState.cutoff(), max.y() - 1);
+                int maxZ = min(oldBaseZ + oldState.cutoff(), max.z() - 1);
 
                 for (int x = minX; x <= maxX; x++) {
                     for (int y = minY; y <= maxY; y++) {
@@ -151,9 +151,9 @@ public class VoxelTracker extends AbstractTracker<VoxelPos, VoxelTile, TrackingS
                 int minX = max(newBaseX - newState.cutoff(), min.x());
                 int minY = max(newBaseY - newState.cutoff(), min.y());
                 int minZ = max(newBaseZ - newState.cutoff(), min.z());
-                int maxX = min(newBaseX + newState.cutoff(), max.x());
-                int maxY = min(newBaseY + newState.cutoff(), max.y());
-                int maxZ = min(newBaseZ + newState.cutoff(), max.z());
+                int maxX = min(newBaseX + newState.cutoff(), max.x() - 1);
+                int maxY = min(newBaseY + newState.cutoff(), max.y() - 1);
+                int maxZ = min(newBaseZ + newState.cutoff(), max.z() - 1);
 
                 for (int x = minX; x <= maxX; x++) {
                     for (int y = minY; y <= maxY; y++) {

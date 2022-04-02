@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -47,19 +47,6 @@ public class TileSnapshot<POS extends IFarPos, T extends IFarTile> implements IT
     @Getter(AccessLevel.NONE)
     protected final byte[] data;
 
-    /*TODO: public TileSnapshot(@NonNull DataIn in, @NonNull IFarRenderMode<POS, T> mode) throws IOException {
-        this.pos = mode.readPos(in);
-        this.timestamp = in.readVarLongZigZag();
-
-        int len = in.readVarIntZigZag();
-        if (len < 0) { //no data!
-            this.data = null;
-        } else {
-            this.data = new byte[len];
-            in.readFully(this.data);
-        }
-    }*/
-
     public TileSnapshot(@NonNull DataIn in, @NonNull POS pos) throws IOException {
         this.pos = pos;
         this.timestamp = in.readVarLongZigZag();
@@ -72,18 +59,6 @@ public class TileSnapshot<POS extends IFarPos, T extends IFarTile> implements IT
             in.readFully(this.data);
         }
     }
-
-    /*TODO: public void write(@NonNull DataOut out, @NonNull IFarRenderMode<POS, T> mode) throws IOException {
-        mode.writePos(out, this.pos);
-        out.writeVarLongZigZag(this.timestamp);
-
-        if (this.data == null) { //no data!
-            out.writeVarIntZigZag(-1);
-        } else { //tile data is present, write it
-            out.writeVarIntZigZag(this.data.length);
-            out.write(this.data);
-        }
-    }*/
 
     public void write(@NonNull DataOut out) throws IOException {
         out.writeVarLongZigZag(this.timestamp);

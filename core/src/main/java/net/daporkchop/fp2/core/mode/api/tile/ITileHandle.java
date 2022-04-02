@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -74,10 +74,5 @@ public interface ITileHandle<POS extends IFarPos, T extends IFarTile> extends IT
      *
      * @return whether or not the operation was able to be applied
      */
-    boolean clearDirty();
-
-    /**
-     * @return whether or not any vanilla terrain which could affect the contents of this tile exists
-     */
-    boolean anyVanillaExists();
+    boolean clearDirty(); //TODO: i think this should accept a dirty timestamp parameter in order to guarantee atomicity
 }

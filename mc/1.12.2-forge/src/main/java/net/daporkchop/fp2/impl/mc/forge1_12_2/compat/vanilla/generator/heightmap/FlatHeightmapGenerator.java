@@ -24,11 +24,12 @@ import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.world.BlockWorldConstants;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapData;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapTile;
 import net.daporkchop.fp2.core.mode.heightmap.server.gen.rough.AbstractRoughHeightmapGenerator;
+import net.daporkchop.fp2.core.server.world.IFarWorldServer;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
 import net.minecraft.world.WorldServer;
@@ -49,8 +50,8 @@ import static net.daporkchop.fp2.core.mode.heightmap.HeightmapConstants.*;
 public class FlatHeightmapGenerator extends AbstractRoughHeightmapGenerator {
     protected final HeightmapData[] datas = new HeightmapData[MAX_LAYERS];
 
-    public FlatHeightmapGenerator(@NonNull IFarWorldServer world) {
-        super(world);
+    public FlatHeightmapGenerator(@NonNull IFarWorldServer world, @NonNull IFarTileProvider<HeightmapPos, HeightmapTile> provider) {
+        super(world, provider);
 
         FlatGeneratorInfo generatorInfo = this.loadGeneratorInfoFromWorld((WorldServer) world.fp2_IFarWorld_implWorld());
 

@@ -21,17 +21,18 @@
 package net.daporkchop.fp2.core.mode.heightmap.server.gen.rough;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.core.mode.common.server.gen.AbstractFarGenerator;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapTile;
+import net.daporkchop.fp2.core.server.world.IFarWorldServer;
 
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractRoughHeightmapGenerator extends AbstractFarGenerator implements IFarGeneratorRough<HeightmapPos, HeightmapTile> {
-    public AbstractRoughHeightmapGenerator(@NonNull IFarWorldServer world) {
-        super(world);
+public abstract class AbstractRoughHeightmapGenerator extends AbstractFarGenerator<HeightmapPos, HeightmapTile> implements IFarGeneratorRough<HeightmapPos, HeightmapTile> {
+    public AbstractRoughHeightmapGenerator(@NonNull IFarWorldServer world, @NonNull IFarTileProvider<HeightmapPos, HeightmapTile> provider) {
+        super(world, provider);
     }
 }

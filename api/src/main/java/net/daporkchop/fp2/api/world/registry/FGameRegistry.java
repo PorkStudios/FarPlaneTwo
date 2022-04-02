@@ -54,9 +54,9 @@ public interface FGameRegistry {
      * mappings, and if the saved token is unchanged on the next load it would be safe to re-use the other saved data (the data would have to be erased and re-generated if the token
      * were to change).
      *
-     * @return a {@code byte[]} which identifies the contents of this registry, or an empty {@link Optional} if none is available
+     * @return a {@code byte[]} which identifies the contents of this registry
      */
-    Optional<byte[]> registryToken();
+    byte[] registryToken();
 
     //
     // BIOMES

@@ -21,12 +21,13 @@
 package net.daporkchop.fp2.core.mode.heightmap.server.scale;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.core.mode.common.server.gen.AbstractFarGenerator;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapData;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapTile;
+import net.daporkchop.fp2.core.server.world.IFarWorldServer;
 
 import java.util.stream.Stream;
 
@@ -41,9 +42,9 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  *
  * @author DaPorkchop_
  */
-public class HeightmapScalerMinMax extends AbstractFarGenerator implements IFarScaler<HeightmapPos, HeightmapTile> {
-    public HeightmapScalerMinMax(@NonNull IFarWorldServer world) {
-        super(world);
+public class HeightmapScalerMinMax extends AbstractFarGenerator<HeightmapPos, HeightmapTile> implements IFarScaler<HeightmapPos, HeightmapTile> {
+    public HeightmapScalerMinMax(@NonNull IFarWorldServer world, @NonNull IFarTileProvider<HeightmapPos, HeightmapTile> provider) {
+        super(world, provider);
     }
 
     @Override
@@ -73,6 +74,10 @@ public class HeightmapScalerMinMax extends AbstractFarGenerator implements IFarS
         for (int subX = 0; subX < 2; subX++) {
             for (int subZ = 0; subZ < 2; subZ++) {
                 HeightmapTile src = srcs[subX * 2 + subZ];
+                if (src == null) { //null source tiles are treated as effectively empty
+                    continue;
+                }
+
                 int baseX = subX * (HT_VOXELS >> 1);
                 int baseZ = subZ * (HT_VOXELS >> 1);
 

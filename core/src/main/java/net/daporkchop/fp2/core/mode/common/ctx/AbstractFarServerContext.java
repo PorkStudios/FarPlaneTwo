@@ -22,22 +22,24 @@ package net.daporkchop.fp2.core.mode.common.ctx;
 
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.Synchronized;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarServerContext;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
-import net.daporkchop.fp2.core.server.player.IFarPlayerServer;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTracker;
 import net.daporkchop.fp2.core.mode.api.tile.TileSnapshot;
 import net.daporkchop.fp2.core.network.packet.debug.server.SPacketDebugUpdateStatistics;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketTileData;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUnloadTile;
+import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUnloadTiles;
+import net.daporkchop.fp2.core.server.player.IFarPlayerServer;
+import net.daporkchop.fp2.core.server.world.IFarWorldServer;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
@@ -97,14 +99,48 @@ public abstract class AbstractFarServerContext<POS extends IFarPos, T extends IF
         this.debugUpdate();
     }
 
-    @Synchronized("sendQueue")
     protected void flushSendQueue() {
-        if (!this.sendQueue.isEmpty()) {
-            this.sendQueue.forEach((pos, optionalSnapshot) -> this.player.fp2_IFarPlayer_sendPacket(optionalSnapshot.isPresent()
-                    ? new SPacketTileData().mode(this.mode).tile(optionalSnapshot.get())
-                    : new SPacketUnloadTile().mode(this.mode).pos(pos)));
+        //check if the send queue contains any items to see if any additional work is necessary.
+        // this is safe to call without synchronization: it only accesses the map size, which involves reading a single int field. the worst that can happen is we miss a
+        // queued tile for one tick.
+        if (this.sendQueue.isEmpty()) {
+            //the send queue is empty, nothing to do!
+            return;
+        }
+
+        //make a snapshot of the queue contents, then clear it.
+        List<Map.Entry<POS, Optional<TileSnapshot<POS, T>>>> sendQueueSnapshot;
+        synchronized (this.sendQueue) {
+            sendQueueSnapshot = new ArrayList<>(this.sendQueue.entrySet());
             this.sendQueue.clear();
         }
+
+        //group queue items by type
+        List<POS> unloadedPositions = new ArrayList<>();
+        List<TileSnapshot<POS, T>> loadedSnapshots = new ArrayList<>();
+        sendQueueSnapshot.forEach(entry -> {
+            if (entry.getValue().isPresent()) { //non-empty optional, the tile is being loaded
+                loadedSnapshots.add(entry.getValue().get());
+            } else { //empty optional, the tile is being unloaded
+                unloadedPositions.add(entry.getKey());
+            }
+        });
+        sendQueueSnapshot = null; //allow GC
+
+        //send packets for unloaded tiles
+        switch (unloadedPositions.size()) {
+            case 0: //there are no tiles to unload, do nothing
+                break;
+            case 1: //we're only unloading a single tile
+                this.player.fp2_IFarPlayer_sendPacket(new SPacketUnloadTile().mode(this.mode).pos(unloadedPositions.get(0)));
+                break;
+            default: //we're unloading more than one tile, batch it into a single packet
+                this.player.fp2_IFarPlayer_sendPacket(new SPacketUnloadTiles().mode(this.mode).positions(unloadedPositions));
+                break;
+        }
+
+        //send packets for loaded/updated tiles
+        loadedSnapshots.forEach(snapshot -> this.player.fp2_IFarPlayer_sendPacket(new SPacketTileData().mode(this.mode).tile(snapshot)));
     }
 
     private void debugUpdate() {
@@ -130,32 +166,35 @@ public abstract class AbstractFarServerContext<POS extends IFarPos, T extends IF
     }
 
     @Override
-    @Synchronized("sendQueue")
     public void sendTile(@NonNull TileSnapshot<POS, T> snapshot) {
         if (this.closed) { //this context has been closed - silently discard all tile data
             return;
         }
 
-        this.sendQueue.put(snapshot.pos(), Optional.of(snapshot));
+        synchronized (this.sendQueue) {
+            this.sendQueue.put(snapshot.pos(), Optional.of(snapshot));
+        }
     }
 
     @Override
-    @Synchronized("sendQueue")
     public void sendTileUnload(@NonNull POS pos) {
         if (this.closed) { //this context has been closed - silently discard all tile data
             return;
         }
 
-        this.sendQueue.put(pos, Optional.empty());
+        synchronized (this.sendQueue) {
+            this.sendQueue.put(pos, Optional.empty());
+        }
     }
 
     @Override
-    @Synchronized("sendQueue")
     public void sendMultiTileUnload(@NonNull Iterable<POS> positions) {
         if (this.closed) { //this context has been closed - silently discard all tile data
             return;
         }
 
-        positions.forEach(pos -> this.sendQueue.put(pos, Optional.empty()));
+        synchronized (this.sendQueue) {
+            positions.forEach(pos -> this.sendQueue.put(pos, Optional.empty()));
+        }
     }
 }

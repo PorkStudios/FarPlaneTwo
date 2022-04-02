@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -83,8 +83,8 @@ public class HeightmapTracker extends AbstractTracker<HeightmapPos, HeightmapTil
             HeightmapPos max = this.coordLimits.max(lvl);
             int minX = max(baseX - state.cutoff(), min.x());
             int minZ = max(baseZ - state.cutoff(), min.z());
-            int maxX = min(baseX + state.cutoff(), max.x());
-            int maxZ = min(baseZ + state.cutoff(), max.z());
+            int maxX = min(baseX + state.cutoff(), max.x() - 1);
+            int maxZ = min(baseZ + state.cutoff(), max.z() - 1);
 
             for (int x = minX; x <= maxX; x++) {
                 for (int z = minZ; z <= maxZ; z++) {
@@ -119,8 +119,8 @@ public class HeightmapTracker extends AbstractTracker<HeightmapPos, HeightmapTil
             if (!newState.hasLevel(lvl) || oldState.hasLevel(lvl)) {
                 int minX = max(oldBaseX - oldState.cutoff(), min.x());
                 int minZ = max(oldBaseZ - oldState.cutoff(), min.z());
-                int maxX = min(oldBaseX + oldState.cutoff(), max.x());
-                int maxZ = min(oldBaseZ + oldState.cutoff(), max.z());
+                int maxZ = min(oldBaseZ + oldState.cutoff(), max.z() - 1);
+                int maxX = min(oldBaseX + oldState.cutoff(), max.x() - 1);
 
                 for (int x = minX; x <= maxX; x++) {
                     for (int z = minZ; z <= maxZ; z++) {
@@ -135,8 +135,8 @@ public class HeightmapTracker extends AbstractTracker<HeightmapPos, HeightmapTil
             if (!oldState.hasLevel(lvl) || newState.hasLevel(lvl)) {
                 int minX = max(newBaseX - newState.cutoff(), min.x());
                 int minZ = max(newBaseZ - newState.cutoff(), min.z());
-                int maxX = min(newBaseX + newState.cutoff(), max.x());
-                int maxZ = min(newBaseZ + newState.cutoff(), max.z());
+                int maxX = min(newBaseX + newState.cutoff(), max.x() - 1);
+                int maxZ = min(newBaseZ + newState.cutoff(), max.z() - 1);
 
                 for (int x = minX; x <= maxX; x++) {
                     for (int z = minZ; z <= maxZ; z++) {

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -21,8 +21,8 @@
 package net.daporkchop.fp2.core.util.threading.scheduler;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.core.util.threading.workergroup.WorkerGroupBuilder;
 import net.daporkchop.fp2.core.util.datastructure.ConcurrentUnboundedPriorityBlockingQueue;
+import net.daporkchop.fp2.core.util.threading.workergroup.WorkerGroupBuilder;
 import net.daporkchop.lib.common.util.PorkUtil;
 
 import java.util.ArrayDeque;
@@ -60,10 +60,29 @@ public class ApproximatelyPrioritizedSharedFutureScheduler<P, V> extends SharedF
     protected final AtomicLong ctr = new AtomicLong(Long.MIN_VALUE); //we assume this will never overflow - a perhaps naïve assumption, but still, 2⁶⁴ IS a very large number...
     protected final Comparator<P> initialComparator;
 
-    public ApproximatelyPrioritizedSharedFutureScheduler(@NonNull Function<Scheduler<P, V>, Function<P, V>> functionFactory, @NonNull WorkerGroupBuilder builder, @NonNull Comparator<P> initialComparator) {
+    public ApproximatelyPrioritizedSharedFutureScheduler(@NonNull Function<? super SharedFutureScheduler<P, V>, WorkFunction<P, V>> functionFactory, @NonNull WorkerGroupBuilder builder, @NonNull Comparator<P> initialComparator) {
         super(functionFactory, builder);
 
         this.initialComparator = initialComparator;
+    }
+
+    @Override
+    protected boolean canRecurse(@NonNull P from, @NonNull P to) {
+        return this.initialComparator.compare(from, to) > 0;
+    }
+
+    @Override
+    protected boolean canExecuteInBatch(@NonNull List<P> parameters) {
+        checkArg(!parameters.isEmpty(), "a batch must consist of at least one parameter!");
+
+        //make sure that all of the parameters are tied at the same comparison level
+        P firstParam = parameters.get(0);
+        for (int i = 1; i < parameters.size(); i++) {
+            if (this.initialComparator.compare(firstParam, parameters.get(i)) != 0) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override

@@ -21,13 +21,16 @@
 package net.daporkchop.fp2.core.mode.voxel.server.gen.exact;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
+import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
+import net.daporkchop.fp2.core.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.core.server.world.IFarWorldServer;
 
 /**
  * @author DaPorkchop_
  */
 public class CCVoxelGenerator extends AbstractExactVoxelGenerator {
-    public CCVoxelGenerator(@NonNull IFarWorldServer world) {
-        super(world);
+    public CCVoxelGenerator(@NonNull IFarWorldServer world, @NonNull IFarTileProvider<VoxelPos, VoxelTile> provider) {
+        super(world, provider);
     }
 }

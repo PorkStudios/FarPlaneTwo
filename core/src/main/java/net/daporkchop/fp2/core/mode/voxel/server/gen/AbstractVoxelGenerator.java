@@ -21,19 +21,22 @@
 package net.daporkchop.fp2.core.mode.voxel.server.gen;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.common.server.gen.AbstractFarGenerator;
+import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
+import net.daporkchop.fp2.core.mode.voxel.VoxelTile;
+import net.daporkchop.fp2.core.server.world.IFarWorldServer;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.reference.cache.Cached;
 
-import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.fp2.core.mode.voxel.VoxelConstants.*;
+import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractVoxelGenerator extends AbstractFarGenerator {
-    public static final int CACHE_MIN = 0;
+public abstract class AbstractVoxelGenerator extends AbstractFarGenerator<VoxelPos, VoxelTile> {
+    public static final int CACHE_MIN = -1;
     public static final int CACHE_MAX = VT_VOXELS + 1;
     public static final int CACHE_SIZE = CACHE_MAX - CACHE_MIN;
 
@@ -63,7 +66,7 @@ public abstract class AbstractVoxelGenerator extends AbstractFarGenerator {
 
     protected final Cached<byte[]> typeMapCache = Cached.threadLocal(() -> new byte[cb(CACHE_SIZE)], ReferenceStrength.WEAK);
 
-    public AbstractVoxelGenerator(@NonNull IFarWorldServer world) {
-        super(world);
+    public AbstractVoxelGenerator(@NonNull IFarWorldServer world, @NonNull IFarTileProvider<VoxelPos, VoxelTile> provider) {
+        super(world, provider);
     }
 }

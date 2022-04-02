@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -24,6 +24,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.core.mode.api.IFarCoordLimits;
 
+import static java.lang.Math.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.fp2.core.mode.heightmap.HeightmapConstants.*;
 
@@ -47,11 +48,15 @@ public class HeightmapCoordLimits implements IFarCoordLimits<HeightmapPos> {
 
     @Override
     public HeightmapPos min(int level) {
-        return new HeightmapPos(level, asrFloor(this.minX, HT_SHIFT + level), asrFloor(this.minZ, HT_SHIFT + level));
+        return new HeightmapPos(level,
+                asrFloor(this.minX, HT_SHIFT + level),
+                asrFloor(this.minZ, HT_SHIFT + level));
     }
 
     @Override
     public HeightmapPos max(int level) {
-        return new HeightmapPos(level, asrCeil(this.maxX, HT_SHIFT + level), asrCeil(this.maxZ, HT_SHIFT + level));
+        return new HeightmapPos(level,
+                incrementExact(asrCeil(this.maxX, HT_SHIFT + level)),
+                incrementExact(asrCeil(this.maxZ, HT_SHIFT + level)));
     }
 }

@@ -76,14 +76,14 @@ public class FP2CubicWorldGen {
         @FEventHandler(name = "cubicworldgen_heightmap_generator_rough_customcubic")
         public Optional<IFarGeneratorRough<HeightmapPos, HeightmapTile>> createHeightmapGeneratorRoughCustomCubic(IFarGeneratorRough.CreationEvent<HeightmapPos, HeightmapTile> event) {
             return this.isCustomCubicWorld(event.world())
-                    ? Optional.of(new CWGHeightmapGenerator(event.world()))
+                    ? Optional.of(new CWGHeightmapGenerator(event.world(), event.provider()))
                     : Optional.empty();
         }
 
         @FEventHandler(name = "cubicworldgen_voxel_generator_rough_customcubic")
         public Optional<IFarGeneratorRough<VoxelPos, VoxelTile>> createVoxelGeneratorRoughCustomCubic(IFarGeneratorRough.CreationEvent<VoxelPos, VoxelTile> event) {
             return this.isCustomCubicWorld(event.world())
-                    ? Optional.of(new CWGVoxelGenerator(event.world()))
+                    ? Optional.of(new CWGVoxelGenerator(event.world(), event.provider()))
                     : Optional.empty();
         }
 
@@ -97,7 +97,7 @@ public class FP2CubicWorldGen {
         @FEventHandler(name = "cubicworldgen_heightmap_generator_rough_flatcubic")
         public Optional<IFarGeneratorRough<HeightmapPos, HeightmapTile>> createHeightmapGeneratorRoughFlatCubic(IFarGeneratorRough.CreationEvent<HeightmapPos, HeightmapTile> event) {
             return this.isFlatCubicWorld(event.world())
-                    ? Optional.of(new CWGFlatHeightmapGenerator(event.world()))
+                    ? Optional.of(new CWGFlatHeightmapGenerator(event.world(), event.provider()))
                     : Optional.empty();
         }
     }

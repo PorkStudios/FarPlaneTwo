@@ -22,6 +22,7 @@ package net.daporkchop.fp2.core.mode.api.ctx;
 
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
+import net.daporkchop.fp2.common.util.Identifier;
 import net.daporkchop.fp2.core.util.threading.workergroup.WorkerManager;
 
 /**
@@ -49,7 +50,7 @@ public interface IFarWorld {
     /**
      * @return this world's dimension ID
      */
-    int fp2_IFarWorld_dimensionId();
+    Identifier fp2_IFarWorld_dimensionId();
 
     /**
      * @return this world's current timestamp

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -28,6 +28,7 @@ import net.daporkchop.fp2.core.util.threading.workergroup.WorkerGroup;
 import net.daporkchop.fp2.core.util.threading.workergroup.WorkerGroupBuilder;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.reference.cache.Cached;
+import net.daporkchop.lib.primitive.map.open.ObjObjOpenHashMap;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.ArrayDeque;
@@ -68,15 +69,48 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
 
     protected final Cached<Deque<Task>> recursionStack = Cached.threadLocal(this.recursionStackFactory());
 
-    protected final Function<P, V> function;
+    protected final WorkFunction<P, V> function;
 
     protected final WorkerGroup group;
     protected volatile boolean running = true;
 
-    public SharedFutureScheduler(@NonNull Function<Scheduler<P, V>, Function<P, V>> functionFactory, @NonNull WorkerGroupBuilder builder) {
+    public SharedFutureScheduler(@NonNull Function<? super SharedFutureScheduler<P, V>, WorkFunction<P, V>> functionFactory, @NonNull WorkerGroupBuilder builder) {
         this.function = functionFactory.apply(this);
 
         this.group = builder.build(this);
+    }
+
+    /**
+     * Checks whether or not a worker is allowed to recurse into execution of a task with the given destination parameter from the given source parameter.
+     *
+     * @param from the parameter of the task currently being executed by the worker
+     * @param to   the parameter to recurse to
+     * @return whether or not the recursion is allowed
+     */
+    protected boolean canRecurse(@NonNull P from, @NonNull P to) {
+        return true;
+    }
+
+    /**
+     * Checks whether or not a worker is allowed to recurse into execution of a batch task with the given destination parameters from the given source parameter.
+     *
+     * @param from the parameter of the task currently being executed by the worker
+     * @param tos  the parameters of the batch to recurse to
+     * @return whether or not the recursion is allowed
+     */
+    protected boolean canRecurseToBatch(@NonNull P from, @NonNull List<P> tos) {
+        return tos.stream().allMatch(to -> this.canRecurse(from, to));
+    }
+
+    /**
+     * Checks whether or not all of the parameters in the given list are allowed to be executed in the same batch.
+     *
+     * @param parameters the list of parameters in the batch. It is safe to assume that there are no duplicate elements in the list.
+     * @return whether or not all of the parameters in the given list are allowed to be executed in the same batch
+     */
+    protected boolean canExecuteInBatch(@NonNull List<P> parameters) {
+        checkArg(!parameters.isEmpty(), "a batch must consist of at least one parameter!");
+        return true;
     }
 
     protected Supplier<Deque<Task>> recursionStackFactory() {
@@ -122,7 +156,7 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
             public Task apply(@NonNull P param, Task task) {
                 if (task == null) { //task doesn't exist, create new one
                     if (DEBUG_PRINTS_ENABLED) {
-                        fp2().log().info("creating new task at %s, was previously null", param);
+                        fp2().log().info("retain: creating new task at %s, was previously null", param);
                     }
 
                     task = SharedFutureScheduler.this.createTask(param);
@@ -131,7 +165,7 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
                     SharedFutureScheduler.this.enqueue(task);
                 } else if (task.refCnt < 0) { //task is currently being executed, we want to replace it to force it to be re-enqueued later
                     if (DEBUG_PRINTS_ENABLED) {
-                        fp2().log().info("creating new task at %s, was previously %s", param, task);
+                        fp2().log().info("retain: creating new task at %s, was previously %s", param, task);
                     }
 
                     Task previousTask = task;
@@ -143,7 +177,7 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
                     task.refCnt = incrementExact(task.refCnt);
 
                     if (DEBUG_PRINTS_ENABLED) {
-                        fp2().log().info("retaining existing task at %s, reference count is now %d", param, task.refCnt);
+                        fp2().log().info("retain: retained existing task at %s, reference count is now %d", param, task.refCnt);
                     }
                 }
 
@@ -166,7 +200,7 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
             public Task apply(@NonNull P param, Task task) {
                 if (task != expectedTask) { //tasks don't match, do nothing
                     if (DEBUG_PRINTS_ENABLED) {
-                        fp2().log().info("failed to release task at %s, %s != %s", param, task, expectedTask);
+                        fp2().log().info("release: failed to release task at %s, %s != %s", param, task, expectedTask);
                     }
 
                     this.released = false;
@@ -178,12 +212,12 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
                 if (task.refCnt > 0) { //the task isn't being actively executed
                     if (--task.refCnt != 0) { //reference count is non-zero, the task is still live
                         if (DEBUG_PRINTS_ENABLED) {
-                            fp2().log().info("partially released task at %s, reference count is now %d", param, task.refCnt);
+                            fp2().log().info("release: partially released task at %s, reference count is now %d", param, task.refCnt);
                         }
                         return task;
                     } else { //the reference count reached zero! cancel the task, unqueue it and remove it from the map
                         if (DEBUG_PRINTS_ENABLED) {
-                            fp2().log().info("totally released task at %s, replacing with %d", param, task.previous);
+                            fp2().log().info("release: totally released task at %s, replacing with %d", param, task.previous);
                         }
 
                         SharedFutureScheduler.this.unqueue(task);
@@ -231,9 +265,9 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
                     || task.refCnt < 0) { //task is currently being executed, we can't start executing it
                     if (DEBUG_PRINTS_ENABLED) {
                         if (task != expectedTask) {
-                            fp2().log().info("couldn't begin task at %s (mismatch)", param);
+                            fp2().log().info("begin: couldn't begin task at %s (mismatch)", param);
                         } else {
-                            fp2().log().info("couldn't begin task at %s (already executing)", param);
+                            fp2().log().info("begin: couldn't begin task at %s (already executing)", param);
                         }
                     }
 
@@ -242,13 +276,14 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
                     checkState(task.refCnt != 0);
 
                     if (DEBUG_PRINTS_ENABLED) {
-                        fp2().log().info("began executing task at %s", param);
+                        fp2().log().info("begin: began executing task at %s", param);
                     }
 
                     //set reference count to -1 to indicate that it's started execution
                     task.refCnt = -1;
                     this.started = true;
 
+                    //remove task from execution queue to prevent another thread from trying to start it
                     SharedFutureScheduler.this.unqueue(task);
                 }
                 return task;
@@ -262,20 +297,20 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
 
     protected void deleteTask(@NonNull Task expectedTask) {
         this.tasks.compute(expectedTask.param, (param, task) -> {
-            checkState(task != null);
+            checkState(task != null, "task for %s was already removed!", param);
 
             if (task == expectedTask) { //task remains unchanged, delete it
                 if (DEBUG_PRINTS_ENABLED) {
-                    fp2().log().info("removed completed task at %s", param);
+                    fp2().log().info("delete: removed completed task at %s", param);
                 }
                 return null;
             } else { //tasks don't match, meaning the task has been re-scheduled
                 if (DEBUG_PRINTS_ENABLED) {
-                    fp2().log().info("task at %s (%s) was re-scheduled during execution, adding %s to queue", param, expectedTask, task);
+                    fp2().log().info("delete: task at %s (%s) was re-scheduled during execution, adding %s to queue", param, expectedTask, task);
                 }
 
                 //new task must reference the task which was completed, let's clear that reference
-                checkState(task.previous == expectedTask);
+                checkState(task.previous == expectedTask, "previous task for %s is not the expected task!", param);
                 task.previous = null;
 
                 //enqueue the new task and leave it in the map
@@ -283,6 +318,76 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
                 return task;
             }
         });
+    }
+
+    /**
+     * Attempts to acquire a task in order to execute it as part of a batch.
+     * <p>
+     * If no matching task exists, a new one will be created and begun. If a task already exists and has not yet begun, it will be started. If a task exists and is already started,
+     * the acquisition will fail.
+     *
+     * @param _param the parameter to acquire a task for
+     * @return the acquired task, or {@code null} if acquisition failed
+     */
+    protected Task acquireTaskForBatch(@NonNull P _param) {
+        class State implements BiFunction<P, Task, Task> {
+            Task task;
+
+            @Override
+            public Task apply(@NonNull P param, Task task) {
+                if (task == null) { //task doesn't exist, create new one
+                    if (DEBUG_PRINTS_ENABLED) {
+                        fp2().log().info("acquire: creating new task at %s, was previously null", param);
+                    }
+
+                    task = SharedFutureScheduler.this.createTask(param);
+
+                    //set reference count to -1 to indicate that it's started execution
+                    task.refCnt = -1;
+
+                    //save task instance to return from outer method
+                    this.task = task;
+                } else if (task.refCnt < 0) { //task is currently being executed, acquisition failed
+                    if (DEBUG_PRINTS_ENABLED) {
+                        fp2().log().info("acquire: failed to acquire task at %s", param);
+                    }
+
+                    //return null from outer method
+                    this.task = null;
+                } else { //task is currently still queued, begin executing it
+                    checkState(task.refCnt != 0);
+
+                    //the previous task is non-null, therefore it's still running and we aren't allowed to start this one yet
+                    if (task.previous != null) {
+                        if (DEBUG_PRINTS_ENABLED) {
+                            fp2().log().info("acquire: previous task at %s is still active", param);
+                        }
+
+                        //exit and keep existing value without changing anything
+                        return task;
+                    }
+
+                    if (DEBUG_PRINTS_ENABLED) {
+                        fp2().log().info("acquire: began executing task at %s", param);
+                    }
+
+                    //set reference count to -1 to indicate that it's started execution
+                    task.refCnt = -1;
+
+                    //remove task from execution queue to prevent another thread from trying to start it
+                    SharedFutureScheduler.this.unqueue(task);
+
+                    //save task instance to return from outer method
+                    this.task = task;
+                }
+
+                return task;
+            }
+        }
+
+        State state = new State();
+        this.tasks.compute(_param, state);
+        return state.task;
     }
 
     protected void pollAndExecuteSingleTask() {
@@ -306,33 +411,94 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
         return this.queue.poll(1L, TimeUnit.SECONDS);
     }
 
-    protected void executeTask(@NonNull Task task) {
+    protected void executeTask(@NonNull Task initialTask) {
         if (!this.running) {
             throw new SchedulerClosedError();
         }
 
         Deque<Task> recursionStack = this.recursionStack.get();
-        recursionStack.push(task);
+        if (!recursionStack.isEmpty()) { //ensure that this recursion is actually legal
+            P from = recursionStack.peekFirst().param;
+            checkState(this.canRecurse(from, initialTask.param), "recursion from %s to %s is not permitted!", from, initialTask.param);
+        }
+
+        //begin recursion into task
+        recursionStack.push(initialTask);
+
+        //keep track of all the tasks being executed
+        List<Task> allTasks = new ArrayList<>();
+        allTasks.add(initialTask);
 
         try { //execute the task and complete future accordingly
-            task.complete(this.function.apply(task.param));
+            Map<P, V> values = new ObjObjOpenHashMap<>();
+            values.put(initialTask.param, null);
+
+            this.function.work(initialTask.param, new Callback<P, V>() {
+                @Override
+                public void complete(@NonNull P param, @NonNull V value) {
+                    checkArg(values.containsKey(param), "completed invalid parameter! got %s, expected one of %s", param, values.keySet());
+                    checkState(values.put(param, value) == null, "parameter %s was already completed!", param);
+                }
+
+                @Override
+                public List<P> acquire(@NonNull List<P> params, @NonNull AcquisitionStrategy strategy) {
+                    List<P> acquired = new ArrayList<>();
+
+                    for (P param : params) {
+                        Task task;
+                        switch (strategy) {
+                            default: //the strategy is a hint, so fall back to any approach
+                            case TRY_STEAL_EXISTING_OR_CREATE:
+                                task = SharedFutureScheduler.this.acquireTaskForBatch(param);
+                                break;
+                        }
+
+                        if (task != null) { //we were able to successfully acquire the task
+                            checkState(!values.containsKey(task.param), "parameter %s was acquired twice?!?", param);
+
+                            values.put(task.param, null);
+                            allTasks.add(task);
+                            acquired.add(param);
+                        }
+                    }
+
+                    if (DEBUG_PRINTS_ENABLED) {
+                        fp2().log().info("callback acquire: acquired %d/%d tasks using %s (%s/%s, total %s)", acquired.size(), params.size(), strategy, acquired, params, values.keySet());
+                    }
+
+                    return acquired;
+                }
+            });
+
+            //complete the futures
+            for (Task task : allTasks) {
+                V value = values.get(task.param);
+                checkState(value != null, "parameter %s was not completed!", task.param);
+
+                //task was completed normally, set the future's result value
+                task.complete(value);
+            }
         } catch (SchedulerClosedError e) { //catch and rethrow this separately to prevent it from being used to complete the future
-            task.cancel0(); //cancel the future to make sure it has a return value
+            allTasks.forEach(Task::cancel0); //cancel the futures to make sure they are all completed
             throw e;
         } catch (RecursiveTaskCancelledError e) { //a dependent task was cancelled, which likely means this one was too (but we need to make sure of it)
-            if (!task.isCancelled()) { //this should be impossible
-                task.completeExceptionally(e);
+            if (allTasks.stream().noneMatch(Task::isCancelled)) { //this should be impossible
+                allTasks.forEach(task -> task.completeExceptionally(e));
                 this.group.manager().handle(e);
             }
         } catch (Throwable t) {
-            task.completeExceptionally(t);
+            allTasks.forEach(task -> task.completeExceptionally(t));
             if (this.running) { //only handle the exception if we aren't already shutting the scheduler down
                 this.group.manager().handle(t);
             }
-        } finally { //the task's been executed, remove it from the map
-            this.deleteTask(task);
+        } finally {
+            { //recursion is complete, so pop the top off the recursion stack
+                Task popped = recursionStack.pollFirst();
+                checkState(initialTask == popped, "recursion stack is in invalid state: popped %s, but expected %s!", popped, initialTask);
+            }
 
-            checkState(task == recursionStack.pop());
+            //the task's been executed, remove it from the map
+            allTasks.forEach(this::deleteTask);
         }
     }
 
@@ -497,7 +663,88 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
 
         @Override
         public String toString() {
-            return this.getClass().getCanonicalName() + '@' + Integer.toHexString(this.hashCode()) + ",param=" + this.param;
+            return this.getClass().getTypeName() + '@' + Integer.toHexString(this.hashCode()) + ",param=" + this.param;
         }
+    }
+
+    /**
+     * A user-defined function which computes a value based on a given parameter.
+     *
+     * @author DaPorkchop_
+     */
+    @FunctionalInterface
+    public interface WorkFunction<P, V> {
+        /**
+         * Wraps a regular {@link Function} into a {@link WorkFunction}.
+         *
+         * @param function the {@link Function} to wrap
+         * @return the wrapped {@link Function}
+         */
+        static <P, V> WorkFunction<P, V> wrap(@NonNull Function<P, V> function) {
+            return (param, callback) -> callback.complete(param, function.apply(param));
+        }
+
+        /**
+         * Calls the function with the given parameter.
+         * <p>
+         * <strong>Parameter ownership:</strong><br>
+         * Every {@link WorkFunction} invocation "owns" one or more parameters. The function is responsible for {@link Callback#complete(Object, Object) providing a result value} for
+         * every parameter it owns before the invocation returns. Initially, an invocation owns only a single parameter; the one which the function receives as a method argument.
+         * Invocations can acquire ownership of additional parameters using {@link Callback#acquire(List, AcquisitionStrategy) the given callback}.
+         * <p>
+         * The scheduler will ensure that no single parameter is owned by more than one invocation at a time.
+         *
+         * @param param    the parameter
+         * @param callback the {@link Callback} instance to notify with the task result
+         */
+        void work(@NonNull P param, @NonNull Callback<P, V> callback);
+    }
+
+    /**
+     * A callback to which will be accessed by a {@link WorkFunction} to notify task completion results.
+     *
+     * @author DaPorkchop_
+     */
+    public interface Callback<P, V> {
+        /**
+         * Sets the result value for the given parameter.
+         *
+         * @param param the parameter
+         * @param value the result value
+         */
+        void complete(@NonNull P param, @NonNull V value);
+
+        /**
+         * Tries to acquire ownership of the given parameters.
+         *
+         * @param params   the parameters to try to acquire ownership of
+         * @param strategy the strategy to use for acquiring the parameters' ownership. Note that this is merely a hint, the implementation is free to handle this any way it chooses.
+         * @return the parameters that were actually acquired
+         */
+        List<P> acquire(@NonNull List<P> params, @NonNull AcquisitionStrategy strategy);
+    }
+
+    /**
+     * Defines the strategies a {@link WorkFunction} invocation may use for acquiring additional parameters through {@link Callback#acquire(List, AcquisitionStrategy)}.
+     *
+     * @author DaPorkchop_
+     */
+    public enum AcquisitionStrategy {
+        /**
+         * Ownership of a parameter will be acquired according to the following rules:
+         * <ul>
+         *     <li>if the parameter is already scheduled, ownership will only be acquired if the parameter has not yet begun execution by any other thread.</li>
+         *     <li>if the parameter is not already scheduled, ownership will not be acquired.</li>
+         * </ul>
+         */
+        TRY_STEAL_EXISTING,
+        /**
+         * Ownership of a parameter will be acquired according to the following rules:
+         * <ul>
+         *     <li>if the parameter is already scheduled, ownership will only be acquired if the parameter has not yet begun execution by any other thread.</li>
+         *     <li>if the parameter is not already scheduled, ownership will be acquired in any case.</li>
+         * </ul>
+         */
+        TRY_STEAL_EXISTING_OR_CREATE;
     }
 }

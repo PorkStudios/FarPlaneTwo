@@ -49,6 +49,7 @@ import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Set;
 import java.util.Spliterators;
 import java.util.concurrent.CompletableFuture;
@@ -92,37 +93,28 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
 
         this.coordLimits = mode.tileCoordLimits(world.fp2_IFarWorld_coordLimits());
 
-        this.generatorRough = this.mode().roughGenerator(world);
-        this.generatorExact = this.mode().exactGenerator(world);
+        this.generatorRough = this.mode().roughGenerator(world, this);
+        this.generatorExact = this.mode().exactGenerator(world, this);
 
         if (this.generatorRough == null) {
-            fp2().log().warn("no rough %s generator exists for DIM%d (generator=%s)! Falling back to exact generator, this will have serious performance implications.", mode.name(), world.fp2_IFarWorld_dimensionId(), world.fp2_IFarWorldServer_terrainGeneratorInfo().implGenerator());
+            fp2().log().warn("no rough %s generator exists for world '%s' (generator=%s)! Falling back to exact generator, this will have serious performance implications.", mode.name(), world.fp2_IFarWorld_dimensionId(), world.fp2_IFarWorldServer_terrainGeneratorInfo().implGenerator());
             //TODO: make the fallback generator smart! rather than simply getting the chunks from the world, do generation and population in
             // a volatile, in-memory world clone to prevent huge numbers of chunks/cubes from potentially being generated (and therefore saved)
         }
 
         this.lowResolution = this.generatorRough != null && this.generatorRough.supportsLowResolution();
 
-        this.scaler = mode.scaler(world);
+        this.scaler = mode.scaler(world, this);
 
         this.root = world.fp2_IFarWorldServer_worldDirectory().resolve(MODID).resolve(this.mode().name().toLowerCase());
         this.storage = new RocksStorage<>(this, this.root);
 
         this.scheduler = new ApproximatelyPrioritizedSharedFutureScheduler<>(
-                scheduler -> task -> {
-                    switch (task.stage()) {
-                        case LOAD:
-                            return new AbstractTileTask.Load<>(this, scheduler, task.pos()).get();
-                        case UPDATE:
-                            return new AbstractTileTask.Update<>(this, scheduler, task.pos()).get();
-                        default:
-                            throw new IllegalArgumentException("unknown or stage in task: " + task);
-                    }
-                },
+                scheduler -> new TileWorker<>(this, scheduler),
                 this.world.fp2_IFarWorld_workerManager().createChildWorkerGroup()
                         .threads(fp2().globalConfig().performance().terrainThreads())
                         .threadFactory(PThreadFactories.builder().daemon().minPriority().collapsingId()
-                                .name(PStrings.fastFormat("FP2 %s DIM%d Worker #%%d", mode.name(), world.fp2_IFarWorld_dimensionId())).build()),
+                                .name(PStrings.fastFormat("FP2 %s %s Worker #%%d", mode.name(), world.fp2_IFarWorld_dimensionId())).build()),
                 PriorityTask.approxComparator());
 
         this.trackerManager = this.createTracker();
@@ -194,8 +186,7 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
         checkState(this.lastCompletedTick >= 0L, "flushed update queue before any game ticks were completed?!?");
 
         if (!this.updatesPending.isEmpty()) {
-            this.storage.markAllDirty(StreamSupport.stream(Spliterators.spliterator(this.updatesPending, DISTINCT | NONNULL), false), this.lastCompletedTick)
-                    .count(); //arbitrary lightweight terminal operation
+            this.storage.multiMarkDirty(new ArrayList<>(this.updatesPending), this.lastCompletedTick);
             this.updatesPending.clear();
         }
     }
@@ -218,7 +209,7 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
         this.onTickEnd(null);
         this.shutdownUpdateQueue();
 
-        fp2().log().trace("Shutting down storage in DIM%d", this.world.fp2_IFarWorld_dimensionId());
+        fp2().log().trace("Shutting down storage in world '%s'", this.world.fp2_IFarWorld_dimensionId());
         this.storage.close();
     }
 }

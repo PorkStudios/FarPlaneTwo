@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -45,7 +45,7 @@ public class SPacketUnloadTiles implements IPacket {
     @NonNull
     protected IFarRenderMode<?, ?> mode;
     @NonNull
-    protected Collection<IFarPos> positions;
+    protected Collection<? extends IFarPos> positions;
 
     @Override
     public void read(@NonNull DataIn in) throws IOException {
@@ -53,7 +53,7 @@ public class SPacketUnloadTiles implements IPacket {
         int size = in.readVarInt();
         this.positions = new ArrayList<>(size);
         for (int i = 0; i < size; i++) {
-            this.positions.add(this.mode.readPos(in));
+            this.positions.add(uncheckedCast(this.mode.readPos(in)));
         }
     }
 

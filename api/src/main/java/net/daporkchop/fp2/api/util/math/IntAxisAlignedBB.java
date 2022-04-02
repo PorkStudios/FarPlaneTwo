@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -25,7 +25,7 @@ import lombok.Data;
 /**
  * A 3-dimensional axis-aligned bounding box using {@code int} coordinates.
  * <p>
- * All coordinates are inclusive.
+ * Minimum coordinates are inclusive, maximum coordinates are exclusive.
  *
  * @author DaPorkchop_
  */
@@ -37,4 +37,37 @@ public final class IntAxisAlignedBB {
     protected final int maxX;
     protected final int maxY;
     protected final int maxZ;
+
+    /**
+     * @return the size of this AABB along the X axis
+     */
+    public int sizeX() {
+        return this.maxX - this.minX;
+    }
+
+    /**
+     * @return the size of this AABB along the Y axis
+     */
+    public int sizeY() {
+        return this.maxY - this.minY;
+    }
+
+    /**
+     * @return the size of this AABB along the Z axis
+     */
+    public int sizeZ() {
+        return this.maxZ - this.minZ;
+    }
+
+    /**
+     * Checks whether or not the given point is contained by this bounding box.
+     *
+     * @param x the point's X coordinate
+     * @param y the point's Y coordinate
+     * @param z the point's Z coordinate
+     * @return whether or not the given point is contained by this bounding box
+     */
+    public boolean contains(int x, int y, int z) {
+        return x >= this.minX && x < this.maxX && y >= this.minY && y < this.maxY && z >= this.minZ && z < this.maxZ;
+    }
 }

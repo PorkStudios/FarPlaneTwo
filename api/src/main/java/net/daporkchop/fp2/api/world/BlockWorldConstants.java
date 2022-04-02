@@ -23,14 +23,25 @@ package net.daporkchop.fp2.api.world;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.api.world.registry.FExtendedStateRegistryData;
+import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 
+import java.util.function.Consumer;
+import java.util.function.Function;
+
+import static java.lang.Math.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
+ * Constants and helper methods for users and implementors of {@link FBlockWorld}.
+ *
  * @author DaPorkchop_
  */
 @UtilityClass
 public class BlockWorldConstants {
+    //
+    // BLOCK TYPES
+    //
+
     /**
      * The block type used to indicate that a block is invisible. Block states using this type will be treated as air.
      *
@@ -51,6 +62,63 @@ public class BlockWorldConstants {
      * @see FExtendedStateRegistryData#type(int)
      */
     public static final int BLOCK_TYPE_OPAQUE = 2;
+
+    //
+    // DATA BAND ORDINALS
+    //
+
+    /**
+     * Ordinal of the states band.
+     * <p>
+     * States are represented as an {@code int}, as returned by the corresponding methods in {@link FGameRegistry}.
+     */
+    public static final int BAND_ORDINAL_STATES = 0;
+
+    /**
+     * Ordinal of the biomes band.
+     * <p>
+     * Biomes are represented as an {@code int}, as returned by the corresponding methods in {@link FGameRegistry}.
+     */
+    public static final int BAND_ORDINAL_BIOMES = 1;
+
+    /**
+     * Ordinal of the block+sky light band.
+     * <p>
+     * Block+sky light levels are represented as a {@code byte}, as returned by {@link BlockWorldConstants#packLight(int, int)}. Light levels are unsigned nibbles (4-bit integers),
+     * where {@code 0} is the darkest and {@code 15} is the brightest possible value.
+     */
+    public static final int BAND_ORDINAL_LIGHT = 2;
+
+    //
+    // DATA BAND HELPERS
+    //
+
+    /**
+     * Gets a flag indicating that the data band with the given ordinal number is enabled.
+     *
+     * @param bandOrdinal the ordinal number of the band
+     * @return a flag indicating that the data band with the given ordinal number is enabled
+     */
+    static int bandFlag(int bandOrdinal) {
+        assert (bandOrdinal & 0x1F) == bandOrdinal : "illegal band ordinal " + bandOrdinal;
+        return 1 << bandOrdinal;
+    }
+
+    /**
+     * Checks whether or not a band is enabled.
+     *
+     * @param enabledBands a bitfield indicating which bands are enabled
+     * @param bandOrdinal  the ordinal number of the band to check for
+     * @return whether or not the band is enabled
+     */
+    static boolean isBandEnabled(int enabledBands, int bandOrdinal) {
+        assert (bandOrdinal & 0x1F) == bandOrdinal : "illegal band ordinal " + bandOrdinal;
+        return (enabledBands & (1 << bandOrdinal)) != 0;
+    }
+
+    //
+    // LIGHT PACKING/UNPACKING HELPERS
+    //
 
     /**
      * Packs the given sky light and block light values together into a single {@code byte}.
@@ -83,58 +151,90 @@ public class BlockWorldConstants {
         return packedLight & 0xF;
     }
 
+    //
+    // QUERYSHAPE-IMPLEMENTATION-SPECIFIC OPTIMIZATION HELPERS
+    //
+
     /**
-     * Validates the arguments for a call to {@link FBlockWorld#getData(int[], int, int, int[], int, int, byte[], int, int, int, int, int, int, int, int, int, int, int)},
-     * throwing an exception if the parameters are invalid.
+     * Invokes a {@link TypedQueryShapeConsumer} with the given {@link FBlockWorld.QueryShape} as a parameter, automatically calling a type-specific method variant if possible.
      *
-     * @see FBlockWorld#getData(int[], int, int, int[], int, int, byte[], int, int, int, int, int, int, int, int, int, int, int)
+     * @param shape  the {@link FBlockWorld.QueryShape}
+     * @param action the {@link TypedQueryShapeConsumer}
      */
-    public static void validateArgsForGetData(
-            int[] states, int statesOff, int statesStride,
-            int[] biomes, int biomesOff, int biomesStride,
-            byte[] light, int lightOff, int lightStride,
-            int x, int y, int z, int sizeX, int sizeY, int sizeZ, int strideX, int strideY, int strideZ) {
-        int count = positive(sizeX, "sizeX") * positive(sizeY, "sizeY") * positive(sizeZ, "sizeZ");
-        if (states != null) {
-            checkRangeLen(states.length, statesOff, positive(statesStride, "statesStride") * count);
+    public static void withQueryShape(@NonNull FBlockWorld.QueryShape shape, @NonNull TypedQueryShapeConsumer action) {
+        if (shape instanceof FBlockWorld.SinglePointQueryShape) {
+            action.acceptPoint((FBlockWorld.SinglePointQueryShape) shape);
+        } else if (shape instanceof FBlockWorld.MultiPointsQueryShape) {
+            action.acceptPoints((FBlockWorld.MultiPointsQueryShape) shape);
+        } else if (shape instanceof FBlockWorld.OriginSizeStrideQueryShape) {
+            action.acceptOriginSizeStride((FBlockWorld.OriginSizeStrideQueryShape) shape);
+        } else {
+            action.acceptGeneric(shape);
         }
-        if (biomes != null) {
-            checkRangeLen(biomes.length, biomesOff, positive(biomesStride, "biomesStride") * count);
-        }
-        if (light != null) {
-            checkRangeLen(light.length, lightOff, positive(lightStride, "lightStride") * count);
-        }
-        positive(strideX, "strideX");
-        positive(strideY, "strideY");
-        positive(strideZ, "strideZ");
     }
 
     /**
-     * Validates the arguments for a call to {@link FBlockWorld#getData(int[], int, int, int[], int, int, byte[], int, int, int[], int, int, int[], int, int, int[], int, int, int)},
-     * throwing an exception if the parameters are invalid.
+     * Invokes a {@link TypedQueryShapeFunction} with the given {@link FBlockWorld.QueryShape} as a parameter, automatically calling a type-specific method variant if possible.
      *
-     * @see FBlockWorld#getData(int[], int, int, int[], int, int, byte[], int, int, int[], int, int, int[], int, int, int[], int, int, int)
+     * @param shape  the {@link FBlockWorld.QueryShape}
+     * @param action the {@link TypedQueryShapeFunction}
+     * @return the {@link TypedQueryShapeFunction}'s return value
      */
-    public static void validateArgsForGetData(
-            int[] states, int statesOff, int statesStride,
-            int[] biomes, int biomesOff, int biomesStride,
-            byte[] light, int lightOff, int lightStride,
-            @NonNull int[] xs, int xOff, int xStride,
-            @NonNull int[] ys, int yOff, int yStride,
-            @NonNull int[] zs, int zOff, int zStride,
-            int count) {
-        notNegative(count, "count");
-        if (states != null) {
-            checkRangeLen(states.length, statesOff, positive(statesStride, "statesStride") * count);
+    public static <R> R fromQueryShape(@NonNull FBlockWorld.QueryShape shape, @NonNull TypedQueryShapeFunction<R> action) {
+        if (shape instanceof FBlockWorld.SinglePointQueryShape) {
+            return action.applyPoint((FBlockWorld.SinglePointQueryShape) shape);
+        } else if (shape instanceof FBlockWorld.MultiPointsQueryShape) {
+            return action.applyPoints((FBlockWorld.MultiPointsQueryShape) shape);
+        } else if (shape instanceof FBlockWorld.OriginSizeStrideQueryShape) {
+            return action.applyOriginSizeStride((FBlockWorld.OriginSizeStrideQueryShape) shape);
+        } else {
+            return action.applyGeneric(shape);
         }
-        if (biomes != null) {
-            checkRangeLen(biomes.length, biomesOff, positive(biomesStride, "biomesStride") * count);
+    }
+
+    /**
+     * A {@link Consumer}-syle callback function which accepts a {@link FBlockWorld.QueryShape}. Multiple methods are provided in order to allow optimized implementations for specific
+     * {@link FBlockWorld.QueryShape} implementations.
+     *
+     * @author DaPorkchop_
+     */
+    @FunctionalInterface
+    public interface TypedQueryShapeConsumer {
+        default void acceptPoint(@NonNull FBlockWorld.SinglePointQueryShape shape) {
+            this.acceptGeneric(shape);
         }
-        if (light != null) {
-            checkRangeLen(light.length, lightOff, positive(lightStride, "lightStride") * count);
+
+        default void acceptPoints(@NonNull FBlockWorld.MultiPointsQueryShape shape) {
+            this.acceptGeneric(shape);
         }
-        checkRangeLen(xs.length, xOff, positive(xStride, "xStride") * count);
-        checkRangeLen(ys.length, yOff, positive(yStride, "yStride") * count);
-        checkRangeLen(zs.length, zOff, positive(zStride, "zStride") * count);
+
+        default void acceptOriginSizeStride(@NonNull FBlockWorld.OriginSizeStrideQueryShape shape) {
+            this.acceptGeneric(shape);
+        }
+
+        void acceptGeneric(@NonNull FBlockWorld.QueryShape shape);
+    }
+
+    /**
+     * A {@link Function}-syle callback function which accepts a {@link FBlockWorld.QueryShape}. Multiple methods are provided in order to allow optimized implementations for specific
+     * {@link FBlockWorld.QueryShape} implementations.
+     *
+     * @author DaPorkchop_
+     */
+    @FunctionalInterface
+    public interface TypedQueryShapeFunction<R> {
+        default R applyPoint(@NonNull FBlockWorld.SinglePointQueryShape shape) {
+            return this.applyGeneric(shape);
+        }
+
+        default R applyPoints(@NonNull FBlockWorld.MultiPointsQueryShape shape) {
+            return this.applyGeneric(shape);
+        }
+
+        default R applyOriginSizeStride(@NonNull FBlockWorld.OriginSizeStrideQueryShape shape) {
+            return this.applyGeneric(shape);
+        }
+
+        R applyGeneric(@NonNull FBlockWorld.QueryShape shape);
     }
 }

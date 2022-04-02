@@ -23,12 +23,13 @@ package net.daporkchop.fp2.core.mode.heightmap.server.gen.exact;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.api.world.GenerationNotAllowedException;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.core.mode.common.server.gen.AbstractFarGenerator;
-import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapData;
+import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapTile;
+import net.daporkchop.fp2.core.server.world.IFarWorldServer;
 
 import java.util.Arrays;
 
@@ -37,9 +38,9 @@ import static net.daporkchop.fp2.core.mode.heightmap.HeightmapConstants.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractExactHeightmapGenerator extends AbstractFarGenerator implements IFarGeneratorExact<HeightmapPos, HeightmapTile> {
-    public AbstractExactHeightmapGenerator(@NonNull IFarWorldServer world) {
-        super(world);
+public abstract class AbstractExactHeightmapGenerator extends AbstractFarGenerator<HeightmapPos, HeightmapTile> implements IFarGeneratorExact<HeightmapPos, HeightmapTile> {
+    public AbstractExactHeightmapGenerator(@NonNull IFarWorldServer world, @NonNull IFarTileProvider<HeightmapPos, HeightmapTile> provider) {
+        super(world, provider);
     }
 
     protected abstract void computeElevations(@NonNull FBlockWorld world, @NonNull int[] elevations, int blockX, int blockZ);

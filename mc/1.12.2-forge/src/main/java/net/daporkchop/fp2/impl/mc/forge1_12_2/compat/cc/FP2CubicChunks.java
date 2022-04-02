@@ -113,10 +113,10 @@ public class FP2CubicChunks {
             if (this.isCubicWorld(event.world())) {
                 ICubicWorld cubicWorld = (ICubicWorld) event.world().fp2_IFarWorld_implWorld();
                 int minY = cubicWorld.getMinHeight();
-                int maxY = cubicWorld.getMaxHeight() - 1;
+                int maxY = cubicWorld.getMaxHeight();
 
                 final int HORIZONTAL_LIMIT = 30_000_000; //TODO: hard-coding this is probably a bad idea, but there don't seem to be any variables or methods i can use to get it
-                return Optional.of(new IntAxisAlignedBB(-HORIZONTAL_LIMIT, minY, -HORIZONTAL_LIMIT, HORIZONTAL_LIMIT, maxY, HORIZONTAL_LIMIT));
+                return Optional.of(new IntAxisAlignedBB(-HORIZONTAL_LIMIT, minY, -HORIZONTAL_LIMIT, HORIZONTAL_LIMIT + 1, maxY, HORIZONTAL_LIMIT + 1));
             } else {
                 return Optional.empty();
             }
@@ -144,7 +144,7 @@ public class FP2CubicChunks {
                 constrain = @Constrain(before = "vanilla_heightmap_generator_exact"))
         public Optional<IFarGeneratorExact<HeightmapPos, HeightmapTile>> createHeightmapGeneratorExact(IFarGeneratorExact.CreationEvent<HeightmapPos, HeightmapTile> event) {
             return this.isCubicWorld(event.world())
-                    ? Optional.of(new CCHeightmapGenerator(event.world()))
+                    ? Optional.of(new CCHeightmapGenerator(event.world(), event.provider()))
                     : Optional.empty();
         }
 
@@ -152,7 +152,7 @@ public class FP2CubicChunks {
                 constrain = @Constrain(before = "vanilla_voxel_generator_exact"))
         public Optional<IFarGeneratorExact<VoxelPos, VoxelTile>> createVoxelGeneratorExact(IFarGeneratorExact.CreationEvent<VoxelPos, VoxelTile> event) {
             return this.isCubicWorld(event.world())
-                    ? Optional.of(new CCVoxelGenerator(event.world()))
+                    ? Optional.of(new CCVoxelGenerator(event.world(), event.provider()))
                     : Optional.empty();
         }
 

@@ -20,103 +20,61 @@
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.exactfblockworld;
 
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import net.daporkchop.fp2.api.event.FEventHandler;
-import net.daporkchop.fp2.api.world.FBlockWorld;
-import net.daporkchop.fp2.api.world.GenerationNotAllowedException;
-import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
-import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
+import net.daporkchop.fp2.core.minecraft.util.threading.asynccache.AsyncCacheNBT;
+import net.daporkchop.fp2.core.minecraft.world.chunks.AbstractChunksExactFBlockWorldHolder;
+import net.daporkchop.fp2.core.minecraft.world.chunks.AbstractPrefetchedChunksExactFBlockWorld;
 import net.daporkchop.fp2.core.server.world.ExactFBlockWorldHolder;
+import net.daporkchop.fp2.core.server.world.IFarWorldServer;
 import net.daporkchop.fp2.core.util.datastructure.Datastructures;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSegtreeSet;
 import net.daporkchop.fp2.core.util.threading.futurecache.IAsyncCache;
-import net.daporkchop.fp2.core.util.threading.lazy.LazyFutureTask;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.world.chunk.storage.ATAnvilChunkLoader1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.world.IMixinWorldServer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.region.ThreadSafeRegionFileCache;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.util.threading.asyncblockaccess.AsyncCacheNBTBase;
 import net.daporkchop.lib.common.function.throwing.ERunnable;
+import net.daporkchop.lib.math.vector.Vec2i;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.WorldServer;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.storage.AnvilChunkLoader;
 
 import java.io.IOException;
-import java.util.stream.Stream;
-
-import static net.daporkchop.lib.common.util.PorkUtil.*;
+import java.util.List;
 
 /**
  * Default implementation of {@link ExactFBlockWorldHolder} for vanilla worlds.
  *
  * @author DaPorkchop_
  */
-public class VanillaExactFBlockWorldHolder1_12 implements ExactFBlockWorldHolder {
-    protected final WorldServer world;
-    protected final AnvilChunkLoader io;
-
-    protected final ChunkCache chunks = new ChunkCache();
-
-    protected final NDimensionalIntSegtreeSet chunksExistCache;
-
+public class VanillaExactFBlockWorldHolder1_12 extends AbstractChunksExactFBlockWorldHolder<Chunk> {
     public VanillaExactFBlockWorldHolder1_12(@NonNull WorldServer world) {
-        this.world = world;
-        this.io = (AnvilChunkLoader) this.world.getChunkProvider().chunkLoader;
+        super(((IMixinWorldServer) world).fp2_farWorldServer(), 4);
+    }
 
-        this.chunksExistCache = Datastructures.INSTANCE.nDimensionalIntSegtreeSet()
+    @Override
+    protected NDimensionalIntSegtreeSet createChunksExistIndex(@NonNull IFarWorldServer world) {
+        AnvilChunkLoader io = (AnvilChunkLoader) ((WorldServer) world.fp2_IFarWorld_implWorld()).getChunkProvider().chunkLoader;
+        return Datastructures.INSTANCE.nDimensionalIntSegtreeSet()
                 .dimensions(2)
                 .threadSafe(true)
-                .initialPoints(() -> ThreadSafeRegionFileCache.INSTANCE.allChunks(this.io.chunkSaveLocation.toPath().resolve("region"))
+                .initialPoints(() -> ThreadSafeRegionFileCache.INSTANCE.allChunks(io.chunkSaveLocation.toPath().resolve("region"))
                         .map(pos -> new int[]{ pos.x, pos.z })
                         .parallel())
                 .build();
-
-        ((IMixinWorldServer) world).fp2_farWorldServer().fp2_IFarWorldServer_eventBus().registerWeak(this);
     }
 
     @Override
-    public FBlockWorld worldFor(@NonNull AllowGenerationRequirement requirement) {
-        return new VanillaExactFBlockWorld1_12(this, requirement == AllowGenerationRequirement.ALLOWED);
+    protected AsyncCacheNBT<Vec2i, ?, Chunk, ?> createChunkCache(@NonNull IFarWorldServer world) {
+        return new ChunkCache((WorldServer) world.fp2_IFarWorld_implWorld(), (AnvilChunkLoader) ((WorldServer) world.fp2_IFarWorld_implWorld()).getChunkProvider().chunkLoader);
     }
 
     @Override
-    public void close() {
-        ((IMixinWorldServer) this.world).fp2_farWorldServer().fp2_IFarWorldServer_eventBus().unregister(this);
-        this.chunksExistCache.release();
-    }
-
-    @FEventHandler
-    private void onColumnSaved(@NonNull ColumnSavedEvent event) {
-        this.chunksExistCache.add(event.pos().x(), event.pos().y());
-        this.chunks.notifyUpdate(new ChunkPos(event.pos().x(), event.pos().y()), (NBTTagCompound) event.data());
-    }
-
-    @FEventHandler
-    private void onCubeSaved(@NonNull CubeSavedEvent event) {
-        throw new UnsupportedOperationException("vanilla world shouldn't have cubes!");
-    }
-
-    public boolean containsAnyData(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
-        int minSectionX = minX >> 4;
-        int minSectionZ = minZ >> 4;
-        int maxSectionX = (maxX >> 4) + 1; //rounded up because maximum positions are inclusive
-        int maxSectionZ = (maxZ >> 4) + 1;
-
-        return maxY >= 0 && minY < this.world.getHeight() && this.chunksExistCache.containsAny(minSectionX, minSectionZ, maxSectionX, maxSectionZ);
-    }
-
-    protected Chunk getChunk(int chunkX, int chunkZ, boolean allowGeneration) throws GenerationNotAllowedException {
-        return GenerationNotAllowedException.throwIfNull(this.chunks.get(new ChunkPos(chunkX, chunkZ), allowGeneration).join());
-    }
-
-    protected Stream<Chunk> multiGetChunks(@NonNull Stream<ChunkPos> chunkPositions, boolean allowGeneration) throws GenerationNotAllowedException {
-        //collect all futures into an array first in order to issue all tasks at once before blocking, thus ensuring maximum parallelism
-        LazyFutureTask<Chunk>[] chunkFutures = uncheckedCast(chunkPositions.map(pos -> this.chunks.get(pos, allowGeneration)).toArray(LazyFutureTask[]::new));
-
-        return LazyFutureTask.scatterGather(chunkFutures).stream()
-                .peek(GenerationNotAllowedException.uncheckedThrowIfNull());
+    protected AbstractPrefetchedChunksExactFBlockWorld<Chunk> prefetchedWorld(boolean generationAllowed, @NonNull List<Chunk> chunks) {
+        return new PrefetchedChunksFBlockWorld1_12(this, generationAllowed, chunks);
     }
 
     /**
@@ -124,37 +82,43 @@ public class VanillaExactFBlockWorldHolder1_12 implements ExactFBlockWorldHolder
      *
      * @author DaPorkchop_
      */
-    protected class ChunkCache extends AsyncCacheNBTBase<ChunkPos, Object, Chunk> {
-        //TODO: this doesn't handle the difference between "chunk is populated" and "chunk and its neighbors are populated", which is important because vanilla is very dumb
+    //TODO: this doesn't handle the difference between "chunk is populated" and "chunk and its neighbors are populated", which is important because vanilla is very dumb
+    @RequiredArgsConstructor
+    @Getter
+    protected static class ChunkCache extends AsyncCacheNBT<Vec2i, Object, Chunk, NBTTagCompound> {
+        @NonNull
+        private final WorldServer world;
+        @NonNull
+        private final AnvilChunkLoader io;
 
         @Override
-        protected Chunk parseNBT(@NonNull ChunkPos key, @NonNull Object param, @NonNull NBTTagCompound nbt) {
-            Chunk chunk = ((ATAnvilChunkLoader1_12) VanillaExactFBlockWorldHolder1_12.this.io).invokeCheckedReadChunkFromNBT(VanillaExactFBlockWorldHolder1_12.this.world, key.x, key.z, nbt);
+        protected Chunk parseNBT(@NonNull Vec2i key, @NonNull Object param, @NonNull NBTTagCompound nbt) {
+            Chunk chunk = ((ATAnvilChunkLoader1_12) this.io).invokeCheckedReadChunkFromNBT(this.world, key.x(), key.y(), nbt);
             return chunk.isTerrainPopulated() ? chunk : null;
         }
 
         @Override
         @SneakyThrows(IOException.class)
-        protected Chunk loadFromDisk(@NonNull ChunkPos key, @NonNull Object param) {
-            Object[] data = VanillaExactFBlockWorldHolder1_12.this.io.loadChunk__Async(VanillaExactFBlockWorldHolder1_12.this.world, key.x, key.z);
+        protected Chunk loadFromDisk(@NonNull Vec2i key, @NonNull Object param) {
+            Object[] data = this.io.loadChunk__Async(this.world, key.x(), key.y());
             Chunk chunk = data != null ? (Chunk) data[0] : null;
             return chunk != null && chunk.isTerrainPopulated() ? chunk : null;
         }
 
         @Override
-        protected void triggerGeneration(@NonNull ChunkPos key, @NonNull Object param) {
-            ((IMixinWorldServer) VanillaExactFBlockWorldHolder1_12.this.world).fp2_farWorldServer().fp2_IFarWorld_workerManager().workExecutor().run((ERunnable) () -> {
-                int x = key.x;
-                int z = key.z;
+        protected void triggerGeneration(@NonNull Vec2i key, @NonNull Object param) {
+            ((IMixinWorldServer) this.world).fp2_farWorldServer().fp2_IFarWorld_workerManager().workExecutor().run((ERunnable) () -> {
+                int x = key.x();
+                int z = key.y();
 
                 //see net.minecraftforge.server.command.ChunkGenWorker#doWork() for more info
 
-                Chunk chunk = VanillaExactFBlockWorldHolder1_12.this.world.getChunk(x, z);
-                VanillaExactFBlockWorldHolder1_12.this.world.getChunk(x + 1, z);
-                VanillaExactFBlockWorldHolder1_12.this.world.getChunk(x + 1, z + 1);
-                VanillaExactFBlockWorldHolder1_12.this.world.getChunk(x, z + 1);
+                Chunk chunk = this.world.getChunk(x, z);
+                this.world.getChunk(x + 1, z);
+                this.world.getChunk(x + 1, z + 1);
+                this.world.getChunk(x, z + 1);
 
-                VanillaExactFBlockWorldHolder1_12.this.io.saveChunk(VanillaExactFBlockWorldHolder1_12.this.world, chunk);
+                this.io.saveChunk(this.world, chunk);
             }).join();
         }
     }

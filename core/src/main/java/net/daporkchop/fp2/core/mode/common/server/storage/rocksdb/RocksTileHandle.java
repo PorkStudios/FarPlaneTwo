@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -89,7 +89,7 @@ public class RocksTileHandle<POS extends IFarPos, T extends IFarTile> implements
             byte[] keyBytes = this.pos.toBytes();
 
             //obtain an exclusive lock on both timestamp keys to ensure coherency
-            byte[][] get = txn.multiGetForUpdate(READ_OPTIONS,
+            byte[][] get = multiGetForUpdate(txn, READ_OPTIONS,
                     ImmutableList.of(this.storage.cfTileTimestamp, this.storage.cfTileDirtyTimestamp),
                     new byte[][]{ keyBytes, keyBytes });
 
@@ -152,7 +152,7 @@ public class RocksTileHandle<POS extends IFarPos, T extends IFarTile> implements
             byte[] keyBytes = this.pos.toBytes();
 
             //obtain an exclusive lock on both timestamp keys to ensure coherency
-            byte[][] get = txn.multiGetForUpdate(READ_OPTIONS,
+            byte[][] get = multiGetForUpdate(txn, READ_OPTIONS,
                     ImmutableList.of(this.storage.cfTileTimestamp, this.storage.cfTileDirtyTimestamp),
                     new byte[][]{ keyBytes, keyBytes });
 
@@ -167,7 +167,7 @@ public class RocksTileHandle<POS extends IFarPos, T extends IFarTile> implements
                     : TIMESTAMP_BLANK;
 
             if (timestamp == TIMESTAMP_BLANK //the tile doesn't exist, so we can't mark it as dirty
-                    || dirtyTimestamp <= timestamp || dirtyTimestamp <= existingDirtyTimestamp) { //the new dirty timestamp isn't newer than the existing one, so we can't replace it
+                || dirtyTimestamp <= timestamp || dirtyTimestamp <= existingDirtyTimestamp) { //the new dirty timestamp isn't newer than the existing one, so we can't replace it
                 //exit without committing the transaction
                 return false;
             }
@@ -194,18 +194,12 @@ public class RocksTileHandle<POS extends IFarPos, T extends IFarTile> implements
                 return false;
             }
 
-            //store new dirty timestamp in db
+            //clear dirty timestamp in db
             txn.delete(this.storage.cfTileDirtyTimestamp, keyBytes);
 
             //commit transaction and report that a change was made
             txn.commit();
             return true;
         }
-    }
-
-    @Override
-    @SneakyThrows(RocksDBException.class)
-    public boolean anyVanillaExists() {
-        return this.storage.db.get(this.storage.cfAnyVanillaExists, this.pos.toBytes()) != null;
     }
 }
