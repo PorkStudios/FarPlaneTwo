@@ -80,8 +80,6 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
 
     protected final Scheduler<PriorityTask<POS>, ITileHandle<POS, T>> scheduler; //TODO: make this global rather than per-mode and per-dimension
 
-    protected final boolean lowResolution;
-
     protected Set<POS> updatesPending = new ObjectRBTreeSet<>();
     protected long lastCompletedTick = -1L;
 
@@ -99,8 +97,6 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
             //TODO: make the fallback generator smart! rather than simply getting the chunks from the world, do generation and population in
             // a volatile, in-memory world clone to prevent huge numbers of chunks/cubes from potentially being generated (and therefore saved)
         }
-
-        this.lowResolution = this.generatorRough != null && this.generatorRough.supportsLowResolution();
 
         this.scaler = mode.scaler(world, this);
 
@@ -148,7 +144,7 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
     }
 
     public boolean canGenerateRough(@NonNull POS pos) {
-        return this.generatorRough != null && (pos.level() == 0 || this.lowResolution);
+        return this.generatorRough != null && this.generatorRough.canGenerate(pos);
     }
 
     protected void scheduleForUpdate(@NonNull POS... positions) {

@@ -54,6 +54,11 @@ public class CWGVoxelGenerator extends AbstractRoughVoxelGenerator<CWGContext> {
     }
 
     @Override
+    public boolean canGenerate(@NonNull VoxelPos pos) {
+        return true;
+    }
+
+    @Override
     public void generate(@NonNull VoxelPos pos, @NonNull VoxelTile tile) {
         int level = pos.level();
         int baseX = pos.blockX();
@@ -105,10 +110,5 @@ public class CWGVoxelGenerator extends AbstractRoughVoxelGenerator<CWGContext> {
         int seaLevel = this.seaLevel() >> level << level; //truncate lower bits in order to scale the sea level to the current zoom level
         data.light = BlockWorldConstants.packLight(blockY < seaLevel ? max(15 - (seaLevel - blockY) * 3, 0) : 15, 0);
         data.biome = ctx.getBiome(blockX, blockZ);
-    }
-
-    @Override
-    public boolean supportsLowResolution() {
-        return true;
     }
 }

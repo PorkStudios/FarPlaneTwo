@@ -160,20 +160,30 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
     protected void generateRough(@NonNull State state) {
         state.positions().forEach(pos -> checkArg(this.provider.canGenerateRough(pos), "cannot do rough generation at %s!", pos));
 
+        //try to steal tasks required to make this a batch
+        this.provider.generatorRough().batchGenerationGroup(state.positions()).ifPresent(batchPositions -> {
+            List<POS> initialBatchPositions = new ArrayList<>();
+            batchPositions.forEach(initialBatchPositions::add);
+
+            //ensure the original position is contained in the list
+            checkState(initialBatchPositions.containsAll(state.positions()), "batch group for %s doesn't contain all of its inputs! given: %s", state.positions(), initialBatchPositions);
+
+            //try to acquire all the positions
+            state.tryAcquire(initialBatchPositions, SharedFutureScheduler.AcquisitionStrategy.TRY_STEAL_EXISTING_OR_CREATE);
+        });
+
         SimpleRecycler<T> tileRecycler = this.provider.mode().tileRecycler();
-        T tile = tileRecycler.allocate();
+        T[] tiles = tileRecycler.allocate(state.positions().size(), this.provider.mode()::tileArray);
         try {
-            state.forEachPositionHandleTimestamp((pos, handle, minimumTimestamp) -> {
-                tile.reset();
+            //generate tile
+            this.provider.generatorRough().generate(state.positions().toArray(this.provider.mode().posArray(state.positions().size())), tiles);
 
-                //generate tile
-                this.provider.generatorRough().generate(pos, tile);
-
-                //update handle contents
-                handle.set(ITileMetadata.ofTimestamp(minimumTimestamp), tile);
-            });
+            //update tile contents
+            this.provider.storage().multiSet(state.positions(),
+                    StreamSupport.stream(state.minimumTimestamps().spliterator(), false).map(ITileMetadata::ofTimestamp).collect(Collectors.toList()),
+                    Arrays.asList(tiles));
         } finally {
-            tileRecycler.release(tile);
+            tileRecycler.release(tiles);
         }
 
         //notify callback
@@ -182,7 +192,7 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
 
     protected void generateExact(@NonNull State state, boolean allowGeneration) throws GenerationNotAllowedException {
         try (FBlockWorld exactWorld = this.provider.world().fp2_IFarWorldServer_exactBlockWorldHolder().worldFor(allowGeneration ? ExactFBlockWorldHolder.AllowGenerationRequirement.ALLOWED : ExactFBlockWorldHolder.AllowGenerationRequirement.NOT_ALLOWED)) {
-            //consider making this a batch to a batch generation task
+            //try to steal tasks required to make this a batch
             this.provider.generatorExact().batchGenerationGroup(exactWorld, state.positions()).ifPresent(batchPositions -> {
                 List<POS> initialBatchPositions = new ArrayList<>();
                 batchPositions.forEach(initialBatchPositions::add);

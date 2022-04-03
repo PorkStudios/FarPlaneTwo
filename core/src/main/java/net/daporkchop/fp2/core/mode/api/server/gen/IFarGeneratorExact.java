@@ -67,9 +67,9 @@ public interface IFarGeneratorExact<POS extends IFarPos, T extends IFarTile> ext
     }
 
     /**
-     * Gets an {@link Optional} {@link Iterable} of all the tile positions which may be generated at the same time as the tile at the given position to potentially achieve better performance.
+     * Gets an {@link Optional} {@link Iterable} of all the tile positions which may be generated at the same time as the tiles at the given positions to potentially achieve better performance.
      * <p>
-     * If an empty {@link Optional} is returned, no batching will be done and the tile will be generated individually.
+     * If an empty {@link Optional} is returned, no additional batching will be done.
      * <p>
      * Otherwise, the following restrictions apply to the positions which may be returned:
      * <ul>
@@ -86,21 +86,24 @@ public interface IFarGeneratorExact<POS extends IFarPos, T extends IFarTile> ext
      * @return an {@link Optional} {@link Iterable} of all the tile positions which may be generated at the same time
      */
     default Optional<? extends Iterable<POS>> batchGenerationGroup(@NonNull FBlockWorld world, @NonNull Collection<POS> positions) {
-        return Optional.ofNullable(positions.stream()
-                .map(pos -> this.batchGenerationGroup(world, pos))
-                .filter(Optional::isPresent).map(Optional::get)
-                .<SimpleSet<POS>>reduce(null,
-                        (a, b) -> {
-                            if (a == null) {
-                                a = this.provider().mode().directPosAccess().newPositionSet();
-                            }
-                            b.forEach(a::add);
-                            return a;
-                        },
-                        (a, b) -> {
-                            b.forEach(a::add);
-                            return a;
-                        }));
+        SimpleSet<POS> set = null;
+        for (POS pos : positions) {
+            Optional<? extends Iterable<POS>> optionalBatchGroup = this.batchGenerationGroup(world, pos);
+            if (optionalBatchGroup.isPresent()) {
+                if (set == null) { //create set if it doesn't exist
+                    set = this.provider().mode().directPosAccess().newPositionSet();
+                }
+
+                //add all positions to set
+                optionalBatchGroup.get().forEach(set::add);
+            }
+        }
+
+        if (set != null) { //the set was created, ensure that all of the original input positions are included
+            positions.forEach(set::add);
+        }
+
+        return Optional.ofNullable(set);
     }
 
     /**

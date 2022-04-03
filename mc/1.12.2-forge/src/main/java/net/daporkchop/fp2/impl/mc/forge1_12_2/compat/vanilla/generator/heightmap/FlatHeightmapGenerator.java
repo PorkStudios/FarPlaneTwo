@@ -129,7 +129,7 @@ public class FlatHeightmapGenerator extends AbstractRoughHeightmapGenerator {
     }
 
     @Override
-    public boolean supportsLowResolution() {
+    public boolean canGenerate(@NonNull HeightmapPos pos) {
         return true;
     }
 
