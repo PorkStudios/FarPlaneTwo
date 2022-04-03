@@ -69,11 +69,11 @@ public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
     public CWGHeightmapGenerator(@NonNull IFarWorldServer world, @NonNull IFarTileProvider<HeightmapPos, HeightmapTile> provider) {
         super(world, provider);
 
-        this.ctx = Cached.threadLocal(() -> new CWGContext(this.registry, (WorldServer) world.fp2_IFarWorld_implWorld(), HMAP_SIZE, 2, HT_SHIFT), ReferenceStrength.WEAK);
+        this.ctx = Cached.threadLocal(() -> new CWGContext(this.registry(), (WorldServer) world.fp2_IFarWorld_implWorld(), HMAP_SIZE, 2, HT_SHIFT), ReferenceStrength.WEAK);
     }
 
     @Override
-    public boolean supportsLowResolution() {
+    public boolean canGenerate(@NonNull HeightmapPos pos) {
         return true;
     }
 
@@ -95,10 +95,10 @@ public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
             for (int z = 0, inIdx = heightsIndex(x, z); z < HT_VOXELS; z++, inIdx++) {
                 double height = hmap[inIdx];
 
-                boolean addWater = height < this.seaLevel;
+                boolean addWater = height < this.seaLevel();
                 if (!addWater) { //check surrounding points to see if they're below sea level
                     for (int i = 0, lim = SEARCH_AROUND_WATER_OFFSETS.length; i < lim; i++) {
-                        if (hmap[inIdx + SEARCH_AROUND_WATER_OFFSETS[i]] < this.seaLevel) {
+                        if (hmap[inIdx + SEARCH_AROUND_WATER_OFFSETS[i]] < this.seaLevel()) {
                             addWater = true;
                             break;
                         }
@@ -128,15 +128,15 @@ public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
 
         data.height_int = heightI;
         data.height_frac = heightF;
-        data.state = this.registry.state2id(state);
-        data.light = (15 - clamp(this.seaLevel - heightI, 0, 5) * 3) << 4;
+        data.state = this.registry().state2id(state);
+        data.light = (15 - clamp(this.seaLevel() - heightI, 0, 5) * 3) << 4;
         data.biome = biome;
         tile.setLayer(x, z, DEFAULT_LAYER, data);
 
         if (addWater) { //set water
-            data.height_int = this.seaLevel - 1;
+            data.height_int = this.seaLevel() - 1;
             data.height_frac = HEIGHT_FRAC_LIQUID;
-            data.state = this.registry.state2id(Blocks.WATER.getDefaultState());
+            data.state = this.registry().state2id(Blocks.WATER.getDefaultState());
             data.light = BlockWorldConstants.packLight(15, 0);
             data.secondaryConnection = WATER_LAYER;
             tile.setLayer(x, z, WATER_LAYER, data);

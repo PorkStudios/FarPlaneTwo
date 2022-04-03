@@ -33,6 +33,7 @@ import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
@@ -433,18 +434,26 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
             Map<P, V> values = new ObjObjOpenHashMap<>();
             values.put(initialTask.param, null);
 
+            if (DEBUG_PRINTS_ENABLED) {
+                fp2().log().info("execute: beginning to execute %s", initialTask.param);
+            }
+
             this.function.work(initialTask.param, new Callback<P, V>() {
                 @Override
                 public void complete(@NonNull P param, @NonNull V value) {
                     checkArg(values.containsKey(param), "completed invalid parameter! got %s, expected one of %s", param, values.keySet());
                     checkState(values.put(param, value) == null, "parameter %s was already completed!", param);
+
+                    if (DEBUG_PRINTS_ENABLED) {
+                        fp2().log().info("callback complete: completed %s", param);
+                    }
                 }
 
                 @Override
-                public List<P> acquire(@NonNull List<P> params, @NonNull AcquisitionStrategy strategy) {
+                public List<P> acquire(@NonNull Iterable<P> params, @NonNull AcquisitionStrategy strategy) {
                     List<P> acquired = new ArrayList<>();
 
-                    for (P param : params) {
+                    params.forEach(param -> {
                         Task task;
                         switch (strategy) {
                             default: //the strategy is a hint, so fall back to any approach
@@ -460,15 +469,25 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
                             allTasks.add(task);
                             acquired.add(param);
                         }
-                    }
+                    });
 
                     if (DEBUG_PRINTS_ENABLED) {
-                        fp2().log().info("callback acquire: acquired %d/%d tasks using %s (%s/%s, total %s)", acquired.size(), params.size(), strategy, acquired, params, values.keySet());
+                        List<P> paramsAsList = new ArrayList<>();
+                        params.forEach(paramsAsList::add);
+                        fp2().log().info("callback acquire: acquired %d/%d tasks using %s (%s/%s, total %s)", acquired.size(), paramsAsList.size(), strategy, acquired, paramsAsList, values.keySet());
                     }
 
                     return acquired;
                 }
             });
+
+            if (DEBUG_PRINTS_ENABLED) {
+                if (values.size() == 1) {
+                    fp2().log().info("execute: finished execution of %s, no additional parameters were acquired", initialTask.param);
+                } else {
+                    fp2().log().info("execute: finished execution of %s, some additional parameters were acquired: ", initialTask.param, values.keySet());
+                }
+            }
 
             //complete the futures
             for (Task task : allTasks) {
@@ -690,7 +709,7 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
          * <strong>Parameter ownership:</strong><br>
          * Every {@link WorkFunction} invocation "owns" one or more parameters. The function is responsible for {@link Callback#complete(Object, Object) providing a result value} for
          * every parameter it owns before the invocation returns. Initially, an invocation owns only a single parameter; the one which the function receives as a method argument.
-         * Invocations can acquire ownership of additional parameters using {@link Callback#acquire(List, AcquisitionStrategy) the given callback}.
+         * Invocations can acquire ownership of additional parameters using {@link Callback#acquire(Iterable, AcquisitionStrategy) the given callback}.
          * <p>
          * The scheduler will ensure that no single parameter is owned by more than one invocation at a time.
          *
@@ -721,11 +740,11 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
          * @param strategy the strategy to use for acquiring the parameters' ownership. Note that this is merely a hint, the implementation is free to handle this any way it chooses.
          * @return the parameters that were actually acquired
          */
-        List<P> acquire(@NonNull List<P> params, @NonNull AcquisitionStrategy strategy);
+        List<P> acquire(@NonNull Iterable<P> params, @NonNull AcquisitionStrategy strategy);
     }
 
     /**
-     * Defines the strategies a {@link WorkFunction} invocation may use for acquiring additional parameters through {@link Callback#acquire(List, AcquisitionStrategy)}.
+     * Defines the strategies a {@link WorkFunction} invocation may use for acquiring additional parameters through {@link Callback#acquire(Iterable, AcquisitionStrategy)}.
      *
      * @author DaPorkchop_
      */

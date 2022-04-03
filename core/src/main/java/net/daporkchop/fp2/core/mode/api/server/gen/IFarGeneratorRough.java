@@ -25,6 +25,12 @@ import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.server.IFarServerResourceCreationEvent;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
+import net.daporkchop.fp2.core.util.datastructure.SimpleSet;
+
+import java.util.Collection;
+import java.util.Optional;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * Extracts height and color information from a world for use by a rendering mode.
@@ -33,11 +39,57 @@ import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
  *
  * @author DaPorkchop_
  */
-public interface IFarGeneratorRough<POS extends IFarPos, T extends IFarTile> extends IFarGenerator {
+public interface IFarGeneratorRough<POS extends IFarPos, T extends IFarTile> extends IFarGenerator<POS, T> {
     /**
-     * @return whether or not this generator can generate tiles at low resolution
+     * Gets an {@link Optional} {@link Iterable} of all the tile positions which may be generated at the same time as the tile at the given position to potentially achieve better performance.
+     * <p>
+     * If an empty {@link Optional} is returned, no batching will be done and the tile will be generated individually.
+     *
+     * @param pos the position of the tile to generate
+     * @return an {@link Optional} {@link Iterable} of all the tile positions which may be generated at the same time
      */
-    boolean supportsLowResolution();
+    default Optional<? extends Iterable<POS>> batchGenerationGroup(@NonNull POS pos) {
+        return Optional.empty(); //don't do batch generation by default
+    }
+
+    /**
+     * Gets an {@link Optional} {@link Iterable} of all the tile positions which may be generated at the same time as the tiles at the given positions to potentially achieve better performance.
+     * <p>
+     * If an empty {@link Optional} is returned, no additional batching will be done.
+     *
+     * @param positions the position of the tile to generate
+     * @return an {@link Optional} {@link Iterable} of all the tile positions which may be generated at the same time
+     */
+    default Optional<? extends Iterable<POS>> batchGenerationGroup(@NonNull Collection<POS> positions) {
+        SimpleSet<POS> set = null;
+        for (POS pos : positions) {
+            Optional<? extends Iterable<POS>> optionalBatchGroup = this.batchGenerationGroup(pos);
+            if (optionalBatchGroup.isPresent()) {
+                if (set == null) { //create set if it doesn't exist
+                    set = this.provider().mode().directPosAccess().newPositionSet();
+                }
+
+                //add all positions to set
+                optionalBatchGroup.get().forEach(set::add);
+            }
+        }
+
+        if (set != null) { //the set was created, ensure that all of the original input positions are included
+            positions.forEach(set::add);
+        }
+
+        return Optional.ofNullable(set);
+    }
+
+    /**
+     * Checks whether or not rough generation at the given position is possible.
+     * <p>
+     * The position must be valid (within the world's coordinate limits)!
+     *
+     * @param pos the position to check
+     * @return whether or not rough generation is possible
+     */
+    boolean canGenerate(@NonNull POS pos);
 
     /**
      * Generates a rough estimate of the terrain in the given tile.
@@ -46,6 +98,20 @@ public interface IFarGeneratorRough<POS extends IFarPos, T extends IFarTile> ext
      * @param tile the tile to generate
      */
     void generate(@NonNull POS pos, @NonNull T tile);
+
+    /**
+     * Generates a rough estimate of the terrain in the given tiles.
+     *
+     * @param positions the positions of the tiles to generate
+     * @param tiles     the tiles to generate
+     */
+    default void generate(@NonNull POS[] positions, @NonNull T[] tiles) {
+        checkArg(positions.length == tiles.length, "positions (%d) and tiles (%d) must have same number of elements!", positions.length, tiles.length);
+
+        for (int i = 0; i < positions.length; i++) {
+            this.generate(positions[i], tiles[i]);
+        }
+    }
 
     /**
      * Fired to create a new {@link IFarGeneratorRough}.

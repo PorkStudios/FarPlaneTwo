@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -20,6 +20,11 @@
 
 package net.daporkchop.fp2.core.mode.api.server.gen;
 
+import net.daporkchop.fp2.core.mode.api.IFarPos;
+import net.daporkchop.fp2.core.mode.api.IFarTile;
+import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
+import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+
 /**
  * Extracts height and color information from a world for use by a rendering mode.
  * <p>
@@ -27,5 +32,14 @@ package net.daporkchop.fp2.core.mode.api.server.gen;
  *
  * @author DaPorkchop_
  */
-public interface IFarGenerator {
+public interface IFarGenerator<POS extends IFarPos, T extends IFarTile> {
+    /**
+     * @return the {@link IFarWorldServer world} that this generator generates tiles in
+     */
+    IFarWorldServer world();
+
+    /**
+     * @return the {@link IFarTileProvider tile provider} that this generator generates tiles for
+     */
+    IFarTileProvider<POS, T> provider();
 }

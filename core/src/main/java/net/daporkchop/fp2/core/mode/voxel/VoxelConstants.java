@@ -31,7 +31,7 @@ import lombok.experimental.UtilityClass;
 public class VoxelConstants {
     public static final String NAME = "voxel";
 
-    public static final int STORAGE_VERSION = 8;
+    public static final int STORAGE_VERSION = 9;
 
     //definitions of tile sizes
     public static final int VT_SHIFT = 4;

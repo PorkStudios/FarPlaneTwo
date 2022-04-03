@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.core.mode.heightmap.server.scale;
 
+import com.google.common.collect.ImmutableList;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
@@ -29,6 +30,7 @@ import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapTile;
 import net.daporkchop.fp2.core.server.world.IFarWorldServer;
 
+import java.util.List;
 import java.util.stream.Stream;
 
 import static java.lang.Math.*;
@@ -48,19 +50,19 @@ public class HeightmapScalerMinMax extends AbstractFarGenerator<HeightmapPos, He
     }
 
     @Override
-    public Stream<HeightmapPos> outputs(@NonNull HeightmapPos srcPos) {
-        return Stream.of(srcPos.up());
+    public List<HeightmapPos> outputs(@NonNull HeightmapPos srcPos) {
+        return ImmutableList.of(srcPos.up());
     }
 
     @Override
-    public Stream<HeightmapPos> inputs(@NonNull HeightmapPos dstPos) {
+    public List<HeightmapPos> inputs(@NonNull HeightmapPos dstPos) {
         checkArg(dstPos.level() > 0, "cannot generate inputs for level 0!");
 
         int x = dstPos.x() << 1;
         int z = dstPos.z() << 1;
         int level = dstPos.level();
 
-        return Stream.of(
+        return ImmutableList.of(
                 new HeightmapPos(level - 1, x, z),
                 new HeightmapPos(level - 1, x, z + 1),
                 new HeightmapPos(level - 1, x + 1, z),

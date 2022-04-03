@@ -28,8 +28,9 @@ import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.server.IFarServerResourceCreationEvent;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
+import net.daporkchop.fp2.core.util.datastructure.SimpleSet;
 
-import java.util.List;
+import java.util.Collection;
 import java.util.Optional;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -41,9 +42,9 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  *
  * @author DaPorkchop_
  */
-public interface IFarGeneratorExact<POS extends IFarPos, T extends IFarTile> extends IFarGenerator {
+public interface IFarGeneratorExact<POS extends IFarPos, T extends IFarTile> extends IFarGenerator<POS, T> {
     /**
-     * Gets an {@link Optional} {@link List} of all the tile positions which may be generated at the same time as the tile at the given position to potentially achieve better performance.
+     * Gets an {@link Optional} {@link Iterable} of all the tile positions which may be generated at the same time as the tile at the given position to potentially achieve better performance.
      * <p>
      * If an empty {@link Optional} is returned, no batching will be done and the tile will be generated individually.
      * <p>
@@ -59,10 +60,50 @@ public interface IFarGeneratorExact<POS extends IFarPos, T extends IFarTile> ext
      *
      * @param world the {@link FBlockWorld} instance providing access to block data in the world
      * @param pos   the position of the tile to generate
-     * @return an {@link Optional} {@link List} of all the tile positions which may be generated at the same time
+     * @return an {@link Optional} {@link Iterable} of all the tile positions which may be generated at the same time
      */
-    default Optional<List<POS>> batchGenerationGroup(@NonNull FBlockWorld world, @NonNull POS pos) {
+    default Optional<? extends Iterable<POS>> batchGenerationGroup(@NonNull FBlockWorld world, @NonNull POS pos) {
         return Optional.empty(); //don't do batch generation by default
+    }
+
+    /**
+     * Gets an {@link Optional} {@link Iterable} of all the tile positions which may be generated at the same time as the tiles at the given positions to potentially achieve better performance.
+     * <p>
+     * If an empty {@link Optional} is returned, no additional batching will be done.
+     * <p>
+     * Otherwise, the following restrictions apply to the positions which may be returned:
+     * <ul>
+     *     <li>the input position must be present in the list</li>
+     *     <li>all of the positions must be valid (i.e. within the provider's {@link IFarCoordLimits coordinate limits})</li>
+     *     <li>the positions must be chosen such that generation can only fail with a {@link GenerationNotAllowedException} if the input position would have failed. Conversely,
+     *     if the input position would have been able to be generated successfully, generation for the whole batch <strong>must</strong> succeed. As thi is entirely dependent
+     *     on the world's internal data representation, it is recommended to use {@link FBlockWorld#guaranteedDataAvailableVolume} to determine which data is guaranteed
+     *     to be available if the data necessary for generating the input position is.</li>
+     * </ul>
+     *
+     * @param world     the {@link FBlockWorld} instance providing access to block data in the world
+     * @param positions the position of the tile to generate
+     * @return an {@link Optional} {@link Iterable} of all the tile positions which may be generated at the same time
+     */
+    default Optional<? extends Iterable<POS>> batchGenerationGroup(@NonNull FBlockWorld world, @NonNull Collection<POS> positions) {
+        SimpleSet<POS> set = null;
+        for (POS pos : positions) {
+            Optional<? extends Iterable<POS>> optionalBatchGroup = this.batchGenerationGroup(world, pos);
+            if (optionalBatchGroup.isPresent()) {
+                if (set == null) { //create set if it doesn't exist
+                    set = this.provider().mode().directPosAccess().newPositionSet();
+                }
+
+                //add all positions to set
+                optionalBatchGroup.get().forEach(set::add);
+            }
+        }
+
+        if (set != null) { //the set was created, ensure that all of the original input positions are included
+            positions.forEach(set::add);
+        }
+
+        return Optional.ofNullable(set);
     }
 
     /**

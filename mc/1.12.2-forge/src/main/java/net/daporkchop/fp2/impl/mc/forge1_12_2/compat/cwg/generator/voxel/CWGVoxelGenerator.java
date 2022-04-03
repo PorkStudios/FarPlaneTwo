@@ -50,7 +50,12 @@ public class CWGVoxelGenerator extends AbstractRoughVoxelGenerator<CWGContext> {
     public CWGVoxelGenerator(@NonNull IFarWorldServer world, @NonNull IFarTileProvider<VoxelPos, VoxelTile> provider) {
         super(world, provider);
 
-        this.ctx = Cached.threadLocal(() -> new CWGContext(this.registry, (WorldServer) world.fp2_IFarWorld_implWorld(), CACHE_SIZE, 2, VT_SHIFT), ReferenceStrength.WEAK);
+        this.ctx = Cached.threadLocal(() -> new CWGContext(this.registry(), (WorldServer) world.fp2_IFarWorld_implWorld(), CACHE_SIZE, 2, VT_SHIFT), ReferenceStrength.WEAK);
+    }
+
+    @Override
+    public boolean canGenerate(@NonNull VoxelPos pos) {
+        return true;
     }
 
     @Override
@@ -71,7 +76,7 @@ public class CWGVoxelGenerator extends AbstractRoughVoxelGenerator<CWGContext> {
         for (int x = CACHE_MIN; x < CACHE_MAX; x++) {
             for (int y = CACHE_MIN; y < CACHE_MAX; y++) {
                 final int idx = cacheIndex(x, y, CACHE_MIN);
-                Arrays.fill(densityMap[0], idx, idx + CACHE_MAX, ((this.seaLevel - 0.125d) - (baseY + (y << level))) * scaleFactor);
+                Arrays.fill(densityMap[0], idx, idx + CACHE_MAX, ((this.seaLevel() - 0.125d) - (baseY + (y << level))) * scaleFactor);
             }
         }
 
@@ -85,7 +90,7 @@ public class CWGVoxelGenerator extends AbstractRoughVoxelGenerator<CWGContext> {
     @Override
     protected int getFaceState(int blockX, int blockY, int blockZ, int level, double nx, double ny, double nz, double density0, double density1, int edge, int layer, CWGContext ctx) {
         if (layer == 0) { //layer 0 is always water lol
-            return this.registry.state2id(Blocks.WATER.getDefaultState());
+            return this.registry().state2id(Blocks.WATER.getDefaultState());
         }
 
         double density = max(density0, density1);
@@ -95,20 +100,15 @@ public class CWGVoxelGenerator extends AbstractRoughVoxelGenerator<CWGContext> {
             state = replacer.getReplacedBlock(state, blockX, blockY, blockZ, nx, ny, nz, density);
         }
 
-        return this.registry.state2id(state);
+        return this.registry().state2id(state);
     }
 
     @Override
     protected void populateVoxelBlockData(int blockX, int blockY, int blockZ, int level, double nx, double ny, double nz, VoxelData data, CWGContext ctx) {
         blockY++;
 
-        int seaLevel = this.seaLevel >> level << level; //truncate lower bits in order to scale the sea level to the current zoom level
+        int seaLevel = this.seaLevel() >> level << level; //truncate lower bits in order to scale the sea level to the current zoom level
         data.light = BlockWorldConstants.packLight(blockY < seaLevel ? max(15 - (seaLevel - blockY) * 3, 0) : 15, 0);
         data.biome = ctx.getBiome(blockX, blockZ);
-    }
-
-    @Override
-    public boolean supportsLowResolution() {
-        return true;
     }
 }

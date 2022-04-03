@@ -66,8 +66,8 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
             return Optional.empty();
         }
 
-        VoxelPos min = this.provider.coordLimits().min(0);
-        VoxelPos max = this.provider.coordLimits().max(0);
+        VoxelPos min = this.provider().coordLimits().min(0);
+        VoxelPos max = this.provider().coordLimits().max(0);
 
         //TODO: figure out whether or not this is actually correct? i don't think this properly accounts for every possible edge case, rather it just happens to work for the current
         // values of CACHE_MIN/CACHE_MAX...
@@ -87,7 +87,7 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
         checkArg(typeMap.length >= cb(CACHE_SIZE) && stateMap.length >= cb(CACHE_SIZE));
 
         for (int i = 0; i < cb(CACHE_SIZE); i++) { //set each type flag depending on the block state at the corresponding position
-            typeMap[i] = (byte) this.extendedStateRegistryData.type(stateMap[i]);
+            typeMap[i] = (byte) this.extendedStateRegistryData().type(stateMap[i]);
         }
     }
 
@@ -108,7 +108,7 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
             //query all world data at once
             world.query(FBlockWorld.Query.of(
                     new FBlockWorld.OriginSizeStrideQueryShape(
-                            posIn.blockX() + CACHE_MIN, posIn.blockY() + CACHE_MIN, posIn.blockZ() + CACHE_MIN,
+                            posIn.blockX() + CACHE_MIN - 1, posIn.blockY() + CACHE_MIN - 1, posIn.blockZ() + CACHE_MIN - 1,
                             CACHE_SIZE, CACHE_SIZE, CACHE_SIZE,
                             1, 1, 1),
                     new FBlockWorld.BandArraysQueryOutput(stateCache, 0, 1, biomeCache, 0, 1, lightCache, 0, 1, cb(CACHE_SIZE))));
@@ -118,7 +118,7 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
 
             VoxelData data = new VoxelData();
 
-            data.x = data.y = data.z = POS_ONE;
+            data.x = data.y = data.z = 0;
 
             for (int dx = 0; dx < VT_VOXELS; dx++) {
                 for (int dy = 0; dy < VT_VOXELS; dy++) {

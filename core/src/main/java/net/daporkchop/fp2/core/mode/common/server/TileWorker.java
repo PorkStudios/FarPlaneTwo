@@ -20,6 +20,8 @@
 
 package net.daporkchop.fp2.core.mode.common.server;
 
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.api.world.FBlockWorld;
@@ -33,12 +35,19 @@ import net.daporkchop.fp2.core.server.world.ExactFBlockWorldHolder;
 import net.daporkchop.fp2.core.util.SimpleRecycler;
 import net.daporkchop.fp2.core.util.threading.scheduler.Scheduler;
 import net.daporkchop.fp2.core.util.threading.scheduler.SharedFutureScheduler;
-import net.daporkchop.lib.common.util.PArrays;
+import net.daporkchop.lib.primitive.lambda.ObjObjLongConsumer;
+import net.daporkchop.lib.primitive.list.LongList;
+import net.daporkchop.lib.primitive.list.array.LongArrayList;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.function.LongConsumer;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.fp2.core.debug.FP2Debug.*;
@@ -66,7 +75,25 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
         }
     }
 
-    protected boolean allowNewGeneration(@NonNull TaskStage stage, @NonNull ITileHandle<POS, T> handle) {
+    protected LongList minimumTimestamps(@NonNull TaskStage stage, @NonNull List<POS> positions) {
+        LongList out = new LongArrayList(positions.size());
+        switch (stage) {
+            case LOAD:
+                for (int i = 0; i < positions.size(); i++) {
+                    out.add(ITileMetadata.TIMESTAMP_GENERATED);
+                }
+                break;
+            case UPDATE:
+                this.provider.storage().multiDirtyTimestamp(positions)
+                        .forEach((LongConsumer) minimumTimestamp -> out.add(minimumTimestamp == ITileMetadata.TIMESTAMP_BLANK ? ITileMetadata.TIMESTAMP_GENERATED : minimumTimestamp));
+                break;
+            default:
+                throw new IllegalArgumentException("unknown stage: " + stage);
+        }
+        return out;
+    }
+
+    protected boolean allowNewGeneration(@NonNull TaskStage stage) {
         switch (stage) {
             case LOAD:
                 return true;
@@ -77,209 +104,290 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
         }
     }
 
-    protected PriorityTask<POS> taskFor(@NonNull TaskStage stage, @NonNull POS pos) {
-        return this.provider.taskFor(stage, pos);
-    }
-
     @Override
     public void work(@NonNull PriorityTask<POS> task, @NonNull SharedFutureScheduler.Callback<PriorityTask<POS>, ITileHandle<POS, T>> callback) {
-        TaskStage stage = task.stage();
-        POS pos = task.pos();
+        State state = new State(task, callback);
 
-        checkArg(this.provider.coordLimits().contains(pos), "tile position is outside coordinate limits: %s", pos);
-
-        ITileHandle<POS, T> handle = this.provider.storage().handleFor(pos);
-
-        long minimumTimestamp = this.minimumTimestamp(stage, handle);
-        long worldTimestamp = this.provider.lastCompletedTick;
-        checkState(worldTimestamp >= minimumTimestamp, "worldTimestamp (%d) is less than minimumTimestamp (%d)?!?", worldTimestamp, minimumTimestamp);
-
-        if (handle.timestamp() >= minimumTimestamp) { //break out early if already new enough
-            callback.complete(task, handle);
+        if (state.considerExit()) {
             return;
         }
 
-        if (!(FP2_DEBUG && !fp2().globalConfig().debug().exactGeneration()) && this.provider.anyVanillaTerrainExistsAt(pos)) {
+        if (!(FP2_DEBUG && !fp2().globalConfig().debug().exactGeneration()) && this.provider.anyVanillaTerrainExistsAt(state.positions())) {
             //there's some terrain at the given position, let's try to generate something with it
-            if (pos.level() == 0) {
+            if (state.level() == 0) {
                 //the position is at detail level 0, do exact generation
                 try {
-                    this.generateExact(task, pos, handle, worldTimestamp, false, callback);
+                    this.generateExact(state, false);
                     return;
                 } catch (GenerationNotAllowedException e) {
                     //the terrain existed, but wasn't populated so we don't want to use it
                 }
             } else {
                 //force the tile to be scaled, which will cause this to be executed recursively
-                this.generateScale(task, pos, handle, worldTimestamp, callback);
+                this.generateScale(state);
                 return;
             }
         }
 
-        if (this.provider.canGenerateRough(pos)) { //the tile can be generated using the rough generator
-            this.generateRough(task, pos, handle, worldTimestamp, callback);
+        if (state.positions().stream().anyMatch(this.provider::canGenerateRough)) { //the tile can be generated using the rough generator
+            this.generateRough(state);
             return;
         }
 
-        if (!this.allowNewGeneration(stage, handle)) { //we aren't allowed to generate any new tiles
+        if (!this.allowNewGeneration(state.stage())) { //we aren't allowed to generate any new tiles
             //make sure the tile isn't marked as dirty
             //TODO: this should be impossible, but we can't do proper vanilla terrain population tests yet. delete this in The Future:tm:!
-            handle.clearDirty();
+            this.provider.storage.multiClearDirty(state.positions());
 
-            callback.complete(task, handle);
+            //mark all acquired tasks as complete before exiting
+            state.completeAll();
             return;
         }
 
         //rough generation isn't available...
-        if (pos.level() == 0) {
+        if (state.level() == 0) {
             //do exact generation, allowing it to generate vanilla terrain if needed
             try {
-                this.generateExact(task, pos, handle, worldTimestamp, true, callback);
+                this.generateExact(state, true);
             } catch (GenerationNotAllowedException e) { //impossible
-                throw new IllegalArgumentException("generation blocked while processing tile at " + pos, e);
+                throw new IllegalArgumentException("encountered ungenerated terrain while processing tile(s) at " + state.positions(), e);
             }
         } else { //this will generate the tile and all tiles below it down to level 0 until the tile can be "generated" from scaled data
-            this.generateScale(task, pos, handle, worldTimestamp, callback);
+            this.generateScale(state);
         }
     }
 
-    protected void generateRough(@NonNull PriorityTask<POS> task, @NonNull POS pos, @NonNull ITileHandle<POS, T> handle, long minimumTimestamp, @NonNull SharedFutureScheduler.Callback<PriorityTask<POS>, ITileHandle<POS, T>> callback) {
-        checkArg(pos.level() == 0 || this.provider.canGenerateRough(pos), "cannot do rough generation at %s!", pos);
+    protected void generateRough(@NonNull State state) {
+        state.positions().forEach(pos -> checkArg(this.provider.canGenerateRough(pos), "cannot do rough generation at %s!", pos));
+
+        //try to steal tasks required to make this a batch
+        this.provider.generatorRough().batchGenerationGroup(state.positions()).ifPresent(batchPositions -> {
+            List<POS> initialBatchPositions = new ArrayList<>();
+            batchPositions.forEach(initialBatchPositions::add);
+
+            //ensure the original position is contained in the list
+            checkState(initialBatchPositions.containsAll(state.positions()), "batch group for %s doesn't contain all of its inputs! given: %s", state.positions(), initialBatchPositions);
+
+            //try to acquire all the positions
+            state.tryAcquire(initialBatchPositions, SharedFutureScheduler.AcquisitionStrategy.TRY_STEAL_EXISTING_OR_CREATE);
+        });
 
         SimpleRecycler<T> tileRecycler = this.provider.mode().tileRecycler();
-        T tile = tileRecycler.allocate();
+        T[] tiles = tileRecycler.allocate(state.positions().size(), this.provider.mode()::tileArray);
         try {
             //generate tile
-            this.provider.generatorRough().generate(pos, tile);
-
-            //update handle contents
-            handle.set(ITileMetadata.ofTimestamp(minimumTimestamp), tile);
-        } finally {
-            tileRecycler.release(tile);
-        }
-
-        //notify callback
-        callback.complete(task, handle);
-    }
-
-    protected void generateExact(@NonNull PriorityTask<POS> task, @NonNull POS pos, @NonNull ITileHandle<POS, T> handle, long minimumTimestamp, boolean allowGeneration, @NonNull SharedFutureScheduler.Callback<PriorityTask<POS>, ITileHandle<POS, T>> callback) throws GenerationNotAllowedException {
-        try (FBlockWorld exactWorld = this.provider.world().fp2_IFarWorldServer_exactBlockWorldHolder().worldFor(allowGeneration ? ExactFBlockWorldHolder.AllowGenerationRequirement.ALLOWED : ExactFBlockWorldHolder.AllowGenerationRequirement.NOT_ALLOWED)) {
-            //consider promotion to a batch generation task
-            Optional<List<POS>> optionalBatchPositions = this.provider.generatorExact().batchGenerationGroup(exactWorld, pos);
-            if (optionalBatchPositions.isPresent()) {
-                List<POS> initialBatchPositions = optionalBatchPositions.get();
-
-                //ensure the original position is contained in the list
-                checkState(initialBatchPositions.remove(pos), "batch group for %s doesn't contain itself! %s", pos, initialBatchPositions);
-
-                //acquire as many positions as possible for this batch
-                List<PriorityTask<POS>> batchTasks = callback.acquire(
-                        initialBatchPositions.stream().map(batchPos -> this.taskFor(task.stage(), batchPos)).collect(Collectors.toList()),
-                        SharedFutureScheduler.AcquisitionStrategy.TRY_STEAL_EXISTING_OR_CREATE);
-
-                //manually add the initial task to the list, since it isn't present in the list now (because we can't acquire the same task twice)
-                batchTasks.add(task);
-
-                //actually generate the tiles
-                this.generateExactBatch(batchTasks, batchTasks.stream().map(PriorityTask::pos).collect(Collectors.toList()), minimumTimestamp, callback, exactWorld);
-            } else {
-                //do regular, non-batched exact generation
-                this.generateExactSingle(task, pos, handle, minimumTimestamp, callback, exactWorld);
-            }
-        }
-    }
-
-    protected void generateExactSingle(@NonNull PriorityTask<POS> task, @NonNull POS pos, @NonNull ITileHandle<POS, T> handle, long minimumTimestamp, @NonNull SharedFutureScheduler.Callback<PriorityTask<POS>, ITileHandle<POS, T>> callback, @NonNull FBlockWorld exactWorld) throws GenerationNotAllowedException {
-        SimpleRecycler<T> tileRecycler = this.provider.mode().tileRecycler();
-        T tile = tileRecycler.allocate();
-        try {
-            //generate tile
-            this.provider.generatorExact().generate(exactWorld, pos, tile);
-
-            //update handle contents
-            handle.set(ITileMetadata.ofTimestamp(minimumTimestamp), tile);
-        } finally {
-            tileRecycler.release(tile);
-        }
-
-        //notify callback
-        callback.complete(task, handle);
-    }
-
-    protected void generateExactBatch(@NonNull List<PriorityTask<POS>> tasks, @NonNull List<POS> positions, long minimumTimestamp, @NonNull SharedFutureScheduler.Callback<PriorityTask<POS>, ITileHandle<POS, T>> callback, @NonNull FBlockWorld exactWorld) throws GenerationNotAllowedException {
-        SimpleRecycler<T> tileRecycler = this.provider.mode().tileRecycler();
-        T[] tiles = tileRecycler.allocate(positions.size(), this.provider.mode()::tileArray);
-        try {
-            //generate tile
-            this.provider.generatorExact().generate(exactWorld, positions.toArray(this.provider.mode().posArray(positions.size())), tiles);
+            this.provider.generatorRough().generate(state.positions().toArray(this.provider.mode().posArray(state.positions().size())), tiles);
 
             //update tile contents
-            this.provider.storage().multiSet(positions,
-                    Arrays.asList(PArrays.filled(positions.size(), ITileMetadata[]::new, ITileMetadata.ofTimestamp(minimumTimestamp))),
+            this.provider.storage().multiSet(state.positions(),
+                    StreamSupport.stream(state.minimumTimestamps().spliterator(), false).map(ITileMetadata::ofTimestamp).collect(Collectors.toList()),
                     Arrays.asList(tiles));
         } finally {
             tileRecycler.release(tiles);
         }
 
         //notify callback
-        tasks.forEach(task -> callback.complete(task, this.provider.storage().handleFor(task.pos())));
+        state.completeAll();
     }
 
-    protected void generateScale(@NonNull PriorityTask<POS> task, @NonNull POS pos, @NonNull ITileHandle<POS, T> handle, long minimumTimestamp, @NonNull SharedFutureScheduler.Callback<PriorityTask<POS>, ITileHandle<POS, T>> callback) {
+    protected void generateExact(@NonNull State state, boolean allowGeneration) throws GenerationNotAllowedException {
+        try (FBlockWorld exactWorld = this.provider.world().fp2_IFarWorldServer_exactBlockWorldHolder().worldFor(allowGeneration ? ExactFBlockWorldHolder.AllowGenerationRequirement.ALLOWED : ExactFBlockWorldHolder.AllowGenerationRequirement.NOT_ALLOWED)) {
+            //try to steal tasks required to make this a batch
+            this.provider.generatorExact().batchGenerationGroup(exactWorld, state.positions()).ifPresent(batchPositions -> {
+                List<POS> initialBatchPositions = new ArrayList<>();
+                batchPositions.forEach(initialBatchPositions::add);
+
+                //ensure the original position is contained in the list
+                checkState(initialBatchPositions.containsAll(state.positions()), "batch group for %s doesn't contain all of its inputs! given: %s", state.positions(), initialBatchPositions);
+
+                //try to acquire all the positions
+                state.tryAcquire(initialBatchPositions, SharedFutureScheduler.AcquisitionStrategy.TRY_STEAL_EXISTING_OR_CREATE);
+            });
+
+            //actually do exact generation
+            SimpleRecycler<T> tileRecycler = this.provider.mode().tileRecycler();
+            T[] tiles = tileRecycler.allocate(state.positions().size(), this.provider.mode()::tileArray);
+            try {
+                //generate tile
+                this.provider.generatorExact().generate(exactWorld, state.positions().toArray(this.provider.mode().posArray(state.positions().size())), tiles);
+
+                //update tile contents
+                this.provider.storage().multiSet(state.positions(),
+                        StreamSupport.stream(state.minimumTimestamps().spliterator(), false).map(ITileMetadata::ofTimestamp).collect(Collectors.toList()),
+                        Arrays.asList(tiles));
+            } finally {
+                tileRecycler.release(tiles);
+            }
+
+            //notify callback
+            state.completeAll();
+        }
+    }
+
+    protected void generateScale(@NonNull State state) {
         //find input positions
-        List<POS> srcPositions = this.provider.scaler().inputs(pos).collect(Collectors.toList());
+        List<POS> uniqueValidSourcePositions = this.provider.scaler().uniqueInputs(state.positions()).stream()
+                .filter(this.provider.coordLimits()::contains)
+                .collect(Collectors.toList());
 
         //wait for all source tiles to be generated
-        this.scheduler.scatterGather(srcPositions.stream()
-                .filter(this.provider.coordLimits()::contains) //don't bother generating tiles which are outside the coordinate limits
-                .map(srcPos -> this.taskFor(task.stage(), srcPos))
+        this.scheduler.scatterGather(uniqueValidSourcePositions.stream()
+                .map(state.stage()::taskForPosition)
                 .collect(Collectors.toList()));
 
-        if (handle.timestamp() >= minimumTimestamp) { //break out early if tile is already done
-            callback.complete(task, handle);
+        if (state.considerExit()) {
             return;
         }
 
-        //inflate sources
-        SimpleRecycler<T> tileRecycler = this.provider.mode().tileRecycler();
-        T[] srcs = this.provider.mode().tileArray(srcPositions.size());
-        T dst = tileRecycler.allocate();
-        try {
-            {
-                //snapshot tile data for all source positions
-                List<ITileSnapshot<POS, T>> snapshots = this.provider.storage().multiSnapshot(srcPositions);
+        //snapshot all tiles
+        Map<POS, ITileSnapshot<POS, T>> snapshotsByPosition = this.provider.storage().multiSnapshot(uniqueValidSourcePositions).stream()
+                //no null checks are necessary, because we're only snapshotting the input positions which are valid, and therefore all snapshots will be non-null
+                .collect(Collectors.toMap(ITileSnapshot::pos, Function.identity()));
 
+        if (state.considerExit()) {
+            return;
+        }
+
+        //scale each position individually
+        SimpleRecycler<T> tileRecycler = this.provider.mode().tileRecycler();
+        state.forEachPositionHandleTimestamp((pos, handle, minimumTimestamp) -> {
+            List<POS> srcPositions = this.provider.scaler().inputs(pos);
+
+            T[] srcs = this.provider.mode().tileArray(srcPositions.size());
+            T dst = tileRecycler.allocate();
+            try {
                 //inflate tile snapshots where necessary
                 for (int i = 0; i < srcPositions.size(); i++) {
                     //tile is only guaranteed to have been generated if it's at a valid position (we filter out invalid
                     // positions above in the scatterGather call)
                     if (this.provider.coordLimits().contains(srcPositions.get(i))) {
-                        srcs[i] = snapshots.get(i).loadTile(tileRecycler);
+                        srcs[i] = snapshotsByPosition.get(srcPositions.get(i)).loadTile(tileRecycler);
+                    }
+                }
+
+                //actually do scaling
+                this.provider.scaler().scale(srcs, dst);
+
+                //update handle contents
+                handle.set(ITileMetadata.ofTimestamp(minimumTimestamp), dst);
+            } finally {
+                //release all allocated tile instances
+                tileRecycler.release(dst);
+                for (T src : srcs) {
+                    if (src != null) {
+                        tileRecycler.release(src);
                     }
                 }
             }
+        });
 
-            if (handle.timestamp() >= minimumTimestamp) { //break out early if tile is already done
-                callback.complete(task, handle);
-                return;
-            }
+        //all tiles have been scaled, mark the tasks as complete
+        state.completeAll();
+    }
 
-            //actually do scaling
-            this.provider.scaler().scale(srcs, dst);
+    /**
+     * @author DaPorkchop_
+     */
+    @Getter
+    protected class State {
+        private final TaskStage stage;
+        private final SharedFutureScheduler.Callback<PriorityTask<POS>, ITileHandle<POS, T>> callback;
 
-            //update handle contents
-            handle.set(ITileMetadata.ofTimestamp(minimumTimestamp), dst);
-        } finally {
-            //release all allocated tile instances
-            tileRecycler.release(dst);
-            for (T src : srcs) {
-                if (src != null) {
-                    tileRecycler.release(src);
-                }
-            }
+        private final int level;
+
+        private final Set<POS> allPositions = new ObjectOpenHashSet<>();
+        private final List<POS> positions = new ArrayList<>();
+        private final List<ITileHandle<POS, T>> handles = new ArrayList<>();
+        private final LongList minimumTimestamps = new LongArrayList();
+
+        private final long worldTimestamp = TileWorker.this.provider.currentTimestamp();
+
+        public State(@NonNull PriorityTask<POS> initialTask, @NonNull SharedFutureScheduler.Callback<PriorityTask<POS>, ITileHandle<POS, T>> callback) {
+            this.stage = initialTask.stage();
+            this.callback = callback;
+
+            this.level = initialTask.pos().level();
+            this.add(initialTask.pos());
         }
 
-        //notify callback
-        callback.complete(task, handle);
+        private void add(@NonNull POS pos) {
+            checkArg(TileWorker.this.provider.coordLimits().contains(pos), "tile position is outside coordinate limits: %s", pos);
+
+            ITileHandle<POS, T> handle = TileWorker.this.provider.storage().handleFor(pos);
+
+            long minimumTimestamp = TileWorker.this.minimumTimestamp(this.stage, handle);
+            checkState(this.worldTimestamp >= minimumTimestamp, "worldTimestamp (%d) is less than minimumTimestamp (%d)?!?", this.worldTimestamp, minimumTimestamp);
+
+            checkState(this.allPositions.add(pos), "position %s has already been acquired!", pos);
+            this.positions.add(pos);
+            this.handles.add(handle);
+            this.minimumTimestamps.add(minimumTimestamp);
+        }
+
+        private void add(@NonNull List<POS> positions) {
+            positions.forEach(pos -> checkArg(TileWorker.this.provider.coordLimits().contains(pos), "tile position is outside coordinate limits: %s", pos));
+
+            LongList minimumTimestamps = TileWorker.this.minimumTimestamps(this.stage, positions);
+            minimumTimestamps.forEach((LongConsumer) minimumTimestamp -> checkState(this.worldTimestamp >= minimumTimestamp, "worldTimestamp (%d) is less than minimumTimestamp (%d)?!?", this.worldTimestamp, minimumTimestamp));
+
+            positions.forEach(pos -> {
+                checkState(this.allPositions.add(pos), "position %s has already been acquired!", pos);
+                this.handles.add(TileWorker.this.provider.storage().handleFor(pos));
+            });
+            this.positions.addAll(positions);
+            this.minimumTimestamps.addAll(minimumTimestamps);
+        }
+
+        protected void tryAcquire(@NonNull List<POS> positions, @NonNull SharedFutureScheduler.AcquisitionStrategy strategy) {
+            //convert to PriorityTasks
+            List<PriorityTask<POS>> initialTasks = positions.stream()
+                    .filter(pos -> !this.allPositions.contains(pos)) //skip positions which have already been acquired to avoid adding duplicates
+                    .map(this.stage::taskForPosition).collect(Collectors.toList());
+
+            //try to acquire the tasks
+            List<PriorityTask<POS>> acquiredTasks = this.callback.acquire(initialTasks, strategy);
+
+            //add the acquired tasks to this state
+            this.add(acquiredTasks.stream().map(PriorityTask::pos).collect(Collectors.toList()));
+        }
+
+        public void completeAll() {
+            //complete all positions
+            for (int i = 0; i < this.positions.size(); i++) {
+                this.callback.complete(this.stage.taskForPosition(this.positions.get(i)), this.handles.get(i));
+            }
+
+            //clear all state
+            this.positions.clear();
+            this.handles.clear();
+            this.minimumTimestamps.clear();
+        }
+
+        public boolean considerExit() {
+            //check if any positions are already new enough
+            LongList timestamps = TileWorker.this.provider.storage().multiTimestamp(this.positions);
+            for (int i = 0; i < timestamps.size(); i++) {
+                if (timestamps.get(i) >= this.minimumTimestamps.get(i)) { //tile is new enough
+                    //complete the corresponding task
+                    this.callback.complete(this.stage.taskForPosition(this.positions.get(i)), this.handles.get(i));
+
+                    //remove the position from state
+                    this.positions.remove(i);
+                    this.handles.remove(i);
+                    this.minimumTimestamps.removeAt(i);
+                    timestamps.removeAt(i);
+                    i--;
+                }
+            }
+
+            //if no positions are left, this task has nothing left to do and may safely exit
+            return this.positions.isEmpty();
+        }
+
+        public void forEachPositionHandleTimestamp(@NonNull ObjObjLongConsumer<POS, ITileHandle<POS, T>> action) {
+            for (int i = 0; i < this.positions.size(); i++) {
+                action.accept(this.positions.get(i), this.handles.get(i), this.minimumTimestamps.get(i));
+            }
+        }
     }
 }

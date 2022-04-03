@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.core.mode.voxel.server.scale;
 
+import com.google.common.collect.ImmutableList;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
@@ -37,7 +38,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
-import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.api.world.BlockWorldConstants.*;
 import static net.daporkchop.fp2.core.mode.voxel.VoxelConstants.*;
@@ -93,12 +93,12 @@ public class VoxelScalerIntersection extends AbstractFarGenerator<VoxelPos, Voxe
     }
 
     @Override
-    public Stream<VoxelPos> outputs(@NonNull VoxelPos srcPos) {
-        return Stream.of(srcPos.up()); //TODO: fix this
+    public List<VoxelPos> outputs(@NonNull VoxelPos srcPos) {
+        return ImmutableList.of(srcPos.up()); //TODO: fix this
     }
 
     @Override
-    public Stream<VoxelPos> inputs(@NonNull VoxelPos dstPos) {
+    public List<VoxelPos> inputs(@NonNull VoxelPos dstPos) {
         checkArg(dstPos.level() > 0, "cannot generate inputs for level 0!");
 
         int x = dstPos.x() << 1;
@@ -116,7 +116,7 @@ public class VoxelScalerIntersection extends AbstractFarGenerator<VoxelPos, Voxe
                 }
             }
         }
-        return Arrays.stream(positions);
+        return ImmutableList.copyOf(positions);
     }
 
     @Override
@@ -140,7 +140,7 @@ public class VoxelScalerIntersection extends AbstractFarGenerator<VoxelPos, Voxe
                         int edges = 0;
                         for (int edge = 0; edge < 3; edge++) {
                             if (((data.edges >> (edge << 1)) & EDGE_DIR_MASK) != EDGE_DIR_NONE
-                                && (true || this.extendedStateRegistryData.type(data.states[edge]) == BLOCK_TYPE_OPAQUE)) {
+                                && (true || this.extendedStateRegistryData().type(data.states[edge]) == BLOCK_TYPE_OPAQUE)) {
                                 edges |= (data.edges & (EDGE_DIR_MASK << (edge << 1)));
                                 srcStates[srcIndex(x, y, z, edge)] = data.states[edge];
                             }
