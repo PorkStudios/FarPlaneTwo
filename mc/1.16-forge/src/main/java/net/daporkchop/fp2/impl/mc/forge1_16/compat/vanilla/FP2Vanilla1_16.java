@@ -109,12 +109,12 @@ public class FP2Vanilla1_16 {
 
     @FEventHandler(name = "vanilla_heightmap_generator_exact")
     public IFarGeneratorExact<HeightmapPos, HeightmapTile> createHeightmapGeneratorExact(IFarGeneratorExact.CreationEvent<HeightmapPos, HeightmapTile> event) {
-        return new VanillaHeightmapGenerator(event.world());
+        return new VanillaHeightmapGenerator(event.world(), event.provider());
     }
 
     @FEventHandler(name = "vanilla_voxel_generator_exact")
     public IFarGeneratorExact<VoxelPos, VoxelTile> createVoxelGeneratorExact(IFarGeneratorExact.CreationEvent<VoxelPos, VoxelTile> event) {
-        return new VanillaVoxelGenerator(event.world());
+        return new VanillaVoxelGenerator(event.world(), event.provider());
     }
 
     //tile providers

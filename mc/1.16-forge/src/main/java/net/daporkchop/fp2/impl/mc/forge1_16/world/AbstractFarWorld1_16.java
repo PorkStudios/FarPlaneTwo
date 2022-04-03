@@ -22,6 +22,7 @@ package net.daporkchop.fp2.impl.mc.forge1_16.world;
 
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.common.util.Identifier;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarWorld;
 import net.daporkchop.fp2.impl.mc.forge1_16.FP2Forge1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.world.registry.GameRegistry1_16;
@@ -50,8 +51,8 @@ public abstract class AbstractFarWorld1_16<W extends World> implements IFarWorld
     }
 
     @Override
-    public int fp2_IFarWorld_dimensionId() {
-        return this.world.dimension().location().hashCode(); //TODO: use an Identifier for the dimension ID
+    public Identifier fp2_IFarWorld_dimensionId() {
+        return Identifier.from(this.world.dimension().location().toString());
     }
 
     @Override

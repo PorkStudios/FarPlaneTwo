@@ -84,11 +84,13 @@ public final class GameRegistry1_16 implements FGameRegistry {
     }
 
     @Override
-    public Optional<byte[]> registryToken() {
+    public byte[] registryToken() {
         ByteBuf buf = ByteBufAllocator.DEFAULT.buffer();
         try {
             //serialize the registry
             buf.writeCharSequence(this.getClass().getTypeName(), StandardCharsets.UTF_8); //class name
+            buf.writeByte(0);
+
             for (Biome biome : this.idsToBiomes) { //biomes
                 buf.writeCharSequence(biome.getRegistryName().toString(), StandardCharsets.UTF_8);
                 buf.writeByte(0);
@@ -101,7 +103,7 @@ public final class GameRegistry1_16 implements FGameRegistry {
             //copy buffer contents to a byte[]
             byte[] arr = new byte[buf.readableBytes()];
             buf.readBytes(arr);
-            return Optional.of(arr);
+            return arr;
         } finally {
             buf.release();
         }

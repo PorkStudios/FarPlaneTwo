@@ -63,6 +63,7 @@ dependencies {
     //:core module, plus dependency-specific addon modules
     implementationShade project(":core")
     implementationShade project(":core:log4j")
+    implementationShade project(":core:minecraft")
     implementationShade project(":core:mixin")
 
     implementationShade project(":resources")
