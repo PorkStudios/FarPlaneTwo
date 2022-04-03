@@ -23,6 +23,7 @@ package net.daporkchop.fp2.core.mode.common.server.storage.rocksdb;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.google.common.collect.ImmutableList;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
@@ -281,6 +282,10 @@ public class RocksStorage<POS extends IFarPos, T extends IFarTile> implements IF
     public List<ITileSnapshot<POS, T>> multiSnapshot(@NonNull List<POS> positions) {
         int length = positions.size();
 
+        if (length == 0) { //nothing to do!
+            return ImmutableList.of();
+        }
+
         List<byte[]> valueBytes;
         {
             //prepare parameter arrays for MultiGet
@@ -318,6 +323,11 @@ public class RocksStorage<POS extends IFarPos, T extends IFarTile> implements IF
     @SneakyThrows(RocksDBException.class)
     public LongList multiTimestamp(@NonNull List<POS> positions) {
         int length = positions.size();
+        LongList out = new LongArrayList(length);
+
+        if (length == 0) { //nothing to do!
+            return out;
+        }
 
         //read all timestamps simultaneously
         List<byte[]> timestamps = this.db.multiGetAsList(READ_OPTIONS,
@@ -325,7 +335,6 @@ public class RocksStorage<POS extends IFarPos, T extends IFarTile> implements IF
                 positions.stream().map(POS::toBytes).collect(Collectors.toList()));
 
         //deserialize timestamp values
-        LongList out = new LongArrayList(length);
         timestamps.forEach(timestamp -> out.add(timestamp != null ? readLongLE(timestamp) : TIMESTAMP_BLANK));
         return out;
     }
@@ -417,6 +426,11 @@ public class RocksStorage<POS extends IFarPos, T extends IFarTile> implements IF
     @SneakyThrows(RocksDBException.class)
     public LongList multiDirtyTimestamp(@NonNull List<POS> positions) {
         int length = positions.size();
+        LongList out = new LongArrayList(length);
+
+        if (length == 0) { //nothing to do!
+            return out;
+        }
 
         //read all dirty timestamps simultaneously
         List<byte[]> dirtyTimestamps = this.db.multiGetAsList(READ_OPTIONS,
@@ -424,7 +438,6 @@ public class RocksStorage<POS extends IFarPos, T extends IFarTile> implements IF
                 positions.stream().map(POS::toBytes).collect(Collectors.toList()));
 
         //deserialize dirty timestamp values
-        LongList out = new LongArrayList(length);
         dirtyTimestamps.forEach(dirtyTimestamp -> out.add(dirtyTimestamp != null ? readLongLE(dirtyTimestamp) : TIMESTAMP_BLANK));
         return out;
     }

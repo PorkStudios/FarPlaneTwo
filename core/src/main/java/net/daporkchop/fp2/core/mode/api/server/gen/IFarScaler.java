@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -23,32 +23,74 @@ package net.daporkchop.fp2.core.mode.api.server.gen;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
+import net.daporkchop.fp2.core.util.datastructure.SimpleSet;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.stream.Stream;
+
+import static java.lang.Math.*;
 
 /**
  * @author DaPorkchop_
  */
-public interface IFarScaler<POS extends IFarPos, T extends IFarTile> extends IFarGenerator {
+public interface IFarScaler<POS extends IFarPos, T extends IFarTile> extends IFarGenerator<POS, T> {
     /**
      * Gets the positions of all the low-detail tiles whose contents are affected by the content of the given high-detail tile.
-     * <p>
-     * The returned {@link Stream} must be sequential!
      *
      * @param srcPos the position of the high-detail tile
      * @return the positions of all the low-detail tiles whose contents are affected by the content of the given high-detail tile
      */
-    Stream<POS> outputs(@NonNull POS srcPos);
+    List<POS> outputs(@NonNull POS srcPos);
+
+    /**
+     * Gets the positions of all the low-detail tiles whose contents are affected by the content of the given high-detail tiles.
+     * <p>
+     * Bulk equivalent to {@link #outputs(IFarPos)}.
+     *
+     * @param srcPositions the positions of the high-detail tiles
+     * @return the positions of all the low-detail tiles whose contents are affected by the content of the given high-detail tiles
+     * @see #outputs(IFarPos)
+     */
+    default Collection<POS> uniqueOutputs(@NonNull Iterable<POS> srcPositions) {
+        try (SimpleSet<POS> set = this.provider().mode().directPosAccess().newPositionSet()) {
+            //get all positions and add them to the set (this discards duplicates)
+            srcPositions.forEach(pos -> this.outputs(pos).forEach(set::add));
+
+            //convert set to a regular java list
+            List<POS> list = new ArrayList<>(toIntExact(set.count()));
+            set.forEach(list::add);
+            return list;
+        }
+    }
 
     /**
      * Gets the positions of all the high-detail tiles needed to create the given low-detail tile.
-     * <p>
-     * The returned {@link Stream} must be sequential!
      *
      * @param dstPos the position of the low-detail tile to generate
      * @return the positions of all the high-detail tiles needed to create the given low-detail tile
      */
-    Stream<POS> inputs(@NonNull POS dstPos);
+    List<POS> inputs(@NonNull POS dstPos);
+
+    /**
+     * Gets the positions of all the high-detail tiles needed to create the given low-detail tiles.
+     *
+     * @param dstPositions the positions of the low-detail tiles to generate
+     * @return the unique positions of all the high-detail tiles needed to create the given low-detail tiles
+     * @see #inputs(IFarPos)
+     */
+    default Collection<POS> uniqueInputs(@NonNull Iterable<POS> dstPositions) {
+        try (SimpleSet<POS> set = this.provider().mode().directPosAccess().newPositionSet()) {
+            //get all positions and add them to the set (this discards duplicates)
+            dstPositions.forEach(pos -> this.inputs(pos).forEach(set::add));
+
+            //convert set to a regular java list
+            List<POS> list = new ArrayList<>(toIntExact(set.count()));
+            set.forEach(list::add);
+            return list;
+        }
+    }
 
     /**
      * Merges the content of the given high-detail tiles into the given low-detail data tile.

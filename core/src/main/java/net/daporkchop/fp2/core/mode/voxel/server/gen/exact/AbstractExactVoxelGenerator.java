@@ -66,8 +66,8 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
             return Optional.empty();
         }
 
-        VoxelPos min = this.provider.coordLimits().min(0);
-        VoxelPos max = this.provider.coordLimits().max(0);
+        VoxelPos min = this.provider().coordLimits().min(0);
+        VoxelPos max = this.provider().coordLimits().max(0);
 
         //TODO: figure out whether or not this is actually correct? i don't think this properly accounts for every possible edge case, rather it just happens to work for the current
         // values of CACHE_MIN/CACHE_MAX...
@@ -87,7 +87,7 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
         checkArg(typeMap.length >= cb(CACHE_SIZE) && stateMap.length >= cb(CACHE_SIZE));
 
         for (int i = 0; i < cb(CACHE_SIZE); i++) { //set each type flag depending on the block state at the corresponding position
-            typeMap[i] = (byte) this.extendedStateRegistryData.type(stateMap[i]);
+            typeMap[i] = (byte) this.extendedStateRegistryData().type(stateMap[i]);
         }
     }
 

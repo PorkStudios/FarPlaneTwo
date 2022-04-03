@@ -30,7 +30,6 @@ import net.daporkchop.fp2.core.mode.api.IFarCoordLimits;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
@@ -38,25 +37,24 @@ import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.core.mode.api.server.storage.IFarStorage;
 import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTrackerManager;
 import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
+import net.daporkchop.fp2.core.mode.common.server.storage.rocksdb.RocksStorage;
 import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
 import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
 import net.daporkchop.fp2.core.server.event.TickEndEvent;
+import net.daporkchop.fp2.core.server.world.IFarWorldServer;
 import net.daporkchop.fp2.core.util.threading.scheduler.ApproximatelyPrioritizedSharedFutureScheduler;
 import net.daporkchop.fp2.core.util.threading.scheduler.Scheduler;
-import net.daporkchop.fp2.core.mode.common.server.storage.rocksdb.RocksStorage;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
-import java.util.Spliterators;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
-import static java.util.Spliterator.*;
 import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
@@ -129,26 +127,24 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
 
     protected abstract boolean anyVanillaTerrainExistsAt(@NonNull POS pos);
 
-    protected PriorityTask<POS> taskFor(@NonNull TaskStage stage, @NonNull POS pos) {
-        return PriorityTask.forStageAndPosition(stage, pos);
-    }
-
-    protected PriorityTask<POS> loadTaskFor(@NonNull POS pos) {
-        return this.taskFor(TaskStage.LOAD, pos);
-    }
-
-    protected PriorityTask<POS> updateTaskFor(@NonNull POS pos) {
-        return this.taskFor(TaskStage.UPDATE, pos);
+    protected boolean anyVanillaTerrainExistsAt(@NonNull List<POS> positions) {
+        return positions.stream().anyMatch(this::anyVanillaTerrainExistsAt);
     }
 
     @Override
     public CompletableFuture<ITileHandle<POS, T>> requestLoad(@NonNull POS pos) {
-        return this.scheduler.schedule(this.loadTaskFor(pos));
+        return this.scheduler.schedule(TaskStage.LOAD.taskForPosition(pos));
     }
 
     @Override
     public CompletableFuture<ITileHandle<POS, T>> requestUpdate(@NonNull POS pos) {
-        return this.scheduler.schedule(this.updateTaskFor(pos));
+        return this.scheduler.schedule(TaskStage.UPDATE.taskForPosition(pos));
+    }
+
+    @Override
+    public long currentTimestamp() {
+        checkState(this.lastCompletedTick >= 0L, "no game ticks have been completed?!?");
+        return this.lastCompletedTick;
     }
 
     public boolean canGenerateRough(@NonNull POS pos) {

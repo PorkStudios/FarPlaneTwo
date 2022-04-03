@@ -25,13 +25,13 @@ import net.daporkchop.fp2.core.mode.api.IFarCoordLimits;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.core.mode.api.server.storage.IFarStorage;
 import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTrackerManager;
 import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
+import net.daporkchop.fp2.core.server.world.IFarWorldServer;
 
 import java.io.Closeable;
 import java.util.concurrent.CompletableFuture;
@@ -77,6 +77,11 @@ public interface IFarTileProvider<POS extends IFarPos, T extends IFarTile> exten
      * @return the {@link IFarRenderMode} that this world is used by
      */
     IFarRenderMode<POS, T> mode();
+
+    /**
+     * @return the current world timestamp
+     */
+    long currentTimestamp();
 
     @Override
     void close();

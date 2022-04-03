@@ -63,7 +63,7 @@ public class FlatHeightmapGenerator extends AbstractRoughHeightmapGenerator {
         for (int i = layers.size() - 1; i >= 0; i--) {
             FlatLayerInfo layer = layers.get(i);
 
-            int blockType = this.extendedStateRegistryData.type(this.registry.state2id(layer.getLayerMaterial()));
+            int blockType = this.extendedStateRegistryData().type(this.registry().state2id(layer.getLayerMaterial()));
             if (topWaterLayerIndex < 0 && layer.getLayerMaterial().getBlock() == Blocks.WATER) {
                 topWaterLayerIndex = i;
             } else if (blockType == BLOCK_TYPE_OPAQUE) {
@@ -95,8 +95,8 @@ public class FlatHeightmapGenerator extends AbstractRoughHeightmapGenerator {
         HeightmapData data = new HeightmapData();
         FlatLayerInfo layer = generatorInfo.getFlatLayers().get(layerIndex);
 
-        data.state = this.registry.state2id(layer.getLayerMaterial());
-        data.biome = this.registry.biome2id(this.registry.biome2id(generatorInfo.getBiome()));
+        data.state = this.registry().state2id(layer.getLayerMaterial());
+        data.biome = this.registry().biome2id(this.registry().biome2id(generatorInfo.getBiome())); //TODO: figure out why i'm getting the ID of an ID, and whether or not this even works properly
         data.height_int = layer.getMinY() + layer.getLayerCount();
         data.light = this.getLightAtLayer(generatorInfo.getFlatLayers(), layerIndex);
         data.secondaryConnection = secondaryConnection;

@@ -33,7 +33,7 @@ import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
  *
  * @author DaPorkchop_
  */
-public interface IFarGeneratorRough<POS extends IFarPos, T extends IFarTile> extends IFarGenerator {
+public interface IFarGeneratorRough<POS extends IFarPos, T extends IFarTile> extends IFarGenerator<POS, T> {
     /**
      * @return whether or not this generator can generate tiles at low resolution
      */

@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.core.mode.common.server.gen;
 
+import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.world.registry.FExtendedBiomeRegistryData;
 import net.daporkchop.fp2.api.world.registry.FExtendedStateRegistryData;
@@ -33,15 +34,16 @@ import net.daporkchop.fp2.core.server.world.IFarWorldServer;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractFarGenerator<POS extends IFarPos, T extends IFarTile> implements IFarGenerator {
-    protected final IFarWorldServer world;
-    protected final IFarTileProvider<POS, T> provider;
+@Getter
+public abstract class AbstractFarGenerator<POS extends IFarPos, T extends IFarTile> implements IFarGenerator<POS, T> {
+    private final IFarWorldServer world;
+    private final IFarTileProvider<POS, T> provider;
 
-    protected final FGameRegistry registry;
-    protected final FExtendedBiomeRegistryData extendedBiomeRegistryData;
-    protected final FExtendedStateRegistryData extendedStateRegistryData;
+    private final FGameRegistry registry;
+    private final FExtendedBiomeRegistryData extendedBiomeRegistryData;
+    private final FExtendedStateRegistryData extendedStateRegistryData;
 
-    protected final int seaLevel;
+    private final int seaLevel;
 
     public AbstractFarGenerator(@NonNull IFarWorldServer world, @NonNull IFarTileProvider<POS, T> provider) {
         this.world = world;
