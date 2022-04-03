@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.core.mode.common.server;
 
+import com.google.common.collect.ImmutableList;
 import it.unimi.dsi.fastutil.objects.ObjectRBTreeSet;
 import lombok.Getter;
 import lombok.NonNull;
@@ -50,14 +51,14 @@ import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
-import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
@@ -147,16 +148,21 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
         return this.generatorRough != null && this.generatorRough.canGenerate(pos);
     }
 
-    protected void scheduleForUpdate(@NonNull POS... positions) {
-        this.scheduleForUpdate(Stream.of(positions));
+    protected void scheduleForUpdate(@NonNull POS pos) {
+        this.scheduleForUpdate(ImmutableList.of(pos));
     }
 
-    @Synchronized("updatesPending")
-    protected void scheduleForUpdate(@NonNull Stream<POS> positions) {
-        positions.forEach(pos -> {
-            for (; this.updatesPending.add(pos) && pos.isLevelValid(); pos = uncheckedCast(pos.up())) {
-            }
-        });
+    protected void scheduleForUpdate(@NonNull POS... positions) {
+        this.scheduleForUpdate(Arrays.asList(positions));
+    }
+
+    protected void scheduleForUpdate(@NonNull Collection<POS> positions) {
+        positions.forEach(pos -> checkArg(pos.level() == 0, "position must be at level 0! %s", pos));
+
+        //noinspection SynchronizeOnNonFinalField
+        synchronized (this.updatesPending) {
+            this.updatesPending.addAll(positions);
+        }
     }
 
     @FEventHandler
@@ -178,7 +184,18 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
         checkState(this.lastCompletedTick >= 0L, "flushed update queue before any game ticks were completed?!?");
 
         if (!this.updatesPending.isEmpty()) {
+            //iterate up through all of the scaler outputs and enqueue them all for marking as dirty
+            Collection<POS> last = this.updatesPending;
+            for (int level = 0; level + 1 < this.mode.maxLevels(); level++) {
+                Collection<POS> next = this.scaler.uniqueOutputs(last);
+                this.updatesPending.addAll(next);
+                last = next;
+            }
+
+            //actually mark all of the queued tiles as dirty
             this.storage.multiMarkDirty(new ArrayList<>(this.updatesPending), this.lastCompletedTick);
+
+            //clear the pending updates queue
             this.updatesPending.clear();
         }
     }

@@ -63,7 +63,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
     protected static final long TASK_DEPENDENCIES_OFFSET = PUnsafe.pork_getOffset(SharedFutureScheduler.Task.class, "dependencies");
 
-    protected static final boolean DEBUG_PRINTS_ENABLED = Boolean.parseBoolean(System.getProperty("fp2.SharedFutureScheduler.debugPrintsEnabled", "true"));
+    protected static final boolean DEBUG_PRINTS_ENABLED = Boolean.parseBoolean(System.getProperty("fp2.SharedFutureScheduler.debugPrintsEnabled", "false"));
 
     protected final Map<P, Task> tasks = new ConcurrentHashMap<>();
     protected final BlockingQueue<Task> queue = this.createTaskQueue();
@@ -709,7 +709,7 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
          * <strong>Parameter ownership:</strong><br>
          * Every {@link WorkFunction} invocation "owns" one or more parameters. The function is responsible for {@link Callback#complete(Object, Object) providing a result value} for
          * every parameter it owns before the invocation returns. Initially, an invocation owns only a single parameter; the one which the function receives as a method argument.
-         * Invocations can acquire ownership of additional parameters using {@link Callback#acquire(List, AcquisitionStrategy) the given callback}.
+         * Invocations can acquire ownership of additional parameters using {@link Callback#acquire(Iterable, AcquisitionStrategy) the given callback}.
          * <p>
          * The scheduler will ensure that no single parameter is owned by more than one invocation at a time.
          *
@@ -744,7 +744,7 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
     }
 
     /**
-     * Defines the strategies a {@link WorkFunction} invocation may use for acquiring additional parameters through {@link Callback#acquire(List, AcquisitionStrategy)}.
+     * Defines the strategies a {@link WorkFunction} invocation may use for acquiring additional parameters through {@link Callback#acquire(Iterable, AcquisitionStrategy)}.
      *
      * @author DaPorkchop_
      */
