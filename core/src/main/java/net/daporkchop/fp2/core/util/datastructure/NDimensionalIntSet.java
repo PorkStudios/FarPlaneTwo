@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -24,7 +24,6 @@ import lombok.NonNull;
 import lombok.Setter;
 import net.daporkchop.lib.primitive.lambda.IntIntConsumer;
 import net.daporkchop.lib.primitive.lambda.IntIntIntConsumer;
-import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
@@ -46,13 +45,13 @@ public interface NDimensionalIntSet extends IDatastructure<NDimensionalIntSet> {
     /**
      * @return the number of points in this set
      */
-    long count();
+    int size();
 
     /**
      * @return whether or not this set is empty
      */
     default boolean isEmpty() {
-        return this.count() == 0L;
+        return this.size() == 0;
     }
 
     /**
@@ -248,15 +247,6 @@ public interface NDimensionalIntSet extends IDatastructure<NDimensionalIntSet> {
             callback.accept(coords[0], coords[1], coords[2]);
         });
     }
-
-    @Override
-    int refCnt();
-
-    @Override
-    NDimensionalIntSet retain() throws AlreadyReleasedException;
-
-    @Override
-    boolean release() throws AlreadyReleasedException;
 
     @Setter
     abstract class Builder extends IDatastructure.Builder<Builder, NDimensionalIntSet> {

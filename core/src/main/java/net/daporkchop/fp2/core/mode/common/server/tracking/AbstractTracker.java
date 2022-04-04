@@ -119,7 +119,8 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
                 this.pauseQueue();
                 this.clearWaiting();
 
-                try (SimpleSet<POS> untrackingPositions = this.mode.directPosAccess().newPositionSet()) {
+                {
+                    SimpleSet<POS> untrackingPositions = this.mode.directPosAccess().newPositionSet();
                     //actually update the tracking state (this is synchronized)
                     this.updateState(lastState, nextState, untrackingPositions);
 
@@ -309,7 +310,9 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
 
         //untrack all positions
         //  (using temporary set to avoid CME)
-        try (SimpleSet<POS> tmp = this.mode.directPosAccess().newPositionSet()) {
+        {
+            SimpleSet<POS> tmp = this.mode.directPosAccess().newPositionSet();
+
             this.waitingPositions.forEach(tmp::add);
             this.loadedPositions.forEach(tmp::add);
 
@@ -318,7 +321,6 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
 
         //release everything
         this.queuedPositions.close();
-        this.loadedPositions.close();
         this.waitingPositions.clear();
         this.doneWaitingPositions.clear();
     }

@@ -95,7 +95,6 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
 
     @Override
     protected void doRelease() {
-        this.renderablePositions.release();
         for (Level level : this.levels) {
             level.close();
         }

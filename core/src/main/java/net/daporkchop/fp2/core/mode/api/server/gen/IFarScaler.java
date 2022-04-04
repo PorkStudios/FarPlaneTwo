@@ -54,15 +54,15 @@ public interface IFarScaler<POS extends IFarPos, T extends IFarTile> extends IFa
      * @see #outputs(IFarPos)
      */
     default Collection<POS> uniqueOutputs(@NonNull Iterable<POS> srcPositions) {
-        try (SimpleSet<POS> set = this.provider().mode().directPosAccess().newPositionSet()) {
-            //get all positions and add them to the set (this discards duplicates)
-            srcPositions.forEach(pos -> this.outputs(pos).forEach(set::add));
+        SimpleSet<POS> set = this.provider().mode().directPosAccess().newPositionSet();
 
-            //convert set to a regular java list
-            List<POS> list = new ArrayList<>(toIntExact(set.count()));
-            set.forEach(list::add);
-            return list;
-        }
+        //get all positions and add them to the set (this discards duplicates)
+        srcPositions.forEach(pos -> this.outputs(pos).forEach(set::add));
+
+        //convert set to a regular java list
+        List<POS> list = new ArrayList<>(toIntExact(set.count()));
+        set.forEach(list::add);
+        return list;
     }
 
     /**
@@ -81,15 +81,15 @@ public interface IFarScaler<POS extends IFarPos, T extends IFarTile> extends IFa
      * @see #inputs(IFarPos)
      */
     default Collection<POS> uniqueInputs(@NonNull Iterable<POS> dstPositions) {
-        try (SimpleSet<POS> set = this.provider().mode().directPosAccess().newPositionSet()) {
-            //get all positions and add them to the set (this discards duplicates)
-            dstPositions.forEach(pos -> this.inputs(pos).forEach(set::add));
+        SimpleSet<POS> set = this.provider().mode().directPosAccess().newPositionSet();
 
-            //convert set to a regular java list
-            List<POS> list = new ArrayList<>(toIntExact(set.count()));
-            set.forEach(list::add);
-            return list;
-        }
+        //get all positions and add them to the set (this discards duplicates)
+        dstPositions.forEach(pos -> this.inputs(pos).forEach(set::add));
+
+        //convert set to a regular java list
+        List<POS> list = new ArrayList<>(toIntExact(set.count()));
+        set.forEach(list::add);
+        return list;
     }
 
     /**

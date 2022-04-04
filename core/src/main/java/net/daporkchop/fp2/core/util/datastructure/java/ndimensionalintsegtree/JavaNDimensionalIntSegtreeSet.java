@@ -25,8 +25,6 @@ import lombok.NonNull;
 import net.daporkchop.fp2.core.util.datastructure.Datastructures;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSegtreeSet;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSet;
-import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
-import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
 import java.util.Arrays;
 import java.util.function.Consumer;
@@ -39,7 +37,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public class JavaNDimensionalIntSegtreeSet extends AbstractRefCounted implements NDimensionalIntSegtreeSet {
+public class JavaNDimensionalIntSegtreeSet implements NDimensionalIntSegtreeSet {
     //this class is confusing because most ranges are inclusive. sorry about that...
 
     protected static final int LEVELS = Integer.SIZE;
@@ -111,21 +109,8 @@ public class JavaNDimensionalIntSegtreeSet extends AbstractRefCounted implements
     }
 
     @Override
-    public NDimensionalIntSegtreeSet retain() throws AlreadyReleasedException {
-        super.retain();
-        return this;
-    }
-
-    @Override
-    protected void doRelease() {
-        for (NDimensionalIntSet delegate : this.delegates) {
-            delegate.release();
-        }
-    }
-
-    @Override
-    public long count() {
-        return this.delegates[0].count();
+    public int size() {
+        return this.delegates[0].size();
     }
 
     @Override

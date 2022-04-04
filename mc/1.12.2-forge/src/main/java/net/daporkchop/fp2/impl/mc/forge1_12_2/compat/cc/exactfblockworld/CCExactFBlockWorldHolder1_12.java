@@ -136,12 +136,6 @@ public class CCExactFBlockWorldHolder1_12 extends AbstractCubesExactFBlockWorldH
     }
 
     @Override
-    public void close() {
-        super.close();
-        this.columnsExistCache.release();
-    }
-
-    @Override
     protected void onColumnSaved(ColumnSavedEvent event) {
         //cache the column data for later use
         this.columnCache.notifyUpdate(event.pos(), uncheckedCast(event.data()));

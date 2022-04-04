@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -20,9 +20,6 @@
 
 package net.daporkchop.fp2.core.util.datastructure;
 
-import net.daporkchop.lib.common.misc.refcount.RefCounted;
-import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
-
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
@@ -30,16 +27,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  *
  * @author DaPorkchop_
  */
-interface IDatastructure<I extends IDatastructure<? extends I>> extends RefCounted {
-    @Override
-    int refCnt();
-
-    @Override
-    I retain() throws AlreadyReleasedException;
-
-    @Override
-    boolean release() throws AlreadyReleasedException;
-
+interface IDatastructure<I extends IDatastructure<? extends I>> {
     abstract class Builder<B extends Builder<B, I>, I> {
         protected boolean threadSafe;
 

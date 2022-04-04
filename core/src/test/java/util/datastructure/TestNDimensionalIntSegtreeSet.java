@@ -91,7 +91,8 @@ public class TestNDimensionalIntSegtreeSet {
         Set<Vec3i> reference = new HashSet<>(nPoints);
         ThreadLocalRandom r = ThreadLocalRandom.current();
 
-        try (NDimensionalIntSegtreeSet test = Datastructures.INSTANCE.nDimensionalIntSegtreeSet().dimensions(3).threadSafe(false).build()) {
+        {
+            NDimensionalIntSegtreeSet test = Datastructures.INSTANCE.nDimensionalIntSegtreeSet().dimensions(3).threadSafe(false).build();
             for (int i = 0; i < nPoints; i++) { //insert some random values
                 int x = r.nextInt(min, max);
                 int y = r.nextInt(min, max);
@@ -135,7 +136,8 @@ public class TestNDimensionalIntSegtreeSet {
         Set<Vec3i> reference = new HashSet<>();
         ThreadLocalRandom r = ThreadLocalRandom.current();
 
-        try (NDimensionalIntSegtreeSet test = Datastructures.INSTANCE.nDimensionalIntSegtreeSet().dimensions(3).threadSafe(false).build()) {
+        {
+            NDimensionalIntSegtreeSet test = Datastructures.INSTANCE.nDimensionalIntSegtreeSet().dimensions(3).threadSafe(false).build();
             ensureEqual(reference, test);
             doAABBIntersections(reference, test, min, max);
 
@@ -172,7 +174,8 @@ public class TestNDimensionalIntSegtreeSet {
         Set<Vec3i> reference = new HashSet<>();
         ThreadLocalRandom r = ThreadLocalRandom.current();
 
-        try (NDimensionalIntSegtreeSet test = Datastructures.INSTANCE.nDimensionalIntSegtreeSet().dimensions(3).threadSafe(false).build()) {
+        {
+            NDimensionalIntSegtreeSet test = Datastructures.INSTANCE.nDimensionalIntSegtreeSet().dimensions(3).threadSafe(false).build();
             for (int i = 0; i < 32; i++) {
                 int x = r.nextInt(min, max);
                 int y = r.nextInt(min, max);

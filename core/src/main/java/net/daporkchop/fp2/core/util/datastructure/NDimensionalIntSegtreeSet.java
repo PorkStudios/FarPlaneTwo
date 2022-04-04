@@ -23,7 +23,6 @@ package net.daporkchop.fp2.core.util.datastructure;
 import lombok.NonNull;
 import lombok.Setter;
 import net.daporkchop.lib.common.function.throwing.ESupplier;
-import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
 import java.util.stream.Stream;
 
@@ -103,15 +102,6 @@ public interface NDimensionalIntSegtreeSet extends NDimensionalIntSet {
     default boolean containsAny(int x0, int y0, int z0, int x1, int y1, int z1) {
         return this.containsAny(new int[]{ x0, y0, z0 }, new int[]{ x1, y1, z1 });
     }
-
-    @Override
-    int refCnt();
-
-    @Override
-    NDimensionalIntSegtreeSet retain() throws AlreadyReleasedException;
-
-    @Override
-    boolean release() throws AlreadyReleasedException;
 
     @Setter
     abstract class Builder extends IDatastructure.Builder<Builder, NDimensionalIntSegtreeSet> {

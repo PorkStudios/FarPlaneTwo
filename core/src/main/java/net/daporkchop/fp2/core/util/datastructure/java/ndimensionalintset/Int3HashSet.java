@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.core.util.datastructure.java.ndimensionalintset;
 
 import io.netty.util.internal.PlatformDependent;
+import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSet;
 import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
@@ -31,6 +32,7 @@ import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
 import java.util.function.Consumer;
 
+import static java.lang.Math.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -43,7 +45,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  * @see <a href="https://github.com/OpenCubicChunks/CubicChunks/pull/674">https://github.com/OpenCubicChunks/CubicChunks/pull/674</a>
  */
-public class Int3HashSet extends AbstractRefCounted implements NDimensionalIntSet {
+public class Int3HashSet implements NDimensionalIntSet {
     protected static final int BUCKET_AXIS_BITS = 2; //the number of bits per axis which are used inside of the bucket rather than identifying the bucket
     protected static final int BUCKET_AXIS_MASK = (1 << BUCKET_AXIS_BITS) - 1;
 
@@ -82,7 +84,8 @@ public class Int3HashSet extends AbstractRefCounted implements NDimensionalIntSe
     protected long resizeThreshold = 0L;
     protected long usedBuckets = 0L;
 
-    protected long size = 0L; //the number of values stored in the set
+    @Getter
+    protected int size = 0; //the number of values stored in the set
 
     protected PCleaner cleaner;
 
@@ -104,7 +107,7 @@ public class Int3HashSet extends AbstractRefCounted implements NDimensionalIntSe
         long value = PUnsafe.getLong(bucket + BUCKET_VALUE_OFFSET);
         if ((value & flag) == 0L) { //flag wasn't previously set
             PUnsafe.putLong(bucket + BUCKET_VALUE_OFFSET, value | flag);
-            this.size++; //the position was newly added, so we need to increment the total size
+            this.size = incrementExact(this.size); //the position was newly added, so we need to increment the total size
             return true;
         } else { //flag was already set
             return false;
@@ -344,30 +347,12 @@ public class Int3HashSet extends AbstractRefCounted implements NDimensionalIntSe
 
         //reset all size counters
         this.usedBuckets = 0L;
-        this.size = 0L;
+        this.size = 0;
     }
 
     protected void setTableSize(long tableSize) {
         this.tableSize = tableSize;
         this.resizeThreshold = (tableSize >> 1L) + (tableSize >> 2L); //count * 0.75
-    }
-
-    @Override
-    public long count() {
-        return this.size;
-    }
-
-    @Override
-    public Int3HashSet retain() throws AlreadyReleasedException {
-        super.retain();
-        return this;
-    }
-
-    @Override
-    protected void doRelease() {
-        if (this.cleaner != null) {
-            this.cleaner.clean();
-        }
     }
 
     //

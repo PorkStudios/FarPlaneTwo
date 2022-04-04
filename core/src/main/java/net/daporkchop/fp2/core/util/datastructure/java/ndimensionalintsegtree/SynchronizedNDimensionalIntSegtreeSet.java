@@ -25,7 +25,6 @@ import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSegtreeSet;
 import net.daporkchop.lib.primitive.lambda.IntIntConsumer;
 import net.daporkchop.lib.primitive.lambda.IntIntIntConsumer;
-import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
@@ -46,8 +45,8 @@ public class SynchronizedNDimensionalIntSegtreeSet implements NDimensionalIntSeg
     }
 
     @Override
-    public synchronized long count() {
-        return this.delegate.count();
+    public synchronized int size() {
+        return this.delegate.size();
     }
 
     @Override
@@ -158,21 +157,5 @@ public class SynchronizedNDimensionalIntSegtreeSet implements NDimensionalIntSeg
     @Override
     public synchronized boolean containsAny(int x0, int y0, int z0, int x1, int y1, int z1) {
         return this.delegate.containsAny(x0, y0, z0, x1, y1, z1);
-    }
-
-    @Override
-    public int refCnt() {
-        return this.delegate.refCnt();
-    }
-
-    @Override
-    public NDimensionalIntSegtreeSet retain() throws AlreadyReleasedException {
-        this.delegate.retain();
-        return this;
-    }
-
-    @Override
-    public boolean release() throws AlreadyReleasedException {
-        return this.delegate.release();
     }
 }

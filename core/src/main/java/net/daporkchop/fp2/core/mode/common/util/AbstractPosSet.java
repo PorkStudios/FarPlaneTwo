@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -53,33 +53,8 @@ public abstract class AbstractPosSet<POS extends IFarPos> implements SimpleSet<P
     }
 
     @Override
-    public int refCnt() {
-        return this.delegates[0].refCnt();
-    }
-
-    @Override
-    public SimpleSet<POS> retain() throws AlreadyReleasedException {
-        this.delegates[0].retain();
-        return this;
-    }
-
-    @Override
-    public boolean release() throws AlreadyReleasedException {
-        NDimensionalIntSet[] delegates = this.delegates;
-
-        if (delegates[0].release()) {
-            for (int level = 1; level < delegates.length; level++) {
-                checkState(delegates[level].release(), "failed to release delegate set at level #%d!", level);
-            }
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    @Override
     public long count() {
-        return Stream.of(this.delegates).mapToLong(NDimensionalIntSet::count).sum();
+        return Stream.of(this.delegates).mapToLong(NDimensionalIntSet::size).sum();
     }
 
     @Override

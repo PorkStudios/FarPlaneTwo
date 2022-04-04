@@ -117,7 +117,6 @@ public abstract class AbstractCubesExactFBlockWorldHolder<CUBE> extends Abstract
     @Override
     public void close() {
         this.world().fp2_IFarWorldServer_eventBus().unregister(this);
-        this.cubesExistIndex.release();
     }
 
     @FEventHandler
@@ -203,14 +202,16 @@ public abstract class AbstractCubesExactFBlockWorldHolder<CUBE> extends Abstract
         }
 
         //collect all the positions into an NDimensionalIntSet
-        try (NDimensionalIntSet set = Datastructures.INSTANCE.nDimensionalIntSet().dimensions(3).threadSafe(false).build()) {
+        {
+            NDimensionalIntSet set = Datastructures.INSTANCE.nDimensionalIntSet().dimensions(3).threadSafe(false).build();
+
             //add the positions for each shape to the set
             for (FBlockWorld.QueryShape shape : shapes) {
                 this.getCubePositionsToPrefetch(set, shape);
             }
 
             //now that the shapes have been reduced to a set of unique positions, convert it to a list of Vec3i
-            List<Vec3i> positions = new ArrayList<>(toIntExact(set.count()));
+            List<Vec3i> positions = new ArrayList<>(set.size());
             set.forEach3D((x, y, z) -> positions.add(Vec3i.of(x, y, z)));
             return positions;
         }
@@ -349,7 +350,9 @@ public abstract class AbstractCubesExactFBlockWorldHolder<CUBE> extends Abstract
     protected List<Vec3i> getCubePositionsToPrefetchGeneric(@NonNull FBlockWorld.QueryShape shape) {
         shape.validate();
 
-        try (NDimensionalIntSet set = Datastructures.INSTANCE.nDimensionalIntSet().dimensions(3).threadSafe(false).build()) {
+        {
+            NDimensionalIntSet set = Datastructures.INSTANCE.nDimensionalIntSet().dimensions(3).threadSafe(false).build();
+
             //iterate over every position, recording all the ones which are valid
             shape.forEach((index, x, y, z) -> {
                 if (this.isValidPosition(x, y, z)) {
@@ -358,7 +361,7 @@ public abstract class AbstractCubesExactFBlockWorldHolder<CUBE> extends Abstract
             });
 
             //now that the shape has been reduced to a set of unique positions, convert it to a list of Vec3i
-            List<Vec3i> positions = new ArrayList<>(toIntExact(set.count()));
+            List<Vec3i> positions = new ArrayList<>(set.size());
             set.forEach3D((x, y, z) -> positions.add(Vec3i.of(x, y, z)));
             return positions;
         }

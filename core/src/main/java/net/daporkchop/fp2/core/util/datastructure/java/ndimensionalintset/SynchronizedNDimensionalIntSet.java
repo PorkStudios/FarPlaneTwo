@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -25,7 +25,6 @@ import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSet;
 import net.daporkchop.lib.primitive.lambda.IntIntConsumer;
 import net.daporkchop.lib.primitive.lambda.IntIntIntConsumer;
-import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
@@ -46,8 +45,8 @@ public class SynchronizedNDimensionalIntSet implements NDimensionalIntSet {
     }
 
     @Override
-    public synchronized long count() {
-        return this.delegate.count();
+    public synchronized int size() {
+        return this.delegate.size();
     }
 
     @Override
@@ -138,21 +137,5 @@ public class SynchronizedNDimensionalIntSet implements NDimensionalIntSet {
     @Override
     public synchronized void forEach3D(@NonNull IntIntIntConsumer callback) {
         this.delegate.forEach3D(callback);
-    }
-
-    @Override
-    public int refCnt() {
-        return this.delegate.refCnt();
-    }
-
-    @Override
-    public NDimensionalIntSet retain() throws AlreadyReleasedException {
-        this.delegate.retain();
-        return this;
-    }
-
-    @Override
-    public boolean release() throws AlreadyReleasedException {
-        return this.delegate.release();
     }
 }

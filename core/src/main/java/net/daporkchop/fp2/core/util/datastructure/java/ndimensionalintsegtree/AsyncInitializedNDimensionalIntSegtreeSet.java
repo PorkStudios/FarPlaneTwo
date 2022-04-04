@@ -26,7 +26,6 @@ import net.daporkchop.lib.common.function.throwing.ERunnable;
 import net.daporkchop.lib.common.function.throwing.ESupplier;
 import net.daporkchop.lib.primitive.lambda.IntIntConsumer;
 import net.daporkchop.lib.primitive.lambda.IntIntIntConsumer;
-import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
@@ -46,16 +45,11 @@ public class AsyncInitializedNDimensionalIntSegtreeSet implements NDimensionalIn
         this.delegate = delegate;
 
         this.initFuture = CompletableFuture.runAsync((ERunnable) () -> {
-            delegate.retain();
-            try {
-                try (Stream<int[]> stream = initialPoints.get()) { //add all points to delegate set
-                    stream.forEach(delegate::add);
-                }
-
-                this.initFuture = null; //if everything was successful, set initFuture to null to allow it to be GC'd
-            } finally {
-                delegate.release();
+            try (Stream<int[]> stream = initialPoints.get()) { //add all points to delegate set
+                stream.forEach(delegate::add);
             }
+
+            this.initFuture = null; //if everything was successful, set initFuture to null to allow it to be GC'd
         });
     }
 
@@ -77,8 +71,8 @@ public class AsyncInitializedNDimensionalIntSegtreeSet implements NDimensionalIn
     }
 
     @Override
-    public long count() {
-        return this.delegate.count();
+    public int size() {
+        return this.delegate.size();
     }
 
     @Override
@@ -210,21 +204,5 @@ public class AsyncInitializedNDimensionalIntSegtreeSet implements NDimensionalIn
     public boolean containsAny(int x0, int y0, int z0, int x1, int y1, int z1) {
         this.handleRead();
         return this.delegate.containsAny(x0, y0, z0, x1, y1, z1);
-    }
-
-    @Override
-    public int refCnt() {
-        return this.delegate.refCnt();
-    }
-
-    @Override
-    public NDimensionalIntSegtreeSet retain() throws AlreadyReleasedException {
-        this.delegate.retain();
-        return this;
-    }
-
-    @Override
-    public boolean release() throws AlreadyReleasedException {
-        return this.delegate.release();
     }
 }

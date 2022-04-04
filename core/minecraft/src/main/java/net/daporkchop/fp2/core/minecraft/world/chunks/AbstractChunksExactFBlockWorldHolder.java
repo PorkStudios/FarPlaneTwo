@@ -112,7 +112,6 @@ public abstract class AbstractChunksExactFBlockWorldHolder<CHUNK> extends Abstra
     @Override
     public void close() {
         this.world().fp2_IFarWorldServer_eventBus().unregister(this);
-        this.chunksExistIndex().release();
     }
 
     @Override
@@ -207,14 +206,16 @@ public abstract class AbstractChunksExactFBlockWorldHolder<CHUNK> extends Abstra
         }
 
         //collect all the positions into an NDimensionalIntSet
-        try (NDimensionalIntSet set = Datastructures.INSTANCE.nDimensionalIntSet().dimensions(2).threadSafe(false).build()) {
+        {
+            NDimensionalIntSet set = Datastructures.INSTANCE.nDimensionalIntSet().dimensions(2).threadSafe(false).build();
+
             //add the positions for each shape to the set
             for (FBlockWorld.QueryShape shape : shapes) {
                 this.getChunkPositionsToPrefetch(set, shape);
             }
 
             //now that the shapes have been reduced to a set of unique positions, convert it to a list of Vec2i
-            List<Vec2i> positions = new ArrayList<>(toIntExact(set.count()));
+            List<Vec2i> positions = new ArrayList<>(set.size());
             set.forEach2D((x, z) -> positions.add(Vec2i.of(x, z)));
             return positions;
         }
@@ -351,7 +352,9 @@ public abstract class AbstractChunksExactFBlockWorldHolder<CHUNK> extends Abstra
     protected List<Vec2i> getChunkPositionsToPrefetchGeneric(@NonNull FBlockWorld.QueryShape shape) {
         shape.validate();
 
-        try (NDimensionalIntSet set = Datastructures.INSTANCE.nDimensionalIntSet().dimensions(2).threadSafe(false).build()) {
+        {
+            NDimensionalIntSet set = Datastructures.INSTANCE.nDimensionalIntSet().dimensions(2).threadSafe(false).build();
+
             //iterate over every position, recording all the ones which are valid
             shape.forEach((index, x, y, z) -> {
                 if (this.isValidPosition(x, y, z)) {
@@ -360,7 +363,7 @@ public abstract class AbstractChunksExactFBlockWorldHolder<CHUNK> extends Abstra
             });
 
             //now that the shape has been reduced to a set of unique positions, convert it to a list of Vec2i
-            List<Vec2i> positions = new ArrayList<>(toIntExact(set.count()));
+            List<Vec2i> positions = new ArrayList<>(set.size());
             set.forEach2D((x, z) -> positions.add(Vec2i.of(x, z)));
             return positions;
         }

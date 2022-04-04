@@ -38,7 +38,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 public class TestNDimensionalIntSet {
     protected static void ensureEqual(Set<Vec3i> reference, NDimensionalIntSet test) {
-        checkState(reference.size() == test.count());
+        checkState(reference.size() == test.size());
 
         reference.forEach(v -> checkState(test.contains(v.x(), v.y(), v.z())));
         test.forEach3D((x, y, z) -> checkState(reference.contains(Vec3i.of(x, y, z))));
@@ -68,7 +68,8 @@ public class TestNDimensionalIntSet {
         Set<Vec3i> reference = new HashSet<>(nPoints);
         ThreadLocalRandom r = ThreadLocalRandom.current();
 
-        try (NDimensionalIntSet test = Datastructures.INSTANCE.nDimensionalIntSet().dimensions(3).threadSafe(false).build()) {
+        {
+            NDimensionalIntSet test = Datastructures.INSTANCE.nDimensionalIntSet().dimensions(3).threadSafe(false).build();
             for (int i = 0; i < nPoints; i++) { //insert some random values
                 int x = r.nextInt(min, max);
                 int y = r.nextInt(min, max);
@@ -110,7 +111,8 @@ public class TestNDimensionalIntSet {
         Set<Vec3i> reference = new HashSet<>();
         ThreadLocalRandom r = ThreadLocalRandom.current();
 
-        try (NDimensionalIntSet test = Datastructures.INSTANCE.nDimensionalIntSet().dimensions(3).threadSafe(false).build()) {
+        {
+            NDimensionalIntSet test = Datastructures.INSTANCE.nDimensionalIntSet().dimensions(3).threadSafe(false).build();
             ensureEqual(reference, test);
 
             for (int i = 0; i < 10000; i++) {
@@ -145,7 +147,8 @@ public class TestNDimensionalIntSet {
         Set<Vec3i> reference = new HashSet<>();
         ThreadLocalRandom r = ThreadLocalRandom.current();
 
-        try (NDimensionalIntSet test = Datastructures.INSTANCE.nDimensionalIntSet().dimensions(3).threadSafe(false).build()) {
+        {
+            NDimensionalIntSet test = Datastructures.INSTANCE.nDimensionalIntSet().dimensions(3).threadSafe(false).build();
             ensureEqual(reference, test);
 
             for (int i = 0; i < 10000; i++) {
