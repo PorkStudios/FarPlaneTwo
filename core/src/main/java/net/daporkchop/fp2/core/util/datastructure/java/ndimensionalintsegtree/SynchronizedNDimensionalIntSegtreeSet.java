@@ -23,6 +23,7 @@ package net.daporkchop.fp2.core.util.datastructure.java.ndimensionalintsegtree;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSegtreeSet;
+import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSet;
 import net.daporkchop.lib.primitive.lambda.IntIntConsumer;
 import net.daporkchop.lib.primitive.lambda.IntIntIntConsumer;
 
@@ -38,6 +39,10 @@ import java.util.function.IntConsumer;
 public class SynchronizedNDimensionalIntSegtreeSet implements NDimensionalIntSegtreeSet {
     @NonNull
     protected final NDimensionalIntSegtreeSet delegate;
+
+    //
+    // NDimensionalIntSet methods
+    //
 
     @Override
     public int dimensions() {
@@ -77,11 +82,6 @@ public class SynchronizedNDimensionalIntSegtreeSet implements NDimensionalIntSeg
     @Override
     public synchronized void forEach(@NonNull Consumer<int[]> callback) {
         this.delegate.forEach(callback);
-    }
-
-    @Override
-    public synchronized boolean containsAny(@NonNull int[] a, @NonNull int[] b) {
-        return this.delegate.containsAny(a, b);
     }
 
     @Override
@@ -142,6 +142,30 @@ public class SynchronizedNDimensionalIntSegtreeSet implements NDimensionalIntSeg
     @Override
     public synchronized void forEach3D(@NonNull IntIntIntConsumer callback) {
         this.delegate.forEach3D(callback);
+    }
+
+    @Override
+    public synchronized boolean containsAll(@NonNull NDimensionalIntSet set) {
+        return this.delegate.containsAll(set);
+    }
+
+    @Override
+    public synchronized boolean addAll(@NonNull NDimensionalIntSet set) {
+        return this.delegate.addAll(set);
+    }
+
+    @Override
+    public synchronized boolean removeAll(@NonNull NDimensionalIntSet set) {
+        return this.delegate.removeAll(set);
+    }
+
+    //
+    // NDimensionalIntSegtreeSet methods
+    //
+
+    @Override
+    public synchronized boolean containsAny(@NonNull int[] a, @NonNull int[] b) {
+        return this.delegate.containsAny(a, b);
     }
 
     @Override

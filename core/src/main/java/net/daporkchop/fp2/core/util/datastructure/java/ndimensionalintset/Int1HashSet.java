@@ -35,8 +35,6 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * A fast hash-set implementation for 1-dimensional vectors with {@code int} components.
  * <p>
  * Optimized for the case where queries will be close to each other.
- * <p>
- * Not thread-safe. Attempting to use this concurrently from multiple threads will likely have catastrophic results (read: JVM crashes).
  *
  * @author DaPorkchop_
  * @see <a href="https://github.com/OpenCubicChunks/CubicChunks/pull/674">https://github.com/OpenCubicChunks/CubicChunks/pull/674</a>
@@ -290,6 +288,143 @@ public class Int1HashSet implements NDimensionalIntSet {
                 }
             }
         }
+    }
+
+    @Override
+    public boolean containsAll(@NonNull NDimensionalIntSet set) {
+        return set instanceof Int1HashSet ? this.containsAll((Int1HashSet) set) : NDimensionalIntSet.super.containsAll(set);
+    }
+
+    protected boolean containsAll(@NonNull Int1HashSet other) {
+        if (this.size < other.size) { //we contain fewer points than the other set, and therefore cannot contain all of them
+            return false;
+        } else if (other.size == 0) { //other set is empty, we contain everything
+            return true;
+        }
+
+        //we can assume that neither set is empty, and therefore both sets' tables must be initialized
+
+        long[] thisValues = this.values;
+
+        int[] otherKeys = other.keys;
+        long[] otherValues = other.values;
+
+        //iterate over every bucket in the other set
+        for (int otherBucket = 0; otherBucket < otherValues.length; otherBucket++) {
+            long otherValue = otherValues[otherBucket];
+            if (otherValue != 0L) { //the other bucket is occupied
+                //find corresponding bucket in self
+                int thisBucket = this.findBucket(otherKeys[otherBucket * AXIS_COUNT + AXIS_X_OFFSET], false);
+
+                if (thisBucket < 0 //this set doesn't contain the bucket, all the points in the bucket are missing
+                    || (otherValue & ~thisValues[thisBucket]) != 0L) { //the other bucket contains some points which this one doesn't
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    @Override
+    public boolean addAll(@NonNull NDimensionalIntSet set) {
+        return set instanceof Int1HashSet ? this.addAll((Int1HashSet) set) : NDimensionalIntSet.super.addAll(set);
+    }
+
+    protected boolean addAll(@NonNull Int1HashSet other) {
+        if (other.size == 0) { //other set is empty, there's nothing to add
+            return false;
+        }
+
+        //the other set isn't empty, so its table must have been initialized.
+        // we can't assume the same about this set, but we wouldn't want to keep a constant reference to this set's table anyway since it could be resized
+        // by findBucket() during iteration
+
+        boolean modified = false;
+
+        int[] otherKeys = other.keys;
+        long[] otherValues = other.values;
+
+        //iterate over every bucket in the other set
+        for (int otherBucket = 0; otherBucket < otherValues.length; otherBucket++) {
+            long otherValue = otherValues[otherBucket];
+            if (otherValue != 0L) { //the other bucket is occupied
+                //find corresponding bucket in self, or create it if none exists
+                int thisBucket = this.findBucket(otherKeys[otherBucket * AXIS_COUNT + AXIS_X_OFFSET], true);
+
+                //get current bucket value
+                long[] thisValues = this.values; //findBucket() has initialized the table for us if it wasn't already
+                long thisValue = thisValues[thisBucket];
+
+                //determine which points this bucket didn't contain before and must be added
+                long addedBits = otherValue & ~thisValue;
+                if (addedBits != 0L) { //the other bucket contained some points that this one didn't, add them all simultaneously!
+                    thisValues[thisBucket] = thisValue | otherValue;
+                    this.size = addExact(this.size, Long.bitCount(addedBits)); //increase this set's total size according to the number of added points
+                    modified = true; //remember that this set was modified for later
+                }
+            }
+        }
+
+        return modified;
+    }
+
+    @Override
+    public boolean removeAll(@NonNull NDimensionalIntSet set) {
+        return set instanceof Int1HashSet ? this.removeAll((Int1HashSet) set) : NDimensionalIntSet.super.removeAll(set);
+    }
+
+    protected boolean removeAll(@NonNull Int1HashSet other) {
+        if (this.size == 0) { //this set is empty, there's nothing to be removed
+            return false;
+        } else if (other.size == 0) { //other set is empty, there's nothing to remove
+            return true;
+        }
+
+        //we can assume that neither set is empty, and therefore both sets' tables must be initialized
+
+        boolean modified = false;
+
+        int[] thisKeys = this.keys;
+        long[] thisValues = this.values;
+
+        int[] otherKeys = other.keys;
+        long[] otherValues = other.values;
+
+        //iterate over every bucket in the other set
+        for (int otherBucket = 0; otherBucket < otherValues.length; otherBucket++) {
+            long otherValue = otherValues[otherBucket];
+            if (otherValue != 0L) { //the other bucket is occupied
+                //find corresponding bucket in self
+                int thisBucket = this.findBucket(otherKeys[otherBucket * AXIS_COUNT + AXIS_X_OFFSET], false);
+
+                if (thisBucket < 0) { //this set doesn't contain the bucket, all the points in the bucket are missing
+                    continue;
+                }
+
+                long thisValue = thisValues[thisBucket];
+                long removedBits = otherValue & thisValue;
+                if (removedBits == 0L) { //this bucket doesn't contain any of the points contained by the other bucket, there's nothing to remove
+                    continue;
+                }
+
+                //decrease this set's total size according to the number of points we removed from this bucket
+                this.size -= Long.bitCount(removedBits);
+
+                if (thisValue == removedBits) { //all the points were removed from the bucket! the bucket is now empty and need to be removed
+                    this.usedBuckets--;
+
+                    //shifting the buckets IS expensive, yes, but it'll only happen when the entire bucket is deleted, which won't happen on every removal
+                    this.shiftBuckets(thisKeys, thisValues, thisBucket, thisValues.length - 1);
+                } else { //update bucket value with the positions removed
+                    thisValues[thisBucket] = thisValue & ~otherValue;
+                }
+
+                modified = true;
+            }
+        }
+
+        return modified;
     }
 
     @Override

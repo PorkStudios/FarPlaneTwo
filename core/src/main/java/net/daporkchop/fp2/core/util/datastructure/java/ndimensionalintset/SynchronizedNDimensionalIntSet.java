@@ -138,4 +138,19 @@ public class SynchronizedNDimensionalIntSet implements NDimensionalIntSet {
     public synchronized void forEach3D(@NonNull IntIntIntConsumer callback) {
         this.delegate.forEach3D(callback);
     }
+
+    @Override
+    public synchronized boolean containsAll(@NonNull NDimensionalIntSet set) {
+        return this.delegate.containsAll(set);
+    }
+
+    @Override
+    public synchronized boolean addAll(@NonNull NDimensionalIntSet set) {
+        return this.delegate.addAll(set);
+    }
+
+    @Override
+    public synchronized boolean removeAll(@NonNull NDimensionalIntSet set) {
+        return this.delegate.removeAll(set);
+    }
 }

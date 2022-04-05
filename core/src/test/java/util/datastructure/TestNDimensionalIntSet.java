@@ -169,4 +169,52 @@ public class TestNDimensionalIntSet {
             ensureEqual(Collections.emptySet(), test);
         }
     }
+
+    @Test
+    public void testBulkOperationsHighCoordinates() {
+        this.testBulkOperations(Integer.MIN_VALUE, Integer.MAX_VALUE);
+    }
+
+    @Test
+    public void testBulkOperationsSmallCoordinates() {
+        this.testBulkOperations(-500, 500);
+    }
+
+    protected void testBulkOperations(int min, int max) {
+        Set<Vec3i> reference0 = new HashSet<>();
+        Set<Vec3i> reference1 = new HashSet<>();
+        ThreadLocalRandom r = ThreadLocalRandom.current();
+
+        {
+            NDimensionalIntSet test0 = Datastructures.INSTANCE.nDimensionalIntSet().dimensions(3).threadSafe(false).build();
+            NDimensionalIntSet test1 = Datastructures.INSTANCE.nDimensionalIntSet().dimensions(3).threadSafe(false).build();
+
+            for (int i = 0; i < 10000; i++) {
+                int x = r.nextInt(min, max);
+                int y = r.nextInt(min, max);
+                int z = r.nextInt(min, max);
+                Vec3i vec = Vec3i.of(x, y, z);
+
+                if (r.nextBoolean()) {
+                    checkState(reference0.add(vec) == test0.add(x, y, z));
+                }
+                if (r.nextBoolean()) {
+                    checkState(reference1.add(vec) == test1.add(x, y, z));
+                }
+            }
+
+            ensureEqual(reference0, test0);
+            ensureEqual(reference1, test1);
+
+            checkState(reference1.addAll(reference0) == test1.addAll(test0));
+
+            ensureEqual(reference0, test0);
+            ensureEqual(reference1, test1);
+
+            checkState(reference1.containsAll(reference0));
+            checkState(test1.containsAll(test0));
+
+            checkState(reference1.removeAll(reference0) == test1.removeAll(test0));
+        }
+    }
 }

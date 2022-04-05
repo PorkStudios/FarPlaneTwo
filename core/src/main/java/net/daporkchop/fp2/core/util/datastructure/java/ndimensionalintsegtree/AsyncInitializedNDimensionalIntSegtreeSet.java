@@ -22,6 +22,7 @@ package net.daporkchop.fp2.core.util.datastructure.java.ndimensionalintsegtree;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSegtreeSet;
+import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSet;
 import net.daporkchop.lib.common.function.throwing.ERunnable;
 import net.daporkchop.lib.common.function.throwing.ESupplier;
 import net.daporkchop.lib.primitive.lambda.IntIntConsumer;
@@ -64,6 +65,10 @@ public class AsyncInitializedNDimensionalIntSegtreeSet implements NDimensionalIn
             this.initFuture.join(); //block until initialization is complete, or throw exception
         }
     }
+
+    //
+    // NDimensionalIntSet methods
+    //
 
     @Override
     public int dimensions() {
@@ -108,12 +113,6 @@ public class AsyncInitializedNDimensionalIntSegtreeSet implements NDimensionalIn
     public void forEach(@NonNull Consumer<int[]> callback) {
         this.handleRead();
         this.delegate.forEach(callback);
-    }
-
-    @Override
-    public boolean containsAny(@NonNull int[] a, @NonNull int[] b) {
-        this.handleRead();
-        return this.delegate.containsAny(a, b);
     }
 
     @Override
@@ -186,6 +185,34 @@ public class AsyncInitializedNDimensionalIntSegtreeSet implements NDimensionalIn
     public void forEach3D(@NonNull IntIntIntConsumer callback) {
         this.handleRead();
         this.delegate.forEach3D(callback);
+    }
+
+    @Override
+    public boolean containsAll(@NonNull NDimensionalIntSet set) {
+        this.handleRead();
+        return this.delegate.containsAll(set);
+    }
+
+    @Override
+    public boolean addAll(@NonNull NDimensionalIntSet set) {
+        this.handleWrite();
+        return this.delegate.addAll(set);
+    }
+
+    @Override
+    public boolean removeAll(@NonNull NDimensionalIntSet set) {
+        this.handleRead(); //this will block until initialization is complete, which is good because otherwise we might be removing points that don't exist yet but will soon
+        return this.delegate.removeAll(set);
+    }
+
+    //
+    // NDimensionalIntSegtreeSet methods
+    //
+
+    @Override
+    public boolean containsAny(@NonNull int[] a, @NonNull int[] b) {
+        this.handleRead();
+        return this.delegate.containsAny(a, b);
     }
 
     @Override

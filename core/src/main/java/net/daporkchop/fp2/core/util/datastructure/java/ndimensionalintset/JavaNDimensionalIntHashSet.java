@@ -24,6 +24,7 @@ import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSet;
+import net.daporkchop.lib.common.util.PorkUtil;
 
 import java.util.Arrays;
 import java.util.function.Consumer;
@@ -80,5 +81,35 @@ public class JavaNDimensionalIntHashSet extends ObjectOpenCustomHashSet<int[]> i
     @Override
     public void forEach(@NonNull Consumer action) {
         super.forEach(uncheckedCast(action));
+    }
+
+    @Override
+    public boolean containsAll(@NonNull NDimensionalIntSet set) {
+        if (set instanceof JavaNDimensionalIntHashSet) {
+            checkArg(this.dimensions == set.dimensions(), "mismatched dimension count (this: %dD, set: %dD)", this.dimensions(), set.dimensions());
+            return super.containsAll(PorkUtil.<ObjectOpenCustomHashSet<int[]>>uncheckedCast(set));
+        } else {
+            return NDimensionalIntSet.super.containsAll(set);
+        }
+    }
+
+    @Override
+    public boolean addAll(@NonNull NDimensionalIntSet set) {
+        if (set instanceof JavaNDimensionalIntHashSet) {
+            checkArg(this.dimensions == set.dimensions(), "mismatched dimension count (this: %dD, set: %dD)", this.dimensions(), set.dimensions());
+            return super.addAll(PorkUtil.<ObjectOpenCustomHashSet<int[]>>uncheckedCast(set));
+        } else {
+            return NDimensionalIntSet.super.containsAll(set);
+        }
+    }
+
+    @Override
+    public boolean removeAll(@NonNull NDimensionalIntSet set) {
+        if (set instanceof JavaNDimensionalIntHashSet) {
+            checkArg(this.dimensions == set.dimensions(), "mismatched dimension count (this: %dD, set: %dD)", this.dimensions(), set.dimensions());
+            return super.removeAll(PorkUtil.<ObjectOpenCustomHashSet<int[]>>uncheckedCast(set));
+        } else {
+            return NDimensionalIntSet.super.containsAll(set);
+        }
     }
 }
