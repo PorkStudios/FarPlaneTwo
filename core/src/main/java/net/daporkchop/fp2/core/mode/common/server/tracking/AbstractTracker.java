@@ -32,7 +32,6 @@ import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
 import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
 import net.daporkchop.fp2.core.util.datastructure.RecyclingArrayDeque;
-import net.daporkchop.fp2.core.util.datastructure.SimpleSet;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.ArrayList;
@@ -59,7 +58,7 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
     protected final IFarCoordLimits<POS> coordLimits;
 
     protected final RecyclingArrayDeque<POS> queuedPositions = new RecyclingArrayDeque<>();
-    protected final SimpleSet<POS> loadedPositions;
+    protected final Set<POS> loadedPositions;
     protected final Set<POS> waitingPositions = ConcurrentHashMap.newKeySet();
     protected final Queue<POS> doneWaitingPositions = new ConcurrentLinkedQueue<>();
 
@@ -120,7 +119,7 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
                 this.clearWaiting();
 
                 {
-                    SimpleSet<POS> untrackingPositions = this.mode.directPosAccess().newPositionSet();
+                    Set<POS> untrackingPositions = this.mode.directPosAccess().newPositionSet();
                     //actually update the tracking state (this is synchronized)
                     this.updateState(lastState, nextState, untrackingPositions);
 
@@ -138,7 +137,7 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
         this.updateWaiting();
     }
 
-    protected synchronized void updateState(STATE lastState, @NonNull STATE nextState, @NonNull SimpleSet<POS> untrackingPositions) {
+    protected synchronized void updateState(STATE lastState, @NonNull STATE nextState, @NonNull Set<POS> untrackingPositions) {
         long startTime = System.nanoTime();
 
         if (lastState != null) { //if lastState exists, we can diff the positions (which is faster than iterating over all of them)
@@ -311,10 +310,10 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
         //untrack all positions
         //  (using temporary set to avoid CME)
         {
-            SimpleSet<POS> tmp = this.mode.directPosAccess().newPositionSet();
+            Set<POS> tmp = this.mode.directPosAccess().newPositionSet();
 
-            this.waitingPositions.forEach(tmp::add);
-            this.loadedPositions.forEach(tmp::add);
+            tmp.addAll(this.waitingPositions);
+            tmp.addAll(this.loadedPositions);
 
             tmp.forEach(pos -> this.manager.stopTracking(this, pos));
         }
@@ -330,7 +329,7 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
         //i don't care that i'm calling #count() and #size() in a not thread-safe manner - worst-case scenario, the count is reported incorrectly for a split second
 
         return DebugStats.Tracking.builder()
-                .tilesLoaded(this.loadedPositions.count())
+                .tilesLoaded(this.loadedPositions.size())
                 .tilesLoading(this.waitingPositions.size())
                 .tilesQueued(this.queuedPositions.size())
                 .tilesTrackedGlobal(this.manager.entries().size())

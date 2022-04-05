@@ -25,12 +25,10 @@ import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.util.datastructure.Datastructures;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSet;
 import net.daporkchop.fp2.core.util.datastructure.SimpleSet;
-import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
+import java.util.Collection;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
-
-import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * Base class for implementations of {@link SimpleSet} optimized specifically for a specific {@link IFarPos} type.
@@ -53,8 +51,8 @@ public abstract class AbstractPosSet<POS extends IFarPos> implements SimpleSet<P
     }
 
     @Override
-    public long count() {
-        return Stream.of(this.delegates).mapToLong(NDimensionalIntSet::size).sum();
+    public int size() {
+        return Stream.of(this.delegates).mapToInt(NDimensionalIntSet::size).sum();
     }
 
     @Override
@@ -68,14 +66,67 @@ public abstract class AbstractPosSet<POS extends IFarPos> implements SimpleSet<P
     }
 
     @Override
-    public abstract boolean add(@NonNull POS value);
+    public abstract boolean add(POS value);
 
     @Override
-    public abstract boolean remove(@NonNull POS value);
+    public abstract boolean remove(Object value);
 
     @Override
-    public abstract boolean contains(@NonNull POS value);
+    public abstract boolean contains(Object value);
 
     @Override
     public abstract void forEach(@NonNull Consumer<? super POS> callback);
+
+    @Override
+    public boolean containsAll(@NonNull Collection<?> c) {
+        if (this.getClass() == c.getClass()) { //the other set is of the same type
+            NDimensionalIntSet[] thisDelegates = this.delegates;
+            NDimensionalIntSet[] otherDelegates = ((AbstractPosSet) c).delegates;
+
+            for (int level = 0; level < thisDelegates.length; level++) {
+                if (!thisDelegates[level].containsAll(otherDelegates[level])) {
+                    return false;
+                }
+            }
+            return true;
+        } else {
+            return SimpleSet.super.containsAll(c);
+        }
+    }
+
+    @Override
+    public boolean addAll(@NonNull Collection<? extends POS> c) {
+        if (this.getClass() == c.getClass()) { //the other set is of the same type
+            NDimensionalIntSet[] thisDelegates = this.delegates;
+            NDimensionalIntSet[] otherDelegates = ((AbstractPosSet) c).delegates;
+
+            boolean modified = false;
+            for (int level = 0; level < thisDelegates.length; level++) {
+                if (thisDelegates[level].addAll(otherDelegates[level])) {
+                    modified = true;
+                }
+            }
+            return modified;
+        } else {
+            return SimpleSet.super.addAll(c);
+        }
+    }
+
+    @Override
+    public boolean removeAll(@NonNull Collection<?> c) {
+        if (this.getClass() == c.getClass()) { //the other set is of the same type
+            NDimensionalIntSet[] thisDelegates = this.delegates;
+            NDimensionalIntSet[] otherDelegates = ((AbstractPosSet) c).delegates;
+
+            boolean modified = false;
+            for (int level = 0; level < thisDelegates.length; level++) {
+                if (thisDelegates[level].removeAll(otherDelegates[level])) {
+                    modified = true;
+                }
+            }
+            return modified;
+        } else {
+            return SimpleSet.super.removeAll(c);
+        }
+    }
 }

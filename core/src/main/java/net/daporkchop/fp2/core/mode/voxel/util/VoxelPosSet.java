@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -43,18 +43,28 @@ public class VoxelPosSet extends AbstractPosSet<VoxelPos> {
     }
 
     @Override
-    public boolean add(@NonNull VoxelPos pos) {
+    public boolean add(VoxelPos pos) {
         return this.delegates[pos.level()].add(pos.x(), pos.y(), pos.z());
     }
 
     @Override
-    public boolean remove(@NonNull VoxelPos pos) {
-        return this.delegates[pos.level()].remove(pos.x(), pos.y(), pos.z());
+    public boolean remove(Object value) {
+        if (value instanceof VoxelPos) {
+            VoxelPos pos = (VoxelPos) value;
+            return this.delegates[pos.level()].remove(pos.x(), pos.y(), pos.z());
+        } else {
+            return false;
+        }
     }
 
     @Override
-    public boolean contains(@NonNull VoxelPos pos) {
-        return this.delegates[pos.level()].contains(pos.x(), pos.y(), pos.z());
+    public boolean contains(Object value) {
+        if (value instanceof VoxelPos) {
+            VoxelPos pos = (VoxelPos) value;
+            return this.delegates[pos.level()].contains(pos.x(), pos.y(), pos.z());
+        } else {
+            return false;
+        }
     }
 
     @Override

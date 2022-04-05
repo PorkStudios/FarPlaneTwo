@@ -21,78 +21,156 @@
 package net.daporkchop.fp2.core.util.datastructure;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.core.util.BreakOutOfLambdaException;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import static java.lang.Math.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
- * Alternative to {@link Set} with a much simpler API.
+ * Base code for a simple {@link Set} implementation.
  *
  * @author DaPorkchop_
  */
-public interface SimpleSet<E> extends IDatastructure<SimpleSet<E>>, Iterable<E> { //TODO: replace this with a regular java set
+public interface SimpleSet<E> extends Set<E> {
     /**
-     * @return the number of points in this set
+     * Empty method to force subclasses to implement this.
+     * <p>
+     * {@inheritDoc}
      */
-    long count();
+    @Override
+    void forEach(@NonNull Consumer<? super E> callback);
 
-    /**
-     * @return whether or not this set is empty
-     */
+    @Override
     default boolean isEmpty() {
-        return this.count() == 0L;
+        return this.size() == 0;
     }
 
-    /**
-     * Removes every point in this set.
-     */
-    void clear();
+    @Override
+    default Object[] toArray() {
+        class State implements Consumer<E> {
+            final Object[] array = new Object[SimpleSet.this.size()];
+            int i = 0;
 
-    //
-    // generic methods
-    //
+            @Override
+            public void accept(E e) {
+                this.array[this.i] = e;
+                this.i = incrementExact(this.i);
+            }
+        }
 
-    /**
-     * Adds the given value to this set.
-     *
-     * @param value the value to add
-     * @return whether or not this set was modified as a result of this change
-     */
-    boolean add(@NonNull E value);
+        State state = new State();
+        this.forEach(state);
+        checkState(state.i == state.array.length, "iterated over %d/%d elements!", state.i, state.array.length);
+        return state.array;
+    }
 
-    /**
-     * Removes the given value from this set.
-     *
-     * @param value the value to remove
-     * @return whether or not this set was modified as a result of this change
-     */
-    boolean remove(@NonNull E value);
+    @Override
+    default <T> T[] toArray(@NonNull T[] a) {
+        class State implements Consumer<E> {
+            final T[] array;
+            int i = 0;
 
-    /**
-     * Checks whether or not this set contains the given value.
-     *
-     * @param value the value to check for
-     * @return whether or not this set contains the given point
-     */
-    boolean contains(@NonNull E value);
+            State(T[] a) {
+                int size = SimpleSet.this.size();
+                if (a.length < size) {
+                    a = uncheckedCast(Array.newInstance(a.getClass().getComponentType(), size));
+                } else if (a.length > size) {
+                    a[size] = null;
+                }
+                this.array = a;
+            }
 
-    /**
-     * Runs the given callback function for every value in this set.
-     *
-     * @param callback the callback function
-     */
-    void forEach(@NonNull Consumer<? super E> callback);
+            @Override
+            public void accept(E e) {
+                this.array[this.i] = uncheckedCast(e);
+                this.i = incrementExact(this.i);
+            }
+        }
+
+        State state = new State(a);
+        this.forEach(state);
+        checkState(state.i == state.array.length, "iterated over %d/%d elements!", state.i, state.array.length);
+        return state.array;
+    }
+
+    @Override
+    default boolean containsAll(@NonNull Collection<?> c) {
+        try {
+            //check every point
+            c.forEach(point -> {
+                if (!this.contains(point)) {
+                    throw BreakOutOfLambdaException.get();
+                }
+            });
+
+            //every point was contained
+            return true;
+        } catch (BreakOutOfLambdaException e) {
+            //a point wasn't contained, return false
+            return false;
+        }
+    }
+
+    @Override
+    default boolean addAll(@NonNull Collection<? extends E> c) {//local class contains the return value without having to allocate a second object to get the return value
+        class State implements Consumer<E> {
+            boolean modified = false;
+
+            @Override
+            public void accept(E value) {
+                //try to add each value and update the "modified" flag if successful
+                if (SimpleSet.this.add(value)) {
+                    this.modified = true;
+                }
+            }
+        }
+
+        State state = new State();
+        c.forEach(state);
+        return state.modified;
+    }
+
+    @Override
+    default boolean retainAll(@NonNull Collection<?> c) {
+        throw new UnsupportedOperationException(); //TODO: implementing this would require buffering all the values...
+    }
+
+    @Override
+    default boolean removeAll(@NonNull Collection<?> c) {
+        //local class contains the return value without having to allocate a second object to get the return value
+        class State implements Consumer<Object> {
+            boolean modified = false;
+
+            @Override
+            public void accept(Object value) {
+                //try to remove each value and update the "modified" flag if successful
+                if (SimpleSet.this.remove(value)) {
+                    this.modified = true;
+                }
+            }
+        }
+
+        State state = new State();
+        c.forEach(state);
+        return state.modified;
+    }
 
     @Override
     @Deprecated
     default Iterator<E> iterator() {
         //buffer the whole thing into a list in order to get it as an iterator
-        List<E> list = new ArrayList<>(toInt(this.count()));
+        List<E> list = new ArrayList<>(this.size());
+
+        //noinspection UseBulkOperation: doing that will likely cause it to use an iterator, resulting in infinite recursion
         this.forEach(list::add);
         return list.iterator();
     }

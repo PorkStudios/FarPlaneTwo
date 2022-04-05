@@ -23,14 +23,11 @@ package net.daporkchop.fp2.core.mode.api.server.gen;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
-import net.daporkchop.fp2.core.util.datastructure.SimpleSet;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
-
-import static java.lang.Math.*;
 
 /**
  * @author DaPorkchop_
@@ -54,15 +51,12 @@ public interface IFarScaler<POS extends IFarPos, T extends IFarTile> extends IFa
      * @see #outputs(IFarPos)
      */
     default Collection<POS> uniqueOutputs(@NonNull Iterable<POS> srcPositions) {
-        SimpleSet<POS> set = this.provider().mode().directPosAccess().newPositionSet();
+        Set<POS> set = this.provider().mode().directPosAccess().newPositionSet();
 
         //get all positions and add them to the set (this discards duplicates)
-        srcPositions.forEach(pos -> this.outputs(pos).forEach(set::add));
+        srcPositions.forEach(pos -> set.addAll(this.outputs(pos)));
 
-        //convert set to a regular java list
-        List<POS> list = new ArrayList<>(toIntExact(set.count()));
-        set.forEach(list::add);
-        return list;
+        return set;
     }
 
     /**
@@ -81,15 +75,11 @@ public interface IFarScaler<POS extends IFarPos, T extends IFarTile> extends IFa
      * @see #inputs(IFarPos)
      */
     default Collection<POS> uniqueInputs(@NonNull Iterable<POS> dstPositions) {
-        SimpleSet<POS> set = this.provider().mode().directPosAccess().newPositionSet();
+        Set<POS> set = this.provider().mode().directPosAccess().newPositionSet();
 
         //get all positions and add them to the set (this discards duplicates)
-        dstPositions.forEach(pos -> this.inputs(pos).forEach(set::add));
-
-        //convert set to a regular java list
-        List<POS> list = new ArrayList<>(toIntExact(set.count()));
-        set.forEach(list::add);
-        return list;
+        dstPositions.forEach(pos -> set.addAll(this.inputs(pos)));
+        return set;
     }
 
     /**

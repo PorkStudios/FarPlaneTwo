@@ -35,7 +35,6 @@ import net.daporkchop.fp2.core.mode.common.client.ICullingStrategy;
 import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutput;
 import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutputStorage;
 import net.daporkchop.fp2.core.mode.common.client.strategy.IFarRenderStrategy;
-import net.daporkchop.fp2.core.util.datastructure.SimpleSet;
 import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
 import net.daporkchop.fp2.gl.draw.DrawMode;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
@@ -52,6 +51,7 @@ import java.lang.reflect.Array;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -71,7 +71,7 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
 
     protected final Allocator directMemoryAlloc = new DirectMemoryAllocator(true);
 
-    protected final SimpleSet<POS> renderablePositions;
+    protected final Set<POS> renderablePositions;
     protected final Level[] levels;
 
     public <T extends IFarTile> AbstractRenderIndex(@NonNull IFarRenderStrategy<POS, T, BO, DB, DC> strategy) {
@@ -139,7 +139,7 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
     public DebugStats.Renderer stats() {
         return Stream.of(this.levels)
                 .map(Level::stats)
-                .reduce(DebugStats.Renderer.builder().bakedTiles(this.renderablePositions.count()).build(), DebugStats.Renderer::add);
+                .reduce(DebugStats.Renderer.builder().bakedTiles(this.renderablePositions.size()).build(), DebugStats.Renderer::add);
     }
 
     /**

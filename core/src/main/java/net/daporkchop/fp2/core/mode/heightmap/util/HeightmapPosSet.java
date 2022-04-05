@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -43,18 +43,28 @@ public class HeightmapPosSet extends AbstractPosSet<HeightmapPos> {
     }
 
     @Override
-    public boolean add(@NonNull HeightmapPos pos) {
+    public boolean add(HeightmapPos pos) {
         return this.delegates[pos.level()].add(pos.x(), pos.z());
     }
 
     @Override
-    public boolean remove(@NonNull HeightmapPos pos) {
-        return this.delegates[pos.level()].remove(pos.x(), pos.z());
+    public boolean remove(Object value) {
+        if (value instanceof HeightmapPos) {
+            HeightmapPos pos = (HeightmapPos) value;
+            return this.delegates[pos.level()].remove(pos.x(), pos.z());
+        } else {
+            return false;
+        }
     }
 
     @Override
-    public boolean contains(@NonNull HeightmapPos pos) {
-        return this.delegates[pos.level()].contains(pos.x(), pos.z());
+    public boolean contains(Object value) {
+        if (value instanceof HeightmapPos) {
+            HeightmapPos pos = (HeightmapPos) value;
+            return this.delegates[pos.level()].contains(pos.x(), pos.z());
+        } else {
+            return false;
+        }
     }
 
     @Override

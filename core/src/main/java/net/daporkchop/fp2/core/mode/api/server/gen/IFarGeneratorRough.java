@@ -25,10 +25,10 @@ import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.server.IFarServerResourceCreationEvent;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
-import net.daporkchop.fp2.core.util.datastructure.SimpleSet;
 
 import java.util.Collection;
 import java.util.Optional;
+import java.util.Set;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -61,7 +61,7 @@ public interface IFarGeneratorRough<POS extends IFarPos, T extends IFarTile> ext
      * @return an {@link Optional} {@link Iterable} of all the tile positions which may be generated at the same time
      */
     default Optional<? extends Iterable<POS>> batchGenerationGroup(@NonNull Collection<POS> positions) {
-        SimpleSet<POS> set = null;
+        Set<POS> set = null;
         for (POS pos : positions) {
             Optional<? extends Iterable<POS>> optionalBatchGroup = this.batchGenerationGroup(pos);
             if (optionalBatchGroup.isPresent()) {
@@ -75,7 +75,7 @@ public interface IFarGeneratorRough<POS extends IFarPos, T extends IFarTile> ext
         }
 
         if (set != null) { //the set was created, ensure that all of the original input positions are included
-            positions.forEach(set::add);
+            set.addAll(positions);
         }
 
         return Optional.ofNullable(set);
