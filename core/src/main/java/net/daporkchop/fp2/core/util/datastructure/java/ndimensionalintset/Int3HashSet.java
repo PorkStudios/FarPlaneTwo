@@ -20,16 +20,12 @@
 
 package net.daporkchop.fp2.core.util.datastructure.java.ndimensionalintset;
 
-import io.netty.util.internal.PlatformDependent;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSet;
-import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
 import net.daporkchop.lib.primitive.lambda.IntIntIntConsumer;
-import net.daporkchop.lib.unsafe.PCleaner;
-import net.daporkchop.lib.unsafe.PUnsafe;
-import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
+import java.util.Arrays;
 import java.util.function.Consumer;
 
 import static java.lang.Math.*;
@@ -46,48 +42,36 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @see <a href="https://github.com/OpenCubicChunks/CubicChunks/pull/674">https://github.com/OpenCubicChunks/CubicChunks/pull/674</a>
  */
 public class Int3HashSet implements NDimensionalIntSet {
+    protected static final int AXIS_COUNT = 3;
+
+    protected static final int AXIS_X_OFFSET = 0;
+    protected static final int AXIS_Y_OFFSET = 1;
+    protected static final int AXIS_Z_OFFSET = 2;
+
     protected static final int BUCKET_AXIS_BITS = 2; //the number of bits per axis which are used inside of the bucket rather than identifying the bucket
     protected static final int BUCKET_AXIS_MASK = (1 << BUCKET_AXIS_BITS) - 1;
 
-    protected static final long KEY_X_OFFSET = 0L;
-    protected static final long KEY_Y_OFFSET = KEY_X_OFFSET + Integer.BYTES;
-    protected static final long KEY_Z_OFFSET = KEY_Y_OFFSET + Integer.BYTES;
-    protected static final long KEY_BYTES = KEY_Z_OFFSET + Integer.BYTES;
+    protected static final int DEFAULT_TABLE_SIZE = 16;
 
-    protected static final long VALUE_BYTES = Long.BYTES;
-
-    protected static final long BUCKET_KEY_OFFSET = 0L;
-    protected static final long BUCKET_VALUE_OFFSET = BUCKET_KEY_OFFSET + KEY_BYTES;
-    protected static final long BUCKET_BYTES = BUCKET_VALUE_OFFSET + VALUE_BYTES;
-
-    protected static final long DEFAULT_TABLE_SIZE = 16L;
-
-    protected static long hashPosition(int x, int y, int z) {
-        return x * 1403638657883916319L //some random prime numbers
-               + y * 4408464607732138253L
-               + z * 2587306874955016303L;
+    protected static int hashPosition(int x, int y, int z) {
+        return (int) ((x * 1403638657883916319L //some random prime numbers
+                       + y * 4408464607732138253L
+                       + z * 2587306874955016303L) >>> 32L);
     }
 
     protected static long positionFlag(int x, int y, int z) {
         return 1L << (((x & BUCKET_AXIS_MASK) << (BUCKET_AXIS_BITS * 2)) | ((y & BUCKET_AXIS_MASK) << BUCKET_AXIS_BITS) | (z & BUCKET_AXIS_MASK));
     }
 
-    protected static long allocateTable(long tableSize) {
-        long size = tableSize * BUCKET_BYTES;
-        long addr = PUnsafe.allocateMemory(size); //allocate
-        PUnsafe.setMemory(addr, size, (byte) 0); //clear
-        return addr;
-    }
+    protected int[] keys = null;
+    protected long[] values = null;
 
-    protected long tableAddr = 0L; //the address of the table in memory
-    protected long tableSize = 0L; //the physical size of the table (in buckets). always a non-zero power of two
-    protected long resizeThreshold = 0L;
-    protected long usedBuckets = 0L;
+    protected int tableSize = 0; //the physical size of the table (in buckets). always a non-zero power of two
+    protected int resizeThreshold = 0;
+    protected int usedBuckets = 0;
 
     @Getter
     protected int size = 0; //the number of values stored in the set
-
-    protected PCleaner cleaner;
 
     public Int3HashSet() {
         this.setTableSize(DEFAULT_TABLE_SIZE);
@@ -102,11 +86,11 @@ public class Int3HashSet implements NDimensionalIntSet {
     @Override
     public boolean add(int x, int y, int z) {
         long flag = positionFlag(x, y, z);
-        long bucket = this.findBucket(x >> BUCKET_AXIS_BITS, y >> BUCKET_AXIS_BITS, z >> BUCKET_AXIS_BITS, true);
+        int bucket = this.findBucket(x >> BUCKET_AXIS_BITS, y >> BUCKET_AXIS_BITS, z >> BUCKET_AXIS_BITS, true);
 
-        long value = PUnsafe.getLong(bucket + BUCKET_VALUE_OFFSET);
+        long value = this.values[bucket];
         if ((value & flag) == 0L) { //flag wasn't previously set
-            PUnsafe.putLong(bucket + BUCKET_VALUE_OFFSET, value | flag);
+            this.values[bucket] = value | flag;
             this.size = incrementExact(this.size); //the position was newly added, so we need to increment the total size
             return true;
         } else { //flag was already set
@@ -117,38 +101,40 @@ public class Int3HashSet implements NDimensionalIntSet {
     @Override
     public boolean contains(int x, int y, int z) {
         long flag = positionFlag(x, y, z);
-        long bucket = this.findBucket(x >> BUCKET_AXIS_BITS, y >> BUCKET_AXIS_BITS, z >> BUCKET_AXIS_BITS, false);
+        int bucket = this.findBucket(x >> BUCKET_AXIS_BITS, y >> BUCKET_AXIS_BITS, z >> BUCKET_AXIS_BITS, false);
 
-        return bucket != 0L //bucket exists
-               && (PUnsafe.getLong(bucket + BUCKET_VALUE_OFFSET) & flag) != 0L; //flag is set
+        return bucket >= 0 //bucket exists
+               && (this.values[bucket] & flag) != 0L; //flag is set
     }
 
-    protected long findBucket(int x, int y, int z, boolean createIfAbsent) {
-        long tableSize = this.tableSize;
-        long tableAddr = this.tableAddr;
-        if (tableAddr == 0L) {
+    protected int findBucket(int x, int y, int z, boolean createIfAbsent) {
+        int[] keys = this.keys;
+        long[] values = this.values;
+
+        int tableSize = this.tableSize;
+        if (keys == null) {
             if (createIfAbsent) { //the table hasn't been allocated yet - let's make a new one!
-                this.tableAddr = tableAddr = allocateTable(tableSize);
-                this.cleaner = PCleaner.cleaner(this, tableAddr);
+                this.keys = keys = new int[multiplyExact(tableSize, AXIS_COUNT)];
+                this.values = values = new long[tableSize];
             } else { //the table isn't even allocated yet, so the bucket clearly isn't present
-                return 0L;
+                return -1;
             }
         }
 
-        long mask = tableSize - 1L; //tableSize is always a power of two, so we can safely create a bitmask like this
-        long hash = hashPosition(x, y, z);
+        int mask = tableSize - 1; //tableSize is always a power of two, so we can safely create a bitmask like this
+        int hash = hashPosition(x, y, z);
 
-        for (long i = 0L; ; i++) {
-            long bucketAddr = tableAddr + ((hash + i) & mask) * BUCKET_BYTES;
+        for (int i = 0; ; i++) {
+            int bucket = (hash + i) & mask;
 
-            if (PUnsafe.getLong(bucketAddr + BUCKET_VALUE_OFFSET) == 0L) { //if the bucket value is 0, it means the bucket hasn't been assigned yet
+            if (values[bucket] == 0L) { //if the bucket value is 0, it means the bucket hasn't been assigned yet
                 if (createIfAbsent) {
                     if (this.usedBuckets < this.resizeThreshold) { //let's assign the bucket to our current position
                         this.usedBuckets++;
-                        PUnsafe.putInt(bucketAddr + BUCKET_KEY_OFFSET + KEY_X_OFFSET, x);
-                        PUnsafe.putInt(bucketAddr + BUCKET_KEY_OFFSET + KEY_Y_OFFSET, y);
-                        PUnsafe.putInt(bucketAddr + BUCKET_KEY_OFFSET + KEY_Z_OFFSET, z);
-                        return bucketAddr;
+                        keys[bucket * AXIS_COUNT + AXIS_X_OFFSET] = x;
+                        keys[bucket * AXIS_COUNT + AXIS_Y_OFFSET] = y;
+                        keys[bucket * AXIS_COUNT + AXIS_Z_OFFSET] = z;
+                        return bucket;
                     } else {
                         //we've established that there's no matching bucket, but the table is full. let's resize it before allocating a bucket
                         // to avoid overfilling the table
@@ -156,15 +142,15 @@ public class Int3HashSet implements NDimensionalIntSet {
                         return this.findBucket(x, y, z, createIfAbsent); //tail recursion will probably be optimized away
                     }
                 } else { //empty bucket, abort search - there won't be anything else later on
-                    return 0L;
+                    return -1;
                 }
             }
 
             //the bucket is set. check coordinates to see if it matches the one we're searching for
-            if (PUnsafe.getInt(bucketAddr + BUCKET_KEY_OFFSET + KEY_X_OFFSET) == x
-                && PUnsafe.getInt(bucketAddr + BUCKET_KEY_OFFSET + KEY_Y_OFFSET) == y
-                && PUnsafe.getInt(bucketAddr + BUCKET_KEY_OFFSET + KEY_Z_OFFSET) == z) { //we found the matching bucket!
-                return bucketAddr;
+            if (keys[bucket * AXIS_COUNT + AXIS_X_OFFSET] == x
+                && keys[bucket * AXIS_COUNT + AXIS_Y_OFFSET] == y
+                && keys[bucket * AXIS_COUNT + AXIS_Z_OFFSET] == z) { //we found the matching bucket!
+                return bucket;
             }
 
             //continue search...
@@ -172,48 +158,44 @@ public class Int3HashSet implements NDimensionalIntSet {
     }
 
     protected void resize() {
-        long oldTableSize = this.tableSize;
-        long oldTableAddr = this.tableAddr;
-        PCleaner oldCleaner = this.cleaner;
+        int oldTableSize = this.tableSize;
+        int[] oldKeys = this.keys;
+        long[] oldValues = this.values;
 
         //allocate new table
-        long newTableSize = oldTableSize << 1L;
+        int newTableSize = multiplyExact(oldTableSize, 2);
         this.setTableSize(newTableSize);
-        long newTableAddr = this.tableAddr = allocateTable(newTableSize);
-        this.cleaner = PCleaner.cleaner(this, newTableAddr);
-        long newMask = newTableSize - 1L;
+        int[] newKeys = this.keys = new int[multiplyExact(newTableSize, AXIS_COUNT)];
+        long[] newValues = this.values = new long[newTableSize];
+        int newMask = newTableSize - 1;
 
         //iterate through every bucket in the old table and copy it to the new one
-        for (long i = 0; i < oldTableSize; i++) {
-            long oldBucketAddr = oldTableAddr + i * BUCKET_BYTES;
+        for (int oldBucket = 0; oldBucket < oldTableSize; oldBucket++) {
 
             //read the bucket into registers
-            int x = PUnsafe.getInt(oldBucketAddr + BUCKET_KEY_OFFSET + KEY_X_OFFSET);
-            int y = PUnsafe.getInt(oldBucketAddr + BUCKET_KEY_OFFSET + KEY_Y_OFFSET);
-            int z = PUnsafe.getInt(oldBucketAddr + BUCKET_KEY_OFFSET + KEY_Z_OFFSET);
-            long value = PUnsafe.getLong(oldBucketAddr + BUCKET_VALUE_OFFSET);
+            int x = oldKeys[oldBucket * AXIS_COUNT + AXIS_X_OFFSET];
+            int y = oldKeys[oldBucket * AXIS_COUNT + AXIS_Y_OFFSET];
+            int z = oldKeys[oldBucket * AXIS_COUNT + AXIS_Z_OFFSET];
+            long value = oldValues[oldBucket];
             if (value == 0L) { //the bucket is unset, so there's no reason to copy it
                 continue;
             }
 
-            for (long hash = hashPosition(x, y, z), j = 0L; ; j++) {
-                long newBucketAddr = newTableAddr + ((hash + j) & newMask) * BUCKET_BYTES;
+            for (int hash = hashPosition(x, y, z), j = 0; ; j++) {
+                int newBucket = (hash + j) & newMask;
 
-                if (PUnsafe.getLong(newBucketAddr + BUCKET_VALUE_OFFSET) == 0L) { //if the bucket value is 0, it means the bucket hasn't been assigned yet
+                if (newValues[newBucket] == 0L) { //if the bucket value is 0, it means the bucket hasn't been assigned yet
                     //write bucket into new table
-                    PUnsafe.putInt(newBucketAddr + BUCKET_KEY_OFFSET + KEY_X_OFFSET, x);
-                    PUnsafe.putInt(newBucketAddr + BUCKET_KEY_OFFSET + KEY_Y_OFFSET, y);
-                    PUnsafe.putInt(newBucketAddr + BUCKET_KEY_OFFSET + KEY_Z_OFFSET, z);
-                    PUnsafe.putLong(newBucketAddr + BUCKET_VALUE_OFFSET, value);
+                    newKeys[newBucket * AXIS_COUNT + AXIS_X_OFFSET] = x;
+                    newKeys[newBucket * AXIS_COUNT + AXIS_Y_OFFSET] = y;
+                    newKeys[newBucket * AXIS_COUNT + AXIS_Z_OFFSET] = z;
+                    newValues[newBucket] = value;
                     break; //advance to next bucket in old table
                 }
 
                 //continue search...
             }
         }
-
-        //delete old table
-        oldCleaner.clean();
     }
 
     @Override
@@ -223,18 +205,19 @@ public class Int3HashSet implements NDimensionalIntSet {
 
     @Override
     public void forEach3D(@NonNull IntIntIntConsumer action) {
-        long tableAddr = this.tableAddr;
-        if (tableAddr == 0L) { //the table isn't even allocated yet, there's nothing to iterate through...
+        int[] keys = this.keys;
+        long[] values = this.values;
+
+        if (keys == null) { //the table isn't even allocated yet, there's nothing to iterate through...
             return;
         }
 
-        //haha yes, c-style iterators
-        for (long bucket = tableAddr, end = tableAddr + this.tableSize * BUCKET_BYTES; bucket != end; bucket += BUCKET_BYTES) {
+        for (int bucket = 0; bucket < values.length; bucket++) {
             //read the bucket into registers
-            int bucketX = PUnsafe.getInt(bucket + BUCKET_KEY_OFFSET + KEY_X_OFFSET);
-            int bucketY = PUnsafe.getInt(bucket + BUCKET_KEY_OFFSET + KEY_Y_OFFSET);
-            int bucketZ = PUnsafe.getInt(bucket + BUCKET_KEY_OFFSET + KEY_Z_OFFSET);
-            long value = PUnsafe.getLong(bucket + BUCKET_VALUE_OFFSET);
+            int bucketX = keys[bucket * AXIS_COUNT + AXIS_X_OFFSET];
+            int bucketY = keys[bucket * AXIS_COUNT + AXIS_Y_OFFSET];
+            int bucketZ = keys[bucket * AXIS_COUNT + AXIS_Z_OFFSET];
+            long value = values[bucket];
 
             while (value != 0L) {
                 //this is intrinsic and compiles into TZCNT, which has a latency of 3 cycles - much faster than iterating through all 64 bits
@@ -254,27 +237,29 @@ public class Int3HashSet implements NDimensionalIntSet {
 
     @Override
     public boolean remove(int x, int y, int z) {
-        long tableAddr = this.tableAddr;
-        if (tableAddr == 0L) { //the table isn't even allocated yet, there's nothing to remove...
+        int[] keys = this.keys;
+        long[] values = this.values;
+
+        if (keys == null) { //the table isn't even allocated yet, there's nothing to remove...
             return false;
         }
 
-        long mask = this.tableSize - 1L; //tableSize is always a power of two, so we can safely create a bitmask like this
+        int mask = this.tableSize - 1; //tableSize is always a power of two, so we can safely create a bitmask like this
 
         long flag = positionFlag(x, y, z);
         int searchBucketX = x >> BUCKET_AXIS_BITS;
         int searchBucketY = y >> BUCKET_AXIS_BITS;
         int searchBucketZ = z >> BUCKET_AXIS_BITS;
-        long hash = hashPosition(searchBucketX, searchBucketY, searchBucketZ);
+        int hash = hashPosition(searchBucketX, searchBucketY, searchBucketZ);
 
-        for (long i = 0L; ; i++) {
-            long bucketAddr = tableAddr + ((hash + i) & mask) * BUCKET_BYTES;
+        for (int i = 0; ; i++) {
+            int bucket = (hash + i) & mask;
 
             //read the bucket into registers
-            int bucketX = PUnsafe.getInt(bucketAddr + BUCKET_KEY_OFFSET + KEY_X_OFFSET);
-            int bucketY = PUnsafe.getInt(bucketAddr + BUCKET_KEY_OFFSET + KEY_Y_OFFSET);
-            int bucketZ = PUnsafe.getInt(bucketAddr + BUCKET_KEY_OFFSET + KEY_Z_OFFSET);
-            long value = PUnsafe.getLong(bucketAddr + BUCKET_VALUE_OFFSET);
+            int bucketX = keys[bucket * AXIS_COUNT + AXIS_X_OFFSET];
+            int bucketY = keys[bucket * AXIS_COUNT + AXIS_Y_OFFSET];
+            int bucketZ = keys[bucket * AXIS_COUNT + AXIS_Z_OFFSET];
+            long value = values[bucket];
             if (value == 0L) { //the bucket is unset. we've reached the end of the bucket chain for this hash, which means
                 return false;
             } else if (bucketX != searchBucketX || bucketY != searchBucketY || bucketZ != searchBucketZ) { //the bucket doesn't match, so the search must go on
@@ -290,9 +275,9 @@ public class Int3HashSet implements NDimensionalIntSet {
                 this.usedBuckets--;
 
                 //shifting the buckets IS expensive, yes, but it'll only happen when the entire bucket is deleted, which won't happen on every removal
-                this.shiftBuckets(tableAddr, (hash + i) & mask, mask);
+                this.shiftBuckets(keys, values, (hash + i) & mask, mask);
             } else { //update bucket value with this position removed
-                PUnsafe.putLong(bucketAddr + BUCKET_VALUE_OFFSET, value & ~flag);
+                values[bucket] = value & ~flag;
             }
 
             return true;
@@ -300,9 +285,9 @@ public class Int3HashSet implements NDimensionalIntSet {
     }
 
     //adapted from it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap#shiftKeys(int)
-    protected void shiftBuckets(long tableAddr, long pos, long mask) {
-        long last;
-        long slot;
+    protected void shiftBuckets(int[] keys, long[] values, int pos, int mask) {
+        int last;
+        int slot;
 
         int currX;
         int currY;
@@ -310,25 +295,23 @@ public class Int3HashSet implements NDimensionalIntSet {
         long currValue;
 
         for (; ; ) {
-            pos = ((last = pos) + 1L) & mask;
-            for (; ; pos = (pos + 1L) & mask) {
-                long currAddr = tableAddr + pos * BUCKET_BYTES;
-                if ((currValue = PUnsafe.getLong(currAddr + BUCKET_VALUE_OFFSET)) == 0L) { //curr points to an unset bucket
-                    PUnsafe.setMemory(tableAddr + last * BUCKET_BYTES, BUCKET_BYTES, (byte) 0); //delete last bucket
+            pos = ((last = pos) + 1) & mask;
+            for (; ; pos = (pos + 1) & mask) {
+                if ((currValue = values[pos]) == 0L) { //curr points to an unset bucket
+                    values[last] = 0L; //delete last bucket
                     return;
                 }
 
                 slot = hashPosition(
-                        currX = PUnsafe.getInt(currAddr + BUCKET_KEY_OFFSET + KEY_X_OFFSET),
-                        currY = PUnsafe.getInt(currAddr + BUCKET_KEY_OFFSET + KEY_Y_OFFSET),
-                        currZ = PUnsafe.getInt(currAddr + BUCKET_KEY_OFFSET + KEY_Z_OFFSET)) & mask;
+                        currX = keys[pos * AXIS_COUNT + AXIS_X_OFFSET],
+                        currY = keys[pos * AXIS_COUNT + AXIS_Y_OFFSET],
+                        currZ = keys[pos * AXIS_COUNT + AXIS_Z_OFFSET]) & mask;
 
                 if (last <= pos ? last >= slot || slot > pos : last >= slot && slot > pos) {
-                    long lastAddr = tableAddr + last * BUCKET_BYTES;
-                    PlatformDependent.putInt(lastAddr + BUCKET_KEY_OFFSET + KEY_X_OFFSET, currX);
-                    PlatformDependent.putInt(lastAddr + BUCKET_KEY_OFFSET + KEY_Y_OFFSET, currY);
-                    PlatformDependent.putInt(lastAddr + BUCKET_KEY_OFFSET + KEY_Z_OFFSET, currZ);
-                    PlatformDependent.putLong(lastAddr + BUCKET_VALUE_OFFSET, currValue);
+                    keys[last * AXIS_COUNT + AXIS_X_OFFSET] = currX;
+                    keys[last * AXIS_COUNT + AXIS_Y_OFFSET] = currY;
+                    keys[last * AXIS_COUNT + AXIS_Z_OFFSET] = currZ;
+                    values[last] = currValue;
                     break;
                 }
             }
@@ -343,16 +326,16 @@ public class Int3HashSet implements NDimensionalIntSet {
 
         //fill the entire table with zeroes
         // (since the table isn't empty, we can be sure that the table has been allocated so there's no reason to check for it)
-        PUnsafe.setMemory(this.tableAddr, this.tableSize * BUCKET_BYTES, (byte) 0);
+        Arrays.fill(this.values, 0L);
 
         //reset all size counters
-        this.usedBuckets = 0L;
+        this.usedBuckets = 0;
         this.size = 0;
     }
 
-    protected void setTableSize(long tableSize) {
+    protected void setTableSize(int tableSize) {
         this.tableSize = tableSize;
-        this.resizeThreshold = (tableSize >> 1L) + (tableSize >> 2L); //count * 0.75
+        this.resizeThreshold = (tableSize >> 1) + (tableSize >> 2); //count * 0.75
     }
 
     //
