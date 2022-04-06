@@ -24,23 +24,24 @@ import lombok.NonNull;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.util.datastructure.Datastructures;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSet;
-import net.daporkchop.fp2.core.util.datastructure.SimpleSet;
+import net.daporkchop.fp2.core.util.datastructure.simple.SimpleSet;
 
 import java.util.Collection;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 /**
- * Base class for implementations of {@link SimpleSet} optimized specifically for a specific {@link IFarPos} type.
+ * Base class for implementations of {@link Set} optimized specifically for a specific {@link IFarPos} type.
  * <p>
  * Not thread-safe.
  *
  * @author DaPorkchop_
  */
-public abstract class AbstractPosSet<POS extends IFarPos> implements SimpleSet<POS> {
+public abstract class AbstractPosHashSet<POS extends IFarPos> extends SimpleSet<POS> {
     protected final NDimensionalIntSet[] delegates;
 
-    public AbstractPosSet(int dimensions, int maxLevels) {
+    public AbstractPosHashSet(int dimensions, int maxLevels) {
         NDimensionalIntSet.Builder builder = Datastructures.INSTANCE.nDimensionalIntSet()
                 .dimensions(dimensions).threadSafe(false);
 
@@ -81,7 +82,7 @@ public abstract class AbstractPosSet<POS extends IFarPos> implements SimpleSet<P
     public boolean containsAll(@NonNull Collection<?> c) {
         if (this.getClass() == c.getClass()) { //the other set is of the same type
             NDimensionalIntSet[] thisDelegates = this.delegates;
-            NDimensionalIntSet[] otherDelegates = ((AbstractPosSet) c).delegates;
+            NDimensionalIntSet[] otherDelegates = ((AbstractPosHashSet) c).delegates;
 
             for (int level = 0; level < thisDelegates.length; level++) {
                 if (!thisDelegates[level].containsAll(otherDelegates[level])) {
@@ -90,7 +91,7 @@ public abstract class AbstractPosSet<POS extends IFarPos> implements SimpleSet<P
             }
             return true;
         } else {
-            return SimpleSet.super.containsAll(c);
+            return super.containsAll(c);
         }
     }
 
@@ -98,7 +99,7 @@ public abstract class AbstractPosSet<POS extends IFarPos> implements SimpleSet<P
     public boolean addAll(@NonNull Collection<? extends POS> c) {
         if (this.getClass() == c.getClass()) { //the other set is of the same type
             NDimensionalIntSet[] thisDelegates = this.delegates;
-            NDimensionalIntSet[] otherDelegates = ((AbstractPosSet) c).delegates;
+            NDimensionalIntSet[] otherDelegates = ((AbstractPosHashSet) c).delegates;
 
             boolean modified = false;
             for (int level = 0; level < thisDelegates.length; level++) {
@@ -108,7 +109,7 @@ public abstract class AbstractPosSet<POS extends IFarPos> implements SimpleSet<P
             }
             return modified;
         } else {
-            return SimpleSet.super.addAll(c);
+            return super.addAll(c);
         }
     }
 
@@ -116,7 +117,7 @@ public abstract class AbstractPosSet<POS extends IFarPos> implements SimpleSet<P
     public boolean removeAll(@NonNull Collection<?> c) {
         if (this.getClass() == c.getClass()) { //the other set is of the same type
             NDimensionalIntSet[] thisDelegates = this.delegates;
-            NDimensionalIntSet[] otherDelegates = ((AbstractPosSet) c).delegates;
+            NDimensionalIntSet[] otherDelegates = ((AbstractPosHashSet) c).delegates;
 
             boolean modified = false;
             for (int level = 0; level < thisDelegates.length; level++) {
@@ -126,7 +127,7 @@ public abstract class AbstractPosSet<POS extends IFarPos> implements SimpleSet<P
             }
             return modified;
         } else {
-            return SimpleSet.super.removeAll(c);
+            return super.removeAll(c);
         }
     }
 }

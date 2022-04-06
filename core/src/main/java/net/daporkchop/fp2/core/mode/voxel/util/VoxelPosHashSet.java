@@ -18,40 +18,40 @@
  *
  */
 
-package net.daporkchop.fp2.core.mode.heightmap.util;
+package net.daporkchop.fp2.core.mode.voxel.util;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.core.mode.common.util.AbstractPosSet;
-import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
+import net.daporkchop.fp2.core.mode.common.util.AbstractPosHashSet;
+import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSet;
-import net.daporkchop.fp2.core.util.datastructure.SimpleSet;
 
+import java.util.Set;
 import java.util.function.Consumer;
 
-import static net.daporkchop.fp2.core.mode.heightmap.HeightmapConstants.*;
+import static net.daporkchop.fp2.core.mode.voxel.VoxelConstants.*;
 
 /**
- * Implementation of {@link SimpleSet} optimized specifically for {@link HeightmapPos}.
+ * Implementation of {@link Set} optimized specifically for {@link VoxelPos}.
  * <p>
  * Not thread-safe.
  *
  * @author DaPorkchop_
  */
-public class HeightmapPosSet extends AbstractPosSet<HeightmapPos> {
-    public HeightmapPosSet() {
-        super(2, HMAX_LODS);
+public class VoxelPosHashSet extends AbstractPosHashSet<VoxelPos> {
+    public VoxelPosHashSet() {
+        super(3, VMAX_LODS);
     }
 
     @Override
-    public boolean add(HeightmapPos pos) {
-        return this.delegates[pos.level()].add(pos.x(), pos.z());
+    public boolean add(VoxelPos pos) {
+        return this.delegates[pos.level()].add(pos.x(), pos.y(), pos.z());
     }
 
     @Override
     public boolean remove(Object value) {
-        if (value instanceof HeightmapPos) {
-            HeightmapPos pos = (HeightmapPos) value;
-            return this.delegates[pos.level()].remove(pos.x(), pos.z());
+        if (value instanceof VoxelPos) {
+            VoxelPos pos = (VoxelPos) value;
+            return this.delegates[pos.level()].remove(pos.x(), pos.y(), pos.z());
         } else {
             return false;
         }
@@ -59,21 +59,21 @@ public class HeightmapPosSet extends AbstractPosSet<HeightmapPos> {
 
     @Override
     public boolean contains(Object value) {
-        if (value instanceof HeightmapPos) {
-            HeightmapPos pos = (HeightmapPos) value;
-            return this.delegates[pos.level()].contains(pos.x(), pos.z());
+        if (value instanceof VoxelPos) {
+            VoxelPos pos = (VoxelPos) value;
+            return this.delegates[pos.level()].contains(pos.x(), pos.y(), pos.z());
         } else {
             return false;
         }
     }
 
     @Override
-    public void forEach(@NonNull Consumer<? super HeightmapPos> callback) {
+    public void forEach(@NonNull Consumer<? super VoxelPos> callback) {
         NDimensionalIntSet[] delegates = this.delegates;
 
         for (int level = 0; level < delegates.length; level++) {
             int levelButFinal = level; //damn you java
-            delegates[level].forEach2D((x, y) -> callback.accept(new HeightmapPos(levelButFinal, x, y)));
+            delegates[level].forEach3D((x, y, z) -> callback.accept(new VoxelPos(levelButFinal, x, y, z)));
         }
     }
 }

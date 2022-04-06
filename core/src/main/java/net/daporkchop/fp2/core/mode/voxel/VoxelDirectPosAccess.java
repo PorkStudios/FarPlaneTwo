@@ -25,10 +25,12 @@ import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.mode.api.IFarDirectPosAccess;
-import net.daporkchop.fp2.core.mode.voxel.util.VoxelPosSet;
+import net.daporkchop.fp2.core.mode.voxel.util.VoxelPosArrayList;
+import net.daporkchop.fp2.core.mode.voxel.util.VoxelPosHashSet;
 import net.daporkchop.fp2.core.util.math.geometry.Volume;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
+import java.util.List;
 import java.util.Set;
 
 import static net.daporkchop.fp2.common.util.TypeSize.*;
@@ -188,6 +190,11 @@ public class VoxelDirectPosAccess implements IFarDirectPosAccess<VoxelPos> {
 
     @Override
     public Set<VoxelPos> newPositionSet() {
-        return new VoxelPosSet();
+        return new VoxelPosHashSet();
+    }
+
+    @Override
+    public List<VoxelPos> newPositionList() {
+        return new VoxelPosArrayList();
     }
 }

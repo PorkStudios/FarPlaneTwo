@@ -18,17 +18,13 @@
  *
  */
 
-package net.daporkchop.fp2.core.util.datastructure;
+package net.daporkchop.fp2.core.util.datastructure.simple;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.util.BreakOutOfLambdaException;
 
 import java.lang.reflect.Array;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
 import java.util.function.Consumer;
 
 import static java.lang.Math.*;
@@ -36,28 +32,28 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
- * Base code for a simple {@link Set} implementation.
+ * Base code for a simple {@link Collection} implementation.
  *
  * @author DaPorkchop_
  */
-public interface SimpleSet<E> extends Set<E> {
+public abstract class SimpleCollection<E> implements Collection<E> {
     /**
      * Empty method to force subclasses to implement this.
      * <p>
      * {@inheritDoc}
      */
     @Override
-    void forEach(@NonNull Consumer<? super E> callback);
+    public abstract void forEach(@NonNull Consumer<? super E> callback);
 
     @Override
-    default boolean isEmpty() {
+    public boolean isEmpty() {
         return this.size() == 0;
     }
 
     @Override
-    default Object[] toArray() {
+    public Object[] toArray() {
         class State implements Consumer<E> {
-            final Object[] array = new Object[SimpleSet.this.size()];
+            final Object[] array = new Object[SimpleCollection.this.size()];
             int i = 0;
 
             @Override
@@ -74,13 +70,13 @@ public interface SimpleSet<E> extends Set<E> {
     }
 
     @Override
-    default <T> T[] toArray(@NonNull T[] a) {
+    public <T> T[] toArray(@NonNull T[] a) {
         class State implements Consumer<E> {
             final T[] array;
             int i = 0;
 
             State(T[] a) {
-                int size = SimpleSet.this.size();
+                int size = SimpleCollection.this.size();
                 if (a.length < size) {
                     a = uncheckedCast(Array.newInstance(a.getClass().getComponentType(), size));
                 } else if (a.length > size) {
@@ -103,7 +99,7 @@ public interface SimpleSet<E> extends Set<E> {
     }
 
     @Override
-    default boolean containsAll(@NonNull Collection<?> c) {
+    public boolean containsAll(@NonNull Collection<?> c) {
         try {
             //check every point
             c.forEach(point -> {
@@ -121,14 +117,14 @@ public interface SimpleSet<E> extends Set<E> {
     }
 
     @Override
-    default boolean addAll(@NonNull Collection<? extends E> c) {//local class contains the return value without having to allocate a second object to get the return value
+    public boolean addAll(@NonNull Collection<? extends E> c) {//local class contains the return value without having to allocate a second object to get the return value
         class State implements Consumer<E> {
             boolean modified = false;
 
             @Override
             public void accept(E value) {
                 //try to add each value and update the "modified" flag if successful
-                if (SimpleSet.this.add(value)) {
+                if (SimpleCollection.this.add(value)) {
                     this.modified = true;
                 }
             }
@@ -140,12 +136,12 @@ public interface SimpleSet<E> extends Set<E> {
     }
 
     @Override
-    default boolean retainAll(@NonNull Collection<?> c) {
+    public boolean retainAll(@NonNull Collection<?> c) {
         throw new UnsupportedOperationException(); //TODO: implementing this would require buffering all the values...
     }
 
     @Override
-    default boolean removeAll(@NonNull Collection<?> c) {
+    public boolean removeAll(@NonNull Collection<?> c) {
         //local class contains the return value without having to allocate a second object to get the return value
         class State implements Consumer<Object> {
             boolean modified = false;
@@ -153,7 +149,7 @@ public interface SimpleSet<E> extends Set<E> {
             @Override
             public void accept(Object value) {
                 //try to remove each value and update the "modified" flag if successful
-                if (SimpleSet.this.remove(value)) {
+                if (SimpleCollection.this.remove(value)) {
                     this.modified = true;
                 }
             }
@@ -165,13 +161,19 @@ public interface SimpleSet<E> extends Set<E> {
     }
 
     @Override
-    @Deprecated
-    default Iterator<E> iterator() {
-        //buffer the whole thing into a list in order to get it as an iterator
-        List<E> list = new ArrayList<>(this.size());
+    public String toString() {
+        if (this.isEmpty()) {
+            return "[]";
+        }
 
-        //noinspection UseBulkOperation: doing that will likely cause it to use an iterator, resulting in infinite recursion
-        this.forEach(list::add);
-        return list.iterator();
+        StringBuilder builder = new StringBuilder("[");
+        this.forEach(value -> builder.append(value == this ? "(this Collection)" : value).append(',').append(' '));
+
+        int length = builder.length();
+        if (length > 1) { //something has been added, need to fix up the tail
+            builder.setCharAt(length - 2, ']');
+            builder.setLength(length - 1);
+        }
+        return builder.toString();
     }
 }

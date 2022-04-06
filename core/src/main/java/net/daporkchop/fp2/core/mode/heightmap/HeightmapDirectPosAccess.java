@@ -25,10 +25,12 @@ import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.mode.api.IFarDirectPosAccess;
-import net.daporkchop.fp2.core.mode.heightmap.util.HeightmapPosSet;
+import net.daporkchop.fp2.core.mode.heightmap.util.HeightmapPosArrayList;
+import net.daporkchop.fp2.core.mode.heightmap.util.HeightmapPosHashSet;
 import net.daporkchop.fp2.core.util.math.geometry.Volume;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
+import java.util.List;
 import java.util.Set;
 
 import static net.daporkchop.fp2.common.util.TypeSize.*;
@@ -171,6 +173,11 @@ public class HeightmapDirectPosAccess implements IFarDirectPosAccess<HeightmapPo
 
     @Override
     public Set<HeightmapPos> newPositionSet() {
-        return new HeightmapPosSet();
+        return new HeightmapPosHashSet();
+    }
+
+    @Override
+    public List<HeightmapPos> newPositionList() {
+        return new HeightmapPosArrayList();
     }
 }

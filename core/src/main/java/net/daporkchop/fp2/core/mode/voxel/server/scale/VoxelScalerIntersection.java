@@ -29,6 +29,7 @@ import net.daporkchop.fp2.core.mode.common.server.gen.AbstractFarGenerator;
 import net.daporkchop.fp2.core.mode.voxel.VoxelData;
 import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.core.mode.voxel.VoxelTile;
+import net.daporkchop.fp2.core.mode.voxel.util.VoxelPosArrayList;
 import net.daporkchop.fp2.core.server.world.IFarWorldServer;
 import net.daporkchop.fp2.core.util.math.Vector3d;
 import net.daporkchop.fp2.core.util.math.qef.QefSolver;
@@ -108,15 +109,15 @@ public class VoxelScalerIntersection extends AbstractFarGenerator<VoxelPos, Voxe
 
         final int min = SRC_MIN >> VT_SHIFT;
         final int max = ((SRC_MAX - 1) >> VT_SHIFT) + 1;
-        VoxelPos[] positions = new VoxelPos[(max - min) * (max - min) * (max - min)];
-        for (int i = 0, dx = min; dx < max; dx++) {
+        List<VoxelPos> out = new VoxelPosArrayList((max - min) * (max - min) * (max - min));
+        for (int dx = min; dx < max; dx++) {
             for (int dy = min; dy < max; dy++) {
                 for (int dz = min; dz < max; dz++) {
-                    positions[i++] = new VoxelPos(level, x + dx, y + dy, z + dz);
+                    out.add(new VoxelPos(level, x + dx, y + dy, z + dz));
                 }
             }
         }
-        return ImmutableList.copyOf(positions);
+        return out;
     }
 
     @Override

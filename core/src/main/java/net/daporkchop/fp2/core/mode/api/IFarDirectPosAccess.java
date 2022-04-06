@@ -24,6 +24,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.util.math.geometry.Volume;
 
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -136,4 +137,9 @@ public interface IFarDirectPosAccess<POS extends IFarPos> {
      * @return a new {@link Set} which can store positions of type {@link POS}
      */
     Set<POS> newPositionSet();
+
+    /**
+     * @return a new {@link List} which can store positions of type {@link POS}
+     */
+    List<POS> newPositionList();
 }
