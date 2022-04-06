@@ -35,6 +35,12 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 public interface NDimensionalIntSegtreeSet extends NDimensionalIntSet {
+    /**
+     * @return a clone of this set
+     */
+    @Override
+    NDimensionalIntSegtreeSet clone();
+
     //
     // generic methods
     //

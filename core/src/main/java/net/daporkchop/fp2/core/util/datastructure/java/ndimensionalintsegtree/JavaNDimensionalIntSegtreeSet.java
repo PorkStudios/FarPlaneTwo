@@ -108,6 +108,13 @@ public class JavaNDimensionalIntSegtreeSet implements NDimensionalIntSegtreeSet 
                 .toArray(NDimensionalIntSet[]::new);
     }
 
+    protected JavaNDimensionalIntSegtreeSet(JavaNDimensionalIntSegtreeSet src) {
+        this.dimensions = src.dimensions;
+
+        //deep clone of delegates
+        this.delegates = Stream.of(src.delegates).map(NDimensionalIntSet::clone).toArray(NDimensionalIntSet[]::new);
+    }
+
     @Override
     public int size() {
         return this.delegates[0].size();
@@ -123,6 +130,11 @@ public class JavaNDimensionalIntSegtreeSet implements NDimensionalIntSegtreeSet 
         for (NDimensionalIntSet delegate : this.delegates) {
             delegate.clear();
         }
+    }
+
+    @Override
+    public JavaNDimensionalIntSegtreeSet clone() {
+        return new JavaNDimensionalIntSegtreeSet(this);
     }
 
     @Override

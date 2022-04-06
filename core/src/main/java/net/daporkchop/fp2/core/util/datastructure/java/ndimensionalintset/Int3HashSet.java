@@ -26,6 +26,7 @@ import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSet;
 import net.daporkchop.lib.primitive.lambda.IntIntIntConsumer;
 
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 import static java.lang.Math.*;
@@ -79,6 +80,24 @@ public class Int3HashSet implements NDimensionalIntSet {
         initialCapacity = (int) Math.ceil(initialCapacity * (1.0d / 0.75d)); //scale according to resize threshold
         initialCapacity = 1 << (Integer.SIZE - Integer.numberOfLeadingZeros(initialCapacity - 1)); //round up to next power of two
         this.setTableSize(Math.max(initialCapacity, DEFAULT_TABLE_SIZE));
+    }
+
+    protected Int3HashSet(Int3HashSet src) {
+        if (src.keys != null) { //the source set's table is allocated, clone it
+            this.keys = src.keys.clone();
+            this.values = src.values.clone();
+        }
+
+        //copy regular fields
+        this.tableSize = src.tableSize;
+        this.resizeThreshold = src.resizeThreshold;
+        this.usedBuckets = src.usedBuckets;
+        this.size = src.size;
+    }
+
+    @Override
+    public Int3HashSet clone() {
+        return new Int3HashSet(this);
     }
 
     @Override

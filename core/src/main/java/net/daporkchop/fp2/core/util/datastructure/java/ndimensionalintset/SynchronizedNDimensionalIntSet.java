@@ -60,6 +60,11 @@ public class SynchronizedNDimensionalIntSet implements NDimensionalIntSet {
     }
 
     @Override
+    public synchronized SynchronizedNDimensionalIntSet clone() {
+        return new SynchronizedNDimensionalIntSet(this.delegate.clone());
+    }
+
+    @Override
     public synchronized boolean add(@NonNull int... point) {
         return this.delegate.add(point);
     }

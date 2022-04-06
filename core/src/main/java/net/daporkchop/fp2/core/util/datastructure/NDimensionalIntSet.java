@@ -60,6 +60,11 @@ public interface NDimensionalIntSet extends IDatastructure<NDimensionalIntSet> {
      */
     void clear();
 
+    /**
+     * @return a clone of this set
+     */
+    NDimensionalIntSet clone();
+
     //
     // generic methods
     //

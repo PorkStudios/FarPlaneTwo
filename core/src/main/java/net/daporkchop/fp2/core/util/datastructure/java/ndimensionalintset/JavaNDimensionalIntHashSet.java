@@ -60,6 +60,17 @@ public class JavaNDimensionalIntHashSet extends ObjectOpenCustomHashSet<int[]> i
         this.dimensions = positive(dimensions, "dimensions");
     }
 
+    protected JavaNDimensionalIntHashSet(JavaNDimensionalIntHashSet src) {
+        super(src, STRATEGY);
+
+        this.dimensions = src.dimensions;
+    }
+
+    @Override
+    public JavaNDimensionalIntHashSet clone() {
+        return new JavaNDimensionalIntHashSet(this);
+    }
+
     @Override
     public boolean add(@NonNull int[] point) {
         checkArg(point.length == this.dimensions, this.dimensions);

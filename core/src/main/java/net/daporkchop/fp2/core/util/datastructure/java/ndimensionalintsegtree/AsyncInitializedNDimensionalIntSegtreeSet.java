@@ -92,6 +92,12 @@ public class AsyncInitializedNDimensionalIntSegtreeSet implements NDimensionalIn
     }
 
     @Override
+    public NDimensionalIntSegtreeSet clone() {
+        this.handleRead(); //block until future is complete
+        return this.delegate.clone(); //clone delegate, we don't need to wrap it in an AsyncInitializedNDimensionalIntSegtreeSet because we only serve as a proxy once initialization is complete
+    }
+
+    @Override
     public boolean add(@NonNull int... point) {
         this.handleWrite();
         return this.delegate.add(point);

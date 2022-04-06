@@ -65,6 +65,11 @@ public class SynchronizedNDimensionalIntSegtreeSet implements NDimensionalIntSeg
     }
 
     @Override
+    public synchronized SynchronizedNDimensionalIntSegtreeSet clone() {
+        return new SynchronizedNDimensionalIntSegtreeSet(this.delegate.clone());
+    }
+
+    @Override
     public synchronized boolean add(@NonNull int... point) {
         return this.delegate.add(point);
     }

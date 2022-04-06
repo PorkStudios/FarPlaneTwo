@@ -78,6 +78,24 @@ public class Int1HashSet implements NDimensionalIntSet {
         this.setTableSize(Math.max(initialCapacity, DEFAULT_TABLE_SIZE));
     }
 
+    protected Int1HashSet(Int1HashSet src) {
+        if (src.keys != null) { //the source set's table is allocated, clone it
+            this.keys = src.keys.clone();
+            this.values = src.values.clone();
+        }
+
+        //copy regular fields
+        this.tableSize = src.tableSize;
+        this.resizeThreshold = src.resizeThreshold;
+        this.usedBuckets = src.usedBuckets;
+        this.size = src.size;
+    }
+
+    @Override
+    public Int1HashSet clone() {
+        return new Int1HashSet(this);
+    }
+
     @Override
     public boolean add(int x) {
         long flag = positionFlag(x);
