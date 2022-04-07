@@ -30,13 +30,13 @@ import net.daporkchop.fp2.core.mode.voxel.VoxelData;
 import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.core.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.core.mode.voxel.server.gen.AbstractVoxelGenerator;
+import net.daporkchop.fp2.core.mode.voxel.util.VoxelPosHashSet;
 import net.daporkchop.fp2.core.server.world.IFarWorldServer;
 import net.daporkchop.fp2.core.util.GlobalAllocators;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.api.world.BlockWorldConstants.*;
@@ -53,7 +53,7 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
     }
 
     @Override
-    public Optional<List<VoxelPos>> batchGenerationGroup(@NonNull FBlockWorld world, @NonNull VoxelPos pos) {
+    public Optional<Set<VoxelPos>> batchGenerationGroup(@NonNull FBlockWorld world, @NonNull VoxelPos pos) {
         checkArg(pos.level() == 0, "can only exact generate at level 0, not %d!", pos.level());
 
         IntAxisAlignedBB initialBB = new IntAxisAlignedBB(
@@ -71,7 +71,7 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
 
         //TODO: figure out whether or not this is actually correct? i don't think this properly accounts for every possible edge case, rather it just happens to work for the current
         // values of CACHE_MIN/CACHE_MAX...
-        List<VoxelPos> out = new ArrayList<>();
+        Set<VoxelPos> out = new VoxelPosHashSet();
         for (int tileX = max(asrCeil(dataAvailableBB.minX() - CACHE_MIN, VT_SHIFT), min.x()); tileX < min(asrCeil(dataAvailableBB.maxX() - CACHE_MAX, VT_SHIFT), max.x()); tileX++) {
             for (int tileY = max(asrCeil(dataAvailableBB.minY() - CACHE_MIN, VT_SHIFT), min.y()); tileY < min(asrCeil(dataAvailableBB.maxY() - CACHE_MAX, VT_SHIFT), max.y()); tileY++) {
                 for (int tileZ = max(asrCeil(dataAvailableBB.minZ() - CACHE_MIN, VT_SHIFT), min.z()); tileZ < min(asrCeil(dataAvailableBB.maxZ() - CACHE_MAX, VT_SHIFT), max.z()); tileZ++) {

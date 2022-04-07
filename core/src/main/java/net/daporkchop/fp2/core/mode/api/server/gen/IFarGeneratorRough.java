@@ -41,41 +41,38 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 public interface IFarGeneratorRough<POS extends IFarPos, T extends IFarTile> extends IFarGenerator<POS, T> {
     /**
-     * Gets an {@link Optional} {@link Iterable} of all the tile positions which may be generated at the same time as the tile at the given position to potentially achieve better performance.
+     * Gets an {@link Optional} {@link Collection} containing all the tile positions which may be generated at the same time as the tile at the given position to potentially achieve better performance.
      * <p>
      * If an empty {@link Optional} is returned, no batching will be done and the tile will be generated individually.
      *
      * @param pos the position of the tile to generate
-     * @return an {@link Optional} {@link Iterable} of all the tile positions which may be generated at the same time
+     * @return an {@link Optional} {@link Collection} containing all the tile positions which may be generated at the same time
      */
-    default Optional<? extends Iterable<POS>> batchGenerationGroup(@NonNull POS pos) {
+    default Optional<? extends Collection<POS>> batchGenerationGroup(@NonNull POS pos) {
         return Optional.empty(); //don't do batch generation by default
     }
 
     /**
-     * Gets an {@link Optional} {@link Iterable} of all the tile positions which may be generated at the same time as the tiles at the given positions to potentially achieve better performance.
+     * Gets an {@link Optional} {@link Collection} containing all the tile positions which may be generated at the same time as the tiles at the given positions to potentially achieve better performance.
      * <p>
      * If an empty {@link Optional} is returned, no additional batching will be done.
      *
      * @param positions the position of the tile to generate
-     * @return an {@link Optional} {@link Iterable} of all the tile positions which may be generated at the same time
+     * @return an {@link Optional} {@link Collection} containing all the tile positions which may be generated at the same time
      */
-    default Optional<? extends Iterable<POS>> batchGenerationGroup(@NonNull Collection<POS> positions) {
+    default Optional<? extends Collection<POS>> batchGenerationGroup(@NonNull Collection<POS> positions) {
         Set<POS> set = null;
         for (POS pos : positions) {
-            Optional<? extends Iterable<POS>> optionalBatchGroup = this.batchGenerationGroup(pos);
+            Optional<? extends Collection<POS>> optionalBatchGroup = this.batchGenerationGroup(pos);
             if (optionalBatchGroup.isPresent()) {
                 if (set == null) { //create set if it doesn't exist
-                    set = this.provider().mode().directPosAccess().newPositionSet();
+                    //clone the input collection to ensure that all of the original input positions will be included
+                    set = this.provider().mode().directPosAccess().clonePositionsAsSet(positions);
                 }
 
                 //add all positions to set
-                optionalBatchGroup.get().forEach(set::add);
+                set.addAll(optionalBatchGroup.get());
             }
-        }
-
-        if (set != null) { //the set was created, ensure that all of the original input positions are included
-            set.addAll(positions);
         }
 
         return Optional.ofNullable(set);
