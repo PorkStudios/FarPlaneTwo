@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -31,6 +31,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -50,6 +52,7 @@ public class BlockingSupport {
      * @param future the {@link CompletableFuture}
      * @return the {@link CompletableFuture}'s return value
      * @throws IllegalStateException if the current thread does not belong to a {@link WorkerGroup} which is a child of this {@link WorkerManager}
+     * @throws InterruptedException  if the thread was unblocked using {@link #externalManagedUnblock} while waiting
      */
     @SneakyThrows(InterruptedException.class)
     public static <V> V managedBlock(@NonNull CompletableFuture<V> future) {
@@ -57,9 +60,6 @@ public class BlockingSupport {
 
         try {
             return future.get();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw e;
         } catch (ExecutionException e) {
             throw new CompletionException(e.getCause());
         } finally {
@@ -76,7 +76,37 @@ public class BlockingSupport {
     }
 
     /**
-     * Interrupts a thread which was is currently blocked by {@link #managedBlock(CompletableFuture)}.
+     * Calls {@link Semaphore#tryAcquire(int, long, TimeUnit)}.
+     *
+     * @param semaphore the {@link Semaphore} to acquire permits from
+     * @param permits   the number of permits to acquire
+     * @param timeout   the maximum length of time to wait before giving up
+     * @param unit      the unit of time used by {@code time}
+     * @return {@code true} if the permits could be acquired, or {@code false} if the timeout was reached
+     * @throws IllegalStateException if the current thread does not belong to a {@link WorkerGroup} which is a child of this {@link WorkerManager}
+     * @throws InterruptedException  if the thread was unblocked using {@link #externalManagedUnblock} while waiting
+     */
+    @SneakyThrows(InterruptedException.class)
+    public static boolean managedTryAcquire(@NonNull Semaphore semaphore, int permits, long timeout, @NonNull TimeUnit unit) {
+        checkState(BLOCKED_THREADS.add(Thread.currentThread()), "recursively blocking task?!?");
+
+        try {
+            return semaphore.tryAcquire(permits, timeout, unit);
+        } finally {
+            if (BLOCKED_THREADS.remove(Thread.currentThread())) { //we were blocking, but we should still double-check to see if we've been interrupted
+                if (Thread.interrupted()) {
+                    throw new InterruptedException();
+                }
+            } else { //the thread has been unblocked by something else - wait for the interrupt to arrive
+                LockSupport.park();
+
+                throw new InterruptedException();
+            }
+        }
+    }
+
+    /**
+     * Interrupts a thread which was is currently blocked by {@link #managedBlock}.
      *
      * @param thread the thread
      */

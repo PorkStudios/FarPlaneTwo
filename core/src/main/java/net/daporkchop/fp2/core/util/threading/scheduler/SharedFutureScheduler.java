@@ -22,7 +22,6 @@ package net.daporkchop.fp2.core.util.threading.scheduler;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import net.daporkchop.fp2.core.util.threading.BlockingSupport;
 import net.daporkchop.fp2.core.util.threading.workergroup.WorkerGroup;
 import net.daporkchop.fp2.core.util.threading.workergroup.WorkerGroupBuilder;
@@ -33,7 +32,6 @@ import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
@@ -405,11 +403,14 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
         this.executeTask(task);
     }
 
-    @SneakyThrows(InterruptedException.class)
     protected Task pollSingleTask() {
-        //poll the queue, but don't wait indefinitely because we need to be able to exit if the executor stops running.
-        // we don't want to use interrupts because they can cause unwanted side-effects (such as closing NIO channels).
-        return this.queue.poll(1L, TimeUnit.SECONDS);
+        try {
+            //poll the queue, but don't wait indefinitely because we need to be able to exit if the executor stops running.
+            // we don't want to use interrupts because they can cause unwanted side-effects (such as closing NIO channels).
+            return this.queue.poll(1L, TimeUnit.SECONDS);
+        } catch (InterruptedException e) { //the thread should only be interrupted by BlockingSupport, which should only be used when shutting down
+            throw new SchedulerClosedError(e);
+        }
     }
 
     protected void executeTask(@NonNull Task initialTask) {
@@ -497,6 +498,13 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
                 //task was completed normally, set the future's result value
                 task.complete(value);
             }
+
+            if (false) { //trick javac into letting me catch InterruptedException
+                throw new InterruptedException();
+            }
+        } catch (InterruptedException e) { //the thread should only be interrupted by BlockingSupport, which should only be used when shutting down the scheduler
+            allTasks.forEach(Task::cancel0);
+            throw new SchedulerClosedError(e);
         } catch (SchedulerClosedError e) { //catch and rethrow this separately to prevent it from being used to complete the future
             allTasks.forEach(Task::cancel0); //cancel the futures to make sure they are all completed
             throw e;
@@ -630,6 +638,13 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
      * @author DaPorkchop_
      */
     protected static class SchedulerClosedError extends Error {
+        public SchedulerClosedError() {
+            super();
+        }
+
+        public SchedulerClosedError(Throwable cause) {
+            super(cause);
+        }
     }
 
     /**

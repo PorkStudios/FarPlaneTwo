@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.core.util.datastructure;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.core.util.threading.BlockingSupport;
 
 import java.util.AbstractQueue;
 import java.util.Collection;
@@ -101,7 +102,7 @@ public class ConcurrentUnboundedPriorityBlockingQueue<E> extends AbstractQueue<E
 
     @Override
     public E poll(long timeout, TimeUnit unit) throws InterruptedException {
-        return this.lock.tryAcquire(timeout, unit) ? requireNonNull(this.map.pollFirstEntry().getKey()) : null;
+        return BlockingSupport.managedTryAcquire(this.lock, 1, timeout, unit) ? requireNonNull(this.map.pollFirstEntry().getKey()) : null;
     }
 
     @Override
