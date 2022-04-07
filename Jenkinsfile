@@ -85,7 +85,7 @@ pipeline {
                 sh "./gradlew test"
             }
             post {
-                success {
+                always {
                     junit "**/build/test-results/**/*.xml"
                 }
             }
