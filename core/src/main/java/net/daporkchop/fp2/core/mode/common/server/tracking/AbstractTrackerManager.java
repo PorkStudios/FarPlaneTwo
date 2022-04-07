@@ -262,7 +262,7 @@ public abstract class AbstractTrackerManager<POS extends IFarPos, T extends IFar
      *
      * @author DaPorkchop_
      */
-    @ToString
+    @ToString(callSuper = true)
     protected class Entry extends CompactReferenceArraySet<AbstractTracker<POS, T, ?>> implements Consumer<ITileHandle<POS, T>>, Function<ITileHandle<POS, T>, Void> {
         //we're using an ArraySet because even though all the operations run in O(n) time, it shouldn't ever be an issue - this should still be plenty fast even if there are
         //  hundreds of players tracking the same tile, and it uses a fair amount less memory than an equivalent HashSet.

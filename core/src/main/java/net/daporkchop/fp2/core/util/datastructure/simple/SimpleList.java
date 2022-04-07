@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.core.util.datastructure.simple;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -126,7 +127,17 @@ public abstract class SimpleList<E> extends SimpleCollection<E> implements List<
             return false;
         }
 
-        c.forEach(this.listIterator(index)::add);
+        @AllArgsConstructor
+        class State implements Consumer<E> {
+            int index;
+
+            @Override
+            public void accept(E e) {
+                SimpleList.this.add(this.index++, e);
+            }
+        }
+
+        c.forEach(new State(index));
         return true;
     }
 

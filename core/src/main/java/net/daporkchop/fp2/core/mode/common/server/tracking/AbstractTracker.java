@@ -245,14 +245,16 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
                     //buffer the positions we want to add in a list (we don't want to being tracking them while holding the monitor since that could deadlock)
                     positions.add(pos);
                 }
+
+                //begin tracking all of the added positions
+                // unfortunately, we still have to be holding the lock while this happens, as otherwise a subsequent update may try to tell the manager to untrack a waiting position
+                // before we've even begun tracking it...
+                this.waitingPositions.addAll(positions);
+                positions.forEach(pos -> this.manager.beginTracking(this, pos));
+                positions.clear();
             } finally {
                 PUnsafe.monitorExit(this);
             }
-
-            //begin tracking all of the added positions
-            this.waitingPositions.addAll(positions);
-            positions.forEach(pos -> this.manager.beginTracking(this, pos));
-            positions.clear();
         } while (!this.doneWaitingPositions.isEmpty() || this.waitingPositions.size() < targetLoadQueueSize);
     }
 
