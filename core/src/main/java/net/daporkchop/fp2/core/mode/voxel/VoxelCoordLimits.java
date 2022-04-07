@@ -25,8 +25,8 @@ import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.core.mode.api.IFarCoordLimits;
 
 import static java.lang.Math.*;
-import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.fp2.core.mode.voxel.VoxelConstants.*;
+import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 
 /**
  * @author DaPorkchop_
@@ -44,9 +44,9 @@ public class VoxelCoordLimits implements IFarCoordLimits<VoxelPos> {
     public boolean contains(@NonNull VoxelPos pos) {
         int shift = VT_SHIFT + pos.level();
 
-        return pos.x() >= asrFloor(this.minX, shift) && pos.x() <= asrCeil(this.maxX, shift)
+        return pos.x() >= asrFloor(this.minX, shift) && pos.x() < asrCeil(this.maxX, shift)
                && pos.y() >= asrFloor(this.minY, shift) && pos.y() <= asrCeil(this.maxY, shift)
-               && pos.z() >= asrFloor(this.minZ, shift) && pos.z() <= asrCeil(this.maxZ, shift);
+               && pos.z() >= asrFloor(this.minZ, shift) && pos.z() < asrCeil(this.maxZ, shift);
     }
 
     @Override
@@ -60,8 +60,8 @@ public class VoxelCoordLimits implements IFarCoordLimits<VoxelPos> {
     @Override
     public VoxelPos max(int level) {
         return new VoxelPos(level,
-                incrementExact(asrCeil(this.maxX, VT_SHIFT + level)),
-                incrementExact(asrCeil(this.maxY, VT_SHIFT + level)),
-                incrementExact(asrCeil(this.maxZ, VT_SHIFT + level)));
+                asrCeil(this.maxX, VT_SHIFT + level),
+                asrCeil(this.maxY, VT_SHIFT + level) + 1, //TODO: remove + 1 on Y once voxel mode actually renders voxels
+                asrCeil(this.maxZ, VT_SHIFT + level));
     }
 }

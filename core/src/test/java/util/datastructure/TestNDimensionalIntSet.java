@@ -50,8 +50,8 @@ public class TestNDimensionalIntSet {
     }
 
     @Test
-    public void test1000000BigCoordinates() {
-        this.test(1000000, Integer.MIN_VALUE, Integer.MAX_VALUE);
+    public void test100000BigCoordinates() {
+        this.test(100000, Integer.MIN_VALUE, Integer.MAX_VALUE);
     }
 
     @Test

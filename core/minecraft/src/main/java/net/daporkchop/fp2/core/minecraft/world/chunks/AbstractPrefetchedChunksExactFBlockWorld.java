@@ -23,6 +23,7 @@ package net.daporkchop.fp2.core.minecraft.world.chunks;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
+import net.daporkchop.fp2.api.world.BlockWorldConstants;
 import net.daporkchop.fp2.api.world.FBlockWorld;
 import net.daporkchop.fp2.api.world.GenerationNotAllowedException;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
@@ -157,8 +158,10 @@ public abstract class AbstractPrefetchedChunksExactFBlockWorld<CHUNK> implements
 
     @Override
     public byte getLight(int x, int y, int z) throws GenerationNotAllowedException {
-        if (!this.holder.isValidPosition(x, y, z)) { //position is outside world, return 0
-            return 0;
+        if (!this.holder.isValidPosition(x, y, z)) { //position is outside world, return default
+            return y >= this.holder.bounds().maxY()
+                    ? BlockWorldConstants.packLight(15, 0) //y coordinates are high, return full sky light
+                    : BlockWorldConstants.packLight(0, 0);
         }
 
         CHUNK chunk = this.getPrefetchedChunk(x, y, z);
