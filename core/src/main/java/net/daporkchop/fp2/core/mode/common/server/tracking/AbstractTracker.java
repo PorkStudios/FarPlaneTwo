@@ -98,7 +98,9 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
     /**
      * Actually runs a tracker update. Called from the {@link #manager}'s update scheduler.
      */
-    protected void doUpdate() {
+    //TODO: i don't want this to be synchronized, it's just a temporary workaround for a race when "handle unloading tiles now that we no longer hold a lock"
+    // which i have yet to debug
+    protected synchronized void doUpdate() {
         if (this.closed) { //the tracker has been closed, exit
             return;
         }
