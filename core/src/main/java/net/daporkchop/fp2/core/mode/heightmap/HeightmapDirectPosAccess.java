@@ -30,6 +30,7 @@ import net.daporkchop.fp2.core.mode.heightmap.util.HeightmapPosHashSet;
 import net.daporkchop.fp2.core.util.math.geometry.Volume;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -177,7 +178,22 @@ public class HeightmapDirectPosAccess implements IFarDirectPosAccess<HeightmapPo
     }
 
     @Override
+    public Set<HeightmapPos> clonePositionsAsSet(@NonNull Collection<HeightmapPos> src) {
+        return new HeightmapPosHashSet(src);
+    }
+
+    @Override
     public List<HeightmapPos> newPositionList() {
         return new HeightmapPosArrayList();
+    }
+
+    @Override
+    public List<HeightmapPos> newPositionList(int initialCapacity) {
+        return new HeightmapPosArrayList(initialCapacity);
+    }
+
+    @Override
+    public List<HeightmapPos> clonePositionsAsList(@NonNull Collection<HeightmapPos> src) {
+        return new HeightmapPosArrayList(src);
     }
 }

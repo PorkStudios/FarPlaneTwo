@@ -82,7 +82,7 @@ public class Int3HashSet implements NDimensionalIntSet {
         this.setTableSize(Math.max(initialCapacity, DEFAULT_TABLE_SIZE));
     }
 
-    protected Int3HashSet(Int3HashSet src) {
+    public Int3HashSet(Int3HashSet src) {
         if (src.keys != null) { //the source set's table is allocated, clone it
             this.keys = src.keys.clone();
             this.values = src.values.clone();

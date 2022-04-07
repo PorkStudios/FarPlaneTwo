@@ -20,9 +20,11 @@
 
 package net.daporkchop.fp2.core.mode.heightmap.util;
 
+import lombok.NonNull;
 import net.daporkchop.fp2.core.mode.common.util.AbstractPosArrayList;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -37,6 +39,10 @@ public class HeightmapPosArrayList extends AbstractPosArrayList<HeightmapPos> {
 
     public HeightmapPosArrayList(int initialCapacity) {
         super(3, initialCapacity);
+    }
+
+    public HeightmapPosArrayList(@NonNull Collection<? extends HeightmapPos> src) {
+        super(3, src);
     }
 
     @Override

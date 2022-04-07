@@ -79,7 +79,7 @@ public class Int2HashSet implements NDimensionalIntSet {
         this.setTableSize(Math.max(initialCapacity, DEFAULT_TABLE_SIZE));
     }
 
-    protected Int2HashSet(Int2HashSet src) {
+    public Int2HashSet(Int2HashSet src) {
         if (src.keys != null) { //the source set's table is allocated, clone it
             this.keys = src.keys.clone();
             this.values = src.values.clone();

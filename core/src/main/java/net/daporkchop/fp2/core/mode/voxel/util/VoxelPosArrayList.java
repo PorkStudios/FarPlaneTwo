@@ -20,9 +20,11 @@
 
 package net.daporkchop.fp2.core.mode.voxel.util;
 
+import lombok.NonNull;
 import net.daporkchop.fp2.core.mode.common.util.AbstractPosArrayList;
 import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -37,6 +39,10 @@ public class VoxelPosArrayList extends AbstractPosArrayList<VoxelPos> {
 
     public VoxelPosArrayList(int initialCapacity) {
         super(4, initialCapacity);
+    }
+
+    public VoxelPosArrayList(@NonNull Collection<? extends VoxelPos> src) {
+        super(4, src);
     }
 
     @Override

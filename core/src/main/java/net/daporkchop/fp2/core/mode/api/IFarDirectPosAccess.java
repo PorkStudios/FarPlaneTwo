@@ -24,6 +24,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.util.math.geometry.Volume;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -139,7 +140,29 @@ public interface IFarDirectPosAccess<POS extends IFarPos> {
     Set<POS> newPositionSet();
 
     /**
+     * Creates a new {@link Set} which can store positions of type {@link POS} and adds all the positions in the given {@link Collection} to it.
+     *
+     * @param src the {@link Collection} to clone
+     * @return a new {@link Set} which can store positions of type {@link POS} and contains all the positions from the given {@link Collection}
+     */
+    Set<POS> clonePositionsAsSet(@NonNull Collection<POS> src);
+
+    /**
      * @return a new {@link List} which can store positions of type {@link POS}
      */
     List<POS> newPositionList();
+
+    /**
+     * @param initialCapacity the initial size of the list
+     * @return a new {@link List} which can store positions of type {@link POS}
+     */
+    List<POS> newPositionList(int initialCapacity);
+
+    /**
+     * Creates a new {@link List} which can store positions of type {@link POS} and adds all the positions in the given {@link Collection} to it.
+     *
+     * @param src the {@link Collection} to clone
+     * @return a new {@link List} which can store positions of type {@link POS} and contains all the positions from the given {@link Collection}
+     */
+    List<POS> clonePositionsAsList(@NonNull Collection<POS> src);
 }

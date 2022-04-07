@@ -23,8 +23,9 @@ package net.daporkchop.fp2.core.mode.voxel.util;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.mode.common.util.AbstractPosHashSet;
 import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
-import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSet;
+import net.daporkchop.fp2.core.util.datastructure.java.ndimensionalintset.Int3HashSet;
 
+import java.util.Collection;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -37,21 +38,37 @@ import static net.daporkchop.fp2.core.mode.voxel.VoxelConstants.*;
  *
  * @author DaPorkchop_
  */
-public class VoxelPosHashSet extends AbstractPosHashSet<VoxelPos> {
+public class VoxelPosHashSet extends AbstractPosHashSet<VoxelPos, Int3HashSet> {
     public VoxelPosHashSet() {
-        super(3, VMAX_LODS);
+        super(new Int3HashSet[VMAX_LODS]);
+    }
+
+    public VoxelPosHashSet(Collection<? extends VoxelPos> c) {
+        super(new Int3HashSet[VMAX_LODS], c);
+    }
+
+    @Override
+    protected Int3HashSet createSet() {
+        return new Int3HashSet();
+    }
+
+    @Override
+    protected Int3HashSet cloneSet(Int3HashSet src) {
+        return new Int3HashSet(src);
     }
 
     @Override
     public boolean add(VoxelPos pos) {
-        return this.delegates[pos.level()].add(pos.x(), pos.y(), pos.z());
+        return this.getOrCreateDelegate(pos.level()).add(pos.x(), pos.y(), pos.z());
     }
 
     @Override
     public boolean remove(Object value) {
         if (value instanceof VoxelPos) {
             VoxelPos pos = (VoxelPos) value;
-            return this.delegates[pos.level()].remove(pos.x(), pos.y(), pos.z());
+
+            Int3HashSet delegate = this.delegates[pos.level()];
+            return delegate != null && delegate.remove(pos.x(), pos.y(), pos.z());
         } else {
             return false;
         }
@@ -61,7 +78,9 @@ public class VoxelPosHashSet extends AbstractPosHashSet<VoxelPos> {
     public boolean contains(Object value) {
         if (value instanceof VoxelPos) {
             VoxelPos pos = (VoxelPos) value;
-            return this.delegates[pos.level()].contains(pos.x(), pos.y(), pos.z());
+
+            Int3HashSet delegate = this.delegates[pos.level()];
+            return delegate != null && delegate.contains(pos.x(), pos.y(), pos.z());
         } else {
             return false;
         }
@@ -69,11 +88,14 @@ public class VoxelPosHashSet extends AbstractPosHashSet<VoxelPos> {
 
     @Override
     public void forEach(@NonNull Consumer<? super VoxelPos> callback) {
-        NDimensionalIntSet[] delegates = this.delegates;
+        Int3HashSet[] delegates = this.delegates;
 
         for (int level = 0; level < delegates.length; level++) {
-            int levelButFinal = level; //damn you java
-            delegates[level].forEach3D((x, y, z) -> callback.accept(new VoxelPos(levelButFinal, x, y, z)));
+            Int3HashSet delegate = delegates[level];
+            if (delegate != null) {
+                int levelButFinal = level; //damn you java
+                delegate.forEach3D((x, y, z) -> callback.accept(new VoxelPos(levelButFinal, x, y, z)));
+            }
         }
     }
 }

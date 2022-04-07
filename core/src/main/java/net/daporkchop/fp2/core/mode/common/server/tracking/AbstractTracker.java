@@ -34,7 +34,6 @@ import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
 import net.daporkchop.fp2.core.util.datastructure.RecyclingArrayDeque;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Queue;
@@ -194,7 +193,7 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
         }
 
         //remove the rest of the waiting positions, stop tracking them and re-add them to the load queue
-        List<POS> waitingPositions = new ArrayList<>(this.waitingPositions);
+        Set<POS> waitingPositions = this.mode.directPosAccess().clonePositionsAsSet(this.waitingPositions);
         this.waitingPositions.clear();
 
         //stop tracking all positions in the set
@@ -209,7 +208,7 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
      */
     protected void updateWaiting() {
         int targetLoadQueueSize = fp2().globalConfig().performance().terrainThreads();
-        List<POS> positions = new ArrayList<>();
+        List<POS> positions = this.mode.directPosAccess().newPositionList();
 
         do {
             if (this.queuePaused) { //the tracker update thread has specifically requested to pause queue polling, so we shouldn't do anything here

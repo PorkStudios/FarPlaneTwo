@@ -27,12 +27,14 @@ import net.daporkchop.fp2.core.util.datastructure.simple.SimpleList;
 import net.daporkchop.lib.common.math.BinMath;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import static java.lang.Math.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * Base class for implementations of {@link List} optimized specifically for a specific {@link IFarPos} type.
@@ -57,6 +59,20 @@ public abstract class AbstractPosArrayList<POS extends IFarPos> extends SimpleLi
     public AbstractPosArrayList(int wordsPerPos, int initialCapacity) {
         this(wordsPerPos);
         this.array = new int[multiplyExact(BinMath.roundToNearestPowerOf2(notNegative(initialCapacity, "initialCapacity")), wordsPerPos)];
+    }
+
+    public AbstractPosArrayList(int wordsPerPos, @NonNull Collection<? extends POS> src) {
+        this(wordsPerPos, src.size());
+
+        if (this.getClass() == src.getClass()) { //the source collection is a position list of the same type, clone it
+            AbstractPosArrayList<? extends POS> srcList = uncheckedCast(src);
+
+            //the array is pre-allocated and is big enough to fit all the values: we can do a simple array copy
+            this.size = srcList.size;
+            System.arraycopy(srcList.array, 0, this.array, 0, this.size);
+        } else { //some other type of collection, fall back to regular addAll
+            this.addAll(src);
+        }
     }
 
     /**

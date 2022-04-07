@@ -162,7 +162,7 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
 
         //try to steal tasks required to make this a batch
         this.provider.generatorRough().batchGenerationGroup(state.positions()).ifPresent(batchPositions -> {
-            List<POS> initialBatchPositions = new ArrayList<>();
+            List<POS> initialBatchPositions = this.provider.mode().directPosAccess().newPositionList();
             batchPositions.forEach(initialBatchPositions::add);
 
             //ensure the original position is contained in the list
@@ -194,7 +194,7 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
         try (FBlockWorld exactWorld = this.provider.world().fp2_IFarWorldServer_exactBlockWorldHolder().worldFor(allowGeneration ? ExactFBlockWorldHolder.AllowGenerationRequirement.ALLOWED : ExactFBlockWorldHolder.AllowGenerationRequirement.NOT_ALLOWED)) {
             //try to steal tasks required to make this a batch
             this.provider.generatorExact().batchGenerationGroup(exactWorld, state.positions()).ifPresent(batchPositions -> {
-                List<POS> initialBatchPositions = new ArrayList<>();
+                List<POS> initialBatchPositions = this.provider.mode().directPosAccess().newPositionList();
                 batchPositions.forEach(initialBatchPositions::add);
 
                 //ensure the original position is contained in the list
@@ -296,7 +296,7 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
         private final int level;
 
         private final Set<POS> allPositions = new ObjectOpenHashSet<>();
-        private final List<POS> positions = new ArrayList<>();
+        private final List<POS> positions = TileWorker.this.provider.mode().directPosAccess().newPositionList();
         private final List<ITileHandle<POS, T>> handles = new ArrayList<>();
         private final LongList minimumTimestamps = new LongArrayList();
 

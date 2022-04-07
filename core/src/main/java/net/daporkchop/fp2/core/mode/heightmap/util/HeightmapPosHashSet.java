@@ -23,8 +23,9 @@ package net.daporkchop.fp2.core.mode.heightmap.util;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.mode.common.util.AbstractPosHashSet;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
-import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSet;
+import net.daporkchop.fp2.core.util.datastructure.java.ndimensionalintset.Int2HashSet;
 
+import java.util.Collection;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -37,21 +38,37 @@ import static net.daporkchop.fp2.core.mode.heightmap.HeightmapConstants.*;
  *
  * @author DaPorkchop_
  */
-public class HeightmapPosHashSet extends AbstractPosHashSet<HeightmapPos> {
+public class HeightmapPosHashSet extends AbstractPosHashSet<HeightmapPos, Int2HashSet> {
     public HeightmapPosHashSet() {
-        super(2, HMAX_LODS);
+        super(new Int2HashSet[HMAX_LODS]);
+    }
+
+    public HeightmapPosHashSet(Collection<? extends HeightmapPos> c) {
+        super(new Int2HashSet[HMAX_LODS], c);
+    }
+
+    @Override
+    protected Int2HashSet createSet() {
+        return new Int2HashSet();
+    }
+
+    @Override
+    protected Int2HashSet cloneSet(Int2HashSet src) {
+        return new Int2HashSet(src);
     }
 
     @Override
     public boolean add(HeightmapPos pos) {
-        return this.delegates[pos.level()].add(pos.x(), pos.z());
+        return this.getOrCreateDelegate(pos.level()).add(pos.x(), pos.z());
     }
 
     @Override
     public boolean remove(Object value) {
         if (value instanceof HeightmapPos) {
             HeightmapPos pos = (HeightmapPos) value;
-            return this.delegates[pos.level()].remove(pos.x(), pos.z());
+
+            Int2HashSet delegate = this.delegates[pos.level()];
+            return delegate != null && delegate.remove(pos.x(), pos.z());
         } else {
             return false;
         }
@@ -61,7 +78,9 @@ public class HeightmapPosHashSet extends AbstractPosHashSet<HeightmapPos> {
     public boolean contains(Object value) {
         if (value instanceof HeightmapPos) {
             HeightmapPos pos = (HeightmapPos) value;
-            return this.delegates[pos.level()].contains(pos.x(), pos.z());
+
+            Int2HashSet delegate = this.delegates[pos.level()];
+            return delegate != null && delegate.contains(pos.x(), pos.z());
         } else {
             return false;
         }
@@ -69,11 +88,14 @@ public class HeightmapPosHashSet extends AbstractPosHashSet<HeightmapPos> {
 
     @Override
     public void forEach(@NonNull Consumer<? super HeightmapPos> callback) {
-        NDimensionalIntSet[] delegates = this.delegates;
+        Int2HashSet[] delegates = this.delegates;
 
         for (int level = 0; level < delegates.length; level++) {
-            int levelButFinal = level; //damn you java
-            delegates[level].forEach2D((x, y) -> callback.accept(new HeightmapPos(levelButFinal, x, y)));
+            Int2HashSet delegate = delegates[level];
+            if (delegate != null) {
+                int levelButFinal = level; //damn you java
+                delegate.forEach2D((x, y) -> callback.accept(new HeightmapPos(levelButFinal, x, y)));
+            }
         }
     }
 }

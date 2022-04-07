@@ -21,15 +21,15 @@
 package net.daporkchop.fp2.core.mode.common.util;
 
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.core.util.datastructure.Datastructures;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSet;
 import net.daporkchop.fp2.core.util.datastructure.simple.SimpleSet;
+import net.daporkchop.lib.common.util.PorkUtil;
 
 import java.util.Collection;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.stream.Stream;
 
 /**
  * Base class for implementations of {@link Set} optimized specifically for a specific {@link IFarPos} type.
@@ -38,32 +38,74 @@ import java.util.stream.Stream;
  *
  * @author DaPorkchop_
  */
-public abstract class AbstractPosHashSet<POS extends IFarPos> extends SimpleSet<POS> {
-    protected final NDimensionalIntSet[] delegates;
+@RequiredArgsConstructor
+public abstract class AbstractPosHashSet<POS extends IFarPos, SET extends NDimensionalIntSet> extends SimpleSet<POS> {
+    @NonNull
+    protected final SET[] delegates;
 
-    public AbstractPosHashSet(int dimensions, int maxLevels) {
-        NDimensionalIntSet.Builder builder = Datastructures.INSTANCE.nDimensionalIntSet()
-                .dimensions(dimensions).threadSafe(false);
+    public AbstractPosHashSet(@NonNull SET[] delegates, Collection<? extends POS> c) {
+        this.delegates = delegates;
 
-        this.delegates = new NDimensionalIntSet[maxLevels];
-        for (int level = 0; level < maxLevels; level++) {
-            this.delegates[level] = builder.build();
+        if (this.getClass() == c.getClass()) { //the other set is of the same type
+            SET[] thisDelegates = this.delegates;
+            SET[] otherDelegates = PorkUtil.<AbstractPosHashSet<POS, SET>>uncheckedCast(c).delegates;
+            assert thisDelegates.length == otherDelegates.length : "thisDelegates (" + thisDelegates.length + ") and otherDelegates (" + otherDelegates.length + ") have mismatched lengths!";
+
+            //clone the source set at each level
+            for (int level = 0; level < thisDelegates.length; level++) {
+                SET otherDelegate = otherDelegates[level];
+                if (otherDelegate != null && !otherDelegate.isEmpty()) { //the source set has been allocated and is non-empty, clone it
+                    thisDelegates[level] = this.cloneSet(otherDelegate);
+                }
+            }
+        } else { //fall back to regular addAll
+            this.addAll(c);
         }
+    }
+
+    protected abstract SET createSet();
+
+    protected abstract SET cloneSet(SET src);
+
+    protected SET getOrCreateDelegate(int level) {
+        SET[] delegates = this.delegates;
+        SET delegate = delegates[level];
+
+        if (delegate == null) { //set is unallocated, create a new one
+            delegate = delegates[level] = this.createSet();
+        }
+
+        return delegate;
     }
 
     @Override
     public int size() {
-        return Stream.of(this.delegates).mapToInt(NDimensionalIntSet::size).sum();
+        int size = 0;
+        for (SET set : this.delegates) {
+            if (set != null) {
+                size += set.size();
+            }
+        }
+        return size;
     }
 
     @Override
     public boolean isEmpty() {
-        return Stream.of(this.delegates).allMatch(NDimensionalIntSet::isEmpty);
+        for (SET set : this.delegates) {
+            if (set != null && !set.isEmpty()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override
     public void clear() {
-        Stream.of(this.delegates).forEach(NDimensionalIntSet::clear);
+        for (SET set : this.delegates) {
+            if (set != null) {
+                set.clear();
+            }
+        }
     }
 
     @Override
@@ -81,11 +123,19 @@ public abstract class AbstractPosHashSet<POS extends IFarPos> extends SimpleSet<
     @Override
     public boolean containsAll(@NonNull Collection<?> c) {
         if (this.getClass() == c.getClass()) { //the other set is of the same type
-            NDimensionalIntSet[] thisDelegates = this.delegates;
-            NDimensionalIntSet[] otherDelegates = ((AbstractPosHashSet) c).delegates;
+            SET[] thisDelegates = this.delegates;
+            SET[] otherDelegates = PorkUtil.<AbstractPosHashSet<POS, SET>>uncheckedCast(c).delegates;
+            assert thisDelegates.length == otherDelegates.length : "thisDelegates (" + thisDelegates.length + ") and otherDelegates (" + otherDelegates.length + ") have mismatched lengths!";
 
             for (int level = 0; level < thisDelegates.length; level++) {
-                if (!thisDelegates[level].containsAll(otherDelegates[level])) {
+                SET thisDelegate = thisDelegates[level];
+                SET otherDelegate = otherDelegates[level];
+
+                if (thisDelegate != otherDelegate //the sets can only be identity equal if they are both null, so we can now assume that at least one of them is non-null
+                    && otherDelegate != null //if the other set is null, our set is guaranteed to contain every point
+                    && (thisDelegate == null
+                        ? !otherDelegate.isEmpty() //if our set is null it's implicitly empty, so if the other set is non-empty we're missing all of the points
+                        : !thisDelegate.containsAll(otherDelegate))) { //neither set is null, delegate to containsAll on the actual sets
                     return false;
                 }
             }
@@ -98,12 +148,23 @@ public abstract class AbstractPosHashSet<POS extends IFarPos> extends SimpleSet<
     @Override
     public boolean addAll(@NonNull Collection<? extends POS> c) {
         if (this.getClass() == c.getClass()) { //the other set is of the same type
-            NDimensionalIntSet[] thisDelegates = this.delegates;
-            NDimensionalIntSet[] otherDelegates = ((AbstractPosHashSet) c).delegates;
+            SET[] thisDelegates = this.delegates;
+            SET[] otherDelegates = PorkUtil.<AbstractPosHashSet<POS, SET>>uncheckedCast(c).delegates;
+            assert thisDelegates.length == otherDelegates.length : "thisDelegates (" + thisDelegates.length + ") and otherDelegates (" + otherDelegates.length + ") have mismatched lengths!";
 
             boolean modified = false;
             for (int level = 0; level < thisDelegates.length; level++) {
-                if (thisDelegates[level].addAll(otherDelegates[level])) {
+                SET thisDelegate = thisDelegates[level];
+                SET otherDelegate = otherDelegates[level];
+
+                if (otherDelegate == null || otherDelegate.isEmpty()) { //the other set is null or empty, there's nothing to add
+                    continue;
+                }
+
+                if (thisDelegate == null) { //this delegate hasn't been allocated yet, clone it
+                    thisDelegates[level] = this.cloneSet(otherDelegate);
+                    modified = true;
+                } else if (thisDelegate.addAll(otherDelegate)) { //neither set is null, delegate to addAll on the actual sets
                     modified = true;
                 }
             }
@@ -116,12 +177,21 @@ public abstract class AbstractPosHashSet<POS extends IFarPos> extends SimpleSet<
     @Override
     public boolean removeAll(@NonNull Collection<?> c) {
         if (this.getClass() == c.getClass()) { //the other set is of the same type
-            NDimensionalIntSet[] thisDelegates = this.delegates;
-            NDimensionalIntSet[] otherDelegates = ((AbstractPosHashSet) c).delegates;
+            SET[] thisDelegates = this.delegates;
+            SET[] otherDelegates = PorkUtil.<AbstractPosHashSet<POS, SET>>uncheckedCast(c).delegates;
+            assert thisDelegates.length == otherDelegates.length : "thisDelegates (" + thisDelegates.length + ") and otherDelegates (" + otherDelegates.length + ") have mismatched lengths!";
 
             boolean modified = false;
             for (int level = 0; level < thisDelegates.length; level++) {
-                if (thisDelegates[level].removeAll(otherDelegates[level])) {
+                SET thisDelegate = thisDelegates[level];
+                SET otherDelegate = otherDelegates[level];
+
+                if (otherDelegate == null || otherDelegate.isEmpty() //the other set is null or empty, there's nothing to remove
+                    || thisDelegate == null || thisDelegate.isEmpty()) { //this set is null or empty, there's nothing to be removed
+                    continue;
+                }
+
+                if (thisDelegate.removeAll(otherDelegate)) { //neither set is null, delegate to removeAll on the actual sets
                     modified = true;
                 }
             }

@@ -116,7 +116,7 @@ public abstract class AbstractFarServerContext<POS extends IFarPos, T extends IF
         }
 
         //group queue items by type
-        List<POS> unloadedPositions = new ArrayList<>();
+        List<POS> unloadedPositions = this.mode.directPosAccess().newPositionList();
         List<TileSnapshot<POS, T>> loadedSnapshots = new ArrayList<>();
         sendQueueSnapshot.forEach(entry -> {
             if (entry.getValue().isPresent()) { //non-empty optional, the tile is being loaded

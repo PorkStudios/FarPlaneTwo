@@ -30,6 +30,7 @@ import net.daporkchop.fp2.core.mode.voxel.util.VoxelPosHashSet;
 import net.daporkchop.fp2.core.util.math.geometry.Volume;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -194,7 +195,22 @@ public class VoxelDirectPosAccess implements IFarDirectPosAccess<VoxelPos> {
     }
 
     @Override
+    public Set<VoxelPos> clonePositionsAsSet(@NonNull Collection<VoxelPos> src) {
+        return new VoxelPosHashSet(src);
+    }
+
+    @Override
     public List<VoxelPos> newPositionList() {
         return new VoxelPosArrayList();
+    }
+
+    @Override
+    public List<VoxelPos> newPositionList(int initialCapacity) {
+        return new VoxelPosArrayList(initialCapacity);
+    }
+
+    @Override
+    public List<VoxelPos> clonePositionsAsList(@NonNull Collection<VoxelPos> src) {
+        return new VoxelPosArrayList(src);
     }
 }
