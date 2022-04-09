@@ -68,6 +68,7 @@ public class TestIFarPosList {
             List<POS> reference = new ArrayList<>();
             List<POS> test = listFactory.get();
 
+            //append some random positions
             for (int i = 0; i < 1000; i++) {
                 POS pos = randomPOSFunction.apply(r);
                 reference.add(pos);
@@ -76,6 +77,7 @@ public class TestIFarPosList {
 
             ensureEqual(reference, test);
 
+            //insert some random positions
             for (int i = 0; i < 32; i++) {
                 int index = r.nextInt(reference.size());
                 POS pos = randomPOSFunction.apply(r);
@@ -85,6 +87,7 @@ public class TestIFarPosList {
 
             ensureEqual(reference, test);
 
+            //replace some random positions
             for (int i = 0; i < 32; i++) {
                 int index = r.nextInt(reference.size());
                 POS pos = randomPOSFunction.apply(r);
@@ -94,6 +97,7 @@ public class TestIFarPosList {
 
             ensureEqual(reference, test);
 
+            //remove some positions at random indices
             for (int i = 0; i < 32; i++) {
                 int index = r.nextInt(reference.size());
                 POS p0 = reference.remove(index);
@@ -103,6 +107,7 @@ public class TestIFarPosList {
 
             ensureEqual(reference, test);
 
+            //removeIf half the positions at random
             {
                 long seed = r.nextLong();
                 SplittableRandom r0 = new SplittableRandom(seed);
@@ -113,6 +118,7 @@ public class TestIFarPosList {
 
             ensureEqual(reference, test);
 
+            //clear a random sub-range of the list
             {
                 int low = r.nextInt(0, reference.size() >> 1);
                 int high = r.nextInt(reference.size() >> 1, reference.size());
@@ -121,6 +127,36 @@ public class TestIFarPosList {
             }
 
             ensureEqual(reference, test);
+
+            //duplicate the lists using addAll
+            List<POS> reference2 = new ArrayList<>();
+            reference2.addAll(reference);
+            List<POS> test2 = listFactory.get();
+            test2.addAll(test);
+
+            ensureEqual(reference, reference2);
+            ensureEqual(test, test2);
+            ensureEqual(reference2, test2);
+
+            //addAll the lists again
+            reference2.addAll(reference);
+            test2.addAll(test);
+
+            ensureEqual(reference2, test2);
+            ensureEqual(reference, reference2.subList(0, reference.size()));
+            ensureEqual(reference, reference2.subList(reference.size(), reference2.size()));
+            ensureEqual(test, test2.subList(0, test.size()));
+            ensureEqual(test, test2.subList(test.size(), test2.size()));
+
+            //addAll the lists multiple time at random starting indices
+            for (int i = 0; i < 32; i++) {
+                int index = r.nextInt(reference2.size());
+                List<POS> srcList = r.nextBoolean() ? reference : test;
+                reference2.addAll(index, srcList);
+                test2.addAll(index, srcList);
+            }
+
+            ensureEqual(reference2, test2);
         });
     }
 }

@@ -20,11 +20,13 @@
 
 package net.daporkchop.fp2.core.mode.common.util;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.util.datastructure.simple.SimpleList;
 import net.daporkchop.lib.common.math.BinMath;
+import net.daporkchop.lib.common.util.PorkUtil;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -159,10 +161,67 @@ public abstract class AbstractPosArrayList<POS extends IFarPos> extends SimpleLi
         this.size = size + 1;
     }
 
+    @Override
+    public boolean addAll(int index, Collection<? extends POS> c) {
+        int size = this.size;
+        if (index != size) { //we're not appending to the tail of the list
+            checkIndex(size, index);
+        }
+
+        int cSize = c.size();
+        if (cSize == 0) { //other collection is empty, nothing to do!
+            return false;
+        }
+
+        int[] array = this.array;
+        int wordsPerPos = this.wordsPerPos;
+
+        int totalSize = addExact(size, cSize);
+        int baseIndex = index * wordsPerPos;
+
+        if (array == null //array is unallocated
+            || multiplyExact(totalSize, wordsPerPos) >= array.length) { //array is full
+            array = this.allocateOrGrow(cSize);
+        }
+
+        if (index != size) { //we're inserting the values in the middle of the list, so we need to shift subsequent elements forwards
+            System.arraycopy(array, baseIndex, array, (index + cSize) * wordsPerPos, size * wordsPerPos - baseIndex);
+        }
+
+        if (this.getClass() == c.getClass()) { //source collection is of the same class, we can simply copy the array elements
+            System.arraycopy(PorkUtil.<AbstractPosArrayList<POS>>uncheckedCast(c).array, 0, array, baseIndex, cSize * wordsPerPos);
+        } else { //source collection is of some other type, write the elements to the target array using forEach
+            @AllArgsConstructor
+            class State implements Consumer<POS> {
+                final int[] array;
+                int baseIndex;
+
+                @Override
+                public void accept(POS pos) {
+                    int baseIndex = this.baseIndex;
+                    AbstractPosArrayList.this.writePos(pos, this.array, baseIndex);
+                    this.baseIndex = baseIndex + wordsPerPos;
+                }
+            }
+
+            c.forEach(new State(array, baseIndex));
+        }
+
+        //increase final size counter
+        this.size = totalSize;
+        return true;
+    }
+
     protected int[] allocateOrGrow() {
         return this.array = this.array == null
                 ? new int[this.wordsPerPos * DEFAULT_ARRAY_SIZE] //array is currently unallocated
                 : Arrays.copyOf(this.array, multiplyExact(this.array.length, 2)); //array is already allocated, but too small
+    }
+
+    protected int[] allocateOrGrow(int minIncrease) {
+        return this.array = this.array == null
+                ? new int[multiplyExact(this.wordsPerPos, max(BinMath.roundToNearestPowerOf2(minIncrease), DEFAULT_ARRAY_SIZE))] //array is currently unallocated
+                : Arrays.copyOf(this.array, max(multiplyExact(this.wordsPerPos, BinMath.roundToNearestPowerOf2(addExact(this.array.length / this.wordsPerPos, minIncrease))), multiplyExact(this.array.length, 2))); //array is already allocated, but too small
     }
 
     @Override
