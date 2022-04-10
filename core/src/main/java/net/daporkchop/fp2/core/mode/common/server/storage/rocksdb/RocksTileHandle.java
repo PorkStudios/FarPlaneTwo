@@ -42,7 +42,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static net.daporkchop.fp2.core.mode.common.server.storage.rocksdb.RocksStorage.*;
+import static net.daporkchop.fp2.core.mode.common.server.storage.rocksdb.RocksTileStorage.*;
 
 /**
  * @author DaPorkchop_
@@ -53,7 +53,7 @@ public class RocksTileHandle<POS extends IFarPos, T extends IFarTile> implements
     @NonNull
     protected final POS pos;
     @NonNull
-    protected final RocksStorage<POS, T> storage;
+    protected final RocksTileStorage<POS, T> storage;
 
     @Override
     @SneakyThrows(RocksDBException.class)

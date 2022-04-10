@@ -31,7 +31,7 @@ import lombok.NonNull;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
-import net.daporkchop.fp2.core.mode.api.server.storage.IFarStorage;
+import net.daporkchop.fp2.core.mode.api.server.storage.IFarTileStorage;
 import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.core.mode.api.tile.ITileMetadata;
 import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
@@ -81,7 +81,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public class RocksStorage<POS extends IFarPos, T extends IFarTile> implements IFarStorage<POS, T> {
+public class RocksTileStorage<POS extends IFarPos, T extends IFarTile> implements IFarTileStorage<POS, T> {
     protected static final DBOptions DB_OPTIONS = new DBOptions()
             .setCreateIfMissing(true)
             .setCreateMissingColumnFamilies(true)
@@ -198,7 +198,7 @@ public class RocksStorage<POS extends IFarPos, T extends IFarTile> implements IF
             .build(CacheLoader.from(pos -> new RocksTileHandle<>(pos, this)));
 
     @SneakyThrows({ IOException.class, RocksDBException.class })
-    public RocksStorage(@NonNull AbstractFarTileProvider<POS, T> world, @NonNull Path storageRoot) {
+    public RocksTileStorage(@NonNull AbstractFarTileProvider<POS, T> world, @NonNull Path storageRoot) {
         this.world = world;
         this.version = world.mode().storageVersion();
 

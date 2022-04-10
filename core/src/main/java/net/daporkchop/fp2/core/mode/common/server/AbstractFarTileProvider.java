@@ -35,10 +35,10 @@ import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
-import net.daporkchop.fp2.core.mode.api.server.storage.IFarStorage;
+import net.daporkchop.fp2.core.mode.api.server.storage.IFarTileStorage;
 import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTrackerManager;
 import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
-import net.daporkchop.fp2.core.mode.common.server.storage.rocksdb.RocksStorage;
+import net.daporkchop.fp2.core.mode.common.server.storage.rocksdb.RocksTileStorage;
 import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
 import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
 import net.daporkchop.fp2.core.server.event.TickEndEvent;
@@ -73,7 +73,7 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
     protected final IFarGeneratorExact<POS, T> generatorExact;
     protected final IFarScaler<POS, T> scaler;
 
-    protected final IFarStorage<POS, T> storage;
+    protected final IFarTileStorage<POS, T> storage;
 
     protected final IFarCoordLimits<POS> coordLimits;
 
@@ -102,7 +102,7 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
         this.scaler = mode.scaler(world, this);
 
         this.root = world.fp2_IFarWorldServer_worldDirectory().resolve(MODID).resolve(this.mode().name().toLowerCase());
-        this.storage = new RocksStorage<>(this, this.root);
+        this.storage = new RocksTileStorage<>(this, this.root);
 
         this.scheduler = new ApproximatelyPrioritizedSharedFutureScheduler<>(
                 scheduler -> new TileWorker<>(this, scheduler),

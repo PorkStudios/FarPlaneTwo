@@ -41,7 +41,7 @@ import java.util.stream.Stream;
  *
  * @author DaPorkchop_
  */
-public interface IFarStorage<POS extends IFarPos, T extends IFarTile> extends Closeable {
+public interface IFarTileStorage<POS extends IFarPos, T extends IFarTile> extends Closeable {
     /**
      * Gets an {@link ITileHandle} for accessing the tile data at the given position.
      *
@@ -196,7 +196,7 @@ public interface IFarStorage<POS extends IFarPos, T extends IFarTile> extends Cl
      * <p>
      * If write operations are queued, this method will block until they are completed.
      * <p>
-     * After this method has completed, attempting to invoke any methods on this {@link IFarStorage} instance or any {@link ITileHandle}s returned by {@link #handleFor(IFarPos)}
+     * After this method has completed, attempting to invoke any methods on this {@link IFarTileStorage} instance or any {@link ITileHandle}s returned by {@link #handleFor(IFarPos)}
      * will result in undefined behavior.
      */
     @Override
@@ -217,7 +217,7 @@ public interface IFarStorage<POS extends IFarPos, T extends IFarTile> extends Cl
     void removeListener(@NonNull Listener<POS, T> listener);
 
     /**
-     * Listens for changes made to any data stored in a {@link IFarStorage}.
+     * Listens for changes made to any data stored in a {@link IFarTileStorage}.
      *
      * @author DaPorkchop_
      */
