@@ -26,16 +26,12 @@ import net.daporkchop.fp2.api.storage.FStorageException;
 import net.daporkchop.fp2.api.storage.internal.FStorageColumnInternal;
 import net.daporkchop.fp2.api.storage.internal.FStorageSnapshotInternal;
 import net.daporkchop.lib.unsafe.PCleaner;
-import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.Snapshot;
 
-import java.util.IdentityHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Implementation of {@link FStorageSnapshotInternal} for {@link RocksStorageInternal}.
@@ -53,29 +49,19 @@ public class RocksStorageSnapshotInternal implements FStorageSnapshotInternal {
 
     private final PCleaner cleaner;
 
-    private final Map<FStorageColumnInternal, ColumnFamilyHandle> columnFamilyHandlesSnapshot = new IdentityHashMap<>();
-
     public RocksStorageSnapshotInternal(@NonNull RocksStorageInternal storageInternal) {
         this.storageInternal = storageInternal;
 
-        storageInternal.readLock().lock();
-        try {
-            //take a snapshot of the FStorageColumnInternal -> ColumnFamilyHandle mappings
-            storageInternal.columns().values().forEach(column -> this.columnFamilyHandlesSnapshot.put(column, column.handle()));
+        //create a snapshot
+        RocksDB db = this.db = storageInternal.storage().db();
+        Snapshot snapshot = this.snapshot = db.getSnapshot();
 
-            //create a snapshot
-            RocksDB db = this.db = storageInternal.storage().db();
-            Snapshot snapshot = this.snapshot = db.getSnapshot();
+        //use a cleaner to ensure the snapshot is released when this instance is garbage-collected
+        this.cleaner = PCleaner.cleaner(this, () -> db.releaseSnapshot(snapshot));
 
-            //use a cleaner to ensure the snapshot is released when this instance is garbage-collected
-            this.cleaner = PCleaner.cleaner(this, () -> db.releaseSnapshot(snapshot));
-
-            //create new ReadOptions and configure them with the snapshot
-            this.readOptions = new ReadOptions(RocksStorage.READ_OPTIONS);
-            this.readOptions.setSnapshot(snapshot);
-        } finally {
-            storageInternal.readLock().unlock();
-        }
+        //create new ReadOptions and configure them with the snapshot
+        this.readOptions = new ReadOptions(RocksStorage.READ_OPTIONS);
+        this.readOptions.setSnapshot(snapshot);
     }
 
     public void validate() throws FStorageException {
@@ -95,7 +81,7 @@ public class RocksStorageSnapshotInternal implements FStorageSnapshotInternal {
         this.validate();
 
         try {
-            return this.db.get(this.columnFamilyHandlesSnapshot.get(column), this.readOptions, key);
+            return this.db.get(((RocksStorageColumnInternal) column).handle(), this.readOptions, key);
         } catch (RocksDBException e) {
             throw new FStorageException(e);
         }
@@ -106,7 +92,7 @@ public class RocksStorageSnapshotInternal implements FStorageSnapshotInternal {
         this.validate();
 
         try {
-            return this.db.multiGetAsList(this.readOptions, columns.stream().map(this.columnFamilyHandlesSnapshot::get).collect(Collectors.toList()), keys);
+            return this.db.multiGetAsList(this.readOptions, RocksStorageInternal.toColumnFamilyHandles(columns), keys);
         } catch (RocksDBException e) {
             throw new FStorageException(e);
         }

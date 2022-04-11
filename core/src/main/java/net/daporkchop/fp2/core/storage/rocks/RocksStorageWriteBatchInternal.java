@@ -22,12 +22,10 @@ package net.daporkchop.fp2.core.storage.rocks;
 
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.api.storage.FStorageException;
 import net.daporkchop.fp2.api.storage.internal.FStorageColumnInternal;
 import net.daporkchop.fp2.api.storage.internal.FStorageWriteBatchInternal;
-import net.daporkchop.lib.primitive.map.IntObjMap;
-import net.daporkchop.lib.primitive.map.open.IntObjOpenHashMap;
-import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.WriteBatch;
 
@@ -38,29 +36,11 @@ import static net.daporkchop.fp2.core.storage.rocks.RocksStorage.*;
  *
  * @author DaPorkchop_
  */
+@RequiredArgsConstructor
 @Getter
-public class RocksStorageWriteBatchInternal implements FStorageWriteBatchInternal {
+public class RocksStorageWriteBatchInternal extends WriteBatch implements FStorageWriteBatchInternal {
+    @NonNull
     private final RocksStorageInternal storageInternal;
-
-    private WriteBatch batch = new WriteBatch();
-
-    private final IntObjMap<ColumnFamilyHandle> savedIdsToColumnFamiliesMappings = new IntObjOpenHashMap<>();
-    private int modificationCounter;
-
-    public RocksStorageWriteBatchInternal(@NonNull RocksStorageInternal storageInternal) {
-        this.storageInternal = storageInternal;
-
-        storageInternal.readLock().lock();
-        try {
-            //snapshot the column family id -> RocksStorageColumnInternal mappings
-            storageInternal.columns().values().forEach(column -> this.savedIdsToColumnFamiliesMappings.put(column.handle().getID(), column.handle()));
-
-            //save modification counter so that we can check for conflicts
-            this.modificationCounter = storageInternal.modificationCounter();
-        } finally {
-            storageInternal.readLock().unlock();
-        }
-    }
 
     public void validate() throws FStorageException {
         this.storageInternal.ensureOpen();
@@ -72,108 +52,7 @@ public class RocksStorageWriteBatchInternal implements FStorageWriteBatchInterna
 
         this.storageInternal.readLock().lock();
         try {
-            if (this.modificationCounter != this.storageInternal.modificationCounter()) { //the column structure has changed since this write batch began
-                this.modificationCounter = this.storageInternal.modificationCounter();
-
-                //update the saved column family id -> RocksStorageColumnInternal mappings so that it contains both old and new IDs (we don't know when the column families changed, so
-                // we have to assume it could have happened at any time since this write batch was created)
-                this.storageInternal.columns().values().forEach(column -> this.savedIdsToColumnFamiliesMappings.putIfAbsent(column.handle().getID(), column.handle()));
-
-                //rewrite history by copying each operation from the old batch and putting it into a new one with the updated column families
-                WriteBatch newBatch = new WriteBatch();
-                this.batch.iterate(new WriteBatch.Handler() {
-                    @Override
-                    public void put(int columnFamilyId, byte[] key, byte[] value) throws RocksDBException {
-                        newBatch.put(RocksStorageWriteBatchInternal.this.savedIdsToColumnFamiliesMappings.get(columnFamilyId), key, value);
-                    }
-
-                    @Override
-                    public void put(byte[] key, byte[] value) {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override
-                    public void merge(int columnFamilyId, byte[] key, byte[] value) throws RocksDBException {
-                        newBatch.merge(RocksStorageWriteBatchInternal.this.savedIdsToColumnFamiliesMappings.get(columnFamilyId), key, value);
-                    }
-
-                    @Override
-                    public void merge(byte[] key, byte[] value) {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override
-                    public void delete(int columnFamilyId, byte[] key) throws RocksDBException {
-                        newBatch.delete(RocksStorageWriteBatchInternal.this.savedIdsToColumnFamiliesMappings.get(columnFamilyId), key);
-                    }
-
-                    @Override
-                    public void delete(byte[] key) {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override
-                    public void singleDelete(int columnFamilyId, byte[] key) throws RocksDBException {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override
-                    public void singleDelete(byte[] key) {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override
-                    public void deleteRange(int columnFamilyId, byte[] beginKey, byte[] endKey) throws RocksDBException {
-                        newBatch.deleteRange(RocksStorageWriteBatchInternal.this.savedIdsToColumnFamiliesMappings.get(columnFamilyId), beginKey, endKey);
-                    }
-
-                    @Override
-                    public void deleteRange(byte[] beginKey, byte[] endKey) {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override
-                    public void logData(byte[] blob) {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override
-                    public void putBlobIndex(int columnFamilyId, byte[] key, byte[] value) throws RocksDBException {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override
-                    public void markBeginPrepare() throws RocksDBException {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override
-                    public void markEndPrepare(byte[] xid) throws RocksDBException {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override
-                    public void markNoop(boolean emptyBatch) throws RocksDBException {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override
-                    public void markRollback(byte[] xid) throws RocksDBException {
-                        throw new UnsupportedOperationException();
-                    }
-
-                    @Override
-                    public void markCommit(byte[] xid) throws RocksDBException {
-                        throw new UnsupportedOperationException();
-                    }
-                });
-
-                //replace the current batch with the rewritten one
-                this.batch.close();
-                this.batch = newBatch;
-            }
-
-            this.storageInternal.storage().db().write(WRITE_OPTIONS, this.batch);
+            this.storageInternal.storage().db().write(WRITE_OPTIONS, this);
         } catch (RocksDBException e) {
             throw new FStorageException(e);
         } finally {
@@ -182,19 +61,9 @@ public class RocksStorageWriteBatchInternal implements FStorageWriteBatchInterna
     }
 
     @Override
-    public void clear() {
-        this.batch.clear();
-    }
-
-    @Override
-    public void close() {
-        this.batch.close();
-    }
-
-    @Override
     public void put(@NonNull FStorageColumnInternal column, @NonNull byte[] key, @NonNull byte[] value) throws FStorageException {
         try {
-            this.batch.put(((RocksStorageColumnInternal) column).handle(), key, value);
+            this.put(((RocksStorageColumnInternal) column).handle(), key, value);
         } catch (RocksDBException e) {
             throw new FStorageException(e);
         }
@@ -203,7 +72,7 @@ public class RocksStorageWriteBatchInternal implements FStorageWriteBatchInterna
     @Override
     public void delete(@NonNull FStorageColumnInternal column, @NonNull byte[] key) throws FStorageException {
         try {
-            this.batch.delete(((RocksStorageColumnInternal) column).handle(), key);
+            this.delete(((RocksStorageColumnInternal) column).handle(), key);
         } catch (RocksDBException e) {
             throw new FStorageException(e);
         }

@@ -21,32 +21,27 @@
 package net.daporkchop.fp2.core.storage.rocks;
 
 import com.google.common.collect.ImmutableBiMap;
-import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.storage.FStorageException;
-import net.daporkchop.fp2.api.storage.internal.FStorageColumnHintsInternal;
 import net.daporkchop.fp2.api.storage.internal.FStorageColumnInternal;
 import net.daporkchop.fp2.api.storage.internal.FStorageInternal;
 import net.daporkchop.fp2.api.storage.internal.FStorageSnapshotInternal;
 import net.daporkchop.fp2.api.storage.internal.FStorageTransactionInternal;
 import net.daporkchop.fp2.api.storage.internal.FStorageWriteBatchInternal;
-import net.daporkchop.lib.common.util.PorkUtil;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
 import org.rocksdb.WriteBatch;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
@@ -84,7 +79,6 @@ public class RocksStorageInternal extends ReentrantReadWriteLock implements FSto
     private final RocksStorageManifest.ItemData manifestData;
 
     private final ImmutableBiMap<String, RocksStorageColumnInternal> columns;
-    private final Set<String> usedColumnFamilies;
 
     private int modificationCounter = 0;
 
@@ -97,8 +91,6 @@ public class RocksStorageInternal extends ReentrantReadWriteLock implements FSto
         //noinspection UnstableApiUsage
         this.columns = columns.entrySet().stream()
                 .collect(ImmutableBiMap.toImmutableBiMap(Map.Entry::getKey, entry -> new RocksStorageColumnInternal(entry.getValue())));
-
-        this.usedColumnFamilies = new ObjectOpenHashSet<>(columns.keySet());
     }
 
     public void ensureOpen() {
@@ -111,9 +103,12 @@ public class RocksStorageInternal extends ReentrantReadWriteLock implements FSto
         this.ensureOpen();
         this.open = false;
 
+        //set the column family handle in each RocksStorageColumnInternal to null in order to cause any illegal accesses after we've already closed to fail
+        this.columns.values().forEach(column -> column.handle(null));
+
         //notify the storage that we've stopped using all the column families
         // (assume we already hold a write lock on the storage)
-        this.storage.stopUsingColumnFamilies(this.usedColumnFamilies);
+        this.storage.stopUsingColumnFamilies(this.manifestData.columnNamesToColumnFamilyNames().values());
     }
 
     @Override
@@ -190,72 +185,16 @@ public class RocksStorageInternal extends ReentrantReadWriteLock implements FSto
     public void clearColumns(@NonNull Collection<FStorageColumnInternal> columns) throws FStorageException {
         this.ensureOpen();
 
-        List<String> columnNames = PorkUtil.<Collection<RocksStorageColumnInternal>>uncheckedCast(columns).stream()
-                .distinct().map(this.columns.inverse()::get).collect(Collectors.toList());
-        List<ColumnFamilyHandle> oldColumnFamilyHandles = PorkUtil.<Collection<RocksStorageColumnInternal>>uncheckedCast(columns).stream()
-                .distinct().map(RocksStorageColumnInternal::handle).collect(Collectors.toList());
-
-        //acquire write lock on the storage since we're about to be modifying the manifest
-        this.storage.writeLock().lock();
-        //acquire write lock on self since we're about to be modifying the column families
+        //acquire a write lock to prevent other transactions/write batches from inserting new values while we're trying to delete them
         this.writeLock().lock();
-        try {
-            List<String> newColumnFamilyNames = new ArrayList<>(columnNames.size());
-
-            this.storage.manifest().snapshot();
-            try {
-                columnNames.forEach(columnName -> {
-                    //find the name of the current column family so we can use that to get the usage hints for the new one
-                    String oldColumnFamilyName = this.manifestData.columnNamesToColumnFamilyNames().get(columnName);
-                    FStorageColumnHintsInternal oldColumnHints = this.storage.manifest().allColumnFamilies().get(oldColumnFamilyName);
-
-                    //mark the old column family for deletion
-                    this.storage.manifest().columnFamiliesPendingDeletion().add(oldColumnFamilyName);
-
-                    //create a new column family
-                    String newColumnFamilyName = this.storage.manifest().assignNewColumnFamilyName(oldColumnHints);
-                    newColumnFamilyNames.add(newColumnFamilyName);
-
-                    //associate the new column family name with the column being cleared
-                    this.manifestData.columnNamesToColumnFamilyNames().put(columnName, newColumnFamilyName);
-                });
-
-                //save the updated manifest
-                this.storage.writeManifest();
-            } catch (Exception e) { //something failed, roll back the changes and rethrow exception
-                this.storage.manifest().rollback();
-                throw new FStorageException("failed to replace column families", e);
-            } finally {
-                this.storage.manifest().clearSnapshot();
-            }
-
-            //open the new column families
-            Map<String, ColumnFamilyHandle> newColumnFamilies = this.storage.beginUsingColumnFamilies(newColumnFamilyNames);
-
-            //remember the new column families' names so that we can release them when closing this storage
-            this.usedColumnFamilies.addAll(newColumnFamilyNames);
-
-            //increment the modification counter in order to invalidate active transactions
-            this.modificationCounter++;
-
-            //replace the existing column families with the new ones
-            for (int i = 0; i < columnNames.size(); i++) {
-                this.columns.get(columnNames.get(i)).handle(newColumnFamilies.get(newColumnFamilyNames.get(i)));
-            }
-        } finally {
-            this.writeLock().unlock();
-            this.storage.writeLock().unlock();
-        }
-
-        //technically, we're done now! the old column families are no longer referenced and will be dropped from the db eventually, and all future db operations will be redirected to
-        //  the new column families. however, in order to possibly allow rocksdb to reclaim some storage sooner, we'll go through and do a range delete across every key in the old
-        //  column families.
-
+        //do a range deletion over all the keys in the column family
         try (WriteBatch batch = new WriteBatch()) {
-            //iterate over each of the old column families
-            for (ColumnFamilyHandle oldColumnFamilyHandle : oldColumnFamilyHandles) {
+            //iterate over each of the columns
+            for (FStorageColumnInternal column : new ReferenceOpenHashSet<>(columns)) {
+                ColumnFamilyHandle handle = ((RocksStorageColumnInternal) column).handle();
+
                 //create an iterator in the column family
-                try (RocksIterator itr = this.storage.db().newIterator(oldColumnFamilyHandle, RocksStorage.READ_OPTIONS)) {
+                try (RocksIterator itr = this.storage.db().newIterator(handle, RocksStorage.READ_OPTIONS)) {
                     itr.seekToFirst();
                     if (!itr.isValid()) { //the column family is empty, there's nothing to do!
                         continue;
@@ -267,18 +206,23 @@ public class RocksStorageInternal extends ReentrantReadWriteLock implements FSto
                     byte[] lastKey = itr.key();
 
                     if (Arrays.equals(firstKey, lastKey)) { //the keys are the same, there's only one entry in the column family
-                        batch.delete(oldColumnFamilyHandle, firstKey);
+                        batch.delete(handle, firstKey);
                     } else { //there are multiple keys in the column family
-                        batch.deleteRange(oldColumnFamilyHandle, firstKey, lastKey);
-                        batch.delete(oldColumnFamilyHandle, lastKey); //explicitly delete lastKey because deleteRange()'s upper bound is exclusive
+                        batch.deleteRange(handle, firstKey, lastKey);
+                        batch.delete(handle, lastKey); //explicitly delete lastKey because deleteRange()'s upper bound is exclusive
                     }
                 }
             }
 
             //execute all the deleteRange()s
             this.storage.db().write(RocksStorage.WRITE_OPTIONS, batch);
+
+            //increment modification counter in order to cause all the outstanding transactions to fail
+            this.modificationCounter++;
         } catch (RocksDBException e) {
             throw new FStorageException("failed to clear old column families", e);
+        } finally {
+            this.writeLock().unlock();
         }
     }
 
