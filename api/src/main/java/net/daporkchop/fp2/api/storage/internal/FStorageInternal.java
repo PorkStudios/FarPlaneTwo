@@ -59,25 +59,25 @@ public interface FStorageInternal extends FStorageReadOperationsInternal, AutoCl
     void close() throws FStorageException;
 
     //
-    // MANIFEST
+    // TOKEN
     //
 
     /**
-     * @return the current manifest data, if any
+     * @return the current token data, if any
      */
-    Optional<byte[]> getManifest();
+    Optional<byte[]> getToken();
 
     /**
-     * Sets the manifest data.
+     * Sets the token data.
      *
-     * @param manifest the new manifest data
+     * @param token the new token data
      */
-    void setManifest(@NonNull byte[] manifest) throws FStorageException;
+    void setToken(@NonNull byte[] token) throws FStorageException;
 
     /**
-     * Removes the manifest data.
+     * Removes the token data.
      */
-    void removeManifest() throws FStorageException;
+    void removeToken() throws FStorageException;
 
     //
     // COLUMN MANAGEMENT

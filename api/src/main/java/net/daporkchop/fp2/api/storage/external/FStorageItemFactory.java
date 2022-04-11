@@ -56,10 +56,15 @@ public interface FStorageItemFactory<I extends FStorageItem> {
     enum ConfigurationResult {
         /**
          * The existing item's storage will be opened, or a new one created if it doesn't exist.
+         * <p>
+         * If the item is being opened using {@link FStorageCategory#openItem(String, FStorageItemFactory)} and the item doesn't already exist, a new item cannot be created, so
+         * the operation will fail.
          */
         CREATE_IF_MISSING,
         /**
          * If the item's storage exists, it will be deleted. Finally, a new storage will be created.
+         * <p>
+         * If the item is being opened using {@link FStorageCategory#openItem(String, FStorageItemFactory)} and the item doesn't already exist, the operation will fail.
          */
         DELETE_EXISTING_AND_CREATE,
     }
@@ -91,9 +96,9 @@ public interface FStorageItemFactory<I extends FStorageItem> {
      */
     interface ConfigurationCallback {
         /**
-         * @return the existing manifest for the given storage item, if any
+         * @return the existing token for the given storage item, if any
          */
-        Optional<byte[]> getExistingManifest();
+        Optional<byte[]> getExistingToken();
 
         /**
          * Registers a column to be used by the storage item.
