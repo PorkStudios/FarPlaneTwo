@@ -28,7 +28,7 @@ import net.daporkchop.fp2.api.storage.external.FStorageCategory;
  *
  * @author DaPorkchop_
  */
-public interface FStorage extends FStorageCategory {
+public interface FStorage extends FStorageCategory, AutoCloseable {
     /**
      * Closes this storage.
      * <p>

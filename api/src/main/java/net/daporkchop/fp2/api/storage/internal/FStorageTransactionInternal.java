@@ -21,8 +21,8 @@
 package net.daporkchop.fp2.api.storage.internal;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.api.util.CloseableResource;
 import net.daporkchop.fp2.api.storage.FStorageException;
+import net.daporkchop.fp2.api.util.CloseableResource;
 
 import java.util.List;
 
@@ -50,7 +50,7 @@ public interface FStorageTransactionInternal extends FStorageOperationsInternal,
      * <p>
      * This will discard any uncommitted writes and release any other keys owned by this transaction.
      */
-    void rollback();
+    void rollback() throws FStorageException;
 
     //
     // READ OPERATIONS
@@ -68,7 +68,7 @@ public interface FStorageTransactionInternal extends FStorageOperationsInternal,
     byte[] get(@NonNull FStorageColumnInternal column, @NonNull byte[] key, @NonNull ConflictDetectionLevel conflictDetectionLevel) throws FStorageException;
 
     @Override
-    default byte[][] multiGet(@NonNull List<FStorageColumnInternal> columns, @NonNull List<byte[]> keys) throws FStorageException {
+    default List<byte[]> multiGet(@NonNull List<FStorageColumnInternal> columns, @NonNull List<byte[]> keys) throws FStorageException {
         return this.multiGet(columns, keys, ConflictDetectionLevel.UPDATE);
     }
 
@@ -76,7 +76,7 @@ public interface FStorageTransactionInternal extends FStorageOperationsInternal,
      * @param conflictDetectionLevel how conflict detection should be performed for the keys
      * @see #multiGet(List, List)
      */
-    byte[][] multiGet(@NonNull List<FStorageColumnInternal> columns, @NonNull List<byte[]> keys, @NonNull ConflictDetectionLevel conflictDetectionLevel) throws FStorageException;
+    List<byte[]> multiGet(@NonNull List<FStorageColumnInternal> columns, @NonNull List<byte[]> keys, @NonNull ConflictDetectionLevel conflictDetectionLevel) throws FStorageException;
 
     //
     // WRITE OPERATIONS
@@ -124,6 +124,6 @@ public interface FStorageTransactionInternal extends FStorageOperationsInternal,
          * <p>
          * Note that this is only a hint, the implementation may still choose to use a stricter conflict detection level.
          */
-        NONE;
+        NONE,
     }
 }

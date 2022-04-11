@@ -22,7 +22,6 @@ package net.daporkchop.fp2.api.storage.internal;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.api.storage.FStorageException;
-import net.daporkchop.fp2.api.storage.external.FStorageItem;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -34,7 +33,7 @@ import java.util.Optional;
  *
  * @author DaPorkchop_
  */
-public interface FStorageInternal extends FStorageReadOperationsInternal, AutoCloseable {
+public interface FStorageInternal extends FStorageReadOperationsInternal {
     /**
      * @return a new {@link FStorageWriteBatchInternal write batch}
      */
@@ -49,14 +48,6 @@ public interface FStorageInternal extends FStorageReadOperationsInternal, AutoCl
      * @return a new {@link FStorageSnapshotInternal snapshot}
      */
     FStorageSnapshotInternal snapshot();
-
-    /**
-     * Closes this storage.
-     * <p>
-     * Should only be called by {@link FStorageItem#close()}.
-     */
-    @Override
-    void close() throws FStorageException;
 
     //
     // TOKEN

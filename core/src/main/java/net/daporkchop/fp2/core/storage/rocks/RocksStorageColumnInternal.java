@@ -18,24 +18,22 @@
  *
  */
 
-package net.daporkchop.fp2.api.storage.internal;
+package net.daporkchop.fp2.core.storage.rocks;
 
-import net.daporkchop.fp2.api.storage.FStorageException;
-import net.daporkchop.fp2.api.util.CloseableResource;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
+import net.daporkchop.fp2.api.storage.internal.FStorageColumnInternal;
+import org.rocksdb.ColumnFamilyHandle;
 
 /**
- * A write batch buffers a series of write operations which can be atomically all at once.
+ * Implementation of {@link FStorageColumnInternal} for {@link RocksStorage}.
  *
  * @author DaPorkchop_
  */
-public interface FStorageWriteBatchInternal extends FStorageWriteOperationsInternal, CloseableResource {
-    /**
-     * Atomically executes all of the buffered writes.
-     */
-    void write() throws FStorageException;
-
-    /**
-     * Resets this write batch to its initial state by clearing all of the buffered writes.
-     */
-    void clear();
+@AllArgsConstructor
+@Getter
+@Setter
+public class RocksStorageColumnInternal implements FStorageColumnInternal {
+    private ColumnFamilyHandle handle;
 }

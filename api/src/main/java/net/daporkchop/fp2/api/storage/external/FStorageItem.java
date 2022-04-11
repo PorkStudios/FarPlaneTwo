@@ -29,12 +29,12 @@ import net.daporkchop.fp2.api.storage.internal.FStorageInternal;
  *
  * @author DaPorkchop_
  */
-public interface FStorageItem extends AutoCloseable {
+public interface FStorageItem {
     /**
-     * Closes this item.
+     * Called by the implementation when closing the item with {@link FStorageCategory#closeItem(String)}. Must <strong>not</strong> be called by ordinary user code.
      * <p>
-     * This must call {@link FStorageInternal#close()} on the {@link FStorageInternal} instance which this item was created with.
+     * This allows the implementation to trigger any internal cleanup, such as flushing any buffered data to the underlying {@link FStorageInternal}, before the item's storage is actually
+     * closed. Once this method returns, the underlying {@link FStorageInternal} will no longer be accessible.
      */
-    @Override
-    void close() throws FStorageException;
+    void closeInternal() throws FStorageException;
 }

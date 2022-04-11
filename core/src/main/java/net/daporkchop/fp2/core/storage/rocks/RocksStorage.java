@@ -49,6 +49,7 @@ import org.rocksdb.OptimisticTransactionDB;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
+import org.rocksdb.Transaction;
 import org.rocksdb.WriteOptions;
 
 import java.io.IOException;
@@ -87,6 +88,7 @@ public abstract class RocksStorage<DB extends RocksDB> extends ReentrantReadWrit
 
     private final Path root;
 
+    @Getter
     private final DB db;
 
     private final DBOptions dbOptions = this.createDBOptions();
@@ -145,7 +147,10 @@ public abstract class RocksStorage<DB extends RocksDB> extends ReentrantReadWrit
             }
 
             //create root storage category
-            this.rootCategory = new RocksStorageCategory.Root(this, this.manifest.rootCategory());
+            this.rootCategory = new RocksStorageCategory(this, this.manifest.rootCategory());
+
+            //no column families are used right now, so cleanup will delete every column family that was in the deletion queue
+            this.cleanColumnFamiliesPendingDeletion();
         } finally {
             this.writeLock().unlock();
         }
@@ -209,6 +214,8 @@ public abstract class RocksStorage<DB extends RocksDB> extends ReentrantReadWrit
 
     protected abstract DB createDB(DBOptions dbOptions, String path, List<ColumnFamilyDescriptor> columnFamilyDescriptors, List<ColumnFamilyHandle> columnFamilyHandles) throws RocksDBException;
 
+    public abstract Transaction beginTransaction(@NonNull WriteOptions writeOptions);
+
     protected DBOptions createDBOptions() {
         return new DBOptions()
                 .setCreateIfMissing(true)
@@ -248,6 +255,9 @@ public abstract class RocksStorage<DB extends RocksDB> extends ReentrantReadWrit
         try {
             this.ensureOpen();
             this.open = false;
+
+            //close the root category
+            this.rootCategory.doClose();
 
             try {
                 //flush all column families
@@ -413,13 +423,23 @@ public abstract class RocksStorage<DB extends RocksDB> extends ReentrantReadWrit
     }
 
     @Override
-    public FStorageCategory openCategory(@NonNull String name) throws FStorageException, NoSuchElementException {
+    public FStorageCategory openCategory(@NonNull String name) throws FStorageException, NoSuchElementException, IllegalStateException {
         return this.rootCategory.openCategory(name);
     }
 
     @Override
-    public FStorageCategory openOrCreateCategory(@NonNull String name) throws FStorageException {
+    public FStorageCategory openOrCreateCategory(@NonNull String name) throws FStorageException, IllegalStateException {
         return this.rootCategory.openOrCreateCategory(name);
+    }
+
+    @Override
+    public void closeCategory(@NonNull String name) throws FStorageException, NoSuchElementException {
+        this.rootCategory.closeCategory(name);
+    }
+
+    @Override
+    public void deleteCategory(@NonNull String name) throws FStorageException, NoSuchElementException, IllegalStateException {
+        this.rootCategory.deleteCategory(name);
     }
 
     @Override
@@ -434,17 +454,27 @@ public abstract class RocksStorage<DB extends RocksDB> extends ReentrantReadWrit
 
     @Override
     public Map<String, ? extends FStorageItem> openItems() {
-        return this.rootCategory.openItems();
+        return this.rootCategory.openItemsExternal();
     }
 
     @Override
-    public <I extends FStorageItem> I openItem(@NonNull String name, @NonNull FStorageItemFactory<I> factory) throws FStorageException, NoSuchElementException {
+    public <I extends FStorageItem> I openItem(@NonNull String name, @NonNull FStorageItemFactory<I> factory) throws FStorageException, NoSuchElementException, IllegalStateException {
         return this.rootCategory.openItem(name, factory);
     }
 
     @Override
-    public <I extends FStorageItem> I openOrCreateItem(@NonNull String name, @NonNull FStorageItemFactory<I> factory) throws FStorageException {
+    public <I extends FStorageItem> I openOrCreateItem(@NonNull String name, @NonNull FStorageItemFactory<I> factory) throws FStorageException, IllegalStateException {
         return this.rootCategory.openOrCreateItem(name, factory);
+    }
+
+    @Override
+    public void closeItem(@NonNull String name) throws FStorageException, NoSuchElementException {
+        this.rootCategory.closeItem(name);
+    }
+
+    @Override
+    public void deleteItem(@NonNull String name) throws FStorageException, NoSuchElementException, IllegalStateException {
+        this.rootCategory.deleteItem(name);
     }
 
     @Override
@@ -465,6 +495,11 @@ public abstract class RocksStorage<DB extends RocksDB> extends ReentrantReadWrit
         @Override
         protected OptimisticTransactionDB createDB(DBOptions dbOptions, String path, List<ColumnFamilyDescriptor> columnFamilyDescriptors, List<ColumnFamilyHandle> columnFamilyHandles) throws RocksDBException {
             return OptimisticTransactionDB.open(dbOptions, path, columnFamilyDescriptors, columnFamilyHandles);
+        }
+
+        @Override
+        public Transaction beginTransaction(@NonNull WriteOptions writeOptions) {
+            return this.db().beginTransaction(writeOptions);
         }
     }
 }

@@ -53,5 +53,5 @@ public interface FStorageReadOperationsInternal {
      * @return an array of results. For each column-entry pair, the corresponding element in the returned array is the value associated with the given key, or {@code null} if it could not be found
      * @throws FStorageException if the operation fails
      */
-    byte[][] multiGet(@NonNull List<FStorageColumnInternal> columns, @NonNull List<byte[]> keys) throws FStorageException;
+    List<byte[]> multiGet(@NonNull List<FStorageColumnInternal> columns, @NonNull List<byte[]> keys) throws FStorageException;
 }

@@ -31,7 +31,6 @@ import net.daporkchop.fp2.api.storage.external.FStorageItem;
 import net.daporkchop.fp2.api.storage.external.FStorageItemFactory;
 import net.daporkchop.fp2.api.storage.internal.FStorageColumnHintsInternal;
 import net.daporkchop.lib.primitive.map.open.ObjObjOpenHashMap;
-import org.rocksdb.ColumnFamilyHandle;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -41,39 +40,31 @@ import java.util.Optional;
 import java.util.Set;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
 @Getter
-public abstract class RocksStorageCategory implements FStorageCategory {
+public class RocksStorageCategory implements FStorageCategory {
     @NonNull
     private final RocksStorage<?> storage;
 
     @NonNull
     private final RocksStorageManifest.CategoryData manifestData;
 
-    private final Map<String, FStorageCategory> openCategories = new ObjObjOpenHashMap<>();
-    private final Map<String, ? extends FStorageItem> openItems = new ObjObjOpenHashMap<>();
+    private final Map<String, RocksStorageCategory> openCategories = new ObjObjOpenHashMap<>();
+    private final Map<String, RocksStorageInternal> openItemsInternal = new ObjObjOpenHashMap<>();
+    private final Map<String, ? extends FStorageItem> openItemsExternal = new ObjObjOpenHashMap<>();
 
     private volatile boolean open = true;
 
-    @Override
-    public void close() throws FStorageException {
-        this.storage.writeLock().lock();
-        try {
-            this.ensureOpen();
-            checkState(this.openCategories.isEmpty(), "cannot close category when some sub-categories are still open! %s", this.openCategories);
-            checkState(this.openItems.isEmpty(), "cannot close category when some sub-items are still open! %s", this.openItems);
+    protected void doClose() throws FStorageException {
+        this.ensureOpen();
+        checkState(this.openCategories.isEmpty(), "cannot close category when some sub-categories are still open! %s", this.openCategories);
+        checkState(this.openItemsExternal.isEmpty(), "cannot close category when some sub-items are still open! %s", this.openItemsExternal);
 
-            this.close0();
-        } finally {
-            this.storage.writeLock().unlock();
-        }
-    }
-
-    protected void close0() throws FStorageException {
         this.open = false;
     }
 
@@ -104,7 +95,7 @@ public abstract class RocksStorageCategory implements FStorageCategory {
     }
 
     @Override
-    public FStorageCategory openCategory(@NonNull String name) throws FStorageException, NoSuchElementException {
+    public FStorageCategory openCategory(@NonNull String name) throws FStorageException, NoSuchElementException, IllegalStateException {
         this.storage.writeLock().lock();
         try {
             this.ensureOpen();
@@ -119,7 +110,7 @@ public abstract class RocksStorageCategory implements FStorageCategory {
             }
 
             //open the category
-            RocksStorageCategory category = new Normal(this.storage, data, this);
+            RocksStorageCategory category = new RocksStorageCategory(this.storage, data);
             this.openCategories.put(name, category);
             return category;
         } finally {
@@ -128,7 +119,7 @@ public abstract class RocksStorageCategory implements FStorageCategory {
     }
 
     @Override
-    public FStorageCategory openOrCreateCategory(@NonNull String name) throws FStorageException {
+    public FStorageCategory openOrCreateCategory(@NonNull String name) throws FStorageException, IllegalStateException {
         this.storage.writeLock().lock();
         try {
             this.ensureOpen();
@@ -155,9 +146,30 @@ public abstract class RocksStorageCategory implements FStorageCategory {
             }
 
             //open the category
-            RocksStorageCategory category = new Normal(this.storage, data, this);
+            RocksStorageCategory category = new RocksStorageCategory(this.storage, data);
             this.openCategories.put(name, category);
             return category;
+        } finally {
+            this.storage.writeLock().unlock();
+        }
+    }
+
+    @Override
+    public void closeCategory(@NonNull String name) throws FStorageException, NoSuchElementException {
+        this.storage.writeLock().lock();
+        try {
+            this.ensureOpen();
+
+            RocksStorageCategory category = this.openCategories.get(name);
+            if (category == null) { //the category wasn't open
+                throw new NoSuchElementException("no category is open with name: " + name);
+            }
+
+            //try to close the category
+            category.doClose();
+
+            //remove the category from this category
+            this.openCategories.remove(name);
         } finally {
             this.storage.writeLock().unlock();
         }
@@ -224,29 +236,29 @@ public abstract class RocksStorageCategory implements FStorageCategory {
             this.ensureOpen();
 
             //take snapshot of open items map
-            return ImmutableMap.copyOf(this.openItems);
+            return ImmutableMap.copyOf(this.openItemsExternal);
         } finally {
             this.storage.readLock().unlock();
         }
     }
 
     @Override
-    public <I extends FStorageItem> I openItem(@NonNull String name, @NonNull FStorageItemFactory<I> factory) throws FStorageException, NoSuchElementException {
+    public <I extends FStorageItem> I openItem(@NonNull String name, @NonNull FStorageItemFactory<I> factory) throws FStorageException, NoSuchElementException, IllegalStateException {
         return this.openItem0(name, factory, false);
     }
 
     @Override
-    public <I extends FStorageItem> I openOrCreateItem(@NonNull String name, @NonNull FStorageItemFactory<I> factory) throws FStorageException {
+    public <I extends FStorageItem> I openOrCreateItem(@NonNull String name, @NonNull FStorageItemFactory<I> factory) throws FStorageException, IllegalStateException {
         return this.openItem0(name, factory, true);
     }
 
-    protected <I extends FStorageItem> I openItem0(@NonNull String name, @NonNull FStorageItemFactory<I> factory, boolean createIfMissing) throws FStorageException, NoSuchElementException {
+    protected <I extends FStorageItem> I openItem0(@NonNull String name, @NonNull FStorageItemFactory<I> factory, boolean createIfMissing) throws FStorageException, NoSuchElementException, IllegalStateException {
         this.storage.writeLock().lock();
         try {
             this.ensureOpen();
 
             //ensure the item isn't already open
-            checkState(!this.openItems.containsKey(name), "item '%s' is already open!", name);
+            checkState(!this.openItemsExternal.containsKey(name), "item '%s' is already open!", name);
 
             //ensure the item exists
             RocksStorageManifest.ItemData data = this.manifestData.items().get(name);
@@ -285,8 +297,6 @@ public abstract class RocksStorageCategory implements FStorageCategory {
 
             boolean hasTakenSnapshot = false;
             try {
-                boolean isNewItem = false;
-
                 switch (result) {
                     case DELETE_EXISTING_AND_CREATE:
                         if (data != null) { //the item already exists
@@ -297,9 +307,6 @@ public abstract class RocksStorageCategory implements FStorageCategory {
                             //delete the item data
                             // this will mark all the item's column families for deletion
                             this.recursiveDeleteItem(data);
-
-                            //the item is effectively being created from scratch
-                            isNewItem = true;
                         }
                     case CREATE_IF_MISSING:
                         if (data == null) { //the item doesn't exist
@@ -312,9 +319,6 @@ public abstract class RocksStorageCategory implements FStorageCategory {
                             //create a new, empty storage item
                             data = new RocksStorageManifest.ItemData();
                             this.manifestData.items().put(name, data);
-
-                            //remember that the item is new
-                            isNewItem = true;
                         }
                         break;
                     default:
@@ -395,10 +399,49 @@ public abstract class RocksStorageCategory implements FStorageCategory {
                 }
             }
 
-            //begin using (and create if necessary) all of the column families used by this item
-            Map<String, ColumnFamilyHandle> columnFamilyHandles = this.storage.beginUsingColumnFamilies(data.columnNamesToColumnFamilyNames().values());
+            //begin using (and create if necessary) all of the column families used by this item, then wrap into a RocksStorageInternal
+            RocksStorageInternal storageInternal = new RocksStorageInternal(this.storage, data, this.storage.beginUsingColumnFamilies(data.columnNamesToColumnFamilyNames().values()));
 
-            //TODO: something
+            //try to construct item
+            I item;
+            try {
+                item = factory.create(storageInternal);
+            } catch (Exception e) { //failure, close the internal storage again to release the column families back to the storage
+                storageInternal.close();
+                throw new FStorageException("failed to open item", e);
+            }
+
+            //save the storage and item
+            this.openItemsInternal.put(name, storageInternal);
+            this.openItemsExternal.put(name, uncheckedCast(item));
+
+            return item;
+        } finally {
+            this.storage.writeLock().unlock();
+        }
+    }
+
+    @Override
+    public void closeItem(@NonNull String name) throws FStorageException, NoSuchElementException {
+        this.storage.writeLock().lock();
+        try {
+            this.ensureOpen();
+
+            RocksStorageInternal storageInternal = this.openItemsInternal.get(name);
+            if (storageInternal == null) { //the item wasn't open
+                throw new NoSuchElementException("no item is open with name: " + name);
+            }
+
+            this.openItemsInternal.remove(name);
+            FStorageItem item = this.openItemsExternal.remove(name);
+
+            try {
+                //notify the user code that the item is being closed
+                item.closeInternal();
+            } finally {
+                //close the internal storage
+                storageInternal.close();
+            }
         } finally {
             this.storage.writeLock().unlock();
         }
@@ -413,7 +456,7 @@ public abstract class RocksStorageCategory implements FStorageCategory {
             //validate the names being removed
             names.forEach(name -> {
                 //ensure the item isn't already open
-                checkState(!this.openItems.containsKey(name), "item '%s' is already open!", name);
+                checkState(!this.openItemsExternal.containsKey(name), "item '%s' is already open!", name);
 
                 //ensure the item exists
                 if (!this.manifestData.items().containsKey(name)) {
@@ -449,39 +492,6 @@ public abstract class RocksStorageCategory implements FStorageCategory {
     public void ensureOpen() {
         if (!this.open) {
             throw new IllegalStateException("category has been closed!");
-        }
-    }
-
-    /**
-     * The root storage category.
-     *
-     * @author DaPorkchop_
-     */
-    public static class Root extends RocksStorageCategory {
-        public Root(@NonNull RocksStorage<?> storage, @NonNull RocksStorageManifest.CategoryData manifestData) {
-            super(storage, manifestData);
-        }
-    }
-
-    /**
-     * An ordinary storage category.
-     *
-     * @author DaPorkchop_
-     */
-    public static class Normal extends RocksStorageCategory {
-        private final RocksStorageCategory parent;
-
-        public Normal(@NonNull RocksStorage<?> storage, @NonNull RocksStorageManifest.CategoryData manifestData, @NonNull RocksStorageCategory parent) {
-            super(storage, manifestData);
-            this.parent = parent;
-        }
-
-        @Override
-        protected void close0() throws FStorageException {
-            super.close0();
-
-            //we hold a write lock, so we can modify the parent's openCategories map
-            checkState(this.parent.openCategories.values().remove(this), "failed to remove self from parent!");
         }
     }
 }

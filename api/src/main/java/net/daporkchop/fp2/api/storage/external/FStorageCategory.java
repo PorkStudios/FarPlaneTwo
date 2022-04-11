@@ -34,15 +34,7 @@ import java.util.Set;
  *
  * @author DaPorkchop_
  */
-public interface FStorageCategory extends AutoCloseable {
-    /**
-     * Closes this category.
-     * <p>
-     * All children of this category must be closed prior to calling this method.
-     */
-    @Override
-    void close() throws FStorageException;
-
+public interface FStorageCategory {
     //
     // CATEGORIES
     //
@@ -53,7 +45,7 @@ public interface FStorageCategory extends AutoCloseable {
     Set<String> allCategories();
 
     /**
-     * @return a {@link Map} containing all of the child categories that are currently open
+     * @return a {@link Map} containing a snapshot of all of the child categories that are currently open
      */
     Map<String, FStorageCategory> openCategories();
 
@@ -63,16 +55,29 @@ public interface FStorageCategory extends AutoCloseable {
      * @param name the name of the category to open
      * @return the category
      * @throws NoSuchElementException if no category with the given name exists
+     * @throws IllegalStateException  if the category is currently open
      */
-    FStorageCategory openCategory(@NonNull String name) throws FStorageException, NoSuchElementException;
+    FStorageCategory openCategory(@NonNull String name) throws FStorageException, NoSuchElementException, IllegalStateException;
 
     /**
      * Opens the child category with the given name, creating it if it doesn't exist.
      *
      * @param name the name of the category to open
      * @return the category
+     * @throws IllegalStateException if the category is currently open
      */
-    FStorageCategory openOrCreateCategory(@NonNull String name) throws FStorageException;
+    FStorageCategory openOrCreateCategory(@NonNull String name) throws FStorageException, IllegalStateException;
+
+    /**
+     * Closes the child category with the given name, failing if it isn't open.
+     * <p>
+     * Users must take care not to access an category while or after it is being closed. All outstanding method calls on the category must have completed before this method is called, and
+     * users should assume that any method calls on the category made while or after calling this method will produce undefined behavior.
+     *
+     * @param name the name of the category to close
+     * @throws NoSuchElementException if no category with the given name is open
+     */
+    void closeCategory(@NonNull String name) throws FStorageException, NoSuchElementException;
 
     /**
      * Deletes the child category with the given name, and all of its children. The category must not be open.
@@ -104,7 +109,7 @@ public interface FStorageCategory extends AutoCloseable {
     Set<String> allItems();
 
     /**
-     * @return a {@link Map} containing all of the child items that are currently open
+     * @return a {@link Map} containing a snapshot of all of the child items that are currently open
      */
     Map<String, ? extends FStorageItem> openItems();
 
@@ -114,9 +119,10 @@ public interface FStorageCategory extends AutoCloseable {
      * @param name    the name of the item to open
      * @param factory the {@link FStorageItemFactory} to use to initialize the item
      * @return the item
-     * @throws NoSuchElementException if no open with the given name exists
+     * @throws NoSuchElementException if no item with the given name exists
+     * @throws IllegalStateException  if the item is currently open
      */
-    <I extends FStorageItem> I openItem(@NonNull String name, @NonNull FStorageItemFactory<I> factory) throws FStorageException, NoSuchElementException;
+    <I extends FStorageItem> I openItem(@NonNull String name, @NonNull FStorageItemFactory<I> factory) throws FStorageException, NoSuchElementException, IllegalStateException;
 
     /**
      * Opens the child item with the given name, creating it if it doesn't exist.
@@ -124,8 +130,20 @@ public interface FStorageCategory extends AutoCloseable {
      * @param name    the name of the item to open
      * @param factory the {@link FStorageItemFactory} to use to initialize the item
      * @return the item
+     * @throws IllegalStateException if the item is currently open
      */
-    <I extends FStorageItem> I openOrCreateItem(@NonNull String name, @NonNull FStorageItemFactory<I> factory) throws FStorageException;
+    <I extends FStorageItem> I openOrCreateItem(@NonNull String name, @NonNull FStorageItemFactory<I> factory) throws FStorageException, IllegalStateException;
+
+    /**
+     * Closes the child item with the given name, failing if it isn't open.
+     * <p>
+     * Users must take care not to access an item while or after it is being closed. All outstanding method calls on the item must have completed before this method is called, and users
+     * should assume that any method on the item calls made while or after calling this method will produce undefined behavior.
+     *
+     * @param name the name of the item to close
+     * @throws NoSuchElementException if no item with the given name is open
+     */
+    void closeItem(@NonNull String name) throws FStorageException, NoSuchElementException;
 
     /**
      * Deletes the child item with the given name. The item must not be open.
