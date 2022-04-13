@@ -20,9 +20,7 @@
 
 package net.daporkchop.fp2.core.storage.rocks;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.Unpooled;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.storage.FStorage;
@@ -31,12 +29,9 @@ import net.daporkchop.fp2.api.storage.external.FStorageCategory;
 import net.daporkchop.fp2.api.storage.external.FStorageItem;
 import net.daporkchop.fp2.api.storage.external.FStorageItemFactory;
 import net.daporkchop.fp2.api.storage.internal.FStorageColumnHintsInternal;
-import net.daporkchop.lib.binary.stream.DataIn;
-import net.daporkchop.lib.binary.stream.DataOut;
+import net.daporkchop.fp2.core.storage.rocks.manifest.RocksStorageManifest;
 import net.daporkchop.lib.common.misc.file.PFiles;
-import net.daporkchop.lib.compression.context.PDeflater;
-import net.daporkchop.lib.compression.context.PInflater;
-import net.daporkchop.lib.compression.zstd.Zstd;
+import net.daporkchop.lib.common.reference.cache.Cached;
 import net.daporkchop.lib.primitive.map.open.ObjObjOpenHashMap;
 import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
@@ -50,26 +45,24 @@ import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.Transaction;
+import org.rocksdb.TransactionDB;
+import org.rocksdb.TransactionDBOptions;
 import org.rocksdb.WriteOptions;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 import java.util.Set;
-import java.util.TreeSet;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static java.nio.file.StandardCopyOption.*;
-import static java.nio.file.StandardOpenOption.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -77,7 +70,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  *
  * @author DaPorkchop_
  */
-public abstract class RocksStorage<DB extends RocksDB> extends ReentrantReadWriteLock implements FStorage {
+public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
     static {
         RocksDB.loadLibrary(); //ensure rocksdb is loaded (ForgeRocks does this automatically, but whatever)
     }
@@ -92,10 +85,10 @@ public abstract class RocksStorage<DB extends RocksDB> extends ReentrantReadWrit
     private final DB db;
 
     private final DBOptions dbOptions = this.createDBOptions();
-    private final Map<FStorageColumnHintsInternal, ColumnFamilyOptions> cfOptions = new ObjObjOpenHashMap<>();
+    private final Map<FStorageColumnHintsInternal, ColumnFamilyOptions> cachedColumnFamilyOptionsForHints = new ConcurrentHashMap<>();
 
-    private final Map<String, ColumnFamilyHandle> openColumnFamilyHandles = new ObjObjOpenHashMap<>();
-    private final Set<String> usedColumnFamilyNames = new TreeSet<>();
+    private final Map<String, ColumnFamilyHandle> openColumnFamilyHandles = new ConcurrentHashMap<>();
+    private final Set<String> lockedColumnFamilyNames = ConcurrentHashMap.newKeySet();
 
     @Getter
     private final RocksStorageManifest manifest;
@@ -107,109 +100,39 @@ public abstract class RocksStorage<DB extends RocksDB> extends ReentrantReadWrit
     protected RocksStorage(Path root) throws FStorageException {
         this.root = PFiles.ensureDirectoryExists(root);
 
-        this.writeLock().lock();
-        try {
-            //try to load the manifest
-            Optional<RocksStorageManifest> optionalManifest = this.loadManifest();
-            if (optionalManifest.isPresent()) { //manifest exists
-                this.manifest = optionalManifest.get();
-            } else { //manifest doesn't exist, nuke the folder and create a new storage
-                PFiles.rmContents(root);
-                this.manifest = new RocksStorageManifest();
+        //try to load the manifest
+        this.manifest = new RocksStorageManifest(this.root.resolve("manifest_v0")).load();
 
-                //save the new manifest
-                this.writeManifest();
-            }
+        //prepare column families for load
+        List<String> cfNames = new ArrayList<>();
+        List<ColumnFamilyDescriptor> cfDescriptors = new ArrayList<>();
+        this.manifest.forEachColumnFamily((name, hints) -> {
+            cfNames.add(name);
+            cfDescriptors.add(new ColumnFamilyDescriptor(name.getBytes(StandardCharsets.UTF_8), this.getCachedColumnFamilyOptionsForHints(hints)));
+        });
 
-            //prepare column families for load
-            List<String> cfNames = new ArrayList<>();
-            List<ColumnFamilyDescriptor> cfDescriptors = new ArrayList<>();
-            this.manifest.allColumnFamilies().forEach((name, hints) -> {
-                cfNames.add(name);
-                cfDescriptors.add(new ColumnFamilyDescriptor(name.getBytes(StandardCharsets.UTF_8), this.cfOptions.computeIfAbsent(hints, this::createColumnFamilyOptionsForHints)));
-            });
-
-            //default column family must be registered
-            cfNames.add(new String(RocksDB.DEFAULT_COLUMN_FAMILY).intern());
-            cfDescriptors.add(new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY));
-
-            try {
-                //open db
-                List<ColumnFamilyHandle> cfHandles = new ArrayList<>();
-                this.db = this.createDB(this.dbOptions, root.toString(), cfDescriptors, cfHandles);
-
-                //save all the opened column family handles
-                for (int i = 0; i < cfNames.size(); i++) {
-                    this.openColumnFamilyHandles.put(cfNames.get(i), cfHandles.get(i));
-                }
-            } catch (RocksDBException e) {
-                throw new FStorageException("failed to open db", e);
-            }
-
-            //create root storage category
-            this.rootCategory = new RocksStorageCategory(this, this.manifest.rootCategory());
-
-            //no column families are used right now, so cleanup will delete every column family that was in the deletion queue
-            this.cleanColumnFamiliesPendingDeletion();
-        } finally {
-            this.writeLock().unlock();
-        }
-    }
-
-    protected Optional<RocksStorageManifest> loadManifest() throws FStorageException {
-        Path manifestPath = this.root.resolve("manifest_v0");
+        //default column family must be registered
+        cfNames.add(new String(RocksDB.DEFAULT_COLUMN_FAMILY).intern());
+        cfDescriptors.add(new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY));
 
         try {
-            if (!PFiles.checkFileExists(manifestPath)) { //manifest doesn't exist
-                return Optional.empty();
+            //open db
+            List<ColumnFamilyHandle> cfHandles = new ArrayList<>();
+            this.db = this.createDB(this.dbOptions, root.toString(), cfDescriptors, cfHandles);
+
+            //save all the opened column family handles
+            for (int i = 0; i < cfNames.size(); i++) {
+                this.openColumnFamilyHandles.put(cfNames.get(i), cfHandles.get(i));
             }
-
-            //read manifest data
-            byte[] compressedManifest = Files.readAllBytes(manifestPath);
-
-            //decompress it
-            byte[] decompressedManifest = new byte[Zstd.PROVIDER.frameContentSize(Unpooled.wrappedBuffer(compressedManifest))];
-            try (PInflater inflater = Zstd.PROVIDER.inflater()) {
-                checkState(inflater.decompress(Unpooled.wrappedBuffer(compressedManifest), Unpooled.wrappedBuffer(decompressedManifest).clear()));
-            }
-
-            //deserialize it
-            return Optional.of(RocksStorageManifest.read(DataIn.wrap(Unpooled.wrappedBuffer(decompressedManifest), false)));
-        } catch (IOException e) {
-            throw new FStorageException("exception while loading manifest", e);
+        } catch (RocksDBException e) {
+            throw new FStorageException("failed to open db", e);
         }
-    }
 
-    protected void writeManifest() throws FStorageException {
-        checkState(this.writeLock().isHeldByCurrentThread(), "cannot modify manifest without holding a write lock!");
+        //create root storage category
+        this.rootCategory = new RocksStorageCategory(this, this.root.resolve("manifest"));
 
-        Path manifestPath = this.root.resolve("manifest_v0");
-        Path tempManifestPath = this.root.resolve("manifest_tmp");
-
-        ByteBuf uncompressed = ByteBufAllocator.DEFAULT.buffer();
-        ByteBuf compressed = ByteBufAllocator.DEFAULT.buffer();
-        try {
-            //serialize manifest data
-            this.manifest.write(DataOut.wrap(uncompressed, false));
-
-            //compress it
-            try (PDeflater deflater = Zstd.PROVIDER.deflater()) {
-                deflater.compressGrowing(uncompressed, compressed);
-            }
-
-            //copy buffer contents to a byte[] and write it to a file synchronously
-            byte[] arr = new byte[compressed.readableBytes()];
-            compressed.readBytes(arr);
-            Files.write(tempManifestPath, arr, CREATE, TRUNCATE_EXISTING, WRITE, SYNC, DSYNC);
-
-            //new manifest data has been synced to disk, do an atomic move
-            Files.move(tempManifestPath, manifestPath, REPLACE_EXISTING, ATOMIC_MOVE);
-        } catch (IOException e) {
-            throw new FStorageException("exception while loading manifest", e);
-        } finally {
-            compressed.release();
-            uncompressed.release();
-        }
+        //no column families are used right now, so cleanup will delete every column family that was in the deletion queue
+        this.cleanColumnFamiliesPendingDeletion();
     }
 
     protected abstract DB createDB(DBOptions dbOptions, String path, List<ColumnFamilyDescriptor> columnFamilyDescriptors, List<ColumnFamilyHandle> columnFamilyHandles) throws RocksDBException;
@@ -224,8 +147,12 @@ public abstract class RocksStorage<DB extends RocksDB> extends ReentrantReadWrit
                 .setKeepLogFileNum(1L);
     }
 
-    protected void closeDBOptions(@NonNull DBOptions options) {
+    protected void releaseDBOptions(@NonNull DBOptions options) {
         options.close();
+    }
+
+    protected ColumnFamilyOptions getCachedColumnFamilyOptionsForHints(@NonNull FStorageColumnHintsInternal hints) {
+        return this.cachedColumnFamilyOptionsForHints.computeIfAbsent(hints, this::createColumnFamilyOptionsForHints);
     }
 
     protected ColumnFamilyOptions createColumnFamilyOptionsForHints(@NonNull FStorageColumnHintsInternal hints) {
@@ -241,7 +168,7 @@ public abstract class RocksStorage<DB extends RocksDB> extends ReentrantReadWrit
         return options;
     }
 
-    protected void closeColumnFamilyOptions(@NonNull ColumnFamilyOptions options) {
+    protected void releaseColumnFamilyOptions(@NonNull ColumnFamilyOptions options) {
         if (options.compressionOptions() != null) { //compression options are set, close them
             options.compressionOptions().close();
         }
@@ -249,9 +176,13 @@ public abstract class RocksStorage<DB extends RocksDB> extends ReentrantReadWrit
         options.close();
     }
 
+    protected void releaseOptions() {
+        this.releaseDBOptions(this.dbOptions);
+        this.cachedColumnFamilyOptionsForHints.values().forEach(this::releaseColumnFamilyOptions);
+    }
+
     @Override
     public void close() throws FStorageException {
-        this.writeLock().lock();
         try {
             this.ensureOpen();
             this.open = false;
@@ -275,10 +206,7 @@ public abstract class RocksStorage<DB extends RocksDB> extends ReentrantReadWrit
             throw new FStorageException("failed to close db", e);
         } finally {
             //release allocated Options instances
-            this.dbOptions.close();
-            this.cfOptions.values().forEach(this::closeColumnFamilyOptions);
-
-            this.writeLock().unlock();
+            this.releaseOptions();
         }
     }
 
@@ -292,118 +220,137 @@ public abstract class RocksStorage<DB extends RocksDB> extends ReentrantReadWrit
         }
     }
 
-    public ColumnFamilyHandle beginUsingColumnFamily(@NonNull String columnFamilyName) throws FStorageException {
-        return this.beginUsingColumnFamilies(Collections.singleton(columnFamilyName)).get(columnFamilyName);
-    }
+    public Map<String, String> modifyColumns(@NonNull Set<String> columnFamilyNamesToDelete, @NonNull Map<String, FStorageColumnHintsInternal> columnNamesAndHintsToCreate) throws FStorageException {
+        this.ensureOpen();
 
-    public Map<String, ColumnFamilyHandle> beginUsingColumnFamilies(@NonNull Collection<String> columnFamilyNames) throws FStorageException {
-        checkState(this.writeLock().isHeldByCurrentThread(), "cannot begin using column families without holding a write lock!");
+        Map<String, String> out = new ObjObjOpenHashMap<>(columnNamesAndHintsToCreate.size());
 
-        columnFamilyNames.forEach(columnFamilyName -> {
-            checkState(!this.usedColumnFamilyNames.contains(columnFamilyName), "column family '%s' is already being used", columnFamilyName);
-
-            checkState(this.manifest.allColumnFamilies().containsKey(columnFamilyName), "column family '%s' isn't declared in the manifest", columnFamilyName);
-            checkState(!this.manifest.columnFamiliesPendingDeletion().contains(columnFamilyName), "column family '%s' is pending deletion", columnFamilyName);
-        });
-
-        Map<String, ColumnFamilyHandle> out = new ObjObjOpenHashMap<>(columnFamilyNames.size());
-
-        List<String> columnFamiliesToCreateNames = new ArrayList<>();
-        List<ColumnFamilyDescriptor> columnFamiliesToCreateDescriptors = new ArrayList<>();
-
-        columnFamilyNames.stream().distinct().forEach(columnFamilyName -> {
-            ColumnFamilyHandle handle = this.openColumnFamilyHandles.get(columnFamilyName);
-            if (handle != null) { //the named column family is already open
-                out.put(columnFamilyName, handle);
-            } else { //enqueue the column family to be created
-                FStorageColumnHintsInternal hints = this.manifest.allColumnFamilies().get(columnFamilyName);
-
-                columnFamiliesToCreateNames.add(columnFamilyName);
-                columnFamiliesToCreateDescriptors.add(new ColumnFamilyDescriptor(columnFamilyName.getBytes(StandardCharsets.UTF_8), this.createColumnFamilyOptionsForHints(hints)));
+        Collection<String> lockedColumnFamiliesToDelete = new ArrayList<>(columnFamilyNamesToDelete.size());
+        try {
+            //atomically acquire ownership of every column family being deleted
+            for (String columnFamilyName : columnFamilyNamesToDelete) {
+                checkState(this.lockedColumnFamilyNames.add(columnFamilyName), "cannot delete column family '%s' because it is currently used!", columnFamilyName);
+                lockedColumnFamiliesToDelete.add(columnFamilyName);
             }
-        });
+            lockedColumnFamiliesToDelete = columnFamilyNamesToDelete; //all of the column families have been acquired, replace with original input set to save memory lol
 
-        if (!columnFamiliesToCreateNames.isEmpty()) { //we need to create some column families
-            try {
-                List<ColumnFamilyHandle> handles = this.db.createColumnFamilies(columnFamiliesToCreateDescriptors);
-
-                //save the created column families into the map
-                for (int i = 0; i < columnFamiliesToCreateNames.size(); i++) {
-                    this.openColumnFamilyHandles.put(columnFamiliesToCreateNames.get(i), handles.get(i));
-                    out.put(columnFamiliesToCreateNames.get(i), handles.get(i));
+            //perform the operations atomically by grouping them all into a single manifest update
+            this.manifest.update(manifest -> {
+                if (!manifest.containsAllColumnFamilyNames(columnFamilyNamesToDelete)) { //some of the column family names don't exist
+                    columnFamilyNamesToDelete.forEach(columnFamilyName -> checkArg(manifest.containsColumnFamilyName(columnFamilyName), "cannot delete column family '%s' because it doesn't exist", columnFamilyName));
                 }
-            } catch (RocksDBException e) {
-                throw new FStorageException("failed to create column families", e);
-            }
-        }
 
-        //now that all of the column family handles have been retrieved, mark all of them as used simultaneously
-        // (doing it this way ensures that we won't be in an invalid state if we fail halfway through)
-        this.usedColumnFamilyNames.addAll(columnFamilyNames);
+                //mark all of the column families for deletion
+                manifest.markColumnFamiliesForDeletion(columnFamilyNamesToDelete);
+
+                //assign column family names to each of the columns being created
+                columnNamesAndHintsToCreate.forEach((columnName, hints) -> out.put(columnName, manifest.assignNewColumnFamilyName(hints)));
+            });
+
+            try {
+                //create new column families for each of the newly assigned column family names
+                List<String> columnFamilyNames = new ArrayList<>(columnNamesAndHintsToCreate.size());
+                List<ColumnFamilyDescriptor> columnFamilyDescriptors = new ArrayList<>(columnNamesAndHintsToCreate.size());
+
+                //build column family descriptors
+                columnNamesAndHintsToCreate.forEach((columnName, hints) -> {
+                    String columnFamilyName = out.get(columnName);
+                    columnFamilyNames.add(columnFamilyName);
+                    columnFamilyDescriptors.add(new ColumnFamilyDescriptor(columnFamilyName.getBytes(StandardCharsets.UTF_8), this.getCachedColumnFamilyOptionsForHints(hints)));
+                });
+
+                //actually create the column families
+                List<ColumnFamilyHandle> columnFamilyHandles = this.db.createColumnFamilies(columnFamilyDescriptors);
+
+                //save new column family handles into the global map
+                for (int i = 0; i < columnFamilyNames.size(); i++) {
+                    this.openColumnFamilyHandles.put(columnFamilyNames.get(i), columnFamilyHandles.get(i));
+                }
+            } catch (RocksDBException e) { //technically, this should probably rollback everything if it fails, but that's so unlikely that i simply can't be bothered to care
+                throw new FStorageException("failed to create new column families", e);
+            }
+        } finally {
+            //unlock all of the column family names which have been acquired so far
+            this.lockedColumnFamilyNames.removeAll(lockedColumnFamiliesToDelete);
+        }
 
         return out;
     }
 
-    public void stopUsingColumnFamily(@NonNull String columnFamilyName) throws FStorageException {
-        this.stopUsingColumnFamilies(Collections.singleton(columnFamilyName));
+    public Map<String, ColumnFamilyHandle> acquireColumnFamilies(@NonNull Set<String> columnFamilyNames) throws FStorageException {
+        this.ensureOpen();
+
+        Collection<String> lockedColumnFamiliesToReleaseOnFailure = new ArrayList<>(columnFamilyNames.size());
+        try {
+            //atomically acquire ownership of every column family being acquired
+            for (String columnFamilyName : columnFamilyNames) {
+                checkState(this.lockedColumnFamilyNames.add(columnFamilyName), "cannot acquire column family '%s' because it is currently used!", columnFamilyName);
+                lockedColumnFamiliesToReleaseOnFailure.add(columnFamilyName);
+            }
+            lockedColumnFamiliesToReleaseOnFailure = columnFamilyNames; //all of the column families have been acquired, replace with original input set to save memory lol
+
+            if (!this.openColumnFamilyHandles.keySet().containsAll(columnFamilyNames)) { //some of the column families being acquired don't actually exist!
+                columnFamilyNames.forEach(columnFamilyName -> checkState(this.openColumnFamilyHandles.containsKey(columnFamilyName), "cannot acquire column family '%s' because it doesn't exist!", columnFamilyName));
+            }
+
+            //retrieve columnFamilyHandle instances for
+            return columnFamilyNames.stream().collect(Collectors.toMap(Function.identity(), this.openColumnFamilyHandles::get));
+        } catch (Exception e) {
+            //unlock all of the column family names which have been acquired so far
+            this.lockedColumnFamilyNames.removeAll(lockedColumnFamiliesToReleaseOnFailure);
+            throw new FStorageException("failed to acquire column families", e);
+        }
     }
 
-    public void stopUsingColumnFamilies(@NonNull Collection<String> columnFamilyNames) throws FStorageException {
-        checkState(this.writeLock().isHeldByCurrentThread(), "cannot stop using column families without holding a write lock!");
+    public void releaseColumnFamilies(@NonNull Set<String> columnFamilyNames) throws FStorageException {
+        this.ensureOpen();
 
-        if (!this.usedColumnFamilyNames.containsAll(columnFamilyNames)) {
-            columnFamilyNames.forEach(columnFamilyName -> checkState(!this.usedColumnFamilyNames.contains(columnFamilyName), "column family '%s' is not being used", columnFamilyName));
-        }
-
-        //un-mark all the column families as used
-        this.usedColumnFamilyNames.removeAll(columnFamilyNames);
-
-        if (columnFamilyNames.stream().anyMatch(this.manifest.columnFamiliesPendingDeletion()::contains)) { //some of the column families are pending deletion, try to clean up the pending deletion queue
-            this.cleanColumnFamiliesPendingDeletion();
+        Collection<String> releasedColumnFamilesToReacquireOnFailure = new ArrayList<>(columnFamilyNames.size());
+        try {
+            //atomically release ownership of every column family being released
+            for (String columnFamilyName : columnFamilyNames) {
+                checkState(this.lockedColumnFamilyNames.remove(columnFamilyName), "cannot release column family '%s' because it isn't being used!", columnFamilyName);
+                releasedColumnFamilesToReacquireOnFailure.add(columnFamilyName);
+            }
+        } catch (Exception e) {
+            //re-lock all of the column family names which have been released so far
+            this.lockedColumnFamilyNames.addAll(releasedColumnFamilesToReacquireOnFailure);
+            throw new FStorageException("failed to release column families", e);
         }
     }
 
-    public void cleanColumnFamiliesPendingDeletion() throws FStorageException {
-        checkState(this.writeLock().isHeldByCurrentThread(), "cannot clean column families without holding a write lock!");
-
-        if (this.manifest.columnFamiliesPendingDeletion().isEmpty()) { //nothing to do
+    protected void cleanColumnFamiliesPendingDeletion() throws FStorageException {
+        if (!this.manifest.isAnyColumnFamilyPendingDeletion()) { //nothing to do
             return;
         }
 
-        //filter out column families which aren't open (if they aren't open, that means they were never actually created so we can just remove them from the pending deletion queue)
-        Set<String> columnFamilyNamesToDelete = this.manifest.columnFamiliesPendingDeletion().stream()
-                .filter(columnFamilyName -> this.openColumnFamilyHandles.containsKey(columnFamilyName) && !this.usedColumnFamilyNames.contains(columnFamilyName))
-                .collect(Collectors.toSet());
+        Set<String> columnFamilyNamesToDelete = new ObjectOpenHashSet<>();
+        try {
+            //atomically acquire a lock on as many column families queued for deletion as possible
+            this.manifest.forEachColumnFamilyNamePendingDeletion(columnFamilyName -> {
+                if (this.openColumnFamilyHandles.containsKey(columnFamilyName) //the column family is actually open (this should always be true, but sanity check just in case)
+                    && this.lockedColumnFamilyNames.add(columnFamilyName)) { //we managed to acquire a lock on the column family
+                    columnFamilyNamesToDelete.add(columnFamilyName);
+                }
+            });
 
-        if (!columnFamilyNamesToDelete.isEmpty()) {
             try {
                 //get handles of all the column families we're about to delete and drop them
                 this.db.dropColumnFamilies(columnFamilyNamesToDelete.stream()
                         .map(this.openColumnFamilyHandles::get)
                         .collect(Collectors.toList()));
             } catch (RocksDBException e) {
-                throw new FStorageException("failed to delete column families", e);
+                throw new FStorageException("failed to drop column families", e);
             }
 
-            //the column families have been dropped
-
-            //remove and close their handles
-            columnFamilyNamesToDelete.forEach(columnFamilyName -> this.openColumnFamilyHandles.remove(columnFamilyName).close());
-
-            this.manifest.snapshot();
-            try {
-                //remove the column families from the manifest and un-mark them as pending deletion
-                this.manifest.allColumnFamilies().keySet().removeAll(columnFamilyNamesToDelete);
-                this.manifest.columnFamiliesPendingDeletion().removeAll(columnFamilyNamesToDelete);
-
-                //save the updated manifest
-                this.writeManifest();
-            } catch (Exception e) {
-                this.manifest.rollback();
-                throw new FStorageException("failed to update manifest after column family deletion", e);
-            } finally {
-                this.manifest.clearSnapshot();
-            }
+            //update manifest to show that the column families have been deleted
+            this.manifest.update(manifest -> {
+                columnFamilyNamesToDelete.forEach(manifest::removeColumnFamilyFromDeletionQueue);
+            });
+        } catch (Exception e) {
+            //unlock all of the column family names which have been acquired so far
+            this.lockedColumnFamilyNames.removeAll(columnFamilyNamesToDelete);
+            throw new FStorageException("failed to cleanup column families", e);
         }
     }
 
@@ -443,11 +390,6 @@ public abstract class RocksStorage<DB extends RocksDB> extends ReentrantReadWrit
     }
 
     @Override
-    public void deleteCategories(@NonNull Collection<String> names) throws FStorageException, NoSuchElementException, IllegalStateException {
-        this.rootCategory.deleteCategories(names);
-    }
-
-    @Override
     public Set<String> allItems() {
         return this.rootCategory.allItems();
     }
@@ -477,9 +419,40 @@ public abstract class RocksStorage<DB extends RocksDB> extends ReentrantReadWrit
         this.rootCategory.deleteItem(name);
     }
 
-    @Override
-    public void deleteItems(@NonNull Collection<String> names) throws FStorageException, NoSuchElementException, IllegalStateException {
-        this.rootCategory.deleteItems(names);
+    /**
+     * Implementation of {@link RocksStorage} backed by an ordinary {@link TransactionDB}.
+     *
+     * @author DaPorkchop_
+     */
+    protected static class TransactionRocksStorage extends RocksStorage<TransactionDB> {
+        protected TransactionDBOptions transactionDBOptions;
+
+        protected TransactionRocksStorage(Path root) throws FStorageException {
+            super(root);
+        }
+
+        @Override
+        protected TransactionDB createDB(DBOptions dbOptions, String path, List<ColumnFamilyDescriptor> columnFamilyDescriptors, List<ColumnFamilyHandle> columnFamilyHandles) throws RocksDBException {
+            if (this.transactionDBOptions == null) { //allocate transactionDBOptions if they haven't been yet
+                this.transactionDBOptions = new TransactionDBOptions();
+            }
+
+            return TransactionDB.open(dbOptions, this.transactionDBOptions, path, columnFamilyDescriptors, columnFamilyHandles);
+        }
+
+        @Override
+        public Transaction beginTransaction(@NonNull WriteOptions writeOptions) {
+            return this.db().beginTransaction(writeOptions);
+        }
+
+        @Override
+        protected void releaseDBOptions(@NonNull DBOptions options) {
+            super.releaseDBOptions(options);
+
+            if (this.transactionDBOptions != null) { //transactionDBOptions have been allocated, release them
+                this.transactionDBOptions.close();
+            }
+        }
     }
 
     /**

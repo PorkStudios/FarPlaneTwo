@@ -23,8 +23,6 @@ package net.daporkchop.fp2.api.storage.external;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.storage.FStorageException;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -86,18 +84,7 @@ public interface FStorageCategory {
      * @throws NoSuchElementException if no category with the given name exists
      * @throws IllegalStateException  if the category is currently open
      */
-    default void deleteCategory(@NonNull String name) throws FStorageException, NoSuchElementException, IllegalStateException {
-        this.deleteCategories(Collections.singleton(name));
-    }
-
-    /**
-     * Deletes the child categories with the given names, and all of their children. The categories must not be open. The operation is applied atomically.
-     *
-     * @param names the names of the categories to delete
-     * @throws NoSuchElementException if no category with any of the given names exists
-     * @throws IllegalStateException  if any of the categories are currently open
-     */
-    void deleteCategories(@NonNull Collection<String> names) throws FStorageException, NoSuchElementException, IllegalStateException;
+    void deleteCategory(@NonNull String name) throws FStorageException, NoSuchElementException, IllegalStateException;
 
     //
     // ITEMS
@@ -152,16 +139,5 @@ public interface FStorageCategory {
      * @throws NoSuchElementException if no item with the given name exists
      * @throws IllegalStateException  if the item is currently open
      */
-    default void deleteItem(@NonNull String name) throws FStorageException, NoSuchElementException, IllegalStateException {
-        this.deleteItems(Collections.singleton(name));
-    }
-
-    /**
-     * Deletes the child items with the given names. The items must not be open. The operation is applied atomically.
-     *
-     * @param names the names of the items to delete
-     * @throws NoSuchElementException if no item with any of the given names exists
-     * @throws IllegalStateException  if any of the items are currently open
-     */
-    void deleteItems(@NonNull Collection<String> names) throws FStorageException, NoSuchElementException, IllegalStateException;
+    void deleteItem(@NonNull String name) throws FStorageException, NoSuchElementException, IllegalStateException;
 }

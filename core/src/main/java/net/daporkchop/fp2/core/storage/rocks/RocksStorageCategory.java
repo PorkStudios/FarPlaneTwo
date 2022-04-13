@@ -30,14 +30,20 @@ import net.daporkchop.fp2.api.storage.external.FStorageCategory;
 import net.daporkchop.fp2.api.storage.external.FStorageItem;
 import net.daporkchop.fp2.api.storage.external.FStorageItemFactory;
 import net.daporkchop.fp2.api.storage.internal.FStorageColumnHintsInternal;
+import net.daporkchop.fp2.core.storage.rocks.manifest.RocksCategoryManifest;
+import net.daporkchop.fp2.core.storage.rocks.manifest.RocksStorageManifest;
+import net.daporkchop.lib.common.misc.file.PFiles;
 import net.daporkchop.lib.primitive.map.open.ObjObjOpenHashMap;
+import net.daporkchop.lib.unsafe.PUnsafe;
 
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
@@ -48,17 +54,29 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 @RequiredArgsConstructor
 @Getter
 public class RocksStorageCategory implements FStorageCategory {
-    @NonNull
     private final RocksStorage<?> storage;
 
-    @NonNull
-    private final RocksStorageManifest.CategoryData manifestData;
+    private final Path manifestRoot;
+    private final RocksCategoryManifest manifestData;
 
-    private final Map<String, RocksStorageCategory> openCategories = new ObjObjOpenHashMap<>();
-    private final Map<String, RocksStorageInternal> openItemsInternal = new ObjObjOpenHashMap<>();
-    private final Map<String, ? extends FStorageItem> openItemsExternal = new ObjObjOpenHashMap<>();
+    private final Map<String, RocksStorageCategory> openCategories = new ConcurrentHashMap<>();
+    private final Map<String, RocksStorageInternal> openItemsInternal = new ConcurrentHashMap<>();
+    private final Map<String, ? extends FStorageItem> openItemsExternal = new ConcurrentHashMap<>();
 
     private volatile boolean open = true;
+
+    public RocksStorageCategory(@NonNull RocksStorage<?> storage, @NonNull Path manifestRoot) throws FStorageException {
+        this.storage = storage;
+        this.manifestRoot = PFiles.ensureDirectoryExists(manifestRoot);
+
+        this.manifestData = new RocksCategoryManifest(manifestRoot.resolve("m_manifest_v0")).load();
+    }
+
+    protected void doDelete() throws FStorageException { //must only be called when accessing this category externally
+        //recursively delete all sub-categories
+        for (String category : this.allCategories()) {
+        }
+    }
 
     protected void doClose() throws FStorageException {
         this.ensureOpen();
@@ -70,142 +88,116 @@ public class RocksStorageCategory implements FStorageCategory {
 
     @Override
     public Set<String> allCategories() {
-        this.storage.readLock().lock();
-        try {
-            this.ensureOpen();
+        this.ensureOpen();
 
-            //take snapshot of categories set from manifest
-            return ImmutableSet.copyOf(this.manifestData.categories().keySet());
-        } finally {
-            this.storage.readLock().unlock();
-        }
+        //take snapshot of open child categories data from manifest
+        ImmutableSet.Builder<String> builder = ImmutableSet.builder();
+        this.manifestData.forEachChildCategoryName(builder::add);
+        return builder.build();
     }
 
     @Override
     public Map<String, FStorageCategory> openCategories() {
-        this.storage.readLock().lock();
-        try {
-            this.ensureOpen();
+        this.ensureOpen();
 
-            //take snapshot of open categories map
-            return ImmutableMap.copyOf(this.openCategories);
-        } finally {
-            this.storage.readLock().unlock();
-        }
+        //take snapshot of open categories map
+        return ImmutableMap.copyOf(this.openCategories);
     }
 
     @Override
-    public FStorageCategory openCategory(@NonNull String name) throws FStorageException, NoSuchElementException, IllegalStateException {
-        this.storage.writeLock().lock();
-        try {
-            this.ensureOpen();
+    public FStorageCategory openCategory(@NonNull String nameIn) throws FStorageException, NoSuchElementException, IllegalStateException {
+        this.ensureOpen();
 
+        return this.openCategories.compute(nameIn, (name, category) -> {
             //ensure the category isn't already open
-            checkState(!this.openCategories.containsKey(name), "category '%s' is already open!", name);
+            checkState(category == null, "category '%s' is already open!", name);
 
             //ensure the category exists
-            RocksStorageManifest.CategoryData data = this.manifestData.categories().get(name);
-            if (data == null) {
+            if (!this.manifestData.hasCategory(name)) {
                 throw new NoSuchElementException("no category exists with name: " + name);
             }
 
-            //open the category
-            RocksStorageCategory category = new RocksStorageCategory(this.storage, data);
-            this.openCategories.put(name, category);
-            return category;
-        } finally {
-            this.storage.writeLock().unlock();
-        }
-    }
-
-    @Override
-    public FStorageCategory openOrCreateCategory(@NonNull String name) throws FStorageException, IllegalStateException {
-        this.storage.writeLock().lock();
-        try {
-            this.ensureOpen();
-
-            //ensure the category isn't already open
-            checkState(!this.openCategories.containsKey(name), "category '%s' is already open!", name);
-
-            //check if the category exists
-            RocksStorageManifest.CategoryData data = this.manifestData.categories().get(name);
-            if (data == null) { //create a new category
-                data = new RocksStorageManifest.CategoryData();
-
-                this.storage.manifest().snapshot();
-                try {
-                    //add the category to the manifest, then save the updated manifest
-                    this.manifestData.categories().put(name, data);
-                    this.storage.writeManifest();
-                } catch (Exception e) { //something failed, roll back the changes and rethrow exception
-                    this.storage.manifest().rollback();
-                    throw new FStorageException("failed to create category", e);
-                } finally {
-                    this.storage.manifest().clearSnapshot();
-                }
-            }
-
-            //open the category
-            RocksStorageCategory category = new RocksStorageCategory(this.storage, data);
-            this.openCategories.put(name, category);
-            return category;
-        } finally {
-            this.storage.writeLock().unlock();
-        }
-    }
-
-    @Override
-    public void closeCategory(@NonNull String name) throws FStorageException, NoSuchElementException {
-        this.storage.writeLock().lock();
-        try {
-            this.ensureOpen();
-
-            RocksStorageCategory category = this.openCategories.get(name);
-            if (category == null) { //the category wasn't open
-                throw new NoSuchElementException("no category is open with name: " + name);
-            }
-
-            //try to close the category
-            category.doClose();
-
-            //remove the category from this category
-            this.openCategories.remove(name);
-        } finally {
-            this.storage.writeLock().unlock();
-        }
-    }
-
-    @Override
-    public void deleteCategories(@NonNull Collection<String> names) throws FStorageException, NoSuchElementException, IllegalStateException {
-        this.storage.writeLock().lock();
-        try {
-            this.ensureOpen();
-
-            //validate the names being removed
-            names.forEach(name -> {
-                //ensure the category isn't already open
-                checkState(!this.openCategories.containsKey(name), "category '%s' is already open!", name);
-
-                //ensure the category exists
-                if (!this.manifestData.categories().containsKey(name)) {
-                    throw new NoSuchElementException("no category exists with name: " + name);
-                }
-            });
-
-            this.storage.manifest().snapshot();
             try {
-                //remove the categories from the manifest, then save the updated manifest
-                names.forEach(name -> this.recursiveDeleteCategory(this.manifestData.categories().remove(name)));
-                this.storage.writeManifest();
-            } catch (Exception e) { //something failed, roll back the changes and rethrow exception
-                this.storage.manifest().rollback();
-                throw new FStorageException("failed to delete categories", e);
-            } finally {
-                this.storage.manifest().clearSnapshot();
+                //open the category
+                return new RocksStorageCategory(this.storage, this.manifestRoot.resolve("c_" + name));
+            } catch (FStorageException e) {
+                PUnsafe.throwException(e); //hack to throw FStorageException from inside of the lambda
+                throw new AssertionError(); //impossible
             }
-        } finally {
-            this.storage.writeLock().unlock();
-        }
+        });
+    }
+
+    @Override
+    public FStorageCategory openOrCreateCategory(@NonNull String nameIn) throws FStorageException, IllegalStateException {
+        this.ensureOpen();
+
+        return this.openCategories.compute(nameIn, (name, category) -> {
+            //ensure the category isn't already open
+            checkState(category == null, "category '%s' is already open!", name);
+
+            try {
+                //check if the category exists
+                if (!this.manifestData.hasCategory(name)) { //the category doesn't exist, create it
+                    this.manifestData.update(manifest -> manifest.addCategory(name));
+                }
+
+                //open the category
+                return new RocksStorageCategory(this.storage, this.manifestRoot.resolve("c_" + name));
+            } catch (FStorageException e) {
+                PUnsafe.throwException(e); //hack to throw FStorageException from inside of the lambda
+                throw new AssertionError(); //impossible
+            }
+        });
+    }
+
+    @Override
+    public void closeCategory(@NonNull String nameIn) throws FStorageException, NoSuchElementException {
+        this.ensureOpen();
+
+        this.openCategories.compute(nameIn, (name, category) -> {
+            //ensure the category is already open
+            checkState(category != null, "category '%s' isn't open!", name);
+
+            try {
+                //try to close the category
+                category.doClose();
+
+                //remove the category from this category
+                return null;
+            } catch (FStorageException e) {
+                PUnsafe.throwException(e); //hack to throw FStorageException from inside of the lambda
+                throw new AssertionError(); //impossible
+            }
+        });
+    }
+
+    @Override
+    public void deleteCategory(@NonNull String nameIn) throws FStorageException, NoSuchElementException, IllegalStateException {
+        this.ensureOpen();
+
+        this.openCategories.compute(nameIn, (name, category) -> {
+            //ensure the category isn't open
+            checkState(category == null, "category '%s' is currently open!", name);
+
+            //ensure the category exists
+            if (!this.manifestData.hasCategory(name)) {
+                throw new NoSuchElementException("no category exists with name: " + name);
+            }
+
+            try {
+                //remove the category from the manifest
+                this.manifestData.update(manifest -> manifest.removeCategory(name));
+
+                //recursively erase the category's contents
+                PFiles.rm(this.manifestRoot.resolve("c_" + name));
+
+                //return null because the category still isn't open
+                return null;
+            } catch (Exception e) {
+                PUnsafe.throwException(e); //hack to throw FStorageException from inside of the lambda
+                throw new AssertionError(); //impossible
+            }
+        });
     }
 
     protected void recursiveDeleteCategory(@NonNull RocksStorageManifest.CategoryData data) {
@@ -400,7 +392,7 @@ public class RocksStorageCategory implements FStorageCategory {
             }
 
             //begin using (and create if necessary) all of the column families used by this item, then wrap into a RocksStorageInternal
-            RocksStorageInternal storageInternal = new RocksStorageInternal(this.storage, data, this.storage.beginUsingColumnFamilies(data.columnNamesToColumnFamilyNames().values()));
+            RocksStorageInternal storageInternal = new RocksStorageInternal(this.storage, data, this.storage.acquireColumnFamilies(data.columnNamesToColumnFamilyNames().values()));
 
             //try to construct item
             I item;
