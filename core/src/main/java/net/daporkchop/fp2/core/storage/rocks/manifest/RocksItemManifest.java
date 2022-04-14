@@ -31,6 +31,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 
+import static net.daporkchop.lib.common.util.PValidation.*;
+
 /**
  * @author DaPorkchop_
  */
@@ -40,6 +42,9 @@ public class RocksItemManifest extends AbstractRocksManifest<RocksItemManifest> 
 
     private byte[] token;
     private transient byte[] tokenSnapshot;
+
+    private boolean initialized = false;
+    private transient boolean initializedSnapshot;
 
     public RocksItemManifest(@NonNull Path filePath) {
         super(filePath);
@@ -58,6 +63,7 @@ public class RocksItemManifest extends AbstractRocksManifest<RocksItemManifest> 
     protected void clear0() {
         this.columnNamesToColumnFamilyNames = new TreeMap<>();
         this.token = null;
+        this.initialized = false;
     }
 
     @Override
@@ -73,6 +79,9 @@ public class RocksItemManifest extends AbstractRocksManifest<RocksItemManifest> 
             this.token = new byte[in.readVarInt()];
             in.readFully(this.token);
         }
+
+        //read initialized flag
+        this.initialized = in.readBoolean();
     }
 
     @Override
@@ -90,6 +99,9 @@ public class RocksItemManifest extends AbstractRocksManifest<RocksItemManifest> 
             out.writeVarInt(this.token.length);
             out.write(this.token);
         }
+
+        //write initialized flag
+        out.writeBoolean(this.initialized);
     }
 
     @Override
@@ -97,6 +109,7 @@ public class RocksItemManifest extends AbstractRocksManifest<RocksItemManifest> 
         //clone primary collection to snapshot
         this.columnNamesToColumnFamilyNamesSnapshot = new TreeMap<>(this.columnNamesToColumnFamilyNames);
         this.tokenSnapshot = this.token;
+        this.initializedSnapshot = this.initialized;
     }
 
     @Override
@@ -104,17 +117,39 @@ public class RocksItemManifest extends AbstractRocksManifest<RocksItemManifest> 
         //clone snapshot collection to primary
         this.columnNamesToColumnFamilyNames = new TreeMap<>(this.columnNamesToColumnFamilyNamesSnapshot);
         this.token = this.tokenSnapshot;
+        this.initialized = this.initializedSnapshot;
     }
 
     @Override
     protected void clearSnapshot0() {
         this.columnNamesToColumnFamilyNamesSnapshot = null;
         this.tokenSnapshot = null;
+        this.initializedSnapshot = false;
     }
 
     //
     // helper methods
     //
+
+    public Map<String, String> snapshotColumnNamesToColumnFamilyNames() {
+        return this.getWithReadLock(manifest -> new TreeMap<>(manifest.columnNamesToColumnFamilyNames));
+    }
+
+    public void removeColumnByName(@NonNull String columnName) {
+        this.runWithWriteLock(manifest -> checkState(manifest.columnNamesToColumnFamilyNames.remove(columnName) != null, "can't remove column '%s' because it doesn't exist!", columnName));
+    }
+
+    public boolean columnExistsWithName(@NonNull String columnName) {
+        return this.getWithReadLock(manifest -> manifest.columnNamesToColumnFamilyNames.containsKey(columnName));
+    }
+
+    public Optional<String> getColumnFamilyNameForColumn(@NonNull String columnName) {
+        return this.getWithReadLock(manifest -> Optional.ofNullable(manifest.columnNamesToColumnFamilyNames.get(columnName)));
+    }
+
+    public void addColumn(@NonNull String columnName, @NonNull String columnFamilyName) {
+        this.runWithWriteLock(manifest -> checkState(manifest.columnNamesToColumnFamilyNames.putIfAbsent(columnName, columnFamilyName) == null, "can't add column '%s' because another column with the same name already exists!", columnName));
+    }
 
     public Optional<byte[]> getToken() {
         return this.getWithReadLock(manifest -> Optional.ofNullable(this.token)).map(byte[]::clone);
@@ -126,5 +161,16 @@ public class RocksItemManifest extends AbstractRocksManifest<RocksItemManifest> 
 
     public void removeToken() {
         this.runWithWriteLock(manifest -> manifest.token = null);
+    }
+
+    public boolean isInitialized() {
+        return this.getWithReadLock(manifest -> manifest.initialized);
+    }
+
+    public void markInitialized() {
+        this.runWithWriteLock(manifest -> {
+            checkState(!this.initialized, "already initialized!");
+            manifest.initialized = true;
+        });
     }
 }

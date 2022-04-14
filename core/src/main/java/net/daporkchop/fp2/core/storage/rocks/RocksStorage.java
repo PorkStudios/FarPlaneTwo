@@ -31,8 +31,8 @@ import net.daporkchop.fp2.api.storage.external.FStorageItemFactory;
 import net.daporkchop.fp2.api.storage.internal.FStorageColumnHintsInternal;
 import net.daporkchop.fp2.core.storage.rocks.manifest.RocksStorageManifest;
 import net.daporkchop.lib.common.misc.file.PFiles;
-import net.daporkchop.lib.common.reference.cache.Cached;
 import net.daporkchop.lib.primitive.map.open.ObjObjOpenHashMap;
+import net.daporkchop.lib.unsafe.PUnsafe;
 import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.ColumnFamilyOptions;
@@ -59,8 +59,6 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -128,11 +126,37 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
             throw new FStorageException("failed to open db", e);
         }
 
-        //create root storage category
-        this.rootCategory = new RocksStorageCategory(this, this.root.resolve("manifest"));
+        try {
+            //create root storage category
+            this.rootCategory = new RocksStorageCategory(this, this.root.resolve("manifest"));
 
-        //no column families are used right now, so cleanup will delete every column family that was in the deletion queue
-        this.cleanColumnFamiliesPendingDeletion();
+            //run cleanup on root category (this will recursively get a Set of all the column family names in use)
+            Set<String> usedColumnFamilyNames = this.rootCategory.doCleanup();
+
+            //make sure all of the used column families exist
+            if (!this.openColumnFamilyHandles.keySet().containsAll(usedColumnFamilyNames)) {
+                usedColumnFamilyNames.forEach(columnFamilyName -> checkState(this.openColumnFamilyHandles.containsKey(columnFamilyName), "column family '%s' doesn't exist!", columnFamilyName));
+            }
+
+            //delete all the column families which are unused
+            Set<String> columnFamiliesForDeletion = new ObjectOpenHashSet<>(this.openColumnFamilyHandles.keySet());
+            columnFamiliesForDeletion.removeAll(usedColumnFamilyNames);
+            if (!columnFamiliesForDeletion.isEmpty()) { //there are some column families to delete
+                this.deleteColumnFamilies(columnFamiliesForDeletion);
+            }
+
+            //no column families are used right now, so cleanup will delete every column family that was in the deletion queue
+            this.deleteQueuedColumnFamilies();
+        } catch (Exception e) {
+            try { //try to close the db again
+                this.close();
+            } catch (Exception e1) {
+                e.addSuppressed(e1);
+            }
+
+            PUnsafe.throwException(e); //rethrow exception
+            throw new AssertionError(); //impossible
+        }
     }
 
     protected abstract DB createDB(DBOptions dbOptions, String path, List<ColumnFamilyDescriptor> columnFamilyDescriptors, List<ColumnFamilyHandle> columnFamilyHandles) throws RocksDBException;
@@ -195,12 +219,12 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
                 this.db.flush(FLUSH_OPTIONS, new ArrayList<>(this.openColumnFamilyHandles.values()));
 
                 //delete any column families whose deletion is pending
-                this.cleanColumnFamiliesPendingDeletion();
+                this.deleteQueuedColumnFamilies();
 
                 //close all column families, then the db itself
                 this.openColumnFamilyHandles.values().forEach(ColumnFamilyHandle::close);
             } finally {
-                this.db.close();
+                this.db.closeE();
             }
         } catch (RocksDBException e) {
             throw new FStorageException("failed to close db", e);
@@ -293,7 +317,7 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
                 columnFamilyNames.forEach(columnFamilyName -> checkState(this.openColumnFamilyHandles.containsKey(columnFamilyName), "cannot acquire column family '%s' because it doesn't exist!", columnFamilyName));
             }
 
-            //retrieve columnFamilyHandle instances for
+            //retrieve columnFamilyHandle instances
             return columnFamilyNames.stream().collect(Collectors.toMap(Function.identity(), this.openColumnFamilyHandles::get));
         } catch (Exception e) {
             //unlock all of the column family names which have been acquired so far
@@ -319,7 +343,35 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
         }
     }
 
-    protected void cleanColumnFamiliesPendingDeletion() throws FStorageException {
+    public void deleteColumnFamilies(@NonNull Set<String> columnFamilyNames) throws FStorageException {
+        this.ensureOpen();
+
+        Collection<String> lockedColumnFamiliesToReleaseOnFailure = new ArrayList<>(columnFamilyNames.size());
+        try {
+            //atomically acquire ownership of every column family being deleted
+            for (String columnFamilyName : columnFamilyNames) {
+                checkState(this.lockedColumnFamilyNames.add(columnFamilyName), "cannot acquire column family '%s' because it is currently used!", columnFamilyName);
+                lockedColumnFamiliesToReleaseOnFailure.add(columnFamilyName);
+            }
+            lockedColumnFamiliesToReleaseOnFailure = columnFamilyNames; //all of the column families have been acquired, replace with original input set to save memory lol
+
+            if (!this.openColumnFamilyHandles.keySet().containsAll(columnFamilyNames)) { //some of the column families being deleted don't actually exist!
+                columnFamilyNames.forEach(columnFamilyName -> checkState(this.openColumnFamilyHandles.containsKey(columnFamilyName), "cannot delete column family '%s' because it doesn't exist!", columnFamilyName));
+            }
+
+            //mark all of the column families for deletion
+            this.manifest.update(manifest -> manifest.markColumnFamiliesForDeletion(columnFamilyNames));
+        } catch (Exception e) {
+            //unlock all of the column family names which have been acquired so far
+            this.lockedColumnFamilyNames.removeAll(lockedColumnFamiliesToReleaseOnFailure);
+            throw new FStorageException("failed to delete column families", e);
+        }
+
+        //run column family cleanup
+        this.deleteQueuedColumnFamilies();
+    }
+
+    protected void deleteQueuedColumnFamilies() throws FStorageException {
         if (!this.manifest.isAnyColumnFamilyPendingDeletion()) { //nothing to do
             return;
         }
@@ -396,7 +448,7 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
 
     @Override
     public Map<String, ? extends FStorageItem> openItems() {
-        return this.rootCategory.openItemsExternal();
+        return this.rootCategory.openItems();
     }
 
     @Override

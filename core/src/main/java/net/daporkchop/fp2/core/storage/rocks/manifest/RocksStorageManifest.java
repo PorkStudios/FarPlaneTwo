@@ -151,7 +151,9 @@ public class RocksStorageManifest extends AbstractRocksManifest<RocksStorageMani
     }
 
     public void markColumnFamiliesForDeletion(@NonNull Collection<String> columnFamilyNames) {
-        this.runWithWriteLock(manifest -> manifest.columnFamiliesPendingDeletion.addAll(columnFamilyNames));
+        this.runWithWriteLock(manifest -> {
+            manifest.columnFamiliesPendingDeletion.addAll(columnFamilyNames);
+        });
     }
 
     public boolean isAnyColumnFamilyPendingDeletion() {

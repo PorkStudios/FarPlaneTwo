@@ -29,21 +29,18 @@ import net.daporkchop.fp2.api.storage.FStorageException;
 import net.daporkchop.fp2.api.storage.external.FStorageCategory;
 import net.daporkchop.fp2.api.storage.external.FStorageItem;
 import net.daporkchop.fp2.api.storage.external.FStorageItemFactory;
-import net.daporkchop.fp2.api.storage.internal.FStorageColumnHintsInternal;
 import net.daporkchop.fp2.core.storage.rocks.manifest.RocksCategoryManifest;
-import net.daporkchop.fp2.core.storage.rocks.manifest.RocksStorageManifest;
 import net.daporkchop.lib.common.misc.file.PFiles;
-import net.daporkchop.lib.primitive.map.open.ObjObjOpenHashMap;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collection;
-import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
@@ -60,8 +57,7 @@ public class RocksStorageCategory implements FStorageCategory {
     private final RocksCategoryManifest manifestData;
 
     private final Map<String, RocksStorageCategory> openCategories = new ConcurrentHashMap<>();
-    private final Map<String, RocksStorageInternal> openItemsInternal = new ConcurrentHashMap<>();
-    private final Map<String, ? extends FStorageItem> openItemsExternal = new ConcurrentHashMap<>();
+    private final Map<String, RocksStorageInternal> openItems = new ConcurrentHashMap<>();
 
     private volatile boolean open = true;
 
@@ -69,19 +65,96 @@ public class RocksStorageCategory implements FStorageCategory {
         this.storage = storage;
         this.manifestRoot = PFiles.ensureDirectoryExists(manifestRoot);
 
-        this.manifestData = new RocksCategoryManifest(manifestRoot.resolve("m_manifest_v0")).load();
+        this.manifestData = new RocksCategoryManifest(this.manifestFilePath()).load();
     }
 
-    protected void doDelete() throws FStorageException { //must only be called when accessing this category externally
-        //recursively delete all sub-categories
-        for (String category : this.allCategories()) {
+    protected Path manifestFilePath() {
+        return this.manifestRoot.resolve("m_manifest_v0");
+    }
+
+    protected Path categoryPath(String name) {
+        return this.manifestRoot.resolve("c_" + name);
+    }
+
+    protected Path itemPath(String name) {
+        return this.manifestRoot.resolve("i_" + name);
+    }
+
+    protected Set<String> doCleanup() throws FStorageException {
+        this.ensureOpen();
+        checkState(this.openCategories.isEmpty(), "cannot do cleanup when some sub-categories are open! %s", this.openCategories);
+        checkState(this.openItems.isEmpty(), "cannot do cleanup when some sub-items are open! %s", this.openItems);
+
+        try {
+            //iterate over every path and make sure that there is a valid category/item which it belongs to. if not, delete it
+            try (Stream<Path> stream = Files.list(this.manifestRoot)) {
+                for (Iterator<Path> itr = stream.iterator(); itr.hasNext(); ) {
+                    Path childPath = itr.next();
+
+                    String pathName = childPath.getFileName().toString();
+                    if (pathName.startsWith("c_")) { //child path represents a category
+                        if (!this.manifestData.hasCategory(pathName.substring("c_".length()))) { //category doesn't exist in the manifest, delete it!
+                            new RocksStorageCategory(this.storage, childPath).doDelete();
+                        }
+                    } else if (pathName.startsWith("i_")) { //child path represents an item
+                        if (!this.manifestData.hasItem(pathName.substring("i_".length()))) { //item doesn't exist in the manifest, delete it!
+                            new RocksStorageInternal(this.storage, childPath).doDelete();
+                        }
+                    } else if (this.manifestFilePath().equals(childPath)) { //child path is this category's manifest data
+                        //no-op
+                    } else { //what?
+                        throw new IllegalStateException("don't know what to do with path: " + childPath);
+                    }
+                }
+            }
+
+            //iterate over every category/item registered in this category's manifest and run cleanup on it
+            ImmutableSet.Builder<String> builder = ImmutableSet.builder();
+            this.manifestData.forEachChildCategoryName(categoryName -> {
+                try {
+                    builder.addAll(new RocksStorageCategory(this.storage, this.categoryPath(categoryName)).doCleanup());
+                } catch (FStorageException e) {
+                    PUnsafe.throwException(e); //hack to throw FStorageException from inside of the lambda
+                    throw new AssertionError(); //impossible
+                }
+            });
+            this.manifestData.forEachChildItemName(itemName -> {
+                try {
+                    builder.addAll(new RocksStorageInternal(this.storage, this.itemPath(itemName)).doCleanup());
+                } catch (FStorageException e) {
+                    PUnsafe.throwException(e); //hack to throw FStorageException from inside of the lambda
+                    throw new AssertionError(); //impossible
+                }
+            });
+            return builder.build();
+        } catch (FStorageException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new FStorageException("failed to cleanup in " + this.manifestRoot, e);
         }
+    }
+
+    protected void doDelete() throws FStorageException {
+        this.doClose();
+
+        //recursively delete all sub-categories
+        for (String categoryName : this.allCategories()) {
+            new RocksStorageCategory(this.storage, this.categoryPath(categoryName)).doDelete();
+        }
+
+        //delete sub-items
+        for (String itemName : this.allItems()) {
+            new RocksStorageInternal(this.storage, this.itemPath(itemName)).doDelete();
+        }
+
+        //delete manifest root directory
+        PFiles.rm(this.manifestRoot);
     }
 
     protected void doClose() throws FStorageException {
         this.ensureOpen();
         checkState(this.openCategories.isEmpty(), "cannot close category when some sub-categories are still open! %s", this.openCategories);
-        checkState(this.openItemsExternal.isEmpty(), "cannot close category when some sub-items are still open! %s", this.openItemsExternal);
+        checkState(this.openItems.isEmpty(), "cannot close category when some sub-items are still open! %s", this.openItems);
 
         this.open = false;
     }
@@ -90,7 +163,7 @@ public class RocksStorageCategory implements FStorageCategory {
     public Set<String> allCategories() {
         this.ensureOpen();
 
-        //take snapshot of open child categories data from manifest
+        //take snapshot of child categories data from manifest
         ImmutableSet.Builder<String> builder = ImmutableSet.builder();
         this.manifestData.forEachChildCategoryName(builder::add);
         return builder.build();
@@ -119,7 +192,7 @@ public class RocksStorageCategory implements FStorageCategory {
 
             try {
                 //open the category
-                return new RocksStorageCategory(this.storage, this.manifestRoot.resolve("c_" + name));
+                return new RocksStorageCategory(this.storage, this.categoryPath(name));
             } catch (FStorageException e) {
                 PUnsafe.throwException(e); //hack to throw FStorageException from inside of the lambda
                 throw new AssertionError(); //impossible
@@ -142,7 +215,7 @@ public class RocksStorageCategory implements FStorageCategory {
                 }
 
                 //open the category
-                return new RocksStorageCategory(this.storage, this.manifestRoot.resolve("c_" + name));
+                return new RocksStorageCategory(this.storage, this.categoryPath(name));
             } catch (FStorageException e) {
                 PUnsafe.throwException(e); //hack to throw FStorageException from inside of the lambda
                 throw new AssertionError(); //impossible
@@ -156,7 +229,9 @@ public class RocksStorageCategory implements FStorageCategory {
 
         this.openCategories.compute(nameIn, (name, category) -> {
             //ensure the category is already open
-            checkState(category != null, "category '%s' isn't open!", name);
+            if (category == null) {
+                throw new NoSuchElementException("no category is open with name: " + name);
+            }
 
             try {
                 //try to close the category
@@ -188,8 +263,9 @@ public class RocksStorageCategory implements FStorageCategory {
                 //remove the category from the manifest
                 this.manifestData.update(manifest -> manifest.removeCategory(name));
 
-                //recursively erase the category's contents
-                PFiles.rm(this.manifestRoot.resolve("c_" + name));
+                //now that the category has been removed from the manifest, it technically no longer exists. we'll delete it now, but even if deletion is interrupted it'll be able
+                // to be resumed the next time cleanup is run.
+                new RocksStorageCategory(this.storage, this.categoryPath(name)).doDelete();
 
                 //return null because the category still isn't open
                 return null;
@@ -200,38 +276,24 @@ public class RocksStorageCategory implements FStorageCategory {
         });
     }
 
-    protected void recursiveDeleteCategory(@NonNull RocksStorageManifest.CategoryData data) {
-        //delete all sub-categories
-        data.categories().values().forEach(this::recursiveDeleteCategory);
-        data.categories().clear();
-
-        //delete all sub-items
-        data.items().values().forEach(this::recursiveDeleteItem);
-        data.items().clear();
-    }
-
     @Override
     public Set<String> allItems() {
-        this.storage.readLock().lock();
-        try {
-            //take snapshot of items set from manifest
-            return ImmutableSet.copyOf(this.manifestData.items().keySet());
-        } finally {
-            this.storage.readLock().unlock();
-        }
+        this.ensureOpen();
+
+        //take snapshot of child items data from manifest
+        ImmutableSet.Builder<String> builder = ImmutableSet.builder();
+        this.manifestData.forEachChildItemName(builder::add);
+        return builder.build();
     }
 
     @Override
     public Map<String, ? extends FStorageItem> openItems() {
-        this.storage.readLock().lock();
-        try {
-            this.ensureOpen();
+        this.ensureOpen();
 
-            //take snapshot of open items map
-            return ImmutableMap.copyOf(this.openItemsExternal);
-        } finally {
-            this.storage.readLock().unlock();
-        }
+        //take snapshot of open items map
+        ImmutableMap.Builder<String, FStorageItem> builder = ImmutableMap.builder();
+        this.openItems.forEach((name, storage) -> builder.put(name, storage.externalItem()));
+        return builder.build();
     }
 
     @Override
@@ -244,241 +306,98 @@ public class RocksStorageCategory implements FStorageCategory {
         return this.openItem0(name, factory, true);
     }
 
-    protected <I extends FStorageItem> I openItem0(@NonNull String name, @NonNull FStorageItemFactory<I> factory, boolean createIfMissing) throws FStorageException, NoSuchElementException, IllegalStateException {
-        this.storage.writeLock().lock();
-        try {
-            this.ensureOpen();
+    protected <I extends FStorageItem> I openItem0(@NonNull String nameIn, @NonNull FStorageItemFactory<I> factory, boolean createIfMissing) throws FStorageException, NoSuchElementException, IllegalStateException {
+        this.ensureOpen();
 
+        return uncheckedCast(this.openItems.compute(nameIn, (name, storage) -> {
             //ensure the item isn't already open
-            checkState(!this.openItemsExternal.containsKey(name), "item '%s' is already open!", name);
+            checkState(storage == null, "item '%s' is already open!", name);
 
-            //ensure the item exists
-            RocksStorageManifest.ItemData data = this.manifestData.items().get(name);
-
-            @RequiredArgsConstructor
-            class CallbackImpl implements FStorageItemFactory.ConfigurationCallback {
-                final RocksStorageManifest.ItemData data;
-
-                final Set<String> columnNames = new HashSet<>();
-                final Map<String, FStorageColumnHintsInternal> columnHints = new ObjObjOpenHashMap<>();
-                final Map<String, FStorageItemFactory.ColumnRequirement> columnRequirements = new ObjObjOpenHashMap<>();
-
-                @Override
-                public Optional<byte[]> getExistingToken() {
-                    return this.data != null ? Optional.ofNullable(this.data.token()) : Optional.empty();
-                }
-
-                @Override
-                public void registerColumn(@NonNull String name, @NonNull FStorageColumnHintsInternal hints, @NonNull FStorageItemFactory.ColumnRequirement requirement) {
-                    checkArg(this.columnNames.add(name), "column '%s' already registered!", name);
-
-                    this.columnHints.put(name, hints);
-                    this.columnRequirements.put(name, requirement);
-                }
-            }
-
-            //configure the item
-            CallbackImpl callback = new CallbackImpl(data);
-            FStorageItemFactory.ConfigurationResult result = factory.configure(callback);
-
-            if (data == null //the item doesn't exist
-                && !createIfMissing) { //create a new item
-                //we aren't allowed to create the item, fail
+            //check if the item exists
+            boolean exists = this.manifestData.hasItem(name);
+            if (!createIfMissing && !exists) {
                 throw new NoSuchElementException("no item exists with name: " + name);
             }
 
-            boolean hasTakenSnapshot = false;
             try {
-                switch (result) {
-                    case DELETE_EXISTING_AND_CREATE:
-                        if (data != null) { //the item already exists
-                            //we're about to modify the storage manifest, take a snapshot of it to allow rollbacks
-                            this.storage.manifest().snapshot();
-                            hasTakenSnapshot = true;
+                //create the item
+                storage = new RocksStorageInternal(this.storage, this.itemPath(name), factory);
 
-                            //delete the item data
-                            // this will mark all the item's column families for deletion
-                            this.recursiveDeleteItem(data);
+                //add item to the manifest
+                this.manifestData.update(manifest -> manifest.addItem(name));
+
+                return storage;
+            } catch (Exception e) { //something failed, try to rollback changes
+                if (!exists) { //the item was newly created
+                    //try to close and delete the item
+                    try {
+                        if (storage != null) { //storage could be non-null if the failure occured while updating the category manifest
+                            storage.doClose();
                         }
-                    case CREATE_IF_MISSING:
-                        if (data == null) { //the item doesn't exist
-                            //we checked above to see if (data == null && !createIfMissing), so if this code is run we know that createIfMissing is true
 
-                            //we're about to modify the storage manifest, take a snapshot of it to allow rollbacks
-                            this.storage.manifest().snapshot();
-                            hasTakenSnapshot = true;
-
-                            //create a new, empty storage item
-                            data = new RocksStorageManifest.ItemData();
-                            this.manifestData.items().put(name, data);
-                        }
-                        break;
-                    default:
-                        throw new IllegalArgumentException("unsupported configuration result: " + result);
-                }
-
-                //prepare manifest for creating the column families (and deleting any existing ones if necessary)
-                for (String columnName : callback.columnNames) {
-                    FStorageItemFactory.ColumnRequirement columnRequirement = callback.columnRequirements.get(columnName);
-                    FStorageColumnHintsInternal columnHints = callback.columnHints.get(columnName);
-
-                    String columnFamilyName = data.columnNamesToColumnFamilyNames().get(columnName);
-
-                    switch (columnRequirement) {
-                        case FAIL_IF_MISSING:
-                            if (columnFamilyName == null) { //the column with the given name doesn't exist
-                                throw new NoSuchElementException("the column '" + columnName + "' doesn't exist, but was requested with " + FStorageItemFactory.ColumnRequirement.FAIL_IF_MISSING);
-                            }
-                            break;
-                        case DELETE_EXISTING_AND_CREATE:
-                            if (columnFamilyName != null) { //the column with the given name exists
-                                //we're about to modify the storage manifest, take a snapshot of it if we haven't already to allow rollbacks
-                                if (!hasTakenSnapshot) {
-                                    this.storage.manifest().snapshot();
-                                    hasTakenSnapshot = true;
-                                }
-
-                                //mark the column family for deletion
-                                this.storage.manifest().columnFamiliesPendingDeletion().add(columnFamilyName);
-
-                                //remove the column family from the item's manifest
-                                checkState(data.columnNamesToColumnFamilyNames().remove(columnName, columnFamilyName));
-                                columnFamilyName = null;
-                            }
-                        case CREATE_IF_MISSING:
-                            if (columnFamilyName == null) { //the column with the given name doesn't exist, create a new one
-                                //we're about to modify the storage manifest, take a snapshot of it if we haven't already to allow rollbacks
-                                if (!hasTakenSnapshot) {
-                                    this.storage.manifest().snapshot();
-                                    hasTakenSnapshot = true;
-                                }
-
-                                //allocate a new column family
-                                columnFamilyName = this.storage.manifest().assignNewColumnFamilyName(columnHints);
-
-                                //save the column family into the item
-                                data.columnNamesToColumnFamilyNames().put(columnName, columnFamilyName);
-                            } else { //the column with the given name exists
-                                //check if the existing column family has the same usage hints, and modify them if the hints have changed
-                                FStorageColumnHintsInternal existingHints = this.storage.manifest().allColumnFamilies().get(columnFamilyName);
-                                if (!existingHints.equals(columnHints)) { //existing column family has different usage hints, replace them
-                                    //we're about to modify the storage manifest, take a snapshot of it if we haven't already to allow rollbacks
-                                    if (!hasTakenSnapshot) {
-                                        this.storage.manifest().snapshot();
-                                        hasTakenSnapshot = true;
-                                    }
-
-                                    this.storage.manifest().allColumnFamilies().put(columnFamilyName, columnHints);
-                                }
-                            }
-                            break;
-                        default:
-                            throw new IllegalArgumentException("unsupported column requirement: " + columnRequirement);
+                        new RocksStorageInternal(this.storage, this.itemPath(name)).doDelete();
+                    } catch (Exception e1) {
+                        e.addSuppressed(e1);
                     }
                 }
 
-                if (hasTakenSnapshot) { //the manifest has been changed, save it
-                    this.storage.writeManifest();
-                }
-            } catch (Exception e) { //something failed, roll back the changes (if any) and rethrow exception
-                if (hasTakenSnapshot) {
-                    this.storage.manifest().rollback();
-                }
-                throw new FStorageException("failed to open item", e);
-            } finally {
-                if (hasTakenSnapshot) {
-                    this.storage.manifest().clearSnapshot();
-                }
+                PUnsafe.throwException(e); //hack to throw Exception from inside of the lambda
+                throw new AssertionError(); //impossible
             }
-
-            //begin using (and create if necessary) all of the column families used by this item, then wrap into a RocksStorageInternal
-            RocksStorageInternal storageInternal = new RocksStorageInternal(this.storage, data, this.storage.acquireColumnFamilies(data.columnNamesToColumnFamilyNames().values()));
-
-            //try to construct item
-            I item;
-            try {
-                item = factory.create(storageInternal);
-            } catch (Exception e) { //failure, close the internal storage again to release the column families back to the storage
-                storageInternal.close();
-                throw new FStorageException("failed to open item", e);
-            }
-
-            //save the storage and item
-            this.openItemsInternal.put(name, storageInternal);
-            this.openItemsExternal.put(name, uncheckedCast(item));
-
-            return item;
-        } finally {
-            this.storage.writeLock().unlock();
-        }
+        }).externalItem());
     }
 
     @Override
-    public void closeItem(@NonNull String name) throws FStorageException, NoSuchElementException {
-        this.storage.writeLock().lock();
-        try {
-            this.ensureOpen();
+    public void closeItem(@NonNull String nameIn) throws FStorageException, NoSuchElementException {
+        this.ensureOpen();
 
-            RocksStorageInternal storageInternal = this.openItemsInternal.get(name);
-            if (storageInternal == null) { //the item wasn't open
+        this.openItems.compute(nameIn, (name, storage) -> {
+            //ensure the item is already open
+            if (storage == null) {
                 throw new NoSuchElementException("no item is open with name: " + name);
             }
 
-            this.openItemsInternal.remove(name);
-            FStorageItem item = this.openItemsExternal.remove(name);
-
             try {
-                //notify the user code that the item is being closed
-                item.closeInternal();
-            } finally {
-                //close the internal storage
-                storageInternal.close();
+                //try to close the item
+                storage.doClose();
+
+                //remove the item from this category
+                return null;
+            } catch (FStorageException e) {
+                PUnsafe.throwException(e); //hack to throw FStorageException from inside of the lambda
+                throw new AssertionError(); //impossible
             }
-        } finally {
-            this.storage.writeLock().unlock();
-        }
+        });
     }
 
     @Override
-    public void deleteItems(@NonNull Collection<String> names) throws FStorageException, NoSuchElementException, IllegalStateException {
-        this.storage.writeLock().lock();
-        try {
-            this.ensureOpen();
+    public void deleteItem(@NonNull String nameIn) throws FStorageException, NoSuchElementException, IllegalStateException {
+        this.ensureOpen();
 
-            //validate the names being removed
-            names.forEach(name -> {
-                //ensure the item isn't already open
-                checkState(!this.openItemsExternal.containsKey(name), "item '%s' is already open!", name);
+        this.openItems.compute(nameIn, (name, storage) -> {
+            //ensure the item isn't open
+            checkState(storage == null, "category '%s' is currently open!", name);
 
-                //ensure the item exists
-                if (!this.manifestData.items().containsKey(name)) {
-                    throw new NoSuchElementException("no item exists with name: " + name);
-                }
-            });
-
-            this.storage.manifest().snapshot();
-            try {
-                //remove the items from the manifest, then save the updated manifest
-                names.forEach(name -> this.recursiveDeleteItem(this.manifestData.items().remove(name)));
-                this.storage.writeManifest();
-            } catch (Exception e) { //something failed, roll back the changes and rethrow exception
-                this.storage.manifest().rollback();
-                throw new FStorageException("failed to delete items", e);
-            } finally {
-                this.storage.manifest().clearSnapshot();
+            //ensure the item exists
+            if (!this.manifestData.hasItem(name)) {
+                throw new NoSuchElementException("no item exists with name: " + name);
             }
-        } finally {
-            this.storage.writeLock().unlock();
-        }
-    }
 
-    protected void recursiveDeleteItem(@NonNull RocksStorageManifest.ItemData data) {
-        //mark all column families as pending deletion
-        this.storage.manifest().columnFamiliesPendingDeletion().addAll(data.columnNamesToColumnFamilyNames().values());
-        data.columnNamesToColumnFamilyNames().clear();
+            try {
+                //remove the item from the manifest
+                this.manifestData.update(manifest -> manifest.removeItem(name));
 
-        //clear token
-        data.token(null);
+                //now that the item has been removed from the manifest, it technically no longer exists. we'll delete it now, but even if deletion is interrupted it'll be able
+                // to be resumed the next time cleanup is run.
+                new RocksStorageInternal(this.storage, this.itemPath(name)).doDelete();
+
+                //return null because the item still isn't open
+                return null;
+            } catch (Exception e) {
+                PUnsafe.throwException(e); //hack to throw FStorageException from inside of the lambda
+                throw new AssertionError(); //impossible
+            }
+        });
     }
 
     public void ensureOpen() {

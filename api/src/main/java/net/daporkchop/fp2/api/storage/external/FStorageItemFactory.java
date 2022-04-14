@@ -81,6 +81,8 @@ public interface FStorageItemFactory<I extends FStorageItem> {
         CREATE_IF_MISSING,
         /**
          * The existing column will be opened, or initialization will fail if it doesn't exist.
+         * <p>
+         * A new column will still be created if the item is being created for the first time.
          */
         FAIL_IF_MISSING,
         /**

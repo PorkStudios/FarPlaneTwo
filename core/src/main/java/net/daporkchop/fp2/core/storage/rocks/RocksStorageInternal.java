@@ -21,30 +21,44 @@
 package net.daporkchop.fp2.core.storage.rocks;
 
 import com.google.common.collect.ImmutableBiMap;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.api.storage.FStorageException;
+import net.daporkchop.fp2.api.storage.external.FStorageItem;
+import net.daporkchop.fp2.api.storage.external.FStorageItemFactory;
+import net.daporkchop.fp2.api.storage.internal.FStorageColumnHintsInternal;
 import net.daporkchop.fp2.api.storage.internal.FStorageColumnInternal;
 import net.daporkchop.fp2.api.storage.internal.FStorageInternal;
 import net.daporkchop.fp2.api.storage.internal.FStorageSnapshotInternal;
 import net.daporkchop.fp2.api.storage.internal.FStorageTransactionInternal;
 import net.daporkchop.fp2.api.storage.internal.FStorageWriteBatchInternal;
+import net.daporkchop.fp2.core.storage.rocks.manifest.RocksItemManifest;
+import net.daporkchop.lib.common.misc.file.PFiles;
+import net.daporkchop.lib.primitive.map.open.ObjObjOpenHashMap;
+import net.daporkchop.lib.unsafe.PUnsafe;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
 import org.rocksdb.WriteBatch;
 
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
-import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * Implementation of {@link FStorageInternal} for {@link RocksStorage}.
@@ -76,21 +90,179 @@ public class RocksStorageInternal extends ReentrantReadWriteLock implements FSto
     }
 
     private final RocksStorage<?> storage;
-    private final RocksStorageManifest.ItemData manifestData;
+
+    private final Path manifestRoot;
+    private final RocksItemManifest manifestData;
 
     private final ImmutableBiMap<String, RocksStorageColumnInternal> columns;
+
+    private FStorageItem externalItem; //TODO
 
     private int modificationCounter = 0;
 
     private volatile boolean open = true;
 
-    public RocksStorageInternal(@NonNull RocksStorage<?> storage, @NonNull RocksStorageManifest.ItemData manifestData, @NonNull Map<String, ColumnFamilyHandle> columns) {
+    //internal constructor, only used during cleanup and deletion
+    public RocksStorageInternal(@NonNull RocksStorage<?> storage, @NonNull Path manifestRoot) throws FStorageException {
         this.storage = storage;
-        this.manifestData = manifestData;
+        this.manifestRoot = PFiles.ensureDirectoryExists(manifestRoot);
 
+        this.manifestData = new RocksItemManifest(this.manifestFilePath()).load();
+
+        //this dummy constructor doesn't actually open any column families
+        this.columns = ImmutableBiMap.of();
+    }
+
+    @SuppressWarnings("OptionalAssignedToNull")
+    public RocksStorageInternal(@NonNull RocksStorage<?> storage, @NonNull Path manifestRoot, @NonNull FStorageItemFactory<?> factory) throws FStorageException {
+        this.storage = storage;
+        this.manifestRoot = PFiles.ensureDirectoryExists(manifestRoot);
+
+        this.manifestData = new RocksItemManifest(this.manifestFilePath()).load();
+
+        @RequiredArgsConstructor
+        class CallbackImpl implements FStorageItemFactory.ConfigurationCallback {
+            final Set<String> columnNames = new ObjectOpenHashSet<>();
+            final Map<String, FStorageColumnHintsInternal> columnHints = new ObjObjOpenHashMap<>();
+            final Map<String, FStorageItemFactory.ColumnRequirement> columnRequirements = new ObjObjOpenHashMap<>();
+
+            @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+            Optional<byte[]> newToken;
+
+            @Override
+            public Optional<byte[]> getExistingToken() {
+                return RocksStorageInternal.this.manifestData.getToken();
+            }
+
+            @Override
+            public void registerColumn(@NonNull String name, @NonNull FStorageColumnHintsInternal hints, @NonNull FStorageItemFactory.ColumnRequirement requirement) {
+                checkArg(this.columnNames.add(name), "column '%s' already registered!", name);
+
+                this.columnHints.put(name, hints);
+                this.columnRequirements.put(name, requirement);
+            }
+        }
+
+        //configure the item
+        CallbackImpl callback = new CallbackImpl();
+        FStorageItemFactory.ConfigurationResult result = factory.configure(callback);
+
+        Set<String> columnFamilyNamesToDelete = new ObjectOpenHashSet<>();
+
+        this.manifestData.update(manifest -> {
+            switch (result) {
+                case DELETE_EXISTING_AND_CREATE:
+                    if (manifest.isInitialized()) { //the item already exists
+                        //delete the item data by scheduling all of the previous column families for deletion.
+                        // if something goes wrong and we crash before the old column families can actually be deleted from the storage at the tail of
+                        // this constructor, they'll just sit around until the next cleanup pass.
+                        columnFamilyNamesToDelete.addAll(manifest.snapshotColumnNamesToColumnFamilyNames().values());
+
+                        //if no new token is being set, preserve the old one
+                        if (callback.newToken == null) {
+                            callback.newToken = manifest.getToken();
+                        }
+
+                        //clear the item manifest
+                        manifest.clear();
+                    }
+                case CREATE_IF_MISSING:
+                    //no-op
+                    break;
+                default:
+                    throw new IllegalArgumentException("unsupported configuration result: " + result);
+            }
+
+            boolean isNewItem = !manifest.isInitialized();
+
+            //prepare to create and acquire column families
+            Map<String, FStorageColumnHintsInternal> columnsToCreate = new ObjObjOpenHashMap<>();
+
+            for (String columnName : callback.columnNames) {
+                FStorageItemFactory.ColumnRequirement columnRequirement = callback.columnRequirements.get(columnName);
+                FStorageColumnHintsInternal columnHints = callback.columnHints.get(columnName);
+
+                Optional<String> optionalColumnFamilyName = manifest.getColumnFamilyNameForColumn(columnName);
+
+                switch (columnRequirement) {
+                    case DELETE_EXISTING_AND_CREATE:
+                        if (optionalColumnFamilyName.isPresent()) { //the column with the given name exists
+                            //mark the column family for deletion.
+                            // if something goes wrong and we crash before the old column families can actually be deleted from the storage at the tail of
+                            // this constructor, they'll just sit around until the next cleanup pass.
+                            columnFamilyNamesToDelete.add(optionalColumnFamilyName.get());
+
+                            //remove the column family from the item's manifest
+                            manifest.removeColumnByName(columnName);
+                            optionalColumnFamilyName = Optional.empty();
+                        }
+                    case CREATE_IF_MISSING:
+                        if (optionalColumnFamilyName.isPresent()) { //the column with the given name exists
+                            //TODO: consider updating the column family hints?
+                        } else { //the column with the given name doesn't exist, create a new one
+                            //schedule a new column family to be created
+                            columnsToCreate.put(columnName, columnHints);
+                        }
+                        break;
+                    case FAIL_IF_MISSING:
+                        if (optionalColumnFamilyName.isPresent()) { //the column with the given name exists
+                            //TODO: consider updating the column family hints?
+                        } else { //the column with the given name doesn't exist
+                            if (isNewItem) {
+                                //schedule a new column family to be created
+                                columnsToCreate.put(columnName, columnHints);
+                            } else { //FAIL_IF_MISSING isn't allowed to create new columns when opening an existing item
+                                throw new NoSuchElementException("the column '" + columnName + "' doesn't exist, but was requested with " + FStorageItemFactory.ColumnRequirement.FAIL_IF_MISSING);
+                            }
+                        }
+                    default:
+                        throw new IllegalArgumentException("unsupported column requirement: " + columnRequirement);
+                }
+            }
+
+            if (!columnsToCreate.isEmpty()) { //some columns need to have a new column family created
+                Map<String, String> columnNamesToNewColumnFamilyNames;
+                try {
+                    columnNamesToNewColumnFamilyNames = this.storage.modifyColumns(Collections.emptySet(), columnsToCreate);
+                } catch (FStorageException e) {
+                    PUnsafe.throwException(e); //hack to throw FStorageException from inside of the lambda
+                    throw new AssertionError(); //impossible
+                }
+
+                //save all the newly created column name -> column family name mappings into the item manifest
+                columnNamesToNewColumnFamilyNames.forEach(manifest::addColumn);
+            }
+        });
+
+        if (!columnFamilyNamesToDelete.isEmpty()) { //some column families are being replaced, let's ask the storage to delete them
+            this.storage.deleteColumnFamilies(columnFamilyNamesToDelete);
+        }
+
+        Map<String, String> columnNamesToColumnFamilyNames = this.manifestData.snapshotColumnNamesToColumnFamilyNames();
+        Set<String> uniqueColumnFamilyNames = new ObjectOpenHashSet<>(columnNamesToColumnFamilyNames.values());
+
+        //acquire all of the column families
         //noinspection UnstableApiUsage
-        this.columns = columns.entrySet().stream()
+        this.columns = this.storage.acquireColumnFamilies(uniqueColumnFamilyNames).entrySet().stream()
                 .collect(ImmutableBiMap.toImmutableBiMap(Map.Entry::getKey, entry -> new RocksStorageColumnInternal(entry.getValue())));
+
+        try {
+            //create user item instance
+            this.externalItem = factory.create(this);
+        } catch (Exception e) { //something failed, release all of the column families again
+            try {
+                this.doClose();
+            } catch (Exception e1) {
+                e.addSuppressed(new FStorageException("failed to close item after failed open", e));
+            }
+
+            PUnsafe.throwException(e); //rethrow original exception
+            throw new AssertionError(); //impossible
+        }
+    }
+
+    protected Path manifestFilePath() {
+        return this.manifestRoot.resolve("m_manifest_v0");
     }
 
     public void ensureOpen() {
@@ -99,16 +271,39 @@ public class RocksStorageInternal extends ReentrantReadWriteLock implements FSto
         }
     }
 
-    public void close() throws FStorageException {
+    protected Set<String> doCleanup() throws FStorageException {
         this.ensureOpen();
-        this.open = false;
 
-        //set the column family handle in each RocksStorageColumnInternal to null in order to cause any illegal accesses after we've already closed to fail
-        this.columns.values().forEach(column -> column.handle(null));
+        //simply return a snapshot of all the column family names used by this storage
+        return ImmutableSet.copyOf(this.manifestData.snapshotColumnNamesToColumnFamilyNames().values());
+    }
 
-        //notify the storage that we've stopped using all the column families
-        // (assume we already hold a write lock on the storage)
-        this.storage.stopUsingColumnFamilies(this.manifestData.columnNamesToColumnFamilyNames().values());
+    protected void doDelete() throws FStorageException {
+        this.doClose();
+
+        //enqueue all column families for deletion
+        this.storage.deleteColumnFamilies(new ObjectOpenHashSet<>(this.manifestData.snapshotColumnNamesToColumnFamilyNames().values()));
+
+        //delete manifest root directory
+        PFiles.rm(this.manifestRoot);
+    }
+
+    protected void doClose() throws FStorageException {
+        this.ensureOpen();
+
+        try {
+            //notify user code that it's being closed
+            this.externalItem.closeInternal();
+        } finally {
+            this.open = false;
+
+            //set the column family handle in each RocksStorageColumnInternal to null in order to cause any illegal accesses after we've already closed to fail
+            this.columns.values().forEach(column -> column.handle(null));
+
+            //notify the storage that we've stopped using all the column families
+            // (assume we already hold a write lock on the storage)
+            this.storage.releaseColumnFamilies(new ObjectOpenHashSet<>(this.manifestData.snapshotColumnNamesToColumnFamilyNames().values()));
+        }
     }
 
     @Override
@@ -131,54 +326,28 @@ public class RocksStorageInternal extends ReentrantReadWriteLock implements FSto
 
     @Override
     public Optional<byte[]> getToken() {
-        //the token is stored in the manifest, we don't need to acquire our own lock
-        this.storage.readLock().lock();
-        try {
-            this.ensureOpen();
-
-            return Optional.ofNullable(this.manifestData.token());
-        } finally {
-            this.storage.readLock().unlock();
-        }
+        this.ensureOpen();
+        return this.manifestData.getToken();
     }
 
     @Override
     public void setToken(@NonNull byte[] token) throws FStorageException {
-        this.setToken0(token);
+        this.ensureOpen();
+        this.manifestData.update(manifest -> manifest.setToken(token));
     }
 
     @Override
     public void removeToken() throws FStorageException {
-        this.setToken0(null);
-    }
-
-    protected void setToken0(byte[] token) throws FStorageException {
         this.ensureOpen();
-
-        //the token is stored in the manifest, we don't need to acquire our own lock
-        this.storage.writeLock().lock();
-        try {
-            this.storage.manifest().snapshot();
-            try {
-                //replace the token, then save the updated manifest
-                this.manifestData.token(token);
-                this.storage.writeManifest();
-            } catch (Exception e) { //something failed, roll back the changes and rethrow exception
-                this.storage.manifest().rollback();
-                throw new FStorageException("failed to set storage token", e);
-            } finally {
-                this.storage.manifest().clearSnapshot();
-            }
-        } finally {
-            this.storage.writeLock().unlock();
-        }
+        this.manifestData.update(RocksItemManifest::removeToken);
     }
 
     @Override
     public Map<String, FStorageColumnInternal> getColumns() {
-        //we aren't actually reading anything, just returning an IMMUTABLE map. no locking is necessary!
         this.ensureOpen();
-        return uncheckedCast(this.columns);
+
+        //take snapshot of columns map
+        return ImmutableMap.copyOf(this.columns);
     }
 
     @Override
