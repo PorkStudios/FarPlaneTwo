@@ -56,7 +56,7 @@ public interface FStorageInternal extends FStorageReadOperationsInternal {
     /**
      * @return the current token data, if any
      */
-    Optional<byte[]> getToken();
+    Optional<byte[]> getToken() throws FStorageException;
 
     /**
      * Sets the token data.

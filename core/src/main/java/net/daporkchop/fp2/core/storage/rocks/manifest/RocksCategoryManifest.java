@@ -21,15 +21,17 @@
 package net.daporkchop.fp2.core.storage.rocks.manifest;
 
 import lombok.NonNull;
-import net.daporkchop.lib.binary.stream.DataIn;
-import net.daporkchop.lib.binary.stream.DataOut;
-import net.daporkchop.lib.common.function.io.IOConsumer;
+import lombok.SneakyThrows;
+import net.daporkchop.fp2.core.storage.rocks.access.IRocksAccess;
+import net.daporkchop.fp2.core.storage.rocks.access.IRocksReadAccess;
+import net.daporkchop.fp2.core.storage.rocks.access.RocksConflictDetectionHint;
+import net.daporkchop.fp2.core.storage.rocks.access.iterator.IRocksIterator;
+import org.rocksdb.ColumnFamilyHandle;
+import org.rocksdb.RocksDBException;
 
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.function.Consumer;
+import java.nio.charset.StandardCharsets;
+import java.util.Optional;
+import java.util.function.BiConsumer;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -37,110 +39,106 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 public class RocksCategoryManifest extends AbstractRocksManifest<RocksCategoryManifest> {
-    private Set<String> childCategoryNames = new TreeSet<>();
-    private transient Set<String> childCategoryNamesSnapshot;
+    private static final String CHILD_CATEGORIES = escape("categories").intern();
+    private static final String CHILD_ITEMS = escape("items").intern();
 
-    private Set<String> childItemNames = new TreeSet<>();
-    private transient Set<String> childItemNamesSnapshot;
-
-    public RocksCategoryManifest(@NonNull Path filePath) {
-        super(filePath);
+    public RocksCategoryManifest(@NonNull ColumnFamilyHandle columnFamily, @NonNull String inode) {
+        super(columnFamily, inode);
     }
 
     //
-    // manifest implementation
+    // accessor methods
     //
 
-    @Override
-    protected int version() {
-        return 0;
-    }
+    @SneakyThrows(RocksDBException.class)
+    public void forEachChildCategory(@NonNull IRocksReadAccess access, @NonNull BiConsumer<String, String> action) {
+        byte[] keyBase = (this.inode + SEPARATOR + CHILD_CATEGORIES + SEPARATOR).getBytes(StandardCharsets.UTF_8);
 
-    @Override
-    protected void clear0() {
-        this.childCategoryNames = new TreeSet<>();
-        this.childItemNames = new TreeSet<>();
-    }
+        try (IRocksIterator itr = access.iterator(this.columnFamily, keyBase, increment(keyBase))) {
+            for (itr.seekToFirst(); itr.isValid(); ) {
+                //strip keyBase prefix, parse as UTF-8 and unescape
+                byte[] key = itr.key();
+                String categoryName = unescape(new String(key, keyBase.length, key.length - keyBase.length, StandardCharsets.UTF_8)).intern();
 
-    @Override
-    protected void read0(int version, DataIn in) throws IOException {
-        //read child category names
-        this.childCategoryNames = new TreeSet<>();
-        for (int i = 0, count = in.readVarInt(); i < count; i++) {
-            this.childCategoryNames.add(in.readVarUTF().intern());
-        }
-
-        //read child item names
-        this.childItemNames = new TreeSet<>();
-        for (int i = 0, count = in.readVarInt(); i < count; i++) {
-            this.childCategoryNames.add(in.readVarUTF().intern());
+                //invoke user function
+                action.accept(categoryName, new String(itr.value(), StandardCharsets.UTF_8));
+            }
         }
     }
 
-    @Override
-    protected void write0(DataOut out) throws IOException {
-        //write all child category names (with length prefix)
-        out.writeVarInt(this.childCategoryNames.size());
-        this.childCategoryNames.forEach((IOConsumer<String>) out::writeVarUTF);
-
-        //write all child item names (with length prefix)
-        out.writeVarInt(this.childItemNames.size());
-        this.childItemNames.forEach((IOConsumer<String>) out::writeVarUTF);
+    @SneakyThrows(RocksDBException.class)
+    public boolean hasCategory(@NonNull IRocksReadAccess access, @NonNull String name) {
+        return access.get(this.columnFamily,
+                (this.inode + SEPARATOR + CHILD_CATEGORIES + SEPARATOR + escape(name)).getBytes(StandardCharsets.UTF_8),
+                RocksConflictDetectionHint.SHARED) != null;
     }
 
-    @Override
-    protected void snapshot0() {
-        //clone primary collections to snapshots
-        this.childCategoryNamesSnapshot = new TreeSet<>(this.childCategoryNames);
-        this.childItemNamesSnapshot = new TreeSet<>(this.childItemNames);
+    @SneakyThrows(RocksDBException.class)
+    public Optional<String> getCategoryInode(@NonNull IRocksReadAccess access, @NonNull String name) {
+        return Optional.ofNullable(access.get(this.columnFamily,
+                (this.inode + SEPARATOR + CHILD_CATEGORIES + SEPARATOR + escape(name)).getBytes(StandardCharsets.UTF_8),
+                RocksConflictDetectionHint.SHARED)).map(arr -> new String(arr, StandardCharsets.UTF_8));
     }
 
-    @Override
-    protected void rollback0() {
-        //clone snapshot collections to primaries
-        this.childCategoryNames = new TreeSet<>(this.childCategoryNamesSnapshot);
-        this.childItemNames = new TreeSet<>(this.childItemNamesSnapshot);
+    @SneakyThrows(RocksDBException.class)
+    public void addCategory(@NonNull IRocksAccess access, @NonNull String name, @NonNull String inode) {
+        byte[] key = (this.inode + SEPARATOR + CHILD_CATEGORIES + SEPARATOR + escape(name)).getBytes(StandardCharsets.UTF_8);
+
+        checkState(access.get(this.columnFamily, key) == null, "category '%s' already exists", name);
+        access.put(this.columnFamily, key, inode.getBytes(StandardCharsets.UTF_8));
     }
 
-    @Override
-    protected void clearSnapshot0() {
-        this.childCategoryNamesSnapshot = null;
-        this.childItemNamesSnapshot = null;
+    @SneakyThrows(RocksDBException.class)
+    public void removeCategory(@NonNull IRocksAccess access, @NonNull String name) {
+        byte[] key = (this.inode + SEPARATOR + CHILD_CATEGORIES + SEPARATOR + escape(name)).getBytes(StandardCharsets.UTF_8);
+
+        checkState(access.get(this.columnFamily, key) != null, "category '%s' doesn't exist", name);
+        access.delete(this.columnFamily, key);
     }
 
-    //
-    // helper methods
-    //
+    @SneakyThrows(RocksDBException.class)
+    public void forEachChildItem(@NonNull IRocksReadAccess access, @NonNull BiConsumer<String, String> action) {
+        byte[] keyBase = (this.inode + SEPARATOR + CHILD_ITEMS + SEPARATOR).getBytes(StandardCharsets.UTF_8);
 
-    public void forEachChildCategoryName(@NonNull Consumer<String> action) {
-        this.runWithReadLock(manifest -> manifest.childCategoryNames.forEach(action));
+        try (IRocksIterator itr = access.iterator(this.columnFamily, keyBase, increment(keyBase))) {
+            for (itr.seekToFirst(); itr.isValid(); ) {
+                //strip keyBase prefix, parse as UTF-8 and unescape
+                byte[] key = itr.key();
+                String itemName = unescape(new String(key, keyBase.length, key.length - keyBase.length, StandardCharsets.UTF_8)).intern();
+
+                //invoke user function
+                action.accept(itemName, new String(itr.value(), StandardCharsets.UTF_8));
+            }
+        }
     }
 
-    public boolean hasCategory(@NonNull String name) {
-        return this.getWithReadLock(manifest -> manifest.childCategoryNames.contains(name));
+    @SneakyThrows(RocksDBException.class)
+    public boolean hasItem(@NonNull IRocksReadAccess access, @NonNull String name) {
+        return access.get(this.columnFamily,
+                (this.inode + SEPARATOR + CHILD_ITEMS + SEPARATOR + escape(name)).getBytes(StandardCharsets.UTF_8),
+                RocksConflictDetectionHint.SHARED) != null;
     }
 
-    public void addCategory(@NonNull String name) {
-        this.runWithWriteLock(manifest -> checkState(manifest.childCategoryNames.add(name), "category '%s' already exists", name));
+    @SneakyThrows(RocksDBException.class)
+    public Optional<String> getItemInode(@NonNull IRocksReadAccess access, @NonNull String name) {
+        return Optional.ofNullable(access.get(this.columnFamily,
+                (this.inode + SEPARATOR + CHILD_ITEMS + SEPARATOR + escape(name)).getBytes(StandardCharsets.UTF_8),
+                RocksConflictDetectionHint.SHARED)).map(arr -> new String(arr, StandardCharsets.UTF_8));
     }
 
-    public void removeCategory(@NonNull String name) {
-        this.runWithWriteLock(manifest -> checkState(manifest.childCategoryNames.remove(name), "category '%s' doesn't exist", name));
+    @SneakyThrows(RocksDBException.class)
+    public void addItem(@NonNull IRocksAccess access, @NonNull String name, @NonNull String inode) {
+        byte[] key = (this.inode + SEPARATOR + CHILD_ITEMS + SEPARATOR + escape(name)).getBytes(StandardCharsets.UTF_8);
+
+        checkState(access.get(this.columnFamily, key) == null, "item '%s' already exists", name);
+        access.put(this.columnFamily, key, inode.getBytes(StandardCharsets.UTF_8));
     }
 
-    public void forEachChildItemName(@NonNull Consumer<String> action) {
-        this.runWithReadLock(manifest -> manifest.childItemNames.forEach(action));
-    }
+    @SneakyThrows(RocksDBException.class)
+    public void removeItem(@NonNull IRocksAccess access, @NonNull String name) {
+        byte[] key = (this.inode + SEPARATOR + CHILD_ITEMS + SEPARATOR + escape(name)).getBytes(StandardCharsets.UTF_8);
 
-    public boolean hasItem(@NonNull String name) {
-        return this.getWithReadLock(manifest -> manifest.childItemNames.contains(name));
-    }
-
-    public void addItem(@NonNull String name) {
-        this.runWithWriteLock(manifest -> checkState(manifest.childItemNames.add(name), "item '%s' already exists", name));
-    }
-
-    public void removeItem(@NonNull String name) {
-        this.runWithWriteLock(manifest -> checkState(manifest.childItemNames.remove(name), "item '%s' doesn't exist", name));
+        checkState(access.get(this.columnFamily, key) != null, "item '%s' doesn't exist", name);
+        access.delete(this.columnFamily, key);
     }
 }

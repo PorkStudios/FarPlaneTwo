@@ -40,7 +40,7 @@ public interface FStorageCategory {
     /**
      * @return a {@link Set} containing the names of all the child categories that exist
      */
-    Set<String> allCategories();
+    Set<String> allCategories() throws FStorageException;
 
     /**
      * @return a {@link Map} containing a snapshot of all of the child categories that are currently open
@@ -93,7 +93,7 @@ public interface FStorageCategory {
     /**
      * @return a {@link Set} containing the names of all the child items that exist
      */
-    Set<String> allItems();
+    Set<String> allItems() throws FStorageException;
 
     /**
      * @return a {@link Map} containing a snapshot of all of the child items that are currently open

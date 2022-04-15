@@ -20,157 +20,116 @@
 
 package net.daporkchop.fp2.core.storage.rocks.manifest;
 
+import com.google.common.collect.ImmutableMap;
 import lombok.NonNull;
-import net.daporkchop.lib.binary.stream.DataIn;
-import net.daporkchop.lib.binary.stream.DataOut;
-import net.daporkchop.lib.common.function.io.IOBiConsumer;
+import lombok.SneakyThrows;
+import net.daporkchop.fp2.core.storage.rocks.access.IRocksAccess;
+import net.daporkchop.fp2.core.storage.rocks.access.IRocksReadAccess;
+import net.daporkchop.fp2.core.storage.rocks.access.IRocksWriteAccess;
+import net.daporkchop.fp2.core.storage.rocks.access.RocksConflictDetectionHint;
+import net.daporkchop.fp2.core.storage.rocks.access.iterator.IRocksIterator;
+import org.rocksdb.ColumnFamilyHandle;
+import org.rocksdb.RocksDBException;
 
-import java.io.IOException;
-import java.nio.file.Path;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Optional;
-import java.util.TreeMap;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
 public class RocksItemManifest extends AbstractRocksManifest<RocksItemManifest> {
-    private Map<String, String> columnNamesToColumnFamilyNames = new TreeMap<>();
-    private transient Map<String, String> columnNamesToColumnFamilyNamesSnapshot;
+    private static final String COLUMN_NAMES = escape("column_names").intern();
+    private static final String TOKEN = escape("token").intern();
+    private static final String INITIALIZED = escape("initialized").intern();
 
-    private byte[] token;
-    private transient byte[] tokenSnapshot;
-
-    private boolean initialized = false;
-    private transient boolean initializedSnapshot;
-
-    public RocksItemManifest(@NonNull Path filePath) {
-        super(filePath);
+    public RocksItemManifest(@NonNull ColumnFamilyHandle columnFamily, @NonNull String inode) {
+        super(columnFamily, inode);
     }
 
     //
-    // manifest implementation
+    // accessor methods
     //
 
-    @Override
-    protected int version() {
-        return 0;
-    }
+    @SneakyThrows(RocksDBException.class)
+    public Map<String, String> snapshotColumnNamesToColumnFamilyNames(@NonNull IRocksReadAccess access) {
+        byte[] keyBase = (this.inode + SEPARATOR + COLUMN_NAMES + SEPARATOR).getBytes(StandardCharsets.UTF_8);
 
-    @Override
-    protected void clear0() {
-        this.columnNamesToColumnFamilyNames = new TreeMap<>();
-        this.token = null;
-        this.initialized = false;
-    }
+        ImmutableMap.Builder<String, String> builder = ImmutableMap.builder();
 
-    @Override
-    protected void read0(int version, DataIn in) throws IOException {
-        //read column name -> column family name mappings
-        this.columnNamesToColumnFamilyNames = new TreeMap<>();
-        for (int i = 0, count = in.readVarInt(); i < count; i++) {
-            this.columnNamesToColumnFamilyNames.put(in.readVarUTF().intern(), in.readVarUTF().intern());
+        try (IRocksIterator itr = access.iterator(this.columnFamily, keyBase, increment(keyBase))) {
+            for (itr.seekToFirst(); itr.isValid(); ) {
+                //strip keyBase prefix, parse as UTF-8 and unescape
+                byte[] key = itr.key();
+                String columnName = unescape(new String(key, keyBase.length, key.length - keyBase.length, StandardCharsets.UTF_8)).intern();
+
+                builder.put(columnName, new String(itr.value(), StandardCharsets.UTF_8));
+            }
         }
 
-        //read token data
-        if (in.readBoolean()) {
-            this.token = new byte[in.readVarInt()];
-            in.readFully(this.token);
-        }
-
-        //read initialized flag
-        this.initialized = in.readBoolean();
+        return builder.build();
     }
 
-    @Override
-    protected void write0(DataOut out) throws IOException {
-        //write column name -> column family name mappings (with length prefix)
-        out.writeVarInt(this.columnNamesToColumnFamilyNames.size());
-        this.columnNamesToColumnFamilyNames.forEach((IOBiConsumer<String, String>) (name, data) -> {
-            out.writeVarUTF(name);
-            out.writeVarUTF(data);
-        });
-
-        //write token data
-        out.writeBoolean(this.token != null);
-        if (this.token != null) {
-            out.writeVarInt(this.token.length);
-            out.write(this.token);
-        }
-
-        //write initialized flag
-        out.writeBoolean(this.initialized);
+    @SneakyThrows(RocksDBException.class)
+    public boolean columnExistsWithName(@NonNull IRocksReadAccess access, @NonNull String columnName) {
+        return access.get(this.columnFamily,
+                (this.inode + SEPARATOR + COLUMN_NAMES + SEPARATOR + escape(columnName)).getBytes(StandardCharsets.UTF_8),
+                RocksConflictDetectionHint.SHARED) != null;
     }
 
-    @Override
-    protected void snapshot0() {
-        //clone primary collection to snapshot
-        this.columnNamesToColumnFamilyNamesSnapshot = new TreeMap<>(this.columnNamesToColumnFamilyNames);
-        this.tokenSnapshot = this.token;
-        this.initializedSnapshot = this.initialized;
+    @SneakyThrows(RocksDBException.class)
+    public Optional<String> getColumnFamilyNameForColumn(@NonNull IRocksReadAccess access, @NonNull String columnName) {
+        return Optional.ofNullable(access.get(this.columnFamily,
+                (this.inode + SEPARATOR + COLUMN_NAMES + SEPARATOR + escape(columnName)).getBytes(StandardCharsets.UTF_8),
+                RocksConflictDetectionHint.SHARED)).map(arr -> new String(arr, StandardCharsets.UTF_8));
     }
 
-    @Override
-    protected void rollback0() {
-        //clone snapshot collection to primary
-        this.columnNamesToColumnFamilyNames = new TreeMap<>(this.columnNamesToColumnFamilyNamesSnapshot);
-        this.token = this.tokenSnapshot;
-        this.initialized = this.initializedSnapshot;
+    @SneakyThrows(RocksDBException.class)
+    public void addColumn(@NonNull IRocksAccess access, @NonNull String columnName, @NonNull String columnFamilyName) {
+        byte[] key = (this.inode + SEPARATOR + COLUMN_NAMES + SEPARATOR + escape(columnName)).getBytes(StandardCharsets.UTF_8);
+
+        checkState(access.get(this.columnFamily, key) == null, "can't add column '%s' because another column with the same name already exists!", columnName);
+        access.put(this.columnFamily, key, columnFamilyName.getBytes(StandardCharsets.UTF_8));
     }
 
-    @Override
-    protected void clearSnapshot0() {
-        this.columnNamesToColumnFamilyNamesSnapshot = null;
-        this.tokenSnapshot = null;
-        this.initializedSnapshot = false;
+    @SneakyThrows(RocksDBException.class)
+    public void removeColumnByName(@NonNull IRocksAccess access, @NonNull String columnName) {
+        byte[] key = (this.inode + SEPARATOR + COLUMN_NAMES + SEPARATOR + escape(columnName)).getBytes(StandardCharsets.UTF_8);
+
+        checkState(access.get(this.columnFamily, key) != null, "can't remove column '%s' because it doesn't exist!", columnName);
+        access.delete(this.columnFamily, key);
     }
 
-    //
-    // helper methods
-    //
-
-    public Map<String, String> snapshotColumnNamesToColumnFamilyNames() {
-        return this.getWithReadLock(manifest -> new TreeMap<>(manifest.columnNamesToColumnFamilyNames));
+    @SneakyThrows(RocksDBException.class)
+    public Optional<byte[]> getToken(@NonNull IRocksReadAccess access) {
+        return Optional.ofNullable(access.get(this.columnFamily, (this.inode + SEPARATOR + TOKEN).getBytes(StandardCharsets.UTF_8)));
     }
 
-    public void removeColumnByName(@NonNull String columnName) {
-        this.runWithWriteLock(manifest -> checkState(manifest.columnNamesToColumnFamilyNames.remove(columnName) != null, "can't remove column '%s' because it doesn't exist!", columnName));
+    @SneakyThrows(RocksDBException.class)
+    public void setToken(@NonNull IRocksWriteAccess access, @NonNull byte[] token) {
+        access.put(this.columnFamily, (this.inode + SEPARATOR + TOKEN).getBytes(StandardCharsets.UTF_8), token);
     }
 
-    public boolean columnExistsWithName(@NonNull String columnName) {
-        return this.getWithReadLock(manifest -> manifest.columnNamesToColumnFamilyNames.containsKey(columnName));
+    @SneakyThrows(RocksDBException.class)
+    public void removeToken(@NonNull IRocksWriteAccess access) {
+        access.delete(this.columnFamily, (this.inode + SEPARATOR + TOKEN).getBytes(StandardCharsets.UTF_8));
     }
 
-    public Optional<String> getColumnFamilyNameForColumn(@NonNull String columnName) {
-        return this.getWithReadLock(manifest -> Optional.ofNullable(manifest.columnNamesToColumnFamilyNames.get(columnName)));
+    @SneakyThrows(RocksDBException.class)
+    public boolean isInitialized(@NonNull IRocksReadAccess access) {
+        return access.get(this.columnFamily,
+                (this.inode + SEPARATOR + INITIALIZED).getBytes(StandardCharsets.UTF_8),
+                RocksConflictDetectionHint.SHARED) != null;
     }
 
-    public void addColumn(@NonNull String columnName, @NonNull String columnFamilyName) {
-        this.runWithWriteLock(manifest -> checkState(manifest.columnNamesToColumnFamilyNames.putIfAbsent(columnName, columnFamilyName) == null, "can't add column '%s' because another column with the same name already exists!", columnName));
-    }
+    @SneakyThrows(RocksDBException.class)
+    public void markInitialized(@NonNull IRocksAccess access) {
+        byte[] key = (this.inode + SEPARATOR + INITIALIZED).getBytes(StandardCharsets.UTF_8);
 
-    public Optional<byte[]> getToken() {
-        return this.getWithReadLock(manifest -> Optional.ofNullable(this.token)).map(byte[]::clone);
-    }
-
-    public void setToken(byte[] token) {
-        this.runWithWriteLock(manifest -> manifest.token = token.clone());
-    }
-
-    public void removeToken() {
-        this.runWithWriteLock(manifest -> manifest.token = null);
-    }
-
-    public boolean isInitialized() {
-        return this.getWithReadLock(manifest -> manifest.initialized);
-    }
-
-    public void markInitialized() {
-        this.runWithWriteLock(manifest -> {
-            checkState(!this.initialized, "already initialized!");
-            manifest.initialized = true;
-        });
+        checkState(access.get(this.columnFamily, key) == null, "already initialized!");
+        access.put(this.columnFamily, key, EMPTY_BYTE_ARRAY);
     }
 }
