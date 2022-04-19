@@ -24,10 +24,10 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.api.event.ReturningEvent;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.server.world.IFarLevelServer;
 
 /**
- * Fired in order to retrieve the terrain generator implementation for a given {@link IFarWorldServer}.
+ * Fired in order to retrieve the terrain generator implementation for a given {@link IFarLevelServer}.
  *
  * @author DaPorkchop_
  */
@@ -35,5 +35,5 @@ import net.daporkchop.fp2.core.server.world.IFarWorldServer;
 @Getter
 public class GetTerrainGeneratorEvent implements ReturningEvent<Object> {
     @NonNull
-    protected final IFarWorldServer world;
+    protected final IFarLevelServer world;
 }

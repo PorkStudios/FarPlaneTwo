@@ -37,7 +37,6 @@ import net.daporkchop.fp2.core.mode.heightmap.client.struct.HeightmapLocalAttrib
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
-import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.draw.index.IndexFormat;
 import net.daporkchop.fp2.gl.draw.index.IndexType;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
@@ -102,7 +101,7 @@ public class ShaderBasedHeightmapRenderStrategy extends AbstractMultipassIndexed
 
     @Override
     public IRenderBaker<HeightmapPos, HeightmapTile, IndexedBakeOutput<HeightmapGlobalAttributes, HeightmapLocalAttributes>> createBaker() {
-        return new HeightmapBaker(this.worldRenderer, this.textureUVs);
+        return new HeightmapBaker(this.levelRenderer, this.textureUVs);
     }
 
     @Override

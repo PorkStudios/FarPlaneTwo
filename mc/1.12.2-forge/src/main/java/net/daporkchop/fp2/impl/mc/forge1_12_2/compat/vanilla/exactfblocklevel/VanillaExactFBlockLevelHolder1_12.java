@@ -18,17 +18,17 @@
  *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.exactfblockworld;
+package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.exactfblocklevel;
 
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.core.minecraft.util.threading.asynccache.AsyncCacheNBT;
-import net.daporkchop.fp2.core.minecraft.world.chunks.AbstractChunksExactFBlockWorldHolder;
-import net.daporkchop.fp2.core.minecraft.world.chunks.AbstractPrefetchedChunksExactFBlockWorld;
-import net.daporkchop.fp2.core.server.world.ExactFBlockWorldHolder;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.minecraft.world.chunks.AbstractChunksExactFBlockLevelHolder;
+import net.daporkchop.fp2.core.minecraft.world.chunks.AbstractPrefetchedChunksExactFBlockLevel;
+import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
+import net.daporkchop.fp2.core.server.world.IFarLevelServer;
 import net.daporkchop.fp2.core.util.datastructure.Datastructures;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSegtreeSet;
 import net.daporkchop.fp2.core.util.threading.futurecache.IAsyncCache;
@@ -46,18 +46,18 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * Default implementation of {@link ExactFBlockWorldHolder} for vanilla worlds.
+ * Default implementation of {@link ExactFBlockLevelHolder} for vanilla worlds.
  *
  * @author DaPorkchop_
  */
-public class VanillaExactFBlockWorldHolder1_12 extends AbstractChunksExactFBlockWorldHolder<Chunk> {
-    public VanillaExactFBlockWorldHolder1_12(@NonNull WorldServer world) {
-        super(((IMixinWorldServer) world).fp2_farWorldServer(), 4);
+public class VanillaExactFBlockLevelHolder1_12 extends AbstractChunksExactFBlockLevelHolder<Chunk> {
+    public VanillaExactFBlockLevelHolder1_12(@NonNull WorldServer world) {
+        super(((IMixinWorldServer) world).fp2_farLevelServer(), 4);
     }
 
     @Override
-    protected NDimensionalIntSegtreeSet createChunksExistIndex(@NonNull IFarWorldServer world) {
-        AnvilChunkLoader io = (AnvilChunkLoader) ((WorldServer) world.fp2_IFarWorld_implWorld()).getChunkProvider().chunkLoader;
+    protected NDimensionalIntSegtreeSet createChunksExistIndex(@NonNull IFarLevelServer world) {
+        AnvilChunkLoader io = (AnvilChunkLoader) ((WorldServer) world.implWorld()).getChunkProvider().chunkLoader;
         return Datastructures.INSTANCE.nDimensionalIntSegtreeSet()
                 .dimensions(2)
                 .threadSafe(true)
@@ -68,13 +68,13 @@ public class VanillaExactFBlockWorldHolder1_12 extends AbstractChunksExactFBlock
     }
 
     @Override
-    protected AsyncCacheNBT<Vec2i, ?, Chunk, ?> createChunkCache(@NonNull IFarWorldServer world) {
-        return new ChunkCache((WorldServer) world.fp2_IFarWorld_implWorld(), (AnvilChunkLoader) ((WorldServer) world.fp2_IFarWorld_implWorld()).getChunkProvider().chunkLoader);
+    protected AsyncCacheNBT<Vec2i, ?, Chunk, ?> createChunkCache(@NonNull IFarLevelServer world) {
+        return new ChunkCache((WorldServer) world.implWorld(), (AnvilChunkLoader) ((WorldServer) world.implWorld()).getChunkProvider().chunkLoader);
     }
 
     @Override
-    protected AbstractPrefetchedChunksExactFBlockWorld<Chunk> prefetchedWorld(boolean generationAllowed, @NonNull List<Chunk> chunks) {
-        return new PrefetchedChunksFBlockWorld1_12(this, generationAllowed, chunks);
+    protected AbstractPrefetchedChunksExactFBlockLevel<Chunk> prefetchedWorld(boolean generationAllowed, @NonNull List<Chunk> chunks) {
+        return new PrefetchedChunksFBlockLevel1_12(this, generationAllowed, chunks);
     }
 
     /**
@@ -107,7 +107,7 @@ public class VanillaExactFBlockWorldHolder1_12 extends AbstractChunksExactFBlock
 
         @Override
         protected void triggerGeneration(@NonNull Vec2i key, @NonNull Object param) {
-            ((IMixinWorldServer) this.world).fp2_farWorldServer().fp2_IFarWorld_workerManager().workExecutor().run((ERunnable) () -> {
+            ((IMixinWorldServer) this.world).fp2_farLevelServer().workerManager().workExecutor().run((ERunnable) () -> {
                 int x = key.x();
                 int z = key.y();
 

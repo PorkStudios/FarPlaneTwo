@@ -237,7 +237,7 @@ public class RocksTileStorage<POS extends IFarPos, T extends IFarTile> implement
             buf.writeIntLE(this.version); //tile format version
 
             { //registry
-                byte[] registryToken = this.world.world().fp2_IFarWorld_registry().registryToken();
+                byte[] registryToken = this.world.world().registry().registryToken();
                 buf.writeIntLE(registryToken.length).writeBytes(registryToken);
             }
 

@@ -31,7 +31,7 @@ import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.core.mode.api.server.storage.IFarTileStorage;
 import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTrackerManager;
 import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.server.world.IFarLevelServer;
 
 import java.io.Closeable;
 import java.util.concurrent.CompletableFuture;
@@ -40,7 +40,7 @@ import java.util.concurrent.CompletableFuture;
  * @author DaPorkchop_
  */
 public interface IFarTileProvider<POS extends IFarPos, T extends IFarTile> extends Closeable {
-    IFarWorldServer world();
+    IFarLevelServer world();
 
     CompletableFuture<ITileHandle<POS, T>> requestLoad(@NonNull POS pos);
 

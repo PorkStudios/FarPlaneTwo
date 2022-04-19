@@ -24,7 +24,7 @@ import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.util.OrderedRegistry;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
-import net.daporkchop.fp2.core.client.world.IFarWorldClient;
+import net.daporkchop.fp2.core.client.world.IFarLevelClient;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.event.AbstractRegisterEvent;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
@@ -34,7 +34,7 @@ import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.core.server.player.IFarPlayerServer;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.server.world.IFarLevelServer;
 import net.daporkchop.fp2.core.util.SimpleRecycler;
 import net.daporkchop.lib.binary.stream.DataIn;
 import net.daporkchop.lib.binary.stream.DataOut;
@@ -73,34 +73,34 @@ public interface IFarRenderMode<POS extends IFarPos, T extends IFarTile> {
      * @param world the vanilla world
      * @return the new {@link IFarTileProvider}
      */
-    IFarTileProvider<POS, T> tileProvider(@NonNull IFarWorldServer world);
+    IFarTileProvider<POS, T> tileProvider(@NonNull IFarLevelServer world);
 
     /**
-     * Creates a new {@link IFarGeneratorExact exact generator} for the given {@link IFarWorldServer world} and {@link IFarTileProvider tile provider}.
+     * Creates a new {@link IFarGeneratorExact exact generator} for the given {@link IFarLevelServer world} and {@link IFarTileProvider tile provider}.
      *
-     * @param world    the {@link IFarWorldServer world}
+     * @param world    the {@link IFarLevelServer world}
      * @param provider the {@link IFarTileProvider tile provider}
      * @return the new {@link IFarGeneratorExact exact generator}
      */
-    IFarGeneratorExact<POS, T> exactGenerator(@NonNull IFarWorldServer world, @NonNull IFarTileProvider<POS, T> provider);
+    IFarGeneratorExact<POS, T> exactGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<POS, T> provider);
 
     /**
-     * Creates a new {@link IFarGeneratorRough rough generator} for the given {@link IFarWorldServer world} and {@link IFarTileProvider tile provider}.
+     * Creates a new {@link IFarGeneratorRough rough generator} for the given {@link IFarLevelServer world} and {@link IFarTileProvider tile provider}.
      *
-     * @param world    the {@link IFarWorldServer world}
+     * @param world    the {@link IFarLevelServer world}
      * @param provider the {@link IFarTileProvider tile provider}
      * @return the new {@link IFarGeneratorRough rough generator}, or {@code null} if none is available
      */
-    IFarGeneratorRough<POS, T> roughGenerator(@NonNull IFarWorldServer world, @NonNull IFarTileProvider<POS, T> provider);
+    IFarGeneratorRough<POS, T> roughGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<POS, T> provider);
 
     /**
-     * Creates a new {@link IFarScaler scaler} for the given {@link IFarWorldServer world} and {@link IFarTileProvider tile provider}.
+     * Creates a new {@link IFarScaler scaler} for the given {@link IFarLevelServer world} and {@link IFarTileProvider tile provider}.
      *
-     * @param world    the {@link IFarWorldServer world}
+     * @param world    the {@link IFarLevelServer world}
      * @param provider the {@link IFarTileProvider tile provider}
      * @return the new {@link IFarScaler scaler}
      */
-    IFarScaler<POS, T> scaler(@NonNull IFarWorldServer world, @NonNull IFarTileProvider<POS, T> provider);
+    IFarScaler<POS, T> scaler(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<POS, T> provider);
 
     /**
      * Creates a new {@link IFarServerContext} for the given player in the given world.
@@ -110,7 +110,7 @@ public interface IFarRenderMode<POS extends IFarPos, T extends IFarTile> {
      * @param config
      * @return the new {@link IFarServerContext}
      */
-    IFarServerContext<POS, T> serverContext(@NonNull IFarPlayerServer player, @NonNull IFarWorldServer world, @NonNull FP2Config config);
+    IFarServerContext<POS, T> serverContext(@NonNull IFarPlayerServer player, @NonNull IFarLevelServer world, @NonNull FP2Config config);
 
     /**
      * Creates a new {@link IFarClientContext} for the given world.
@@ -119,7 +119,7 @@ public interface IFarRenderMode<POS extends IFarPos, T extends IFarTile> {
      * @param config
      * @return the new {@link IFarClientContext}
      */
-    IFarClientContext<POS, T> clientContext(@NonNull IFarWorldClient world, @NonNull FP2Config config);
+    IFarClientContext<POS, T> clientContext(@NonNull IFarLevelClient world, @NonNull FP2Config config);
 
     /**
      * @return a recycler for tile objects

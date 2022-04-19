@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.api.test.world;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.api.world.FBlockWorld;
+import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import org.junit.jupiter.api.Test;
 
 import java.util.BitSet;
@@ -33,7 +33,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public class TestFBlockWorld {
+public class TestFBlockLevel {
     //
     // QueryShape and implementations
     //
@@ -45,7 +45,7 @@ public class TestFBlockWorld {
             int y = ThreadLocalRandom.current().nextInt(Integer.MIN_VALUE, Integer.MAX_VALUE);
             int z = ThreadLocalRandom.current().nextInt(Integer.MIN_VALUE, Integer.MAX_VALUE);
 
-            this.testQueryShape(new FBlockWorld.SinglePointQueryShape(x, y, z));
+            this.testQueryShape(new FBlockLevel.SinglePointQueryShape(x, y, z));
         });
     }
 
@@ -58,7 +58,7 @@ public class TestFBlockWorld {
             int[] y = ThreadLocalRandom.current().ints(count).toArray();
             int[] z = ThreadLocalRandom.current().ints(count).toArray();
 
-            this.testQueryShape(new FBlockWorld.MultiPointsQueryShape(x, 0, 1, y, 0, 1, z, 0, 1, count));
+            this.testQueryShape(new FBlockLevel.MultiPointsQueryShape(x, 0, 1, y, 0, 1, z, 0, 1, count));
         });
 
         //interleaved
@@ -66,7 +66,7 @@ public class TestFBlockWorld {
             int count = ThreadLocalRandom.current().nextInt(4096);
             int[] positions = ThreadLocalRandom.current().ints(count * 3).toArray();
 
-            this.testQueryShape(new FBlockWorld.MultiPointsQueryShape(positions, 0, 3, positions, 1, 3, positions, 2, 3, count));
+            this.testQueryShape(new FBlockLevel.MultiPointsQueryShape(positions, 0, 3, positions, 1, 3, positions, 2, 3, count));
         });
     }
 
@@ -83,11 +83,11 @@ public class TestFBlockWorld {
             int strideY = ThreadLocalRandom.current().nextInt(65536);
             int strideZ = ThreadLocalRandom.current().nextInt(65536);
 
-            this.testQueryShape(new FBlockWorld.OriginSizeStrideQueryShape(originX, originY, originZ, sizeX, sizeY, sizeZ, strideX, strideY, strideZ));
+            this.testQueryShape(new FBlockLevel.OriginSizeStrideQueryShape(originX, originY, originZ, sizeX, sizeY, sizeZ, strideX, strideY, strideZ));
         });
     }
 
-    private void testQueryShape(@NonNull FBlockWorld.QueryShape shape) {
+    private void testQueryShape(@NonNull FBlockLevel.QueryShape shape) {
         shape.validate();
 
         //keep track of which voxel position indices have been visited so far

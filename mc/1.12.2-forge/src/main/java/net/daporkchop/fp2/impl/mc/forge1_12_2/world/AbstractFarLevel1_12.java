@@ -24,7 +24,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.common.util.Identifier;
-import net.daporkchop.fp2.core.mode.api.ctx.IFarWorld;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarLevel;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.world.registry.GameRegistry1_12_2;
 import net.minecraft.world.DimensionType;
@@ -37,19 +37,19 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @RequiredArgsConstructor
 @Getter
-public abstract class AbstractFarWorld1_12<W extends World> implements IFarWorld {
+public abstract class AbstractFarLevel1_12<W extends World> implements IFarLevel {
     @NonNull
     protected final FP2Forge1_12_2 fp2;
     @NonNull
     protected final W world;
 
     @Override
-    public Object fp2_IFarWorld_implWorld() {
+    public Object implWorld() {
         return this.world;
     }
 
     @Override
-    public Identifier fp2_IFarWorld_dimensionId() {
+    public Identifier dimensionId() {
         int dimensionId = this.world.provider.getDimension();
         DimensionType dimensionType = this.world.provider.getDimensionType();
 
@@ -60,12 +60,12 @@ public abstract class AbstractFarWorld1_12<W extends World> implements IFarWorld
     }
 
     @Override
-    public long fp2_IFarWorld_timestamp() {
+    public long timestamp() {
         return this.world.getTotalWorldTime();
     }
 
     @Override
-    public GameRegistry1_12_2 fp2_IFarWorld_registry() {
+    public GameRegistry1_12_2 registry() {
         return GameRegistry1_12_2.get();
     }
 }

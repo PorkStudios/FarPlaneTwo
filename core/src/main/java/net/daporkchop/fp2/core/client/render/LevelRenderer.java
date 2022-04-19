@@ -20,19 +20,19 @@
 
 package net.daporkchop.fp2.core.client.render;
 
-import net.daporkchop.fp2.core.client.world.IFarWorldClient;
+import net.daporkchop.fp2.core.client.world.IFarLevelClient;
 import net.daporkchop.fp2.gl.GL;
 
 /**
- * Version-independent interface for rendering the world.
+ * Version-independent interface for rendering the level.
  *
  * @author DaPorkchop_
  */
-public interface WorldRenderer {
+public interface LevelRenderer {
     /**
-     * @return the {@link IFarWorldClient} which is being rendered in
+     * @return the {@link IFarLevelClient} which is being rendered in
      */
-    IFarWorldClient world();
+    IFarLevelClient level();
 
     /**
      * Gets the render type which the given block state will be rendered as.

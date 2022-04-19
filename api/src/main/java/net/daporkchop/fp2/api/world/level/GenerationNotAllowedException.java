@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.api.world;
+package net.daporkchop.fp2.api.world.level;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -29,7 +29,7 @@ import java.util.function.Consumer;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
- * Thrown by accessor methods in {@link FBlockWorld} if an attempt is made to access terrain that does not exist and terrain generation is disallowed.
+ * Thrown by accessor methods in {@link FBlockLevel} if an attempt is made to access terrain that does not exist and terrain generation is disallowed.
  *
  * @author DaPorkchop_
  */

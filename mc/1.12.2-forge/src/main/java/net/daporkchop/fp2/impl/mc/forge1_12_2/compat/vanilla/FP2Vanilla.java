@@ -36,11 +36,11 @@ import net.daporkchop.fp2.core.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.core.mode.voxel.server.VoxelTileProvider;
 import net.daporkchop.fp2.core.mode.voxel.server.gen.exact.VanillaVoxelGenerator;
 import net.daporkchop.fp2.core.server.event.GetCoordinateLimitsEvent;
-import net.daporkchop.fp2.core.server.event.GetExactFBlockWorldEvent;
+import net.daporkchop.fp2.core.server.event.GetExactFBlockLevelEvent;
 import net.daporkchop.fp2.core.server.event.GetTerrainGeneratorEvent;
-import net.daporkchop.fp2.core.server.world.ExactFBlockWorldHolder;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.exactfblockworld.VanillaExactFBlockWorldHolder1_12;
+import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
+import net.daporkchop.fp2.core.server.world.IFarLevelServer;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.exactfblocklevel.VanillaExactFBlockLevelHolder1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.generator.heightmap.FlatHeightmapGenerator;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.Util1_12_2;
 import net.minecraft.block.state.IBlockState;
@@ -80,20 +80,20 @@ public class FP2Vanilla {
     @FEventHandler(name = "vanilla_world_coordinate_limits")
     public IntAxisAlignedBB getCoordinateLimits(GetCoordinateLimitsEvent event) {
         int minY = 0;
-        int maxY = ((World) event.world().fp2_IFarWorld_implWorld()).getHeight();
+        int maxY = ((World) event.world().implWorld()).getHeight();
 
         final int HORIZONTAL_LIMIT = 30_000_000; //TODO: hard-coding this is probably a bad idea, but there don't seem to be any variables or methods i can use to get it
         return new IntAxisAlignedBB(-HORIZONTAL_LIMIT, minY, -HORIZONTAL_LIMIT, HORIZONTAL_LIMIT + 1, maxY, HORIZONTAL_LIMIT + 1);
     }
 
-    @FEventHandler(name = "vanilla_world_exact_fblockworld")
-    public ExactFBlockWorldHolder getExactFBlockWorld(GetExactFBlockWorldEvent event) {
-        return new VanillaExactFBlockWorldHolder1_12((WorldServer) event.world().fp2_IFarWorld_implWorld());
+    @FEventHandler(name = "vanilla_world_exact_fblocklevel")
+    public ExactFBlockLevelHolder getExactFBlockLevel(GetExactFBlockLevelEvent event) {
+        return new VanillaExactFBlockLevelHolder1_12((WorldServer) event.world().implWorld());
     }
 
     @FEventHandler(name = "vanilla_world_terrain_generator")
     public Object getTerrainGenerator(GetTerrainGeneratorEvent event) {
-        return ((WorldServer) event.world().fp2_IFarWorld_implWorld()).getChunkProvider().chunkGenerator;
+        return ((WorldServer) event.world().implWorld()).getChunkProvider().chunkGenerator;
     }
 
     //exact generators
@@ -110,8 +110,8 @@ public class FP2Vanilla {
 
     //Superflat rough generators
 
-    protected boolean isSuperflatWorld(IFarWorldServer world) {
-        return world.fp2_IFarWorldServer_terrainGeneratorInfo().implGenerator() instanceof ChunkGeneratorFlat;
+    protected boolean isSuperflatWorld(IFarLevelServer world) {
+        return world.terrainGeneratorInfo().implGenerator() instanceof ChunkGeneratorFlat;
     }
 
     @FEventHandler(name = "vanilla_heightmap_generator_rough_superflat")

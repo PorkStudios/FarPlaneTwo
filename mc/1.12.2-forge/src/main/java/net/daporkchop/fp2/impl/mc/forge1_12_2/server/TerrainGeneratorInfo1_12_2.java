@@ -23,7 +23,7 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.server;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.core.server.event.GetTerrainGeneratorEvent;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.server.world.IFarLevelServer;
 import net.daporkchop.fp2.core.server.world.TerrainGeneratorInfo;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.world.IMixinWorldServer;
 import net.minecraft.world.WorldServer;
@@ -39,8 +39,8 @@ public class TerrainGeneratorInfo1_12_2 implements TerrainGeneratorInfo {
     protected final WorldServer world;
 
     @Override
-    public IFarWorldServer world() {
-        return ((IMixinWorldServer) this.world).fp2_farWorldServer();
+    public IFarLevelServer world() {
+        return ((IMixinWorldServer) this.world).fp2_farLevelServer();
     }
 
     @Override

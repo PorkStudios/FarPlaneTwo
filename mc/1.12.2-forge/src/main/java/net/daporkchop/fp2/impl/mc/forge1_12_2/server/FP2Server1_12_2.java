@@ -106,14 +106,14 @@ public class FP2Server1_12_2 {
     @SubscribeEvent
     public void worldLoad(WorldEvent.Load event) {
         if (!event.getWorld().isRemote) {
-            ((IMixinWorldServer) event.getWorld()).fp2_farWorldServer().fp2_IFarWorldServer_init();
+            ((IMixinWorldServer) event.getWorld()).fp2_farLevelServer().init();
         }
     }
 
     @SubscribeEvent
     public void worldUnload(WorldEvent.Unload event) {
         if (!event.getWorld().isRemote) {
-            ((IMixinWorldServer) event.getWorld()).fp2_farWorldServer().fp2_IFarWorld_close();
+            ((IMixinWorldServer) event.getWorld()).fp2_farLevelServer().close();
         }
     }
 
@@ -134,7 +134,7 @@ public class FP2Server1_12_2 {
             IFarPlayerServer player = ((IMixinNetHandlerPlayServer) ((EntityPlayerMP) event.getEntity()).connection).fp2_farPlayerServer();
 
             //cubic chunks world data information has already been sent
-            player.fp2_IFarPlayer_joinedWorld(((IMixinWorldServer) event.getWorld()).fp2_farWorldServer());
+            player.fp2_IFarPlayer_joinedWorld(((IMixinWorldServer) event.getWorld()).fp2_farLevelServer());
         }
     }
 
@@ -152,7 +152,7 @@ public class FP2Server1_12_2 {
     @SubscribeEvent
     public void onWorldTickEnd(TickEvent.WorldTickEvent event) {
         if (!event.world.isRemote && event.phase == TickEvent.Phase.END) {
-            ((IMixinWorldServer) event.world).fp2_farWorldServer().fp2_IFarWorldServer_eventBus().fire(new TickEndEvent());
+            ((IMixinWorldServer) event.world).fp2_farLevelServer().eventBus().fire(new TickEndEvent());
 
             event.world.playerEntities.forEach(player -> ((IMixinNetHandlerPlayServer) ((EntityPlayerMP) player).connection).fp2_farPlayerServer().fp2_IFarPlayer_update());
         }
@@ -161,6 +161,6 @@ public class FP2Server1_12_2 {
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public void onChunkDataSave(ChunkDataEvent.Save event) {
         Chunk chunk = event.getChunk();
-        ((IMixinWorldServer) event.getWorld()).fp2_farWorldServer().fp2_IFarWorldServer_eventBus().fire(new ColumnSavedEvent(Vec2i.of(chunk.x, chunk.z), new FColumn1_12_2(chunk), event.getData()));
+        ((IMixinWorldServer) event.getWorld()).fp2_farLevelServer().eventBus().fire(new ColumnSavedEvent(Vec2i.of(chunk.x, chunk.z), new FColumn1_12_2(chunk), event.getData()));
     }
 }

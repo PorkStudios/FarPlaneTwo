@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cc.exactfblockworld;
+package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cc.exactfblocklevel;
 
 import io.github.opencubicchunks.cubicchunks.api.util.Coords;
 import io.github.opencubicchunks.cubicchunks.api.util.CubePos;
@@ -37,12 +37,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.core.minecraft.util.threading.asynccache.AsyncCacheNBT;
-import net.daporkchop.fp2.core.minecraft.world.cubes.AbstractCubesExactFBlockWorldHolder;
-import net.daporkchop.fp2.core.minecraft.world.cubes.AbstractPrefetchedCubesExactFBlockWorld;
+import net.daporkchop.fp2.core.minecraft.world.cubes.AbstractCubesExactFBlockLevelHolder;
+import net.daporkchop.fp2.core.minecraft.world.cubes.AbstractPrefetchedCubesExactFBlockLevel;
 import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
 import net.daporkchop.fp2.core.server.event.TickEndEvent;
-import net.daporkchop.fp2.core.server.world.ExactFBlockWorldHolder;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
+import net.daporkchop.fp2.core.server.world.IFarLevelServer;
 import net.daporkchop.fp2.core.util.datastructure.Datastructures;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSegtreeSet;
 import net.daporkchop.fp2.core.util.threading.futurecache.IAsyncCache;
@@ -68,15 +68,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
- * Default implementation of {@link ExactFBlockWorldHolder} for cubic chunks worlds.
+ * Default implementation of {@link ExactFBlockLevelHolder} for cubic chunks worlds.
  *
  * @author DaPorkchop_
  */
-public class CCExactFBlockWorldHolder1_12 extends AbstractCubesExactFBlockWorldHolder<ICube> {
+public class CCExactFBlockLevelHolder1_12 extends AbstractCubesExactFBlockLevelHolder<ICube> {
     protected static final long ASYNCBATCHINGCUBEIO_STORAGE_OFFSET = PUnsafe.pork_getOffset(AsyncBatchingCubeIO.class, "storage");
 
-    protected static ICubeIO getIO(@NonNull IFarWorldServer world) {
-        return ((ICubeProviderInternal.Server) ((ICubicWorldInternal) world.fp2_IFarWorld_implWorld()).getCubeCache()).getCubeIO();
+    protected static ICubeIO getIO(@NonNull IFarLevelServer world) {
+        return ((ICubeProviderInternal.Server) ((ICubicWorldInternal) world.implWorld()).getCubeCache()).getCubeIO();
     }
 
     protected static ICubicStorage getStorage(@NonNull ICubeIO io) {
@@ -93,8 +93,8 @@ public class CCExactFBlockWorldHolder1_12 extends AbstractCubesExactFBlockWorldH
 
     protected final AtomicInteger generatedCount = new AtomicInteger();
 
-    public CCExactFBlockWorldHolder1_12(@NonNull WorldServer world) {
-        super(((IMixinWorldServer) world).fp2_farWorldServer(), Integer.numberOfTrailingZeros(Coords.cubeToMinBlock(1)));
+    public CCExactFBlockLevelHolder1_12(@NonNull WorldServer world) {
+        super(((IMixinWorldServer) world).fp2_farLevelServer(), Integer.numberOfTrailingZeros(Coords.cubeToMinBlock(1)));
 
         this.generator = ((ICubicWorldServer) world).getCubeGenerator();
 
@@ -113,7 +113,7 @@ public class CCExactFBlockWorldHolder1_12 extends AbstractCubesExactFBlockWorldH
     }
 
     @Override
-    protected NDimensionalIntSegtreeSet createCubesExistIndex(@NonNull IFarWorldServer world) {
+    protected NDimensionalIntSegtreeSet createCubesExistIndex(@NonNull IFarLevelServer world) {
         return Datastructures.INSTANCE.nDimensionalIntSegtreeSet()
                 .dimensions(3)
                 .threadSafe(true)
@@ -126,13 +126,13 @@ public class CCExactFBlockWorldHolder1_12 extends AbstractCubesExactFBlockWorldH
     }
 
     @Override
-    protected AsyncCacheNBT<Vec3i, ?, ICube, ?> createCubeCache(@NonNull IFarWorldServer world) {
+    protected AsyncCacheNBT<Vec3i, ?, ICube, ?> createCubeCache(@NonNull IFarLevelServer world) {
         return new CubeCache(world, getIO(world));
     }
 
     @Override
-    protected AbstractPrefetchedCubesExactFBlockWorld<ICube> prefetchedWorld(boolean generationAllowed, @NonNull List<ICube> cubes) {
-        return new PrefetchedCubesCCFBlockWorld1_12(this, generationAllowed, cubes);
+    protected AbstractPrefetchedCubesExactFBlockLevel<ICube> prefetchedWorld(boolean generationAllowed, @NonNull List<ICube> cubes) {
+        return new PrefetchedCubesCCFBlockLevel1_12(this, generationAllowed, cubes);
     }
 
     @Override
@@ -152,7 +152,7 @@ public class CCExactFBlockWorldHolder1_12 extends AbstractCubesExactFBlockWorldH
         if (this.generatedCount.get() >= 8192) {
             this.generatedCount.lazySet(0);
 
-            ((ICubicWorldServer) this.world().fp2_IFarWorld_implWorld()).unloadOldCubes();
+            ((ICubicWorldServer) this.world().implWorld()).unloadOldCubes();
         }
     }
 
@@ -164,7 +164,7 @@ public class CCExactFBlockWorldHolder1_12 extends AbstractCubesExactFBlockWorldH
     @RequiredArgsConstructor
     protected class ColumnCache extends AsyncCacheNBT<Vec2i, Object, Chunk, NBTTagCompound> {
         @NonNull
-        protected final IFarWorldServer world;
+        protected final IFarLevelServer world;
         @NonNull
         protected final ICubeIO io;
 
@@ -186,17 +186,17 @@ public class CCExactFBlockWorldHolder1_12 extends AbstractCubesExactFBlockWorldH
         @Override
         protected void triggerGeneration(@NonNull Vec2i key, @NonNull Object param) {
             //spin until the generator reports that it's ready
-            while (CCExactFBlockWorldHolder1_12.this.generator.pollAsyncColumnGenerator(key.x(), key.y()) != ICubeGenerator.GeneratorReadyState.READY) {
+            while (CCExactFBlockLevelHolder1_12.this.generator.pollAsyncColumnGenerator(key.x(), key.y()) != ICubeGenerator.GeneratorReadyState.READY) {
                 PorkUtil.sleep(1L);
             }
 
             //load and immediately save column on server thread
-            this.world.fp2_IFarWorld_workerManager().workExecutor().run(() -> {
-                Chunk column = ((ICubicWorldServer) this.world.fp2_IFarWorld_implWorld())
+            this.world.workerManager().workExecutor().run(() -> {
+                Chunk column = ((ICubicWorldServer) this.world.implWorld())
                         .getCubeCache().getColumn(key.x(), key.y(), ICubeProviderServer.Requirement.POPULATE);
                 if (column != null && !column.isEmpty()) {
                     this.io.saveColumn(column);
-                    CCExactFBlockWorldHolder1_12.this.generatedCount.incrementAndGet();
+                    CCExactFBlockLevelHolder1_12.this.generatedCount.incrementAndGet();
                 }
             }).join();
         }
@@ -210,13 +210,13 @@ public class CCExactFBlockWorldHolder1_12 extends AbstractCubesExactFBlockWorldH
     @RequiredArgsConstructor
     protected class CubeCache extends AsyncCacheNBT<Vec3i, Chunk, ICube, NBTTagCompound> {
         @NonNull
-        protected final IFarWorldServer world;
+        protected final IFarLevelServer world;
         @NonNull
         protected final ICubeIO io;
 
         @Override
         protected Chunk getParamFor(@NonNull Vec3i key, boolean allowGeneration) {
-            return CCExactFBlockWorldHolder1_12.this.columnCache.get(Vec2i.of(key.x(), key.z()), allowGeneration).join();
+            return CCExactFBlockLevelHolder1_12.this.columnCache.get(Vec2i.of(key.x(), key.z()), allowGeneration).join();
         }
 
         @Override
@@ -237,18 +237,18 @@ public class CCExactFBlockWorldHolder1_12 extends AbstractCubesExactFBlockWorldH
         @Override
         protected void triggerGeneration(@NonNull Vec3i key, @NonNull Chunk param) {
             //spin until the generator reports that it's ready
-            while (CCExactFBlockWorldHolder1_12.this.generator.pollAsyncCubeGenerator(key.x(), key.y(), key.z()) != ICubeGenerator.GeneratorReadyState.READY
-                   || CCExactFBlockWorldHolder1_12.this.generator.pollAsyncCubePopulator(key.x(), key.y(), key.z()) != ICubeGenerator.GeneratorReadyState.READY) {
+            while (CCExactFBlockLevelHolder1_12.this.generator.pollAsyncCubeGenerator(key.x(), key.y(), key.z()) != ICubeGenerator.GeneratorReadyState.READY
+                   || CCExactFBlockLevelHolder1_12.this.generator.pollAsyncCubePopulator(key.x(), key.y(), key.z()) != ICubeGenerator.GeneratorReadyState.READY) {
                 PorkUtil.sleep(1L);
             }
 
-            this.world.fp2_IFarWorld_workerManager().workExecutor().run(() -> {
+            this.world.workerManager().workExecutor().run(() -> {
                 //TODO: save column as well if needed
-                ICube cube = ((ICubicWorldServer) this.world.fp2_IFarWorld_implWorld())
+                ICube cube = ((ICubicWorldServer) this.world.implWorld())
                         .getCubeCache().getCube(key.x(), key.y(), key.z(), ICubeProviderServer.Requirement.LIGHT);
                 if (cube != null && cube.isInitialLightingDone()) {
                     this.io.saveCube((Cube) cube);
-                    CCExactFBlockWorldHolder1_12.this.generatedCount.incrementAndGet();
+                    CCExactFBlockLevelHolder1_12.this.generatedCount.incrementAndGet();
                 }
             }).join();
         }
@@ -260,7 +260,7 @@ public class CCExactFBlockWorldHolder1_12 extends AbstractCubesExactFBlockWorldH
                     ? new CubeBiomeAccessWrapper(((Cube) value).getBiomeArray())
                     : new Column2dBiomeAccessWrapper(value.getColumn().getBiomeArray());
 
-            return new CubeWithoutWorld(PorkUtil.fallbackIfNull(value.getStorage(), CCExactFBlockWorldHolder1_12.this.emptyStorage), biomeAccess, new CubePos(key.x(), key.y(), key.z()));
+            return new CubeWithoutWorld(PorkUtil.fallbackIfNull(value.getStorage(), CCExactFBlockLevelHolder1_12.this.emptyStorage), biomeAccess, new CubePos(key.x(), key.y(), key.z()));
         }
     }
 }

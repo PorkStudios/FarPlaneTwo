@@ -22,16 +22,16 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.client.world;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
-import net.daporkchop.fp2.core.client.render.WorldRenderer;
-import net.daporkchop.fp2.core.client.world.IFarWorldClient;
+import net.daporkchop.fp2.core.client.render.LevelRenderer;
+import net.daporkchop.fp2.core.client.world.IFarLevelClient;
 import net.daporkchop.fp2.core.util.threading.futureexecutor.MarkedFutureExecutor;
 import net.daporkchop.fp2.core.util.threading.workergroup.DefaultWorkerManager;
 import net.daporkchop.fp2.core.util.threading.workergroup.WorkerManager;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.ATMinecraft1_12;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.client.render.WorldRenderer1_12_2;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.client.render.LevelRenderer1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.threading.futureexecutor.ClientThreadMarkedFutureExecutor;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.world.AbstractFarWorld1_12;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.world.AbstractFarLevel1_12;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 
@@ -40,38 +40,38 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public class FarWorldClient1_12_2 extends AbstractFarWorld1_12<WorldClient> implements IFarWorldClient {
+public class FarLevelClient1_12_2 extends AbstractFarLevel1_12<WorldClient> implements IFarLevelClient {
     protected final IntAxisAlignedBB coordLimits;
     protected final WorkerManager workerManager;
 
-    protected WorldRenderer1_12_2 renderer;
+    protected LevelRenderer1_12_2 renderer;
 
-    public FarWorldClient1_12_2(@NonNull FP2Forge1_12_2 fp2, @NonNull WorldClient world, @NonNull IntAxisAlignedBB coordLimits) {
+    public FarLevelClient1_12_2(@NonNull FP2Forge1_12_2 fp2, @NonNull WorldClient world, @NonNull IntAxisAlignedBB coordLimits) {
         super(fp2, world);
 
         this.coordLimits = coordLimits;
         this.workerManager = new DefaultWorkerManager(((ATMinecraft1_12) Minecraft.getMinecraft()).getThread(), ClientThreadMarkedFutureExecutor.getFor(Minecraft.getMinecraft()));
 
-        this.workerManager.rootExecutor().run(MarkedFutureExecutor.DEFAULT_MARKER, () -> this.renderer = new WorldRenderer1_12_2(Minecraft.getMinecraft(), this)).join();
+        this.workerManager.rootExecutor().run(MarkedFutureExecutor.DEFAULT_MARKER, () -> this.renderer = new LevelRenderer1_12_2(Minecraft.getMinecraft(), this)).join();
     }
 
     @Override
-    public void fp2_IFarWorld_close() {
+    public void close() {
         this.workerManager.rootExecutor().run(MarkedFutureExecutor.DEFAULT_MARKER, this.renderer::close);
     }
 
     @Override
-    public IntAxisAlignedBB fp2_IFarWorld_coordLimits() {
+    public IntAxisAlignedBB coordLimits() {
         return this.coordLimits;
     }
 
     @Override
-    public WorkerManager fp2_IFarWorld_workerManager() {
+    public WorkerManager workerManager() {
         return this.workerManager;
     }
 
     @Override
-    public WorldRenderer fp2_IFarWorldClient_renderer() {
+    public LevelRenderer renderer() {
         checkState(this.renderer != null, "renderer hasn't been initialized!");
         return this.renderer;
     }

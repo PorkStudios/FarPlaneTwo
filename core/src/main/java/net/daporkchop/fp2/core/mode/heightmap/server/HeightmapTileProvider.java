@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.core.mode.heightmap.server;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.api.world.FBlockWorld;
+import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTrackerManager;
 import net.daporkchop.fp2.core.mode.common.server.AbstractFarTileProvider;
@@ -30,14 +30,14 @@ import net.daporkchop.fp2.core.mode.heightmap.HeightmapTile;
 import net.daporkchop.fp2.core.mode.heightmap.server.tracking.HeightmapTrackerManager;
 import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
 import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
-import net.daporkchop.fp2.core.server.world.ExactFBlockWorldHolder;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
+import net.daporkchop.fp2.core.server.world.IFarLevelServer;
 
 /**
  * @author DaPorkchop_
  */
 public abstract class HeightmapTileProvider extends AbstractFarTileProvider<HeightmapPos, HeightmapTile> {
-    public HeightmapTileProvider(@NonNull IFarWorldServer world, @NonNull IFarRenderMode<HeightmapPos, HeightmapTile> mode) {
+    public HeightmapTileProvider(@NonNull IFarLevelServer world, @NonNull IFarRenderMode<HeightmapPos, HeightmapTile> mode) {
         super(world, mode);
     }
 
@@ -51,7 +51,7 @@ public abstract class HeightmapTileProvider extends AbstractFarTileProvider<Heig
         int x = pos.blockX();
         int z = pos.blockZ();
         int sideLength = pos.sideLength();
-        try (FBlockWorld world = this.world().fp2_IFarWorldServer_exactBlockWorldHolder().worldFor(ExactFBlockWorldHolder.AllowGenerationRequirement.DONT_CARE)) {
+        try (FBlockLevel world = this.world().exactBlockLevelHolder().worldFor(ExactFBlockLevelHolder.AllowGenerationRequirement.DONT_CARE)) {
             return world.containsAnyData(x, Integer.MIN_VALUE, z, x + sideLength, Integer.MAX_VALUE, z + sideLength);
         }
     }
@@ -65,7 +65,7 @@ public abstract class HeightmapTileProvider extends AbstractFarTileProvider<Heig
      * @author DaPorkchop_
      */
     public static class Vanilla extends HeightmapTileProvider {
-        public Vanilla(@NonNull IFarWorldServer world, @NonNull IFarRenderMode<HeightmapPos, HeightmapTile> mode) {
+        public Vanilla(@NonNull IFarLevelServer world, @NonNull IFarRenderMode<HeightmapPos, HeightmapTile> mode) {
             super(world, mode);
         }
 
@@ -79,7 +79,7 @@ public abstract class HeightmapTileProvider extends AbstractFarTileProvider<Heig
      * @author DaPorkchop_
      */
     public static class CubicChunks extends HeightmapTileProvider {
-        public CubicChunks(@NonNull IFarWorldServer world, @NonNull IFarRenderMode<HeightmapPos, HeightmapTile> mode) {
+        public CubicChunks(@NonNull IFarLevelServer world, @NonNull IFarRenderMode<HeightmapPos, HeightmapTile> mode) {
             super(world, mode);
         }
 

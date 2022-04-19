@@ -21,15 +21,15 @@
 package net.daporkchop.fp2.core.server.world;
 
 /**
- * Provides information about the terrain generator used in a given {@link IFarWorldServer}.
+ * Provides information about the terrain generator used in a given {@link IFarLevelServer}.
  *
  * @author DaPorkchop_
  */
 public interface TerrainGeneratorInfo {
     /**
-     * @return the {@link IFarWorldServer} which th
+     * @return the {@link IFarLevelServer} which th
      */
-    IFarWorldServer world();
+    IFarLevelServer world();
 
     /**
      * @return the implementation-specific terrain generator instance

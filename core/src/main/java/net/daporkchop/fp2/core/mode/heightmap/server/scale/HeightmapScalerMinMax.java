@@ -29,7 +29,7 @@ import net.daporkchop.fp2.core.mode.heightmap.HeightmapData;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapTile;
 import net.daporkchop.fp2.core.mode.heightmap.util.HeightmapPosArrayList;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.server.world.IFarLevelServer;
 
 import java.util.List;
 
@@ -45,7 +45,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 public class HeightmapScalerMinMax extends AbstractFarGenerator<HeightmapPos, HeightmapTile> implements IFarScaler<HeightmapPos, HeightmapTile> {
-    public HeightmapScalerMinMax(@NonNull IFarWorldServer world, @NonNull IFarTileProvider<HeightmapPos, HeightmapTile> provider) {
+    public HeightmapScalerMinMax(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<HeightmapPos, HeightmapTile> provider) {
         super(world, provider);
     }
 

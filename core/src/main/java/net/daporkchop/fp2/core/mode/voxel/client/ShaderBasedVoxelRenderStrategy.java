@@ -114,12 +114,12 @@ public class ShaderBasedVoxelRenderStrategy extends AbstractMultipassIndexedRend
 
     @Override
     public ICullingStrategy cullingStrategy() {
-        return new VoxelCullingStrategy(this.worldRenderer.blockedTracker());
+        return new VoxelCullingStrategy(this.levelRenderer.blockedTracker());
     }
 
     @Override
     public IRenderBaker<VoxelPos, VoxelTile, IndexedBakeOutput<VoxelGlobalAttributes, VoxelLocalAttributes>> createBaker() {
-        return new VoxelBaker(this.worldRenderer, this.textureUVs);
+        return new VoxelBaker(this.levelRenderer, this.textureUVs);
     }
 
     @Override

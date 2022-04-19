@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,29 +18,22 @@
  *
  */
 
-package net.daporkchop.fp2.api.world;
+package net.daporkchop.fp2.core.client.world;
 
-import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
-import net.daporkchop.fp2.api.world.registry.FGameRegistry;
+import net.daporkchop.fp2.core.client.render.LevelRenderer;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarLevel;
+import net.daporkchop.fp2.core.util.annotation.CalledFromClientThread;
 
 /**
- * A world consisting of blocks.
- *
  * @author DaPorkchop_
  */
-public interface FWorldServer {
-    /**
-     * @return the implementation-specific server world instance
-     */
-    Object internalWorld();
+public interface IFarLevelClient extends IFarLevel {
+    @CalledFromClientThread
+    @Override
+    void close();
 
     /**
-     * @return the {@link FGameRegistry} used in this world
+     * @return a {@link LevelRenderer} for rendering this level
      */
-    FGameRegistry gameRegistry();
-
-    /**
-     * @return the world's coordinate limits, in blocks
-     */
-    IntAxisAlignedBB bounds();
+    LevelRenderer renderer();
 }

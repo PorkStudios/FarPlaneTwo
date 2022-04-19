@@ -24,14 +24,14 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
-import net.daporkchop.fp2.api.world.FBlockWorld;
-import net.daporkchop.fp2.api.world.GenerationNotAllowedException;
+import net.daporkchop.fp2.api.world.level.FBlockLevel;
+import net.daporkchop.fp2.api.world.level.GenerationNotAllowedException;
 import net.daporkchop.fp2.core.minecraft.util.threading.asynccache.AsyncCacheNBT;
-import net.daporkchop.fp2.core.minecraft.world.AbstractExactFBlockWorldHolder;
+import net.daporkchop.fp2.core.minecraft.world.AbstractExactFBlockLevelHolder;
 import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
 import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
-import net.daporkchop.fp2.core.server.world.ExactFBlockWorldHolder;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
+import net.daporkchop.fp2.core.server.world.IFarLevelServer;
 import net.daporkchop.fp2.core.util.datastructure.Datastructures;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSegtreeSet;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSet;
@@ -50,14 +50,14 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
- * Base implementation of an {@link ExactFBlockWorldHolder} which serves a Minecraft-style world made up of chunk columns.
+ * Base implementation of an {@link ExactFBlockLevelHolder} which serves a Minecraft-style world made up of chunk columns.
  * <p>
- * Serves as a shared base for implementations of {@link FBlockWorld} which are based on it.
+ * Serves as a shared base for implementations of {@link FBlockLevel} which are based on it.
  *
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractChunksExactFBlockWorldHolder<CHUNK> extends AbstractExactFBlockWorldHolder {
+public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends AbstractExactFBlockLevelHolder {
     private final NDimensionalIntSegtreeSet chunksExistIndex;
     private final AsyncCacheNBT<Vec2i, ?, CHUNK, ?> chunkCache;
 
@@ -66,7 +66,7 @@ public abstract class AbstractChunksExactFBlockWorldHolder<CHUNK> extends Abstra
     private final int minHeight;
     private final int maxHeight;
 
-    public AbstractChunksExactFBlockWorldHolder(@NonNull IFarWorldServer world, int chunkShift) {
+    public AbstractChunksExactFBlockLevelHolder(@NonNull IFarLevelServer world, int chunkShift) {
         super(world);
 
         this.chunkShift = positive(chunkShift, "chunkShift");
@@ -78,28 +78,28 @@ public abstract class AbstractChunksExactFBlockWorldHolder<CHUNK> extends Abstra
         this.chunkCache = this.createChunkCache(world);
 
         //register self to listen for events
-        this.world().fp2_IFarWorldServer_eventBus().registerWeak(this);
+        this.world().eventBus().registerWeak(this);
     }
 
     /**
      * Creates the {@link #chunksExistIndex}.
      * <p>
-     * Note that this is called by {@link AbstractChunksExactFBlockWorldHolder}'s constructor. Accessing any internal state inside of this method will likely cause unexpected behavior.
+     * Note that this is called by {@link AbstractChunksExactFBlockLevelHolder}'s constructor. Accessing any internal state inside of this method will likely cause unexpected behavior.
      *
-     * @param world the {@link IFarWorldServer} instanced passed to the constructor
+     * @param world the {@link IFarLevelServer} instanced passed to the constructor
      * @return the {@link #chunksExistIndex} to use
      */
-    protected abstract NDimensionalIntSegtreeSet createChunksExistIndex(@NonNull IFarWorldServer world);
+    protected abstract NDimensionalIntSegtreeSet createChunksExistIndex(@NonNull IFarLevelServer world);
 
     /**
      * Creates the {@link #chunkCache}.
      * <p>
-     * Note that this is called by {@link AbstractChunksExactFBlockWorldHolder}'s constructor. Accessing any internal state inside of this method will likely cause unexpected behavior.
+     * Note that this is called by {@link AbstractChunksExactFBlockLevelHolder}'s constructor. Accessing any internal state inside of this method will likely cause unexpected behavior.
      *
-     * @param world the {@link IFarWorldServer} instanced passed to the constructor
+     * @param world the {@link IFarLevelServer} instanced passed to the constructor
      * @return the {@link #chunkCache} to use
      */
-    protected abstract AsyncCacheNBT<Vec2i, ?, CHUNK, ?> createChunkCache(@NonNull IFarWorldServer world);
+    protected abstract AsyncCacheNBT<Vec2i, ?, CHUNK, ?> createChunkCache(@NonNull IFarLevelServer world);
 
     public int chunkSize() {
         return 1 << this.chunkShift;
@@ -111,19 +111,19 @@ public abstract class AbstractChunksExactFBlockWorldHolder<CHUNK> extends Abstra
 
     @Override
     public void close() {
-        this.world().fp2_IFarWorldServer_eventBus().unregister(this);
+        this.world().eventBus().unregister(this);
     }
 
     @Override
-    public FBlockWorld worldFor(@NonNull AllowGenerationRequirement requirement) {
+    public FBlockLevel worldFor(@NonNull AllowGenerationRequirement requirement) {
         return this.regularWorld(requirement == AllowGenerationRequirement.ALLOWED);
     }
 
-    protected AbstractChunksExactFBlockWorld<CHUNK> regularWorld(boolean generationAllowed) {
-        return new AbstractChunksExactFBlockWorld<>(this, generationAllowed);
+    protected AbstractChunksExactFBlockLevel<CHUNK> regularWorld(boolean generationAllowed) {
+        return new AbstractChunksExactFBlockLevel<>(this, generationAllowed);
     }
 
-    protected abstract AbstractPrefetchedChunksExactFBlockWorld<CHUNK> prefetchedWorld(boolean generationAllowed, @NonNull List<CHUNK> chunks);
+    protected abstract AbstractPrefetchedChunksExactFBlockLevel<CHUNK> prefetchedWorld(boolean generationAllowed, @NonNull List<CHUNK> chunks);
 
     @FEventHandler
     protected void onColumnSaved(@NonNull ColumnSavedEvent event) {
@@ -174,18 +174,18 @@ public abstract class AbstractChunksExactFBlockWorldHolder<CHUNK> extends Abstra
     /**
      * Gets a {@link List} of the chunk positions which need to be prefetched in order to respond to a query with the given shape.
      *
-     * @param shape the {@link FBlockWorld.QueryShape query's shape}
+     * @param shape the {@link FBlockLevel.QueryShape query's shape}
      * @return the positions of the chunks to prefetch
      */
-    public List<Vec2i> getChunkPositionsToPrefetch(@NonNull FBlockWorld.QueryShape shape) {
+    public List<Vec2i> getChunkPositionsToPrefetch(@NonNull FBlockLevel.QueryShape shape) {
         if (shape.count() == 0) { //the shape contains no points, we don't need to prefetch anything
             return Collections.emptyList();
-        } else if (shape instanceof FBlockWorld.SinglePointQueryShape) {
-            return this.getChunkPositionsToPrefetch((FBlockWorld.SinglePointQueryShape) shape);
-        } else if (shape instanceof FBlockWorld.OriginSizeStrideQueryShape) {
-            return this.getChunkPositionsToPrefetch((FBlockWorld.OriginSizeStrideQueryShape) shape);
-        } else if (shape instanceof FBlockWorld.MultiPointsQueryShape) {
-            return this.getChunkPositionsToPrefetch((FBlockWorld.MultiPointsQueryShape) shape);
+        } else if (shape instanceof FBlockLevel.SinglePointQueryShape) {
+            return this.getChunkPositionsToPrefetch((FBlockLevel.SinglePointQueryShape) shape);
+        } else if (shape instanceof FBlockLevel.OriginSizeStrideQueryShape) {
+            return this.getChunkPositionsToPrefetch((FBlockLevel.OriginSizeStrideQueryShape) shape);
+        } else if (shape instanceof FBlockLevel.MultiPointsQueryShape) {
+            return this.getChunkPositionsToPrefetch((FBlockLevel.MultiPointsQueryShape) shape);
         } else {
             return this.getChunkPositionsToPrefetchGeneric(shape);
         }
@@ -194,10 +194,10 @@ public abstract class AbstractChunksExactFBlockWorldHolder<CHUNK> extends Abstra
     /**
      * Gets a {@link List} of the chunk positions which need to be prefetched in order to respond to a group of queries with the given shapes.
      *
-     * @param shapes the {@link FBlockWorld.QueryShape queries' shapes}
+     * @param shapes the {@link FBlockLevel.QueryShape queries' shapes}
      * @return the positions of the chunks to prefetch
      */
-    public List<Vec2i> getChunkPositionsToPrefetch(@NonNull FBlockWorld.QueryShape... shapes) {
+    public List<Vec2i> getChunkPositionsToPrefetch(@NonNull FBlockLevel.QueryShape... shapes) {
         switch (shapes.length) {
             case 0: //there are no shapes, we don't need to prefetch anything
                 return Collections.emptyList();
@@ -210,7 +210,7 @@ public abstract class AbstractChunksExactFBlockWorldHolder<CHUNK> extends Abstra
             NDimensionalIntSet set = Datastructures.INSTANCE.nDimensionalIntSet().dimensions(2).threadSafe(false).build();
 
             //add the positions for each shape to the set
-            for (FBlockWorld.QueryShape shape : shapes) {
+            for (FBlockLevel.QueryShape shape : shapes) {
                 this.getChunkPositionsToPrefetch(set, shape);
             }
 
@@ -221,33 +221,33 @@ public abstract class AbstractChunksExactFBlockWorldHolder<CHUNK> extends Abstra
         }
     }
 
-    protected void getChunkPositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull FBlockWorld.QueryShape shape) {
+    protected void getChunkPositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull FBlockLevel.QueryShape shape) {
         if (shape.count() == 0) { //the shape contains no points, we don't need to prefetch anything
             //no-op
-        } else if (shape instanceof FBlockWorld.SinglePointQueryShape) {
-            this.getChunkPositionsToPrefetch(set, (FBlockWorld.SinglePointQueryShape) shape);
-        } else if (shape instanceof FBlockWorld.OriginSizeStrideQueryShape) {
-            this.getChunkPositionsToPrefetch(set, (FBlockWorld.OriginSizeStrideQueryShape) shape);
-        } else if (shape instanceof FBlockWorld.MultiPointsQueryShape) {
-            this.getChunkPositionsToPrefetch(set, (FBlockWorld.MultiPointsQueryShape) shape);
+        } else if (shape instanceof FBlockLevel.SinglePointQueryShape) {
+            this.getChunkPositionsToPrefetch(set, (FBlockLevel.SinglePointQueryShape) shape);
+        } else if (shape instanceof FBlockLevel.OriginSizeStrideQueryShape) {
+            this.getChunkPositionsToPrefetch(set, (FBlockLevel.OriginSizeStrideQueryShape) shape);
+        } else if (shape instanceof FBlockLevel.MultiPointsQueryShape) {
+            this.getChunkPositionsToPrefetch(set, (FBlockLevel.MultiPointsQueryShape) shape);
         } else {
             this.getChunkPositionsToPrefetchGeneric(set, shape);
         }
     }
 
-    protected List<Vec2i> getChunkPositionsToPrefetch(@NonNull FBlockWorld.SinglePointQueryShape shape) {
+    protected List<Vec2i> getChunkPositionsToPrefetch(@NonNull FBlockLevel.SinglePointQueryShape shape) {
         return this.isValidPosition(shape.x(), shape.y(), shape.z())
                 ? Collections.singletonList(Vec2i.of(shape.x() >> this.chunkShift(), shape.z() >> this.chunkShift()))
                 : Collections.emptyList();
     }
 
-    protected void getChunkPositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull FBlockWorld.SinglePointQueryShape shape) {
+    protected void getChunkPositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull FBlockLevel.SinglePointQueryShape shape) {
         if (this.isValidPosition(shape.x(), shape.y(), shape.z())) {
             set.add(shape.x() >> this.chunkShift(), shape.z() >> this.chunkShift());
         }
     }
 
-    protected List<Vec2i> getChunkPositionsToPrefetch(@NonNull FBlockWorld.OriginSizeStrideQueryShape shape) {
+    protected List<Vec2i> getChunkPositionsToPrefetch(@NonNull FBlockLevel.OriginSizeStrideQueryShape shape) {
         shape.validate();
 
         if (!this.isAnyPointValid(shape)) { //no points are valid, there's no reason to check anything
@@ -259,7 +259,7 @@ public abstract class AbstractChunksExactFBlockWorldHolder<CHUNK> extends Abstra
         }
     }
 
-    protected void getChunkPositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull FBlockWorld.OriginSizeStrideQueryShape shape) {
+    protected void getChunkPositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull FBlockLevel.OriginSizeStrideQueryShape shape) {
         shape.validate();
 
         if (!this.isAnyPointValid(shape)) { //no points are valid, there's no reason to check anything
@@ -271,7 +271,7 @@ public abstract class AbstractChunksExactFBlockWorldHolder<CHUNK> extends Abstra
         }
     }
 
-    protected List<Vec2i> getChunkPositionsToPrefetchRegularAABB(@NonNull FBlockWorld.OriginSizeStrideQueryShape shape) {
+    protected List<Vec2i> getChunkPositionsToPrefetchRegularAABB(@NonNull FBlockLevel.OriginSizeStrideQueryShape shape) {
         shape.validate();
 
         //we assume that at least one Y coordinate is valid, meaning that the entire chunk needs to be prefetched as long as the horizontal coordinates are valid
@@ -292,7 +292,7 @@ public abstract class AbstractChunksExactFBlockWorldHolder<CHUNK> extends Abstra
         return positions;
     }
 
-    protected void getChunkPositionsToPrefetchRegularAABB(@NonNull NDimensionalIntSet set, @NonNull FBlockWorld.OriginSizeStrideQueryShape shape) {
+    protected void getChunkPositionsToPrefetchRegularAABB(@NonNull NDimensionalIntSet set, @NonNull FBlockLevel.OriginSizeStrideQueryShape shape) {
         shape.validate();
 
         //we assume that at least one Y coordinate is valid, meaning that the entire chunk needs to be prefetched as long as the horizontal coordinates are valid
@@ -311,7 +311,7 @@ public abstract class AbstractChunksExactFBlockWorldHolder<CHUNK> extends Abstra
         }
     }
 
-    protected List<Vec2i> getChunkPositionsToPrefetchSparseAABB(@NonNull FBlockWorld.OriginSizeStrideQueryShape shape) {
+    protected List<Vec2i> getChunkPositionsToPrefetchSparseAABB(@NonNull FBlockLevel.OriginSizeStrideQueryShape shape) {
         shape.validate();
 
         //we assume that at least one Y coordinate is valid, meaning that the entire chunk needs to be prefetched as long as the horizontal coordinates are valid
@@ -326,7 +326,7 @@ public abstract class AbstractChunksExactFBlockWorldHolder<CHUNK> extends Abstra
         return positions;
     }
 
-    protected void getChunkPositionsToPrefetchSparseAABB(@NonNull NDimensionalIntSet set, @NonNull FBlockWorld.OriginSizeStrideQueryShape shape) {
+    protected void getChunkPositionsToPrefetchSparseAABB(@NonNull NDimensionalIntSet set, @NonNull FBlockLevel.OriginSizeStrideQueryShape shape) {
         shape.validate();
 
         //we assume that at least one Y coordinate is valid, meaning that the entire chunk needs to be prefetched as long as the horizontal coordinates are valid
@@ -339,17 +339,17 @@ public abstract class AbstractChunksExactFBlockWorldHolder<CHUNK> extends Abstra
         chunkXSupplier.accept(chunkX -> chunkZSupplier.accept(chunkZ -> set.add(chunkX, chunkZ)));
     }
 
-    protected List<Vec2i> getChunkPositionsToPrefetch(@NonNull FBlockWorld.MultiPointsQueryShape shape) {
+    protected List<Vec2i> getChunkPositionsToPrefetch(@NonNull FBlockLevel.MultiPointsQueryShape shape) {
         //delegate to generic method, it's already the fastest possible approach for this shape implementation
         return this.getChunkPositionsToPrefetchGeneric(shape);
     }
 
-    protected void getChunkPositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull FBlockWorld.MultiPointsQueryShape shape) {
+    protected void getChunkPositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull FBlockLevel.MultiPointsQueryShape shape) {
         //delegate to generic method, it's already the fastest possible approach for this shape implementation
         this.getChunkPositionsToPrefetchGeneric(set, shape);
     }
 
-    protected List<Vec2i> getChunkPositionsToPrefetchGeneric(@NonNull FBlockWorld.QueryShape shape) {
+    protected List<Vec2i> getChunkPositionsToPrefetchGeneric(@NonNull FBlockLevel.QueryShape shape) {
         shape.validate();
 
         {
@@ -369,7 +369,7 @@ public abstract class AbstractChunksExactFBlockWorldHolder<CHUNK> extends Abstra
         }
     }
 
-    protected void getChunkPositionsToPrefetchGeneric(@NonNull NDimensionalIntSet set, @NonNull FBlockWorld.QueryShape shape) {
+    protected void getChunkPositionsToPrefetchGeneric(@NonNull NDimensionalIntSet set, @NonNull FBlockLevel.QueryShape shape) {
         shape.validate();
 
         //iterate over every position, recording all the ones which are valid

@@ -29,7 +29,7 @@ import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.core.mode.api.client.IFarTileCache;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
-import net.daporkchop.fp2.core.client.world.IFarWorldClient;
+import net.daporkchop.fp2.core.client.world.IFarLevelClient;
 import net.daporkchop.fp2.core.mode.common.client.FarTileCache;
 import net.daporkchop.fp2.core.util.annotation.CalledFromNetworkThread;
 
@@ -43,7 +43,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @Getter
 public abstract class AbstractFarClientContext<POS extends IFarPos, T extends IFarTile> implements IFarClientContext<POS, T> {
     protected final IFarRenderMode<POS, T> mode;
-    protected final IFarWorldClient world;
+    protected final IFarLevelClient world;
     protected final IFarTileCache<POS, T> tileCache;
 
     protected FP2Config config;
@@ -51,7 +51,7 @@ public abstract class AbstractFarClientContext<POS extends IFarPos, T extends IF
 
     protected boolean closed = false;
 
-    public AbstractFarClientContext(@NonNull IFarWorldClient world, @NonNull FP2Config config, @NonNull IFarRenderMode<POS, T> mode) {
+    public AbstractFarClientContext(@NonNull IFarLevelClient world, @NonNull FP2Config config, @NonNull IFarRenderMode<POS, T> mode) {
         this.world = world;
         this.mode = mode;
         this.tileCache = this.tileCache0();
@@ -72,7 +72,7 @@ public abstract class AbstractFarClientContext<POS extends IFarPos, T extends IF
         this.config = config;
 
         //check if we need to replace the renderer on the client thread
-        this.world.fp2_IFarWorld_workerManager().rootExecutor().execute(() -> {
+        this.world.workerManager().rootExecutor().execute(() -> {
             if (this.config != config) { //config has changed since this task was scheduled, skip re-check since we're technically out-of-date
                 return;
             }
@@ -95,7 +95,7 @@ public abstract class AbstractFarClientContext<POS extends IFarPos, T extends IF
         this.closed = true;
 
         //do all cleanup on client thread
-        this.world.fp2_IFarWorld_workerManager().rootExecutor().execute(() -> {
+        this.world.workerManager().rootExecutor().execute(() -> {
             if (this.renderer != null) {
                 this.renderer.close();
                 this.renderer = null;

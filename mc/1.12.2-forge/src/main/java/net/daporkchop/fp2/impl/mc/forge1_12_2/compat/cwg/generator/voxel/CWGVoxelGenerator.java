@@ -22,13 +22,13 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cwg.generator.voxel;
 
 import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.IBiomeBlockReplacer;
 import lombok.NonNull;
-import net.daporkchop.fp2.api.world.BlockWorldConstants;
+import net.daporkchop.fp2.api.world.level.BlockLevelConstants;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.voxel.VoxelData;
 import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.core.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.core.mode.voxel.server.gen.rough.AbstractRoughVoxelGenerator;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.server.world.IFarLevelServer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cwg.CWGContext;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.reference.cache.Cached;
@@ -47,10 +47,10 @@ import static net.daporkchop.fp2.core.mode.voxel.VoxelConstants.*;
 public class CWGVoxelGenerator extends AbstractRoughVoxelGenerator<CWGContext> {
     protected final Cached<CWGContext> ctx;
 
-    public CWGVoxelGenerator(@NonNull IFarWorldServer world, @NonNull IFarTileProvider<VoxelPos, VoxelTile> provider) {
+    public CWGVoxelGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<VoxelPos, VoxelTile> provider) {
         super(world, provider);
 
-        this.ctx = Cached.threadLocal(() -> new CWGContext(this.registry(), (WorldServer) world.fp2_IFarWorld_implWorld(), CACHE_SIZE, 2, VT_SHIFT), ReferenceStrength.WEAK);
+        this.ctx = Cached.threadLocal(() -> new CWGContext(this.registry(), (WorldServer) world.implWorld(), CACHE_SIZE, 2, VT_SHIFT), ReferenceStrength.WEAK);
     }
 
     @Override
@@ -108,7 +108,7 @@ public class CWGVoxelGenerator extends AbstractRoughVoxelGenerator<CWGContext> {
         blockY++;
 
         int seaLevel = this.seaLevel() >> level << level; //truncate lower bits in order to scale the sea level to the current zoom level
-        data.light = BlockWorldConstants.packLight(blockY < seaLevel ? max(15 - (seaLevel - blockY) * 3, 0) : 15, 0);
+        data.light = BlockLevelConstants.packLight(blockY < seaLevel ? max(15 - (seaLevel - blockY) * 3, 0) : 15, 0);
         data.biome = ctx.getBiome(blockX, blockZ);
     }
 }

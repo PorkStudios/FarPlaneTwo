@@ -24,14 +24,14 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
-import net.daporkchop.fp2.api.world.FBlockWorld;
-import net.daporkchop.fp2.api.world.GenerationNotAllowedException;
+import net.daporkchop.fp2.api.world.level.FBlockLevel;
+import net.daporkchop.fp2.api.world.level.GenerationNotAllowedException;
 import net.daporkchop.fp2.core.minecraft.util.threading.asynccache.AsyncCacheNBT;
-import net.daporkchop.fp2.core.minecraft.world.AbstractExactFBlockWorldHolder;
+import net.daporkchop.fp2.core.minecraft.world.AbstractExactFBlockLevelHolder;
 import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
 import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
-import net.daporkchop.fp2.core.server.world.ExactFBlockWorldHolder;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
+import net.daporkchop.fp2.core.server.world.IFarLevelServer;
 import net.daporkchop.fp2.core.util.datastructure.Datastructures;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSegtreeSet;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSet;
@@ -50,20 +50,20 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
- * Base implementation of an {@link ExactFBlockWorldHolder} which serves a Minecraft-style world made up of cubes.
+ * Base implementation of an {@link ExactFBlockLevelHolder} which serves a Minecraft-style world made up of cubes.
  * <p>
- * Serves as a shared base for implementations of {@link FBlockWorld} which are based on it.
+ * Serves as a shared base for implementations of {@link FBlockLevel} which are based on it.
  *
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractCubesExactFBlockWorldHolder<CUBE> extends AbstractExactFBlockWorldHolder {
+public abstract class AbstractCubesExactFBlockLevelHolder<CUBE> extends AbstractExactFBlockLevelHolder {
     private final NDimensionalIntSegtreeSet cubesExistIndex;
     private final AsyncCacheNBT<Vec3i, ?, CUBE, ?> cubeCache;
 
     private final int cubeShift;
 
-    public AbstractCubesExactFBlockWorldHolder(@NonNull IFarWorldServer world, int cubeShift) {
+    public AbstractCubesExactFBlockLevelHolder(@NonNull IFarLevelServer world, int cubeShift) {
         super(world);
 
         this.cubeShift = positive(cubeShift, "cubeShift");
@@ -72,28 +72,28 @@ public abstract class AbstractCubesExactFBlockWorldHolder<CUBE> extends Abstract
         this.cubeCache = this.createCubeCache(world);
 
         //register self to listen for events
-        this.world().fp2_IFarWorldServer_eventBus().registerWeak(this);
+        this.world().eventBus().registerWeak(this);
     }
 
     /**
      * Creates the {@link #cubesExistIndex}.
      * <p>
-     * Note that this is called by {@link AbstractCubesExactFBlockWorldHolder}'s constructor. Accessing any internal state inside of this method will likely cause unexpected behavior.
+     * Note that this is called by {@link AbstractCubesExactFBlockLevelHolder}'s constructor. Accessing any internal state inside of this method will likely cause unexpected behavior.
      *
-     * @param world the {@link IFarWorldServer} instanced passed to the constructor
+     * @param world the {@link IFarLevelServer} instanced passed to the constructor
      * @return the {@link #cubesExistIndex} to use
      */
-    protected abstract NDimensionalIntSegtreeSet createCubesExistIndex(@NonNull IFarWorldServer world);
+    protected abstract NDimensionalIntSegtreeSet createCubesExistIndex(@NonNull IFarLevelServer world);
 
     /**
      * Creates the {@link #cubeCache}.
      * <p>
-     * Note that this is called by {@link AbstractCubesExactFBlockWorldHolder}'s constructor. Accessing any internal state inside of this method will likely cause unexpected behavior.
+     * Note that this is called by {@link AbstractCubesExactFBlockLevelHolder}'s constructor. Accessing any internal state inside of this method will likely cause unexpected behavior.
      *
-     * @param world the {@link IFarWorldServer} instanced passed to the constructor
+     * @param world the {@link IFarLevelServer} instanced passed to the constructor
      * @return the {@link #cubeCache} to use
      */
-    protected abstract AsyncCacheNBT<Vec3i, ?, CUBE, ?> createCubeCache(@NonNull IFarWorldServer world);
+    protected abstract AsyncCacheNBT<Vec3i, ?, CUBE, ?> createCubeCache(@NonNull IFarLevelServer world);
 
     public int cubeSize() {
         return 1 << this.cubeShift;
@@ -104,19 +104,19 @@ public abstract class AbstractCubesExactFBlockWorldHolder<CUBE> extends Abstract
     }
 
     @Override
-    public FBlockWorld worldFor(@NonNull AllowGenerationRequirement requirement) {
+    public FBlockLevel worldFor(@NonNull AllowGenerationRequirement requirement) {
         return this.regularWorld(requirement == AllowGenerationRequirement.ALLOWED);
     }
 
-    protected AbstractCubesExactFBlockWorld<CUBE> regularWorld(boolean generationAllowed) {
-        return new AbstractCubesExactFBlockWorld<>(this, generationAllowed);
+    protected AbstractCubesExactFBlockLevel<CUBE> regularWorld(boolean generationAllowed) {
+        return new AbstractCubesExactFBlockLevel<>(this, generationAllowed);
     }
 
-    protected abstract AbstractPrefetchedCubesExactFBlockWorld<CUBE> prefetchedWorld(boolean generationAllowed, @NonNull List<CUBE> cubes);
+    protected abstract AbstractPrefetchedCubesExactFBlockLevel<CUBE> prefetchedWorld(boolean generationAllowed, @NonNull List<CUBE> cubes);
 
     @Override
     public void close() {
-        this.world().fp2_IFarWorldServer_eventBus().unregister(this);
+        this.world().eventBus().unregister(this);
     }
 
     @FEventHandler
@@ -170,18 +170,18 @@ public abstract class AbstractCubesExactFBlockWorldHolder<CUBE> extends Abstract
     /**
      * Gets a {@link List} of the cube positions which need to be prefetched in order to respond to a query with the given shape.
      *
-     * @param shape the {@link FBlockWorld.QueryShape query's shape}
+     * @param shape the {@link FBlockLevel.QueryShape query's shape}
      * @return the positions of the cubes to prefetch
      */
-    public List<Vec3i> getCubePositionsToPrefetch(@NonNull FBlockWorld.QueryShape shape) {
+    public List<Vec3i> getCubePositionsToPrefetch(@NonNull FBlockLevel.QueryShape shape) {
         if (shape.count() == 0) { //the shape contains no points, we don't need to prefetch anything
             return Collections.emptyList();
-        } else if (shape instanceof FBlockWorld.SinglePointQueryShape) {
-            return this.getCubePositionsToPrefetch((FBlockWorld.SinglePointQueryShape) shape);
-        } else if (shape instanceof FBlockWorld.OriginSizeStrideQueryShape) {
-            return this.getCubePositionsToPrefetch((FBlockWorld.OriginSizeStrideQueryShape) shape);
-        } else if (shape instanceof FBlockWorld.MultiPointsQueryShape) {
-            return this.getCubePositionsToPrefetch((FBlockWorld.MultiPointsQueryShape) shape);
+        } else if (shape instanceof FBlockLevel.SinglePointQueryShape) {
+            return this.getCubePositionsToPrefetch((FBlockLevel.SinglePointQueryShape) shape);
+        } else if (shape instanceof FBlockLevel.OriginSizeStrideQueryShape) {
+            return this.getCubePositionsToPrefetch((FBlockLevel.OriginSizeStrideQueryShape) shape);
+        } else if (shape instanceof FBlockLevel.MultiPointsQueryShape) {
+            return this.getCubePositionsToPrefetch((FBlockLevel.MultiPointsQueryShape) shape);
         } else {
             return this.getCubePositionsToPrefetchGeneric(shape);
         }
@@ -190,10 +190,10 @@ public abstract class AbstractCubesExactFBlockWorldHolder<CUBE> extends Abstract
     /**
      * Gets a {@link List} of the chunk positions which need to be prefetched in order to respond to a group of queries with the given shapes.
      *
-     * @param shapes the {@link FBlockWorld.QueryShape queries' shapes}
+     * @param shapes the {@link FBlockLevel.QueryShape queries' shapes}
      * @return the positions of the chunks to prefetch
      */
-    public List<Vec3i> getCubePositionsToPrefetch(@NonNull FBlockWorld.QueryShape... shapes) {
+    public List<Vec3i> getCubePositionsToPrefetch(@NonNull FBlockLevel.QueryShape... shapes) {
         switch (shapes.length) {
             case 0: //there are no shapes, we don't need to prefetch anything
                 return Collections.emptyList();
@@ -206,7 +206,7 @@ public abstract class AbstractCubesExactFBlockWorldHolder<CUBE> extends Abstract
             NDimensionalIntSet set = Datastructures.INSTANCE.nDimensionalIntSet().dimensions(3).threadSafe(false).build();
 
             //add the positions for each shape to the set
-            for (FBlockWorld.QueryShape shape : shapes) {
+            for (FBlockLevel.QueryShape shape : shapes) {
                 this.getCubePositionsToPrefetch(set, shape);
             }
 
@@ -217,33 +217,33 @@ public abstract class AbstractCubesExactFBlockWorldHolder<CUBE> extends Abstract
         }
     }
 
-    protected void getCubePositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull FBlockWorld.QueryShape shape) {
+    protected void getCubePositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull FBlockLevel.QueryShape shape) {
         if (shape.count() == 0) { //the shape contains no points, we don't need to prefetch anything
             //no-op
-        } else if (shape instanceof FBlockWorld.SinglePointQueryShape) {
-            this.getCubePositionsToPrefetch(set, (FBlockWorld.SinglePointQueryShape) shape);
-        } else if (shape instanceof FBlockWorld.OriginSizeStrideQueryShape) {
-            this.getCubePositionsToPrefetch(set, (FBlockWorld.OriginSizeStrideQueryShape) shape);
-        } else if (shape instanceof FBlockWorld.MultiPointsQueryShape) {
-            this.getCubePositionsToPrefetch(set, (FBlockWorld.MultiPointsQueryShape) shape);
+        } else if (shape instanceof FBlockLevel.SinglePointQueryShape) {
+            this.getCubePositionsToPrefetch(set, (FBlockLevel.SinglePointQueryShape) shape);
+        } else if (shape instanceof FBlockLevel.OriginSizeStrideQueryShape) {
+            this.getCubePositionsToPrefetch(set, (FBlockLevel.OriginSizeStrideQueryShape) shape);
+        } else if (shape instanceof FBlockLevel.MultiPointsQueryShape) {
+            this.getCubePositionsToPrefetch(set, (FBlockLevel.MultiPointsQueryShape) shape);
         } else {
             this.getCubePositionsToPrefetchGeneric(set, shape);
         }
     }
 
-    protected List<Vec3i> getCubePositionsToPrefetch(@NonNull FBlockWorld.SinglePointQueryShape shape) {
+    protected List<Vec3i> getCubePositionsToPrefetch(@NonNull FBlockLevel.SinglePointQueryShape shape) {
         return this.isValidPosition(shape.x(), shape.y(), shape.z())
                 ? Collections.singletonList(Vec3i.of(shape.x() >> this.cubeShift(), shape.y() >> this.cubeShift(), shape.z() >> this.cubeShift()))
                 : Collections.emptyList();
     }
 
-    protected void getCubePositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull FBlockWorld.SinglePointQueryShape shape) {
+    protected void getCubePositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull FBlockLevel.SinglePointQueryShape shape) {
         if (this.isValidPosition(shape.x(), shape.y(), shape.z())) {
             set.add(shape.x() >> this.cubeShift(), shape.y() >> this.cubeShift(), shape.z() >> this.cubeShift());
         }
     }
 
-    protected List<Vec3i> getCubePositionsToPrefetch(@NonNull FBlockWorld.OriginSizeStrideQueryShape shape) {
+    protected List<Vec3i> getCubePositionsToPrefetch(@NonNull FBlockLevel.OriginSizeStrideQueryShape shape) {
         shape.validate();
 
         if (!this.isAnyPointValid(shape)) { //no points are valid, there's no reason to check anything
@@ -255,7 +255,7 @@ public abstract class AbstractCubesExactFBlockWorldHolder<CUBE> extends Abstract
         }
     }
 
-    protected void getCubePositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull FBlockWorld.OriginSizeStrideQueryShape shape) {
+    protected void getCubePositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull FBlockLevel.OriginSizeStrideQueryShape shape) {
         shape.validate();
 
         if (!this.isAnyPointValid(shape)) { //no points are valid, there's no reason to check anything
@@ -267,7 +267,7 @@ public abstract class AbstractCubesExactFBlockWorldHolder<CUBE> extends Abstract
         }
     }
 
-    protected List<Vec3i> getCubePositionsToPrefetchRegularAABB(@NonNull FBlockWorld.OriginSizeStrideQueryShape shape) {
+    protected List<Vec3i> getCubePositionsToPrefetchRegularAABB(@NonNull FBlockLevel.OriginSizeStrideQueryShape shape) {
         shape.validate();
 
         //find min and max cube coordinates (upper bound is inclusive)
@@ -290,7 +290,7 @@ public abstract class AbstractCubesExactFBlockWorldHolder<CUBE> extends Abstract
         return positions;
     }
 
-    protected void getCubePositionsToPrefetchRegularAABB(@NonNull NDimensionalIntSet set, @NonNull FBlockWorld.OriginSizeStrideQueryShape shape) {
+    protected void getCubePositionsToPrefetchRegularAABB(@NonNull NDimensionalIntSet set, @NonNull FBlockLevel.OriginSizeStrideQueryShape shape) {
         shape.validate();
 
         //find min and max cube coordinates (upper bound is inclusive)
@@ -311,7 +311,7 @@ public abstract class AbstractCubesExactFBlockWorldHolder<CUBE> extends Abstract
         }
     }
 
-    protected List<Vec3i> getCubePositionsToPrefetchSparseAABB(@NonNull FBlockWorld.OriginSizeStrideQueryShape shape) {
+    protected List<Vec3i> getCubePositionsToPrefetchSparseAABB(@NonNull FBlockLevel.OriginSizeStrideQueryShape shape) {
         shape.validate();
 
         //find cube X,Y,Z coordinates
@@ -325,7 +325,7 @@ public abstract class AbstractCubesExactFBlockWorldHolder<CUBE> extends Abstract
         return positions;
     }
 
-    protected void getCubePositionsToPrefetchSparseAABB(@NonNull NDimensionalIntSet set, @NonNull FBlockWorld.OriginSizeStrideQueryShape shape) {
+    protected void getCubePositionsToPrefetchSparseAABB(@NonNull NDimensionalIntSet set, @NonNull FBlockLevel.OriginSizeStrideQueryShape shape) {
         shape.validate();
 
         //find cube X,Y,Z coordinates
@@ -337,17 +337,17 @@ public abstract class AbstractCubesExactFBlockWorldHolder<CUBE> extends Abstract
         cubeXSupplier.accept(cubeX -> cubeYSupplier.accept(cubeY -> cubeZSupplier.accept(cubeZ -> set.add(cubeX, cubeY, cubeZ))));
     }
 
-    protected List<Vec3i> getCubePositionsToPrefetch(@NonNull FBlockWorld.MultiPointsQueryShape shape) {
+    protected List<Vec3i> getCubePositionsToPrefetch(@NonNull FBlockLevel.MultiPointsQueryShape shape) {
         //delegate to generic method, it's already the fastest possible approach for this shape implementation
         return this.getCubePositionsToPrefetchGeneric(shape);
     }
 
-    protected void getCubePositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull FBlockWorld.MultiPointsQueryShape shape) {
+    protected void getCubePositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull FBlockLevel.MultiPointsQueryShape shape) {
         //delegate to generic method, it's already the fastest possible approach for this shape implementation
         this.getCubePositionsToPrefetchGeneric(set, shape);
     }
 
-    protected List<Vec3i> getCubePositionsToPrefetchGeneric(@NonNull FBlockWorld.QueryShape shape) {
+    protected List<Vec3i> getCubePositionsToPrefetchGeneric(@NonNull FBlockLevel.QueryShape shape) {
         shape.validate();
 
         {
@@ -367,7 +367,7 @@ public abstract class AbstractCubesExactFBlockWorldHolder<CUBE> extends Abstract
         }
     }
 
-    protected void getCubePositionsToPrefetchGeneric(@NonNull NDimensionalIntSet set, @NonNull FBlockWorld.QueryShape shape) {
+    protected void getCubePositionsToPrefetchGeneric(@NonNull NDimensionalIntSet set, @NonNull FBlockLevel.QueryShape shape) {
         shape.validate();
 
         //iterate over every position, recording all the ones which are valid

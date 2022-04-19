@@ -18,17 +18,16 @@
  *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cc.exactfblockworld;
+package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.exactfblocklevel;
 
-import io.github.opencubicchunks.cubicchunks.api.world.ICube;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.SneakyThrows;
-import net.daporkchop.fp2.api.world.BlockWorldConstants;
-import net.daporkchop.fp2.api.world.GenerationNotAllowedException;
-import net.daporkchop.fp2.core.minecraft.world.cubes.AbstractCubesExactFBlockWorldHolder;
-import net.daporkchop.fp2.core.minecraft.world.cubes.AbstractPrefetchedCubesExactFBlockWorld;
-import net.daporkchop.lib.math.vector.Vec3i;
+import net.daporkchop.fp2.api.world.level.BlockLevelConstants;
+import net.daporkchop.fp2.api.world.level.GenerationNotAllowedException;
+import net.daporkchop.fp2.core.minecraft.world.chunks.AbstractChunksExactFBlockLevelHolder;
+import net.daporkchop.fp2.core.minecraft.world.chunks.AbstractPrefetchedChunksExactFBlockLevel;
+import net.daporkchop.lib.common.math.BinMath;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
 import net.minecraft.tileentity.TileEntity;
@@ -38,6 +37,7 @@ import net.minecraft.world.EnumSkyBlock;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.WorldType;
 import net.minecraft.world.biome.Biome;
+import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 
@@ -48,30 +48,31 @@ import java.util.List;
  * @author DaPorkchop_
  */
 @Getter
-public class PrefetchedCubesCCFBlockWorld1_12 extends AbstractPrefetchedCubesExactFBlockWorld<ICube> implements IBlockAccess {
-    public PrefetchedCubesCCFBlockWorld1_12(@NonNull AbstractCubesExactFBlockWorldHolder<ICube> holder, boolean generationAllowed, @NonNull List<ICube> cubes) {
-        super(holder, generationAllowed, cubes);
+public class PrefetchedChunksFBlockLevel1_12 extends AbstractPrefetchedChunksExactFBlockLevel<Chunk> implements IBlockAccess {
+    public PrefetchedChunksFBlockLevel1_12(@NonNull AbstractChunksExactFBlockLevelHolder<Chunk> holder, boolean generationAllowed, @NonNull List<Chunk> chunks) {
+        super(holder, generationAllowed, chunks);
     }
 
     @Override
-    protected Vec3i cubePosition(@NonNull ICube cube) {
-        return Vec3i.of(cube.getX(), cube.getY(), cube.getZ());
+    protected long packedChunkPosition(@NonNull Chunk chunk) {
+        return BinMath.packXY(chunk.x, chunk.z);
     }
 
     @Override
-    protected int getState(int x, int y, int z, ICube cube) throws GenerationNotAllowedException {
-        return this.registry().state2id(cube.getBlockState(x, y, z).getActualState(this, new BlockPos(x, y, z)));
-    }
-
-    @Override
-    protected int getBiome(int x, int y, int z, ICube cube) throws GenerationNotAllowedException {
-        return this.registry().biome2id(cube.getBiome(new BlockPos(x, y, z)));
-    }
-
-    @Override
-    protected byte getLight(int x, int y, int z, ICube cube) throws GenerationNotAllowedException {
+    protected int getState(int x, int y, int z, Chunk chunk) throws GenerationNotAllowedException {
         BlockPos pos = new BlockPos(x, y, z);
-        return BlockWorldConstants.packLight(cube.getLightFor(EnumSkyBlock.SKY, pos), cube.getLightFor(EnumSkyBlock.BLOCK, pos));
+        return this.registry().state2id(chunk.getBlockState(pos).getActualState(this, pos));
+    }
+
+    @Override
+    protected int getBiome(int x, int y, int z, Chunk chunk) throws GenerationNotAllowedException {
+        return this.registry().biome2id(chunk.getBiome(new BlockPos(x, y, z), null));
+    }
+
+    @Override
+    protected byte getLight(int x, int y, int z, Chunk chunk) throws GenerationNotAllowedException {
+        BlockPos pos = new BlockPos(x, y, z);
+        return BlockLevelConstants.packLight(chunk.getLightFor(EnumSkyBlock.SKY, pos), chunk.getLightFor(EnumSkyBlock.BLOCK, pos));
     }
 
     // IBlockAccess
@@ -88,9 +89,9 @@ public class PrefetchedCubesCCFBlockWorld1_12 extends AbstractPrefetchedCubesExa
         if (!this.holder().isValidPosition(pos.getX(), pos.getY(), pos.getZ())) { //position is outside world, return air
             return Blocks.AIR.getDefaultState();
         } else {
-            //this is gross, i'd rather have it throw an exception than having to load the cube. unfortunately, Block#getActualBlockState may have to access the state of
-            //  a neighboring block, which may not have been prefetched. however, since we NEED to know the real block state at the position, we're forced to load the cube...
-            return this.getOrLoadCube(pos.getX(), pos.getY(), pos.getZ()).getBlockState(pos);
+            //this is gross, i'd rather have it throw an exception than having to load the chunk. unfortunately, Block#getActualBlockState may have to access the state of
+            //  a neighboring block, which may not have been prefetched. however, since we NEED to know the real block state at the position, we're forced to load the chunk...
+            return this.getOrLoadChunk(pos.getX(), pos.getY(), pos.getZ()).getBlockState(pos);
         }
     }
 

@@ -30,9 +30,9 @@ import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.server.event.GetCoordinateLimitsEvent;
-import net.daporkchop.fp2.core.server.event.GetExactFBlockWorldEvent;
-import net.daporkchop.fp2.core.server.world.ExactFBlockWorldHolder;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.server.event.GetExactFBlockLevelEvent;
+import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
+import net.daporkchop.fp2.core.server.world.IFarLevelServer;
 import net.daporkchop.fp2.core.server.world.TerrainGeneratorInfo;
 import net.daporkchop.fp2.core.util.threading.workergroup.DefaultWorkerManager;
 import net.daporkchop.fp2.core.util.threading.workergroup.WorkerManager;
@@ -40,7 +40,7 @@ import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.server.ATMinecraftServer1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.server.TerrainGeneratorInfo1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.threading.futureexecutor.ServerThreadMarkedFutureExecutor;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.world.AbstractFarWorld1_12;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.world.AbstractFarLevel1_12;
 import net.minecraft.world.WorldServer;
 
 import java.nio.file.Path;
@@ -53,35 +53,35 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 /**
  * @author DaPorkchop_
  */
-public class FarWorldServer1_12 extends AbstractFarWorld1_12<WorldServer> implements IFarWorldServer {
+public class FarLevelServer1_12 extends AbstractFarLevel1_12<WorldServer> implements IFarLevelServer {
     protected Map<IFarRenderMode, IFarTileProvider> tileProvidersByMode;
     protected IFarTileProvider[] tileProviders;
 
     protected WorkerManager workerManager;
-    protected ExactFBlockWorldHolder exactFBlockWorldHolder;
+    protected ExactFBlockLevelHolder exactFBlockLevelHolder;
     protected FEventBus eventBus = new EventBus();
 
     protected IntAxisAlignedBB coordLimits;
 
-    public FarWorldServer1_12(@NonNull FP2Forge1_12_2 fp2, @NonNull WorldServer world) {
+    public FarLevelServer1_12(@NonNull FP2Forge1_12_2 fp2, @NonNull WorldServer world) {
         super(fp2, world);
     }
 
     @Override
-    public IntAxisAlignedBB fp2_IFarWorld_coordLimits() {
+    public IntAxisAlignedBB coordLimits() {
         checkState(this.coordLimits != null, "not initialized!");
         return this.coordLimits;
     }
 
     @Override
-    public void fp2_IFarWorldServer_init() {
+    public void init() {
         checkState(this.coordLimits == null, "already initialized!");
 
         this.coordLimits = this.fp2().eventBus().fireAndGetFirst(new GetCoordinateLimitsEvent(this)).get();
 
         this.workerManager = new DefaultWorkerManager(((ATMinecraftServer1_12) this.world.getMinecraftServer()).getServerThread(), ServerThreadMarkedFutureExecutor.getFor(this.world.getMinecraftServer()));
 
-        this.exactFBlockWorldHolder = this.fp2().eventBus().fireAndGetFirst(new GetExactFBlockWorldEvent(this)).get();
+        this.exactFBlockLevelHolder = this.fp2().eventBus().fireAndGetFirst(new GetExactFBlockLevelEvent(this)).get();
 
         ImmutableMap.Builder<IFarRenderMode, IFarTileProvider> builder = ImmutableMap.builder();
         IFarRenderMode.REGISTRY.forEachEntry((name, mode) -> builder.put(mode, mode.tileProvider(uncheckedCast(this))));
@@ -91,52 +91,52 @@ public class FarWorldServer1_12 extends AbstractFarWorld1_12<WorldServer> implem
     }
 
     @Override
-    public void fp2_IFarWorld_close() {
-        this.fp2_IFarWorldServer_forEachTileProvider(IFarTileProvider::close);
-        this.exactFBlockWorldHolder.close();
+    public void close() {
+        this.forEachTileProvider(IFarTileProvider::close);
+        this.exactFBlockLevelHolder.close();
     }
 
     @Override
-    public WorkerManager fp2_IFarWorld_workerManager() {
+    public WorkerManager workerManager() {
         return this.workerManager;
     }
 
     @Override
-    public <POS extends IFarPos, T extends IFarTile> IFarTileProvider<POS, T> fp2_IFarWorldServer_tileProviderFor(@NonNull IFarRenderMode<POS, T> mode) {
+    public <POS extends IFarPos, T extends IFarTile> IFarTileProvider<POS, T> tileProviderFor(@NonNull IFarRenderMode<POS, T> mode) {
         IFarTileProvider<POS, T> context = uncheckedCast(this.tileProvidersByMode.get(mode));
         checkArg(context != null, "cannot find tile provider for unknown render mode: %s", mode);
         return context;
     }
 
     @Override
-    public void fp2_IFarWorldServer_forEachTileProvider(@NonNull Consumer<IFarTileProvider<?, ?>> action) {
+    public void forEachTileProvider(@NonNull Consumer<IFarTileProvider<?, ?>> action) {
         for (IFarTileProvider tileProvider : this.tileProviders) {
             action.accept(uncheckedCast(tileProvider));
         }
     }
 
     @Override
-    public Path fp2_IFarWorldServer_worldDirectory() {
+    public Path levelDirectory() {
         return this.world.getChunkSaveLocation().toPath();
     }
 
     @Override
-    public TerrainGeneratorInfo fp2_IFarWorldServer_terrainGeneratorInfo() {
+    public TerrainGeneratorInfo terrainGeneratorInfo() {
         return new TerrainGeneratorInfo1_12_2(this.world);
     }
 
     @Override
-    public ExactFBlockWorldHolder fp2_IFarWorldServer_exactBlockWorldHolder() {
-        return this.exactFBlockWorldHolder;
+    public ExactFBlockLevelHolder exactBlockLevelHolder() {
+        return this.exactFBlockLevelHolder;
     }
 
     @Override
-    public int fp2_IFarWorldServer_seaLevel() {
+    public int seaLevel() {
         return this.world.getSeaLevel();
     }
 
     @Override
-    public FEventBus fp2_IFarWorldServer_eventBus() {
+    public FEventBus eventBus() {
         return this.eventBus;
     }
 }

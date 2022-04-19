@@ -35,7 +35,7 @@ import net.daporkchop.fp2.core.network.packet.standard.server.SPacketTileData;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUnloadTile;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUnloadTiles;
 import net.daporkchop.fp2.core.server.player.IFarPlayerServer;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.server.world.IFarLevelServer;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
 
 import java.util.ArrayList;
@@ -55,7 +55,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @Getter
 public abstract class AbstractFarServerContext<POS extends IFarPos, T extends IFarTile> implements IFarServerContext<POS, T> {
     protected final IFarPlayerServer player;
-    protected final IFarWorldServer world;
+    protected final IFarLevelServer world;
     protected final IFarRenderMode<POS, T> mode;
     protected final IFarTileProvider<POS, T> tileProvider;
 
@@ -69,13 +69,13 @@ public abstract class AbstractFarServerContext<POS extends IFarPos, T extends IF
 
     private int debugLastUpdateSent;
 
-    public AbstractFarServerContext(@NonNull IFarPlayerServer player, @NonNull IFarWorldServer world, @NonNull FP2Config config, @NonNull IFarRenderMode<POS, T> mode) {
+    public AbstractFarServerContext(@NonNull IFarPlayerServer player, @NonNull IFarLevelServer world, @NonNull FP2Config config, @NonNull IFarRenderMode<POS, T> mode) {
         this.player = player;
         this.world = world;
         this.mode = mode;
         this.config = config;
 
-        this.tileProvider = world.fp2_IFarWorldServer_tileProviderFor(mode);
+        this.tileProvider = world.tileProviderFor(mode);
         this.tracker = this.tileProvider.trackerManager().beginTracking(this);
     }
 

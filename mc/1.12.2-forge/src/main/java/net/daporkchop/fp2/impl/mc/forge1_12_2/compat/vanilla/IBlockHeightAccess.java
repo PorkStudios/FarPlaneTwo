@@ -20,9 +20,9 @@
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla;
 
-import net.daporkchop.fp2.api.world.BlockWorldConstants;
-import net.daporkchop.fp2.api.world.FBlockWorld;
-import net.daporkchop.fp2.api.world.GenerationNotAllowedException;
+import net.daporkchop.fp2.api.world.level.BlockLevelConstants;
+import net.daporkchop.fp2.api.world.level.FBlockLevel;
+import net.daporkchop.fp2.api.world.level.GenerationNotAllowedException;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.fp2.core.util.IHeightMap;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.world.registry.GameRegistry1_12_2;
@@ -36,7 +36,7 @@ import net.minecraft.world.biome.Biome;
  * @author DaPorkchop_
  */
 @Deprecated
-public interface IBlockHeightAccess extends IBlockAccess, IHeightMap, FBlockWorld {
+public interface IBlockHeightAccess extends IBlockAccess, IHeightMap, FBlockLevel {
     /**
      * Re-definition of {@link IBlockAccess#getBiome(BlockPos)}, as that method's marked as client-only.
      */
@@ -77,6 +77,6 @@ public interface IBlockHeightAccess extends IBlockAccess, IHeightMap, FBlockWorl
     @Override
     default byte getLight(int x, int y, int z) throws GenerationNotAllowedException {
         int combinedLight = this.getCombinedLight(new BlockPos(x, y, z), 0);
-        return BlockWorldConstants.packLight(combinedLight >> 20, combinedLight >> 4);
+        return BlockLevelConstants.packLight(combinedLight >> 20, combinedLight >> 4);
     }
 }

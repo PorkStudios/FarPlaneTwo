@@ -18,52 +18,24 @@
  *
  */
 
-package net.daporkchop.fp2.core.mode.api.ctx;
+package net.daporkchop.fp2.core.server.event;
 
-import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
-import net.daporkchop.fp2.api.world.registry.FGameRegistry;
-import net.daporkchop.fp2.common.util.Identifier;
-import net.daporkchop.fp2.core.util.threading.workergroup.WorkerManager;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.api.event.ReturningEvent;
+import net.daporkchop.fp2.api.world.level.FBlockLevel;
+import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
+import net.daporkchop.fp2.core.server.world.IFarLevelServer;
 
 /**
- * Provides access to additional fp2 information in a world.
+ * Fired in order to retrieve the exact {@link FBlockLevel} for accessing the real block data in a given {@link IFarLevelServer}.
  *
  * @author DaPorkchop_
  */
-//TODO: find a more logical place to put this
-public interface IFarWorld {
-    /**
-     * @return the implementation-specific object corresponding to this world
-     */
-    Object fp2_IFarWorld_implWorld();
-
-    /**
-     * @return the block coordinate limits in this world
-     */
-    IntAxisAlignedBB fp2_IFarWorld_coordLimits();
-
-    /**
-     * @return the {@link WorkerManager} used by this world
-     */
-    WorkerManager fp2_IFarWorld_workerManager();
-
-    /**
-     * @return this world's dimension ID
-     */
-    Identifier fp2_IFarWorld_dimensionId();
-
-    /**
-     * @return this world's current timestamp
-     */
-    long fp2_IFarWorld_timestamp();
-
-    /**
-     * @return the {@link FGameRegistry} used in this world
-     */
-    FGameRegistry fp2_IFarWorld_registry();
-
-    /**
-     * Called when the world is being unloaded.
-     */
-    void fp2_IFarWorld_close();
+@RequiredArgsConstructor
+@Getter
+public class GetExactFBlockLevelEvent implements ReturningEvent<ExactFBlockLevelHolder> {
+    @NonNull
+    protected final IFarLevelServer world;
 }

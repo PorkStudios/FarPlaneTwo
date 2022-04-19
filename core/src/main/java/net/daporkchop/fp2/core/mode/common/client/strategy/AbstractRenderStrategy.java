@@ -30,7 +30,7 @@ import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.core.client.render.GlobalUniformAttributes;
 import net.daporkchop.fp2.core.client.render.TextureUVs;
-import net.daporkchop.fp2.core.client.render.WorldRenderer;
+import net.daporkchop.fp2.core.client.render.LevelRenderer;
 import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;
 import net.daporkchop.fp2.core.client.shader.ShaderMacros;
 import net.daporkchop.fp2.core.config.FP2Config;
@@ -69,7 +69,7 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
     protected final Allocator alloc = new DirectMemoryAllocator();
 
     protected final AbstractFarRenderer<POS, T> farRenderer;
-    protected final WorldRenderer worldRenderer;
+    protected final LevelRenderer levelRenderer;
     protected final IFarRenderMode<POS, T> mode;
     protected final GL gl;
 
@@ -90,7 +90,7 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
 
     public AbstractRenderStrategy(@NonNull AbstractFarRenderer<POS, T> farRenderer) {
         this.farRenderer = farRenderer;
-        this.worldRenderer = farRenderer.worldRenderer();
+        this.levelRenderer = farRenderer.levelRenderer();
         this.mode = farRenderer.mode();
         this.gl = farRenderer.gl();
 
@@ -98,11 +98,11 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
         this.uniformBuffer = this.uniformFormat.createBuffer(BufferUsage.STATIC_DRAW);
 
         this.textureFormatTerrain = this.gl.createTextureFormat2D(TerrainTextureAttribute.class).build();
-        this.textureTerrain = this.textureFormatTerrain.wrapExternalTexture(this.worldRenderer.terrainTextureId());
+        this.textureTerrain = this.textureFormatTerrain.wrapExternalTexture(this.levelRenderer.terrainTextureId());
         this.textureFormatLightmap = this.gl.createTextureFormat2D(LightmapTextureAttribute.class).build();
-        this.textureLightmap = this.textureFormatLightmap.wrapExternalTexture(this.worldRenderer.lightmapTextureId());
+        this.textureLightmap = this.textureFormatLightmap.wrapExternalTexture(this.levelRenderer.lightmapTextureId());
 
-        this.textureUVs = this.worldRenderer.textureUVs();
+        this.textureUVs = this.levelRenderer.textureUVs();
 
         this.macros.define("T_SHIFT", this.mode.tileShift());
 

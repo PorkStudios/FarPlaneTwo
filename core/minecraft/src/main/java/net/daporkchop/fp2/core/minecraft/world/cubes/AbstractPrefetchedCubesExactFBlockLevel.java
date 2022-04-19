@@ -23,9 +23,9 @@ package net.daporkchop.fp2.core.minecraft.world.cubes;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
-import net.daporkchop.fp2.api.world.BlockWorldConstants;
-import net.daporkchop.fp2.api.world.FBlockWorld;
-import net.daporkchop.fp2.api.world.GenerationNotAllowedException;
+import net.daporkchop.fp2.api.world.level.BlockLevelConstants;
+import net.daporkchop.fp2.api.world.level.FBlockLevel;
+import net.daporkchop.fp2.api.world.level.GenerationNotAllowedException;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.lib.math.vector.Vec3i;
 import net.daporkchop.lib.primitive.map.open.ObjObjOpenHashMap;
@@ -34,16 +34,16 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Base implementation of an {@link FBlockWorld} which serves a Minecraft-style world made up of cubes.
+ * Base implementation of an {@link FBlockLevel} which serves a Minecraft-style world made up of cubes.
  * <p>
- * This forms the internal API implementation used by {@link AbstractCubesExactFBlockWorldHolder}. It contains a group of chunks which have been prefetched and can be quickly accessed
+ * This forms the internal API implementation used by {@link AbstractCubesExactFBlockLevelHolder}. It contains a group of chunks which have been prefetched and can be quickly accessed
  * without blocking.
  *
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractPrefetchedCubesExactFBlockWorld<CUBE> implements FBlockWorld {
-    private final AbstractCubesExactFBlockWorldHolder<CUBE> holder;
+public abstract class AbstractPrefetchedCubesExactFBlockLevel<CUBE> implements FBlockLevel {
+    private final AbstractCubesExactFBlockLevelHolder<CUBE> holder;
     private final boolean generationAllowed;
 
     private final int cubeShift;
@@ -52,7 +52,7 @@ public abstract class AbstractPrefetchedCubesExactFBlockWorld<CUBE> implements F
 
     private final FGameRegistry registry;
 
-    public AbstractPrefetchedCubesExactFBlockWorld(@NonNull AbstractCubesExactFBlockWorldHolder<CUBE> holder, boolean generationAllowed, @NonNull List<CUBE> cubes) {
+    public AbstractPrefetchedCubesExactFBlockLevel(@NonNull AbstractCubesExactFBlockLevelHolder<CUBE> holder, boolean generationAllowed, @NonNull List<CUBE> cubes) {
         this.holder = holder;
         this.generationAllowed = generationAllowed;
 
@@ -74,7 +74,7 @@ public abstract class AbstractPrefetchedCubesExactFBlockWorld<CUBE> implements F
 
     @Override
     public void close() {
-        //no-op, all resources are owned by AbstractCubesExactFBlockWorldHolder
+        //no-op, all resources are owned by AbstractCubesExactFBlockLevelHolder
     }
 
     @Override
@@ -105,7 +105,7 @@ public abstract class AbstractPrefetchedCubesExactFBlockWorld<CUBE> implements F
     }
 
     /**
-     * Gets the {@link CUBE} which contains the given voxel position, and attempts to load it from the parent {@link AbstractCubesExactFBlockWorldHolder holder} if it isn't prefetched.
+     * Gets the {@link CUBE} which contains the given voxel position, and attempts to load it from the parent {@link AbstractCubesExactFBlockLevelHolder holder} if it isn't prefetched.
      *
      * @param x the voxel position's X coordinate
      * @param y the voxel position's Y coordinate
@@ -160,8 +160,8 @@ public abstract class AbstractPrefetchedCubesExactFBlockWorld<CUBE> implements F
     public byte getLight(int x, int y, int z) throws GenerationNotAllowedException {
         if (!this.holder.isValidPosition(x, y, z)) { //position is outside world, return default
             return y >= this.holder.bounds().maxY()
-                    ? BlockWorldConstants.packLight(15, 0) //y coordinates are high, return full sky light
-                    : BlockWorldConstants.packLight(0, 0);
+                    ? BlockLevelConstants.packLight(15, 0) //y coordinates are high, return full sky light
+                    : BlockLevelConstants.packLight(0, 0);
         }
 
         CUBE cube = this.getPrefetchedCube(x, y, z);

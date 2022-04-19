@@ -24,7 +24,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
-import net.daporkchop.fp2.core.client.world.IFarWorldClient;
+import net.daporkchop.fp2.core.client.world.IFarLevelClient;
 import net.daporkchop.fp2.core.mode.common.ctx.AbstractFarClientContext;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapTile;
@@ -34,7 +34,7 @@ import net.daporkchop.fp2.core.mode.heightmap.client.HeightmapRenderer;
  * @author DaPorkchop_
  */
 public class HeightmapClientContext extends AbstractFarClientContext<HeightmapPos, HeightmapTile> {
-    public HeightmapClientContext(@NonNull IFarWorldClient world, @NonNull FP2Config config, @NonNull IFarRenderMode<HeightmapPos, HeightmapTile> mode) {
+    public HeightmapClientContext(@NonNull IFarLevelClient world, @NonNull FP2Config config, @NonNull IFarRenderMode<HeightmapPos, HeightmapTile> mode) {
         super(world, config, mode);
     }
 

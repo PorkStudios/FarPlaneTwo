@@ -22,11 +22,11 @@ package net.daporkchop.fp2.core.server.world;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.api.event.FEventBus;
-import net.daporkchop.fp2.api.world.FBlockWorld;
+import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
-import net.daporkchop.fp2.core.mode.api.ctx.IFarWorld;
+import net.daporkchop.fp2.core.mode.api.ctx.IFarLevel;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 
 import java.nio.file.Path;
@@ -35,49 +35,50 @@ import java.util.function.Consumer;
 /**
  * @author DaPorkchop_
  */
-public interface IFarWorldServer extends IFarWorld {
+public interface IFarLevelServer extends IFarLevel {
     /**
-     * Gets the {@link IFarTileProvider} used by the given {@link IFarRenderMode} in this world.
+     * Gets the {@link IFarTileProvider} used by the given {@link IFarRenderMode} in this level.
      *
      * @param mode the {@link IFarRenderMode}
-     * @return the {@link IFarTileProvider} used by the given {@link IFarRenderMode} in this world
+     * @return the {@link IFarTileProvider} used by the given {@link IFarRenderMode} in this level
      */
-    <POS extends IFarPos, T extends IFarTile> IFarTileProvider<POS, T> fp2_IFarWorldServer_tileProviderFor(@NonNull IFarRenderMode<POS, T> mode);
+    <POS extends IFarPos, T extends IFarTile> IFarTileProvider<POS, T> tileProviderFor(@NonNull IFarRenderMode<POS, T> mode);
 
     /**
      * Runs the given action on every {@link IFarTileProvider}.
      *
      * @param action the action
      */
-    void fp2_IFarWorldServer_forEachTileProvider(@NonNull Consumer<IFarTileProvider<?, ?>> action);
+    void forEachTileProvider(@NonNull Consumer<IFarTileProvider<?, ?>> action);
 
     /**
-     * @return the world's root directory
+     * @return the level's root directory
      */
-    Path fp2_IFarWorldServer_worldDirectory();
+    @Deprecated
+    Path levelDirectory();
 
     /**
-     * @return a {@link TerrainGeneratorInfo} for this world
+     * @return a {@link TerrainGeneratorInfo} for this level
      */
-    TerrainGeneratorInfo fp2_IFarWorldServer_terrainGeneratorInfo();
+    TerrainGeneratorInfo terrainGeneratorInfo();
 
     /**
-     * @return an {@link ExactFBlockWorldHolder} for accessing this world's exact {@link FBlockWorld}
+     * @return an {@link ExactFBlockLevelHolder} for accessing this level's exact {@link FBlockLevel}
      */
-    ExactFBlockWorldHolder fp2_IFarWorldServer_exactBlockWorldHolder();
+    ExactFBlockLevelHolder exactBlockLevelHolder();
 
     /**
-     * @return the sea level
+     * @return this level's sea level
      */
-    int fp2_IFarWorldServer_seaLevel();
+    int seaLevel();
 
     /**
-     * @return an event bus for events specific to this world
+     * @return an event bus for events specific to this level
      */
-    FEventBus fp2_IFarWorldServer_eventBus();
+    FEventBus eventBus();
 
     /**
-     * Called when the world is being loaded.
+     * Called when the level is being loaded.
      */
-    void fp2_IFarWorldServer_init();
+    void init();
 }

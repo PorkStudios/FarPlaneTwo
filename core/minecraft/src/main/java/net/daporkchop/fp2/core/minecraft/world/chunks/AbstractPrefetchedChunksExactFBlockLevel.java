@@ -23,9 +23,9 @@ package net.daporkchop.fp2.core.minecraft.world.chunks;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
-import net.daporkchop.fp2.api.world.BlockWorldConstants;
-import net.daporkchop.fp2.api.world.FBlockWorld;
-import net.daporkchop.fp2.api.world.GenerationNotAllowedException;
+import net.daporkchop.fp2.api.world.level.BlockLevelConstants;
+import net.daporkchop.fp2.api.world.level.FBlockLevel;
+import net.daporkchop.fp2.api.world.level.GenerationNotAllowedException;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.lib.common.math.BinMath;
 import net.daporkchop.lib.primitive.map.LongObjMap;
@@ -34,16 +34,16 @@ import net.daporkchop.lib.primitive.map.open.LongObjOpenHashMap;
 import java.util.List;
 
 /**
- * Base implementation of an {@link FBlockWorld} which serves a Minecraft-style world made up of chunk columns.
+ * Base implementation of an {@link FBlockLevel} which serves a Minecraft-style world made up of chunk columns.
  * <p>
- * This forms the internal API implementation used by {@link AbstractChunksExactFBlockWorldHolder}. It contains a group of chunks which have been prefetched and can be quickly accessed
+ * This forms the internal API implementation used by {@link AbstractChunksExactFBlockLevelHolder}. It contains a group of chunks which have been prefetched and can be quickly accessed
  * without blocking.
  *
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractPrefetchedChunksExactFBlockWorld<CHUNK> implements FBlockWorld {
-    private final AbstractChunksExactFBlockWorldHolder<CHUNK> holder;
+public abstract class AbstractPrefetchedChunksExactFBlockLevel<CHUNK> implements FBlockLevel {
+    private final AbstractChunksExactFBlockLevelHolder<CHUNK> holder;
     private final boolean generationAllowed;
 
     private final int chunkShift;
@@ -52,7 +52,7 @@ public abstract class AbstractPrefetchedChunksExactFBlockWorld<CHUNK> implements
 
     private final FGameRegistry registry;
 
-    public AbstractPrefetchedChunksExactFBlockWorld(@NonNull AbstractChunksExactFBlockWorldHolder<CHUNK> holder, boolean generationAllowed, @NonNull List<CHUNK> chunks) {
+    public AbstractPrefetchedChunksExactFBlockLevel(@NonNull AbstractChunksExactFBlockLevelHolder<CHUNK> holder, boolean generationAllowed, @NonNull List<CHUNK> chunks) {
         this.holder = holder;
         this.generationAllowed = generationAllowed;
 
@@ -74,7 +74,7 @@ public abstract class AbstractPrefetchedChunksExactFBlockWorld<CHUNK> implements
 
     @Override
     public void close() {
-        //no-op, all resources are owned by AbstractChunksExactFBlockWorldHolder
+        //no-op, all resources are owned by AbstractChunksExactFBlockLevelHolder
     }
 
     @Override
@@ -105,7 +105,7 @@ public abstract class AbstractPrefetchedChunksExactFBlockWorld<CHUNK> implements
     }
 
     /**
-     * Gets the {@link CHUNK} which contains the given voxel position, and attempts to load it from the parent {@link AbstractChunksExactFBlockWorldHolder holder} if it isn't prefetched.
+     * Gets the {@link CHUNK} which contains the given voxel position, and attempts to load it from the parent {@link AbstractChunksExactFBlockLevelHolder holder} if it isn't prefetched.
      *
      * @param x the voxel position's X coordinate
      * @param y the voxel position's Y coordinate
@@ -160,8 +160,8 @@ public abstract class AbstractPrefetchedChunksExactFBlockWorld<CHUNK> implements
     public byte getLight(int x, int y, int z) throws GenerationNotAllowedException {
         if (!this.holder.isValidPosition(x, y, z)) { //position is outside world, return default
             return y >= this.holder.bounds().maxY()
-                    ? BlockWorldConstants.packLight(15, 0) //y coordinates are high, return full sky light
-                    : BlockWorldConstants.packLight(0, 0);
+                    ? BlockLevelConstants.packLight(15, 0) //y coordinates are high, return full sky light
+                    : BlockLevelConstants.packLight(0, 0);
         }
 
         CHUNK chunk = this.getPrefetchedChunk(x, y, z);

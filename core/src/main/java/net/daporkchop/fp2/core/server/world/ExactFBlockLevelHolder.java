@@ -18,22 +18,42 @@
  *
  */
 
-package net.daporkchop.fp2.core.client.world;
+package net.daporkchop.fp2.core.server.world;
 
-import net.daporkchop.fp2.core.client.render.WorldRenderer;
-import net.daporkchop.fp2.core.mode.api.ctx.IFarWorld;
-import net.daporkchop.fp2.core.util.annotation.CalledFromClientThread;
+import lombok.NonNull;
+import net.daporkchop.fp2.api.world.level.FBlockLevel;
+import net.daporkchop.fp2.common.util.capability.CloseableResource;
 
 /**
+ * A container which provides instances of {@link FBlockLevel}.
+ *
  * @author DaPorkchop_
  */
-public interface IFarWorldClient extends IFarWorld {
-    @CalledFromClientThread
-    @Override
-    void fp2_IFarWorld_close();
+public interface ExactFBlockLevelHolder extends CloseableResource {
+    /**
+     * Gets an {@link FBlockLevel} instance for given requirement of whether or not generation should be allowed.
+     *
+     * @param requirement whether or not generation should be allowed
+     * @return an {@link FBlockLevel} instance matching the given requirement
+     */
+    FBlockLevel worldFor(@NonNull AllowGenerationRequirement requirement);
 
     /**
-     * @return a {@link WorldRenderer} for rendering this world
+     * {@inheritDoc}
+     * <p>
+     * When this holder is closed, all the {@link FBlockLevel} instances created by it will produce undefined behavior, even if not yet closed.
      */
-    WorldRenderer fp2_IFarWorldClient_renderer();
+    @Override
+    void close();
+
+    /**
+     * Controls whether or not generation should be allowed when requesting an {@link FBlockLevel} instance.
+     *
+     * @author DaPorkchop_
+     */
+    enum AllowGenerationRequirement {
+        ALLOWED,
+        NOT_ALLOWED,
+        DONT_CARE;
+    }
 }

@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.api.world;
+package net.daporkchop.fp2.api.world.level;
 
 import lombok.Data;
 import lombok.NonNull;
@@ -39,9 +39,9 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * Each voxel contains multiple independent data values, stored in separate channels ("bands"). The following bands are used:<br>
  * <table>
  *     <tr><th>Name</th><th>Type</th><th>Description</th></tr>
- *     <tr><td>{@link BlockWorldConstants#BAND_ORDINAL_STATES State}</td><td>{@code int}</td><td>A state ID, as returned by the corresponding methods in {@link FGameRegistry}</td></tr>
- *     <tr><td>{@link BlockWorldConstants#BAND_ORDINAL_BIOMES Biome}</td><td>{@code int}</td><td>A biome ID, as returned by the corresponding methods in {@link FGameRegistry}</td></tr>
- *     <tr><td>{@link BlockWorldConstants#BAND_ORDINAL_LIGHT Light}</td><td>{@code byte}</td><td>Block+sky light levels, as returned by {@link BlockWorldConstants#packLight(int, int)}</td></tr>
+ *     <tr><td>{@link BlockLevelConstants#BAND_ORDINAL_STATES State}</td><td>{@code int}</td><td>A state ID, as returned by the corresponding methods in {@link FGameRegistry}</td></tr>
+ *     <tr><td>{@link BlockLevelConstants#BAND_ORDINAL_BIOMES Biome}</td><td>{@code int}</td><td>A biome ID, as returned by the corresponding methods in {@link FGameRegistry}</td></tr>
+ *     <tr><td>{@link BlockLevelConstants#BAND_ORDINAL_LIGHT Light}</td><td>{@code byte}</td><td>Block+sky light levels, as returned by {@link BlockLevelConstants#packLight(int, int)}</td></tr>
  * </table><br>
  * More bands may be added in the future as necessary.
  * <p>
@@ -77,7 +77,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  *
  * @author DaPorkchop_
  */
-public interface FBlockWorld extends AutoCloseable {
+public interface FBlockLevel extends AutoCloseable {
     /**
      * Closes this world, immediately releasing any internally allocated resources.
      * <p>
@@ -257,13 +257,13 @@ public interface FBlockWorld extends AutoCloseable {
                 byte light = 0;
 
                 //read values if corresponding bands are enabled
-                if (BlockWorldConstants.isBandEnabled(enabledBands, BlockWorldConstants.BAND_ORDINAL_STATES)) {
+                if (BlockLevelConstants.isBandEnabled(enabledBands, BlockLevelConstants.BAND_ORDINAL_STATES)) {
                     state = this.getState(x, y, z);
                 }
-                if (BlockWorldConstants.isBandEnabled(enabledBands, BlockWorldConstants.BAND_ORDINAL_BIOMES)) {
+                if (BlockLevelConstants.isBandEnabled(enabledBands, BlockLevelConstants.BAND_ORDINAL_BIOMES)) {
                     biome = this.getBiome(x, y, z);
                 }
-                if (BlockWorldConstants.isBandEnabled(enabledBands, BlockWorldConstants.BAND_ORDINAL_LIGHT)) {
+                if (BlockLevelConstants.isBandEnabled(enabledBands, BlockLevelConstants.BAND_ORDINAL_LIGHT)) {
                     light = this.getLight(x, y, z);
                 }
 
@@ -593,7 +593,7 @@ public interface FBlockWorld extends AutoCloseable {
 
         /**
          * @return a bitfield indicating which bands are enabled for this output
-         * @see BlockWorldConstants#isBandEnabled(int, int)
+         * @see BlockLevelConstants#isBandEnabled(int, int)
          */
         int enabledBands();
 
@@ -605,7 +605,7 @@ public interface FBlockWorld extends AutoCloseable {
         /**
          * Sets the state value at the given output index.
          * <p>
-         * If this output does not have the {@link BlockWorldConstants#BAND_ORDINAL_STATES "states" band} enabled, the value will be silently discarded.
+         * If this output does not have the {@link BlockLevelConstants#BAND_ORDINAL_STATES "states" band} enabled, the value will be silently discarded.
          *
          * @param index the output index
          * @param state the new state value
@@ -615,7 +615,7 @@ public interface FBlockWorld extends AutoCloseable {
         /**
          * Sets the biome value at the given output index.
          * <p>
-         * If this output does not have the {@link BlockWorldConstants#BAND_ORDINAL_BIOMES "biome" band} enabled, the value will be silently discarded.
+         * If this output does not have the {@link BlockLevelConstants#BAND_ORDINAL_BIOMES "biome" band} enabled, the value will be silently discarded.
          *
          * @param index the output index
          * @param biome the new biome value
@@ -625,7 +625,7 @@ public interface FBlockWorld extends AutoCloseable {
         /**
          * Sets the light value at the given output index.
          * <p>
-         * If this output does not have the {@link BlockWorldConstants#BAND_ORDINAL_LIGHT "light" band} enabled, the value will be silently discarded.
+         * If this output does not have the {@link BlockLevelConstants#BAND_ORDINAL_LIGHT "light" band} enabled, the value will be silently discarded.
          *
          * @param index the output index
          * @param light the new light value
@@ -706,13 +706,13 @@ public interface FBlockWorld extends AutoCloseable {
         public int enabledBands() {
             int bands = 0;
             if (this.statesArray != null) {
-                bands |= BlockWorldConstants.bandFlag(BlockWorldConstants.BAND_ORDINAL_STATES);
+                bands |= BlockLevelConstants.bandFlag(BlockLevelConstants.BAND_ORDINAL_STATES);
             }
             if (this.biomesArray != null) {
-                bands |= BlockWorldConstants.bandFlag(BlockWorldConstants.BAND_ORDINAL_BIOMES);
+                bands |= BlockLevelConstants.bandFlag(BlockLevelConstants.BAND_ORDINAL_BIOMES);
             }
             if (this.lightArray != null) {
-                bands |= BlockWorldConstants.bandFlag(BlockWorldConstants.BAND_ORDINAL_LIGHT);
+                bands |= BlockLevelConstants.bandFlag(BlockLevelConstants.BAND_ORDINAL_LIGHT);
             }
             return bands;
         }

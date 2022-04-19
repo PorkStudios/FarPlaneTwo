@@ -73,10 +73,10 @@ public abstract class AbstractTrackerManager<POS extends IFarPos, T extends IFar
         this.tileProvider = tileProvider;
 
         this.scheduler = new NoFutureScheduler<>(AbstractTracker::doUpdate,
-                tileProvider.world().fp2_IFarWorld_workerManager().createChildWorkerGroup()
+                tileProvider.world().workerManager().createChildWorkerGroup()
                         .threads(fp2().globalConfig().performance().trackingThreads())
                         .threadFactory(PThreadFactories.builder().daemon().minPriority().collapsingId()
-                                .name(PStrings.fastFormat("FP2 %s %s Tracker #%%d", tileProvider.mode().name(), tileProvider.world().fp2_IFarWorld_dimensionId())).build()));
+                                .name(PStrings.fastFormat("FP2 %s %s Tracker #%%d", tileProvider.mode().name(), tileProvider.world().dimensionId())).build()));
 
         tileProvider.storage().addListener(this);
     }

@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.core.mode.api.ctx;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.core.client.world.IFarWorldClient;
+import net.daporkchop.fp2.core.client.world.IFarLevelClient;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
@@ -31,7 +31,7 @@ import net.daporkchop.fp2.core.mode.api.client.IFarTileCache;
 import net.daporkchop.fp2.core.util.annotation.CalledFromNetworkThread;
 
 /**
- * A client-side context for a specific {@link IFarRenderMode} in a {@link IFarWorldClient}.
+ * A client-side context for a specific {@link IFarRenderMode} in a {@link IFarLevelClient}.
  *
  * @author DaPorkchop_
  */
@@ -44,7 +44,7 @@ public interface IFarClientContext<POS extends IFarPos, T extends IFarTile> exte
     /**
      * @return the world
      */
-    IFarWorldClient world();
+    IFarLevelClient world();
 
     /**
      * @return a cache for tiles used by this context

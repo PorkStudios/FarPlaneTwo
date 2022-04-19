@@ -28,7 +28,7 @@ import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.client.IFarTileCache;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
-import net.daporkchop.fp2.core.client.world.IFarWorldClient;
+import net.daporkchop.fp2.core.client.world.IFarLevelClient;
 import net.daporkchop.fp2.core.network.packet.debug.server.SPacketDebugUpdateStatistics;
 import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketHandshake;
@@ -111,7 +111,7 @@ public abstract class AbstractFarPlayerClient implements IFarPlayerClient {
         }
     }
 
-    protected abstract IFarWorldClient createWorldClient(@NonNull SPacketSessionBegin packet); //TODO: i want to get rid of this and figure out how to *not* have to include the coordinate bounds in the session begin packet
+    protected abstract IFarLevelClient createWorldClient(@NonNull SPacketSessionBegin packet); //TODO: i want to get rid of this and figure out how to *not* have to include the coordinate bounds in the session begin packet
 
     protected void handle(@NonNull SPacketSessionEnd packet) {
         checkState(this.sessionOpen, "no session is currently open!");
@@ -121,7 +121,7 @@ public abstract class AbstractFarPlayerClient implements IFarPlayerClient {
 
         if (this.context != null) {
             this.context.close();
-            this.context.world().fp2_IFarWorld_close();
+            this.context.world().close();
             this.context = null;
         }
     }

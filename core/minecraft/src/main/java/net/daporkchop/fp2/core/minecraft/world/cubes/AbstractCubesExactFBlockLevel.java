@@ -24,8 +24,8 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
-import net.daporkchop.fp2.api.world.FBlockWorld;
-import net.daporkchop.fp2.api.world.GenerationNotAllowedException;
+import net.daporkchop.fp2.api.world.level.FBlockLevel;
+import net.daporkchop.fp2.api.world.level.GenerationNotAllowedException;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.lib.math.vector.Vec3i;
 
@@ -35,10 +35,10 @@ import java.util.stream.Stream;
 import static java.util.Objects.*;
 
 /**
- * Base implementation of an {@link FBlockWorld} which serves a Minecraft-style world made up of cubes.
+ * Base implementation of an {@link FBlockLevel} which serves a Minecraft-style world made up of cubes.
  * <p>
- * This forms the user-facing API implementation used by {@link AbstractCubesExactFBlockWorldHolder}. It does not do anything by itself, but rather prefetches the cubes which need to be
- * accessed before delegating to {@link AbstractPrefetchedCubesExactFBlockWorld}.
+ * This forms the user-facing API implementation used by {@link AbstractCubesExactFBlockLevelHolder}. It does not do anything by itself, but rather prefetches the cubes which need to be
+ * accessed before delegating to {@link AbstractPrefetchedCubesExactFBlockLevel}.
  * <p>
  * You have been epicly trolled by this class' name: because there's no actual implementation-specific logic going on here, I didn't actually make it abstract! Ha! I bet you feel
  * really stupid right now.
@@ -47,14 +47,14 @@ import static java.util.Objects.*;
  */
 @RequiredArgsConstructor
 @Getter
-public class AbstractCubesExactFBlockWorld<CUBE> implements FBlockWorld {
+public class AbstractCubesExactFBlockLevel<CUBE> implements FBlockLevel {
     @NonNull
-    private final AbstractCubesExactFBlockWorldHolder<CUBE> holder;
+    private final AbstractCubesExactFBlockLevelHolder<CUBE> holder;
     private final boolean generationAllowed;
 
     @Override
     public void close() {
-        //no-op, all resources are owned by AbstractChunksExactFBlockWorldHolder
+        //no-op, all resources are owned by AbstractChunksExactFBlockLevelHolder
     }
 
     @Override
@@ -79,7 +79,7 @@ public class AbstractCubesExactFBlockWorld<CUBE> implements FBlockWorld {
 
     @Override
     public int getState(int x, int y, int z) throws GenerationNotAllowedException {
-        //delegate to a query because it'll delegate to AbstractPrefetchedCubesExactFBlockWorld, which can access neighboring chunks if Block#getActualState accesses a
+        //delegate to a query because it'll delegate to AbstractPrefetchedCubesExactFBlockLevel, which can access neighboring chunks if Block#getActualState accesses a
         //  state which goes over a cube/column border. this is slow, but i don't care because the single getter methods are dumb and bad anyway.
         int[] buf = new int[1];
         this.query(Query.of(new SinglePointQueryShape(x, y, z), new BandArraysQueryOutput(buf, 0, 1, null, 0, 0, null, 0, 0, 1)));
@@ -88,7 +88,7 @@ public class AbstractCubesExactFBlockWorld<CUBE> implements FBlockWorld {
 
     @Override
     public int getBiome(int x, int y, int z) throws GenerationNotAllowedException {
-        //delegate to a query because it'll delegate to AbstractPrefetchedCubesExactFBlockWorld, which can access neighboring chunks if Block#getActualState accesses a
+        //delegate to a query because it'll delegate to AbstractPrefetchedCubesExactFBlockLevel, which can access neighboring chunks if Block#getActualState accesses a
         //  state which goes over a cube/column border. this is slow, but i don't care because the single getter methods are dumb and bad anyway.
         int[] buf = new int[1];
         this.query(Query.of(new SinglePointQueryShape(x, y, z), new BandArraysQueryOutput(null, 0, 0, buf, 0, 1, null, 0, 0, 1)));
@@ -97,7 +97,7 @@ public class AbstractCubesExactFBlockWorld<CUBE> implements FBlockWorld {
 
     @Override
     public byte getLight(int x, int y, int z) throws GenerationNotAllowedException {
-        //delegate to a query because it'll delegate to AbstractPrefetchedCubesExactFBlockWorld, which can access neighboring chunks if Block#getActualState accesses a
+        //delegate to a query because it'll delegate to AbstractPrefetchedCubesExactFBlockLevel, which can access neighboring chunks if Block#getActualState accesses a
         //  state which goes over a cube/column border. this is slow, but i don't care because the single getter methods are dumb and bad anyway.
         byte[] buf = new byte[1];
         this.query(Query.of(new SinglePointQueryShape(x, y, z), new BandArraysQueryOutput(null, 0, 0, null, 0, 0, buf, 0, 1, 1)));
@@ -112,7 +112,7 @@ public class AbstractCubesExactFBlockWorld<CUBE> implements FBlockWorld {
         //figure out which cubes need to be prefetched
         List<Vec3i> prefetchPositions = this.holder.getCubePositionsToPrefetch(query.shape());
 
-        //prefetch all the cubes, then delegate the actual query execution to AbstractPrefetchedCubesExactFBlockWorld
+        //prefetch all the cubes, then delegate the actual query execution to AbstractPrefetchedCubesExactFBlockLevel
         this.holder.prefetchedWorld(this.generationAllowed, this.holder.multiGetCubes(prefetchPositions, this.generationAllowed)).query(query);
     }
 
@@ -126,7 +126,7 @@ public class AbstractCubesExactFBlockWorld<CUBE> implements FBlockWorld {
         //figure out which cubes need to be prefetched
         List<Vec3i> prefetchPositions = this.holder.getCubePositionsToPrefetch(Stream.of(queries).map(Query::shape).toArray(QueryShape[]::new));
 
-        //prefetch all the cubes, then delegate the actual query execution to AbstractPrefetchedCubesExactFBlockWorld
+        //prefetch all the cubes, then delegate the actual query execution to AbstractPrefetchedCubesExactFBlockLevel
         this.holder.prefetchedWorld(this.generationAllowed, this.holder.multiGetCubes(prefetchPositions, this.generationAllowed)).query(queries);
     }
 }

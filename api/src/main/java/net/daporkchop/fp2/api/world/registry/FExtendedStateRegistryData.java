@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -20,7 +20,7 @@
 
 package net.daporkchop.fp2.api.world.registry;
 
-import net.daporkchop.fp2.api.world.BlockWorldConstants;
+import net.daporkchop.fp2.api.world.level.BlockLevelConstants;
 
 /**
  * Extended information describing the attributes of individual states using IDs from a {@link FGameRegistry}.
@@ -36,11 +36,11 @@ public interface FExtendedStateRegistryData {
     /**
      * Gets the block type for the given state ID.
      * <p>
-     * The resulting value will be one of the block types defined in {@link BlockWorldConstants}:
+     * The resulting value will be one of the block types defined in {@link BlockLevelConstants}:
      * <ul>
-     *     <li>{@link BlockWorldConstants#BLOCK_TYPE_INVISIBLE}</li>
-     *     <li>{@link BlockWorldConstants#BLOCK_TYPE_TRANSPARENT}</li>
-     *     <li>{@link BlockWorldConstants#BLOCK_TYPE_OPAQUE}</li>
+     *     <li>{@link BlockLevelConstants#BLOCK_TYPE_INVISIBLE}</li>
+     *     <li>{@link BlockLevelConstants#BLOCK_TYPE_TRANSPARENT}</li>
+     *     <li>{@link BlockLevelConstants#BLOCK_TYPE_OPAQUE}</li>
      * </ul>
      *
      * @param state the state ID

@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.core.mode.voxel.server;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.api.world.FBlockWorld;
+import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTrackerManager;
 import net.daporkchop.fp2.core.mode.common.server.AbstractFarTileProvider;
@@ -30,14 +30,14 @@ import net.daporkchop.fp2.core.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.core.mode.voxel.server.tracking.VoxelTrackerManager;
 import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
 import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
-import net.daporkchop.fp2.core.server.world.ExactFBlockWorldHolder;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
+import net.daporkchop.fp2.core.server.world.IFarLevelServer;
 
 /**
  * @author DaPorkchop_
  */
 public abstract class VoxelTileProvider extends AbstractFarTileProvider<VoxelPos, VoxelTile> {
-    public VoxelTileProvider(@NonNull IFarWorldServer world, @NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
+    public VoxelTileProvider(@NonNull IFarLevelServer world, @NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
         super(world, mode);
     }
 
@@ -52,7 +52,7 @@ public abstract class VoxelTileProvider extends AbstractFarTileProvider<VoxelPos
         int y = pos.blockY();
         int z = pos.blockZ();
         int sideLength = pos.sideLength();
-        try (FBlockWorld world = this.world().fp2_IFarWorldServer_exactBlockWorldHolder().worldFor(ExactFBlockWorldHolder.AllowGenerationRequirement.DONT_CARE)) {
+        try (FBlockLevel world = this.world().exactBlockLevelHolder().worldFor(ExactFBlockLevelHolder.AllowGenerationRequirement.DONT_CARE)) {
             return world.containsAnyData(x, y, z, x + sideLength, y + sideLength, z + sideLength);
         }
     }
@@ -61,7 +61,7 @@ public abstract class VoxelTileProvider extends AbstractFarTileProvider<VoxelPos
      * @author DaPorkchop_
      */
     public static class Vanilla extends VoxelTileProvider {
-        public Vanilla(@NonNull IFarWorldServer world, @NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
+        public Vanilla(@NonNull IFarLevelServer world, @NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
             super(world, mode);
         }
 
@@ -90,7 +90,7 @@ public abstract class VoxelTileProvider extends AbstractFarTileProvider<VoxelPos
      * @author DaPorkchop_
      */
     public static class CubicChunks extends VoxelTileProvider {
-        public CubicChunks(@NonNull IFarWorldServer world, @NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
+        public CubicChunks(@NonNull IFarLevelServer world, @NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
             super(world, mode);
         }
 

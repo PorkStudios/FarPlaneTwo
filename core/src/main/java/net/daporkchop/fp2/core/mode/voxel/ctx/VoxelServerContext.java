@@ -23,7 +23,7 @@ package net.daporkchop.fp2.core.mode.voxel.ctx;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.server.world.IFarLevelServer;
 import net.daporkchop.fp2.core.mode.common.ctx.AbstractFarServerContext;
 import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.core.mode.voxel.VoxelTile;
@@ -33,7 +33,7 @@ import net.daporkchop.fp2.core.server.player.IFarPlayerServer;
  * @author DaPorkchop_
  */
 public class VoxelServerContext extends AbstractFarServerContext<VoxelPos, VoxelTile> {
-    public VoxelServerContext(@NonNull IFarPlayerServer player, @NonNull IFarWorldServer world, @NonNull FP2Config config, @NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
+    public VoxelServerContext(@NonNull IFarPlayerServer player, @NonNull IFarLevelServer world, @NonNull FP2Config config, @NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
         super(player, world, config, mode);
     }
 }

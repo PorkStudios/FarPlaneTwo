@@ -42,7 +42,7 @@ import net.daporkchop.fp2.core.mode.common.server.storage.rocksdb.RocksTileStora
 import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
 import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
 import net.daporkchop.fp2.core.server.event.TickEndEvent;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.server.world.IFarLevelServer;
 import net.daporkchop.fp2.core.util.threading.scheduler.ApproximatelyPrioritizedSharedFutureScheduler;
 import net.daporkchop.fp2.core.util.threading.scheduler.Scheduler;
 import net.daporkchop.lib.common.misc.string.PStrings;
@@ -65,7 +65,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @Getter
 public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFarTile> implements IFarTileProvider<POS, T> {
-    protected final IFarWorldServer world;
+    protected final IFarLevelServer world;
     protected final IFarRenderMode<POS, T> mode;
     protected final Path root;
 
@@ -84,32 +84,32 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
     protected Set<POS> updatesPending = new ObjectRBTreeSet<>();
     protected long lastCompletedTick = -1L;
 
-    public AbstractFarTileProvider(@NonNull IFarWorldServer world, @NonNull IFarRenderMode<POS, T> mode) {
+    public AbstractFarTileProvider(@NonNull IFarLevelServer world, @NonNull IFarRenderMode<POS, T> mode) {
         this.world = world;
         this.mode = mode;
 
-        this.coordLimits = mode.tileCoordLimits(world.fp2_IFarWorld_coordLimits());
+        this.coordLimits = mode.tileCoordLimits(world.coordLimits());
 
         this.generatorRough = this.mode().roughGenerator(world, this);
         this.generatorExact = this.mode().exactGenerator(world, this);
 
         if (this.generatorRough == null) {
-            fp2().log().warn("no rough %s generator exists for world '%s' (generator=%s)! Falling back to exact generator, this will have serious performance implications.", mode.name(), world.fp2_IFarWorld_dimensionId(), world.fp2_IFarWorldServer_terrainGeneratorInfo().implGenerator());
+            fp2().log().warn("no rough %s generator exists for world '%s' (generator=%s)! Falling back to exact generator, this will have serious performance implications.", mode.name(), world.dimensionId(), world.terrainGeneratorInfo().implGenerator());
             //TODO: make the fallback generator smart! rather than simply getting the chunks from the world, do generation and population in
             // a volatile, in-memory world clone to prevent huge numbers of chunks/cubes from potentially being generated (and therefore saved)
         }
 
         this.scaler = mode.scaler(world, this);
 
-        this.root = world.fp2_IFarWorldServer_worldDirectory().resolve(MODID).resolve(this.mode().name().toLowerCase());
+        this.root = world.levelDirectory().resolve(MODID).resolve(this.mode().name().toLowerCase());
         this.storage = new RocksTileStorage<>(this, this.root);
 
         this.scheduler = new ApproximatelyPrioritizedSharedFutureScheduler<>(
                 scheduler -> new TileWorker<>(this, scheduler),
-                this.world.fp2_IFarWorld_workerManager().createChildWorkerGroup()
+                this.world.workerManager().createChildWorkerGroup()
                         .threads(fp2().globalConfig().performance().terrainThreads())
                         .threadFactory(PThreadFactories.builder().daemon().minPriority().collapsingId()
-                                .name(PStrings.fastFormat("FP2 %s %s Worker #%%d", mode.name(), world.fp2_IFarWorld_dimensionId())).build()),
+                                .name(PStrings.fastFormat("FP2 %s %s Worker #%%d", mode.name(), world.dimensionId())).build()),
                 PriorityTask.approxComparator());
 
         this.trackerManager = this.createTracker();
@@ -117,7 +117,7 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
         //TODO: figure out why i was registering this here?
         // fp2().eventBus().registerWeak(this);
 
-        world.fp2_IFarWorldServer_eventBus().registerWeak(this);
+        world.eventBus().registerWeak(this);
     }
 
     protected abstract IFarTrackerManager<POS, T> createTracker();
@@ -173,7 +173,7 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
 
     @FEventHandler
     private void onTickEnd(TickEndEvent event) {
-        this.lastCompletedTick = this.world.fp2_IFarWorld_timestamp();
+        this.lastCompletedTick = this.world.timestamp();
         checkState(this.lastCompletedTick >= 0L, "lastCompletedTick (%d) < 0?!?", this.lastCompletedTick);
 
         this.flushUpdateQueue();
@@ -218,7 +218,7 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
         this.onTickEnd(null);
         this.shutdownUpdateQueue();
 
-        fp2().log().trace("Shutting down storage in world '%s'", this.world.fp2_IFarWorld_dimensionId());
+        fp2().log().trace("Shutting down storage in world '%s'", this.world.dimensionId());
         this.storage.close();
     }
 }

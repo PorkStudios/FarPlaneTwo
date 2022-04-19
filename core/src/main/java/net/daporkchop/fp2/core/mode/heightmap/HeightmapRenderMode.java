@@ -24,7 +24,7 @@ import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
-import net.daporkchop.fp2.core.client.world.IFarWorldClient;
+import net.daporkchop.fp2.core.client.world.IFarLevelClient;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.IFarCoordLimits;
 import net.daporkchop.fp2.core.mode.api.IFarDirectPosAccess;
@@ -38,7 +38,7 @@ import net.daporkchop.fp2.core.mode.heightmap.ctx.HeightmapClientContext;
 import net.daporkchop.fp2.core.mode.heightmap.ctx.HeightmapServerContext;
 import net.daporkchop.fp2.core.mode.heightmap.server.scale.HeightmapScalerMinMax;
 import net.daporkchop.fp2.core.server.player.IFarPlayerServer;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.server.world.IFarLevelServer;
 import net.daporkchop.fp2.core.util.math.MathUtil;
 import net.daporkchop.lib.binary.stream.DataIn;
 import net.daporkchop.lib.binary.stream.DataOut;
@@ -60,17 +60,17 @@ public class HeightmapRenderMode extends AbstractFarRenderMode<HeightmapPos, Hei
     }
 
     @Override
-    protected AbstractExactGeneratorCreationEvent exactGeneratorCreationEvent(@NonNull IFarWorldServer world, @NonNull IFarTileProvider<HeightmapPos, HeightmapTile> provider) {
+    protected AbstractExactGeneratorCreationEvent exactGeneratorCreationEvent(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<HeightmapPos, HeightmapTile> provider) {
         return new AbstractExactGeneratorCreationEvent(world, provider) {};
     }
 
     @Override
-    protected AbstractRoughGeneratorCreationEvent roughGeneratorCreationEvent(@NonNull IFarWorldServer world, @NonNull IFarTileProvider<HeightmapPos, HeightmapTile> provider) {
+    protected AbstractRoughGeneratorCreationEvent roughGeneratorCreationEvent(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<HeightmapPos, HeightmapTile> provider) {
         return new AbstractRoughGeneratorCreationEvent(world, provider) {};
     }
 
     @Override
-    protected AbstractTileProviderCreationEvent tileProviderCreationEvent(@NonNull IFarWorldServer world) {
+    protected AbstractTileProviderCreationEvent tileProviderCreationEvent(@NonNull IFarLevelServer world) {
         return new AbstractTileProviderCreationEvent(world) {};
     }
 
@@ -80,17 +80,17 @@ public class HeightmapRenderMode extends AbstractFarRenderMode<HeightmapPos, Hei
     }
 
     @Override
-    public IFarScaler<HeightmapPos, HeightmapTile> scaler(@NonNull IFarWorldServer world, @NonNull IFarTileProvider<HeightmapPos, HeightmapTile> provider) {
+    public IFarScaler<HeightmapPos, HeightmapTile> scaler(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<HeightmapPos, HeightmapTile> provider) {
         return new HeightmapScalerMinMax(world, provider);
     }
 
     @Override
-    public IFarServerContext<HeightmapPos, HeightmapTile> serverContext(@NonNull IFarPlayerServer player, @NonNull IFarWorldServer world, @NonNull FP2Config config) {
+    public IFarServerContext<HeightmapPos, HeightmapTile> serverContext(@NonNull IFarPlayerServer player, @NonNull IFarLevelServer world, @NonNull FP2Config config) {
         return new HeightmapServerContext(player, world, config, this);
     }
 
     @Override
-    public IFarClientContext<HeightmapPos, HeightmapTile> clientContext(@NonNull IFarWorldClient world, @NonNull FP2Config config) {
+    public IFarClientContext<HeightmapPos, HeightmapTile> clientContext(@NonNull IFarLevelClient world, @NonNull FP2Config config) {
         return new HeightmapClientContext(world, config, this);
     }
 

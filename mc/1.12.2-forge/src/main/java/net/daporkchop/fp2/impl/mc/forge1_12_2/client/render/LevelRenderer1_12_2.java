@@ -23,11 +23,11 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.client.render;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
-import net.daporkchop.fp2.core.client.render.WorldRenderer;
+import net.daporkchop.fp2.core.client.render.LevelRenderer;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.renderer.ATEntityRenderer1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.client.renderer.IMixinRenderGlobal;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.client.world.FarWorldClient1_12_2;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.client.world.FarLevelClient1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.ResourceProvider1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.SingleBiomeBlockAccess;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.world.registry.GameRegistry1_12_2;
@@ -38,22 +38,22 @@ import net.minecraft.util.math.BlockPos;
  * @author DaPorkchop_
  */
 @Getter
-public class WorldRenderer1_12_2 implements WorldRenderer, AutoCloseable {
+public class LevelRenderer1_12_2 implements LevelRenderer, AutoCloseable {
     protected final Minecraft mc;
     protected final GL gl;
 
-    protected final FarWorldClient1_12_2 world;
+    protected final FarLevelClient1_12_2 level;
 
     protected final TextureUVs1_12_2 textureUVs;
 
     protected final GameRegistry1_12_2 registry;
     protected final byte[] renderTypeLookup;
 
-    public WorldRenderer1_12_2(@NonNull Minecraft mc, @NonNull FarWorldClient1_12_2 world) {
+    public LevelRenderer1_12_2(@NonNull Minecraft mc, @NonNull FarLevelClient1_12_2 level) {
         this.mc = mc;
-        this.world = world;
+        this.level = level;
 
-        this.registry = world.fp2_IFarWorld_registry();
+        this.registry = level.registry();
 
         //look up and cache the render type for each block state
         this.renderTypeLookup = new byte[this.registry.states().max().getAsInt() + 1];
@@ -82,7 +82,7 @@ public class WorldRenderer1_12_2 implements WorldRenderer, AutoCloseable {
                 .withResourceProvider(new ResourceProvider1_12_2(this.mc))
                 .wrapCurrent();
 
-        this.textureUVs = new TextureUVs1_12_2(world.fp2_IFarWorld_registry(), this.gl, mc);
+        this.textureUVs = new TextureUVs1_12_2(level.registry(), this.gl, mc);
     }
 
     @Override

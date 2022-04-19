@@ -23,10 +23,10 @@ package net.daporkchop.fp2.core.minecraft.world;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
-import net.daporkchop.fp2.api.world.FBlockWorld;
+import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
-import net.daporkchop.fp2.core.server.world.ExactFBlockWorldHolder;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
+import net.daporkchop.fp2.core.server.world.IFarLevelServer;
 
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
@@ -37,15 +37,15 @@ import static java.lang.Math.*;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractExactFBlockWorldHolder implements ExactFBlockWorldHolder {
-    private final IFarWorldServer world;
+public abstract class AbstractExactFBlockLevelHolder implements ExactFBlockLevelHolder {
+    private final IFarLevelServer world;
     private final FGameRegistry registry;
     private final IntAxisAlignedBB bounds;
 
-    public AbstractExactFBlockWorldHolder(@NonNull IFarWorldServer world) {
+    public AbstractExactFBlockLevelHolder(@NonNull IFarLevelServer world) {
         this.world = world;
-        this.registry = world.fp2_IFarWorld_registry();
-        this.bounds = world.fp2_IFarWorld_coordLimits();
+        this.registry = world.registry();
+        this.bounds = world.coordLimits();
     }
 
     //
@@ -86,16 +86,16 @@ public abstract class AbstractExactFBlockWorldHolder implements ExactFBlockWorld
     }
 
     //
-    // Shared implementations of FBlockWorld's data availability accessors
+    // Shared implementations of FBlockLevel's data availability accessors
     //
 
     /**
-     * @see FBlockWorld#containsAnyData
+     * @see FBlockLevel#containsAnyData
      */
     public abstract boolean containsAnyData(int minX, int minY, int minZ, int maxX, int maxY, int maxZ);
 
     /**
-     * @see FBlockWorld#guaranteedDataAvailableVolume
+     * @see FBlockLevel#guaranteedDataAvailableVolume
      */
     public abstract IntAxisAlignedBB guaranteedDataAvailableVolume(int minX, int minY, int minZ, int maxX, int maxY, int maxZ);
 
@@ -103,7 +103,7 @@ public abstract class AbstractExactFBlockWorldHolder implements ExactFBlockWorld
     // Generic coordinate utilities, used when computing prefetching regions
     //
 
-    protected boolean isAnyPointValid(@NonNull FBlockWorld.OriginSizeStrideQueryShape shape) {
+    protected boolean isAnyPointValid(@NonNull FBlockLevel.OriginSizeStrideQueryShape shape) {
         return this.isAnyPointValid(shape.originX(), shape.sizeX(), shape.strideX(), this.bounds.minX(), this.bounds.maxX())
                && this.isAnyPointValid(shape.originY(), shape.sizeY(), shape.strideY(), this.bounds.minY(), this.bounds.maxY())
                && this.isAnyPointValid(shape.originZ(), shape.sizeZ(), shape.strideZ(), this.bounds.minZ(), this.bounds.maxZ());

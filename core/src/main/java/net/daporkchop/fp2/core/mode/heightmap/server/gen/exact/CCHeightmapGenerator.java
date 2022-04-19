@@ -21,11 +21,11 @@
 package net.daporkchop.fp2.core.mode.heightmap.server.gen.exact;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.api.world.FBlockWorld;
+import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapTile;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.server.world.IFarLevelServer;
 
 /**
  * @author DaPorkchop_
@@ -33,12 +33,12 @@ import net.daporkchop.fp2.core.server.world.IFarWorldServer;
 public class CCHeightmapGenerator extends AbstractExactHeightmapGenerator {
     protected static final int Y_LIMIT = Integer.MIN_VALUE + Character.MAX_VALUE; //the minimum Y coordinate that will be considered for heightmap samples
 
-    public CCHeightmapGenerator(@NonNull IFarWorldServer world, @NonNull IFarTileProvider<HeightmapPos, HeightmapTile> provider) {
+    public CCHeightmapGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<HeightmapPos, HeightmapTile> provider) {
         super(world, provider);
     }
 
     @Override
-    protected void computeElevations(@NonNull FBlockWorld world, @NonNull int[] elevations, int blockX, int blockZ) {
+    protected void computeElevations(@NonNull FBlockLevel world, @NonNull int[] elevations, int blockX, int blockZ) {
         throw new UnsupportedOperationException(); //TODO
         /*int y = world.getTopBlockY(blockX, blockZ);
         if (y < Y_LIMIT) { //there are no blocks in this column, therefore nothing to do

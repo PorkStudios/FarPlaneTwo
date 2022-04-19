@@ -22,7 +22,7 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.core.world;
 
 import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.world.IMixinWorldServer;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.server.world.FarWorldServer1_12;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.server.world.FarLevelServer1_12;
 import net.minecraft.world.WorldServer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -36,17 +36,17 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 @Mixin(WorldServer.class)
 public abstract class MixinWorldServer implements IMixinWorldServer {
     @Unique
-    protected FarWorldServer1_12 fp2_farWorldServer;
+    protected FarLevelServer1_12 fp2_farLevelServer;
 
     @Override
-    public FarWorldServer1_12 fp2_farWorldServer() {
-        if (this.fp2_farWorldServer == null) {
+    public FarLevelServer1_12 fp2_farLevelServer() {
+        if (this.fp2_farLevelServer == null) {
             synchronized (this) {
-                if (this.fp2_farWorldServer == null) {
-                    this.fp2_farWorldServer = new FarWorldServer1_12((FP2Forge1_12_2) fp2(), uncheckedCast(this));
+                if (this.fp2_farLevelServer == null) {
+                    this.fp2_farLevelServer = new FarLevelServer1_12((FP2Forge1_12_2) fp2(), uncheckedCast(this));
                 }
             }
         }
-        return this.fp2_farWorldServer;
+        return this.fp2_farLevelServer;
     }
 }
