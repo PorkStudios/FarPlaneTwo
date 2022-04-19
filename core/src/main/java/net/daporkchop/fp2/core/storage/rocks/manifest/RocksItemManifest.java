@@ -46,8 +46,23 @@ public class RocksItemManifest extends AbstractRocksManifest<RocksItemManifest> 
     private static final String TOKEN = escape("token").intern();
     private static final String INITIALIZED = escape("initialized").intern();
 
-    public RocksItemManifest(@NonNull ColumnFamilyHandle columnFamily, @NonNull String inode) {
-        super(columnFamily, inode);
+    public RocksItemManifest(@NonNull ColumnFamilyHandle columnFamily, @NonNull String inode, @NonNull IRocksAccess access) {
+        super(columnFamily, inode, access);
+    }
+
+    @Override
+    protected int version() {
+        return 0;
+    }
+
+    @Override
+    protected void initialize(@NonNull IRocksAccess access) throws RocksDBException {
+        //no-op
+    }
+
+    @Override
+    protected void upgrade(int savedVersion, @NonNull IRocksAccess access) throws RocksDBException {
+        //no-op
     }
 
     //

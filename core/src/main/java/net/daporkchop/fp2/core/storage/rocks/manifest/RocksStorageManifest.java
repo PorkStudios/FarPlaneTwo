@@ -76,8 +76,23 @@ public class RocksStorageManifest extends AbstractRocksManifest<RocksStorageMani
         }
     }
 
-    public RocksStorageManifest(@NonNull ColumnFamilyHandle columnFamily, @NonNull String inode) {
-        super(columnFamily, inode);
+    public RocksStorageManifest(@NonNull ColumnFamilyHandle columnFamily, @NonNull String inode, @NonNull IRocksAccess access) {
+        super(columnFamily, inode, access);
+    }
+
+    @Override
+    protected int version() {
+        return 0;
+    }
+
+    @Override
+    protected void initialize(@NonNull IRocksAccess access) throws RocksDBException {
+        //no-op
+    }
+
+    @Override
+    protected void upgrade(int savedVersion, @NonNull IRocksAccess access) throws RocksDBException {
+        //no-op
     }
 
     //

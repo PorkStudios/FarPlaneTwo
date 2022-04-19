@@ -85,7 +85,7 @@ public class RocksStorageTransactionInternal implements FStorageTransactionInter
         //save modification counter so that we can check for conflicts
         this.modificationCounter = storageInternal.modificationCounter();
 
-        this.transaction = storageInternal.storage().beginTransaction(WRITE_OPTIONS);
+        this.transaction = storageInternal.storage().beginTransaction(WRITE_OPTIONS, true);
     }
 
     public void validate() throws FStorageException {

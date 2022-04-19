@@ -101,7 +101,7 @@ public class RocksStorageInternal extends ReentrantReadWriteLock implements FSto
     @SuppressWarnings("OptionalAssignedToNull")
     public RocksStorageInternal(@NonNull RocksStorage<?> storage, @NonNull String inode, @NonNull FStorageItemFactory<?> factory, @NonNull IRocksAccess access) {
         this.storage = storage;
-        this.manifestData = new RocksItemManifest(storage.defaultColumnFamily(), inode);
+        this.manifestData = new RocksItemManifest(storage.defaultColumnFamily(), inode, access);
 
         @RequiredArgsConstructor
         @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
@@ -143,7 +143,7 @@ public class RocksStorageInternal extends ReentrantReadWriteLock implements FSto
                     }
 
                     //clear the item manifest
-                    this.manifestData.clear(access);
+                    this.manifestData.delete(access);
                 }
             case CREATE_IF_MISSING:
                 //no-op

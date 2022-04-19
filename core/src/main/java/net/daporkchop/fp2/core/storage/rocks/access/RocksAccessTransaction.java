@@ -94,6 +94,19 @@ public class RocksAccessTransaction implements IRocksAccess, AutoCloseable {
             protected RocksIterator createDelegate(@NonNull ReadOptions options, @NonNull ColumnFamilyHandle columnFamily) throws RocksDBException {
                 return RocksAccessTransaction.this.transaction.getIterator(options, columnFamily);
             }
+
+            @Override
+            public boolean isValid() throws RocksDBException {
+                if (!super.isValid()) { //if rocksdb itself reports that the iterator isn't valid, then it certainly isn't valid in any case
+                    return false;
+                }
+
+                //rocksdb reports that the iterator is valid, but let's manually check to make sure that current key is within the requested iteration range.
+                //  workaround for https://github.com/facebook/rocksdb/issues/2343
+                byte[] key = this.key();
+                return (fromKeyInclusive == null || LEX_BYTES_COMPARATOR.compare(key, fromKeyInclusive) >= 0)
+                       && (toKeyExclusive == null || LEX_BYTES_COMPARATOR.compare(key, toKeyExclusive) < 0);
+            }
         };
     }
 

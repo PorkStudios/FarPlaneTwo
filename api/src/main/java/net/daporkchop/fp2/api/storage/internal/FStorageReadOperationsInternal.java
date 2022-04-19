@@ -44,7 +44,7 @@ public interface FStorageReadOperationsInternal {
     byte[] get(@NonNull FStorageColumnInternal column, @NonNull byte[] key) throws FStorageException;
 
     /**
-     * Gets the values associated with the given keys in the given storage columns.
+     * Gets the values associated with the given keys in the given storage columns. The operation is performed atomically.
      * <p>
      * This is a read operation.
      *

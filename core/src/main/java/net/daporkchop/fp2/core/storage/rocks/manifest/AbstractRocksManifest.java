@@ -21,20 +21,21 @@
 package net.daporkchop.fp2.core.storage.rocks.manifest;
 
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import net.daporkchop.fp2.core.storage.rocks.access.IRocksWriteAccess;
+import net.daporkchop.fp2.core.storage.rocks.access.IRocksAccess;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.RocksDBException;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 
+import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
 public abstract class AbstractRocksManifest<M> {
     protected static final String SEPARATOR = ".";
 
@@ -102,14 +103,47 @@ public abstract class AbstractRocksManifest<M> {
         return dst;
     }
 
-    @NonNull
     protected final ColumnFamilyHandle columnFamily;
-    @NonNull
     protected final String inode;
 
     @SneakyThrows(RocksDBException.class)
-    public void clear(@NonNull IRocksWriteAccess access) {
-        //do a simple deleteRange on the whole prefix space
+    public AbstractRocksManifest(@NonNull ColumnFamilyHandle columnFamily, @NonNull String inode, @NonNull IRocksAccess access) {
+        this.columnFamily = columnFamily;
+        this.inode = inode;
+
+        byte[] versionKey = inode.getBytes(StandardCharsets.UTF_8);
+        byte[] savedVersionBytes = access.get(columnFamily, versionKey);
+
+        int currentVersion = this.version();
+        byte[] currentVersionBytes = ByteBuffer.allocate(INT_SIZE).order(ByteOrder.LITTLE_ENDIAN).putInt(currentVersion).array();
+
+        if (savedVersionBytes == null) { //version hasn't been written, we need to initialize the manifest item
+            //save the current item version
+            access.put(columnFamily, versionKey, currentVersionBytes);
+            this.initialize(access);
+        } else { //check if we need to upgrade the manifest data
+            int savedVersion = ByteBuffer.wrap(savedVersionBytes).order(ByteOrder.LITTLE_ENDIAN).getInt();
+            checkState(savedVersion <= currentVersion, "saved data version (%d) is newer than the current supported version (%d)", savedVersion, currentVersion);
+
+            if (savedVersion < currentVersion) { //saved version is older, upgrade the data
+                access.put(columnFamily, versionKey, currentVersionBytes);
+                this.upgrade(savedVersion, access);
+            }
+        }
+    }
+
+    protected abstract int version();
+
+    protected abstract void initialize(@NonNull IRocksAccess access) throws RocksDBException;
+
+    protected abstract void upgrade(int savedVersion, @NonNull IRocksAccess access) throws RocksDBException;
+
+    @SneakyThrows(RocksDBException.class)
+    public void delete(@NonNull IRocksAccess access) {
+        //delete the version indicator
+        access.delete(this.columnFamily, this.inode.getBytes(StandardCharsets.UTF_8));
+
+        //do a simple deleteRange on the whole inode space
         byte[] keyBase = (this.inode + SEPARATOR).getBytes(StandardCharsets.UTF_8);
         access.deleteRange(this.columnFamily, keyBase, increment(keyBase));
     }

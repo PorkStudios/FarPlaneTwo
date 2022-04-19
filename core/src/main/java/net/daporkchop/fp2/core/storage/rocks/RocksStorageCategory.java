@@ -58,9 +58,9 @@ public class RocksStorageCategory implements FStorageCategory {
 
     private volatile boolean open = true;
 
-    public RocksStorageCategory(@NonNull RocksStorage<?> storage, @NonNull String inode) {
+    public RocksStorageCategory(@NonNull RocksStorage<?> storage, @NonNull String inode, @NonNull IRocksAccess access) {
         this.storage = storage;
-        this.manifestData = new RocksCategoryManifest(storage.defaultColumnFamily(), inode);
+        this.manifestData = new RocksCategoryManifest(storage.defaultColumnFamily(), inode, access);
     }
 
     public void ensureOpen() {
@@ -70,7 +70,7 @@ public class RocksStorageCategory implements FStorageCategory {
     }
 
     protected void doDeleteCategory(@NonNull IRocksAccess access, @NonNull String inode) {
-        RocksCategoryManifest manifest = new RocksCategoryManifest(this.storage.defaultColumnFamily(), inode);
+        RocksCategoryManifest manifest = new RocksCategoryManifest(this.storage.defaultColumnFamily(), inode, access);
 
         //recursively delete all sub-categories
         manifest.forEachChildCategory(access, (categoryName, categoryInode) -> this.doDeleteCategory(access, categoryInode));
@@ -79,18 +79,18 @@ public class RocksStorageCategory implements FStorageCategory {
         manifest.forEachChildItem(access, (itemName, itemInode) -> this.doDeleteItem(access, itemInode));
 
         //clear the category's manifest data
-        manifest.clear(access);
+        manifest.delete(access);
         this.storage.manifest().deleteInode(access, inode);
     }
 
     protected void doDeleteItem(@NonNull IRocksAccess access, @NonNull String inode) {
-        RocksItemManifest manifest = new RocksItemManifest(this.storage.defaultColumnFamily(), inode);
+        RocksItemManifest manifest = new RocksItemManifest(this.storage.defaultColumnFamily(), inode, access);
 
         //delete all of the item's column families
         this.storage.deleteColumnFamilies(access, manifest.snapshotColumnNamesToColumnFamilyNames(access).values());
 
         //clear the item's manifest data
-        manifest.clear(access);
+        manifest.delete(access);
         this.storage.manifest().deleteInode(access, inode);
     }
 
@@ -143,7 +143,8 @@ public class RocksStorageCategory implements FStorageCategory {
                 }
 
                 //open the category
-                return new RocksStorageCategory(this.storage, optionalInode.get());
+                String inode = optionalInode.get();
+                return this.storage.transactGet(access -> new RocksStorageCategory(this.storage, inode, access));
             } catch (RocksDBException e) {
                 PUnsafe.throwException(new FStorageException("failed to open category", e)); //hack to throw FStorageException from inside of the lambda
                 throw new AssertionError(); //impossible
@@ -177,7 +178,8 @@ public class RocksStorageCategory implements FStorageCategory {
                 }
 
                 //open the category
-                return new RocksStorageCategory(this.storage, optionalInode.get());
+                String inode = optionalInode.get();
+                return this.storage.transactGet(access -> new RocksStorageCategory(this.storage, inode, access));
             } catch (RocksDBException e) {
                 PUnsafe.throwException(new FStorageException("failed to open category", e)); //hack to throw FStorageException from inside of the lambda
                 throw new AssertionError(); //impossible

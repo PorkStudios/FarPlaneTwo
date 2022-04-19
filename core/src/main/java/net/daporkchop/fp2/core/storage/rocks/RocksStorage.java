@@ -34,6 +34,7 @@ import net.daporkchop.fp2.core.storage.rocks.access.IRocksAccess;
 import net.daporkchop.fp2.core.storage.rocks.access.IRocksReadAccess;
 import net.daporkchop.fp2.core.storage.rocks.access.IRocksWriteAccess;
 import net.daporkchop.fp2.core.storage.rocks.access.RocksAccessDB;
+import net.daporkchop.fp2.core.storage.rocks.access.RocksAccessReadMasqueradingAsReadWrite;
 import net.daporkchop.fp2.core.storage.rocks.access.RocksAccessTransaction;
 import net.daporkchop.fp2.core.storage.rocks.access.RocksAccessWriteBatch;
 import net.daporkchop.fp2.core.storage.rocks.manifest.RocksStorageManifest;
@@ -63,6 +64,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -92,6 +94,25 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
     public static final FlushOptions FLUSH_OPTIONS = new FlushOptions().setWaitForFlush(true).setAllowWriteStall(true);
 
     protected static final String DEFAULT_COLUMN_FAMILY_NAME = new String(RocksDB.DEFAULT_COLUMN_FAMILY).intern();
+
+    public static final Comparator<byte[]> LEX_BYTES_COMPARATOR = (a, b) -> {
+        int diff;
+        for (int i = 0; i < a.length && i < b.length; i++) {
+            diff = (a[i] & 0xFF) - (b[i] & 0xFF);
+            if (diff != 0) {
+                return diff;
+            }
+        }
+        // if array entries are equal till the first ends, then the
+        // longer is "bigger"
+        return a.length - b.length;
+    };
+
+    public static FStorage open(@NonNull Path root) throws FStorageException {
+        return Boolean.getBoolean("fp2.core.storage.rocksdb.optimistic")
+                ? new OptimisticRocksStorage(root)
+                : new TransactionRocksStorage(root);
+    }
 
     /**
      * Checks whether a {@link RocksDBException} is likely the result of a transaction commit failure.
@@ -150,9 +171,11 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
                 .collect(Collectors.toList());
         List<ColumnFamilyHandle> initialColumnFamilyHandles = new ArrayList<>(initialColumnFamilyNames.size());
         try (RocksDB db = RocksDB.openReadOnly(root.toString(), initialColumnFamilyDescriptors, initialColumnFamilyHandles)) {
+            IRocksAccess access = new RocksAccessReadMasqueradingAsReadWrite(new RocksAccessDB(db));
+
             //determine the real options to use for each column family based on the column hints
-            new RocksStorageManifest(db.getDefaultColumnFamily(), "")
-                    .forEachColumnFamily(new RocksAccessDB(db), (columnFamilyName, hints) -> {
+            new RocksStorageManifest(db.getDefaultColumnFamily(), "", access)
+                    .forEachColumnFamily(access, (columnFamilyName, hints) -> {
                         cfNames.add(columnFamilyName);
                         cfDescriptors.add(new ColumnFamilyDescriptor(columnFamilyName.getBytes(StandardCharsets.UTF_8), this.getCachedColumnFamilyOptionsForHints(hints)));
                     });
@@ -184,10 +207,11 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
         }
 
         try {
-            this.manifest = new RocksStorageManifest(this.db.getDefaultColumnFamily(), "");
+            //open the storage manifest
+            this.manifest = this.transactGet(access -> new RocksStorageManifest(this.db.getDefaultColumnFamily(), "", access));
 
             //create root storage category
-            this.rootCategory = new RocksStorageCategory(this, "root");
+            this.rootCategory = this.transactGet(access -> new RocksStorageCategory(this, "root", access));
 
             //run cleanup to delete any column families whose deletion was previously scheduled
             this.deleteQueuedColumnFamilies();
