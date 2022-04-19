@@ -18,11 +18,39 @@
  *
  */
 
+package net.daporkchop.fp2.core.storage.rocks;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
+import net.daporkchop.fp2.api.storage.internal.FStorageColumn;
+import org.rocksdb.ColumnFamilyHandle;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Consumer;
+
 /**
- * The internal {@link net.daporkchop.fp2.api.storage.FStorage} API to be used by implementors of {@link net.daporkchop.fp2.api.storage.external.FStorageCategory}.
+ * Implementation of {@link FStorageColumn} for {@link RocksStorage}.
  *
  * @author DaPorkchop_
- * @see net.daporkchop.fp2.api.storage.internal.FStorageInternal
- * @see net.daporkchop.fp2.api.storage.internal.FStorageColumnInternal
  */
-package net.daporkchop.fp2.api.storage.internal;
+@AllArgsConstructor
+@Getter
+@Setter
+public class RocksStorageColumn implements FStorageColumn {
+    public static List<ColumnFamilyHandle> toColumnFamilyHandles(List<FStorageColumn> columns) {
+        ColumnFamilyHandle[] out = new ColumnFamilyHandle[columns.size()];
+        columns.forEach(new Consumer<FStorageColumn>() {
+            int i = 0;
+
+            @Override
+            public void accept(FStorageColumn column) {
+                out[this.i++] = ((RocksStorageColumn) column).handle();
+            }
+        });
+        return Arrays.asList(out);
+    }
+
+    private ColumnFamilyHandle handle;
+}

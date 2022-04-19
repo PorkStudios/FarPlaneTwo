@@ -22,12 +22,11 @@ package net.daporkchop.fp2.core.storage.rocks.manifest;
 
 import lombok.NonNull;
 import lombok.SneakyThrows;
-import net.daporkchop.fp2.core.storage.rocks.access.IRocksAccess;
-import net.daporkchop.fp2.core.storage.rocks.access.IRocksReadAccess;
-import net.daporkchop.fp2.core.storage.rocks.access.RocksConflictDetectionHint;
-import net.daporkchop.fp2.core.storage.rocks.access.iterator.IRocksIterator;
-import org.rocksdb.ColumnFamilyHandle;
-import org.rocksdb.RocksDBException;
+import net.daporkchop.fp2.api.storage.FStorageException;
+import net.daporkchop.fp2.api.storage.internal.access.FStorageAccess;
+import net.daporkchop.fp2.api.storage.internal.access.FStorageIterator;
+import net.daporkchop.fp2.api.storage.internal.access.FStorageReadAccess;
+import net.daporkchop.fp2.core.storage.rocks.RocksStorageColumn;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
@@ -42,8 +41,8 @@ public class RocksCategoryManifest extends AbstractRocksManifest<RocksCategoryMa
     private static final String CHILD_CATEGORIES = escape("categories").intern();
     private static final String CHILD_ITEMS = escape("items").intern();
 
-    public RocksCategoryManifest(@NonNull ColumnFamilyHandle columnFamily, @NonNull String inode, @NonNull IRocksAccess access) {
-        super(columnFamily, inode, access);
+    public RocksCategoryManifest(@NonNull RocksStorageColumn column, @NonNull String inode, @NonNull FStorageAccess access) {
+        super(column, inode, access);
     }
 
     @Override
@@ -52,12 +51,12 @@ public class RocksCategoryManifest extends AbstractRocksManifest<RocksCategoryMa
     }
 
     @Override
-    protected void initialize(@NonNull IRocksAccess access) throws RocksDBException {
+    protected void initialize(@NonNull FStorageAccess access) throws FStorageException {
         //no-op
     }
 
     @Override
-    protected void upgrade(int savedVersion, @NonNull IRocksAccess access) throws RocksDBException {
+    protected void upgrade(int savedVersion, @NonNull FStorageAccess access) throws FStorageException {
         //no-op
     }
 
@@ -65,11 +64,11 @@ public class RocksCategoryManifest extends AbstractRocksManifest<RocksCategoryMa
     // accessor methods
     //
 
-    @SneakyThrows(RocksDBException.class)
-    public void forEachChildCategory(@NonNull IRocksReadAccess access, @NonNull BiConsumer<String, String> action) {
+    @SneakyThrows(FStorageException.class)
+    public void forEachChildCategory(@NonNull FStorageReadAccess access, @NonNull BiConsumer<String, String> action) {
         byte[] keyBase = (this.inode + SEPARATOR + CHILD_CATEGORIES + SEPARATOR).getBytes(StandardCharsets.UTF_8);
 
-        try (IRocksIterator itr = access.iterator(this.columnFamily, keyBase, increment(keyBase))) {
+        try (FStorageIterator itr = access.iterator(this.column, keyBase, increment(keyBase))) {
             for (itr.seekToFirst(); itr.isValid(); ) {
                 //strip keyBase prefix, parse as UTF-8 and unescape
                 byte[] key = itr.key();
@@ -81,41 +80,39 @@ public class RocksCategoryManifest extends AbstractRocksManifest<RocksCategoryMa
         }
     }
 
-    @SneakyThrows(RocksDBException.class)
-    public boolean hasCategory(@NonNull IRocksReadAccess access, @NonNull String name) {
-        return access.get(this.columnFamily,
-                (this.inode + SEPARATOR + CHILD_CATEGORIES + SEPARATOR + escape(name)).getBytes(StandardCharsets.UTF_8),
-                RocksConflictDetectionHint.SHARED) != null;
+    @SneakyThrows(FStorageException.class)
+    public boolean hasCategory(@NonNull FStorageReadAccess access, @NonNull String name) {
+        return access.get(this.column,
+                (this.inode + SEPARATOR + CHILD_CATEGORIES + SEPARATOR + escape(name)).getBytes(StandardCharsets.UTF_8)) != null;
     }
 
-    @SneakyThrows(RocksDBException.class)
-    public Optional<String> getCategoryInode(@NonNull IRocksReadAccess access, @NonNull String name) {
-        return Optional.ofNullable(access.get(this.columnFamily,
-                (this.inode + SEPARATOR + CHILD_CATEGORIES + SEPARATOR + escape(name)).getBytes(StandardCharsets.UTF_8),
-                RocksConflictDetectionHint.SHARED)).map(arr -> new String(arr, StandardCharsets.UTF_8));
+    @SneakyThrows(FStorageException.class)
+    public Optional<String> getCategoryInode(@NonNull FStorageReadAccess access, @NonNull String name) {
+        return Optional.ofNullable(access.get(this.column,
+                (this.inode + SEPARATOR + CHILD_CATEGORIES + SEPARATOR + escape(name)).getBytes(StandardCharsets.UTF_8))).map(arr -> new String(arr, StandardCharsets.UTF_8));
     }
 
-    @SneakyThrows(RocksDBException.class)
-    public void addCategory(@NonNull IRocksAccess access, @NonNull String name, @NonNull String inode) {
+    @SneakyThrows(FStorageException.class)
+    public void addCategory(@NonNull FStorageAccess access, @NonNull String name, @NonNull String inode) {
         byte[] key = (this.inode + SEPARATOR + CHILD_CATEGORIES + SEPARATOR + escape(name)).getBytes(StandardCharsets.UTF_8);
 
-        checkState(access.get(this.columnFamily, key) == null, "category '%s' already exists", name);
-        access.put(this.columnFamily, key, inode.getBytes(StandardCharsets.UTF_8));
+        checkState(access.get(this.column, key) == null, "category '%s' already exists", name);
+        access.put(this.column, key, inode.getBytes(StandardCharsets.UTF_8));
     }
 
-    @SneakyThrows(RocksDBException.class)
-    public void removeCategory(@NonNull IRocksAccess access, @NonNull String name) {
+    @SneakyThrows(FStorageException.class)
+    public void removeCategory(@NonNull FStorageAccess access, @NonNull String name) {
         byte[] key = (this.inode + SEPARATOR + CHILD_CATEGORIES + SEPARATOR + escape(name)).getBytes(StandardCharsets.UTF_8);
 
-        checkState(access.get(this.columnFamily, key) != null, "category '%s' doesn't exist", name);
-        access.delete(this.columnFamily, key);
+        checkState(access.get(this.column, key) != null, "category '%s' doesn't exist", name);
+        access.delete(this.column, key);
     }
 
-    @SneakyThrows(RocksDBException.class)
-    public void forEachChildItem(@NonNull IRocksReadAccess access, @NonNull BiConsumer<String, String> action) {
+    @SneakyThrows(FStorageException.class)
+    public void forEachChildItem(@NonNull FStorageReadAccess access, @NonNull BiConsumer<String, String> action) {
         byte[] keyBase = (this.inode + SEPARATOR + CHILD_ITEMS + SEPARATOR).getBytes(StandardCharsets.UTF_8);
 
-        try (IRocksIterator itr = access.iterator(this.columnFamily, keyBase, increment(keyBase))) {
+        try (FStorageIterator itr = access.iterator(this.column, keyBase, increment(keyBase))) {
             for (itr.seekToFirst(); itr.isValid(); ) {
                 //strip keyBase prefix, parse as UTF-8 and unescape
                 byte[] key = itr.key();
@@ -127,33 +124,32 @@ public class RocksCategoryManifest extends AbstractRocksManifest<RocksCategoryMa
         }
     }
 
-    @SneakyThrows(RocksDBException.class)
-    public boolean hasItem(@NonNull IRocksReadAccess access, @NonNull String name) {
-        return access.get(this.columnFamily,
-                (this.inode + SEPARATOR + CHILD_ITEMS + SEPARATOR + escape(name)).getBytes(StandardCharsets.UTF_8),
-                RocksConflictDetectionHint.SHARED) != null;
+    @SneakyThrows(FStorageException.class)
+    public boolean hasItem(@NonNull FStorageReadAccess access, @NonNull String name) {
+        return access.get(this.column,
+                (this.inode + SEPARATOR + CHILD_ITEMS + SEPARATOR + escape(name)).getBytes(StandardCharsets.UTF_8)) != null;
     }
 
-    @SneakyThrows(RocksDBException.class)
-    public Optional<String> getItemInode(@NonNull IRocksReadAccess access, @NonNull String name) {
-        return Optional.ofNullable(access.get(this.columnFamily,
-                (this.inode + SEPARATOR + CHILD_ITEMS + SEPARATOR + escape(name)).getBytes(StandardCharsets.UTF_8),
-                RocksConflictDetectionHint.SHARED)).map(arr -> new String(arr, StandardCharsets.UTF_8));
+    @SneakyThrows(FStorageException.class)
+    public Optional<String> getItemInode(@NonNull FStorageReadAccess access, @NonNull String name) {
+        return Optional.ofNullable(access.get(this.column,
+                (this.inode + SEPARATOR + CHILD_ITEMS + SEPARATOR + escape(name)).getBytes(StandardCharsets.UTF_8)))
+                .map(arr -> new String(arr, StandardCharsets.UTF_8));
     }
 
-    @SneakyThrows(RocksDBException.class)
-    public void addItem(@NonNull IRocksAccess access, @NonNull String name, @NonNull String inode) {
+    @SneakyThrows(FStorageException.class)
+    public void addItem(@NonNull FStorageAccess access, @NonNull String name, @NonNull String inode) {
         byte[] key = (this.inode + SEPARATOR + CHILD_ITEMS + SEPARATOR + escape(name)).getBytes(StandardCharsets.UTF_8);
 
-        checkState(access.get(this.columnFamily, key) == null, "item '%s' already exists", name);
-        access.put(this.columnFamily, key, inode.getBytes(StandardCharsets.UTF_8));
+        checkState(access.get(this.column, key) == null, "item '%s' already exists", name);
+        access.put(this.column, key, inode.getBytes(StandardCharsets.UTF_8));
     }
 
-    @SneakyThrows(RocksDBException.class)
-    public void removeItem(@NonNull IRocksAccess access, @NonNull String name) {
+    @SneakyThrows(FStorageException.class)
+    public void removeItem(@NonNull FStorageAccess access, @NonNull String name) {
         byte[] key = (this.inode + SEPARATOR + CHILD_ITEMS + SEPARATOR + escape(name)).getBytes(StandardCharsets.UTF_8);
 
-        checkState(access.get(this.columnFamily, key) != null, "item '%s' doesn't exist", name);
-        access.delete(this.columnFamily, key);
+        checkState(access.get(this.column, key) != null, "item '%s' doesn't exist", name);
+        access.delete(this.column, key);
     }
 }

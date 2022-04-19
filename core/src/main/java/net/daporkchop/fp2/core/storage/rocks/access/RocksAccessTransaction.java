@@ -22,9 +22,11 @@ package net.daporkchop.fp2.core.storage.rocks.access;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.core.storage.rocks.access.iterator.IRocksIterator;
-import net.daporkchop.fp2.core.storage.rocks.access.iterator.RocksIteratorBounded;
-import net.daporkchop.fp2.core.storage.rocks.access.iterator.RocksIteratorDefault;
+import net.daporkchop.fp2.api.storage.FStorageException;
+import net.daporkchop.fp2.api.storage.internal.FStorageColumn;
+import net.daporkchop.fp2.api.storage.internal.access.FStorageAccess;
+import net.daporkchop.fp2.api.storage.internal.access.FStorageIterator;
+import net.daporkchop.fp2.core.storage.rocks.RocksStorageColumn;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDBException;
@@ -38,12 +40,12 @@ import java.util.List;
 import static net.daporkchop.fp2.core.storage.rocks.RocksStorage.*;
 
 /**
- * Implements {@link IRocksAccess} by simply wrapping a {@link Transaction}.
+ * Implements {@link FStorageAccess} by simply wrapping a {@link Transaction}.
  *
  * @author DaPorkchop_
  */
 @Getter
-public class RocksAccessTransaction implements IRocksAccess, AutoCloseable {
+public class RocksAccessTransaction implements FStorageAccess, AutoCloseable {
     protected final Transaction transaction;
 
     protected final ReadOptions readOptions;
@@ -63,40 +65,55 @@ public class RocksAccessTransaction implements IRocksAccess, AutoCloseable {
     }
 
     @Override
-    public byte[] get(@NonNull ColumnFamilyHandle columnFamily, @NonNull byte[] key, @NonNull RocksConflictDetectionHint conflictDetectionHint) throws RocksDBException {
-        return conflictDetectionHint == RocksConflictDetectionHint.NONE
-                ? this.transaction.get(columnFamily, this.readOptions, key)
-                : this.transaction.getForUpdate(this.readOptions, columnFamily, key, conflictDetectionHint != RocksConflictDetectionHint.SHARED);
+    public void close() {
+        if (this.readOptions != READ_OPTIONS) { //we created a private ReadOptions instance, release it
+            this.readOptions.close();
+
+            //snapshot doesn't need to be closed because it's owned by the transaction
+        }
+    }
+
+    //
+    // FStorageReadAccess
+    //
+
+    @Override
+    public byte[] get(@NonNull FStorageColumn column, @NonNull byte[] key) throws FStorageException {
+        try {
+            return this.transaction.getForUpdate(this.readOptions, ((RocksStorageColumn) column).handle(), key, false);
+        } catch (RocksDBException e) {
+            throw wrapException(e);
+        }
     }
 
     @Override
-    public List<byte[]> multiGet(@NonNull List<ColumnFamilyHandle> columnFamilies, @NonNull List<byte[]> keys, @NonNull RocksConflictDetectionHint conflictDetectionHint) throws RocksDBException {
-        byte[][] keysArray = keys.toArray(new byte[0][]);
-
-        return Arrays.asList(conflictDetectionHint == RocksConflictDetectionHint.NONE
-                ? this.transaction.multiGet(this.readOptions, columnFamilies, keysArray)
-                : this.transaction.multiGetForUpdate(this.readOptions, columnFamilies, keysArray)); //assume EXCLUSIVE
+    public List<byte[]> multiGet(@NonNull List<FStorageColumn> columns, @NonNull List<byte[]> keys) throws FStorageException {
+        try {
+            return Arrays.asList(this.transaction.multiGetForUpdate(this.readOptions, RocksStorageColumn.toColumnFamilyHandles(columns), keys.toArray(new byte[0][])));
+        } catch (RocksDBException e) {
+            throw wrapException(e);
+        }
     }
 
     @Override
-    public IRocksIterator iterator(@NonNull ColumnFamilyHandle columnFamily) throws RocksDBException {
-        return new RocksIteratorDefault(this.transaction.getIterator(this.readOptions, columnFamily));
+    public FStorageIterator iterator(@NonNull FStorageColumn column) throws FStorageException {
+        return new RocksIteratorDefault(this.transaction.getIterator(this.readOptions, ((RocksStorageColumn) column).handle()));
     }
 
     @Override
-    public IRocksIterator iterator(@NonNull ColumnFamilyHandle columnFamily, byte[] fromKeyInclusive, byte[] toKeyExclusive) throws RocksDBException {
+    public FStorageIterator iterator(@NonNull FStorageColumn column, byte[] fromKeyInclusive, byte[] toKeyExclusive) throws FStorageException {
         if (fromKeyInclusive == null && toKeyExclusive == null) { //both lower and upper bounds are null, create a regular iterator
-            return this.iterator(columnFamily);
+            return this.iterator(column);
         }
 
-        return new RocksIteratorBounded(this.readOptions, columnFamily, fromKeyInclusive, toKeyExclusive) {
+        return new RocksIteratorBounded(this.readOptions, ((RocksStorageColumn) column).handle(), fromKeyInclusive, toKeyExclusive) {
             @Override
-            protected RocksIterator createDelegate(@NonNull ReadOptions options, @NonNull ColumnFamilyHandle columnFamily) throws RocksDBException {
+            protected RocksIterator createDelegate(@NonNull ReadOptions options, @NonNull ColumnFamilyHandle columnFamily) throws FStorageException {
                 return RocksAccessTransaction.this.transaction.getIterator(options, columnFamily);
             }
 
             @Override
-            public boolean isValid() throws RocksDBException {
+            public boolean isValid() throws FStorageException {
                 if (!super.isValid()) { //if rocksdb itself reports that the iterator isn't valid, then it certainly isn't valid in any case
                     return false;
                 }
@@ -110,42 +127,37 @@ public class RocksAccessTransaction implements IRocksAccess, AutoCloseable {
         };
     }
 
+    //
+    // FStorageWriteAccess
+    //
+
     @Override
-    public void put(@NonNull ColumnFamilyHandle columnFamily, @NonNull byte[] key, @NonNull byte[] value, @NonNull RocksConflictDetectionHint conflictDetectionHint) throws RocksDBException {
-        if (conflictDetectionHint == RocksConflictDetectionHint.NONE) {
-            this.transaction.putUntracked(columnFamily, key, value);
-        } else {
-            this.transaction.put(columnFamily, key, value); //assume EXCLUSIVE
+    public void put(@NonNull FStorageColumn column, @NonNull byte[] key, @NonNull byte[] value) throws FStorageException {
+        try {
+            this.transaction.put(((RocksStorageColumn) column).handle(), key, value);
+        } catch (RocksDBException e) {
+            throw wrapException(e);
         }
     }
 
     @Override
-    public void delete(@NonNull ColumnFamilyHandle columnFamily, @NonNull byte[] key, @NonNull RocksConflictDetectionHint conflictDetectionHint) throws RocksDBException {
-        if (conflictDetectionHint == RocksConflictDetectionHint.NONE) {
-            this.transaction.deleteUntracked(columnFamily, key);
-        } else {
-            this.transaction.delete(columnFamily, key); //assume EXCLUSIVE
+    public void delete(@NonNull FStorageColumn column, @NonNull byte[] key) throws FStorageException {
+        try {
+            this.transaction.delete(((RocksStorageColumn) column).handle(), key);
+        } catch (RocksDBException e) {
+            throw wrapException(e);
         }
     }
 
     @Override
-    public void deleteRange(@NonNull ColumnFamilyHandle columnFamily, @NonNull byte[] fromKeyInclusive, @NonNull byte[] toKeyExclusive, @NonNull RocksConflictDetectionHint conflictDetectionHint) throws RocksDBException {
+    public void deleteRange(@NonNull FStorageColumn column, @NonNull byte[] fromKeyInclusive, @NonNull byte[] toKeyExclusive) throws FStorageException {
         //we can't actually do a deleteRange in a transaction, which is unfortunate. fall back to iterating over the range and deleting every key, which is probably close enough,
         //  although technically not perfectly atomic.
 
-        try (IRocksIterator itr = this.iterator(columnFamily, fromKeyInclusive, toKeyExclusive)) {
+        try (FStorageIterator itr = this.iterator(column, fromKeyInclusive, toKeyExclusive)) {
             for (itr.seekToFirst(); itr.isValid(); ) {
-                this.delete(columnFamily, itr.key(), conflictDetectionHint);
+                this.delete(column, itr.key());
             }
-        }
-    }
-
-    @Override
-    public void close() {
-        if (this.readOptions != READ_OPTIONS) { //we created a private ReadOptions instance, release it
-            this.readOptions.close();
-
-            //snapshot doesn't need to be closed because it's owned by the transaction
         }
     }
 }

@@ -30,9 +30,12 @@ import net.daporkchop.fp2.api.storage.external.FStorageCategory;
 import net.daporkchop.fp2.api.storage.external.FStorageItem;
 import net.daporkchop.fp2.api.storage.external.FStorageItemFactory;
 import net.daporkchop.fp2.api.storage.internal.FStorageColumnHintsInternal;
-import net.daporkchop.fp2.core.storage.rocks.access.IRocksAccess;
-import net.daporkchop.fp2.core.storage.rocks.access.IRocksReadAccess;
-import net.daporkchop.fp2.core.storage.rocks.access.IRocksWriteAccess;
+import net.daporkchop.fp2.api.storage.internal.FStorageInternal;
+import net.daporkchop.fp2.api.storage.internal.access.FStorageAccess;
+import net.daporkchop.fp2.api.storage.internal.access.FStorageReadAccess;
+import net.daporkchop.fp2.api.storage.internal.access.FStorageWriteAccess;
+import net.daporkchop.fp2.api.util.function.ThrowingConsumer;
+import net.daporkchop.fp2.api.util.function.ThrowingFunction;
 import net.daporkchop.fp2.core.storage.rocks.access.RocksAccessDB;
 import net.daporkchop.fp2.core.storage.rocks.access.RocksAccessReadMasqueradingAsReadWrite;
 import net.daporkchop.fp2.core.storage.rocks.access.RocksAccessTransaction;
@@ -53,6 +56,7 @@ import org.rocksdb.Options;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
+import org.rocksdb.Snapshot;
 import org.rocksdb.Transaction;
 import org.rocksdb.TransactionDB;
 import org.rocksdb.TransactionDBOptions;
@@ -71,7 +75,6 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -130,6 +133,10 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
         }
     }
 
+    public static FStorageException wrapException(RocksDBException e) {
+        return new FStorageExceptionWrappedRocksDBException(e);
+    }
+
     private final Path root;
 
     @Getter
@@ -142,7 +149,7 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
     private final Set<String> lockedColumnFamilyNames = ConcurrentHashMap.newKeySet();
 
     @Getter
-    private final ColumnFamilyHandle defaultColumnFamily;
+    private final RocksStorageColumn defaultColumn;
 
     @Getter
     private final RocksStorageManifest manifest;
@@ -171,10 +178,10 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
                 .collect(Collectors.toList());
         List<ColumnFamilyHandle> initialColumnFamilyHandles = new ArrayList<>(initialColumnFamilyNames.size());
         try (RocksDB db = RocksDB.openReadOnly(root.toString(), initialColumnFamilyDescriptors, initialColumnFamilyHandles)) {
-            IRocksAccess access = new RocksAccessReadMasqueradingAsReadWrite(new RocksAccessDB(db));
+            FStorageAccess access = new RocksAccessReadMasqueradingAsReadWrite(new RocksAccessDB(db, READ_OPTIONS));
 
             //determine the real options to use for each column family based on the column hints
-            new RocksStorageManifest(db.getDefaultColumnFamily(), "", access)
+            new RocksStorageManifest(new RocksStorageColumn(db.getDefaultColumnFamily()), "", access)
                     .forEachColumnFamily(access, (columnFamilyName, hints) -> {
                         cfNames.add(columnFamilyName);
                         cfDescriptors.add(new ColumnFamilyDescriptor(columnFamilyName.getBytes(StandardCharsets.UTF_8), this.getCachedColumnFamilyOptionsForHints(hints)));
@@ -201,17 +208,17 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
             }
 
             //get the default column family handle
-            this.defaultColumnFamily = this.db.getDefaultColumnFamily();
+            this.defaultColumn = new RocksStorageColumn(this.db.getDefaultColumnFamily());
         } catch (RocksDBException e) {
             throw new FStorageException("failed to open db", e);
         }
 
         try {
             //open the storage manifest
-            this.manifest = this.transactGet(access -> new RocksStorageManifest(this.db.getDefaultColumnFamily(), "", access));
+            this.manifest = this.transactAtomicGet(access -> new RocksStorageManifest(this.defaultColumn, "", access));
 
             //create root storage category
-            this.rootCategory = this.transactGet(access -> new RocksStorageCategory(this, "root", access));
+            this.rootCategory = this.transactAtomicGet(access -> new RocksStorageCategory(this, "root", access));
 
             //run cleanup to delete any column families whose deletion was previously scheduled
             this.deleteQueuedColumnFamilies();
@@ -230,44 +237,60 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
     protected abstract DB openDB(DBOptions dbOptions, String path, List<ColumnFamilyDescriptor> columnFamilyDescriptors, List<ColumnFamilyHandle> columnFamilyHandles) throws RocksDBException;
 
     /**
-     * Performs a set of read operations.
-     *
-     * @param action a callback function which accepts a {@link IRocksReadAccess} with which the read actions should be made. Once the callback function returns, all of the write operations
-     *               will be applied atomically. Note that the function may be called multiple times, so be careful if modifying any state outside of the database!
+     * @see FStorageInternal#readRun(ThrowingConsumer)
      */
-    public void readRun(@NonNull Consumer<IRocksReadAccess> action) throws RocksDBException {
-        action.accept(new RocksAccessDB(this.db));
+    public void readRun(@NonNull ThrowingConsumer<? super FStorageReadAccess, ? extends FStorageException> action) throws FStorageException {
+        action.acceptThrowing(new RocksAccessDB(this.db, READ_OPTIONS));
     }
 
     /**
-     * Performs a set of read operations.
-     *
-     * @param action a callback function which accepts a {@link IRocksReadAccess} with which the read actions should be made. Once the callback function returns, all of the write operations
-     *               will be applied atomically. Note that the function may be called multiple times, so be careful if modifying any state outside of the database!
-     * @return the callback function's return value
+     * @see FStorageInternal#readGet(ThrowingFunction)
      */
-    public <T> T readGet(@NonNull Function<IRocksReadAccess, T> action) throws RocksDBException {
-        return action.apply(new RocksAccessDB(this.db));
+    public <R> R readGet(@NonNull ThrowingFunction<? super FStorageReadAccess, R, ? extends FStorageException> action) throws FStorageException {
+        return action.applyThrowing(new RocksAccessDB(this.db, READ_OPTIONS));
     }
 
     /**
-     * Atomically performs a set of write operations.
-     *
-     * @param action a callback function which accepts a {@link IRocksWriteAccess} to which the write actions should be made. Once the callback function returns, all of the write operations
-     *               will be applied atomically. Note that the function may be called multiple times, so be careful if modifying any state outside of the database!
+     * @see FStorageInternal#readAtomicRun(ThrowingConsumer)
      */
-    public void batchWrites(@NonNull Consumer<IRocksWriteAccess> action) throws RocksDBException {
+    public void readAtomicRun(@NonNull ThrowingConsumer<? super FStorageReadAccess, ? extends FStorageException> action) throws FStorageException {
+        try (Snapshot snapshot = this.db.getSnapshot();
+             ReadOptions readOptions = new ReadOptions(READ_OPTIONS).setSnapshot(snapshot)) {
+            action.acceptThrowing(new RocksAccessDB(this.db, readOptions));
+        }
+    }
+
+    /**
+     * @see FStorageInternal#readAtomicGet(ThrowingFunction)
+     */
+    public <R> R readAtomicGet(@NonNull ThrowingFunction<? super FStorageReadAccess, R, ? extends FStorageException> action) throws FStorageException {
+        try (Snapshot snapshot = this.db.getSnapshot();
+             ReadOptions readOptions = new ReadOptions(READ_OPTIONS).setSnapshot(snapshot)) {
+            return action.applyThrowing(new RocksAccessDB(this.db, readOptions));
+        }
+    }
+
+    /**
+     * @see FStorageInternal#writeAtomicRun(ThrowingConsumer)
+     */
+    public void writeAtomicRun(@NonNull ThrowingConsumer<? super FStorageWriteAccess, ? extends FStorageException> action) throws FStorageException {
         do {
             try (RocksAccessWriteBatch batch = new RocksAccessWriteBatch()) {
-                //execute the callback with the created WriteBatch
-                action.accept(batch);
+                try {
+                    //execute the callback with the created WriteBatch
+                    action.acceptThrowing(batch);
+                } catch (FStorageExceptionWrappedRocksDBException e) {
+                    throw e.getCause();
+                } catch (FStorageException e) {
+                    throw new IllegalArgumentException("don't know what to do with " + e.getClass().getTypeName(), e);
+                }
 
                 //execute the WriteBatch
                 this.db.write(WRITE_OPTIONS, batch);
                 return;
             } catch (RocksDBException e) {
                 if (!isTransactionCommitFailure(e)) { //"regular" exception, rethrow
-                    throw e;
+                    throw wrapException(e);
                 }
 
                 //the database is transactional and there was a commit failure, try again until it works!
@@ -276,24 +299,56 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
     }
 
     /**
-     * Atomically performs a set of read and write operations.
-     *
-     * @param action a callback function which accepts a {@link IRocksAccess} with which the read/write actions should be made. Once the callback function returns, all of the write operations
-     *               will be applied atomically. Note that the function may be called multiple times, so be careful if modifying any state outside of the database!
+     * @see FStorageInternal#writeAtomicGet(ThrowingFunction)
      */
-    public void transactRun(@NonNull Consumer<IRocksAccess> action) throws RocksDBException {
+    public <R> R writeAtomicGet(@NonNull ThrowingFunction<? super FStorageWriteAccess, ? extends R, ? extends FStorageException> action) throws FStorageException {
+        do {
+            try (RocksAccessWriteBatch batch = new RocksAccessWriteBatch()) {
+                R result;
+                try {
+                    //execute the callback with the created WriteBatch
+                    result = action.applyThrowing(batch);
+                } catch (FStorageExceptionWrappedRocksDBException e) {
+                    throw e.getCause();
+                } catch (FStorageException e) {
+                    throw new IllegalArgumentException("don't know what to do with " + e.getClass().getTypeName(), e);
+                }
+
+                //execute the WriteBatch
+                this.db.write(WRITE_OPTIONS, batch);
+                return result;
+            } catch (RocksDBException e) {
+                if (!isTransactionCommitFailure(e)) { //"regular" exception, rethrow
+                    throw wrapException(e);
+                }
+
+                //the database is transactional and there was a commit failure, try again until it works!
+            }
+        } while (true);
+    }
+
+    /**
+     * @see FStorageInternal#transactAtomicRun(ThrowingConsumer)
+     */
+    public void transactAtomicRun(@NonNull ThrowingConsumer<? super FStorageAccess, ? extends FStorageException> action) throws FStorageException {
         do {
             try (Transaction txn = this.beginTransaction(WRITE_OPTIONS, true);
                  RocksAccessTransaction access = new RocksAccessTransaction(txn)) {
-                //execute the callback with the transaction
-                action.accept(access);
+                try {
+                    //execute the callback with the transaction
+                    action.acceptThrowing(access);
+                } catch (FStorageExceptionWrappedRocksDBException e) {
+                    throw e.getCause();
+                } catch (FStorageException e) {
+                    throw new IllegalArgumentException("don't know what to do with " + e.getClass().getTypeName(), e);
+                }
 
                 //try to commit the transaction
                 txn.commit();
                 return;
             } catch (RocksDBException e) {
                 if (!isTransactionCommitFailure(e)) { //"regular" exception, rethrow
-                    throw e;
+                    throw wrapException(e);
                 }
 
                 //the database is transactional and there was a commit failure, try again until it works!
@@ -302,25 +357,28 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
     }
 
     /**
-     * Atomically performs a set of read and write operations.
-     *
-     * @param action a callback function which accepts a {@link IRocksAccess} with which the read/write actions should be made. Once the callback function returns, all of the write operations
-     *               will be applied atomically. Note that the function may be called multiple times, so be careful if modifying any state outside of the database!
-     * @return the callback function's return value
+     * @see FStorageInternal#transactAtomicGet(ThrowingFunction)
      */
-    public <T> T transactGet(@NonNull Function<IRocksAccess, T> action) throws RocksDBException {
+    public <R> R transactAtomicGet(@NonNull ThrowingFunction<? super FStorageAccess, ? extends R, ? extends FStorageException> action) throws FStorageException {
         do {
             try (Transaction txn = this.beginTransaction(WRITE_OPTIONS, true);
                  RocksAccessTransaction access = new RocksAccessTransaction(txn)) {
-                //execute the callback with the transaction
-                T result = action.apply(access);
+                R result;
+                try {
+                    //execute the callback with the transaction
+                    result = action.applyThrowing(access);
+                } catch (FStorageExceptionWrappedRocksDBException e) {
+                    throw e.getCause();
+                } catch (FStorageException e) {
+                    throw new IllegalArgumentException("don't know what to do with " + e.getClass().getTypeName(), e);
+                }
 
                 //try to commit the transaction
                 txn.commit();
                 return result;
             } catch (RocksDBException e) {
                 if (!isTransactionCommitFailure(e)) { //"regular" exception, rethrow
-                    throw e;
+                    throw wrapException(e);
                 }
 
                 //the database is transactional and there was a commit failure, try again until it works!
@@ -411,7 +469,7 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
         }
     }
 
-    public Map<String, String> createColumnFamilies(@NonNull IRocksAccess access, @NonNull Map<String, FStorageColumnHintsInternal> columnNamesAndHintsToCreate) {
+    public Map<String, String> createColumnFamilies(@NonNull FStorageAccess access, @NonNull Map<String, FStorageColumnHintsInternal> columnNamesAndHintsToCreate) {
         this.ensureOpen();
 
         //noinspection UnstableApiUsage
@@ -419,7 +477,7 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
                 entry -> this.manifest.assignNewColumnFamilyName(access, entry.getValue())));
     }
 
-    public Map<String, ColumnFamilyHandle> acquireColumnFamilies(@NonNull Collection<String> columnFamilyNames) throws RocksDBException {
+    public Map<String, ColumnFamilyHandle> acquireColumnFamilies(@NonNull Collection<String> columnFamilyNames) throws FStorageException {
         this.ensureOpen();
 
         Collection<String> lockedColumnFamiliesToReleaseOnFailure = new ArrayList<>(columnFamilyNames.size());
@@ -499,11 +557,11 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
         }
     }
 
-    public void deleteColumnFamily(@NonNull IRocksAccess access, @NonNull String columnFamilyName) {
+    public void deleteColumnFamily(@NonNull FStorageAccess access, @NonNull String columnFamilyName) {
         this.deleteColumnFamilies(access, Collections.singleton(columnFamilyName));
     }
 
-    public void deleteColumnFamilies(@NonNull IRocksAccess access, @NonNull Collection<String> columnFamilyNames) {
+    public void deleteColumnFamilies(@NonNull FStorageAccess access, @NonNull Collection<String> columnFamilyNames) {
         this.ensureOpen();
 
         Collection<String> lockedColumnFamiliesToReleaseOnFailure = new ArrayList<>(columnFamilyNames.size());
@@ -531,7 +589,7 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
         }
     }
 
-    protected void deleteQueuedColumnFamilies() throws RocksDBException {
+    protected void deleteQueuedColumnFamilies() throws FStorageException {
         if (!this.readGet(this.manifest::isAnyColumnFamilyPendingDeletion)) { //nothing to do
             return;
         }
@@ -545,14 +603,17 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
                 }
             }));
 
-            //get handles of all the column families we're about to delete and drop them
-            this.db.dropColumnFamilies(columnFamilyNamesToDelete.stream()
-                    .map(this.openColumnFamilyHandles::get)
-                    .filter(Objects::nonNull) //the column family might not be open if it was scheduled for deletion without ever being created (it exists solely in the manifest)
-                    .collect(Collectors.toList()));
+            try {//get handles of all the column families we're about to delete and drop them
+                this.db.dropColumnFamilies(columnFamilyNamesToDelete.stream()
+                        .map(this.openColumnFamilyHandles::get)
+                        .filter(Objects::nonNull) //the column family might not be open if it was scheduled for deletion without ever being created (it exists solely in the manifest)
+                        .collect(Collectors.toList()));
+            } catch (RocksDBException e) {
+                throw wrapException(e);
+            }
 
             //update manifest to show that the column families have been deleted
-            this.transactRun(access -> columnFamilyNamesToDelete.forEach(columnFamilyName -> this.manifest.removeColumnFamilyFromDeletionQueue(access, columnFamilyName)));
+            this.transactAtomicRun(access -> columnFamilyNamesToDelete.forEach(columnFamilyName -> this.manifest.removeColumnFamilyFromDeletionQueue(access, columnFamilyName)));
         } catch (Exception e) {
             //unlock all of the column family names which have been acquired so far
             this.lockedColumnFamilyNames.removeAll(columnFamilyNamesToDelete);

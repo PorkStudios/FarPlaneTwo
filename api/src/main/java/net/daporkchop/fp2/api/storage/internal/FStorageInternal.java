@@ -22,6 +22,11 @@ package net.daporkchop.fp2.api.storage.internal;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.api.storage.FStorageException;
+import net.daporkchop.fp2.api.storage.internal.access.FStorageAccess;
+import net.daporkchop.fp2.api.storage.internal.access.FStorageReadAccess;
+import net.daporkchop.fp2.api.storage.internal.access.FStorageWriteAccess;
+import net.daporkchop.fp2.api.util.function.ThrowingConsumer;
+import net.daporkchop.fp2.api.util.function.ThrowingFunction;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -29,25 +34,142 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Provides access to operations which are not specific to a single {@link FStorageColumnInternal internal storage column}.
+ * Provides access to operations which are not specific to a single {@link FStorageColumn internal storage column}.
  *
  * @author DaPorkchop_
  */
-public interface FStorageInternal extends FStorageReadOperationsInternal {
+public interface FStorageInternal {
     /**
-     * @return a new {@link FStorageWriteBatchInternal write batch}
+     * Runs the given function with a {@link FStorageReadAccess} providing read-only access to this storage's data.
+     * <p>
+     * The read operations performed using the {@link FStorageReadAccess} passed to the function are not necessarily performed atomically. Modifications performed
+     * while the function is being executed may be visible.
+     * <p>
+     * Any {@link FStorageException}s thrown inside the function must be re-thrown without modification, as they may be treated specially by the implementation.
+     * <p>
+     * Note that the implementation may choose to invoke the function more than once. The user code must be able to handle this, and should treat each invocation as if it were the first.
+     *
+     * @param action the function
      */
-    FStorageWriteBatchInternal beginWriteBatch();
+    default void readRun(@NonNull ThrowingConsumer<? super FStorageReadAccess, ? extends FStorageException> action) throws FStorageException {
+        this.readAtomicGet(access -> {
+            action.acceptThrowing(access);
+            return null;
+        });
+    }
 
     /**
-     * @return a new {@link FStorageTransactionInternal transaction}
+     * Runs the given function with a {@link FStorageReadAccess} providing read-only access to this storage's data and returns the result.
+     * <p>
+     * The read operations performed using the {@link FStorageReadAccess} passed to the function are not necessarily performed atomically. Modifications performed
+     * while the function is being executed may be visible.
+     * <p>
+     * Any {@link FStorageException}s thrown inside the function must be re-thrown without modification, as they may be treated specially by the implementation.
+     * <p>
+     * Note that the implementation may choose to invoke the function more than once. The user code must be able to handle this, and should treat each invocation as if it were the first.
+     *
+     * @param action the function
+     * @return the function's return value
      */
-    FStorageTransactionInternal beginTransaction();
+    <R> R readGet(@NonNull ThrowingFunction<? super FStorageReadAccess, ? extends R, ? extends FStorageException> action) throws FStorageException;
 
     /**
-     * @return a new {@link FStorageSnapshotInternal snapshot}
+     * Runs the given function with a {@link FStorageReadAccess} providing read-only access to this storage's data.
+     * <p>
+     * The read operations performed using the {@link FStorageReadAccess} passed to the function are performed atomically. Modifications performed while the function
+     * is being executed will not be visible.
+     * <p>
+     * Any {@link FStorageException}s thrown inside the function must be re-thrown without modification, as they may be treated specially by the implementation.
+     * <p>
+     * Note that the implementation may choose to invoke the function more than once. The user code must be able to handle this, and should treat each invocation as if it were the first.
+     *
+     * @param action the function
      */
-    FStorageSnapshotInternal snapshot();
+    default void readAtomicRun(@NonNull ThrowingConsumer<? super FStorageReadAccess, ? extends FStorageException> action) throws FStorageException {
+        this.readAtomicGet(access -> {
+            action.acceptThrowing(access);
+            return null;
+        });
+    }
+
+    /**
+     * Runs the given function with a {@link FStorageReadAccess} providing read-only access to this storage's data and returns the result.
+     * <p>
+     * The read operations performed using the {@link FStorageReadAccess} passed to the function are performed atomically. Modifications performed while the function
+     * is being executed will not be visible.
+     * <p>
+     * Any {@link FStorageException}s thrown inside the function must be re-thrown without modification, as they may be treated specially by the implementation.
+     * <p>
+     * Note that the implementation may choose to invoke the function more than once. The user code must be able to handle this, and should treat each invocation as if it were the first.
+     *
+     * @param action the function
+     * @return the function's return value
+     */
+    <R> R readAtomicGet(@NonNull ThrowingFunction<? super FStorageReadAccess, ? extends R, ? extends FStorageException> action) throws FStorageException;
+
+    /**
+     * Runs the given function with a {@link FStorageWriteAccess} providing write-only access to this storage's data.
+     * <p>
+     * The write operations performed using the {@link FStorageWriteAccess} passed to the function are performed atomically.
+     * <p>
+     * Any {@link FStorageException}s thrown inside the function must be re-thrown without modification, as they may be treated specially by the implementation.
+     * <p>
+     * Note that the implementation may choose to invoke the function more than once. The user code must be able to handle this, and should treat each invocation as if it were the first.
+     *
+     * @param action the function
+     */
+    default void writeAtomicRun(@NonNull ThrowingConsumer<? super FStorageWriteAccess, ? extends FStorageException> action) throws FStorageException {
+        this.writeAtomicGet(access -> {
+            action.acceptThrowing(access);
+            return null;
+        });
+    }
+
+    /**
+     * Runs the given function with a {@link FStorageWriteAccess} providing write-only access to this storage's data and returns the result.
+     * <p>
+     * The write operations performed using the {@link FStorageWriteAccess} passed to the function are performed atomically.
+     * <p>
+     * Any {@link FStorageException}s thrown inside the function must be re-thrown without modification, as they may be treated specially by the implementation.
+     * <p>
+     * Note that the implementation may choose to invoke the function more than once. The user code must be able to handle this, and should treat each invocation as if it were the first.
+     *
+     * @param action the function
+     * @return the function's return value
+     */
+    <R> R writeAtomicGet(@NonNull ThrowingFunction<? super FStorageWriteAccess, ? extends R, ? extends FStorageException> action) throws FStorageException;
+
+    /**
+     * Runs the given function with a {@link FStorageAccess} providing read and write access to this storage's data and returns the result.
+     * <p>
+     * The read and write operations performed using the {@link FStorageAccess} passed to the function are performed atomically.
+     * <p>
+     * Any {@link FStorageException}s thrown inside the function must be re-thrown without modification, as they may be treated specially by the implementation.
+     * <p>
+     * Note that the implementation may choose to invoke the function more than once. The user code must be able to handle this, and should treat each invocation as if it were the first.
+     *
+     * @param action the function
+     */
+    default void transactAtomicRun(@NonNull ThrowingConsumer<? super FStorageAccess, ? extends FStorageException> action) throws FStorageException {
+        this.transactAtomicGet(access -> {
+            action.acceptThrowing(access);
+            return null;
+        });
+    }
+
+    /**
+     * Runs the given function with a {@link FStorageAccess} providing read and write access to this storage's data and returns the result.
+     * <p>
+     * The read and write operations performed using the {@link FStorageAccess} passed to the function are performed atomically.
+     * <p>
+     * Any {@link FStorageException}s thrown inside the function must be re-thrown without modification, as they may be treated specially by the implementation.
+     * <p>
+     * Note that the implementation may choose to invoke the function more than once. The user code must be able to handle this, and should treat each invocation as if it were the first.
+     *
+     * @param action the function
+     * @return the function's return value
+     */
+    <R> R transactAtomicGet(@NonNull ThrowingFunction<? super FStorageAccess, ? extends R, ? extends FStorageException> action) throws FStorageException;
 
     //
     // TOKEN
@@ -77,14 +199,14 @@ public interface FStorageInternal extends FStorageReadOperationsInternal {
     /**
      * @return a {@link Map} containing all of the columns in this storage
      */
-    Map<String, FStorageColumnInternal> getColumns();
+    Map<String, FStorageColumn> getColumns();
 
     /**
      * Clears the given column, removing all entries from it. The operation is performed atomically.
      *
      * @param column the column to clear
      */
-    default void clearColumn(@NonNull FStorageColumnInternal column) throws FStorageException {
+    default void clearColumn(@NonNull FStorageColumn column) throws FStorageException {
         this.clearColumns(Collections.singleton(column));
     }
 
@@ -93,5 +215,5 @@ public interface FStorageInternal extends FStorageReadOperationsInternal {
      *
      * @param columns the columns to clear
      */
-    void clearColumns(@NonNull Collection<FStorageColumnInternal> columns) throws FStorageException;
+    void clearColumns(@NonNull Collection<FStorageColumn> columns) throws FStorageException;
 }

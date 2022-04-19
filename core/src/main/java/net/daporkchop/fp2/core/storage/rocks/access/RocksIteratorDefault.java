@@ -18,72 +18,74 @@
  *
  */
 
-package net.daporkchop.fp2.core.storage.rocks.access.iterator;
+package net.daporkchop.fp2.core.storage.rocks.access;
 
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import org.rocksdb.RocksDBException;
+import net.daporkchop.fp2.api.storage.FStorageException;
+import net.daporkchop.fp2.api.storage.internal.access.FStorageIterator;
 import org.rocksdb.RocksIterator;
 
 /**
- * Implementation of {@link IRocksIterator} which simply delegates to a child {@link RocksIterator} instance.
+ * Implementation of {@link FStorageIterator} which simply delegates to a child {@link RocksIterator} instance.
  *
  * @author DaPorkchop_
+ * @see RocksIteratorBounded
  */
 @RequiredArgsConstructor
 @Getter
-public class RocksIteratorDefault implements IRocksIterator {
+public class RocksIteratorDefault implements FStorageIterator {
     @NonNull
     protected final RocksIterator delegate;
 
     @Override
-    public boolean isValid() throws RocksDBException {
+    public boolean isValid() throws FStorageException {
         return this.delegate.isValid();
     }
 
     @Override
-    public void seekToFirst() throws RocksDBException {
+    public void seekToFirst() throws FStorageException {
         this.delegate.seekToFirst();
     }
 
     @Override
-    public void seekToLast() throws RocksDBException {
+    public void seekToLast() throws FStorageException {
         this.delegate.seekToLast();
     }
 
     @Override
-    public void seekCeil(@NonNull byte[] key) throws RocksDBException {
+    public void seekCeil(@NonNull byte[] key) throws FStorageException {
         this.delegate.seek(key);
     }
 
     @Override
-    public void seekFloor(@NonNull byte[] key) throws RocksDBException {
+    public void seekFloor(@NonNull byte[] key) throws FStorageException {
         this.delegate.seekForPrev(key);
     }
 
     @Override
-    public void next() throws RocksDBException {
+    public void next() throws FStorageException {
         this.delegate.next();
     }
 
     @Override
-    public void prev() throws RocksDBException {
+    public void prev() throws FStorageException {
         this.delegate.prev();
     }
 
     @Override
-    public byte[] key() throws RocksDBException {
+    public byte[] key() throws FStorageException {
         return this.delegate.key();
     }
 
     @Override
-    public byte[] value() throws RocksDBException {
+    public byte[] value() throws FStorageException {
         return this.delegate.value();
     }
 
     @Override
-    public void close() throws RocksDBException {
+    public void close() throws FStorageException {
         this.delegate.close();
     }
 }

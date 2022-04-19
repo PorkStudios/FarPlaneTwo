@@ -21,28 +21,45 @@
 package net.daporkchop.fp2.core.storage.rocks.access;
 
 import lombok.NonNull;
-import org.rocksdb.ColumnFamilyHandle;
+import net.daporkchop.fp2.api.storage.FStorageException;
+import net.daporkchop.fp2.api.storage.internal.FStorageColumn;
+import net.daporkchop.fp2.api.storage.internal.access.FStorageWriteAccess;
+import net.daporkchop.fp2.core.storage.rocks.RocksStorageColumn;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.WriteBatch;
 
+import static net.daporkchop.fp2.core.storage.rocks.RocksStorage.*;
+
 /**
- * Implements {@link IRocksWriteAccess} by simply extending {@link WriteBatch}.
+ * Implements {@link FStorageWriteAccess} by simply extending {@link WriteBatch}.
  *
  * @author DaPorkchop_
  */
-public class RocksAccessWriteBatch extends WriteBatch implements IRocksWriteAccess {
+public class RocksAccessWriteBatch extends WriteBatch implements FStorageWriteAccess {
     @Override
-    public void put(@NonNull ColumnFamilyHandle columnFamily, @NonNull byte[] key, @NonNull byte[] value, @NonNull RocksConflictDetectionHint conflictDetectionHint) throws RocksDBException {
-        this.put(columnFamily, key, value);
+    public void put(@NonNull FStorageColumn column, @NonNull byte[] key, @NonNull byte[] value) throws FStorageException {
+        try {
+            this.put(((RocksStorageColumn) column).handle(), key, value);
+        } catch (RocksDBException e) {
+            throw wrapException(e);
+        }
     }
 
     @Override
-    public void delete(@NonNull ColumnFamilyHandle columnFamily, @NonNull byte[] key, @NonNull RocksConflictDetectionHint conflictDetectionHint) throws RocksDBException {
-        this.delete(columnFamily, key);
+    public void delete(@NonNull FStorageColumn column, @NonNull byte[] key) throws FStorageException {
+        try {
+            this.delete(((RocksStorageColumn) column).handle(), key);
+        } catch (RocksDBException e) {
+            throw wrapException(e);
+        }
     }
 
     @Override
-    public void deleteRange(@NonNull ColumnFamilyHandle columnFamily, @NonNull byte[] fromKeyInclusive, @NonNull byte[] toKeyExclusive, @NonNull RocksConflictDetectionHint conflictDetectionHint) throws RocksDBException {
-        this.deleteRange(columnFamily, fromKeyInclusive, toKeyExclusive);
+    public void deleteRange(@NonNull FStorageColumn column, @NonNull byte[] fromKeyInclusive, @NonNull byte[] toKeyExclusive) throws FStorageException {
+        try {
+            this.deleteRange(((RocksStorageColumn) column).handle(), fromKeyInclusive, toKeyExclusive);
+        } catch (RocksDBException e) {
+            throw wrapException(e);
+        }
     }
 }

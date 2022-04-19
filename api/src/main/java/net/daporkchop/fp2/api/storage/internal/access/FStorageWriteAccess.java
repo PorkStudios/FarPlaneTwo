@@ -18,17 +18,19 @@
  *
  */
 
-package net.daporkchop.fp2.api.storage.internal;
+package net.daporkchop.fp2.api.storage.internal.access;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.api.storage.FStorageException;
+import net.daporkchop.fp2.api.storage.internal.FStorageColumn;
+import net.daporkchop.fp2.api.storage.internal.FStorageInternal;
 
 /**
  * Interface defining a set of write operations which span an entire {@link FStorageInternal}.
  *
  * @author DaPorkchop_
  */
-public interface FStorageWriteOperationsInternal {
+public interface FStorageWriteAccess {
     /**
      * Inserts the given key-value pair into the given storage column. If the key was already associated with a value, it will be silently replaced.
      * <p>
@@ -39,7 +41,7 @@ public interface FStorageWriteOperationsInternal {
      * @param value  the value
      * @throws FStorageException if the operation fails
      */
-    void put(@NonNull FStorageColumnInternal column, @NonNull byte[] key, @NonNull byte[] value) throws FStorageException;
+    void put(@NonNull FStorageColumn column, @NonNull byte[] key, @NonNull byte[] value) throws FStorageException;
 
     /**
      * Removes the key-value pair with the given key from the given storage column.
@@ -50,5 +52,17 @@ public interface FStorageWriteOperationsInternal {
      * @param key    the key
      * @throws FStorageException if the operation fails
      */
-    void delete(@NonNull FStorageColumnInternal column, @NonNull byte[] key) throws FStorageException;
+    void delete(@NonNull FStorageColumn column, @NonNull byte[] key) throws FStorageException;
+
+    /**
+     * Atomically removes all the key-value pair with keys in the given key range from the given storage column.
+     * <p>
+     * This is a write operation.
+     *
+     * @param column           the storage column
+     * @param fromKeyInclusive the lower bound (inclusive) of the range of keys to delete
+     * @param toKeyExclusive   the upper bound (exclusive) of the range of keys to delete
+     * @throws FStorageException if the operation fails
+     */
+    void deleteRange(@NonNull FStorageColumn column, @NonNull byte[] fromKeyInclusive, @NonNull byte[] toKeyExclusive) throws FStorageException;
 }

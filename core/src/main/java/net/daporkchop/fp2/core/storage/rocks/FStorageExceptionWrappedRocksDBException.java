@@ -18,24 +18,21 @@
  *
  */
 
-package net.daporkchop.fp2.api.storage.internal;
+package net.daporkchop.fp2.core.storage.rocks;
 
 import net.daporkchop.fp2.api.storage.FStorageException;
-import net.daporkchop.fp2.api.util.CloseableResource;
+import org.rocksdb.RocksDBException;
 
 /**
- * A write batch buffers a series of write operations which can be atomically all at once.
- *
  * @author DaPorkchop_
  */
-public interface FStorageWriteBatchInternal extends FStorageWriteOperationsInternal, CloseableResource {
-    /**
-     * Atomically executes all of the buffered writes.
-     */
-    void write() throws FStorageException;
+public class FStorageExceptionWrappedRocksDBException extends FStorageException {
+    public FStorageExceptionWrappedRocksDBException(RocksDBException cause) {
+        super(cause);
+    }
 
-    /**
-     * Resets this write batch to its initial state by clearing all of the buffered writes.
-     */
-    void clear();
+    @Override
+    public RocksDBException getCause() {
+        return (RocksDBException) super.getCause();
+    }
 }

@@ -20,31 +20,17 @@
 
 package net.daporkchop.fp2.api.storage.internal;
 
-import net.daporkchop.fp2.api.storage.FStorageException;
+import net.daporkchop.fp2.api.storage.internal.access.FStorageAccess;
 
 /**
- * An exception that may be thrown by {@link FStorageTransactionInternal} if a conflict is detected.
+ * Provides access to a single internal storage column.
+ * <p>
+ * A storage column is a key-value store, whose keys and values are arbitrarily sized binary blobs.
+ * <p>
+ * This object does nothing by itself, it only serves as a handle used by other database operations which access a specific column, such as those in
+ * {@link FStorageAccess}.
  *
  * @author DaPorkchop_
  */
-public class FStorageTransactionFailedException extends FStorageException {
-    public FStorageTransactionFailedException() {
-        super();
-    }
-
-    public FStorageTransactionFailedException(String message) {
-        super(message);
-    }
-
-    public FStorageTransactionFailedException(String message, Throwable cause) {
-        super(message, cause);
-    }
-
-    public FStorageTransactionFailedException(Throwable cause) {
-        super(cause);
-    }
-
-    protected FStorageTransactionFailedException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
-        super(message, cause, enableSuppression, writableStackTrace);
-    }
+public interface FStorageColumn {
 }

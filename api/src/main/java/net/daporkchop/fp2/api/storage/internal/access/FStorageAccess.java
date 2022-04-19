@@ -18,17 +18,16 @@
  *
  */
 
-package net.daporkchop.fp2.api.storage.internal;
+package net.daporkchop.fp2.api.storage.internal.access;
+
+import net.daporkchop.fp2.api.storage.internal.FStorageInternal;
 
 /**
- * Provides access to a single internal storage column.
- * <p>
- * A storage column is a key-value store, whose keys and values are arbitrarily sized binary blobs.
- * <p>
- * This object does nothing by itself, it only serves as a handle used by other database operations which access a specific column, such as those in
- * {@link FStorageOperationsInternal}.
+ * Interface defining a set of read and write operations which span an entire {@link FStorageInternal}.
  *
  * @author DaPorkchop_
+ * @see FStorageReadAccess
+ * @see FStorageWriteAccess
  */
-public interface FStorageColumnInternal {
+public interface FStorageAccess extends FStorageReadAccess, FStorageWriteAccess {
 }

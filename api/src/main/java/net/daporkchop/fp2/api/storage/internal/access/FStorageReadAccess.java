@@ -18,10 +18,12 @@
  *
  */
 
-package net.daporkchop.fp2.api.storage.internal;
+package net.daporkchop.fp2.api.storage.internal.access;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.api.storage.FStorageException;
+import net.daporkchop.fp2.api.storage.internal.FStorageColumn;
+import net.daporkchop.fp2.api.storage.internal.FStorageInternal;
 
 import java.util.List;
 
@@ -30,7 +32,7 @@ import java.util.List;
  *
  * @author DaPorkchop_
  */
-public interface FStorageReadOperationsInternal {
+public interface FStorageReadAccess {
     /**
      * Gets the value associated with the given key in the given storage column.
      * <p>
@@ -41,10 +43,10 @@ public interface FStorageReadOperationsInternal {
      * @return the value associated with the given key, or {@code null} if it could not be found
      * @throws FStorageException if the operation fails
      */
-    byte[] get(@NonNull FStorageColumnInternal column, @NonNull byte[] key) throws FStorageException;
+    byte[] get(@NonNull FStorageColumn column, @NonNull byte[] key) throws FStorageException;
 
     /**
-     * Gets the values associated with the given keys in the given storage columns. The operation is performed atomically.
+     * Atomically gets the values associated with the given keys in the given storage columns. The operation is performed atomically.
      * <p>
      * This is a read operation.
      *
@@ -53,5 +55,31 @@ public interface FStorageReadOperationsInternal {
      * @return an array of results. For each column-entry pair, the corresponding element in the returned array is the value associated with the given key, or {@code null} if it could not be found
      * @throws FStorageException if the operation fails
      */
-    List<byte[]> multiGet(@NonNull List<FStorageColumnInternal> columns, @NonNull List<byte[]> keys) throws FStorageException;
+    List<byte[]> multiGet(@NonNull List<FStorageColumn> columns, @NonNull List<byte[]> keys) throws FStorageException;
+
+    /**
+     * Gets an {@link FStorageIterator iterator} for iterating over the entries in the given storage column.
+     * <p>
+     * This, and all of the methods defined in {@link FStorageIterator}, are read operations.
+     *
+     * @param column the storage column
+     * @return the {@link FStorageIterator iterator}
+     * @throws FStorageException if the operation fails
+     */
+    default FStorageIterator iterator(@NonNull FStorageColumn column) throws FStorageException {
+        return this.iterator(column, null, null);
+    }
+
+    /**
+     * Gets an {@link FStorageIterator iterator} for iterating over a given range of entries in the given storage column.
+     * <p>
+     * This, and all of the methods defined in {@link FStorageIterator}, are read operations.
+     *
+     * @param column           the storage column
+     * @param fromKeyInclusive the lower bound of the iteration range (inclusive), or {@code null} if no explicit lower bound is requested
+     * @param toKeyExclusive   the upper bound of the iteration range (exclusive), or {@code null} if no explicit upper bound is requested
+     * @return the {@link FStorageIterator iterator}
+     * @throws FStorageException if the operation fails
+     */
+    FStorageIterator iterator(@NonNull FStorageColumn column, byte[] fromKeyInclusive, byte[] toKeyExclusive) throws FStorageException;
 }

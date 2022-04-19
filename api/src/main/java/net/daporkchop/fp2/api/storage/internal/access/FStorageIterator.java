@@ -18,14 +18,39 @@
  *
  */
 
-package net.daporkchop.fp2.api.storage.internal;
+package net.daporkchop.fp2.api.storage.internal.access;
+
+import lombok.NonNull;
+import net.daporkchop.fp2.api.storage.FStorageException;
+import net.daporkchop.fp2.api.storage.internal.FStorageColumn;
 
 /**
- * Interface defining a set of read and write operations which span an entire {@link FStorageInternal}.
+ * Interface defining an iterator, which allows iterating across the entries in a single {@link FStorageColumn column}.
  *
  * @author DaPorkchop_
- * @see FStorageReadOperationsInternal
- * @see FStorageWriteOperationsInternal
  */
-public interface FStorageOperationsInternal extends FStorageReadOperationsInternal, FStorageWriteOperationsInternal {
+public interface FStorageIterator extends AutoCloseable {
+    /**
+     * @return whether or not the iterator is currently valid
+     */
+    boolean isValid() throws FStorageException;
+
+    void seekToFirst() throws FStorageException;
+
+    void seekToLast() throws FStorageException;
+
+    void seekCeil(@NonNull byte[] key) throws FStorageException;
+
+    void seekFloor(@NonNull byte[] key) throws FStorageException;
+
+    void next() throws FStorageException;
+
+    void prev() throws FStorageException;
+
+    byte[] key() throws FStorageException;
+
+    byte[] value() throws FStorageException;
+
+    @Override
+    void close() throws FStorageException;
 }

@@ -18,32 +18,36 @@
  *
  */
 
-package net.daporkchop.fp2.core.storage.rocks.access;
+package net.daporkchop.fp2.api.util.function;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.core.storage.rocks.access.iterator.IRocksIterator;
-import org.rocksdb.ColumnFamilyHandle;
-import org.rocksdb.RocksDBException;
+import net.daporkchop.lib.unsafe.PUnsafe;
 
-import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
+ * Alternative to {@link Function} which can throw an exception.
+ *
  * @author DaPorkchop_
+ * @see Consumer
  */
-public interface IRocksReadAccess {
-    default byte[] get(@NonNull ColumnFamilyHandle columnFamily, @NonNull byte[] key) throws RocksDBException {
-        return this.get(columnFamily, key, RocksConflictDetectionHint.EXCLUSIVE);
+@FunctionalInterface
+public interface ThrowingFunction<T, R, E extends Throwable> extends Function<T, R> {
+    /**
+     * @deprecated use {@link #applyThrowing(Object)}
+     */
+    @Override
+    default R apply(T t) {
+        try {
+            return this.applyThrowing(t);
+        } catch (Throwable e) {
+            PUnsafe.throwException(e); //rethrow Throwable
+            throw new AssertionError(e); //impossible
+        }
     }
 
-    byte[] get(@NonNull ColumnFamilyHandle columnFamily, @NonNull byte[] key, @NonNull RocksConflictDetectionHint conflictDetectionHint) throws RocksDBException;
-
-    default List<byte[]> multiGet(@NonNull List<ColumnFamilyHandle> columnFamilies, @NonNull List<byte[]> keys) throws RocksDBException {
-        return this.multiGet(columnFamilies, keys, RocksConflictDetectionHint.EXCLUSIVE);
-    }
-
-    List<byte[]> multiGet(@NonNull List<ColumnFamilyHandle> columnFamilies, @NonNull List<byte[]> keys, @NonNull RocksConflictDetectionHint conflictDetectionHint) throws RocksDBException;
-
-    IRocksIterator iterator(@NonNull ColumnFamilyHandle columnFamily) throws RocksDBException;
-
-    IRocksIterator iterator(@NonNull ColumnFamilyHandle columnFamily, byte[] fromKeyInclusive, byte[] toKeyExclusive) throws RocksDBException;
+    /**
+     * @see Function#apply(Object)
+     */
+    R applyThrowing(T t) throws E;
 }

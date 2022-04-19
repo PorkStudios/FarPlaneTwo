@@ -29,11 +29,11 @@ import net.daporkchop.fp2.api.storage.FStorageException;
 import net.daporkchop.fp2.api.storage.external.FStorageCategory;
 import net.daporkchop.fp2.api.storage.external.FStorageItem;
 import net.daporkchop.fp2.api.storage.external.FStorageItemFactory;
-import net.daporkchop.fp2.core.storage.rocks.access.IRocksAccess;
+import net.daporkchop.fp2.api.storage.internal.access.FStorageAccess;
+import net.daporkchop.fp2.core.storage.rocks.internal.RocksStorageInternal;
 import net.daporkchop.fp2.core.storage.rocks.manifest.RocksCategoryManifest;
 import net.daporkchop.fp2.core.storage.rocks.manifest.RocksItemManifest;
 import net.daporkchop.lib.unsafe.PUnsafe;
-import org.rocksdb.RocksDBException;
 
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -58,9 +58,9 @@ public class RocksStorageCategory implements FStorageCategory {
 
     private volatile boolean open = true;
 
-    public RocksStorageCategory(@NonNull RocksStorage<?> storage, @NonNull String inode, @NonNull IRocksAccess access) {
+    public RocksStorageCategory(@NonNull RocksStorage<?> storage, @NonNull String inode, @NonNull FStorageAccess access) {
         this.storage = storage;
-        this.manifestData = new RocksCategoryManifest(storage.defaultColumnFamily(), inode, access);
+        this.manifestData = new RocksCategoryManifest(storage.defaultColumn(), inode, access);
     }
 
     public void ensureOpen() {
@@ -69,8 +69,8 @@ public class RocksStorageCategory implements FStorageCategory {
         }
     }
 
-    protected void doDeleteCategory(@NonNull IRocksAccess access, @NonNull String inode) {
-        RocksCategoryManifest manifest = new RocksCategoryManifest(this.storage.defaultColumnFamily(), inode, access);
+    protected void doDeleteCategory(@NonNull FStorageAccess access, @NonNull String inode) {
+        RocksCategoryManifest manifest = new RocksCategoryManifest(this.storage.defaultColumn(), inode, access);
 
         //recursively delete all sub-categories
         manifest.forEachChildCategory(access, (categoryName, categoryInode) -> this.doDeleteCategory(access, categoryInode));
@@ -83,8 +83,8 @@ public class RocksStorageCategory implements FStorageCategory {
         this.storage.manifest().deleteInode(access, inode);
     }
 
-    protected void doDeleteItem(@NonNull IRocksAccess access, @NonNull String inode) {
-        RocksItemManifest manifest = new RocksItemManifest(this.storage.defaultColumnFamily(), inode, access);
+    protected void doDeleteItem(@NonNull FStorageAccess access, @NonNull String inode) {
+        RocksItemManifest manifest = new RocksItemManifest(this.storage.defaultColumn(), inode, access);
 
         //delete all of the item's column families
         this.storage.deleteColumnFamilies(access, manifest.snapshotColumnNamesToColumnFamilyNames(access).values());
@@ -107,15 +107,11 @@ public class RocksStorageCategory implements FStorageCategory {
         this.ensureOpen();
 
         //take snapshot of child categories data from manifest
-        try {
-            return this.storage.readGet(access -> {
-                ImmutableSet.Builder<String> builder = ImmutableSet.builder();
-                this.manifestData.forEachChildCategory(access, (categoryName, inode) -> builder.add(categoryName));
-                return builder.build();
-            });
-        } catch (RocksDBException e) {
-            throw new FStorageException("failed to list child categories", e);
-        }
+        return this.storage.readGet(access -> {
+            ImmutableSet.Builder<String> builder = ImmutableSet.builder();
+            this.manifestData.forEachChildCategory(access, (categoryName, inode) -> builder.add(categoryName));
+            return builder.build();
+        });
     }
 
     @Override
@@ -144,9 +140,9 @@ public class RocksStorageCategory implements FStorageCategory {
 
                 //open the category
                 String inode = optionalInode.get();
-                return this.storage.transactGet(access -> new RocksStorageCategory(this.storage, inode, access));
-            } catch (RocksDBException e) {
-                PUnsafe.throwException(new FStorageException("failed to open category", e)); //hack to throw FStorageException from inside of the lambda
+                return this.storage.transactAtomicGet(access -> new RocksStorageCategory(this.storage, inode, access));
+            } catch (FStorageException e) {
+                PUnsafe.throwException(e); //hack to throw FStorageException from inside of the lambda
                 throw new AssertionError(); //impossible
             }
         });
@@ -166,7 +162,7 @@ public class RocksStorageCategory implements FStorageCategory {
                 //check if the category exists
                 if (!optionalInode.isPresent()) {
                     //create a new category
-                    optionalInode = Optional.of(this.storage.transactGet(access -> {
+                    optionalInode = Optional.of(this.storage.transactAtomicGet(access -> {
                         //allocate a new inode
                         String inode = this.storage.manifest().allocateInode(access);
 
@@ -179,9 +175,9 @@ public class RocksStorageCategory implements FStorageCategory {
 
                 //open the category
                 String inode = optionalInode.get();
-                return this.storage.transactGet(access -> new RocksStorageCategory(this.storage, inode, access));
-            } catch (RocksDBException e) {
-                PUnsafe.throwException(new FStorageException("failed to open category", e)); //hack to throw FStorageException from inside of the lambda
+                return this.storage.transactAtomicGet(access -> new RocksStorageCategory(this.storage, inode, access));
+            } catch (FStorageException e) {
+                PUnsafe.throwException(e); //hack to throw FStorageException from inside of the lambda
                 throw new AssertionError(); //impossible
             }
         });
@@ -214,7 +210,7 @@ public class RocksStorageCategory implements FStorageCategory {
             checkState(category == null, "category '%s' is currently open!", name);
 
             try {
-                this.storage.transactRun(access -> {
+                this.storage.transactAtomicRun(access -> {
                     Optional<String> optionalInode = this.manifestData.getCategoryInode(access, name);
 
                     //ensure the category exists
@@ -231,18 +227,14 @@ public class RocksStorageCategory implements FStorageCategory {
 
                 //return null because the category still isn't open
                 return null;
-            } catch (RocksDBException e) {
-                PUnsafe.throwException(new FStorageException("failed to delete category", e)); //hack to throw FStorageException from inside of the lambda
+            } catch (FStorageException e) {
+                PUnsafe.throwException(e); //hack to throw FStorageException from inside of the lambda
                 throw new AssertionError(); //impossible
             }
         });
 
         //try to delete any column families that may be left
-        try {
-            this.storage.deleteQueuedColumnFamilies();
-        } catch (RocksDBException e) {
-            throw new FStorageException("failed to cleanup column families", e);
-        }
+        this.storage.deleteQueuedColumnFamilies();
     }
 
     @Override
@@ -250,15 +242,11 @@ public class RocksStorageCategory implements FStorageCategory {
         this.ensureOpen();
 
         //take snapshot of child items data from manifest
-        try {
-            return this.storage.readGet(access -> {
-                ImmutableSet.Builder<String> builder = ImmutableSet.builder();
-                this.manifestData.forEachChildItem(access, (itemName, inode) -> builder.add(itemName));
-                return builder.build();
-            });
-        } catch (RocksDBException e) {
-            throw new FStorageException("failed to list child items", e);
-        }
+        return this.storage.readGet(access -> {
+            ImmutableSet.Builder<String> builder = ImmutableSet.builder();
+            this.manifestData.forEachChildItem(access, (itemName, inode) -> builder.add(itemName));
+            return builder.build();
+        });
     }
 
     @Override
@@ -289,7 +277,7 @@ public class RocksStorageCategory implements FStorageCategory {
             checkState(storage == null, "item '%s' is already open!", name);
 
             try {
-                storage = this.storage.transactGet(access -> {
+                storage = this.storage.transactAtomicGet(access -> {
                     Optional<String> optionalInode = this.manifestData.getItemInode(access, name);
 
                     //check if the item exists
@@ -315,8 +303,8 @@ public class RocksStorageCategory implements FStorageCategory {
                 storage.open(factory);
 
                 return storage;
-            } catch (RocksDBException e) {
-                PUnsafe.throwException(new FStorageException("failed to open item", e)); //hack to throw FStorageException from inside of the lambda
+            } catch (FStorageException e) {
+                PUnsafe.throwException(e); //hack to throw FStorageException from inside of the lambda
                 throw new AssertionError(); //impossible
             }
         }).externalItem());
@@ -354,7 +342,7 @@ public class RocksStorageCategory implements FStorageCategory {
             checkState(storage == null, "item '%s' is currently open!", name);
 
             try {
-                this.storage.transactRun(access -> {
+                this.storage.transactAtomicRun(access -> {
                     Optional<String> optionalInode = this.manifestData.getItemInode(access, name);
 
                     //ensure the item exists
@@ -371,17 +359,13 @@ public class RocksStorageCategory implements FStorageCategory {
 
                 //return null because the item still isn't open
                 return null;
-            } catch (RocksDBException e) {
-                PUnsafe.throwException(new FStorageException("failed to delete item", e)); //hack to throw FStorageException from inside of the lambda
+            } catch (FStorageException e) {
+                PUnsafe.throwException(e); //hack to throw FStorageException from inside of the lambda
                 throw new AssertionError(); //impossible
             }
         });
 
         //try to delete any column families that may be left
-        try {
-            this.storage.deleteQueuedColumnFamilies();
-        } catch (RocksDBException e) {
-            throw new FStorageException("failed to cleanup column families", e);
-        }
+        this.storage.deleteQueuedColumnFamilies();
     }
 }

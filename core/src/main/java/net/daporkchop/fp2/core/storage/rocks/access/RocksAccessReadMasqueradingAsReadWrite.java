@@ -23,55 +23,47 @@ package net.daporkchop.fp2.core.storage.rocks.access;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.core.storage.rocks.access.iterator.IRocksIterator;
-import org.rocksdb.ColumnFamilyHandle;
-import org.rocksdb.RocksDBException;
+import net.daporkchop.fp2.api.storage.FStorageException;
+import net.daporkchop.fp2.api.storage.internal.FStorageColumn;
+import net.daporkchop.fp2.api.storage.internal.access.FStorageAccess;
+import net.daporkchop.fp2.api.storage.internal.access.FStorageIterator;
+import net.daporkchop.fp2.api.storage.internal.access.FStorageReadAccess;
 
 import java.util.List;
 
 /**
- * Implementation of {@link IRocksAccess} which is actually read-only, but is pretending to be read-write.
+ * Implementation of {@link FStorageAccess} which is actually read-only, but is pretending to be read-write.
  *
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
 @Getter
-public class RocksAccessReadMasqueradingAsReadWrite implements IRocksAccess {
+public class RocksAccessReadMasqueradingAsReadWrite implements FStorageAccess {
     @NonNull
-    protected final IRocksReadAccess delegate;
+    protected final FStorageReadAccess delegate;
 
     //
     // IRocksReadAccess
     //
 
     @Override
-    public byte[] get(@NonNull ColumnFamilyHandle columnFamily, @NonNull byte[] key) throws RocksDBException {
-        return this.delegate.get(columnFamily, key);
+    public byte[] get(@NonNull FStorageColumn column, @NonNull byte[] key) throws FStorageException {
+        return this.delegate.get(column, key);
     }
 
     @Override
-    public byte[] get(@NonNull ColumnFamilyHandle columnFamily, @NonNull byte[] key, @NonNull RocksConflictDetectionHint conflictDetectionHint) throws RocksDBException {
-        return this.delegate.get(columnFamily, key, conflictDetectionHint);
-    }
-
-    @Override
-    public List<byte[]> multiGet(@NonNull List<ColumnFamilyHandle> columnFamilies, @NonNull List<byte[]> keys) throws RocksDBException {
+    public List<byte[]> multiGet(@NonNull List<FStorageColumn> columnFamilies, @NonNull List<byte[]> keys) throws FStorageException {
         return this.delegate.multiGet(columnFamilies, keys);
     }
 
     @Override
-    public List<byte[]> multiGet(@NonNull List<ColumnFamilyHandle> columnFamilies, @NonNull List<byte[]> keys, @NonNull RocksConflictDetectionHint conflictDetectionHint) throws RocksDBException {
-        return this.delegate.multiGet(columnFamilies, keys, conflictDetectionHint);
+    public FStorageIterator iterator(@NonNull FStorageColumn column) throws FStorageException {
+        return this.delegate.iterator(column);
     }
 
     @Override
-    public IRocksIterator iterator(@NonNull ColumnFamilyHandle columnFamily) throws RocksDBException {
-        return this.delegate.iterator(columnFamily);
-    }
-
-    @Override
-    public IRocksIterator iterator(@NonNull ColumnFamilyHandle columnFamily, byte[] fromKeyInclusive, byte[] toKeyExclusive) throws RocksDBException {
-        return this.delegate.iterator(columnFamily, fromKeyInclusive, toKeyExclusive);
+    public FStorageIterator iterator(@NonNull FStorageColumn column, byte[] fromKeyInclusive, byte[] toKeyExclusive) throws FStorageException {
+        return this.delegate.iterator(column, fromKeyInclusive, toKeyExclusive);
     }
 
     //
@@ -79,32 +71,17 @@ public class RocksAccessReadMasqueradingAsReadWrite implements IRocksAccess {
     //
 
     @Override
-    public void put(@NonNull ColumnFamilyHandle columnFamily, @NonNull byte[] key, @NonNull byte[] value) throws RocksDBException {
+    public void put(@NonNull FStorageColumn column, @NonNull byte[] key, @NonNull byte[] value) throws FStorageException {
         throw new UnsupportedOperationException("read-only");
     }
 
     @Override
-    public void put(@NonNull ColumnFamilyHandle columnFamily, @NonNull byte[] key, @NonNull byte[] value, @NonNull RocksConflictDetectionHint conflictDetectionHint) throws RocksDBException {
+    public void delete(@NonNull FStorageColumn column, @NonNull byte[] key) throws FStorageException {
         throw new UnsupportedOperationException("read-only");
     }
 
     @Override
-    public void delete(@NonNull ColumnFamilyHandle columnFamily, @NonNull byte[] key) throws RocksDBException {
-        throw new UnsupportedOperationException("read-only");
-    }
-
-    @Override
-    public void delete(@NonNull ColumnFamilyHandle columnFamily, @NonNull byte[] key, @NonNull RocksConflictDetectionHint conflictDetectionHint) throws RocksDBException {
-        throw new UnsupportedOperationException("read-only");
-    }
-
-    @Override
-    public void deleteRange(@NonNull ColumnFamilyHandle columnFamily, @NonNull byte[] fromKeyInclusive, @NonNull byte[] toKeyExclusive) throws RocksDBException {
-        throw new UnsupportedOperationException("read-only");
-    }
-
-    @Override
-    public void deleteRange(@NonNull ColumnFamilyHandle columnFamily, @NonNull byte[] fromKeyInclusive, @NonNull byte[] toKeyExclusive, @NonNull RocksConflictDetectionHint conflictDetectionHint) throws RocksDBException {
+    public void deleteRange(@NonNull FStorageColumn column, @NonNull byte[] fromKeyInclusive, @NonNull byte[] toKeyExclusive) throws FStorageException {
         throw new UnsupportedOperationException("read-only");
     }
 }

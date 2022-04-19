@@ -30,7 +30,7 @@ import lombok.experimental.SuperBuilder;
 import static java.lang.Math.*;
 
 /**
- * Provides hints to the implementation as to what kind of data a {@link FStorageColumnInternal} will contain. This allows the implementation to optimize the column specifically
+ * Provides hints to the implementation as to what kind of data a {@link FStorageColumn} will contain. This allows the implementation to optimize the column specifically
  * for its expected contents.
  *
  * @author DaPorkchop_

@@ -18,14 +18,36 @@
  *
  */
 
-package net.daporkchop.fp2.api.storage.internal;
+package net.daporkchop.fp2.api.util.function;
 
-import net.daporkchop.fp2.api.util.CloseableResource;
+import net.daporkchop.lib.unsafe.PUnsafe;
+
+import java.util.function.Consumer;
 
 /**
- * Represents a readable snapshot of an {@link FStorageInternal}'s state at a specific point in time.
+ * Alternative to {@link Consumer} which can throw an exception.
  *
  * @author DaPorkchop_
+ * @see Consumer
  */
-public interface FStorageSnapshotInternal extends FStorageReadOperationsInternal, CloseableResource {
+@FunctionalInterface
+public interface ThrowingConsumer<T, E extends Throwable> extends Consumer<T> {
+    /**
+     * @deprecated use {@link #acceptThrowing(Object)}
+     */
+    @Override
+    @Deprecated
+    default void accept(T t) {
+        try {
+            this.acceptThrowing(t);
+        } catch (Throwable e) {
+            PUnsafe.throwException(e); //rethrow Throwable
+            throw new AssertionError(e); //impossible
+        }
+    }
+
+    /**
+     * @see Consumer#accept(Object)
+     */
+    void acceptThrowing(T t) throws E;
 }

@@ -18,7 +18,7 @@
  *
  */
 
-package net.daporkchop.fp2.core.storage.rocks;
+package net.daporkchop.fp2.core.storage.rocks.internal;
 
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
@@ -32,12 +32,15 @@ import net.daporkchop.fp2.api.storage.FStorageException;
 import net.daporkchop.fp2.api.storage.external.FStorageItem;
 import net.daporkchop.fp2.api.storage.external.FStorageItemFactory;
 import net.daporkchop.fp2.api.storage.internal.FStorageColumnHintsInternal;
-import net.daporkchop.fp2.api.storage.internal.FStorageColumnInternal;
+import net.daporkchop.fp2.api.storage.internal.FStorageColumn;
 import net.daporkchop.fp2.api.storage.internal.FStorageInternal;
-import net.daporkchop.fp2.api.storage.internal.FStorageSnapshotInternal;
-import net.daporkchop.fp2.api.storage.internal.FStorageTransactionInternal;
-import net.daporkchop.fp2.api.storage.internal.FStorageWriteBatchInternal;
-import net.daporkchop.fp2.core.storage.rocks.access.IRocksAccess;
+import net.daporkchop.fp2.api.storage.internal.access.FStorageAccess;
+import net.daporkchop.fp2.api.storage.internal.access.FStorageReadAccess;
+import net.daporkchop.fp2.api.storage.internal.access.FStorageWriteAccess;
+import net.daporkchop.fp2.api.util.function.ThrowingConsumer;
+import net.daporkchop.fp2.api.util.function.ThrowingFunction;
+import net.daporkchop.fp2.core.storage.rocks.RocksStorage;
+import net.daporkchop.fp2.core.storage.rocks.RocksStorageColumn;
 import net.daporkchop.fp2.core.storage.rocks.manifest.RocksItemManifest;
 import net.daporkchop.lib.primitive.map.open.ObjObjOpenHashMap;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -48,13 +51,11 @@ import org.rocksdb.WriteBatch;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.function.Consumer;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -74,23 +75,10 @@ public class RocksStorageInternal extends ReentrantReadWriteLock implements FSto
      * Additionally, we assume that the storage is being used correctly and that no method calls are made while or after the storage is closed.
      */
 
-    public static List<ColumnFamilyHandle> toColumnFamilyHandles(List<FStorageColumnInternal> columns) {
-        ColumnFamilyHandle[] out = new ColumnFamilyHandle[columns.size()];
-        columns.forEach(new Consumer<FStorageColumnInternal>() {
-            int i = 0;
-
-            @Override
-            public void accept(FStorageColumnInternal column) {
-                out[this.i++] = ((RocksStorageColumnInternal) column).handle();
-            }
-        });
-        return Arrays.asList(out);
-    }
-
     private final RocksStorage<?> storage;
     private final RocksItemManifest manifestData;
 
-    private ImmutableBiMap<String, RocksStorageColumnInternal> columns;
+    private ImmutableBiMap<String, RocksStorageColumn> columns;
     private Collection<String> columnFamilyNames;
     private FStorageItem externalItem;
 
@@ -99,9 +87,9 @@ public class RocksStorageInternal extends ReentrantReadWriteLock implements FSto
     private volatile boolean open = true;
 
     @SuppressWarnings("OptionalAssignedToNull")
-    public RocksStorageInternal(@NonNull RocksStorage<?> storage, @NonNull String inode, @NonNull FStorageItemFactory<?> factory, @NonNull IRocksAccess access) {
+    public RocksStorageInternal(@NonNull RocksStorage<?> storage, @NonNull String inode, @NonNull FStorageItemFactory<?> factory, @NonNull FStorageAccess access) {
         this.storage = storage;
-        this.manifestData = new RocksItemManifest(storage.defaultColumnFamily(), inode, access);
+        this.manifestData = new RocksItemManifest(storage.defaultColumn(), inode, access);
 
         @RequiredArgsConstructor
         @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
@@ -204,7 +192,7 @@ public class RocksStorageInternal extends ReentrantReadWriteLock implements FSto
         }
     }
 
-    public void open(@NonNull FStorageItemFactory<?> factory) throws RocksDBException {
+    public void open(@NonNull FStorageItemFactory<?> factory) throws FStorageException {
         Map<String, String> columnNamesToColumnFamilyNames = this.storage.readGet(this.manifestData::snapshotColumnNamesToColumnFamilyNames);
 
         this.columnFamilyNames = ImmutableSet.copyOf(columnNamesToColumnFamilyNames.values());
@@ -213,7 +201,7 @@ public class RocksStorageInternal extends ReentrantReadWriteLock implements FSto
             //acquire all of the column families
             //noinspection UnstableApiUsage
             this.columns = this.storage.acquireColumnFamilies(columnNamesToColumnFamilyNames.values()).entrySet().stream()
-                    .collect(ImmutableBiMap.toImmutableBiMap(Map.Entry::getKey, entry -> new RocksStorageColumnInternal(entry.getValue())));
+                    .collect(ImmutableBiMap.toImmutableBiMap(Map.Entry::getKey, entry -> new RocksStorageColumn(entry.getValue())));
 
             //create user item instance
             this.externalItem = factory.create(this);
@@ -221,7 +209,7 @@ public class RocksStorageInternal extends ReentrantReadWriteLock implements FSto
             try {
                 this.doClose();
             } catch (Exception e1) {
-                e.addSuppressed(new FStorageException("failed to close item after failed open", e));
+                e.addSuppressed(e1);
             }
 
             PUnsafe.throwException(e); //rethrow original exception
@@ -235,7 +223,7 @@ public class RocksStorageInternal extends ReentrantReadWriteLock implements FSto
         }
     }
 
-    protected void doClose() throws FStorageException {
+    public void doClose() throws FStorageException {
         this.ensureOpen();
 
         try {
@@ -256,55 +244,65 @@ public class RocksStorageInternal extends ReentrantReadWriteLock implements FSto
     }
 
     @Override
-    public FStorageWriteBatchInternal beginWriteBatch() {
-        this.ensureOpen();
-        return new RocksStorageWriteBatchInternal(this);
+    public void readRun(@NonNull ThrowingConsumer<? super FStorageReadAccess, ? extends FStorageException> action) throws FStorageException {
+        this.storage.readRun(action);
     }
 
     @Override
-    public FStorageTransactionInternal beginTransaction() {
-        this.ensureOpen();
-        return new RocksStorageTransactionInternal(this);
+    public <R> R readGet(@NonNull ThrowingFunction<? super FStorageReadAccess, ? extends R, ? extends FStorageException> action) throws FStorageException {
+        return this.storage.readGet(action);
     }
 
     @Override
-    public FStorageSnapshotInternal snapshot() {
-        this.ensureOpen();
-        return new RocksStorageSnapshotInternal(this);
+    public void readAtomicRun(@NonNull ThrowingConsumer<? super FStorageReadAccess, ? extends FStorageException> action) throws FStorageException {
+        this.storage.readAtomicRun(action);
+    }
+
+    @Override
+    public <R> R readAtomicGet(@NonNull ThrowingFunction<? super FStorageReadAccess, ? extends R, ? extends FStorageException> action) throws FStorageException {
+        return this.storage.readAtomicGet(action);
+    }
+
+    @Override
+    public void writeAtomicRun(@NonNull ThrowingConsumer<? super FStorageWriteAccess, ? extends FStorageException> action) throws FStorageException {
+        this.storage.writeAtomicRun(action);
+    }
+
+    @Override
+    public <R> R writeAtomicGet(@NonNull ThrowingFunction<? super FStorageWriteAccess, ? extends R, ? extends FStorageException> action) throws FStorageException {
+        return this.storage.writeAtomicGet(action);
+    }
+
+    @Override
+    public void transactAtomicRun(@NonNull ThrowingConsumer<? super FStorageAccess, ? extends FStorageException> action) throws FStorageException {
+        this.storage.transactAtomicRun(action);
+    }
+
+    @Override
+    public <R> R transactAtomicGet(@NonNull ThrowingFunction<? super FStorageAccess, ? extends R, ? extends FStorageException> action) throws FStorageException {
+        return this.storage.transactAtomicGet(action);
     }
 
     @Override
     public Optional<byte[]> getToken() throws FStorageException {
         this.ensureOpen();
-        try {
-            return this.storage.readGet(this.manifestData::getToken);
-        } catch (RocksDBException e) {
-            throw new FStorageException("failed to get storage token", e);
-        }
+        return this.storage.readGet(this.manifestData::getToken);
     }
 
     @Override
     public void setToken(@NonNull byte[] token) throws FStorageException {
         this.ensureOpen();
-        try {
-            this.storage.batchWrites(access -> this.manifestData.setToken(access, token));
-        } catch (RocksDBException e) {
-            throw new FStorageException("failed to set storage token", e);
-        }
+        this.storage.writeAtomicRun(access -> this.manifestData.setToken(access, token));
     }
 
     @Override
     public void removeToken() throws FStorageException {
         this.ensureOpen();
-        try {
-            this.storage.batchWrites(this.manifestData::removeToken);
-        } catch (RocksDBException e) {
-            throw new FStorageException("failed to remove storage token", e);
-        }
+        this.storage.writeAtomicRun(this.manifestData::removeToken);
     }
 
     @Override
-    public Map<String, FStorageColumnInternal> getColumns() {
+    public Map<String, FStorageColumn> getColumns() {
         this.ensureOpen();
 
         //take snapshot of columns map
@@ -312,7 +310,7 @@ public class RocksStorageInternal extends ReentrantReadWriteLock implements FSto
     }
 
     @Override
-    public void clearColumns(@NonNull Collection<FStorageColumnInternal> columns) throws FStorageException {
+    public void clearColumns(@NonNull Collection<FStorageColumn> columns) throws FStorageException {
         this.ensureOpen();
 
         //acquire a write lock to prevent other transactions/write batches from inserting new values while we're trying to delete them
@@ -320,8 +318,8 @@ public class RocksStorageInternal extends ReentrantReadWriteLock implements FSto
         //do a range deletion over all the keys in the column family
         try (WriteBatch batch = new WriteBatch()) {
             //iterate over each of the columns
-            for (FStorageColumnInternal column : new ReferenceOpenHashSet<>(columns)) {
-                ColumnFamilyHandle handle = ((RocksStorageColumnInternal) column).handle();
+            for (FStorageColumn column : new ReferenceOpenHashSet<>(columns)) {
+                ColumnFamilyHandle handle = ((RocksStorageColumn) column).handle();
 
                 //create an iterator in the column family
                 try (RocksIterator itr = this.storage.db().newIterator(handle, RocksStorage.READ_OPTIONS)) {
@@ -353,26 +351,6 @@ public class RocksStorageInternal extends ReentrantReadWriteLock implements FSto
             throw new FStorageException("failed to clear old column families", e);
         } finally {
             this.writeLock().unlock();
-        }
-    }
-
-    @Override
-    public byte[] get(@NonNull FStorageColumnInternal column, @NonNull byte[] key) throws FStorageException {
-        this.ensureOpen();
-        try {
-            return this.storage.db().get(((RocksStorageColumnInternal) column).handle(), RocksStorage.READ_OPTIONS, key);
-        } catch (RocksDBException e) {
-            throw new FStorageException(e);
-        }
-    }
-
-    @Override
-    public List<byte[]> multiGet(@NonNull List<FStorageColumnInternal> columns, @NonNull List<byte[]> keys) throws FStorageException {
-        this.ensureOpen();
-        try {
-            return this.storage.db().multiGetAsList(RocksStorage.READ_OPTIONS, toColumnFamilyHandles(columns), keys);
-        } catch (RocksDBException e) {
-            throw new FStorageException(e);
         }
     }
 }

@@ -25,14 +25,13 @@ import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import lombok.NonNull;
 import lombok.SneakyThrows;
+import net.daporkchop.fp2.api.storage.FStorageException;
 import net.daporkchop.fp2.api.storage.internal.FStorageColumnHintsInternal;
-import net.daporkchop.fp2.core.storage.rocks.access.IRocksAccess;
-import net.daporkchop.fp2.core.storage.rocks.access.IRocksReadAccess;
-import net.daporkchop.fp2.core.storage.rocks.access.IRocksWriteAccess;
-import net.daporkchop.fp2.core.storage.rocks.access.RocksConflictDetectionHint;
-import net.daporkchop.fp2.core.storage.rocks.access.iterator.IRocksIterator;
-import org.rocksdb.ColumnFamilyHandle;
-import org.rocksdb.RocksDBException;
+import net.daporkchop.fp2.api.storage.internal.access.FStorageAccess;
+import net.daporkchop.fp2.api.storage.internal.access.FStorageIterator;
+import net.daporkchop.fp2.api.storage.internal.access.FStorageReadAccess;
+import net.daporkchop.fp2.api.storage.internal.access.FStorageWriteAccess;
+import net.daporkchop.fp2.core.storage.rocks.RocksStorageColumn;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
@@ -76,8 +75,8 @@ public class RocksStorageManifest extends AbstractRocksManifest<RocksStorageMani
         }
     }
 
-    public RocksStorageManifest(@NonNull ColumnFamilyHandle columnFamily, @NonNull String inode, @NonNull IRocksAccess access) {
-        super(columnFamily, inode, access);
+    public RocksStorageManifest(@NonNull RocksStorageColumn column, @NonNull String inode, @NonNull FStorageAccess access) {
+        super(column, inode, access);
     }
 
     @Override
@@ -86,12 +85,12 @@ public class RocksStorageManifest extends AbstractRocksManifest<RocksStorageMani
     }
 
     @Override
-    protected void initialize(@NonNull IRocksAccess access) throws RocksDBException {
+    protected void initialize(@NonNull FStorageAccess access) throws FStorageException {
         //no-op
     }
 
     @Override
-    protected void upgrade(int savedVersion, @NonNull IRocksAccess access) throws RocksDBException {
+    protected void upgrade(int savedVersion, @NonNull FStorageAccess access) throws FStorageException {
         //no-op
     }
 
@@ -99,12 +98,12 @@ public class RocksStorageManifest extends AbstractRocksManifest<RocksStorageMani
     // accessor methods
     //
 
-    @SneakyThrows(RocksDBException.class)
-    public void forEachColumnFamily(@NonNull IRocksReadAccess access, @NonNull BiConsumer<String, FStorageColumnHintsInternal> action) {
+    @SneakyThrows(FStorageException.class)
+    public void forEachColumnFamily(@NonNull FStorageReadAccess access, @NonNull BiConsumer<String, FStorageColumnHintsInternal> action) {
         String prefix = this.inode + SEPARATOR + ALL_COLUMN_FAMILIES + SEPARATOR;
         byte[] keyBase = prefix.getBytes(StandardCharsets.UTF_8);
 
-        try (IRocksIterator itr = access.iterator(this.columnFamily, keyBase, increment(keyBase))) {
+        try (FStorageIterator itr = access.iterator(this.column, keyBase, increment(keyBase))) {
             for (itr.seekToFirst(); itr.isValid(); ) {
                 //strip keyBase prefix, parse as UTF-8 and unescape
                 byte[] key = itr.key();
@@ -116,64 +115,62 @@ public class RocksStorageManifest extends AbstractRocksManifest<RocksStorageMani
         }
     }
 
-    @SneakyThrows(RocksDBException.class)
-    public String assignNewColumnFamilyName(@NonNull IRocksAccess access, @NonNull FStorageColumnHintsInternal hints) {
+    @SneakyThrows(FStorageException.class)
+    public String assignNewColumnFamilyName(@NonNull FStorageAccess access, @NonNull FStorageColumnHintsInternal hints) {
         String name;
         byte[] key;
 
         do {
             name = UUID.randomUUID().toString();
             key = (this.inode + SEPARATOR + ALL_COLUMN_FAMILIES + SEPARATOR + escape(name)).getBytes(StandardCharsets.UTF_8);
-        } while (access.get(this.columnFamily, key, RocksConflictDetectionHint.SHARED) != null); //if the name is already taken, keep trying until we get one which is unique
+        } while (access.get(this.column, key) != null); //if the name is already taken, keep trying until we get one which is unique
 
-        access.put(this.columnFamily, key, writeColumnHints(hints));
+        access.put(this.column, key, writeColumnHints(hints));
         return name;
     }
 
-    @SneakyThrows(RocksDBException.class)
-    public boolean containsColumnFamilyName(@NonNull IRocksReadAccess access, @NonNull String name) {
-        return access.get(this.columnFamily,
-                (this.inode + SEPARATOR + ALL_COLUMN_FAMILIES + SEPARATOR + escape(name)).getBytes(StandardCharsets.UTF_8),
-                RocksConflictDetectionHint.SHARED) != null;
+    @SneakyThrows(FStorageException.class)
+    public boolean containsColumnFamilyName(@NonNull FStorageReadAccess access, @NonNull String name) {
+        return access.get(this.column,
+                (this.inode + SEPARATOR + ALL_COLUMN_FAMILIES + SEPARATOR + escape(name)).getBytes(StandardCharsets.UTF_8)) != null;
     }
 
-    @SneakyThrows(RocksDBException.class)
-    public FStorageColumnHintsInternal getHintsForColumnFamily(@NonNull IRocksReadAccess access, @NonNull String name) {
-        byte[] data = access.get(this.columnFamily,
-                (this.inode + SEPARATOR + ALL_COLUMN_FAMILIES + SEPARATOR + escape(name)).getBytes(StandardCharsets.UTF_8),
-                RocksConflictDetectionHint.SHARED);
+    @SneakyThrows(FStorageException.class)
+    public FStorageColumnHintsInternal getHintsForColumnFamily(@NonNull FStorageReadAccess access, @NonNull String name) {
+        byte[] data = access.get(this.column,
+                (this.inode + SEPARATOR + ALL_COLUMN_FAMILIES + SEPARATOR + escape(name)).getBytes(StandardCharsets.UTF_8));
 
         checkArg(data != null, "column family '%s' doesn't exist!", name);
         return readColumnHints(data);
     }
 
-    public boolean containsAllColumnFamilyNames(@NonNull IRocksReadAccess access, @NonNull Collection<String> c) {
+    public boolean containsAllColumnFamilyNames(@NonNull FStorageReadAccess access, @NonNull Collection<String> c) {
         //i literally don't care that this isn't optimized
         return c.stream().distinct().allMatch(name -> this.containsColumnFamilyName(access, name));
     }
 
-    @SneakyThrows(RocksDBException.class)
-    public void markColumnFamiliesForDeletion(@NonNull IRocksWriteAccess access, @NonNull Collection<String> columnFamilyNames) {
+    @SneakyThrows(FStorageException.class)
+    public void markColumnFamiliesForDeletion(@NonNull FStorageWriteAccess access, @NonNull Collection<String> columnFamilyNames) {
         for (String name : columnFamilyNames) {
-            access.put(this.columnFamily, (this.inode + SEPARATOR + COLUMN_FAMILIES_PENDING_DELETION + SEPARATOR + escape(name)).getBytes(StandardCharsets.UTF_8), EMPTY_BYTE_ARRAY);
+            access.put(this.column, (this.inode + SEPARATOR + COLUMN_FAMILIES_PENDING_DELETION + SEPARATOR + escape(name)).getBytes(StandardCharsets.UTF_8), EMPTY_BYTE_ARRAY);
         }
     }
 
-    @SneakyThrows(RocksDBException.class)
-    public boolean isAnyColumnFamilyPendingDeletion(@NonNull IRocksReadAccess access) {
+    @SneakyThrows(FStorageException.class)
+    public boolean isAnyColumnFamilyPendingDeletion(@NonNull FStorageReadAccess access) {
         byte[] keyBase = (this.inode + SEPARATOR + COLUMN_FAMILIES_PENDING_DELETION + SEPARATOR).getBytes(StandardCharsets.UTF_8);
 
-        try (IRocksIterator itr = access.iterator(this.columnFamily, keyBase, increment(keyBase))) {
+        try (FStorageIterator itr = access.iterator(this.column, keyBase, increment(keyBase))) {
             itr.seekToFirst();
             return itr.isValid(); //if there is a first element, then the deletion queue isn't empty
         }
     }
 
-    @SneakyThrows(RocksDBException.class)
-    public void forEachColumnFamilyNamePendingDeletion(@NonNull IRocksReadAccess access, @NonNull Consumer<String> action) {
+    @SneakyThrows(FStorageException.class)
+    public void forEachColumnFamilyNamePendingDeletion(@NonNull FStorageReadAccess access, @NonNull Consumer<String> action) {
         byte[] keyBase = (this.inode + SEPARATOR + COLUMN_FAMILIES_PENDING_DELETION + SEPARATOR).getBytes(StandardCharsets.UTF_8);
 
-        try (IRocksIterator itr = access.iterator(this.columnFamily, keyBase, increment(keyBase))) {
+        try (FStorageIterator itr = access.iterator(this.column, keyBase, increment(keyBase))) {
             for (itr.seekToFirst(); itr.isValid(); ) {
                 //strip keyBase prefix, parse as UTF-8 and unescape
                 byte[] key = itr.key();
@@ -182,40 +179,40 @@ public class RocksStorageManifest extends AbstractRocksManifest<RocksStorageMani
         }
     }
 
-    @SneakyThrows(RocksDBException.class)
-    public void removeColumnFamilyFromDeletionQueue(@NonNull IRocksAccess access, @NonNull String columnFamilyName) {
+    @SneakyThrows(FStorageException.class)
+    public void removeColumnFamilyFromDeletionQueue(@NonNull FStorageAccess access, @NonNull String columnFamilyName) {
         byte[] allColumnFamiliesKey = (this.inode + SEPARATOR + ALL_COLUMN_FAMILIES + SEPARATOR + escape(columnFamilyName)).getBytes(StandardCharsets.UTF_8);
         byte[] columnFamiliesPendingDeletionKey = (this.inode + SEPARATOR + COLUMN_FAMILIES_PENDING_DELETION + SEPARATOR + escape(columnFamilyName)).getBytes(StandardCharsets.UTF_8);
 
-        checkState(access.get(this.columnFamily, allColumnFamiliesKey) != null, "column family '%s' doesn't exist", columnFamilyName);
-        checkState(access.get(this.columnFamily, columnFamiliesPendingDeletionKey) != null, "column family '%s' isn't marked for deletion", columnFamilyName);
+        checkState(access.get(this.column, allColumnFamiliesKey) != null, "column family '%s' doesn't exist", columnFamilyName);
+        checkState(access.get(this.column, columnFamiliesPendingDeletionKey) != null, "column family '%s' isn't marked for deletion", columnFamilyName);
 
         //remove column family from allColumnFamilies map
-        access.delete(this.columnFamily, allColumnFamiliesKey);
+        access.delete(this.column, allColumnFamiliesKey);
 
         //remove column family from deletion queue
-        access.delete(this.columnFamily, columnFamiliesPendingDeletionKey);
+        access.delete(this.column, columnFamiliesPendingDeletionKey);
     }
 
-    @SneakyThrows(RocksDBException.class)
-    public String allocateInode(@NonNull IRocksAccess access) {
+    @SneakyThrows(FStorageException.class)
+    public String allocateInode(@NonNull FStorageAccess access) {
         String inode;
         byte[] key;
 
         do {
             inode = UUID.randomUUID().toString();
             key = (this.inode + SEPARATOR + INODES + SEPARATOR + escape(inode)).getBytes(StandardCharsets.UTF_8);
-        } while (access.get(this.columnFamily, key, RocksConflictDetectionHint.SHARED) != null); //if the name is already taken, keep trying until we get one which is unique
+        } while (access.get(this.column, key) != null); //if the name is already taken, keep trying until we get one which is unique
 
-        access.put(this.columnFamily, key, EMPTY_BYTE_ARRAY);
+        access.put(this.column, key, EMPTY_BYTE_ARRAY);
         return inode;
     }
 
-    @SneakyThrows(RocksDBException.class)
-    public void deleteInode(@NonNull IRocksAccess access, @NonNull String inode) {
+    @SneakyThrows(FStorageException.class)
+    public void deleteInode(@NonNull FStorageAccess access, @NonNull String inode) {
         byte[] key = (this.inode + SEPARATOR + INODES + SEPARATOR + escape(inode)).getBytes(StandardCharsets.UTF_8);
 
-        checkState(access.get(this.columnFamily, key) != null, "inode '%s' doesn't exist!", inode);
-        access.delete(this.columnFamily, key);
+        checkState(access.get(this.column, key) != null, "inode '%s' doesn't exist!", inode);
+        access.delete(this.column, key);
     }
 }

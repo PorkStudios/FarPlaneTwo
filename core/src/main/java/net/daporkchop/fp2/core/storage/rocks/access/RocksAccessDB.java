@@ -23,10 +23,11 @@ package net.daporkchop.fp2.core.storage.rocks.access;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.core.storage.rocks.RocksStorage;
-import net.daporkchop.fp2.core.storage.rocks.access.iterator.IRocksIterator;
-import net.daporkchop.fp2.core.storage.rocks.access.iterator.RocksIteratorBounded;
-import net.daporkchop.fp2.core.storage.rocks.access.iterator.RocksIteratorDefault;
+import net.daporkchop.fp2.api.storage.FStorageException;
+import net.daporkchop.fp2.api.storage.internal.FStorageColumn;
+import net.daporkchop.fp2.api.storage.internal.access.FStorageAccess;
+import net.daporkchop.fp2.api.storage.internal.access.FStorageIterator;
+import net.daporkchop.fp2.core.storage.rocks.RocksStorageColumn;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDB;
@@ -38,64 +39,72 @@ import java.util.List;
 import static net.daporkchop.fp2.core.storage.rocks.RocksStorage.*;
 
 /**
- * Implements {@link IRocksAccess} by simply wrapping a {@link RocksDB}.
+ * Implements {@link FStorageAccess} by simply wrapping a {@link RocksDB}.
  *
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
 @Getter
-public class RocksAccessDB implements IRocksAccess {
+public class RocksAccessDB implements FStorageAccess {
     @NonNull
     protected final RocksDB db;
+    @NonNull
+    protected final ReadOptions readOptions;
+
+    //
+    // FStorageReadAccess
+    //
 
     @Override
-    public byte[] get(@NonNull ColumnFamilyHandle columnFamily, @NonNull byte[] key) throws RocksDBException {
-        return this.db.get(columnFamily, READ_OPTIONS, key);
+    public byte[] get(@NonNull FStorageColumn column, @NonNull byte[] key) throws FStorageException {
+        try {
+            return this.db.get(((RocksStorageColumn) column).handle(), this.readOptions, key);
+        } catch (RocksDBException e) {
+            throw wrapException(e);
+        }
     }
 
     @Override
-    public byte[] get(@NonNull ColumnFamilyHandle columnFamily, @NonNull byte[] key, @NonNull RocksConflictDetectionHint conflictDetectionHint) throws RocksDBException {
-        return this.get(columnFamily, key);
+    public List<byte[]> multiGet(@NonNull List<FStorageColumn> columns, @NonNull List<byte[]> keys) throws FStorageException {
+        try {
+            return this.db.multiGetAsList(this.readOptions, RocksStorageColumn.toColumnFamilyHandles(columns), keys);
+        } catch (RocksDBException e) {
+            throw wrapException(e);
+        }
     }
 
     @Override
-    public List<byte[]> multiGet(@NonNull List<ColumnFamilyHandle> columnFamilies, @NonNull List<byte[]> keys) throws RocksDBException {
-        return this.db.multiGetAsList(READ_OPTIONS, columnFamilies, keys);
+    public FStorageIterator iterator(@NonNull FStorageColumn column) throws FStorageException {
+        return new RocksIteratorDefault(this.db.newIterator(((RocksStorageColumn) column).handle(), this.readOptions));
     }
 
     @Override
-    public List<byte[]> multiGet(@NonNull List<ColumnFamilyHandle> columnFamilies, @NonNull List<byte[]> keys, @NonNull RocksConflictDetectionHint conflictDetectionHint) throws RocksDBException {
-        return this.multiGet(columnFamilies, keys);
-    }
-
-    @Override
-    public IRocksIterator iterator(@NonNull ColumnFamilyHandle columnFamily) throws RocksDBException {
-        return new RocksIteratorDefault(this.db.newIterator(columnFamily, READ_OPTIONS));
-    }
-
-    @Override
-    public IRocksIterator iterator(@NonNull ColumnFamilyHandle columnFamily, byte[] fromKeyInclusive, byte[] toKeyExclusive) throws RocksDBException {
+    public FStorageIterator iterator(@NonNull FStorageColumn column, byte[] fromKeyInclusive, byte[] toKeyExclusive) throws FStorageException {
         if (fromKeyInclusive == null && toKeyExclusive == null) { //both lower and upper bounds are null, create a regular iterator
-            return this.iterator(columnFamily);
+            return this.iterator(column);
         }
 
-        return new RocksIteratorBounded(READ_OPTIONS, columnFamily, fromKeyInclusive, toKeyExclusive) {
+        return new RocksIteratorBounded(this.readOptions, ((RocksStorageColumn) column).handle(), fromKeyInclusive, toKeyExclusive) {
             @Override
-            protected RocksIterator createDelegate(@NonNull ReadOptions options, @NonNull ColumnFamilyHandle columnFamily) throws RocksDBException {
+            protected RocksIterator createDelegate(@NonNull ReadOptions options, @NonNull ColumnFamilyHandle columnFamily) throws FStorageException {
                 return RocksAccessDB.this.db.newIterator(columnFamily, options);
             }
         };
     }
 
+    //
+    // FStorageWriteAccess
+    //
+
     @Override
-    public void put(@NonNull ColumnFamilyHandle columnFamily, @NonNull byte[] key, @NonNull byte[] value) throws RocksDBException {
+    public void put(@NonNull FStorageColumn column, @NonNull byte[] key, @NonNull byte[] value) throws FStorageException {
         do {
             try {
-                this.db.put(columnFamily, WRITE_OPTIONS, key, value);
+                this.db.put(((RocksStorageColumn) column).handle(), WRITE_OPTIONS, key, value);
                 return;
             } catch (RocksDBException e) {
-                if (!RocksStorage.isTransactionCommitFailure(e)) { //"regular" exception, rethrow
-                    throw e;
+                if (!isTransactionCommitFailure(e)) { //"regular" exception, rethrow
+                    throw wrapException(e);
                 }
 
                 //the database is transactional and there was a commit failure, try again until it works!
@@ -104,19 +113,14 @@ public class RocksAccessDB implements IRocksAccess {
     }
 
     @Override
-    public void put(@NonNull ColumnFamilyHandle columnFamily, @NonNull byte[] key, @NonNull byte[] value, @NonNull RocksConflictDetectionHint conflictDetectionHint) throws RocksDBException {
-        this.put(columnFamily, key, value);
-    }
-
-    @Override
-    public void delete(@NonNull ColumnFamilyHandle columnFamily, @NonNull byte[] key) throws RocksDBException {
+    public void delete(@NonNull FStorageColumn column, @NonNull byte[] key) throws FStorageException {
         do {
             try {
-                this.db.delete(columnFamily, WRITE_OPTIONS, key);
+                this.db.delete(((RocksStorageColumn) column).handle(), WRITE_OPTIONS, key);
                 return;
             } catch (RocksDBException e) {
-                if (!RocksStorage.isTransactionCommitFailure(e)) { //"regular" exception, rethrow
-                    throw e;
+                if (!isTransactionCommitFailure(e)) { //"regular" exception, rethrow
+                    throw wrapException(e);
                 }
 
                 //the database is transactional and there was a commit failure, try again until it works!
@@ -125,28 +129,18 @@ public class RocksAccessDB implements IRocksAccess {
     }
 
     @Override
-    public void delete(@NonNull ColumnFamilyHandle columnFamily, @NonNull byte[] key, @NonNull RocksConflictDetectionHint conflictDetectionHint) throws RocksDBException {
-        this.delete(columnFamily, key);
-    }
-
-    @Override
-    public void deleteRange(@NonNull ColumnFamilyHandle columnFamily, @NonNull byte[] fromKeyInclusive, @NonNull byte[] toKeyExclusive) throws RocksDBException {
+    public void deleteRange(@NonNull FStorageColumn column, @NonNull byte[] fromKeyInclusive, @NonNull byte[] toKeyExclusive) throws FStorageException {
         do {
             try {
-                this.db.deleteRange(columnFamily, WRITE_OPTIONS, fromKeyInclusive, toKeyExclusive);
+                this.db.deleteRange(((RocksStorageColumn) column).handle(), WRITE_OPTIONS, fromKeyInclusive, toKeyExclusive);
                 return;
             } catch (RocksDBException e) {
-                if (!RocksStorage.isTransactionCommitFailure(e)) { //"regular" exception, rethrow
-                    throw e;
+                if (!isTransactionCommitFailure(e)) { //"regular" exception, rethrow
+                    throw wrapException(e);
                 }
 
                 //the database is transactional and there was a commit failure, try again until it works!
             }
         } while (true);
-    }
-
-    @Override
-    public void deleteRange(@NonNull ColumnFamilyHandle columnFamily, @NonNull byte[] fromKeyInclusive, @NonNull byte[] toKeyExclusive, @NonNull RocksConflictDetectionHint conflictDetectionHint) throws RocksDBException {
-        this.deleteRange(columnFamily, fromKeyInclusive, toKeyExclusive);
     }
 }
