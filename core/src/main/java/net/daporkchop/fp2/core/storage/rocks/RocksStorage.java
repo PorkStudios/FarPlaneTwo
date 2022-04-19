@@ -279,9 +279,11 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
                 try {
                     //execute the callback with the created WriteBatch
                     action.acceptThrowing(batch);
-                } catch (FStorageExceptionWrappedRocksDBException e) {
-                    throw e.getCause();
                 } catch (FStorageException e) {
+                    if (e instanceof FStorageExceptionWrappedRocksDBException) {
+                        throw ((FStorageExceptionWrappedRocksDBException) e).getCause();
+                    }
+
                     throw new IllegalArgumentException("don't know what to do with " + e.getClass().getTypeName(), e);
                 }
 
@@ -308,9 +310,11 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
                 try {
                     //execute the callback with the created WriteBatch
                     result = action.applyThrowing(batch);
-                } catch (FStorageExceptionWrappedRocksDBException e) {
-                    throw e.getCause();
                 } catch (FStorageException e) {
+                    if (e instanceof FStorageExceptionWrappedRocksDBException) {
+                        throw ((FStorageExceptionWrappedRocksDBException) e).getCause();
+                    }
+
                     throw new IllegalArgumentException("don't know what to do with " + e.getClass().getTypeName(), e);
                 }
 
@@ -337,9 +341,11 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
                 try {
                     //execute the callback with the transaction
                     action.acceptThrowing(access);
-                } catch (FStorageExceptionWrappedRocksDBException e) {
-                    throw e.getCause();
                 } catch (FStorageException e) {
+                    if (e instanceof FStorageExceptionWrappedRocksDBException) {
+                        throw ((FStorageExceptionWrappedRocksDBException) e).getCause();
+                    }
+
                     throw new IllegalArgumentException("don't know what to do with " + e.getClass().getTypeName(), e);
                 }
 
@@ -367,9 +373,11 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
                 try {
                     //execute the callback with the transaction
                     result = action.applyThrowing(access);
-                } catch (FStorageExceptionWrappedRocksDBException e) {
-                    throw e.getCause();
                 } catch (FStorageException e) {
+                    if (e instanceof FStorageExceptionWrappedRocksDBException) {
+                        throw ((FStorageExceptionWrappedRocksDBException) e).getCause();
+                    }
+
                     throw new IllegalArgumentException("don't know what to do with " + e.getClass().getTypeName(), e);
                 }
 
@@ -436,10 +444,10 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
             this.ensureOpen();
             this.open = false;
 
-            //close the root category
-            this.rootCategory.doClose();
-
             try {
+                //close the root category
+                this.rootCategory.close();
+
                 //flush all column families
                 this.db.flush(FLUSH_OPTIONS, new ArrayList<>(this.openColumnFamilyHandles.values()));
 
@@ -634,11 +642,6 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
     }
 
     @Override
-    public Map<String, FStorageCategory> openCategories() {
-        return this.rootCategory.openCategories();
-    }
-
-    @Override
     public FStorageCategory openCategory(@NonNull String name) throws FStorageException, NoSuchElementException, IllegalStateException {
         return this.rootCategory.openCategory(name);
     }
@@ -646,11 +649,6 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
     @Override
     public FStorageCategory openOrCreateCategory(@NonNull String name) throws FStorageException, IllegalStateException {
         return this.rootCategory.openOrCreateCategory(name);
-    }
-
-    @Override
-    public void closeCategory(@NonNull String name) throws FStorageException, NoSuchElementException {
-        this.rootCategory.closeCategory(name);
     }
 
     @Override
@@ -664,11 +662,6 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
     }
 
     @Override
-    public Map<String, ? extends FStorageItem> openItems() {
-        return this.rootCategory.openItems();
-    }
-
-    @Override
     public <I extends FStorageItem> I openItem(@NonNull String name, @NonNull FStorageItemFactory<I> factory) throws FStorageException, NoSuchElementException, IllegalStateException {
         return this.rootCategory.openItem(name, factory);
     }
@@ -676,11 +669,6 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
     @Override
     public <I extends FStorageItem> I openOrCreateItem(@NonNull String name, @NonNull FStorageItemFactory<I> factory) throws FStorageException, IllegalStateException {
         return this.rootCategory.openOrCreateItem(name, factory);
-    }
-
-    @Override
-    public void closeItem(@NonNull String name) throws FStorageException, NoSuchElementException {
-        this.rootCategory.closeItem(name);
     }
 
     @Override

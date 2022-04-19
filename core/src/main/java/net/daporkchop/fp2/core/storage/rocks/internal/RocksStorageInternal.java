@@ -31,8 +31,8 @@ import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.api.storage.FStorageException;
 import net.daporkchop.fp2.api.storage.external.FStorageItem;
 import net.daporkchop.fp2.api.storage.external.FStorageItemFactory;
-import net.daporkchop.fp2.api.storage.internal.FStorageColumnHintsInternal;
 import net.daporkchop.fp2.api.storage.internal.FStorageColumn;
+import net.daporkchop.fp2.api.storage.internal.FStorageColumnHintsInternal;
 import net.daporkchop.fp2.api.storage.internal.FStorageInternal;
 import net.daporkchop.fp2.api.storage.internal.access.FStorageAccess;
 import net.daporkchop.fp2.api.storage.internal.access.FStorageReadAccess;
@@ -40,6 +40,7 @@ import net.daporkchop.fp2.api.storage.internal.access.FStorageWriteAccess;
 import net.daporkchop.fp2.api.util.function.ThrowingConsumer;
 import net.daporkchop.fp2.api.util.function.ThrowingFunction;
 import net.daporkchop.fp2.core.storage.rocks.RocksStorage;
+import net.daporkchop.fp2.core.storage.rocks.RocksStorageCategory;
 import net.daporkchop.fp2.core.storage.rocks.RocksStorageColumn;
 import net.daporkchop.fp2.core.storage.rocks.manifest.RocksItemManifest;
 import net.daporkchop.lib.primitive.map.open.ObjObjOpenHashMap;
@@ -80,6 +81,11 @@ public class RocksStorageInternal extends ReentrantReadWriteLock implements FSto
 
     private ImmutableBiMap<String, RocksStorageColumn> columns;
     private Collection<String> columnFamilyNames;
+
+    private RocksStorageCategory parent;
+    @Getter
+    private String nameInParent;
+
     private FStorageItem externalItem;
 
     private int modificationCounter = 0;
@@ -192,7 +198,7 @@ public class RocksStorageInternal extends ReentrantReadWriteLock implements FSto
         }
     }
 
-    public void open(@NonNull FStorageItemFactory<?> factory) throws FStorageException {
+    public void open(@NonNull FStorageItemFactory<?> factory, @NonNull RocksStorageCategory parent, @NonNull String nameInParent) throws FStorageException {
         Map<String, String> columnNamesToColumnFamilyNames = this.storage.readGet(this.manifestData::snapshotColumnNamesToColumnFamilyNames);
 
         this.columnFamilyNames = ImmutableSet.copyOf(columnNamesToColumnFamilyNames.values());
@@ -207,7 +213,7 @@ public class RocksStorageInternal extends ReentrantReadWriteLock implements FSto
             this.externalItem = factory.create(this);
         } catch (Exception e) { //something failed, release all of the column families again
             try {
-                this.doClose();
+                this.close();
             } catch (Exception e1) {
                 e.addSuppressed(e1);
             }
@@ -215,6 +221,9 @@ public class RocksStorageInternal extends ReentrantReadWriteLock implements FSto
             PUnsafe.throwException(e); //rethrow original exception
             throw new AssertionError(); //impossible
         }
+
+        this.parent = parent;
+        this.nameInParent = nameInParent;
     }
 
     public void ensureOpen() {
@@ -223,13 +232,13 @@ public class RocksStorageInternal extends ReentrantReadWriteLock implements FSto
         }
     }
 
-    public void doClose() throws FStorageException {
+    @Override
+    public void close() throws FStorageException {
         this.ensureOpen();
 
         try {
-            //notify user code that it's being closed
-            if (this.externalItem != null) {
-                this.externalItem.closeInternal();
+            if (this.parent != null) { //remove self from parent
+                this.parent.doCloseItem(this);
             }
         } finally {
             this.open = false;

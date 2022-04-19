@@ -20,11 +20,9 @@
 
 package net.daporkchop.fp2.core.storage.rocks;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.api.storage.FStorageException;
 import net.daporkchop.fp2.api.storage.external.FStorageCategory;
 import net.daporkchop.fp2.api.storage.external.FStorageItem;
@@ -47,13 +45,12 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
 @Getter
 public class RocksStorageCategory implements FStorageCategory {
     private final RocksStorage<?> storage;
     private final RocksCategoryManifest manifestData;
 
-    private final Map<String, RocksStorageCategory> openCategories = new ConcurrentHashMap<>();
+    private final Map<String, RocksStorageCategory.AsChild> openCategories = new ConcurrentHashMap<>();
     private final Map<String, RocksStorageInternal> openItems = new ConcurrentHashMap<>();
 
     private volatile boolean open = true;
@@ -94,7 +91,8 @@ public class RocksStorageCategory implements FStorageCategory {
         this.storage.manifest().deleteInode(access, inode);
     }
 
-    protected void doClose() {
+    @Override
+    public void close() throws FStorageException {
         this.ensureOpen();
         checkState(this.openCategories.isEmpty(), "cannot close category when some sub-categories are still open! %s", this.openCategories);
         checkState(this.openItems.isEmpty(), "cannot close category when some sub-items are still open! %s", this.openItems);
@@ -115,14 +113,6 @@ public class RocksStorageCategory implements FStorageCategory {
     }
 
     @Override
-    public Map<String, FStorageCategory> openCategories() {
-        this.ensureOpen();
-
-        //take snapshot of open categories map
-        return ImmutableMap.copyOf(this.openCategories);
-    }
-
-    @Override
     public FStorageCategory openCategory(@NonNull String nameIn) throws FStorageException, NoSuchElementException, IllegalStateException {
         this.ensureOpen();
 
@@ -140,7 +130,7 @@ public class RocksStorageCategory implements FStorageCategory {
 
                 //open the category
                 String inode = optionalInode.get();
-                return this.storage.transactAtomicGet(access -> new RocksStorageCategory(this.storage, inode, access));
+                return this.storage.transactAtomicGet(access -> new RocksStorageCategory.AsChild(this.storage, inode, access, this, name));
             } catch (FStorageException e) {
                 PUnsafe.throwException(e); //hack to throw FStorageException from inside of the lambda
                 throw new AssertionError(); //impossible
@@ -175,7 +165,7 @@ public class RocksStorageCategory implements FStorageCategory {
 
                 //open the category
                 String inode = optionalInode.get();
-                return this.storage.transactAtomicGet(access -> new RocksStorageCategory(this.storage, inode, access));
+                return this.storage.transactAtomicGet(access -> new RocksStorageCategory.AsChild(this.storage, inode, access, this, name));
             } catch (FStorageException e) {
                 PUnsafe.throwException(e); //hack to throw FStorageException from inside of the lambda
                 throw new AssertionError(); //impossible
@@ -183,18 +173,14 @@ public class RocksStorageCategory implements FStorageCategory {
         });
     }
 
-    @Override
-    public void closeCategory(@NonNull String nameIn) throws FStorageException, NoSuchElementException {
+    public void doCloseCategory(@NonNull RocksStorageCategory.AsChild categoryIn) throws NoSuchElementException {
         this.ensureOpen();
 
-        this.openCategories.compute(nameIn, (name, category) -> {
+        this.openCategories.compute(categoryIn.nameInParent(), (name, category) -> {
             //ensure the category is already open
             if (category == null) {
                 throw new NoSuchElementException("no category is open with name: " + name);
             }
-
-            //try to close the category
-            category.doClose();
 
             //remove the category from this category
             return null;
@@ -250,16 +236,6 @@ public class RocksStorageCategory implements FStorageCategory {
     }
 
     @Override
-    public Map<String, ? extends FStorageItem> openItems() {
-        this.ensureOpen();
-
-        //take snapshot of open items map
-        ImmutableMap.Builder<String, FStorageItem> builder = ImmutableMap.builder();
-        this.openItems.forEach((name, storage) -> builder.put(name, storage.externalItem()));
-        return builder.build();
-    }
-
-    @Override
     public <I extends FStorageItem> I openItem(@NonNull String name, @NonNull FStorageItemFactory<I> factory) throws FStorageException, NoSuchElementException, IllegalStateException {
         return this.openItem0(name, factory, false);
     }
@@ -300,7 +276,7 @@ public class RocksStorageCategory implements FStorageCategory {
                 });
 
                 //all the column family initialization has completed atomically, now we just need to acquire the column families and construct the user object 
-                storage.open(factory);
+                storage.open(factory, this, name);
 
                 return storage;
             } catch (FStorageException e) {
@@ -310,26 +286,17 @@ public class RocksStorageCategory implements FStorageCategory {
         }).externalItem());
     }
 
-    @Override
-    public void closeItem(@NonNull String nameIn) throws FStorageException, NoSuchElementException {
+    public void doCloseItem(@NonNull RocksStorageInternal item) throws NoSuchElementException {
         this.ensureOpen();
 
-        this.openItems.compute(nameIn, (name, storage) -> {
+        this.openItems.compute(item.nameInParent(), (name, storage) -> {
             //ensure the item is already open
             if (storage == null) {
                 throw new NoSuchElementException("no item is open with name: " + name);
             }
 
-            try {
-                //try to close the item
-                storage.doClose();
-
-                //remove the item from this category
-                return null;
-            } catch (FStorageException e) {
-                PUnsafe.throwException(e); //hack to throw FStorageException from inside of the lambda
-                throw new AssertionError(); //impossible
-            }
+            //remove the item from this category
+            return null;
         });
     }
 
@@ -367,5 +334,30 @@ public class RocksStorageCategory implements FStorageCategory {
 
         //try to delete any column families that may be left
         this.storage.deleteQueuedColumnFamilies();
+    }
+
+    /**
+     * A {@link RocksStorageCategory} which is a child of another {@link RocksStorageCategory}.l
+     *
+     * @author DaPorkchop_
+     */
+    @Getter
+    public static class AsChild extends RocksStorageCategory {
+        private final RocksStorageCategory parent;
+        private final String nameInParent;
+
+        public AsChild(@NonNull RocksStorage<?> storage, @NonNull String inode, @NonNull FStorageAccess access, @NonNull RocksStorageCategory parent, @NonNull String nameInParent) {
+            super(storage, inode, access);
+
+            this.parent = parent;
+            this.nameInParent = nameInParent;
+        }
+
+        @Override
+        public void close() throws FStorageException {
+            super.close();
+
+            this.parent.doCloseCategory(this);
+        }
     }
 }

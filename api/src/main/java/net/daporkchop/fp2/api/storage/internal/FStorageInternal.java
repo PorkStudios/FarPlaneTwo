@@ -22,6 +22,7 @@ package net.daporkchop.fp2.api.storage.internal;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.api.storage.FStorageException;
+import net.daporkchop.fp2.api.storage.external.FStorageItem;
 import net.daporkchop.fp2.api.storage.internal.access.FStorageAccess;
 import net.daporkchop.fp2.api.storage.internal.access.FStorageReadAccess;
 import net.daporkchop.fp2.api.storage.internal.access.FStorageWriteAccess;
@@ -38,7 +39,15 @@ import java.util.Optional;
  *
  * @author DaPorkchop_
  */
-public interface FStorageInternal {
+public interface FStorageInternal extends AutoCloseable {
+    /**
+     * Closes this storage.
+     * <p>
+     * Must only be called by {@link FStorageItem#close()}.
+     */
+    @Override
+    void close() throws FStorageException;
+
     /**
      * Runs the given function with a {@link FStorageReadAccess} providing read-only access to this storage's data.
      * <p>

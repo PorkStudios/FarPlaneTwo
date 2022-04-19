@@ -23,7 +23,6 @@ package net.daporkchop.fp2.api.storage.external;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.storage.FStorageException;
 
-import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
@@ -32,7 +31,15 @@ import java.util.Set;
  *
  * @author DaPorkchop_
  */
-public interface FStorageCategory {
+public interface FStorageCategory extends AutoCloseable {
+    /**
+     * Closes this category.
+     * <p>
+     * All children of this category must be closed prior to calling this method.
+     */
+    @Override
+    void close() throws FStorageException;
+
     //
     // CATEGORIES
     //
@@ -41,11 +48,6 @@ public interface FStorageCategory {
      * @return a {@link Set} containing the names of all the child categories that exist
      */
     Set<String> allCategories() throws FStorageException;
-
-    /**
-     * @return a {@link Map} containing a snapshot of all of the child categories that are currently open
-     */
-    Map<String, FStorageCategory> openCategories();
 
     /**
      * Opens the child category with the given name, failing it if it doesn't exist.
@@ -67,17 +69,6 @@ public interface FStorageCategory {
     FStorageCategory openOrCreateCategory(@NonNull String name) throws FStorageException, IllegalStateException;
 
     /**
-     * Closes the child category with the given name, failing if it isn't open.
-     * <p>
-     * Users must take care not to access an category while or after it is being closed. All outstanding method calls on the category must have completed before this method is called, and
-     * users should assume that any method calls on the category made while or after calling this method will produce undefined behavior.
-     *
-     * @param name the name of the category to close
-     * @throws NoSuchElementException if no category with the given name is open
-     */
-    void closeCategory(@NonNull String name) throws FStorageException, NoSuchElementException;
-
-    /**
      * Deletes the child category with the given name, and all of its children. The category must not be open.
      *
      * @param name the name of the category to delete
@@ -94,11 +85,6 @@ public interface FStorageCategory {
      * @return a {@link Set} containing the names of all the child items that exist
      */
     Set<String> allItems() throws FStorageException;
-
-    /**
-     * @return a {@link Map} containing a snapshot of all of the child items that are currently open
-     */
-    Map<String, ? extends FStorageItem> openItems();
 
     /**
      * Opens the child item with the given name, failing it if it doesn't exist.
@@ -120,17 +106,6 @@ public interface FStorageCategory {
      * @throws IllegalStateException if the item is currently open
      */
     <I extends FStorageItem> I openOrCreateItem(@NonNull String name, @NonNull FStorageItemFactory<I> factory) throws FStorageException, IllegalStateException;
-
-    /**
-     * Closes the child item with the given name, failing if it isn't open.
-     * <p>
-     * Users must take care not to access an item while or after it is being closed. All outstanding method calls on the item must have completed before this method is called, and users
-     * should assume that any method on the item calls made while or after calling this method will produce undefined behavior.
-     *
-     * @param name the name of the item to close
-     * @throws NoSuchElementException if no item with the given name is open
-     */
-    void closeItem(@NonNull String name) throws FStorageException, NoSuchElementException;
 
     /**
      * Deletes the child item with the given name. The item must not be open.
