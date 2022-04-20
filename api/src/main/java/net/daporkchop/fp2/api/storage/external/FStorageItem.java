@@ -35,6 +35,8 @@ public interface FStorageItem extends AutoCloseable {
      * <p>
      * This <strong>must</strong> call {@link FStorageInternal#close()} on the {@link FStorageInternal} instance which this item was created with before returning. Ideally, it should be called
      * in a dedicated {@code finally} block at the tail of the method.
+     * <p>
+     * Once this method has been invoked, attempting to invoke any methods on this instance or any objects owned by it will result in undefined behavior.
      */
     @Override
     void close() throws FStorageException;

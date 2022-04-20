@@ -40,7 +40,7 @@ public class TerrainGeneratorInfo1_12_2 implements TerrainGeneratorInfo {
 
     @Override
     public IFarLevelServer world() {
-        return ((IMixinWorldServer) this.world).fp2_farLevelServer();
+        return ((IMixinWorldServer) this.world).fp2_levelServer();
     }
 
     @Override

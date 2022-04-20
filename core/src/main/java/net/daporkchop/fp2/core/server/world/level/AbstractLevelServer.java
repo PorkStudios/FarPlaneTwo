@@ -26,8 +26,11 @@ import lombok.SneakyThrows;
 import net.daporkchop.fp2.api.storage.FStorageException;
 import net.daporkchop.fp2.api.storage.external.FStorageCategory;
 import net.daporkchop.fp2.api.storage.external.FStorageCategoryFactory;
+import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
+import net.daporkchop.fp2.api.world.FWorldServer;
 import net.daporkchop.fp2.api.world.level.FLevelServer;
+import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
@@ -39,8 +42,6 @@ import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
 import net.daporkchop.fp2.core.world.level.AbstractLevel;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -48,7 +49,6 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
-import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
@@ -58,7 +58,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractLevelServer<F extends FP2Core, WORLD> extends AbstractLevel<F, WORLD> implements FLevelServer, IFarLevelServer {
+public abstract class AbstractLevelServer<F extends FP2Core, IMPL_LEVEL> extends AbstractLevel<F, IMPL_LEVEL, FWorldServer> implements FLevelServer, IFarLevelServer {
     private final FStorageCategory storageCategory;
 
     private final Map<IFarRenderMode<?, ?>, IFarTileProvider<?, ?>> loadedTileProviders = new ConcurrentHashMap<>();
@@ -67,22 +67,45 @@ public abstract class AbstractLevelServer<F extends FP2Core, WORLD> extends Abst
 
     private final ExactFBlockLevelHolder exactBlockLevelHolder;
 
-    public AbstractLevelServer(@NonNull F fp2, WORLD implWorld, @NonNull FStorageCategory storageCategory) {
-        super(fp2, implWorld);
+    @SneakyThrows(FStorageException.class)
+    public AbstractLevelServer(@NonNull F fp2, IMPL_LEVEL implLevel, @NonNull FWorldServer world, @NonNull Identifier id, @NonNull FGameRegistry registry) {
+        super(fp2, implLevel, world, id);
 
-        this.storageCategory = storageCategory;
+        this.storageCategory = world.storageCategory().openOrCreateCategory("level_" + id, callback -> {
+            //copy token to a byte[]
+            byte[] newToken = registry.registryToken();
+            callback.setToken(newToken);
 
-        this.coordLimits = this.fp2().eventBus().fireAndGetFirst(new GetCoordinateLimitsEvent(this)).get();
-        this.exactBlockLevelHolder = this.fp2().eventBus().fireAndGetFirst(new GetExactFBlockLevelEvent(this)).get();
+            Optional<byte[]> existingToken = callback.getExistingToken();
+            return !existingToken.isPresent() || Arrays.equals(newToken, existingToken.get())
+                    ? FStorageCategoryFactory.ConfigurationResult.CREATE_IF_MISSING //category doesn't exist or has a matching storage version
+                    : FStorageCategoryFactory.ConfigurationResult.DELETE_EXISTING_AND_CREATE; //category exists but has a mismatched storage version, re-create it
+        });
+
+        try {
+            this.coordLimits = this.fp2().eventBus().fireAndGetFirst(new GetCoordinateLimitsEvent(this)).get();
+            this.exactBlockLevelHolder = this.fp2().eventBus().fireAndGetFirst(new GetExactFBlockLevelEvent(this)).get();
+        } catch (Exception e) {
+            //something went wrong, try to close storage category
+            try {
+                this.storageCategory.close();
+            } catch (Exception e1) {
+                e.addSuppressed(e);
+            }
+
+            PUnsafe.throwException(e); //rethrow exception
+            throw new AssertionError(); //impossible
+        }
     }
 
     @Override
     @SneakyThrows(FStorageException.class)
     public void close() {
-        checkState(this.loadedTileProviders.isEmpty(), "some tile providers are still loaded: %s", this.loadedTileProviders.keySet());
-
-        this.exactBlockLevelHolder.close();
-        this.storageCategory.close();
+        //try-with-resources to ensure that everything is closed
+        try (FStorageCategory storageCategory = this.storageCategory;
+             ExactFBlockLevelHolder exactBlockLevelHolder = this.exactBlockLevelHolder) {
+            checkState(this.loadedTileProviders.isEmpty(), "some tile providers are still loaded: %s", this.loadedTileProviders.keySet());
+        }
     }
 
     @Override
@@ -90,33 +113,7 @@ public abstract class AbstractLevelServer<F extends FP2Core, WORLD> extends Abst
         return uncheckedCast(this.loadedTileProviders.compute(modeIn, (mode, tileProvider) -> {
             checkState(tileProvider == null, "tile provider for %s is already loaded!", mode);
 
-            FStorageCategory category = null;
-            try {
-                category = this.storageCategory.openOrCreateCategory("mode_" + mode.name(), callback -> {
-                    //copy token to a byte[]
-                    byte[] newToken = ByteBuffer.allocate(INT_SIZE).order(ByteOrder.LITTLE_ENDIAN).putInt(mode.storageVersion()).array();
-                    callback.setToken(newToken);
-
-                    Optional<byte[]> existingToken = callback.getExistingToken();
-                    return !existingToken.isPresent() || Arrays.equals(newToken, existingToken.get())
-                            ? FStorageCategoryFactory.ConfigurationResult.CREATE_IF_MISSING //category doesn't exist or has a matching storage version
-                            : FStorageCategoryFactory.ConfigurationResult.DELETE_EXISTING_AND_CREATE; //category exists but has a mismatched storage version, re-create it
-                });
-
-                return mode.tileProvider(this, category);
-            } catch (Exception e) {
-                //something went wrong, try to close the category
-                try {
-                    if (category != null) {
-                        category.close();
-                    }
-                } catch (Exception e1) {
-                    e.addSuppressed(e1);
-                }
-
-                PUnsafe.throwException(e); //rethrow exception
-                throw new AssertionError(); //impossible
-            }
+            return mode.tileProvider(this);
         }));
     }
 

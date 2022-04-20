@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.core.mode.api.server.storage;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.api.storage.external.FStorageItem;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
@@ -29,8 +30,6 @@ import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
 import net.daporkchop.lib.primitive.list.LongList;
 import net.daporkchop.lib.primitive.list.array.LongArrayList;
 
-import java.io.Closeable;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
@@ -41,7 +40,7 @@ import java.util.stream.Stream;
  *
  * @author DaPorkchop_
  */
-public interface IFarTileStorage<POS extends IFarPos, T extends IFarTile> extends Closeable {
+public interface FTileStorage<POS extends IFarPos, T extends IFarTile> extends FStorageItem {
     /**
      * Gets an {@link ITileHandle} for accessing the tile data at the given position.
      *
@@ -192,17 +191,6 @@ public interface IFarTileStorage<POS extends IFarPos, T extends IFarTile> extend
     }
 
     /**
-     * Closes this storage.
-     * <p>
-     * If write operations are queued, this method will block until they are completed.
-     * <p>
-     * After this method has completed, attempting to invoke any methods on this {@link IFarTileStorage} instance or any {@link ITileHandle}s returned by {@link #handleFor(IFarPos)}
-     * will result in undefined behavior.
-     */
-    @Override
-    void close() throws IOException;
-
-    /**
      * Adds a new {@link Listener} which will receive all future notifications.
      *
      * @param listener the {@link Listener} to add
@@ -217,7 +205,7 @@ public interface IFarTileStorage<POS extends IFarPos, T extends IFarTile> extend
     void removeListener(@NonNull Listener<POS, T> listener);
 
     /**
-     * Listens for changes made to any data stored in a {@link IFarTileStorage}.
+     * Listens for changes made to any data stored in a {@link FTileStorage}.
      *
      * @author DaPorkchop_
      */

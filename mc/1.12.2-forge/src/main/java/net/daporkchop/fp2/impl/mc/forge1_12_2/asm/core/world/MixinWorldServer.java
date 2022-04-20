@@ -21,14 +21,15 @@
 package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.core.world;
 
 import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.server.IMixinMinecraftServer1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.world.IMixinWorldServer;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.server.world.level.FarLevelServer1_12;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.server.world.level.FLevelServer1_12;
+import net.daporkchop.lib.common.util.PorkUtil;
 import net.minecraft.world.WorldServer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 
-import static net.daporkchop.fp2.core.FP2Core.*;
-import static net.daporkchop.lib.common.util.PorkUtil.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
@@ -36,17 +37,27 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 @Mixin(WorldServer.class)
 public abstract class MixinWorldServer implements IMixinWorldServer {
     @Unique
-    protected FarLevelServer1_12 fp2_farLevelServer;
+    protected FLevelServer1_12 fp2_levelServer;
 
     @Override
-    public FarLevelServer1_12 fp2_farLevelServer() {
-        if (this.fp2_farLevelServer == null) {
-            synchronized (this) {
-                if (this.fp2_farLevelServer == null) {
-                    this.fp2_farLevelServer = new FarLevelServer1_12((FP2Forge1_12_2) fp2(), uncheckedCast(this));
-                }
-            }
-        }
-        return this.fp2_farLevelServer;
+    public void fp2_initLevelServer() {
+        checkState(this.fp2_levelServer == null, "already initialized!");
+
+        this.fp2_levelServer = (FLevelServer1_12) ((IMixinMinecraftServer1_12) PorkUtil.<WorldServer>uncheckedCast(this).getMinecraftServer()).fp2_worldServer()
+                .loadLevel(FP2Forge1_12_2.getIdentifierForWorld(PorkUtil.<WorldServer>uncheckedCast(this)), this);
+    }
+
+    @Override
+    public void fp2_closeLevelServer() {
+        checkState(this.fp2_levelServer != null, "not initialized or already closed!");
+
+        this.fp2_levelServer.close();
+        this.fp2_levelServer = null;
+    }
+
+    @Override
+    public FLevelServer1_12 fp2_levelServer() {
+        checkState(this.fp2_levelServer != null, "not initialized or already closed!");
+        return this.fp2_levelServer;
     }
 }

@@ -32,7 +32,7 @@ public interface FLevel extends AutoCloseable {
     /**
      * @return the implementation-specific object corresponding to this level
      */
-    Object implWorld();
+    Object implLevel();
 
     /**
      * @return this level's ID

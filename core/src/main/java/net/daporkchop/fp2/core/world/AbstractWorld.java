@@ -20,12 +20,15 @@
 
 package net.daporkchop.fp2.core.world;
 
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.api.event.FEventBus;
 import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.api.world.FWorld;
 import net.daporkchop.fp2.api.world.level.FLevel;
+import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.event.EventBus;
 
 import java.util.Map;
@@ -39,21 +42,27 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  *
  * @author DaPorkchop_
  */
-public abstract class AbstractWorld implements FWorld {
+@RequiredArgsConstructor
+@Getter
+public abstract class AbstractWorld<F extends FP2Core> implements FWorld {
+    @NonNull
+    private final F fp2;
+
+    @Getter(AccessLevel.NONE)
     protected final Map<Identifier, FLevel> loadedLevels = new ConcurrentHashMap<>();
 
-    @Getter
     protected final FEventBus eventBus = new EventBus();
 
     @Override
-    public FLevel loadLevel(@NonNull Identifier idIn) {
+    public FLevel loadLevel(@NonNull Identifier idIn, Object implLevel) {
         return this.loadedLevels.compute(idIn, (id, level) -> {
             checkState(level == null, "level %s is already loaded!", id);
-            return this.createLevel(id);
+
+            return this.createLevel(id, implLevel);
         });
     }
 
-    protected abstract FLevel createLevel(@NonNull Identifier id);
+    protected abstract FLevel createLevel(@NonNull Identifier id, Object implLevel);
 
     @Override
     public void unloadLevel(@NonNull Identifier idIn) throws NoSuchElementException {

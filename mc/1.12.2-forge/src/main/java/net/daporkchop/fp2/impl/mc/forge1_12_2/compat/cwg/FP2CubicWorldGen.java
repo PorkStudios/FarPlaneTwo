@@ -69,7 +69,7 @@ public class FP2CubicWorldGen {
         //CustomCubic rough generators
 
         protected boolean isCustomCubicWorld(IFarLevelServer world) {
-            ICubicWorldServer cubicWorld = (ICubicWorldServer) world.implWorld();
+            ICubicWorldServer cubicWorld = (ICubicWorldServer) world.implLevel();
             return cubicWorld.isCubicWorld() && cubicWorld.getCubeGenerator() instanceof CustomTerrainGenerator;
         }
 
@@ -90,7 +90,7 @@ public class FP2CubicWorldGen {
         //FlatCubic rough generators
 
         protected boolean isFlatCubicWorld(IFarLevelServer world) {
-            ICubicWorldServer cubicWorld = (ICubicWorldServer) world.implWorld();
+            ICubicWorldServer cubicWorld = (ICubicWorldServer) world.implLevel();
             return cubicWorld.isCubicWorld() && cubicWorld.getCubeGenerator() instanceof FlatTerrainProcessor;
         }
 

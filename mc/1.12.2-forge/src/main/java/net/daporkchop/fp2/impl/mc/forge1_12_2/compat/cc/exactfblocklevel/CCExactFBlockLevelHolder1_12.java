@@ -76,7 +76,7 @@ public class CCExactFBlockLevelHolder1_12 extends AbstractCubesExactFBlockLevelH
     protected static final long ASYNCBATCHINGCUBEIO_STORAGE_OFFSET = PUnsafe.pork_getOffset(AsyncBatchingCubeIO.class, "storage");
 
     protected static ICubeIO getIO(@NonNull IFarLevelServer world) {
-        return ((ICubeProviderInternal.Server) ((ICubicWorldInternal) world.implWorld()).getCubeCache()).getCubeIO();
+        return ((ICubeProviderInternal.Server) ((ICubicWorldInternal) world.implLevel()).getCubeCache()).getCubeIO();
     }
 
     protected static ICubicStorage getStorage(@NonNull ICubeIO io) {
@@ -94,7 +94,7 @@ public class CCExactFBlockLevelHolder1_12 extends AbstractCubesExactFBlockLevelH
     protected final AtomicInteger generatedCount = new AtomicInteger();
 
     public CCExactFBlockLevelHolder1_12(@NonNull WorldServer world) {
-        super(((IMixinWorldServer) world).fp2_farLevelServer(), Integer.numberOfTrailingZeros(Coords.cubeToMinBlock(1)));
+        super(((IMixinWorldServer) world).fp2_levelServer(), Integer.numberOfTrailingZeros(Coords.cubeToMinBlock(1)));
 
         this.generator = ((ICubicWorldServer) world).getCubeGenerator();
 
@@ -152,7 +152,7 @@ public class CCExactFBlockLevelHolder1_12 extends AbstractCubesExactFBlockLevelH
         if (this.generatedCount.get() >= 8192) {
             this.generatedCount.lazySet(0);
 
-            ((ICubicWorldServer) this.world().implWorld()).unloadOldCubes();
+            ((ICubicWorldServer) this.world().implLevel()).unloadOldCubes();
         }
     }
 
@@ -192,7 +192,7 @@ public class CCExactFBlockLevelHolder1_12 extends AbstractCubesExactFBlockLevelH
 
             //load and immediately save column on server thread
             this.world.workerManager().workExecutor().run(() -> {
-                Chunk column = ((ICubicWorldServer) this.world.implWorld())
+                Chunk column = ((ICubicWorldServer) this.world.implLevel())
                         .getCubeCache().getColumn(key.x(), key.y(), ICubeProviderServer.Requirement.POPULATE);
                 if (column != null && !column.isEmpty()) {
                     this.io.saveColumn(column);
@@ -244,7 +244,7 @@ public class CCExactFBlockLevelHolder1_12 extends AbstractCubesExactFBlockLevelH
 
             this.world.workerManager().workExecutor().run(() -> {
                 //TODO: save column as well if needed
-                ICube cube = ((ICubicWorldServer) this.world.implWorld())
+                ICube cube = ((ICubicWorldServer) this.world.implLevel())
                         .getCubeCache().getCube(key.x(), key.y(), key.z(), ICubeProviderServer.Requirement.LIGHT);
                 if (cube != null && cube.isInitialLightingDone()) {
                     this.io.saveCube((Cube) cube);

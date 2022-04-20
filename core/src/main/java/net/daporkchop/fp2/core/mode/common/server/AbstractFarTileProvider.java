@@ -27,6 +27,7 @@ import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.Synchronized;
 import net.daporkchop.fp2.api.event.FEventHandler;
+import net.daporkchop.fp2.api.storage.FStorageException;
 import net.daporkchop.fp2.core.mode.api.IFarCoordLimits;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
@@ -35,10 +36,10 @@ import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
-import net.daporkchop.fp2.core.mode.api.server.storage.IFarTileStorage;
+import net.daporkchop.fp2.core.mode.api.server.storage.FTileStorage;
 import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTrackerManager;
 import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
-import net.daporkchop.fp2.core.mode.common.server.storage.rocksdb.RocksTileStorage;
+import net.daporkchop.fp2.core.mode.common.server.storage.DefaultTileStorage;
 import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
 import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
 import net.daporkchop.fp2.core.server.event.TickEndEvent;
@@ -47,9 +48,8 @@ import net.daporkchop.fp2.core.util.threading.scheduler.ApproximatelyPrioritized
 import net.daporkchop.fp2.core.util.threading.scheduler.Scheduler;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
+import net.daporkchop.lib.unsafe.PUnsafe;
 
-import java.io.IOException;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -67,13 +67,12 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFarTile> implements IFarTileProvider<POS, T> {
     protected final IFarLevelServer world;
     protected final IFarRenderMode<POS, T> mode;
-    protected final Path root;
 
     protected final IFarGeneratorRough<POS, T> generatorRough;
     protected final IFarGeneratorExact<POS, T> generatorExact;
     protected final IFarScaler<POS, T> scaler;
 
-    protected final IFarTileStorage<POS, T> storage;
+    protected final FTileStorage<POS, T> storage;
 
     protected final IFarCoordLimits<POS> coordLimits;
 
@@ -84,6 +83,9 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
     protected Set<POS> updatesPending = new ObjectRBTreeSet<>();
     protected long lastCompletedTick = -1L;
 
+    protected boolean open = false;
+
+    @SneakyThrows(FStorageException.class)
     public AbstractFarTileProvider(@NonNull IFarLevelServer world, @NonNull IFarRenderMode<POS, T> mode) {
         this.world = world;
         this.mode = mode;
@@ -101,23 +103,70 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
 
         this.scaler = mode.scaler(world, this);
 
-        this.root = world.levelDirectory().resolve(MODID).resolve(this.mode().name().toLowerCase());
-        this.storage = new RocksTileStorage<>(this, this.root);
+        try {
+            //open the tile storage
+            this.storage = world.storageCategory().openOrCreateItem("mode_" + mode.name(), DefaultTileStorage.factory(this));
 
-        this.scheduler = new ApproximatelyPrioritizedSharedFutureScheduler<>(
-                scheduler -> new TileWorker<>(this, scheduler),
-                this.world.workerManager().createChildWorkerGroup()
-                        .threads(fp2().globalConfig().performance().terrainThreads())
-                        .threadFactory(PThreadFactories.builder().daemon().minPriority().collapsingId()
-                                .name(PStrings.fastFormat("FP2 %s %s Worker #%%d", mode.name(), world.id())).build()),
-                PriorityTask.approxComparator());
+            //create the task scheduler
+            this.scheduler = new ApproximatelyPrioritizedSharedFutureScheduler<>(
+                    scheduler -> new TileWorker<>(this, scheduler),
+                    this.world.workerManager().createChildWorkerGroup()
+                            .threads(fp2().globalConfig().performance().terrainThreads())
+                            .threadFactory(PThreadFactories.builder().daemon().minPriority().collapsingId()
+                                    .name(PStrings.fastFormat("FP2 %s %s Worker #%%d", mode.name(), world.id())).build()),
+                    PriorityTask.approxComparator());
 
-        this.trackerManager = this.createTracker();
+            //create the tracker manager
+            this.trackerManager = this.createTracker();
 
-        //TODO: figure out why i was registering this here?
-        // fp2().eventBus().registerWeak(this);
+            //register self to listen for events
+            //TODO: figure out why i was registering this to the global event bus?
+            // fp2().eventBus().registerWeak(this);
+            world.eventBus().registerWeak(this);
 
-        world.eventBus().registerWeak(this);
+            //mark self as open in order to make all resources be released on close
+            this.open = true;
+        } catch (Exception e) {
+            //something went wrong, call close() to clean up any resources which may have been opened
+            try {
+                this.close();
+            } catch (Exception e1) {
+                e.addSuppressed(e1);
+            }
+
+            PUnsafe.throwException(e); //rethrow exception
+            throw new AssertionError(); //impossible
+        }
+    }
+
+    @Override
+    @SneakyThrows(FStorageException.class)
+    public void close() {
+        //try-with-resources to ensure that everything is closed
+        try (FTileStorage<POS, T> storage = this.storage;
+             Scheduler<PriorityTask<POS>, ITileHandle<POS, T>> scheduler = this.scheduler;
+             IFarTrackerManager<POS, T> trackerManager = this.trackerManager) {
+
+            if (this.open) { //the provider has been fully opened, we should unregister ourself from the event bus and flush all the queues
+                fp2().eventBus().unregister(this);
+
+                this.onTickEnd(null);
+                this.shutdownUpdateQueue();
+            }
+        }
+
+        //original shutdown order:
+        /*this.trackerManager.close();
+
+        fp2().eventBus().unregister(this);
+
+        this.scheduler.close();
+
+        this.onTickEnd(null);
+        this.shutdownUpdateQueue();
+
+        fp2().log().trace("Shutting down storage in world '%s'", this.world.id());
+        this.storage.close();*/
     }
 
     protected abstract IFarTrackerManager<POS, T> createTracker();
@@ -204,21 +253,5 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
     protected void shutdownUpdateQueue() {
         this.flushUpdateQueue();
         this.updatesPending = null;
-    }
-
-    @Override
-    @SneakyThrows(IOException.class)
-    public void close() {
-        this.trackerManager.close();
-
-        fp2().eventBus().unregister(this);
-
-        this.scheduler.close();
-
-        this.onTickEnd(null);
-        this.shutdownUpdateQueue();
-
-        fp2().log().trace("Shutting down storage in world '%s'", this.world.id());
-        this.storage.close();
     }
 }

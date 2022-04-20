@@ -18,48 +18,54 @@
  *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_12_2.client.world.level;
+package net.daporkchop.fp2.impl.mc.forge1_12_2.server.world.level;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
-import net.daporkchop.fp2.core.client.world.level.AbstractLevelClient;
-import net.daporkchop.fp2.core.util.threading.futureexecutor.MarkedFutureExecutor;
+import net.daporkchop.fp2.api.util.Identifier;
+import net.daporkchop.fp2.api.world.FWorldServer;
+import net.daporkchop.fp2.core.server.world.TerrainGeneratorInfo;
+import net.daporkchop.fp2.core.server.world.level.AbstractLevelServer;
 import net.daporkchop.fp2.core.util.threading.workergroup.DefaultWorkerManager;
 import net.daporkchop.fp2.core.util.threading.workergroup.WorkerManager;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.ATMinecraft1_12;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.client.render.LevelRenderer1_12_2;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.util.threading.futureexecutor.ClientThreadMarkedFutureExecutor;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.server.ATMinecraftServer1_12;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.server.TerrainGeneratorInfo1_12_2;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.util.threading.futureexecutor.ServerThreadMarkedFutureExecutor;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.world.level.IFarLevel1_12;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.WorldClient;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.world.registry.GameRegistry1_12_2;
+import net.minecraft.world.WorldServer;
+
+import java.nio.file.Path;
 
 /**
  * @author DaPorkchop_
  */
 @Getter
-public class FarLevelClient1_12_2 extends AbstractLevelClient<FP2Forge1_12_2, WorldClient> implements IFarLevel1_12 {
-    private final IntAxisAlignedBB coordLimits;
-    private final LevelRenderer1_12_2 renderer;
-
-    public FarLevelClient1_12_2(@NonNull FP2Forge1_12_2 fp2, @NonNull WorldClient world, @NonNull IntAxisAlignedBB coordLimits) {
-        super(fp2, world);
-
-        this.coordLimits = coordLimits;
-
-        this.renderer = this.workerManager().rootExecutor().supply(MarkedFutureExecutor.DEFAULT_MARKER, () -> new LevelRenderer1_12_2(Minecraft.getMinecraft(), this)).join();
+public class FLevelServer1_12 extends AbstractLevelServer<FP2Forge1_12_2, WorldServer> implements IFarLevel1_12 {
+    public FLevelServer1_12(@NonNull FP2Forge1_12_2 fp2, @NonNull WorldServer implLevel, @NonNull FWorldServer world, @NonNull Identifier id) {
+        super(fp2, implLevel, world, id, GameRegistry1_12_2.get());
     }
 
     @Override
     protected WorkerManager createWorkerManager() {
         return new DefaultWorkerManager(
-                ((ATMinecraft1_12) Minecraft.getMinecraft()).getThread(),
-                ClientThreadMarkedFutureExecutor.getFor(Minecraft.getMinecraft()));
+                ((ATMinecraftServer1_12) this.implLevel().getMinecraftServer()).getServerThread(),
+                ServerThreadMarkedFutureExecutor.getFor(this.implLevel().getMinecraftServer()));
     }
 
     @Override
-    public void close() {
-        this.workerManager().rootExecutor().run(MarkedFutureExecutor.DEFAULT_MARKER, this.renderer::close);
+    public Path levelDirectory() {
+        return this.implLevel().getChunkSaveLocation().toPath();
+    }
+
+    @Override
+    public TerrainGeneratorInfo terrainGeneratorInfo() {
+        return new TerrainGeneratorInfo1_12_2(this.implLevel());
+    }
+
+    @Override
+    public int seaLevel() {
+        return this.implLevel().getSeaLevel();
     }
 }

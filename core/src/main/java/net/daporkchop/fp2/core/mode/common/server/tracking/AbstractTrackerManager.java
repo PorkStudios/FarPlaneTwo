@@ -28,7 +28,7 @@ import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
-import net.daporkchop.fp2.core.mode.api.server.storage.IFarTileStorage;
+import net.daporkchop.fp2.core.mode.api.server.storage.FTileStorage;
 import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTracker;
 import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTrackerManager;
 import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
@@ -59,7 +59,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractTrackerManager<POS extends IFarPos, T extends IFarTile> implements IFarTrackerManager<POS, T>, IFarTileStorage.Listener<POS, T> {
+public abstract class AbstractTrackerManager<POS extends IFarPos, T extends IFarTile> implements IFarTrackerManager<POS, T>, FTileStorage.Listener<POS, T> {
     protected final IFarTileProvider<POS, T> tileProvider;
 
     protected final Map<POS, Entry> entries = new ConcurrentHashMap<>();

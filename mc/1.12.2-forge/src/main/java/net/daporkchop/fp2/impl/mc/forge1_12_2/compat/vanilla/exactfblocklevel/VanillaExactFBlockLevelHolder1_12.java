@@ -52,12 +52,12 @@ import java.util.List;
  */
 public class VanillaExactFBlockLevelHolder1_12 extends AbstractChunksExactFBlockLevelHolder<Chunk> {
     public VanillaExactFBlockLevelHolder1_12(@NonNull WorldServer world) {
-        super(((IMixinWorldServer) world).fp2_farLevelServer(), 4);
+        super(((IMixinWorldServer) world).fp2_levelServer(), 4);
     }
 
     @Override
     protected NDimensionalIntSegtreeSet createChunksExistIndex(@NonNull IFarLevelServer world) {
-        AnvilChunkLoader io = (AnvilChunkLoader) ((WorldServer) world.implWorld()).getChunkProvider().chunkLoader;
+        AnvilChunkLoader io = (AnvilChunkLoader) ((WorldServer) world.implLevel()).getChunkProvider().chunkLoader;
         return Datastructures.INSTANCE.nDimensionalIntSegtreeSet()
                 .dimensions(2)
                 .threadSafe(true)
@@ -69,7 +69,7 @@ public class VanillaExactFBlockLevelHolder1_12 extends AbstractChunksExactFBlock
 
     @Override
     protected AsyncCacheNBT<Vec2i, ?, Chunk, ?> createChunkCache(@NonNull IFarLevelServer world) {
-        return new ChunkCache((WorldServer) world.implWorld(), (AnvilChunkLoader) ((WorldServer) world.implWorld()).getChunkProvider().chunkLoader);
+        return new ChunkCache((WorldServer) world.implLevel(), (AnvilChunkLoader) ((WorldServer) world.implLevel()).getChunkProvider().chunkLoader);
     }
 
     @Override
@@ -107,7 +107,7 @@ public class VanillaExactFBlockLevelHolder1_12 extends AbstractChunksExactFBlock
 
         @Override
         protected void triggerGeneration(@NonNull Vec2i key, @NonNull Object param) {
-            ((IMixinWorldServer) this.world).fp2_farLevelServer().workerManager().workExecutor().run((ERunnable) () -> {
+            ((IMixinWorldServer) this.world).fp2_levelServer().workerManager().workExecutor().run((ERunnable) () -> {
                 int x = key.x();
                 int z = key.y();
 

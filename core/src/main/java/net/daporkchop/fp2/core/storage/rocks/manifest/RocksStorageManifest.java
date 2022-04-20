@@ -54,7 +54,8 @@ public class RocksStorageManifest extends AbstractRocksManifest<RocksStorageMani
         ByteBuf buf = Unpooled.wrappedBuffer(arr);
 
         return FStorageColumnHintsInternal.builder()
-                .expectedKeySize(buf.readIntLE())
+                .expectedAverageKeySize(buf.readIntLE())
+                .expectedAverageValueSize(buf.readIntLE())
                 .compressability(FStorageColumnHintsInternal.Compressability.valueOf(buf.readCharSequence(buf.readIntLE(), StandardCharsets.UTF_8).toString()))
                 .build();
     }
@@ -63,7 +64,8 @@ public class RocksStorageManifest extends AbstractRocksManifest<RocksStorageMani
         ByteBuf buf = ByteBufAllocator.DEFAULT.buffer();
         try {
             //serialize hints
-            buf.writeIntLE(hints.expectedKeySize());
+            buf.writeIntLE(hints.expectedAverageKeySize());
+            buf.writeIntLE(hints.expectedAverageValueSize());
             buf.setIntLE(buf.writerIndex(), buf.writeInt(0).writeCharSequence(hints.compressability().name(), StandardCharsets.UTF_8));
 
             //copy ByteBuf to a byte[]

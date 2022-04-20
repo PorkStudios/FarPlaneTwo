@@ -27,7 +27,7 @@ import net.daporkchop.fp2.core.client.render.LevelRenderer;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.renderer.ATEntityRenderer1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.client.renderer.IMixinRenderGlobal;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.client.world.level.FarLevelClient1_12_2;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.client.world.level.FLevelClient1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.ResourceProvider1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.SingleBiomeBlockAccess;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.world.registry.GameRegistry1_12_2;
@@ -42,14 +42,14 @@ public class LevelRenderer1_12_2 implements LevelRenderer, AutoCloseable {
     protected final Minecraft mc;
     protected final GL gl;
 
-    protected final FarLevelClient1_12_2 level;
+    protected final FLevelClient1_12_2 level;
 
     protected final TextureUVs1_12_2 textureUVs;
 
     protected final GameRegistry1_12_2 registry;
     protected final byte[] renderTypeLookup;
 
-    public LevelRenderer1_12_2(@NonNull Minecraft mc, @NonNull FarLevelClient1_12_2 level) {
+    public LevelRenderer1_12_2(@NonNull Minecraft mc, @NonNull FLevelClient1_12_2 level) {
         this.mc = mc;
         this.level = level;
 

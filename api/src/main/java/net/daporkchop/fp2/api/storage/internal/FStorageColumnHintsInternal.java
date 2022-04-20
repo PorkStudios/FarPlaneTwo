@@ -50,7 +50,15 @@ public class FStorageColumnHintsInternal {
      * Default: {@code -1}
      */
     @Builder.Default
-    private final int expectedKeySize = -1;
+    private final int expectedAverageKeySize = -1;
+
+    /**
+     * The expected average size of a value, in bytes, or a value {@code < 0} if unknown.
+     * <p>
+     * Default: {@code -1}
+     */
+    @Builder.Default
+    private final int expectedAverageValueSize = -1;
 
     /**
      * The expected compressability of data.
@@ -62,10 +70,17 @@ public class FStorageColumnHintsInternal {
     private final Compressability compressability = Compressability.NORMAL;
 
     /**
-     * @see #expectedKeySize
+     * @see #expectedAverageKeySize
      */
-    public int expectedKeySize() {
-        return max(this.expectedKeySize, -1);
+    public int expectedAverageKeySize() {
+        return max(this.expectedAverageKeySize, -1);
+    }
+
+    /**
+     * @see #expectedAverageValueSize
+     */
+    public int expectedAverageValueSize() {
+        return max(this.expectedAverageValueSize, -1);
     }
 
     /**

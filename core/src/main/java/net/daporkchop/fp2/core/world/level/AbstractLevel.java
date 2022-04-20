@@ -23,6 +23,8 @@ package net.daporkchop.fp2.core.world.level;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.event.FEventBus;
+import net.daporkchop.fp2.api.util.Identifier;
+import net.daporkchop.fp2.api.world.FWorld;
 import net.daporkchop.fp2.api.world.level.FLevel;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.event.EventBus;
@@ -34,17 +36,22 @@ import net.daporkchop.fp2.core.util.threading.workergroup.WorkerManager;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractLevel<F extends FP2Core, WORLD> implements FLevel {
+public abstract class AbstractLevel<F extends FP2Core, IMPL_LEVEL, WORLD extends FWorld> implements FLevel {
     private final F fp2;
-    private final WORLD implWorld;
+    private final IMPL_LEVEL implLevel;
+
+    private final WORLD world;
+    private final Identifier id;
 
     private final WorkerManager workerManager;
 
     private final FEventBus eventBus = new EventBus();
 
-    public AbstractLevel(@NonNull F fp2, WORLD implWorld) {
+    public AbstractLevel(@NonNull F fp2, IMPL_LEVEL implLevel, @NonNull WORLD world, @NonNull Identifier id) {
         this.fp2 = fp2;
-        this.implWorld = implWorld;
+        this.implLevel = implLevel;
+        this.world = world;
+        this.id = id;
 
         this.workerManager = this.createWorkerManager();
     }

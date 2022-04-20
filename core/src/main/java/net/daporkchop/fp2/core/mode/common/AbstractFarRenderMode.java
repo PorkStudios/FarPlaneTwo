@@ -24,7 +24,6 @@ import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.api.storage.external.FStorageCategory;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
@@ -87,7 +86,7 @@ public abstract class AbstractFarRenderMode<POS extends IFarPos, T extends IFarT
     protected abstract AbstractTileProviderCreationEvent tileProviderCreationEvent(@NonNull IFarLevelServer world);
 
     @Override
-    public IFarTileProvider<POS, T> tileProvider(@NonNull IFarLevelServer world, @NonNull FStorageCategory storageCategory) {
+    public IFarTileProvider<POS, T> tileProvider(@NonNull IFarLevelServer world) {
         return fp2().eventBus().fireAndGetFirst(this.tileProviderCreationEvent(world))
                 .orElseThrow(() -> new IllegalStateException(PStrings.fastFormat(
                         "No tile provider available for world '%s', mode:%s",

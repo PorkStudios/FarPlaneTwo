@@ -18,47 +18,17 @@
  *
  */
 
-package net.daporkchop.fp2.core.server.world;
+package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.server;
 
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.SneakyThrows;
-import net.daporkchop.fp2.api.storage.FStorage;
-import net.daporkchop.fp2.api.storage.FStorageException;
-import net.daporkchop.fp2.api.storage.external.FStorageCategory;
-import net.daporkchop.fp2.api.world.FWorldServer;
-import net.daporkchop.fp2.core.FP2Core;
-import net.daporkchop.fp2.core.storage.rocks.RocksStorage;
-import net.daporkchop.fp2.core.world.AbstractWorld;
-
-import java.nio.file.Path;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.server.world.FWorldServer1_12;
 
 /**
- * Base implementation of {@link FWorldServer}.
- *
  * @author DaPorkchop_
  */
-@Getter
-public abstract class AbstractWorldServer<F extends FP2Core> extends AbstractWorld<F> implements FWorldServer {
-    private static final int VERSION = 0;
+public interface IMixinMinecraftServer1_12 {
+    void fp2_initWorldServer();
 
-    private final FStorage storage;
+    void fp2_closeWorldServer();
 
-    @SneakyThrows(FStorageException.class)
-    public AbstractWorldServer(@NonNull F fp2, @NonNull Path path) {
-        super(fp2);
-
-        this.storage = RocksStorage.open(path.resolve("fp2"));
-    }
-
-    @Override
-    @SneakyThrows(FStorageException.class)
-    public void close() {
-        this.storage.close();
-    }
-
-    @Override
-    public FStorageCategory storageCategory() {
-        return this.storage;
-    }
+    FWorldServer1_12 fp2_worldServer();
 }

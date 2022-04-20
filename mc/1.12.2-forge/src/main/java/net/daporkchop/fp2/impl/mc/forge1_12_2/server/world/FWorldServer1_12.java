@@ -18,47 +18,31 @@
  *
  */
 
-package net.daporkchop.fp2.core.server.world;
+package net.daporkchop.fp2.impl.mc.forge1_12_2.server.world;
 
-import lombok.Getter;
 import lombok.NonNull;
-import lombok.SneakyThrows;
-import net.daporkchop.fp2.api.storage.FStorage;
-import net.daporkchop.fp2.api.storage.FStorageException;
-import net.daporkchop.fp2.api.storage.external.FStorageCategory;
-import net.daporkchop.fp2.api.world.FWorldServer;
-import net.daporkchop.fp2.core.FP2Core;
-import net.daporkchop.fp2.core.storage.rocks.RocksStorage;
-import net.daporkchop.fp2.core.world.AbstractWorld;
-
-import java.nio.file.Path;
+import net.daporkchop.fp2.api.util.Identifier;
+import net.daporkchop.fp2.api.world.level.FLevel;
+import net.daporkchop.fp2.core.server.world.AbstractWorldServer;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.server.world.level.FLevelServer1_12;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.WorldServer;
 
 /**
- * Base implementation of {@link FWorldServer}.
- *
  * @author DaPorkchop_
  */
-@Getter
-public abstract class AbstractWorldServer<F extends FP2Core> extends AbstractWorld<F> implements FWorldServer {
-    private static final int VERSION = 0;
+public class FWorldServer1_12 extends AbstractWorldServer<FP2Forge1_12_2> {
+    private final MinecraftServer server;
 
-    private final FStorage storage;
+    public FWorldServer1_12(@NonNull FP2Forge1_12_2 fp2, @NonNull MinecraftServer server) {
+        super(fp2, server.getActiveAnvilConverter().getSaveLoader(server.getFolderName(), false).getWorldDirectory().toPath());
 
-    @SneakyThrows(FStorageException.class)
-    public AbstractWorldServer(@NonNull F fp2, @NonNull Path path) {
-        super(fp2);
-
-        this.storage = RocksStorage.open(path.resolve("fp2"));
+        this.server = server;
     }
 
     @Override
-    @SneakyThrows(FStorageException.class)
-    public void close() {
-        this.storage.close();
-    }
-
-    @Override
-    public FStorageCategory storageCategory() {
-        return this.storage;
+    protected FLevel createLevel(@NonNull Identifier id, Object implLevel) {
+        return new FLevelServer1_12(this.fp2(), (WorldServer) implLevel, this, id);
     }
 }

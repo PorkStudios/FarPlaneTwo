@@ -94,7 +94,7 @@ public class FP2CubicChunks {
     @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static final class Events {
         protected boolean isCubicWorld(IFarLevel world) {
-            return ((ICubicWorld) world.implWorld()).isCubicWorld();
+            return ((ICubicWorld) world.implLevel()).isCubicWorld();
         }
 
         //forge events
@@ -102,7 +102,7 @@ public class FP2CubicChunks {
         @SubscribeEvent(priority = EventPriority.LOWEST)
         public void onCubeDataSave(CubeDataEvent.Save event) {
             ICube cube = event.getCube();
-            ((IMixinWorldServer) cube.getWorld()).fp2_farLevelServer().eventBus().fire(new CubeSavedEvent(Vec3i.of(cube.getX(), cube.getY(), cube.getZ()), new FCube1_12_2(cube), event.getData()));
+            ((IMixinWorldServer) cube.getWorld()).fp2_levelServer().eventBus().fire(new CubeSavedEvent(Vec3i.of(cube.getX(), cube.getY(), cube.getZ()), new FCube1_12_2(cube), event.getData()));
         }
 
         //world information providers
@@ -111,7 +111,7 @@ public class FP2CubicChunks {
                 constrain = @Constrain(before = "vanilla_world_coordinate_limits"))
         public Optional<IntAxisAlignedBB> getCoordinateLimits(GetCoordinateLimitsEvent event) {
             if (this.isCubicWorld(event.world())) {
-                ICubicWorld cubicWorld = (ICubicWorld) event.world().implWorld();
+                ICubicWorld cubicWorld = (ICubicWorld) event.world().implLevel();
                 int minY = cubicWorld.getMinHeight();
                 int maxY = cubicWorld.getMaxHeight();
 
@@ -126,7 +126,7 @@ public class FP2CubicChunks {
                 constrain = @Constrain(before = "vanilla_world_exact_fblocklevel"))
         public Optional<ExactFBlockLevelHolder> getExactFBlockLevel(GetExactFBlockLevelEvent event) {
             return this.isCubicWorld(event.world())
-                    ? Optional.of(new CCExactFBlockLevelHolder1_12((WorldServer) event.world().implWorld()))
+                    ? Optional.of(new CCExactFBlockLevelHolder1_12((WorldServer) event.world().implLevel()))
                     : Optional.empty();
         }
 
@@ -134,7 +134,7 @@ public class FP2CubicChunks {
                 constrain = @Constrain(before = "vanilla_world_terrain_generator"))
         public Optional<Object> getTerrainGenerator(GetTerrainGeneratorEvent event) {
             return this.isCubicWorld(event.world())
-                    ? Optional.of(((ICubicWorldServer) event.world().implWorld()).getCubeGenerator())
+                    ? Optional.of(((ICubicWorldServer) event.world().implLevel()).getCubeGenerator())
                     : Optional.empty();
         }
 

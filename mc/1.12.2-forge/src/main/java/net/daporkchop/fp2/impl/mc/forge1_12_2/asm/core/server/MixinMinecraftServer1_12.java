@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -20,6 +20,9 @@
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.core.server;
 
+import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.server.IMixinMinecraftServer1_12;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.server.world.FWorldServer1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.threading.futureexecutor.ServerThreadMarkedFutureExecutor;
 import net.minecraft.server.MinecraftServer;
 import org.spongepowered.asm.mixin.Mixin;
@@ -28,6 +31,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import static net.daporkchop.fp2.core.FP2Core.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
@@ -37,9 +42,12 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 @Mixin(MinecraftServer.class)
 @SuppressWarnings("deprecation")
-public abstract class MixinMinecraftServer implements ServerThreadMarkedFutureExecutor.Holder {
+public abstract class MixinMinecraftServer1_12 implements IMixinMinecraftServer1_12, ServerThreadMarkedFutureExecutor.Holder {
     @Unique
     private ServerThreadMarkedFutureExecutor fp2_executor;
+
+    @Unique
+    private FWorldServer1_12 fp2_worldServer;
 
     @Inject(method = "Lnet/minecraft/server/MinecraftServer;startServerThread()V",
             at = @At(value = "INVOKE",
@@ -47,6 +55,26 @@ public abstract class MixinMinecraftServer implements ServerThreadMarkedFutureEx
                     shift = At.Shift.BEFORE))
     private void fp2_startServerThread_constructMarkedExecutor(CallbackInfo ci) {
         this.fp2_executor = new ServerThreadMarkedFutureExecutor(uncheckedCast(this));
+    }
+
+    @Override
+    public void fp2_initWorldServer() {
+        checkState(this.fp2_worldServer == null, "already initialized!");
+        this.fp2_worldServer = new FWorldServer1_12((FP2Forge1_12_2) fp2(), uncheckedCast(this));
+    }
+
+    @Override
+    public void fp2_closeWorldServer() {
+        checkState(this.fp2_worldServer != null, "not initialized or already closed!");
+
+        this.fp2_worldServer.close();
+        this.fp2_worldServer = null;
+    }
+
+    @Override
+    public FWorldServer1_12 fp2_worldServer() {
+        checkState(this.fp2_worldServer != null, "not initialized or already closed!");
+        return this.fp2_worldServer;
     }
 
     @Override

@@ -37,6 +37,7 @@ import org.rocksdb.Transaction;
 import java.util.Arrays;
 import java.util.List;
 
+import static java.lang.Math.*;
 import static net.daporkchop.fp2.core.storage.rocks.RocksStorage.*;
 
 /**
@@ -89,7 +90,28 @@ public class RocksAccessTransaction implements FStorageAccess, AutoCloseable {
     @Override
     public List<byte[]> multiGet(@NonNull List<FStorageColumn> columns, @NonNull List<byte[]> keys) throws FStorageException {
         try {
-            return Arrays.asList(this.transaction.multiGetForUpdate(this.readOptions, RocksStorageColumn.toColumnFamilyHandles(columns), keys.toArray(new byte[0][])));
+            List<ColumnFamilyHandle> handles = RocksStorageColumn.toColumnFamilyHandles(columns);
+            byte[][] keysArray = keys.toArray(new byte[0][]);
+
+            byte[][] result;
+
+            final int MAX_BATCH_SIZE = 65536;
+            if (keysArray.length <= MAX_BATCH_SIZE) {
+                result = this.transaction.multiGetForUpdate(this.readOptions, handles, keysArray);
+            } else { //workaround for https://github.com/facebook/rocksdb/issues/9006: read results in increments of at most MAX_BATCH_SIZE at a time
+                result = new byte[keysArray.length][];
+
+                for (int i = 0; i < keysArray.length; ) {
+                    int batchSize = min(keysArray.length - i, MAX_BATCH_SIZE);
+
+                    byte[][] tmp = this.transaction.multiGetForUpdate(this.readOptions, handles.subList(i, i + batchSize), Arrays.copyOfRange(keysArray, i, i + batchSize));
+                    System.arraycopy(tmp, 0, result, i, batchSize);
+
+                    i += batchSize;
+                }
+            }
+
+            return Arrays.asList(result);
         } catch (RocksDBException e) {
             throw wrapException(e);
         }

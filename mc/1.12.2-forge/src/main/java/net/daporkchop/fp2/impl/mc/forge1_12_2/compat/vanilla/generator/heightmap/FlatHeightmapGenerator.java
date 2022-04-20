@@ -53,7 +53,7 @@ public class FlatHeightmapGenerator extends AbstractRoughHeightmapGenerator {
     public FlatHeightmapGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<HeightmapPos, HeightmapTile> provider) {
         super(world, provider);
 
-        FlatGeneratorInfo generatorInfo = this.loadGeneratorInfoFromWorld((WorldServer) world.implWorld());
+        FlatGeneratorInfo generatorInfo = this.loadGeneratorInfoFromWorld((WorldServer) world.implLevel());
 
         List<FlatLayerInfo> layers = generatorInfo.getFlatLayers();
         int topOpaqueLayerIndex = -1;

@@ -36,10 +36,11 @@ public interface FWorld extends AutoCloseable {
     /**
      * Loads the {@link FLevel} with the given {@link Identifier ID}.
      *
-     * @param id the level's ID
+     * @param id        the level's ID
+     * @param implLevel an implementation-specific object representing the level being loaded
      * @return the loaded level
      */
-    FLevel loadLevel(@NonNull Identifier id);
+    FLevel loadLevel(@NonNull Identifier id, Object implLevel);
 
     /**
      * Unloads the {@link FLevel} with the given {@link Identifier ID}.

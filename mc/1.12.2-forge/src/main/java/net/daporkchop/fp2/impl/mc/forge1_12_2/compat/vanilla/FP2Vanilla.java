@@ -80,7 +80,7 @@ public class FP2Vanilla {
     @FEventHandler(name = "vanilla_world_coordinate_limits")
     public IntAxisAlignedBB getCoordinateLimits(GetCoordinateLimitsEvent event) {
         int minY = 0;
-        int maxY = ((World) event.world().implWorld()).getHeight();
+        int maxY = ((World) event.world().implLevel()).getHeight();
 
         final int HORIZONTAL_LIMIT = 30_000_000; //TODO: hard-coding this is probably a bad idea, but there don't seem to be any variables or methods i can use to get it
         return new IntAxisAlignedBB(-HORIZONTAL_LIMIT, minY, -HORIZONTAL_LIMIT, HORIZONTAL_LIMIT + 1, maxY, HORIZONTAL_LIMIT + 1);
@@ -88,12 +88,12 @@ public class FP2Vanilla {
 
     @FEventHandler(name = "vanilla_world_exact_fblocklevel")
     public ExactFBlockLevelHolder getExactFBlockLevel(GetExactFBlockLevelEvent event) {
-        return new VanillaExactFBlockLevelHolder1_12((WorldServer) event.world().implWorld());
+        return new VanillaExactFBlockLevelHolder1_12((WorldServer) event.world().implLevel());
     }
 
     @FEventHandler(name = "vanilla_world_terrain_generator")
     public Object getTerrainGenerator(GetTerrainGeneratorEvent event) {
-        return ((WorldServer) event.world().implWorld()).getChunkProvider().chunkGenerator;
+        return ((WorldServer) event.world().implLevel()).getChunkProvider().chunkGenerator;
     }
 
     //exact generators

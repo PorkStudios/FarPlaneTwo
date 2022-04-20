@@ -20,35 +20,20 @@
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.world.level;
 
-import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarLevel;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.world.registry.GameRegistry1_12_2;
-import net.minecraft.world.DimensionType;
 import net.minecraft.world.World;
-
-import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
 public interface IFarLevel1_12 extends IFarLevel {
     @Override
-    World implWorld();
-
-    @Override
-    default Identifier id() {
-        int dimensionId = this.implWorld().provider.getDimension();
-        DimensionType dimensionType = this.implWorld().provider.getDimensionType();
-
-        //sanity check because i'm not entirely sure what kind of crazy shit mods do with dimension types, and i want to be sure not to screw anything up
-        checkState(dimensionId == dimensionType.getId(), "dimension #%d has invalid ID: '%s' is expected to have ID %d", dimensionId, dimensionType.getName(), dimensionType.getId());
-
-        return Identifier.fromLenient("minecraft", dimensionType.getName());
-    }
+    World implLevel();
 
     @Override
     default long timestamp() {
-        return this.implWorld().getTotalWorldTime();
+        return this.implLevel().getTotalWorldTime();
     }
 
     @Override
