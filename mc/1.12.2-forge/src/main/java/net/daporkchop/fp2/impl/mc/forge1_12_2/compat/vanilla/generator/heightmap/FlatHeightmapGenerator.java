@@ -29,7 +29,7 @@ import net.daporkchop.fp2.core.mode.heightmap.HeightmapData;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapTile;
 import net.daporkchop.fp2.core.mode.heightmap.server.gen.rough.AbstractRoughHeightmapGenerator;
-import net.daporkchop.fp2.core.server.world.IFarLevelServer;
+import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
 import net.minecraft.world.WorldServer;

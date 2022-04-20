@@ -29,7 +29,7 @@ import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfi
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionBegin;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionEnd;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUpdateConfig;
-import net.daporkchop.fp2.core.server.world.IFarLevelServer;
+import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.util.annotation.CalledFromNetworkThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
 
@@ -76,7 +76,7 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
     protected void handleDebug(@NonNull CPacketDebugDropAllTiles packet) {
         this.world.workerManager().rootExecutor().execute(() -> {
             this.fp2().log().info("Dropping all tiles");
-            this.world.forEachTileProvider(tileProvider -> tileProvider.trackerManager().dropAllTiles());
+            this.world.forEachLoadedTileProvider(tileProvider -> tileProvider.trackerManager().dropAllTiles());
         });
     }
 

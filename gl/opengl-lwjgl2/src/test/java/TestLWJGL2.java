@@ -22,7 +22,7 @@ import com.google.common.base.Strings;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.SneakyThrows;
-import net.daporkchop.fp2.common.util.Identifier;
+import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.common.util.exception.ResourceNotFoundException;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.attribute.AttributeBuffer;

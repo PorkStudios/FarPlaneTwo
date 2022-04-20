@@ -23,8 +23,10 @@ package net.daporkchop.fp2.core.storage.rocks;
 import com.google.common.collect.ImmutableSet;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.api.storage.FStorageException;
 import net.daporkchop.fp2.api.storage.external.FStorageCategory;
+import net.daporkchop.fp2.api.storage.external.FStorageCategoryFactory;
 import net.daporkchop.fp2.api.storage.external.FStorageItem;
 import net.daporkchop.fp2.api.storage.external.FStorageItemFactory;
 import net.daporkchop.fp2.api.storage.internal.access.FStorageAccess;
@@ -55,9 +57,67 @@ public class RocksStorageCategory implements FStorageCategory {
 
     private volatile boolean open = true;
 
-    public RocksStorageCategory(@NonNull RocksStorage<?> storage, @NonNull String inode, @NonNull FStorageAccess access) {
+    @SuppressWarnings("OptionalAssignedToNull")
+    public RocksStorageCategory(@NonNull RocksStorage<?> storage, @NonNull String inode, @NonNull FStorageAccess access, @NonNull FStorageCategoryFactory factory) {
         this.storage = storage;
         this.manifestData = new RocksCategoryManifest(storage.defaultColumn(), inode, access);
+
+        @RequiredArgsConstructor
+        @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+        class CallbackImpl implements FStorageCategoryFactory.ConfigurationCallback {
+            final Optional<byte[]> existingToken;
+            Optional<byte[]> newToken;
+
+            @Override
+            public Optional<byte[]> getExistingToken() {
+                return this.existingToken;
+            }
+
+            @Override
+            public void setToken(@NonNull byte[] token) {
+                this.newToken = Optional.of(token.clone());
+            }
+
+            @Override
+            public void clearToken() {
+                this.newToken = Optional.empty();
+            }
+        }
+
+        //configure the category
+        CallbackImpl callback = new CallbackImpl(this.manifestData.getToken(access));
+        FStorageCategoryFactory.ConfigurationResult result = factory.configure(callback);
+
+        switch (result) {
+            case DELETE_EXISTING_AND_CREATE:
+                if (this.manifestData.isInitialized(access)) { //the category already exists
+                    //delete the category data without deleting the inode
+                    this.doDeleteCategory(access, inode, false);
+
+                    //if no new token is being set, preserve the old one
+                    if (callback.newToken == null) {
+                        callback.newToken = callback.existingToken;
+                    }
+                }
+            case CREATE_IF_MISSING:
+                //no-op
+                break;
+            default:
+                throw new IllegalArgumentException("unsupported configuration result: " + result);
+        }
+
+        if (callback.newToken != null) { //the token is being updated
+            if (callback.newToken.isPresent()) {
+                this.manifestData.setToken(access, callback.newToken.get());
+            } else {
+                this.manifestData.removeToken(access);
+            }
+        }
+
+        if (!this.manifestData.isInitialized(access)) {
+            //the category has been fully initialized
+            this.manifestData.markInitialized(access);
+        }
     }
 
     public void ensureOpen() {
@@ -66,18 +126,23 @@ public class RocksStorageCategory implements FStorageCategory {
         }
     }
 
-    protected void doDeleteCategory(@NonNull FStorageAccess access, @NonNull String inode) {
+    protected void doDeleteCategory(@NonNull FStorageAccess access, @NonNull String inode, boolean deleteInode) {
         RocksCategoryManifest manifest = new RocksCategoryManifest(this.storage.defaultColumn(), inode, access);
 
         //recursively delete all sub-categories
-        manifest.forEachChildCategory(access, (categoryName, categoryInode) -> this.doDeleteCategory(access, categoryInode));
+        manifest.forEachChildCategory(access, (categoryName, categoryInode) -> this.doDeleteCategory(access, categoryInode, true));
 
         //delete all sub-items
         manifest.forEachChildItem(access, (itemName, itemInode) -> this.doDeleteItem(access, itemInode));
 
-        //clear the category's manifest data
-        manifest.delete(access);
-        this.storage.manifest().deleteInode(access, inode);
+        if (deleteInode) {
+            //delete the category's manifest inode and remove it from the inode allocation table
+            manifest.delete(access);
+            this.storage.manifest().deleteInode(access, inode);
+        } else {
+            //clear the category's manifest data
+            manifest.clear(access);
+        }
     }
 
     protected void doDeleteItem(@NonNull FStorageAccess access, @NonNull String inode) {
@@ -101,6 +166,24 @@ public class RocksStorageCategory implements FStorageCategory {
     }
 
     @Override
+    public Optional<byte[]> getToken() throws FStorageException {
+        this.ensureOpen();
+        return this.storage.readGet(this.manifestData::getToken);
+    }
+
+    @Override
+    public void setToken(@NonNull byte[] token) throws FStorageException {
+        this.ensureOpen();
+        this.storage.writeAtomicRun(access -> this.manifestData.setToken(access, token));
+    }
+
+    @Override
+    public void removeToken() throws FStorageException {
+        this.ensureOpen();
+        this.storage.writeAtomicRun(this.manifestData::removeToken);
+    }
+
+    @Override
     public Set<String> allCategories() throws FStorageException {
         this.ensureOpen();
 
@@ -113,7 +196,7 @@ public class RocksStorageCategory implements FStorageCategory {
     }
 
     @Override
-    public FStorageCategory openCategory(@NonNull String nameIn) throws FStorageException, NoSuchElementException, IllegalStateException {
+    public FStorageCategory openCategory(@NonNull String nameIn, @NonNull FStorageCategoryFactory factory) throws FStorageException, NoSuchElementException, IllegalStateException {
         this.ensureOpen();
 
         return this.openCategories.compute(nameIn, (name, category) -> {
@@ -130,7 +213,7 @@ public class RocksStorageCategory implements FStorageCategory {
 
                 //open the category
                 String inode = optionalInode.get();
-                return this.storage.transactAtomicGet(access -> new RocksStorageCategory.AsChild(this.storage, inode, access, this, name));
+                return this.storage.transactAtomicGet(access -> new RocksStorageCategory.AsChild(this.storage, inode, access, factory, this, name));
             } catch (FStorageException e) {
                 PUnsafe.throwException(e); //hack to throw FStorageException from inside of the lambda
                 throw new AssertionError(); //impossible
@@ -139,7 +222,7 @@ public class RocksStorageCategory implements FStorageCategory {
     }
 
     @Override
-    public FStorageCategory openOrCreateCategory(@NonNull String nameIn) throws FStorageException, IllegalStateException {
+    public FStorageCategory openOrCreateCategory(@NonNull String nameIn, @NonNull FStorageCategoryFactory factory) throws FStorageException, IllegalStateException {
         this.ensureOpen();
 
         return this.openCategories.compute(nameIn, (name, category) -> {
@@ -165,7 +248,7 @@ public class RocksStorageCategory implements FStorageCategory {
 
                 //open the category
                 String inode = optionalInode.get();
-                return this.storage.transactAtomicGet(access -> new RocksStorageCategory.AsChild(this.storage, inode, access, this, name));
+                return this.storage.transactAtomicGet(access -> new RocksStorageCategory.AsChild(this.storage, inode, access, factory, this, name));
             } catch (FStorageException e) {
                 PUnsafe.throwException(e); //hack to throw FStorageException from inside of the lambda
                 throw new AssertionError(); //impossible
@@ -208,7 +291,7 @@ public class RocksStorageCategory implements FStorageCategory {
                     this.manifestData.removeCategory(access, name);
 
                     //delete the category's contents
-                    this.doDeleteCategory(access, optionalInode.get());
+                    this.doDeleteCategory(access, optionalInode.get(), true);
                 });
 
                 //return null because the category still isn't open
@@ -346,8 +429,8 @@ public class RocksStorageCategory implements FStorageCategory {
         private final RocksStorageCategory parent;
         private final String nameInParent;
 
-        public AsChild(@NonNull RocksStorage<?> storage, @NonNull String inode, @NonNull FStorageAccess access, @NonNull RocksStorageCategory parent, @NonNull String nameInParent) {
-            super(storage, inode, access);
+        public AsChild(@NonNull RocksStorage<?> storage, @NonNull String inode, @NonNull FStorageAccess access, @NonNull FStorageCategoryFactory factory, @NonNull RocksStorageCategory parent, @NonNull String nameInParent) {
+            super(storage, inode, access, factory);
 
             this.parent = parent;
             this.nameInParent = nameInParent;
@@ -357,7 +440,9 @@ public class RocksStorageCategory implements FStorageCategory {
         public void close() throws FStorageException {
             super.close();
 
-            this.parent.doCloseCategory(this);
+            if (this.parent != null) {
+                this.parent.doCloseCategory(this);
+            }
         }
     }
 }

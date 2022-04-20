@@ -31,7 +31,7 @@ import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.core.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.core.mode.voxel.server.gen.AbstractVoxelGenerator;
 import net.daporkchop.fp2.core.mode.voxel.util.VoxelPosHashSet;
-import net.daporkchop.fp2.core.server.world.IFarLevelServer;
+import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.util.GlobalAllocators;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 

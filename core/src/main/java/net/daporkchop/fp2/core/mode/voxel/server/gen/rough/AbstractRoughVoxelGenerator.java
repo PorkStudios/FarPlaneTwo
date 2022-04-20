@@ -27,7 +27,7 @@ import net.daporkchop.fp2.core.mode.voxel.VoxelData;
 import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.core.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.core.mode.voxel.server.gen.AbstractVoxelGenerator;
-import net.daporkchop.fp2.core.server.world.IFarLevelServer;
+import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.util.math.Vector3d;
 import net.daporkchop.fp2.core.util.math.qef.QefSolver;
 import net.daporkchop.lib.common.reference.ReferenceStrength;

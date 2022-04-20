@@ -24,6 +24,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.api.storage.FStorageException;
 
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -41,6 +42,27 @@ public interface FStorageCategory extends AutoCloseable {
     void close() throws FStorageException;
 
     //
+    // TOKEN
+    //
+
+    /**
+     * @return the current token data, if any
+     */
+    Optional<byte[]> getToken() throws FStorageException;
+
+    /**
+     * Sets the token data.
+     *
+     * @param token the new token data
+     */
+    void setToken(@NonNull byte[] token) throws FStorageException;
+
+    /**
+     * Removes the token data.
+     */
+    void removeToken() throws FStorageException;
+
+    //
     // CATEGORIES
     //
 
@@ -52,21 +74,23 @@ public interface FStorageCategory extends AutoCloseable {
     /**
      * Opens the child category with the given name, failing it if it doesn't exist.
      *
-     * @param name the name of the category to open
+     * @param name    the name of the category to open
+     * @param factory the {@link FStorageCategoryFactory} to use to initialize the category
      * @return the category
      * @throws NoSuchElementException if no category with the given name exists
      * @throws IllegalStateException  if the category is currently open
      */
-    FStorageCategory openCategory(@NonNull String name) throws FStorageException, NoSuchElementException, IllegalStateException;
+    FStorageCategory openCategory(@NonNull String name, @NonNull FStorageCategoryFactory factory) throws FStorageException, NoSuchElementException, IllegalStateException;
 
     /**
      * Opens the child category with the given name, creating it if it doesn't exist.
      *
-     * @param name the name of the category to open
+     * @param name    the name of the category to open
+     * @param factory the {@link FStorageCategoryFactory} to use to initialize the category
      * @return the category
      * @throws IllegalStateException if the category is currently open
      */
-    FStorageCategory openOrCreateCategory(@NonNull String name) throws FStorageException, IllegalStateException;
+    FStorageCategory openOrCreateCategory(@NonNull String name, @NonNull FStorageCategoryFactory factory) throws FStorageException, IllegalStateException;
 
     /**
      * Deletes the child category with the given name, and all of its children. The category must not be open.

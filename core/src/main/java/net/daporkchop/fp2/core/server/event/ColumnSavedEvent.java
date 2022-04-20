@@ -23,7 +23,7 @@ package net.daporkchop.fp2.core.server.event;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.core.server.world.IFarLevelServer;
+import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.server.world.FColumn;
 import net.daporkchop.lib.math.vector.Vec2i;
 

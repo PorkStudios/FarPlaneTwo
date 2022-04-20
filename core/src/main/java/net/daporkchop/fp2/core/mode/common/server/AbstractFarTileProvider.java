@@ -42,7 +42,7 @@ import net.daporkchop.fp2.core.mode.common.server.storage.rocksdb.RocksTileStora
 import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
 import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
 import net.daporkchop.fp2.core.server.event.TickEndEvent;
-import net.daporkchop.fp2.core.server.world.IFarLevelServer;
+import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.util.threading.scheduler.ApproximatelyPrioritizedSharedFutureScheduler;
 import net.daporkchop.fp2.core.util.threading.scheduler.Scheduler;
 import net.daporkchop.lib.common.misc.string.PStrings;
@@ -94,7 +94,7 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
         this.generatorExact = this.mode().exactGenerator(world, this);
 
         if (this.generatorRough == null) {
-            fp2().log().warn("no rough %s generator exists for world '%s' (generator=%s)! Falling back to exact generator, this will have serious performance implications.", mode.name(), world.dimensionId(), world.terrainGeneratorInfo().implGenerator());
+            fp2().log().warn("no rough %s generator exists for world '%s' (generator=%s)! Falling back to exact generator, this will have serious performance implications.", mode.name(), world.id(), world.terrainGeneratorInfo().implGenerator());
             //TODO: make the fallback generator smart! rather than simply getting the chunks from the world, do generation and population in
             // a volatile, in-memory world clone to prevent huge numbers of chunks/cubes from potentially being generated (and therefore saved)
         }
@@ -109,7 +109,7 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
                 this.world.workerManager().createChildWorkerGroup()
                         .threads(fp2().globalConfig().performance().terrainThreads())
                         .threadFactory(PThreadFactories.builder().daemon().minPriority().collapsingId()
-                                .name(PStrings.fastFormat("FP2 %s %s Worker #%%d", mode.name(), world.dimensionId())).build()),
+                                .name(PStrings.fastFormat("FP2 %s %s Worker #%%d", mode.name(), world.id())).build()),
                 PriorityTask.approxComparator());
 
         this.trackerManager = this.createTracker();
@@ -218,7 +218,7 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
         this.onTickEnd(null);
         this.shutdownUpdateQueue();
 
-        fp2().log().trace("Shutting down storage in world '%s'", this.world.dimensionId());
+        fp2().log().trace("Shutting down storage in world '%s'", this.world.id());
         this.storage.close();
     }
 }

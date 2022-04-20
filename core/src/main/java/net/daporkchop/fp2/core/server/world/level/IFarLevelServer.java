@@ -18,38 +18,46 @@
  *
  */
 
-package net.daporkchop.fp2.core.server.world;
+package net.daporkchop.fp2.core.server.world.level;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.api.event.FEventBus;
 import net.daporkchop.fp2.api.world.level.FBlockLevel;
+import net.daporkchop.fp2.api.world.level.FLevelServer;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarLevel;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
+import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
+import net.daporkchop.fp2.core.server.world.TerrainGeneratorInfo;
 
 import java.nio.file.Path;
+import java.util.NoSuchElementException;
 import java.util.function.Consumer;
 
 /**
  * @author DaPorkchop_
  */
-public interface IFarLevelServer extends IFarLevel {
+public interface IFarLevelServer extends IFarLevel, FLevelServer {
+    <POS extends IFarPos, T extends IFarTile> IFarTileProvider<POS, T> loadTileProvider(@NonNull IFarRenderMode<POS, T> mode);
+
+    void unloadTileProvider(@NonNull IFarRenderMode<?, ?> mode) throws NoSuchElementException;
+
     /**
      * Gets the {@link IFarTileProvider} used by the given {@link IFarRenderMode} in this level.
      *
      * @param mode the {@link IFarRenderMode}
      * @return the {@link IFarTileProvider} used by the given {@link IFarRenderMode} in this level
      */
-    <POS extends IFarPos, T extends IFarTile> IFarTileProvider<POS, T> tileProviderFor(@NonNull IFarRenderMode<POS, T> mode);
+    <POS extends IFarPos, T extends IFarTile> IFarTileProvider<POS, T> tileProviderFor(@NonNull IFarRenderMode<POS, T> mode) throws NoSuchElementException;
 
     /**
      * Runs the given action on every {@link IFarTileProvider}.
      *
      * @param action the action
      */
-    void forEachTileProvider(@NonNull Consumer<IFarTileProvider<?, ?>> action);
+    @Deprecated
+    void forEachLoadedTileProvider(@NonNull Consumer<IFarTileProvider<?, ?>> action);
 
     /**
      * @return the level's root directory
@@ -71,14 +79,4 @@ public interface IFarLevelServer extends IFarLevel {
      * @return this level's sea level
      */
     int seaLevel();
-
-    /**
-     * @return an event bus for events specific to this level
-     */
-    FEventBus eventBus();
-
-    /**
-     * Called when the level is being loaded.
-     */
-    void init();
 }

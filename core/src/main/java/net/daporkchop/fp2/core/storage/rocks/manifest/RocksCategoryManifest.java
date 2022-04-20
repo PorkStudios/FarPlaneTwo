@@ -26,6 +26,7 @@ import net.daporkchop.fp2.api.storage.FStorageException;
 import net.daporkchop.fp2.api.storage.internal.access.FStorageAccess;
 import net.daporkchop.fp2.api.storage.internal.access.FStorageIterator;
 import net.daporkchop.fp2.api.storage.internal.access.FStorageReadAccess;
+import net.daporkchop.fp2.api.storage.internal.access.FStorageWriteAccess;
 import net.daporkchop.fp2.core.storage.rocks.RocksStorageColumn;
 
 import java.nio.charset.StandardCharsets;
@@ -33,6 +34,7 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
@@ -40,6 +42,8 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 public class RocksCategoryManifest extends AbstractRocksManifest<RocksCategoryManifest> {
     private static final String CHILD_CATEGORIES = escape("categories").intern();
     private static final String CHILD_ITEMS = escape("items").intern();
+    private static final String TOKEN = escape("token").intern();
+    private static final String INITIALIZED = escape("initialized").intern();
 
     public RocksCategoryManifest(@NonNull RocksStorageColumn column, @NonNull String inode, @NonNull FStorageAccess access) {
         super(column, inode, access);
@@ -151,5 +155,34 @@ public class RocksCategoryManifest extends AbstractRocksManifest<RocksCategoryMa
 
         checkState(access.get(this.column, key) != null, "item '%s' doesn't exist", name);
         access.delete(this.column, key);
+    }
+
+    @SneakyThrows(FStorageException.class)
+    public Optional<byte[]> getToken(@NonNull FStorageReadAccess access) {
+        return Optional.ofNullable(access.get(this.column, (this.inode + SEPARATOR + TOKEN).getBytes(StandardCharsets.UTF_8)));
+    }
+
+    @SneakyThrows(FStorageException.class)
+    public void setToken(@NonNull FStorageWriteAccess access, @NonNull byte[] token) {
+        access.put(this.column, (this.inode + SEPARATOR + TOKEN).getBytes(StandardCharsets.UTF_8), token);
+    }
+
+    @SneakyThrows(FStorageException.class)
+    public void removeToken(@NonNull FStorageWriteAccess access) {
+        access.delete(this.column, (this.inode + SEPARATOR + TOKEN).getBytes(StandardCharsets.UTF_8));
+    }
+
+    @SneakyThrows(FStorageException.class)
+    public boolean isInitialized(@NonNull FStorageReadAccess access) {
+        return access.get(this.column,
+                (this.inode + SEPARATOR + INITIALIZED).getBytes(StandardCharsets.UTF_8)) != null;
+    }
+
+    @SneakyThrows(FStorageException.class)
+    public void markInitialized(@NonNull FStorageAccess access) {
+        byte[] key = (this.inode + SEPARATOR + INITIALIZED).getBytes(StandardCharsets.UTF_8);
+
+        checkState(access.get(this.column, key) == null, "already initialized!");
+        access.put(this.column, key, EMPTY_BYTE_ARRAY);
     }
 }

@@ -20,9 +20,7 @@
 
 package net.daporkchop.fp2.core.mode.api.ctx;
 
-import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
-import net.daporkchop.fp2.api.world.registry.FGameRegistry;
-import net.daporkchop.fp2.common.util.Identifier;
+import net.daporkchop.fp2.api.world.level.FLevel;
 import net.daporkchop.fp2.core.util.threading.workergroup.WorkerManager;
 
 /**
@@ -30,40 +28,9 @@ import net.daporkchop.fp2.core.util.threading.workergroup.WorkerManager;
  *
  * @author DaPorkchop_
  */
-//TODO: find a more logical place to put this
-public interface IFarLevel {
-    /**
-     * @return the implementation-specific object corresponding to this level
-     */
-    Object implWorld();
-
-    /**
-     * @return the block coordinate limits in this level
-     */
-    IntAxisAlignedBB coordLimits();
-
+public interface IFarLevel extends FLevel {
     /**
      * @return the {@link WorkerManager} used by this level
      */
     WorkerManager workerManager();
-
-    /**
-     * @return this level's dimension ID
-     */
-    Identifier dimensionId();
-
-    /**
-     * @return this world's current timestamp
-     */
-    long timestamp();
-
-    /**
-     * @return the {@link FGameRegistry} used in this level
-     */
-    FGameRegistry registry();
-
-    /**
-     * Called when the level is being unloaded.
-     */
-    void close();
 }

@@ -24,7 +24,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.api.event.ReturningEvent;
-import net.daporkchop.fp2.core.server.world.IFarLevelServer;
+import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 
 /**
  * Fired in order to retrieve the terrain generator implementation for a given {@link IFarLevelServer}.

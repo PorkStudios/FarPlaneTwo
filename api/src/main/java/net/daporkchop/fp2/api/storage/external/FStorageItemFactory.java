@@ -103,6 +103,18 @@ public interface FStorageItemFactory<I extends FStorageItem> {
         Optional<byte[]> getExistingToken();
 
         /**
+         * Updates the item's token once it's opened.
+         *
+         * @param token the new token
+         */
+        void setToken(@NonNull byte[] token);
+
+        /**
+         * Clears the item's token once it's opened.
+         */
+        void clearToken();
+
+        /**
          * Registers a column to be used by the storage item.
          *
          * @param name        the column's name

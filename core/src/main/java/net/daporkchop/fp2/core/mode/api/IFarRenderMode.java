@@ -22,9 +22,10 @@ package net.daporkchop.fp2.core.mode.api;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
+import net.daporkchop.fp2.api.storage.external.FStorageCategory;
 import net.daporkchop.fp2.api.util.OrderedRegistry;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
-import net.daporkchop.fp2.core.client.world.IFarLevelClient;
+import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.event.AbstractRegisterEvent;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
@@ -34,7 +35,7 @@ import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.core.server.player.IFarPlayerServer;
-import net.daporkchop.fp2.core.server.world.IFarLevelServer;
+import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.util.SimpleRecycler;
 import net.daporkchop.lib.binary.stream.DataIn;
 import net.daporkchop.lib.binary.stream.DataOut;
@@ -70,10 +71,11 @@ public interface IFarRenderMode<POS extends IFarPos, T extends IFarTile> {
     /**
      * Creates a new {@link IFarTileProvider} for the given vanilla world.
      *
-     * @param world the vanilla world
+     * @param world           the vanilla world
+     * @param storageCategory the {@link FStorageCategory} which tile data is to be stored in
      * @return the new {@link IFarTileProvider}
      */
-    IFarTileProvider<POS, T> tileProvider(@NonNull IFarLevelServer world);
+    IFarTileProvider<POS, T> tileProvider(@NonNull IFarLevelServer world, @NonNull FStorageCategory storageCategory);
 
     /**
      * Creates a new {@link IFarGeneratorExact exact generator} for the given {@link IFarLevelServer world} and {@link IFarTileProvider tile provider}.

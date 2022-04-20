@@ -26,7 +26,7 @@ import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.api.event.ReturningEvent;
 import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
-import net.daporkchop.fp2.core.server.world.IFarLevelServer;
+import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 
 /**
  * Fired in order to retrieve the exact {@link FBlockLevel} for accessing the real block data in a given {@link IFarLevelServer}.

@@ -27,7 +27,7 @@ import net.daporkchop.fp2.core.client.render.LevelRenderer;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.renderer.ATEntityRenderer1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.client.renderer.IMixinRenderGlobal;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.client.world.FarLevelClient1_12_2;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.client.world.level.FarLevelClient1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.ResourceProvider1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.SingleBiomeBlockAccess;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.world.registry.GameRegistry1_12_2;

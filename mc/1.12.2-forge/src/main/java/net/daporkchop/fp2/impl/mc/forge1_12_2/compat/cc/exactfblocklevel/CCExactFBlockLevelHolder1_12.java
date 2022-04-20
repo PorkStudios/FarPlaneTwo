@@ -42,7 +42,7 @@ import net.daporkchop.fp2.core.minecraft.world.cubes.AbstractPrefetchedCubesExac
 import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
 import net.daporkchop.fp2.core.server.event.TickEndEvent;
 import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
-import net.daporkchop.fp2.core.server.world.IFarLevelServer;
+import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.util.datastructure.Datastructures;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSegtreeSet;
 import net.daporkchop.fp2.core.util.threading.futurecache.IAsyncCache;

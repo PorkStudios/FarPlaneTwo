@@ -25,7 +25,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapTile;
-import net.daporkchop.fp2.core.server.world.IFarLevelServer;
+import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.generator.heightmap.FlatHeightmapGenerator;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Biomes;

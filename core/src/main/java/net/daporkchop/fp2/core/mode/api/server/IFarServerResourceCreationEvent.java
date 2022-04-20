@@ -24,7 +24,7 @@ import net.daporkchop.fp2.api.event.ReturningEvent;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
-import net.daporkchop.fp2.core.server.world.IFarLevelServer;
+import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 
 /**
  * Fired when a new {@link R} needs to be created for a given {@link IFarLevelServer}.

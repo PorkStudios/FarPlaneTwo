@@ -18,22 +18,36 @@
  *
  */
 
-package net.daporkchop.fp2.core.client.world;
+package net.daporkchop.fp2.core.world.level;
 
-import net.daporkchop.fp2.core.client.render.LevelRenderer;
-import net.daporkchop.fp2.core.mode.api.ctx.IFarLevel;
-import net.daporkchop.fp2.core.util.annotation.CalledFromClientThread;
+import lombok.Getter;
+import lombok.NonNull;
+import net.daporkchop.fp2.api.event.FEventBus;
+import net.daporkchop.fp2.api.world.level.FLevel;
+import net.daporkchop.fp2.core.FP2Core;
+import net.daporkchop.fp2.core.event.EventBus;
+import net.daporkchop.fp2.core.util.threading.workergroup.WorkerManager;
 
 /**
+ * Base implementation of {@link FLevel}.
+ *
  * @author DaPorkchop_
  */
-public interface IFarLevelClient extends IFarLevel {
-    @CalledFromClientThread
-    @Override
-    void close();
+@Getter
+public abstract class AbstractLevel<F extends FP2Core, WORLD> implements FLevel {
+    private final F fp2;
+    private final WORLD implWorld;
 
-    /**
-     * @return a {@link LevelRenderer} for rendering this level
-     */
-    LevelRenderer renderer();
+    private final WorkerManager workerManager;
+
+    private final FEventBus eventBus = new EventBus();
+
+    public AbstractLevel(@NonNull F fp2, WORLD implWorld) {
+        this.fp2 = fp2;
+        this.implWorld = implWorld;
+
+        this.workerManager = this.createWorkerManager();
+    }
+
+    protected abstract WorkerManager createWorkerManager();
 }

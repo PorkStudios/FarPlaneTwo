@@ -18,12 +18,12 @@
  *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_12_2.client.world;
+package net.daporkchop.fp2.impl.mc.forge1_12_2.client.world.level;
 
+import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
-import net.daporkchop.fp2.core.client.render.LevelRenderer;
-import net.daporkchop.fp2.core.client.world.IFarLevelClient;
+import net.daporkchop.fp2.core.client.world.level.AbstractLevelClient;
 import net.daporkchop.fp2.core.util.threading.futureexecutor.MarkedFutureExecutor;
 import net.daporkchop.fp2.core.util.threading.workergroup.DefaultWorkerManager;
 import net.daporkchop.fp2.core.util.threading.workergroup.WorkerManager;
@@ -31,48 +31,35 @@ import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.ATMinecraft1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.client.render.LevelRenderer1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.threading.futureexecutor.ClientThreadMarkedFutureExecutor;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.world.AbstractFarLevel1_12;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.world.level.IFarLevel1_12;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
-
-import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
-public class FarLevelClient1_12_2 extends AbstractFarLevel1_12<WorldClient> implements IFarLevelClient {
-    protected final IntAxisAlignedBB coordLimits;
-    protected final WorkerManager workerManager;
-
-    protected LevelRenderer1_12_2 renderer;
+@Getter
+public class FarLevelClient1_12_2 extends AbstractLevelClient<FP2Forge1_12_2, WorldClient> implements IFarLevel1_12 {
+    private final IntAxisAlignedBB coordLimits;
+    private final LevelRenderer1_12_2 renderer;
 
     public FarLevelClient1_12_2(@NonNull FP2Forge1_12_2 fp2, @NonNull WorldClient world, @NonNull IntAxisAlignedBB coordLimits) {
         super(fp2, world);
 
         this.coordLimits = coordLimits;
-        this.workerManager = new DefaultWorkerManager(((ATMinecraft1_12) Minecraft.getMinecraft()).getThread(), ClientThreadMarkedFutureExecutor.getFor(Minecraft.getMinecraft()));
 
-        this.workerManager.rootExecutor().run(MarkedFutureExecutor.DEFAULT_MARKER, () -> this.renderer = new LevelRenderer1_12_2(Minecraft.getMinecraft(), this)).join();
+        this.renderer = this.workerManager().rootExecutor().supply(MarkedFutureExecutor.DEFAULT_MARKER, () -> new LevelRenderer1_12_2(Minecraft.getMinecraft(), this)).join();
+    }
+
+    @Override
+    protected WorkerManager createWorkerManager() {
+        return new DefaultWorkerManager(
+                ((ATMinecraft1_12) Minecraft.getMinecraft()).getThread(),
+                ClientThreadMarkedFutureExecutor.getFor(Minecraft.getMinecraft()));
     }
 
     @Override
     public void close() {
-        this.workerManager.rootExecutor().run(MarkedFutureExecutor.DEFAULT_MARKER, this.renderer::close);
-    }
-
-    @Override
-    public IntAxisAlignedBB coordLimits() {
-        return this.coordLimits;
-    }
-
-    @Override
-    public WorkerManager workerManager() {
-        return this.workerManager;
-    }
-
-    @Override
-    public LevelRenderer renderer() {
-        checkState(this.renderer != null, "renderer hasn't been initialized!");
-        return this.renderer;
+        this.workerManager().rootExecutor().run(MarkedFutureExecutor.DEFAULT_MARKER, this.renderer::close);
     }
 }

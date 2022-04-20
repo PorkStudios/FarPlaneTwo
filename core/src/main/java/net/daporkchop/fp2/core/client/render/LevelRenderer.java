@@ -20,7 +20,7 @@
 
 package net.daporkchop.fp2.core.client.render;
 
-import net.daporkchop.fp2.core.client.world.IFarLevelClient;
+import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
 import net.daporkchop.fp2.gl.GL;
 
 /**

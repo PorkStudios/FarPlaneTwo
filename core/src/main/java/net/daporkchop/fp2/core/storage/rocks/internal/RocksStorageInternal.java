@@ -113,6 +113,16 @@ public class RocksStorageInternal extends ReentrantReadWriteLock implements FSto
             }
 
             @Override
+            public void setToken(@NonNull byte[] token) {
+                this.newToken = Optional.of(token.clone());
+            }
+
+            @Override
+            public void clearToken() {
+                this.newToken = Optional.empty();
+            }
+
+            @Override
             public void registerColumn(@NonNull String name, @NonNull FStorageColumnHintsInternal hints, @NonNull FStorageItemFactory.ColumnRequirement requirement) {
                 checkArg(this.columnNames.add(name), "column '%s' was already registered!", name);
 
@@ -137,7 +147,7 @@ public class RocksStorageInternal extends ReentrantReadWriteLock implements FSto
                     }
 
                     //clear the item manifest
-                    this.manifestData.delete(access);
+                    this.manifestData.clear(access);
                 }
             case CREATE_IF_MISSING:
                 //no-op
@@ -195,6 +205,19 @@ public class RocksStorageInternal extends ReentrantReadWriteLock implements FSto
             //assign a column family name for each of the columns, then save all the newly created column name -> column family name mappings into the item manifest
             this.storage.createColumnFamilies(access, columnsToCreate)
                     .forEach((columnName, columnFamilyName) -> this.manifestData.addColumn(access, columnName, columnFamilyName));
+        }
+
+        if (callback.newToken != null) { //the token is being updated
+            if (callback.newToken.isPresent()) {
+                this.manifestData.setToken(access, callback.newToken.get());
+            } else {
+                this.manifestData.removeToken(access);
+            }
+        }
+
+        if (isNewItem) {
+            //the item has been fully initialized
+            this.manifestData.markInitialized(access);
         }
     }
 

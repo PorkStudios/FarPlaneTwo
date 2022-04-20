@@ -20,6 +20,8 @@
 
 package net.daporkchop.fp2.core.server.world;
 
+import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
+
 /**
  * Provides information about the terrain generator used in a given {@link IFarLevelServer}.
  *

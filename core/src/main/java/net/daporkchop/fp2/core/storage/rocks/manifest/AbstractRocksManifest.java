@@ -140,12 +140,17 @@ public abstract class AbstractRocksManifest<M> {
     protected abstract void upgrade(int savedVersion, @NonNull FStorageAccess access) throws FStorageException;
 
     @SneakyThrows(FStorageException.class)
-    public void delete(@NonNull FStorageWriteAccess access) {
-        //delete the version indicator
-        access.delete(this.column, this.inode.getBytes(StandardCharsets.UTF_8));
-
+    public void clear(@NonNull FStorageWriteAccess access) {
         //do a simple deleteRange on the whole inode space
         byte[] keyBase = (this.inode + SEPARATOR).getBytes(StandardCharsets.UTF_8);
         access.deleteRange(this.column, keyBase, increment(keyBase));
+    }
+
+    @SneakyThrows(FStorageException.class)
+    public void delete(@NonNull FStorageWriteAccess access) {
+        this.clear(access);
+
+        //delete the version indicator
+        access.delete(this.column, this.inode.getBytes(StandardCharsets.UTF_8));
     }
 }

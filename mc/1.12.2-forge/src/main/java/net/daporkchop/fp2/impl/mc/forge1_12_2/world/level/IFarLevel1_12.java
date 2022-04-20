@@ -18,14 +18,10 @@
  *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_12_2.world;
+package net.daporkchop.fp2.impl.mc.forge1_12_2.world.level;
 
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.common.util.Identifier;
+import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarLevel;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.world.registry.GameRegistry1_12_2;
 import net.minecraft.world.DimensionType;
 import net.minecraft.world.World;
@@ -35,23 +31,14 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-@Getter
-public abstract class AbstractFarLevel1_12<W extends World> implements IFarLevel {
-    @NonNull
-    protected final FP2Forge1_12_2 fp2;
-    @NonNull
-    protected final W world;
+public interface IFarLevel1_12 extends IFarLevel {
+    @Override
+    World implWorld();
 
     @Override
-    public Object implWorld() {
-        return this.world;
-    }
-
-    @Override
-    public Identifier dimensionId() {
-        int dimensionId = this.world.provider.getDimension();
-        DimensionType dimensionType = this.world.provider.getDimensionType();
+    default Identifier id() {
+        int dimensionId = this.implWorld().provider.getDimension();
+        DimensionType dimensionType = this.implWorld().provider.getDimensionType();
 
         //sanity check because i'm not entirely sure what kind of crazy shit mods do with dimension types, and i want to be sure not to screw anything up
         checkState(dimensionId == dimensionType.getId(), "dimension #%d has invalid ID: '%s' is expected to have ID %d", dimensionId, dimensionType.getName(), dimensionType.getId());
@@ -60,12 +47,12 @@ public abstract class AbstractFarLevel1_12<W extends World> implements IFarLevel
     }
 
     @Override
-    public long timestamp() {
-        return this.world.getTotalWorldTime();
+    default long timestamp() {
+        return this.implWorld().getTotalWorldTime();
     }
 
     @Override
-    public GameRegistry1_12_2 registry() {
+    default GameRegistry1_12_2 registry() {
         return GameRegistry1_12_2.get();
     }
 }

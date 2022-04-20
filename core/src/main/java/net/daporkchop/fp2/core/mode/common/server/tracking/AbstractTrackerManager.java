@@ -76,7 +76,7 @@ public abstract class AbstractTrackerManager<POS extends IFarPos, T extends IFar
                 tileProvider.world().workerManager().createChildWorkerGroup()
                         .threads(fp2().globalConfig().performance().trackingThreads())
                         .threadFactory(PThreadFactories.builder().daemon().minPriority().collapsingId()
-                                .name(PStrings.fastFormat("FP2 %s %s Tracker #%%d", tileProvider.mode().name(), tileProvider.world().dimensionId())).build()));
+                                .name(PStrings.fastFormat("FP2 %s %s Tracker #%%d", tileProvider.mode().name(), tileProvider.world().id())).build()));
 
         tileProvider.storage().addListener(this);
     }

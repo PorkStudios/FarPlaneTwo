@@ -27,6 +27,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.api.storage.FStorage;
 import net.daporkchop.fp2.api.storage.FStorageException;
 import net.daporkchop.fp2.api.storage.external.FStorageCategory;
+import net.daporkchop.fp2.api.storage.external.FStorageCategoryFactory;
 import net.daporkchop.fp2.api.storage.external.FStorageItem;
 import net.daporkchop.fp2.api.storage.external.FStorageItemFactory;
 import net.daporkchop.fp2.api.storage.internal.FStorageColumnHintsInternal;
@@ -73,6 +74,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -218,7 +220,7 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
             this.manifest = this.transactAtomicGet(access -> new RocksStorageManifest(this.defaultColumn, "", access));
 
             //create root storage category
-            this.rootCategory = this.transactAtomicGet(access -> new RocksStorageCategory(this, "root", access));
+            this.rootCategory = this.transactAtomicGet(access -> new RocksStorageCategory(this, "root", access, FStorageCategoryFactory.createIfMissing()));
 
             //run cleanup to delete any column families whose deletion was previously scheduled
             this.deleteQueuedColumnFamilies();
@@ -637,18 +639,33 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
     //
 
     @Override
+    public Optional<byte[]> getToken() throws FStorageException {
+        return this.rootCategory.getToken();
+    }
+
+    @Override
+    public void setToken(@NonNull byte[] token) throws FStorageException {
+        this.rootCategory.setToken(token);
+    }
+
+    @Override
+    public void removeToken() throws FStorageException {
+        this.rootCategory.removeToken();
+    }
+
+    @Override
     public Set<String> allCategories() throws FStorageException {
         return this.rootCategory.allCategories();
     }
 
     @Override
-    public FStorageCategory openCategory(@NonNull String name) throws FStorageException, NoSuchElementException, IllegalStateException {
-        return this.rootCategory.openCategory(name);
+    public FStorageCategory openCategory(@NonNull String name, @NonNull FStorageCategoryFactory factory) throws FStorageException, NoSuchElementException, IllegalStateException {
+        return this.rootCategory.openCategory(name, factory);
     }
 
     @Override
-    public FStorageCategory openOrCreateCategory(@NonNull String name) throws FStorageException, IllegalStateException {
-        return this.rootCategory.openOrCreateCategory(name);
+    public FStorageCategory openOrCreateCategory(@NonNull String name, @NonNull FStorageCategoryFactory factory) throws FStorageException, IllegalStateException {
+        return this.rootCategory.openOrCreateCategory(name, factory);
     }
 
     @Override
