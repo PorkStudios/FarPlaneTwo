@@ -23,6 +23,7 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.core.client.network;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.client.network.IMixinNetHandlerPlayClient;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.client.player.FarPlayerClient1_12;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.client.world.FWorldClient1_12;
 import net.minecraft.client.network.NetHandlerPlayClient;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -30,7 +31,10 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.Optional;
+
 import static net.daporkchop.fp2.core.FP2Core.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
@@ -39,26 +43,51 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 @Mixin(NetHandlerPlayClient.class)
 public abstract class MixinNetHandlerPlayClient implements IMixinNetHandlerPlayClient {
     @Unique
-    protected FarPlayerClient1_12 fp2_farPlayerClient;
+    protected FWorldClient1_12 fp2_worldClient;
+    @Unique
+    protected FarPlayerClient1_12 fp2_playerClient;
 
     @Override
-    public FarPlayerClient1_12 fp2_farPlayerClient() {
-        if (this.fp2_farPlayerClient == null) {
-            synchronized (this) {
-                if (this.fp2_farPlayerClient == null) {
-                    this.fp2_farPlayerClient = new FarPlayerClient1_12((FP2Forge1_12_2) fp2(), uncheckedCast(this));
-                }
-            }
+    public void fp2_initClient() {
+        checkState(this.fp2_worldClient == null && this.fp2_playerClient == null, "already initialized!");
+
+        this.fp2_worldClient = new FWorldClient1_12((FP2Forge1_12_2) fp2(), uncheckedCast(this));
+        this.fp2_playerClient = new FarPlayerClient1_12((FP2Forge1_12_2) fp2(), this.fp2_worldClient, uncheckedCast(this));
+    }
+
+    @Override
+    public void fp2_closeClient() {
+        checkState(this.fp2_worldClient != null && this.fp2_playerClient != null, "not initialized or already closed!");
+
+        //try-with-resources to ensure everything is closed
+        try (FWorldClient1_12 worldClient = this.fp2_worldClient;
+             FarPlayerClient1_12 playerClient = this.fp2_playerClient) {
+            this.fp2_worldClient = null;
+            this.fp2_playerClient = null;
         }
-        return this.fp2_farPlayerClient;
+    }
+
+    @Override
+    public Optional<FWorldClient1_12> fp2_worldClient() {
+        return Optional.ofNullable(this.fp2_worldClient);
+    }
+
+    @Override
+    public Optional<FarPlayerClient1_12> fp2_playerClient() {
+        return Optional.ofNullable(this.fp2_playerClient);
+    }
+
+    @Inject(method = "Lnet/minecraft/client/network/NetHandlerPlayClient;<init>*",
+            at = @At("RETURN"),
+            require = 1, allow = 1)
+    private void fp2_$init$_doInit(CallbackInfo ci) {
+        this.fp2_initClient();
     }
 
     @Inject(method = "Lnet/minecraft/client/network/NetHandlerPlayClient;cleanup()V",
             at = @At("HEAD"),
             require = 1, allow = 1)
-    private void fp2_cleanup_closeContext(CallbackInfo ci) {
-        if (this.fp2_farPlayerClient != null) {
-            this.fp2_farPlayerClient.fp2_IFarPlayerClient_close();
-        }
+    private void fp2_cleanup_doClose(CallbackInfo ci) {
+        this.fp2_closeClient();
     }
 }

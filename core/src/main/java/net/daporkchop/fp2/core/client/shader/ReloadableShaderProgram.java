@@ -21,7 +21,6 @@
 package net.daporkchop.fp2.core.client.shader;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.api.event.ReloadCompleteEvent;
 import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.common.util.capability.CloseableResource;
 import net.daporkchop.fp2.core.event.AbstractReloadEvent;
@@ -75,11 +74,6 @@ public interface ReloadableShaderProgram<P extends BaseShaderProgram<?>> extends
             protected void handleFailure(int failed, int total, @NonNull Throwable cause) {
                 fp2().log().error("shader reload failed", cause);
                 fp2().client().chat().error("§c%d/%d shaders failed to reload (check log for info)", failed, total);
-            }
-
-            @Override
-            protected ReloadCompleteEvent<ReloadableShaderProgram<?>> completeEvent() {
-                return new ReloadCompleteEvent<ReloadableShaderProgram<?>>() {};
             }
         }.fire();
     }

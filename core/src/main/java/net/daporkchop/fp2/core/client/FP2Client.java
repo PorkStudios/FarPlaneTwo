@@ -28,8 +28,8 @@ import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.gui.GuiContext;
 import net.daporkchop.fp2.core.client.gui.GuiScreen;
 import net.daporkchop.fp2.core.client.key.KeyCategory;
-import net.daporkchop.fp2.core.client.shader.ShaderMacros;
 import net.daporkchop.fp2.core.client.player.IFarPlayerClient;
+import net.daporkchop.fp2.core.client.shader.ShaderMacros;
 import net.daporkchop.lib.logging.Logger;
 
 import java.util.Optional;
@@ -71,7 +71,7 @@ public abstract class FP2Client {
     /**
      * @return the current {@link IFarPlayerClient}, or an empty {@link Optional} if the client is not connected
      */
-    public abstract Optional<IFarPlayerClient> currentPlayer();
+    public abstract Optional<? extends IFarPlayerClient> currentPlayer();
 
     //TODO: somehow move Reversed-Z stuff out of FP2Client, and preferably into :gl
     @Deprecated

@@ -21,6 +21,8 @@
 package net.daporkchop.fp2.core.client.world.level;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.api.util.Identifier;
+import net.daporkchop.fp2.api.world.FWorldClient;
 import net.daporkchop.fp2.api.world.level.FLevelClient;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.world.level.AbstractLevel;
@@ -28,8 +30,8 @@ import net.daporkchop.fp2.core.world.level.AbstractLevel;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractLevelClient<F extends FP2Core, WORLD> extends AbstractLevel<F, WORLD> implements FLevelClient, IFarLevelClient {
-    public AbstractLevelClient(@NonNull F fp2, WORLD implWorld) {
-        super(fp2, implWorld);
+public abstract class AbstractLevelClient<F extends FP2Core, IMPL_LEVEL> extends AbstractLevel<F, IMPL_LEVEL, FWorldClient> implements FLevelClient, IFarLevelClient {
+    public AbstractLevelClient(@NonNull F fp2, IMPL_LEVEL impl_level, @NonNull FWorldClient world, @NonNull Identifier id) {
+        super(fp2, impl_level, world, id);
     }
 }

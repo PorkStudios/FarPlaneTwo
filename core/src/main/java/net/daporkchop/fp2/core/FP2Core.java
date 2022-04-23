@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -28,7 +28,7 @@ import lombok.SneakyThrows;
 import net.daporkchop.fp2.api.FP2;
 import net.daporkchop.fp2.api.event.FEventBus;
 import net.daporkchop.fp2.api.event.FEventHandler;
-import net.daporkchop.fp2.api.event.RegisterEvent;
+import net.daporkchop.fp2.api.event.generic.FRegisterEvent;
 import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.gui.GuiContext;
@@ -179,7 +179,7 @@ public abstract class FP2Core implements FP2 {
     public abstract void unsupported(@NonNull String message);
 
     @FEventHandler
-    protected void registerDefaultRenderModes(RegisterEvent<IFarRenderMode<?, ?>> event) {
+    protected void registerDefaultRenderModes(FRegisterEvent<IFarRenderMode<?, ?>> event) {
         event.registry()
                 .addLast(VoxelConstants.NAME, new VoxelRenderMode())
                 .addLast(HeightmapConstants.NAME, new HeightmapRenderMode());

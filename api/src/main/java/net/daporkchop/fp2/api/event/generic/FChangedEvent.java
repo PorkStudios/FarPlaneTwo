@@ -18,19 +18,21 @@
  *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.server;
-
-import net.daporkchop.fp2.impl.mc.forge1_12_2.server.world.FWorldServer1_12;
-
-import java.util.Optional;
+package net.daporkchop.fp2.api.event.generic;
 
 /**
+ * Fired when a resource of a certain type is replaced with a new value.
+ *
  * @author DaPorkchop_
  */
-public interface IMixinMinecraftServer1_12 {
-    void fp2_initWorldServer();
+public interface FChangedEvent<T> {
+    /**
+     * @return the previous value
+     */
+    T prev();
 
-    void fp2_closeWorldServer();
-
-    Optional<FWorldServer1_12> fp2_worldServer();
+    /**
+     * @return the next value
+     */
+    T next();
 }

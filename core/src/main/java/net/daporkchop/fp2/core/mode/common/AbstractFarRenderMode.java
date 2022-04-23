@@ -99,7 +99,7 @@ public abstract class AbstractFarRenderMode<POS extends IFarPos, T extends IFarT
     public abstract IFarServerContext<POS, T> serverContext(@NonNull IFarPlayerServer player, @NonNull IFarLevelServer world, @NonNull FP2Config config);
 
     @Override
-    public abstract IFarClientContext<POS, T> clientContext(@NonNull IFarLevelClient world, @NonNull FP2Config config);
+    public abstract IFarClientContext<POS, T> clientContext(@NonNull IFarLevelClient level, @NonNull FP2Config config);
 
     @Override
     public SimpleRecycler<T> tileRecycler() {

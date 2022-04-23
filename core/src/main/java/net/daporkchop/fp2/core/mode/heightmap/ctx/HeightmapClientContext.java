@@ -21,10 +21,10 @@
 package net.daporkchop.fp2.core.mode.heightmap.ctx;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
-import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
 import net.daporkchop.fp2.core.mode.common.ctx.AbstractFarClientContext;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapTile;
@@ -34,8 +34,8 @@ import net.daporkchop.fp2.core.mode.heightmap.client.HeightmapRenderer;
  * @author DaPorkchop_
  */
 public class HeightmapClientContext extends AbstractFarClientContext<HeightmapPos, HeightmapTile> {
-    public HeightmapClientContext(@NonNull IFarLevelClient world, @NonNull FP2Config config, @NonNull IFarRenderMode<HeightmapPos, HeightmapTile> mode) {
-        super(world, config, mode);
+    public HeightmapClientContext(@NonNull IFarLevelClient level, @NonNull FP2Config config, @NonNull IFarRenderMode<HeightmapPos, HeightmapTile> mode) {
+        super(level, config, mode);
     }
 
     @Override

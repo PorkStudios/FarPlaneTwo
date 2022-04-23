@@ -18,19 +18,18 @@
  *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.server;
+package net.daporkchop.fp2.api.event.generic;
 
-import net.daporkchop.fp2.impl.mc.forge1_12_2.server.world.FWorldServer1_12;
-
-import java.util.Optional;
+import net.daporkchop.fp2.api.util.OrderedRegistry;
 
 /**
+ * Fired when a registry of a given type is being populated.
+ *
  * @author DaPorkchop_
  */
-public interface IMixinMinecraftServer1_12 {
-    void fp2_initWorldServer();
-
-    void fp2_closeWorldServer();
-
-    Optional<FWorldServer1_12> fp2_worldServer();
+public interface FRegisterEvent<T> {
+    /**
+     * @return the {@link OrderedRegistry} to which entries should be added
+     */
+    OrderedRegistry<T> registry();
 }

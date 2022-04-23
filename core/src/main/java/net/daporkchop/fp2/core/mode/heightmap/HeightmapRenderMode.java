@@ -90,8 +90,8 @@ public class HeightmapRenderMode extends AbstractFarRenderMode<HeightmapPos, Hei
     }
 
     @Override
-    public IFarClientContext<HeightmapPos, HeightmapTile> clientContext(@NonNull IFarLevelClient world, @NonNull FP2Config config) {
-        return new HeightmapClientContext(world, config, this);
+    public IFarClientContext<HeightmapPos, HeightmapTile> clientContext(@NonNull IFarLevelClient level, @NonNull FP2Config config) {
+        return new HeightmapClientContext(level, config, this);
     }
 
     @Override

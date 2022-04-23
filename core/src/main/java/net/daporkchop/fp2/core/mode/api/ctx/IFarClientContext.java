@@ -44,7 +44,7 @@ public interface IFarClientContext<POS extends IFarPos, T extends IFarTile> exte
     /**
      * @return the world
      */
-    IFarLevelClient world();
+    IFarLevelClient level();
 
     /**
      * @return a cache for tiles used by this context

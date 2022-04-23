@@ -18,19 +18,27 @@
  *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.server;
+package net.daporkchop.fp2.impl.mc.forge1_12_2.client.world;
 
-import net.daporkchop.fp2.impl.mc.forge1_12_2.server.world.FWorldServer1_12;
-
-import java.util.Optional;
+import lombok.NonNull;
+import net.daporkchop.fp2.api.util.Identifier;
+import net.daporkchop.fp2.api.world.level.FLevel;
+import net.daporkchop.fp2.core.client.world.AbstractWorldClient;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.client.world.level.FLevelClient1_12_2;
+import net.minecraft.client.multiplayer.WorldClient;
+import net.minecraft.client.network.NetHandlerPlayClient;
 
 /**
  * @author DaPorkchop_
  */
-public interface IMixinMinecraftServer1_12 {
-    void fp2_initWorldServer();
+public class FWorldClient1_12 extends AbstractWorldClient<FP2Forge1_12_2, NetHandlerPlayClient, WorldClient> {
+    public FWorldClient1_12(@NonNull FP2Forge1_12_2 fp2, @NonNull NetHandlerPlayClient implWorld) {
+        super(fp2, implWorld);
+    }
 
-    void fp2_closeWorldServer();
-
-    Optional<FWorldServer1_12> fp2_worldServer();
+    @Override
+    protected FLevel createLevel(@NonNull Identifier id, @NonNull WorldClient implLevel) {
+        return new FLevelClient1_12_2(this.fp2(), implLevel, this, id, COORD_LIMITS_HACK.get());
+    }
 }

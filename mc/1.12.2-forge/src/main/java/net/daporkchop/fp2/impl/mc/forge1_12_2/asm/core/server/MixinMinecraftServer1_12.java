@@ -31,6 +31,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.Optional;
+
 import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
@@ -72,9 +74,8 @@ public abstract class MixinMinecraftServer1_12 implements IMixinMinecraftServer1
     }
 
     @Override
-    public FWorldServer1_12 fp2_worldServer() {
-        checkState(this.fp2_worldServer != null, "not initialized or already closed!");
-        return this.fp2_worldServer;
+    public Optional<FWorldServer1_12> fp2_worldServer() {
+        return Optional.ofNullable(this.fp2_worldServer);
     }
 
     @Override

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,40 +18,16 @@
  *
  */
 
-package net.daporkchop.fp2.api.event;
-
-import lombok.NonNull;
-import net.daporkchop.lib.common.function.throwing.ERunnable;
+package net.daporkchop.fp2.api.event.generic.load;
 
 /**
- * Fired when all resources of a certain type should be reloaded.
+ * Fired when a resource of a certain type is being loaded.
  *
  * @author DaPorkchop_
  */
-public interface ReloadEvent<T> {
+public interface FLoadingEvent<T> {
     /**
-     * Notify the event that the listener was able to be reloaded successfully.
+     * @return the instance being loaded
      */
-    void notifySuccess();
-
-    /**
-     * Notify the event that the listener could not be reloaded.
-     *
-     * @param cause the {@link Throwable} which caused the reload to to fail
-     */
-    void notifyFailure(@NonNull Throwable cause);
-
-    /**
-     * Tries to run the given {@link ERunnable} which will reload the resource.
-     *
-     * @param reloadAction the {@link ERunnable}
-     */
-    default void doReload(@NonNull ERunnable reloadAction) {
-        try {
-            reloadAction.runThrowing();
-            this.notifySuccess();
-        } catch (Throwable cause) {
-            this.notifyFailure(cause);
-        }
-    }
+    T value();
 }

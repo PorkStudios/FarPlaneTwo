@@ -76,7 +76,7 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
     protected void handleDebug(@NonNull CPacketDebugDropAllTiles packet) {
         this.world.workerManager().rootExecutor().execute(() -> {
             this.fp2().log().info("Dropping all tiles");
-            this.world.forEachLoadedTileProvider(tileProvider -> tileProvider.trackerManager().dropAllTiles());
+            this.world.forEachTileProvider((mode, tileProvider) -> tileProvider.trackerManager().dropAllTiles());
         });
     }
 

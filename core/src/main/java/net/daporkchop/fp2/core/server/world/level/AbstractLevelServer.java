@@ -43,13 +43,12 @@ import net.daporkchop.fp2.core.world.level.AbstractLevel;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.Arrays;
+import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 
-import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
@@ -61,7 +60,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 public abstract class AbstractLevelServer<F extends FP2Core, IMPL_LEVEL> extends AbstractLevel<F, IMPL_LEVEL, FWorldServer> implements FLevelServer, IFarLevelServer {
     private final FStorageCategory storageCategory;
 
-    private final Map<IFarRenderMode<?, ?>, IFarTileProvider<?, ?>> loadedTileProviders = new ConcurrentHashMap<>();
+    private final Map<IFarRenderMode<?, ?>, IFarTileProvider<?, ?>> loadedTileProviders = new IdentityHashMap<>();
 
     private final IntAxisAlignedBB coordLimits;
 
@@ -83,8 +82,14 @@ public abstract class AbstractLevelServer<F extends FP2Core, IMPL_LEVEL> extends
         });
 
         try {
+            //determine the level's coordinate limits
             this.coordLimits = this.fp2().eventBus().fireAndGetFirst(new GetCoordinateLimitsEvent(this)).get();
+
+            //create an exactFBlockHolder for the level
             this.exactBlockLevelHolder = this.fp2().eventBus().fireAndGetFirst(new GetExactFBlockLevelEvent(this)).get();
+
+            //open a tile provider for each registered render mode
+            IFarRenderMode.REGISTRY.forEachEntry((_name, mode) -> this.loadedTileProviders.put(mode, mode.tileProvider(this)));
         } catch (Exception e) {
             //something went wrong, try to close storage category
             try {
@@ -104,48 +109,47 @@ public abstract class AbstractLevelServer<F extends FP2Core, IMPL_LEVEL> extends
         //try-with-resources to ensure that everything is closed
         try (FStorageCategory storageCategory = this.storageCategory;
              ExactFBlockLevelHolder exactBlockLevelHolder = this.exactBlockLevelHolder) {
-            checkState(this.loadedTileProviders.isEmpty(), "some tile providers are still loaded: %s", this.loadedTileProviders.keySet());
-        }
-    }
 
-    @Override
-    public <POS extends IFarPos, T extends IFarTile> IFarTileProvider<POS, T> loadTileProvider(@NonNull IFarRenderMode<POS, T> modeIn) {
-        return uncheckedCast(this.loadedTileProviders.compute(modeIn, (mode, tileProvider) -> {
-            checkState(tileProvider == null, "tile provider for %s is already loaded!", mode);
+            class State implements BiConsumer<IFarRenderMode<?, ?>, IFarTileProvider<?, ?>> {
+                Throwable cause = null;
 
-            return mode.tileProvider(this);
-        }));
-    }
-
-    @Override
-    public void unloadTileProvider(@NonNull IFarRenderMode<?, ?> modeIn) throws NoSuchElementException {
-        this.loadedTileProviders.compute(modeIn, (mode, tileProvider) -> {
-            if (tileProvider == null) {
-                throw new NoSuchElementException("tile provider isn't loaded: " + mode);
+                @Override
+                public void accept(IFarRenderMode<?, ?> mode, IFarTileProvider<?, ?> tileProvider) {
+                    try {
+                        tileProvider.close();
+                    } catch (Throwable t) {
+                        if (this.cause == null) {
+                            this.cause = t; //this is the first exception which occurred, save it for later
+                        } else {
+                            this.cause.addSuppressed(t); //this is not the first exception to occur, append it to the first one
+                        }
+                    }
+                }
             }
 
-            tileProvider.close();
-            return null; //return null to remove the provider from the map
-        });
+            //close all the tile providers, then clear the map
+            State state = new State();
+            this.loadedTileProviders.forEach(state);
+            this.loadedTileProviders.clear();
+
+            if (state.cause != null) { //an exception occurred while closing one of the tile providers
+                PUnsafe.throwException(state.cause); //rethrow exception
+                throw new AssertionError(); //impossible
+            }
+        }
     }
 
     @Override
     public <POS extends IFarPos, T extends IFarTile> IFarTileProvider<POS, T> tileProviderFor(@NonNull IFarRenderMode<POS, T> mode) throws NoSuchElementException {
         IFarTileProvider<POS, T> tileProvider = uncheckedCast(this.loadedTileProviders.get(mode));
         if (tileProvider == null) {
-            throw new NoSuchElementException("tile provider isn't loaded: " + mode);
+            throw new NoSuchElementException("cannot get tile provider for invalid mode: " + mode);
         }
         return tileProvider;
     }
 
     @Override
-    public void forEachLoadedTileProvider(@NonNull Consumer<IFarTileProvider<?, ?>> action) {
-        //iterate once, and then do a computeIfPresent to ensure we hold a lock
-        /*this.loadedTileProviders.keySet().forEach(key -> this.loadedTileProviders.computeIfPresent(key, (mode, tileProvider) -> {
-            action.accept(tileProvider);
-            return tileProvider;
-        }));*/
-
-        this.loadedTileProviders.values().forEach(action);
+    public void forEachTileProvider(@NonNull BiConsumer<? super IFarRenderMode<?, ?>, ? super IFarTileProvider<?, ?>> action) {
+        this.loadedTileProviders.forEach(action);
     }
 }

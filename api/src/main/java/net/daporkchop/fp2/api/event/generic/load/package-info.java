@@ -18,19 +18,17 @@
  *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.server;
-
-import net.daporkchop.fp2.impl.mc.forge1_12_2.server.world.FWorldServer1_12;
-
-import java.util.Optional;
-
 /**
+ * This package defines a family of events related to loading and unloading resources.
+ * <p>
+ * The lifecycle of a resource with load/unload events involves firing the following events on a specific event bus with a generic parameter of the resource type in question:
+ * <ul>
+ *     <li>{@link net.daporkchop.fp2.api.event.generic.load.FLoadingEvent}: fired while a resource is being loaded</li>
+ *     <li>{@link net.daporkchop.fp2.api.event.generic.load.FLoadedEvent}: fired once a resource has been fully loaded</li>
+ *     <li>{@link net.daporkchop.fp2.api.event.generic.load.FUnloadingEvent}: fired while a resource is being unloaded</li>
+ *     <li>{@link net.daporkchop.fp2.api.event.generic.load.FUnloadedEvent}: fired once a resource has been fully unloaded</li>
+ * </ul>
+ *
  * @author DaPorkchop_
  */
-public interface IMixinMinecraftServer1_12 {
-    void fp2_initWorldServer();
-
-    void fp2_closeWorldServer();
-
-    Optional<FWorldServer1_12> fp2_worldServer();
-}
+package net.daporkchop.fp2.api.event.generic.load;

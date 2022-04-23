@@ -85,7 +85,6 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
 
     protected boolean open = false;
 
-    @SneakyThrows(FStorageException.class)
     public AbstractFarTileProvider(@NonNull IFarLevelServer world, @NonNull IFarRenderMode<POS, T> mode) {
         this.world = world;
         this.mode = mode;

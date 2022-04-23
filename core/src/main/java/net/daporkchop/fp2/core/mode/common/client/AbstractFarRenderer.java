@@ -56,7 +56,7 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTil
         this.context = context;
         this.mode = context.mode();
 
-        this.levelRenderer = context.world().renderer();
+        this.levelRenderer = context.level().renderer();
         this.gl = this.levelRenderer.gl();
 
         this.strategy = this.strategy0();

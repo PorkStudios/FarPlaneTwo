@@ -18,19 +18,16 @@
  *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.server;
-
-import net.daporkchop.fp2.impl.mc.forge1_12_2.server.world.FWorldServer1_12;
-
-import java.util.Optional;
+package net.daporkchop.fp2.api.event.generic.load;
 
 /**
+ * Fired when a resource of a certain type has been completely loaded.
+ *
  * @author DaPorkchop_
  */
-public interface IMixinMinecraftServer1_12 {
-    void fp2_initWorldServer();
-
-    void fp2_closeWorldServer();
-
-    Optional<FWorldServer1_12> fp2_worldServer();
+public interface FLoadedEvent<T> {
+    /**
+     * @return the instance which was loaded
+     */
+    T value();
 }

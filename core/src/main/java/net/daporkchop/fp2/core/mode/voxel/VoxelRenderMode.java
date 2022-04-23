@@ -90,8 +90,8 @@ public class VoxelRenderMode extends AbstractFarRenderMode<VoxelPos, VoxelTile> 
     }
 
     @Override
-    public IFarClientContext<VoxelPos, VoxelTile> clientContext(@NonNull IFarLevelClient world, @NonNull FP2Config config) {
-        return new VoxelClientContext(world, config, this);
+    public IFarClientContext<VoxelPos, VoxelTile> clientContext(@NonNull IFarLevelClient level, @NonNull FP2Config config) {
+        return new VoxelClientContext(level, config, this);
     }
 
     @Override

@@ -23,9 +23,15 @@ package net.daporkchop.fp2.api.world.level;
 import net.daporkchop.fp2.api.event.FEventBus;
 import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
+import net.daporkchop.fp2.api.world.FWorld;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 
 /**
+ * An independent "universe" owned by a {@link FWorld world}, a level contains all of the necessary information for a render mode to generate and serve tiles.
+ * <p>
+ * Levels are loaded and unloaded by the implementation as necessary. Relevant {@link net.daporkchop.fp2.api.event.generic.load load/unload events} will be sent on
+ * {@link FWorld#eventBus() the parent world's event bus}.
+ *
  * @author DaPorkchop_
  */
 public interface FLevel extends AutoCloseable {

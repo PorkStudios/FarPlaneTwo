@@ -39,14 +39,12 @@ import java.nio.file.Path;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractWorldServer<F extends FP2Core> extends AbstractWorld<F> implements FWorldServer {
-    private static final int VERSION = 0;
-
+public abstract class AbstractWorldServer<F extends FP2Core, IMPL_WORLD, IMPL_LEVEL> extends AbstractWorld<F, IMPL_WORLD, IMPL_LEVEL> implements FWorldServer {
     private final FStorage storage;
 
     @SneakyThrows(FStorageException.class)
-    public AbstractWorldServer(@NonNull F fp2, @NonNull Path path) {
-        super(fp2);
+    public AbstractWorldServer(@NonNull F fp2, IMPL_WORLD implWorld, @NonNull Path path) {
+        super(fp2, implWorld);
 
         this.storage = RocksStorage.open(path.resolve("fp2"));
     }

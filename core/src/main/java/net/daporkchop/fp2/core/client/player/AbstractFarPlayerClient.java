@@ -21,6 +21,9 @@
 package net.daporkchop.fp2.core.client.player;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.core.FP2Core;
+import net.daporkchop.fp2.core.client.world.AbstractWorldClient;
+import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
@@ -28,7 +31,6 @@ import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.client.IFarTileCache;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
-import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
 import net.daporkchop.fp2.core.network.packet.debug.server.SPacketDebugUpdateStatistics;
 import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketHandshake;
@@ -51,7 +53,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractFarPlayerClient implements IFarPlayerClient {
+public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFarPlayerClient {
     protected FP2Config serverConfig;
     protected FP2Config config;
 
@@ -66,7 +68,7 @@ public abstract class AbstractFarPlayerClient implements IFarPlayerClient {
 
     @CalledFromNetworkThread
     @Override
-    public void fp2_IFarPlayerClient_handle(@NonNull Object packet) {
+    public void handle(@NonNull Object packet) {
         if (packet instanceof SPacketHandshake) {
             this.handle((SPacketHandshake) packet);
         } else if (packet instanceof SPacketSessionBegin) {
@@ -107,11 +109,16 @@ public abstract class AbstractFarPlayerClient implements IFarPlayerClient {
         this.fp2().log().info("beginning session with mode %s", mode);
 
         if (mode != null) {
-            this.context = mode.clientContext(this.createWorldClient(packet), this.config);
+            AbstractWorldClient.COORD_LIMITS_HACK.set(packet.coordLimits());
+            try {
+                this.context = mode.clientContext(this.loadActiveWorld(), this.config);
+            } finally {
+                AbstractWorldClient.COORD_LIMITS_HACK.remove();
+            }
         }
     }
 
-    protected abstract IFarLevelClient createWorldClient(@NonNull SPacketSessionBegin packet); //TODO: i want to get rid of this and figure out how to *not* have to include the coordinate bounds in the session begin packet
+    protected abstract IFarLevelClient loadActiveWorld(); //TODO: i want to get rid of this and figure out how to *not* have to include the coordinate bounds in the session begin packet
 
     protected void handle(@NonNull SPacketSessionEnd packet) {
         checkState(this.sessionOpen, "no session is currently open!");
@@ -121,7 +128,7 @@ public abstract class AbstractFarPlayerClient implements IFarPlayerClient {
 
         if (this.context != null) {
             this.context.close();
-            this.context.world().close();
+            this.world().unloadLevel(this.context.level().id()); //unload the level, since we loaded it earlier
             this.context = null;
         }
     }
@@ -177,14 +184,14 @@ public abstract class AbstractFarPlayerClient implements IFarPlayerClient {
 
     @CalledFromAnyThread
     @Override
-    public DebugStats.Tracking fp2_IFarPlayerClient_debugServerStats() {
+    public DebugStats.Tracking debugServerStats() {
         return this.debugServerStats;
     }
 
     @CalledFromAnyThread
     @CalledFromClientThread
     @Override
-    public void fp2_IFarPlayerClient_ready() {
+    public void ready() {
         if (!this.clientReady) {
             this.clientReady = true;
 
@@ -197,20 +204,20 @@ public abstract class AbstractFarPlayerClient implements IFarPlayerClient {
             if (this.handshakeReceived && this.clientReady) {
                 this.initialConfigSent = true;
 
-                this.fp2_IFarPlayerClient_send(new CPacketClientConfig().config(this.fp2().globalConfig()));
+                this.send(new CPacketClientConfig().config(this.fp2().globalConfig()));
             }
         }
     }
 
     @CalledFromAnyThread
     @Override
-    public FP2Config fp2_IFarPlayerClient_serverConfig() {
+    public FP2Config serverConfig() {
         return this.serverConfig;
     }
 
     @CalledFromAnyThread
     @Override
-    public FP2Config fp2_IFarPlayerClient_config() {
+    public FP2Config config() {
         return this.config;
     }
 
@@ -220,7 +227,7 @@ public abstract class AbstractFarPlayerClient implements IFarPlayerClient {
 
     @CalledFromAnyThread
     @Override
-    public <POS extends IFarPos, T extends IFarTile> IFarClientContext<POS, T> fp2_IFarPlayerClient_activeContext() {
+    public <POS extends IFarPos, T extends IFarTile> IFarClientContext<POS, T> activeContext() {
         return uncheckedCast(this.context);
     }
 }

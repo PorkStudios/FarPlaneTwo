@@ -43,7 +43,7 @@ public abstract class MixinWorldServer implements IMixinWorldServer {
     public void fp2_initLevelServer() {
         checkState(this.fp2_levelServer == null, "already initialized!");
 
-        this.fp2_levelServer = (FLevelServer1_12) ((IMixinMinecraftServer1_12) PorkUtil.<WorldServer>uncheckedCast(this).getMinecraftServer()).fp2_worldServer()
+        this.fp2_levelServer = (FLevelServer1_12) ((IMixinMinecraftServer1_12) PorkUtil.<WorldServer>uncheckedCast(this).getMinecraftServer()).fp2_worldServer().get()
                 .loadLevel(FP2Forge1_12_2.getIdentifierForWorld(PorkUtil.<WorldServer>uncheckedCast(this)), this);
     }
 
@@ -51,8 +51,10 @@ public abstract class MixinWorldServer implements IMixinWorldServer {
     public void fp2_closeLevelServer() {
         checkState(this.fp2_levelServer != null, "not initialized or already closed!");
 
-        this.fp2_levelServer.close();
-        this.fp2_levelServer = null;
+        //try-with-resources to ensure everything gets closed
+        try (FLevelServer1_12 levelServer = this.fp2_levelServer) {
+            this.fp2_levelServer = null;
+        }
     }
 
     @Override

@@ -34,8 +34,8 @@ import net.daporkchop.fp2.core.mode.voxel.client.VoxelRenderer;
  * @author DaPorkchop_
  */
 public class VoxelClientContext extends AbstractFarClientContext<VoxelPos, VoxelTile> {
-    public VoxelClientContext(@NonNull IFarLevelClient world, @NonNull FP2Config config, @NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
-        super(world, config, mode);
+    public VoxelClientContext(@NonNull IFarLevelClient level, @NonNull FP2Config config, @NonNull IFarRenderMode<VoxelPos, VoxelTile> mode) {
+        super(level, config, mode);
     }
 
     @Override

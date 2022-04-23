@@ -81,9 +81,9 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
 
         this.index = this.strategy.createIndex();
         this.baker = this.strategy.createBaker();
-        this.coordLimits = this.renderer.mode().tileCoordLimits(renderer.context().world().coordLimits());
+        this.coordLimits = this.renderer.mode().tileCoordLimits(renderer.context().level().coordLimits());
 
-        this.bakeScheduler = new NoFutureScheduler<>(this, this.renderer.context().world().workerManager().createChildWorkerGroup()
+        this.bakeScheduler = new NoFutureScheduler<>(this, this.renderer.context().level().workerManager().createChildWorkerGroup()
                 .threads(fp2().globalConfig().performance().bakeThreads())
                 .threadFactory(PThreadFactories.builder().daemon().minPriority().collapsingId().name("FP2 Rendering Thread #%d").build()));
 
@@ -208,7 +208,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
         });
 
         if (this.isBulkUpdateQueued.compareAndSet(false, true)) { //we won the race to enqueue a bulk update!
-            this.renderer.context().world().workerManager().workExecutor().run(this);
+            this.renderer.context().level().workerManager().workExecutor().run(this);
         }
     }
 
@@ -216,7 +216,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
         this.pendingRenderableUpdates.put(pos, renderable);
 
         if (this.isBulkUpdateQueued.compareAndSet(false, true)) { //we won the race to enqueue a bulk update!
-            this.renderer.context().world().workerManager().workExecutor().run(this);
+            this.renderer.context().level().workerManager().workExecutor().run(this);
         }
     }
 

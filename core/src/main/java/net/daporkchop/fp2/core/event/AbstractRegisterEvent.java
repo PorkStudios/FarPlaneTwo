@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -22,7 +22,7 @@ package net.daporkchop.fp2.core.event;
 
 import lombok.Getter;
 import net.daporkchop.fp2.api.event.FEventBus;
-import net.daporkchop.fp2.api.event.RegisterEvent;
+import net.daporkchop.fp2.api.event.generic.FRegisterEvent;
 import net.daporkchop.fp2.api.util.OrderedRegistry;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.util.registry.ImmutableOrderedRegistry;
@@ -36,12 +36,12 @@ import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
- * Implementation of {@link RegisterEvent}.
+ * Implementation of {@link FRegisterEvent}.
  *
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractRegisterEvent<T> implements RegisterEvent<T> {
+public abstract class AbstractRegisterEvent<T> implements FRegisterEvent<T> {
     protected final OrderedRegistry<T> registry = new LinkedOrderedRegistry<>();
 
     /**

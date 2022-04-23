@@ -43,7 +43,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @Getter
 public abstract class AbstractFarClientContext<POS extends IFarPos, T extends IFarTile> implements IFarClientContext<POS, T> {
     protected final IFarRenderMode<POS, T> mode;
-    protected final IFarLevelClient world;
+    protected final IFarLevelClient level;
     protected final IFarTileCache<POS, T> tileCache;
 
     protected FP2Config config;
@@ -51,8 +51,8 @@ public abstract class AbstractFarClientContext<POS extends IFarPos, T extends IF
 
     protected boolean closed = false;
 
-    public AbstractFarClientContext(@NonNull IFarLevelClient world, @NonNull FP2Config config, @NonNull IFarRenderMode<POS, T> mode) {
-        this.world = world;
+    public AbstractFarClientContext(@NonNull IFarLevelClient level, @NonNull FP2Config config, @NonNull IFarRenderMode<POS, T> mode) {
+        this.level = level;
         this.mode = mode;
         this.tileCache = this.tileCache0();
 
@@ -72,7 +72,7 @@ public abstract class AbstractFarClientContext<POS extends IFarPos, T extends IF
         this.config = config;
 
         //check if we need to replace the renderer on the client thread
-        this.world.workerManager().rootExecutor().execute(() -> {
+        this.level.workerManager().rootExecutor().execute(() -> {
             if (this.config != config) { //config has changed since this task was scheduled, skip re-check since we're technically out-of-date
                 return;
             }
@@ -95,7 +95,7 @@ public abstract class AbstractFarClientContext<POS extends IFarPos, T extends IF
         this.closed = true;
 
         //do all cleanup on client thread
-        this.world.workerManager().rootExecutor().execute(() -> {
+        this.level.workerManager().rootExecutor().execute(() -> {
             if (this.renderer != null) {
                 this.renderer.close();
                 this.renderer = null;

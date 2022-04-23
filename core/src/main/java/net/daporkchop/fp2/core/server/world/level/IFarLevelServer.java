@@ -33,21 +33,18 @@ import net.daporkchop.fp2.core.server.world.TerrainGeneratorInfo;
 
 import java.nio.file.Path;
 import java.util.NoSuchElementException;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 
 /**
  * @author DaPorkchop_
  */
 public interface IFarLevelServer extends IFarLevel, FLevelServer {
-    <POS extends IFarPos, T extends IFarTile> IFarTileProvider<POS, T> loadTileProvider(@NonNull IFarRenderMode<POS, T> mode);
-
-    void unloadTileProvider(@NonNull IFarRenderMode<?, ?> mode) throws NoSuchElementException;
-
     /**
      * Gets the {@link IFarTileProvider} used by the given {@link IFarRenderMode} in this level.
      *
      * @param mode the {@link IFarRenderMode}
      * @return the {@link IFarTileProvider} used by the given {@link IFarRenderMode} in this level
+     * @throws NoSuchElementException if no {@link IFarTileProvider} is registered for the given render mode (i.e. the given render mode is invalid)
      */
     <POS extends IFarPos, T extends IFarTile> IFarTileProvider<POS, T> tileProviderFor(@NonNull IFarRenderMode<POS, T> mode) throws NoSuchElementException;
 
@@ -56,8 +53,7 @@ public interface IFarLevelServer extends IFarLevel, FLevelServer {
      *
      * @param action the action
      */
-    @Deprecated
-    void forEachLoadedTileProvider(@NonNull Consumer<IFarTileProvider<?, ?>> action);
+    void forEachTileProvider(@NonNull BiConsumer<? super IFarRenderMode<?, ?>, ? super IFarTileProvider<?, ?>> action);
 
     /**
      * @return the level's root directory

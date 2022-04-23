@@ -23,19 +23,19 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.client;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
-import net.daporkchop.fp2.api.event.ChangedEvent;
+import net.daporkchop.fp2.api.event.generic.FChangedEvent;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.gui.GuiContext;
 import net.daporkchop.fp2.core.client.gui.GuiScreen;
 import net.daporkchop.fp2.core.client.key.KeyCategory;
-import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.client.player.IFarPlayerClient;
+import net.daporkchop.fp2.core.config.FP2Config;
+import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.ATMinecraft1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.gui.ATGuiScreen1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.client.network.IMixinNetHandlerPlayClient;
-import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.client.gui.GuiContext1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.log.ChatAsPorkLibLogger;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -61,8 +61,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
-import static net.daporkchop.fp2.impl.mc.forge1_12_2.compat.of.OFHelper.*;
 import static net.daporkchop.fp2.core.debug.FP2Debug.*;
+import static net.daporkchop.fp2.impl.mc.forge1_12_2.compat.of.OFHelper.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL45.*;
@@ -130,10 +130,10 @@ public class FP2Client1_12_2 extends FP2Client {
     }
 
     @Override
-    public Optional<IFarPlayerClient> currentPlayer() {
+    public Optional<? extends IFarPlayerClient> currentPlayer() {
         NetHandlerPlayClient connection = this.mc.getConnection();
         return connection != null
-                ? Optional.of(((IMixinNetHandlerPlayClient) connection).fp2_farPlayerClient())
+                ? ((IMixinNetHandlerPlayClient) connection).fp2_playerClient()
                 : Optional.empty();
     }
 
@@ -178,13 +178,13 @@ public class FP2Client1_12_2 extends FP2Client {
     //fp2 events
 
     @FEventHandler
-    protected void onConfigChanged(ChangedEvent<FP2Config> event) {
+    protected void onConfigChanged(FChangedEvent<FP2Config> event) {
         if (FP2_DEBUG) {
             this.updateDebugColorMacros(event.next());
         }
 
         //send updated config to server
-        this.currentPlayer().ifPresent(player -> player.fp2_IFarPlayerClient_send(new CPacketClientConfig().config(this.fp2().globalConfig())));
+        this.currentPlayer().ifPresent(player -> player.send(new CPacketClientConfig().config(this.fp2().globalConfig())));
     }
 
     //forge events

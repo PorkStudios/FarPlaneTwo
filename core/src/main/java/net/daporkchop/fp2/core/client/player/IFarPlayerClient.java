@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.core.client.player;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.api.world.FWorldClient;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
@@ -35,42 +36,45 @@ import net.daporkchop.fp2.core.util.annotation.CalledFromNetworkThread;
 /**
  * @author DaPorkchop_
  */
-public interface IFarPlayerClient {
+public interface IFarPlayerClient extends AutoCloseable {
     FP2Core fp2();
 
     @CalledFromNetworkThread
-    void fp2_IFarPlayerClient_handle(@NonNull Object packet);
+    void handle(@NonNull Object packet);
 
     @CalledFromAnyThread
-    void fp2_IFarPlayerClient_send(@NonNull IPacket packet);
+    void send(@NonNull IPacket packet);
 
     @CalledFromAnyThread
-    DebugStats.Tracking fp2_IFarPlayerClient_debugServerStats();
+    DebugStats.Tracking debugServerStats();
 
     @CalledFromClientThread
-    void fp2_IFarPlayerClient_ready();
+    void ready();
+
+    FWorldClient world();
 
     /**
      * @return the server's config, or {@code null} if none/currently unknown
      */
     @CalledFromAnyThread
-    FP2Config fp2_IFarPlayerClient_serverConfig();
+    FP2Config serverConfig();
 
     /**
      * @return the current effective config (merged result of client and server config), or {@code null} if none
      */
     @CalledFromAnyThread
-    FP2Config fp2_IFarPlayerClient_config();
+    FP2Config config();
 
     /**
      * @return the currently active render context, or {@code null} if none are active
      */
     @CalledFromAnyThread
-    <POS extends IFarPos, T extends IFarTile> IFarClientContext<POS, T> fp2_IFarPlayerClient_activeContext();
+    <POS extends IFarPos, T extends IFarTile> IFarClientContext<POS, T> activeContext();
 
     /**
      * Closes this player, causing the active session (if any) to be closed.
      */
     @CalledFromAnyThread
-    void fp2_IFarPlayerClient_close();
+    @Override
+    void close();
 }

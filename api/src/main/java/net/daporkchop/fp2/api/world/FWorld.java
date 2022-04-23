@@ -20,35 +20,24 @@
 
 package net.daporkchop.fp2.api.world;
 
-import lombok.NonNull;
+import net.daporkchop.fp2.api.FP2;
 import net.daporkchop.fp2.api.event.FEventBus;
 import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.api.world.level.FLevel;
 
-import java.util.NoSuchElementException;
-
 /**
  * A collection of {@link FLevel level}s, each of which is identified by its own unique {@link Identifier}.
+ * <p>
+ * Worlds are loaded and unloaded by the implementation as necessary. Relevant {@link net.daporkchop.fp2.api.event.generic.load load/unload events} will be sent on
+ * {@link FP2#eventBus() the global event bus}.
  *
  * @author DaPorkchop_
  */
 public interface FWorld extends AutoCloseable {
     /**
-     * Loads the {@link FLevel} with the given {@link Identifier ID}.
-     *
-     * @param id        the level's ID
-     * @param implLevel an implementation-specific object representing the level being loaded
-     * @return the loaded level
+     * @return the implementation-specific object corresponding to this world
      */
-    FLevel loadLevel(@NonNull Identifier id, Object implLevel);
-
-    /**
-     * Unloads the {@link FLevel} with the given {@link Identifier ID}.
-     *
-     * @param id the level's ID
-     * @throws NoSuchElementException if the level isn't loaded
-     */
-    void unloadLevel(@NonNull Identifier id) throws NoSuchElementException;
+    Object implWorld();
 
     /**
      * @return an event bus for events specific to this world

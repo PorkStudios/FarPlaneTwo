@@ -18,19 +18,29 @@
  *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.server;
+package net.daporkchop.fp2.core.client.world;
 
-import net.daporkchop.fp2.impl.mc.forge1_12_2.server.world.FWorldServer1_12;
-
-import java.util.Optional;
+import lombok.NonNull;
+import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
+import net.daporkchop.fp2.api.world.FWorldClient;
+import net.daporkchop.fp2.core.FP2Core;
+import net.daporkchop.fp2.core.world.AbstractWorld;
+import net.daporkchop.lib.common.misc.threadlocal.TL;
 
 /**
+ * Base implementation of {@link FWorldClient}.
+ *
  * @author DaPorkchop_
  */
-public interface IMixinMinecraftServer1_12 {
-    void fp2_initWorldServer();
+public abstract class AbstractWorldClient<F extends FP2Core, IMPL_WORLD, IMPL_LEVEL> extends AbstractWorld<F, IMPL_WORLD, IMPL_LEVEL> implements FWorldClient {
+    public static final TL<IntAxisAlignedBB> COORD_LIMITS_HACK = TL.create(); //TODO: this is disgusting
 
-    void fp2_closeWorldServer();
+    public AbstractWorldClient(@NonNull F fp2, IMPL_WORLD implWorld) {
+        super(fp2, implWorld);
+    }
 
-    Optional<FWorldServer1_12> fp2_worldServer();
+    @Override
+    public void close() {
+        //no-op
+    }
 }

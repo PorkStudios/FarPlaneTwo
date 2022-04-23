@@ -113,13 +113,13 @@ public interface IFarRenderMode<POS extends IFarPos, T extends IFarTile> {
     IFarServerContext<POS, T> serverContext(@NonNull IFarPlayerServer player, @NonNull IFarLevelServer world, @NonNull FP2Config config);
 
     /**
-     * Creates a new {@link IFarClientContext} for the given world.
+     * Creates a new {@link IFarClientContext} for the given level.
      *
-     * @param world  the world
+     * @param level  the level
      * @param config
      * @return the new {@link IFarClientContext}
      */
-    IFarClientContext<POS, T> clientContext(@NonNull IFarLevelClient world, @NonNull FP2Config config);
+    IFarClientContext<POS, T> clientContext(@NonNull IFarLevelClient level, @NonNull FP2Config config);
 
     /**
      * @return a recycler for tile objects

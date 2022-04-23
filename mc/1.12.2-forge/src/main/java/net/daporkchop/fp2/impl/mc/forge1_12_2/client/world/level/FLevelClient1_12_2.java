@@ -22,7 +22,9 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.client.world.level;
 
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
+import net.daporkchop.fp2.api.world.FWorldClient;
 import net.daporkchop.fp2.core.client.world.level.AbstractLevelClient;
 import net.daporkchop.fp2.core.util.threading.futureexecutor.MarkedFutureExecutor;
 import net.daporkchop.fp2.core.util.threading.workergroup.DefaultWorkerManager;
@@ -43,8 +45,8 @@ public class FLevelClient1_12_2 extends AbstractLevelClient<FP2Forge1_12_2, Worl
     private final IntAxisAlignedBB coordLimits;
     private final LevelRenderer1_12_2 renderer;
 
-    public FLevelClient1_12_2(@NonNull FP2Forge1_12_2 fp2, @NonNull WorldClient world, @NonNull IntAxisAlignedBB coordLimits) {
-        super(fp2, world);
+    public FLevelClient1_12_2(@NonNull FP2Forge1_12_2 fp2, @NonNull WorldClient implLevel, @NonNull FWorldClient world, @NonNull Identifier id, @NonNull IntAxisAlignedBB coordLimits) {
+        super(fp2, implLevel, world, id);
 
         this.coordLimits = coordLimits;
 

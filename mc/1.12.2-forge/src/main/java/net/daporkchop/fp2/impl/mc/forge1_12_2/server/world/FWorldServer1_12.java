@@ -32,17 +32,13 @@ import net.minecraft.world.WorldServer;
 /**
  * @author DaPorkchop_
  */
-public class FWorldServer1_12 extends AbstractWorldServer<FP2Forge1_12_2> {
-    private final MinecraftServer server;
-
-    public FWorldServer1_12(@NonNull FP2Forge1_12_2 fp2, @NonNull MinecraftServer server) {
-        super(fp2, server.getActiveAnvilConverter().getSaveLoader(server.getFolderName(), false).getWorldDirectory().toPath());
-
-        this.server = server;
+public class FWorldServer1_12 extends AbstractWorldServer<FP2Forge1_12_2, MinecraftServer, WorldServer> {
+    public FWorldServer1_12(@NonNull FP2Forge1_12_2 fp2, @NonNull MinecraftServer implWorld) {
+        super(fp2, implWorld, implWorld.getActiveAnvilConverter().getSaveLoader(implWorld.getFolderName(), false).getWorldDirectory().toPath());
     }
 
     @Override
-    protected FLevel createLevel(@NonNull Identifier id, Object implLevel) {
-        return new FLevelServer1_12(this.fp2(), (WorldServer) implLevel, this, id);
+    protected FLevel createLevel(@NonNull Identifier id, @NonNull WorldServer implLevel) {
+        return new FLevelServer1_12(this.fp2(), implLevel, this, id);
     }
 }
