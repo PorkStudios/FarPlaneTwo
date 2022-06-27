@@ -18,7 +18,7 @@
  *
  */
 
-package util.datastructure;
+package net.daporkchop.fp2.core.test.util.datastructure;
 
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapConstants;

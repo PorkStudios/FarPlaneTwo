@@ -18,11 +18,14 @@
  *
  */
 
+package net.daporkchop.fp2.core.test.event;
+
 import net.daporkchop.fp2.api.event.Constrain;
 import net.daporkchop.fp2.api.event.FEventBus;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.api.event.ReturningEvent;
 import net.daporkchop.fp2.core.event.EventBus;
+import net.daporkchop.lib.reflection.type.PTypes;
 import org.junit.jupiter.api.Test;
 
 import java.lang.ref.WeakReference;
@@ -45,16 +48,24 @@ public class TestEventBus {
 
             @FEventHandler
             private void handleObject(Object event) {
+                System.out.println("handling Object event: " + event);
                 this.object++;
             }
 
             @FEventHandler
             public void handleBaseString(Base<String> event) {
+                System.out.println("handling Base<String> event: " + event);
                 this.baseString++;
             }
 
             @FEventHandler
+            public void handleBaseWildcardExtendsCharSequence(Base<? extends CharSequence> event) {
+                System.out.println("handling Base<? extends CharSequence> event: " + event);
+            }
+
+            @FEventHandler
             public void handleEventBaseWildcard(Event<Base<?>> event) {
+                System.out.println("handling Event<Base<?>> event: " + event);
                 this.eventBaseWildcard++;
             }
         }
@@ -72,28 +83,41 @@ public class TestEventBus {
         eventBus.fire(new Event<Base<?>>() {});
         checkState(events.eventBaseWildcard == 1);
 
-        Object listener = new Object() {
-            @FEventHandler
-            public void handleString(String event) {
-                if ("!!! this should not be printed !!!".equals(event)) {
-                    throw new IllegalStateException();
+        { //make sure that the listener can be garbage-collected when weakly referenced by the event bus
+            Object listener = new Object() {
+                @FEventHandler
+                public void handleString(String event) {
+                    if ("!!! this should not be printed !!!".equals(event)) {
+                        throw new IllegalStateException();
+                    }
+
+                    System.out.println("handled String event: " + event);
                 }
+            };
+            WeakReference<Object> listenerReference = new WeakReference<>(listener);
 
-                System.out.println("handled String event: " + event);
-            }
-        };
-        WeakReference<Object> listenerReference = new WeakReference<>(listener);
+            eventBus.fire("!!! this should not be printed !!!");
+            eventBus.registerWeak(listener);
+            eventBus.fire("hello world");
 
-        eventBus.fire("!!! this should not be printed !!!");
-        eventBus.registerWeak(listener);
-        eventBus.fire("hello world");
+            listener = null;
+            do {
+                System.gc();
+            } while (listenerReference.get() != null);
 
-        listener = null;
-        do {
-            System.gc();
-        } while (listenerReference.get() != null);
+            eventBus.fire("!!! this should not be printed !!!");
+        }
 
-        eventBus.fire("!!! this should not be printed !!!");
+        { //test fireTyped*
+            System.out.println("DynamicallyTypedEvent masquerading as Object");
+            eventBus.fireTyped(Boolean.TRUE, Object.class);
+
+            System.out.println("DynamicallyTypedEvent masquerading as Base<String>");
+            eventBus.fireTyped(new Base() {}, PTypes.parameterized(Base.class, null, String.class));
+
+            System.out.println("Testing with Base2<String>");
+            eventBus.fireTyped(new Base2() {}, PTypes.parameterized(Base2.class, null, String.class));
+        }
     }
 
     @FEventHandler
@@ -193,6 +217,9 @@ public class TestEventBus {
     }
 
     private interface Base<T> {
+    }
+
+    private interface Base2<T> extends Base<T> {
     }
 
     private interface Event<T> {

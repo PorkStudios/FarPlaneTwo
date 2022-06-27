@@ -18,10 +18,10 @@
  *
  */
 
-package util.datastructure;
+package net.daporkchop.fp2.core.test.util.datastructure;
 
 import net.daporkchop.fp2.core.util.datastructure.Datastructures;
-import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSet;
+import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSegtreeSet;
 import net.daporkchop.lib.math.vector.Vec3i;
 import org.junit.jupiter.api.Test;
 
@@ -30,18 +30,41 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.IntStream;
 
+import static java.lang.Math.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.fp2.core.test.util.datastructure.TestNDimensionalIntSet.*;
 
 /**
  * @author DaPorkchop_
  */
-public class TestNDimensionalIntSet {
-    protected static void ensureEqual(Set<Vec3i> reference, NDimensionalIntSet test) {
-        checkState(reference.size() == test.size());
+public class TestNDimensionalIntSegtreeSet {
+    protected static void doAABBIntersections(Set<Vec3i> reference, NDimensionalIntSegtreeSet test, int _min, int _max) {
+        int d = abs(_max - _min);
+        int min = min(_min, _min - (d >> 1));
+        int max = max(_max, _max + (d >> 1));
 
-        reference.forEach(v -> checkState(test.contains(v.x(), v.y(), v.z())));
-        test.forEach3D((x, y, z) -> checkState(reference.contains(Vec3i.of(x, y, z))));
+        IntStream.range(0, 128).parallel().forEach(_unused -> {
+            int x0 = ThreadLocalRandom.current().nextInt(min, max);
+            int x1 = ThreadLocalRandom.current().nextInt(min, max);
+            int y0 = ThreadLocalRandom.current().nextInt(min, max);
+            int y1 = ThreadLocalRandom.current().nextInt(min, max);
+            int z0 = ThreadLocalRandom.current().nextInt(min, max);
+            int z1 = ThreadLocalRandom.current().nextInt(min, max);
+
+            int minX = min(x0, x1);
+            int maxX = max(x0, x1);
+            int minY = min(y0, y1);
+            int maxY = max(y0, y1);
+            int minZ = min(z0, z1);
+            int maxZ = max(z0, z1);
+
+            boolean ref = reference.stream().anyMatch(v -> v.x() >= minX && v.x() <= maxX && v.y() >= minY && v.y() <= maxY && v.z() >= minZ && v.z() <= maxZ);
+            boolean tst = test.containsAny(minX, minY, minZ, maxX, maxY, maxZ);
+
+            checkState(ref == tst);
+        });
     }
 
     @Test
@@ -69,7 +92,7 @@ public class TestNDimensionalIntSet {
         ThreadLocalRandom r = ThreadLocalRandom.current();
 
         {
-            NDimensionalIntSet test = Datastructures.INSTANCE.nDimensionalIntSet().dimensions(3).threadSafe(false).build();
+            NDimensionalIntSegtreeSet test = Datastructures.INSTANCE.nDimensionalIntSegtreeSet().dimensions(3).threadSafe(false).build();
             for (int i = 0; i < nPoints; i++) { //insert some random values
                 int x = r.nextInt(min, max);
                 int y = r.nextInt(min, max);
@@ -83,6 +106,7 @@ public class TestNDimensionalIntSet {
             }
 
             ensureEqual(reference, test);
+            doAABBIntersections(reference, test, min, max);
 
             for (Iterator<Vec3i> itr = reference.iterator(); itr.hasNext(); ) { //remove some positions at random
                 Vec3i pos = itr.next();
@@ -94,6 +118,7 @@ public class TestNDimensionalIntSet {
             }
 
             ensureEqual(reference, test);
+            doAABBIntersections(reference, test, min, max);
         }
     }
 
@@ -112,8 +137,9 @@ public class TestNDimensionalIntSet {
         ThreadLocalRandom r = ThreadLocalRandom.current();
 
         {
-            NDimensionalIntSet test = Datastructures.INSTANCE.nDimensionalIntSet().dimensions(3).threadSafe(false).build();
+            NDimensionalIntSegtreeSet test = Datastructures.INSTANCE.nDimensionalIntSegtreeSet().dimensions(3).threadSafe(false).build();
             ensureEqual(reference, test);
+            doAABBIntersections(reference, test, min, max);
 
             for (int i = 0; i < 10000; i++) {
                 int x = r.nextInt(min, max);
@@ -130,6 +156,7 @@ public class TestNDimensionalIntSet {
             }
 
             ensureEqual(reference, test);
+            doAABBIntersections(reference, test, min, max);
         }
     }
 
@@ -148,10 +175,8 @@ public class TestNDimensionalIntSet {
         ThreadLocalRandom r = ThreadLocalRandom.current();
 
         {
-            NDimensionalIntSet test = Datastructures.INSTANCE.nDimensionalIntSet().dimensions(3).threadSafe(false).build();
-            ensureEqual(reference, test);
-
-            for (int i = 0; i < 10000; i++) {
+            NDimensionalIntSegtreeSet test = Datastructures.INSTANCE.nDimensionalIntSegtreeSet().dimensions(3).threadSafe(false).build();
+            for (int i = 0; i < 32; i++) {
                 int x = r.nextInt(min, max);
                 int y = r.nextInt(min, max);
                 int z = r.nextInt(min, max);
@@ -160,6 +185,7 @@ public class TestNDimensionalIntSet {
             }
 
             ensureEqual(reference, test);
+            doAABBIntersections(reference, test, min, max);
 
             reference.forEach(pos -> {
                 checkState(test.remove(pos.x(), pos.y(), pos.z()));
@@ -167,54 +193,7 @@ public class TestNDimensionalIntSet {
             });
 
             ensureEqual(Collections.emptySet(), test);
-        }
-    }
-
-    @Test
-    public void testBulkOperationsHighCoordinates() {
-        this.testBulkOperations(Integer.MIN_VALUE, Integer.MAX_VALUE);
-    }
-
-    @Test
-    public void testBulkOperationsSmallCoordinates() {
-        this.testBulkOperations(-500, 500);
-    }
-
-    protected void testBulkOperations(int min, int max) {
-        Set<Vec3i> reference0 = new HashSet<>();
-        Set<Vec3i> reference1 = new HashSet<>();
-        ThreadLocalRandom r = ThreadLocalRandom.current();
-
-        {
-            NDimensionalIntSet test0 = Datastructures.INSTANCE.nDimensionalIntSet().dimensions(3).threadSafe(false).build();
-            NDimensionalIntSet test1 = Datastructures.INSTANCE.nDimensionalIntSet().dimensions(3).threadSafe(false).build();
-
-            for (int i = 0; i < 10000; i++) {
-                int x = r.nextInt(min, max);
-                int y = r.nextInt(min, max);
-                int z = r.nextInt(min, max);
-                Vec3i vec = Vec3i.of(x, y, z);
-
-                if (r.nextBoolean()) {
-                    checkState(reference0.add(vec) == test0.add(x, y, z));
-                }
-                if (r.nextBoolean()) {
-                    checkState(reference1.add(vec) == test1.add(x, y, z));
-                }
-            }
-
-            ensureEqual(reference0, test0);
-            ensureEqual(reference1, test1);
-
-            checkState(reference1.addAll(reference0) == test1.addAll(test0));
-
-            ensureEqual(reference0, test0);
-            ensureEqual(reference1, test1);
-
-            checkState(reference1.containsAll(reference0));
-            checkState(test1.containsAll(test0));
-
-            checkState(reference1.removeAll(reference0) == test1.removeAll(test0));
+            doAABBIntersections(Collections.emptySet(), test, min, max);
         }
     }
 }

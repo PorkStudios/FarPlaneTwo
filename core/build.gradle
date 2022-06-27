@@ -45,4 +45,7 @@ dependencies {
     apiShade("net.daporkchop.lib:primitive:$porklibVersion") {
         exclude group: "io.netty"
     }
+    apiShade("net.daporkchop.lib:reflection:$porklibVersion") {
+        exclude group: "io.netty"
+    }
 }

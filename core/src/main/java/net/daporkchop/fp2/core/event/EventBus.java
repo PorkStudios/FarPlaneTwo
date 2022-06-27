@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -24,7 +24,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -37,6 +37,7 @@ import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.reference.Reference;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.util.PorkUtil;
+import net.daporkchop.lib.reflection.type.PTypes;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -44,24 +45,34 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.lang.reflect.TypeVariable;
-import java.lang.reflect.WildcardType;
+import java.util.AbstractCollection;
+import java.util.AbstractMap;
+import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.Spliterator;
 import java.util.WeakHashMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.lang.Math.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
@@ -72,69 +83,15 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 //TODO: this currently does not properly wait for handlers to be removed from all executing lists when unregistering them
 public class EventBus implements FEventBus {
-    protected static final LoadingCache<Type, List<Type>> ALL_TYPES_CACHE = CacheBuilder.newBuilder()
+    protected static final LoadingCache<Type, List<Type>> INHERITED_TYPES_CACHE = CacheBuilder.newBuilder()
             .weakKeys().weakValues()
             .build(new CacheLoader<Type, List<Type>>() {
                 @Override
+                @SuppressWarnings("UnstableApiUsage")
                 public List<Type> load(Type key) throws Exception {
-                    ImmutableSet.Builder<Type> builder = ImmutableSet.builder();
-                    this.findTypesRecursive(builder, key);
-                    return ImmutableList.copyOf(builder.build());
-                }
-
-                protected <T> void findTypesRecursive(ImmutableSet.Builder<Type> builder, Type type) {
-                    builder.add(type);
-
-                    Class<T> rawType;
-                    if (type == Object.class) {
-                        return;
-                    } else if (type instanceof Class) {
-                        rawType = uncheckedCast(type);
-                    } else if (type instanceof ParameterizedType) {
-                        ParameterizedType parameterizedType = (ParameterizedType) type;
-                        rawType = uncheckedCast(parameterizedType.getRawType());
-                    } else {
-                        throw new IllegalArgumentException("don't know how to handle type: " + type);
-                    }
-
-                    Map<String, Type> parameters = this.getParameters(type);
-
-                    if (!rawType.isInterface()) {
-                        this.findTypesRecursive(builder, resolveType(rawType.getGenericSuperclass(), parameters));
-                    }
-                    for (Type interfaz : rawType.getGenericInterfaces()) {
-                        this.findTypesRecursive(builder, resolveType(interfaz, parameters));
-                    }
-                }
-
-                protected <T> Map<String, Type> getParameters(Type type) {
-                    Map<String, Type> map = new HashMap<>();
-
-                    Class<T> rawType;
-                    Type[] typeArguments;
-                    if (type instanceof Class) {
-                        rawType = uncheckedCast(type);
-                        typeArguments = new Type[0];
-                    } else if (type instanceof ParameterizedType) {
-                        ParameterizedType parameterizedType = (ParameterizedType) type;
-                        rawType = uncheckedCast(parameterizedType.getRawType());
-                        typeArguments = parameterizedType.getActualTypeArguments();
-
-                        if (parameterizedType.getOwnerType() != null) {
-                            map = this.getParameters(parameterizedType.getOwnerType());
-                        }
-                    } else {
-                        throw new IllegalArgumentException("don't know how to handle type: " + type);
-                    }
-
-                    TypeVariable<Class<T>>[] typeVariables = rawType.getTypeParameters();
-                    if (typeVariables.length == typeArguments.length) { //there are no type arguments
-                        for (int i = 0; i < typeVariables.length; i++) {
-                            map.put(typeVariables[i].getName(), typeArguments[i]);
-                        }
-                    }
-
-                    return map;
+                    return PTypes.allRawSupertypes(PTypes.raw(key))
+                            .map(rawSupertype -> PTypes.inheritedGenericSupertype(key, rawSupertype))
+                            .collect(ImmutableList.toImmutableList());
                 }
             });
 
@@ -163,7 +120,7 @@ public class EventBus implements FEventBus {
 
                                 boolean returning = ReturningEvent.class.isAssignableFrom(method.getParameterTypes()[0]);
                                 if (returning) {
-                                    Type returningParameterType = ALL_TYPES_CACHE.getUnchecked(parameterType).stream()
+                                    Type returningParameterType = INHERITED_TYPES_CACHE.getUnchecked(parameterType).stream()
                                             .filter(type -> type == ReturningEvent.class
                                                             || (type instanceof ParameterizedType && ((ParameterizedType) type).getRawType() == ReturningEvent.class))
                                             .findAny().get();
@@ -177,7 +134,7 @@ public class EventBus implements FEventBus {
                                         throw new IllegalStateException("monitor handler may not have a return value: " + methodAsString);
                                     } else if (t.equals(method.getGenericReturnType())) { //T
                                         returnHandling = ReturnHandling.T;
-                                    } else if (new ParameterizedTypeImpl(new Type[]{ t }, Optional.class, null).equals(method.getGenericReturnType())) { //Optional<T>
+                                    } else if (PTypes.equals(PTypes.parameterized(Optional.class, null, t), method.getGenericReturnType())) { //Optional<T>
                                         returnHandling = ReturnHandling.OPTIONAL_T;
                                     } else {
                                         throw new IllegalArgumentException(PStrings.fastFormat("event handler must return void, %2$s or Optional<%2$s>: %1$s", methodAsString, parameterType));
@@ -201,53 +158,13 @@ public class EventBus implements FEventBus {
                 }
             });
 
-    protected static Type resolveType(Type type, Map<String, Type> parameters) {
-        if (type == null || type instanceof Class) {
-            return type;
-        } else if (type instanceof ParameterizedType) {
-            ParameterizedType parameterizedType = (ParameterizedType) type;
-            Type[] actualTypeArguments = Stream.of(parameterizedType.getActualTypeArguments()).map(argument -> resolveType(argument, parameters)).toArray(Type[]::new);
-            Type rawType = resolveType(parameterizedType.getRawType(), parameters);
-            Type ownerType = resolveType(parameterizedType.getOwnerType(), parameters);
-
-            return new ParameterizedTypeImpl(actualTypeArguments, rawType, ownerType);
-        } else if (type instanceof TypeVariable) {
-            TypeVariable typeVariable = (TypeVariable) type;
-            Type value = parameters.get(typeVariable.getName());
-            checkArg(value != null, "unknown type variable: %s (parameters: %s)", typeVariable, parameters);
-            return value;
-        } else if (type instanceof WildcardType) {
-            WildcardType wildcardType = (WildcardType) type;
-            Type[] upperBounds = Stream.of(wildcardType.getUpperBounds()).map(argument -> resolveType(argument, parameters)).toArray(Type[]::new);
-            Type[] lowerBounds = Stream.of(wildcardType.getLowerBounds()).map(argument -> resolveType(argument, parameters)).toArray(Type[]::new);
-
-            return new WildcardTypeImpl(upperBounds, lowerBounds);
-        } else {
-            throw new IllegalArgumentException("don't know how to handle type: " + type);
-        }
-    }
-
-    protected static boolean isAssignableFrom(Type a, Type b) {
-        //TODO: this is incomplete, and partially wrong
-
-        if (a instanceof Class) {
-            if (b instanceof Class) {
-                return ((Class<?>) a).isAssignableFrom((Class<?>) b);
-            } else if (b instanceof ParameterizedType) {
-                return isAssignableFrom(a, ((ParameterizedType) b).getRawType());
-            }
-        }
-
-        throw new IllegalArgumentException(a + " " + b);
-    }
-
     protected static String toStringGeneric(@NonNull Method method) {
         return Stream.of(method.getGenericParameterTypes()).map(Objects::toString).collect(Collectors.joining(", ",
                 method.getGenericReturnType() + " " + method.getDeclaringClass().getTypeName() + '#' + method.getName() + '(', ")"));
     }
 
-    protected final Map<Type, Set<Class<?>>> signatureToEventClasses = new HashMap<>();
-    protected final Map<Type, HandlerList> signatureToHandlers = new HashMap<>();
+    protected final TypeInheritanceMap<Boolean> presentEventClasses = new WeakTypeInheritanceMap<>();
+    protected final TypeInheritanceMap<HandlerList> signatureToHandlers = new ConcurrentTypeInheritanceMap<>(); //needs to be concurrent in order to be read when a DynamicallyTypedEvent is fired
 
     protected final Map<Class<?>, HandlerList> eventClassesToHandlers = CacheBuilder.newBuilder().weakKeys().<Class<?>, HandlerList>build().asMap();
 
@@ -279,22 +196,9 @@ public class EventBus implements FEventBus {
 
     protected void addHandler(@NonNull Handler handler, @NonNull Type signature) {
         this.signatureToHandlers.computeIfAbsent(signature, HandlerList::new).add(handler);
-        this.signatureToEventClasses.getOrDefault(signature, Collections.emptySet()).forEach(eventClass -> {
-            this.eventClassesToHandlers.get(eventClass).add(handler);
-        });
-    }
 
-    protected synchronized void cleanup(@NonNull Class<?> listenerClass, @NonNull Object referenceOrListener) {
-        LISTENER_METHOD_CACHE.getUnchecked(listenerClass).forEach(method -> {
-            this.signatureToHandlers.computeIfPresent(method.signature, (signature, list) -> {
-                list.cleanAndRemove(referenceOrListener);
-                return list.isEmpty() ? null : list;
-            });
-
-            this.signatureToEventClasses.getOrDefault(method.signature, Collections.emptySet()).forEach(eventClass -> {
-                this.eventClassesToHandlers.get(eventClass).cleanAndRemove(referenceOrListener);
-            });
-        });
+        this.presentEventClasses.subMap(signature)
+                .forEach((eventClass, flag) -> this.eventClassesToHandlers.get(eventClass).add(handler));
     }
 
     @Override
@@ -307,12 +211,67 @@ public class EventBus implements FEventBus {
         this.cleanup(listener, listener);
     }
 
+    protected synchronized void cleanup(@NonNull Class<?> listenerClass, @NonNull Object referenceOrListener) {
+        LISTENER_METHOD_CACHE.getUnchecked(listenerClass).forEach(method -> {
+            this.signatureToHandlers.computeIfPresent(method.signature, (signature, list) -> {
+                list.cleanAndRemove(referenceOrListener);
+                return list.isEmpty() ? null : list;
+            });
+
+            this.presentEventClasses.subMap(method.signature)
+                    .forEach((eventClass, flag) -> this.eventClassesToHandlers.get(eventClass).cleanAndRemove(referenceOrListener));
+        });
+    }
+
+    protected HandlerList getHandlerListForEvent(@NonNull Object event) {
+        Class<?> eventClass = event.getClass();
+
+        HandlerList list = this.eventClassesToHandlers.get(eventClass);
+        return list == null
+                ? this.createListForUnknownEventType(event) //create a new HandlerList for the given event type
+                : list;
+    }
+
+    protected synchronized HandlerList createListForUnknownEventType(@NonNull Object event) {
+        return this.eventClassesToHandlers.computeIfAbsent(event.getClass(), eventClass -> {
+            HandlerList list = new HandlerList(eventClass);
+            list.add(this.signatureToHandlers.superMap(eventClass).values().stream()
+                    .flatMap(signatureSpecificList -> Stream.of(signatureSpecificList.handlers))
+                    .distinct().toArray(Handler[]::new));
+
+            this.presentEventClasses.put(eventClass, Boolean.TRUE);
+            return list;
+        });
+    }
+
+    protected HandlerList getHandlerListForEvent(@NonNull Object event, @NonNull Type forcedType) {
+        if (!PTypes.raw(forcedType).isAssignableFrom(event.getClass())) {
+            throw new IllegalArgumentException("raw type of " + PTypes.toString(forcedType) + " is not assignable from event " + event.getClass());
+        }
+
+        //find all the handlers whose signatures are subtypes of the event's real type, pack them into a new HandlerList and return that
+        //TODO: this will make it difficult to implement waiting for handlers to be removed from all executing lists when unregistering them
+
+        HandlerList tempList = new HandlerList(forcedType);
+        tempList.add(this.signatureToHandlers.superMap(forcedType).values().stream()
+                .flatMap(list -> Stream.of(list.handlers))
+                .distinct().toArray(Handler[]::new));
+        return tempList;
+    }
+
     @Override
     public <T> T fire(@NonNull T event) {
-        HandlerList list = this.eventClassesToHandlers.get(event.getClass());
-        if (list == null) {
-            list = this.createListForUnknownEventType(event);
+        HandlerList list = this.getHandlerListForEvent(event);
+
+        for (Handler handler : list.handlers) {
+            handler.fire(event);
         }
+        return event;
+    }
+
+    @Override
+    public <T> T fireTyped(@NonNull T event, @NonNull Type forcedType) {
+        HandlerList list = this.getHandlerListForEvent(event, forcedType);
 
         for (Handler handler : list.handlers) {
             handler.fire(event);
@@ -322,10 +281,20 @@ public class EventBus implements FEventBus {
 
     @Override
     public <R> Optional<R> fireAndGetFirst(@NonNull ReturningEvent<R> event) {
-        HandlerList list = this.eventClassesToHandlers.get(event.getClass());
-        if (list == null) {
-            list = this.createListForUnknownEventType(event);
+        HandlerList list = this.getHandlerListForEvent(event);
+
+        Optional<R> out = Optional.empty();
+        for (Handler handler : list.handlers) {
+            if (!out.isPresent() || handler.monitor) {
+                out = uncheckedCast(handler.fire(event));
+            }
         }
+        return out;
+    }
+
+    @Override
+    public <R> Optional<R> fireTypedAndGetFirst(@NonNull ReturningEvent<R> event, @NonNull Type forcedType) {
+        HandlerList list = this.getHandlerListForEvent(event, forcedType);
 
         Optional<R> out = Optional.empty();
         for (Handler handler : list.handlers) {
@@ -338,10 +307,7 @@ public class EventBus implements FEventBus {
 
     @Override
     public <R> List<R> fireAndGetAll(@NonNull ReturningEvent<R> event) {
-        HandlerList list = this.eventClassesToHandlers.get(event.getClass());
-        if (list == null) {
-            list = this.createListForUnknownEventType(event);
-        }
+        HandlerList list = this.getHandlerListForEvent(event);
 
         List<R> out = new ArrayList<>();
         for (Handler handler : list.handlers) {
@@ -350,16 +316,15 @@ public class EventBus implements FEventBus {
         return out;
     }
 
-    protected synchronized HandlerList createListForUnknownEventType(@NonNull Object event) {
-        return this.eventClassesToHandlers.computeIfAbsent(event.getClass(), eventClass -> {
-            HandlerList list = new HandlerList(eventClass);
-            ALL_TYPES_CACHE.getUnchecked(eventClass).forEach(type -> {
-                list.add(this.signatureToHandlers.computeIfAbsent(type, HandlerList::new).handlers);
+    @Override
+    public <R> List<R> fireTypedAndGetAll(@NonNull ReturningEvent<R> event, @NonNull Type forcedType) {
+        HandlerList list = this.getHandlerListForEvent(event, forcedType);
 
-                this.signatureToEventClasses.computeIfAbsent(type, _unused -> Collections.newSetFromMap(new WeakHashMap<>())).add(eventClass);
-            });
-            return list;
-        });
+        List<R> out = new ArrayList<>();
+        for (Handler handler : list.handlers) {
+            PorkUtil.<Optional<R>>uncheckedCast(handler.fire(event)).ifPresent(out::add);
+        }
+        return out;
     }
 
     /**
@@ -608,88 +573,363 @@ public class EventBus implements FEventBus {
         public abstract Optional<?> wrapReturnValue(Object returnValue);
     }
 
-    /**
-     * @author DaPorkchop_
-     */
-    @RequiredArgsConstructor
-    private static class ParameterizedTypeImpl implements ParameterizedType {
-        @NonNull
-        private final Type[] actualTypeArguments;
-        @NonNull
-        private final Type rawType;
-        private final Type ownerType;
-
-        @Override
-        public Type[] getActualTypeArguments() {
-            return this.actualTypeArguments;
+    private interface TypeInheritanceMap<V> extends Map<Type, V> {
+        /**
+         * Gets a view of the portion of this map whose keys are a subtype of the given type.
+         *
+         * @param type the type
+         * @return a view of the portion of this map whose keys are a subtype of the given type
+         */
+        default TypeInheritanceMap<V> subMap(@NonNull Type type) {
+            return new DefaultTypeInheritanceChildMap<>(this, key -> PTypes.isSubtype(type, key));
         }
 
-        @Override
-        public Type getRawType() {
-            return this.rawType;
-        }
-
-        @Override
-        public Type getOwnerType() {
-            return this.ownerType;
-        }
-
-        @Override
-        public int hashCode() {
-            return Arrays.hashCode(this.actualTypeArguments)
-                   ^ Objects.hashCode(this.ownerType)
-                   ^ Objects.hashCode(this.rawType);
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (obj == this) {
-                return true;
-            } else if (obj instanceof ParameterizedType) {
-                ParameterizedType other = (ParameterizedType) obj;
-                return Objects.equals(this.ownerType, other.getOwnerType())
-                       && Objects.equals(this.rawType, other.getRawType())
-                       && Arrays.equals(this.actualTypeArguments, other.getActualTypeArguments());
-            } else {
-                return false;
-            }
+        /**
+         * Gets a view of the portion of this map whose keys are a supertype of the given type.
+         *
+         * @param type the type
+         * @return a view of the portion of this map whose keys are a supertype of the given type
+         */
+        default TypeInheritanceMap<V> superMap(@NonNull Type type) {
+            return new DefaultTypeInheritanceChildMap<>(this, key -> PTypes.isSubtype(key, type));
         }
     }
 
-    /**
-     * @author DaPorkchop_
-     */
+    private static class DefaultTypeInheritanceMap<V> extends HashMap<Type, V> implements TypeInheritanceMap<V> {
+    }
+
+    private static class WeakTypeInheritanceMap<V> extends WeakHashMap<Type, V> implements TypeInheritanceMap<V> {
+    }
+
+    private static class ConcurrentTypeInheritanceMap<V> extends ConcurrentHashMap<Type, V> implements TypeInheritanceMap<V> {
+    }
+
     @RequiredArgsConstructor
-    private static class WildcardTypeImpl implements WildcardType {
+    private static class DefaultTypeInheritanceChildMap<V> extends AbstractMap<Type, V> implements TypeInheritanceMap<V> {
         @NonNull
-        private final Type[] upperBounds;
+        private final TypeInheritanceMap<V> delegate;
         @NonNull
-        private final Type[] lowerBounds;
+        private final Predicate<Type> filter;
+
+        @Getter(lazy = true)
+        private final Set<Entry<Type, V>> entrySet = new AbstractSet<Entry<Type, V>>() {
+            @Override
+            public Iterator<Entry<Type, V>> iterator() {
+                Predicate<Type> filter = DefaultTypeInheritanceChildMap.this.filter;
+
+                return new BaseFilteredIterator<Entry<Type, V>>(DefaultTypeInheritanceChildMap.this.delegate.entrySet().iterator()) {
+                    @Override
+                    protected boolean test(@NonNull Entry<Type, V> entry) {
+                        return filter.test(entry.getKey());
+                    }
+                };
+            }
+
+            @Override
+            public Spliterator<Entry<Type, V>> spliterator() {
+                Predicate<Type> filter = DefaultTypeInheritanceChildMap.this.filter;
+
+                return new FilteredSpliterator<>(
+                        DefaultTypeInheritanceChildMap.this.delegate.entrySet().spliterator(),
+                        entry -> filter.test(entry.getKey()));
+            }
+
+            @Override
+            public Stream<Entry<Type, V>> stream() {
+                Predicate<Type> filter = DefaultTypeInheritanceChildMap.this.filter;
+
+                return DefaultTypeInheritanceChildMap.this.delegate.entrySet().stream()
+                        .filter(entry -> filter.test(entry.getKey()));
+            }
+
+            @Override
+            public int size() {
+                return DefaultTypeInheritanceChildMap.this.size();
+            }
+        };
+
+        @Getter(lazy = true)
+        private final Set<Type> keySet = new AbstractSet<Type>() {
+            @Override
+            public Iterator<Type> iterator() {
+                Predicate<Type> filter = DefaultTypeInheritanceChildMap.this.filter;
+
+                return new BaseFilteredIterator<Type>(DefaultTypeInheritanceChildMap.this.delegate.keySet().iterator()) {
+                    @Override
+                    protected boolean test(@NonNull Type key) {
+                        return filter.test(key);
+                    }
+                };
+            }
+
+            @Override
+            public Spliterator<Type> spliterator() {
+                return new FilteredSpliterator<>(
+                        DefaultTypeInheritanceChildMap.this.delegate.keySet().spliterator(),
+                        DefaultTypeInheritanceChildMap.this.filter);
+            }
+
+            @Override
+            public Stream<Type> stream() {
+                return DefaultTypeInheritanceChildMap.this.delegate.keySet().stream()
+                        .filter(DefaultTypeInheritanceChildMap.this.filter);
+            }
+
+            @Override
+            public int size() {
+                return DefaultTypeInheritanceChildMap.this.size();
+            }
+        };
+
+        @Getter(lazy = true)
+        private final Collection<V> values = new AbstractCollection<V>() {
+            @Override
+            public Iterator<V> iterator() {
+                return new BaseMappingIterator<Map.Entry<Type, V>, V>(DefaultTypeInheritanceChildMap.this.entrySet().iterator()) {
+                    @Override
+                    protected V map(Entry<Type, V> in) {
+                        return in.getValue();
+                    }
+                };
+            }
+
+            @Override
+            public Spliterator<V> spliterator() {
+                return new MappingSpliterator<Map.Entry<Type, V>, V>(DefaultTypeInheritanceChildMap.this.entrySet().spliterator(), Map.Entry::getValue);
+            }
+
+            @Override
+            public Stream<V> stream() {
+                //noinspection SimplifyStreamApiCallChains
+                return DefaultTypeInheritanceChildMap.this.entrySet().stream().map(Map.Entry::getValue);
+            }
+
+            @Override
+            public int size() {
+                return DefaultTypeInheritanceChildMap.this.size();
+            }
+        };
 
         @Override
-        public Type[] getUpperBounds() {
-            return this.upperBounds;
+        public int size() {
+            return toIntExact(this.delegate.keySet().stream().filter(this.filter).count());
         }
 
         @Override
-        public Type[] getLowerBounds() {
-            return this.lowerBounds;
+        public boolean isEmpty() {
+            return this.delegate.keySet().stream().noneMatch(this.filter);
         }
 
         @Override
-        public int hashCode() {
-            return Arrays.hashCode(this.upperBounds) ^ Arrays.hashCode(this.lowerBounds);
+        public boolean containsKey(Object key) {
+            return key instanceof Type && this.filter.test((Type) key) && this.delegate.containsKey(key);
         }
 
         @Override
-        public boolean equals(Object obj) {
-            if (obj == this) {
-                return true;
-            } else if (obj instanceof WildcardType) {
-                WildcardType other = (WildcardType) obj;
-                return Arrays.equals(this.upperBounds, other.getUpperBounds()) && Arrays.equals(this.lowerBounds, other.getLowerBounds());
-            } else {
-                return false;
+        public V get(Object key) {
+            return key instanceof Type && this.filter.test((Type) key) ? this.delegate.get(key) : null;
+        }
+
+        @Override
+        public V put(Type key, V value) {
+            checkArg(this.filter.test(key), "key %s out of range", key);
+            return this.delegate.put(key, value);
+        }
+
+        @Override
+        public V remove(Object key) {
+            return key instanceof Type && this.filter.test((Type) key) ? this.delegate.remove(key) : null;
+        }
+
+        @Override
+        public void clear() {
+            this.delegate.keySet().removeIf(this.filter);
+        }
+
+        @RequiredArgsConstructor
+        private abstract static class BaseFilteredIterator<E> implements Iterator<E> {
+            @NonNull
+            private final Iterator<E> delegate;
+
+            private E next;
+            private boolean valid;
+
+            protected abstract boolean test(@NonNull E value);
+
+            @Override
+            public boolean hasNext() {
+                while (this.next == null && this.delegate.hasNext()) {
+                    E next = this.delegate.next();
+                    this.valid = false;
+
+                    if (this.test(next)) {
+                        this.next = next;
+                        break;
+                    }
+                }
+                return this.next != null;
+            }
+
+            @Override
+            public E next() {
+                if (!this.hasNext()) {
+                    throw new NoSuchElementException();
+                }
+
+                E next = this.next;
+                this.next = null;
+                this.valid = true;
+                return next;
+            }
+
+            @Override
+            public void remove() {
+                checkState(this.valid);
+
+                this.valid = false;
+                this.delegate.remove();
+            }
+
+            @Override
+            public void forEachRemaining(Consumer<? super E> action) {
+                this.valid = false;
+
+                if (this.next != null) {
+                    E next = this.next;
+                    this.next = null;
+                    action.accept(next);
+                }
+
+                this.delegate.forEachRemaining(value -> {
+                    if (this.test(value)) {
+                        action.accept(value);
+                    }
+                });
+            }
+        }
+
+        @RequiredArgsConstructor
+        private abstract static class BaseMappingIterator<I, O> implements Iterator<O> {
+            @NonNull
+            private final Iterator<I> delegate;
+
+            protected abstract O map(I in);
+
+            @Override
+            public boolean hasNext() {
+                return this.delegate.hasNext();
+            }
+
+            @Override
+            public O next() {
+                return this.map(this.delegate.next());
+            }
+
+            @Override
+            public void remove() {
+                this.delegate.remove();
+            }
+
+            @Override
+            public void forEachRemaining(Consumer<? super O> action) {
+                this.delegate.forEachRemaining(in -> action.accept(this.map(in)));
+            }
+        }
+
+        @RequiredArgsConstructor
+        private static final class FilteredSpliterator<E> implements Spliterator<E> {
+            @NonNull
+            private final Spliterator<E> delegate;
+            @NonNull
+            private final Predicate<E> filter;
+
+            @Override
+            public boolean tryAdvance(Consumer<? super E> action) {
+                class State implements Consumer<E> {
+                    boolean found;
+
+                    @Override
+                    public void accept(E e) {
+                        if (FilteredSpliterator.this.filter.test(e)) {
+                            this.found = true;
+                            action.accept(e);
+                        }
+                    }
+                }
+
+                State state = new State();
+                while (this.delegate.tryAdvance(state) && !state.found) {
+                }
+                return state.found;
+            }
+
+            @Override
+            public Spliterator<E> trySplit() {
+                Spliterator<E> split = this.delegate.trySplit();
+                return split != null ? new FilteredSpliterator<>(split, this.filter) : null;
+            }
+
+            @Override
+            public long estimateSize() {
+                return Long.MAX_VALUE;
+            }
+
+            @Override
+            public int characteristics() {
+                return this.delegate.characteristics() & ~(SIZED | SUBSIZED);
+            }
+
+            @Override
+            public void forEachRemaining(Consumer<? super E> action) {
+                this.delegate.forEachRemaining(value -> {
+                    if (this.filter.test(value)) {
+                        action.accept(value);
+                    }
+                });
+            }
+
+            @Override
+            public Comparator<? super E> getComparator() {
+                return this.delegate.getComparator();
+            }
+        }
+
+        @RequiredArgsConstructor
+        private static final class MappingSpliterator<I, O> implements Spliterator<O> {
+            @NonNull
+            private final Spliterator<I> delegate;
+            @NonNull
+            private final Function<I, O> mappingFunction;
+
+            @Override
+            public boolean tryAdvance(Consumer<? super O> action) {
+                return this.delegate.tryAdvance(in -> action.accept(this.mappingFunction.apply(in)));
+            }
+
+            @Override
+            public Spliterator<O> trySplit() {
+                Spliterator<I> split = this.delegate.trySplit();
+                return split != null ? new MappingSpliterator<>(split, this.mappingFunction) : null;
+            }
+
+            @Override
+            public long estimateSize() {
+                return this.delegate.estimateSize();
+            }
+
+            @Override
+            public long getExactSizeIfKnown() {
+                return this.delegate.getExactSizeIfKnown();
+            }
+
+            @Override
+            public int characteristics() {
+                return this.delegate.characteristics() & ~(SORTED | DISTINCT | NONNULL);
+            }
+
+            @Override
+            public void forEachRemaining(Consumer<? super O> action) {
+                this.delegate.forEachRemaining(in -> action.accept(this.mappingFunction.apply(in)));
             }
         }
     }
