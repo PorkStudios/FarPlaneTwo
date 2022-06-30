@@ -56,21 +56,28 @@ public class BlockingSupport {
      */
     @SneakyThrows(InterruptedException.class)
     public static <V> V managedBlock(@NonNull CompletableFuture<V> future) {
+        checkState(!Thread.interrupted(), "thread %s was interrupted without going through %s (Thread.interrupted(), head)", Thread.currentThread(), BlockingSupport.class);
         checkState(BLOCKED_THREADS.add(Thread.currentThread()), "recursively blocking task?!?");
 
+        InterruptedException ie = null;
         try {
             return future.get();
         } catch (ExecutionException e) {
             throw new CompletionException(e.getCause());
+        } catch (InterruptedException e) { //we were interrupted, CompletableFuture#get() caught the exception for us
+            ie = e; //save exception for use in finally block
+            throw e;
         } finally {
             if (BLOCKED_THREADS.remove(Thread.currentThread())) { //we were blocking, but we should still double-check to see if we've been interrupted
-                if (Thread.interrupted()) {
+                checkState(!Thread.interrupted(), "thread %s was interrupted without going through %s (Thread.interrupted(), tail)", Thread.currentThread(), BlockingSupport.class);
+                checkState(ie == null, "thread %s was interrupted without going through %s (ie != null)", Thread.currentThread(), BlockingSupport.class);
+            } else { //the thread has been unblocked by something else - wait for the interrupt to arrive
+                if (ie != null) { //the interrupt was already handled by CompletableFuture#get()
+                    //no-op, the exception has already been thrown by the catch block
+                } else {
+                    LockSupport.park();
                     throw new InterruptedException();
                 }
-            } else { //the thread has been unblocked by something else - wait for the interrupt to arrive
-                LockSupport.park();
-
-                throw new InterruptedException();
             }
         }
     }
@@ -88,19 +95,26 @@ public class BlockingSupport {
      */
     @SneakyThrows(InterruptedException.class)
     public static boolean managedTryAcquire(@NonNull Semaphore semaphore, int permits, long timeout, @NonNull TimeUnit unit) {
+        checkState(!Thread.interrupted(), "thread %s was interrupted without going through %s (Thread.interrupted(), head)", Thread.currentThread(), BlockingSupport.class);
         checkState(BLOCKED_THREADS.add(Thread.currentThread()), "recursively blocking task?!?");
 
+        InterruptedException ie = null;
         try {
             return semaphore.tryAcquire(permits, timeout, unit);
+        } catch (InterruptedException e) { //we were interrupted, Semaphore#tryAcquire() caught the exception for us
+            ie = e; //save exception for use in finally block
+            throw e;
         } finally {
             if (BLOCKED_THREADS.remove(Thread.currentThread())) { //we were blocking, but we should still double-check to see if we've been interrupted
-                if (Thread.interrupted()) {
+                checkState(!Thread.interrupted(), "thread %s was interrupted without going through %s (Thread.interrupted(), tail)", Thread.currentThread(), BlockingSupport.class);
+                checkState(ie == null, "thread %s was interrupted without going through %s (ie != null)", Thread.currentThread(), BlockingSupport.class);
+            } else { //the thread has been unblocked by something else - wait for the interrupt to arrive
+                if (ie != null) { //the interrupt was already handled by Semaphore#tryAcquire()
+                    //no-op, the exception has already been thrown by the catch block
+                } else {
+                    LockSupport.park();
                     throw new InterruptedException();
                 }
-            } else { //the thread has been unblocked by something else - wait for the interrupt to arrive
-                LockSupport.park();
-
-                throw new InterruptedException();
             }
         }
     }
