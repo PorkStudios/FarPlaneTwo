@@ -67,7 +67,10 @@ public abstract class MixinMinecraftServer1_12 implements IMixinMinecraftServer1
 
     @Override
     public void fp2_closeWorldServer() {
-        checkState(this.fp2_worldServer != null, "not initialized or already closed!");
+        if (this.fp2_worldServer == null) {
+            fp2().log().warn("attempted to close world, but it was either not initialized or already closed!");
+            return;
+        }
 
         try (FWorldServer1_12 worldServer = this.fp2_worldServer) {
             this.fp2_worldServer = null;

@@ -128,7 +128,8 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
 
         if (this.context != null) {
             this.context.close();
-            this.world().unloadLevel(this.context.level().id()); //unload the level, since we loaded it earlier
+            //TODO: better solution than casting to AbstractWorldClient
+            ((AbstractWorldClient<?, ?, ?, ?, ?>) this.world()).unloadLevel(this.context.level().id()); //unload the level, since we loaded it earlier
             this.context = null;
         }
     }
