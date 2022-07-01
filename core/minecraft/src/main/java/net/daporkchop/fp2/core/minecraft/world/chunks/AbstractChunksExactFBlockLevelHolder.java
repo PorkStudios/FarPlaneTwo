@@ -66,16 +66,16 @@ public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends Abstra
     private final int minHeight;
     private final int maxHeight;
 
-    public AbstractChunksExactFBlockLevelHolder(@NonNull IFarLevelServer world, int chunkShift) {
-        super(world);
+    public AbstractChunksExactFBlockLevelHolder(@NonNull IFarLevelServer level, int chunkShift) {
+        super(level);
 
         this.chunkShift = positive(chunkShift, "chunkShift");
 
         this.minHeight = this.bounds().minY();
         this.maxHeight = this.bounds().maxY();
 
-        this.chunksExistIndex = this.createChunksExistIndex(world);
-        this.chunkCache = this.createChunkCache(world);
+        this.chunksExistIndex = this.createChunksExistIndex(level);
+        this.chunkCache = this.createChunkCache(level);
 
         //register self to listen for events
         this.world().eventBus().registerWeak(this);

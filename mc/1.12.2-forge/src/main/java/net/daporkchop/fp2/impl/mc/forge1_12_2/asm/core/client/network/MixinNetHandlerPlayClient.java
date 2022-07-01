@@ -51,7 +51,7 @@ public abstract class MixinNetHandlerPlayClient implements IMixinNetHandlerPlayC
     public void fp2_initClient() {
         checkState(this.fp2_worldClient == null && this.fp2_playerClient == null, "already initialized!");
 
-        this.fp2_worldClient = new FWorldClient1_12((FP2Forge1_12_2) fp2(), uncheckedCast(this));
+        this.fp2_worldClient = new FWorldClient1_12((FP2Forge1_12_2) fp2(), uncheckedCast(this)).init();
         this.fp2_playerClient = new FarPlayerClient1_12((FP2Forge1_12_2) fp2(), this.fp2_worldClient, uncheckedCast(this));
     }
 

@@ -125,8 +125,8 @@ public class FP2CubicChunks {
         @FEventHandler(name = "cubicchunks_world_exact_fblocklevel",
                 constrain = @Constrain(before = "vanilla_world_exact_fblocklevel"))
         public Optional<ExactFBlockLevelHolder> getExactFBlockLevel(GetExactFBlockLevelEvent event) {
-            return this.isCubicWorld(event.world())
-                    ? Optional.of(new CCExactFBlockLevelHolder1_12((WorldServer) event.world().implLevel()))
+            return this.isCubicWorld(event.level())
+                    ? Optional.of(new CCExactFBlockLevelHolder1_12((WorldServer) event.level().implLevel()))
                     : Optional.empty();
         }
 

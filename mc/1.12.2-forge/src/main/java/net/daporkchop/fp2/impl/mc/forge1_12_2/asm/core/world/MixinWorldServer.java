@@ -30,6 +30,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
@@ -43,16 +44,18 @@ public abstract class MixinWorldServer implements IMixinWorldServer {
     public void fp2_initLevelServer() {
         checkState(this.fp2_levelServer == null, "already initialized!");
 
-        this.fp2_levelServer = (FLevelServer1_12) ((IMixinMinecraftServer1_12) PorkUtil.<WorldServer>uncheckedCast(this).getMinecraftServer()).fp2_worldServer().get()
-                .loadLevel(FP2Forge1_12_2.getIdentifierForWorld(PorkUtil.<WorldServer>uncheckedCast(this)), this);
+        this.fp2_levelServer = ((IMixinMinecraftServer1_12) PorkUtil.<WorldServer>uncheckedCast(this).getMinecraftServer()).fp2_worldServer().get()
+                .loadLevel(FP2Forge1_12_2.getIdentifierForWorld(uncheckedCast(this)), uncheckedCast(this));
     }
 
     @Override
     public void fp2_closeLevelServer() {
         checkState(this.fp2_levelServer != null, "not initialized or already closed!");
 
-        //try-with-resources to ensure everything gets closed
-        try (FLevelServer1_12 levelServer = this.fp2_levelServer) {
+        try {
+            //unload the level from the world
+            this.fp2_levelServer.world().unloadLevel(this.fp2_levelServer.id());
+        } finally {
             this.fp2_levelServer = null;
         }
     }

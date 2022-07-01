@@ -62,15 +62,16 @@ public abstract class MixinMinecraftServer1_12 implements IMixinMinecraftServer1
     @Override
     public void fp2_initWorldServer() {
         checkState(this.fp2_worldServer == null, "already initialized!");
-        this.fp2_worldServer = new FWorldServer1_12((FP2Forge1_12_2) fp2(), uncheckedCast(this));
+        this.fp2_worldServer = new FWorldServer1_12((FP2Forge1_12_2) fp2(), uncheckedCast(this)).init();
     }
 
     @Override
     public void fp2_closeWorldServer() {
         checkState(this.fp2_worldServer != null, "not initialized or already closed!");
 
-        this.fp2_worldServer.close();
-        this.fp2_worldServer = null;
+        try (FWorldServer1_12 worldServer = this.fp2_worldServer) {
+            this.fp2_worldServer = null;
+        }
     }
 
     @Override

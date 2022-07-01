@@ -37,5 +37,5 @@ import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 @Getter
 public class GetExactFBlockLevelEvent implements ReturningEvent<ExactFBlockLevelHolder> {
     @NonNull
-    protected final IFarLevelServer world;
+    protected final IFarLevelServer level;
 }

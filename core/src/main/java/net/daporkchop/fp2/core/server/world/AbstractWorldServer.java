@@ -22,12 +22,11 @@ package net.daporkchop.fp2.core.server.world;
 
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.SneakyThrows;
 import net.daporkchop.fp2.api.storage.FStorage;
-import net.daporkchop.fp2.api.storage.FStorageException;
 import net.daporkchop.fp2.api.storage.external.FStorageCategory;
 import net.daporkchop.fp2.api.world.FWorldServer;
 import net.daporkchop.fp2.core.FP2Core;
+import net.daporkchop.fp2.core.server.world.level.AbstractLevelServer;
 import net.daporkchop.fp2.core.storage.rocks.RocksStorage;
 import net.daporkchop.fp2.core.world.AbstractWorld;
 
@@ -39,20 +38,24 @@ import java.nio.file.Path;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractWorldServer<F extends FP2Core, IMPL_WORLD, IMPL_LEVEL> extends AbstractWorld<F, IMPL_WORLD, IMPL_LEVEL> implements FWorldServer {
+public abstract class AbstractWorldServer<F extends FP2Core,
+        IMPL_WORLD, WORLD extends AbstractWorldServer<F, IMPL_WORLD, WORLD, IMPL_LEVEL, LEVEL>,
+        IMPL_LEVEL, LEVEL extends AbstractLevelServer<F, IMPL_WORLD, WORLD, IMPL_LEVEL, LEVEL>> extends AbstractWorld<F, IMPL_WORLD, WORLD, IMPL_LEVEL, LEVEL> implements FWorldServer {
     private final FStorage storage;
 
-    @SneakyThrows(FStorageException.class)
     public AbstractWorldServer(@NonNull F fp2, IMPL_WORLD implWorld, @NonNull Path path) {
         super(fp2, implWorld);
 
-        this.storage = RocksStorage.open(path.resolve("fp2"));
+        this.storage = this.getForInit(() -> RocksStorage.open(path.resolve("fp2")));
     }
 
     @Override
-    @SneakyThrows(FStorageException.class)
-    public void close() {
-        this.storage.close();
+    protected void doClose() throws Exception {
+        //noinspection Convert2MethodRef
+        try (AutoCloseable closeSuper = () -> super.doClose();
+             FStorage storage = this.storage) {
+            //no-op
+        }
     }
 
     @Override

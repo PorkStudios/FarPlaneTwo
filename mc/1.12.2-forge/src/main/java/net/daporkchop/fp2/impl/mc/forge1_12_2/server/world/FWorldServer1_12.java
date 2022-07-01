@@ -22,7 +22,6 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.server.world;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.api.util.Identifier;
-import net.daporkchop.fp2.api.world.level.FLevel;
 import net.daporkchop.fp2.core.server.world.AbstractWorldServer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.server.world.level.FLevelServer1_12;
@@ -32,13 +31,13 @@ import net.minecraft.world.WorldServer;
 /**
  * @author DaPorkchop_
  */
-public class FWorldServer1_12 extends AbstractWorldServer<FP2Forge1_12_2, MinecraftServer, WorldServer> {
+public class FWorldServer1_12 extends AbstractWorldServer<FP2Forge1_12_2, MinecraftServer, FWorldServer1_12, WorldServer, FLevelServer1_12> {
     public FWorldServer1_12(@NonNull FP2Forge1_12_2 fp2, @NonNull MinecraftServer implWorld) {
         super(fp2, implWorld, implWorld.getActiveAnvilConverter().getSaveLoader(implWorld.getFolderName(), false).getWorldDirectory().toPath());
     }
 
     @Override
-    protected FLevel createLevel(@NonNull Identifier id, @NonNull WorldServer implLevel) {
+    protected FLevelServer1_12 createLevel(@NonNull Identifier id, @NonNull WorldServer implLevel) {
         return new FLevelServer1_12(this.fp2(), implLevel, this, id);
     }
 }

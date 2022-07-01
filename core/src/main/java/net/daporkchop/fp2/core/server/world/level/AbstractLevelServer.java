@@ -28,7 +28,6 @@ import net.daporkchop.fp2.api.storage.external.FStorageCategory;
 import net.daporkchop.fp2.api.storage.external.FStorageCategoryFactory;
 import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
-import net.daporkchop.fp2.api.world.FWorldServer;
 import net.daporkchop.fp2.api.world.level.FLevelServer;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.fp2.core.FP2Core;
@@ -38,6 +37,7 @@ import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.server.event.GetCoordinateLimitsEvent;
 import net.daporkchop.fp2.core.server.event.GetExactFBlockLevelEvent;
+import net.daporkchop.fp2.core.server.world.AbstractWorldServer;
 import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
 import net.daporkchop.fp2.core.world.level.AbstractLevel;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -57,7 +57,9 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractLevelServer<F extends FP2Core, IMPL_LEVEL> extends AbstractLevel<F, IMPL_LEVEL, FWorldServer> implements FLevelServer, IFarLevelServer {
+public abstract class AbstractLevelServer<F extends FP2Core,
+        IMPL_WORLD, WORLD extends AbstractWorldServer<F, IMPL_WORLD, WORLD, IMPL_LEVEL, LEVEL>,
+        IMPL_LEVEL, LEVEL extends AbstractLevelServer<F, IMPL_WORLD, WORLD, IMPL_LEVEL, LEVEL>> extends AbstractLevel<F, IMPL_WORLD, WORLD, IMPL_LEVEL, LEVEL> implements FLevelServer, IFarLevelServer {
     private final FStorageCategory storageCategory;
 
     private final Map<IFarRenderMode<?, ?>, IFarTileProvider<?, ?>> loadedTileProviders = new IdentityHashMap<>();
@@ -66,11 +68,11 @@ public abstract class AbstractLevelServer<F extends FP2Core, IMPL_LEVEL> extends
 
     private final ExactFBlockLevelHolder exactBlockLevelHolder;
 
-    @SneakyThrows(FStorageException.class)
-    public AbstractLevelServer(@NonNull F fp2, IMPL_LEVEL implLevel, @NonNull FWorldServer world, @NonNull Identifier id, @NonNull FGameRegistry registry) {
+    public AbstractLevelServer(@NonNull F fp2, IMPL_LEVEL implLevel, @NonNull WORLD world, @NonNull Identifier id, @NonNull FGameRegistry registry) {
         super(fp2, implLevel, world, id);
 
-        this.storageCategory = world.storageCategory().openOrCreateCategory("level_" + id, callback -> {
+        //open a storage category for this level
+        this.storageCategory = this.getForInit(() -> world.storageCategory().openOrCreateCategory("level_" + id, callback -> {
             //copy token to a byte[]
             byte[] newToken = registry.registryToken();
             callback.setToken(newToken);
@@ -79,37 +81,25 @@ public abstract class AbstractLevelServer<F extends FP2Core, IMPL_LEVEL> extends
             return !existingToken.isPresent() || Arrays.equals(newToken, existingToken.get())
                     ? FStorageCategoryFactory.ConfigurationResult.CREATE_IF_MISSING //category doesn't exist or has a matching storage version
                     : FStorageCategoryFactory.ConfigurationResult.DELETE_EXISTING_AND_CREATE; //category exists but has a mismatched storage version, re-create it
-        });
+        }));
 
-        try {
-            //determine the level's coordinate limits
-            this.coordLimits = this.fp2().eventBus().fireAndGetFirst(new GetCoordinateLimitsEvent(this)).get();
+        //determine the level's coordinate limits
+        this.coordLimits = this.getForInit(() -> this.fp2().eventBus().fireAndGetFirst(new GetCoordinateLimitsEvent(this)).get());
 
-            //create an exactFBlockHolder for the level
-            this.exactBlockLevelHolder = this.fp2().eventBus().fireAndGetFirst(new GetExactFBlockLevelEvent(this)).get();
+        //create an exactFBlockHolder for the level
+        this.exactBlockLevelHolder = this.getForInit(() -> this.fp2().eventBus().fireAndGetFirst(new GetExactFBlockLevelEvent(this)).get());
 
-            //open a tile provider for each registered render mode
-            IFarRenderMode.REGISTRY.forEachEntry((_name, mode) -> this.loadedTileProviders.put(mode, mode.tileProvider(this)));
-        } catch (Exception e) {
-            //something went wrong, try to close storage category
-            try {
-                this.storageCategory.close();
-            } catch (Exception e1) {
-                e.addSuppressed(e);
-            }
-
-            PUnsafe.throwException(e); //rethrow exception
-            throw new AssertionError(); //impossible
-        }
+        //open a tile provider for each registered render mode
+        this.runForInit(() -> IFarRenderMode.REGISTRY.forEachEntry((_name, mode) -> this.loadedTileProviders.put(mode, mode.tileProvider(this))));
     }
 
     @Override
-    @SneakyThrows(FStorageException.class)
-    public void close() {
+    protected void doClose() throws Exception {
         //try-with-resources to ensure that everything is closed
-        try (FStorageCategory storageCategory = this.storageCategory;
+        //noinspection Convert2MethodRef
+        try (AutoCloseable closeSuper = () -> super.doClose();
+             FStorageCategory storageCategory = this.storageCategory;
              ExactFBlockLevelHolder exactBlockLevelHolder = this.exactBlockLevelHolder) {
-
             class State implements BiConsumer<IFarRenderMode<?, ?>, IFarTileProvider<?, ?>> {
                 Throwable cause = null;
 

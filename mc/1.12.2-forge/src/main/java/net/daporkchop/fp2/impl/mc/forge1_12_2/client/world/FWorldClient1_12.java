@@ -32,13 +32,13 @@ import net.minecraft.client.network.NetHandlerPlayClient;
 /**
  * @author DaPorkchop_
  */
-public class FWorldClient1_12 extends AbstractWorldClient<FP2Forge1_12_2, NetHandlerPlayClient, WorldClient> {
+public class FWorldClient1_12 extends AbstractWorldClient<FP2Forge1_12_2, NetHandlerPlayClient, FWorldClient1_12, WorldClient, FLevelClient1_12_2> {
     public FWorldClient1_12(@NonNull FP2Forge1_12_2 fp2, @NonNull NetHandlerPlayClient implWorld) {
         super(fp2, implWorld);
     }
 
     @Override
-    protected FLevel createLevel(@NonNull Identifier id, @NonNull WorldClient implLevel) {
+    protected FLevelClient1_12_2 createLevel(@NonNull Identifier id, @NonNull WorldClient implLevel) {
         return new FLevelClient1_12_2(this.fp2(), implLevel, this, id, COORD_LIMITS_HACK.get());
     }
 }

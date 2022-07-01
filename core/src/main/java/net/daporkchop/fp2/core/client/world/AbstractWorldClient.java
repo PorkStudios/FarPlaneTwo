@@ -24,6 +24,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.api.world.FWorldClient;
 import net.daporkchop.fp2.core.FP2Core;
+import net.daporkchop.fp2.core.client.world.level.AbstractLevelClient;
 import net.daporkchop.fp2.core.world.AbstractWorld;
 import net.daporkchop.lib.common.misc.threadlocal.TL;
 
@@ -32,15 +33,12 @@ import net.daporkchop.lib.common.misc.threadlocal.TL;
  *
  * @author DaPorkchop_
  */
-public abstract class AbstractWorldClient<F extends FP2Core, IMPL_WORLD, IMPL_LEVEL> extends AbstractWorld<F, IMPL_WORLD, IMPL_LEVEL> implements FWorldClient {
+public abstract class AbstractWorldClient<F extends FP2Core,
+        IMPL_WORLD, WORLD extends AbstractWorldClient<F, IMPL_WORLD, WORLD, IMPL_LEVEL, LEVEL>,
+        IMPL_LEVEL, LEVEL extends AbstractLevelClient<F, IMPL_WORLD, WORLD, IMPL_LEVEL, LEVEL>> extends AbstractWorld<F, IMPL_WORLD, WORLD, IMPL_LEVEL, LEVEL> implements FWorldClient {
     public static final TL<IntAxisAlignedBB> COORD_LIMITS_HACK = TL.create(); //TODO: this is disgusting
 
     public AbstractWorldClient(@NonNull F fp2, IMPL_WORLD implWorld) {
         super(fp2, implWorld);
-    }
-
-    @Override
-    public void close() {
-        //no-op
     }
 }
