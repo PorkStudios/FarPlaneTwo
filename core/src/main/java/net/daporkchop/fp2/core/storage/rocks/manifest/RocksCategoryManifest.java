@@ -73,7 +73,7 @@ public class RocksCategoryManifest extends AbstractRocksManifest<RocksCategoryMa
         byte[] keyBase = (this.inode + SEPARATOR + CHILD_CATEGORIES + SEPARATOR).getBytes(StandardCharsets.UTF_8);
 
         try (FStorageIterator itr = access.iterator(this.column, keyBase, increment(keyBase))) {
-            for (itr.seekToFirst(); itr.isValid(); ) {
+            for (itr.seekToFirst(); itr.isValid(); itr.next()) {
                 //strip keyBase prefix, parse as UTF-8 and unescape
                 byte[] key = itr.key();
                 String categoryName = unescape(new String(key, keyBase.length, key.length - keyBase.length, StandardCharsets.UTF_8)).intern();
@@ -117,7 +117,7 @@ public class RocksCategoryManifest extends AbstractRocksManifest<RocksCategoryMa
         byte[] keyBase = (this.inode + SEPARATOR + CHILD_ITEMS + SEPARATOR).getBytes(StandardCharsets.UTF_8);
 
         try (FStorageIterator itr = access.iterator(this.column, keyBase, increment(keyBase))) {
-            for (itr.seekToFirst(); itr.isValid(); ) {
+            for (itr.seekToFirst(); itr.isValid(); itr.next()) {
                 //strip keyBase prefix, parse as UTF-8 and unescape
                 byte[] key = itr.key();
                 String itemName = unescape(new String(key, keyBase.length, key.length - keyBase.length, StandardCharsets.UTF_8)).intern();

@@ -35,6 +35,7 @@ import net.daporkchop.fp2.core.storage.rocks.RocksStorageColumn;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -106,7 +107,7 @@ public class RocksStorageManifest extends AbstractRocksManifest<RocksStorageMani
         byte[] keyBase = prefix.getBytes(StandardCharsets.UTF_8);
 
         try (FStorageIterator itr = access.iterator(this.column, keyBase, increment(keyBase))) {
-            for (itr.seekToFirst(); itr.isValid(); ) {
+            for (itr.seekToFirst(); itr.isValid(); itr.next()) {
                 //strip keyBase prefix, parse as UTF-8 and unescape
                 byte[] key = itr.key();
                 String columnFamilyName = unescape(new String(key, keyBase.length, key.length - keyBase.length, StandardCharsets.UTF_8));
@@ -146,6 +147,14 @@ public class RocksStorageManifest extends AbstractRocksManifest<RocksStorageMani
         return readColumnHints(data);
     }
 
+    @SneakyThrows(FStorageException.class)
+    public Optional<FStorageColumnHintsInternal> getHintsForColumnFamilyIfPresent(@NonNull FStorageReadAccess access, @NonNull String name) {
+        byte[] data = access.get(this.column,
+                (this.inode + SEPARATOR + ALL_COLUMN_FAMILIES + SEPARATOR + escape(name)).getBytes(StandardCharsets.UTF_8));
+
+        return Optional.ofNullable(data).map(RocksStorageManifest::readColumnHints);
+    }
+
     public boolean containsAllColumnFamilyNames(@NonNull FStorageReadAccess access, @NonNull Collection<String> c) {
         //i literally don't care that this isn't optimized
         return c.stream().distinct().allMatch(name -> this.containsColumnFamilyName(access, name));
@@ -173,7 +182,7 @@ public class RocksStorageManifest extends AbstractRocksManifest<RocksStorageMani
         byte[] keyBase = (this.inode + SEPARATOR + COLUMN_FAMILIES_PENDING_DELETION + SEPARATOR).getBytes(StandardCharsets.UTF_8);
 
         try (FStorageIterator itr = access.iterator(this.column, keyBase, increment(keyBase))) {
-            for (itr.seekToFirst(); itr.isValid(); ) {
+            for (itr.seekToFirst(); itr.isValid(); itr.next()) {
                 //strip keyBase prefix, parse as UTF-8 and unescape
                 byte[] key = itr.key();
                 action.accept(unescape(new String(key, keyBase.length, key.length - keyBase.length, StandardCharsets.UTF_8)));

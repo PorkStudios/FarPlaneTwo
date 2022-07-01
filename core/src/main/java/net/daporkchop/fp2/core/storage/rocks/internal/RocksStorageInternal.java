@@ -79,7 +79,8 @@ public class RocksStorageInternal extends ReentrantReadWriteLock implements FSto
     private final RocksStorage<?> storage;
     private final RocksItemManifest manifestData;
 
-    private ImmutableBiMap<String, RocksStorageColumn> columns;
+    private ImmutableBiMap<String, RocksStorageColumn> columnFamilyNamesToColumns;
+    private ImmutableBiMap<String, RocksStorageColumn> columnNamesToColumns;
     private Collection<String> columnFamilyNames;
 
     private RocksStorageCategory parent;
@@ -196,6 +197,7 @@ public class RocksStorageInternal extends ReentrantReadWriteLock implements FSto
                             throw new NoSuchElementException("the column '" + columnName + "' doesn't exist, but was requested with " + FStorageItemFactory.ColumnRequirement.FAIL_IF_MISSING);
                         }
                     }
+                    break;
                 default:
                     throw new IllegalArgumentException("unsupported column requirement: " + columnRequirement);
             }
@@ -229,8 +231,12 @@ public class RocksStorageInternal extends ReentrantReadWriteLock implements FSto
         try {
             //acquire all of the column families
             //noinspection UnstableApiUsage
-            this.columns = this.storage.acquireColumnFamilies(columnNamesToColumnFamilyNames.values()).entrySet().stream()
+            this.columnFamilyNamesToColumns = this.storage.acquireColumnFamilies(columnNamesToColumnFamilyNames.values()).entrySet().stream()
                     .collect(ImmutableBiMap.toImmutableBiMap(Map.Entry::getKey, entry -> new RocksStorageColumn(entry.getValue())));
+
+            //noinspection UnstableApiUsage
+            this.columnNamesToColumns = columnNamesToColumnFamilyNames.entrySet().stream()
+                    .collect(ImmutableBiMap.toImmutableBiMap(Map.Entry::getKey, entry -> this.columnFamilyNamesToColumns.get(entry.getValue())));
 
             //create user item instance
             this.externalItem = factory.create(this);
@@ -267,7 +273,7 @@ public class RocksStorageInternal extends ReentrantReadWriteLock implements FSto
             this.open = false;
 
             //set the column family handle in each RocksStorageColumnInternal to null in order to cause any illegal accesses after we've already closed to fail
-            this.columns.values().forEach(column -> column.handle(null));
+            this.columnFamilyNamesToColumns.values().forEach(column -> column.handle(null));
 
             //notify the storage that we've stopped using all the column families
             // (assume we already hold a write lock on the storage)
@@ -338,7 +344,7 @@ public class RocksStorageInternal extends ReentrantReadWriteLock implements FSto
         this.ensureOpen();
 
         //take snapshot of columns map
-        return ImmutableMap.copyOf(this.columns);
+        return ImmutableMap.copyOf(this.columnNamesToColumns);
     }
 
     @Override

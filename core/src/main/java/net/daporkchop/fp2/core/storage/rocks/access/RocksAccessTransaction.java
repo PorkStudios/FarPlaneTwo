@@ -177,7 +177,7 @@ public class RocksAccessTransaction implements FStorageAccess, AutoCloseable {
         //  although technically not perfectly atomic.
 
         try (FStorageIterator itr = this.iterator(column, fromKeyInclusive, toKeyExclusive)) {
-            for (itr.seekToFirst(); itr.isValid(); ) {
+            for (itr.seekToFirst(); itr.isValid(); itr.next()) {
                 this.delete(column, itr.key());
             }
         }

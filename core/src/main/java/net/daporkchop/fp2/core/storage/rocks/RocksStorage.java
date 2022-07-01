@@ -67,9 +67,11 @@ import org.rocksdb.WriteOptions;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -163,36 +165,50 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
     protected RocksStorage(Path root) throws FStorageException {
         this.root = PFiles.ensureDirectoryExists(root);
 
-        //find the names of all the column families in the db so that we can open it
-        List<byte[]> initialColumnFamilyNames;
-        try {
-            initialColumnFamilyNames = RocksDB.listColumnFamilies(LIST_COLUMN_FAMILIES_OPTIONS, root.toString());
-        } catch (RocksDBException e) {
-            throw new FStorageException("failed to list column families", e);
-        }
-
         List<String> cfNames = new ArrayList<>();
         List<ColumnFamilyDescriptor> cfDescriptors = new ArrayList<>();
 
-        //open database read-only so that we can access the root manifest data and determine what options to use for each column family
-        List<ColumnFamilyDescriptor> initialColumnFamilyDescriptors = initialColumnFamilyNames.stream()
-                .map(columnFamilyName -> new ColumnFamilyDescriptor(columnFamilyName, this.getCachedColumnFamilyOptionsForHints(FStorageColumnHintsInternal.DEFAULT)))
-                .collect(Collectors.toList());
-        List<ColumnFamilyHandle> initialColumnFamilyHandles = new ArrayList<>(initialColumnFamilyNames.size());
-        try (RocksDB db = RocksDB.openReadOnly(root.toString(), initialColumnFamilyDescriptors, initialColumnFamilyHandles)) {
-            FStorageAccess access = new RocksAccessReadMasqueradingAsReadWrite(new RocksAccessDB(db, READ_OPTIONS));
+        if (PFiles.checkFileExists(root.resolve("CURRENT"))) { //the database exists!
+            //find the names of all the column families in the db so that we can open it
+            List<byte[]> initialColumnFamilyNames;
+            try {
+                initialColumnFamilyNames = RocksDB.listColumnFamilies(LIST_COLUMN_FAMILIES_OPTIONS, root.toString());
+            } catch (RocksDBException e) {
+                throw new FStorageException("failed to list column families", e);
+            }
 
-            //determine the real options to use for each column family based on the column hints
-            new RocksStorageManifest(new RocksStorageColumn(db.getDefaultColumnFamily()), "", access)
-                    .forEachColumnFamily(access, (columnFamilyName, hints) -> {
-                        cfNames.add(columnFamilyName);
-                        cfDescriptors.add(new ColumnFamilyDescriptor(columnFamilyName.getBytes(StandardCharsets.UTF_8), this.getCachedColumnFamilyOptionsForHints(hints)));
-                    });
+            //open database read-only so that we can access the root manifest data and determine what options to use for each column family
+            List<ColumnFamilyDescriptor> initialColumnFamilyDescriptors = initialColumnFamilyNames.stream()
+                    .map(columnFamilyName -> new ColumnFamilyDescriptor(columnFamilyName, this.getCachedColumnFamilyOptionsForHints(FStorageColumnHintsInternal.DEFAULT)))
+                    .collect(Collectors.toList());
+            List<ColumnFamilyHandle> initialColumnFamilyHandles = new ArrayList<>(initialColumnFamilyNames.size());
+            try (RocksDB db = RocksDB.openReadOnly(root.toString(), initialColumnFamilyDescriptors, initialColumnFamilyHandles)) {
+                FStorageAccess access = new RocksAccessReadMasqueradingAsReadWrite(new RocksAccessDB(db, READ_OPTIONS));
 
-            //close all the column family handles again before closing the db
-            initialColumnFamilyHandles.forEach(ColumnFamilyHandle::close);
-        } catch (RocksDBException e) {
-            throw new FStorageException("failed to initially load manifest data", e);
+                //determine the real options to use for each column family based on the column hints
+                new RocksStorageManifest(new RocksStorageColumn(db.getDefaultColumnFamily()), "", access)
+                        .forEachColumnFamily(access, (columnFamilyName, hints) -> {
+                            cfNames.add(columnFamilyName);
+                            cfDescriptors.add(new ColumnFamilyDescriptor(columnFamilyName.getBytes(StandardCharsets.UTF_8), this.getCachedColumnFamilyOptionsForHints(hints)));
+                        });
+
+                //close all the column family handles again before closing the db
+                initialColumnFamilyHandles.forEach(ColumnFamilyHandle::close);
+            } catch (RocksDBException e) {
+                throw new FStorageException("failed to initially load manifest data", e);
+            }
+
+            //check if any column families are present in the db but not yet in the list. this can happen when a column family is created, but creation fails before it is
+            //  committed to the manifest.
+            //TODO: i'm not sure if these are ever being deleted...
+            Set<String> cfNamesAsSet = new HashSet<>(cfNames);
+            initialColumnFamilyNames.forEach(initialColumnFamilyName -> {
+                if (!Arrays.equals(RocksDB.DEFAULT_COLUMN_FAMILY, initialColumnFamilyName) //we don't care about the default column family
+                    && !cfNamesAsSet.contains(new String(initialColumnFamilyName, StandardCharsets.UTF_8))) { //the column family wasn't present in the manifest
+                    cfNames.add(new String(initialColumnFamilyName, StandardCharsets.UTF_8));
+                    cfDescriptors.add(new ColumnFamilyDescriptor(initialColumnFamilyName, this.getCachedColumnFamilyOptionsForHints(FStorageColumnHintsInternal.DEFAULT)));
+                }
+            });
         }
 
         //default column family must be registered
@@ -613,7 +629,7 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
                 }
             }));
 
-            try {//get handles of all the column families we're about to delete and drop them
+            try { //get handles of all the column families we're about to delete and drop them
                 this.db.dropColumnFamilies(columnFamilyNamesToDelete.stream()
                         .map(this.openColumnFamilyHandles::get)
                         .filter(Objects::nonNull) //the column family might not be open if it was scheduled for deletion without ever being created (it exists solely in the manifest)

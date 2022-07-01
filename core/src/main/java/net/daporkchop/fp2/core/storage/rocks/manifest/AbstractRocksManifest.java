@@ -66,7 +66,7 @@ public abstract class AbstractRocksManifest<M> {
             if ((c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) { //the character can be used without changes
                 builder.append(c);
             } else if (c == '_') {
-                c = escaped.charAt(i++);
+                c = escaped.charAt(++i);
                 switch (c) {
                     case '0': { //decode 4-digit hex sequence
                         String next = escaped.substring(i, i += 4);
