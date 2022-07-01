@@ -31,9 +31,11 @@ import net.daporkchop.fp2.core.util.threading.workergroup.WorkerManager;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.server.ATMinecraftServer1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.server.TerrainGeneratorInfo1_12_2;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.server.world.FWorldServer1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.threading.futureexecutor.ServerThreadMarkedFutureExecutor;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.world.level.IFarLevel1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.world.registry.GameRegistry1_12_2;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.WorldServer;
 
 import java.nio.file.Path;
@@ -42,8 +44,8 @@ import java.nio.file.Path;
  * @author DaPorkchop_
  */
 @Getter
-public class FLevelServer1_12 extends AbstractLevelServer<FP2Forge1_12_2, WorldServer> implements IFarLevel1_12 {
-    public FLevelServer1_12(@NonNull FP2Forge1_12_2 fp2, @NonNull WorldServer implLevel, @NonNull FWorldServer world, @NonNull Identifier id) {
+public class FLevelServer1_12 extends AbstractLevelServer<FP2Forge1_12_2, MinecraftServer, FWorldServer1_12, WorldServer, FLevelServer1_12> implements IFarLevel1_12 {
+    public FLevelServer1_12(@NonNull FP2Forge1_12_2 fp2, @NonNull WorldServer implLevel, @NonNull FWorldServer1_12 world, @NonNull Identifier id) {
         super(fp2, implLevel, world, id, GameRegistry1_12_2.get());
     }
 
@@ -61,7 +63,7 @@ public class FLevelServer1_12 extends AbstractLevelServer<FP2Forge1_12_2, WorldS
 
     @Override
     public TerrainGeneratorInfo terrainGeneratorInfo() {
-        return new TerrainGeneratorInfo1_12_2(this.implLevel());
+        return new TerrainGeneratorInfo1_12_2(this, this.implLevel());
     }
 
     @Override

@@ -35,6 +35,7 @@ import net.daporkchop.fp2.core.util.threading.futurecache.IAsyncCache;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.world.chunk.storage.ATAnvilChunkLoader1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.world.IMixinWorldServer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.region.ThreadSafeRegionFileCache;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.server.world.level.FLevelServer1_12;
 import net.daporkchop.lib.common.function.throwing.ERunnable;
 import net.daporkchop.lib.math.vector.Vec2i;
 import net.minecraft.nbt.NBTTagCompound;
@@ -51,13 +52,13 @@ import java.util.List;
  * @author DaPorkchop_
  */
 public class VanillaExactFBlockLevelHolder1_12 extends AbstractChunksExactFBlockLevelHolder<Chunk> {
-    public VanillaExactFBlockLevelHolder1_12(@NonNull WorldServer world) {
-        super(((IMixinWorldServer) world).fp2_levelServer(), 4);
+    public VanillaExactFBlockLevelHolder1_12(@NonNull FLevelServer1_12 level) {
+        super(level, 4);
     }
 
     @Override
-    protected NDimensionalIntSegtreeSet createChunksExistIndex(@NonNull IFarLevelServer world) {
-        AnvilChunkLoader io = (AnvilChunkLoader) ((WorldServer) world.implLevel()).getChunkProvider().chunkLoader;
+    protected NDimensionalIntSegtreeSet createChunksExistIndex(@NonNull IFarLevelServer level) {
+        AnvilChunkLoader io = (AnvilChunkLoader) ((WorldServer) level.implLevel()).getChunkProvider().chunkLoader;
         return Datastructures.INSTANCE.nDimensionalIntSegtreeSet()
                 .dimensions(2)
                 .threadSafe(true)
@@ -68,8 +69,8 @@ public class VanillaExactFBlockLevelHolder1_12 extends AbstractChunksExactFBlock
     }
 
     @Override
-    protected AsyncCacheNBT<Vec2i, ?, Chunk, ?> createChunkCache(@NonNull IFarLevelServer world) {
-        return new ChunkCache((WorldServer) world.implLevel(), (AnvilChunkLoader) ((WorldServer) world.implLevel()).getChunkProvider().chunkLoader);
+    protected AsyncCacheNBT<Vec2i, ?, Chunk, ?> createChunkCache(@NonNull IFarLevelServer level) {
+        return new ChunkCache((WorldServer) level.implLevel(), (AnvilChunkLoader) ((WorldServer) level.implLevel()).getChunkProvider().chunkLoader);
     }
 
     @Override

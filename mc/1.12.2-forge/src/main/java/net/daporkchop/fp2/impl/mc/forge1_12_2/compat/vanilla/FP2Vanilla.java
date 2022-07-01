@@ -42,6 +42,7 @@ import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.exactfblocklevel.VanillaExactFBlockLevelHolder1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.generator.heightmap.FlatHeightmapGenerator;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.server.world.level.FLevelServer1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.Util1_12_2;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
@@ -88,7 +89,7 @@ public class FP2Vanilla {
 
     @FEventHandler(name = "vanilla_world_exact_fblocklevel")
     public ExactFBlockLevelHolder getExactFBlockLevel(GetExactFBlockLevelEvent event) {
-        return new VanillaExactFBlockLevelHolder1_12((WorldServer) event.world().implLevel());
+        return new VanillaExactFBlockLevelHolder1_12((FLevelServer1_12) event.level());
     }
 
     @FEventHandler(name = "vanilla_world_terrain_generator")
