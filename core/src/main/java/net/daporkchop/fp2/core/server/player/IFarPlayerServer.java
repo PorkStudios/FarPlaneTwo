@@ -25,7 +25,7 @@ import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.network.IPacket;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
-import net.daporkchop.fp2.core.util.annotation.CalledFromNetworkThread;
+import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
 import net.daporkchop.lib.math.vector.Vec3d;
 
@@ -37,7 +37,7 @@ public interface IFarPlayerServer {
 
     Vec3d fp2_IFarPlayer_position();
 
-    @CalledFromNetworkThread
+    @CalledFromAnyThread
     void fp2_IFarPlayerServer_handle(@NonNull Object packet);
 
     @CalledFromServerThread

@@ -30,7 +30,7 @@ import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionBegi
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionEnd;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUpdateConfig;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
-import net.daporkchop.fp2.core.util.annotation.CalledFromNetworkThread;
+import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
 
 import java.util.Objects;
@@ -55,10 +55,11 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
     protected boolean sessionOpen;
     protected boolean closed;
 
-    @CalledFromNetworkThread
+    @CalledFromAnyThread
     @Override
     public void fp2_IFarPlayerServer_handle(@NonNull Object packet) {
-        this.world.workerManager().rootExecutor().execute(() -> { //TODO: move all logic to network threads
+        //delegate packet handling to server thread
+        this.world.workerManager().rootExecutor().execute(() -> { //TODO: do this on the invoking thread
             if (packet instanceof CPacketClientConfig) {
                 this.handle((CPacketClientConfig) packet);
             } else if (packet instanceof CPacketDebugDropAllTiles) {

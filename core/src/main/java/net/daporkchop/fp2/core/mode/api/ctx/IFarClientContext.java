@@ -28,7 +28,7 @@ import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.core.mode.api.client.IFarTileCache;
-import net.daporkchop.fp2.core.util.annotation.CalledFromNetworkThread;
+import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 
 /**
  * A client-side context for a specific {@link IFarRenderMode} in a {@link IFarLevelClient}.
@@ -66,13 +66,13 @@ public interface IFarClientContext<POS extends IFarPos, T extends IFarTile> exte
      *
      * @param config the new config
      */
-    @CalledFromNetworkThread
+    @CalledFromAnyThread
     void notifyConfigChange(@NonNull FP2Config config);
 
     /**
      * Closes this context, releasing any allocated resources.
      */
-    @CalledFromNetworkThread
+    @CalledFromAnyThread
     @Override
     void close();
 }

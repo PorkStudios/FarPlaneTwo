@@ -73,7 +73,7 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
     @Override
     public synchronized void handle(@NonNull Object packet) {
         if (this.closed) { //the player has been closed, we should drop any incoming packets as they are likely just backlogged and hadn't been processed yet when the player was closed
-            this.fp2().log().warn("received unexpected packet " + className(packet) + " after player had been closed");
+            this.fp2().log().warn(className(this) + ": received unexpected packet " + className(packet) + " after player had been closed");
             return;
         }
 
