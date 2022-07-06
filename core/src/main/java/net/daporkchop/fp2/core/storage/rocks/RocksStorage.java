@@ -82,6 +82,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -203,9 +204,13 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
             //TODO: i'm not sure if these are ever being deleted...
             Set<String> cfNamesAsSet = new HashSet<>(cfNames);
             initialColumnFamilyNames.forEach(initialColumnFamilyName -> {
+                String cfName = new String(initialColumnFamilyName, StandardCharsets.UTF_8);
+
                 if (!Arrays.equals(RocksDB.DEFAULT_COLUMN_FAMILY, initialColumnFamilyName) //we don't care about the default column family
-                    && !cfNamesAsSet.contains(new String(initialColumnFamilyName, StandardCharsets.UTF_8))) { //the column family wasn't present in the manifest
-                    cfNames.add(new String(initialColumnFamilyName, StandardCharsets.UTF_8));
+                    && !cfNamesAsSet.contains(cfName)) { //the column family wasn't present in the manifest
+                    fp2().log().alert("storage at '%s' contains unknown or invalid column family '%s' which was not present in manifest!", root, cfName);
+
+                    cfNames.add(cfName);
                     cfDescriptors.add(new ColumnFamilyDescriptor(initialColumnFamilyName, this.getCachedColumnFamilyOptionsForHints(FStorageColumnHintsInternal.DEFAULT)));
                 }
             });
@@ -608,11 +613,11 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
             //mark all of the column families for deletion
             this.manifest.markColumnFamiliesForDeletion(access, columnFamilyNames);
         } catch (Exception e) {
-            //unlock all of the column family names which have been acquired so far
-            this.lockedColumnFamilyNames.removeAll(lockedColumnFamiliesToReleaseOnFailure);
-
             PUnsafe.throwException(e); //rethrow exception
             throw new AssertionError(); //impossible
+        } finally {
+            //unlock all of the column family names which have been acquired so far
+            this.lockedColumnFamilyNames.removeAll(lockedColumnFamiliesToReleaseOnFailure);
         }
     }
 
@@ -630,11 +635,16 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
                 }
             }));
 
+            fp2().log().info("deleting named column families: %s", columnFamilyNamesToDelete);
+
             try { //get handles of all the column families we're about to delete and drop them
-                this.db.dropColumnFamilies(columnFamilyNamesToDelete.stream()
-                        .map(this.openColumnFamilyHandles::get)
+                List<ColumnFamilyHandle> handles = columnFamilyNamesToDelete.stream()
+                        .map(this.openColumnFamilyHandles::remove)
                         .filter(Objects::nonNull) //the column family might not be open if it was scheduled for deletion without ever being created (it exists solely in the manifest)
-                        .collect(Collectors.toList()));
+                        .collect(Collectors.toList());
+
+                this.db.dropColumnFamilies(handles);
+                handles.forEach(ColumnFamilyHandle::close);
             } catch (RocksDBException e) {
                 throw wrapException(e);
             }
@@ -642,11 +652,11 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
             //update manifest to show that the column families have been deleted
             this.transactAtomicRun(access -> columnFamilyNamesToDelete.forEach(columnFamilyName -> this.manifest.removeColumnFamilyFromDeletionQueue(access, columnFamilyName)));
         } catch (Exception e) {
-            //unlock all of the column family names which have been acquired so far
-            this.lockedColumnFamilyNames.removeAll(columnFamilyNamesToDelete);
-
             PUnsafe.throwException(e); //rethrow exception
             throw new AssertionError(); //impossible
+        } finally {
+            //unlock all of the column family names which have been acquired so far
+            this.lockedColumnFamilyNames.removeAll(columnFamilyNamesToDelete);
         }
     }
 

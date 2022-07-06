@@ -69,8 +69,9 @@ public abstract class AbstractRocksManifest<M> {
                 c = escaped.charAt(++i);
                 switch (c) {
                     case '0': { //decode 4-digit hex sequence
-                        String next = escaped.substring(i, i += 4);
-                        builder.append((char) Integer.parseUnsignedInt(next));
+                        String next = escaped.substring(i + 1, i + 5);
+                        i += 4;
+                        builder.append((char) Integer.parseUnsignedInt(next, 16));
                         break;
                     }
                     case '1':
@@ -86,7 +87,7 @@ public abstract class AbstractRocksManifest<M> {
                         throw new IllegalArgumentException("illegal escape sequence: _" + c);
                 }
             } else {
-                builder.append(String.format("_0%04x", (int) c));
+                throw new IllegalArgumentException("illegal character: _" + c);
             }
         }
         return builder.toString();
