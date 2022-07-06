@@ -57,7 +57,10 @@ public abstract class MixinNetHandlerPlayClient implements IMixinNetHandlerPlayC
 
     @Override
     public void fp2_closeClient() {
-        checkState(this.fp2_worldClient != null && this.fp2_playerClient != null, "not initialized or already closed!");
+        if (this.fp2_worldClient == null && this.fp2_playerClient == null) {
+            fp2().log().alert("attempted to close client world, but it was either not initialized or already closed!");
+            return;
+        }
 
         //try-with-resources to ensure everything is closed
         try (FWorldClient1_12 worldClient = this.fp2_worldClient;

@@ -25,7 +25,6 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.core.client.player.AbstractFarPlayerClient;
 import net.daporkchop.fp2.core.network.IPacket;
-import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionEnd;
 import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.network.ATNetHandlerPlayClient1_12;
@@ -49,7 +48,7 @@ public class FarPlayerClient1_12 extends AbstractFarPlayerClient {
     protected final NetHandlerPlayClient netHandlerPlayClient;
 
     @Override
-    protected FLevelClient1_12_2 loadActiveWorld() {
+    protected FLevelClient1_12_2 loadActiveLevel() {
         WorldClient worldClient = ((ATNetHandlerPlayClient1_12) this.netHandlerPlayClient).getWorld();
         return this.world.loadLevel(FP2Forge1_12_2.getIdentifierForWorld(worldClient), worldClient);
     }
@@ -58,15 +57,5 @@ public class FarPlayerClient1_12 extends AbstractFarPlayerClient {
     @Override
     public void send(@NonNull IPacket packet) {
         FP2Network1_12_2.sendToServer(packet); //yuck, a *static* context?
-    }
-
-    @CalledFromAnyThread
-    @Override
-    public void close() {
-        ((ATNetHandlerPlayClient1_12) this.netHandlerPlayClient).getNetManager().channel().eventLoop().execute(() -> {
-            if (this.sessionOpen) {
-                this.handle(new SPacketSessionEnd());
-            }
-        });
     }
 }

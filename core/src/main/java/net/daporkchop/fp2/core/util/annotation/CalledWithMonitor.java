@@ -18,26 +18,24 @@
  *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_12_2.client.world;
+package net.daporkchop.fp2.core.util.annotation;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.api.util.Identifier;
-import net.daporkchop.fp2.core.client.world.AbstractWorldClient;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.client.world.level.FLevelClient1_12_2;
-import net.minecraft.client.multiplayer.WorldClient;
-import net.minecraft.client.network.NetHandlerPlayClient;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+
+import static java.lang.annotation.ElementType.*;
+import static java.lang.annotation.RetentionPolicy.*;
 
 /**
+ * Indicates that the annotated method may only be called by threads which own the {@link #value() named object}'s monitor.
+ *
  * @author DaPorkchop_
  */
-public class FWorldClient1_12 extends AbstractWorldClient<FP2Forge1_12_2, NetHandlerPlayClient, FWorldClient1_12, WorldClient, FLevelClient1_12_2> {
-    public FWorldClient1_12(@NonNull FP2Forge1_12_2 fp2, @NonNull NetHandlerPlayClient implWorld) {
-        super(fp2, implWorld);
-    }
-
-    @Override
-    protected FLevelClient1_12_2 createLevel(@NonNull Identifier id, @NonNull WorldClient implLevel) {
-        return new FLevelClient1_12_2(this.fp2(), implLevel, this, id, COORD_LIMITS_HACK.get());
-    }
+@Retention(CLASS)
+@Target(METHOD)
+public @interface CalledWithMonitor {
+    /**
+     * @return the name of the object whose monitor must be owned by the calling thread in order for this method to be invoked
+     */
+    String value() default "this";
 }

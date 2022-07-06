@@ -437,7 +437,8 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
             options.setCompressionType(CompressionType.ZSTD_COMPRESSION)
                     .setCompressionOptions(new CompressionOptions().setEnabled(true)
                             .setMaxDictBytes(64 << 10)
-                            .setZStdMaxTrainBytes(64 << 10));
+                            .setZStdMaxTrainBytes(64 << 16)
+                            .setLevel(6));
         }
 
         return options;

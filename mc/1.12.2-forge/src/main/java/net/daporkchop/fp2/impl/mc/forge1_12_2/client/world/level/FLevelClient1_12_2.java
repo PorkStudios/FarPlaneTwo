@@ -32,6 +32,8 @@ import net.daporkchop.fp2.core.util.threading.workergroup.DefaultWorkerManager;
 import net.daporkchop.fp2.core.util.threading.workergroup.WorkerManager;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.ATMinecraft1_12;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.multiplayer.ATWorldClient1_12;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.network.ATNetHandlerPlayClient1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.client.render.LevelRenderer1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.client.world.FWorldClient1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.threading.futureexecutor.ClientThreadMarkedFutureExecutor;
@@ -58,9 +60,8 @@ public class FLevelClient1_12_2 extends AbstractLevelClient<FP2Forge1_12_2, NetH
 
     @Override
     protected WorkerManager createWorkerManager() {
-        return new DefaultWorkerManager(
-                ((ATMinecraft1_12) Minecraft.getMinecraft()).getThread(),
-                ClientThreadMarkedFutureExecutor.getFor(Minecraft.getMinecraft()));
+        Minecraft mc = ((ATNetHandlerPlayClient1_12) ((ATWorldClient1_12) this.implLevel()).getConnection()).getClient();
+        return new DefaultWorkerManager(((ATMinecraft1_12) mc).getThread(), ClientThreadMarkedFutureExecutor.getFor(mc));
     }
 
     @Override

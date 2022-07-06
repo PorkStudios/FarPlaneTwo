@@ -21,6 +21,8 @@
 package net.daporkchop.fp2.core.client.player;
 
 import lombok.NonNull;
+import lombok.SneakyThrows;
+import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.world.AbstractWorldClient;
 import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
@@ -42,7 +44,7 @@ import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUnloadTiles
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUpdateConfig;
 import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromClientThread;
-import net.daporkchop.fp2.core.util.annotation.CalledFromNetworkThread;
+import net.daporkchop.fp2.core.util.annotation.CalledWithMonitor;
 import net.daporkchop.lib.common.util.PorkUtil;
 
 import java.util.Objects;
@@ -63,12 +65,18 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
     protected boolean clientReady;
     protected boolean initialConfigSent;
     protected boolean sessionOpen;
+    protected boolean closed;
 
     protected DebugStats.Tracking debugServerStats;
 
-    @CalledFromNetworkThread
+    @CalledFromAnyThread
     @Override
-    public void handle(@NonNull Object packet) {
+    public synchronized void handle(@NonNull Object packet) {
+        if (this.closed) { //the player has been closed, we should drop any incoming packets as they are likely just backlogged and hadn't been processed yet when the player was closed
+            this.fp2().log().warn("received unexpected packet " + className(packet) + " after player had been closed");
+            return;
+        }
+
         if (packet instanceof SPacketHandshake) {
             this.handle((SPacketHandshake) packet);
         } else if (packet instanceof SPacketSessionBegin) {
@@ -92,6 +100,7 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
         }
     }
 
+    @CalledWithMonitor
     protected void handle(@NonNull SPacketHandshake packet) {
         checkState(!this.handshakeReceived, "handshake packet has already been received!");
         this.handshakeReceived = true;
@@ -101,6 +110,7 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
         this.trySendInitialConfig();
     }
 
+    @CalledWithMonitor
     protected void handle(@NonNull SPacketSessionBegin packet) {
         checkState(!this.sessionOpen, "a session is already open!");
         this.sessionOpen = true;
@@ -111,29 +121,24 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
         if (mode != null) {
             AbstractWorldClient.COORD_LIMITS_HACK.set(packet.coordLimits());
             try {
-                this.context = mode.clientContext(this.loadActiveWorld(), this.config);
+                this.context = mode.clientContext(this.loadActiveLevel(), this.config);
             } finally {
                 AbstractWorldClient.COORD_LIMITS_HACK.remove();
             }
         }
     }
 
-    protected abstract IFarLevelClient loadActiveWorld(); //TODO: i want to get rid of this and figure out how to *not* have to include the coordinate bounds in the session begin packet
+    protected abstract IFarLevelClient loadActiveLevel(); //TODO: i want to get rid of this and figure out how to *not* have to include the coordinate bounds in the session begin packet
 
+    @CalledWithMonitor
     protected void handle(@NonNull SPacketSessionEnd packet) {
         checkState(this.sessionOpen, "no session is currently open!");
         this.sessionOpen = false;
 
         this.fp2().log().info("ending session");
-
-        if (this.context != null) {
-            this.context.close();
-            //TODO: better solution than casting to AbstractWorldClient
-            ((AbstractWorldClient<?, ?, ?, ?, ?>) this.world()).unloadLevel(this.context.level().id()); //unload the level, since we loaded it earlier
-            this.context = null;
-        }
     }
 
+    @CalledWithMonitor
     protected void handle(@NonNull SPacketTileData packet) {
         checkState(this.sessionOpen, "no session is currently open!");
         checkState(this.context != null, "active session has no render mode!");
@@ -143,6 +148,7 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
         //this.fp2_context.tileCache().receiveTile(uncheckedCast(packet.tile().compressed()));
     }
 
+    @CalledWithMonitor
     protected void handle(@NonNull SPacketUnloadTile packet) {
         checkState(this.sessionOpen, "no session is currently open!");
         checkState(this.context != null, "active session has no render mode!");
@@ -150,6 +156,7 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
         this.context.tileCache().unloadTile(uncheckedCast(packet.pos()));
     }
 
+    @CalledWithMonitor
     protected void handle(@NonNull SPacketUnloadTiles packet) {
         checkState(this.sessionOpen, "no session is currently open!");
         checkState(this.context != null, "active session has no render mode!");
@@ -157,6 +164,7 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
         packet.positions().forEach(PorkUtil.<IFarTileCache<IFarPos, ?>>uncheckedCast(this.context.tileCache())::unloadTile);
     }
 
+    @CalledWithMonitor
     protected void handle(@NonNull SPacketUpdateConfig.Merged packet) {
         if (Objects.equals(this.config, packet.config())) { //nothing changed, so nothing to do!
             return;
@@ -174,11 +182,13 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
         }
     }
 
+    @CalledWithMonitor
     protected void handle(@NonNull SPacketUpdateConfig.Server packet) {
         this.serverConfig = packet.config();
         this.fp2().log().info("server notified remote config update: %s", this.serverConfig);
     }
 
+    @CalledWithMonitor
     protected void handleDebug(@NonNull SPacketDebugUpdateStatistics packet) {
         this.debugServerStats = packet.tracking();
     }
@@ -192,7 +202,7 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
     @CalledFromAnyThread
     @CalledFromClientThread
     @Override
-    public void ready() {
+    public synchronized void ready() {
         if (!this.clientReady) {
             this.clientReady = true;
 
@@ -200,12 +210,36 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
         }
     }
 
-    protected synchronized void trySendInitialConfig() {
+    @CalledWithMonitor
+    protected void trySendInitialConfig() {
         if (!this.initialConfigSent) {
             if (this.handshakeReceived && this.clientReady) {
                 this.initialConfigSent = true;
 
                 this.send(new CPacketClientConfig().config(this.fp2().globalConfig()));
+            }
+        }
+    }
+
+    @CalledFromAnyThread
+    @Override
+    public synchronized void close() {
+        checkState(!this.closed, "already closed!");
+        this.closed = true;
+
+        this.closeSessionIfOpen();
+    }
+
+    @CalledWithMonitor
+    @SneakyThrows
+    protected void closeSessionIfOpen() {
+        if (this.context != null) { //a context is set, we should close it
+            Identifier levelId = this.context.level().id();
+
+            //TODO: better solution than casting to AbstractWorldClient
+            try (AutoCloseable unloadLevel = () -> ((AbstractWorldClient<?, ?, ?, ?, ?>) this.world()).unloadLevel(levelId); //unload the level, since we loaded it earlier
+                 IFarClientContext<?, ?> context = this.context) {
+                this.context = null;
             }
         }
     }

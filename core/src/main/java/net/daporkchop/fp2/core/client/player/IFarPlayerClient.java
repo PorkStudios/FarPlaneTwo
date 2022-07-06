@@ -31,7 +31,6 @@ import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.network.IPacket;
 import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromClientThread;
-import net.daporkchop.fp2.core.util.annotation.CalledFromNetworkThread;
 
 /**
  * @author DaPorkchop_
@@ -39,7 +38,7 @@ import net.daporkchop.fp2.core.util.annotation.CalledFromNetworkThread;
 public interface IFarPlayerClient extends AutoCloseable {
     FP2Core fp2();
 
-    @CalledFromNetworkThread
+    @CalledFromAnyThread
     void handle(@NonNull Object packet);
 
     @CalledFromAnyThread
