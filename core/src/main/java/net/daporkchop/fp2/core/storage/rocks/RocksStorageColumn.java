@@ -23,9 +23,12 @@ package net.daporkchop.fp2.core.storage.rocks;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.SneakyThrows;
 import net.daporkchop.fp2.api.storage.internal.FStorageColumn;
 import org.rocksdb.ColumnFamilyHandle;
+import org.rocksdb.RocksDBException;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
@@ -53,4 +56,10 @@ public class RocksStorageColumn implements FStorageColumn {
     }
 
     private ColumnFamilyHandle handle;
+
+    @Override
+    @SneakyThrows(RocksDBException.class)
+    public String toString() {
+        return "RocksStorageColumn[internalColumnFamilyName='" + new String(this.handle.getName(), StandardCharsets.UTF_8) + "',internalColumnFamilyID=" + this.handle.getID() + ']';
+    }
 }

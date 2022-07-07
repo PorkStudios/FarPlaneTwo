@@ -424,6 +424,7 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
                 .setCreateIfMissing(true)
                 .setCreateMissingColumnFamilies(true)
                 .setAllowConcurrentMemtableWrite(true)
+                .setAllowFAllocate(false)
                 .setKeepLogFileNum(1L);
     }
 
@@ -546,7 +547,28 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
                     //actually create the column families
                     List<ColumnFamilyHandle> columnFamilyHandles;
                     try {
-                        columnFamilyHandles = this.db.createColumnFamilies(newColumnFamilyDescriptors);
+                        if (!(this.db instanceof TransactionDB)) {
+                            columnFamilyHandles = this.db.createColumnFamilies(newColumnFamilyDescriptors);
+                        } else { //workaround for https://github.com/facebook/rocksdb/issues/10322: create column families individually
+                            columnFamilyHandles = new ArrayList<>(newColumnFamilyDescriptors.size());
+                            try {
+                                for (ColumnFamilyDescriptor columnFamilyDescriptor : newColumnFamilyDescriptors) {
+                                    columnFamilyHandles.add(this.db.createColumnFamily(columnFamilyDescriptor));
+                                }
+                            } catch (RocksDBException e) { //something went wrong, try to drop all the column families which have been created so far in order to pretend like the operation is atomic
+                                for (ColumnFamilyHandle columnFamilyHandle : columnFamilyHandles) {
+                                    //try-with-resources to ensure the column family handle is closed in any case
+                                    try (ColumnFamilyHandle cfHandle = columnFamilyHandle) {
+                                        this.db.dropColumnFamily(cfHandle);
+                                    } catch (Exception e1) {
+                                        e.addSuppressed(e1);
+                                    }
+                                }
+
+                                //rethrow original exception now that the column families have been dropped again
+                                throw e;
+                            }
+                        }
                     } catch (RocksDBException e) {
                         PUnsafe.throwException(e); //hack to throw RocksDBException from inside lambda
                         throw new AssertionError(); //impossible
@@ -643,8 +665,31 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
                         .filter(Objects::nonNull) //the column family might not be open if it was scheduled for deletion without ever being created (it exists solely in the manifest)
                         .collect(Collectors.toList());
 
-                this.db.dropColumnFamilies(handles);
-                handles.forEach(ColumnFamilyHandle::close);
+                try {
+                    if (!(this.db instanceof TransactionDB)) {
+                        this.db.dropColumnFamilies(handles);
+                    } else { //workaround for https://github.com/facebook/rocksdb/issues/10322: drop column families one-at-a-time
+                        RocksDBException e = null;
+                        for (ColumnFamilyHandle columnFamilyHandle : handles) {
+                            try {
+                                this.db.dropColumnFamily(columnFamilyHandle);
+                            } catch (RocksDBException e1) { //something went wrong, save the exception to be rethrown later
+                                if (e == null) {
+                                    e = e1;
+                                } else {
+                                    e.addSuppressed(e1);
+                                }
+                            }
+                        }
+
+                        //at least one column family threw an exception while being dropped, rethrow the exception
+                        if (e != null) {
+                            throw e;
+                        }
+                    }
+                } finally {
+                    handles.forEach(ColumnFamilyHandle::close);
+                }
             } catch (RocksDBException e) {
                 throw wrapException(e);
             }
