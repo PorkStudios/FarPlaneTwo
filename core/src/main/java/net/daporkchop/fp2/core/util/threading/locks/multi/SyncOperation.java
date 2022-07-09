@@ -23,5 +23,18 @@ package net.daporkchop.fp2.core.util.threading.locks.multi;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractSynchronizationOperation<T> {
+public abstract class SyncOperation<STATE> {
+    protected abstract boolean tryEarly();
+
+    protected abstract STATE createState();
+
+    protected void disposeState(STATE state) {
+        //no-op
+    }
+
+    protected abstract boolean tryAcquire(STATE state);
+
+    protected abstract boolean shouldParkAfterFailedAcquire(STATE state);
+
+    protected abstract void cancel(STATE state);
 }

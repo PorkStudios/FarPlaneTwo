@@ -127,6 +127,10 @@ public class ConcurrentUnboundedPriorityBlockingQueue<E> extends AbstractQueue<E
 
     @Override
     public E peek() {
+        if (this.map.isEmpty()) { //fast-track in case of an empty map
+            return null;
+        }
+
         try {
             return this.map.firstKey();
         } catch (NoSuchElementException e) { //set is empty

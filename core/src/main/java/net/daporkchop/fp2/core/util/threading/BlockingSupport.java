@@ -23,6 +23,7 @@ package net.daporkchop.fp2.core.util.threading;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.core.util.threading.locks.multi.MultiSemaphore;
 import net.daporkchop.fp2.core.util.threading.workergroup.WorkerGroup;
 import net.daporkchop.fp2.core.util.threading.workergroup.WorkerManager;
 
@@ -95,6 +96,32 @@ public class BlockingSupport {
      */
     @SneakyThrows(InterruptedException.class)
     public static boolean managedTryAcquire(@NonNull Semaphore semaphore, int permits, long timeout, @NonNull TimeUnit unit) {
+        checkState(!Thread.interrupted(), "thread %s was interrupted without going through %s (Thread.interrupted(), head)", Thread.currentThread(), BlockingSupport.class);
+        checkState(BLOCKED_THREADS.add(Thread.currentThread()), "recursively blocking task?!?");
+
+        InterruptedException ie = null;
+        try {
+            return semaphore.tryAcquire(permits, timeout, unit);
+        } catch (InterruptedException e) { //we were interrupted, Semaphore#tryAcquire() caught the exception for us
+            ie = e; //save exception for use in finally block
+            throw e;
+        } finally {
+            if (BLOCKED_THREADS.remove(Thread.currentThread())) { //we were blocking, but we should still double-check to see if we've been interrupted
+                checkState(!Thread.interrupted(), "thread %s was interrupted without going through %s (Thread.interrupted(), tail)", Thread.currentThread(), BlockingSupport.class);
+                checkState(ie == null, "thread %s was interrupted without going through %s (ie != null)", Thread.currentThread(), BlockingSupport.class);
+            } else { //the thread has been unblocked by something else - wait for the interrupt to arrive
+                if (ie != null) { //the interrupt was already handled by Semaphore#tryAcquire()
+                    //no-op, the exception has already been thrown by the catch block
+                } else {
+                    LockSupport.park();
+                    throw new InterruptedException();
+                }
+            }
+        }
+    }
+
+    @SneakyThrows(InterruptedException.class)
+    public static boolean managedTryAcquire(@NonNull MultiSemaphore semaphore, int permits, long timeout, @NonNull TimeUnit unit) {
         checkState(!Thread.interrupted(), "thread %s was interrupted without going through %s (Thread.interrupted(), head)", Thread.currentThread(), BlockingSupport.class);
         checkState(BLOCKED_THREADS.add(Thread.currentThread()), "recursively blocking task?!?");
 

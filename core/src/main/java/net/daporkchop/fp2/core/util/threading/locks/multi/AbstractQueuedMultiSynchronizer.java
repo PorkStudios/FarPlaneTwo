@@ -22,6 +22,8 @@ package net.daporkchop.fp2.core.util.threading.locks.multi;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.Objects;
@@ -31,7 +33,7 @@ import java.util.concurrent.locks.LockSupport;
 
 /**
  * A version of {@link AbstractQueuedSynchronizer} which allows executing multiple potentially blocking operations simultaneously by aggregating them through an
- * {@link AbstractSynchronizationAggregator}.
+ * {@link SyncAggregator}.
  *
  * @author DaPorkchop_
  */
@@ -176,7 +178,7 @@ public abstract class AbstractQueuedMultiSynchronizer extends AbstractOwnableSyn
         }
 
         if (successor != null) { //unpark the successor's thread if any
-            LockSupport.unpark(successor.thread);
+            successor.signal();
         }
     }
 
@@ -188,8 +190,8 @@ public abstract class AbstractQueuedMultiSynchronizer extends AbstractOwnableSyn
             Node head = this.head;
             if (head != null && head != this.tail) { //the queue has a head
                 int waitStatus = head.waitStatus;
-                if (waitStatus == Node.SIGNAL) { //the head node's thread needs to be signalled, race to clear the status
-                    if (head.compareAndSetWaitStatus(Node.SIGNAL, 0)) { //we won the race, unpark the thread
+                if (waitStatus == Node.SIGNAL) { //the head node's successor's thread needs to be signalled, race to clear the status
+                    if (head.compareAndSetWaitStatus(Node.SIGNAL, 0)) { //we won the race, unpark the successor's  thread
                         this.unparkSuccessor(head);
                     } else { //we lost the race, try again from the beginning in case the queue has been modified
                         continue;
@@ -657,6 +659,14 @@ public abstract class AbstractQueuedMultiSynchronizer extends AbstractOwnableSyn
         }
     }
 
+    public SyncOperation<?> prepareAcquireExclusive(int arg) {
+        return new AcquireExclusiveOperation(this, arg);
+    }
+
+    public SyncOperation<?> prepareAcquireShared(int arg) {
+        return new AcquireSharedOperation(this, arg);
+    }
+
     //
     // QUEUE INSPECTION METHODS
     //
@@ -760,6 +770,129 @@ public abstract class AbstractQueuedMultiSynchronizer extends AbstractOwnableSyn
          */
         private boolean compareAndSetNext(Node expect, Node update) {
             return PUnsafe.compareAndSwapObject(this, NODE_NEXT_OFFSET, expect, update);
+        }
+
+        /**
+         * Signals this node's thread.
+         */
+        private void signal() {
+            LockSupport.unpark(this.thread);
+        }
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    private static final class AcquireState {
+        protected final Node node;
+        protected boolean failed;
+
+        protected Node predecessor;
+
+        protected AcquireState(@NonNull AbstractQueuedMultiSynchronizer sync, boolean exclusive) {
+            this.node = sync.addWaiter(exclusive ? Node.EXCLUSIVE : Node.SHARED);
+            this.failed = true;
+        }
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @RequiredArgsConstructor
+    private static abstract class AbstractAcquireOperation extends SyncOperation<AcquireState> {
+        @NonNull
+        protected final AbstractQueuedMultiSynchronizer sync;
+        protected final int arg;
+
+        @Override
+        protected boolean tryAcquire(AcquireState state) {
+            Node node = state.node;
+            Node predecessor = state.predecessor = node.predecessor();
+
+            if (predecessor == this.sync.head && this.tryAcquire(state, predecessor, node)) {
+                predecessor.next = null; //help GC
+                state.failed = false;
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+        protected abstract boolean tryAcquire(AcquireState state, Node predecessor, Node node);
+
+        @Override
+        protected boolean shouldParkAfterFailedAcquire(AcquireState state) {
+            return this.sync.shouldParkAfterFailedAcquire(state.predecessor, state.node);
+        }
+
+        @Override
+        protected void cancel(AcquireState state) {
+            if (state.failed) {
+                this.sync.cancelAcquire(state.node);
+            }
+        }
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    private static final class AcquireExclusiveOperation extends AbstractAcquireOperation {
+        public AcquireExclusiveOperation(@NonNull AbstractQueuedMultiSynchronizer sync, int arg) {
+            super(sync, arg);
+        }
+
+        @Override
+        protected boolean tryEarly() {
+            return this.sync.tryAcquire(this.arg);
+        }
+
+        @Override
+        protected AcquireState createState() {
+            return new AcquireState(this.sync, true);
+        }
+
+        @Override
+        protected boolean tryAcquire(AcquireState state, Node predecessor, Node node) {
+            AbstractQueuedMultiSynchronizer sync = this.sync;
+
+            if (sync.tryAcquire(this.arg)) {
+                sync.setHead(node);
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    private static final class AcquireSharedOperation extends AbstractAcquireOperation {
+        public AcquireSharedOperation(@NonNull AbstractQueuedMultiSynchronizer sync, int arg) {
+            super(sync, arg);
+        }
+
+        @Override
+        protected boolean tryEarly() {
+            return this.sync.tryAcquireShared(this.arg) >= 0;
+        }
+
+        @Override
+        protected AcquireState createState() {
+            return new AcquireState(this.sync, false);
+        }
+
+        @Override
+        protected boolean tryAcquire(AcquireState state, Node predecessor, Node node) {
+            AbstractQueuedMultiSynchronizer sync = this.sync;
+
+            int result = sync.tryAcquireShared(this.arg);
+            if (result >= 0) {
+                sync.setHeadAndPropagate(node, result);
+                return true;
+            } else {
+                return false;
+            }
         }
     }
 }
