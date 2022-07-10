@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.util.threading.locks.multi;
@@ -26,6 +25,9 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.locks.AbstractOwnableSynchronizer;
 import java.util.concurrent.locks.AbstractQueuedSynchronizer;
@@ -659,10 +661,22 @@ public abstract class AbstractQueuedMultiSynchronizer extends AbstractOwnableSyn
         }
     }
 
+    /**
+     * Creates a {@link SyncOperation} which will {@link #acquire(int) acquire an exclusive lock} from this synchronizer with the given argument.
+     *
+     * @param arg the argument
+     * @return a {@link SyncOperation}
+     */
     public SyncOperation<?> prepareAcquireExclusive(int arg) {
         return new AcquireExclusiveOperation(this, arg);
     }
 
+    /**
+     * Creates a {@link SyncOperation} which will {@link #acquireShared(int) acquire a shared lock} from this synchronizer with the given argument.
+     *
+     * @param arg the argument
+     * @return a {@link SyncOperation}
+     */
     public SyncOperation<?> prepareAcquireShared(int arg) {
         return new AcquireSharedOperation(this, arg);
     }
@@ -671,7 +685,177 @@ public abstract class AbstractQueuedMultiSynchronizer extends AbstractOwnableSyn
     // QUEUE INSPECTION METHODS
     //
 
-    //TODO
+    /**
+     * @see AbstractQueuedSynchronizer#hasQueuedThreads()
+     */
+    public final boolean hasQueuedThreads() {
+        return this.head != this.tail;
+    }
+
+    /**
+     * @see AbstractQueuedSynchronizer#hasContended()
+     */
+    public final boolean hasContended() {
+        return this.head != null;
+    }
+
+    /**
+     * @see AbstractQueuedSynchronizer#getFirstQueuedThread()
+     */
+    public final Thread getFirstQueuedThread() {
+        return this.head == this.tail //fast check to see if queue is empty
+                ? null //queue is empty, so obviously no threads are queued
+                : this.fullGetFirstQueuedThread();
+    }
+
+    /**
+     * @see AbstractQueuedSynchronizer#fullGetFirstQueuedThread()
+     */
+    private Thread fullGetFirstQueuedThread() {
+        {
+            /*
+             * The first node is normally head.next. Try to get its
+             * thread field, ensuring consistent reads: If thread
+             * field is nulled out or s.prev is no longer head, then
+             * some other thread(s) concurrently performed setHead in
+             * between some of our reads. We try this twice before
+             * resorting to traversal.
+             */
+
+            Node head;
+            Node successor;
+            Thread successorThread;
+            if (((head = this.head) != null && (successor = head.next) != null && successor.prev == this.head && (successorThread = successor.thread) != null)
+                || ((head = this.head) != null && (successor = head.next) != null && successor.prev == this.head && (successorThread = successor.thread) != null)) {
+                return successorThread;
+            }
+        }
+
+        /*
+         * Head's next field might not have been set yet, or may have
+         * been unset after setHead. So we must check to see if tail
+         * is actually first node. If not, we continue on, safely
+         * traversing from tail back to head to find first,
+         * guaranteeing termination.
+         */
+
+        Node tail = this.tail;
+        Thread firstThread = null;
+        while (tail != null && tail != this.head) {
+            Thread tt = tail.thread;
+            if (tt != null) {
+                firstThread = tt;
+            }
+            tail = tail.prev;
+        }
+        return firstThread;
+    }
+
+    /**
+     * @see AbstractQueuedSynchronizer#isQueued(Thread)
+     */
+    public final boolean isQueued(@NonNull Thread thread) {
+        for (Node node = this.tail; node != null; node = node.prev) {
+            if (node.thread == thread) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * @see AbstractQueuedSynchronizer#apparentlyFirstQueuedIsExclusive()
+     */
+    public final boolean apparentlyFirstQueuedIsExclusive() {
+        Node h = this.head;
+        if (h != null) {
+            Node s = h.next;
+            if (s != null) {
+                return !s.isShared() && s.thread != null;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * @see AbstractQueuedSynchronizer#hasQueuedPredecessors()
+     */
+    public final boolean hasQueuedPredecessors() {
+        //the correctness of this depends on head being initialized before tail and on head.next being accurate if the current thread is first in queue.
+
+        //read fields in reverse initialization order
+        Node tail = this.tail;
+        Node head = this.head;
+
+        if (head != tail) {
+            Node successor = head.next;
+            return successor == null || successor.thread == Thread.currentThread();
+        }
+        return false;
+    }
+
+    //
+    // INSTRUMENTATION/MONITORING
+    //
+
+    /**
+     * @see AbstractQueuedSynchronizer#getQueueLength()
+     */
+    public final int getQueueLength() {
+        int cnt = 0;
+        for (Node node = this.tail; node != null; node = node.prev) {
+            if (node.thread != null) {
+                cnt++;
+            }
+        }
+        return cnt;
+    }
+
+    /**
+     * @see AbstractQueuedSynchronizer#getQueuedThreads()
+     */
+    public final Collection<Thread> getQueuedThreads() {
+        List<Thread> list = new ArrayList<>();
+        for (Node node = this.tail; node != null; node = node.prev) {
+            Thread thread = node.thread;
+            if (thread != null) {
+                list.add(thread);
+            }
+        }
+        return list;
+    }
+
+    /**
+     * @see AbstractQueuedSynchronizer#getExclusiveQueuedThreads()
+     */
+    public final Collection<Thread> getExclusiveQueuedThreads() {
+        List<Thread> list = new ArrayList<>();
+        for (Node node = this.tail; node != null; node = node.prev) {
+            if (!node.isShared()) {
+                Thread thread = node.thread;
+                if (thread != null) {
+                    list.add(thread);
+                }
+            }
+        }
+        return list;
+    }
+
+    /**
+     * @see AbstractQueuedSynchronizer#getSharedQueuedThreads()
+     */
+    public final Collection<Thread> getSharedQueuedThreads() {
+        List<Thread> list = new ArrayList<>();
+        for (Node node = this.tail; node != null; node = node.prev) {
+            if (node.isShared()) {
+                Thread thread = node.thread;
+                if (thread != null) {
+                    list.add(thread);
+                }
+            }
+        }
+        return list;
+    }
 
     /**
      * @author DaPorkchop_
@@ -805,7 +989,7 @@ public abstract class AbstractQueuedMultiSynchronizer extends AbstractOwnableSyn
         protected final int arg;
 
         @Override
-        protected boolean tryAcquire(AcquireState state) {
+        protected boolean tryComplete(AcquireState state) {
             Node node = state.node;
             Node predecessor = state.predecessor = node.predecessor();
 
@@ -821,12 +1005,12 @@ public abstract class AbstractQueuedMultiSynchronizer extends AbstractOwnableSyn
         protected abstract boolean tryAcquire(AcquireState state, Node predecessor, Node node);
 
         @Override
-        protected boolean shouldParkAfterFailedAcquire(AcquireState state) {
+        protected boolean shouldParkAfterFailedComplete(AcquireState state) {
             return this.sync.shouldParkAfterFailedAcquire(state.predecessor, state.node);
         }
 
         @Override
-        protected void cancel(AcquireState state) {
+        protected void disposeState(AcquireState state) {
             if (state.failed) {
                 this.sync.cancelAcquire(state.node);
             }

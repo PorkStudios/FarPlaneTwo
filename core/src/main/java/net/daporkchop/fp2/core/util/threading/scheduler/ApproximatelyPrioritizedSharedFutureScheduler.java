@@ -15,13 +15,13 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.util.threading.scheduler;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.core.util.datastructure.ConcurrentUnboundedMultiPriorityBlockingQueue;
+import net.daporkchop.fp2.core.util.datastructure.NavigableBlockingQueue;
+import net.daporkchop.fp2.core.util.datastructure.java.navigableblockingqueue.ConcurrentUnboundedBucketedNavigableBlockingQueue;
 import net.daporkchop.fp2.core.util.threading.workergroup.WorkerGroupBuilder;
 import net.daporkchop.lib.common.util.PorkUtil;
 
@@ -89,7 +89,7 @@ public class ApproximatelyPrioritizedSharedFutureScheduler<P, V> extends SharedF
         return () -> new ArrayDeque<SharedFutureScheduler<P, V>.Task>() {
             @Override
             public void push(SharedFutureScheduler<P, V>.Task task) {
-                checkState(this.isEmpty() || PorkUtil.<Task>uncheckedCast(this.peekFirst()).compareTo(uncheckedCast(task)) > 0);
+                checkState(this.isEmpty() || ApproximatelyPrioritizedSharedFutureScheduler.this.canRecurse(this.peekFirst().param, task.param));
                 super.push(task);
             }
         };
@@ -97,7 +97,7 @@ public class ApproximatelyPrioritizedSharedFutureScheduler<P, V> extends SharedF
 
     @Override
     protected BlockingQueue<SharedFutureScheduler<P, V>.Task> createTaskQueue() {
-        return new ConcurrentUnboundedMultiPriorityBlockingQueue<>((a, b) -> this.initialComparator.compare(a.param, b.param));
+        return new ConcurrentUnboundedBucketedNavigableBlockingQueue<>((a, b) -> this.initialComparator.compare(a.param, b.param));
     }
 
     @Override
@@ -115,7 +115,7 @@ public class ApproximatelyPrioritizedSharedFutureScheduler<P, V> extends SharedF
         Deque<SharedFutureScheduler<P, V>.Task> recursionStack = this.recursionStack.get();
         Task parent = uncheckedCast(recursionStack.peekFirst());
         if (parent != null) { //this is a recursive task! we should make sure that the child task is less than the current one
-            checkArg(parent.compareTo(uncheckedCast(task)) > 0, "task at %s tried to recurse upwards to %s!", parent, task);
+            checkState(this.canRecurse(parent.param, task.param), "recursion from %s to %s is not permitted!", parent.param, task.param);
         }
 
         while (!task.isDone()) {
@@ -128,7 +128,7 @@ public class ApproximatelyPrioritizedSharedFutureScheduler<P, V> extends SharedF
         Deque<SharedFutureScheduler<P, V>.Task> recursionStack = this.recursionStack.get();
         Task parent = uncheckedCast(recursionStack.peekFirst());
         if (parent != null) { //this is a recursive task! we should make sure that the task we get is less than the current one
-            return PorkUtil.<ConcurrentUnboundedMultiPriorityBlockingQueue<Task>>uncheckedCast(this.queue).pollLess(parent, 1L, TimeUnit.SECONDS);
+            return PorkUtil.<NavigableBlockingQueue<Task>>uncheckedCast(this.queue).pollLess(parent, 1L, TimeUnit.SECONDS);
         } else {
             return super.pollSingleTask();
         }
@@ -140,7 +140,7 @@ public class ApproximatelyPrioritizedSharedFutureScheduler<P, V> extends SharedF
         Task parent = uncheckedCast(recursionStack.peekFirst());
         if (parent != null) { //this is a recursive task! we should make sure that all of the child tasks are less than the current one
             for (P param : params) {
-                checkArg(this.initialComparator.compare(parent.param, param) > 0, "task %s tried to recurse upwards to %s!", parent.param, param);
+                checkState(this.canRecurse(parent.param, param), "recursion from %s to %s is not permitted!", parent.param, param);
             }
         }
 
@@ -156,28 +156,5 @@ public class ApproximatelyPrioritizedSharedFutureScheduler<P, V> extends SharedF
             values.add(task.join());
         }
         return values;
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    protected class Task extends SharedFutureScheduler<P, V>.Task implements Comparable<Task> {
-        protected final long tieBreak = ApproximatelyPrioritizedSharedFutureScheduler.this.ctr.getAndIncrement();
-
-        public Task(@NonNull P param) {
-            super(param);
-        }
-
-        @Override
-        public int compareTo(Task o) {
-            int d;
-            if ((d = ApproximatelyPrioritizedSharedFutureScheduler.this.initialComparator.compare(this.param, o.param)) != 0
-                || (d = Long.compare(this.tieBreak, o.tieBreak)) != 0) {
-                return d;
-            }
-
-            checkState(this.param.equals(o.param), "%s != %s", this.param, o.param);
-            return 0;
-        }
     }
 }

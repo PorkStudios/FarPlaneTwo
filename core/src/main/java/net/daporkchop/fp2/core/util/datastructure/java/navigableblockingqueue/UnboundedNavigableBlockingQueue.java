@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,13 +15,13 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
-package net.daporkchop.fp2.core.util.datastructure;
+package net.daporkchop.fp2.core.util.datastructure.java.navigableblockingqueue;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.util.EqualsTieBreakComparator;
+import net.daporkchop.fp2.core.util.datastructure.NavigableBlockingQueue;
 
 import java.util.AbstractQueue;
 import java.util.Collection;
@@ -29,7 +29,6 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.NavigableSet;
 import java.util.TreeSet;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
@@ -45,20 +44,20 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  *
  * @author DaPorkchop_
  */
-public class UnboundedPriorityBlockingQueue<E> extends AbstractQueue<E> implements BlockingQueue<E> {
+public class UnboundedNavigableBlockingQueue<E> extends AbstractQueue<E> implements NavigableBlockingQueue<E> {
     protected final Lock lock = new ReentrantLock();
     protected final Condition notEmpty = this.lock.newCondition();
     protected final NavigableSet<E> set;
 
-    public UnboundedPriorityBlockingQueue() {
+    public UnboundedNavigableBlockingQueue() {
         this(null);
     }
 
-    public UnboundedPriorityBlockingQueue(Comparator<E> comparator) {
+    public UnboundedNavigableBlockingQueue(Comparator<E> comparator) {
         this(comparator, false, true);
     }
 
-    public UnboundedPriorityBlockingQueue(Comparator<E> comparator, boolean tieUseHashCode, boolean tieUp) {
+    public UnboundedNavigableBlockingQueue(Comparator<E> comparator, boolean tieUseHashCode, boolean tieUp) {
         this.set = new TreeSet<>(new EqualsTieBreakComparator<>(comparator, tieUseHashCode, tieUp));
     }
 
@@ -183,5 +182,17 @@ public class UnboundedPriorityBlockingQueue<E> extends AbstractQueue<E> implemen
     public boolean offer(E e, long timeout, TimeUnit unit) {
         this.add(e);
         return true;
+    }
+
+    //custom methods
+
+    @Override
+    public E pollLess(@NonNull E curr) {
+        this.lock.lock();
+        try {
+            return ((NavigableSet<E>) this.set.headSet(curr)).pollFirst();
+        } finally {
+            this.lock.unlock();
+        }
     }
 }

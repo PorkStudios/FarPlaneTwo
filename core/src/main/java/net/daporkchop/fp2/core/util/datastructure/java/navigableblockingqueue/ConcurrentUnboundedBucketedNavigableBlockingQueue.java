@@ -15,13 +15,13 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
-package net.daporkchop.fp2.core.util.datastructure;
+package net.daporkchop.fp2.core.util.datastructure.java.navigableblockingqueue;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.core.util.datastructure.NavigableBlockingQueue;
 import net.daporkchop.fp2.core.util.threading.locks.multi.MultiSemaphore;
 import net.daporkchop.fp2.core.util.threading.locks.multi.StampedSignaller;
 import net.daporkchop.fp2.core.util.threading.locks.multi.SyncAggregator;
@@ -45,13 +45,15 @@ import static java.util.Objects.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
- * Alternative to {@link UnboundedPriorityBlockingQueue} whose elements are distributed into multiple queue "buckets" with different priority levels.
+ * Alternative to {@link UnboundedNavigableBlockingQueue} whose elements are distributed into multiple queue "buckets" with different priority levels.
  * <p>
  * The relative order of elements within a bucket is undefined, although it is likely to be approximately insertion order.
  *
+ * @see ConcurrentUnboundedNavigableBlockingQueue
  * @author DaPorkchop_
  */
-public class ConcurrentUnboundedMultiPriorityBlockingQueue<E> extends AbstractQueue<E> implements BlockingQueue<E> {
+//TODO: don't store a constant reference to a bucket key inside the queue
+public class ConcurrentUnboundedBucketedNavigableBlockingQueue<E> extends AbstractQueue<E> implements NavigableBlockingQueue<E> {
     protected final NavigableMap<E, Bucket<E>> buckets;
     protected final Comparator<? super E> bucketingComparator;
 
@@ -61,7 +63,7 @@ public class ConcurrentUnboundedMultiPriorityBlockingQueue<E> extends AbstractQu
     /**
      * @param bucketingComparator the {@link Comparator} used to distribute elements into individually prioritized buckets
      */
-    public ConcurrentUnboundedMultiPriorityBlockingQueue(@NonNull Comparator<? super E> bucketingComparator) {
+    public ConcurrentUnboundedBucketedNavigableBlockingQueue(@NonNull Comparator<? super E> bucketingComparator) {
         this.buckets = new ConcurrentSkipListMap<>(bucketingComparator);
         this.bucketingComparator = bucketingComparator;
 
@@ -225,6 +227,7 @@ public class ConcurrentUnboundedMultiPriorityBlockingQueue<E> extends AbstractQu
 
     //custom methods
 
+    @Override
     public E pollLess(@NonNull E curr) {
         for (Bucket<E> bucket : this.buckets.headMap(curr).values()) { //try to poll() each bucket less than the given key in priority order
             E value = bucket.poll();
@@ -236,6 +239,7 @@ public class ConcurrentUnboundedMultiPriorityBlockingQueue<E> extends AbstractQu
         return null; //none of the buckets contained any values to poll
     }
 
+    @Override
     public E pollLess(@NonNull E curr, long timeout, TimeUnit unit) throws InterruptedException {
         long nanosTimeout = unit.toNanos(timeout);
         if (nanosTimeout <= 0L) { //timeout has already expired lol
@@ -265,6 +269,7 @@ public class ConcurrentUnboundedMultiPriorityBlockingQueue<E> extends AbstractQu
         } while (true);
     }
 
+    @Override
     public E takeLess(@NonNull E curr) throws InterruptedException {
         do {
             Syncs syncs = this.syncs;
@@ -289,7 +294,7 @@ public class ConcurrentUnboundedMultiPriorityBlockingQueue<E> extends AbstractQu
         protected final List<SyncOperation<?>> syncOperations;
 
         protected int binarySearchLessIndex(@NonNull E key) {
-            Comparator<? super E> bucketingComparator = ConcurrentUnboundedMultiPriorityBlockingQueue.this.bucketingComparator;
+            Comparator<? super E> bucketingComparator = ConcurrentUnboundedBucketedNavigableBlockingQueue.this.bucketingComparator;
             Bucket<E>[] buckets = this.buckets;
 
             int low = 0;

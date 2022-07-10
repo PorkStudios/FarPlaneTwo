@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.util.threading.locks.multi;
@@ -50,7 +49,7 @@ public class SyncAggregator {
 
         //try to see if any of the operations can succeed without having to create a state
         for (int i = 0; i < operationsCount; i++) {
-            if (operations.get(i).tryEarly()) { //the operation was able to be acquired successfully with tryEarly()!
+            if (operations.get(i).tryEarly()) { //the operation was able to be completed successfully with tryEarly()!
                 return i;
             }
         }
@@ -81,17 +80,17 @@ public class SyncAggregator {
         boolean interrupted = false;
         try {
             do {
-                //try to acquire each running operation
+                //try to complete each running operation
                 for (int i = 0; i < operationsCount; i++) {
-                    if (operations.get(i).tryAcquire(uncheckedCast(states[i]))) { //the operation was able to be acquired successfully, return it!
+                    if (operations.get(i).tryComplete(uncheckedCast(states[i]))) { //the operation was able to be completed successfully, return it!
                         return i;
                     }
                 }
 
-                //acquire failed! check every running operation to see if we need to park
+                //complete failed! check every running operation to see if we need to park
                 boolean shouldPark = true;
                 for (int i = 0; i < operationsCount; i++) {
-                    if (!operations.get(i).shouldParkAfterFailedAcquire(uncheckedCast(states[i]))) {
+                    if (!operations.get(i).shouldParkAfterFailedComplete(uncheckedCast(states[i]))) {
                         //we can only park if EVERY operation reports that it's safe to do so
                         shouldPark = false;
                     }
@@ -137,7 +136,7 @@ public class SyncAggregator {
 
         //try to see if any of the operations can succeed without having to create a state
         for (int i = 0; i < operationsCount; i++) {
-            if (operations.get(i).tryEarly()) { //the operation was able to be acquired successfully with tryEarly()!
+            if (operations.get(i).tryEarly()) { //the operation was able to be completed successfully with tryEarly()!
                 return i;
             }
         }
@@ -167,17 +166,17 @@ public class SyncAggregator {
 
         try {
             do {
-                //try to acquire each running operation
+                //try to complete each running operation
                 for (int i = 0; i < operationsCount; i++) {
-                    if (operations.get(i).tryAcquire(uncheckedCast(states[i]))) { //the operation was able to be acquired successfully, return it!
+                    if (operations.get(i).tryComplete(uncheckedCast(states[i]))) { //the operation was able to be completed successfully, return it!
                         return i;
                     }
                 }
 
-                //acquire failed! check every running operation to see if we need to park
+                //complete failed! check every running operation to see if we need to park
                 boolean shouldPark = true;
                 for (int i = 0; i < operationsCount; i++) {
-                    if (!operations.get(i).shouldParkAfterFailedAcquire(uncheckedCast(states[i]))) {
+                    if (!operations.get(i).shouldParkAfterFailedComplete(uncheckedCast(states[i]))) {
                         //we can only park if EVERY operation reports that it's safe to do so
                         shouldPark = false;
                     }
@@ -223,7 +222,7 @@ public class SyncAggregator {
 
         //try to see if any of the operations can succeed without having to create a state
         for (int i = 0; i < operationsCount; i++) {
-            if (operations.get(i).tryEarly()) { //the operation was able to be acquired successfully with tryEarly()!
+            if (operations.get(i).tryEarly()) { //the operation was able to be completed successfully with tryEarly()!
                 return OptionalInt.of(i);
             }
         }
@@ -254,9 +253,9 @@ public class SyncAggregator {
         try {
             long deadline = System.nanoTime() + nanosTimeout;
             do {
-                //try to acquire each running operation
+                //try to complete each running operation
                 for (int i = 0; i < operationsCount; i++) {
-                    if (operations.get(i).tryAcquire(uncheckedCast(states[i]))) { //the operation was able to be acquired successfully, return it!
+                    if (operations.get(i).tryComplete(uncheckedCast(states[i]))) { //the operation was able to be completed successfully, return it!
                         return OptionalInt.of(i);
                     }
                 }
@@ -266,10 +265,10 @@ public class SyncAggregator {
                     return OptionalInt.empty();
                 }
 
-                //acquire failed! check every running operation to see if we need to park
+                //complete failed! check every running operation to see if we need to park
                 boolean shouldPark = true;
                 for (int i = 0; i < operationsCount; i++) {
-                    if (!operations.get(i).shouldParkAfterFailedAcquire(uncheckedCast(states[i]))) {
+                    if (!operations.get(i).shouldParkAfterFailedComplete(uncheckedCast(states[i]))) {
                         //we can only park if EVERY operation reports that it's safe to do so
                         shouldPark = false;
                     }

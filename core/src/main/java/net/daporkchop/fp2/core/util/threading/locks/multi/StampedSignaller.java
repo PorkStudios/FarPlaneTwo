@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.util.threading.locks.multi;
@@ -27,18 +26,35 @@ import net.daporkchop.lib.unsafe.PUnsafe;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.LockSupport;
 
 /**
+ * A simple synchronization aid which allows threads to block until they receive a signal.
+ * <p>
+ * This is conceptually similar to both<br>
+ * <ul>
+ *     <li>{@link Object}'s {@link Object#wait()}/{@link Object#notify()}</li>
+ *     <li>{@link Lock}'s {@link Condition#await()}/{@link Condition#signal()}</li>
+ * </ul><br>
+ * except that it does not require waiters to hold any locks in order to await or send signals.
+ * <p>
+ * Additionally, it supports "stamps": arbitrary {@code long} tokens which are invalidated every time a signal is broadcast. Waiters can await invalidation of a specific stamp,
+ * allowing them to detect signals which may have been sent prior to retrieving the current stamp.
+ *
  * @author DaPorkchop_
  */
-//TODO: this isn't entirely perfect, but for now i don't care
+//TODO: this isn't entirely race-free, but for now i don't care
 public final class StampedSignaller {
     private static final long NODE_STATE_OFFSET = PUnsafe.pork_getOffset(Node.class, "state");
 
     private final AtomicLong generationCounter = new AtomicLong();
     private final Queue<Node> queue = new ConcurrentLinkedQueue<>();
 
+    /**
+     * Signals all waiters and invalidates the current stamp.
+     */
     public void signalAll() {
         this.generationCounter.incrementAndGet();
 
@@ -50,10 +66,16 @@ public final class StampedSignaller {
         }
     }
 
+    /**
+     * @return the current stamp
+     */
     public long stamp() {
         return this.generationCounter.get();
     }
 
+    /**
+     * @return a {@link SyncOperation} which will block until a signal is received
+     */
     public SyncOperation<?> prepareAwait() {
         return new SyncOperation<Node>() {
             @Override
@@ -69,31 +91,38 @@ public final class StampedSignaller {
             }
 
             @Override
-            protected boolean tryAcquire(Node node) {
+            protected boolean tryComplete(Node node) {
                 return node.state != Node.WAITING;
             }
 
             @Override
-            protected boolean shouldParkAfterFailedAcquire(Node node) {
+            protected boolean shouldParkAfterFailedComplete(Node node) {
                 return node.state == Node.WAITING;
             }
 
             @Override
-            protected void cancel(Node node) {
+            protected void disposeState(Node node) {
                 StampedSignaller.this.queue.remove(node);
             }
         };
     }
 
+    /**
+     * @return a {@link SyncOperation} which will block until the current stamp is invalidated
+     */
     public SyncOperation<?> prepareAwaitNow() {
         return this.prepareAwait(this.stamp());
     }
 
+    /**
+     * @param stamp the stamp to await invalidation of
+     * @return a {@link SyncOperation} which will block until the given stamp is invalidated
+     */
     public SyncOperation<?> prepareAwait(long stamp) {
         return new SyncOperation<Node>() {
             @Override
             protected boolean tryEarly() {
-                return false; //there's never anything to do
+                return StampedSignaller.this.generationCounter.get() != stamp;
             }
 
             @Override
@@ -104,17 +133,17 @@ public final class StampedSignaller {
             }
 
             @Override
-            protected boolean tryAcquire(Node node) {
+            protected boolean tryComplete(Node node) {
                 return node.state != Node.WAITING || StampedSignaller.this.generationCounter.get() != stamp;
             }
 
             @Override
-            protected boolean shouldParkAfterFailedAcquire(Node node) {
+            protected boolean shouldParkAfterFailedComplete(Node node) {
                 return node.state == Node.WAITING && StampedSignaller.this.generationCounter.get() == stamp;
             }
 
             @Override
-            protected void cancel(Node node) {
+            protected void disposeState(Node node) {
                 if (node.casState(Node.WAITING, Node.CANCELLED)) {
                     StampedSignaller.this.queue.remove(node);
                 }

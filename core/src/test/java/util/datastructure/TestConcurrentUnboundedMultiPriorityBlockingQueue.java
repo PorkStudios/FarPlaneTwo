@@ -15,12 +15,11 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package util.datastructure;
 
-import net.daporkchop.fp2.core.util.datastructure.ConcurrentUnboundedMultiPriorityBlockingQueue;
+import net.daporkchop.fp2.core.util.datastructure.java.navigableblockingqueue.ConcurrentUnboundedBucketedNavigableBlockingQueue;
 import net.daporkchop.lib.common.util.PorkUtil;
 import org.junit.jupiter.api.Test;
 
@@ -45,7 +44,7 @@ public class TestConcurrentUnboundedMultiPriorityBlockingQueue {
          * zzzz
          */
 
-        BlockingQueue<String> queue = new ConcurrentUnboundedMultiPriorityBlockingQueue<>(Comparator.comparingInt(str -> str.charAt(0)));
+        BlockingQueue<String> queue = new ConcurrentUnboundedBucketedNavigableBlockingQueue<>(Comparator.comparingInt(str -> str.charAt(0)));
 
         Thread thread = new Thread(() -> {
             try {
@@ -85,7 +84,7 @@ public class TestConcurrentUnboundedMultiPriorityBlockingQueue {
          * ffff
          */
 
-        ConcurrentUnboundedMultiPriorityBlockingQueue<String> queue = new ConcurrentUnboundedMultiPriorityBlockingQueue<>(Comparator.comparingInt(str -> str.charAt(0)));
+        ConcurrentUnboundedBucketedNavigableBlockingQueue<String> queue = new ConcurrentUnboundedBucketedNavigableBlockingQueue<>(Comparator.comparingInt(str -> str.charAt(0)));
 
         Thread thread = new Thread(() -> {
             try {
