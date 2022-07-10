@@ -21,8 +21,6 @@
 package util.datastructure;
 
 import net.daporkchop.fp2.core.util.datastructure.ConcurrentUnboundedMultiPriorityBlockingQueue;
-import net.daporkchop.fp2.core.util.threading.locks.multi.StampedSignaller;
-import net.daporkchop.fp2.core.util.threading.locks.multi.SyncAggregator;
 import net.daporkchop.lib.common.util.PorkUtil;
 import org.junit.jupiter.api.Test;
 
@@ -34,7 +32,19 @@ import java.util.concurrent.BlockingQueue;
  */
 public class TestConcurrentUnboundedMultiPriorityBlockingQueue {
     @Test
-    public void test() throws InterruptedException {
+    public void testOrdering() throws InterruptedException {
+        /*
+         * As printing will likely take longer than adding a single string to the queue, this should print out something along the lines of:
+         *
+         * jeff1
+         * asdf
+         * jeff2
+         * jeff3
+         * jeff4
+         * jeff5
+         * zzzz
+         */
+
         BlockingQueue<String> queue = new ConcurrentUnboundedMultiPriorityBlockingQueue<>(Comparator.comparingInt(str -> str.charAt(0)));
 
         Thread thread = new Thread(() -> {
@@ -42,10 +52,12 @@ public class TestConcurrentUnboundedMultiPriorityBlockingQueue {
                 while (true) {
                     String str = queue.take();
                     System.out.println(str);
-                    if ("exit".equals(str)) {
+                    if ("zzzz".equals(str)) {
                         return;
                     }
                 }
+            } catch (InterruptedException e) {
+                //swallow exception and exit quietly
             } catch (Throwable t) {
                 t.printStackTrace();
             }
@@ -58,41 +70,49 @@ public class TestConcurrentUnboundedMultiPriorityBlockingQueue {
         queue.add("jeff3");
         queue.add("jeff4");
         queue.add("jeff5");
-        queue.add("aeff");
-
-        PorkUtil.sleep(1000L);
-        thread.interrupt();
+        queue.add("asdf");
+        queue.add("zzzz");
 
         thread.join();
     }
 
     @Test
-    public void testSignaller() throws InterruptedException {
-        StampedSignaller signaller = new StampedSignaller();
+    public void testLess() throws InterruptedException {
+        /*
+         * This should print exactly the following:
+         *
+         * asdf
+         * ffff
+         */
 
-        long stamp = signaller.stamp();
-        signaller.signalAll();
-        SyncAggregator.awaitFirst(signaller.prepareAwait(stamp));
+        ConcurrentUnboundedMultiPriorityBlockingQueue<String> queue = new ConcurrentUnboundedMultiPriorityBlockingQueue<>(Comparator.comparingInt(str -> str.charAt(0)));
 
         Thread thread = new Thread(() -> {
             try {
                 while (true) {
-                    SyncAggregator.awaitFirst(signaller.prepareAwait());
-                    System.out.println("signalled");
+                    String str = queue.takeLess("gggg");
+                    System.out.println(str);
+                    if ("ffff".equals(str)) {
+                        return;
+                    }
                 }
+            } catch (InterruptedException e) {
+                //swallow exception and exit quietly
             } catch (Throwable t) {
                 t.printStackTrace();
             }
         });
         thread.start();
 
-        for (int i = 0; i < 5; i++) {
-            PorkUtil.sleep(100L);
-            System.out.println("signalling");
-            signaller.signalAll();
-        }
+        queue.add("jeff1");
+        queue.add("jeff2");
+        queue.add("jeff3");
+        queue.add("jeff4");
+        queue.add("jeff5");
+        queue.add("asdf");
+        queue.add("g");
+        queue.add("ffff");
 
-        thread.interrupt();
         thread.join();
     }
 }

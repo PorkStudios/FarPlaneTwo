@@ -24,6 +24,7 @@ import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.OptionalInt;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
@@ -43,13 +44,13 @@ public class SyncAggregator {
      * @param operations the {@link SyncOperation synchronization operations} to begin and wait for
      * @return the index of the first operation which was completed
      */
-    public static int awaitFirstUninterruptably(@NonNull SyncOperation<?>... operations) {
-        int operationsCount = operations.length;
+    public static int awaitFirstUninterruptably(@NonNull List<SyncOperation<?>> operations) {
+        int operationsCount = operations.size();
         checkArg(operationsCount > 0, "at least one operation must be given");
 
         //try to see if any of the operations can succeed without having to create a state
         for (int i = 0; i < operationsCount; i++) {
-            if (operations[i].tryEarly()) { //the operation was able to be acquired successfully with tryEarly()!
+            if (operations.get(i).tryEarly()) { //the operation was able to be acquired successfully with tryEarly()!
                 return i;
             }
         }
@@ -61,13 +62,13 @@ public class SyncAggregator {
             try {
                 //create a state instance for every operation
                 for (; stateCreationIndex < operationsCount; stateCreationIndex++) {
-                    states[stateCreationIndex] = operations[stateCreationIndex].createState();
+                    states[stateCreationIndex] = operations.get(stateCreationIndex).createState();
                 }
             } catch (Throwable t) {
                 //something went wrong, try to dispose as many state instances as possible
                 for (int i = 0; i < stateCreationIndex; i++) {
                     try {
-                        operations[i].disposeState(uncheckedCast(states[i]));
+                        operations.get(i).disposeState(uncheckedCast(states[i]));
                     } catch (Throwable t1) {
                         t.addSuppressed(t1);
                     } finally {
@@ -82,7 +83,7 @@ public class SyncAggregator {
             do {
                 //try to acquire each running operation
                 for (int i = 0; i < operationsCount; i++) {
-                    if (operations[i].tryAcquire(uncheckedCast(states[i]))) { //the operation was able to be acquired successfully, return it!
+                    if (operations.get(i).tryAcquire(uncheckedCast(states[i]))) { //the operation was able to be acquired successfully, return it!
                         return i;
                     }
                 }
@@ -90,7 +91,7 @@ public class SyncAggregator {
                 //acquire failed! check every running operation to see if we need to park
                 boolean shouldPark = true;
                 for (int i = 0; i < operationsCount; i++) {
-                    if (!operations[i].shouldParkAfterFailedAcquire(uncheckedCast(states[i]))) {
+                    if (!operations.get(i).shouldParkAfterFailedAcquire(uncheckedCast(states[i]))) {
                         //we can only park if EVERY operation reports that it's safe to do so
                         shouldPark = false;
                     }
@@ -112,7 +113,7 @@ public class SyncAggregator {
 
             //dispose all the created states
             for (int i = 0; i < operationsCount; i++) {
-                operations[i].disposeState(uncheckedCast(states[i]));
+                operations.get(i).disposeState(uncheckedCast(states[i]));
             }
             Arrays.fill(states, null);
         }
@@ -126,8 +127,8 @@ public class SyncAggregator {
      * @return the index of the first operation which was completed
      * @throws InterruptedException if the thread was interrupted while waiting
      */
-    public static int awaitFirst(@NonNull SyncOperation<?>... operations) throws InterruptedException {
-        int operationsCount = operations.length;
+    public static int awaitFirst(@NonNull List<SyncOperation<?>> operations) throws InterruptedException {
+        int operationsCount = operations.size();
         checkArg(operationsCount > 0, "at least one operation must be given");
 
         if (Thread.interrupted()) {
@@ -136,7 +137,7 @@ public class SyncAggregator {
 
         //try to see if any of the operations can succeed without having to create a state
         for (int i = 0; i < operationsCount; i++) {
-            if (operations[i].tryEarly()) { //the operation was able to be acquired successfully with tryEarly()!
+            if (operations.get(i).tryEarly()) { //the operation was able to be acquired successfully with tryEarly()!
                 return i;
             }
         }
@@ -148,13 +149,13 @@ public class SyncAggregator {
             try {
                 //create a state instance for every operation
                 for (; stateCreationIndex < operationsCount; stateCreationIndex++) {
-                    states[stateCreationIndex] = operations[stateCreationIndex].createState();
+                    states[stateCreationIndex] = operations.get(stateCreationIndex).createState();
                 }
             } catch (Throwable t) {
                 //something went wrong, try to dispose as many state instances as possible
                 for (int i = 0; i < stateCreationIndex; i++) {
                     try {
-                        operations[i].disposeState(uncheckedCast(states[i]));
+                        operations.get(i).disposeState(uncheckedCast(states[i]));
                     } catch (Throwable t1) {
                         t.addSuppressed(t1);
                     } finally {
@@ -168,7 +169,7 @@ public class SyncAggregator {
             do {
                 //try to acquire each running operation
                 for (int i = 0; i < operationsCount; i++) {
-                    if (operations[i].tryAcquire(uncheckedCast(states[i]))) { //the operation was able to be acquired successfully, return it!
+                    if (operations.get(i).tryAcquire(uncheckedCast(states[i]))) { //the operation was able to be acquired successfully, return it!
                         return i;
                     }
                 }
@@ -176,7 +177,7 @@ public class SyncAggregator {
                 //acquire failed! check every running operation to see if we need to park
                 boolean shouldPark = true;
                 for (int i = 0; i < operationsCount; i++) {
-                    if (!operations[i].shouldParkAfterFailedAcquire(uncheckedCast(states[i]))) {
+                    if (!operations.get(i).shouldParkAfterFailedAcquire(uncheckedCast(states[i]))) {
                         //we can only park if EVERY operation reports that it's safe to do so
                         shouldPark = false;
                     }
@@ -193,7 +194,7 @@ public class SyncAggregator {
         } finally {
             //dispose all the created states
             for (int i = 0; i < operationsCount; i++) {
-                operations[i].disposeState(uncheckedCast(states[i]));
+                operations.get(i).disposeState(uncheckedCast(states[i]));
             }
             Arrays.fill(states, null);
         }
@@ -207,8 +208,8 @@ public class SyncAggregator {
      * @return the index of the first operation which was completed
      * @throws InterruptedException if the thread was interrupted while waiting
      */
-    public static OptionalInt awaitFirst(long timeout, @NonNull TimeUnit unit, @NonNull SyncOperation<?>... operations) throws InterruptedException {
-        int operationsCount = operations.length;
+    public static OptionalInt awaitFirst(long timeout, @NonNull TimeUnit unit, @NonNull List<SyncOperation<?>> operations) throws InterruptedException {
+        int operationsCount = operations.size();
         checkArg(operationsCount > 0, "at least one operation must be given");
 
         if (Thread.interrupted()) {
@@ -222,7 +223,7 @@ public class SyncAggregator {
 
         //try to see if any of the operations can succeed without having to create a state
         for (int i = 0; i < operationsCount; i++) {
-            if (operations[i].tryEarly()) { //the operation was able to be acquired successfully with tryEarly()!
+            if (operations.get(i).tryEarly()) { //the operation was able to be acquired successfully with tryEarly()!
                 return OptionalInt.of(i);
             }
         }
@@ -234,13 +235,13 @@ public class SyncAggregator {
             try {
                 //create a state instance for every operation
                 for (; stateCreationIndex < operationsCount; stateCreationIndex++) {
-                    states[stateCreationIndex] = operations[stateCreationIndex].createState();
+                    states[stateCreationIndex] = operations.get(stateCreationIndex).createState();
                 }
             } catch (Throwable t) {
                 //something went wrong, try to dispose as many state instances as possible
                 for (int i = 0; i < stateCreationIndex; i++) {
                     try {
-                        operations[i].disposeState(uncheckedCast(states[i]));
+                        operations.get(i).disposeState(uncheckedCast(states[i]));
                     } catch (Throwable t1) {
                         t.addSuppressed(t1);
                     } finally {
@@ -255,7 +256,7 @@ public class SyncAggregator {
             do {
                 //try to acquire each running operation
                 for (int i = 0; i < operationsCount; i++) {
-                    if (operations[i].tryAcquire(uncheckedCast(states[i]))) { //the operation was able to be acquired successfully, return it!
+                    if (operations.get(i).tryAcquire(uncheckedCast(states[i]))) { //the operation was able to be acquired successfully, return it!
                         return OptionalInt.of(i);
                     }
                 }
@@ -268,7 +269,7 @@ public class SyncAggregator {
                 //acquire failed! check every running operation to see if we need to park
                 boolean shouldPark = true;
                 for (int i = 0; i < operationsCount; i++) {
-                    if (!operations[i].shouldParkAfterFailedAcquire(uncheckedCast(states[i]))) {
+                    if (!operations.get(i).shouldParkAfterFailedAcquire(uncheckedCast(states[i]))) {
                         //we can only park if EVERY operation reports that it's safe to do so
                         shouldPark = false;
                     }
@@ -285,7 +286,7 @@ public class SyncAggregator {
         } finally {
             //dispose all the created states
             for (int i = 0; i < operationsCount; i++) {
-                operations[i].disposeState(uncheckedCast(states[i]));
+                operations.get(i).disposeState(uncheckedCast(states[i]));
             }
             Arrays.fill(states, null);
         }

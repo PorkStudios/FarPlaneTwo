@@ -21,7 +21,6 @@
 package net.daporkchop.fp2.core.util.datastructure;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.core.util.threading.BlockingSupport;
 
 import java.util.AbstractQueue;
 import java.util.Collection;
@@ -102,7 +101,7 @@ public class ConcurrentUnboundedPriorityBlockingQueue<E> extends AbstractQueue<E
 
     @Override
     public E poll(long timeout, TimeUnit unit) throws InterruptedException {
-        return BlockingSupport.managedTryAcquire(this.lock, 1, timeout, unit) ? requireNonNull(this.map.pollFirstEntry().getKey()) : null;
+        return this.lock.tryAcquire(timeout, unit) ? requireNonNull(this.map.pollFirstEntry().getKey()) : null;
     }
 
     @Override

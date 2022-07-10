@@ -22,16 +22,17 @@ package net.daporkchop.fp2.core.util.datastructure;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.core.util.threading.BlockingSupport;
 import net.daporkchop.fp2.core.util.threading.locks.multi.MultiSemaphore;
 import net.daporkchop.fp2.core.util.threading.locks.multi.StampedSignaller;
 import net.daporkchop.fp2.core.util.threading.locks.multi.SyncAggregator;
 import net.daporkchop.fp2.core.util.threading.locks.multi.SyncOperation;
 
 import java.util.AbstractQueue;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.List;
 import java.util.NavigableMap;
 import java.util.OptionalInt;
 import java.util.Queue;
@@ -39,7 +40,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 
 import static java.util.Objects.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
@@ -53,15 +53,17 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 public class ConcurrentUnboundedMultiPriorityBlockingQueue<E> extends AbstractQueue<E> implements BlockingQueue<E> {
     protected final NavigableMap<E, Bucket<E>> buckets;
+    protected final Comparator<? super E> bucketingComparator;
 
     protected final StampedSignaller bucketAddedSignaller = new StampedSignaller();
-    protected volatile Syncs<E> syncs;
+    protected volatile Syncs syncs;
 
     /**
      * @param bucketingComparator the {@link Comparator} used to distribute elements into individually prioritized buckets
      */
     public ConcurrentUnboundedMultiPriorityBlockingQueue(@NonNull Comparator<? super E> bucketingComparator) {
         this.buckets = new ConcurrentSkipListMap<>(bucketingComparator);
+        this.bucketingComparator = bucketingComparator;
 
         this.rebuildSyncs();
     }
@@ -111,7 +113,7 @@ public class ConcurrentUnboundedMultiPriorityBlockingQueue<E> extends AbstractQu
             syncOperations[i + 1] = buckets[i].acquireOp;
         }
 
-        this.syncs = new Syncs<>(buckets, syncOperations);
+        this.syncs = new Syncs(buckets, Arrays.asList(syncOperations));
         this.bucketAddedSignaller.signalAll();
         syncOperations[0] = this.bucketAddedSignaller.prepareAwaitNow();
     }
@@ -144,7 +146,7 @@ public class ConcurrentUnboundedMultiPriorityBlockingQueue<E> extends AbstractQu
 
         long deadline = System.nanoTime() + nanosTimeout;
         do {
-            Syncs<E> syncs = this.syncs;
+            Syncs syncs = this.syncs;
             OptionalInt optionalIndex = SyncAggregator.awaitFirst(nanosTimeout, TimeUnit.NANOSECONDS, syncs.syncOperations);
             if (!optionalIndex.isPresent()) { //timeout has been reached
                 return null;
@@ -166,7 +168,7 @@ public class ConcurrentUnboundedMultiPriorityBlockingQueue<E> extends AbstractQu
     @Override
     public E take() throws InterruptedException {
         do {
-            Syncs<E> syncs = this.syncs;
+            Syncs syncs = this.syncs;
 
             int index = SyncAggregator.awaitFirst(syncs.syncOperations);
             if (index != 0) { //index 0 is reserved for bucketAddedSignaller
@@ -224,18 +226,91 @@ public class ConcurrentUnboundedMultiPriorityBlockingQueue<E> extends AbstractQu
     //custom methods
 
     public E pollLess(@NonNull E curr) {
-        throw new UnsupportedOperationException(); //TODO
+        for (Bucket<E> bucket : this.buckets.headMap(curr).values()) { //try to poll() each bucket less than the given key in priority order
+            E value = bucket.poll();
+            if (value != null) { //the bucket had a value available, return it
+                return value;
+            }
+        }
+
+        return null; //none of the buckets contained any values to poll
+    }
+
+    public E pollLess(@NonNull E curr, long timeout, TimeUnit unit) throws InterruptedException {
+        long nanosTimeout = unit.toNanos(timeout);
+        if (nanosTimeout <= 0L) { //timeout has already expired lol
+            return null;
+        }
+
+        long deadline = System.nanoTime() + nanosTimeout;
+        do {
+            Syncs syncs = this.syncs;
+
+            int upperBoundIndex = syncs.binarySearchLessIndex(curr) + 1;
+            OptionalInt optionalIndex = SyncAggregator.awaitFirst(nanosTimeout, TimeUnit.NANOSECONDS, syncs.syncOperations.subList(0, upperBoundIndex));
+            if (!optionalIndex.isPresent()) { //timeout has been reached
+                return null;
+            }
+
+            int index = optionalIndex.getAsInt();
+            if (index != 0) { //index 0 is reserved for bucketAddedSignaller
+                Bucket<E> bucket = syncs.buckets[index - 1];
+                return requireNonNull(bucket.queue.poll());
+            }
+
+            nanosTimeout = deadline - System.nanoTime();
+            if (nanosTimeout <= 0L) { //timeout has been reached
+                return null;
+            }
+        } while (true);
+    }
+
+    public E takeLess(@NonNull E curr) throws InterruptedException {
+        do {
+            Syncs syncs = this.syncs;
+
+            int upperBoundIndex = syncs.binarySearchLessIndex(curr) + 1;
+            int index = SyncAggregator.awaitFirst(syncs.syncOperations.subList(0, upperBoundIndex));
+            if (index != 0) { //index 0 is reserved for bucketAddedSignaller
+                Bucket<E> bucket = syncs.buckets[index - 1];
+                return requireNonNull(bucket.queue.poll());
+            }
+        } while (true);
     }
 
     /**
      * @author DaPorkchop_
      */
     @RequiredArgsConstructor
-    protected static class Syncs<E> {
+    protected class Syncs {
         @NonNull
         protected final Bucket<E>[] buckets;
         @NonNull
-        protected final SyncOperation<?>[] syncOperations;
+        protected final List<SyncOperation<?>> syncOperations;
+
+        protected int binarySearchLessIndex(@NonNull E key) {
+            Comparator<? super E> bucketingComparator = ConcurrentUnboundedMultiPriorityBlockingQueue.this.bucketingComparator;
+            Bucket<E>[] buckets = this.buckets;
+
+            int low = 0;
+            int high = buckets.length - 1;
+
+            while (low <= high) {
+                int mid = (low + high) >>> 1;
+                int cmp = bucketingComparator.compare(buckets[mid].key, key);
+                if (cmp < 0) {
+                    low = mid + 1;
+                } else if (cmp > 0) {
+                    high = mid - 1;
+                } else {
+                    return mid; //key found
+                }
+            }
+
+            //key not found
+            //return -(low + 1);
+            return low;
+        }
     }
 
     /**
@@ -294,7 +369,7 @@ public class ConcurrentUnboundedMultiPriorityBlockingQueue<E> extends AbstractQu
 
         @Override
         public E poll(long timeout, TimeUnit unit) throws InterruptedException {
-            return BlockingSupport.managedTryAcquire(this.lock, 1, timeout, unit) ? requireNonNull(this.queue.poll()) : null;
+            return this.lock.tryAcquire(timeout, unit) ? requireNonNull(this.queue.poll()) : null;
         }
 
         @Override

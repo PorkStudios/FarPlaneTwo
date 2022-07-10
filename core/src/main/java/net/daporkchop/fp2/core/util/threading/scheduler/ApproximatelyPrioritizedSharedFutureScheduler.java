@@ -21,7 +21,7 @@
 package net.daporkchop.fp2.core.util.threading.scheduler;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.core.util.datastructure.ConcurrentUnboundedPriorityBlockingQueue;
+import net.daporkchop.fp2.core.util.datastructure.ConcurrentUnboundedMultiPriorityBlockingQueue;
 import net.daporkchop.fp2.core.util.threading.workergroup.WorkerGroupBuilder;
 import net.daporkchop.lib.common.util.PorkUtil;
 
@@ -34,7 +34,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.LockSupport;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -98,7 +97,7 @@ public class ApproximatelyPrioritizedSharedFutureScheduler<P, V> extends SharedF
 
     @Override
     protected BlockingQueue<SharedFutureScheduler<P, V>.Task> createTaskQueue() {
-        return new ConcurrentUnboundedPriorityBlockingQueue<>();
+        return new ConcurrentUnboundedMultiPriorityBlockingQueue<>((a, b) -> this.initialComparator.compare(a.param, b.param));
     }
 
     @Override
@@ -125,18 +124,11 @@ public class ApproximatelyPrioritizedSharedFutureScheduler<P, V> extends SharedF
     }
 
     @Override
-    protected SharedFutureScheduler<P, V>.Task pollSingleTask() {
+    protected SharedFutureScheduler<P, V>.Task pollSingleTask() throws InterruptedException {
         Deque<SharedFutureScheduler<P, V>.Task> recursionStack = this.recursionStack.get();
         Task parent = uncheckedCast(recursionStack.peekFirst());
         if (parent != null) { //this is a recursive task! we should make sure that the task we get is less than the current one
-            Task polledTask = PorkUtil.<ConcurrentUnboundedPriorityBlockingQueue<Task>>uncheckedCast(this.queue).pollLess(parent);
-            if (polledTask == null) {
-                //sleep to avoid high CPU while spinning...
-                //this is actually pretty yucky, but unfortunately i don't see any way to avoid having to spin here other than making some kind of semaphore which
-                //  is somehow aware of key ranges somehow.
-                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1L));
-            }
-            return polledTask;
+            return PorkUtil.<ConcurrentUnboundedMultiPriorityBlockingQueue<Task>>uncheckedCast(this.queue).pollLess(parent, 1L, TimeUnit.SECONDS);
         } else {
             return super.pollSingleTask();
         }
