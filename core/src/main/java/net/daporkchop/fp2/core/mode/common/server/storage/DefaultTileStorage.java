@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.common.server.storage;
@@ -66,6 +65,8 @@ import static net.daporkchop.fp2.core.mode.api.tile.ITileMetadata.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
+ * Default implementation of {@link FTileStorage}.
+ *
  * @author DaPorkchop_
  */
 public class DefaultTileStorage<POS extends IFarPos, T extends IFarTile> implements FTileStorage<POS, T> {
@@ -416,7 +417,8 @@ public class DefaultTileStorage<POS extends IFarPos, T extends IFarTile> impleme
                         : TIMESTAMP_BLANK;
 
                 if (timestamp == TIMESTAMP_BLANK //the tile doesn't exist, so we can't mark it as dirty
-                    || dirtyTimestamp <= timestamp || dirtyTimestamp <= existingDirtyTimestamp) { //the new dirty timestamp isn't newer than the existing one, so we can't replace it
+                    || dirtyTimestamp <= timestamp
+                    || dirtyTimestamp <= existingDirtyTimestamp) { //the new dirty timestamp isn't newer than the existing one, so we can't replace it
                     //skip this position
                     continue;
                 }

@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.common.server.tracking;
@@ -56,10 +55,71 @@ import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
+ * Base implementation of {@link IFarTrackerManager}.
+ * <p>
+ * This provides the generic functionality for loading and unloading tiles, shares tile handles between {@link IFarTracker tracker}s with overlapping ranges, and broadcasts
+ * tile updates to listening {@link IFarTracker tracker}s.
+ *
  * @author DaPorkchop_
+ * @see AbstractTracker
  */
 @Getter
 public abstract class AbstractTrackerManager<POS extends IFarPos, T extends IFarTile> implements IFarTrackerManager<POS, T>, FTileStorage.Listener<POS, T> {
+    /*
+     * Implementation notes:
+     *
+     * Each tile which is being tracked by at least one tracker is assigned an Entry, which is inserted into the 'entries' ConcurrentHashMap. Entries keep a set of players
+     * which are tracking them, as well as a separate set of players which are waiting to receive the tile for the first time.
+     *
+     * This implementation is very tightly coupled with AbstractTracker, especially with regards to synchronization.
+     *
+     * Outline of various operations:
+     * - AbstractTrackerManager#beginTracking():
+     *       ├─ConcurrentHashMap#compute(pos) (synchronizes on hash table bucket)
+     *       │ ├─if entry exists at pos:
+     *       │ │ └─try to acquire entry's lock, return existing entry if successful, abort and spin on ConcurrentHashMap#compute(pos) if unsuccessful until we succeed
+     *       │ └─else:
+     *       │   └─create new entry, acquire its lock and return it
+     *       │ (we now hold only the entry's lock)
+     *       ├─add tracker to entry's "all trackers" and "trackers waiting for load" set
+     *       ├─if tile is not already queued for load
+     *       │ ├─get a new CompletableFuture to load the tile from the tile provider
+     *       │ └─if CompletableFuture is already completed (-> Entry#tileLoaded())
+     *       │   ├─cancel CompletableFuture (noop) and set it to null; take a snapshot of the tile's contents
+     *       │   ├─invoke AbstractTracker#notifyChanged() for "all trackers"/"trackers waiting for load" depending on timestamp value
+     *       │   ├─clear "trackers waiting for load" set
+     *       │   └─invoke Entry#checkDirty()
+     *       └─release entry's lock
+     *
+     * - AbstractTrackerManager#stopTracking():
+     *       └─ConcurrentHashMap#compute(pos) (synchronizes on hash table bucket)
+     *         ├─if entry exists at pos:
+     *         │ ├─try to acquire entry's lock, abort and spin on ConcurrentHashMap#compute(pos) if unsuccessful until we succeed
+     *         │ │ (we now hold both the hash table bucket's the entry's lock)
+     *         │ ├─remove tracker from entry's "all trackers" set
+     *         │ ├─try to remove tracker from entry's "trackers waiting for load" set, send tile unload packet to client if successful
+     *         │ ├─if "all trackers" set is empty:
+     *         │ │ ├─cancel and clear updateFuture, if any
+     *         │ │ └─remove this entry from manager's entries map
+     *         │ └─release entry's lock
+     *         └─else:
+     *           └─throw exception
+     *
+     * - AbstractTrackerManager#tileLoaded():
+     *       ├─ConcurrentHashMap#compute(pos) (synchronizes on hash table bucket)
+     *       │ ├─if entry exists at pos:
+     *       │ │ └─try to acquire entry's lock, return existing entry if successful, abort and spin on ConcurrentHashMap#compute(pos) if unsuccessful until we succeed
+     *       │ └─else:
+     *       │   └─return from AbstractTrackerManager#tileLoaded()
+     *       │ (we now hold only the entry's lock)
+     *       ├─if loadFuture is set, cancel it (possibly noop) and set it to null; take a snapshot of the tile's contents
+     *       ├─invoke AbstractTracker#notifyChanged() for "all trackers"/"trackers waiting for load" depending on timestamp value
+     *       ├─clear "trackers waiting for load" set
+     *       ├─invoke Entry#checkDirty()
+     *       └─release entry's lock
+     *
+     * ...to be continued...
+     */
     protected final IFarTileProvider<POS, T> tileProvider;
 
     protected final Map<POS, Entry> entries = new ConcurrentHashMap<>();
@@ -242,6 +302,10 @@ public abstract class AbstractTrackerManager<POS extends IFarPos, T extends IFar
         @Override
         public void run() {
             do {
+                //make sure spin is reset to false: if it's true and the entry is removed from before the next iteration, we'll be stuck spinning forever as apply() will
+                //  never be invoked
+                this.spin = false;
+
                 AbstractTrackerManager.this.entries.computeIfPresent(this.pos, this);
             } while (this.spin);
 

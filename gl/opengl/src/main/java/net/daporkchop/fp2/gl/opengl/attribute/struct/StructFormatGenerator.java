@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.attribute.struct;
@@ -171,7 +170,7 @@ public class StructFormatGenerator {
                         mv.visitVarInsn(ALOAD, 2);
                         mv.visitVarInsn(LLOAD, 3);
                         mv.visitLdcInsn(layout.stride());
-                        mv.visitMethodInsn(INVOKEVIRTUAL, getInternalName(GLBuffer.class), "upload", getMethodDescriptor(VOID_TYPE, LONG_TYPE, LONG_TYPE), false);
+                        mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLBuffer.class), "upload", getMethodDescriptor(VOID_TYPE, LONG_TYPE, LONG_TYPE), true);
                     },
                     () -> {
                         //free direct buffer
@@ -257,7 +256,7 @@ public class StructFormatGenerator {
                         mv.visitVarInsn(ALOAD, 2);
                         mv.visitVarInsn(LLOAD, 3);
                         mv.visitVarInsn(LLOAD, 5);
-                        mv.visitMethodInsn(INVOKEVIRTUAL, getInternalName(GLBuffer.class), "upload", getMethodDescriptor(VOID_TYPE, LONG_TYPE, LONG_TYPE), false);
+                        mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLBuffer.class), "upload", getMethodDescriptor(VOID_TYPE, LONG_TYPE, LONG_TYPE), true);
                     },
                     () -> {
                         //free direct buffer

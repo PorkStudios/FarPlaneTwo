@@ -22,6 +22,7 @@ package net.daporkchop.fp2.core.util.threading.scheduler;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import net.daporkchop.fp2.core.util.threading.BlockingSupport;
 import net.daporkchop.fp2.core.util.threading.workergroup.WorkerGroup;
 import net.daporkchop.fp2.core.util.threading.workergroup.WorkerGroupBuilder;
@@ -394,7 +395,13 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
             throw new SchedulerClosedError();
         }
 
-        Task task = this.pollSingleTask();
+        Task task;
+        try {
+            task = BlockingSupport.managedBlockUnchecked(this::pollSingleTask);
+        } catch (InterruptedException e) { //the thread should only be interrupted by BlockingSupport, which should only be used when shutting down
+            throw new SchedulerClosedError(e);
+        }
+
         if (task == null //queue is empty
             || !this.beginTask(task)) { //we lost the "race" to begin executing the task
             return;
@@ -403,14 +410,10 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
         this.executeTask(task);
     }
 
-    protected Task pollSingleTask() {
-        try {
-            //poll the queue, but don't wait indefinitely because we need to be able to exit if the executor stops running.
-            // we don't want to use interrupts because they can cause unwanted side-effects (such as closing NIO channels).
-            return this.queue.poll(1L, TimeUnit.SECONDS);
-        } catch (InterruptedException e) { //the thread should only be interrupted by BlockingSupport, which should only be used when shutting down
-            throw new SchedulerClosedError(e);
-        }
+    protected Task pollSingleTask() throws InterruptedException {
+        //poll the queue, but don't wait indefinitely because we need to be able to exit if the executor stops running.
+        // we don't want to use interrupts because they can cause unwanted side-effects (such as closing NIO channels).
+        return this.queue.poll(1L, TimeUnit.SECONDS);
     }
 
     protected void executeTask(@NonNull Task initialTask) {
@@ -672,6 +675,7 @@ public class SharedFutureScheduler<P, V> implements Scheduler<P, V>, Runnable {
         }
 
         @Override
+        @SneakyThrows(InterruptedException.class)
         public V join() {
             if (SharedFutureScheduler.this.group.threads().contains(Thread.currentThread())) {
                 //we're on a worker thread, which means this task is being waited on recursively!

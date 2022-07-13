@@ -15,13 +15,12 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
-package net.daporkchop.fp2.core.util.datastructure;
+package net.daporkchop.fp2.core.util.datastructure.java.navigableblockingqueue;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.core.util.threading.BlockingSupport;
+import net.daporkchop.fp2.core.util.datastructure.NavigableBlockingQueue;
 
 import java.util.AbstractQueue;
 import java.util.Collection;
@@ -30,7 +29,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.NoSuchElementException;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -38,19 +36,20 @@ import java.util.concurrent.TimeUnit;
 import static java.util.Objects.*;
 
 /**
- * Alternative to {@link UnboundedPriorityBlockingQueue} with better performance under high concurrency.
+ * Alternative to {@link UnboundedNavigableBlockingQueue} with better performance under high concurrency.
  *
  * @author DaPorkchop_
+ * @see ConcurrentUnboundedBucketedNavigableBlockingQueue
  */
-public class ConcurrentUnboundedPriorityBlockingQueue<E> extends AbstractQueue<E> implements BlockingQueue<E> {
+public class ConcurrentUnboundedNavigableBlockingQueue<E> extends AbstractQueue<E> implements NavigableBlockingQueue<E> {
     protected final Semaphore lock = new Semaphore(0);
     protected final NavigableMap<E, Boolean> map;
 
-    public ConcurrentUnboundedPriorityBlockingQueue() {
+    public ConcurrentUnboundedNavigableBlockingQueue() {
         this.map = new ConcurrentSkipListMap<>();
     }
 
-    public ConcurrentUnboundedPriorityBlockingQueue(@NonNull Comparator<E> comparator) {
+    public ConcurrentUnboundedNavigableBlockingQueue(@NonNull Comparator<E> comparator) {
         this.map = new ConcurrentSkipListMap<>(comparator);
     }
 
@@ -102,7 +101,7 @@ public class ConcurrentUnboundedPriorityBlockingQueue<E> extends AbstractQueue<E
 
     @Override
     public E poll(long timeout, TimeUnit unit) throws InterruptedException {
-        return BlockingSupport.managedTryAcquire(this.lock, 1, timeout, unit) ? requireNonNull(this.map.pollFirstEntry().getKey()) : null;
+        return this.lock.tryAcquire(timeout, unit) ? requireNonNull(this.map.pollFirstEntry().getKey()) : null;
     }
 
     @Override
@@ -127,6 +126,10 @@ public class ConcurrentUnboundedPriorityBlockingQueue<E> extends AbstractQueue<E
 
     @Override
     public E peek() {
+        if (this.map.isEmpty()) { //fast-track in case of an empty map
+            return null;
+        }
+
         try {
             return this.map.firstKey();
         } catch (NoSuchElementException e) { //set is empty
@@ -155,6 +158,7 @@ public class ConcurrentUnboundedPriorityBlockingQueue<E> extends AbstractQueue<E
 
     //custom methods
 
+    @Override
     public E pollLess(@NonNull E curr) {
         if (this.lock.tryAcquire()) {
             Map.Entry<E, Boolean> entry = ((NavigableMap<E, Boolean>) this.map.headMap(curr)).pollFirstEntry();

@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.command;
@@ -176,18 +175,18 @@ public class CommandBufferBuilderImpl extends AbstractCommandBufferBuilder {
             entryVisitor.visitMethodInsn(INVOKEVIRTUAL, CLASS_NAME, executeMethodName, getMethodDescriptor(VOID_TYPE, getType(GLAPI.class)), false);
 
             //restore all affected OpenGL properties from their saved values
-            if (GLExtension.GL_ARB_compatibility.supported(this.gl)) { //restore old attributes from the legacy attribute stack, if possible
-                //api.glPopClientAttrib();
-                entryVisitor.visitVarInsn(ALOAD, 1);
-                entryVisitor.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glPopClientAttrib", getMethodDescriptor(VOID_TYPE), true);
-
-                //api.glPopAttrib();
-                entryVisitor.visitVarInsn(ALOAD, 1);
-                entryVisitor.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glPopAttrib", getMethodDescriptor(VOID_TYPE), true);
-            }
             state.properties()
                     .filter(property -> !GLExtension.GL_ARB_compatibility.supported(this.gl) || !property.canBackupRestoreToLegacyAttributeStack())
                     .forEach(property -> property.restore(entryVisitor, 1, bufferLvtIndex, baseLvts.poll()));
+            if (GLExtension.GL_ARB_compatibility.supported(this.gl)) { //restore old attributes from the legacy attribute stack, if possible
+                //api.glPopAttrib();
+                entryVisitor.visitVarInsn(ALOAD, 1);
+                entryVisitor.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glPopAttrib", getMethodDescriptor(VOID_TYPE), true);
+
+                //api.glPopClientAttrib();
+                entryVisitor.visitVarInsn(ALOAD, 1);
+                entryVisitor.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glPopClientAttrib", getMethodDescriptor(VOID_TYPE), true);
+            }
         } else {
             //invoke execute(GLAPI)
             entryVisitor.visitVarInsn(ALOAD, 0);
