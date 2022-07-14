@@ -17,47 +17,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_16.server.world;
+package net.daporkchop.fp2.impl.mc.forge1_16.asm.interfaz.server;
 
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.core.server.world.TerrainGeneratorInfo;
-import net.daporkchop.fp2.impl.mc.forge1_16.server.world.level.FLevelServer1_16;
-import net.minecraft.world.server.ServerWorld;
+import net.daporkchop.fp2.impl.mc.forge1_16.server.world.FWorldServer1_16;
+
+import java.util.Optional;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public class TerrainGeneratorInfo1_16 implements TerrainGeneratorInfo {
-    @NonNull
-    protected final FLevelServer1_16 level;
-    @NonNull
-    protected final ServerWorld world;
+public interface IMixinMinecraftServer1_16 {
+    void fp2_initWorldServer();
 
-    @Override
-    public FLevelServer1_16 world() {
-        return this.level;
-    }
+    void fp2_closeWorldServer();
 
-    @Override
-    public Object implGenerator() {
-        return this.world.getChunkSource().getGenerator();
-    }
-
-    @Override
-    public String generator() {
-        //TODO: this is dumb
-        return this.world.getServer().registryAccess().dimensionTypes().getResourceKey(this.world.dimensionType()).get().location().toString();
-    }
-
-    @Override
-    public String options() {
-        return ""; //TODO: this is always empty
-    }
-
-    @Override
-    public long seed() {
-        return this.world.getSeed();
-    }
+    Optional<FWorldServer1_16> fp2_worldServer();
 }

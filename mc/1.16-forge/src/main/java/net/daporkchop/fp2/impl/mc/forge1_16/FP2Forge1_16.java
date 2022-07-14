@@ -15,12 +15,13 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_16;
 
+import lombok.NonNull;
 import net.daporkchop.fp2.api.event.FEventBus;
+import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.debug.FP2Debug;
@@ -32,6 +33,7 @@ import net.daporkchop.fp2.impl.mc.forge1_16.network.FP2Network1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.server.FP2Server1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.util.I18n1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.util.ParallelDispatchEventAsFutureExecutor1_16;
+import net.minecraft.world.World;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
@@ -57,6 +59,10 @@ import static net.daporkchop.fp2.core.debug.FP2Debug.*;
 @Mod(MODID)
 public final class FP2Forge1_16 extends FP2Core {
     public static boolean INITIALIZED = false; //TODO: this is a nasty hack
+
+    public static Identifier getIdentifierForWorld(@NonNull World world) {
+        return Identifier.from(world.dimension().location().toString());
+    }
 
     private FP2Client1_16 client;
     private FP2Server1_16 server;
@@ -114,6 +120,10 @@ public final class FP2Forge1_16 extends FP2Core {
     @SubscribeEvent
     public void processIMC(InterModProcessEvent event) {
     }
+
+    //
+    // FP2Core
+    //
 
     @Override
     public boolean hasClient() {

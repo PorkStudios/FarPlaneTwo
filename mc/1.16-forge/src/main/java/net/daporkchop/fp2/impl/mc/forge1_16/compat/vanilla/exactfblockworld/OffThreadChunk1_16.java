@@ -15,14 +15,13 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_16.compat.vanilla.exactfblockworld;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.api.world.FBlockWorld;
+import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.lib.common.util.PArrays;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -42,7 +41,7 @@ import java.util.stream.IntStream;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
- * A container around all the data in a chunk which is relevant to the exact {@link FBlockWorld} implementation.
+ * A container around all the data in a chunk which is relevant to the exact {@link FBlockLevel} implementation.
  * <p>
  * Using my own class for this serves two purposes:<br>
  * <ul>

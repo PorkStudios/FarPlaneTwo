@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_16.network;
@@ -93,7 +92,7 @@ public class FP2Network1_16 {
                         },
                         (packet, contextSupplier) -> {
                             NetworkEvent.Context context = contextSupplier.get();
-                            ((IMixinClientPlayNetHandler1_16) context.getNetworkManager().getPacketListener()).fp2_farPlayerClient().fp2_IFarPlayerClient_handle(packet);
+                            ((IMixinClientPlayNetHandler1_16) context.getNetworkManager().getPacketListener()).fp2_playerClient().get().handle(packet);
                             context.setPacketHandled(true);
                         },
                         Optional.of(NetworkDirection.PLAY_TO_CLIENT));

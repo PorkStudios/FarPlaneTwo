@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_16.asm.core.world.server;
@@ -86,7 +85,7 @@ public abstract class MixinServerChunkProvider1_16 implements IMixinServerChunkP
             require = 1, allow = 1)
     private CompletableFuture<IChunk> fp2_getChunk_redirectToFP2Executor(Supplier<IChunk> supplier, Executor executor) {
         //redirect tasks to the fp2 worker manager if current thread belongs to an fp2 worker group
-        WorkerManager workerManager = ((IMixinServerWorld1_16) this.level).fp2_farWorldServer().fp2_IFarWorld_workerManager();
+        WorkerManager workerManager = ((IMixinServerWorld1_16) this.level).fp2_levelServer().workerManager();
         if (workerManager.belongsToWorkerGroup(Thread.currentThread())) {
             //print warning if not already printed
             if (!FP2_WORKERTHREAD_GETCHUNK_WARNING) {

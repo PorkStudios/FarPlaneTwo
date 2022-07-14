@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_16.compat.vanilla.exactfblockworld;
@@ -24,10 +23,10 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.core.minecraft.util.threading.asynccache.AsyncCacheNBT;
-import net.daporkchop.fp2.core.minecraft.world.chunks.AbstractChunksExactFBlockWorldHolder;
-import net.daporkchop.fp2.core.minecraft.world.chunks.AbstractPrefetchedChunksExactFBlockWorld;
+import net.daporkchop.fp2.core.minecraft.world.chunks.AbstractChunksExactFBlockLevelHolder;
+import net.daporkchop.fp2.core.minecraft.world.chunks.AbstractPrefetchedChunksExactFBlockLevel;
 import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.util.datastructure.Datastructures;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSegtreeSet;
 import net.daporkchop.fp2.core.util.threading.futurecache.IAsyncCache;
@@ -35,6 +34,7 @@ import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.world.chunk.storage.ATChunkLo
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.world.server.ATChunkManager1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.interfaz.world.chunk.storage.IMixinIOWorker1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.interfaz.world.server.IMixinServerWorld1_16;
+import net.daporkchop.fp2.impl.mc.forge1_16.server.world.level.FLevelServer1_16;
 import net.daporkchop.lib.common.function.throwing.ERunnable;
 import net.daporkchop.lib.math.vector.Vec2i;
 import net.minecraft.nbt.CompoundNBT;
@@ -53,17 +53,17 @@ import java.util.List;
 /**
  * @author DaPorkchop_
  */
-public class VanillaExactFBlockWorldHolder1_16 extends AbstractChunksExactFBlockWorldHolder<OffThreadChunk1_16> {
-    public VanillaExactFBlockWorldHolder1_16(@NonNull ServerWorld world) {
-        super(((IMixinServerWorld1_16) world).fp2_farWorldServer(), 4);
+public class VanillaExactFBlockLevelHolder1_16 extends AbstractChunksExactFBlockLevelHolder<OffThreadChunk1_16> {
+    public VanillaExactFBlockLevelHolder1_16(@NonNull FLevelServer1_16 level) {
+        super(level, 4);
     }
 
     @Override
-    protected NDimensionalIntSegtreeSet createChunksExistIndex(@NonNull IFarWorldServer world) {
+    protected NDimensionalIntSegtreeSet createChunksExistIndex(@NonNull IFarLevelServer level) {
         return Datastructures.INSTANCE.nDimensionalIntSegtreeSet()
                 .dimensions(2)
                 .threadSafe(true)
-                .initialPoints(() -> ((IMixinIOWorker1_16) ((ATChunkLoader1_16) ((ServerWorld) world.fp2_IFarWorld_implWorld()).getChunkSource().chunkMap).getWorker()).fp2_IOWorker_listChunks()
+                .initialPoints(() -> ((IMixinIOWorker1_16) ((ATChunkLoader1_16) ((ServerWorld) level.implLevel()).getChunkSource().chunkMap).getWorker()).fp2_IOWorker_listChunks()
                         //this doesn't filter out chunks that aren't fully generated, but including those would make iteration massively slower. i'll just take the performance
                         //  hit of having to try to load a bunch of not-quite-fully-generated chunks into the cache during runtime, at least until i make the segment tree lazily
                         //  initialized.
@@ -73,13 +73,13 @@ public class VanillaExactFBlockWorldHolder1_16 extends AbstractChunksExactFBlock
     }
 
     @Override
-    protected AsyncCacheNBT<Vec2i, ?, OffThreadChunk1_16, ?> createChunkCache(@NonNull IFarWorldServer world) {
-        return new ChunkCache((ServerWorld) world.fp2_IFarWorld_implWorld());
+    protected AsyncCacheNBT<Vec2i, ?, OffThreadChunk1_16, ?> createChunkCache(@NonNull IFarLevelServer level) {
+        return new ChunkCache((ServerWorld) level.implLevel());
     }
 
     @Override
-    protected AbstractPrefetchedChunksExactFBlockWorld<OffThreadChunk1_16> prefetchedWorld(boolean generationAllowed, @NonNull List<OffThreadChunk1_16> chunks) {
-        return new PrefetchedChunksFBlockWorld1_16(this, generationAllowed, chunks);
+    protected AbstractPrefetchedChunksExactFBlockLevel<OffThreadChunk1_16> prefetchedWorld(boolean generationAllowed, @NonNull List<OffThreadChunk1_16> chunks) {
+        return new PrefetchedChunksFBlockLevel1_16(this, generationAllowed, chunks);
     }
 
     @FEventHandler
@@ -146,7 +146,7 @@ public class VanillaExactFBlockWorldHolder1_16 extends AbstractChunksExactFBlock
 
         @Override
         protected void triggerGeneration(@NonNull Vec2i key, @NonNull Object param) {
-            ((IMixinServerWorld1_16) this.world).fp2_farWorldServer().fp2_IFarWorld_workerManager().workExecutor().run((ERunnable) () -> {
+            ((IMixinServerWorld1_16) this.world).fp2_levelServer().workerManager().workExecutor().run((ERunnable) () -> {
                 int x = key.x();
                 int z = key.y();
 

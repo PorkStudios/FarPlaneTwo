@@ -15,11 +15,13 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_16.asm.core.server;
 
+import net.daporkchop.fp2.impl.mc.forge1_16.FP2Forge1_16;
+import net.daporkchop.fp2.impl.mc.forge1_16.asm.interfaz.server.IMixinMinecraftServer1_16;
+import net.daporkchop.fp2.impl.mc.forge1_16.server.world.FWorldServer1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.util.threading.futureexecutor.ServerThreadMarkedFutureExecutor1_16;
 import net.minecraft.server.MinecraftServer;
 import org.spongepowered.asm.mixin.Mixin;
@@ -28,6 +30,10 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.Optional;
+
+import static net.daporkchop.fp2.core.FP2Core.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
@@ -35,15 +41,41 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 @Mixin(MinecraftServer.class)
 @SuppressWarnings("deprecation")
-public abstract class MixinMinecraftServer1_16 implements ServerThreadMarkedFutureExecutor1_16.Holder {
+public abstract class MixinMinecraftServer1_16 implements IMixinMinecraftServer1_16, ServerThreadMarkedFutureExecutor1_16.Holder {
     @Unique
     private ServerThreadMarkedFutureExecutor1_16 fp2_executor;
+
+    @Unique
+    private FWorldServer1_16 fp2_worldServer;
 
     @Inject(method = "Lnet/minecraft/server/MinecraftServer;<init>*",
             at = @At("RETURN"),
             require = 1)
     private void fp2_$init$_constructMarkedExecutor(CallbackInfo ci) {
         this.fp2_executor = new ServerThreadMarkedFutureExecutor1_16(uncheckedCast(this));
+    }
+
+    @Override
+    public void fp2_initWorldServer() {
+        checkState(this.fp2_worldServer == null, "already initialized!");
+        this.fp2_worldServer = new FWorldServer1_16((FP2Forge1_16) fp2(), uncheckedCast(this)).init();
+    }
+
+    @Override
+    public void fp2_closeWorldServer() {
+        if (this.fp2_worldServer == null) {
+            fp2().log().alert("attempted to close server world, but it was either not initialized or already closed!");
+            return;
+        }
+
+        try (FWorldServer1_16 worldServer = this.fp2_worldServer) {
+            this.fp2_worldServer = null;
+        }
+    }
+
+    @Override
+    public Optional<FWorldServer1_16> fp2_worldServer() {
+        return Optional.ofNullable(this.fp2_worldServer);
     }
 
     @Override

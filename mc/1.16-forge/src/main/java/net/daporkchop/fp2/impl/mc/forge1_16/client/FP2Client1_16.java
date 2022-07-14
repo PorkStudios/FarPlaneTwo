@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_16.client;
@@ -126,9 +125,11 @@ public class FP2Client1_16 extends FP2Client {
     }
 
     @Override
-    public Optional<IFarPlayerClient> currentPlayer() {
+    public Optional<? extends IFarPlayerClient> currentPlayer() {
         ClientPlayNetHandler netHandler = this.mc.getConnection();
-        return netHandler != null ? Optional.of(((IMixinClientPlayNetHandler1_16) netHandler).fp2_farPlayerClient()) : Optional.empty();
+        return netHandler != null
+                ? ((IMixinClientPlayNetHandler1_16) netHandler).fp2_playerClient()
+                : Optional.empty();
     }
 
     @Override
@@ -169,7 +170,7 @@ public class FP2Client1_16 extends FP2Client {
     public void initGui(GuiScreenEvent.InitGuiEvent.Post event) {
         Button button = new Button(0, 0, 40, 20, new TranslationTextComponent(MODID + ".gui.buttonFP2Options"), b -> {
             FP2Config defaultConfig = FP2Config.DEFAULT_CONFIG;
-            FP2Config serverConfig = this.mc.isLocalServer() ? null : this.currentPlayer().map(IFarPlayerClient::fp2_IFarPlayerClient_serverConfig).orElse(null);
+            FP2Config serverConfig = this.mc.isLocalServer() ? null : this.currentPlayer().map(IFarPlayerClient::serverConfig).orElse(null);
             FP2Config clientConfig = this.fp2().globalConfig();
 
             ConfigGuiHelper.createAndDisplayGuiContext("menu", defaultConfig, serverConfig, clientConfig, this.fp2()::globalConfig);

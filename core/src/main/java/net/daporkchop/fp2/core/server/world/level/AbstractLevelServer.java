@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.server.world.level;
@@ -68,8 +67,12 @@ public abstract class AbstractLevelServer<F extends FP2Core,
 
     private final ExactFBlockLevelHolder exactBlockLevelHolder;
 
+    private final FGameRegistry registry;
+
     public AbstractLevelServer(@NonNull F fp2, IMPL_LEVEL implLevel, @NonNull WORLD world, @NonNull Identifier id, @NonNull FGameRegistry registry) {
         super(fp2, implLevel, world, id);
+
+        this.registry = registry;
 
         //open a storage category for this level
         this.storageCategory = this.getForInit(() -> world.storageCategory().openOrCreateCategory("level_" + id, callback -> {

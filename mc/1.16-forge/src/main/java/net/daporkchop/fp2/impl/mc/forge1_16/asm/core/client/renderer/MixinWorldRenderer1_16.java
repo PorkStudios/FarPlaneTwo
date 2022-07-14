@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_16.asm.core.client.renderer;
@@ -127,7 +126,7 @@ public abstract class MixinWorldRenderer1_16 implements IMixinWorldRenderer1_16 
             require = 1, allow = 1)
     private void fp2_setupRender_prepare(ActiveRenderInfo info, ClippingHelper clippingHelper, boolean useCapturedFrustum, int frameCount, boolean playerSpectator, CallbackInfo ci) {
         fp2().client().currentPlayer().ifPresent(player -> {
-            IFarClientContext<?, ?> context = player.fp2_IFarPlayerClient_activeContext();
+            IFarClientContext<?, ?> context = player.activeContext();
             IFarRenderer renderer;
             if (context != null && (renderer = context.renderer()) != null) {
                 this.level.getProfiler().push("fp2_prepare");
@@ -155,7 +154,7 @@ public abstract class MixinWorldRenderer1_16 implements IMixinWorldRenderer1_16 
                     target = "Lnet/minecraft/client/renderer/GameRenderer;getRenderDistance()F"),
             require = 1, allow = 1)
     private float fp2_renderLevel_increaseFogDistance(GameRenderer renderer) {
-        IFarClientContext<?, ?> context = fp2().client().currentPlayer().map(IFarPlayerClient::fp2_IFarPlayerClient_activeContext).orElse(null);
+        IFarClientContext<?, ?> context = fp2().client().currentPlayer().map(IFarPlayerClient::activeContext).orElse(null);
         if (context != null) {
             FP2Config config = context.config();
             return config.effectiveRenderDistanceBlocks();
@@ -176,7 +175,7 @@ public abstract class MixinWorldRenderer1_16 implements IMixinWorldRenderer1_16 
         //immediately after vanilla cutout() layer
 
         fp2().client().currentPlayer().ifPresent(player -> {
-            IFarClientContext<?, ?> context = player.fp2_IFarPlayerClient_activeContext();
+            IFarClientContext<?, ?> context = player.activeContext();
             IFarRenderer renderer;
             if (context != null && (renderer = context.renderer()) != null) {
                 this.level.getProfiler().push("fp2_render_post");

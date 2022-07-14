@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_16.compat.vanilla;
@@ -37,10 +36,11 @@ import net.daporkchop.fp2.core.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.core.mode.voxel.server.VoxelTileProvider;
 import net.daporkchop.fp2.core.mode.voxel.server.gen.exact.VanillaVoxelGenerator;
 import net.daporkchop.fp2.core.server.event.GetCoordinateLimitsEvent;
-import net.daporkchop.fp2.core.server.event.GetExactFBlockWorldEvent;
+import net.daporkchop.fp2.core.server.event.GetExactFBlockLevelEvent;
 import net.daporkchop.fp2.core.server.event.GetTerrainGeneratorEvent;
-import net.daporkchop.fp2.core.server.world.ExactFBlockWorldHolder;
-import net.daporkchop.fp2.impl.mc.forge1_16.compat.vanilla.exactfblockworld.VanillaExactFBlockWorldHolder1_16;
+import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
+import net.daporkchop.fp2.impl.mc.forge1_16.compat.vanilla.exactfblockworld.VanillaExactFBlockLevelHolder1_16;
+import net.daporkchop.fp2.impl.mc.forge1_16.server.world.level.FLevelServer1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.util.Util1_16;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -89,20 +89,20 @@ public class FP2Vanilla1_16 {
     @FEventHandler(name = "vanilla_world_coordinate_limits")
     public IntAxisAlignedBB getCoordinateLimits(GetCoordinateLimitsEvent event) {
         int minY = 0;
-        int maxY = ((World) event.world().fp2_IFarWorld_implWorld()).getHeight() - 1;
+        int maxY = ((World) event.world().implLevel()).getHeight() - 1;
 
         final int HORIZONTAL_LIMIT = 30_000_000; //TODO: hard-coding this is probably a bad idea, but there don't seem to be any variables or methods i can use to get it
         return new IntAxisAlignedBB(-HORIZONTAL_LIMIT, minY, -HORIZONTAL_LIMIT, HORIZONTAL_LIMIT, maxY, HORIZONTAL_LIMIT);
     }
 
     @FEventHandler(name = "vanilla_world_exact_fblockworld")
-    public ExactFBlockWorldHolder getExactFBlockWorld(GetExactFBlockWorldEvent event) {
-        return new VanillaExactFBlockWorldHolder1_16((ServerWorld) event.world().fp2_IFarWorld_implWorld());
+    public ExactFBlockLevelHolder getExactFBlockWorld(GetExactFBlockLevelEvent event) {
+        return new VanillaExactFBlockLevelHolder1_16((FLevelServer1_16) event.level());
     }
 
     @FEventHandler(name = "vanilla_world_terrain_generator")
     public Object getTerrainGenerator(GetTerrainGeneratorEvent event) {
-        return ((ServerWorld) event.world().fp2_IFarWorld_implWorld()).getChunkSource().getGenerator();
+        return ((ServerWorld) event.world().implLevel()).getChunkSource().getGenerator();
     }
 
     //exact generators

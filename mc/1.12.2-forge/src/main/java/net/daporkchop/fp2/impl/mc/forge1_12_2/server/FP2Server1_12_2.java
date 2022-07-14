@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.server;
@@ -23,8 +22,8 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.server;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.SneakyThrows;
-import net.daporkchop.fp2.api.event.generic.FChangedEvent;
 import net.daporkchop.fp2.api.event.FEventHandler;
+import net.daporkchop.fp2.api.event.generic.FChangedEvent;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketHandshake;
 import net.daporkchop.fp2.core.server.FP2Server;
@@ -101,9 +100,13 @@ public class FP2Server1_12_2 extends FP2Server {
     protected void onConfigChanged(FChangedEvent<FP2Config> event) {
         MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
         if (server != null) { //a server instance is currently present, update the serverConfig instance for every connected player
-            server.addScheduledTask(() -> ((ATMinecraftServer1_12) server).getPlayerList().getPlayers().forEach(player -> ((IMixinNetHandlerPlayServer) player.connection).fp2_farPlayerServer().fp2_IFarPlayer_serverConfig(this.fp2().globalConfig())));
+            server.addScheduledTask(() -> ((ATMinecraftServer1_12) server).getPlayerList()
+                    .getPlayers()
+                    .forEach(player -> ((IMixinNetHandlerPlayServer) player.connection).fp2_farPlayerServer().fp2_IFarPlayer_serverConfig(this.fp2().globalConfig())));
         }
     }
+
+    //these two events are re-fired on the fp2 global event bus from the FML mod loading bus
 
     @FEventHandler
     protected void onServerAboutToStart(FMLServerAboutToStartEvent event) {

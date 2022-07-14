@@ -15,13 +15,13 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.client.render;
 
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
 import net.daporkchop.fp2.core.client.render.LevelRenderer;
 import net.daporkchop.fp2.gl.GL;
@@ -53,7 +53,7 @@ public class LevelRenderer1_12_2 implements LevelRenderer, AutoCloseable {
         this.mc = mc;
         this.level = level;
 
-        this.registry = level.registry();
+        this.registry = (GameRegistry1_12_2) level.registry();
 
         //look up and cache the render type for each block state
         this.renderTypeLookup = new byte[this.registry.statesCount()];

@@ -15,16 +15,15 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_16.compat.vanilla.exactfblockworld;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.api.world.BlockWorldConstants;
-import net.daporkchop.fp2.api.world.GenerationNotAllowedException;
-import net.daporkchop.fp2.core.minecraft.world.chunks.AbstractChunksExactFBlockWorldHolder;
-import net.daporkchop.fp2.core.minecraft.world.chunks.AbstractPrefetchedChunksExactFBlockWorld;
+import net.daporkchop.fp2.api.world.level.BlockLevelConstants;
+import net.daporkchop.fp2.api.world.level.GenerationNotAllowedException;
+import net.daporkchop.fp2.core.minecraft.world.chunks.AbstractChunksExactFBlockLevelHolder;
+import net.daporkchop.fp2.core.minecraft.world.chunks.AbstractPrefetchedChunksExactFBlockLevel;
 import net.daporkchop.lib.common.math.BinMath;
 import net.minecraft.block.BlockState;
 import net.minecraft.fluid.FluidState;
@@ -35,8 +34,8 @@ import java.util.List;
 /**
  * @author DaPorkchop_
  */
-public final class PrefetchedChunksFBlockWorld1_16 extends AbstractPrefetchedChunksExactFBlockWorld<OffThreadChunk1_16> {
-    public PrefetchedChunksFBlockWorld1_16(@NonNull AbstractChunksExactFBlockWorldHolder<OffThreadChunk1_16> holder, boolean generationAllowed, @NonNull List<OffThreadChunk1_16> chunks) {
+public final class PrefetchedChunksFBlockLevel1_16 extends AbstractPrefetchedChunksExactFBlockLevel<OffThreadChunk1_16> {
+    public PrefetchedChunksFBlockLevel1_16(@NonNull AbstractChunksExactFBlockLevelHolder<OffThreadChunk1_16> holder, boolean generationAllowed, @NonNull List<OffThreadChunk1_16> chunks) {
         super(holder, generationAllowed, chunks);
     }
 
@@ -61,11 +60,12 @@ public final class PrefetchedChunksFBlockWorld1_16 extends AbstractPrefetchedChu
 
     @Override
     protected int getBiome(int x, int y, int z, OffThreadChunk1_16 chunk) throws GenerationNotAllowedException {
-        return this.registry().biome2id(chunk.biomes().getNoiseBiome(x >> 2, y >> 2, z >> 2)); //TODO: this doesn't do biome zooming (as would normally be done in BiomeManager)
+        return this.registry()
+                .biome2id(chunk.biomes().getNoiseBiome(x >> 2, y >> 2, z >> 2)); //TODO: this doesn't do biome zooming (as would normally be done in BiomeManager)
     }
 
     @Override
     protected byte getLight(int x, int y, int z, OffThreadChunk1_16 chunk) throws GenerationNotAllowedException {
-        return BlockWorldConstants.packLight(chunk.getSkyLight(x, y, z), chunk.getBlockLight(x, y, z));
+        return BlockLevelConstants.packLight(chunk.getSkyLight(x, y, z), chunk.getBlockLight(x, y, z));
     }
 }

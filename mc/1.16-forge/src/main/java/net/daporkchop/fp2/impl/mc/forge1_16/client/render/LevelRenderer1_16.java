@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_16.client.render;
@@ -23,13 +22,13 @@ package net.daporkchop.fp2.impl.mc.forge1_16.client.render;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.core.client.render.LevelRenderer;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
-import net.daporkchop.fp2.core.client.render.WorldRenderer;
 import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.renderer.ATLightTexture1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.interfaz.client.renderer.IMixinWorldRenderer1_16;
-import net.daporkchop.fp2.impl.mc.forge1_16.client.world.FarWorldClient1_16;
+import net.daporkchop.fp2.impl.mc.forge1_16.client.world.level.FLevelClient1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.util.BiomeColorBlockDisplayReader1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.util.ResourceProvider1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.world.registry.GameRegistry1_16;
@@ -45,7 +44,7 @@ import net.minecraft.util.math.BlockPos;
  */
 @RequiredArgsConstructor
 @Getter
-public class WorldRenderer1_16 implements WorldRenderer, AutoCloseable {
+public class LevelRenderer1_16 implements LevelRenderer, AutoCloseable {
     private static int toLayerIndex(RenderType type) {
         if (type == RenderType.solid()) {
             return IFarRenderer.LAYER_SOLID;
@@ -61,7 +60,7 @@ public class WorldRenderer1_16 implements WorldRenderer, AutoCloseable {
     protected final Minecraft mc;
     protected final GL gl;
 
-    protected final FarWorldClient1_16 world;
+    protected final FLevelClient1_16 level;
 
     protected final TextureUVs1_16 textureUVs;
 
@@ -69,11 +68,11 @@ public class WorldRenderer1_16 implements WorldRenderer, AutoCloseable {
     protected final byte[] renderTypeLookup;
 
     @SuppressWarnings("deprecation")
-    public WorldRenderer1_16(@NonNull Minecraft mc, @NonNull FarWorldClient1_16 world) {
+    public LevelRenderer1_16(@NonNull Minecraft mc, @NonNull FLevelClient1_16 level) {
         this.mc = mc;
-        this.world = world;
+        this.level = level;
 
-        this.registry = world.fp2_IFarWorld_registry();
+        this.registry = level.registry();
 
         this.renderTypeLookup = new byte[this.registry.statesCount()];
         this.registry.states().forEach(state -> {
@@ -91,7 +90,7 @@ public class WorldRenderer1_16 implements WorldRenderer, AutoCloseable {
                 .withResourceProvider(new ResourceProvider1_16(this.mc))
                 .wrapCurrent();
 
-        this.textureUVs = new TextureUVs1_16(world.fp2_IFarWorld_registry(), this.gl, mc);
+        this.textureUVs = new TextureUVs1_16(level.registry(), this.gl, mc);
     }
 
     @Override
@@ -107,7 +106,8 @@ public class WorldRenderer1_16 implements WorldRenderer, AutoCloseable {
 
     @Override
     public int tintFactorForStateInBiomeAtPos(int state, int biome, int x, int y, int z) {
-        return this.mc.getBlockColors().getColor(this.registry.id2state(state), new BiomeColorBlockDisplayReader1_16(this.registry.id2biome(biome)), new BlockPos(x, y, z), 0);
+        return this.mc.getBlockColors()
+                .getColor(this.registry.id2state(state), new BiomeColorBlockDisplayReader1_16(this.registry.id2biome(biome)), new BlockPos(x, y, z), 0);
     }
 
     @Override

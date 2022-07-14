@@ -15,23 +15,20 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_16.asm.core.world.server;
 
-import lombok.Getter;
 import net.daporkchop.fp2.impl.mc.forge1_16.FP2Forge1_16;
+import net.daporkchop.fp2.impl.mc.forge1_16.asm.interfaz.server.IMixinMinecraftServer1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.interfaz.world.server.IMixinServerWorld1_16;
-import net.daporkchop.fp2.impl.mc.forge1_16.server.world.FarWorldServer1_16;
+import net.daporkchop.fp2.impl.mc.forge1_16.server.world.level.FLevelServer1_16;
+import net.daporkchop.lib.common.util.PorkUtil;
 import net.minecraft.world.server.ServerWorld;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import static net.daporkchop.fp2.core.FP2Core.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
@@ -39,14 +36,32 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 @Mixin(ServerWorld.class)
 public abstract class MixinServerWorld1_16 implements IMixinServerWorld1_16 {
-    @Getter
     @Unique
-    protected FarWorldServer1_16 fp2_farWorldServer;
+    private FLevelServer1_16 fp2_levelServer;
 
-    @Inject(method = "Lnet/minecraft/world/server/ServerWorld;<init>*",
-            at = @At("RETURN"),
-            require = 1)
-    private void fp2_$init$_constructFarWorldServer(CallbackInfo ci) {
-        this.fp2_farWorldServer = new FarWorldServer1_16((FP2Forge1_16) fp2(), uncheckedCast(this));
+    @Override
+    public void fp2_initLevelServer() {
+        checkState(this.fp2_levelServer == null, "already initialized!");
+
+        this.fp2_levelServer = ((IMixinMinecraftServer1_16) PorkUtil.<ServerWorld>uncheckedCast(this).getServer()).fp2_worldServer().get()
+                .loadLevel(FP2Forge1_16.getIdentifierForWorld(uncheckedCast(this)), uncheckedCast(this));
+    }
+
+    @Override
+    public void fp2_closeLevelServer() {
+        checkState(this.fp2_levelServer != null, "not initialized or already closed!");
+
+        try {
+            //unload the level from the world
+            this.fp2_levelServer.world().unloadLevel(this.fp2_levelServer.id());
+        } finally {
+            this.fp2_levelServer = null;
+        }
+    }
+
+    @Override
+    public FLevelServer1_16 fp2_levelServer() {
+        checkState(this.fp2_levelServer != null, "not initialized or already closed!");
+        return this.fp2_levelServer;
     }
 }

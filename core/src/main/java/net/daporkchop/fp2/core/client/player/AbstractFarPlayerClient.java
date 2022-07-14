@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.client.player;
@@ -26,7 +25,6 @@ import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.world.AbstractWorldClient;
 import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
-import net.daporkchop.fp2.core.client.world.IFarWorldClient;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
@@ -266,16 +264,4 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
     public <POS extends IFarPos, T extends IFarTile> IFarClientContext<POS, T> activeContext() {
         return uncheckedCast(this.context);
     }
-
-    @CalledFromAnyThread
-    @Override
-    public void fp2_IFarPlayerClient_close() {
-        this.scheduleOnNetworkThread(() -> {
-            if (this.sessionOpen) {
-                this.handle(new SPacketSessionEnd());
-            }
-        });
-    }
-
-    protected abstract void scheduleOnNetworkThread(@NonNull Runnable action);
 }

@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.client;
@@ -24,8 +23,8 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import net.daporkchop.fp2.api.event.ChangedEvent;
 import net.daporkchop.fp2.api.event.FEventHandler;
+import net.daporkchop.fp2.api.event.generic.FChangedEvent;
 import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.gui.GuiContext;
@@ -152,12 +151,12 @@ public abstract class FP2Client {
     //fp2 events
 
     @FEventHandler
-    protected void onConfigChanged(ChangedEvent<FP2Config> event) {
+    protected void onConfigChanged(FChangedEvent<FP2Config> event) {
         if (FP2_DEBUG) {
             this.updateDebugColorMacros(event.next());
         }
 
         //send updated config to server
-        this.currentPlayer().ifPresent(player -> player.fp2_IFarPlayerClient_send(new CPacketClientConfig().config(event.next())));
+        this.currentPlayer().ifPresent(player -> player.send(new CPacketClientConfig().config(event.next())));
     }
 }

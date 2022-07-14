@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.client;
@@ -23,8 +22,6 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.client;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.api.event.generic.FChangedEvent;
-import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.gui.GuiContext;
@@ -32,9 +29,6 @@ import net.daporkchop.fp2.core.client.gui.GuiScreen;
 import net.daporkchop.fp2.core.client.key.KeyCategory;
 import net.daporkchop.fp2.core.client.player.IFarPlayerClient;
 import net.daporkchop.fp2.core.util.threading.futureexecutor.FutureExecutor;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
-import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.ATMinecraft1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.gui.ATGuiScreen1_12;

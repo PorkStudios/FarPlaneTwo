@@ -15,16 +15,24 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_16.asm.interfaz.client.network.play;
 
 import net.daporkchop.fp2.impl.mc.forge1_16.client.player.FarPlayerClient1_16;
+import net.daporkchop.fp2.impl.mc.forge1_16.client.world.FWorldClient1_16;
+
+import java.util.Optional;
 
 /**
  * @author DaPorkchop_
  */
 public interface IMixinClientPlayNetHandler1_16 {
-    FarPlayerClient1_16 fp2_farPlayerClient();
+    void fp2_initClient();
+
+    void fp2_closeClient();
+
+    Optional<FWorldClient1_16> fp2_worldClient();
+
+    Optional<FarPlayerClient1_16> fp2_playerClient();
 }

@@ -19,10 +19,9 @@
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2;
 
+import lombok.NonNull;
 import net.daporkchop.fp2.api.FP2;
 import net.daporkchop.fp2.api.util.Identifier;
-import net.daporkchop.fp2.common.util.ResourceProvider;
-import net.daporkchop.fp2.common.util.exception.ResourceNotFoundException;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.debug.FP2Debug;
@@ -33,19 +32,13 @@ import net.daporkchop.fp2.core.util.threading.futureexecutor.ImmediateFutureExec
 import net.daporkchop.fp2.impl.mc.forge1_12_2.client.FP2Client1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.network.FP2Network1_12_2;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.FastRegistry;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.x86.x86FeatureDetector;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.network.FP2Network1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.server.FP2Server1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.I18n1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.event.IdMappingsChangedEvent;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.util.log.Log4jAsPorkLibLogger;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.threading.futureexecutor.ServerThreadMarkedFutureExecutor;
 import net.minecraft.client.Minecraft;
-import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.DimensionType;
 import net.minecraft.world.World;
-import net.minecraftforge.fml.client.FMLClientHandler;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.Mod;
@@ -78,7 +71,8 @@ public final class FP2Forge1_12_2 extends FP2Core {
         DimensionType dimensionType = world.provider.getDimensionType();
 
         //sanity check because i'm not entirely sure what kind of crazy shit mods do with dimension types, and i want to be sure not to screw anything up
-        checkState(dimensionId == dimensionType.getId(), "dimension #%d has invalid ID: '%s' is expected to have ID %d", dimensionId, dimensionType.getName(), dimensionType.getId());
+        checkState(dimensionId
+                   == dimensionType.getId(), "dimension #%d has invalid ID: '%s' is expected to have ID %d", dimensionId, dimensionType.getName(), dimensionType.getId());
 
         return Identifier.fromLenient("minecraft", dimensionType.getName());
     }
@@ -86,6 +80,7 @@ public final class FP2Forge1_12_2 extends FP2Core {
     public static int getDimensionForWorldIdentifier(@NonNull Identifier id) {
         return DimensionType.byName(id.path()).getId();
     }
+
     private FP2Client1_12_2 client;
     private FP2Server1_12_2 server;
 

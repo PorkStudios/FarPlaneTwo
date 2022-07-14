@@ -15,53 +15,29 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_16.world;
+package net.daporkchop.fp2.impl.mc.forge1_16.server.world;
 
-import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.common.util.Identifier;
-import net.daporkchop.fp2.core.mode.api.ctx.IFarWorld;
+import net.daporkchop.fp2.api.util.Identifier;
+import net.daporkchop.fp2.core.server.world.AbstractWorldServer;
 import net.daporkchop.fp2.impl.mc.forge1_16.FP2Forge1_16;
-import net.daporkchop.fp2.impl.mc.forge1_16.world.registry.GameRegistry1_16;
-import net.minecraft.world.World;
+import net.daporkchop.fp2.impl.mc.forge1_16.server.world.level.FLevelServer1_16;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.server.ServerWorld;
+import net.minecraft.world.storage.FolderName;
 
 /**
  * @author DaPorkchop_
  */
-@Getter
-public abstract class AbstractFarWorld1_16<W extends World> implements IFarWorld {
-    protected final FP2Forge1_16 fp2;
-    protected final W world;
-
-    protected final GameRegistry1_16 registry;
-
-    public AbstractFarWorld1_16(@NonNull FP2Forge1_16 fp2, @NonNull W world) {
-        this.fp2 = fp2;
-        this.world = world;
-
-        this.registry = new GameRegistry1_16(world);
+public class FWorldServer1_16 extends AbstractWorldServer<FP2Forge1_16, MinecraftServer, FWorldServer1_16, ServerWorld, FLevelServer1_16> {
+    public FWorldServer1_16(@NonNull FP2Forge1_16 fp2, @NonNull MinecraftServer implWorld) {
+        super(fp2, implWorld, implWorld.getWorldPath(FolderName.ROOT));
     }
 
     @Override
-    public Object fp2_IFarWorld_implWorld() {
-        return this.world;
-    }
-
-    @Override
-    public Identifier fp2_IFarWorld_dimensionId() {
-        return Identifier.from(this.world.dimension().location().toString());
-    }
-
-    @Override
-    public long fp2_IFarWorld_timestamp() {
-        return this.world.getGameTime();
-    }
-
-    @Override
-    public GameRegistry1_16 fp2_IFarWorld_registry() {
-        return this.registry;
+    protected FLevelServer1_16 createLevel(@NonNull Identifier id, ServerWorld implLevel) {
+        return new FLevelServer1_16(this.fp2(), implLevel, this, id);
     }
 }

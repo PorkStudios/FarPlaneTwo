@@ -17,47 +17,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_16.server.world;
+package net.daporkchop.fp2.impl.mc.forge1_16.client.world;
 
+import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.core.server.world.TerrainGeneratorInfo;
-import net.daporkchop.fp2.impl.mc.forge1_16.server.world.level.FLevelServer1_16;
-import net.minecraft.world.server.ServerWorld;
+import net.daporkchop.fp2.api.util.Identifier;
+import net.daporkchop.fp2.core.client.world.AbstractWorldClient;
+import net.daporkchop.fp2.impl.mc.forge1_16.FP2Forge1_16;
+import net.daporkchop.fp2.impl.mc.forge1_16.client.world.level.FLevelClient1_16;
+import net.minecraft.client.network.play.ClientPlayNetHandler;
+import net.minecraft.client.world.ClientWorld;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public class TerrainGeneratorInfo1_16 implements TerrainGeneratorInfo {
-    @NonNull
-    protected final FLevelServer1_16 level;
-    @NonNull
-    protected final ServerWorld world;
-
-    @Override
-    public FLevelServer1_16 world() {
-        return this.level;
+@Getter
+public class FWorldClient1_16 extends AbstractWorldClient<FP2Forge1_16, ClientPlayNetHandler, FWorldClient1_16, ClientWorld, FLevelClient1_16> {
+    public FWorldClient1_16(@NonNull FP2Forge1_16 fp2, @NonNull ClientPlayNetHandler implWorld) {
+        super(fp2, implWorld);
     }
 
     @Override
-    public Object implGenerator() {
-        return this.world.getChunkSource().getGenerator();
-    }
-
-    @Override
-    public String generator() {
-        //TODO: this is dumb
-        return this.world.getServer().registryAccess().dimensionTypes().getResourceKey(this.world.dimensionType()).get().location().toString();
-    }
-
-    @Override
-    public String options() {
-        return ""; //TODO: this is always empty
-    }
-
-    @Override
-    public long seed() {
-        return this.world.getSeed();
+    protected FLevelClient1_16 createLevel(@NonNull Identifier id, ClientWorld implLevel) {
+        return new FLevelClient1_16(this.fp2(), implLevel, this, id, COORD_LIMITS_HACK.get());
     }
 }

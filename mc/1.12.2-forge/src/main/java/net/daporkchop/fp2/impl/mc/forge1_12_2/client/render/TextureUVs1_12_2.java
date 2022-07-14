@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,16 +15,15 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.client.render;
 
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.fp2.core.client.render.common.AbstractTextureUVs;
 import net.daporkchop.fp2.gl.GL;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.world.registry.GameRegistry1_12_2;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 
@@ -38,7 +37,7 @@ import java.util.List;
 public class TextureUVs1_12_2 extends AbstractTextureUVs {
     protected final Minecraft mc;
 
-    public TextureUVs1_12_2(@NonNull GameRegistry1_12_2 registry, @NonNull GL gl, @NonNull Minecraft mc) {
+    public TextureUVs1_12_2(@NonNull FGameRegistry registry, @NonNull GL gl, @NonNull Minecraft mc) {
         super(registry, gl);
         this.mc = mc;
 

@@ -15,16 +15,19 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_16.asm.interfaz.world.server;
 
-import net.daporkchop.fp2.impl.mc.forge1_16.server.world.FarWorldServer1_16;
+import net.daporkchop.fp2.impl.mc.forge1_16.server.world.level.FLevelServer1_16;
 
 /**
  * @author DaPorkchop_
  */
 public interface IMixinServerWorld1_16 {
-    FarWorldServer1_16 fp2_farWorldServer();
+    void fp2_initLevelServer();
+
+    void fp2_closeLevelServer();
+
+    FLevelServer1_16 fp2_levelServer();
 }

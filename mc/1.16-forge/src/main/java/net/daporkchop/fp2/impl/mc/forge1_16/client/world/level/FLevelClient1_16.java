@@ -15,64 +15,62 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_16.client.world;
+package net.daporkchop.fp2.impl.mc.forge1_16.client.world.level;
 
+import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
-import net.daporkchop.fp2.core.client.render.WorldRenderer;
-import net.daporkchop.fp2.core.client.world.IFarWorldClient;
+import net.daporkchop.fp2.core.client.world.level.AbstractLevelClient;
 import net.daporkchop.fp2.core.util.threading.futureexecutor.MarkedFutureExecutor;
 import net.daporkchop.fp2.core.util.threading.workergroup.DefaultWorkerManager;
 import net.daporkchop.fp2.core.util.threading.workergroup.WorkerManager;
 import net.daporkchop.fp2.impl.mc.forge1_16.FP2Forge1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.ATMinecraft1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.world.ATClientWorld1_16;
-import net.daporkchop.fp2.impl.mc.forge1_16.client.render.WorldRenderer1_16;
+import net.daporkchop.fp2.impl.mc.forge1_16.client.render.LevelRenderer1_16;
+import net.daporkchop.fp2.impl.mc.forge1_16.client.world.FWorldClient1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.util.threading.futureexecutor.ClientThreadMarkedFutureExecutor1_16;
-import net.daporkchop.fp2.impl.mc.forge1_16.world.AbstractFarWorld1_16;
+import net.daporkchop.fp2.impl.mc.forge1_16.world.level.IFLevel1_16;
+import net.daporkchop.fp2.impl.mc.forge1_16.world.registry.GameRegistry1_16;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.network.play.ClientPlayNetHandler;
 import net.minecraft.client.world.ClientWorld;
 
 /**
  * @author DaPorkchop_
  */
-public class FarWorldClient1_16 extends AbstractFarWorld1_16<ClientWorld> implements IFarWorldClient {
-    protected final IntAxisAlignedBB coordLimits;
-    protected final WorkerManager workerManager;
+@Getter
+public class FLevelClient1_16 extends AbstractLevelClient<FP2Forge1_16, ClientPlayNetHandler, FWorldClient1_16, ClientWorld, FLevelClient1_16> implements IFLevel1_16 {
+    private final IntAxisAlignedBB coordLimits;
+    private final GameRegistry1_16 registry;
 
-    protected WorldRenderer1_16 renderer;
+    private final LevelRenderer1_16 renderer;
 
-    public FarWorldClient1_16(@NonNull FP2Forge1_16 fp2, @NonNull ClientWorld world, @NonNull IntAxisAlignedBB coordLimits) {
-        super(fp2, world);
+    public FLevelClient1_16(@NonNull FP2Forge1_16 fp2, @NonNull ClientWorld implLevel, @NonNull FWorldClient1_16 world, @NonNull Identifier id, @NonNull IntAxisAlignedBB coordLimits) {
+        super(fp2, implLevel, world, id);
 
         this.coordLimits = coordLimits;
+        this.registry = this.getForInit(() -> new GameRegistry1_16(implLevel));
 
-        Minecraft mc = ((ATClientWorld1_16) world).getMinecraft();
-        this.workerManager = new DefaultWorkerManager(((ATMinecraft1_16) mc).getGameThread(), ClientThreadMarkedFutureExecutor1_16.getFor(mc));
-
-        this.workerManager.rootExecutor().run(MarkedFutureExecutor.DEFAULT_MARKER, () -> this.renderer = new WorldRenderer1_16(mc, this)).join();
+        Minecraft mc = ((ATClientWorld1_16) implLevel).getMinecraft();
+        this.renderer = this.getForInit(() -> this.workerManager().rootExecutor().supply(MarkedFutureExecutor.DEFAULT_MARKER, () -> new LevelRenderer1_16(mc, this)).join());
     }
 
     @Override
-    public void fp2_IFarWorld_close() {
-        this.workerManager.rootExecutor().run(MarkedFutureExecutor.DEFAULT_MARKER, this.renderer::close);
+    protected WorkerManager createWorkerManager() {
+        Minecraft mc = ((ATClientWorld1_16) this.implLevel()).getMinecraft();
+        return new DefaultWorkerManager(((ATMinecraft1_16) mc).getGameThread(), ClientThreadMarkedFutureExecutor1_16.getFor(mc));
     }
 
     @Override
-    public WorldRenderer fp2_IFarWorldClient_renderer() {
-        return this.renderer;
-    }
-
-    @Override
-    public IntAxisAlignedBB fp2_IFarWorld_coordLimits() {
-        return this.coordLimits;
-    }
-
-    @Override
-    public WorkerManager fp2_IFarWorld_workerManager() {
-        return this.workerManager;
+    protected void doClose() throws Exception {
+        //noinspection Convert2MethodRef
+        try (AutoCloseable closeSuper = () -> super.doClose()) {
+            //close renderer on client thread
+            this.workerManager().rootExecutor().run(MarkedFutureExecutor.DEFAULT_MARKER, this.renderer::close);
+        }
     }
 }
