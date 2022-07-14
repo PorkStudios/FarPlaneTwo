@@ -148,6 +148,7 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
         this.sessionOpen = false;
 
         this.fp2().log().info("ending session");
+        this.closeSessionIfOpen();
     }
 
     @CalledWithMonitor
