@@ -29,8 +29,8 @@ import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfi
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionBegin;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionEnd;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUpdateConfig;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
-import net.daporkchop.fp2.core.util.annotation.CalledFromNetworkThread;
+import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
+import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
 
 import java.util.Objects;
@@ -47,7 +47,7 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
     protected FP2Config serverConfig;
     protected FP2Config mergedConfig;
 
-    protected IFarWorldServer world;
+    protected IFarLevelServer world;
 
     protected IFarRenderMode<?, ?> mode;
     protected IFarServerContext<?, ?> context;
@@ -55,10 +55,11 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
     protected boolean sessionOpen;
     protected boolean closed;
 
-    @CalledFromNetworkThread
+    @CalledFromAnyThread
     @Override
     public void fp2_IFarPlayerServer_handle(@NonNull Object packet) {
-        this.world.fp2_IFarWorld_workerManager().rootExecutor().execute(() -> { //TODO: move all logic to network threads
+        //delegate packet handling to server thread
+        this.world.workerManager().rootExecutor().execute(() -> { //TODO: do this on the invoking thread
             if (packet instanceof CPacketClientConfig) {
                 this.handle((CPacketClientConfig) packet);
             } else if (packet instanceof CPacketDebugDropAllTiles) {
@@ -74,9 +75,9 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
     }
 
     protected void handleDebug(@NonNull CPacketDebugDropAllTiles packet) {
-        this.world.fp2_IFarWorld_workerManager().rootExecutor().execute(() -> {
+        this.world.workerManager().rootExecutor().execute(() -> {
             this.fp2().log().info("Dropping all tiles");
-            this.world.fp2_IFarWorldServer_forEachTileProvider(tileProvider -> tileProvider.trackerManager().dropAllTiles());
+            this.world.forEachTileProvider((mode, tileProvider) -> tileProvider.trackerManager().dropAllTiles());
         });
     }
 
@@ -138,7 +139,7 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
 
     @CalledFromServerThread
     @Override
-    public void fp2_IFarPlayer_joinedWorld(@NonNull IFarWorldServer world) {
+    public void fp2_IFarPlayer_joinedWorld(@NonNull IFarLevelServer world) {
         if (this.sessionOpen) { //close any existing session, as it's in a world which is no longer the current one
             this.endSession();
         }
@@ -155,7 +156,7 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
         this.sessionOpen = true;
 
         if (this.mode != null) {
-            this.fp2_IFarPlayer_sendPacket(new SPacketSessionBegin().coordLimits(this.world.fp2_IFarWorld_coordLimits()));
+            this.fp2_IFarPlayer_sendPacket(new SPacketSessionBegin().coordLimits(this.world.coordLimits()));
 
             this.context = this.mode.serverContext(this, this.world, this.mergedConfig);
         }

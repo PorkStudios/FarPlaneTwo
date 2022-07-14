@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -25,7 +25,6 @@ import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSet;
 import net.daporkchop.lib.primitive.lambda.IntIntConsumer;
 import net.daporkchop.lib.primitive.lambda.IntIntIntConsumer;
-import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
@@ -46,8 +45,8 @@ public class SynchronizedNDimensionalIntSet implements NDimensionalIntSet {
     }
 
     @Override
-    public synchronized long count() {
-        return this.delegate.count();
+    public synchronized int size() {
+        return this.delegate.size();
     }
 
     @Override
@@ -58,6 +57,11 @@ public class SynchronizedNDimensionalIntSet implements NDimensionalIntSet {
     @Override
     public synchronized void clear() {
         this.delegate.clear();
+    }
+
+    @Override
+    public synchronized SynchronizedNDimensionalIntSet clone() {
+        return new SynchronizedNDimensionalIntSet(this.delegate.clone());
     }
 
     @Override
@@ -141,18 +145,17 @@ public class SynchronizedNDimensionalIntSet implements NDimensionalIntSet {
     }
 
     @Override
-    public int refCnt() {
-        return this.delegate.refCnt();
+    public synchronized boolean containsAll(@NonNull NDimensionalIntSet set) {
+        return this.delegate.containsAll(set);
     }
 
     @Override
-    public NDimensionalIntSet retain() throws AlreadyReleasedException {
-        this.delegate.retain();
-        return this;
+    public synchronized boolean addAll(@NonNull NDimensionalIntSet set) {
+        return this.delegate.addAll(set);
     }
 
     @Override
-    public boolean release() throws AlreadyReleasedException {
-        return this.delegate.release();
+    public synchronized boolean removeAll(@NonNull NDimensionalIntSet set) {
+        return this.delegate.removeAll(set);
     }
 }

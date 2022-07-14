@@ -22,24 +22,24 @@ package net.daporkchop.fp2.core.mode.voxel.server.gen.exact;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
-import net.daporkchop.fp2.api.world.FBlockWorld;
-import net.daporkchop.fp2.api.world.GenerationNotAllowedException;
+import net.daporkchop.fp2.api.world.level.FBlockLevel;
+import net.daporkchop.fp2.api.world.level.GenerationNotAllowedException;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.core.mode.voxel.VoxelData;
 import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.core.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.core.mode.voxel.server.gen.AbstractVoxelGenerator;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.mode.voxel.util.VoxelPosHashSet;
+import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.util.GlobalAllocators;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static java.lang.Math.*;
-import static net.daporkchop.fp2.api.world.BlockWorldConstants.*;
+import static net.daporkchop.fp2.api.world.level.BlockLevelConstants.*;
 import static net.daporkchop.fp2.core.mode.voxel.VoxelConstants.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -48,12 +48,12 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator implements IFarGeneratorExact<VoxelPos, VoxelTile> {
-    public AbstractExactVoxelGenerator(@NonNull IFarWorldServer world, @NonNull IFarTileProvider<VoxelPos, VoxelTile> provider) {
+    public AbstractExactVoxelGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<VoxelPos, VoxelTile> provider) {
         super(world, provider);
     }
 
     @Override
-    public Optional<List<VoxelPos>> batchGenerationGroup(@NonNull FBlockWorld world, @NonNull VoxelPos pos) {
+    public Optional<Set<VoxelPos>> batchGenerationGroup(@NonNull FBlockLevel world, @NonNull VoxelPos pos) {
         checkArg(pos.level() == 0, "can only exact generate at level 0, not %d!", pos.level());
 
         IntAxisAlignedBB initialBB = new IntAxisAlignedBB(
@@ -71,7 +71,7 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
 
         //TODO: figure out whether or not this is actually correct? i don't think this properly accounts for every possible edge case, rather it just happens to work for the current
         // values of CACHE_MIN/CACHE_MAX...
-        List<VoxelPos> out = new ArrayList<>();
+        Set<VoxelPos> out = new VoxelPosHashSet();
         for (int tileX = max(asrCeil(dataAvailableBB.minX() - CACHE_MIN, VT_SHIFT), min.x()); tileX < min(asrCeil(dataAvailableBB.maxX() - CACHE_MAX, VT_SHIFT), max.x()); tileX++) {
             for (int tileY = max(asrCeil(dataAvailableBB.minY() - CACHE_MIN, VT_SHIFT), min.y()); tileY < min(asrCeil(dataAvailableBB.maxY() - CACHE_MAX, VT_SHIFT), max.y()); tileY++) {
                 for (int tileZ = max(asrCeil(dataAvailableBB.minZ() - CACHE_MIN, VT_SHIFT), min.z()); tileZ < min(asrCeil(dataAvailableBB.maxZ() - CACHE_MAX, VT_SHIFT), max.z()); tileZ++) {
@@ -92,7 +92,7 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
     }
 
     @Override
-    public void generate(@NonNull FBlockWorld world, @NonNull VoxelPos posIn, @NonNull VoxelTile tile) throws GenerationNotAllowedException {
+    public void generate(@NonNull FBlockLevel world, @NonNull VoxelPos posIn, @NonNull VoxelTile tile) throws GenerationNotAllowedException {
         checkArg(posIn.level() == 0, "can only exact generate at level 0, not %d!", posIn.level());
 
         ArrayAllocator<int[]> intAlloc = GlobalAllocators.ALLOC_INT.get();
@@ -106,12 +106,12 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
 
         try {
             //query all world data at once
-            world.query(FBlockWorld.Query.of(
-                    new FBlockWorld.OriginSizeStrideQueryShape(
+            world.query(FBlockLevel.Query.of(
+                    new FBlockLevel.OriginSizeStrideQueryShape(
                             posIn.blockX() + CACHE_MIN - 1, posIn.blockY() + CACHE_MIN - 1, posIn.blockZ() + CACHE_MIN - 1,
                             CACHE_SIZE, CACHE_SIZE, CACHE_SIZE,
                             1, 1, 1),
-                    new FBlockWorld.BandArraysQueryOutput(stateCache, 0, 1, biomeCache, 0, 1, lightCache, 0, 1, cb(CACHE_SIZE))));
+                    new FBlockLevel.BandArraysQueryOutput(stateCache, 0, 1, biomeCache, 0, 1, lightCache, 0, 1, cb(CACHE_SIZE))));
 
             //use bit flags to identify voxel types rather than reading from the world each time to keep innermost loop head tight and cache-friendly
             this.populateTypeMapFromStateMap(stateCache, typeCache);

@@ -22,11 +22,11 @@ package net.daporkchop.fp2.core.util.datastructure.java.ndimensionalintsegtree;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSegtreeSet;
+import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSet;
 import net.daporkchop.lib.common.function.throwing.ERunnable;
 import net.daporkchop.lib.common.function.throwing.ESupplier;
 import net.daporkchop.lib.primitive.lambda.IntIntConsumer;
 import net.daporkchop.lib.primitive.lambda.IntIntIntConsumer;
-import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
@@ -46,16 +46,11 @@ public class AsyncInitializedNDimensionalIntSegtreeSet implements NDimensionalIn
         this.delegate = delegate;
 
         this.initFuture = CompletableFuture.runAsync((ERunnable) () -> {
-            delegate.retain();
-            try {
-                try (Stream<int[]> stream = initialPoints.get()) { //add all points to delegate set
-                    stream.forEach(delegate::add);
-                }
-
-                this.initFuture = null; //if everything was successful, set initFuture to null to allow it to be GC'd
-            } finally {
-                delegate.release();
+            try (Stream<int[]> stream = initialPoints.get()) { //add all points to delegate set
+                stream.forEach(delegate::add);
             }
+
+            this.initFuture = null; //if everything was successful, set initFuture to null to allow it to be GC'd
         });
     }
 
@@ -71,14 +66,18 @@ public class AsyncInitializedNDimensionalIntSegtreeSet implements NDimensionalIn
         }
     }
 
+    //
+    // NDimensionalIntSet methods
+    //
+
     @Override
     public int dimensions() {
         return this.delegate.dimensions();
     }
 
     @Override
-    public long count() {
-        return this.delegate.count();
+    public int size() {
+        return this.delegate.size();
     }
 
     @Override
@@ -90,6 +89,12 @@ public class AsyncInitializedNDimensionalIntSegtreeSet implements NDimensionalIn
     public void clear() {
         this.handleRead();
         this.delegate.clear();
+    }
+
+    @Override
+    public NDimensionalIntSegtreeSet clone() {
+        this.handleRead(); //block until future is complete
+        return this.delegate.clone(); //clone delegate, we don't need to wrap it in an AsyncInitializedNDimensionalIntSegtreeSet because we only serve as a proxy once initialization is complete
     }
 
     @Override
@@ -114,12 +119,6 @@ public class AsyncInitializedNDimensionalIntSegtreeSet implements NDimensionalIn
     public void forEach(@NonNull Consumer<int[]> callback) {
         this.handleRead();
         this.delegate.forEach(callback);
-    }
-
-    @Override
-    public boolean containsAny(@NonNull int[] a, @NonNull int[] b) {
-        this.handleRead();
-        return this.delegate.containsAny(a, b);
     }
 
     @Override
@@ -195,6 +194,34 @@ public class AsyncInitializedNDimensionalIntSegtreeSet implements NDimensionalIn
     }
 
     @Override
+    public boolean containsAll(@NonNull NDimensionalIntSet set) {
+        this.handleRead();
+        return this.delegate.containsAll(set);
+    }
+
+    @Override
+    public boolean addAll(@NonNull NDimensionalIntSet set) {
+        this.handleWrite();
+        return this.delegate.addAll(set);
+    }
+
+    @Override
+    public boolean removeAll(@NonNull NDimensionalIntSet set) {
+        this.handleRead(); //this will block until initialization is complete, which is good because otherwise we might be removing points that don't exist yet but will soon
+        return this.delegate.removeAll(set);
+    }
+
+    //
+    // NDimensionalIntSegtreeSet methods
+    //
+
+    @Override
+    public boolean containsAny(@NonNull int[] a, @NonNull int[] b) {
+        this.handleRead();
+        return this.delegate.containsAny(a, b);
+    }
+
+    @Override
     public boolean containsAny(int x0, int x1) {
         this.handleRead();
         return this.delegate.containsAny(x0, x1);
@@ -210,21 +237,5 @@ public class AsyncInitializedNDimensionalIntSegtreeSet implements NDimensionalIn
     public boolean containsAny(int x0, int y0, int z0, int x1, int y1, int z1) {
         this.handleRead();
         return this.delegate.containsAny(x0, y0, z0, x1, y1, z1);
-    }
-
-    @Override
-    public int refCnt() {
-        return this.delegate.refCnt();
-    }
-
-    @Override
-    public NDimensionalIntSegtreeSet retain() throws AlreadyReleasedException {
-        this.delegate.retain();
-        return this;
-    }
-
-    @Override
-    public boolean release() throws AlreadyReleasedException {
-        return this.delegate.release();
     }
 }

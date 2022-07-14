@@ -21,12 +21,11 @@
 package net.daporkchop.fp2.gl.opengl.transform.shader;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.common.util.Identifier;
+import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.shader.BaseShaderBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
 import net.daporkchop.fp2.gl.opengl.shader.source.SourceLine;
-import net.daporkchop.fp2.gl.shader.BaseShaderBuilder;
 import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
 import net.daporkchop.fp2.gl.transform.TransformLayout;
 import net.daporkchop.fp2.gl.transform.shader.TransformShader;

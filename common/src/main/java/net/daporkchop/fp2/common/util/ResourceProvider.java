@@ -21,6 +21,7 @@
 package net.daporkchop.fp2.common.util;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.common.util.exception.ResourceNotFoundException;
 
 import java.io.IOException;

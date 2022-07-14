@@ -23,7 +23,7 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.server;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.SneakyThrows;
-import net.daporkchop.fp2.api.event.ChangedEvent;
+import net.daporkchop.fp2.api.event.generic.FChangedEvent;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketHandshake;
@@ -35,6 +35,7 @@ import net.daporkchop.fp2.core.util.threading.futureexecutor.FutureExecutor;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.server.ATMinecraftServer1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.network.IMixinNetHandlerPlayServer;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.server.IMixinMinecraftServer1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.world.IMixinWorldServer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.server.world.FColumn1_12_2;
 import net.daporkchop.fp2.resources.FResources;
@@ -49,6 +50,8 @@ import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.world.ChunkDataEvent;
 import net.minecraftforge.event.world.WorldEvent;
 import net.minecraftforge.fml.common.FMLCommonHandler;
+import net.minecraftforge.fml.common.event.FMLServerAboutToStartEvent;
+import net.minecraftforge.fml.common.event.FMLServerStoppedEvent;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.PlayerEvent;
@@ -95,11 +98,23 @@ public class FP2Server1_12_2 extends FP2Server {
     //fp2 events
 
     @FEventHandler
-    protected void onConfigChanged(ChangedEvent<FP2Config> event) {
+    protected void onConfigChanged(FChangedEvent<FP2Config> event) {
         MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
         if (server != null) { //a server instance is currently present, update the serverConfig instance for every connected player
             server.addScheduledTask(() -> ((ATMinecraftServer1_12) server).getPlayerList().getPlayers().forEach(player -> ((IMixinNetHandlerPlayServer) player.connection).fp2_farPlayerServer().fp2_IFarPlayer_serverConfig(this.fp2().globalConfig())));
         }
+    }
+
+    @FEventHandler
+    protected void onServerAboutToStart(FMLServerAboutToStartEvent event) {
+        MinecraftServer server = event.getServer();
+        ((IMixinMinecraftServer1_12) server).fp2_initWorldServer();
+    }
+
+    @FEventHandler
+    protected void onServerStopped(FMLServerStoppedEvent event) {
+        MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
+        ((IMixinMinecraftServer1_12) server).fp2_closeWorldServer();
     }
 
     //forge events
@@ -107,14 +122,14 @@ public class FP2Server1_12_2 extends FP2Server {
     @SubscribeEvent
     public void worldLoad(WorldEvent.Load event) {
         if (!event.getWorld().isRemote) {
-            ((IMixinWorldServer) event.getWorld()).fp2_farWorldServer().fp2_IFarWorldServer_init();
+            ((IMixinWorldServer) event.getWorld()).fp2_initLevelServer();
         }
     }
 
     @SubscribeEvent
     public void worldUnload(WorldEvent.Unload event) {
         if (!event.getWorld().isRemote) {
-            ((IMixinWorldServer) event.getWorld()).fp2_farWorldServer().fp2_IFarWorld_close();
+            ((IMixinWorldServer) event.getWorld()).fp2_closeLevelServer();
         }
     }
 
@@ -135,7 +150,7 @@ public class FP2Server1_12_2 extends FP2Server {
             IFarPlayerServer player = ((IMixinNetHandlerPlayServer) ((EntityPlayerMP) event.getEntity()).connection).fp2_farPlayerServer();
 
             //cubic chunks world data information has already been sent
-            player.fp2_IFarPlayer_joinedWorld(((IMixinWorldServer) event.getWorld()).fp2_farWorldServer());
+            player.fp2_IFarPlayer_joinedWorld(((IMixinWorldServer) event.getWorld()).fp2_levelServer());
         }
     }
 
@@ -150,7 +165,7 @@ public class FP2Server1_12_2 extends FP2Server {
     @SubscribeEvent
     public void onWorldTickEnd(TickEvent.WorldTickEvent event) {
         if (!event.world.isRemote && event.phase == TickEvent.Phase.END) {
-            ((IMixinWorldServer) event.world).fp2_farWorldServer().fp2_IFarWorldServer_eventBus().fire(new TickEndEvent());
+            ((IMixinWorldServer) event.world).fp2_levelServer().eventBus().fire(new TickEndEvent());
 
             event.world.playerEntities.forEach(player -> ((IMixinNetHandlerPlayServer) ((EntityPlayerMP) player).connection).fp2_farPlayerServer().fp2_IFarPlayer_update());
         }
@@ -159,6 +174,6 @@ public class FP2Server1_12_2 extends FP2Server {
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public void onChunkDataSave(ChunkDataEvent.Save event) {
         Chunk chunk = event.getChunk();
-        ((IMixinWorldServer) event.getWorld()).fp2_farWorldServer().fp2_IFarWorldServer_eventBus().fire(new ColumnSavedEvent(Vec2i.of(chunk.x, chunk.z), new FColumn1_12_2(chunk), event.getData()));
+        ((IMixinWorldServer) event.getWorld()).fp2_levelServer().eventBus().fire(new ColumnSavedEvent(Vec2i.of(chunk.x, chunk.z), new FColumn1_12_2(chunk), event.getData()));
     }
 }

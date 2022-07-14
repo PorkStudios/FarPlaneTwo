@@ -25,7 +25,7 @@ import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.common.server.gen.AbstractFarGenerator;
 import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.core.mode.voxel.VoxelTile;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.reference.cache.Cached;
 
@@ -66,7 +66,7 @@ public abstract class AbstractVoxelGenerator extends AbstractFarGenerator<VoxelP
 
     protected final Cached<byte[]> typeMapCache = Cached.threadLocal(() -> new byte[cb(CACHE_SIZE)], ReferenceStrength.WEAK);
 
-    public AbstractVoxelGenerator(@NonNull IFarWorldServer world, @NonNull IFarTileProvider<VoxelPos, VoxelTile> provider) {
+    public AbstractVoxelGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<VoxelPos, VoxelTile> provider) {
         super(world, provider);
     }
 }

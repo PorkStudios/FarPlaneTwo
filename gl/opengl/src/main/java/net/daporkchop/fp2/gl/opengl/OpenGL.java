@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl;
@@ -59,6 +58,8 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.StructFormatGenerator;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureFormat2DImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureFormatBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.buffer.GLBuffer;
+import net.daporkchop.fp2.gl.opengl.buffer.SimpleGLBufferImpl;
+import net.daporkchop.fp2.gl.opengl.buffer.UploadCopyingGLBufferImpl;
 import net.daporkchop.fp2.gl.opengl.command.CommandBufferBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.draw.DrawLayoutBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.draw.DrawLayoutImpl;
@@ -90,6 +91,8 @@ import net.daporkchop.fp2.gl.transform.TransformLayout;
 import net.daporkchop.fp2.gl.transform.TransformLayoutBuilder;
 import net.daporkchop.fp2.gl.transform.shader.TransformShaderBuilder;
 import net.daporkchop.fp2.gl.transform.shader.TransformShaderProgramBuilder;
+import net.daporkchop.lib.common.pool.handle.HandledPool;
+import net.daporkchop.lib.common.reference.ReferenceStrength;
 
 import java.util.Set;
 import java.util.function.Supplier;
@@ -131,6 +134,8 @@ public class OpenGL implements GL {
     protected final int vertexAttributeAlignment;
 
     protected final boolean preserveInputGlState;
+
+    protected final HandledPool<GLBuffer> tmpBufferPool = HandledPool.global(() -> this.createBuffer(BufferUsage.STREAM_DRAW), ReferenceStrength.WEAK, 16);
 
     @Getter(AccessLevel.NONE)
     protected boolean closed = false;
@@ -216,7 +221,9 @@ public class OpenGL implements GL {
     }
 
     public GLBuffer createBuffer(@NonNull BufferUsage usage) {
-        return new GLBuffer(this, usage);
+        return GLExtension.GL_ARB_copy_buffer.supported(this)
+                ? new UploadCopyingGLBufferImpl(this, usage)
+                : new SimpleGLBufferImpl(this, usage);
     }
 
     @Override

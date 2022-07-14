@@ -21,10 +21,19 @@
 package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.client.network;
 
 import net.daporkchop.fp2.impl.mc.forge1_12_2.client.player.FarPlayerClient1_12;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.client.world.FWorldClient1_12;
+
+import java.util.Optional;
 
 /**
  * @author DaPorkchop_
  */
 public interface IMixinNetHandlerPlayClient {
-    FarPlayerClient1_12 fp2_farPlayerClient();
+    void fp2_initClient();
+
+    void fp2_closeClient();
+
+    Optional<FWorldClient1_12> fp2_worldClient();
+
+    Optional<FarPlayerClient1_12> fp2_playerClient();
 }

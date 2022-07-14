@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -24,7 +24,7 @@ import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSet;
-import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
+import net.daporkchop.lib.common.util.PorkUtil;
 
 import java.util.Arrays;
 import java.util.function.Consumer;
@@ -60,26 +60,15 @@ public class JavaNDimensionalIntHashSet extends ObjectOpenCustomHashSet<int[]> i
         this.dimensions = positive(dimensions, "dimensions");
     }
 
-    @Override
-    public synchronized NDimensionalIntSet retain() throws AlreadyReleasedException {
-        if (this.refCnt == 0) {
-            throw new AlreadyReleasedException();
-        }
-        this.refCnt++;
-        return this;
+    protected JavaNDimensionalIntHashSet(JavaNDimensionalIntHashSet src) {
+        super(src, STRATEGY);
+
+        this.dimensions = src.dimensions;
     }
 
     @Override
-    public long count() {
-        return this.size();
-    }
-
-    @Override
-    public synchronized boolean release() throws AlreadyReleasedException {
-        if (this.refCnt == 0) {
-            throw new AlreadyReleasedException();
-        }
-        return --this.refCnt == 0;
+    public JavaNDimensionalIntHashSet clone() {
+        return new JavaNDimensionalIntHashSet(this);
     }
 
     @Override
@@ -103,5 +92,35 @@ public class JavaNDimensionalIntHashSet extends ObjectOpenCustomHashSet<int[]> i
     @Override
     public void forEach(@NonNull Consumer action) {
         super.forEach(uncheckedCast(action));
+    }
+
+    @Override
+    public boolean containsAll(@NonNull NDimensionalIntSet set) {
+        if (set instanceof JavaNDimensionalIntHashSet) {
+            checkArg(this.dimensions == set.dimensions(), "mismatched dimension count (this: %dD, set: %dD)", this.dimensions(), set.dimensions());
+            return super.containsAll(PorkUtil.<ObjectOpenCustomHashSet<int[]>>uncheckedCast(set));
+        } else {
+            return NDimensionalIntSet.super.containsAll(set);
+        }
+    }
+
+    @Override
+    public boolean addAll(@NonNull NDimensionalIntSet set) {
+        if (set instanceof JavaNDimensionalIntHashSet) {
+            checkArg(this.dimensions == set.dimensions(), "mismatched dimension count (this: %dD, set: %dD)", this.dimensions(), set.dimensions());
+            return super.addAll(PorkUtil.<ObjectOpenCustomHashSet<int[]>>uncheckedCast(set));
+        } else {
+            return NDimensionalIntSet.super.containsAll(set);
+        }
+    }
+
+    @Override
+    public boolean removeAll(@NonNull NDimensionalIntSet set) {
+        if (set instanceof JavaNDimensionalIntHashSet) {
+            checkArg(this.dimensions == set.dimensions(), "mismatched dimension count (this: %dD, set: %dD)", this.dimensions(), set.dimensions());
+            return super.removeAll(PorkUtil.<ObjectOpenCustomHashSet<int[]>>uncheckedCast(set));
+        } else {
+            return NDimensionalIntSet.super.containsAll(set);
+        }
     }
 }

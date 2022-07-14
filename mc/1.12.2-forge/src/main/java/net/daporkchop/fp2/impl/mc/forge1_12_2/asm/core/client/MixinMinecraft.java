@@ -23,7 +23,6 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.core.client;
 import net.daporkchop.fp2.core.client.player.IFarPlayerClient;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.threading.futureexecutor.ClientThreadMarkedFutureExecutor;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.profiler.Profiler;
 import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Final;
@@ -87,6 +86,6 @@ public abstract class MixinMinecraft implements ClientThreadMarkedFutureExecutor
                     opcode = Opcodes.PUTFIELD,
                     shift = At.Shift.AFTER))
     private void fp2_notifyContextReady(CallbackInfo ci) { //gross hack to ensure that the client config packet isn't sent until the client is ready
-        fp2().client().currentPlayer().ifPresent(IFarPlayerClient::fp2_IFarPlayerClient_ready);
+        fp2().client().currentPlayer().ifPresent(IFarPlayerClient::ready);
     }
 }

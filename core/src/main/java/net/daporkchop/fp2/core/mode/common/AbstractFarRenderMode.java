@@ -31,8 +31,8 @@ import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarServerContext;
-import net.daporkchop.fp2.core.client.world.IFarWorldClient;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
+import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.server.player.IFarPlayerServer;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
@@ -62,44 +62,44 @@ public abstract class AbstractFarRenderMode<POS extends IFarPos, T extends IFarT
     @Getter
     protected final int tileShift;
 
-    protected abstract AbstractExactGeneratorCreationEvent exactGeneratorCreationEvent(@NonNull IFarWorldServer world, @NonNull IFarTileProvider<POS, T> provider);
+    protected abstract AbstractExactGeneratorCreationEvent exactGeneratorCreationEvent(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<POS, T> provider);
 
-    protected abstract AbstractRoughGeneratorCreationEvent roughGeneratorCreationEvent(@NonNull IFarWorldServer world, @NonNull IFarTileProvider<POS, T> provider);
+    protected abstract AbstractRoughGeneratorCreationEvent roughGeneratorCreationEvent(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<POS, T> provider);
 
     protected abstract T newTile();
 
     @Override
-    public IFarGeneratorExact<POS, T> exactGenerator(@NonNull IFarWorldServer world, @NonNull IFarTileProvider<POS, T> provider) {
+    public IFarGeneratorExact<POS, T> exactGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<POS, T> provider) {
         return fp2().eventBus().fireAndGetFirst(this.exactGeneratorCreationEvent(world, provider))
                 .orElseThrow(() -> new IllegalStateException(PStrings.fastFormat(
                         "no exact generator available for world '%s', mode:%s",
-                        world.fp2_IFarWorld_dimensionId(),
+                        world.id(),
                         this.name()
                 )));
     }
 
     @Override
-    public IFarGeneratorRough<POS, T> roughGenerator(@NonNull IFarWorldServer world, @NonNull IFarTileProvider<POS, T> provider) {
+    public IFarGeneratorRough<POS, T> roughGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<POS, T> provider) {
         return fp2().eventBus().fireAndGetFirst(this.roughGeneratorCreationEvent(world, provider)).orElse(null);
     }
 
-    protected abstract AbstractTileProviderCreationEvent tileProviderCreationEvent(@NonNull IFarWorldServer world);
+    protected abstract AbstractTileProviderCreationEvent tileProviderCreationEvent(@NonNull IFarLevelServer world);
 
     @Override
-    public IFarTileProvider<POS, T> tileProvider(@NonNull IFarWorldServer world) {
+    public IFarTileProvider<POS, T> tileProvider(@NonNull IFarLevelServer world) {
         return fp2().eventBus().fireAndGetFirst(this.tileProviderCreationEvent(world))
                 .orElseThrow(() -> new IllegalStateException(PStrings.fastFormat(
                         "No tile provider available for world '%s', mode:%s",
-                        world.fp2_IFarWorld_dimensionId(),
+                        world.id(),
                         this.name()
                 )));
     }
 
     @Override
-    public abstract IFarServerContext<POS, T> serverContext(@NonNull IFarPlayerServer player, @NonNull IFarWorldServer world, @NonNull FP2Config config);
+    public abstract IFarServerContext<POS, T> serverContext(@NonNull IFarPlayerServer player, @NonNull IFarLevelServer world, @NonNull FP2Config config);
 
     @Override
-    public abstract IFarClientContext<POS, T> clientContext(@NonNull IFarWorldClient world, @NonNull FP2Config config);
+    public abstract IFarClientContext<POS, T> clientContext(@NonNull IFarLevelClient level, @NonNull FP2Config config);
 
     @Override
     public SimpleRecycler<T> tileRecycler() {
@@ -130,7 +130,7 @@ public abstract class AbstractFarRenderMode<POS extends IFarPos, T extends IFarT
     @Getter
     protected abstract class AbstractExactGeneratorCreationEvent implements IFarGeneratorExact.CreationEvent<POS, T> {
         @NonNull
-        protected final IFarWorldServer world;
+        protected final IFarLevelServer world;
         @NonNull
         protected final IFarTileProvider<POS, T> provider;
 
@@ -147,7 +147,7 @@ public abstract class AbstractFarRenderMode<POS extends IFarPos, T extends IFarT
     @Getter
     protected abstract class AbstractRoughGeneratorCreationEvent implements IFarGeneratorRough.CreationEvent<POS, T> {
         @NonNull
-        protected final IFarWorldServer world;
+        protected final IFarLevelServer world;
         @NonNull
         protected final IFarTileProvider<POS, T> provider;
 
@@ -164,7 +164,7 @@ public abstract class AbstractFarRenderMode<POS extends IFarPos, T extends IFarT
     @Getter
     protected abstract class AbstractTileProviderCreationEvent implements IFarTileProvider.CreationEvent<POS, T> {
         @NonNull
-        protected final IFarWorldServer world;
+        protected final IFarLevelServer world;
 
         @Override
         public IFarRenderMode<POS, T> mode() {

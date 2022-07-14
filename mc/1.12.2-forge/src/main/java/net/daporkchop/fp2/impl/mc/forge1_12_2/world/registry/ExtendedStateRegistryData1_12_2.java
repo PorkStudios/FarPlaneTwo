@@ -25,7 +25,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.api.world.registry.FExtendedStateRegistryData;
 import net.minecraft.block.state.IBlockState;
 
-import static net.daporkchop.fp2.api.world.BlockWorldConstants.*;
+import static net.daporkchop.fp2.api.world.level.BlockLevelConstants.*;
 
 /**
  * @author DaPorkchop_

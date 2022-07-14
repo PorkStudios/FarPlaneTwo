@@ -22,7 +22,7 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.util;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.common.util.Identifier;
+import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.fp2.common.util.exception.ResourceNotFoundException;
 import net.minecraft.client.Minecraft;

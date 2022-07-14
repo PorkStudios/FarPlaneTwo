@@ -28,7 +28,7 @@ import lombok.SneakyThrows;
 import net.daporkchop.fp2.api.FP2;
 import net.daporkchop.fp2.api.event.FEventBus;
 import net.daporkchop.fp2.api.event.FEventHandler;
-import net.daporkchop.fp2.api.event.RegisterEvent;
+import net.daporkchop.fp2.api.event.generic.FRegisterEvent;
 import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.gui.GuiContext;
 import net.daporkchop.fp2.core.client.gui.GuiScreen;
@@ -191,7 +191,7 @@ public abstract class FP2Core implements FP2 {
     }
 
     @FEventHandler
-    protected void registerDefaultRenderModes(RegisterEvent<IFarRenderMode<?, ?>> event) {
+    protected void registerDefaultRenderModes(FRegisterEvent<IFarRenderMode<?, ?>> event) {
         event.registry()
                 .addLast(VoxelConstants.NAME, new VoxelRenderMode())
                 .addLast(HeightmapConstants.NAME, new HeightmapRenderMode());

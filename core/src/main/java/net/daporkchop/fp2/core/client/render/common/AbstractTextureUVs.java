@@ -27,7 +27,7 @@ import it.unimi.dsi.fastutil.ints.IntList;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.event.FEventHandler;
-import net.daporkchop.fp2.api.event.ReloadEvent;
+import net.daporkchop.fp2.api.event.generic.FReloadEvent;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.fp2.core.client.render.TextureUVs;
 import net.daporkchop.fp2.core.util.Direction;
@@ -84,7 +84,7 @@ public abstract class AbstractTextureUVs extends AbstractReleasable implements T
     }
 
     @FEventHandler
-    protected void onReload(@NonNull ReloadEvent<TextureUVs> event) {
+    protected void onReload(@NonNull FReloadEvent<TextureUVs> event) {
         event.doReload(this::reloadUVs);
     }
 

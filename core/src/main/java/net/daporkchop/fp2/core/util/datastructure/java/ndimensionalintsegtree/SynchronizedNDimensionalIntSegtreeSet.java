@@ -23,9 +23,9 @@ package net.daporkchop.fp2.core.util.datastructure.java.ndimensionalintsegtree;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSegtreeSet;
+import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSet;
 import net.daporkchop.lib.primitive.lambda.IntIntConsumer;
 import net.daporkchop.lib.primitive.lambda.IntIntIntConsumer;
-import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
@@ -40,14 +40,18 @@ public class SynchronizedNDimensionalIntSegtreeSet implements NDimensionalIntSeg
     @NonNull
     protected final NDimensionalIntSegtreeSet delegate;
 
+    //
+    // NDimensionalIntSet methods
+    //
+
     @Override
     public int dimensions() {
         return this.delegate.dimensions();
     }
 
     @Override
-    public synchronized long count() {
-        return this.delegate.count();
+    public synchronized int size() {
+        return this.delegate.size();
     }
 
     @Override
@@ -58,6 +62,11 @@ public class SynchronizedNDimensionalIntSegtreeSet implements NDimensionalIntSeg
     @Override
     public synchronized void clear() {
         this.delegate.clear();
+    }
+
+    @Override
+    public synchronized SynchronizedNDimensionalIntSegtreeSet clone() {
+        return new SynchronizedNDimensionalIntSegtreeSet(this.delegate.clone());
     }
 
     @Override
@@ -78,11 +87,6 @@ public class SynchronizedNDimensionalIntSegtreeSet implements NDimensionalIntSeg
     @Override
     public synchronized void forEach(@NonNull Consumer<int[]> callback) {
         this.delegate.forEach(callback);
-    }
-
-    @Override
-    public synchronized boolean containsAny(@NonNull int[] a, @NonNull int[] b) {
-        return this.delegate.containsAny(a, b);
     }
 
     @Override
@@ -146,6 +150,30 @@ public class SynchronizedNDimensionalIntSegtreeSet implements NDimensionalIntSeg
     }
 
     @Override
+    public synchronized boolean containsAll(@NonNull NDimensionalIntSet set) {
+        return this.delegate.containsAll(set);
+    }
+
+    @Override
+    public synchronized boolean addAll(@NonNull NDimensionalIntSet set) {
+        return this.delegate.addAll(set);
+    }
+
+    @Override
+    public synchronized boolean removeAll(@NonNull NDimensionalIntSet set) {
+        return this.delegate.removeAll(set);
+    }
+
+    //
+    // NDimensionalIntSegtreeSet methods
+    //
+
+    @Override
+    public synchronized boolean containsAny(@NonNull int[] a, @NonNull int[] b) {
+        return this.delegate.containsAny(a, b);
+    }
+
+    @Override
     public synchronized boolean containsAny(int x0, int x1) {
         return this.delegate.containsAny(x0, x1);
     }
@@ -158,21 +186,5 @@ public class SynchronizedNDimensionalIntSegtreeSet implements NDimensionalIntSeg
     @Override
     public synchronized boolean containsAny(int x0, int y0, int z0, int x1, int y1, int z1) {
         return this.delegate.containsAny(x0, y0, z0, x1, y1, z1);
-    }
-
-    @Override
-    public int refCnt() {
-        return this.delegate.refCnt();
-    }
-
-    @Override
-    public NDimensionalIntSegtreeSet retain() throws AlreadyReleasedException {
-        this.delegate.retain();
-        return this;
-    }
-
-    @Override
-    public boolean release() throws AlreadyReleasedException {
-        return this.delegate.release();
     }
 }

@@ -21,17 +21,17 @@
 package net.daporkchop.fp2.core.mode.api.ctx;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.core.client.world.IFarWorldClient;
+import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.core.mode.api.client.IFarTileCache;
-import net.daporkchop.fp2.core.util.annotation.CalledFromNetworkThread;
+import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 
 /**
- * A client-side context for a specific {@link IFarRenderMode} in a {@link IFarWorldClient}.
+ * A client-side context for a specific {@link IFarRenderMode} in a {@link IFarLevelClient}.
  *
  * @author DaPorkchop_
  */
@@ -44,7 +44,7 @@ public interface IFarClientContext<POS extends IFarPos, T extends IFarTile> exte
     /**
      * @return the world
      */
-    IFarWorldClient world();
+    IFarLevelClient level();
 
     /**
      * @return a cache for tiles used by this context
@@ -66,13 +66,13 @@ public interface IFarClientContext<POS extends IFarPos, T extends IFarTile> exte
      *
      * @param config the new config
      */
-    @CalledFromNetworkThread
+    @CalledFromAnyThread
     void notifyConfigChange(@NonNull FP2Config config);
 
     /**
      * Closes this context, releasing any allocated resources.
      */
-    @CalledFromNetworkThread
+    @CalledFromAnyThread
     @Override
     void close();
 }

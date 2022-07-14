@@ -20,11 +20,15 @@
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.world;
 
-import net.daporkchop.fp2.impl.mc.forge1_12_2.server.world.FarWorldServer1_12;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.server.world.level.FLevelServer1_12;
 
 /**
  * @author DaPorkchop_
  */
 public interface IMixinWorldServer {
-    FarWorldServer1_12 fp2_farWorldServer();
+    void fp2_initLevelServer();
+
+    void fp2_closeLevelServer();
+
+    FLevelServer1_12 fp2_levelServer();
 }

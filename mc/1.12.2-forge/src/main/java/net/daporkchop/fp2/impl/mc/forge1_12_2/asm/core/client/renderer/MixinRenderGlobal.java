@@ -107,7 +107,7 @@ public abstract class MixinRenderGlobal implements IMixinRenderGlobal {
             require = 1, allow = 1)
     private void fp2_setupTerrain_prepare(Entity viewEntity, double partialTicks, ICamera camera, int frameCount, boolean playerSpectator, CallbackInfo ci) {
         fp2().client().currentPlayer().ifPresent(player -> {
-            IFarClientContext<?, ?> context = player.fp2_IFarPlayerClient_activeContext();
+            IFarClientContext<?, ?> context = player.activeContext();
             IFarRenderer renderer;
             if (context != null && (renderer = context.renderer()) != null) {
                 this.mc.profiler.startSection("fp2_prepare");

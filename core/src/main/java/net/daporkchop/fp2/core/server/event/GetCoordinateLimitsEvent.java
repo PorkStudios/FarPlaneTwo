@@ -25,10 +25,10 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.api.event.ReturningEvent;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 
 /**
- * Fired in order to retrieve the coordinate limits for a given {@link IFarWorldServer}.
+ * Fired in order to retrieve the coordinate limits for a given {@link IFarLevelServer}.
  *
  * @author DaPorkchop_
  */
@@ -36,5 +36,5 @@ import net.daporkchop.fp2.core.server.world.IFarWorldServer;
 @Getter
 public class GetCoordinateLimitsEvent implements ReturningEvent<IntAxisAlignedBB> {
     @NonNull
-    protected final IFarWorldServer world;
+    protected final IFarLevelServer world;
 }

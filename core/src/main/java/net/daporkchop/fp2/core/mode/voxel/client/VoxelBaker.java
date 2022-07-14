@@ -22,9 +22,9 @@ package net.daporkchop.fp2.core.mode.voxel.client;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.api.world.BlockWorldConstants;
+import net.daporkchop.fp2.api.world.level.BlockLevelConstants;
 import net.daporkchop.fp2.core.client.render.TextureUVs;
-import net.daporkchop.fp2.core.client.render.WorldRenderer;
+import net.daporkchop.fp2.core.client.render.LevelRenderer;
 import net.daporkchop.fp2.core.util.GlobalAllocators;
 import net.daporkchop.fp2.gl.attribute.AttributeWriter;
 import net.daporkchop.fp2.gl.draw.index.IndexWriter;
@@ -60,7 +60,7 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
     }
 
     @NonNull
-    protected final WorldRenderer worldRenderer;
+    protected final LevelRenderer levelRenderer;
     @NonNull
     protected final TextureUVs textureUVs;
 
@@ -165,8 +165,8 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
         final int blockY = baseY + ((y & ~(y & VT_VOXELS)) << level);
         final int blockZ = baseZ + ((z & ~(z & VT_VOXELS)) << level);
 
-        int blockLight = BlockWorldConstants.unpackBlockLight(data.light);
-        int skyLight = BlockWorldConstants.unpackSkyLight(data.light);
+        int blockLight = BlockLevelConstants.unpackBlockLight(data.light);
+        int skyLight = BlockLevelConstants.unpackSkyLight(data.light);
         //sky and block light are one unsigned byte each, and are interpreted as normalized floats. since the lightmap texture is 16x16, using
         //  the upper 4 bits for the regular light level (which is in range [0,15]) results in a float range of [0,15/16]. additionally, we set
         //  the bottom 4 bits to 0b1000. this is equivalent to an offset of 0.5 texels, which prevents blending artifacts when sampling right along
@@ -188,7 +188,7 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
             }
 
             attributes.state = this.textureUVs.state2index(data.states[edge]);
-            attributes.color = this.worldRenderer.tintFactorForStateInBiomeAtPos(data.states[edge], data.biome, blockX, blockY, blockZ);
+            attributes.color = this.levelRenderer.tintFactorForStateInBiomeAtPos(data.states[edge], data.biome, blockX, blockY, blockZ);
 
             map[baseMapIndex + edge] = vertices.put(attributes);
         }
@@ -222,7 +222,7 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
                     continue; //skip if any of the vertices are missing
                 }
 
-                IndexWriter buf = indices[this.worldRenderer.renderTypeForState(data.states[edge])];
+                IndexWriter buf = indices[this.levelRenderer.renderTypeForState(data.states[edge])];
 
                 boolean water = false; //TODO: isWater(data.states[edge]);
                 if (water) {

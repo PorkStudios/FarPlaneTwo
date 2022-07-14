@@ -20,10 +20,10 @@
 
 package net.daporkchop.fp2.core.server.event;
 
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 
 /**
- * Fired on an {@link IFarWorldServer}'s event bus when a game tick ends.
+ * Fired on an {@link IFarLevelServer}'s event bus when a game tick ends.
  *
  * @author DaPorkchop_
  */

@@ -22,6 +22,7 @@ package net.daporkchop.fp2.core.mode.common.ctx;
 
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
@@ -29,9 +30,8 @@ import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.core.mode.api.client.IFarTileCache;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
-import net.daporkchop.fp2.core.client.world.IFarWorldClient;
 import net.daporkchop.fp2.core.mode.common.client.FarTileCache;
-import net.daporkchop.fp2.core.util.annotation.CalledFromNetworkThread;
+import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -43,7 +43,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @Getter
 public abstract class AbstractFarClientContext<POS extends IFarPos, T extends IFarTile> implements IFarClientContext<POS, T> {
     protected final IFarRenderMode<POS, T> mode;
-    protected final IFarWorldClient world;
+    protected final IFarLevelClient level;
     protected final IFarTileCache<POS, T> tileCache;
 
     protected FP2Config config;
@@ -51,8 +51,8 @@ public abstract class AbstractFarClientContext<POS extends IFarPos, T extends IF
 
     protected boolean closed = false;
 
-    public AbstractFarClientContext(@NonNull IFarWorldClient world, @NonNull FP2Config config, @NonNull IFarRenderMode<POS, T> mode) {
-        this.world = world;
+    public AbstractFarClientContext(@NonNull IFarLevelClient level, @NonNull FP2Config config, @NonNull IFarRenderMode<POS, T> mode) {
+        this.level = level;
         this.mode = mode;
         this.tileCache = this.tileCache0();
 
@@ -65,14 +65,14 @@ public abstract class AbstractFarClientContext<POS extends IFarPos, T extends IF
 
     protected abstract IFarRenderer renderer0(IFarRenderer old, @NonNull FP2Config config);
 
-    @CalledFromNetworkThread
+    @CalledFromAnyThread
     @Override
-    public void notifyConfigChange(@NonNull FP2Config config) {
+    public synchronized void notifyConfigChange(@NonNull FP2Config config) {
         checkState(!this.closed, "already closed!");
         this.config = config;
 
         //check if we need to replace the renderer on the client thread
-        this.world.fp2_IFarWorld_workerManager().rootExecutor().execute(() -> {
+        this.level.workerManager().rootExecutor().execute(() -> {
             if (this.config != config) { //config has changed since this task was scheduled, skip re-check since we're technically out-of-date
                 return;
             }
@@ -88,20 +88,19 @@ public abstract class AbstractFarClientContext<POS extends IFarPos, T extends IF
         });
     }
 
-    @CalledFromNetworkThread
+    @CalledFromAnyThread
     @Override
-    public void close() {
+    public synchronized void close() {
         checkState(!this.closed, "already closed!");
         this.closed = true;
 
         //do all cleanup on client thread
-        this.world.fp2_IFarWorld_workerManager().rootExecutor().execute(() -> {
-            if (this.renderer != null) {
-                this.renderer.close();
+        this.level.workerManager().rootExecutor().execute(() -> {
+            //try-with-resources to make sure everything gets cleaned up
+            try (IFarTileCache<POS, T> tileCache = this.tileCache;
+                 IFarRenderer renderer = this.renderer) {
                 this.renderer = null;
             }
-
-            this.tileCache.close();
         });
     }
 }

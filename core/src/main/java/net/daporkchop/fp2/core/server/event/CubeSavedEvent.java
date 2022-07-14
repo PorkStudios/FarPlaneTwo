@@ -23,12 +23,12 @@ package net.daporkchop.fp2.core.server.event;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.server.world.FCube;
 import net.daporkchop.lib.math.vector.Vec3i;
 
 /**
- * Fired on an {@link IFarWorldServer}'s event bus when a cube is saved.
+ * Fired on an {@link IFarLevelServer}'s event bus when a cube is saved.
  *
  * @author DaPorkchop_
  */

@@ -24,14 +24,14 @@ import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.api.world.FBlockWorld;
-import net.daporkchop.fp2.api.world.GenerationNotAllowedException;
+import net.daporkchop.fp2.api.world.level.FBlockLevel;
+import net.daporkchop.fp2.api.world.level.GenerationNotAllowedException;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.core.mode.api.tile.ITileMetadata;
 import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
-import net.daporkchop.fp2.core.server.world.ExactFBlockWorldHolder;
+import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
 import net.daporkchop.fp2.core.util.SimpleRecycler;
 import net.daporkchop.fp2.core.util.threading.scheduler.Scheduler;
 import net.daporkchop.fp2.core.util.threading.scheduler.SharedFutureScheduler;
@@ -41,6 +41,7 @@ import net.daporkchop.lib.primitive.list.array.LongArrayList;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -162,14 +163,11 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
 
         //try to steal tasks required to make this a batch
         this.provider.generatorRough().batchGenerationGroup(state.positions()).ifPresent(batchPositions -> {
-            List<POS> initialBatchPositions = new ArrayList<>();
-            batchPositions.forEach(initialBatchPositions::add);
-
             //ensure the original position is contained in the list
-            checkState(initialBatchPositions.containsAll(state.positions()), "batch group for %s doesn't contain all of its inputs! given: %s", state.positions(), initialBatchPositions);
+            checkState(batchPositions.containsAll(state.positions()), "batch group for %s doesn't contain all of its inputs! given: %s", state.positions(), batchPositions);
 
             //try to acquire all the positions
-            state.tryAcquire(initialBatchPositions, SharedFutureScheduler.AcquisitionStrategy.TRY_STEAL_EXISTING_OR_CREATE);
+            state.tryAcquire(batchPositions, SharedFutureScheduler.AcquisitionStrategy.TRY_STEAL_EXISTING_OR_CREATE);
         });
 
         SimpleRecycler<T> tileRecycler = this.provider.mode().tileRecycler();
@@ -191,17 +189,14 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
     }
 
     protected void generateExact(@NonNull State state, boolean allowGeneration) throws GenerationNotAllowedException {
-        try (FBlockWorld exactWorld = this.provider.world().fp2_IFarWorldServer_exactBlockWorldHolder().worldFor(allowGeneration ? ExactFBlockWorldHolder.AllowGenerationRequirement.ALLOWED : ExactFBlockWorldHolder.AllowGenerationRequirement.NOT_ALLOWED)) {
+        try (FBlockLevel exactWorld = this.provider.world().exactBlockLevelHolder().worldFor(allowGeneration ? ExactFBlockLevelHolder.AllowGenerationRequirement.ALLOWED : ExactFBlockLevelHolder.AllowGenerationRequirement.NOT_ALLOWED)) {
             //try to steal tasks required to make this a batch
             this.provider.generatorExact().batchGenerationGroup(exactWorld, state.positions()).ifPresent(batchPositions -> {
-                List<POS> initialBatchPositions = new ArrayList<>();
-                batchPositions.forEach(initialBatchPositions::add);
-
                 //ensure the original position is contained in the list
-                checkState(initialBatchPositions.containsAll(state.positions()), "batch group for %s doesn't contain all of its inputs! given: %s", state.positions(), initialBatchPositions);
+                checkState(batchPositions.containsAll(state.positions()), "batch group for %s doesn't contain all of its inputs! given: %s", state.positions(), batchPositions);
 
                 //try to acquire all the positions
-                state.tryAcquire(initialBatchPositions, SharedFutureScheduler.AcquisitionStrategy.TRY_STEAL_EXISTING_OR_CREATE);
+                state.tryAcquire(batchPositions, SharedFutureScheduler.AcquisitionStrategy.TRY_STEAL_EXISTING_OR_CREATE);
             });
 
             //actually do exact generation
@@ -296,7 +291,7 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
         private final int level;
 
         private final Set<POS> allPositions = new ObjectOpenHashSet<>();
-        private final List<POS> positions = new ArrayList<>();
+        private final List<POS> positions = TileWorker.this.provider.mode().directPosAccess().newPositionList();
         private final List<ITileHandle<POS, T>> handles = new ArrayList<>();
         private final LongList minimumTimestamps = new LongArrayList();
 
@@ -338,7 +333,7 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
             this.minimumTimestamps.addAll(minimumTimestamps);
         }
 
-        protected void tryAcquire(@NonNull List<POS> positions, @NonNull SharedFutureScheduler.AcquisitionStrategy strategy) {
+        protected void tryAcquire(@NonNull Collection<POS> positions, @NonNull SharedFutureScheduler.AcquisitionStrategy strategy) {
             //convert to PriorityTasks
             List<PriorityTask<POS>> initialTasks = positions.stream()
                     .filter(pos -> !this.allPositions.contains(pos)) //skip positions which have already been acquired to avoid adding duplicates

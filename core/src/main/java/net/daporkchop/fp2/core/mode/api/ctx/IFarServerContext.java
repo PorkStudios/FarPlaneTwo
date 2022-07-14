@@ -29,11 +29,11 @@ import net.daporkchop.fp2.core.server.player.IFarPlayerServer;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTracker;
 import net.daporkchop.fp2.core.mode.api.tile.TileSnapshot;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
 
 /**
- * A server-side context for a specific {@link IFarPlayerServer} in a {@link IFarWorldServer} using a specific {@link IFarRenderMode}.
+ * A server-side context for a specific {@link IFarPlayerServer} in a {@link IFarLevelServer} using a specific {@link IFarRenderMode}.
  *
  * @author DaPorkchop_
  */
@@ -46,7 +46,7 @@ public interface IFarServerContext<POS extends IFarPos, T extends IFarTile> exte
     /**
      * @return the vanilla world
      */
-    IFarWorldServer world();
+    IFarLevelServer world();
 
     /**
      * @return the render mode

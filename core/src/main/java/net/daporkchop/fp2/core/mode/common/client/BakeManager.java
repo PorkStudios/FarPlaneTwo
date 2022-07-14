@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,14 +15,12 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.common.client;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.core.mode.api.IFarCoordLimits;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
@@ -82,9 +80,9 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
 
         this.index = this.strategy.createIndex();
         this.baker = this.strategy.createBaker();
-        this.coordLimits = this.renderer.mode().tileCoordLimits(renderer.context().world().fp2_IFarWorld_coordLimits());
+        this.coordLimits = this.renderer.mode().tileCoordLimits(renderer.context().level().coordLimits());
 
-        this.bakeScheduler = new NoFutureScheduler<>(this, this.renderer.context().world().fp2_IFarWorld_workerManager().createChildWorkerGroup()
+        this.bakeScheduler = new NoFutureScheduler<>(this, this.renderer.context().level().workerManager().createChildWorkerGroup()
                 .threads(fp2().globalConfig().performance().bakeThreads())
                 .threadFactory(PThreadFactories.builder().daemon().minPriority().collapsingId().name("FP2 Rendering Thread #%d").build()));
 
@@ -191,11 +189,12 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
     }
 
     protected void checkSelfRenderable(@NonNull POS pos) {
-        this.updateRenderable(pos,
-                this.coordLimits.contains(pos)
-                && this.tileCache.getTileCached(pos) != null
-                && (pos.level() == 0 || PorkUtil.<Stream<POS>>uncheckedCast(pos.down().allPositionsInBB(1, 3))
-                        .anyMatch(p -> this.coordLimits.contains(p) && this.tileCache.getTileCached(p) == null)));
+        if (this.coordLimits.contains(pos)) {
+            this.updateRenderable(pos,
+                    this.tileCache.getTileCached(pos) != null
+                    && (pos.level() == 0 || PorkUtil.<Stream<POS>>uncheckedCast(pos.down().allPositionsInBB(1, 3))
+                            .anyMatch(p -> this.coordLimits.contains(p) && this.tileCache.getTileCached(p) == null)));
+        }
     }
 
     protected void updateData(@NonNull POS pos, @NonNull Optional<IBakeOutput> optionalBakeOutput) {
@@ -209,7 +208,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
         });
 
         if (this.isBulkUpdateQueued.compareAndSet(false, true)) { //we won the race to enqueue a bulk update!
-            this.renderer.context().world().fp2_IFarWorld_workerManager().workExecutor().run(this);
+            this.renderer.context().level().workerManager().workExecutor().run(this);
         }
     }
 
@@ -217,7 +216,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
         this.pendingRenderableUpdates.put(pos, renderable);
 
         if (this.isBulkUpdateQueued.compareAndSet(false, true)) { //we won the race to enqueue a bulk update!
-            this.renderer.context().world().fp2_IFarWorld_workerManager().workExecutor().run(this);
+            this.renderer.context().level().workerManager().workExecutor().run(this);
         }
     }
 

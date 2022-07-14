@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -22,8 +22,11 @@ package net.daporkchop.fp2.core.mode.api;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.client.IFrustum;
-import net.daporkchop.fp2.core.util.datastructure.SimpleSet;
 import net.daporkchop.fp2.core.util.math.geometry.Volume;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Provides access to an off-heap representation of a {@link IFarPos}.
@@ -132,7 +135,34 @@ public interface IFarDirectPosAccess<POS extends IFarPos> {
     boolean inFrustum(long addr, @NonNull IFrustum frustum);
 
     /**
-     * @return a new {@link SimpleSet} which can store positions of type {@link POS}
+     * @return a new {@link Set} which can store positions of type {@link POS}
      */
-    SimpleSet<POS> newPositionSet();
+    Set<POS> newPositionSet();
+
+    /**
+     * Creates a new {@link Set} which can store positions of type {@link POS} and adds all the positions in the given {@link Collection} to it.
+     *
+     * @param src the {@link Collection} to clone
+     * @return a new {@link Set} which can store positions of type {@link POS} and contains all the positions from the given {@link Collection}
+     */
+    Set<POS> clonePositionsAsSet(@NonNull Collection<POS> src);
+
+    /**
+     * @return a new {@link List} which can store positions of type {@link POS}
+     */
+    List<POS> newPositionList();
+
+    /**
+     * @param initialCapacity the initial size of the list
+     * @return a new {@link List} which can store positions of type {@link POS}
+     */
+    List<POS> newPositionList(int initialCapacity);
+
+    /**
+     * Creates a new {@link List} which can store positions of type {@link POS} and adds all the positions in the given {@link Collection} to it.
+     *
+     * @param src the {@link Collection} to clone
+     * @return a new {@link List} which can store positions of type {@link POS} and contains all the positions from the given {@link Collection}
+     */
+    List<POS> clonePositionsAsList(@NonNull Collection<POS> src);
 }

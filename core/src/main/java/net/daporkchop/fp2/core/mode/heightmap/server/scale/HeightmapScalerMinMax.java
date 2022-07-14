@@ -28,10 +28,10 @@ import net.daporkchop.fp2.core.mode.common.server.gen.AbstractFarGenerator;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapData;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapTile;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.mode.heightmap.util.HeightmapPosArrayList;
+import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 
 import java.util.List;
-import java.util.stream.Stream;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.core.mode.heightmap.HeightmapConstants.*;
@@ -45,7 +45,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 public class HeightmapScalerMinMax extends AbstractFarGenerator<HeightmapPos, HeightmapTile> implements IFarScaler<HeightmapPos, HeightmapTile> {
-    public HeightmapScalerMinMax(@NonNull IFarWorldServer world, @NonNull IFarTileProvider<HeightmapPos, HeightmapTile> provider) {
+    public HeightmapScalerMinMax(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<HeightmapPos, HeightmapTile> provider) {
         super(world, provider);
     }
 
@@ -60,13 +60,14 @@ public class HeightmapScalerMinMax extends AbstractFarGenerator<HeightmapPos, He
 
         int x = dstPos.x() << 1;
         int z = dstPos.z() << 1;
-        int level = dstPos.level();
+        int level = dstPos.level() - 1;
 
-        return ImmutableList.of(
-                new HeightmapPos(level - 1, x, z),
-                new HeightmapPos(level - 1, x, z + 1),
-                new HeightmapPos(level - 1, x + 1, z),
-                new HeightmapPos(level - 1, x + 1, z + 1));
+        List<HeightmapPos> out = new HeightmapPosArrayList(4);
+        out.add(new HeightmapPos(level - 1, x, z));
+        out.add(new HeightmapPos(level - 1, x, z + 1));
+        out.add(new HeightmapPos(level - 1, x + 1, z));
+        out.add(new HeightmapPos(level - 1, x + 1, z + 1));
+        return out;
     }
 
     @Override

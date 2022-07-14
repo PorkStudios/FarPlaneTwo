@@ -123,7 +123,7 @@ public abstract class FP2Client {
     /**
      * @return the current {@link IFarPlayerClient}, or an empty {@link Optional} if the client is not connected
      */
-    public abstract Optional<IFarPlayerClient> currentPlayer();
+    public abstract Optional<? extends IFarPlayerClient> currentPlayer();
 
     //TODO: somehow move Reversed-Z stuff out of FP2Client, and preferably into :gl
     @Deprecated

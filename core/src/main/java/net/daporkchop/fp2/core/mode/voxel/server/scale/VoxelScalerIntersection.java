@@ -29,7 +29,8 @@ import net.daporkchop.fp2.core.mode.common.server.gen.AbstractFarGenerator;
 import net.daporkchop.fp2.core.mode.voxel.VoxelData;
 import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.core.mode.voxel.VoxelTile;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.mode.voxel.util.VoxelPosArrayList;
+import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.util.math.Vector3d;
 import net.daporkchop.fp2.core.util.math.qef.QefSolver;
 import net.daporkchop.lib.math.vector.Vec3d;
@@ -39,7 +40,7 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
 
-import static net.daporkchop.fp2.api.world.BlockWorldConstants.*;
+import static net.daporkchop.fp2.api.world.level.BlockLevelConstants.*;
 import static net.daporkchop.fp2.core.mode.voxel.VoxelConstants.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -88,7 +89,7 @@ public class VoxelScalerIntersection extends AbstractFarGenerator<VoxelPos, Voxe
         return Vec3d.of(x + ((c >> 2) & 1) + 0.5d, y + ((c >> 1) & 1) + 0.5d, z + (c & 1) + 0.5d);
     }
 
-    public VoxelScalerIntersection(@NonNull IFarWorldServer world, @NonNull IFarTileProvider<VoxelPos, VoxelTile> provider) {
+    public VoxelScalerIntersection(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<VoxelPos, VoxelTile> provider) {
         super(world, provider);
     }
 
@@ -108,15 +109,15 @@ public class VoxelScalerIntersection extends AbstractFarGenerator<VoxelPos, Voxe
 
         final int min = SRC_MIN >> VT_SHIFT;
         final int max = ((SRC_MAX - 1) >> VT_SHIFT) + 1;
-        VoxelPos[] positions = new VoxelPos[(max - min) * (max - min) * (max - min)];
-        for (int i = 0, dx = min; dx < max; dx++) {
+        List<VoxelPos> out = new VoxelPosArrayList((max - min) * (max - min) * (max - min));
+        for (int dx = min; dx < max; dx++) {
             for (int dy = min; dy < max; dy++) {
                 for (int dz = min; dz < max; dz++) {
-                    positions[i++] = new VoxelPos(level, x + dx, y + dy, z + dz);
+                    out.add(new VoxelPos(level, x + dx, y + dy, z + dz));
                 }
             }
         }
-        return ImmutableList.copyOf(positions);
+        return out;
     }
 
     @Override

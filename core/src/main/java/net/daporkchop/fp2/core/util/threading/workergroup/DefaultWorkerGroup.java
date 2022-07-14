@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -29,6 +29,8 @@ import net.daporkchop.fp2.core.util.threading.futureexecutor.MarkingForwardingFu
 import net.daporkchop.fp2.core.util.threading.futureexecutor.ThreadValidatingForwardingFutureExecutor;
 import net.daporkchop.lib.common.misc.string.PStrings;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.IntStream;
 
@@ -80,20 +82,26 @@ public class DefaultWorkerGroup implements WorkerGroup {
         //  we're currently on the server thread, but any of our workers was waiting for the server thread to do something.
         this.worldExecutor.close();
 
-        //wait for all workers to shut down
+        //shut down all workers at once
         boolean interrupted = false;
-        for (Thread thread : this.threads) {
-            do {
-                BlockingSupport.externalManagedUnblock(thread);
+        List<Thread> threads = new ArrayList<>(this.threads);
+        do {
+            //notify all the threads to wake up
+            threads.forEach(BlockingSupport::externalManagedUnblock);
 
-                try {
-                    thread.join(50L);
-                } catch (InterruptedException e) {
-                    fp2().log().error(PStrings.fastFormat("%s was interrupted while waiting for %s to exit", Thread.currentThread(), thread), e);
-                    interrupted = true;
-                }
-            } while (thread.isAlive());
-        }
+            //wait for the first thread to exit
+            // calling get(0) is safe because the list is guaranteed to be non-empty (there's always at least one thread initially, and we'll break out of the loop as soon as
+            // the list is empty)
+            try {
+                threads.get(0).join(50L);
+            } catch (InterruptedException e) {
+                fp2().log().error(PStrings.fastFormat("%s was interrupted while waiting for %s to exit", Thread.currentThread(), threads.get(0)), e);
+                interrupted = true;
+            }
+
+            //remove all threads which have exited
+            threads.removeIf(thread -> !thread.isAlive());
+        } while (!threads.isEmpty()); //repeat until all threads have exited
 
         //remove all threads from thread->group map now that they're shut down
         this.threads.forEach(thread -> checkState(this.manager.threadsToGroups().remove(thread, this), "unable to remove thread->group mapping %s->%s from THREADS_TO_GROUPS map?!?", thread, this));

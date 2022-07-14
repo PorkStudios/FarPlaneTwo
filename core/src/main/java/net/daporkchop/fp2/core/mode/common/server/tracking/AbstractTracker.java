@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.common.server.tracking;
@@ -32,16 +31,15 @@ import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
 import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
 import net.daporkchop.fp2.core.util.datastructure.RecyclingArrayDeque;
-import net.daporkchop.fp2.core.util.datastructure.SimpleSet;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
@@ -49,7 +47,12 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
+ * Base implementation of {@link IFarTracker}.
+ * <p>
+ * This provides the generic functionality for scheduling tracker updates, manages the queue of tiles to be loaded and schedules loads for new tiles as necessary.
+ *
  * @author DaPorkchop_
+ * @see AbstractTrackerManager
  */
 public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, STATE> implements IFarTracker<POS, T> {
     protected final AbstractTrackerManager<POS, T> manager;
@@ -58,8 +61,17 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
     protected final IFarServerContext<POS, T> context;
     protected final IFarCoordLimits<POS> coordLimits;
 
+    /**
+     * The actual queue of positions to load.
+     * <p>
+     * May only be accessed while holding this tracker's lock. All operations other than polling additionally require that the queue be paused.
+     */
     protected final RecyclingArrayDeque<POS> queuedPositions = new RecyclingArrayDeque<>();
-    protected final SimpleSet<POS> loadedPositions;
+
+    /**
+     * The set of positions which are loaded.
+     */
+    protected final Set<POS> loadedPositions;
     protected final Set<POS> waitingPositions = ConcurrentHashMap.newKeySet();
     protected final Queue<POS> doneWaitingPositions = new ConcurrentLinkedQueue<>();
 
@@ -68,7 +80,7 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
     protected volatile STATE lastState;
     protected volatile STATE nextState;
 
-    protected volatile boolean queuePaused = false;
+    protected final ReentrantLock queuePausedLock = new ReentrantLock();
     protected volatile boolean closed = false;
 
     protected long lastUpdateTime;
@@ -113,31 +125,40 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
                 this.lastState = nextState;
                 this.nextState = null;
 
-                //untrack all the currently waiting tiles
-                //  this makes tile loading more responsive by forcing high-priority tiles to the front of the execution queue, and simplifies
-                //  synchronization logic in the rest of this class' code
+                //pause
                 this.pauseQueue();
-                this.clearWaiting();
 
-                try (SimpleSet<POS> untrackingPositions = this.mode.directPosAccess().newPositionSet()) {
-                    //actually update the tracking state (this is synchronized)
-                    this.updateState(lastState, nextState, untrackingPositions);
+                try {
+                    if (this.closed) { //the tracker has been closed, exit
+                        return;
+                    }
 
-                    //handle unloading tiles now that we no longer hold a lock
-                    untrackingPositions.forEach(pos -> this.manager.stopTracking(this, pos));
+                    //untrack all the currently waiting tiles
+                    //  this makes tile loading more responsive by forcing high-priority tiles to the front of the execution queue, and simplifies
+                    //  synchronization logic in the rest of this class' code
+                    this.clearWaiting();
+
+                    {
+                        Set<POS> untrackingPositions = this.mode.directPosAccess().newPositionSet();
+                        //actually update the tracking state (this is synchronized)
+                        this.updateState(lastState, nextState, untrackingPositions);
+
+                        //handle unloading tiles now that we no longer hold a lock
+                        untrackingPositions.forEach(pos -> this.manager.stopTracking(this, pos));
+                    }
+
+                    checkState(this.waitingPositions.isEmpty(), "load queue isn't empty?!? %s", this.waitingPositions);
+                } finally {
+                    //unpause the queue so that we can fill it up again
+                    this.unpauseQueue();
                 }
-
-                checkState(this.waitingPositions.isEmpty(), "load queue isn't empty?!? %s", this.waitingPositions);
-
-                //unpause the queue so that we can fill it up again
-                this.unpauseQueue();
             }
         }
 
         this.updateWaiting();
     }
 
-    protected synchronized void updateState(STATE lastState, @NonNull STATE nextState, @NonNull SimpleSet<POS> untrackingPositions) {
+    protected void updateState(STATE lastState, @NonNull STATE nextState, @NonNull Set<POS> untrackingPositions) {
         long startTime = System.nanoTime();
 
         if (lastState != null) { //if lastState exists, we can diff the positions (which is faster than iterating over all of them)
@@ -166,19 +187,34 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
     }
 
     /**
-     * Unpauses the load queue, allowing waiting positions to be added again.
+     * @return whether or not the load queue is currently paused
+     */
+    protected boolean isQueuePaused() {
+        return this.queuePausedLock.isLocked();
+    }
+
+    /**
+     * Pauses the load queue.
      * <p>
      * {@link #unpauseQueue()} must be called at some point after calling this method, otherwise tile loading will stop.
      */
-    protected synchronized void pauseQueue() { //synchronizing is, in fact, critical to making this work (i think)
-        this.queuePaused = true;
+    protected void pauseQueue() { //synchronizing is, in fact, critical to making this work (i think)
+        assert !Thread.holdsLock(this) : "current thread may not hold a lock";
+
+        synchronized (this) {
+            this.queuePausedLock.lock();
+        }
     }
 
     /**
      * Unpauses the load queue, allowing waiting positions to be added again.
      */
     protected void unpauseQueue() {
-        this.queuePaused = false;
+        assert !Thread.holdsLock(this) : "current thread must hold this tracker's lock";
+        assert this.isQueuePaused() : "queue must be paused";
+        assert this.queuePausedLock.isHeldByCurrentThread() : "queue must be paused by the current thread";
+
+        this.queuePausedLock.unlock();
     }
 
     /**
@@ -186,15 +222,20 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
      * <p>
      * The queue must be paused (using {@link #pauseQueue()}) when this method is called.
      */
-    protected synchronized void clearWaiting() {
+    protected void clearWaiting() {
+        assert this.isQueuePaused() : "queue must be paused";
+
         //move completed positions from waitingPositions to loadedPositions
         for (POS pos; (pos = this.doneWaitingPositions.poll()) != null; ) {
-            this.waitingPositions.remove(pos);
-            this.loadedPositions.add(pos);
+            if (this.waitingPositions.remove(pos)) {
+                this.loadedPositions.add(pos);
+            } else {
+                fp2().log().trace("clearWaiting: failed to promote " + pos + " from waiting to loaded, was it cancelled?");
+            }
         }
 
         //remove the rest of the waiting positions, stop tracking them and re-add them to the load queue
-        List<POS> waitingPositions = new ArrayList<>(this.waitingPositions);
+        Set<POS> waitingPositions = this.mode.directPosAccess().clonePositionsAsSet(this.waitingPositions);
         this.waitingPositions.clear();
 
         //stop tracking all positions in the set
@@ -208,11 +249,17 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
      * Mark completed tiles as loaded, and replaces them by beginning to wait on new positions from the queue (if possible).
      */
     protected void updateWaiting() {
+        if (Thread.holdsLock(this)) { //this thread already holds this tracker's lock! to avoid recursive invocations to this.manager.beginTracking(), we'll schedule a call
+            //  to doUpdate() from the tracker executor, which will eventually call updateWaiting() again.
+            this.manager.scheduler().schedule(this);
+            return;
+        }
+
         int targetLoadQueueSize = fp2().globalConfig().performance().terrainThreads();
-        List<POS> positions = new ArrayList<>();
+        List<POS> positions = this.mode.directPosAccess().newPositionList();
 
         do {
-            if (this.queuePaused) { //the tracker update thread has specifically requested to pause queue polling, so we shouldn't do anything here
+            if (this.isQueuePaused()) { //the tracker update thread has specifically requested to pause queue polling, so we shouldn't do anything here
                 return;
             }
 
@@ -226,10 +273,17 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
             }
 
             try {
+                if (this.isQueuePaused()) { //the queue might have been paused in the time between the first check and acquiring this tracker's monitor
+                    return;
+                }
+
                 //move completed positions from waitingPositions to loadedPositions
                 for (POS pos; (pos = this.doneWaitingPositions.poll()) != null; ) {
-                    this.waitingPositions.remove(pos);
-                    this.loadedPositions.add(pos);
+                    if (this.waitingPositions.remove(pos)) {
+                        this.loadedPositions.add(pos);
+                    } else {
+                        fp2().log().trace("updateWaiting: failed to promote " + pos + " from waiting to loaded, was it cancelled?");
+                    }
                 }
 
                 if (this.queuedPositions.isEmpty()) { //the queue is empty, so there's nothing left to do
@@ -246,14 +300,16 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
                     //buffer the positions we want to add in a list (we don't want to being tracking them while holding the monitor since that could deadlock)
                     positions.add(pos);
                 }
+
+                //begin tracking all of the added positions
+                // unfortunately, we still have to be holding the lock while this happens, as otherwise a subsequent update may try to tell the manager to untrack a waiting position
+                // before we've even begun tracking it...
+                this.waitingPositions.addAll(positions);
+                positions.forEach(pos -> this.manager.beginTracking(this, pos));
+                positions.clear();
             } finally {
                 PUnsafe.monitorExit(this);
             }
-
-            //begin tracking all of the added positions
-            this.waitingPositions.addAll(positions);
-            positions.forEach(pos -> this.manager.beginTracking(this, pos));
-            positions.clear();
         } while (!this.doneWaitingPositions.isEmpty() || this.waitingPositions.size() < targetLoadQueueSize);
     }
 
@@ -278,7 +334,7 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
                 this.updateWaiting();
             }
         } catch (Throwable t) {
-            this.context.tileProvider().world().fp2_IFarWorld_workerManager().handle(t);
+            this.context.tileProvider().world().workerManager().handle(t);
             PUnsafe.throwException(t);
         }
     }
@@ -297,30 +353,35 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
 
     @CalledFromServerThread
     @Override
-    public synchronized void close() {
-        checkState(!this.closed, "already closed!");
-        this.closed = true;
-
+    public void close() {
         //pause the queue to prevent workers from doing anything else
         this.pauseQueue();
 
-        //tell the client to unload all tiles
-        this.context.sendMultiTileUnload(this.loadedPositions);
+        try {
+            checkState(!this.closed, "already closed!");
+            this.closed = true;
 
-        //untrack all positions
-        //  (using temporary set to avoid CME)
-        try (SimpleSet<POS> tmp = this.mode.directPosAccess().newPositionSet()) {
-            this.waitingPositions.forEach(tmp::add);
-            this.loadedPositions.forEach(tmp::add);
+            //tell the client to unload all tiles
+            this.context.sendMultiTileUnload(this.loadedPositions);
 
-            tmp.forEach(pos -> this.manager.stopTracking(this, pos));
+            //untrack all positions
+            //  (using temporary set to avoid CME)
+            {
+                Set<POS> tmp = this.mode.directPosAccess().newPositionSet();
+
+                tmp.addAll(this.waitingPositions);
+                tmp.addAll(this.loadedPositions);
+
+                tmp.forEach(pos -> this.manager.stopTracking(this, pos));
+            }
+
+            //release everything
+            this.queuedPositions.close();
+            this.waitingPositions.clear();
+            this.doneWaitingPositions.clear();
+        } finally {
+            this.unpauseQueue();
         }
-
-        //release everything
-        this.queuedPositions.close();
-        this.loadedPositions.close();
-        this.waitingPositions.clear();
-        this.doneWaitingPositions.clear();
     }
 
     @Override
@@ -328,7 +389,7 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
         //i don't care that i'm calling #count() and #size() in a not thread-safe manner - worst-case scenario, the count is reported incorrectly for a split second
 
         return DebugStats.Tracking.builder()
-                .tilesLoaded(this.loadedPositions.count())
+                .tilesLoaded(this.loadedPositions.size())
                 .tilesLoading(this.waitingPositions.size())
                 .tilesQueued(this.queuedPositions.size())
                 .tilesTrackedGlobal(this.manager.entries().size())

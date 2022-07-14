@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -22,9 +22,9 @@ package net.daporkchop.fp2.core.util.datastructure;
 
 import lombok.NonNull;
 import lombok.Setter;
+import net.daporkchop.fp2.core.util.BreakOutOfLambdaException;
 import net.daporkchop.lib.primitive.lambda.IntIntConsumer;
 import net.daporkchop.lib.primitive.lambda.IntIntIntConsumer;
-import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
@@ -46,19 +46,24 @@ public interface NDimensionalIntSet extends IDatastructure<NDimensionalIntSet> {
     /**
      * @return the number of points in this set
      */
-    long count();
+    int size();
 
     /**
      * @return whether or not this set is empty
      */
     default boolean isEmpty() {
-        return this.count() == 0L;
+        return this.size() == 0;
     }
 
     /**
      * Removes every point in this set.
      */
     void clear();
+
+    /**
+     * @return a clone of this set
+     */
+    NDimensionalIntSet clone();
 
     //
     // generic methods
@@ -249,14 +254,100 @@ public interface NDimensionalIntSet extends IDatastructure<NDimensionalIntSet> {
         });
     }
 
-    @Override
-    int refCnt();
+    //
+    // bulk operations
+    //
 
-    @Override
-    NDimensionalIntSet retain() throws AlreadyReleasedException;
+    /**
+     * Checks whether or not this set contains every point in the given {@link NDimensionalIntSet}
+     *
+     * @param set the {@link NDimensionalIntSet} containing the points to check for
+     * @return whether or not this set contains every point in the given {@link NDimensionalIntSet}
+     */
+    default boolean containsAll(@NonNull NDimensionalIntSet set) {
+        {
+            int thisDimensions = this.dimensions();
+            int otherDimensions = set.dimensions();
+            checkArg(thisDimensions == otherDimensions, "mismatched dimension count (this: %dD, set: %dD)", thisDimensions, otherDimensions);
+        }
 
-    @Override
-    boolean release() throws AlreadyReleasedException;
+        try {
+            //check every point
+            set.forEach(point -> {
+                if (!this.contains(point)) {
+                    throw BreakOutOfLambdaException.get();
+                }
+            });
+
+            //every point was contained
+            return true;
+        } catch (BreakOutOfLambdaException e) {
+            //a point wasn't contained, return false
+            return false;
+        }
+    }
+
+    /**
+     * Adds every point in the given {@link NDimensionalIntSet} to this set.
+     *
+     * @param set the {@link NDimensionalIntSet} containing the points to add
+     * @return whether or not this set was modified as a result of this operation (i.e. whether or not any points were added)
+     */
+    default boolean addAll(@NonNull NDimensionalIntSet set) {
+        {
+            int thisDimensions = this.dimensions();
+            int otherDimensions = set.dimensions();
+            checkArg(thisDimensions == otherDimensions, "mismatched dimension count (this: %dD, set: %dD)", thisDimensions, otherDimensions);
+        }
+
+        //local class contains the return value without having to allocate a second object to get the return value
+        class State implements Consumer<int[]> {
+            boolean modified = false;
+
+            @Override
+            public void accept(int[] point) {
+                //try to add each point and update the "modified" flag if successful
+                if (NDimensionalIntSet.this.add(point)) {
+                    this.modified = true;
+                }
+            }
+        }
+
+        State state = new State();
+        set.forEach(state);
+        return state.modified;
+    }
+
+    /**
+     * Removes every point in the given {@link NDimensionalIntSet} from this set.
+     *
+     * @param set the {@link NDimensionalIntSet} containing the points to remove
+     * @return whether or not this set was modified as a result of this operation (i.e. whether or not any points were removed)
+     */
+    default boolean removeAll(@NonNull NDimensionalIntSet set) {
+        {
+            int thisDimensions = this.dimensions();
+            int otherDimensions = set.dimensions();
+            checkArg(thisDimensions == otherDimensions, "mismatched dimension count (this: %dD, set: %dD)", thisDimensions, otherDimensions);
+        }
+
+        //local class contains the return value without having to allocate a second object to get the return value
+        class State implements Consumer<int[]> {
+            boolean modified = false;
+
+            @Override
+            public void accept(int[] point) {
+                //try to remove each point and update the "modified" flag if successful
+                if (NDimensionalIntSet.this.remove(point)) {
+                    this.modified = true;
+                }
+            }
+        }
+
+        State state = new State();
+        set.forEach(state);
+        return state.modified;
+    }
 
     @Setter
     abstract class Builder extends IDatastructure.Builder<Builder, NDimensionalIntSet> {

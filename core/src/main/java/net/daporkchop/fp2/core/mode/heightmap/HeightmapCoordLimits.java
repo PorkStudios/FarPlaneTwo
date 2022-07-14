@@ -42,8 +42,8 @@ public class HeightmapCoordLimits implements IFarCoordLimits<HeightmapPos> {
     public boolean contains(@NonNull HeightmapPos pos) {
         int shift = HT_SHIFT + pos.level();
 
-        return pos.x() >= asrFloor(this.minX, shift) && pos.x() <= asrCeil(this.maxX, shift)
-               && pos.z() >= asrFloor(this.minZ, shift) && pos.z() <= asrCeil(this.maxZ, shift);
+        return pos.x() >= asrFloor(this.minX, shift) && pos.x() < asrCeil(this.maxX, shift)
+               && pos.z() >= asrFloor(this.minZ, shift) && pos.z() < asrCeil(this.maxZ, shift);
     }
 
     @Override
@@ -56,7 +56,7 @@ public class HeightmapCoordLimits implements IFarCoordLimits<HeightmapPos> {
     @Override
     public HeightmapPos max(int level) {
         return new HeightmapPos(level,
-                incrementExact(asrCeil(this.maxX, HT_SHIFT + level)),
-                incrementExact(asrCeil(this.maxZ, HT_SHIFT + level)));
+                asrCeil(this.maxX, HT_SHIFT + level),
+                asrCeil(this.maxZ, HT_SHIFT + level));
     }
 }

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -25,10 +25,14 @@ import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.mode.api.IFarDirectPosAccess;
-import net.daporkchop.fp2.core.mode.voxel.util.VoxelPosSet;
-import net.daporkchop.fp2.core.util.datastructure.SimpleSet;
+import net.daporkchop.fp2.core.mode.voxel.util.VoxelPosArrayList;
+import net.daporkchop.fp2.core.mode.voxel.util.VoxelPosHashSet;
 import net.daporkchop.fp2.core.util.math.geometry.Volume;
 import net.daporkchop.lib.unsafe.PUnsafe;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
 
 import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.fp2.core.mode.voxel.VoxelConstants.*;
@@ -186,7 +190,27 @@ public class VoxelDirectPosAccess implements IFarDirectPosAccess<VoxelPos> {
     }
 
     @Override
-    public SimpleSet<VoxelPos> newPositionSet() {
-        return new VoxelPosSet();
+    public Set<VoxelPos> newPositionSet() {
+        return new VoxelPosHashSet();
+    }
+
+    @Override
+    public Set<VoxelPos> clonePositionsAsSet(@NonNull Collection<VoxelPos> src) {
+        return new VoxelPosHashSet(src);
+    }
+
+    @Override
+    public List<VoxelPos> newPositionList() {
+        return new VoxelPosArrayList();
+    }
+
+    @Override
+    public List<VoxelPos> newPositionList(int initialCapacity) {
+        return new VoxelPosArrayList(initialCapacity);
+    }
+
+    @Override
+    public List<VoxelPos> clonePositionsAsList(@NonNull Collection<VoxelPos> src) {
+        return new VoxelPosArrayList(src);
     }
 }
