@@ -26,7 +26,6 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
-import net.daporkchop.fp2.api.event.ReloadCompleteEvent;
 import net.daporkchop.fp2.api.event.ReturningEvent;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.fp2.core.event.AbstractReloadEvent;
@@ -58,11 +57,6 @@ public interface TextureUVs {
             protected void handleFailure(int failed, int total, @NonNull Throwable cause) {
                 fp2().log().error("texture UV cache reload failed", cause);
                 fp2().client().chat().error("§c%d/%d texture UV cache failed to reload (check log for info)", failed, total);
-            }
-
-            @Override
-            protected ReloadCompleteEvent<TextureUVs> completeEvent() {
-                return new ReloadCompleteEvent<TextureUVs>() {};
             }
         }.fire();
     }

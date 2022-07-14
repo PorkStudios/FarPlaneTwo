@@ -6,6 +6,7 @@
   "client": [
     "client.gui.ATGuiButton1_12",
     "client.gui.ATGuiScreen1_12",
+    "client.multiplayer.ATWorldClient1_12",
     "client.network.ATNetHandlerPlayClient1_12",
     "client.renderer.ATEntityRenderer1_12",
     "client.renderer.ATRenderChunk1_12",

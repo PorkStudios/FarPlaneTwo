@@ -24,10 +24,10 @@ import net.daporkchop.fp2.api.event.ReturningEvent;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 
 /**
- * Fired when a new {@link R} needs to be created for a given {@link IFarWorldServer}.
+ * Fired when a new {@link R} needs to be created for a given {@link IFarLevelServer}.
  * <p>
  * Handlers should return a {@link R}, or nothing if they do not support the world type.
  *
@@ -36,9 +36,9 @@ import net.daporkchop.fp2.core.server.world.IFarWorldServer;
  */
 public interface IFarServerResourceCreationEvent<POS extends IFarPos, T extends IFarTile, R> extends ReturningEvent<R> {
     /**
-     * @return the {@link IFarWorldServer} which a {@link R} will be created for
+     * @return the {@link IFarLevelServer} which a {@link R} will be created for
      */
-    IFarWorldServer world();
+    IFarLevelServer world();
 
     /**
      * @return the {@link IFarRenderMode} which the {@link R} will be created for

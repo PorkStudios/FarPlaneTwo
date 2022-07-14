@@ -89,7 +89,7 @@ public abstract class MixinEntityRenderer {
         //directly after vanilla CUTOUT pass
 
         fp2().client().currentPlayer().ifPresent(player -> {
-            IFarClientContext<?, ?> context = player.fp2_IFarPlayerClient_activeContext();
+            IFarClientContext<?, ?> context = player.activeContext();
             IFarRenderer renderer;
             if (context != null && (renderer = context.renderer()) != null) {
                 this.mc.profiler.startSection("fp2_render");
@@ -211,7 +211,7 @@ public abstract class MixinEntityRenderer {
                     target = "Lnet/minecraft/client/renderer/EntityRenderer;farPlaneDistance:F",
                     opcode = Opcodes.PUTFIELD))
     private void fp2_setupCameraTransform_increaseFarPlaneDistance(EntityRenderer renderer, float farPlaneDistance) {
-        IFarClientContext<?, ?> context = fp2().client().currentPlayer().map(IFarPlayerClient::fp2_IFarPlayerClient_activeContext).orElse(null);
+        IFarClientContext<?, ?> context = fp2().client().currentPlayer().map(IFarPlayerClient::activeContext).orElse(null);
         if (context != null) {
             FP2Config config = context.config();
             farPlaneDistance = config.effectiveRenderDistanceBlocks();

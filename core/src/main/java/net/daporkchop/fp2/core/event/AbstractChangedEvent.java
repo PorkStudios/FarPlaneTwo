@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -23,16 +23,16 @@ package net.daporkchop.fp2.core.event;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.api.event.ChangedEvent;
+import net.daporkchop.fp2.api.event.generic.FChangedEvent;
 
 /**
- * Implementation of {@link ChangedEvent}.
+ * Implementation of {@link FChangedEvent}.
  *
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
 @Getter
-public abstract class AbstractChangedEvent<T> implements ChangedEvent<T> {
+public abstract class AbstractChangedEvent<T> implements FChangedEvent<T> {
     @NonNull
     protected final T prev;
     @NonNull

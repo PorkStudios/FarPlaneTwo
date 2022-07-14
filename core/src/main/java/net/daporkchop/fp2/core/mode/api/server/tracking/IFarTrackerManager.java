@@ -23,11 +23,11 @@ import lombok.NonNull;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarServerContext;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
 
 /**
- * Manages {@link IFarTracker} instances belonging to individual {@link IFarServerContext}s for a specific render mode in a specific {@link IFarWorldServer}.
+ * Manages {@link IFarTracker} instances belonging to individual {@link IFarServerContext}s for a specific render mode in a specific {@link IFarLevelServer}.
  *
  * @author DaPorkchop_
  */

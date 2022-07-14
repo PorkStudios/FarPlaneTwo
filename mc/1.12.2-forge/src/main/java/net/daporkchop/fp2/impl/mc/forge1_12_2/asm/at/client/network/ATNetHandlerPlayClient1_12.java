@@ -20,6 +20,7 @@
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.network;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.network.NetHandlerPlayClient;
 import net.minecraft.network.NetworkManager;
@@ -31,6 +32,9 @@ import org.spongepowered.asm.mixin.gen.Accessor;
  */
 @Mixin(NetHandlerPlayClient.class)
 public interface ATNetHandlerPlayClient1_12 {
+    @Accessor
+    Minecraft getClient();
+
     @Accessor
     NetworkManager getNetManager();
 

@@ -21,6 +21,11 @@
 package net.daporkchop.fp2.core.client.player;
 
 import lombok.NonNull;
+import lombok.SneakyThrows;
+import net.daporkchop.fp2.api.util.Identifier;
+import net.daporkchop.fp2.core.FP2Core;
+import net.daporkchop.fp2.core.client.world.AbstractWorldClient;
+import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
@@ -28,7 +33,6 @@ import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.client.IFarTileCache;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
-import net.daporkchop.fp2.core.client.world.IFarWorldClient;
 import net.daporkchop.fp2.core.network.packet.debug.server.SPacketDebugUpdateStatistics;
 import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketHandshake;
@@ -40,7 +44,7 @@ import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUnloadTiles
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUpdateConfig;
 import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromClientThread;
-import net.daporkchop.fp2.core.util.annotation.CalledFromNetworkThread;
+import net.daporkchop.fp2.core.util.annotation.CalledWithMonitor;
 import net.daporkchop.lib.common.util.PorkUtil;
 
 import java.util.Objects;
@@ -51,7 +55,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractFarPlayerClient implements IFarPlayerClient {
+public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFarPlayerClient {
     protected FP2Config serverConfig;
     protected FP2Config config;
 
@@ -61,12 +65,18 @@ public abstract class AbstractFarPlayerClient implements IFarPlayerClient {
     protected boolean clientReady;
     protected boolean initialConfigSent;
     protected boolean sessionOpen;
+    protected boolean closed;
 
     protected DebugStats.Tracking debugServerStats;
 
-    @CalledFromNetworkThread
+    @CalledFromAnyThread
     @Override
-    public void fp2_IFarPlayerClient_handle(@NonNull Object packet) {
+    public synchronized void handle(@NonNull Object packet) {
+        if (this.closed) { //the player has been closed, we should drop any incoming packets as they are likely just backlogged and hadn't been processed yet when the player was closed
+            this.fp2().log().warn(className(this) + ": received unexpected packet " + className(packet) + " after player had been closed");
+            return;
+        }
+
         if (packet instanceof SPacketHandshake) {
             this.handle((SPacketHandshake) packet);
         } else if (packet instanceof SPacketSessionBegin) {
@@ -90,6 +100,7 @@ public abstract class AbstractFarPlayerClient implements IFarPlayerClient {
         }
     }
 
+    @CalledWithMonitor
     protected void handle(@NonNull SPacketHandshake packet) {
         checkState(!this.handshakeReceived, "handshake packet has already been received!");
         this.handshakeReceived = true;
@@ -99,6 +110,7 @@ public abstract class AbstractFarPlayerClient implements IFarPlayerClient {
         this.trySendInitialConfig();
     }
 
+    @CalledWithMonitor
     protected void handle(@NonNull SPacketSessionBegin packet) {
         checkState(!this.sessionOpen, "a session is already open!");
         this.sessionOpen = true;
@@ -107,25 +119,26 @@ public abstract class AbstractFarPlayerClient implements IFarPlayerClient {
         this.fp2().log().info("beginning session with mode %s", mode);
 
         if (mode != null) {
-            this.context = mode.clientContext(this.createWorldClient(packet), this.config);
+            AbstractWorldClient.COORD_LIMITS_HACK.set(packet.coordLimits());
+            try {
+                this.context = mode.clientContext(this.loadActiveLevel(), this.config);
+            } finally {
+                AbstractWorldClient.COORD_LIMITS_HACK.remove();
+            }
         }
     }
 
-    protected abstract IFarWorldClient createWorldClient(@NonNull SPacketSessionBegin packet); //TODO: i want to get rid of this and figure out how to *not* have to include the coordinate bounds in the session begin packet
+    protected abstract IFarLevelClient loadActiveLevel(); //TODO: i want to get rid of this and figure out how to *not* have to include the coordinate bounds in the session begin packet
 
+    @CalledWithMonitor
     protected void handle(@NonNull SPacketSessionEnd packet) {
         checkState(this.sessionOpen, "no session is currently open!");
         this.sessionOpen = false;
 
         this.fp2().log().info("ending session");
-
-        if (this.context != null) {
-            this.context.close();
-            this.context.world().fp2_IFarWorld_close();
-            this.context = null;
-        }
     }
 
+    @CalledWithMonitor
     protected void handle(@NonNull SPacketTileData packet) {
         checkState(this.sessionOpen, "no session is currently open!");
         checkState(this.context != null, "active session has no render mode!");
@@ -135,6 +148,7 @@ public abstract class AbstractFarPlayerClient implements IFarPlayerClient {
         //this.fp2_context.tileCache().receiveTile(uncheckedCast(packet.tile().compressed()));
     }
 
+    @CalledWithMonitor
     protected void handle(@NonNull SPacketUnloadTile packet) {
         checkState(this.sessionOpen, "no session is currently open!");
         checkState(this.context != null, "active session has no render mode!");
@@ -142,6 +156,7 @@ public abstract class AbstractFarPlayerClient implements IFarPlayerClient {
         this.context.tileCache().unloadTile(uncheckedCast(packet.pos()));
     }
 
+    @CalledWithMonitor
     protected void handle(@NonNull SPacketUnloadTiles packet) {
         checkState(this.sessionOpen, "no session is currently open!");
         checkState(this.context != null, "active session has no render mode!");
@@ -149,6 +164,7 @@ public abstract class AbstractFarPlayerClient implements IFarPlayerClient {
         packet.positions().forEach(PorkUtil.<IFarTileCache<IFarPos, ?>>uncheckedCast(this.context.tileCache())::unloadTile);
     }
 
+    @CalledWithMonitor
     protected void handle(@NonNull SPacketUpdateConfig.Merged packet) {
         if (Objects.equals(this.config, packet.config())) { //nothing changed, so nothing to do!
             return;
@@ -166,25 +182,27 @@ public abstract class AbstractFarPlayerClient implements IFarPlayerClient {
         }
     }
 
+    @CalledWithMonitor
     protected void handle(@NonNull SPacketUpdateConfig.Server packet) {
         this.serverConfig = packet.config();
         this.fp2().log().info("server notified remote config update: %s", this.serverConfig);
     }
 
+    @CalledWithMonitor
     protected void handleDebug(@NonNull SPacketDebugUpdateStatistics packet) {
         this.debugServerStats = packet.tracking();
     }
 
     @CalledFromAnyThread
     @Override
-    public DebugStats.Tracking fp2_IFarPlayerClient_debugServerStats() {
+    public DebugStats.Tracking debugServerStats() {
         return this.debugServerStats;
     }
 
     @CalledFromAnyThread
     @CalledFromClientThread
     @Override
-    public void fp2_IFarPlayerClient_ready() {
+    public synchronized void ready() {
         if (!this.clientReady) {
             this.clientReady = true;
 
@@ -192,25 +210,49 @@ public abstract class AbstractFarPlayerClient implements IFarPlayerClient {
         }
     }
 
-    protected synchronized void trySendInitialConfig() {
+    @CalledWithMonitor
+    protected void trySendInitialConfig() {
         if (!this.initialConfigSent) {
             if (this.handshakeReceived && this.clientReady) {
                 this.initialConfigSent = true;
 
-                this.fp2_IFarPlayerClient_send(new CPacketClientConfig().config(this.fp2().globalConfig()));
+                this.send(new CPacketClientConfig().config(this.fp2().globalConfig()));
             }
         }
     }
 
     @CalledFromAnyThread
     @Override
-    public FP2Config fp2_IFarPlayerClient_serverConfig() {
+    public synchronized void close() {
+        checkState(!this.closed, "already closed!");
+        this.closed = true;
+
+        this.closeSessionIfOpen();
+    }
+
+    @CalledWithMonitor
+    @SneakyThrows
+    protected void closeSessionIfOpen() {
+        if (this.context != null) { //a context is set, we should close it
+            Identifier levelId = this.context.level().id();
+
+            //TODO: better solution than casting to AbstractWorldClient
+            try (AutoCloseable unloadLevel = () -> ((AbstractWorldClient<?, ?, ?, ?, ?>) this.world()).unloadLevel(levelId); //unload the level, since we loaded it earlier
+                 IFarClientContext<?, ?> context = this.context) {
+                this.context = null;
+            }
+        }
+    }
+
+    @CalledFromAnyThread
+    @Override
+    public FP2Config serverConfig() {
         return this.serverConfig;
     }
 
     @CalledFromAnyThread
     @Override
-    public FP2Config fp2_IFarPlayerClient_config() {
+    public FP2Config config() {
         return this.config;
     }
 
@@ -220,7 +262,7 @@ public abstract class AbstractFarPlayerClient implements IFarPlayerClient {
 
     @CalledFromAnyThread
     @Override
-    public <POS extends IFarPos, T extends IFarTile> IFarClientContext<POS, T> fp2_IFarPlayerClient_activeContext() {
+    public <POS extends IFarPos, T extends IFarTile> IFarClientContext<POS, T> activeContext() {
         return uncheckedCast(this.context);
     }
 }

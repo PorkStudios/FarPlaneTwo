@@ -88,7 +88,7 @@ public class FP2Network1_12_2 {
         class ClientboundHandler implements IMessageHandler<IMessage, IMessage> {
             @Override
             public IMessage onMessage(IMessage message, MessageContext ctx) {
-                ((IMixinNetHandlerPlayClient) ctx.getClientHandler()).fp2_farPlayerClient().fp2_IFarPlayerClient_handle(((Supplier) message).get());
+                ((IMixinNetHandlerPlayClient) ctx.getClientHandler()).fp2_playerClient().get().handle(((Supplier) message).get());
                 return null;
             }
         }

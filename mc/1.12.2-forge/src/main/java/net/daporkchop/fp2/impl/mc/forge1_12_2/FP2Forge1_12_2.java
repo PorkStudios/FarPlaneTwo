@@ -21,24 +21,26 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.api.FP2;
-import net.daporkchop.fp2.common.util.Identifier;
+import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.fp2.common.util.exception.ResourceNotFoundException;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.FastRegistry;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.x86.x86FeatureDetector;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.debug.FP2Debug;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.util.I18n;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.util.I18n1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.client.FP2Client1_12_2;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.util.log.Log4jAsPorkLibLogger;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.server.FP2Server1_12_2;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.FastRegistry;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.x86.x86FeatureDetector;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.network.FP2Network1_12_2;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.server.FP2Server1_12_2;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.util.I18n1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.event.IdMappingsChangedEvent;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.util.log.Log4jAsPorkLibLogger;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.threading.futureexecutor.ServerThreadMarkedFutureExecutor;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.world.DimensionType;
+import net.minecraft.world.World;
 import net.minecraftforge.fml.client.FMLClientHandler;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Loader;
@@ -48,6 +50,7 @@ import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLModIdMappingEvent;
 import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
+import net.minecraftforge.fml.common.event.FMLServerAboutToStartEvent;
 import net.minecraftforge.fml.common.event.FMLServerStoppedEvent;
 import net.minecraftforge.fml.common.network.NetworkCheckHandler;
 import net.minecraftforge.fml.relauncher.Side;
@@ -60,6 +63,7 @@ import java.nio.file.Path;
 import java.util.Map;
 
 import static net.daporkchop.fp2.core.debug.FP2Debug.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
@@ -69,6 +73,20 @@ import static net.daporkchop.fp2.core.debug.FP2Debug.*;
         dependencies = "required-after:forgerocks@[6.28.2-1.12.2,);after:cubicchunks@[1.12.2-0.0.1188.0,)",
         acceptedMinecraftVersions = "1.12.2")
 public class FP2Forge1_12_2 extends FP2Core implements ResourceProvider {
+    public static Identifier getIdentifierForWorld(@NonNull World world) {
+        int dimensionId = world.provider.getDimension();
+        DimensionType dimensionType = world.provider.getDimensionType();
+
+        //sanity check because i'm not entirely sure what kind of crazy shit mods do with dimension types, and i want to be sure not to screw anything up
+        checkState(dimensionId == dimensionType.getId(), "dimension #%d has invalid ID: '%s' is expected to have ID %d", dimensionId, dimensionType.getName(), dimensionType.getId());
+
+        return Identifier.fromLenient("minecraft", dimensionType.getName());
+    }
+
+    public static int getDimensionForWorldIdentifier(@NonNull Identifier id) {
+        return DimensionType.byName(id.path()).getId();
+    }
+
     private FP2Client1_12_2 client;
     private FP2Server1_12_2 server;
 
@@ -122,8 +140,15 @@ public class FP2Forge1_12_2 extends FP2Core implements ResourceProvider {
     }
 
     @Mod.EventHandler
+    public void serverAboutToStart(FMLServerAboutToStartEvent event) {
+        this.eventBus().fire(event);
+    }
+
+    @Mod.EventHandler
     public void serverStopped(FMLServerStoppedEvent event) {
         try {
+            this.eventBus().fire(event);
+
             ServerThreadMarkedFutureExecutor.getFor(FMLCommonHandler.instance().getMinecraftServerInstance()).close();
         } catch (Exception e) {
             e.printStackTrace();

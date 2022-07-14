@@ -23,7 +23,7 @@ package net.daporkchop.fp2.core.mode.heightmap.ctx;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.mode.common.ctx.AbstractFarServerContext;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapTile;
@@ -33,7 +33,7 @@ import net.daporkchop.fp2.core.server.player.IFarPlayerServer;
  * @author DaPorkchop_
  */
 public class HeightmapServerContext extends AbstractFarServerContext<HeightmapPos, HeightmapTile> {
-    public HeightmapServerContext(@NonNull IFarPlayerServer player, @NonNull IFarWorldServer world, @NonNull FP2Config config, @NonNull IFarRenderMode<HeightmapPos, HeightmapTile> mode) {
+    public HeightmapServerContext(@NonNull IFarPlayerServer player, @NonNull IFarLevelServer world, @NonNull FP2Config config, @NonNull IFarRenderMode<HeightmapPos, HeightmapTile> mode) {
         super(player, world, config, mode);
     }
 }

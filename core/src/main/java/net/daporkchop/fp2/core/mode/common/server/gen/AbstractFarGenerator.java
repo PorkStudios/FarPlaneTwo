@@ -29,14 +29,14 @@ import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGenerator;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 
 /**
  * @author DaPorkchop_
  */
 @Getter
 public abstract class AbstractFarGenerator<POS extends IFarPos, T extends IFarTile> implements IFarGenerator<POS, T> {
-    private final IFarWorldServer world;
+    private final IFarLevelServer world;
     private final IFarTileProvider<POS, T> provider;
 
     private final FGameRegistry registry;
@@ -45,14 +45,14 @@ public abstract class AbstractFarGenerator<POS extends IFarPos, T extends IFarTi
 
     private final int seaLevel;
 
-    public AbstractFarGenerator(@NonNull IFarWorldServer world, @NonNull IFarTileProvider<POS, T> provider) {
+    public AbstractFarGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<POS, T> provider) {
         this.world = world;
         this.provider = provider;
 
-        this.registry = world.fp2_IFarWorld_registry();
+        this.registry = world.registry();
         this.extendedBiomeRegistryData = this.registry.extendedBiomeRegistryData();
         this.extendedStateRegistryData = this.registry.extendedStateRegistryData();
 
-        this.seaLevel = world.fp2_IFarWorldServer_seaLevel();
+        this.seaLevel = world.seaLevel();
     }
 }

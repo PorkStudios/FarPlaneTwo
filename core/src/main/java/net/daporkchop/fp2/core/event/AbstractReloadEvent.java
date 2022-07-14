@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -22,8 +22,7 @@ package net.daporkchop.fp2.core.event;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.api.event.FEventBus;
-import net.daporkchop.fp2.api.event.ReloadCompleteEvent;
-import net.daporkchop.fp2.api.event.ReloadEvent;
+import net.daporkchop.fp2.api.event.generic.FReloadEvent;
 import net.daporkchop.fp2.core.FP2Core;
 
 import java.util.ArrayList;
@@ -32,11 +31,11 @@ import java.util.List;
 import static net.daporkchop.fp2.core.FP2Core.*;
 
 /**
- * Implementation of {@link ReloadEvent}.
+ * Implementation of {@link FReloadEvent}.
  *
  * @author DaPorkchop_
  */
-public abstract class AbstractReloadEvent<T> implements ReloadEvent<T> {
+public abstract class AbstractReloadEvent<T> implements FReloadEvent<T> {
     private final List<Throwable> failureCauses = new ArrayList<>();
     private int total;
 
@@ -54,15 +53,11 @@ public abstract class AbstractReloadEvent<T> implements ReloadEvent<T> {
 
             this.handleFailure(this.failureCauses.size(), this.total, cause);
         }
-
-        fp2().eventBus().fire(this.completeEvent());
     }
 
     protected abstract void handleSuccess(int total);
 
     protected abstract void handleFailure(int failed, int total, @NonNull Throwable cause);
-
-    protected abstract ReloadCompleteEvent<T> completeEvent();
 
     @Override
     public void notifySuccess() {

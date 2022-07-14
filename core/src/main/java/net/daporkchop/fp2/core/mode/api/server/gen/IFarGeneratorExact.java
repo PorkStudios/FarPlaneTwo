@@ -21,8 +21,8 @@
 package net.daporkchop.fp2.core.mode.api.server.gen;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.api.world.FBlockWorld;
-import net.daporkchop.fp2.api.world.GenerationNotAllowedException;
+import net.daporkchop.fp2.api.world.level.FBlockLevel;
+import net.daporkchop.fp2.api.world.level.GenerationNotAllowedException;
 import net.daporkchop.fp2.core.mode.api.IFarCoordLimits;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
@@ -54,15 +54,15 @@ public interface IFarGeneratorExact<POS extends IFarPos, T extends IFarTile> ext
      *     <li>all of the positions must be valid (i.e. within the provider's {@link IFarCoordLimits coordinate limits})</li>
      *     <li>the positions must be chosen such that generation can only fail with a {@link GenerationNotAllowedException} if the input position would have failed. Conversely,
      *     if the input position would have been able to be generated successfully, generation for the whole batch <strong>must</strong> succeed. As thi is entirely dependent
-     *     on the world's internal data representation, it is recommended to use {@link FBlockWorld#guaranteedDataAvailableVolume} to determine which data is guaranteed
+     *     on the world's internal data representation, it is recommended to use {@link FBlockLevel#guaranteedDataAvailableVolume} to determine which data is guaranteed
      *     to be available if the data necessary for generating the input position is.</li>
      * </ul>
      *
-     * @param world the {@link FBlockWorld} instance providing access to block data in the world
+     * @param world the {@link FBlockLevel} instance providing access to block data in the world
      * @param pos   the position of the tile to generate
      * @return an {@link Optional} {@link Collection} containing all the tile positions which may be generated at the same time
      */
-    default Optional<? extends Collection<POS>> batchGenerationGroup(@NonNull FBlockWorld world, @NonNull POS pos) {
+    default Optional<? extends Collection<POS>> batchGenerationGroup(@NonNull FBlockLevel world, @NonNull POS pos) {
         return Optional.empty(); //don't do batch generation by default
     }
 
@@ -77,15 +77,15 @@ public interface IFarGeneratorExact<POS extends IFarPos, T extends IFarTile> ext
      *     <li>all of the positions must be valid (i.e. within the provider's {@link IFarCoordLimits coordinate limits})</li>
      *     <li>the positions must be chosen such that generation can only fail with a {@link GenerationNotAllowedException} if the input position would have failed. Conversely,
      *     if the input position would have been able to be generated successfully, generation for the whole batch <strong>must</strong> succeed. As thi is entirely dependent
-     *     on the world's internal data representation, it is recommended to use {@link FBlockWorld#guaranteedDataAvailableVolume} to determine which data is guaranteed
+     *     on the world's internal data representation, it is recommended to use {@link FBlockLevel#guaranteedDataAvailableVolume} to determine which data is guaranteed
      *     to be available if the data necessary for generating the input position is.</li>
      * </ul>
      *
-     * @param world     the {@link FBlockWorld} instance providing access to block data in the world
+     * @param world     the {@link FBlockLevel} instance providing access to block data in the world
      * @param positions the position of the tile to generate
      * @return an {@link Optional} {@link Collection} containing all the tile positions which may be generated at the same time
      */
-    default Optional<? extends Collection<POS>> batchGenerationGroup(@NonNull FBlockWorld world, @NonNull Collection<POS> positions) {
+    default Optional<? extends Collection<POS>> batchGenerationGroup(@NonNull FBlockLevel world, @NonNull Collection<POS> positions) {
         Set<POS> set = null;
         for (POS pos : positions) {
             Optional<? extends Collection<POS>> optionalBatchGroup = this.batchGenerationGroup(world, pos);
@@ -106,22 +106,22 @@ public interface IFarGeneratorExact<POS extends IFarPos, T extends IFarTile> ext
     /**
      * Generates the terrain in the given tile.
      *
-     * @param world the {@link FBlockWorld} instance providing access to block data in the world
+     * @param world the {@link FBlockLevel} instance providing access to block data in the world
      * @param pos   the position of the tile to generate
      * @param tile  the tile to generate
-     * @throws GenerationNotAllowedException if the generator attempts to access terrain which is not generated, and the given {@link FBlockWorld} does not allow generation
+     * @throws GenerationNotAllowedException if the generator attempts to access terrain which is not generated, and the given {@link FBlockLevel} does not allow generation
      */
-    void generate(@NonNull FBlockWorld world, @NonNull POS pos, @NonNull T tile) throws GenerationNotAllowedException;
+    void generate(@NonNull FBlockLevel world, @NonNull POS pos, @NonNull T tile) throws GenerationNotAllowedException;
 
     /**
      * Generates the terrain in the given tiles.
      *
-     * @param world     the {@link FBlockWorld} instance providing access to block data in the world
+     * @param world     the {@link FBlockLevel} instance providing access to block data in the world
      * @param positions the positions of the tiles to generate
      * @param tiles     the tiles to generate
-     * @throws GenerationNotAllowedException if the generator attempts to access terrain which is not generated, and the given {@link FBlockWorld} does not allow generation
+     * @throws GenerationNotAllowedException if the generator attempts to access terrain which is not generated, and the given {@link FBlockLevel} does not allow generation
      */
-    default void generate(@NonNull FBlockWorld world, @NonNull POS[] positions, @NonNull T[] tiles) throws GenerationNotAllowedException {
+    default void generate(@NonNull FBlockLevel world, @NonNull POS[] positions, @NonNull T[] tiles) throws GenerationNotAllowedException {
         checkArg(positions.length == tiles.length, "positions (%d) and tiles (%d) must have same number of elements!", positions.length, tiles.length);
 
         for (int i = 0; i < positions.length; i++) {

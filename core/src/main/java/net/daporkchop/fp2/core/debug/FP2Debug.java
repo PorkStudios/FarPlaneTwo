@@ -22,7 +22,6 @@ package net.daporkchop.fp2.core.debug;
 
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.api.event.ReloadCompleteEvent;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.key.KeyCategory;
 import net.daporkchop.fp2.core.client.render.TextureUVs;
@@ -63,8 +62,8 @@ public class FP2Debug {
 
             category.addBinding("reloadShaders", "0", ReloadableShaderProgram::reloadAll);
             category.addBinding("dropTiles", "9", () -> fp2.client().currentPlayer().ifPresent(player -> {
-                player.fp2_IFarPlayerClient_send(new CPacketClientConfig().config(null));
-                player.fp2_IFarPlayerClient_send(new CPacketClientConfig().config(fp2.globalConfig()));
+                player.send(new CPacketClientConfig().config(null));
+                player.send(new CPacketClientConfig().config(fp2.globalConfig()));
                 fp2.client().chat().debug("§aReloading session");
             }));
             category.addBinding("reversedZ", "8", () -> {
@@ -109,11 +108,6 @@ public class FP2Debug {
                         fp2().log().error("command buffer rebuild failed", cause);
                         fp2().client().chat().error("§c%d/%d command buffer(s) failed to rebuild (check log for info)", failed, total);
                     }
-
-                    @Override
-                    protected ReloadCompleteEvent<CommandBuffer> completeEvent() {
-                        return new ReloadCompleteEvent<CommandBuffer>() {};
-                    }
                 }.fire();
             });
         }
@@ -138,7 +132,7 @@ public class FP2Debug {
                 list.add("");
                 list.add("§lFarPlaneTwo (Client):");
 
-                IFarClientContext<?, ?> context = player.fp2_IFarPlayerClient_activeContext();
+                IFarClientContext<?, ?> context = player.activeContext();
                 if (context != null) {
                     IFarTileCache<?, ?> tileCache = context.tileCache();
                     if (tileCache != null) {
@@ -178,7 +172,7 @@ public class FP2Debug {
                 list.add("");
                 list.add("§lFarPlaneTwo (Server):");
 
-                DebugStats.Tracking trackingStats = player.fp2_IFarPlayerClient_debugServerStats();
+                DebugStats.Tracking trackingStats = player.debugServerStats();
                 if (trackingStats != null) {
                     list.add("Tracker: " + numberFormat.format(trackingStats.tilesTrackedGlobal()) + "G "
                              + numberFormat.format(trackingStats.tilesTotal()) + "T " + numberFormat.format(trackingStats.tilesLoaded()) + "L "

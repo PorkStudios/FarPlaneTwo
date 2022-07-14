@@ -23,7 +23,7 @@ package net.daporkchop.fp2.core.mode.api.server.gen;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 
 /**
  * Extracts height and color information from a world for use by a rendering mode.
@@ -34,9 +34,9 @@ import net.daporkchop.fp2.core.server.world.IFarWorldServer;
  */
 public interface IFarGenerator<POS extends IFarPos, T extends IFarTile> {
     /**
-     * @return the {@link IFarWorldServer world} that this generator generates tiles in
+     * @return the {@link IFarLevelServer world} that this generator generates tiles in
      */
-    IFarWorldServer world();
+    IFarLevelServer world();
 
     /**
      * @return the {@link IFarTileProvider tile provider} that this generator generates tiles for

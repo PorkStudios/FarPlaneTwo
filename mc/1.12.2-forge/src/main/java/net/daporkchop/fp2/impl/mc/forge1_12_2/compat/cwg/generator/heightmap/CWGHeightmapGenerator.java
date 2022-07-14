@@ -22,13 +22,13 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cwg.generator.heightmap;
 
 import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.IBiomeBlockReplacer;
 import lombok.NonNull;
-import net.daporkchop.fp2.api.world.BlockWorldConstants;
+import net.daporkchop.fp2.api.world.level.BlockLevelConstants;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapData;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapTile;
 import net.daporkchop.fp2.core.mode.heightmap.server.gen.rough.AbstractRoughHeightmapGenerator;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cwg.CWGContext;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.reference.cache.Cached;
@@ -66,10 +66,10 @@ public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
     protected final Cached<CWGContext> ctx;
     protected final Cached<double[]> hmapCache = Cached.threadLocal(() -> new double[sq(HMAP_SIZE)], ReferenceStrength.WEAK);
 
-    public CWGHeightmapGenerator(@NonNull IFarWorldServer world, @NonNull IFarTileProvider<HeightmapPos, HeightmapTile> provider) {
+    public CWGHeightmapGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<HeightmapPos, HeightmapTile> provider) {
         super(world, provider);
 
-        this.ctx = Cached.threadLocal(() -> new CWGContext(this.registry(), (WorldServer) world.fp2_IFarWorld_implWorld(), HMAP_SIZE, 2, HT_SHIFT), ReferenceStrength.WEAK);
+        this.ctx = Cached.threadLocal(() -> new CWGContext(this.registry(), (WorldServer) world.implLevel(), HMAP_SIZE, 2, HT_SHIFT), ReferenceStrength.WEAK);
     }
 
     @Override
@@ -137,7 +137,7 @@ public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
             data.height_int = this.seaLevel() - 1;
             data.height_frac = HEIGHT_FRAC_LIQUID;
             data.state = this.registry().state2id(Blocks.WATER.getDefaultState());
-            data.light = BlockWorldConstants.packLight(15, 0);
+            data.light = BlockLevelConstants.packLight(15, 0);
             data.secondaryConnection = WATER_LAYER;
             tile.setLayer(x, z, WATER_LAYER, data);
             data.secondaryConnection = DEFAULT_LAYER;

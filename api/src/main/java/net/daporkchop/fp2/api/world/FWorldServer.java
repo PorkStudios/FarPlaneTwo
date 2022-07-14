@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -20,27 +20,18 @@
 
 package net.daporkchop.fp2.api.world;
 
-import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
-import net.daporkchop.fp2.api.world.registry.FGameRegistry;
+import net.daporkchop.fp2.api.storage.external.FStorageCategory;
 
 /**
- * A world consisting of blocks.
+ * Sub-type of {@link FWorld} which provides additional methods used on the server side.
  *
  * @author DaPorkchop_
  */
-public interface FWorldServer {
+public interface FWorldServer extends FWorld {
     /**
-     * @return the implementation-specific server world instance
+     * Gets the {@link FStorageCategory} used by this world. It will be closed when this world is closed.
+     *
+     * @return the {@link FStorageCategory} used by this world
      */
-    Object internalWorld();
-
-    /**
-     * @return the {@link FGameRegistry} used in this world
-     */
-    FGameRegistry gameRegistry();
-
-    /**
-     * @return the world's coordinate limits, in blocks
-     */
-    IntAxisAlignedBB bounds();
+    FStorageCategory storageCategory();
 }

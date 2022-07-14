@@ -23,7 +23,7 @@ package net.daporkchop.fp2.core.mode.heightmap.client;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.core.client.render.TextureUVs;
-import net.daporkchop.fp2.core.client.render.WorldRenderer;
+import net.daporkchop.fp2.core.client.render.LevelRenderer;
 import net.daporkchop.fp2.gl.attribute.AttributeWriter;
 import net.daporkchop.fp2.core.mode.common.client.bake.IRenderBaker;
 import net.daporkchop.fp2.core.mode.common.client.bake.indexed.IndexedBakeOutput;
@@ -52,7 +52,7 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
     }
 
     @NonNull
-    protected final WorldRenderer worldRenderer;
+    protected final LevelRenderer levelRenderer;
     @NonNull
     protected final TextureUVs textureUVs;
 
@@ -152,7 +152,7 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
                         continue; //skip if any of the vertices are missing
                     }
 
-                    output.indices()[this.worldRenderer.renderTypeForState(data.state)].appendQuad(oppositeCorner, c1, c0, provoking);
+                    output.indices()[this.levelRenderer.renderTypeForState(data.state)].appendQuad(oppositeCorner, c1, c0, provoking);
                     rendered.set(vertexMapIndex(x, z, layer));
                 }
             }
@@ -186,7 +186,7 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
                                 continue; //skip if any of the vertices are missing
                             }
 
-                            output.indices()[this.worldRenderer.renderTypeForState(data.state)].appendQuad(oppositeCorner, c1, c0, provoking);
+                            output.indices()[this.levelRenderer.renderTypeForState(data.state)].appendQuad(oppositeCorner, c1, c0, provoking);
                         }
                     }
                 }
@@ -214,7 +214,7 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
         attributes.lightBlock = (byte) ((blockLight << 4) | 8);
         attributes.lightSky = (byte) ((skyLight << 4) | 8);
 
-        attributes.color = this.worldRenderer.tintFactorForStateInBiomeAtPos(data.state, data.biome, blockX, data.height_int, blockZ);
+        attributes.color = this.levelRenderer.tintFactorForStateInBiomeAtPos(data.state, data.biome, blockX, data.height_int, blockZ);
 
         attributes.posHorizX = (byte) x;
         attributes.posHorizZ = (byte) z;

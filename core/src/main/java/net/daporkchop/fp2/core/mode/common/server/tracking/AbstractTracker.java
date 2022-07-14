@@ -334,7 +334,7 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
                 this.updateWaiting();
             }
         } catch (Throwable t) {
-            this.context.tileProvider().world().fp2_IFarWorld_workerManager().handle(t);
+            this.context.tileProvider().world().workerManager().handle(t);
             PUnsafe.throwException(t);
         }
     }

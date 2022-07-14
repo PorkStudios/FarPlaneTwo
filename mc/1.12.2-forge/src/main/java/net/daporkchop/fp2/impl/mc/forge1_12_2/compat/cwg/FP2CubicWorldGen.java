@@ -26,7 +26,7 @@ import io.github.opencubicchunks.cubicchunks.cubicgen.flat.FlatTerrainProcessor;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import net.daporkchop.fp2.api.event.FEventHandler;
-import net.daporkchop.fp2.core.server.world.IFarWorldServer;
+import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapTile;
@@ -68,8 +68,8 @@ public class FP2CubicWorldGen {
     public static final class Events {
         //CustomCubic rough generators
 
-        protected boolean isCustomCubicWorld(IFarWorldServer world) {
-            ICubicWorldServer cubicWorld = (ICubicWorldServer) world.fp2_IFarWorld_implWorld();
+        protected boolean isCustomCubicWorld(IFarLevelServer world) {
+            ICubicWorldServer cubicWorld = (ICubicWorldServer) world.implLevel();
             return cubicWorld.isCubicWorld() && cubicWorld.getCubeGenerator() instanceof CustomTerrainGenerator;
         }
 
@@ -89,8 +89,8 @@ public class FP2CubicWorldGen {
 
         //FlatCubic rough generators
 
-        protected boolean isFlatCubicWorld(IFarWorldServer world) {
-            ICubicWorldServer cubicWorld = (ICubicWorldServer) world.fp2_IFarWorld_implWorld();
+        protected boolean isFlatCubicWorld(IFarLevelServer world) {
+            ICubicWorldServer cubicWorld = (ICubicWorldServer) world.implLevel();
             return cubicWorld.isCubicWorld() && cubicWorld.getCubeGenerator() instanceof FlatTerrainProcessor;
         }
 

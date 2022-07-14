@@ -24,15 +24,14 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.core.client.player.AbstractFarPlayerClient;
-import net.daporkchop.fp2.core.client.world.IFarWorldClient;
 import net.daporkchop.fp2.core.network.IPacket;
-import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionBegin;
-import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionEnd;
 import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.network.ATNetHandlerPlayClient1_12;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.client.world.FarWorldClient1_12_2;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.client.world.FWorldClient1_12;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.client.world.level.FLevelClient1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.network.FP2Network1_12_2;
+import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.network.NetHandlerPlayClient;
 
 /**
@@ -44,26 +43,19 @@ public class FarPlayerClient1_12 extends AbstractFarPlayerClient {
     @NonNull
     protected final FP2Forge1_12_2 fp2;
     @NonNull
+    protected final FWorldClient1_12 world;
+    @NonNull
     protected final NetHandlerPlayClient netHandlerPlayClient;
 
     @Override
-    protected IFarWorldClient createWorldClient(@NonNull SPacketSessionBegin packet) {
-        return new FarWorldClient1_12_2(this.fp2(), ((ATNetHandlerPlayClient1_12) this.netHandlerPlayClient).getWorld(), packet.coordLimits());
+    protected FLevelClient1_12_2 loadActiveLevel() {
+        WorldClient worldClient = ((ATNetHandlerPlayClient1_12) this.netHandlerPlayClient).getWorld();
+        return this.world.loadLevel(FP2Forge1_12_2.getIdentifierForWorld(worldClient), worldClient);
     }
 
     @CalledFromAnyThread
     @Override
-    public void fp2_IFarPlayerClient_send(@NonNull IPacket packet) {
+    public void send(@NonNull IPacket packet) {
         FP2Network1_12_2.sendToServer(packet); //yuck, a *static* context?
-    }
-
-    @CalledFromAnyThread
-    @Override
-    public void fp2_IFarPlayerClient_close() {
-        ((ATNetHandlerPlayClient1_12) this.netHandlerPlayClient).getNetManager().channel().eventLoop().execute(() -> {
-            if (this.sessionOpen) {
-                this.handle(new SPacketSessionEnd());
-            }
-        });
     }
 }
