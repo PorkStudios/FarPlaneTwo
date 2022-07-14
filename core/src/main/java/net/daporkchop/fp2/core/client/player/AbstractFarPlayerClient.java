@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.client.player;
@@ -46,6 +45,7 @@ import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromClientThread;
 import net.daporkchop.fp2.core.util.annotation.CalledWithMonitor;
 import net.daporkchop.lib.common.util.PorkUtil;
+import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.Objects;
 
@@ -121,7 +121,19 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
         if (mode != null) {
             AbstractWorldClient.COORD_LIMITS_HACK.set(packet.coordLimits());
             try {
-                this.context = mode.clientContext(this.loadActiveLevel(), this.config);
+                IFarLevelClient activeLevel = this.loadActiveLevel();
+                try {
+                    this.context = mode.clientContext(activeLevel, this.config);
+                } catch (Throwable t) { //something went wrong, try to unload active level again
+                    try {
+                        ((AbstractWorldClient<?, ?, ?, ?, ?>) this.world()).unloadLevel(activeLevel.id());
+                    } catch (Throwable t1) {
+                        t.addSuppressed(t1);
+                    }
+
+                    //rethrow original exception
+                    PUnsafe.throwException(t);
+                }
             } finally {
                 AbstractWorldClient.COORD_LIMITS_HACK.remove();
             }
