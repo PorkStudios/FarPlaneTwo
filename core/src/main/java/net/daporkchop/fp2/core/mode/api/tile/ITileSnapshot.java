@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.api.tile;
@@ -24,7 +23,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
-import net.daporkchop.fp2.core.util.SimpleRecycler;
+import net.daporkchop.fp2.core.util.recycler.Recycler;
 
 /**
  * A snapshot of the data stored at a given tile position.
@@ -38,12 +37,12 @@ public interface ITileSnapshot<POS extends IFarPos, T extends IFarTile> extends 
     POS pos();
 
     /**
-     * Allocates a {@link T} using the given {@link SimpleRecycler} and initializes it using the data stored in this snapshot.
+     * Allocates a {@link T} using the given {@link Recycler} and initializes it using the data stored in this snapshot.
      *
-     * @param recycler a {@link SimpleRecycler} to use for allocating instances of {@link T}
+     * @param recycler a {@link Recycler} to use for allocating instances of {@link T}
      * @return the loaded {@link T}, or {@code null} if this snapshot is empty
      */
-    T loadTile(@NonNull SimpleRecycler<T> recycler);
+    T loadTile(@NonNull Recycler<T> recycler);
 
     /**
      * @return whether or not this snapshot's tile data is empty

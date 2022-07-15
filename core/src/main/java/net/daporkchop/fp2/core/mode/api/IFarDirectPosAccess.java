@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.api;
@@ -33,7 +32,7 @@ import java.util.Set;
  *
  * @author DaPorkchop_
  */
-public interface IFarDirectPosAccess<POS extends IFarPos> {
+public interface IFarDirectPosAccess<POS extends IFarPos> extends IFarPosSerializer<POS> {
     /**
      * @return the number of spatial dimensions required to represent this position
      */

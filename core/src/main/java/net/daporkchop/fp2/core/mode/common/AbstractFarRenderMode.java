@@ -24,6 +24,7 @@ import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
@@ -31,13 +32,13 @@ import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarServerContext;
-import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
-import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
-import net.daporkchop.fp2.core.server.player.IFarPlayerServer;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
-import net.daporkchop.fp2.core.util.SimpleRecycler;
+import net.daporkchop.fp2.core.server.player.IFarPlayerServer;
+import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
+import net.daporkchop.fp2.core.util.recycler.Recycler;
+import net.daporkchop.fp2.core.util.recycler.SimpleRecycler;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.reference.cache.Cached;
@@ -51,7 +52,7 @@ import static net.daporkchop.fp2.core.FP2Core.*;
  */
 @RequiredArgsConstructor
 public abstract class AbstractFarRenderMode<POS extends IFarPos, T extends IFarTile> implements IFarRenderMode<POS, T> {
-    protected final Cached<SimpleRecycler<T>> recyclerRef = Cached.threadLocal(() -> new SimpleRecycler.OfReusablePersistent<>(this::newTile), ReferenceStrength.SOFT);
+    protected final Cached<Recycler<T>> recyclerRef = Cached.threadLocal(() -> new SimpleRecycler.OfReusablePersistent<>(this::newTile), ReferenceStrength.SOFT);
 
     @Getter(lazy = true)
     private final String name = REGISTRY.getName(this);
@@ -102,7 +103,7 @@ public abstract class AbstractFarRenderMode<POS extends IFarPos, T extends IFarT
     public abstract IFarClientContext<POS, T> clientContext(@NonNull IFarLevelClient level, @NonNull FP2Config config);
 
     @Override
-    public SimpleRecycler<T> tileRecycler() {
+    public Recycler<T> tileRecycler() {
         return this.recyclerRef.get();
     }
 

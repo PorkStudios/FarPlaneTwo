@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.api;
@@ -35,7 +34,7 @@ import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.core.server.player.IFarPlayerServer;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
-import net.daporkchop.fp2.core.util.SimpleRecycler;
+import net.daporkchop.fp2.core.util.recycler.Recycler;
 import net.daporkchop.lib.binary.stream.DataIn;
 import net.daporkchop.lib.binary.stream.DataOut;
 
@@ -124,12 +123,17 @@ public interface IFarRenderMode<POS extends IFarPos, T extends IFarTile> {
     /**
      * @return a recycler for tile objects
      */
-    SimpleRecycler<T> tileRecycler();
+    Recycler<T> tileRecycler();
 
     /**
      * @return the {@link IFarDirectPosAccess} used by this render mode
      */
     IFarDirectPosAccess<POS> directPosAccess();
+
+    /**
+     * @return the {@link IFarPosSerializer} used by this render mode to serialize tile positions for storage
+     */
+    IFarPosSerializer<POS> posSerializer();
 
     /**
      * Creates a {@link IFarCoordLimits} for the given block coordinate limits as defined by the given {@link IntAxisAlignedBB}.

@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.api.tile;
@@ -28,7 +27,7 @@ import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
-import net.daporkchop.fp2.core.util.SimpleRecycler;
+import net.daporkchop.fp2.core.util.recycler.Recycler;
 import net.daporkchop.lib.binary.stream.DataIn;
 import net.daporkchop.lib.binary.stream.DataOut;
 
@@ -72,7 +71,7 @@ public class TileSnapshot<POS extends IFarPos, T extends IFarTile> implements IT
     }
 
     @Override
-    public T loadTile(@NonNull SimpleRecycler<T> recycler) {
+    public T loadTile(@NonNull Recycler<T> recycler) {
         if (this.data != null) {
             T tile = recycler.allocate();
             tile.read(Unpooled.wrappedBuffer(this.data));

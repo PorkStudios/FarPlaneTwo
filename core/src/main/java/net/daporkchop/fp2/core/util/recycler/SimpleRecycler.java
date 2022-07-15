@@ -15,19 +15,16 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
-package net.daporkchop.fp2.core.util;
+package net.daporkchop.fp2.core.util.recycler;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.lib.unsafe.PUnsafe;
+import net.daporkchop.fp2.core.util.IReusablePersistent;
 
 import java.util.ArrayDeque;
-import java.util.Deque;
 import java.util.Objects;
-import java.util.function.IntFunction;
 import java.util.function.Supplier;
 
 /**
@@ -37,20 +34,33 @@ import java.util.function.Supplier;
  *
  * @author DaPorkchop_
  */
-public abstract class SimpleRecycler<V> {
-    protected final Deque<V> stack = new ArrayDeque<>();
-
+//directly extend ArrayDeque to eliminate one indirection
+public abstract class SimpleRecycler<V> extends ArrayDeque<V> implements Recycler<V> {
     /**
-     * Gets an instance, either returning a previously released instance or allocating a new one if none are available.
-     * <p>
-     * The instance should be released using {@link #release(Object)} once no longer needed.
+     * Creates a new {@link Recycler} which uses the given {@link Supplier} to allocate new values.
      *
-     * @return the instance
+     * @param factory the {@link Supplier} used to allocate new values
+     * @return a new {@link Recycler}
      */
+    public static <V> Recycler<V> withFactory(@NonNull Supplier<? extends V> factory) {
+        return new SimpleRecycler<V>() {
+            @Override
+            protected V allocate0() {
+                return factory.get();
+            }
+
+            @Override
+            protected void reset0(@NonNull V value) {
+                //no-op
+            }
+        };
+    }
+
+    @Override
     public V allocate() {
-        return this.stack.isEmpty()
+        return this.isEmpty()
                 ? Objects.requireNonNull(this.allocate0(), "allocate0 returned null!")
-                : this.stack.pop();
+                : this.pop();
     }
 
     /**
@@ -60,16 +70,10 @@ public abstract class SimpleRecycler<V> {
      */
     protected abstract V allocate0();
 
-    /**
-     * Releases an instance, potentially saving it to be re-used in the future.
-     * <p>
-     * Once released, the instance must no longer be used in any way.
-     *
-     * @param value the instance to release
-     */
+    @Override
     public void release(@NonNull V value) {
         this.reset0(value);
-        this.stack.push(value);
+        this.push(value);
     }
 
     /**
@@ -78,58 +82,6 @@ public abstract class SimpleRecycler<V> {
      * @param value the instance to reset
      */
     protected abstract void reset0(@NonNull V value);
-
-    /**
-     * Gets multiple instances at once, storing them in an array.
-     *
-     * @param count        the number of instances to get
-     * @param arrayFactory a {@link IntFunction function} for allocating array instances
-     * @return the array containing the allocated instances
-     * @see #allocate()
-     */
-    public V[] allocate(int count, @NonNull IntFunction<V[]> arrayFactory) {
-        return this.allocate(arrayFactory.apply(count));
-    }
-
-    /**
-     * Gets multiple instances at once, filling the given array with them.
-     *
-     * @param values the array to fill with instances
-     * @return the array containing the allocated instances
-     * @see #allocate()
-     */
-    public V[] allocate(@NonNull V[] values) {
-        int pos = 0;
-        try {
-            for (; pos < values.length; pos++) {
-                values[pos] = this.allocate();
-            }
-        } catch (Throwable t) {
-            try { //if we got interrupted, free all the instances which were allocated so far
-                for (int i = 0; i < pos; i++) {
-                    this.release(values[i]);
-                    values[i] = null;
-                }
-            } finally {
-                PUnsafe.throwException(t);
-            }
-        }
-        return values;
-    }
-
-    /**
-     * Releases multiple instances at once.
-     * <p>
-     * Once released, the instances must no longer be used in any way.
-     *
-     * @param values the array containing the instances to release
-     * @see #release(Object)
-     */
-    public void release(@NonNull V[] values) {
-        for (V value : values) {
-            this.release(value);
-        }
-    }
 
     /**
      * Implementation of {@link SimpleRecycler} which is able to handle {@link IReusablePersistent} values.
