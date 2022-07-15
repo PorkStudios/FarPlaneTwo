@@ -53,6 +53,29 @@ public final class VoxelPosSerializer implements IFarPosSerializer<VoxelPos> {
         return SIZE;
     }
 
+    //
+    // STORE
+    //
+
+    @Override
+    public void storePos(@NonNull VoxelPos pos, long addr) {
+        PUnsafe.putByte(addr + LEVEL_OFFSET, toByte(pos.level(), "level"));
+
+        int interleavedHigh = MathUtil.interleaveBitsHigh(pos.x(), pos.y(), pos.z());
+        long interleavedLow = MathUtil.interleaveBits(pos.x(), pos.y(), pos.z());
+        if (PlatformInfo.IS_LITTLE_ENDIAN) { //write in big-endian
+            interleavedHigh = Integer.reverseBytes(interleavedHigh);
+            interleavedLow = Long.reverseBytes(interleavedLow);
+        }
+        PUnsafe.putInt(addr + HIGH_OFFSET, interleavedHigh);
+        PUnsafe.putLong(addr + LOW_OFFSET, interleavedLow);
+    }
+
+    @Override
+    public void storePos(@NonNull VoxelPos pos, byte[] arr, int index) {
+        this.storePos(pos, arr, PUnsafe.arrayByteElementOffset(index));
+    }
+
     @Override
     public void storePos(@NonNull VoxelPos pos, Object base, long offset) {
         PUnsafe.putByte(base, offset + LEVEL_OFFSET, toByte(pos.level(), "level"));
@@ -99,6 +122,32 @@ public final class VoxelPosSerializer implements IFarPosSerializer<VoxelPos> {
         buf.put(index + LEVEL_OFFSET, toByte(pos.level(), "level"))
                 .putInt(index + HIGH_OFFSET, MathUtil.interleaveBitsHigh(pos.x(), pos.y(), pos.z()))
                 .putLong(index + LOW_OFFSET, MathUtil.interleaveBits(pos.x(), pos.y(), pos.z()));
+    }
+
+    //
+    // LOAD
+    //
+
+    @Override
+    public VoxelPos loadPos(long addr) {
+        int level = PUnsafe.getByte(addr + LEVEL_OFFSET) & 0xFF;
+
+        int interleavedHigh = PUnsafe.getInt(addr + HIGH_OFFSET);
+        long interleavedLow = PUnsafe.getLong(addr + LOW_OFFSET);
+        if (PlatformInfo.IS_LITTLE_ENDIAN) { //read in big-endian
+            interleavedHigh = Integer.reverseBytes(interleavedHigh);
+            interleavedLow = Long.reverseBytes(interleavedLow);
+        }
+        int x = MathUtil.uninterleave3_0(interleavedLow, interleavedHigh);
+        int y = MathUtil.uninterleave3_1(interleavedLow, interleavedHigh);
+        int z = MathUtil.uninterleave3_2(interleavedLow, interleavedHigh);
+
+        return new VoxelPos(level, x, y, z);
+    }
+
+    @Override
+    public VoxelPos loadPos(byte[] arr, int index) {
+        return this.loadPos(arr, PUnsafe.arrayByteElementOffset(index));
     }
 
     @Override

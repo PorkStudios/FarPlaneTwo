@@ -51,6 +51,17 @@ public interface IFarPosSerializer<POS extends IFarPos> {
     }
 
     /**
+     * Stores a {@link POS} instance to the given {@code byte[]} starting at the given index.
+     *
+     * @param pos   the {@link POS} instance
+     * @param arr   the {@code byte[]} to write to
+     * @param index the index to start writing at
+     */
+    default void storePos(@NonNull POS pos, @NonNull byte[] arr, int index) {
+        this.storePos(pos, arr, PUnsafe.arrayByteElementOffset(index));
+    }
+
+    /**
      * Stores a {@link POS} instance at the given offset relative to the given Java object.
      *
      * @param pos    the {@link POS} instance
@@ -72,7 +83,7 @@ public interface IFarPosSerializer<POS extends IFarPos> {
         byte[] arr = alloc.atLeast(posSize);
         try {
             //write position to temporary array
-            this.storePos(pos, arr, PUnsafe.ARRAY_BYTE_BASE_OFFSET);
+            this.storePos(pos, arr, 0);
 
             //copy serialized position to buffer
             buf.writeBytes(arr, 0, posSize);
@@ -95,7 +106,7 @@ public interface IFarPosSerializer<POS extends IFarPos> {
         byte[] arr = alloc.atLeast(posSize);
         try {
             //write position to temporary array
-            this.storePos(pos, arr, PUnsafe.ARRAY_BYTE_BASE_OFFSET);
+            this.storePos(pos, arr, 0);
 
             //copy serialized position to buffer
             buf.setBytes(index, arr, 0, posSize);
@@ -117,7 +128,7 @@ public interface IFarPosSerializer<POS extends IFarPos> {
         byte[] arr = alloc.atLeast(posSize);
         try {
             //write position to temporary array
-            this.storePos(pos, arr, PUnsafe.ARRAY_BYTE_BASE_OFFSET);
+            this.storePos(pos, arr, 0);
 
             //copy serialized position to buffer
             buf.put(arr, 0, posSize);
@@ -157,6 +168,16 @@ public interface IFarPosSerializer<POS extends IFarPos> {
     }
 
     /**
+     * Loads the position at the given index in the given {@code byte[]} into a {@link POS} instance.
+     *
+     * @param arr   the {@code byte[]} to read from
+     * @param index the index to start reading at
+     */
+    default POS loadPos(@NonNull byte[] arr, int index) {
+        return this.loadPos(arr, PUnsafe.arrayByteElementOffset(index));
+    }
+
+    /**
      * Loads the position at the given offset relative to the given Java object into a {@link POS} instance.
      *
      * @param base   the Java object to use as a base. If {@code null}, {@code offset} is assumed to be an off-heap memory address.
@@ -181,7 +202,7 @@ public interface IFarPosSerializer<POS extends IFarPos> {
             buf.readBytes(arr, 0, posSize);
 
             //load position from temporary array
-            return this.loadPos(arr, PUnsafe.ARRAY_BYTE_BASE_OFFSET);
+            return this.loadPos(arr, 0);
         } finally {
             alloc.release(arr);
         }
@@ -204,7 +225,7 @@ public interface IFarPosSerializer<POS extends IFarPos> {
             buf.getBytes(index, arr, 0, posSize);
 
             //load position from temporary array
-            return this.loadPos(arr, PUnsafe.ARRAY_BYTE_BASE_OFFSET);
+            return this.loadPos(arr, 0);
         } finally {
             alloc.release(arr);
         }
@@ -226,7 +247,7 @@ public interface IFarPosSerializer<POS extends IFarPos> {
             buf.get(arr, 0, posSize);
 
             //load position from temporary array
-            return this.loadPos(arr, PUnsafe.ARRAY_BYTE_BASE_OFFSET);
+            return this.loadPos(arr, 0);
         } finally {
             alloc.release(arr);
         }

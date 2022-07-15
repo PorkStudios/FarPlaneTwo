@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.common.server.storage;
@@ -36,6 +35,7 @@ import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.core.mode.api.tile.ITileMetadata;
 import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
 import net.daporkchop.fp2.core.mode.api.tile.TileSnapshot;
+import net.daporkchop.fp2.core.util.recycler.Recycler;
 
 import java.util.Arrays;
 import java.util.List;
@@ -66,19 +66,30 @@ public class DefaultTileHandle<POS extends IFarPos, T extends IFarTile> implemen
     @Override
     @SneakyThrows(FStorageException.class)
     public ITileSnapshot<POS, T> snapshot() {
-        byte[] keyBytes = this.pos.toBytes();
+        return this.storage.storageInternal.readGet(access -> {
+            Recycler<byte[]> posBufferRecycler = this.storage.posBufferRecyclerCache.get();
 
-        //read timestamp and tile bytes using multiGet to ensure coherency
-        List<byte[]> valueBytes = this.storage.storageInternal.readGet(access -> access.multiGet(
-                ImmutableList.of(this.storage.columnTimestamp, this.storage.columnData),
-                ImmutableList.of(keyBytes, keyBytes)));
+            //allocate temporary buffer for tile position
+            byte[] keyBytes = posBufferRecycler.allocate();
+            try {
+                //serialize position
+                this.storage.posSerializer.storePos(this.pos, keyBytes, 0);
 
-        byte[] timestampBytes = valueBytes.get(0);
-        byte[] tileBytes = valueBytes.get(1);
+                //read timestamp and tile bytes using multiGet to ensure coherency
+                List<byte[]> valueBytes = access.multiGet(
+                        ImmutableList.of(this.storage.columnTimestamp, this.storage.columnData),
+                        ImmutableList.of(keyBytes, keyBytes));
 
-        return timestampBytes != null
-                ? new TileSnapshot<>(this.pos, readLongLE(timestampBytes), tileBytes)
-                : null;
+                byte[] timestampBytes = valueBytes.get(0);
+                byte[] tileBytes = valueBytes.get(1);
+
+                return timestampBytes != null
+                        ? new TileSnapshot<>(this.pos, readLongLE(timestampBytes), tileBytes)
+                        : null;
+            } finally {
+                posBufferRecycler.release(keyBytes);
+            }
+        });
     }
 
     @Override
@@ -166,8 +177,10 @@ public class DefaultTileHandle<POS extends IFarPos, T extends IFarTile> implemen
                     ? Unpooled.wrappedBuffer(dirtyTimestampBytes).readLongLE() //dirty timestamp for this tile exists, extract it from the byte array
                     : TIMESTAMP_BLANK;
 
-            if (timestamp == TIMESTAMP_BLANK //the tile doesn't exist, so we can't mark it as dirty
-                || dirtyTimestamp <= timestamp || dirtyTimestamp <= existingDirtyTimestamp) { //the new dirty timestamp isn't newer than the existing one, so we can't replace it
+            if (timestamp == TIMESTAMP_BLANK
+                //the tile doesn't exist, so we can't mark it as dirty
+                || dirtyTimestamp <= timestamp
+                || dirtyTimestamp <= existingDirtyTimestamp) { //the new dirty timestamp isn't newer than the existing one, so we can't replace it
                 //exit without making any changes
                 return false;
             }

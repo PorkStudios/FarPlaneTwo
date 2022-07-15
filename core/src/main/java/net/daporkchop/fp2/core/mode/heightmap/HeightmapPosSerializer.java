@@ -52,6 +52,26 @@ public final class HeightmapPosSerializer implements IFarPosSerializer<Heightmap
         return SIZE;
     }
 
+    //
+    // STORE
+    //
+
+    @Override
+    public void storePos(@NonNull HeightmapPos pos, long addr) {
+        PUnsafe.putByte(addr + LEVEL_OFFSET, toByte(pos.level(), "level"));
+
+        long interleaved = MathUtil.interleaveBits(pos.x(), pos.z());
+        if (PlatformInfo.IS_LITTLE_ENDIAN) { //write in big-endian
+            interleaved = Long.reverseBytes(interleaved);
+        }
+        PUnsafe.putLong(addr + COORDS_OFFSET, interleaved);
+    }
+
+    @Override
+    public void storePos(@NonNull HeightmapPos pos, byte[] arr, int index) {
+        this.storePos(pos, arr, PUnsafe.arrayByteElementOffset(index));
+    }
+
     @Override
     public void storePos(@NonNull HeightmapPos pos, Object base, long offset) {
         PUnsafe.putByte(base, offset + LEVEL_OFFSET, toByte(pos.level(), "level"));
@@ -91,6 +111,29 @@ public final class HeightmapPosSerializer implements IFarPosSerializer<Heightmap
 
         buf.put(index + LEVEL_OFFSET, toByte(pos.level(), "level"))
                 .putLong(index + COORDS_OFFSET, MathUtil.interleaveBits(pos.x(), pos.z()));
+    }
+
+    //
+    // LOAD
+    //
+
+    @Override
+    public HeightmapPos loadPos(long addr) {
+        int level = PUnsafe.getByte(addr + LEVEL_OFFSET) & 0xFF;
+
+        long interleaved = PUnsafe.getLong(addr + COORDS_OFFSET);
+        if (PlatformInfo.IS_LITTLE_ENDIAN) { //read in big-endian
+            interleaved = Long.reverseBytes(interleaved);
+        }
+        int x = MathUtil.uninterleave2_0(interleaved);
+        int z = MathUtil.uninterleave2_1(interleaved);
+
+        return new HeightmapPos(level, x, z);
+    }
+
+    @Override
+    public HeightmapPos loadPos(byte[] arr, int index) {
+        return this.loadPos(arr, PUnsafe.arrayByteElementOffset(index));
     }
 
     @Override

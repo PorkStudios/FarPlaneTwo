@@ -33,6 +33,7 @@ import net.daporkchop.fp2.api.storage.internal.FStorageColumn;
 import net.daporkchop.fp2.api.storage.internal.FStorageColumnHintsInternal;
 import net.daporkchop.fp2.api.storage.internal.FStorageInternal;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
+import net.daporkchop.fp2.core.mode.api.IFarPosSerializer;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.server.storage.FTileStorage;
 import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
@@ -40,6 +41,12 @@ import net.daporkchop.fp2.core.mode.api.tile.ITileMetadata;
 import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
 import net.daporkchop.fp2.core.mode.api.tile.TileSnapshot;
 import net.daporkchop.fp2.core.mode.common.server.AbstractFarTileProvider;
+import net.daporkchop.fp2.core.util.datastructure.java.list.ArraySliceAsList;
+import net.daporkchop.fp2.core.util.recycler.Recycler;
+import net.daporkchop.fp2.core.util.recycler.SimpleRecycler;
+import net.daporkchop.lib.common.pool.array.ArrayAllocator;
+import net.daporkchop.lib.common.reference.ReferenceStrength;
+import net.daporkchop.lib.common.reference.cache.Cached;
 import net.daporkchop.lib.common.system.PlatformInfo;
 import net.daporkchop.lib.common.util.PArrays;
 import net.daporkchop.lib.primitive.list.LongList;
@@ -56,12 +63,14 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.fp2.core.mode.api.tile.ITileMetadata.*;
+import static net.daporkchop.fp2.core.util.GlobalAllocators.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -120,7 +129,7 @@ public class DefaultTileStorage<POS extends IFarPos, T extends IFarTile> impleme
         return new FStorageItemFactory<FTileStorage<POS, T>>() {
             @Override
             public ConfigurationResult configure(@NonNull ConfigurationCallback callback) {
-                int expectedPositionSize = toIntExact(tileProvider.mode().directPosAccess().posSize());
+                int expectedPositionSize = toIntExact(tileProvider.mode().posSerializer().posSize());
 
                 //register the columns
                 callback.registerColumn(COLUMN_NAME_TIMESTAMP, //tile timestamp
@@ -159,6 +168,9 @@ public class DefaultTileStorage<POS extends IFarPos, T extends IFarTile> impleme
     }
 
     protected final AbstractFarTileProvider<POS, T> tileProvider;
+    protected final IFarPosSerializer<POS> posSerializer;
+    protected final Cached<Recycler<byte[]>> posBufferRecyclerCache;
+
     protected final FStorageInternal storageInternal;
 
     protected final FStorageColumn columnTimestamp;
@@ -174,6 +186,14 @@ public class DefaultTileStorage<POS extends IFarPos, T extends IFarTile> impleme
 
     protected DefaultTileStorage(@NonNull AbstractFarTileProvider<POS, T> tileProvider, @NonNull FStorageInternal storageInternal) {
         this.tileProvider = tileProvider;
+        this.posSerializer = tileProvider.mode().posSerializer();
+
+        { //create recycler for temporary serialized position buffers
+            int posSize = toIntExact(this.posSerializer.posSize());
+            Supplier<byte[]> factory = () -> new byte[posSize];
+            this.posBufferRecyclerCache = Cached.threadLocal(() -> SimpleRecycler.withFactory(factory), ReferenceStrength.WEAK);
+        }
+
         this.storageInternal = storageInternal;
 
         Map<String, FStorageColumn> columns = storageInternal.getColumns();
@@ -205,20 +225,44 @@ public class DefaultTileStorage<POS extends IFarPos, T extends IFarTile> impleme
         List<byte[]> valueBytes = this.storageInternal.readGet(access -> {
             //prepare parameter arrays for MultiGet
             int doubleLength = multiplyExact(length, 2);
-            FStorageColumn[] columns = new FStorageColumn[doubleLength];
-            byte[][] keys = new byte[doubleLength][];
 
-            for (int i = 0; i < doubleLength; ) {
-                byte[] keyBytes = positions.get(i >> 1).toBytes();
+            Recycler<byte[]> posBufferRecycler = this.posBufferRecyclerCache.get();
+            ArrayAllocator<Object[]> objectAlloc = ALLOC_OBJECT.get();
 
-                columns[i] = this.columnTimestamp;
-                keys[i++] = keyBytes;
-                columns[i] = this.columnData;
-                keys[i++] = keyBytes;
+            //allocate temporary arrays
+            Object[] columns = objectAlloc.atLeast(doubleLength);
+            Object[] duplicatedKeys = objectAlloc.atLeast(doubleLength);
+            byte[][] serializedKeys = posBufferRecycler.allocate(length, byte[][]::new);
+            try {
+                //serialize keys
+                for (int i = 0; i < length; i++) {
+                    this.posSerializer.storePos(positions.get(i), serializedKeys[i], 0);
+                }
+
+                //fill temporary arrays with parameters
+                for (int i = 0; i < doubleLength; ) {
+                    byte[] keyBytes = serializedKeys[i >> 1];
+
+                    columns[i] = this.columnTimestamp;
+                    duplicatedKeys[i++] = keyBytes;
+                    columns[i] = this.columnData;
+                    duplicatedKeys[i++] = keyBytes;
+                }
+
+                //read all timestamps and values simultaneously
+                return access.multiGet(
+                        ArraySliceAsList.wrapUnchecked(columns, 0, doubleLength),
+                        ArraySliceAsList.wrapUnchecked(duplicatedKeys, 0, doubleLength));
+            } finally {
+                //null out elements in temporary arrays
+                Arrays.fill(columns, 0, doubleLength, null);
+                Arrays.fill(duplicatedKeys, 0, doubleLength, null);
+
+                //release all allocated arrays
+                objectAlloc.release(duplicatedKeys);
+                objectAlloc.release(columns);
+                posBufferRecycler.release(serializedKeys);
             }
-
-            //read all timestamps and values simultaneously
-            return access.multiGet(Arrays.asList(columns), Arrays.asList(keys));
         });
 
         //construct snapshots
