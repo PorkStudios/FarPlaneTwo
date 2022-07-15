@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.heightmap;
@@ -28,6 +27,7 @@ import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.IFarCoordLimits;
 import net.daporkchop.fp2.core.mode.api.IFarDirectPosAccess;
+import net.daporkchop.fp2.core.mode.api.IFarPosSerializer;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarServerContext;
@@ -97,6 +97,11 @@ public class HeightmapRenderMode extends AbstractFarRenderMode<HeightmapPos, Hei
     @Override
     public IFarDirectPosAccess<HeightmapPos> directPosAccess() {
         return HeightmapDirectPosAccess.INSTANCE;
+    }
+
+    @Override
+    public IFarPosSerializer<HeightmapPos> posSerializer() {
+        return HeightmapPosSerializer.INSTANCE;
     }
 
     @Override

@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.voxel;
@@ -45,7 +44,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class VoxelDirectPosAccess implements IFarDirectPosAccess<VoxelPos> {
+public final class VoxelDirectPosAccess implements IFarDirectPosAccess<VoxelPos> {
     public static final VoxelDirectPosAccess INSTANCE = new VoxelDirectPosAccess();
 
     /*
@@ -68,32 +67,64 @@ public class VoxelDirectPosAccess implements IFarDirectPosAccess<VoxelPos> {
         return PUnsafe.getInt(pos + _X_OFFSET);
     }
 
+    public static int _x(Object base, long pos) {
+        return PUnsafe.getInt(base, pos + _X_OFFSET);
+    }
+
     public static void _x(long pos, int x) {
         PUnsafe.putInt(pos + _X_OFFSET, x);
+    }
+
+    public static void _x(Object base, long pos, int x) {
+        PUnsafe.putInt(base, pos + _X_OFFSET, x);
     }
 
     public static int _y(long pos) {
         return PUnsafe.getInt(pos + _Y_OFFSET);
     }
 
+    public static int _y(Object base, long pos) {
+        return PUnsafe.getInt(base, pos + _Y_OFFSET);
+    }
+
     public static void _y(long pos, int y) {
         PUnsafe.putInt(pos + _Y_OFFSET, y);
+    }
+
+    public static void _y(Object base, long pos, int y) {
+        PUnsafe.putInt(base, pos + _Y_OFFSET, y);
     }
 
     public static int _z(long pos) {
         return PUnsafe.getInt(pos + _Z_OFFSET);
     }
 
+    public static int _z(Object base, long pos) {
+        return PUnsafe.getInt(base, pos + _Z_OFFSET);
+    }
+
     public static void _z(long pos, int z) {
         PUnsafe.putInt(pos + _Z_OFFSET, z);
+    }
+
+    public static void _z(Object base, long pos, int z) {
+        PUnsafe.putInt(base, pos + _Z_OFFSET, z);
     }
 
     public static int _level(long pos) {
         return PUnsafe.getInt(pos + _LEVEL_OFFSET);
     }
 
+    public static int _level(Object base, long pos) {
+        return PUnsafe.getInt(base, pos + _LEVEL_OFFSET);
+    }
+
     public static void _level(long pos, int level) {
         PUnsafe.putInt(pos + _LEVEL_OFFSET, level);
+    }
+
+    public static void _level(Object base, long pos, int level) {
+        PUnsafe.putInt(base, pos + _LEVEL_OFFSET, level);
     }
 
     @Override
@@ -115,8 +146,21 @@ public class VoxelDirectPosAccess implements IFarDirectPosAccess<VoxelPos> {
     }
 
     @Override
+    public void storePos(@NonNull VoxelPos pos, Object base, long offset) {
+        _x(base, offset, pos.x());
+        _y(base, offset, pos.y());
+        _z(base, offset, pos.z());
+        _level(base, offset, pos.level());
+    }
+
+    @Override
     public VoxelPos loadPos(long addr) {
         return new VoxelPos(_level(addr), _x(addr), _y(addr), _z(addr));
+    }
+
+    @Override
+    public VoxelPos loadPos(Object base, long offset) {
+        return new VoxelPos(_level(base, offset), _x(base, offset), _y(base, offset), _z(base, offset));
     }
 
     @Override
