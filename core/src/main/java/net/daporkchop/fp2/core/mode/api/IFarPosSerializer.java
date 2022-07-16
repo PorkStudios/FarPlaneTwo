@@ -28,6 +28,7 @@ import java.nio.ByteBuffer;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.core.util.GlobalAllocators.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * Encodes and decodes {@link IFarPos} instances to/from a binary representation.
@@ -122,18 +123,12 @@ public interface IFarPosSerializer<POS extends IFarPos> {
      * @param buf the {@link ByteBuffer} to write to
      */
     default void storePos(@NonNull POS pos, @NonNull ByteBuffer buf) {
-        int posSize = toIntExact(this.posSize());
+        checkIndex(buf.remaining() >= this.posSize(), "buffer overflow");
 
-        ArrayAllocator<byte[]> alloc = ALLOC_BYTE.get();
-        byte[] arr = alloc.atLeast(posSize);
-        try {
-            //write position to temporary array
-            this.storePos(pos, arr, 0);
-
-            //copy serialized position to buffer
-            buf.put(arr, 0, posSize);
-        } finally {
-            alloc.release(arr);
+        if (buf.isDirect()) {
+            this.storePos(pos, PUnsafe.pork_directBufferAddress(buf) + buf.position());
+        } else {
+            this.storePos(pos, buf.array(), buf.arrayOffset() + buf.position());
         }
     }
 
@@ -145,15 +140,12 @@ public interface IFarPosSerializer<POS extends IFarPos> {
      * @param index the index in the buffer to write the position at
      */
     default void storePos(@NonNull POS pos, @NonNull ByteBuffer buf, int index) {
-        int oldPos = buf.position();
-        try {
-            //set position to target index
-            buf.position(index);
+        checkRangeLen(buf.limit(), index, (int) this.posSize());
 
-            //actually write the position
-            this.storePos(pos, buf);
-        } finally {
-            buf.position(oldPos);
+        if (buf.isDirect()) {
+            this.storePos(pos, PUnsafe.pork_directBufferAddress(buf) + index);
+        } else {
+            this.storePos(pos, buf.array(), buf.arrayOffset() + index);
         }
     }
 
@@ -238,19 +230,11 @@ public interface IFarPosSerializer<POS extends IFarPos> {
      * @return the {@link POS} instance
      */
     default POS loadPos(@NonNull ByteBuffer buf) {
-        int posSize = toIntExact(this.posSize());
+        checkIndex(buf.remaining() >= this.posSize(), "buffer overflow");
 
-        ArrayAllocator<byte[]> alloc = ALLOC_BYTE.get();
-        byte[] arr = alloc.atLeast(posSize);
-        try {
-            //copy serialized position from buffer
-            buf.get(arr, 0, posSize);
-
-            //load position from temporary array
-            return this.loadPos(arr, 0);
-        } finally {
-            alloc.release(arr);
-        }
+        return buf.isDirect()
+                ? this.loadPos(PUnsafe.pork_directBufferAddress(buf) + buf.position())
+                : this.loadPos(buf.array(), buf.arrayOffset() + buf.position());
     }
 
     /**
@@ -261,15 +245,10 @@ public interface IFarPosSerializer<POS extends IFarPos> {
      * @return the {@link POS} instance
      */
     default POS loadPos(@NonNull ByteBuffer buf, int index) {
-        int oldPos = buf.position();
-        try {
-            //set position to source index
-            buf.position(index);
+        checkRangeLen(buf.limit(), index, (int) this.posSize());
 
-            //actually read the position
-            return this.loadPos(buf);
-        } finally {
-            buf.position(oldPos);
-        }
+        return buf.isDirect()
+                ? this.loadPos(PUnsafe.pork_directBufferAddress(buf) + index)
+                : this.loadPos(buf.array(), buf.arrayOffset() + index);
     }
 }

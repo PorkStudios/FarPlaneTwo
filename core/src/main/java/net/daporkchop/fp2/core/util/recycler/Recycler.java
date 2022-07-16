@@ -20,9 +20,17 @@
 package net.daporkchop.fp2.core.util.recycler;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.core.util.datastructure.java.list.ArraySliceAsList;
+import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.IntFunction;
+
+import static net.daporkchop.fp2.core.util.GlobalAllocators.*;
 
 /**
  * A simple recycler for re-usable object instances.
@@ -48,6 +56,10 @@ public interface Recycler<V> {
      */
     void release(@NonNull V value);
 
+    //
+    // BULK ALLOCATION FUNCTIONS
+    //
+
     /**
      * Gets multiple instances at once, storing them in an array.
      *
@@ -61,6 +73,32 @@ public interface Recycler<V> {
     }
 
     /**
+     * Gets multiple instances at once, storing them in an array.
+     * <p>
+     * The returned array must be released using {@link #release(Object[], int, ArrayAllocator)}.
+     *
+     * @param count the number of instances to get
+     * @param alloc an {@link ArrayAllocator} for allocating array instances
+     * @return the array containing the allocated instances
+     * @see #allocate()
+     */
+    default V[] allocate(int count, @NonNull ArrayAllocator<V[]> alloc) {
+        V[] arr = alloc.atLeast(count);
+        try {
+            return this.allocate(arr, 0, count);
+        } catch (Throwable t) { //something went wrong, try to release original array
+            try {
+                alloc.release(arr);
+            } catch (Throwable t1) {
+                t.addSuppressed(t1);
+            }
+
+            PUnsafe.throwException(t);
+            throw new AssertionError(); //impossible
+        }
+    }
+
+    /**
      * Gets multiple instances at once, filling the given array with them.
      *
      * @param values the array to fill with instances
@@ -68,24 +106,56 @@ public interface Recycler<V> {
      * @see #allocate()
      */
     default V[] allocate(@NonNull V[] values) {
+        return this.allocate(values, 0, values.length);
+    }
+
+    /**
+     * Gets multiple instances at once, filling the given array with them.
+     *
+     * @param values the array to fill with instances
+     * @return the array containing the allocated instances
+     * @see #allocate()
+     */
+    default V[] allocate(@NonNull V[] values, int off, int length) {
         int index = 0;
         try {
-            for (; index < values.length; index++) {
-                values[index] = this.allocate();
+            for (; index < length; index++) {
+                values[off + index] = this.allocate();
             }
             return values;
         } catch (Throwable t) { //something went wrong, free all the instances which were allocated so far before we abort
             for (int i = 0; i < index; i++) {
                 try {
-                    this.release(values[i]);
+                    this.release(values[off + i]);
                 } catch (Throwable t1) { //failed to release instance, save exception to be rethrown
                     t.addSuppressed(t1);
                 }
-                values[i] = null;
+                values[off + i] = null;
             }
 
             PUnsafe.throwException(t);
             throw new AssertionError(); //impossible
+        }
+    }
+
+    //
+    // BULK RELEASE METHODS
+    //
+
+    /**
+     * Releases multiple instances at once from an array allocated by {@link #allocate(int, ArrayAllocator)}.
+     * <p>
+     * Once released, the instances must no longer be used in any way.
+     *
+     * @param values the array containing the instances to release
+     * @param count  the number of instances that were allocated
+     * @param alloc  the {@link ArrayAllocator} which allocated the original array
+     */
+    default void release(@NonNull V[] values, int count, @NonNull ArrayAllocator<V[]> alloc) {
+        try {
+            this.release(values, 0, count);
+        } finally {
+            alloc.release(values);
         }
     }
 
@@ -98,26 +168,215 @@ public interface Recycler<V> {
      * @see #release(Object)
      */
     default void release(@NonNull V[] values) {
+        this.release(values, 0, values.length);
+    }
+
+    /**
+     * Releases multiple instances at once.
+     * <p>
+     * Once released, the instances must no longer be used in any way.
+     *
+     * @param values the array containing the instances to release
+     * @see #release(Object)
+     */
+    default void release(@NonNull V[] values, int off, int length) {
         int index = 0;
         try {
-            for (; index < values.length; index++) {
-                this.release(values[index]);
-                values[index] = null;
+            for (; index < length; index++) {
+                this.release(values[off + index]);
+                values[off + index] = null;
             }
         } catch (Throwable t) { //something went wrong, try to continue freeing elements but save exception to rethrow later
-            values[index] = null; //make sure to null out the element which failed to be released
+            values[off + index] = null; //make sure to null out the element which failed to be released
 
-            for (index++; index < values.length; index++) {
+            for (index++; index < length; index++) {
                 try {
-                    this.release(values[index]);
+                    this.release(values[off + index]);
                 } catch (Throwable t1) { //failed to release instance, save exception to be rethrown
                     t.addSuppressed(t1);
                 }
-                values[index] = null;
+                values[off + index] = null;
             }
 
             PUnsafe.throwException(t);
             throw new AssertionError(); //impossible
+        }
+    }
+
+    /**
+     * Releases multiple instances at once.
+     * <p>
+     * Once released, the instances must no longer be used in any way.
+     *
+     * @param values the {@link List} containing the instances to release
+     * @see #release(Object)
+     */
+    default void release(@NonNull List<V> values) {
+        int index = 0;
+        try {
+            for (; index < values.size(); index++) {
+                this.release(values.get(index));
+            }
+        } catch (Throwable t) { //something went wrong, try to continue freeing elements but save exception to rethrow later
+            for (index++; index < values.size(); index++) {
+                try {
+                    this.release(values.get(index));
+                } catch (Throwable t1) { //failed to release instance, save exception to be rethrown
+                    t.addSuppressed(t1);
+                }
+            }
+
+            PUnsafe.throwException(t);
+            throw new AssertionError(); //impossible
+        }
+    }
+
+    //
+    // CALLBACK METHODS
+    //
+
+    /**
+     * Executes the given {@link Consumer action} with a value allocated from this recycler.
+     *
+     * @param action the action to run
+     */
+    default void runWith(@NonNull Consumer<? super V> action) {
+        V value = this.allocate();
+        try {
+            action.accept(value);
+        } finally {
+            this.release(value);
+        }
+    }
+
+    /**
+     * Executes the given {@link Function action} with a value allocated from this recycler.
+     *
+     * @param action the action to run
+     * @return the action's return value
+     */
+    default <R> R getWith(@NonNull Function<? super V, ? extends R> action) {
+        V value = this.allocate();
+        try {
+            return action.apply(value);
+        } finally {
+            this.release(value);
+        }
+    }
+
+    /**
+     * Executes the given {@link Consumer action} with multiple values allocated from this recycler.
+     *
+     * @param count  the number of values to allocate. Note that the array passed to the action may be longer than this; any excess elements should be ignored.
+     * @param alloc  the {@link ArrayAllocator} to use for allocating the array
+     * @param action the action to run. Note that it may be given a larger array than
+     */
+    default void runWith(int count, @NonNull ArrayAllocator<V[]> alloc, @NonNull Consumer<? super V[]> action) {
+        V[] values = this.allocate(count, alloc);
+        try {
+            action.accept(values);
+        } finally {
+            this.release(values, count, alloc);
+        }
+    }
+
+    /**
+     * Executes the given {@link Consumer action} with multiple values allocated from this recycler.
+     *
+     * @param count  the number of values to allocate. Note that the array passed to the action may be longer than this; any excess elements should be ignored.
+     * @param alloc  the {@link ArrayAllocator} to use for allocating the array
+     * @param action the action to run. Note that it may be given a larger array than
+     * @return the action's return value
+     */
+    default <R> R getWith(int count, @NonNull ArrayAllocator<V[]> alloc, @NonNull Function<? super V[], ? extends R> action) {
+        V[] values = this.allocate(count, alloc);
+        try {
+            return action.apply(values);
+        } finally {
+            this.release(values, count, alloc);
+        }
+    }
+
+    /**
+     * Executes the given {@link Consumer action} with multiple values allocated from this recycler.
+     *
+     * @param count  the number of values to allocate. Note that the array passed to the action may be longer than this; any excess elements should be ignored.
+     * @param action the action to run. Note that it may be given a larger array than
+     */
+    default void runWith(int count, @NonNull Consumer<? super List<V>> action) {
+        ArrayAllocator<Object[]> alloc = ALLOC_OBJECT.get();
+
+        Object[] values = alloc.atLeast(count);
+        try {
+            { //allocate instances
+                int index = 0;
+                try {
+                    for (; index < count; index++) {
+                        values[index] = this.allocate();
+                    }
+                } catch (Throwable t) {
+                    try {
+                        this.release(ArraySliceAsList.wrapUnchecked(values, 0, index));
+                    } catch (Throwable t1) { //failed to release instance, save exception to be rethrown
+                        t.addSuppressed(t1);
+                    }
+
+                    PUnsafe.throwException(t);
+                    throw new AssertionError(); //impossible
+                }
+            }
+
+            List<V> list = ArraySliceAsList.wrapUnchecked(values, 0, count);
+            try {
+                action.accept(list);
+            } finally {
+                this.release(list);
+            }
+        } finally {
+            Arrays.fill(values, 0, count, null);
+            alloc.release(values);
+        }
+    }
+
+    /**
+     * Executes the given {@link Consumer action} with multiple values allocated from this recycler.
+     *
+     * @param count  the number of values to allocate. Note that the array passed to the action may be longer than this; any excess elements should be ignored.
+     * @param action the action to run. Note that it may be given a larger array than
+     * @return the action's return value
+     */
+    default <R> R getWith(int count, @NonNull Function<? super List<V>, ? extends R> action) {
+        ArrayAllocator<Object[]> alloc = ALLOC_OBJECT.get();
+
+        Object[] values = alloc.atLeast(count);
+        try {
+            { //allocate instances
+                int index = 0;
+                try {
+                    for (; index < count; index++) {
+                        values[index] = this.allocate();
+                    }
+                } catch (Throwable t) {
+                    try {
+                        this.release(ArraySliceAsList.wrapUnchecked(values, 0, index));
+                    } catch (Throwable t1) { //failed to release instance, save exception to be rethrown
+                        t.addSuppressed(t1);
+                    }
+
+                    PUnsafe.throwException(t);
+                    throw new AssertionError(); //impossible
+                }
+            }
+
+            List<V> list = ArraySliceAsList.wrapUnchecked(values, 0, count);
+            try {
+                return action.apply(list);
+            } finally {
+                this.release(list);
+            }
+        } finally {
+            Arrays.fill(values, 0, count, null);
+            alloc.release(values);
         }
     }
 }

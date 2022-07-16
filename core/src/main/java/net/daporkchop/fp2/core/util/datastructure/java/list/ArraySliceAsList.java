@@ -19,7 +19,7 @@
 
 package net.daporkchop.fp2.core.util.datastructure.java.list;
 
-import com.google.common.collect.Iterators;
+import com.google.common.collect.ImmutableList;
 import lombok.AccessLevel;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -27,14 +27,12 @@ import lombok.RequiredArgsConstructor;
 import java.util.AbstractList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.List;
 import java.util.RandomAccess;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
-import java.util.stream.Stream;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
@@ -47,6 +45,16 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
 public class ArraySliceAsList<E> extends AbstractList<E> implements RandomAccess {
     /**
+     * Gets a {@link List} which provides a view of the given array.
+     *
+     * @param array the array
+     * @return a {@link List}
+     */
+    public static <E> List<E> wrap(@NonNull E... array) {
+        return wrap(array, 0, array.length);
+    }
+
+    /**
      * Gets a {@link List} which provides a view of the given slice of the given array.
      *
      * @param array  the array
@@ -56,7 +64,10 @@ public class ArraySliceAsList<E> extends AbstractList<E> implements RandomAccess
      */
     public static <E> List<E> wrap(@NonNull E[] array, int offset, int length) {
         checkRangeLen(array.length, offset, length);
-        return new ArraySliceAsList<>(array, offset, length);
+
+        return length != 0
+                ? new ArraySliceAsList<>(array, offset, length)
+                : ImmutableList.of();
     }
 
     /**
@@ -79,11 +90,6 @@ public class ArraySliceAsList<E> extends AbstractList<E> implements RandomAccess
     @Override
     public int size() {
         return this.length;
-    }
-
-    @Override
-    public boolean isEmpty() {
-        return this.length == 0;
     }
 
     @Override

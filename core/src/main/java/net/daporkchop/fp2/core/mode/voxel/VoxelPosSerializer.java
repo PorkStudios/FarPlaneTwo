@@ -26,9 +26,6 @@ import net.daporkchop.fp2.core.util.math.MathUtil;
 import net.daporkchop.lib.common.system.PlatformInfo;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-
 import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -106,24 +103,6 @@ public final class VoxelPosSerializer implements IFarPosSerializer<VoxelPos> {
                 .setLong(index + LOW_OFFSET, MathUtil.interleaveBits(pos.x(), pos.y(), pos.z()));
     }
 
-    @Override
-    public void storePos(@NonNull VoxelPos pos, @NonNull ByteBuffer buf) {
-        checkArg(buf.order() == ByteOrder.BIG_ENDIAN, "buffer must be big-endian");
-
-        buf.put(toByte(pos.level(), "level"))
-                .putInt(MathUtil.interleaveBitsHigh(pos.x(), pos.y(), pos.z()))
-                .putLong(MathUtil.interleaveBits(pos.x(), pos.y(), pos.z()));
-    }
-
-    @Override
-    public void storePos(@NonNull VoxelPos pos, @NonNull ByteBuffer buf, int index) {
-        checkArg(buf.order() == ByteOrder.BIG_ENDIAN, "buffer must be big-endian");
-
-        buf.put(index + LEVEL_OFFSET, toByte(pos.level(), "level"))
-                .putInt(index + HIGH_OFFSET, MathUtil.interleaveBitsHigh(pos.x(), pos.y(), pos.z()))
-                .putLong(index + LOW_OFFSET, MathUtil.interleaveBits(pos.x(), pos.y(), pos.z()));
-    }
-
     //
     // LOAD
     //
@@ -186,36 +165,6 @@ public final class VoxelPosSerializer implements IFarPosSerializer<VoxelPos> {
         int level = buf.getUnsignedByte(index + LEVEL_OFFSET);
 
         //read in big-endian
-        int interleavedHigh = buf.getInt(index + HIGH_OFFSET);
-        long interleavedLow = buf.getLong(index + LOW_OFFSET);
-        int x = MathUtil.uninterleave3_0(interleavedLow, interleavedHigh);
-        int y = MathUtil.uninterleave3_1(interleavedLow, interleavedHigh);
-        int z = MathUtil.uninterleave3_2(interleavedLow, interleavedHigh);
-
-        return new VoxelPos(level, x, y, z);
-    }
-
-    @Override
-    public VoxelPos loadPos(@NonNull ByteBuffer buf) {
-        checkArg(buf.order() == ByteOrder.BIG_ENDIAN, "buffer must be big-endian");
-
-        int level = buf.get() & 0xFF;
-
-        int interleavedHigh = buf.getInt();
-        long interleavedLow = buf.getLong();
-        int x = MathUtil.uninterleave3_0(interleavedLow, interleavedHigh);
-        int y = MathUtil.uninterleave3_1(interleavedLow, interleavedHigh);
-        int z = MathUtil.uninterleave3_2(interleavedLow, interleavedHigh);
-
-        return new VoxelPos(level, x, y, z);
-    }
-
-    @Override
-    public VoxelPos loadPos(@NonNull ByteBuffer buf, int index) {
-        checkArg(buf.order() == ByteOrder.BIG_ENDIAN, "buffer must be big-endian");
-
-        int level = buf.get(index + LEVEL_OFFSET) & 0xFF;
-
         int interleavedHigh = buf.getInt(index + HIGH_OFFSET);
         long interleavedLow = buf.getLong(index + LOW_OFFSET);
         int x = MathUtil.uninterleave3_0(interleavedLow, interleavedHigh);

@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.storage.rocks.access;
@@ -34,8 +33,10 @@ import org.rocksdb.RocksIterator;
 import org.rocksdb.Snapshot;
 import org.rocksdb.Transaction;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.core.storage.rocks.RocksStorage.*;
@@ -47,6 +48,14 @@ import static net.daporkchop.fp2.core.storage.rocks.RocksStorage.*;
  */
 @Getter
 public class RocksAccessTransaction implements FStorageAccess, AutoCloseable {
+    private static byte[] toByteArray(ByteBuffer buffer) {
+        byte[] arr = new byte[buffer.remaining()];
+        int position = buffer.position();
+        buffer.get(arr);
+        buffer.position(position);
+        return arr;
+    }
+
     protected final Transaction transaction;
 
     protected final ReadOptions readOptions;
@@ -88,6 +97,22 @@ public class RocksAccessTransaction implements FStorageAccess, AutoCloseable {
     }
 
     @Override
+    public int get(@NonNull FStorageColumn column, @NonNull ByteBuffer key, @NonNull ByteBuffer value) throws FStorageException {
+        try {
+            //workaround for https://github.com/facebook/rocksdb/issues/10322: we have to copy key into a heap buffer, then get it and copy the result back
+            byte[] valueArray = this.transaction.getForUpdate(this.readOptions, ((RocksStorageColumn) column).handle(), toByteArray(key), false);
+            if (valueArray != null) { //found
+                value.put(valueArray, 0, min(value.remaining(), valueArray.length));
+                return valueArray.length;
+            } else { //not found
+                return -1;
+            }
+        } catch (RocksDBException e) {
+            throw wrapException(e);
+        }
+    }
+
+    @Override
     public List<byte[]> multiGet(@NonNull List<FStorageColumn> columns, @NonNull List<byte[]> keys) throws FStorageException {
         try {
             List<ColumnFamilyHandle> handles = RocksStorageColumn.toColumnFamilyHandles(columns);
@@ -115,6 +140,26 @@ public class RocksAccessTransaction implements FStorageAccess, AutoCloseable {
         } catch (RocksDBException e) {
             throw wrapException(e);
         }
+    }
+
+    @Override
+    public boolean multiGet(@NonNull List<FStorageColumn> columns, @NonNull List<ByteBuffer> keys, @NonNull List<ByteBuffer> values, @NonNull int[] sizes) throws FStorageException {
+        List<byte[]> valueArrays = this.multiGet(columns, keys.stream().map(RocksAccessTransaction::toByteArray).collect(Collectors.toList()));
+
+        boolean allSuccessful = true;
+        for (int i = 0; i < valueArrays.size(); i++) {
+            byte[] valueArray = valueArrays.set(i, null); //set to null to allow fast GC
+            ByteBuffer value = values.get(i);
+
+            if (valueArray != null) { //found
+                value.put(valueArray, 0, min(value.remaining(), valueArray.length));
+                sizes[i] = valueArray.length;
+            } else { //not found
+                sizes[i] = -1;
+                allSuccessful = false;
+            }
+        }
+        return allSuccessful;
     }
 
     @Override

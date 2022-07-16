@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.storage.rocks.access;
@@ -28,12 +27,15 @@ import net.daporkchop.fp2.api.storage.internal.FStorageColumn;
 import net.daporkchop.fp2.api.storage.internal.access.FStorageAccess;
 import net.daporkchop.fp2.api.storage.internal.access.FStorageIterator;
 import net.daporkchop.fp2.core.storage.rocks.RocksStorageColumn;
+import org.rocksdb.ByteBufferGetStatus;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
+import org.rocksdb.Status;
 
+import java.nio.ByteBuffer;
 import java.util.List;
 
 import static net.daporkchop.fp2.core.storage.rocks.RocksStorage.*;
@@ -65,9 +67,39 @@ public class RocksAccessDB implements FStorageAccess {
     }
 
     @Override
+    public int get(@NonNull FStorageColumn column, @NonNull ByteBuffer key, @NonNull ByteBuffer value) throws FStorageException {
+        try {
+            return this.db.get(((RocksStorageColumn) column).handle(), this.readOptions, key, value);
+        } catch (RocksDBException e) {
+            throw wrapException(e);
+        }
+    }
+
+    @Override
     public List<byte[]> multiGet(@NonNull List<FStorageColumn> columns, @NonNull List<byte[]> keys) throws FStorageException {
         try {
             return this.db.multiGetAsList(this.readOptions, RocksStorageColumn.toColumnFamilyHandles(columns), keys);
+        } catch (RocksDBException e) {
+            throw wrapException(e);
+        }
+    }
+
+    @Override
+    public boolean multiGet(@NonNull List<FStorageColumn> columns, @NonNull List<ByteBuffer> keys, @NonNull List<ByteBuffer> values, @NonNull int[] sizes) throws FStorageException {
+        try {
+            List<ByteBufferGetStatus> statuses = this.db.multiGetByteBuffers(this.readOptions, RocksStorageColumn.toColumnFamilyHandles(columns), keys, values);
+
+            boolean allSuccessful = true;
+            for (int i = 0; i < statuses.size(); i++) {
+                ByteBufferGetStatus status = statuses.get(i);
+                if (status.value != null) {
+                    sizes[i] = status.requiredSize;
+                } else {
+                    sizes[i] = -1;
+                    allSuccessful = false;
+                }
+            }
+            return allSuccessful;
         } catch (RocksDBException e) {
             throw wrapException(e);
         }

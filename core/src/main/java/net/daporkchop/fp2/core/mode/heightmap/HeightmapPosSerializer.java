@@ -26,9 +26,6 @@ import net.daporkchop.fp2.core.util.math.MathUtil;
 import net.daporkchop.lib.common.system.PlatformInfo;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-
 import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -97,22 +94,6 @@ public final class HeightmapPosSerializer implements IFarPosSerializer<Heightmap
                 .setLong(index + COORDS_OFFSET, MathUtil.interleaveBits(pos.x(), pos.z()));
     }
 
-    @Override
-    public void storePos(@NonNull HeightmapPos pos, @NonNull ByteBuffer buf) {
-        checkArg(buf.order() == ByteOrder.BIG_ENDIAN, "buffer must be big-endian");
-
-        buf.put(toByte(pos.level(), "level"))
-                .putLong(MathUtil.interleaveBits(pos.x(), pos.z()));
-    }
-
-    @Override
-    public void storePos(@NonNull HeightmapPos pos, @NonNull ByteBuffer buf, int index) {
-        checkArg(buf.order() == ByteOrder.BIG_ENDIAN, "buffer must be big-endian");
-
-        buf.put(index + LEVEL_OFFSET, toByte(pos.level(), "level"))
-                .putLong(index + COORDS_OFFSET, MathUtil.interleaveBits(pos.x(), pos.z()));
-    }
-
     //
     // LOAD
     //
@@ -167,32 +148,6 @@ public final class HeightmapPosSerializer implements IFarPosSerializer<Heightmap
         int level = buf.getUnsignedByte(index + LEVEL_OFFSET);
 
         //read in big-endian
-        long interleaved = buf.getLong(index + COORDS_OFFSET);
-        int x = MathUtil.uninterleave2_0(interleaved);
-        int z = MathUtil.uninterleave2_1(interleaved);
-
-        return new HeightmapPos(level, x, z);
-    }
-
-    @Override
-    public HeightmapPos loadPos(@NonNull ByteBuffer buf) {
-        checkArg(buf.order() == ByteOrder.BIG_ENDIAN, "buffer must be big-endian");
-
-        int level = buf.get() & 0xFF;
-
-        long interleaved = buf.getLong();
-        int x = MathUtil.uninterleave2_0(interleaved);
-        int z = MathUtil.uninterleave2_1(interleaved);
-
-        return new HeightmapPos(level, x, z);
-    }
-
-    @Override
-    public HeightmapPos loadPos(@NonNull ByteBuffer buf, int index) {
-        checkArg(buf.order() == ByteOrder.BIG_ENDIAN, "buffer must be big-endian");
-
-        int level = buf.get(index + LEVEL_OFFSET) & 0xFF;
-
         long interleaved = buf.getLong(index + COORDS_OFFSET);
         int x = MathUtil.uninterleave2_0(interleaved);
         int z = MathUtil.uninterleave2_1(interleaved);
