@@ -120,26 +120,26 @@ public class HeightmapDirectPosAccess implements IFarDirectPosAccess<HeightmapPo
     }
 
     @Override
-    public void storePos(@NonNull HeightmapPos pos, long addr) {
+    public long store(HeightmapPos pos, long addr) {
         _x(addr, pos.x());
         _z(addr, pos.z());
         _level(addr, pos.level());
     }
 
     @Override
-    public void storePos(@NonNull HeightmapPos pos, Object base, long offset) {
+    public long store(HeightmapPos pos, Object base, long offset) {
         _x(base, offset, pos.x());
         _z(base, offset, pos.z());
         _level(base, offset, pos.level());
     }
 
     @Override
-    public HeightmapPos loadPos(long addr) {
+    public HeightmapPos load(long addr) {
         return new HeightmapPos(_level(addr), _x(addr), _z(addr));
     }
 
     @Override
-    public HeightmapPos loadPos(Object base, long offset) {
+    public HeightmapPos load(Object base, long offset) {
         return new HeightmapPos(_level(base, offset), _x(base, offset), _z(base, offset));
     }
 

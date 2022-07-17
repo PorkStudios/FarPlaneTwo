@@ -73,7 +73,7 @@ public class DefaultTileHandle<POS extends IFarPos, T extends IFarTile> implemen
             byte[] keyBytes = posBufferRecycler.allocate();
             try {
                 //serialize position
-                this.storage.posSerializer.storePos(this.pos, keyBytes, 0);
+                this.storage.posCodec.store(this.pos, keyBytes, 0);
 
                 //read timestamp and tile bytes using multiGet to ensure coherency
                 List<byte[]> valueBytes = access.multiGet(

@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.common.client.index;
@@ -225,7 +224,7 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
 
                 this.positionsToHandles.put(pos, handle);
 
-                this.directPosAccess.storePos(pos, this.positionsAddr + handle * this.positionSize);
+                this.directPosAccess.store(pos, this.positionsAddr + handle * this.positionSize);
 
                 //if the node is selectable, set its render outputs
                 if (pos.level() == 0 || AbstractRenderIndex.this.renderablePositions.contains(pos)) {

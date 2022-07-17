@@ -19,33 +19,16 @@
 
 package net.daporkchop.fp2.core.util;
 
-import io.netty.buffer.ByteBuf;
-import lombok.NonNull;
-
 /**
- * A type whose state may be persisted to a binary format, and restored later.
+ * A type whose state may be reset, in order to allow instances to be re-used without reallocation.
  *
  * @author DaPorkchop_
  */
-public interface IReusablePersistent extends IReusable {
+public interface IReusable {
     /**
-     * Restores this instance's state from the data in the given {@link ByteBuf}.
+     * Resets this instance's contents.
      * <p>
-     * The instance is implicitly reset before the state is restored.
-     *
-     * @param src the {@link ByteBuf} to read from
+     * After being reset, the instance's state will be the same as if it were newly constructed.
      */
-    void read(@NonNull ByteBuf src);
-
-    /**
-     * Writes this instance's state to the given {@link ByteBuf}.
-     * <p>
-     * This method returns a {@code boolean} indicating whether or not this instance was empty. Implementations may choose to treat 0 written bytes
-     * differently from being empty, so if {@code true} is returned, the state may be restored later simply by resetting the tile - {@link #read(ByteBuf)}
-     * must not be called.
-     *
-     * @param dst the {@link ByteBuf} to write to
-     * @return whether or not this instance is empty
-     */
-    boolean write(@NonNull ByteBuf dst);
+    void reset();
 }

@@ -32,7 +32,7 @@ import java.util.Set;
  *
  * @author DaPorkchop_
  */
-public interface IFarDirectPosAccess<POS extends IFarPos> extends IFarPosSerializer<POS> {
+public interface IFarDirectPosAccess<POS extends IFarPos> extends IFarPosCodec<POS> {
     /**
      * @return the number of spatial dimensions required to represent this position
      */
@@ -48,8 +48,9 @@ public interface IFarDirectPosAccess<POS extends IFarPos> extends IFarPosSeriali
      *
      * @param pos  the position
      * @param addr the memory address
+     * @return
      */
-    void storePos(@NonNull POS pos, long addr);
+    long store(POS pos, long addr);
 
     /**
      * Loads the position at the give memory address onto the Java heap.
@@ -57,7 +58,7 @@ public interface IFarDirectPosAccess<POS extends IFarPos> extends IFarPosSeriali
      * @param addr the memory address
      * @return the position
      */
-    POS loadPos(long addr);
+    POS load(long addr);
 
     /**
      * Gets the position's offset along the given axis.

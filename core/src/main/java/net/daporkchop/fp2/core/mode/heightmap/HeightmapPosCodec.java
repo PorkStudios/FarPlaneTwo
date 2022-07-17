@@ -21,7 +21,7 @@ package net.daporkchop.fp2.core.mode.heightmap;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import net.daporkchop.fp2.core.mode.api.IFarPosSerializer;
+import net.daporkchop.fp2.core.mode.api.IFarPosCodec;
 import net.daporkchop.fp2.core.util.math.MathUtil;
 import net.daporkchop.lib.common.system.PlatformInfo;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -32,8 +32,8 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public final class HeightmapPosSerializer implements IFarPosSerializer<HeightmapPos> {
-    public static final HeightmapPosSerializer INSTANCE = new HeightmapPosSerializer();
+public final class HeightmapPosCodec implements IFarPosCodec<HeightmapPos> {
+    public static final HeightmapPosCodec INSTANCE = new HeightmapPosCodec();
 
     private static final int LEVEL_OFFSET = 0;
     private static final int COORDS_OFFSET = LEVEL_OFFSET + BYTE_SIZE;
@@ -54,7 +54,7 @@ public final class HeightmapPosSerializer implements IFarPosSerializer<Heightmap
     //
 
     @Override
-    public void storePos(@NonNull HeightmapPos pos, long addr) {
+    public long store(HeightmapPos pos, long addr) {
         PUnsafe.putByte(addr + LEVEL_OFFSET, toByte(pos.level(), "level"));
 
         long interleaved = MathUtil.interleaveBits(pos.x(), pos.z());
@@ -65,12 +65,12 @@ public final class HeightmapPosSerializer implements IFarPosSerializer<Heightmap
     }
 
     @Override
-    public void storePos(@NonNull HeightmapPos pos, byte[] arr, int index) {
-        this.storePos(pos, arr, PUnsafe.arrayByteElementOffset(index));
+    public long store(HeightmapPos pos, byte[] arr, int index) {
+        this.store(pos, arr, PUnsafe.arrayByteElementOffset(index));
     }
 
     @Override
-    public void storePos(@NonNull HeightmapPos pos, Object base, long offset) {
+    public long store(HeightmapPos pos, Object base, long offset) {
         PUnsafe.putByte(base, offset + LEVEL_OFFSET, toByte(pos.level(), "level"));
 
         long interleaved = MathUtil.interleaveBits(pos.x(), pos.z());
@@ -81,14 +81,14 @@ public final class HeightmapPosSerializer implements IFarPosSerializer<Heightmap
     }
 
     @Override
-    public void storePos(@NonNull HeightmapPos pos, @NonNull ByteBuf buf) {
+    public int store(HeightmapPos pos, @NonNull ByteBuf buf) {
         buf.ensureWritable(SIZE).writeByte(pos.level())
                 //write in big-endian
                 .writeLong(MathUtil.interleaveBits(pos.x(), pos.z()));
     }
 
     @Override
-    public void storePos(@NonNull HeightmapPos pos, @NonNull ByteBuf buf, int index) {
+    public int store(HeightmapPos pos, @NonNull ByteBuf buf, int index) {
         buf.setByte(index + LEVEL_OFFSET, pos.level())
                 //write in big-endian
                 .setLong(index + COORDS_OFFSET, MathUtil.interleaveBits(pos.x(), pos.z()));
@@ -99,7 +99,7 @@ public final class HeightmapPosSerializer implements IFarPosSerializer<Heightmap
     //
 
     @Override
-    public HeightmapPos loadPos(long addr) {
+    public HeightmapPos load(long addr) {
         int level = PUnsafe.getByte(addr + LEVEL_OFFSET) & 0xFF;
 
         long interleaved = PUnsafe.getLong(addr + COORDS_OFFSET);
@@ -113,12 +113,12 @@ public final class HeightmapPosSerializer implements IFarPosSerializer<Heightmap
     }
 
     @Override
-    public HeightmapPos loadPos(byte[] arr, int index) {
-        return this.loadPos(arr, PUnsafe.arrayByteElementOffset(index));
+    public HeightmapPos load(byte[] arr, int index) {
+        return this.load(arr, PUnsafe.arrayByteElementOffset(index));
     }
 
     @Override
-    public HeightmapPos loadPos(Object base, long offset) {
+    public HeightmapPos load(Object base, long offset) {
         int level = PUnsafe.getByte(base, offset + LEVEL_OFFSET) & 0xFF;
 
         long interleaved = PUnsafe.getLong(base, offset + COORDS_OFFSET);
@@ -132,7 +132,7 @@ public final class HeightmapPosSerializer implements IFarPosSerializer<Heightmap
     }
 
     @Override
-    public HeightmapPos loadPos(@NonNull ByteBuf buf) {
+    public HeightmapPos load(@NonNull ByteBuf buf) {
         int level = buf.readUnsignedByte();
 
         //read in big-endian
@@ -144,7 +144,7 @@ public final class HeightmapPosSerializer implements IFarPosSerializer<Heightmap
     }
 
     @Override
-    public HeightmapPos loadPos(@NonNull ByteBuf buf, int index) {
+    public HeightmapPos load(@NonNull ByteBuf buf, int index) {
         int level = buf.getUnsignedByte(index + LEVEL_OFFSET);
 
         //read in big-endian

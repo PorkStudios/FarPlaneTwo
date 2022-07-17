@@ -21,7 +21,7 @@ package net.daporkchop.fp2.core.mode.voxel;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import net.daporkchop.fp2.core.mode.api.IFarPosSerializer;
+import net.daporkchop.fp2.core.mode.api.IFarPosCodec;
 import net.daporkchop.fp2.core.util.math.MathUtil;
 import net.daporkchop.lib.common.system.PlatformInfo;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -32,8 +32,8 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public final class VoxelPosSerializer implements IFarPosSerializer<VoxelPos> {
-    public static final VoxelPosSerializer INSTANCE = new VoxelPosSerializer();
+public final class VoxelPosCodec implements IFarPosCodec<VoxelPos> {
+    public static final VoxelPosCodec INSTANCE = new VoxelPosCodec();
 
     private static final int LEVEL_OFFSET = 0;
     private static final int HIGH_OFFSET = LEVEL_OFFSET + BYTE_SIZE;
@@ -55,7 +55,7 @@ public final class VoxelPosSerializer implements IFarPosSerializer<VoxelPos> {
     //
 
     @Override
-    public void storePos(@NonNull VoxelPos pos, long addr) {
+    public long store(VoxelPos pos, long addr) {
         PUnsafe.putByte(addr + LEVEL_OFFSET, toByte(pos.level(), "level"));
 
         int interleavedHigh = MathUtil.interleaveBitsHigh(pos.x(), pos.y(), pos.z());
@@ -69,12 +69,12 @@ public final class VoxelPosSerializer implements IFarPosSerializer<VoxelPos> {
     }
 
     @Override
-    public void storePos(@NonNull VoxelPos pos, byte[] arr, int index) {
-        this.storePos(pos, arr, PUnsafe.arrayByteElementOffset(index));
+    public long store(VoxelPos pos, byte[] arr, int index) {
+        this.store(pos, arr, PUnsafe.arrayByteElementOffset(index));
     }
 
     @Override
-    public void storePos(@NonNull VoxelPos pos, Object base, long offset) {
+    public long store(VoxelPos pos, Object base, long offset) {
         PUnsafe.putByte(base, offset + LEVEL_OFFSET, toByte(pos.level(), "level"));
 
         int interleavedHigh = MathUtil.interleaveBitsHigh(pos.x(), pos.y(), pos.z());
@@ -88,7 +88,7 @@ public final class VoxelPosSerializer implements IFarPosSerializer<VoxelPos> {
     }
 
     @Override
-    public void storePos(@NonNull VoxelPos pos, @NonNull ByteBuf buf) {
+    public int store(VoxelPos pos, @NonNull ByteBuf buf) {
         buf.ensureWritable(SIZE).writeByte(pos.level())
                 //write in big-endian
                 .writeInt(MathUtil.interleaveBitsHigh(pos.x(), pos.y(), pos.z()))
@@ -96,7 +96,7 @@ public final class VoxelPosSerializer implements IFarPosSerializer<VoxelPos> {
     }
 
     @Override
-    public void storePos(@NonNull VoxelPos pos, @NonNull ByteBuf buf, int index) {
+    public int store(VoxelPos pos, @NonNull ByteBuf buf, int index) {
         buf.setByte(index + LEVEL_OFFSET, pos.level())
                 //write in big-endian
                 .setInt(index + HIGH_OFFSET, MathUtil.interleaveBitsHigh(pos.x(), pos.y(), pos.z()))
@@ -108,7 +108,7 @@ public final class VoxelPosSerializer implements IFarPosSerializer<VoxelPos> {
     //
 
     @Override
-    public VoxelPos loadPos(long addr) {
+    public VoxelPos load(long addr) {
         int level = PUnsafe.getByte(addr + LEVEL_OFFSET) & 0xFF;
 
         int interleavedHigh = PUnsafe.getInt(addr + HIGH_OFFSET);
@@ -125,12 +125,12 @@ public final class VoxelPosSerializer implements IFarPosSerializer<VoxelPos> {
     }
 
     @Override
-    public VoxelPos loadPos(byte[] arr, int index) {
-        return this.loadPos(arr, PUnsafe.arrayByteElementOffset(index));
+    public VoxelPos load(byte[] arr, int index) {
+        return this.load(arr, PUnsafe.arrayByteElementOffset(index));
     }
 
     @Override
-    public VoxelPos loadPos(Object base, long offset) {
+    public VoxelPos load(Object base, long offset) {
         int level = PUnsafe.getByte(base, offset + LEVEL_OFFSET) & 0xFF;
 
         int interleavedHigh = PUnsafe.getInt(base, offset + HIGH_OFFSET);
@@ -147,7 +147,7 @@ public final class VoxelPosSerializer implements IFarPosSerializer<VoxelPos> {
     }
 
     @Override
-    public VoxelPos loadPos(@NonNull ByteBuf buf) {
+    public VoxelPos load(@NonNull ByteBuf buf) {
         int level = buf.readUnsignedByte();
 
         //read in big-endian
@@ -161,7 +161,7 @@ public final class VoxelPosSerializer implements IFarPosSerializer<VoxelPos> {
     }
 
     @Override
-    public VoxelPos loadPos(@NonNull ByteBuf buf, int index) {
+    public VoxelPos load(@NonNull ByteBuf buf, int index) {
         int level = buf.getUnsignedByte(index + LEVEL_OFFSET);
 
         //read in big-endian

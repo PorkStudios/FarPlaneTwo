@@ -27,7 +27,7 @@ import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.core.mode.api.IFarPosSerializer;
+import net.daporkchop.fp2.core.mode.api.IFarPosCodec;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
@@ -111,7 +111,7 @@ public abstract class AbstractFarRenderMode<POS extends IFarPos, T extends IFarT
     public abstract IFarDirectPosAccess<POS> directPosAccess();
 
     @Override
-    public abstract IFarPosSerializer<POS> posSerializer();
+    public abstract IFarPosCodec<POS> posCodec();
 
     @Override
     public abstract POS readPos(@NonNull ByteBuf buf);

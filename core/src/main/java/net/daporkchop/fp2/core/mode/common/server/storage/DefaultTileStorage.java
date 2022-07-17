@@ -32,8 +32,9 @@ import net.daporkchop.fp2.api.storage.external.FStorageItemFactory;
 import net.daporkchop.fp2.api.storage.internal.FStorageColumn;
 import net.daporkchop.fp2.api.storage.internal.FStorageColumnHintsInternal;
 import net.daporkchop.fp2.api.storage.internal.FStorageInternal;
+import net.daporkchop.fp2.common.util.DirectBufferHackery;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.core.mode.api.IFarPosSerializer;
+import net.daporkchop.fp2.core.mode.api.IFarPosCodec;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.server.storage.FTileStorage;
 import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
@@ -41,7 +42,8 @@ import net.daporkchop.fp2.core.mode.api.tile.ITileMetadata;
 import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
 import net.daporkchop.fp2.core.mode.api.tile.TileSnapshot;
 import net.daporkchop.fp2.core.mode.common.server.AbstractFarTileProvider;
-import net.daporkchop.fp2.core.util.datastructure.java.list.ArraySliceAsList;
+import net.daporkchop.fp2.core.util.GlobalAllocators;
+import net.daporkchop.fp2.core.util.datastructure.java.list.ListUtils;
 import net.daporkchop.fp2.core.util.recycler.Recycler;
 import net.daporkchop.fp2.core.util.recycler.SimpleRecycler;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
@@ -53,6 +55,7 @@ import net.daporkchop.lib.primitive.list.LongList;
 import net.daporkchop.lib.primitive.list.array.LongArrayList;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -82,6 +85,19 @@ public class DefaultTileStorage<POS extends IFarPos, T extends IFarTile> impleme
     protected static final String COLUMN_NAME_TIMESTAMP = "timestamp";
     protected static final String COLUMN_NAME_DIRTY_TIMESTAMP = "dirty_timestamp";
     protected static final String COLUMN_NAME_DATA = "data";
+
+    protected static final Cached<ArrayAllocator<ByteBuffer[]>> ALLOC_BYTEBUFFER_ARRAY = GlobalAllocators.getArrayAllocatorForComponentType(ByteBuffer.class);
+    protected static final Cached<Recycler<ByteBuffer>> FAKE_DIRECT_BYTEBUFFER_RECYCLER = Cached.threadLocal(() -> new SimpleRecycler<ByteBuffer>() {
+        @Override
+        protected ByteBuffer allocate0() {
+            return DirectBufferHackery.emptyByte();
+        }
+
+        @Override
+        protected void reset0(ByteBuffer value) {
+            //no-op
+        }
+    }, ReferenceStrength.WEAK);
 
     protected static long readLongLE(@NonNull byte[] src) {
         return readLongLE(src, 0);
@@ -129,7 +145,7 @@ public class DefaultTileStorage<POS extends IFarPos, T extends IFarTile> impleme
         return new FStorageItemFactory<FTileStorage<POS, T>>() {
             @Override
             public ConfigurationResult configure(@NonNull ConfigurationCallback callback) {
-                int expectedPositionSize = toIntExact(tileProvider.mode().posSerializer().posSize());
+                int expectedPositionSize = toIntExact(tileProvider.mode().posCodec().posSize());
 
                 //register the columns
                 callback.registerColumn(COLUMN_NAME_TIMESTAMP, //tile timestamp
@@ -168,7 +184,7 @@ public class DefaultTileStorage<POS extends IFarPos, T extends IFarTile> impleme
     }
 
     protected final AbstractFarTileProvider<POS, T> tileProvider;
-    protected final IFarPosSerializer<POS> posSerializer;
+    protected final IFarPosCodec<POS> posCodec;
     protected final Cached<Recycler<byte[]>> posBufferRecyclerCache;
 
     protected final FStorageInternal storageInternal;
@@ -186,10 +202,10 @@ public class DefaultTileStorage<POS extends IFarPos, T extends IFarTile> impleme
 
     protected DefaultTileStorage(@NonNull AbstractFarTileProvider<POS, T> tileProvider, @NonNull FStorageInternal storageInternal) {
         this.tileProvider = tileProvider;
-        this.posSerializer = tileProvider.mode().posSerializer();
+        this.posCodec = tileProvider.mode().posCodec();
 
         { //create recycler for temporary serialized position buffers
-            int posSize = toIntExact(this.posSerializer.posSize());
+            int posSize = toIntExact(this.posCodec.posSize());
             Supplier<byte[]> factory = () -> new byte[posSize];
             this.posBufferRecyclerCache = Cached.threadLocal(() -> SimpleRecycler.withFactory(factory), ReferenceStrength.WEAK);
         }
@@ -223,45 +239,35 @@ public class DefaultTileStorage<POS extends IFarPos, T extends IFarTile> impleme
 
         //read from storage
         List<byte[]> valueBytes = this.storageInternal.readGet(access -> {
-            //prepare parameter arrays for MultiGet
-            int doubleLength = multiplyExact(length, 2);
+            int posSize = toIntExact(this.posCodec.posSize());
 
-            Recycler<byte[]> posBufferRecycler = this.posBufferRecyclerCache.get();
-            ArrayAllocator<Object[]> objectAlloc = ALLOC_OBJECT.get();
+            ArrayAllocator<Object[]> byteBufferArrayAlloc = ALLOC_OBJECT.get();
+            Recycler<ByteBuffer> byteBufferRecycler = FAKE_DIRECT_BYTEBUFFER_RECYCLER.get();
 
             //allocate temporary arrays
-            Object[] columns = objectAlloc.atLeast(doubleLength);
-            Object[] duplicatedKeys = objectAlloc.atLeast(doubleLength);
-            byte[][] serializedKeys = posBufferRecycler.allocate(length, byte[][]::new);
+            Object[] rawKeys = byteBufferRecycler.allocate(length, byteBufferArrayAlloc);
+
+            long serializedKeys = PUnsafe.allocateMemory(multiplyExact(length, posSize));
             try {
-                //serialize keys
-                for (int i = 0; i < length; i++) {
-                    this.posSerializer.storePos(positions.get(i), serializedKeys[i], 0);
-                }
+                { //serialize keys
+                    int i = 0;
+                    for (long addr = serializedKeys, end = serializedKeys + length * (long) posSize; addr != end; i++, addr += posSize) {
+                        this.posCodec.store(positions.get(i), addr);
 
-                //fill temporary arrays with parameters
-                for (int i = 0; i < doubleLength; ) {
-                    byte[] keyBytes = serializedKeys[i >> 1];
-
-                    columns[i] = this.columnTimestamp;
-                    duplicatedKeys[i++] = keyBytes;
-                    columns[i] = this.columnData;
-                    duplicatedKeys[i++] = keyBytes;
+                        //configure buffer
+                        DirectBufferHackery.reset((ByteBuffer) rawKeys[i], addr, posSize);
+                    }
                 }
 
                 //read all timestamps and values simultaneously
                 return access.multiGet(
-                        ArraySliceAsList.wrapUnchecked(columns, 0, doubleLength),
-                        ArraySliceAsList.wrapUnchecked(duplicatedKeys, 0, doubleLength));
+                        ListUtils.repeatSequence(ImmutableList.of(this.columnTimestamp, this.columnData), length),
+                        ListUtils.repeatElements(Arrays.asList(rawKeys), 2));
             } finally {
-                //null out elements in temporary arrays
-                Arrays.fill(columns, 0, doubleLength, null);
-                Arrays.fill(duplicatedKeys, 0, doubleLength, null);
+                //free serialized keys buffer
+                PUnsafe.freeMemory(serializedKeys);
 
-                //release all allocated arrays
-                objectAlloc.release(duplicatedKeys);
-                objectAlloc.release(columns);
-                posBufferRecycler.release(serializedKeys);
+                byteBufferRecycler.release(rawKeys, length, byteBufferArrayAlloc);
             }
         });
 

@@ -27,7 +27,7 @@ import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.IFarCoordLimits;
 import net.daporkchop.fp2.core.mode.api.IFarDirectPosAccess;
-import net.daporkchop.fp2.core.mode.api.IFarPosSerializer;
+import net.daporkchop.fp2.core.mode.api.IFarPosCodec;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarServerContext;
@@ -100,8 +100,8 @@ public class VoxelRenderMode extends AbstractFarRenderMode<VoxelPos, VoxelTile> 
     }
 
     @Override
-    public IFarPosSerializer<VoxelPos> posSerializer() {
-        return VoxelPosSerializer.INSTANCE;
+    public IFarPosCodec<VoxelPos> posCodec() {
+        return VoxelPosCodec.INSTANCE;
     }
 
     @Override

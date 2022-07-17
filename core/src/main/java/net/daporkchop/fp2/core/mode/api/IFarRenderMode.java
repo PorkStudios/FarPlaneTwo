@@ -131,9 +131,9 @@ public interface IFarRenderMode<POS extends IFarPos, T extends IFarTile> {
     IFarDirectPosAccess<POS> directPosAccess();
 
     /**
-     * @return the {@link IFarPosSerializer} used by this render mode to serialize tile positions for storage
+     * @return the {@link IFarPosCodec} used by this render mode to serialize tile positions for storage
      */
-    IFarPosSerializer<POS> posSerializer();
+    IFarPosCodec<POS> posCodec();
 
     /**
      * Creates a {@link IFarCoordLimits} for the given block coordinate limits as defined by the given {@link IntAxisAlignedBB}.

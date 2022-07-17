@@ -17,35 +17,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.util;
-
-import io.netty.buffer.ByteBuf;
-import lombok.NonNull;
+package net.daporkchop.fp2.core.util.serialization;
 
 /**
- * A type whose state may be persisted to a binary format, and restored later.
+ * Encodes and decodes {@link T} instances to/from a binary representation. When deserializing a value, a new instance of {@link T} is allocated.
  *
  * @author DaPorkchop_
  */
-public interface IReusablePersistent extends IReusable {
-    /**
-     * Restores this instance's state from the data in the given {@link ByteBuf}.
-     * <p>
-     * The instance is implicitly reset before the state is restored.
-     *
-     * @param src the {@link ByteBuf} to read from
-     */
-    void read(@NonNull ByteBuf src);
-
-    /**
-     * Writes this instance's state to the given {@link ByteBuf}.
-     * <p>
-     * This method returns a {@code boolean} indicating whether or not this instance was empty. Implementations may choose to treat 0 written bytes
-     * differently from being empty, so if {@code true} is returned, the state may be restored later simply by resetting the tile - {@link #read(ByteBuf)}
-     * must not be called.
-     *
-     * @param dst the {@link ByteBuf} to write to
-     * @return whether or not this instance is empty
-     */
-    boolean write(@NonNull ByteBuf dst);
+public interface IConstructingCodec<T> extends ISerializer<T>, IConstructingDeserializer<T> {
 }
