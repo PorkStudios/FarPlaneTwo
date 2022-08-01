@@ -41,16 +41,15 @@ public interface IFarDirectPosAccess<POS extends IFarPos> extends IFarPosCodec<P
     /**
      * @return the off-heap size of a position, in bytes
      */
-    long posSize();
+    long size();
 
     /**
      * Stores a position off-heap at the given memory address.
      *
      * @param pos  the position
      * @param addr the memory address
-     * @return
      */
-    long store(POS pos, long addr);
+    void store(POS pos, long addr);
 
     /**
      * Loads the position at the give memory address onto the Java heap.

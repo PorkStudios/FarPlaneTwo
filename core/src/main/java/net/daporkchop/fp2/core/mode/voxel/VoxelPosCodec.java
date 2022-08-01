@@ -46,7 +46,7 @@ public final class VoxelPosCodec implements IFarPosCodec<VoxelPos> {
     }
 
     @Override
-    public long posSize() {
+    public long size() {
         return SIZE;
     }
 
@@ -55,7 +55,7 @@ public final class VoxelPosCodec implements IFarPosCodec<VoxelPos> {
     //
 
     @Override
-    public long store(VoxelPos pos, long addr) {
+    public void store(VoxelPos pos, long addr) {
         PUnsafe.putByte(addr + LEVEL_OFFSET, toByte(pos.level(), "level"));
 
         int interleavedHigh = MathUtil.interleaveBitsHigh(pos.x(), pos.y(), pos.z());
@@ -69,12 +69,12 @@ public final class VoxelPosCodec implements IFarPosCodec<VoxelPos> {
     }
 
     @Override
-    public long store(VoxelPos pos, byte[] arr, int index) {
+    public void store(VoxelPos pos, byte[] arr, int index) {
         this.store(pos, arr, PUnsafe.arrayByteElementOffset(index));
     }
 
     @Override
-    public long store(VoxelPos pos, Object base, long offset) {
+    public void store(VoxelPos pos, Object base, long offset) {
         PUnsafe.putByte(base, offset + LEVEL_OFFSET, toByte(pos.level(), "level"));
 
         int interleavedHigh = MathUtil.interleaveBitsHigh(pos.x(), pos.y(), pos.z());
@@ -88,7 +88,7 @@ public final class VoxelPosCodec implements IFarPosCodec<VoxelPos> {
     }
 
     @Override
-    public int store(VoxelPos pos, @NonNull ByteBuf buf) {
+    public void store(VoxelPos pos, @NonNull ByteBuf buf) {
         buf.ensureWritable(SIZE).writeByte(pos.level())
                 //write in big-endian
                 .writeInt(MathUtil.interleaveBitsHigh(pos.x(), pos.y(), pos.z()))
@@ -96,7 +96,7 @@ public final class VoxelPosCodec implements IFarPosCodec<VoxelPos> {
     }
 
     @Override
-    public int store(VoxelPos pos, @NonNull ByteBuf buf, int index) {
+    public void store(VoxelPos pos, @NonNull ByteBuf buf, int index) {
         buf.setByte(index + LEVEL_OFFSET, pos.level())
                 //write in big-endian
                 .setInt(index + HIGH_OFFSET, MathUtil.interleaveBitsHigh(pos.x(), pos.y(), pos.z()))

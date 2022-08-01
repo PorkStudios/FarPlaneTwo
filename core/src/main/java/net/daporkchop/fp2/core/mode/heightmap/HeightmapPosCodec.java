@@ -45,7 +45,7 @@ public final class HeightmapPosCodec implements IFarPosCodec<HeightmapPos> {
     }
 
     @Override
-    public long posSize() {
+    public long size() {
         return SIZE;
     }
 
@@ -54,7 +54,7 @@ public final class HeightmapPosCodec implements IFarPosCodec<HeightmapPos> {
     //
 
     @Override
-    public long store(HeightmapPos pos, long addr) {
+    public void store(HeightmapPos pos, long addr) {
         PUnsafe.putByte(addr + LEVEL_OFFSET, toByte(pos.level(), "level"));
 
         long interleaved = MathUtil.interleaveBits(pos.x(), pos.z());
@@ -65,12 +65,12 @@ public final class HeightmapPosCodec implements IFarPosCodec<HeightmapPos> {
     }
 
     @Override
-    public long store(HeightmapPos pos, byte[] arr, int index) {
+    public void store(HeightmapPos pos, byte[] arr, int index) {
         this.store(pos, arr, PUnsafe.arrayByteElementOffset(index));
     }
 
     @Override
-    public long store(HeightmapPos pos, Object base, long offset) {
+    public void store(HeightmapPos pos, Object base, long offset) {
         PUnsafe.putByte(base, offset + LEVEL_OFFSET, toByte(pos.level(), "level"));
 
         long interleaved = MathUtil.interleaveBits(pos.x(), pos.z());
@@ -81,14 +81,14 @@ public final class HeightmapPosCodec implements IFarPosCodec<HeightmapPos> {
     }
 
     @Override
-    public int store(HeightmapPos pos, @NonNull ByteBuf buf) {
+    public void store(HeightmapPos pos, @NonNull ByteBuf buf) {
         buf.ensureWritable(SIZE).writeByte(pos.level())
                 //write in big-endian
                 .writeLong(MathUtil.interleaveBits(pos.x(), pos.z()));
     }
 
     @Override
-    public int store(HeightmapPos pos, @NonNull ByteBuf buf, int index) {
+    public void store(HeightmapPos pos, @NonNull ByteBuf buf, int index) {
         buf.setByte(index + LEVEL_OFFSET, pos.level())
                 //write in big-endian
                 .setLong(index + COORDS_OFFSET, MathUtil.interleaveBits(pos.x(), pos.z()));

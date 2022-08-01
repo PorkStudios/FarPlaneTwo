@@ -133,12 +133,12 @@ public final class VoxelDirectPosAccess implements IFarDirectPosAccess<VoxelPos>
     }
 
     @Override
-    public long posSize() {
+    public long size() {
         return _SIZE;
     }
 
     @Override
-    public long store(VoxelPos pos, long addr) {
+    public void store(VoxelPos pos, long addr) {
         _x(addr, pos.x());
         _y(addr, pos.y());
         _z(addr, pos.z());
@@ -146,7 +146,7 @@ public final class VoxelDirectPosAccess implements IFarDirectPosAccess<VoxelPos>
     }
 
     @Override
-    public long store(VoxelPos pos, Object base, long offset) {
+    public void store(VoxelPos pos, Object base, long offset) {
         _x(base, offset, pos.x());
         _y(base, offset, pos.y());
         _z(base, offset, pos.z());

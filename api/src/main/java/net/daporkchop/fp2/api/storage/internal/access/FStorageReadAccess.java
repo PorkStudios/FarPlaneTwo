@@ -100,7 +100,7 @@ public interface FStorageReadAccess {
     /**
      * Gets an {@link FStorageIterator iterator} for iterating over a given range of entries in the given storage column.
      * <p>
-     * This, and all of the methods defined in {@link FStorageIterator}, are read operations.
+     * This, and all the methods defined in {@link FStorageIterator}, are read operations.
      *
      * @param column           the storage column
      * @param fromKeyInclusive the lower bound of the iteration range (inclusive), or {@code null} if no explicit lower bound is requested

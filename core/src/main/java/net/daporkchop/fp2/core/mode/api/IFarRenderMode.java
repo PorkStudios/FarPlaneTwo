@@ -35,6 +35,7 @@ import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.core.server.player.IFarPlayerServer;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.util.recycler.Recycler;
+import net.daporkchop.fp2.core.util.serialization.variable.IVariableSizeRecyclingCodec;
 import net.daporkchop.lib.binary.stream.DataIn;
 import net.daporkchop.lib.binary.stream.DataOut;
 
@@ -134,6 +135,11 @@ public interface IFarRenderMode<POS extends IFarPos, T extends IFarTile> {
      * @return the {@link IFarPosCodec} used by this render mode to serialize tile positions for storage
      */
     IFarPosCodec<POS> posCodec();
+
+    /**
+     * @return the {@link IVariableSizeRecyclingCodec} used by this render mode to serialize tiles for storage
+     */
+    IVariableSizeRecyclingCodec<T> tileCodec();
 
     /**
      * Creates a {@link IFarCoordLimits} for the given block coordinate limits as defined by the given {@link IntAxisAlignedBB}.

@@ -17,15 +17,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.mode.api;
-
-import net.daporkchop.fp2.core.util.serialization.fixed.IFixedSizeConstructingCodec;
-import net.daporkchop.fp2.core.util.serialization.variable.IVariableSizeSerializer;
+package net.daporkchop.fp2.core.util.serialization.variable;
 
 /**
- * An {@link IVariableSizeSerializer} specifically for {@link POS tile position}s.
+ * Encodes and decodes {@link T} instances to/from a binary representation. Serialized values have a variable size, which can be auto-detected during deserialization. When
+ * deserializing a value, a new instance of {@link T} is allocated.
  *
  * @author DaPorkchop_
  */
-public interface IFarPosCodec<POS extends IFarPos> extends IFixedSizeConstructingCodec<POS> {
+public interface IVariableSizeConstructingCodec<T> extends IVariableSizeSerializer<T>, IVariableSizeConstructingDeserializer<T> {
 }

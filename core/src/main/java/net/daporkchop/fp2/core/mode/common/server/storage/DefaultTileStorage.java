@@ -43,9 +43,11 @@ import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
 import net.daporkchop.fp2.core.mode.api.tile.TileSnapshot;
 import net.daporkchop.fp2.core.mode.common.server.AbstractFarTileProvider;
 import net.daporkchop.fp2.core.util.GlobalAllocators;
+import net.daporkchop.fp2.core.util.datastructure.java.list.ArraySliceAsList;
 import net.daporkchop.fp2.core.util.datastructure.java.list.ListUtils;
 import net.daporkchop.fp2.core.util.recycler.Recycler;
 import net.daporkchop.fp2.core.util.recycler.SimpleRecycler;
+import net.daporkchop.fp2.core.util.serialization.variable.IVariableSizeRecyclingCodec;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.reference.cache.Cached;
@@ -100,13 +102,21 @@ public class DefaultTileStorage<POS extends IFarPos, T extends IFarTile> impleme
     }, ReferenceStrength.WEAK);
 
     protected static long readLongLE(@NonNull byte[] src) {
-        return readLongLE(src, 0);
+        checkRangeLen(src.length, 0, Long.BYTES);
+        return readLongLE(src, PUnsafe.arrayByteElementOffset(0));
     }
 
     protected static long readLongLE(@NonNull byte[] src, int index) {
         checkRangeLen(src.length, index, Long.BYTES);
+        return readLongLE(src, PUnsafe.arrayByteElementOffset(index));
+    }
 
-        long val = PUnsafe.getLong(src, PUnsafe.ARRAY_BYTE_BASE_OFFSET + index);
+    protected static long readLongLE(long addr) {
+        return readLongLE(null, addr);
+    }
+
+    protected static long readLongLE(Object base, long offset) {
+        long val = PUnsafe.getLong(base, offset);
         return PlatformInfo.IS_BIG_ENDIAN ? Long.reverseBytes(val) : val;
     }
 
@@ -145,7 +155,7 @@ public class DefaultTileStorage<POS extends IFarPos, T extends IFarTile> impleme
         return new FStorageItemFactory<FTileStorage<POS, T>>() {
             @Override
             public ConfigurationResult configure(@NonNull ConfigurationCallback callback) {
-                int expectedPositionSize = toIntExact(tileProvider.mode().posCodec().posSize());
+                int expectedPositionSize = toIntExact(tileProvider.mode().posCodec().size());
 
                 //register the columns
                 callback.registerColumn(COLUMN_NAME_TIMESTAMP, //tile timestamp
@@ -185,6 +195,7 @@ public class DefaultTileStorage<POS extends IFarPos, T extends IFarTile> impleme
 
     protected final AbstractFarTileProvider<POS, T> tileProvider;
     protected final IFarPosCodec<POS> posCodec;
+    protected final IVariableSizeRecyclingCodec<T> tileCodec;
     protected final Cached<Recycler<byte[]>> posBufferRecyclerCache;
 
     protected final FStorageInternal storageInternal;
@@ -203,9 +214,10 @@ public class DefaultTileStorage<POS extends IFarPos, T extends IFarTile> impleme
     protected DefaultTileStorage(@NonNull AbstractFarTileProvider<POS, T> tileProvider, @NonNull FStorageInternal storageInternal) {
         this.tileProvider = tileProvider;
         this.posCodec = tileProvider.mode().posCodec();
+        this.tileCodec = tileProvider.mode().tileCodec();
 
         { //create recycler for temporary serialized position buffers
-            int posSize = toIntExact(this.posCodec.posSize());
+            int posSize = toIntExact(this.posCodec.size());
             Supplier<byte[]> factory = () -> new byte[posSize];
             this.posBufferRecyclerCache = Cached.threadLocal(() -> SimpleRecycler.withFactory(factory), ReferenceStrength.WEAK);
         }
@@ -239,35 +251,65 @@ public class DefaultTileStorage<POS extends IFarPos, T extends IFarTile> impleme
 
         //read from storage
         List<byte[]> valueBytes = this.storageInternal.readGet(access -> {
-            int posSize = toIntExact(this.posCodec.posSize());
+            int posSize = toIntExact(this.posCodec.size());
+            int tileMaxSize = toIntExact(this.tileCodec.maxSize());
 
-            ArrayAllocator<Object[]> byteBufferArrayAlloc = ALLOC_OBJECT.get();
+            ArrayAllocator<int[]> intArrayAlloc = ALLOC_INT.get();
+            ArrayAllocator<ByteBuffer[]> byteBufferArrayAlloc = ALLOC_BYTEBUFFER_ARRAY.get();
             Recycler<ByteBuffer> byteBufferRecycler = FAKE_DIRECT_BYTEBUFFER_RECYCLER.get();
 
-            //allocate temporary arrays
-            Object[] rawKeys = byteBufferRecycler.allocate(length, byteBufferArrayAlloc);
+            //helper variables for array sizes
 
-            long serializedKeys = PUnsafe.allocateMemory(multiplyExact(length, posSize));
+            //allocate temporary arrays for the value sizes
+            int[] sizes = intArrayAlloc.atLeast(multiplyExact(length, 2));
+
+            //allocate an array of direct ByteBuffers
+            int tmpBuffersKeysOffset = 0;
+            int tmpBuffersTimestampsTilesOffset = tmpBuffersKeysOffset + length;
+            int tmpBufferCount = tmpBuffersTimestampsTilesOffset + multiplyExact(length, 2);
+            ByteBuffer[] tmpBuffers = byteBufferRecycler.allocate(tmpBufferCount, byteBufferArrayAlloc);
+
+            //allocate temporary off-heap buffer for serialized keys, tile timestamps and tile data
+            long bufferKeysOffset = 0L;
+            long bufferTimestampsTilesOffset = addExact(bufferKeysOffset, multiplyExact(length, posSize));
+            long buffer = PUnsafe.allocateMemory(addExact(bufferTimestampsTilesOffset, addExact(multiplyExact(length, (long) tileMaxSize), multiplyExact(length, (long) LONG_SIZE))));
             try {
+                long bufferKeys = buffer + bufferKeysOffset;
+                long bufferTimestampsTiles = buffer + bufferTimestampsTilesOffset;
+
                 { //serialize keys
                     int i = 0;
-                    for (long addr = serializedKeys, end = serializedKeys + length * (long) posSize; addr != end; i++, addr += posSize) {
+                    for (long addr = bufferKeys; i < length; i++, addr += posSize) {
                         this.posCodec.store(positions.get(i), addr);
 
                         //configure buffer
-                        DirectBufferHackery.reset((ByteBuffer) rawKeys[i], addr, posSize);
+                        DirectBufferHackery.reset(tmpBuffers[tmpBuffersKeysOffset + i], addr, posSize);
+                    }
+                }
+
+                { //configure buffers for timestamps and data
+                    int i = 0;
+                    for (long addr = bufferTimestampsTiles; i < length;) {
+                        DirectBufferHackery.reset(tmpBuffers[tmpBuffersTimestampsTilesOffset + i++], addr, LONG_SIZE);
+                        addr += LONG_SIZE;
+                        DirectBufferHackery.reset(tmpBuffers[tmpBuffersTimestampsTilesOffset + i++], addr, LONG_SIZE);
+                        addr += tileMaxSize;
                     }
                 }
 
                 //read all timestamps and values simultaneously
-                return access.multiGet(
+                checkState(access.multiGet(
                         ListUtils.repeatSequence(ImmutableList.of(this.columnTimestamp, this.columnData), length),
-                        ListUtils.repeatElements(Arrays.asList(rawKeys), 2));
-            } finally {
-                //free serialized keys buffer
-                PUnsafe.freeMemory(serializedKeys);
+                        ListUtils.repeatElements(ArraySliceAsList.wrap(tmpBuffers, tmpBuffersKeysOffset, length), 2),
+                        ArraySliceAsList.wrap(tmpBuffers, tmpBuffersTimestampsTilesOffset, length * 2),
+                        sizes));
 
-                byteBufferRecycler.release(rawKeys, length, byteBufferArrayAlloc);
+                //TODO: actually do something with the retrieved data
+                throw new UnsupportedOperationException();
+            } finally {
+                PUnsafe.freeMemory(buffer);
+                byteBufferRecycler.release(tmpBuffers, tmpBufferCount, byteBufferArrayAlloc);
+                intArrayAlloc.release(sizes);
             }
         });
 

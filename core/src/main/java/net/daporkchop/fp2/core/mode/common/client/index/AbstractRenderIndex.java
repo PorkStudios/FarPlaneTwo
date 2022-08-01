@@ -168,7 +168,7 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
             this.growFunction = growFunction;
 
             this.directPosAccess = AbstractRenderIndex.this.strategy.mode().directPosAccess();
-            this.positionSize = this.directPosAccess.posSize();
+            this.positionSize = this.directPosAccess.size();
 
             this.positionsToHandles.defaultReturnValue(-1);
 

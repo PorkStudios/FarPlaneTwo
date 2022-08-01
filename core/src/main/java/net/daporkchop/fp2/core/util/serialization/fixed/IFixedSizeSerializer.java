@@ -17,7 +17,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.util.serialization;
+package net.daporkchop.fp2.core.util.serialization.fixed;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
@@ -30,25 +30,24 @@ import static java.lang.Math.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
- * Encodes {@link T} instances to a binary representation.
+ * Encodes {@link T} instances to a binary representation. All serialized instances occupy the same number of bytes.
  *
  * @author DaPorkchop_
  */
-public interface ISerializer<T> {
+public interface IFixedSizeSerializer<T> {
     /**
-     * @return the maximum size of a serialized position, in bytes
+     * @return the size of a serialized {@link T} instance, in bytes
      */
-    long maxSize();
+    long size();
 
     /**
      * Stores a {@link T} instance at the given off-heap memory address.
      *
      * @param value the {@link T} instance
      * @param addr  the memory address
-     * @return the number of bytes actually written
      */
-    default long store(T value, long addr) {
-        return this.store(value, null, addr);
+    default void store(T value, long addr) {
+        this.store(value, null, addr);
     }
 
     /**
@@ -57,10 +56,9 @@ public interface ISerializer<T> {
      * @param value the {@link T} instance
      * @param arr   the {@code byte[]} to write to
      * @param index the index to start writing at
-     * @return the number of bytes actually written
      */
-    default long store(T value, @NonNull byte[] arr, int index) {
-        return this.store(value, arr, PUnsafe.arrayByteElementOffset(index));
+    default void store(T value, @NonNull byte[] arr, int index) {
+        this.store(value, arr, PUnsafe.arrayByteElementOffset(index));
     }
 
     /**
@@ -69,9 +67,8 @@ public interface ISerializer<T> {
      * @param value  the {@link T} instance
      * @param base   the Java object to use as a base. If {@code null}, {@code offset} is assumed to be an off-heap memory address.
      * @param offset the base offset (in bytes) relative to the given Java object to store the position to
-     * @return the number of bytes actually written
      */
-    long store(T value, Object base, long offset);
+    void store(T value, Object base, long offset);
 
     /**
      * Writes a {@link T} instance to the given {@link ByteBuf}.
@@ -80,24 +77,23 @@ public interface ISerializer<T> {
      *
      * @param value the {@link T} instance
      * @param buf   the {@link ByteBuf} to write to
-     * @return the number of bytes actually written
      */
-    default int store(T value, @NonNull ByteBuf buf) {
-        //we want to be absolutely certain that the value can fit within the buffer's limit, as failure to do so could result in a write to an invalid memory address!
-        buf.ensureWritable(toIntExact(this.maxSize()));
+    default void store(T value, @NonNull ByteBuf buf) {
+        int size = toIntExact(this.size());
 
-        int written;
+        //we want to be absolutely certain that the value can fit within the buffer's limit, as failure to do so could result in a write to an invalid memory address!
+        buf.ensureWritable(size);
+
         if (buf.hasMemoryAddress()) {
-            written = toIntExact(this.store(value, buf.memoryAddress() + buf.writerIndex()));
+            this.store(value, buf.memoryAddress() + buf.writerIndex());
         } else if (buf.hasArray()) {
-            written = toIntExact(this.store(value, buf.array(), buf.arrayOffset() + buf.writerIndex()));
+            this.store(value, buf.array(), buf.arrayOffset() + buf.writerIndex());
         } else { //buffer is probably a composite: we don't really care about this, do we?
             throw new IllegalArgumentException(buf.toString());
         }
 
-        //increase writerIndex
-        buf.writerIndex(buf.writerIndex() + written);
-        return written;
+        //advance writerIndex
+        buf.writerIndex(buf.writerIndex() + size);
     }
 
     /**
@@ -108,11 +104,10 @@ public interface ISerializer<T> {
      * @param value the {@link T} instance
      * @param buf   the {@link ByteBuf} to write to
      * @param index the index in the buffer to write the position at
-     * @return the number of bytes actually written
      */
-    default int store(T value, @NonNull ByteBuf buf, int index) {
+    default void store(T value, @NonNull ByteBuf buf, int index) {
         //we want to be absolutely certain that the value can fit within the buffer's limit, as failure to do so could result in a write to an invalid memory address!
-        if (buf.capacity() - notNegative(index, "index") < this.maxSize()) {
+        if (buf.capacity() - notNegative(index, "index") < this.size()) {
             int oldWriterIndex = buf.writerIndex();
             try {
                 buf.writerIndex(index);
@@ -123,9 +118,9 @@ public interface ISerializer<T> {
         }
 
         if (buf.hasMemoryAddress()) {
-            return toIntExact(this.store(value, buf.memoryAddress() + buf.writerIndex()));
+            this.store(value, buf.memoryAddress() + index);
         } else if (buf.hasArray()) {
-            return toIntExact(this.store(value, buf.array(), buf.arrayOffset() + buf.writerIndex()));
+            this.store(value, buf.array(), buf.arrayOffset() + index);
         } else { //buffer is probably a composite: we don't really care about this, do we?
             throw new IllegalArgumentException(buf.toString());
         }
@@ -138,19 +133,23 @@ public interface ISerializer<T> {
      *
      * @param value the {@link T} instance
      * @param buf   the {@link ByteBuffer} to write to
-     * @return the number of bytes actually written
      */
-    default int store(T value, @NonNull ByteBuffer buf) {
+    default void store(T value, @NonNull ByteBuffer buf) {
+        int size = toIntExact(this.size());
+
         //we want to be absolutely certain that the value can fit within the buffer's limit, as failure to do so could result in a write to an invalid memory address!
-        if (buf.remaining() < this.maxSize()) {
+        if (buf.remaining() < size) {
             throw new BufferOverflowException();
         }
 
-        int written = toIntExact(buf.isDirect()
-                ? this.store(value, PUnsafe.pork_directBufferAddress(buf) + buf.position())
-                : this.store(value, buf.array(), buf.arrayOffset() + buf.position()));
-        buf.position(buf.position() + written);
-        return written;
+        if (buf.isDirect()) {
+            this.store(value, PUnsafe.pork_directBufferAddress(buf) + buf.position());
+        } else {
+            this.store(value, buf.array(), buf.arrayOffset() + buf.position());
+        }
+
+        //advance position
+        buf.position(buf.position() + size);
     }
 
     /**
@@ -161,16 +160,17 @@ public interface ISerializer<T> {
      * @param value the {@link T} instance
      * @param buf   the {@link ByteBuffer} to write to
      * @param index the index in the buffer to write the position at
-     * @return the number of bytes actually written
      */
-    default int store(T value, @NonNull ByteBuffer buf, int index) {
+    default void store(T value, @NonNull ByteBuffer buf, int index) {
         //we want to be absolutely certain that the value can fit within the buffer's limit, as failure to do so could result in a write to an invalid memory address!
-        if (buf.limit() - notNegative(index, "index") < this.maxSize()) { //the buffer could potentially overflow
+        if (buf.limit() - notNegative(index, "index") < this.size()) { //the buffer could potentially overflow
             throw new BufferOverflowException();
         }
 
-        return toIntExact(buf.isDirect()
-                ? this.store(value, PUnsafe.pork_directBufferAddress(buf) + index)
-                : this.store(value, buf.array(), buf.arrayOffset() + index));
+        if (buf.isDirect()) {
+            this.store(value, PUnsafe.pork_directBufferAddress(buf) + index);
+        } else {
+            this.store(value, buf.array(), buf.arrayOffset() + index);
+        }
     }
 }

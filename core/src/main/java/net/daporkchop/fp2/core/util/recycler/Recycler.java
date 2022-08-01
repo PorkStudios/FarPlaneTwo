@@ -34,6 +34,10 @@ import static net.daporkchop.fp2.core.util.GlobalAllocators.*;
 
 /**
  * A simple recycler for re-usable object instances.
+ * <p>
+ * For convenience reasons, it is not <i>absolutely</i> necessary to release instances once no longer needed. This eliminates the need for users to add an additional
+ * {@code try-finally} block every time an object is acquired from a recycler, at the cost of potentially degraded performance from having to allocate new instances when an
+ * older instance fails to be released due to an exception.
  *
  * @author DaPorkchop_
  */
@@ -117,25 +121,10 @@ public interface Recycler<V> {
      * @see #allocate()
      */
     default V[] allocate(@NonNull V[] values, int off, int length) {
-        int index = 0;
-        try {
-            for (; index < length; index++) {
-                values[off + index] = this.allocate();
-            }
-            return values;
-        } catch (Throwable t) { //something went wrong, free all the instances which were allocated so far before we abort
-            for (int i = 0; i < index; i++) {
-                try {
-                    this.release(values[off + i]);
-                } catch (Throwable t1) { //failed to release instance, save exception to be rethrown
-                    t.addSuppressed(t1);
-                }
-                values[off + i] = null;
-            }
-
-            PUnsafe.throwException(t);
-            throw new AssertionError(); //impossible
+        for (int index = 0; index < length; index++) {
+            values[off + index] = this.allocate();
         }
+        return values;
     }
 
     //
@@ -180,26 +169,12 @@ public interface Recycler<V> {
      * @see #release(Object)
      */
     default void release(@NonNull V[] values, int off, int length) {
-        int index = 0;
         try {
-            for (; index < length; index++) {
+            for (int index = 0; index < length; index++) {
                 this.release(values[off + index]);
-                values[off + index] = null;
             }
-        } catch (Throwable t) { //something went wrong, try to continue freeing elements but save exception to rethrow later
-            values[off + index] = null; //make sure to null out the element which failed to be released
-
-            for (index++; index < length; index++) {
-                try {
-                    this.release(values[off + index]);
-                } catch (Throwable t1) { //failed to release instance, save exception to be rethrown
-                    t.addSuppressed(t1);
-                }
-                values[off + index] = null;
-            }
-
-            PUnsafe.throwException(t);
-            throw new AssertionError(); //impossible
+        } finally {
+            Arrays.fill(values, off, off + length, null);
         }
     }
 
@@ -212,23 +187,7 @@ public interface Recycler<V> {
      * @see #release(Object)
      */
     default void release(@NonNull List<V> values) {
-        int index = 0;
-        try {
-            for (; index < values.size(); index++) {
-                this.release(values.get(index));
-            }
-        } catch (Throwable t) { //something went wrong, try to continue freeing elements but save exception to rethrow later
-            for (index++; index < values.size(); index++) {
-                try {
-                    this.release(values.get(index));
-                } catch (Throwable t1) { //failed to release instance, save exception to be rethrown
-                    t.addSuppressed(t1);
-                }
-            }
-
-            PUnsafe.throwException(t);
-            throw new AssertionError(); //impossible
-        }
+        values.forEach(this::release);
     }
 
     //

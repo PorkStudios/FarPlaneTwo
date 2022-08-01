@@ -17,12 +17,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.util.serialization;
+package net.daporkchop.fp2.core.util.serialization.fixed;
 
 /**
- * Encodes and decodes {@link T} instances to/from a binary representation. When deserializing a value, a new instance of {@link T} is allocated.
+ * Encodes and decodes {@link T} instances to/from a binary representation. All serialized instances occupy the same number of bytes. When deserializing a value, a new
+ * instance of {@link T} is allocated.
  *
  * @author DaPorkchop_
  */
-public interface IConstructingCodec<T> extends ISerializer<T>, IConstructingDeserializer<T> {
+public interface IFixedSizeConstructingCodec<T> extends IFixedSizeSerializer<T>, IFixedSizeConstructingDeserializer<T> {
 }
