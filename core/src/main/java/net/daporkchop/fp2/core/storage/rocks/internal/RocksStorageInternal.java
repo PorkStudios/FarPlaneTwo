@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.storage.rocks.internal;
@@ -292,6 +291,11 @@ public class RocksStorageInternal extends ReentrantReadWriteLock implements FSto
     }
 
     @Override
+    public <R> R readGet(@NonNull ThrowingFunction<? super FStorageReadAccess, ? extends R, ? extends FStorageException> action, @NonNull ThrowingConsumer<R, ? extends FStorageException> cleanup) throws FStorageException {
+        return this.storage.readGet(action, cleanup);
+    }
+
+    @Override
     public void readAtomicRun(@NonNull ThrowingConsumer<? super FStorageReadAccess, ? extends FStorageException> action) throws FStorageException {
         this.storage.readAtomicRun(action);
     }
@@ -299,6 +303,11 @@ public class RocksStorageInternal extends ReentrantReadWriteLock implements FSto
     @Override
     public <R> R readAtomicGet(@NonNull ThrowingFunction<? super FStorageReadAccess, ? extends R, ? extends FStorageException> action) throws FStorageException {
         return this.storage.readAtomicGet(action);
+    }
+
+    @Override
+    public <R> R readAtomicGet(@NonNull ThrowingFunction<? super FStorageReadAccess, ? extends R, ? extends FStorageException> action, @NonNull ThrowingConsumer<R, ? extends FStorageException> cleanup) throws FStorageException {
+        return this.storage.readAtomicGet(action, cleanup);
     }
 
     @Override
@@ -312,6 +321,11 @@ public class RocksStorageInternal extends ReentrantReadWriteLock implements FSto
     }
 
     @Override
+    public <R> R writeAtomicGet(@NonNull ThrowingFunction<? super FStorageWriteAccess, ? extends R, ? extends FStorageException> action, @NonNull ThrowingConsumer<R, ? extends FStorageException> cleanup) throws FStorageException {
+        return this.storage.writeAtomicGet(action, cleanup);
+    }
+
+    @Override
     public void transactAtomicRun(@NonNull ThrowingConsumer<? super FStorageAccess, ? extends FStorageException> action) throws FStorageException {
         this.storage.transactAtomicRun(action);
     }
@@ -319,6 +333,11 @@ public class RocksStorageInternal extends ReentrantReadWriteLock implements FSto
     @Override
     public <R> R transactAtomicGet(@NonNull ThrowingFunction<? super FStorageAccess, ? extends R, ? extends FStorageException> action) throws FStorageException {
         return this.storage.transactAtomicGet(action);
+    }
+
+    @Override
+    public <R> R transactAtomicGet(@NonNull ThrowingFunction<? super FStorageAccess, ? extends R, ? extends FStorageException> action, @NonNull ThrowingConsumer<R, ? extends FStorageException> cleanup) throws FStorageException {
+        return this.storage.transactAtomicGet(action, cleanup);
     }
 
     @Override
