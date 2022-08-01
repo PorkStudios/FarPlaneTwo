@@ -19,56 +19,20 @@
 
 package net.daporkchop.fp2.core.mode.api.tile;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
-import net.daporkchop.fp2.core.util.recycler.Recycler;
-import net.daporkchop.lib.common.misc.refcount.RefCounted;
+import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
 import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
 
 /**
- * A snapshot of the data stored at a given tile position.
+ * Base implementation of {@link ITileSnapshot}.
  *
  * @author DaPorkchop_
  */
-public interface ITileSnapshot<POS extends IFarPos, T extends IFarTile> extends ITileMetadata, RefCounted {
+public abstract class AbstractTileSnapshot<POS extends IFarPos, T extends IFarTile> extends AbstractRefCounted implements ITileSnapshot<POS, T> {
     @Override
-    int refCnt();
-
-    @Override
-    ITileSnapshot<POS, T> retain() throws AlreadyReleasedException;
-
-    @Override
-    boolean release() throws AlreadyReleasedException;
-
-    /**
-     * @return the tile's position
-     */
-    POS pos();
-
-    /**
-     * Allocates a {@link T} using the given {@link Recycler} and initializes it using the data stored in this snapshot.
-     *
-     * @param recycler a {@link Recycler} to use for allocating instances of {@link T}
-     * @return the loaded {@link T}, or {@code null} if this snapshot is empty
-     */
-    T loadTile(@NonNull Recycler<T> recycler);
-
-    /**
-     * @return whether or not this snapshot's tile data is empty
-     */
-    boolean isEmpty();
-
-    /**
-     * @return this snapshot, with its tile data stored compressed in-memory
-     */
-    ITileSnapshot<POS, T> compressed();
-
-    /**
-     * @return this snapshot, with its tile data stored in-memory without compression
-     */
-    ITileSnapshot<POS, T> uncompressed();
-
-    DebugStats.TileSnapshot stats();
+    public ITileSnapshot<POS, T> retain() throws AlreadyReleasedException {
+        super.retain();
+        return this;
+    }
 }

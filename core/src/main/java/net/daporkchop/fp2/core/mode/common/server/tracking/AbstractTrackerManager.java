@@ -426,17 +426,18 @@ public abstract class AbstractTrackerManager<POS extends IFarPos, T extends IFar
                 this.loadFuture = null;
             }
 
-            ITileSnapshot<POS, T> snapshot = handle.snapshot();
-            if (snapshot.timestamp() > this.lastSentTimestamp) { //tile is newer than the tile previously sent to all trackers, so we'll broadcast it to everyone
-                this.lastSentTimestamp = snapshot.timestamp();
+            try (ITileSnapshot<POS, T> snapshot = handle.snapshot()) {
+                if (snapshot.timestamp() > this.lastSentTimestamp) { //tile is newer than the tile previously sent to all trackers, so we'll broadcast it to everyone
+                    this.lastSentTimestamp = snapshot.timestamp();
 
-                super.forEach(tracker -> tracker.notifyChanged(snapshot));
+                    super.forEach(tracker -> tracker.notifyChanged(snapshot));
 
-                //all of the trackers which were waiting for load have been notified as well
-                this.trackersWaitingForLoad = null;
-            } else if (this.trackersWaitingForLoad != null) { //notify only the players which were waiting for the tile to be loaded
-                this.trackersWaitingForLoad.forEach(tracker -> tracker.notifyChanged(snapshot));
-                this.trackersWaitingForLoad = null;
+                    //all of the trackers which were waiting for load have been notified as well
+                    this.trackersWaitingForLoad = null;
+                } else if (this.trackersWaitingForLoad != null) { //notify only the players which were waiting for the tile to be loaded
+                    this.trackersWaitingForLoad.forEach(tracker -> tracker.notifyChanged(snapshot));
+                    this.trackersWaitingForLoad = null;
+                }
             }
 
             this.checkDirty(handle);
@@ -449,16 +450,17 @@ public abstract class AbstractTrackerManager<POS extends IFarPos, T extends IFar
             checkState(this.updateFuture.isDone(), "tileUpdated called at %s even though it wasn't complete!", this.pos);
             this.updateFuture = null;
 
-            ITileSnapshot<POS, T> snapshot = handle.snapshot();
-            if (snapshot.timestamp() > this.lastSentTimestamp) { //tile is newer than the tile previously sent to all trackers, so we'll broadcast it to all the trackers
-                //  which aren't waiting for an initial load
-                this.lastSentTimestamp = snapshot.timestamp();
+            try (ITileSnapshot<POS, T> snapshot = handle.snapshot()) {
+                if (snapshot.timestamp() > this.lastSentTimestamp) { //tile is newer than the tile previously sent to all trackers, so we'll broadcast it to all the trackers
+                    //  which aren't waiting for an initial load
+                    this.lastSentTimestamp = snapshot.timestamp();
 
-                super.forEach(tracker -> {
-                    if (!this.isWaitingForLoad(tracker)) {
-                        tracker.notifyChanged(snapshot);
-                    }
-                });
+                    super.forEach(tracker -> {
+                        if (!this.isWaitingForLoad(tracker)) {
+                            tracker.notifyChanged(snapshot);
+                        }
+                    });
+                }
             }
 
             this.checkDirty(handle);

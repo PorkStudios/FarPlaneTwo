@@ -323,7 +323,7 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
     @CalledFromAnyThread
     protected void notifyChanged(@NonNull ITileSnapshot<POS, T> snapshot) {
         try {
-            this.context.sendTile(uncheckedCast(snapshot));
+            this.context.sendTile(uncheckedCast(snapshot.retain()));
 
             POS pos = snapshot.pos();
             if (this.waitingPositions.contains(pos)) { //this tile has been initially loaded

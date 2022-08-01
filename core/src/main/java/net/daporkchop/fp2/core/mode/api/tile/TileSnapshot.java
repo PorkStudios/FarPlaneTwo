@@ -38,7 +38,7 @@ import java.io.IOException;
  */
 @RequiredArgsConstructor
 @Getter
-public class TileSnapshot<POS extends IFarPos, T extends IFarTile> implements ITileSnapshot<POS, T> {
+public class TileSnapshot<POS extends IFarPos, T extends IFarTile> extends AbstractTileSnapshot<POS, T> {
     @NonNull
     protected final POS pos;
     protected final long timestamp;
@@ -60,6 +60,8 @@ public class TileSnapshot<POS extends IFarPos, T extends IFarTile> implements IT
     }
 
     public void write(@NonNull DataOut out) throws IOException {
+        this.ensureNotReleased();
+
         out.writeVarLongZigZag(this.timestamp);
 
         if (this.data == null) { //no data!
@@ -71,7 +73,14 @@ public class TileSnapshot<POS extends IFarPos, T extends IFarTile> implements IT
     }
 
     @Override
+    protected void doRelease() {
+        //no-op
+    }
+
+    @Override
     public T loadTile(@NonNull Recycler<T> recycler) {
+        this.ensureNotReleased();
+
         if (this.data != null) {
             T tile = recycler.allocate();
             tile.read(Unpooled.wrappedBuffer(this.data));
@@ -83,21 +92,29 @@ public class TileSnapshot<POS extends IFarPos, T extends IFarTile> implements IT
 
     @Override
     public boolean isEmpty() {
+        this.ensureNotReleased();
+
         return this.data == null;
     }
 
     @Override
     public ITileSnapshot<POS, T> compressed() {
+        this.ensureNotReleased();
+
         return new CompressedTileSnapshot<>(this);
     }
 
     @Override
     public ITileSnapshot<POS, T> uncompressed() {
+        this.ensureNotReleased();
+
         return this; //we're already uncompressed!
     }
 
     @Override
     public DebugStats.TileSnapshot stats() {
+        this.ensureNotReleased();
+
         if (this.data == null) { //this tile is empty!
             return DebugStats.TileSnapshot.ZERO;
         } else {

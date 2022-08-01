@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.common.client;
@@ -46,6 +45,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 //TODO: this still has some race conditions - it's possible that addListener/removeListener might cause the listener to be notified twice for tiles that are
 // received/unloaded during the initial notification pass
+//TODO: handling in case an exception is thrown by a listener
 public class FarTileCache<POS extends IFarPos, T extends IFarTile> extends AbstractReleasable implements IFarTileCache<POS, T>, Function<POS, ITileSnapshot<POS, T>> {
     protected final Map<POS, ITileSnapshot<POS, T>> tiles = new ConcurrentHashMap<>();
     protected final Collection<Listener<POS, T>> listeners = new CopyOnWriteArraySet<>();
@@ -63,6 +63,7 @@ public class FarTileCache<POS extends IFarPos, T extends IFarTile> extends Abstr
                 this.listeners.forEach(listener -> listener.tileAdded(tile));
             } else {
                 this.listeners.forEach(listener -> listener.tileModified(tile));
+                old.release();
             }
             return tile;
         });
@@ -75,6 +76,7 @@ public class FarTileCache<POS extends IFarPos, T extends IFarTile> extends Abstr
             this.debug_updateStats(old, null);
 
             this.listeners.forEach(listener -> listener.tileRemoved(pos));
+            old.release();
             return null;
         });
     }
@@ -84,7 +86,11 @@ public class FarTileCache<POS extends IFarPos, T extends IFarTile> extends Abstr
         this.assertNotReleased();
         checkState(this.listeners.add(listener), "duplicate listener: %s", listener);
         if (notifyForExisting) {
-            this.tiles.forEach((pos, tile) -> listener.tileAdded(tile));
+            //iterate while delegating to compute() for each key to ensure we hold a lock
+            this.tiles.forEach((_pos, _tile) -> this.tiles.computeIfPresent(_pos, (pos, tile) -> {
+                listener.tileAdded(tile);
+                return tile; //don't modify the saved tile
+            }));
         }
     }
 
@@ -100,7 +106,11 @@ public class FarTileCache<POS extends IFarPos, T extends IFarTile> extends Abstr
     @Override
     public ITileSnapshot<POS, T> getTileCached(@NonNull POS position) {
         this.assertNotReleased();
-        return this.tiles.get(position);
+        ITileSnapshot<POS, T> snapshot = this.tiles.get(position);
+        if (snapshot != null) {
+            snapshot.retain();
+        }
+        return snapshot;
     }
 
     @Override
@@ -138,12 +148,19 @@ public class FarTileCache<POS extends IFarPos, T extends IFarTile> extends Abstr
     @Override
     @Deprecated
     public ITileSnapshot<POS, T> apply(@NonNull POS pos) {
-        return this.tiles.get(pos);
+        ITileSnapshot<POS, T> snapshot = this.tiles.get(pos);
+        if (snapshot != null) {
+            snapshot.retain();
+        }
+        return snapshot;
     }
 
     @Override
     protected void doRelease() {
-        this.tiles.forEach((pos, tile) -> this.listeners.forEach(listener -> listener.tileRemoved(pos)));
+        this.tiles.forEach((pos, tile) -> {
+            this.listeners.forEach(listener -> listener.tileRemoved(pos));
+            tile.release();
+        });
         this.tiles.clear();
         this.listeners.clear();
     }

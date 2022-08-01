@@ -89,7 +89,7 @@ public class DefaultTileHandle<POS extends IFarPos, T extends IFarTile> implemen
             } finally {
                 posBufferRecycler.release(keyBytes);
             }
-        });
+        }, ITileSnapshot::release);
     }
 
     @Override

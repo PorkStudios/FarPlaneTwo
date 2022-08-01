@@ -152,33 +152,41 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
         this.checkParentsRenderable(pos);
 
         ITileSnapshot<POS, T>[] compressedInputTiles = uncheckedCast(this.tileCache.getTilesCached(this.baker.bakeInputs(pos)).toArray(ITileSnapshot[]::new));
-        if (compressedInputTiles[0] == null //tile isn't cached any more
-            || compressedInputTiles[0].isEmpty()) { //tile data is empty
-            this.updateData(pos, Optional.empty());
-            return;
-        }
-
-        Recycler<T> recycler = this.renderer.mode().tileRecycler();
-        T[] srcs = this.renderer.mode().tileArray(compressedInputTiles.length);
         try {
-            for (int i = 0; i < srcs.length; i++) { //inflate tiles
-                if (compressedInputTiles[i] != null) {
-                    srcs[i] = compressedInputTiles[i].loadTile(recycler);
+            if (compressedInputTiles[0] == null //tile isn't cached any more
+                || compressedInputTiles[0].isEmpty()) { //tile data is empty
+                this.updateData(pos, Optional.empty());
+                return;
+            }
+
+            Recycler<T> recycler = this.renderer.mode().tileRecycler();
+            T[] srcs = this.renderer.mode().tileArray(compressedInputTiles.length);
+            try {
+                for (int i = 0; i < srcs.length; i++) { //inflate tiles
+                    if (compressedInputTiles[i] != null) {
+                        srcs[i] = compressedInputTiles[i].loadTile(recycler);
+                    }
+                }
+
+                IBakeOutput output = this.strategy.createBakeOutput();
+                try {
+                    this.baker.bake(pos, srcs, uncheckedCast(output));
+
+                    this.updateData(pos, !output.isEmpty() ? Optional.of(output.retain()) : Optional.empty());
+                } finally {
+                    output.release();
+                }
+            } finally { //release tiles again
+                for (T src : srcs) {
+                    if (src != null) {
+                        recycler.release(src);
+                    }
                 }
             }
-
-            IBakeOutput output = this.strategy.createBakeOutput();
-            try {
-                this.baker.bake(pos, srcs, uncheckedCast(output));
-
-                this.updateData(pos, !output.isEmpty() ? Optional.of(output.retain()) : Optional.empty());
-            } finally {
-                output.release();
-            }
-        } finally { //release tiles again
-            for (T src : srcs) {
-                if (src != null) {
-                    recycler.release(src);
+        } finally {
+            for (ITileSnapshot<POS, T> tile : compressedInputTiles) {
+                if (tile != null) {
+                    tile.release(); //TODO: release() could throw an exception
                 }
             }
         }

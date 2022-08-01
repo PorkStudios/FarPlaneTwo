@@ -241,45 +241,50 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
                 //no null checks are necessary, because we're only snapshotting the input positions which are valid, and therefore all snapshots will be non-null
                 .collect(Collectors.toMap(ITileSnapshot::pos, Function.identity()));
 
-        if (state.considerExit()) {
-            return;
-        }
-
-        //scale each position individually
-        Recycler<T> tileRecycler = this.provider.mode().tileRecycler();
-        state.forEachPositionHandleTimestamp((pos, handle, minimumTimestamp) -> {
-            List<POS> srcPositions = this.provider.scaler().inputs(pos);
-
-            T[] srcs = this.provider.mode().tileArray(srcPositions.size());
-            T dst = tileRecycler.allocate();
-            try {
-                //inflate tile snapshots where necessary
-                for (int i = 0; i < srcPositions.size(); i++) {
-                    //tile is only guaranteed to have been generated if it's at a valid position (we filter out invalid
-                    // positions above in the scatterGather call)
-                    if (this.provider.coordLimits().contains(srcPositions.get(i))) {
-                        srcs[i] = snapshotsByPosition.get(srcPositions.get(i)).loadTile(tileRecycler);
-                    }
-                }
-
-                //actually do scaling
-                this.provider.scaler().scale(srcs, dst);
-
-                //update handle contents
-                handle.set(ITileMetadata.ofTimestamp(minimumTimestamp), dst);
-            } finally {
-                //release all allocated tile instances
-                tileRecycler.release(dst);
-                for (T src : srcs) {
-                    if (src != null) {
-                        tileRecycler.release(src);
-                    }
-                }
+        try {
+            if (state.considerExit()) {
+                return;
             }
-        });
 
-        //all tiles have been scaled, mark the tasks as complete
-        state.completeAll();
+            //scale each position individually
+            Recycler<T> tileRecycler = this.provider.mode().tileRecycler();
+            state.forEachPositionHandleTimestamp((pos, handle, minimumTimestamp) -> {
+                List<POS> srcPositions = this.provider.scaler().inputs(pos);
+
+                T[] srcs = this.provider.mode().tileArray(srcPositions.size());
+                T dst = tileRecycler.allocate();
+                try {
+                    //inflate tile snapshots where necessary
+                    for (int i = 0; i < srcPositions.size(); i++) {
+                        //tile is only guaranteed to have been generated if it's at a valid position (we filter out invalid
+                        // positions above in the scatterGather call)
+                        if (this.provider.coordLimits().contains(srcPositions.get(i))) {
+                            srcs[i] = snapshotsByPosition.get(srcPositions.get(i)).loadTile(tileRecycler);
+                        }
+                    }
+
+                    //actually do scaling
+                    this.provider.scaler().scale(srcs, dst);
+
+                    //update handle contents
+                    handle.set(ITileMetadata.ofTimestamp(minimumTimestamp), dst);
+                } finally {
+                    //release all allocated tile instances
+                    tileRecycler.release(dst);
+                    for (T src : srcs) {
+                        if (src != null) {
+                            tileRecycler.release(src);
+                        }
+                    }
+                }
+            });
+
+            //all tiles have been scaled, mark the tasks as complete
+            state.completeAll();
+        } finally {
+            //TODO: release() could throw an exception
+            snapshotsByPosition.values().forEach(ITileSnapshot::release);
+        }
     }
 
     /**

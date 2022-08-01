@@ -43,7 +43,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @Getter
-public class CompressedTileSnapshot<POS extends IFarPos, T extends IFarTile> implements ITileSnapshot<POS, T> {
+public class CompressedTileSnapshot<POS extends IFarPos, T extends IFarTile> extends AbstractTileSnapshot<POS, T> {
     protected static final Cached<ZstdDeflater> ZSTD_DEF = Cached.threadLocal(() -> Zstd.PROVIDER.deflater(Zstd.PROVIDER.deflateOptions()), ReferenceStrength.WEAK);
     protected static final Cached<ZstdInflater> ZSTD_INF = Cached.threadLocal(() -> Zstd.PROVIDER.inflater(Zstd.PROVIDER.inflateOptions()), ReferenceStrength.WEAK);
 
@@ -76,7 +76,14 @@ public class CompressedTileSnapshot<POS extends IFarPos, T extends IFarTile> imp
     }
 
     @Override
+    protected void doRelease() {
+        //no-op
+    }
+
+    @Override
     public T loadTile(@NonNull Recycler<T> recycler) {
+        this.ensureNotReleased();
+
         if (this.data != null) {
             //allocate buffers
             ByteBuf compressed = Unpooled.wrappedBuffer(this.data);
@@ -100,16 +107,22 @@ public class CompressedTileSnapshot<POS extends IFarPos, T extends IFarTile> imp
 
     @Override
     public boolean isEmpty() {
+        this.ensureNotReleased();
+
         return this.data == null;
     }
 
     @Override
     public ITileSnapshot<POS, T> compressed() {
+        this.ensureNotReleased();
+
         return this; //we're already compressed!
     }
 
     @Override
     public ITileSnapshot<POS, T> uncompressed() {
+        this.ensureNotReleased();
+
         byte[] uncompressedData = null;
         if (this.data != null) {
             //allocate buffer
@@ -124,6 +137,8 @@ public class CompressedTileSnapshot<POS extends IFarPos, T extends IFarTile> imp
 
     @Override
     public DebugStats.TileSnapshot stats() {
+        this.ensureNotReleased();
+
         if (this.data == null) { //this tile is empty!
             return DebugStats.TileSnapshot.ZERO;
         } else {

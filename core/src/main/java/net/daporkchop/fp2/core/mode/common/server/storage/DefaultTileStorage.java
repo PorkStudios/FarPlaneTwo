@@ -68,7 +68,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static java.lang.Math.*;
@@ -196,7 +195,6 @@ public class DefaultTileStorage<POS extends IFarPos, T extends IFarTile> impleme
     protected final AbstractFarTileProvider<POS, T> tileProvider;
     protected final IFarPosCodec<POS> posCodec;
     protected final IVariableSizeRecyclingCodec<T> tileCodec;
-    protected final Cached<Recycler<byte[]>> posBufferRecyclerCache;
 
     protected final FStorageInternal storageInternal;
 
@@ -215,12 +213,6 @@ public class DefaultTileStorage<POS extends IFarPos, T extends IFarTile> impleme
         this.tileProvider = tileProvider;
         this.posCodec = tileProvider.mode().posCodec();
         this.tileCodec = tileProvider.mode().tileCodec();
-
-        { //create recycler for temporary serialized position buffers
-            int posSize = toIntExact(this.posCodec.size());
-            Supplier<byte[]> factory = () -> new byte[posSize];
-            this.posBufferRecyclerCache = Cached.threadLocal(() -> SimpleRecycler.withFactory(factory), ReferenceStrength.WEAK);
-        }
 
         this.storageInternal = storageInternal;
 
@@ -289,7 +281,7 @@ public class DefaultTileStorage<POS extends IFarPos, T extends IFarTile> impleme
 
                 { //configure buffers for timestamps and data
                     int i = 0;
-                    for (long addr = bufferTimestampsTiles; i < length;) {
+                    for (long addr = bufferTimestampsTiles; i < length; ) {
                         DirectBufferHackery.reset(tmpBuffers[tmpBuffersTimestampsTilesOffset + i++], addr, LONG_SIZE);
                         addr += LONG_SIZE;
                         DirectBufferHackery.reset(tmpBuffers[tmpBuffersTimestampsTilesOffset + i++], addr, LONG_SIZE);
