@@ -35,6 +35,7 @@ public interface IReusablePersistent extends IReusable {
      *
      * @param src the {@link ByteBuf} to read from
      */
+    @Deprecated
     void read(@NonNull ByteBuf src);
 
     /**
@@ -47,5 +48,6 @@ public interface IReusablePersistent extends IReusable {
      * @param dst the {@link ByteBuf} to write to
      * @return whether or not this instance is empty
      */
+    @Deprecated
     boolean write(@NonNull ByteBuf dst);
 }

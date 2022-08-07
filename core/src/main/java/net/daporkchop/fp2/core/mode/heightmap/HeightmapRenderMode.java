@@ -40,6 +40,7 @@ import net.daporkchop.fp2.core.mode.heightmap.server.scale.HeightmapScalerMinMax
 import net.daporkchop.fp2.core.server.player.IFarPlayerServer;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.util.math.MathUtil;
+import net.daporkchop.fp2.core.util.serialization.variable.IVariableSizeRecyclingCodec;
 import net.daporkchop.lib.binary.stream.DataIn;
 import net.daporkchop.lib.binary.stream.DataOut;
 
@@ -102,6 +103,11 @@ public class HeightmapRenderMode extends AbstractFarRenderMode<HeightmapPos, Hei
     @Override
     public IFarPosCodec<HeightmapPos> posCodec() {
         return HeightmapPosCodec.INSTANCE;
+    }
+
+    @Override
+    public IVariableSizeRecyclingCodec<HeightmapTile> tileCodec() {
+        return HeightmapTile.CODEC;
     }
 
     @Override

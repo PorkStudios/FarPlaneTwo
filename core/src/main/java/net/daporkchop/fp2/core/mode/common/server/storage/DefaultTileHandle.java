@@ -35,12 +35,12 @@ import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.core.mode.api.tile.ITileMetadata;
 import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
 import net.daporkchop.fp2.core.mode.api.tile.TileSnapshot;
-import net.daporkchop.fp2.core.util.recycler.Recycler;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
+import static java.lang.Math.*;
 import static net.daporkchop.fp2.core.mode.common.server.storage.DefaultTileStorage.*;
 
 /**
@@ -67,28 +67,22 @@ public class DefaultTileHandle<POS extends IFarPos, T extends IFarTile> implemen
     @SneakyThrows(FStorageException.class)
     public ITileSnapshot<POS, T> snapshot() {
         return this.storage.storageInternal.readGet(access -> {
-            Recycler<byte[]> posBufferRecycler = this.storage.posBufferRecyclerCache.get();
-
             //allocate temporary buffer for tile position
-            byte[] keyBytes = posBufferRecycler.allocate();
-            try {
-                //serialize position
-                this.storage.posCodec.store(this.pos, keyBytes, 0);
+            byte[] keyBytes = new byte[toIntExact(this.storage.posCodec.size())];
+            //serialize position
+            this.storage.posCodec.store(this.pos, keyBytes, 0);
 
-                //read timestamp and tile bytes using multiGet to ensure coherency
-                List<byte[]> valueBytes = access.multiGet(
-                        ImmutableList.of(this.storage.columnTimestamp, this.storage.columnData),
-                        ImmutableList.of(keyBytes, keyBytes));
+            //read timestamp and tile bytes using multiGet to ensure coherency
+            List<byte[]> valueBytes = access.multiGet(
+                    ImmutableList.of(this.storage.columnTimestamp, this.storage.columnData),
+                    ImmutableList.of(keyBytes, keyBytes));
 
-                byte[] timestampBytes = valueBytes.get(0);
-                byte[] tileBytes = valueBytes.get(1);
+            byte[] timestampBytes = valueBytes.get(0);
+            byte[] tileBytes = valueBytes.get(1);
 
-                return timestampBytes != null
-                        ? new TileSnapshot<>(this.pos, readLongLE(timestampBytes), tileBytes)
-                        : null;
-            } finally {
-                posBufferRecycler.release(keyBytes);
-            }
+            return timestampBytes != null
+                    ? new TileSnapshot<>(this.pos, readLongLE(timestampBytes), tileBytes)
+                    : null;
         }, ITileSnapshot::release);
     }
 

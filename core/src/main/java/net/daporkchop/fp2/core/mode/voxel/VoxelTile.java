@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.voxel;
@@ -25,9 +24,13 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
+import net.daporkchop.fp2.core.util.MutableLong;
+import net.daporkchop.fp2.core.util.serialization.variable.IVariableSizeRecyclingCodec;
+import net.daporkchop.lib.common.system.PlatformInfo;
 import net.daporkchop.lib.unsafe.PCleaner;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
+import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.fp2.core.mode.voxel.VoxelConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -55,6 +58,68 @@ public class VoxelTile implements IFarTile {
 
     public static final int ENTRY_FULL_SIZE_BYTES = ENTRY_DATA_SIZE * 4 + 2;
     public static final int TILE_SIZE = INDEX_SIZE + ENTRY_FULL_SIZE_BYTES * ENTRY_COUNT;
+
+    public static final IVariableSizeRecyclingCodec<VoxelTile> CODEC = new IVariableSizeRecyclingCodec<VoxelTile>() {
+        @Override
+        public long maxSize() {
+            return TILE_SIZE;
+        }
+
+        @Override
+        public void load(@NonNull VoxelTile value, Object base, long offset, @NonNull MutableLong read) {
+            value.reset();
+            long startOffset = offset;
+
+            int count = value.count = PlatformInfo.IS_LITTLE_ENDIAN ? PUnsafe.getInt(base, offset) : Integer.reverseBytes(PUnsafe.getInt(base, offset));
+            offset += INT_SIZE;
+
+            long addr = value.addr + INDEX_SIZE;
+            for (int i = 0; i < count; i++) { //copy data
+                int pos = PlatformInfo.IS_LITTLE_ENDIAN ? PUnsafe.getShort(base, offset) : Short.reverseBytes(PUnsafe.getShort(base, offset));
+                offset += SHORT_SIZE;
+
+                PUnsafe.putShort(value.addr + pos * 2L, (short) i); //put data slot into index
+
+                PUnsafe.putChar(addr, (char) pos); //prefix data with pos
+                addr += 2L;
+                for (int j = 0; j < ENTRY_DATA_SIZE; j++, addr += 4L) {
+                    PUnsafe.putInt(addr, PlatformInfo.IS_LITTLE_ENDIAN ? PUnsafe.getInt(base, offset) : Integer.reverseBytes(PUnsafe.getInt(base, offset)));
+                    offset += INT_SIZE;
+                }
+            }
+
+            read.set(offset - startOffset);
+        }
+
+        @Override
+        public long store(VoxelTile value, Object base, long offset) {
+            long startOffset = offset;
+
+            //leave space for 'count' length prefix
+            offset += INT_SIZE;
+
+            int count = 0;
+            for (int i = 0; i < ENTRY_COUNT; i++) { //iterate through the index and search for set voxels
+                int index = PUnsafe.getShort(value.addr + i * 2L);
+                if (index >= 0) { //voxel is set
+                    //write position
+                    PUnsafe.putShort(base, offset, PlatformInfo.IS_LITTLE_ENDIAN ? (short) i : Short.reverseBytes((short) i));
+                    offset += SHORT_SIZE;
+
+                    long data = value.addr + INDEX_SIZE + index * ENTRY_DATA_SIZE_BYTES;
+                    for (int j = 0; j < ENTRY_DATA_SIZE; j++) { //write voxel data
+                        PUnsafe.putInt(base, offset, PlatformInfo.IS_LITTLE_ENDIAN ? PUnsafe.getInt(data + j * 4L) : Integer.reverseBytes(PUnsafe.getInt(data + j * 4L)));
+                        offset += INT_SIZE;
+                    }
+                    count++;
+                }
+            }
+
+            //length prefix
+            PUnsafe.putInt(base, startOffset, PlatformInfo.IS_LITTLE_ENDIAN ? count : Integer.reverseBytes(count));
+            return offset - startOffset;
+        }
+    };
 
     static int index(int x, int y, int z) {
         assert x >= 0 && x < VT_VOXELS : "x=" + x;
@@ -167,6 +232,11 @@ public class VoxelTile implements IFarTile {
     }
 
     @Override
+    public boolean isEmpty() {
+        return this.count == 0;
+    }
+
+    @Override
     public void reset() {
         this.extra = 0L;
 
@@ -206,12 +276,12 @@ public class VoxelTile implements IFarTile {
         dst.writeIntLE(-1);
 
         int count = 0;
-        for (int i = 0; i < VoxelTile.ENTRY_COUNT; i++) { //iterate through the index and search for set voxels
+        for (int i = 0; i < ENTRY_COUNT; i++) { //iterate through the index and search for set voxels
             int index = PUnsafe.getShort(this.addr + i * 2L);
             if (index >= 0) { //voxel is set
                 dst.writeShortLE(i); //write position
-                long base = this.addr + VoxelTile.INDEX_SIZE + index * VoxelTile.ENTRY_DATA_SIZE_BYTES;
-                for (int j = 0; j < VoxelTile.ENTRY_DATA_SIZE; j++) { //write voxel data
+                long base = this.addr + INDEX_SIZE + index * ENTRY_DATA_SIZE_BYTES;
+                for (int j = 0; j < ENTRY_DATA_SIZE; j++) { //write voxel data
                     dst.writeIntLE(PUnsafe.getInt(base + j * 4L));
                 }
                 count++;

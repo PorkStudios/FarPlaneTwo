@@ -27,7 +27,9 @@ import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
+import net.daporkchop.fp2.core.util.MutableLong;
 import net.daporkchop.fp2.core.util.recycler.Recycler;
+import net.daporkchop.fp2.core.util.serialization.variable.IVariableSizeRecyclingCodec;
 import net.daporkchop.lib.binary.stream.DataIn;
 import net.daporkchop.lib.binary.stream.DataOut;
 
@@ -78,11 +80,12 @@ public class TileSnapshot<POS extends IFarPos, T extends IFarTile> extends Abstr
     }
 
     @Override
-    public T loadTile(@NonNull Recycler<T> recycler) {
+    public T loadTile(@NonNull Recycler<T> recycler, @NonNull IVariableSizeRecyclingCodec<T> codec) {
         this.ensureNotReleased();
 
         if (this.data != null) {
             T tile = recycler.allocate();
+            codec.load(tile, this.data, 0, MutableLong.devNull());
             tile.read(Unpooled.wrappedBuffer(this.data));
             return tile;
         } else {

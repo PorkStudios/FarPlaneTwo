@@ -40,6 +40,7 @@ import net.daporkchop.fp2.core.mode.voxel.server.scale.VoxelScalerIntersection;
 import net.daporkchop.fp2.core.server.player.IFarPlayerServer;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.util.math.MathUtil;
+import net.daporkchop.fp2.core.util.serialization.variable.IVariableSizeRecyclingCodec;
 import net.daporkchop.lib.binary.stream.DataIn;
 import net.daporkchop.lib.binary.stream.DataOut;
 
@@ -102,6 +103,11 @@ public class VoxelRenderMode extends AbstractFarRenderMode<VoxelPos, VoxelTile> 
     @Override
     public IFarPosCodec<VoxelPos> posCodec() {
         return VoxelPosCodec.INSTANCE;
+    }
+
+    @Override
+    public IVariableSizeRecyclingCodec<VoxelTile> tileCodec() {
+        return VoxelTile.CODEC;
     }
 
     @Override

@@ -43,51 +43,51 @@ public interface IFixedSizeRecyclingDeserializer<T> {
     /**
      * Loads the position at the given off-heap memory address into a {@link T} instance.
      *
-     * @param instance the {@link T} instance whose contents are to be overwritten with the deserialized data
-     * @param addr     the memory address
+     * @param value the {@link T} instance whose contents are to be overwritten with the deserialized data
+     * @param addr  the memory address
      */
-    default void load(@NonNull T instance, long addr) {
-        this.load(instance, null, addr);
+    default void load(@NonNull T value, long addr) {
+        this.load(value, null, addr);
     }
 
     /**
      * Loads the position at the given index in the given {@code byte[]} into a {@link T} instance.
      *
-     * @param instance the {@link T} instance whose contents are to be overwritten with the deserialized data
-     * @param arr      the {@code byte[]} to read from
-     * @param index    the index to start reading at
+     * @param value the {@link T} instance whose contents are to be overwritten with the deserialized data
+     * @param arr   the {@code byte[]} to read from
+     * @param index the index to start reading at
      */
-    default void load(@NonNull T instance, @NonNull byte[] arr, int index) {
-        this.load(instance, arr, PUnsafe.arrayByteElementOffset(index));
+    default void load(@NonNull T value, @NonNull byte[] arr, int index) {
+        this.load(value, arr, PUnsafe.arrayByteElementOffset(index));
     }
 
     /**
      * Loads the position at the given offset relative to the given Java object into a {@link T} instance.
      *
-     * @param instance the {@link T} instance whose contents are to be overwritten with the deserialized data
-     * @param base     the Java object to use as a base. If {@code null}, {@code offset} is assumed to be an off-heap memory address.
-     * @param offset   the base offset (in bytes) relative to the given Java object to load the position from
+     * @param value  the {@link T} instance whose contents are to be overwritten with the deserialized data
+     * @param base   the Java object to use as a base. If {@code null}, {@code offset} is assumed to be an off-heap memory address.
+     * @param offset the base offset (in bytes) relative to the given Java object to load the position from
      */
-    void load(@NonNull T instance, Object base, long offset);
+    void load(@NonNull T value, Object base, long offset);
 
     /**
      * Loads the position from the given {@link ByteBuf} into a {@link T} instance.
      * <p>
      * The buffer's {@link ByteBuf#readerIndex() reader index} will be increased by the number of bytes read.
      *
-     * @param instance the {@link T} instance whose contents are to be overwritten with the deserialized data
-     * @param buf      the {@link ByteBuf} to read from
+     * @param value the {@link T} instance whose contents are to be overwritten with the deserialized data
+     * @param buf   the {@link ByteBuf} to read from
      */
-    default void load(@NonNull T instance, @NonNull ByteBuf buf) {
+    default void load(@NonNull T value, @NonNull ByteBuf buf) {
         int size = toIntExact(this.size());
 
         //we want to be absolutely certain that buffer has enough data available, as failure to do so could result in a load from an invalid memory address!
         checkIndex(buf.readableBytes() >= size);
 
         if (buf.hasMemoryAddress()) {
-            this.load(instance, buf.memoryAddress() + buf.readerIndex());
+            this.load(value, buf.memoryAddress() + buf.readerIndex());
         } else if (buf.hasArray()) {
-            this.load(instance, buf.array(), buf.arrayOffset() + buf.readerIndex());
+            this.load(value, buf.array(), buf.arrayOffset() + buf.readerIndex());
         } else { //buffer is probably a composite: we don't really care about this, do we?
             throw new IllegalArgumentException(buf.toString());
         }
@@ -101,18 +101,18 @@ public interface IFixedSizeRecyclingDeserializer<T> {
      * <p>
      * The buffer's {@link ByteBuf#readerIndex() reader index} will not be modified.
      *
-     * @param instance the {@link T} instance whose contents are to be overwritten with the deserialized data
-     * @param buf      the {@link ByteBuf} to read from
-     * @param index    the index in the buffer to read the position from
+     * @param value the {@link T} instance whose contents are to be overwritten with the deserialized data
+     * @param buf   the {@link ByteBuf} to read from
+     * @param index the index in the buffer to read the position from
      */
-    default void load(@NonNull T instance, @NonNull ByteBuf buf, int index) {
+    default void load(@NonNull T value, @NonNull ByteBuf buf, int index) {
         //we want to be absolutely certain that buffer has enough data available, as failure to do so could result in a load from an invalid memory address!
         checkIndex(buf.capacity() - notNegative(index, "index") < this.size());
 
         if (buf.hasMemoryAddress()) {
-            this.load(instance, buf.memoryAddress() + index);
+            this.load(value, buf.memoryAddress() + index);
         } else if (buf.hasArray()) {
-            this.load(instance, buf.array(), buf.arrayOffset() + index);
+            this.load(value, buf.array(), buf.arrayOffset() + index);
         } else { //buffer is probably a composite: we don't really care about this, do we?
             throw new IllegalArgumentException(buf.toString());
         }
@@ -123,19 +123,19 @@ public interface IFixedSizeRecyclingDeserializer<T> {
      * <p>
      * The buffer's {@link ByteBuffer#position() position} will be increased by the number of bytes read.
      *
-     * @param instance the {@link T} instance whose contents are to be overwritten with the deserialized data
-     * @param buf      the {@link ByteBuffer} to read from
+     * @param value the {@link T} instance whose contents are to be overwritten with the deserialized data
+     * @param buf   the {@link ByteBuffer} to read from
      */
-    default void load(@NonNull T instance, @NonNull ByteBuffer buf) {
+    default void load(@NonNull T value, @NonNull ByteBuffer buf) {
         int size = toIntExact(this.size());
 
         //we want to be absolutely certain that buffer has enough data available, as failure to do so could result in a load from an invalid memory address!
         checkIndex(buf.remaining() >= size);
 
         if (buf.isDirect()) {
-            this.load(instance, PUnsafe.pork_directBufferAddress(buf) + buf.position());
+            this.load(value, PUnsafe.pork_directBufferAddress(buf) + buf.position());
         } else {
-            this.load(instance, buf.array(), buf.arrayOffset() + buf.position());
+            this.load(value, buf.array(), buf.arrayOffset() + buf.position());
         }
 
         //advance position
@@ -145,18 +145,18 @@ public interface IFixedSizeRecyclingDeserializer<T> {
     /**
      * Loads the position from the given {@link ByteBuffer} into a {@link T} instance.
      *
-     * @param instance the {@link T} instance whose contents are to be overwritten with the deserialized data
-     * @param buf      the {@link ByteBuffer} to read from
-     * @param index    the index in the buffer to read the position from
+     * @param value the {@link T} instance whose contents are to be overwritten with the deserialized data
+     * @param buf   the {@link ByteBuffer} to read from
+     * @param index the index in the buffer to read the position from
      */
-    default void load(@NonNull T instance, @NonNull ByteBuffer buf, int index) {
+    default void load(@NonNull T value, @NonNull ByteBuffer buf, int index) {
         //we want to be absolutely certain that buffer has enough data available, as failure to do so could result in a load from an invalid memory address!
         checkIndex(buf.capacity() - notNegative(index, "index") < this.size());
 
         if (buf.isDirect()) {
-            this.load(instance, PUnsafe.pork_directBufferAddress(buf) + index);
+            this.load(value, PUnsafe.pork_directBufferAddress(buf) + index);
         } else {
-            this.load(instance, buf.array(), buf.arrayOffset() + index);
+            this.load(value, buf.array(), buf.arrayOffset() + index);
         }
     }
 }

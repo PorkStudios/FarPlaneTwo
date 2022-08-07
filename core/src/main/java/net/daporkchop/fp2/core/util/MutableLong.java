@@ -24,6 +24,7 @@ import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.util.recycler.Recycler;
 import net.daporkchop.fp2.core.util.recycler.SimpleRecycler;
+import net.daporkchop.lib.common.misc.threadlocal.TL;
 import net.daporkchop.lib.common.reference.cache.Cached;
 
 import java.util.concurrent.atomic.AtomicLong;
@@ -50,6 +51,8 @@ public final class MutableLong {
         }
     });
 
+    private static final TL<MutableLong> DUMMY = TL.initializedWith(MutableLong::new);
+
     /**
      * Gets a {@link Recycler} for recycling {@link MutableLong} instances.
      * <p>
@@ -59,6 +62,16 @@ public final class MutableLong {
      */
     public static Recycler<MutableLong> recycler() {
         return RECYCLER.get();
+    }
+
+    /**
+     * Gets a dummy {@link MutableLong} which may be written to, but whose stored value may change unpredictably and should be treated as garbage. This is intended to be
+     * used as a placeholder for methods which accept a {@link MutableLong} in order to return an addition value which is not needed by the caller.
+     *
+     * @return a dummy {@link MutableLong} which returns garbage when read
+     */
+    public static MutableLong devNull() {
+        return DUMMY.get(); //use a thread-local dummy to prevent cache contention from many cores writing to the same address
     }
 
     private long value;

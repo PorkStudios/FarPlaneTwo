@@ -25,5 +25,5 @@ package net.daporkchop.fp2.core.util.serialization.variable;
  *
  * @author DaPorkchop_
  */
-public interface IVariableSizeRecyclingCodec<T> extends IVariableSizeSerializer<T>, IVariableSizeConstructingDeserializer<T> {
+public interface IVariableSizeRecyclingCodec<T> extends IVariableSizeSerializer<T>, IVariableSizeRecyclingDeserializer<T> {
 }
