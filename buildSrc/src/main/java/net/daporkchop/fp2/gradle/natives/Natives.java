@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gradle.natives;
@@ -55,6 +54,8 @@ public final class Natives {
     public static final Optional<Path> CLANG_PATH = FP2GradlePlugin.findInPath("clang++");
     public static final Optional<Path> TAR_PATH = FP2GradlePlugin.findInPath("tar");
 
+    public static final boolean CAN_COMPILE = CLANG_PATH.isPresent() && TAR_PATH.isPresent();
+
     @SneakyThrows({ InterruptedException.class, IOException.class })
     public static void launchProcessAndWait(List<String> command) {
         Process process = new ProcessBuilder().redirectErrorStream(true).command(command).start();
@@ -79,10 +80,6 @@ public final class Natives {
     protected final Project project;
 
     public void register() {
-        if (!CLANG_PATH.isPresent() || !TAR_PATH.isPresent()) { //do nothing
-            return;
-        }
-
         NativesExtension extension = this.project.getExtensions().create("natives", NativesExtension.class);
 
         this.project.afterEvaluate(_project -> {
@@ -91,6 +88,11 @@ public final class Natives {
             Map<SourceSet, Provider<Directory>> linkOutputDirsBySourceSet = new HashMap<>();
 
             extension.getModules().forEach(module -> {
+                if (!CAN_COMPILE) {
+                    System.err.printf("one or more required tools is not available, not compiling native module '%s' for project '%s'\n", module.getName(), this.project.getPath());
+                    return;
+                }
+
                 Provider<Directory> linkOutputDir = linkOutputDirsBySourceSet.computeIfAbsent(module.getSourceSet().get(), sourceSet -> {
                     Provider<Directory> dir = this.project.getLayout().getBuildDirectory().dir(BUILD_DIR_NAME + "/link/" + sourceSet.getName());
                     sourceSet.getOutput().dir(Collections.singletonMap("builtBy", ROOT_TASK_NAME), dir);
