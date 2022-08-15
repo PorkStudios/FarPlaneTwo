@@ -24,7 +24,7 @@ import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
-import net.daporkchop.lib.unsafe.capability.Releasable;
+import net.daporkchop.lib.common.misc.release.Releasable;
 
 import java.util.stream.Stream;
 

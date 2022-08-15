@@ -25,7 +25,7 @@ import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.util.recycler.Recycler;
 import net.daporkchop.lib.common.misc.refcount.RefCounted;
-import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
+import net.daporkchop.lib.common.util.exception.AlreadyReleasedException;
 
 /**
  * A snapshot of the data stored at a given tile position.
