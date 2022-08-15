@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.world.level;
@@ -34,7 +33,7 @@ import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.event.EventBus;
 import net.daporkchop.fp2.core.util.threading.workergroup.WorkerManager;
 import net.daporkchop.fp2.core.world.AbstractWorld;
-import net.daporkchop.lib.common.function.throwing.ERunnable;
+import net.daporkchop.lib.common.function.exception.ERunnable;
 import net.daporkchop.lib.reflection.type.PTypes;
 
 import java.util.concurrent.Callable;

@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.exactfblocklevel;
@@ -36,7 +35,7 @@ import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.world.chunk.storage.ATAnvil
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.world.IMixinWorldServer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.region.ThreadSafeRegionFileCache;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.server.world.level.FLevelServer1_12;
-import net.daporkchop.lib.common.function.throwing.ERunnable;
+import net.daporkchop.lib.common.function.exception.ERunnable;
 import net.daporkchop.lib.math.vector.Vec2i;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.WorldServer;

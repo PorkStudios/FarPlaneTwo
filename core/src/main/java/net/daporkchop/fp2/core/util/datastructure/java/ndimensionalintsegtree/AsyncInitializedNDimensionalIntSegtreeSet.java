@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.util.datastructure.java.ndimensionalintsegtree;
@@ -23,8 +22,8 @@ package net.daporkchop.fp2.core.util.datastructure.java.ndimensionalintsegtree;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSegtreeSet;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSet;
-import net.daporkchop.lib.common.function.throwing.ERunnable;
-import net.daporkchop.lib.common.function.throwing.ESupplier;
+import net.daporkchop.lib.common.function.exception.ERunnable;
+import net.daporkchop.lib.common.function.exception.ESupplier;
 import net.daporkchop.lib.primitive.lambda.IntIntConsumer;
 import net.daporkchop.lib.primitive.lambda.IntIntIntConsumer;
 
