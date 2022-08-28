@@ -25,15 +25,21 @@ import io.netty.buffer.Unpooled;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.SneakyThrows;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
+import net.daporkchop.fp2.core.util.MutableLong;
 import net.daporkchop.fp2.core.util.recycler.Recycler;
+import net.daporkchop.fp2.core.util.serialization.variable.IVariableSizeRecyclingCodec;
+import net.daporkchop.lib.binary.stream.DataIn;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.reference.cache.Cached;
 import net.daporkchop.lib.compression.zstd.Zstd;
 import net.daporkchop.lib.compression.zstd.ZstdDeflater;
 import net.daporkchop.lib.compression.zstd.ZstdInflater;
+
+import java.io.IOException;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -81,7 +87,8 @@ public class CompressedTileSnapshot<POS extends IFarPos, T extends IFarTile> ext
     }
 
     @Override
-    public T loadTile(@NonNull Recycler<T> recycler) {
+    @SneakyThrows(IOException.class)
+    public T loadTile(@NonNull Recycler<T> recycler, @NonNull IVariableSizeRecyclingCodec<T> codec) {
         this.ensureNotReleased();
 
         if (this.data != null) {
@@ -94,7 +101,9 @@ public class CompressedTileSnapshot<POS extends IFarPos, T extends IFarTile> ext
 
                 //initialize tile from decompressed data
                 T tile = recycler.allocate();
-                tile.read(uncompressed);
+                try (DataIn in = DataIn.wrapView(uncompressed)) {
+                    codec.load(tile, in);
+                }
                 return tile;
             } finally {
                 uncompressed.release();

@@ -31,6 +31,7 @@ import net.daporkchop.fp2.core.mode.common.client.bake.IRenderBaker;
 import net.daporkchop.fp2.core.mode.common.client.index.IRenderIndex;
 import net.daporkchop.fp2.core.mode.common.client.strategy.IFarRenderStrategy;
 import net.daporkchop.fp2.core.util.recycler.Recycler;
+import net.daporkchop.fp2.core.util.serialization.variable.IVariableSizeRecyclingCodec;
 import net.daporkchop.fp2.core.util.threading.scheduler.NoFutureScheduler;
 import net.daporkchop.fp2.core.util.threading.scheduler.Scheduler;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
@@ -162,9 +163,10 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
             Recycler<T> recycler = this.renderer.mode().tileRecycler();
             T[] srcs = this.renderer.mode().tileArray(compressedInputTiles.length);
             try {
+                IVariableSizeRecyclingCodec<T> codec = this.renderer.mode().tileCodec();
                 for (int i = 0; i < srcs.length; i++) { //inflate tiles
                     if (compressedInputTiles[i] != null) {
-                        srcs[i] = compressedInputTiles[i].loadTile(recycler);
+                        srcs[i] = compressedInputTiles[i].loadTile(recycler, codec);
                     }
                 }
 

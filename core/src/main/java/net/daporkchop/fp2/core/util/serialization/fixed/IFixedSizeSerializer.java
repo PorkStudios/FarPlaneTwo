@@ -66,7 +66,7 @@ public interface IFixedSizeSerializer<T> {
      *
      * @param value  the {@link T} instance
      * @param base   the Java object to use as a base. If {@code null}, {@code offset} is assumed to be an off-heap memory address.
-     * @param offset the base offset (in bytes) relative to the given Java object to store the position to
+     * @param offset the base offset (in bytes) relative to the given Java object to write to
      */
     void store(T value, Object base, long offset);
 
@@ -103,7 +103,7 @@ public interface IFixedSizeSerializer<T> {
      *
      * @param value the {@link T} instance
      * @param buf   the {@link ByteBuf} to write to
-     * @param index the index in the buffer to write the position at
+     * @param index the index in the buffer to write to
      */
     default void store(T value, @NonNull ByteBuf buf, int index) {
         //we want to be absolutely certain that the value can fit within the buffer's limit, as failure to do so could result in a write to an invalid memory address!
@@ -159,7 +159,7 @@ public interface IFixedSizeSerializer<T> {
      *
      * @param value the {@link T} instance
      * @param buf   the {@link ByteBuffer} to write to
-     * @param index the index in the buffer to write the position at
+     * @param index the index in the buffer to write to
      */
     default void store(T value, @NonNull ByteBuffer buf, int index) {
         //we want to be absolutely certain that the value can fit within the buffer's limit, as failure to do so could result in a write to an invalid memory address!

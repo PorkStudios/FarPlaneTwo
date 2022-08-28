@@ -24,13 +24,14 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
-import net.daporkchop.fp2.core.util.MutableLong;
 import net.daporkchop.fp2.core.util.serialization.variable.IVariableSizeRecyclingCodec;
-import net.daporkchop.lib.common.system.PlatformInfo;
+import net.daporkchop.lib.binary.stream.DataIn;
+import net.daporkchop.lib.binary.stream.DataOut;
 import net.daporkchop.lib.unsafe.PCleaner;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
-import static net.daporkchop.fp2.common.util.TypeSize.*;
+import java.io.IOException;
+
 import static net.daporkchop.fp2.core.mode.voxel.VoxelConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -41,6 +42,14 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @Getter
 public class VoxelTile implements IFarTile {
+    static {
+        //we copy values directly between int[] and off-heap memory
+        PUnsafe.requireTightlyPackedPrimitiveArrays();
+
+        //we assume unaligned memory accesses are supported
+        PUnsafe.requireUnalignedAccess();
+    }
+
     //layout (in ints):
     //0: (dx << 24) | (dy << 16) | (dz << 8) | edges
     //                                       ^ 2 bits are free
@@ -66,58 +75,51 @@ public class VoxelTile implements IFarTile {
         }
 
         @Override
-        public void load(@NonNull VoxelTile value, Object base, long offset, @NonNull MutableLong read) {
-            value.reset();
-            long startOffset = offset;
+        public void load(@NonNull VoxelTile tile, @NonNull DataIn in) throws IOException {
+            tile.reset();
 
-            int count = value.count = PlatformInfo.IS_LITTLE_ENDIAN ? PUnsafe.getInt(base, offset) : Integer.reverseBytes(PUnsafe.getInt(base, offset));
-            offset += INT_SIZE;
+            int count = tile.count = in.readIntLE();
 
-            long addr = value.addr + INDEX_SIZE;
+            long addr = tile.addr + INDEX_SIZE;
             for (int i = 0; i < count; i++) { //copy data
-                int pos = PlatformInfo.IS_LITTLE_ENDIAN ? PUnsafe.getShort(base, offset) : Short.reverseBytes(PUnsafe.getShort(base, offset));
-                offset += SHORT_SIZE;
+                int pos = in.readUnsignedShortLE();
 
-                PUnsafe.putShort(value.addr + pos * 2L, (short) i); //put data slot into index
+                PUnsafe.putShort(tile.addr + pos * 2L, (short) i); //put data slot into index
 
                 PUnsafe.putChar(addr, (char) pos); //prefix data with pos
                 addr += 2L;
                 for (int j = 0; j < ENTRY_DATA_SIZE; j++, addr += 4L) {
-                    PUnsafe.putInt(addr, PlatformInfo.IS_LITTLE_ENDIAN ? PUnsafe.getInt(base, offset) : Integer.reverseBytes(PUnsafe.getInt(base, offset)));
-                    offset += INT_SIZE;
+                    PUnsafe.putUnalignedInt(addr, in.readIntLE());
                 }
             }
-
-            read.set(offset - startOffset);
         }
 
         @Override
-        public long store(VoxelTile value, Object base, long offset) {
-            long startOffset = offset;
-
-            //leave space for 'count' length prefix
-            offset += INT_SIZE;
-
+        public void store(@NonNull VoxelTile tile, @NonNull DataOut out) throws IOException {
+            //first pass: determine number of set voxels for length prefix
+            //TODO: modify tile data format so that we don't need a length prefix
             int count = 0;
             for (int i = 0; i < ENTRY_COUNT; i++) { //iterate through the index and search for set voxels
-                int index = PUnsafe.getShort(value.addr + i * 2L);
+                int index = PUnsafe.getShort(tile.addr + i * 2L);
                 if (index >= 0) { //voxel is set
-                    //write position
-                    PUnsafe.putShort(base, offset, PlatformInfo.IS_LITTLE_ENDIAN ? (short) i : Short.reverseBytes((short) i));
-                    offset += SHORT_SIZE;
-
-                    long data = value.addr + INDEX_SIZE + index * ENTRY_DATA_SIZE_BYTES;
-                    for (int j = 0; j < ENTRY_DATA_SIZE; j++) { //write voxel data
-                        PUnsafe.putInt(base, offset, PlatformInfo.IS_LITTLE_ENDIAN ? PUnsafe.getInt(data + j * 4L) : Integer.reverseBytes(PUnsafe.getInt(data + j * 4L)));
-                        offset += INT_SIZE;
-                    }
                     count++;
                 }
             }
 
-            //length prefix
-            PUnsafe.putInt(base, startOffset, PlatformInfo.IS_LITTLE_ENDIAN ? count : Integer.reverseBytes(count));
-            return offset - startOffset;
+            //second pass: actually write data
+            out.writeIntLE(count);
+            for (int i = 0; i < ENTRY_COUNT; i++) { //iterate through the index and search for set voxels
+                int index = PUnsafe.getShort(tile.addr + i * 2L);
+                if (index >= 0) { //voxel is set
+                    //write position
+                    out.writeShortLE(i);
+
+                    long data = tile.addr + INDEX_SIZE + index * ENTRY_DATA_SIZE_BYTES;
+                    for (int j = 0; j < ENTRY_DATA_SIZE; j++) { //write voxel data
+                        out.writeIntLE(PUnsafe.getUnalignedInt(data + j * 4L));
+                    }
+                }
+            }
         }
     };
 

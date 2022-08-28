@@ -66,7 +66,7 @@ public interface IFixedSizeRecyclingDeserializer<T> {
      *
      * @param value  the {@link T} instance whose contents are to be overwritten with the deserialized data
      * @param base   the Java object to use as a base. If {@code null}, {@code offset} is assumed to be an off-heap memory address.
-     * @param offset the base offset (in bytes) relative to the given Java object to load the position from
+     * @param offset the base offset (in bytes) relative to the given Java object to read from
      */
     void load(@NonNull T value, Object base, long offset);
 
@@ -103,7 +103,7 @@ public interface IFixedSizeRecyclingDeserializer<T> {
      *
      * @param value the {@link T} instance whose contents are to be overwritten with the deserialized data
      * @param buf   the {@link ByteBuf} to read from
-     * @param index the index in the buffer to read the position from
+     * @param index the index in the buffer to read from
      */
     default void load(@NonNull T value, @NonNull ByteBuf buf, int index) {
         //we want to be absolutely certain that buffer has enough data available, as failure to do so could result in a load from an invalid memory address!
@@ -147,7 +147,7 @@ public interface IFixedSizeRecyclingDeserializer<T> {
      *
      * @param value the {@link T} instance whose contents are to be overwritten with the deserialized data
      * @param buf   the {@link ByteBuffer} to read from
-     * @param index the index in the buffer to read the position from
+     * @param index the index in the buffer to read from
      */
     default void load(@NonNull T value, @NonNull ByteBuffer buf, int index) {
         //we want to be absolutely certain that buffer has enough data available, as failure to do so could result in a load from an invalid memory address!

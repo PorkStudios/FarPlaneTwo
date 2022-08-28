@@ -24,11 +24,14 @@ import io.netty.buffer.Unpooled;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
-import net.daporkchop.fp2.core.util.MutableLong;
 import net.daporkchop.fp2.core.util.serialization.variable.IVariableSizeRecyclingCodec;
+import net.daporkchop.lib.binary.stream.DataIn;
+import net.daporkchop.lib.binary.stream.DataOut;
 import net.daporkchop.lib.common.system.PlatformInfo;
 import net.daporkchop.lib.unsafe.PCleaner;
 import net.daporkchop.lib.unsafe.PUnsafe;
+
+import java.io.IOException;
 
 import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.fp2.core.mode.heightmap.HeightmapConstants.*;
@@ -81,34 +84,29 @@ public class HeightmapTile implements IFarTile {
         }
 
         @Override
-        public void load(@NonNull HeightmapTile value, Object base, long offset, @NonNull MutableLong read) {
+        public void load(@NonNull HeightmapTile tile, @NonNull DataIn in) throws IOException {
             if (PlatformInfo.IS_LITTLE_ENDIAN) {
                 //copy everything in one go
-                PUnsafe.copyMemory(base, offset, null, value.addr(), TILE_SIZE_BYTES);
+                in.readFully(Unpooled.wrappedBuffer(tile.addr, TILE_SIZE_BYTES, false).writerIndex(0));
             } else {
                 //read individual ints (reversing the byte order each time)
-                for (long dstAddr = value.addr(), dstEnd = dstAddr + TILE_SIZE_BYTES; dstAddr != dstEnd; dstAddr += INT_SIZE, offset += INT_SIZE) {
-                    PUnsafe.putInt(dstAddr, Integer.reverseBytes(PUnsafe.getInt(base, offset)));
+                for (long addr = tile.addr, end = addr + TILE_SIZE_BYTES; addr != end; addr += INT_SIZE) {
+                    PUnsafe.putInt(addr, in.readIntLE());
                 }
             }
-
-            //set the number of read bytes
-            read.set(TILE_SIZE_BYTES);
         }
 
         @Override
-        public long store(HeightmapTile value, Object base, long offset) {
+        public void store(@NonNull HeightmapTile tile, @NonNull DataOut out) throws IOException {
             if (PlatformInfo.IS_LITTLE_ENDIAN) {
                 //copy everything in one go
-                PUnsafe.copyMemory(null, value.addr(), base, offset, TILE_SIZE_BYTES);
+                out.write(Unpooled.wrappedBuffer(tile.addr, TILE_SIZE_BYTES, false));
             } else {
-                //read individual ints (reversing the byte order each time)
-                for (long srcAddr = value.addr(), srcEnd = srcAddr + TILE_SIZE_BYTES; srcAddr != srcEnd; srcAddr += INT_SIZE, offset += INT_SIZE) {
-                    PUnsafe.putInt(base, offset, Integer.reverseBytes(PUnsafe.getInt(srcAddr)));
+                //write individual ints (reversing the byte order each time)
+                for (long addr = tile.addr, end = addr + TILE_SIZE_BYTES; addr != end; addr += INT_SIZE) {
+                    out.writeIntLE(PUnsafe.getInt(addr));
                 }
             }
-
-            return TILE_SIZE_BYTES;
         }
     };
 

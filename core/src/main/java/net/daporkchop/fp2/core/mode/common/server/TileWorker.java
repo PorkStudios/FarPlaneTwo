@@ -32,6 +32,7 @@ import net.daporkchop.fp2.core.mode.api.tile.ITileMetadata;
 import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
 import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
 import net.daporkchop.fp2.core.util.recycler.Recycler;
+import net.daporkchop.fp2.core.util.serialization.variable.IVariableSizeRecyclingCodec;
 import net.daporkchop.fp2.core.util.threading.scheduler.Scheduler;
 import net.daporkchop.fp2.core.util.threading.scheduler.SharedFutureScheduler;
 import net.daporkchop.lib.primitive.lambda.ObjObjLongConsumer;
@@ -254,12 +255,14 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
                 T[] srcs = this.provider.mode().tileArray(srcPositions.size());
                 T dst = tileRecycler.allocate();
                 try {
+                    IVariableSizeRecyclingCodec<T> codec = this.provider.mode().tileCodec();
+
                     //inflate tile snapshots where necessary
                     for (int i = 0; i < srcPositions.size(); i++) {
                         //tile is only guaranteed to have been generated if it's at a valid position (we filter out invalid
                         // positions above in the scatterGather call)
                         if (this.provider.coordLimits().contains(srcPositions.get(i))) {
-                            srcs[i] = snapshotsByPosition.get(srcPositions.get(i)).loadTile(tileRecycler);
+                            srcs[i] = snapshotsByPosition.get(srcPositions.get(i)).loadTile(tileRecycler, codec);
                         }
                     }
 

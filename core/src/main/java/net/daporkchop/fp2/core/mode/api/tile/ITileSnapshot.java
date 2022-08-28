@@ -24,6 +24,7 @@ import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.util.recycler.Recycler;
+import net.daporkchop.fp2.core.util.serialization.variable.IVariableSizeRecyclingCodec;
 import net.daporkchop.lib.common.misc.refcount.RefCounted;
 import net.daporkchop.lib.common.util.exception.AlreadyReleasedException;
 
@@ -53,7 +54,7 @@ public interface ITileSnapshot<POS extends IFarPos, T extends IFarTile> extends 
      * @param recycler a {@link Recycler} to use for allocating instances of {@link T}
      * @return the loaded {@link T}, or {@code null} if this snapshot is empty
      */
-    T loadTile(@NonNull Recycler<T> recycler);
+    T loadTile(@NonNull Recycler<T> recycler, @NonNull IVariableSizeRecyclingCodec<T> codec);
 
     /**
      * @return whether or not this snapshot's tile data is empty

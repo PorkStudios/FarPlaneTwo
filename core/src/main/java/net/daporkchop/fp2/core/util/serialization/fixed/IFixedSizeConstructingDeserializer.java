@@ -64,7 +64,7 @@ public interface IFixedSizeConstructingDeserializer<T> {
      * Loads the position at the given offset relative to the given Java object into a {@link T} instance.
      *
      * @param base   the Java object to use as a base. If {@code null}, {@code offset} is assumed to be an off-heap memory address.
-     * @param offset the base offset (in bytes) relative to the given Java object to load the position from
+     * @param offset the base offset (in bytes) relative to the given Java object to read from
      * @return the {@link T} instance
      */
     T load(Object base, long offset);
@@ -104,7 +104,7 @@ public interface IFixedSizeConstructingDeserializer<T> {
      * The buffer's {@link ByteBuf#readerIndex() reader index} will not be modified.
      *
      * @param buf   the {@link ByteBuf} to read from
-     * @param index the index in the buffer to read the position from
+     * @param index the index in the buffer to read from
      * @return the {@link T} instance
      */
     default T load(@NonNull ByteBuf buf, int index) {
@@ -148,7 +148,7 @@ public interface IFixedSizeConstructingDeserializer<T> {
      * Loads the position from the given {@link ByteBuffer} into a {@link T} instance.
      *
      * @param buf   the {@link ByteBuffer} to read from
-     * @param index the index in the buffer to read the position from
+     * @param index the index in the buffer to read from
      * @return the {@link T} instance
      */
     default T load(@NonNull ByteBuffer buf, int index) {
