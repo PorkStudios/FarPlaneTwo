@@ -45,8 +45,7 @@ import net.daporkchop.fp2.core.mode.common.server.AbstractFarTileProvider;
 import net.daporkchop.fp2.core.util.GlobalAllocators;
 import net.daporkchop.fp2.core.util.datastructure.java.list.ArraySliceAsList;
 import net.daporkchop.fp2.core.util.datastructure.java.list.ListUtils;
-import net.daporkchop.fp2.core.util.recycler.Recycler;
-import net.daporkchop.fp2.core.util.recycler.SimpleRecycler;
+import net.daporkchop.lib.common.pool.recycler.Recycler;
 import net.daporkchop.fp2.core.util.serialization.variable.IVariableSizeRecyclingCodec;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
@@ -88,17 +87,7 @@ public class DefaultTileStorage<POS extends IFarPos, T extends IFarTile> impleme
     protected static final String COLUMN_NAME_DATA = "data";
 
     protected static final Cached<ArrayAllocator<ByteBuffer[]>> ALLOC_BYTEBUFFER_ARRAY = GlobalAllocators.getArrayAllocatorForComponentType(ByteBuffer.class);
-    protected static final Cached<Recycler<ByteBuffer>> FAKE_DIRECT_BYTEBUFFER_RECYCLER = Cached.threadLocal(() -> new SimpleRecycler<ByteBuffer>() {
-        @Override
-        protected ByteBuffer allocate0() {
-            return DirectBufferHackery.emptyByte();
-        }
-
-        @Override
-        protected void reset0(ByteBuffer value) {
-            //no-op
-        }
-    }, ReferenceStrength.WEAK);
+    protected static final Cached<Recycler<ByteBuffer>> FAKE_DIRECT_BYTEBUFFER_RECYCLER = Cached.threadLocal(() -> Recycler.unbounded(DirectBufferHackery::emptyByte), ReferenceStrength.SOFT);
 
     protected static long readLongLE(@NonNull byte[] src) {
         checkRangeLen(src.length, 0, Long.BYTES);
@@ -259,7 +248,11 @@ public class DefaultTileStorage<POS extends IFarPos, T extends IFarTile> impleme
             int tmpBuffersKeysOffset = 0;
             int tmpBuffersTimestampsTilesOffset = tmpBuffersKeysOffset + length;
             int tmpBufferCount = tmpBuffersTimestampsTilesOffset + multiplyExact(length, 2);
-            ByteBuffer[] tmpBuffers = byteBufferRecycler.allocate(tmpBufferCount, byteBufferArrayAlloc);
+            //TODO: ByteBuffer[] tmpBuffers = byteBufferRecycler.allocate(tmpBufferCount, byteBufferArrayAlloc);
+            ByteBuffer[] tmpBuffers = byteBufferArrayAlloc.atLeast(tmpBufferCount);
+            for (int i = 0; i < tmpBufferCount; i++) {
+                tmpBuffers[i] = byteBufferRecycler.allocate();
+            }
 
             //allocate temporary off-heap buffer for serialized keys, tile timestamps and tile data
             long bufferKeysOffset = 0L;
@@ -300,7 +293,13 @@ public class DefaultTileStorage<POS extends IFarPos, T extends IFarTile> impleme
                 throw new UnsupportedOperationException();
             } finally {
                 PUnsafe.freeMemory(buffer);
-                byteBufferRecycler.release(tmpBuffers, tmpBufferCount, byteBufferArrayAlloc);
+                //TODO: byteBufferRecycler.release(tmpBuffers, tmpBufferCount, byteBufferArrayAlloc);
+                for (int i = 0; i < tmpBufferCount; i++) {
+                    byteBufferRecycler.release(tmpBuffers[i]);
+                }
+                Arrays.fill(tmpBuffers, 0, tmpBufferCount, null);
+                byteBufferArrayAlloc.release(tmpBuffers);
+
                 intArrayAlloc.release(sizes);
             }
         });

@@ -83,7 +83,7 @@ public class DefaultTileHandle<POS extends IFarPos, T extends IFarTile> implemen
             return timestampBytes != null
                     ? new TileSnapshot<>(this.pos, readLongLE(timestampBytes), tileBytes)
                     : null;
-        }, ITileSnapshot::release);
+        }, ITileSnapshot::release);*/
     }
 
     @Override

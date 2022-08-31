@@ -31,10 +31,11 @@ import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.core.mode.api.tile.ITileMetadata;
 import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
 import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
-import net.daporkchop.fp2.core.util.recycler.Recycler;
+import net.daporkchop.lib.common.pool.recycler.Recycler;
 import net.daporkchop.fp2.core.util.serialization.variable.IVariableSizeRecyclingCodec;
 import net.daporkchop.fp2.core.util.threading.scheduler.Scheduler;
 import net.daporkchop.fp2.core.util.threading.scheduler.SharedFutureScheduler;
+import net.daporkchop.lib.common.util.PArrays;
 import net.daporkchop.lib.primitive.lambda.ObjObjLongConsumer;
 import net.daporkchop.lib.primitive.list.LongList;
 import net.daporkchop.lib.primitive.list.array.LongArrayList;
@@ -172,7 +173,8 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
         });
 
         Recycler<T> tileRecycler = this.provider.mode().tileRecycler();
-        T[] tiles = tileRecycler.allocate(state.positions().size(), this.provider.mode()::tileArray);
+        //TODO: T[] tiles = tileRecycler.allocate(state.positions().size(), this.provider.mode()::tileArray);
+        T[] tiles = PArrays.filledFrom(state.positions().size(), this.provider.mode()::tileArray, tileRecycler::allocate);
         try {
             //generate tile
             this.provider.generatorRough().generate(state.positions().toArray(this.provider.mode().posArray(state.positions().size())), tiles);
@@ -182,7 +184,11 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
                     StreamSupport.stream(state.minimumTimestamps().spliterator(), false).map(ITileMetadata::ofTimestamp).collect(Collectors.toList()),
                     Arrays.asList(tiles));
         } finally {
-            tileRecycler.release(tiles);
+            //TODO: tileRecycler.release(tiles);
+            for (T tile : tiles) {
+                tileRecycler.release(tile);
+            }
+            Arrays.fill(tiles, null);
         }
 
         //notify callback
@@ -204,7 +210,8 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
 
             //actually do exact generation
             Recycler<T> tileRecycler = this.provider.mode().tileRecycler();
-            T[] tiles = tileRecycler.allocate(state.positions().size(), this.provider.mode()::tileArray);
+            //TODO: T[] tiles = tileRecycler.allocate(state.positions().size(), this.provider.mode()::tileArray);
+            T[] tiles = PArrays.filledFrom(state.positions().size(), this.provider.mode()::tileArray, tileRecycler::allocate);
             try {
                 //generate tile
                 this.provider.generatorExact().generate(exactWorld, state.positions().toArray(this.provider.mode().posArray(state.positions().size())), tiles);
@@ -214,7 +221,11 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
                         StreamSupport.stream(state.minimumTimestamps().spliterator(), false).map(ITileMetadata::ofTimestamp).collect(Collectors.toList()),
                         Arrays.asList(tiles));
             } finally {
-                tileRecycler.release(tiles);
+                //TODO: tileRecycler.release(tiles);
+                for (T tile : tiles) {
+                    tileRecycler.release(tile);
+                }
+                Arrays.fill(tiles, null);
             }
 
             //notify callback

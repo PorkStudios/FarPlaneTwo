@@ -23,7 +23,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
-import net.daporkchop.fp2.core.util.recycler.Recycler;
+import net.daporkchop.lib.common.pool.recycler.Recycler;
 import net.daporkchop.fp2.core.util.serialization.variable.IVariableSizeRecyclingCodec;
 import net.daporkchop.lib.common.misc.refcount.RefCounted;
 import net.daporkchop.lib.common.util.exception.AlreadyReleasedException;

@@ -37,8 +37,7 @@ import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.core.server.player.IFarPlayerServer;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
-import net.daporkchop.fp2.core.util.recycler.Recycler;
-import net.daporkchop.fp2.core.util.recycler.SimpleRecycler;
+import net.daporkchop.lib.common.pool.recycler.Recycler;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.reference.cache.Cached;
@@ -52,7 +51,7 @@ import static net.daporkchop.fp2.core.FP2Core.*;
  */
 @RequiredArgsConstructor
 public abstract class AbstractFarRenderMode<POS extends IFarPos, T extends IFarTile> implements IFarRenderMode<POS, T> {
-    protected final Cached<Recycler<T>> recyclerRef = Cached.threadLocal(() -> new SimpleRecycler.OfReusablePersistent<>(this::newTile), ReferenceStrength.SOFT);
+    protected final Cached<Recycler<T>> recyclerRef = Cached.threadLocal(() -> Recycler.unbounded(this::newTile, T::reset), ReferenceStrength.SOFT);
 
     @Getter(lazy = true)
     private final String name = REGISTRY.getName(this);
