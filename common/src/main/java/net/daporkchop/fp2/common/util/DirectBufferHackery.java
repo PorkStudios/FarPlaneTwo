@@ -53,12 +53,13 @@ public class DirectBufferHackery {
     private final Class<FloatBuffer> FLOAT = PorkUtil.classForName("java.nio.DirectFloatBufferU");
     private final Class<DoubleBuffer> DOUBLE = PorkUtil.classForName("java.nio.DirectDoubleBufferU");
 
-    public void reset(@NonNull Buffer buffer, long address, int capacity) {
+    public <B extends Buffer> B reset(@NonNull B buffer, long address, int capacity) {
         checkState(buffer.isDirect(), "buffer isn't direct! %s", buffer);
 
         PUnsafe.putInt(buffer, BUFFER_CAPACITY_OFFSET, capacity);
         PUnsafe.putLong(buffer, BUFFER_ADDRESS_OFFSET, address);
         buffer.clear();
+        return buffer;
     }
 
     public ByteBuffer emptyByte() {

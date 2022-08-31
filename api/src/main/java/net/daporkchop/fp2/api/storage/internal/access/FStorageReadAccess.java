@@ -87,7 +87,7 @@ public interface FStorageReadAccess {
     /**
      * Gets an {@link FStorageIterator iterator} for iterating over the entries in the given storage column.
      * <p>
-     * This, and all of the methods defined in {@link FStorageIterator}, are read operations.
+     * This, and all methods defined in {@link FStorageIterator}, are read operations.
      *
      * @param column the storage column
      * @return the {@link FStorageIterator iterator}

@@ -87,33 +87,63 @@ public class DefaultTileStorage<POS extends IFarPos, T extends IFarTile> impleme
     protected static final String COLUMN_NAME_DATA = "data";
 
     protected static final Cached<ArrayAllocator<ByteBuffer[]>> ALLOC_BYTEBUFFER_ARRAY = GlobalAllocators.getArrayAllocatorForComponentType(ByteBuffer.class);
+    protected static final Cached<ArrayAllocator<List<ByteBuffer>>> ALLOC_BYTEBUFFER_LIST = Cached.threadLocal(() -> new ArrayAllocator<List<ByteBuffer>>() {
+        final ArrayAllocator<ByteBuffer[]> delegate = ALLOC_BYTEBUFFER_ARRAY.get();
+
+        @Override
+        public List<ByteBuffer> atLeast(int length) {
+            return this.exactly(length);
+        }
+
+        @Override
+        public List<ByteBuffer> exactly(int length) {
+            //allocate an array, then wrap it in a List of exactly the requested length
+            ByteBuffer[] array = this.delegate.atLeast(length);
+            return ArraySliceAsList.wrap(array, 0, length);
+        }
+
+        @Override
+        public void release(@NonNull List<ByteBuffer> list) {
+            //unwrap the list and return an array
+            ByteBuffer[] array = ((ArraySliceAsList<ByteBuffer>) list).array();
+            Arrays.fill(array, 0, list.size(), null); //null out all elements in the array
+            this.delegate.release(array);
+        }
+    }, ReferenceStrength.WEAK);
+
     protected static final Cached<Recycler<ByteBuffer>> FAKE_DIRECT_BYTEBUFFER_RECYCLER = Cached.threadLocal(() -> Recycler.unbounded(DirectBufferHackery::emptyByte), ReferenceStrength.SOFT);
 
+    @Deprecated
     protected static long readLongLE(@NonNull byte[] src) {
         checkRangeLen(src.length, 0, Long.BYTES);
         return readLongLE(src, PUnsafe.arrayByteElementOffset(0));
     }
 
+    @Deprecated
     protected static long readLongLE(@NonNull byte[] src, int index) {
         checkRangeLen(src.length, index, Long.BYTES);
         return readLongLE(src, PUnsafe.arrayByteElementOffset(index));
     }
 
+    @Deprecated
     protected static long readLongLE(long addr) {
         return readLongLE(null, addr);
     }
 
+    @Deprecated
     protected static long readLongLE(Object base, long offset) {
         long val = PUnsafe.getLong(base, offset);
         return PlatformInfo.IS_BIG_ENDIAN ? Long.reverseBytes(val) : val;
     }
 
+    @Deprecated
     protected static byte[] writeLongLE(long val) {
         byte[] dst = new byte[Long.BYTES];
         writeLongLE(dst, 0, val);
         return dst;
     }
 
+    @Deprecated
     protected static void writeLongLE(@NonNull byte[] dst, int index, long val) {
         checkRangeLen(dst.length, index, Long.BYTES);
 
@@ -191,6 +221,12 @@ public class DefaultTileStorage<POS extends IFarPos, T extends IFarTile> impleme
     protected final FStorageColumn columnDirtyTimestamp;
     protected final FStorageColumn columnData;
 
+    //immutable two-element list containing the following: [this.columnTimestamp, this.columnData]
+    protected final List<FStorageColumn> listColumns_Timestamp_Data;
+
+    //immutable two-element list containing the following: [this.columnTimestamp, this.columnDirtyTimestamp]
+    protected final List<FStorageColumn> listColumns_Timestamp_DirtyTimestamp;
+
     protected final Set<Listener<POS, T>> listeners = new CopyOnWriteArraySet<>();
 
     protected final LoadingCache<POS, ITileHandle<POS, T>> handleCache = CacheBuilder.newBuilder()
@@ -209,6 +245,9 @@ public class DefaultTileStorage<POS extends IFarPos, T extends IFarTile> impleme
         this.columnTimestamp = Objects.requireNonNull(columns.get(COLUMN_NAME_TIMESTAMP), COLUMN_NAME_TIMESTAMP);
         this.columnDirtyTimestamp = Objects.requireNonNull(columns.get(COLUMN_NAME_DIRTY_TIMESTAMP), COLUMN_NAME_DIRTY_TIMESTAMP);
         this.columnData = Objects.requireNonNull(columns.get(COLUMN_NAME_DATA), COLUMN_NAME_DATA);
+
+        this.listColumns_Timestamp_Data = ListUtils.immutableListOf(this.columnTimestamp, this.columnData);
+        this.listColumns_Timestamp_DirtyTimestamp = ListUtils.immutableListOf(this.columnTimestamp, this.columnDirtyTimestamp);
     }
 
     @Override
@@ -221,7 +260,7 @@ public class DefaultTileStorage<POS extends IFarPos, T extends IFarTile> impleme
         return this.handleCache.getUnchecked(pos);
     }
 
-    @Override
+    /*@Override
     @SneakyThrows(FStorageException.class)
     public List<ITileSnapshot<POS, T>> multiSnapshot(@NonNull List<POS> positions) {
         int length = positions.size();
@@ -551,7 +590,7 @@ public class DefaultTileStorage<POS extends IFarPos, T extends IFarTile> impleme
             }
             return out;
         });
-    }
+    }*/
 
     @Override
     public void addListener(@NonNull Listener<POS, T> listener) {

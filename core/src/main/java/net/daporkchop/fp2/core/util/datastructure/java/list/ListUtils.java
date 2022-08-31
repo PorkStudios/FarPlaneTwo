@@ -74,6 +74,124 @@ public class ListUtils {
     }
 
     /**
+     * Constructs an immutable {@link List} containing the given element.
+     *
+     * @param e0 the element at index {@code 0}
+     * @return a {@link List} containing the given element
+     */
+    public <E> List<E> immutableListOf(E e0) {
+        return ImmutableList.of(e0);
+    }
+
+    /**
+     * Constructs an immutable {@link List} containing the given elements.
+     *
+     * @param e0 the element at index {@code 0}
+     * @param e1 the element at index {@code 1}
+     * @return a {@link List} containing the given elements
+     */
+    public <E> List<E> immutableListOf(E e0, E e1) {
+        //ImmutableList.of(Object, Object) would just create an array with two elements and wraps that. we can do better!
+
+        //can't use anonymous class because i need to implement RandomAccess
+        final class TwoElementList extends AbstractList<E> implements RandomAccess {
+            @Override
+            public int size() {
+                return 2;
+            }
+
+            @Override
+            public boolean isEmpty() {
+                return false;
+            }
+
+            @Override
+            public E get(int index) {
+                switch (index) {
+                    case 0:
+                        return e0;
+                    case 1:
+                        return e1;
+                    default:
+                        throw new IndexOutOfBoundsException(String.valueOf(index));
+                }
+            }
+
+            @Override
+            public Object[] toArray() {
+                return new Object[] { e0, e1 };
+            }
+
+            @Override
+            public <T> T[] toArray(T[] a) {
+                if (a.length < 2) {
+                    a = PArrays.filled(2, PorkUtil.<Class<T>>uncheckedCast(a.getClass().getComponentType()), null);
+                }
+
+                a[0] = uncheckedCast(e0);
+                a[1] = uncheckedCast(e1);
+                if (a.length > 2) {
+                    a[2] = null;
+                }
+                return a;
+            }
+
+            @SuppressWarnings("UnnecessaryLocalVariable")
+            @Override
+            public void forEach(@NonNull Consumer<? super E> action) {
+                //preload all member variables into local variables to avoid dereferencing 'this' on every iteration
+                E _e0 = e0;
+                E _e1 = e1;
+                action.accept(_e0);
+                action.accept(_e1);
+            }
+
+            @Override
+            public int indexOf(Object o) {
+                return Objects.equals(o, e0) ? 0 : Objects.equals(o, e1) ? 1 : -1;
+            }
+
+            @Override
+            public int lastIndexOf(Object o) {
+                return Objects.equals(o, e1) ? 1 : Objects.equals(o, e0) ? 0 : -1;
+            }
+
+            @Override
+            public int hashCode() {
+                //noinspection PointlessArithmeticExpression
+                return ((1) * 31 + Objects.hashCode(e0)) * 31 + Objects.hashCode(e1);
+            }
+
+            @Override
+            public String toString() {
+                return "[" + e0 + ',' + e1 + ']';
+            }
+
+            @Override
+            public Stream<E> stream() {
+                return Stream.of(e0, e1);
+            }
+
+            @Override
+            public Stream<E> parallelStream() {
+                return this.stream().parallel();
+            }
+        }
+
+        return new TwoElementList();
+    }
+
+    /**
+     * Constructs an immutable {@link List} containing the given elements.
+     *
+     * @param elements the elements at index {@code 0}
+     * @return a {@link List} containing the given elements
+     */
+    public <E> List<E> immutableListOf(E @NonNull ... elements) {
+        return ImmutableList.copyOf(elements);
+    }
+
+    /**
      * Gets a {@link List} whose contents are the given element repeated the given number of times.
      *
      * @param element the element to repeat
@@ -258,22 +376,22 @@ public class ListUtils {
         }
 
         return BinMath.isPow2(times) ?
-                       new AbstractWrappedRepeatingList(sequence, times) {
-                           final int shift = Integer.numberOfTrailingZeros(this.times);
+                new AbstractWrappedRepeatingList(sequence, times) {
+                    final int shift = Integer.numberOfTrailingZeros(this.times);
 
-                           @Override
-                           public E get(int index) {
-                               checkIndex(index >= 0 && (index >> this.shift) < this.sequence.size(), index);
-                               return this.sequence.get(index & (this.times - 1));
-                           }
-                       } :
-                       new AbstractWrappedRepeatingList(sequence, times) {
-                           @Override
-                           public E get(int index) {
-                               checkIndex(index >= 0 && index < this.size(), index);
-                               return this.sequence.get(index % this.times);
-                           }
-                       };
+                    @Override
+                    public E get(int index) {
+                        checkIndex(index >= 0 && (index >> this.shift) < this.sequence.size(), index);
+                        return this.sequence.get(index & (this.times - 1));
+                    }
+                } :
+                new AbstractWrappedRepeatingList(sequence, times) {
+                    @Override
+                    public E get(int index) {
+                        checkIndex(index >= 0 && index < this.size(), index);
+                        return this.sequence.get(index % this.times);
+                    }
+                };
     }
 
     /**
@@ -350,21 +468,21 @@ public class ListUtils {
         }
 
         return BinMath.isPow2(times) ?
-                       new AbstractElementsRepeatingList(sequence, times) {
-                           final int shift = Integer.numberOfTrailingZeros(this.times);
+                new AbstractElementsRepeatingList(sequence, times) {
+                    final int shift = Integer.numberOfTrailingZeros(this.times);
 
-                           @Override
-                           public E get(int index) {
-                               checkIndex(index >= 0 && (index >> this.shift) < this.sequence.size(), index);
-                               return this.sequence.get(index >> this.shift);
-                           }
-                       } :
-                       new AbstractElementsRepeatingList(sequence, times) {
-                           @Override
-                           public E get(int index) {
-                               checkIndex(index >= 0 && index < this.size(), index);
-                               return this.sequence.get(index / this.times);
-                           }
-                       };
+                    @Override
+                    public E get(int index) {
+                        checkIndex(index >= 0 && (index >> this.shift) < this.sequence.size(), index);
+                        return this.sequence.get(index >> this.shift);
+                    }
+                } :
+                new AbstractElementsRepeatingList(sequence, times) {
+                    @Override
+                    public E get(int index) {
+                        checkIndex(index >= 0 && index < this.size(), index);
+                        return this.sequence.get(index / this.times);
+                    }
+                };
     }
 }

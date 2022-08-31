@@ -27,10 +27,11 @@ import lombok.SneakyThrows;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
-import net.daporkchop.lib.common.pool.recycler.Recycler;
 import net.daporkchop.fp2.core.util.serialization.variable.IVariableSizeRecyclingCodec;
 import net.daporkchop.lib.binary.stream.DataIn;
 import net.daporkchop.lib.binary.stream.DataOut;
+import net.daporkchop.lib.common.pool.recycler.Recycler;
+import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.io.IOException;
 
@@ -40,6 +41,34 @@ import java.io.IOException;
 @RequiredArgsConstructor
 @Getter
 public class TileSnapshot<POS extends IFarPos, T extends IFarTile> extends AbstractTileSnapshot<POS, T> {
+    public static <POS extends IFarPos, T extends IFarTile> TileSnapshot<POS, T> readFromNetwork(@NonNull DataIn in, @NonNull POS pos) throws IOException {
+        long timestamp = in.readVarLongZigZag();
+
+        int len = in.readVarIntZigZag();
+        byte[] data = len < 0
+                ? null //no data!
+                : in.fill(new byte[len]);
+
+        return new TileSnapshot<>(pos, timestamp, data);
+    }
+
+    static {
+        //we copy data directly between off-heap memory and byte[]s
+        PUnsafe.requireTightlyPackedByteArrays();
+    }
+
+    public static <POS extends IFarPos, T extends IFarTile> TileSnapshot<POS, T> of(@NonNull POS pos, long timestamp, long dataAddr, int dataLength) {
+        byte[] data;
+        if (dataLength < 0) { //tile is empty, there is no data
+            data = null;
+        } else { //tile has data, copy it into a byte[]
+            data = new byte[dataLength];
+            PUnsafe.copyMemory(null, dataAddr, data, PUnsafe.arrayByteBaseOffset(), dataLength);
+        }
+
+        return new TileSnapshot<>(pos, timestamp, data);
+    }
+
     @NonNull
     protected final POS pos;
     protected final long timestamp;
@@ -47,20 +76,7 @@ public class TileSnapshot<POS extends IFarPos, T extends IFarTile> extends Abstr
     @Getter(AccessLevel.NONE)
     protected final byte[] data;
 
-    public TileSnapshot(@NonNull DataIn in, @NonNull POS pos) throws IOException {
-        this.pos = pos;
-        this.timestamp = in.readVarLongZigZag();
-
-        int len = in.readVarIntZigZag();
-        if (len < 0) { //no data!
-            this.data = null;
-        } else {
-            this.data = new byte[len];
-            in.readFully(this.data);
-        }
-    }
-
-    public void write(@NonNull DataOut out) throws IOException {
+    public void writeForNetwork(@NonNull DataOut out) throws IOException {
         this.ensureNotReleased();
 
         out.writeVarLongZigZag(this.timestamp);

@@ -21,6 +21,7 @@ package net.daporkchop.fp2.core.util.datastructure.java.list;
 
 import com.google.common.collect.ImmutableList;
 import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
@@ -43,6 +44,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
+@Getter
 public class ArraySliceAsList<E> extends AbstractList<E> implements RandomAccess {
     /**
      * Gets a {@link List} which provides a view of the given array.
