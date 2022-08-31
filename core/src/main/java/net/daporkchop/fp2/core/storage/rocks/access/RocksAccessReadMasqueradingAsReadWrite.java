@@ -86,12 +86,27 @@ public class RocksAccessReadMasqueradingAsReadWrite implements FStorageAccess {
     }
 
     @Override
+    public void put(@NonNull FStorageColumn column, @NonNull ByteBuffer key, @NonNull ByteBuffer value) throws FStorageException {
+        throw new UnsupportedOperationException("read-only");
+    }
+
+    @Override
     public void delete(@NonNull FStorageColumn column, @NonNull byte[] key) throws FStorageException {
         throw new UnsupportedOperationException("read-only");
     }
 
     @Override
+    public void delete(@NonNull FStorageColumn column, @NonNull ByteBuffer key) throws FStorageException {
+        throw new UnsupportedOperationException("read-only");
+    }
+
+    @Override
     public void deleteRange(@NonNull FStorageColumn column, @NonNull byte[] fromKeyInclusive, @NonNull byte[] toKeyExclusive) throws FStorageException {
+        throw new UnsupportedOperationException("read-only");
+    }
+
+    @Override
+    public void deleteRange(@NonNull FStorageColumn column, @NonNull ByteBuffer fromKeyInclusive, @NonNull ByteBuffer toKeyExclusive) throws FStorageException {
         throw new UnsupportedOperationException("read-only");
     }
 }

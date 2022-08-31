@@ -63,6 +63,7 @@ import org.rocksdb.TransactionDBOptions;
 import org.rocksdb.TransactionOptions;
 import org.rocksdb.WriteOptions;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -139,6 +140,20 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
 
     public static FStorageException wrapException(RocksDBException e) {
         return new FStorageExceptionWrappedRocksDBException(e);
+    }
+
+    public static byte[] toByteArrayView(@NonNull ByteBuffer buffer) {
+        if (buffer.hasArray() && buffer.arrayOffset() == 0) { //check if we can expose the buffer's array directly without any allocations
+            byte[] array = buffer.array();
+            if (buffer.position() == 0 && buffer.limit() == array.length) {
+                return array;
+            }
+        }
+
+        int oldPosition = buffer.position();
+        byte[] array = PUnsafe.allocateUninitializedByteArray(buffer.remaining());
+        buffer.get(array).position(oldPosition);
+        return array;
     }
 
     private final Path root;

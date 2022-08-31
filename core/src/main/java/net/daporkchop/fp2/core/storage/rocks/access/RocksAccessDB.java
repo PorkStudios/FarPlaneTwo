@@ -26,6 +26,7 @@ import net.daporkchop.fp2.api.storage.FStorageException;
 import net.daporkchop.fp2.api.storage.internal.FStorageColumn;
 import net.daporkchop.fp2.api.storage.internal.access.FStorageAccess;
 import net.daporkchop.fp2.api.storage.internal.access.FStorageIterator;
+import net.daporkchop.fp2.core.storage.rocks.RocksStorage;
 import net.daporkchop.fp2.core.storage.rocks.RocksStorageColumn;
 import org.rocksdb.ByteBufferGetStatus;
 import org.rocksdb.ColumnFamilyHandle;
@@ -33,7 +34,6 @@ import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
-import org.rocksdb.Status;
 
 import java.nio.ByteBuffer;
 import java.util.List;
@@ -94,9 +94,12 @@ public class RocksAccessDB implements FStorageAccess {
                 ByteBufferGetStatus status = statuses.get(i);
                 if (status.value != null) {
                     sizes[i] = status.requiredSize;
+
+                    if (status.requiredSize > status.value.remaining()) { //the requiredSize is bigger than the buffer
+                        allSuccessful = false;
+                    }
                 } else {
                     sizes[i] = -1;
-                    allSuccessful = false;
                 }
             }
             return allSuccessful;
@@ -145,7 +148,39 @@ public class RocksAccessDB implements FStorageAccess {
     }
 
     @Override
+    public void put(@NonNull FStorageColumn column, @NonNull ByteBuffer key, @NonNull ByteBuffer value) throws FStorageException {
+        do {
+            try {
+                this.db.put(((RocksStorageColumn) column).handle(), WRITE_OPTIONS, key, value);
+                return;
+            } catch (RocksDBException e) {
+                if (!isTransactionCommitFailure(e)) { //"regular" exception, rethrow
+                    throw wrapException(e);
+                }
+
+                //the database is transactional and there was a commit failure, try again until it works!
+            }
+        } while (true);
+    }
+
+    @Override
     public void delete(@NonNull FStorageColumn column, @NonNull byte[] key) throws FStorageException {
+        do {
+            try {
+                this.db.delete(((RocksStorageColumn) column).handle(), WRITE_OPTIONS, key);
+                return;
+            } catch (RocksDBException e) {
+                if (!isTransactionCommitFailure(e)) { //"regular" exception, rethrow
+                    throw wrapException(e);
+                }
+
+                //the database is transactional and there was a commit failure, try again until it works!
+            }
+        } while (true);
+    }
+
+    @Override
+    public void delete(@NonNull FStorageColumn column, @NonNull ByteBuffer key) throws FStorageException {
         do {
             try {
                 this.db.delete(((RocksStorageColumn) column).handle(), WRITE_OPTIONS, key);
@@ -174,5 +209,13 @@ public class RocksAccessDB implements FStorageAccess {
                 //the database is transactional and there was a commit failure, try again until it works!
             }
         } while (true);
+    }
+
+    @Override
+    public void deleteRange(@NonNull FStorageColumn column, @NonNull ByteBuffer fromKeyInclusive, @NonNull ByteBuffer toKeyExclusive) throws FStorageException {
+        //rocksdbjni doesn't provide any versions of deleteRange which take ByteBuffer for the key parameters, so we'll copy them both to ordinary byte[]s and then
+        //  continue as usual
+
+        this.deleteRange(column, RocksStorage.toByteArrayView(fromKeyInclusive), RocksStorage.toByteArrayView(toKeyExclusive));
     }
 }
