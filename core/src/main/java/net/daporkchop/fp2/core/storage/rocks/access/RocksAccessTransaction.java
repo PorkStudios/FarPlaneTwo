@@ -33,6 +33,7 @@ import org.rocksdb.RocksIterator;
 import org.rocksdb.Snapshot;
 import org.rocksdb.Transaction;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
 

@@ -22,6 +22,7 @@ package net.daporkchop.fp2.core.storage.rocks.access;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.storage.FStorageException;
 import net.daporkchop.fp2.api.storage.internal.FStorageColumn;
+import net.daporkchop.fp2.api.storage.internal.access.FStorageIterator;
 import net.daporkchop.fp2.api.storage.internal.access.FStorageReadAccess;
 import net.daporkchop.fp2.core.storage.rocks.RocksStorage;
 
@@ -73,5 +74,10 @@ public interface ArrayOnlyFStorageReadAccess extends FStorageReadAccess {
             }
         }
         return allSuccessful;
+    }
+
+    @Override
+    default FStorageIterator iterator(@NonNull FStorageColumn column, ByteBuffer fromKeyInclusive, ByteBuffer toKeyExclusive) throws FStorageException {
+        return this.iterator(column, RocksStorage.toByteArrayView(fromKeyInclusive), RocksStorage.toByteArrayView(toKeyExclusive));
     }
 }

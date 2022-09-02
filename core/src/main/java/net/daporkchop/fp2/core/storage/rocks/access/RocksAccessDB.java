@@ -127,6 +127,20 @@ public class RocksAccessDB implements FStorageAccess {
         };
     }
 
+    @Override
+    public FStorageIterator iterator(@NonNull FStorageColumn column, ByteBuffer fromKeyInclusive, ByteBuffer toKeyExclusive) throws FStorageException {
+        if (fromKeyInclusive == null && toKeyExclusive == null) { //both lower and upper bounds are null, create a regular iterator
+            return this.iterator(column);
+        }
+
+        return new RocksIteratorBounded(this.readOptions, ((RocksStorageColumn) column).handle(), fromKeyInclusive, toKeyExclusive) {
+            @Override
+            protected RocksIterator createDelegate(@NonNull ReadOptions options, @NonNull ColumnFamilyHandle columnFamily) throws FStorageException {
+                return RocksAccessDB.this.db.newIterator(columnFamily, options);
+            }
+        };
+    }
+
     //
     // FStorageWriteAccess
     //

@@ -154,7 +154,11 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
         return new FStorageExceptionWrappedRocksDBException(e);
     }
 
-    public static byte[] toByteArrayView(@NonNull ByteBuffer buffer) {
+    public static byte[] toByteArrayView(ByteBuffer buffer) {
+        if (buffer == null) {
+            return null;
+        }
+
         if (buffer.hasArray() && buffer.arrayOffset() == 0) { //check if we can expose the buffer's array directly without any allocations
             byte[] array = buffer.array();
             if (buffer.position() == 0 && buffer.limit() == array.length) {

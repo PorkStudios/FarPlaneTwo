@@ -76,6 +76,11 @@ public class RocksAccessReadMasqueradingAsReadWrite implements FStorageAccess {
         return this.delegate.iterator(column, fromKeyInclusive, toKeyExclusive);
     }
 
+    @Override
+    public FStorageIterator iterator(@NonNull FStorageColumn column, ByteBuffer fromKeyInclusive, ByteBuffer toKeyExclusive) throws FStorageException {
+        return this.delegate.iterator(column, fromKeyInclusive, toKeyExclusive);
+    }
+
     //
     // IRocksWriteAccess
     //

@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.storage.rocks.access;
@@ -25,10 +24,14 @@ import lombok.NonNull;
 import net.daporkchop.fp2.api.storage.FStorageException;
 import net.daporkchop.fp2.api.storage.internal.access.FStorageIterator;
 import net.daporkchop.lib.unsafe.PUnsafe;
+import org.rocksdb.AbstractSlice;
 import org.rocksdb.ColumnFamilyHandle;
+import org.rocksdb.DirectSlice;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksIterator;
 import org.rocksdb.Slice;
+
+import java.nio.ByteBuffer;
 
 /**
  * Implementation of {@link FStorageIterator} which simply delegates to a child {@link RocksIterator} instance, but also allows defining the lower and upper iteration bounds.
@@ -41,13 +44,38 @@ public abstract class RocksIteratorBounded implements FStorageIterator {
     protected final RocksIterator delegate;
 
     protected final ReadOptions readOptions;
-    protected final Slice fromKeyInclusiveSlice;
-    protected final Slice toKeyExclusiveSlice;
+    protected final AbstractSlice<?> fromKeyInclusiveSlice;
+    protected final AbstractSlice<?> toKeyExclusiveSlice;
 
     public RocksIteratorBounded(@NonNull ReadOptions defaultReadOptions, @NonNull ColumnFamilyHandle columnFamily, byte[] fromKeyInclusive, byte[] toKeyExclusive) throws FStorageException {
         //wrap lower and upper bounds into Slices
         this.fromKeyInclusiveSlice = fromKeyInclusive != null ? new Slice(fromKeyInclusive) : null;
         this.toKeyExclusiveSlice = toKeyExclusive != null ? new Slice(toKeyExclusive) : null;
+        this.readOptions = new ReadOptions(defaultReadOptions);
+
+        //set lower and upper bounds
+        if (this.fromKeyInclusiveSlice != null) {
+            this.readOptions.setIterateLowerBound(this.fromKeyInclusiveSlice);
+        }
+        if (this.toKeyExclusiveSlice != null) {
+            this.readOptions.setIterateUpperBound(this.toKeyExclusiveSlice);
+        }
+
+        try {
+            //actually create the delegate RocksIterator
+            this.delegate = this.createDelegate(this.readOptions, columnFamily);
+        } catch (Exception e) { //something went wrong, close resources
+            this.close();
+
+            PUnsafe.throwException(e); //rethrow exception
+            throw new AssertionError(); //impossible
+        }
+    }
+
+    public RocksIteratorBounded(@NonNull ReadOptions defaultReadOptions, @NonNull ColumnFamilyHandle columnFamily, ByteBuffer fromKeyInclusive, ByteBuffer toKeyExclusive) throws FStorageException {
+        //wrap lower and upper bounds into Slices
+        this.fromKeyInclusiveSlice = fromKeyInclusive != null ? new DirectSlice(fromKeyInclusive) : null;
+        this.toKeyExclusiveSlice = toKeyExclusive != null ? new DirectSlice(toKeyExclusive) : null;
         this.readOptions = new ReadOptions(defaultReadOptions);
 
         //set lower and upper bounds
@@ -92,7 +120,17 @@ public abstract class RocksIteratorBounded implements FStorageIterator {
     }
 
     @Override
+    public void seekCeil(@NonNull ByteBuffer key) throws FStorageException {
+        this.delegate.seek(key);
+    }
+
+    @Override
     public void seekFloor(@NonNull byte[] key) throws FStorageException {
+        this.delegate.seekForPrev(key);
+    }
+
+    @Override
+    public void seekFloor(@NonNull ByteBuffer key) throws FStorageException {
         this.delegate.seekForPrev(key);
     }
 
@@ -112,8 +150,18 @@ public abstract class RocksIteratorBounded implements FStorageIterator {
     }
 
     @Override
+    public int key(@NonNull ByteBuffer key) throws FStorageException {
+        return this.delegate.key(key);
+    }
+
+    @Override
     public byte[] value() throws FStorageException {
         return this.delegate.value();
+    }
+
+    @Override
+    public int value(@NonNull ByteBuffer value) throws FStorageException {
+        return this.delegate.value(value);
     }
 
     @Override

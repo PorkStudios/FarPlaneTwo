@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.storage.rocks.access;
@@ -26,6 +25,8 @@ import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.api.storage.FStorageException;
 import net.daporkchop.fp2.api.storage.internal.access.FStorageIterator;
 import org.rocksdb.RocksIterator;
+
+import java.nio.ByteBuffer;
 
 /**
  * Implementation of {@link FStorageIterator} which simply delegates to a child {@link RocksIterator} instance.
@@ -60,7 +61,17 @@ public class RocksIteratorDefault implements FStorageIterator {
     }
 
     @Override
+    public void seekCeil(@NonNull ByteBuffer key) throws FStorageException {
+        this.delegate.seek(key);
+    }
+
+    @Override
     public void seekFloor(@NonNull byte[] key) throws FStorageException {
+        this.delegate.seekForPrev(key);
+    }
+
+    @Override
+    public void seekFloor(@NonNull ByteBuffer key) throws FStorageException {
         this.delegate.seekForPrev(key);
     }
 
@@ -80,8 +91,18 @@ public class RocksIteratorDefault implements FStorageIterator {
     }
 
     @Override
+    public int key(@NonNull ByteBuffer key) throws FStorageException {
+        return this.delegate.key(key);
+    }
+
+    @Override
     public byte[] value() throws FStorageException {
         return this.delegate.value();
+    }
+
+    @Override
+    public int value(@NonNull ByteBuffer value) throws FStorageException {
+        return this.delegate.value(value);
     }
 
     @Override

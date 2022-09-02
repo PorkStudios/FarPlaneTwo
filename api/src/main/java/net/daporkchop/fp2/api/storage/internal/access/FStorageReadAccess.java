@@ -93,9 +93,7 @@ public interface FStorageReadAccess {
      * @return the {@link FStorageIterator iterator}
      * @throws FStorageException if the operation fails
      */
-    default FStorageIterator iterator(@NonNull FStorageColumn column) throws FStorageException {
-        return this.iterator(column, null, null);
-    }
+    FStorageIterator iterator(@NonNull FStorageColumn column) throws FStorageException;
 
     /**
      * Gets an {@link FStorageIterator iterator} for iterating over a given range of entries in the given storage column.
@@ -109,4 +107,17 @@ public interface FStorageReadAccess {
      * @throws FStorageException if the operation fails
      */
     FStorageIterator iterator(@NonNull FStorageColumn column, byte[] fromKeyInclusive, byte[] toKeyExclusive) throws FStorageException;
+
+    /**
+     * Gets an {@link FStorageIterator iterator} for iterating over a given range of entries in the given storage column.
+     * <p>
+     * This, and all the methods defined in {@link FStorageIterator}, are read operations.
+     *
+     * @param column           the storage column
+     * @param fromKeyInclusive the lower bound of the iteration range (inclusive), or {@code null} if no explicit lower bound is requested
+     * @param toKeyExclusive   the upper bound of the iteration range (exclusive), or {@code null} if no explicit upper bound is requested
+     * @return the {@link FStorageIterator iterator}
+     * @throws FStorageException if the operation fails
+     */
+    FStorageIterator iterator(@NonNull FStorageColumn column, ByteBuffer fromKeyInclusive, ByteBuffer toKeyExclusive) throws FStorageException;
 }
