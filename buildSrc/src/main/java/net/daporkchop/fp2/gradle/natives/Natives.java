@@ -88,16 +88,16 @@ public final class Natives {
             Map<SourceSet, Provider<Directory>> linkOutputDirsBySourceSet = new HashMap<>();
 
             extension.getModules().forEach(module -> {
-                if (!CAN_COMPILE) {
-                    System.err.printf("one or more required tools is not available, not compiling native module '%s' for project '%s'\n", module.getName(), this.project.getPath());
-                    return;
-                }
-
                 Provider<Directory> linkOutputDir = linkOutputDirsBySourceSet.computeIfAbsent(module.getSourceSet().get(), sourceSet -> {
                     Provider<Directory> dir = this.project.getLayout().getBuildDirectory().dir(BUILD_DIR_NAME + "/link/" + sourceSet.getName());
                     sourceSet.getOutput().dir(Collections.singletonMap("builtBy", ROOT_TASK_NAME), dir);
                     return dir;
                 });
+
+                if (!CAN_COMPILE) {
+                    System.err.printf("one or more required tools is not available, not compiling native module '%s' for project '%s'\n", module.getName(), this.project.getPath());
+                    return;
+                }
 
                 extension.getOperatingSystems().forEach(operatingSystem -> {
                     operatingSystem.getSupportedArchitectures().get().forEach(architecture -> {
