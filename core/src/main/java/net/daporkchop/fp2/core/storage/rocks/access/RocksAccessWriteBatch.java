@@ -36,7 +36,8 @@ import static net.daporkchop.fp2.core.storage.rocks.RocksStorage.*;
  *
  * @author DaPorkchop_
  */
-public class RocksAccessWriteBatch extends WriteBatch implements FStorageWriteAccess {
+//TODO: rocksdbjni doesn't provide any versions of deleteRange which take ByteBuffer for the key parameters
+public class RocksAccessWriteBatch extends WriteBatch implements FStorageWriteAccess, ArrayOnlyFStorageWriteAccess {
     @Override
     public void put(@NonNull FStorageColumn column, @NonNull byte[] key, @NonNull byte[] value) throws FStorageException {
         try {
@@ -80,19 +81,5 @@ public class RocksAccessWriteBatch extends WriteBatch implements FStorageWriteAc
         } catch (RocksDBException e) {
             throw wrapException(e);
         }
-    }
-
-    @Override
-    public void deleteRange(@NonNull FStorageColumn column, @NonNull ByteBuffer fromKeyInclusive, @NonNull ByteBuffer toKeyExclusive) throws FStorageException {
-        //rocksdbjni doesn't provide any versions of deleteRange which take ByteBuffer for the key parameters, so we'll copy them both to ordinary byte[]s and then
-        //  continue as usual
-
-        byte[] fromKeyInclusiveArray = new byte[fromKeyInclusive.remaining()];
-        fromKeyInclusive.get(fromKeyInclusiveArray).position(fromKeyInclusive.position() - fromKeyInclusiveArray.length);
-
-        byte[] toKeyExclusiveArray = new byte[toKeyExclusive.remaining()];
-        toKeyExclusive.get(toKeyExclusiveArray).position(toKeyExclusive.position() - toKeyExclusiveArray.length);
-
-        this.deleteRange(column, fromKeyInclusiveArray, toKeyExclusiveArray);
     }
 }

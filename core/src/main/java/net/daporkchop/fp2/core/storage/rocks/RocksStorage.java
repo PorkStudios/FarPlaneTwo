@@ -40,6 +40,7 @@ import net.daporkchop.fp2.core.storage.rocks.access.RocksAccessDB;
 import net.daporkchop.fp2.core.storage.rocks.access.RocksAccessReadMasqueradingAsReadWrite;
 import net.daporkchop.fp2.core.storage.rocks.access.RocksAccessTransaction;
 import net.daporkchop.fp2.core.storage.rocks.access.RocksAccessWriteBatch;
+import net.daporkchop.fp2.core.storage.rocks.access.RocksAccessWriteBatchWithIndexMasqueradingAsTransaction;
 import net.daporkchop.fp2.core.storage.rocks.manifest.RocksStorageManifest;
 import net.daporkchop.lib.common.misc.file.PFiles;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -79,6 +80,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -117,16 +121,24 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
     };
 
     public static FStorage open(@NonNull Path root) throws FStorageException {
-        return Boolean.getBoolean("fp2.core.storage.rocksdb.optimistic")
-                ? new OptimisticRocksStorage(root)
-                : new TransactionRocksStorage(root);
+        String mode = System.getProperty("fp2.core.storage.rocksdb.mode", "OptimisticTransaction");
+        switch (mode) {
+            case "Locking":
+                return new LockingRocksStorage(root);
+            case "OptimisticTransaction":
+                return new OptimisticTransactionRocksStorage(root);
+            case "PessimisticTransaction":
+                return new PessimisticTransactionRocksStorage(root);
+            default:
+                throw new IllegalArgumentException("unknown or unsupported storage mode: '" + mode + '\'');
+        }
     }
 
     /**
-     * Checks whether a {@link RocksDBException} is likely the result of a transaction commit failure.
+     * Internal API: Checks whether a {@link RocksDBException} is likely the result of a transaction commit failure.
      *
      * @param e the {@link RocksDBException}
-     * @return whether or not the exception is likely the result of a transaction commit failure
+     * @return whether the exception is likely the result of a transaction commit failure
      */
     public static boolean isTransactionCommitFailure(RocksDBException e) {
         switch (e.getStatus().getCode()) {
@@ -245,7 +257,7 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
             }
 
             //get the default column family handle
-            this.defaultColumn = new RocksStorageColumn(this.db.getDefaultColumnFamily());
+            this.defaultColumn = new RocksStorageColumn(this.db().getDefaultColumnFamily());
         } catch (RocksDBException e) {
             throw new FStorageException("failed to open db", e);
         }
@@ -277,30 +289,30 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
      * @see FStorageInternal#readRun(ThrowingConsumer)
      */
     public void readRun(@NonNull ThrowingConsumer<? super FStorageReadAccess, ? extends FStorageException> action) throws FStorageException {
-        action.acceptThrowing(new RocksAccessDB(this.db, READ_OPTIONS));
+        action.acceptThrowing(new RocksAccessDB(this.db(), READ_OPTIONS));
     }
 
     /**
      * @see FStorageInternal#readGet(ThrowingFunction)
      */
     public <R> R readGet(@NonNull ThrowingFunction<? super FStorageReadAccess, ? extends R, ? extends FStorageException> action) throws FStorageException {
-        return action.applyThrowing(new RocksAccessDB(this.db, READ_OPTIONS));
+        return action.applyThrowing(new RocksAccessDB(this.db(), READ_OPTIONS));
     }
 
     /**
      * @see FStorageInternal#readGet(ThrowingFunction, ThrowingConsumer)
      */
     public <R> R readGet(@NonNull ThrowingFunction<? super FStorageReadAccess, ? extends R, ? extends FStorageException> action, @NonNull ThrowingConsumer<R, ? extends FStorageException> cleanup) throws FStorageException {
-        return action.applyThrowing(new RocksAccessDB(this.db, READ_OPTIONS));
+        return action.applyThrowing(new RocksAccessDB(this.db(), READ_OPTIONS));
     }
 
     /**
      * @see FStorageInternal#readAtomicRun(ThrowingConsumer)
      */
     public void readAtomicRun(@NonNull ThrowingConsumer<? super FStorageReadAccess, ? extends FStorageException> action) throws FStorageException {
-        try (Snapshot snapshot = Objects.requireNonNull(this.db.getSnapshot(), "create snapshot failed");
+        try (Snapshot snapshot = Objects.requireNonNull(this.db().getSnapshot(), "create snapshot failed");
              ReadOptions readOptions = new ReadOptions(READ_OPTIONS).setSnapshot(snapshot)) {
-            action.acceptThrowing(new RocksAccessDB(this.db, readOptions));
+            action.acceptThrowing(new RocksAccessDB(this.db(), readOptions));
         }
     }
 
@@ -308,9 +320,9 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
      * @see FStorageInternal#readAtomicGet(ThrowingFunction)
      */
     public <R> R readAtomicGet(@NonNull ThrowingFunction<? super FStorageReadAccess, ? extends R, ? extends FStorageException> action) throws FStorageException {
-        try (Snapshot snapshot = Objects.requireNonNull(this.db.getSnapshot(), "create snapshot failed");
+        try (Snapshot snapshot = Objects.requireNonNull(this.db().getSnapshot(), "create snapshot failed");
              ReadOptions readOptions = new ReadOptions(READ_OPTIONS).setSnapshot(snapshot)) {
-            return action.applyThrowing(new RocksAccessDB(this.db, readOptions));
+            return action.applyThrowing(new RocksAccessDB(this.db(), readOptions));
         }
     }
 
@@ -321,9 +333,9 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
         R result = null;
         boolean resultSet = false; //to account for potential null results
 
-        try (Snapshot snapshot = Objects.requireNonNull(this.db.getSnapshot(), "create snapshot failed");
+        try (Snapshot snapshot = Objects.requireNonNull(this.db().getSnapshot(), "create snapshot failed");
              ReadOptions readOptions = new ReadOptions(READ_OPTIONS).setSnapshot(snapshot)) {
-            result = action.applyThrowing(new RocksAccessDB(this.db, readOptions));
+            result = action.applyThrowing(new RocksAccessDB(this.db(), readOptions));
             resultSet = true;
             return result;
         } catch (Throwable t) {
@@ -358,7 +370,7 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
                 }
 
                 //execute the WriteBatch
-                this.db.write(WRITE_OPTIONS, batch);
+                this.db().write(WRITE_OPTIONS, batch);
                 return;
             } catch (RocksDBException e) {
                 if (!isTransactionCommitFailure(e)) { //"regular" exception, rethrow
@@ -389,7 +401,7 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
                 }
 
                 //execute the WriteBatch
-                this.db.write(WRITE_OPTIONS, batch);
+                this.db().write(WRITE_OPTIONS, batch);
                 return result;
             } catch (RocksDBException e) {
                 if (!isTransactionCommitFailure(e)) { //"regular" exception, rethrow
@@ -423,7 +435,7 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
                 }
 
                 //execute the WriteBatch
-                this.db.write(WRITE_OPTIONS, batch);
+                this.db().write(WRITE_OPTIONS, batch);
                 return result;
             } catch (RocksDBException e) {
                 if (!isTransactionCommitFailure(e)) { //"regular" exception, rethrow
@@ -451,8 +463,7 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
                     }
                 }
 
-                PUnsafe.throwException(t); //rethrow original exception
-                throw new AssertionError(); //impossible
+                throw PUnsafe.throwException(t); //rethrow original exception
             }
         } while (true);
     }
@@ -460,124 +471,17 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
     /**
      * @see FStorageInternal#transactAtomicRun(ThrowingConsumer)
      */
-    public void transactAtomicRun(@NonNull ThrowingConsumer<? super FStorageAccess, ? extends FStorageException> action) throws FStorageException {
-        do {
-            try (Transaction txn = this.beginTransaction(WRITE_OPTIONS, true);
-                 RocksAccessTransaction access = new RocksAccessTransaction(txn)) {
-                try {
-                    //execute the callback with the transaction
-                    action.acceptThrowing(access);
-                } catch (FStorageException e) {
-                    if (e instanceof FStorageExceptionWrappedRocksDBException) {
-                        throw ((FStorageExceptionWrappedRocksDBException) e).getCause();
-                    }
-
-                    throw new IllegalArgumentException("don't know what to do with " + e.getClass().getTypeName(), e);
-                }
-
-                //try to commit the transaction
-                txn.commit();
-                return;
-            } catch (RocksDBException e) {
-                if (!isTransactionCommitFailure(e)) { //"regular" exception, rethrow
-                    throw wrapException(e);
-                }
-
-                //the database is transactional and there was a commit failure, try again until it works!
-            }
-        } while (true);
-    }
+    public abstract void transactAtomicRun(@NonNull ThrowingConsumer<? super FStorageAccess, ? extends FStorageException> action) throws FStorageException;
 
     /**
      * @see FStorageInternal#transactAtomicGet(ThrowingFunction)
      */
-    public <R> R transactAtomicGet(@NonNull ThrowingFunction<? super FStorageAccess, ? extends R, ? extends FStorageException> action) throws FStorageException {
-        do {
-            try (Transaction txn = this.beginTransaction(WRITE_OPTIONS, true);
-                 RocksAccessTransaction access = new RocksAccessTransaction(txn)) {
-                R result;
-                try {
-                    //execute the callback with the transaction
-                    result = action.applyThrowing(access);
-                } catch (FStorageException e) {
-                    if (e instanceof FStorageExceptionWrappedRocksDBException) {
-                        throw ((FStorageExceptionWrappedRocksDBException) e).getCause();
-                    }
-
-                    throw new IllegalArgumentException("don't know what to do with " + e.getClass().getTypeName(), e);
-                }
-
-                //try to commit the transaction
-                txn.commit();
-                return result;
-            } catch (RocksDBException e) {
-                if (!isTransactionCommitFailure(e)) { //"regular" exception, rethrow
-                    throw wrapException(e);
-                }
-
-                //the database is transactional and there was a commit failure, try again until it works!
-            }
-        } while (true);
-    }
+    public abstract <R> R transactAtomicGet(@NonNull ThrowingFunction<? super FStorageAccess, ? extends R, ? extends FStorageException> action) throws FStorageException;
 
     /**
      * @see FStorageInternal#transactAtomicGet(ThrowingFunction, ThrowingConsumer)
      */
-    public <R> R transactAtomicGet(@NonNull ThrowingFunction<? super FStorageAccess, ? extends R, ? extends FStorageException> action, @NonNull ThrowingConsumer<R, ? extends FStorageException> cleanup) throws FStorageException {
-        do {
-            R result = null;
-            boolean resultSet = false; //to account for potential null results
-
-            try (Transaction txn = this.beginTransaction(WRITE_OPTIONS, true);
-                 RocksAccessTransaction access = new RocksAccessTransaction(txn)) {
-                try {
-                    //execute the callback with the transaction
-                    result = action.applyThrowing(access);
-                    resultSet = true;
-                } catch (FStorageException e) {
-                    if (e instanceof FStorageExceptionWrappedRocksDBException) {
-                        throw ((FStorageExceptionWrappedRocksDBException) e).getCause();
-                    }
-
-                    throw new IllegalArgumentException("don't know what to do with " + e.getClass().getTypeName(), e);
-                }
-
-                //try to commit the transaction
-                txn.commit();
-                return result;
-            } catch (RocksDBException e) {
-                if (!isTransactionCommitFailure(e)) { //"regular" exception, rethrow
-                    if (resultSet) { //the result was set before the exception was thrown, try to clean it up
-                        try {
-                            cleanup.acceptThrowing(result);
-                        } catch (Throwable t1) { //save exception for later
-                            e.addSuppressed(t1);
-                        }
-                    }
-
-                    throw wrapException(e);
-                }
-
-                //the database is transactional and there was a commit failure, try again until it works!
-                if (resultSet) { //the result was set before the exception was thrown, try to clean it up
-                    cleanup.acceptThrowing(result);
-                }
-            } catch (Throwable t) {
-                if (resultSet) { //the result was set before the exception was thrown, try to clean it up
-                    try {
-                        cleanup.acceptThrowing(result);
-                    } catch (Throwable t1) { //save exception for later
-                        t.addSuppressed(t1);
-                    }
-                }
-
-                PUnsafe.throwException(t); //rethrow original exception
-                throw new AssertionError(); //impossible
-            }
-        } while (true);
-    }
-
-    protected abstract Transaction beginTransaction(@NonNull WriteOptions writeOptions, boolean setSnapshot);
+    public abstract <R> R transactAtomicGet(@NonNull ThrowingFunction<? super FStorageAccess, ? extends R, ? extends FStorageException> action, @NonNull ThrowingConsumer<R, ? extends FStorageException> cleanup) throws FStorageException;
 
     protected DBOptions createDBOptions() {
         return new DBOptions()
@@ -634,7 +538,7 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
                 this.rootCategory.close();
 
                 //flush all column families
-                this.db.flush(FLUSH_OPTIONS, new ArrayList<>(this.openColumnFamilyHandles.values()));
+                this.db().flush(FLUSH_OPTIONS, new ArrayList<>(this.openColumnFamilyHandles.values()));
 
                 //delete any column families whose deletion is pending
                 this.deleteQueuedColumnFamilies();
@@ -642,7 +546,7 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
                 //close all column families, then the db itself
                 this.openColumnFamilyHandles.values().forEach(ColumnFamilyHandle::close);
             } finally {
-                this.db.closeE();
+                this.db().closeE();
             }
         } catch (RocksDBException e) {
             throw new FStorageException("failed to close db", e);
@@ -708,19 +612,19 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
                     List<ColumnFamilyHandle> columnFamilyHandles;
                     try {
                         if (!(this.db instanceof TransactionDB)) {
-                            columnFamilyHandles = this.db.createColumnFamilies(newColumnFamilyDescriptors);
+                            columnFamilyHandles = this.db().createColumnFamilies(newColumnFamilyDescriptors);
                         } else { //workaround for https://github.com/facebook/rocksdb/issues/10322: create column families individually
                             columnFamilyHandles = new ArrayList<>(newColumnFamilyDescriptors.size());
                             try {
                                 for (ColumnFamilyDescriptor columnFamilyDescriptor : newColumnFamilyDescriptors) {
-                                    columnFamilyHandles.add(this.db.createColumnFamily(columnFamilyDescriptor));
+                                    columnFamilyHandles.add(this.db().createColumnFamily(columnFamilyDescriptor));
                                 }
                             } catch (
                                     RocksDBException e) { //something went wrong, try to drop all the column families which have been created so far in order to pretend like the operation is atomic
                                 for (ColumnFamilyHandle columnFamilyHandle : columnFamilyHandles) {
                                     //try-with-resources to ensure the column family handle is closed in any case
                                     try (ColumnFamilyHandle cfHandle = columnFamilyHandle) {
-                                        this.db.dropColumnFamily(cfHandle);
+                                        this.db().dropColumnFamily(cfHandle);
                                     } catch (Exception e1) {
                                         e.addSuppressed(e1);
                                     }
@@ -828,12 +732,12 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
 
                 try {
                     if (!(this.db instanceof TransactionDB)) {
-                        this.db.dropColumnFamilies(handles);
+                        this.db().dropColumnFamilies(handles);
                     } else { //workaround for https://github.com/facebook/rocksdb/issues/10322: drop column families one-at-a-time
                         RocksDBException e = null;
                         for (ColumnFamilyHandle columnFamilyHandle : handles) {
                             try {
-                                this.db.dropColumnFamily(columnFamilyHandle);
+                                this.db().dropColumnFamily(columnFamilyHandle);
                             } catch (RocksDBException e1) { //something went wrong, save the exception to be rethrown later
                                 if (e == null) {
                                     e = e1;
@@ -927,17 +831,331 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
     }
 
     /**
+     * Base implementation of {@link RocksStorage} backed by a transactional {@link RocksDB}.
+     *
+     * @author DaPorkchop_
+     */
+    protected static class LockingRocksStorage extends RocksStorage<RocksDB> {
+        protected final Lock readLock;
+        protected final Lock writeLock;
+
+        protected LockingRocksStorage(Path root) throws FStorageException {
+            super(root);
+
+            ReadWriteLock lock = new ReentrantReadWriteLock();
+            this.readLock = lock.readLock();
+            this.writeLock = lock.writeLock();
+        }
+
+        @Override
+        protected RocksDB openDB(DBOptions dbOptions, String path, List<ColumnFamilyDescriptor> columnFamilyDescriptors, List<ColumnFamilyHandle> columnFamilyHandles) throws RocksDBException {
+            return RocksDB.open(dbOptions, path, columnFamilyDescriptors, columnFamilyHandles);
+        }
+
+        @Override
+        public void readRun(@NonNull ThrowingConsumer<? super FStorageReadAccess, ? extends FStorageException> action) throws FStorageException {
+            super.readRun(action); //delegate to super without any additional locking: readRun doesn't guarantee any atomicity
+        }
+
+        @Override
+        public <R> R readGet(@NonNull ThrowingFunction<? super FStorageReadAccess, ? extends R, ? extends FStorageException> action) throws FStorageException {
+            return super.readGet(action); //delegate to super without any additional locking: readGet doesn't guarantee any atomicity
+        }
+
+        @Override
+        public <R> R readGet(@NonNull ThrowingFunction<? super FStorageReadAccess, ? extends R, ? extends FStorageException> action, @NonNull ThrowingConsumer<R, ? extends FStorageException> cleanup) throws FStorageException {
+            return super.readGet(action, cleanup); //delegate to super without any additional locking: readGet doesn't guarantee any atomicity
+        }
+
+        @Override
+        public void readAtomicRun(@NonNull ThrowingConsumer<? super FStorageReadAccess, ? extends FStorageException> action) throws FStorageException {
+            super.readAtomicRun(action); //delegate to super without any additional locking: super does all reads from a snapshot, thus fulfilling readAtomicRun's atomicity requirements
+        }
+
+        @Override
+        public <R> R readAtomicGet(@NonNull ThrowingFunction<? super FStorageReadAccess, ? extends R, ? extends FStorageException> action) throws FStorageException {
+            return super.readAtomicGet(action); //delegate to super without any additional locking: super does all reads from a snapshot, thus fulfilling readAtomicRun's atomicity requirements
+        }
+
+        @Override
+        public <R> R readAtomicGet(@NonNull ThrowingFunction<? super FStorageReadAccess, ? extends R, ? extends FStorageException> action, @NonNull ThrowingConsumer<R, ? extends FStorageException> cleanup) throws FStorageException {
+            return super.readAtomicGet(action, cleanup); //delegate to super without any additional locking: super does all reads from a snapshot, thus fulfilling readAtomicRun's atomicity requirements
+        }
+
+        @Override
+        public void writeAtomicRun(@NonNull ThrowingConsumer<? super FStorageWriteAccess, ? extends FStorageException> action) throws FStorageException {
+            //writeAtomicRun only guarantees that the writes will be applied atomically, which the super implementation achieves by using a WriteBatch. we just need to
+            //  delegate to super while holding a read lock to avoid clashing with any transactAtomic* methods
+            this.readLock.lock();
+            try {
+                super.writeAtomicRun(action);
+            } finally {
+                this.readLock.unlock();
+            }
+        }
+
+        @Override
+        public <R> R writeAtomicGet(@NonNull ThrowingFunction<? super FStorageWriteAccess, ? extends R, ? extends FStorageException> action) throws FStorageException {
+            //writeAtomicGet only guarantees that the writes will be applied atomically, which the super implementation achieves by using a WriteBatch. we just need to
+            //  delegate to super while holding a read lock to avoid clashing with any transactAtomic* methods
+            this.readLock.lock();
+            try {
+                return super.writeAtomicGet(action);
+            } finally {
+                this.readLock.unlock();
+            }
+        }
+
+        @Override
+        public <R> R writeAtomicGet(@NonNull ThrowingFunction<? super FStorageWriteAccess, ? extends R, ? extends FStorageException> action, @NonNull ThrowingConsumer<R, ? extends FStorageException> cleanup) throws FStorageException {
+            //writeAtomicGet only guarantees that the writes will be applied atomically, which the super implementation achieves by using a WriteBatch. we just need to
+            //  delegate to super while holding a read lock to avoid clashing with any transactAtomic* methods
+            this.readLock.lock();
+            try {
+                return super.writeAtomicGet(action, cleanup);
+            } finally {
+                this.readLock.unlock();
+            }
+        }
+
+        @Override
+        public void transactAtomicRun(@NonNull ThrowingConsumer<? super FStorageAccess, ? extends FStorageException> action) throws FStorageException {
+            this.writeLock.lock();
+            try (RocksAccessWriteBatchWithIndexMasqueradingAsTransaction batch = new RocksAccessWriteBatchWithIndexMasqueradingAsTransaction(this.db(), READ_OPTIONS)) {
+                try {
+                    //execute the callback with the created WriteBatch
+                    action.acceptThrowing(batch);
+                } catch (FStorageException e) {
+                    if (e instanceof FStorageExceptionWrappedRocksDBException) {
+                        throw ((FStorageExceptionWrappedRocksDBException) e).getCause();
+                    }
+
+                    throw new IllegalArgumentException("don't know what to do with " + e.getClass().getTypeName(), e);
+                }
+
+                //execute the WriteBatch
+                this.db().write(WRITE_OPTIONS, batch);
+            } catch (RocksDBException e) { //the exception cannot possibly be a transaction commit failure, rethrow the exception
+                throw wrapException(e);
+            } finally {
+                this.writeLock.unlock();
+            }
+        }
+
+        @Override
+        public <R> R transactAtomicGet(@NonNull ThrowingFunction<? super FStorageAccess, ? extends R, ? extends FStorageException> action) throws FStorageException {
+            do {
+                this.writeLock.lock();
+                try (RocksAccessWriteBatchWithIndexMasqueradingAsTransaction batch = new RocksAccessWriteBatchWithIndexMasqueradingAsTransaction(this.db(), READ_OPTIONS)) {
+                    R result;
+                    try {
+                        //execute the callback with the created WriteBatch
+                        result = action.applyThrowing(batch);
+                    } catch (FStorageException e) {
+                        if (e instanceof FStorageExceptionWrappedRocksDBException) {
+                            throw ((FStorageExceptionWrappedRocksDBException) e).getCause();
+                        }
+
+                        throw new IllegalArgumentException("don't know what to do with " + e.getClass().getTypeName(), e);
+                    }
+
+                    //execute the WriteBatch
+                    this.db().write(WRITE_OPTIONS, batch);
+                    return result;
+                } catch (RocksDBException e) { //the exception cannot possibly be a transaction commit failure, rethrow the exception
+                    throw wrapException(e);
+                } finally {
+                    this.writeLock.unlock();
+                }
+            } while (true);
+        }
+
+        @Override
+        public <R> R transactAtomicGet(@NonNull ThrowingFunction<? super FStorageAccess, ? extends R, ? extends FStorageException> action, @NonNull ThrowingConsumer<R, ? extends FStorageException> cleanup) throws FStorageException {
+            R result = null;
+            boolean resultSet = false; //to account for potential null results
+
+            this.writeLock.lock();
+            try (RocksAccessWriteBatchWithIndexMasqueradingAsTransaction batch = new RocksAccessWriteBatchWithIndexMasqueradingAsTransaction(this.db(), READ_OPTIONS)) {
+                try {
+                    //execute the callback with the created WriteBatch
+                    result = action.applyThrowing(batch);
+                    resultSet = true;
+                } catch (FStorageException e) {
+                    if (e instanceof FStorageExceptionWrappedRocksDBException) {
+                        throw ((FStorageExceptionWrappedRocksDBException) e).getCause();
+                    }
+
+                    throw new IllegalArgumentException("don't know what to do with " + e.getClass().getTypeName(), e);
+                }
+
+                //execute the WriteBatch
+                this.db().write(WRITE_OPTIONS, batch);
+                return result;
+            } catch (RocksDBException e) { //the exception cannot possibly be a transaction commit failure, rethrow the exception
+                if (resultSet) { //the result was set before the exception was thrown, try to clean it up
+                    try {
+                        cleanup.acceptThrowing(result);
+                    } catch (Throwable t1) { //save exception for later
+                        e.addSuppressed(t1);
+                    }
+                }
+
+                throw wrapException(e);
+            } catch (Throwable t) {
+                if (resultSet) { //the result was set before the exception was thrown, try to clean it up
+                    try {
+                        cleanup.acceptThrowing(result);
+                    } catch (Throwable t1) { //save exception for later
+                        t.addSuppressed(t1);
+                    }
+                }
+
+                throw PUnsafe.throwException(t); //rethrow original exception
+            } finally {
+                this.writeLock.unlock();
+            }
+        }
+    }
+
+    /**
+     * Base implementation of {@link RocksStorage} backed by a transactional {@link RocksDB}.
+     *
+     * @author DaPorkchop_
+     */
+    protected static abstract class AbstractTransactionRocksStorage<DB extends RocksDB> extends RocksStorage<DB> {
+        protected AbstractTransactionRocksStorage(Path root) throws FStorageException {
+            super(root);
+        }
+
+        protected abstract Transaction beginTransaction(@NonNull WriteOptions writeOptions, boolean setSnapshot);
+
+        @Override
+        public void transactAtomicRun(@NonNull ThrowingConsumer<? super FStorageAccess, ? extends FStorageException> action) throws FStorageException {
+            do {
+                try (Transaction txn = this.beginTransaction(WRITE_OPTIONS, true);
+                     RocksAccessTransaction access = new RocksAccessTransaction(txn)) {
+                    try {
+                        //execute the callback with the transaction
+                        action.acceptThrowing(access);
+                    } catch (FStorageException e) {
+                        if (e instanceof FStorageExceptionWrappedRocksDBException) {
+                            throw ((FStorageExceptionWrappedRocksDBException) e).getCause();
+                        }
+
+                        throw new IllegalArgumentException("don't know what to do with " + e.getClass().getTypeName(), e);
+                    }
+
+                    //try to commit the transaction
+                    txn.commit();
+                    return;
+                } catch (RocksDBException e) {
+                    if (!isTransactionCommitFailure(e)) { //"regular" exception, rethrow
+                        throw wrapException(e);
+                    }
+
+                    //the database is transactional and there was a commit failure, try again until it works!
+                }
+            } while (true);
+        }
+
+        @Override
+        public <R> R transactAtomicGet(@NonNull ThrowingFunction<? super FStorageAccess, ? extends R, ? extends FStorageException> action) throws FStorageException {
+            do {
+                try (Transaction txn = this.beginTransaction(WRITE_OPTIONS, true);
+                     RocksAccessTransaction access = new RocksAccessTransaction(txn)) {
+                    R result;
+                    try {
+                        //execute the callback with the transaction
+                        result = action.applyThrowing(access);
+                    } catch (FStorageException e) {
+                        if (e instanceof FStorageExceptionWrappedRocksDBException) {
+                            throw ((FStorageExceptionWrappedRocksDBException) e).getCause();
+                        }
+
+                        throw new IllegalArgumentException("don't know what to do with " + e.getClass().getTypeName(), e);
+                    }
+
+                    //try to commit the transaction
+                    txn.commit();
+                    return result;
+                } catch (RocksDBException e) {
+                    if (!isTransactionCommitFailure(e)) { //"regular" exception, rethrow
+                        throw wrapException(e);
+                    }
+
+                    //the database is transactional and there was a commit failure, try again until it works!
+                }
+            } while (true);
+        }
+
+        @Override
+        public <R> R transactAtomicGet(@NonNull ThrowingFunction<? super FStorageAccess, ? extends R, ? extends FStorageException> action, @NonNull ThrowingConsumer<R, ? extends FStorageException> cleanup) throws FStorageException {
+            do {
+                R result = null;
+                boolean resultSet = false; //to account for potential null results
+
+                try (Transaction txn = this.beginTransaction(WRITE_OPTIONS, true);
+                     RocksAccessTransaction access = new RocksAccessTransaction(txn)) {
+                    try {
+                        //execute the callback with the transaction
+                        result = action.applyThrowing(access);
+                        resultSet = true;
+                    } catch (FStorageException e) {
+                        if (e instanceof FStorageExceptionWrappedRocksDBException) {
+                            throw ((FStorageExceptionWrappedRocksDBException) e).getCause();
+                        }
+
+                        throw new IllegalArgumentException("don't know what to do with " + e.getClass().getTypeName(), e);
+                    }
+
+                    //try to commit the transaction
+                    txn.commit();
+                    return result;
+                } catch (RocksDBException e) {
+                    if (!isTransactionCommitFailure(e)) { //"regular" exception, rethrow
+                        if (resultSet) { //the result was set before the exception was thrown, try to clean it up
+                            try {
+                                cleanup.acceptThrowing(result);
+                            } catch (Throwable t1) { //save exception for later
+                                e.addSuppressed(t1);
+                            }
+                        }
+
+                        throw wrapException(e);
+                    }
+
+                    //the database is transactional and there was a commit failure, try again until it works!
+                    if (resultSet) { //the result was set before the exception was thrown, try to clean it up
+                        cleanup.acceptThrowing(result);
+                    }
+                } catch (Throwable t) {
+                    if (resultSet) { //the result was set before the exception was thrown, try to clean it up
+                        try {
+                            cleanup.acceptThrowing(result);
+                        } catch (Throwable t1) { //save exception for later
+                            t.addSuppressed(t1);
+                        }
+                    }
+
+                    throw PUnsafe.throwException(t); //rethrow original exception
+                }
+            } while (true);
+        }
+    }
+
+    /**
      * Implementation of {@link RocksStorage} backed by an ordinary {@link TransactionDB}.
      *
      * @author DaPorkchop_
      */
-    protected static class TransactionRocksStorage extends RocksStorage<TransactionDB> {
+    protected static class PessimisticTransactionRocksStorage extends AbstractTransactionRocksStorage<TransactionDB> {
         protected static final TransactionOptions TRANSACTION_OPTIONS_DEFAULT = new TransactionOptions();
         protected static final TransactionOptions TRANSACTION_OPTIONS_SET_SNAPSHOT = new TransactionOptions().setSetSnapshot(true);
 
         protected TransactionDBOptions transactionDBOptions;
 
-        protected TransactionRocksStorage(Path root) throws FStorageException {
+        protected PessimisticTransactionRocksStorage(Path root) throws FStorageException {
             super(root);
         }
 
@@ -970,11 +1188,11 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
      *
      * @author DaPorkchop_
      */
-    protected static class OptimisticRocksStorage extends RocksStorage<OptimisticTransactionDB> {
+    protected static class OptimisticTransactionRocksStorage extends AbstractTransactionRocksStorage<OptimisticTransactionDB> {
         protected static final OptimisticTransactionOptions TRANSACTION_OPTIONS_DEFAULT = new OptimisticTransactionOptions();
         protected static final OptimisticTransactionOptions TRANSACTION_OPTIONS_SET_SNAPSHOT = new OptimisticTransactionOptions().setSetSnapshot(true);
 
-        protected OptimisticRocksStorage(Path root) throws FStorageException {
+        protected OptimisticTransactionRocksStorage(Path root) throws FStorageException {
             super(root);
         }
 

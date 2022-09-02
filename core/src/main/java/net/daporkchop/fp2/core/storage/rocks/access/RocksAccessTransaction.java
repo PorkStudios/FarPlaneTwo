@@ -25,7 +25,6 @@ import net.daporkchop.fp2.api.storage.FStorageException;
 import net.daporkchop.fp2.api.storage.internal.FStorageColumn;
 import net.daporkchop.fp2.api.storage.internal.access.FStorageAccess;
 import net.daporkchop.fp2.api.storage.internal.access.FStorageIterator;
-import net.daporkchop.fp2.core.storage.rocks.RocksStorage;
 import net.daporkchop.fp2.core.storage.rocks.RocksStorageColumn;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.ReadOptions;
@@ -34,10 +33,8 @@ import org.rocksdb.RocksIterator;
 import org.rocksdb.Snapshot;
 import org.rocksdb.Transaction;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.core.storage.rocks.RocksStorage.*;
@@ -49,7 +46,7 @@ import static net.daporkchop.fp2.core.storage.rocks.RocksStorage.*;
  */
 //TODO: this will be able to be optimized much better once https://github.com/facebook/rocksdb/pull/10163 is merged
 @Getter
-public class RocksAccessTransaction implements FStorageAccess, AutoCloseable {
+public class RocksAccessTransaction implements FStorageAccess, ArrayOnlyFStorageAccess, AutoCloseable {
     protected final Transaction transaction;
 
     protected final ReadOptions readOptions;
@@ -91,22 +88,6 @@ public class RocksAccessTransaction implements FStorageAccess, AutoCloseable {
     }
 
     @Override
-    public int get(@NonNull FStorageColumn column, @NonNull ByteBuffer key, @NonNull ByteBuffer value) throws FStorageException {
-        try {
-            //workaround for https://github.com/facebook/rocksdb/issues/10322: we have to copy key into a heap buffer, then get it and copy the result back
-            byte[] valueArray = this.transaction.getForUpdate(this.readOptions, ((RocksStorageColumn) column).handle(), RocksStorage.toByteArrayView(key), false);
-            if (valueArray != null) { //found
-                value.put(valueArray, 0, min(value.remaining(), valueArray.length)).flip();
-                return valueArray.length;
-            } else { //not found
-                return -1;
-            }
-        } catch (RocksDBException e) {
-            throw wrapException(e);
-        }
-    }
-
-    @Override
     public List<byte[]> multiGet(@NonNull List<FStorageColumn> columns, @NonNull List<byte[]> keys) throws FStorageException {
         try {
             List<ColumnFamilyHandle> handles = RocksStorageColumn.toColumnFamilyHandles(columns);
@@ -123,7 +104,8 @@ public class RocksAccessTransaction implements FStorageAccess, AutoCloseable {
                 for (int i = 0; i < keysArray.length; ) {
                     int batchSize = min(keysArray.length - i, MAX_BATCH_SIZE);
 
-                    byte[][] tmp = this.transaction.multiGetForUpdate(this.readOptions, handles.subList(i, i + batchSize), Arrays.copyOfRange(keysArray, i, i + batchSize));
+                    byte[][] tmp = this.transaction.multiGetForUpdate(this.readOptions, handles.subList(i, i + batchSize), Arrays.copyOfRange(keysArray, i, i
+                                                                                                                                                            + batchSize));
                     System.arraycopy(tmp, 0, result, i, batchSize);
 
                     i += batchSize;
@@ -134,30 +116,6 @@ public class RocksAccessTransaction implements FStorageAccess, AutoCloseable {
         } catch (RocksDBException e) {
             throw wrapException(e);
         }
-    }
-
-    @Override
-    public boolean multiGet(@NonNull List<FStorageColumn> columns, @NonNull List<ByteBuffer> keys, @NonNull List<ByteBuffer> values, @NonNull int[] sizes) throws FStorageException {
-        List<byte[]> valueArrays = this.multiGet(columns, keys.stream().map(RocksStorage::toByteArrayView).collect(Collectors.toList()));
-
-        boolean allSuccessful = true;
-        for (int i = 0; i < valueArrays.size(); i++) {
-            byte[] valueArray = valueArrays.set(i, null); //set to null to allow fast GC
-            ByteBuffer value = values.get(i);
-
-            if (valueArray != null) { //found
-                value.clear();
-                value.put(valueArray, 0, min(value.remaining(), valueArray.length)).flip();
-                sizes[i] = valueArray.length;
-
-                if (valueArray.length > value.remaining()) { //the requiredSize is bigger than the buffer
-                    allSuccessful = false;
-                }
-            } else { //not found
-                sizes[i] = -1;
-            }
-        }
-        return allSuccessful;
     }
 
     @Override
@@ -206,22 +164,12 @@ public class RocksAccessTransaction implements FStorageAccess, AutoCloseable {
     }
 
     @Override
-    public void put(@NonNull FStorageColumn column, @NonNull ByteBuffer key, @NonNull ByteBuffer value) throws FStorageException {
-        this.put(column, RocksStorage.toByteArrayView(key), RocksStorage.toByteArrayView(value));
-    }
-
-    @Override
     public void delete(@NonNull FStorageColumn column, @NonNull byte[] key) throws FStorageException {
         try {
             this.transaction.delete(((RocksStorageColumn) column).handle(), key);
         } catch (RocksDBException e) {
             throw wrapException(e);
         }
-    }
-
-    @Override
-    public void delete(@NonNull FStorageColumn column, @NonNull ByteBuffer key) throws FStorageException {
-        this.delete(column, RocksStorage.toByteArrayView(key));
     }
 
     @Override
@@ -234,13 +182,5 @@ public class RocksAccessTransaction implements FStorageAccess, AutoCloseable {
                 this.delete(column, itr.key());
             }
         }
-    }
-
-    @Override
-    public void deleteRange(@NonNull FStorageColumn column, @NonNull ByteBuffer fromKeyInclusive, @NonNull ByteBuffer toKeyExclusive) throws FStorageException {
-        //rocksdbjni doesn't provide any versions of deleteRange which take ByteBuffer for the key parameters, so we'll copy them both to ordinary byte[]s and then
-        //  continue as usual
-
-        this.deleteRange(column, RocksStorage.toByteArrayView(fromKeyInclusive), RocksStorage.toByteArrayView(toKeyExclusive));
     }
 }
