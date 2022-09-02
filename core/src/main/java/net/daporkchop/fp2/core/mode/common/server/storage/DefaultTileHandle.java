@@ -181,7 +181,7 @@ public class DefaultTileHandle<POS extends IFarPos, T extends IFarTile> implemen
             } finally {
                 PUnsafe.freeMemory(buffer);
             }
-        });
+        }, ITileSnapshot::release);
     }
 
     @Override
