@@ -1174,6 +1174,8 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
 
         @Override
         public Transaction beginTransaction(@NonNull WriteOptions writeOptions, boolean setSnapshot) {
+            this.ensureOpen();
+
             return this.db().beginTransaction(writeOptions, setSnapshot ? TRANSACTION_OPTIONS_SET_SNAPSHOT : TRANSACTION_OPTIONS_DEFAULT);
         }
 
@@ -1207,6 +1209,8 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
 
         @Override
         public Transaction beginTransaction(@NonNull WriteOptions writeOptions, boolean setSnapshot) {
+            this.ensureOpen();
+
             return this.db().beginTransaction(writeOptions, setSnapshot ? TRANSACTION_OPTIONS_SET_SNAPSHOT : TRANSACTION_OPTIONS_DEFAULT);
         }
     }

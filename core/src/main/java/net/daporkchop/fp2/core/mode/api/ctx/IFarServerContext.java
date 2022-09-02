@@ -30,6 +30,7 @@ import net.daporkchop.fp2.core.mode.api.tile.TileSnapshot;
 import net.daporkchop.fp2.core.server.player.IFarPlayerServer;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
+import net.daporkchop.lib.common.annotation.TransferOwnership;
 
 /**
  * A server-side context for a specific {@link IFarPlayerServer} in a {@link IFarLevelServer} using a specific {@link IFarRenderMode}.
@@ -97,7 +98,7 @@ public interface IFarServerContext<POS extends IFarPos, T extends IFarTile> exte
      *
      * @param snapshot a snapshot of the data to be sent
      */
-    void sendTile(@NonNull TileSnapshot<POS, T> snapshot);
+    void sendTile(@TransferOwnership @NonNull TileSnapshot<POS, T> snapshot);
 
     /**
      * Unloads the tile at the given position on the client.

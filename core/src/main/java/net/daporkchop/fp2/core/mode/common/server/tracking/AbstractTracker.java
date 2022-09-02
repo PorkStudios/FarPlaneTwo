@@ -31,6 +31,7 @@ import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
 import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
 import net.daporkchop.fp2.core.util.datastructure.RecyclingArrayDeque;
+import net.daporkchop.lib.common.annotation.BorrowOwnership;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.Comparator;
@@ -321,7 +322,7 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
      * @param snapshot a snapshot of the tile data
      */
     @CalledFromAnyThread
-    protected void notifyChanged(@NonNull ITileSnapshot<POS, T> snapshot) {
+    protected void notifyChanged(@BorrowOwnership @NonNull ITileSnapshot<POS, T> snapshot) {
         try {
             this.context.sendTile(uncheckedCast(snapshot.retain()));
 

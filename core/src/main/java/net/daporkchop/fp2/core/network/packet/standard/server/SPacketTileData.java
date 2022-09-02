@@ -46,7 +46,7 @@ public class SPacketTileData implements IPacket {
     @Override
     public void read(@NonNull DataIn in) throws IOException {
         this.mode = IFarRenderMode.REGISTRY.get(in.readVarUTF());
-        this.tile = TileSnapshot.readFromNetwork(in, uncheckedCast(this.mode.readPos(in)));
+        this.tile = TileSnapshot.readFromNetwork(uncheckedCast(this.mode.readPos(in)), in);
     }
 
     @Override
@@ -54,5 +54,6 @@ public class SPacketTileData implements IPacket {
         out.writeVarUTF(this.mode.name());
         this.mode.writePos(out, uncheckedCast(this.tile.pos()));
         this.tile.writeForNetwork(out);
+        this.tile.release();
     }
 }

@@ -19,18 +19,19 @@
 
 package net.daporkchop.fp2.core.mode.api.tile;
 
-import lombok.AccessLevel;
-import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import net.daporkchop.fp2.common.util.DirectBufferHackery;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.util.serialization.variable.IVariableSizeRecyclingCodec;
 import net.daporkchop.lib.binary.stream.DataIn;
 import net.daporkchop.lib.binary.stream.DataOut;
+import net.daporkchop.lib.common.annotation.BorrowOwnership;
+import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.common.pool.recycler.Recycler;
+import net.daporkchop.lib.unsafe.PCleaner;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.io.IOException;
@@ -38,60 +39,77 @@ import java.io.IOException;
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-@Getter
 public class TileSnapshot<POS extends IFarPos, T extends IFarTile> extends AbstractTileSnapshot<POS, T> {
-    public static <POS extends IFarPos, T extends IFarTile> TileSnapshot<POS, T> readFromNetwork(@NonNull DataIn in, @NonNull POS pos) throws IOException {
-        long timestamp = in.readVarLongZigZag();
-
-        int len = in.readVarIntZigZag();
-        byte[] data = len < 0
-                ? null //no data!
-                : in.fill(new byte[len]);
-
-        return new TileSnapshot<>(pos, timestamp, data);
+    public static <POS extends IFarPos, T extends IFarTile> TileSnapshot<POS, T> readFromNetwork(@NonNull POS pos, @NonNull DataIn in) throws IOException {
+        return new TileSnapshot<>(pos, in);
     }
 
-    static {
-        //we copy data directly between off-heap memory and byte[]s
-        PUnsafe.requireTightlyPackedByteArrays();
+    public static <POS extends IFarPos, T extends IFarTile> TileSnapshot<POS, T> of(@NonNull POS pos, long timestamp) {
+        return new TileSnapshot<>(pos, timestamp);
     }
 
-    public static <POS extends IFarPos, T extends IFarTile> TileSnapshot<POS, T> of(@NonNull POS pos, long timestamp, long dataAddr, int dataLength) {
-        byte[] data;
-        if (dataLength < 0) { //tile is empty, there is no data
-            data = null;
-        } else { //tile has data, copy it into a byte[]
-            data = new byte[dataLength];
-            PUnsafe.copyMemory(null, dataAddr, data, PUnsafe.arrayByteBaseOffset(), dataLength);
+    public static <POS extends IFarPos, T extends IFarTile> TileSnapshot<POS, T> of(@NonNull POS pos, long timestamp, @BorrowOwnership long dataAddr, int dataLength) {
+        return dataLength < 0
+                ? new TileSnapshot<>(pos, timestamp) //negative length means there's no data
+                : new TileSnapshot<>(pos, timestamp, dataAddr, dataLength);
+    }
+
+    protected TileSnapshot(@NonNull POS pos, @NonNull DataIn in) throws IOException {
+        super(pos, in.readVarLongZigZag());
+
+        int length = in.readVarIntZigZag();
+        if (length < 0) { //no data!
+            this.data = 0L;
+        } else if (length == 0) { //special case for zero-length buffer which requires zero allocations
+            this.data = ZERO_LENGTH_DATA;
+        } else {
+            //allocate buffer space
+            this.data = PUnsafe.allocateMemory(DATA_SIZE(length));
+            this.cleaner = PCleaner.cleaner(this, this.data);
+
+            //read data
+            _data_length(this.data, length);
+            in.readFully(DirectBufferHackery.wrapByte(_data_payload(this.data), length));
         }
-
-        return new TileSnapshot<>(pos, timestamp, data);
     }
 
-    @NonNull
-    protected final POS pos;
-    protected final long timestamp;
+    protected TileSnapshot(@NonNull POS pos, long timestamp) {
+        super(pos, timestamp);
 
-    @Getter(AccessLevel.NONE)
-    protected final byte[] data;
+        this.data = 0L; //there is no data
+    }
+
+    protected TileSnapshot(@NonNull POS pos, long timestamp, @BorrowOwnership long dataAddr, @NotNegative int dataLength) {
+        super(pos, timestamp);
+
+        if (dataLength == 0) { //special case for zero-length buffer which requires zero allocations
+            this.data = ZERO_LENGTH_DATA;
+        } else {
+            //allocate buffer space
+            this.data = PUnsafe.allocateMemory(DATA_SIZE(dataLength));
+            this.cleaner = PCleaner.cleaner(this, this.data);
+
+            //populate data buffer
+            _data_length(this.data, dataLength);
+            PUnsafe.copyMemory(dataAddr, _data_payload(this.data), dataLength);
+        }
+    }
 
     public void writeForNetwork(@NonNull DataOut out) throws IOException {
         this.ensureNotReleased();
 
         out.writeVarLongZigZag(this.timestamp);
 
-        if (this.data == null) { //no data!
+        if (this.data == 0L) { //no data!
             out.writeVarIntZigZag(-1);
         } else { //tile data is present, write it
-            out.writeVarIntZigZag(this.data.length);
-            out.write(this.data);
-        }
-    }
+            int length = _data_length(this.data);
 
-    @Override
-    protected void doRelease() {
-        //no-op
+            out.writeVarIntZigZag(length);
+            if (length != 0) {
+                out.write(DirectBufferHackery.wrapByte(_data_payload(this.data), length));
+            }
+        }
     }
 
     @Override
@@ -99,9 +117,11 @@ public class TileSnapshot<POS extends IFarPos, T extends IFarTile> extends Abstr
     public T loadTile(@NonNull Recycler<T> recycler, @NonNull IVariableSizeRecyclingCodec<T> codec) {
         this.ensureNotReleased();
 
-        if (this.data != null) {
+        if (this.data != 0L) {
             T tile = recycler.allocate();
-            try (DataIn in = DataIn.wrap(this.data)) {
+
+            int length = _data_length(this.data);
+            try (DataIn in = DataIn.wrap(DirectBufferHackery.wrapByte(_data_payload(this.data), length))) {
                 codec.load(tile, in);
             }
             return tile;
@@ -114,7 +134,7 @@ public class TileSnapshot<POS extends IFarPos, T extends IFarTile> extends Abstr
     public boolean isEmpty() {
         this.ensureNotReleased();
 
-        return this.data == null;
+        return this.data == 0L;
     }
 
     @Override
@@ -135,13 +155,15 @@ public class TileSnapshot<POS extends IFarPos, T extends IFarTile> extends Abstr
     public DebugStats.TileSnapshot stats() {
         this.ensureNotReleased();
 
-        if (this.data == null) { //this tile is empty!
+        if (this.data == 0L) { //this tile is empty!
             return DebugStats.TileSnapshot.ZERO;
         } else {
+            int length = _data_length(this.data);
+
             return DebugStats.TileSnapshot.builder()
-                    .allocatedSpace(this.data.length)
-                    .totalSpace(this.data.length)
-                    .uncompressedSize(this.data.length)
+                    .allocatedSpace(length)
+                    .totalSpace(length)
+                    .uncompressedSize(length)
                     .build();
         }
     }

@@ -19,20 +19,90 @@
 
 package net.daporkchop.fp2.core.mode.api.tile;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
+import net.daporkchop.lib.common.annotation.param.NotNegative;
+import net.daporkchop.lib.common.annotation.param.Positive;
 import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
+import net.daporkchop.lib.common.system.PlatformInfo;
 import net.daporkchop.lib.common.util.exception.AlreadyReleasedException;
+import net.daporkchop.lib.unsafe.PCleaner;
+import net.daporkchop.lib.unsafe.PUnsafe;
+
+import java.nio.ByteBuffer;
+
+import static net.daporkchop.fp2.common.util.TypeSize.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * Base implementation of {@link ITileSnapshot}.
  *
  * @author DaPorkchop_
  */
+@RequiredArgsConstructor
+@Getter
 public abstract class AbstractTileSnapshot<POS extends IFarPos, T extends IFarTile> extends AbstractRefCounted implements ITileSnapshot<POS, T> {
+    /*
+     * struct data {
+     *     int length;
+     *     byte payload[...];
+     * };
+     */
+
+    private static final long DATA_LENGTH_OFFSET = 0L;
+    private static final long DATA_LENGTH_SIZE = INT_SIZE;
+
+    private static final long DATA_PAYLOAD_OFFSET = DATA_LENGTH_OFFSET + DATA_LENGTH_SIZE;
+
+    protected static long DATA_SIZE(@NotNegative int length) {
+        return DATA_PAYLOAD_OFFSET + notNegative(length, "length");
+    }
+
+    protected static int _data_length(long data) {
+        return PUnsafe.getInt(data + DATA_LENGTH_OFFSET); //assume this field is aligned
+    }
+
+    protected static void _data_length(long data, @NotNegative int length) {
+        PUnsafe.putInt(data + DATA_LENGTH_OFFSET, length); //assume this field is aligned
+    }
+
+    protected static long _data_payload(long data) {
+        return data + DATA_PAYLOAD_OFFSET;
+    }
+
+    //dummy buffer to allow the memory to be released automatically if the class is unloaded
+    private static final ByteBuffer ZERO_LENGTH_DATA_BUFFER = ByteBuffer.allocateDirect(toInt(DATA_SIZE(0))).order(PlatformInfo.BYTE_ORDER);
+    protected static final long ZERO_LENGTH_DATA = PUnsafe.pork_directBufferAddress(ZERO_LENGTH_DATA_BUFFER);
+
+    static {
+        //initialize ZERO_LENGTH_DATA
+        _data_length(ZERO_LENGTH_DATA, 0);
+    }
+
+    @NonNull
+    protected final POS pos;
+    protected final long timestamp;
+
+    @Getter(AccessLevel.NONE)
+    protected long data;
+    @Getter(AccessLevel.NONE)
+    protected PCleaner cleaner;
+
     @Override
     public ITileSnapshot<POS, T> retain() throws AlreadyReleasedException {
         super.retain();
         return this;
+    }
+
+    @Override
+    protected void doRelease() {
+        if (this.cleaner != null) {
+            this.cleaner.clean();
+            this.cleaner = null; //help gc
+        }
     }
 }
