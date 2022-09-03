@@ -840,19 +840,19 @@ public abstract class RocksStorage<DB extends RocksDB> implements FStorage {
      * @author DaPorkchop_
      */
     protected static class LockingRocksStorage extends RocksStorage<RocksDB> {
-        protected final Lock readLock;
-        protected final Lock writeLock;
+        protected Lock readLock;
+        protected Lock writeLock;
 
         protected LockingRocksStorage(Path root) throws FStorageException {
             super(root);
-
-            ReadWriteLock lock = new ReentrantReadWriteLock();
-            this.readLock = lock.readLock();
-            this.writeLock = lock.writeLock();
         }
 
         @Override
         protected RocksDB openDB(DBOptions dbOptions, String path, List<ColumnFamilyDescriptor> columnFamilyDescriptors, List<ColumnFamilyHandle> columnFamilyHandles) throws RocksDBException {
+            ReadWriteLock lock = new ReentrantReadWriteLock();
+            this.readLock = lock.readLock();
+            this.writeLock = lock.writeLock();
+
             return RocksDB.open(dbOptions, path, columnFamilyDescriptors, columnFamilyHandles);
         }
 
