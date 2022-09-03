@@ -60,7 +60,7 @@ public abstract class MixinBiome1_12 {
      * @author DaPorkchop_
      * @reason optimization
      */
-    @Overwrite
+    @Overwrite(remap = false) //don't remap: this is a forge method
     public int getWaterColorMultiplier() {
         Recycler<BiomeEvent.GetWaterColor> recycler = GETWATERCOLOR_EVENT_RECYCLER.get();
         BiomeEvent.GetWaterColor event = recycler.allocate();
@@ -88,7 +88,7 @@ public abstract class MixinBiome1_12 {
      * @author DaPorkchop_
      * @reason optimization
      */
-    @Overwrite
+    @Overwrite(remap = false) //don't remap: this is a forge method
     public int getModdedBiomeGrassColor(int original) {
         Recycler<BiomeEvent.GetGrassColor> recycler = GETGRASSCOLOR_EVENT_RECYCLER.get();
         BiomeEvent.GetGrassColor event = recycler.allocate();
@@ -116,7 +116,7 @@ public abstract class MixinBiome1_12 {
      * @author DaPorkchop_
      * @reason optimization
      */
-    @Overwrite
+    @Overwrite(remap = false) //don't remap: this is a forge method
     public int getModdedBiomeFoliageColor(int original) {
         Recycler<BiomeEvent.GetFoliageColor> recycler = GETFOLIAGECOLOR_EVENT_RECYCLER.get();
         BiomeEvent.GetFoliageColor event = recycler.allocate();
