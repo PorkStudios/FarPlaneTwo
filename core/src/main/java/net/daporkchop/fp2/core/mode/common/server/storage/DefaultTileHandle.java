@@ -43,7 +43,6 @@ import java.util.stream.Stream;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.common.util.TypeSize.*;
-import static net.daporkchop.fp2.core.mode.common.server.storage.DefaultTileStorage.*;
 import static net.daporkchop.fp2.core.util.GlobalAllocators.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -86,7 +85,7 @@ public class DefaultTileHandle<POS extends IFarPos, T extends IFarTile> implemen
 
                 { //db operations
                     //temporarily allocate fake direct ByteBuffers with no contents and point them to the corresponding regions of the real buffer
-                    Recycler<ByteBuffer> byteBufferRecycler = FAKE_DIRECT_BYTEBUFFER_RECYCLER.get();
+                    Recycler<ByteBuffer> byteBufferRecycler = DirectBufferHackery.byteRecycler();
                     ByteBuffer keyBuffer = DirectBufferHackery.reset(byteBufferRecycler.allocate(), buffer + bufferKeyOffset, bufferKeySize);
                     ByteBuffer timestampBuffer = DirectBufferHackery.reset(byteBufferRecycler.allocate(), buffer + bufferTimestampOffset, bufferTimestampSize);
 
@@ -140,7 +139,7 @@ public class DefaultTileHandle<POS extends IFarPos, T extends IFarTile> implemen
 
                 { //db operations
                     //temporarily allocate fake direct ByteBuffers with no contents and point them to the corresponding regions of the real buffer
-                    Recycler<ByteBuffer> byteBufferRecycler = FAKE_DIRECT_BYTEBUFFER_RECYCLER.get();
+                    Recycler<ByteBuffer> byteBufferRecycler = DirectBufferHackery.byteRecycler();
                     ByteBuffer keyBuffer = DirectBufferHackery.reset(byteBufferRecycler.allocate(), buffer + bufferKeyOffset, bufferKeySize);
                     ByteBuffer timestampBuffer = DirectBufferHackery.reset(byteBufferRecycler.allocate(), buffer + bufferTimestampOffset, bufferTimestampSize);
                     ByteBuffer tileBuffer = DirectBufferHackery.reset(byteBufferRecycler.allocate(), buffer + bufferTileOffset, bufferTileSize);
@@ -221,7 +220,7 @@ public class DefaultTileHandle<POS extends IFarPos, T extends IFarTile> implemen
 
                 { //db operations: load timestamp and dirtyTimestamp from db
                     //temporarily allocate fake direct ByteBuffers with no contents and point them to the corresponding regions of the real buffer
-                    Recycler<ByteBuffer> byteBufferRecycler = FAKE_DIRECT_BYTEBUFFER_RECYCLER.get();
+                    Recycler<ByteBuffer> byteBufferRecycler = DirectBufferHackery.byteRecycler();
                     ByteBuffer keyBuffer = DirectBufferHackery.reset(byteBufferRecycler.allocate(), buffer + bufferKeyOffset, bufferKeySize);
                     ByteBuffer timestampBuffer = DirectBufferHackery.reset(byteBufferRecycler.allocate(), buffer + bufferTimestampOffset, bufferTimestampSize);
                     ByteBuffer dirtyTimestampBuffer = DirectBufferHackery.reset(byteBufferRecycler.allocate(),
@@ -267,7 +266,7 @@ public class DefaultTileHandle<POS extends IFarPos, T extends IFarTile> implemen
 
                 { //db operations: put new timestamp into db
                     //temporarily allocate fake direct ByteBuffers with no contents and point them to the corresponding regions of the real buffer
-                    Recycler<ByteBuffer> byteBufferRecycler = FAKE_DIRECT_BYTEBUFFER_RECYCLER.get();
+                    Recycler<ByteBuffer> byteBufferRecycler = DirectBufferHackery.byteRecycler();
                     ByteBuffer keyBuffer = DirectBufferHackery.reset(byteBufferRecycler.allocate(), buffer + bufferKeyOffset, bufferKeySize);
                     ByteBuffer timestampBuffer = DirectBufferHackery.reset(byteBufferRecycler.allocate(), buffer + bufferTimestampOffset, bufferTimestampSize);
 
@@ -286,7 +285,7 @@ public class DefaultTileHandle<POS extends IFarPos, T extends IFarTile> implemen
                 if (metadata.timestamp() >= dirtyTimestamp) {
                     { //db operations: delete old dirtyTimestamp
                         //temporarily allocate fake direct ByteBuffers with no contents and point them to the corresponding regions of the real buffer
-                        Recycler<ByteBuffer> byteBufferRecycler = FAKE_DIRECT_BYTEBUFFER_RECYCLER.get();
+                        Recycler<ByteBuffer> byteBufferRecycler = DirectBufferHackery.byteRecycler();
                         ByteBuffer keyBuffer = DirectBufferHackery.reset(byteBufferRecycler.allocate(), buffer + bufferKeyOffset, bufferKeySize);
 
                         //actually delete old dirtyTimestamp
@@ -299,7 +298,7 @@ public class DefaultTileHandle<POS extends IFarPos, T extends IFarTile> implemen
 
                 { //db operations: encode tile and store it in db
                     //temporarily allocate fake direct ByteBuffers with no contents and point them to the corresponding regions of the real buffer
-                    Recycler<ByteBuffer> byteBufferRecycler = FAKE_DIRECT_BYTEBUFFER_RECYCLER.get();
+                    Recycler<ByteBuffer> byteBufferRecycler = DirectBufferHackery.byteRecycler();
                     ByteBuffer keyBuffer = DirectBufferHackery.reset(byteBufferRecycler.allocate(), buffer + bufferKeyOffset, bufferKeySize);
                     ByteBuffer tileBuffer = DirectBufferHackery.reset(byteBufferRecycler.allocate(), buffer + bufferTileOffset, bufferTileSize);
 
@@ -364,7 +363,7 @@ public class DefaultTileHandle<POS extends IFarPos, T extends IFarTile> implemen
 
                 { //db operations
                     //temporarily allocate fake direct ByteBuffers with no contents and point them to the corresponding regions of the real buffer
-                    Recycler<ByteBuffer> byteBufferRecycler = FAKE_DIRECT_BYTEBUFFER_RECYCLER.get();
+                    Recycler<ByteBuffer> byteBufferRecycler = DirectBufferHackery.byteRecycler();
                     ByteBuffer keyBuffer = DirectBufferHackery.reset(byteBufferRecycler.allocate(), buffer + bufferKeyOffset, bufferKeySize);
                     ByteBuffer dirtyTimestampBuffer = DirectBufferHackery.reset(byteBufferRecycler.allocate(),
                             buffer + bufferDirtyTimestampOffset, bufferDirtyTimestampSize);
@@ -420,7 +419,7 @@ public class DefaultTileHandle<POS extends IFarPos, T extends IFarTile> implemen
 
                 { //db operations: load timestamp and dirtyTimestamp from db
                     //temporarily allocate fake direct ByteBuffers with no contents and point them to the corresponding regions of the real buffer
-                    Recycler<ByteBuffer> byteBufferRecycler = FAKE_DIRECT_BYTEBUFFER_RECYCLER.get();
+                    Recycler<ByteBuffer> byteBufferRecycler = DirectBufferHackery.byteRecycler();
                     ByteBuffer keyBuffer = DirectBufferHackery.reset(byteBufferRecycler.allocate(), buffer + bufferKeyOffset, bufferKeySize);
                     ByteBuffer timestampBuffer = DirectBufferHackery.reset(byteBufferRecycler.allocate(), buffer + bufferTimestampOffset, bufferTimestampSize);
                     ByteBuffer dirtyTimestampBuffer = DirectBufferHackery.reset(byteBufferRecycler.allocate(),
@@ -468,7 +467,7 @@ public class DefaultTileHandle<POS extends IFarPos, T extends IFarTile> implemen
 
                 { //db operations: put new dirtyTimestamp into db
                     //temporarily allocate fake direct ByteBuffers with no contents and point them to the corresponding regions of the real buffer
-                    Recycler<ByteBuffer> byteBufferRecycler = FAKE_DIRECT_BYTEBUFFER_RECYCLER.get();
+                    Recycler<ByteBuffer> byteBufferRecycler = DirectBufferHackery.byteRecycler();
                     ByteBuffer keyBuffer = DirectBufferHackery.reset(byteBufferRecycler.allocate(), buffer + bufferKeyOffset, bufferKeySize);
                     ByteBuffer dirtyTimestampBuffer = DirectBufferHackery.reset(byteBufferRecycler.allocate(),
                             buffer + bufferDirtyTimestampOffset, bufferDirtyTimestampSize);
@@ -520,7 +519,7 @@ public class DefaultTileHandle<POS extends IFarPos, T extends IFarTile> implemen
 
                 { //db operations: check if dirty timestamp is present in db
                     //temporarily allocate fake direct ByteBuffers with no contents and point them to the corresponding regions of the real buffer
-                    Recycler<ByteBuffer> byteBufferRecycler = FAKE_DIRECT_BYTEBUFFER_RECYCLER.get();
+                    Recycler<ByteBuffer> byteBufferRecycler = DirectBufferHackery.byteRecycler();
                     ByteBuffer keyBuffer = DirectBufferHackery.reset(byteBufferRecycler.allocate(), buffer + bufferKeyOffset, bufferKeySize);
                     ByteBuffer dirtyTimestampBuffer = DirectBufferHackery.reset(byteBufferRecycler.allocate(), 0L, 0);
 
@@ -539,7 +538,7 @@ public class DefaultTileHandle<POS extends IFarPos, T extends IFarTile> implemen
 
                 { //db operations: clear dirty timestamp in db
                     //temporarily allocate fake direct ByteBuffer with no contents and point it to the corresponding region of the real buffer
-                    Recycler<ByteBuffer> byteBufferRecycler = FAKE_DIRECT_BYTEBUFFER_RECYCLER.get();
+                    Recycler<ByteBuffer> byteBufferRecycler = DirectBufferHackery.byteRecycler();
                     ByteBuffer keyBuffer = DirectBufferHackery.reset(byteBufferRecycler.allocate(), buffer + bufferKeyOffset, bufferKeySize);
 
                     //actually delete dirty timestamp from

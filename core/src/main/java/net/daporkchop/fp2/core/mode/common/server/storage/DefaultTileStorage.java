@@ -22,58 +22,43 @@ package net.daporkchop.fp2.core.mode.common.server.storage;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import com.google.common.collect.ImmutableList;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import lombok.NonNull;
-import lombok.SneakyThrows;
 import net.daporkchop.fp2.api.storage.FStorageException;
 import net.daporkchop.fp2.api.storage.external.FStorageItemFactory;
 import net.daporkchop.fp2.api.storage.internal.FStorageColumn;
 import net.daporkchop.fp2.api.storage.internal.FStorageColumnHintsInternal;
 import net.daporkchop.fp2.api.storage.internal.FStorageInternal;
-import net.daporkchop.fp2.common.util.DirectBufferHackery;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarPosCodec;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.server.storage.FTileStorage;
 import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
-import net.daporkchop.fp2.core.mode.api.tile.ITileMetadata;
-import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
-import net.daporkchop.fp2.core.mode.api.tile.TileSnapshot;
 import net.daporkchop.fp2.core.mode.common.server.AbstractFarTileProvider;
 import net.daporkchop.fp2.core.util.GlobalAllocators;
 import net.daporkchop.fp2.core.util.datastructure.java.list.ArraySliceAsList;
 import net.daporkchop.fp2.core.util.datastructure.java.list.ListUtils;
-import net.daporkchop.lib.common.pool.recycler.Recycler;
 import net.daporkchop.fp2.core.util.serialization.variable.IVariableSizeRecyclingCodec;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.reference.cache.Cached;
 import net.daporkchop.lib.common.system.PlatformInfo;
-import net.daporkchop.lib.common.util.PArrays;
-import net.daporkchop.lib.primitive.list.LongList;
-import net.daporkchop.lib.primitive.list.array.LongArrayList;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.BitSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.stream.Collectors;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.fp2.core.FP2Core.*;
-import static net.daporkchop.fp2.core.mode.api.tile.ITileMetadata.*;
-import static net.daporkchop.fp2.core.util.GlobalAllocators.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -110,8 +95,6 @@ public class DefaultTileStorage<POS extends IFarPos, T extends IFarTile> impleme
             this.delegate.release(array);
         }
     }, ReferenceStrength.WEAK);
-
-    protected static final Cached<Recycler<ByteBuffer>> FAKE_DIRECT_BYTEBUFFER_RECYCLER = Cached.threadLocal(() -> Recycler.unbounded(DirectBufferHackery::emptyByte), ReferenceStrength.SOFT);
 
     @Deprecated
     protected static long readLongLE(@NonNull byte[] src) {
