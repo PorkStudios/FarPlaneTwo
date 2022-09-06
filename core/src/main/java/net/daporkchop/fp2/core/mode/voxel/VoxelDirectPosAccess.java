@@ -26,7 +26,6 @@ import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.core.mode.voxel.util.VoxelPosArrayList;
 import net.daporkchop.fp2.core.mode.voxel.util.VoxelPosHashSet;
-import net.daporkchop.fp2.core.util.math.geometry.Volume;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.Collection;
@@ -198,28 +197,6 @@ public final class VoxelDirectPosAccess implements IFarDirectPosAccess<VoxelPos>
     @Override
     public long localHashPos(long addr) {
         return interleaveBits(_x(addr), _y(addr), _z(addr));
-    }
-
-    @Override
-    public boolean intersects(long addr, @NonNull Volume volume) {
-        double x = _x(addr);
-        double y = _y(addr);
-        double z = _z(addr);
-
-        double d = 1 << _level(addr);
-        double f = d * VT_VOXELS;
-        return volume.intersects(x * f, y * f, z * f, (x + 1.0d) * f + d, (y + 1.0d) * f + d, (z + 1.0d) * f + d);
-    }
-
-    @Override
-    public boolean containedBy(long addr, @NonNull Volume volume) {
-        double x = _x(addr);
-        double y = _y(addr);
-        double z = _z(addr);
-
-        double d = 1 << _level(addr);
-        double f = d * VT_VOXELS;
-        return volume.contains(x * f, y * f, z * f, (x + 1.0d) * f + d, (y + 1.0d) * f + d, (z + 1.0d) * f + d);
     }
 
     @Override

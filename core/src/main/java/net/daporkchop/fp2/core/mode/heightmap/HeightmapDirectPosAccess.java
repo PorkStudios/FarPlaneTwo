@@ -26,7 +26,6 @@ import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.core.mode.heightmap.util.HeightmapPosArrayList;
 import net.daporkchop.fp2.core.mode.heightmap.util.HeightmapPosHashSet;
-import net.daporkchop.fp2.core.util.math.geometry.Volume;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.Collection;
@@ -175,26 +174,6 @@ public class HeightmapDirectPosAccess implements IFarDirectPosAccess<HeightmapPo
     @Override
     public long localHashPos(long addr) {
         return interleaveBits(_x(addr), _z(addr));
-    }
-
-    @Override
-    public boolean intersects(long addr, @NonNull Volume volume) {
-        double x = _x(addr);
-        double z = _z(addr);
-
-        double d = 1 << _level(addr);
-        double f = d * HT_VOXELS;
-        return volume.intersects(x * f, Integer.MIN_VALUE, z * f, (x + 1.0d) * f + d, Integer.MAX_VALUE, (z + 1.0d) * f + d);
-    }
-
-    @Override
-    public boolean containedBy(long addr, @NonNull Volume volume) {
-        double x = _x(addr);
-        double z = _z(addr);
-
-        double d = 1 << _level(addr);
-        double f = d * HT_VOXELS;
-        return volume.contains(x * f, Integer.MIN_VALUE, z * f, (x + 1.0d) * f + d, Integer.MAX_VALUE, (z + 1.0d) * f + d);
     }
 
     @Override

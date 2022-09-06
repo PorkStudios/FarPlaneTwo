@@ -21,7 +21,6 @@ package net.daporkchop.fp2.core.mode.api;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.client.IFrustum;
-import net.daporkchop.fp2.core.util.math.geometry.Volume;
 
 import java.util.Collection;
 import java.util.List;
@@ -105,24 +104,6 @@ public interface IFarDirectPosAccess<POS extends IFarPos> extends IFarPosCodec<P
      * @return the position's locality-sensitive hash
      */
     long localHashPos(long addr);
-
-    /**
-     * Checks whether or not the tile at the given position intersects the given volume.
-     *
-     * @param addr   the memory address of the off-heap position
-     * @param volume the volume
-     * @return whether or not the tile at the given position intersects the given volume
-     */
-    boolean intersects(long addr, @NonNull Volume volume);
-
-    /**
-     * Checks whether or not the tile at the given position is contained by the given volume.
-     *
-     * @param addr   the memory address of the off-heap position
-     * @param volume the volume
-     * @return whether or not the tile at the given position is contained by the given volume
-     */
-    boolean containedBy(long addr, @NonNull Volume volume);
 
     /**
      * Checks whether or not the tile at the given position is in the given frustum.
