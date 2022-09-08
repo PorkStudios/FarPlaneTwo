@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.attribute.struct;
@@ -23,9 +22,11 @@ package net.daporkchop.fp2.gl.opengl.attribute.struct;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.gl.opengl.GLExtension;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.InterleavedStructLayout;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.TextureStructLayout;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.property.ComponentInterpretation;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
 import net.daporkchop.lib.common.math.PMath;
 
@@ -85,8 +86,52 @@ public class StructLayouts {
     }
 
     public <S> TextureStructLayout texture(@NonNull OpenGL gl, @NonNull StructInfo<S> structInfo) {
+        boolean unpacked = structInfo.packedProperty().with(new StructProperty.TypedPropertyCallback<Boolean>() {
+            @Override
+            public Boolean withComponents(@NonNull StructProperty.Components componentsProperty) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public Boolean withElements(@NonNull StructProperty.Elements elementsProperty) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public Boolean withFields(@NonNull StructProperty.Fields fieldsProperty) {
+                checkArg(fieldsProperty.fields() == 1, "expected exactly one field, but found %d! %s", fieldsProperty.fields(), structInfo);
+
+                return fieldsProperty.fieldProperty(0).with(new StructProperty.TypedPropertyCallback<Boolean>() {
+                    @Override
+                    public Boolean withComponents(@NonNull StructProperty.Components property) {
+                        ComponentInterpretation interpretation = property.componentInterpretation();
+
+                        if (property.componentType().integer()
+                            && !interpretation.outputType().integer()
+                            && interpretation.outputType().signed()
+                            && interpretation.normalized()) {
+                            //input type is a signed integer, which will be converted to a signed normalized float
+                            return !GLExtension.GL_EXT_texture_snorm.supported(gl); //we'll unpack the texture values manually if GL_*_SNORM textures aren't available
+                        }
+
+                        return false;
+                    }
+
+                    @Override
+                    public Boolean withElements(@NonNull StructProperty.Elements elementsProperty) {
+                        throw new UnsupportedOperationException();
+                    }
+
+                    @Override
+                    public Boolean withFields(@NonNull StructProperty.Fields fieldsProperty) {
+                        throw new UnsupportedOperationException();
+                    }
+                });
+            }
+        });
+
         MutableLong stride = new MutableLong();
-        TextureStructLayout.Member member = structInfo.packedProperty().with(new StructProperty.TypedPropertyCallback<TextureStructLayout.Member>() {
+        TextureStructLayout.Member member = (unpacked ? structInfo.unpackedProperty() : structInfo.packedProperty()).with(new StructProperty.TypedPropertyCallback<TextureStructLayout.Member>() {
             @Override
             public TextureStructLayout.Member withComponents(@NonNull StructProperty.Components componentsProperty) {
                 throw new UnsupportedOperationException();
@@ -127,7 +172,7 @@ public class StructLayouts {
         return TextureStructLayout.builder()
                 .structInfo(structInfo)
                 .layoutName("texture")
-                .unpacked(false)
+                .unpacked(unpacked)
                 .stride(stride.value)
                 .member(member)
                 .build();

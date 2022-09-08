@@ -22,9 +22,11 @@ package net.daporkchop.fp2.gl.opengl.attribute.struct;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.common.asm.ClassloadingUtils;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
+import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.OpenGLConstants;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.StructFormat;
@@ -53,6 +55,7 @@ import static org.objectweb.asm.Type.*;
 /**
  * @author DaPorkchop_
  */
+@RequiredArgsConstructor
 public class StructFormatGenerator {
     private static final boolean WRITE_CLASSES = true;
 
@@ -86,6 +89,9 @@ public class StructFormatGenerator {
     protected final Cache<StructLayout<?, ?>, StructFormat<?, ?>> cache = CacheBuilder.newBuilder()
             .weakValues()
             .build();
+
+    @NonNull
+    protected final OpenGL gl;
 
     @SneakyThrows(ExecutionException.class)
     public <S> InterleavedStructFormat<S> getInterleaved(@NonNull InterleavedStructLayout layout) {
@@ -503,7 +509,9 @@ public class StructFormatGenerator {
             }
 
             { //int textureFormat
-                String components = "RGBA".substring(0, property.components());
+                String components = property.components() == 1
+                        ? "GL_RED" //for some reason, if it has a single component it's not GL_R but GL_RED instead
+                        : "RGBA".substring(0, property.components());
                 String suffix = interpretation.outputType().integer() ? "_INTEGER" : "";
                 mv.visitFieldInsn(GETSTATIC, getInternalName(OpenGLConstants.class), "GL_" + components + suffix, "I");
             }
@@ -571,16 +579,21 @@ public class StructFormatGenerator {
                 mv.visitVarInsn(ILOAD, 1);
                 mv.visitLdcInsn((((2 - componentIndex) & 3) << 3));
                 mv.visitInsn(ISHR);
-                mv.visitLdcInsn(0xFF);
-                mv.visitInsn(IAND);
+
+                if (!property.componentType().integer() && interpretation.normalized() && interpretation.outputType().signed()) {
+                    //the property is stored in memory as a float, which will be normalized while preserving the sign. convert to a byte
+                    mv.visitInsn(I2B);
+                } else { //truncate to 8 bits
+                    mv.visitLdcInsn(0xFF);
+                    mv.visitInsn(IAND);
+                }
+
                 if (!property.componentType().integer()) {
-                    //TODO: allow normalizing float textures
-                    throw new UnsupportedOperationException();
-                    /*mv.visitInsn(I2F);
+                    mv.visitInsn(I2F);
                     if (interpretation.normalized()) {
-                        mv.visitLdcInsn(1.0f / 256.0f);
+                        mv.visitLdcInsn(interpretation.outputType().signed() ? (1.0f / 128.0f) : (1.0f / 256.0f));
                         mv.visitInsn(FMUL);
-                    }*/
+                    }
                 }
 
                 property.componentType().unsafePut(mv);

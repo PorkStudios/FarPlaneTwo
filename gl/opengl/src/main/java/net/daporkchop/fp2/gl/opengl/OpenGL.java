@@ -125,7 +125,7 @@ public class OpenGL implements GL {
 
     protected final Allocator directMemoryAllocator = new DirectMemoryAllocator();
 
-    protected final StructFormatGenerator structFormatGenerator = new StructFormatGenerator();
+    protected final StructFormatGenerator structFormatGenerator = new StructFormatGenerator(this);
 
     protected final LoadingCache<AttributeFormatBuilderImpl<?>, AttributeFormat<?>> attributeFormatCache = CacheBuilder.newBuilder()
             .weakValues()
