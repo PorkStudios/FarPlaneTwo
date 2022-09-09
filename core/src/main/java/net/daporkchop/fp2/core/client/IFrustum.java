@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.client;
@@ -25,7 +24,7 @@ import net.daporkchop.fp2.gl.attribute.annotation.ArrayTransform;
 import net.daporkchop.fp2.gl.attribute.annotation.ArrayType;
 import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarConvert;
-import net.daporkchop.fp2.gl.attribute.annotation.ScalarType;
+import net.daporkchop.fp2.gl.attribute.annotation.ScalarTransform;
 
 /**
  * A view frustum which can check for intersection with objects.
@@ -68,7 +67,7 @@ public interface IFrustum {
         public static final int PLANES_MAX = 10;
 
         @Attribute
-        @ScalarType(convert = @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED))
+        @ScalarTransform(interpret = @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED))
         public int clippingPlaneCount = 0;
 
         @Attribute

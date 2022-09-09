@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.attribute.annotation;
@@ -30,8 +29,8 @@ import java.lang.annotation.Target;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.TYPE_USE })
-public @interface ScalarType {
-    ScalarConvert[] convert() default {};
+public @interface ScalarTransform {
+    ScalarConvert[] interpret() default {};
 
     ScalarExpand[] expand() default {};
 }

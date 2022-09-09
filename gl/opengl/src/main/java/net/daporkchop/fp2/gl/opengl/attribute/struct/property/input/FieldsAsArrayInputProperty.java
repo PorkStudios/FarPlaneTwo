@@ -15,13 +15,12 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.attribute.struct.property.input;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.annotation.ScalarType;
+import net.daporkchop.fp2.gl.attribute.annotation.ScalarTransform;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.ComponentInterpretation;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructPropertyFactory;
@@ -38,9 +37,9 @@ public class FieldsAsArrayInputProperty implements StructProperty.Elements {
     private final StructPropertyFactory.Options options;
     private final Field[] fields;
 
-    private final ScalarType scalarType;
+    private final ScalarTransform scalarType;
 
-    public FieldsAsArrayInputProperty(@NonNull StructPropertyFactory.Options options, @NonNull Field[] fields, @NonNull ScalarType scalarType) {
+    public FieldsAsArrayInputProperty(@NonNull StructPropertyFactory.Options options, @NonNull Field[] fields, @NonNull ScalarTransform scalarType) {
         this.options = options;
         this.fields = fields;
         this.scalarType = scalarType;

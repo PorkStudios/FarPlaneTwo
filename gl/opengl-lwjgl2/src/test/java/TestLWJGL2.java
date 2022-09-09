@@ -15,11 +15,9 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 import com.google.common.base.Strings;
-import lombok.Data;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.api.util.Identifier;
@@ -30,13 +28,14 @@ import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.attribute.AttributeWriter;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
-import net.daporkchop.fp2.gl.attribute.annotation.ArrayTransform;
-import net.daporkchop.fp2.gl.attribute.annotation.ArrayType;
-import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
-import net.daporkchop.fp2.gl.attribute.annotation.FieldsAsArrayAttribute;
-import net.daporkchop.fp2.gl.attribute.annotation.ScalarConvert;
+import net.daporkchop.fp2.gl.attribute.annotation.AArrayType;
+import net.daporkchop.fp2.gl.attribute.annotation.AScalarType;
+import net.daporkchop.fp2.gl.attribute.annotation.AVectorType;
+import net.daporkchop.fp2.gl.attribute.annotation.ArrayLength;
+import net.daporkchop.fp2.gl.attribute.annotation.MethodAttribute;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarExpand;
-import net.daporkchop.fp2.gl.attribute.annotation.ScalarType;
+import net.daporkchop.fp2.gl.attribute.annotation.ScalarConvert;
+import net.daporkchop.fp2.gl.attribute.annotation.ScalarTransform;
 import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureWriter2D;
@@ -131,7 +130,8 @@ public class TestLWJGL2 {
         AttributeFormat<UniformArrayAttribs> uniformArrayFormat = gl.createAttributeFormat(UniformArrayAttribs.class).useFor(AttributeUsage.UNIFORM_ARRAY).build();
         AttributeFormat<GlobalAttribs> globalFormat = gl.createAttributeFormat(GlobalAttribs.class).useFor(AttributeUsage.DRAW_GLOBAL).build();
         TextureFormat2D<TextureAttribs> textureFormat = gl.createTextureFormat2D(TextureAttribs.class).build();
-        AttributeFormat<LocalAttribs> localFormat = gl.createAttributeFormat(LocalAttribs.class).useFor(AttributeUsage.DRAW_LOCAL, AttributeUsage.TRANSFORM_INPUT, AttributeUsage.TRANSFORM_OUTPUT)
+        AttributeFormat<LocalAttribs> localFormat = gl.createAttributeFormat(LocalAttribs.class)
+                .useFor(AttributeUsage.DRAW_LOCAL, AttributeUsage.TRANSFORM_INPUT, AttributeUsage.TRANSFORM_OUTPUT)
                 .rename("pos", "posRenamed")
                 .build();
         AttributeFormat<UniformSelectionAttribs> selectionUniformFormat = gl.createAttributeFormat(UniformSelectionAttribs.class).useFor(AttributeUsage.UNIFORM).build();
@@ -323,77 +323,62 @@ public class TestLWJGL2 {
         }
     }
 
-    @Data
-    public static class UniformAttribs {
-        @FieldsAsArrayAttribute(
-                attribute = @Attribute(name = "scale"),
-                names = { "scaleX", "scaleY" },
-                scalarType = @ScalarType(convert = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true)),
-                transform = @ArrayTransform(ArrayTransform.Type.TO_VECTOR))
-        public final byte scaleX;
-        public final byte scaleY;
+    public interface UniformAttribs {
+        @MethodAttribute(
+                typeVector = @AVectorType(components = 2,
+                        componentType = @AScalarType(value = byte.class,
+                                interpret = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true))))
+        UniformAttribs scale(byte scaleX, byte scaleY);
 
-        @Attribute
-        public final float @ArrayType(length = 3, transform = @ArrayTransform(ArrayTransform.Type.TO_VECTOR)) [] floatsAsVector = new float[3];
+        @MethodAttribute(typeVector = @AVectorType(components = 3, componentType = @AScalarType(float.class)))
+        UniformAttribs floatsAsVector(float @ArrayLength(3) [] floats);
 
-        @Attribute
-        @ScalarType(convert = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = false))
-        public final byte @ArrayType(length = 8, transform = @ArrayTransform(value = ArrayTransform.Type.TO_VECTOR_ARRAY, vectorComponents = 2)) [] vec2Array = new byte[8];
-
-        //@Attribute public final float[] array = new float[8];
+        @MethodAttribute(
+                typeArray = @AArrayType(length = 4,
+                        componentTypeVector = @AVectorType(components = 2,
+                                componentType = @AScalarType(value = byte.class,
+                                        interpret = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = false)))))
+        void vec2Array(byte @ArrayLength(8) [] bytes);
     }
 
-    @Data
-    public static class UniformArrayAttribs {
-        @FieldsAsArrayAttribute(
-                attribute = @Attribute(name = "colorFactor"),
-                names = { "colorFactorR", "colorFactorG", "colorFactorB" },
-                transform = @ArrayTransform(ArrayTransform.Type.TO_VECTOR))
-        public final float colorFactorR;
-        public final float colorFactorG;
-        public final float colorFactorB;
+    public interface UniformArrayAttribs {
+        @MethodAttribute(name = "colorFactor",
+                typeVector = @AVectorType(components = 3, componentType = @AScalarType(float.class)))
+        UniformArrayAttribs colorFactor(float colorFactorR, float colorFactorG, float colorFactorB);
     }
 
-    @Data
-    public static class GlobalAttribs {
-        @FieldsAsArrayAttribute(
-                attribute = @Attribute(name = "offset"),
-                names = { "offsetX", "offsetY" },
-                scalarType = @ScalarType(convert = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = false)),
-                transform = @ArrayTransform(ArrayTransform.Type.TO_VECTOR))
-        public final byte offsetX;
-        public final byte offsetY;
+    public interface GlobalAttribs {
+        @MethodAttribute(
+                typeVector = @AVectorType(components = 2,
+                        componentType = @AScalarType(value = byte.class,
+                                interpret = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = false))))
+        GlobalAttribs offset(int offsetX, int offsetY);
 
-        @Attribute
-        @ScalarType(expand = @ScalarExpand(
-                value = ScalarExpand.Type.INT_ARGB8_TO_BYTE_VECTOR_RGBA,
-                thenConvert = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true)))
-        public final int color;
+        @MethodAttribute(
+                typeVector = @AVectorType(components = 4,
+                        componentType = @AScalarType(value = byte.class,
+                                interpret = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true))))
+        GlobalAttribs color(@ScalarTransform(expand = @ScalarExpand(ScalarExpand.Type.INT_ARGB8_TO_BYTE_VECTOR_RGBA)) int color);
     }
 
-    @Data
-    public static class LocalAttribs {
-        @FieldsAsArrayAttribute(
-                attribute = @Attribute(name = "pos"),
-                names = { "posX", "posY" },
-                scalarType = @ScalarType(convert = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = false)),
-                transform = @ArrayTransform(ArrayTransform.Type.TO_VECTOR))
-        public final byte posX;
-        public final byte posY;
+    public interface LocalAttribs {
+        @MethodAttribute(
+                typeVector = @AVectorType(components = 2,
+                        componentType = @AScalarType(value = byte.class,
+                                interpret = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = false))))
+        LocalAttribs pos(int posX, int posY);
     }
 
-    @Data
-    public static class TextureAttribs {
-        @Attribute
-        @ScalarType(expand = @ScalarExpand(
-                value = ScalarExpand.Type.INT_ARGB8_TO_BYTE_VECTOR_RGBA,
-                thenConvert = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true)))
-        public final int colorFactor;
+    public interface TextureAttribs {
+        @MethodAttribute(
+                typeVector = @AVectorType(components = 4,
+                        componentType = @AScalarType(value = byte.class,
+                                interpret = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true))))
+        TextureAttribs colorFactor(@ScalarTransform(expand = @ScalarExpand(ScalarExpand.Type.INT_ARGB8_TO_BYTE_VECTOR_RGBA)) int colorFactor);
     }
 
-    @Data
-    public static class UniformSelectionAttribs {
-        @Attribute
-        public final int selectable;
+    public interface UniformSelectionAttribs {
+        @MethodAttribute(typeScalar = @AScalarType(int.class))
+        void selectable(int selectable);
     }
 }

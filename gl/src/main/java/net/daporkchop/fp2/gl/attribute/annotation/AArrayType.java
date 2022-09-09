@@ -19,43 +19,57 @@
 
 package net.daporkchop.fp2.gl.attribute.annotation;
 
-import java.lang.annotation.ElementType;
+import net.daporkchop.lib.common.annotation.param.Positive;
+
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Indicates that a group of named fields should be grouped together into a single virtual array attribute.
- * <p>
- * This allows defining primitive arrays and vectors without an indirection into an actual Java array.
- *
  * @author DaPorkchop_
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.FIELD)
-@Deprecated
-public @interface FieldsAsArrayAttribute {
+@Target({})
+public @interface AArrayType {
     /**
-     * @return the {@link Attribute} annotation to place on the virtual attribute. {@link Attribute#name()} <strong>must</strong> be set!
-     */
-    Attribute attribute();
-
-    /**
-     * @return the names of the fields to interpret as array components, in order
-     */
-    String[] names();
-
-    /**
-     * An additional {@link ScalarTransform} annotation to be applied to every array component.
+     * The number of dimensions in the array type. At least one value must be given.
      * <p>
-     * This value has no effect if the array's component type is not scalar.
-     * <p>
-     * If any array component's type is annotated as {@link ScalarTransform}, that annotation will take priority over this one.
+     * If multiple lengths are present, the array type is treated as an array of arrays.
+     *
+     * @return the array's length(s)
      */
-    ScalarTransform scalarType() default @ScalarTransform;
+    @Positive int[] length();
 
     /**
-     * @return any additional {@link ArrayTransform}s to apply to the array after it has been assembled
+     * If non-empty, the array type's component type is set to the vector type.
+     * <p>
+     * More than one vector component type may not be given.
+     * <p>
+     * More than one of {@link #componentTypeVector()}, {@link #componentTypeMatrix()} and {@link #componentTypeScalar()} may not be set at the same time.
+     *
+     * @return the vector component type
      */
-    ArrayTransform[] transform() default {};
+    AVectorType[] componentTypeVector() default {};
+
+    /**
+     * If non-empty, the array type's component type is set to the matrix type.
+     * <p>
+     * More than one matrix component type may not be given.
+     * <p>
+     * More than one of {@link #componentTypeVector()}, {@link #componentTypeMatrix()} and {@link #componentTypeScalar()} may not be set at the same time.
+     *
+     * @return the matrix component type
+     */
+    AMatrixType[] componentTypeMatrix() default {};
+
+    /**
+     * If non-empty, the array type's component type is set to the scalar type.
+     * <p>
+     * More than one scalar component type may not be given.
+     * <p>
+     * More than one of {@link #componentTypeVector()}, {@link #componentTypeMatrix()} and {@link #componentTypeScalar()} may not be set at the same time.
+     *
+     * @return the scalar component type
+     */
+    AScalarType[] componentTypeScalar() default {};
 }

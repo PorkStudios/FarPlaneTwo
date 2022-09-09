@@ -19,6 +19,9 @@
 
 package net.daporkchop.fp2.gl.attribute.annotation;
 
+import net.daporkchop.lib.common.annotation.param.Positive;
+
+import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
@@ -27,23 +30,7 @@ import java.lang.annotation.Target;
  * @author DaPorkchop_
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({})
-public @interface ScalarExpand {
-    Type value();
-
-    boolean alpha() default true;
-
-    ScalarConvert[] thenConvert() default {};
-
-    /**
-     * @author DaPorkchop_
-     */
-    enum Type {
-        /**
-         * The source type is a scalar integer, interpreted as an ARGB8 color.
-         * <p>
-         * The RGB(A) components are extracted individually, resulting in a vector of unsigned {@code byte}s. The A channel is only included if {@link #alpha()} is {@code true}.
-         */
-        INT_ARGB8_TO_BYTE_VECTOR_RGBA
-    }
+@Target({ ElementType.TYPE_USE})
+public @interface ArrayLength {
+    @Positive int value();
 }

@@ -28,22 +28,8 @@ import java.lang.annotation.Target;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({})
-public @interface ScalarExpand {
-    Type value();
+public @interface AScalarType {
+    Class<?> value();
 
-    boolean alpha() default true;
-
-    ScalarConvert[] thenConvert() default {};
-
-    /**
-     * @author DaPorkchop_
-     */
-    enum Type {
-        /**
-         * The source type is a scalar integer, interpreted as an ARGB8 color.
-         * <p>
-         * The RGB(A) components are extracted individually, resulting in a vector of unsigned {@code byte}s. The A channel is only included if {@link #alpha()} is {@code true}.
-         */
-        INT_ARGB8_TO_BYTE_VECTOR_RGBA
-    }
+    ScalarConvert[] interpret() default {};
 }

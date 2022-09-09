@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.attribute.struct.property;
@@ -33,7 +32,7 @@ import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
 import net.daporkchop.fp2.gl.attribute.annotation.FieldsAsArrayAttribute;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarConvert;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarExpand;
-import net.daporkchop.fp2.gl.attribute.annotation.ScalarType;
+import net.daporkchop.fp2.gl.attribute.annotation.ScalarTransform;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.convert.IntegerToFloatConversionProperty;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.convert.IntegerToNormalizedFloatConversionProperty;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.convert.IntegerToUnsignedIntegerConversionProperty;
@@ -162,8 +161,8 @@ public class StructPropertyFactory {
         } else {
             StructProperty.Components rawProperty = new ScalarInputProperty(field);
 
-            return annotatedType.isAnnotationPresent(ScalarType.class)
-                    ? scalarType(options, rawProperty, annotatedType.getAnnotation(ScalarType.class))
+            return annotatedType.isAnnotationPresent(ScalarTransform.class)
+                    ? scalarType(options, rawProperty, annotatedType.getAnnotation(ScalarTransform.class))
                     : rawProperty;
         }
     }
@@ -172,14 +171,14 @@ public class StructPropertyFactory {
         if (annotatedType instanceof AnnotatedArrayType) {
             throw new UnsupportedOperationException("don't know how to process type: " + annotatedType.getType());
         } else {
-            return annotatedType.isAnnotationPresent(ScalarType.class)
-                    ? scalarType(options, (StructProperty.Components) property, annotatedType.getAnnotation(ScalarType.class))
+            return annotatedType.isAnnotationPresent(ScalarTransform.class)
+                    ? scalarType(options, (StructProperty.Components) property, annotatedType.getAnnotation(ScalarTransform.class))
                     : property;
         }
     }
 
-    public static StructProperty.Components scalarType(@NonNull Options options, @NonNull StructProperty.Components property, @NonNull ScalarType scalarType) {
-        StructProperty.Components converted = scalarConvert(options, property, scalarType.convert());
+    public static StructProperty.Components scalarType(@NonNull Options options, @NonNull StructProperty.Components property, @NonNull ScalarTransform scalarType) {
+        StructProperty.Components converted = scalarConvert(options, property, scalarType.interpret());
         StructProperty.Components expanded = scalarExpand(options, converted, scalarType.expand());
 
         return options.unpacked() ? new UnpackingConversionProperty(expanded) : expanded;

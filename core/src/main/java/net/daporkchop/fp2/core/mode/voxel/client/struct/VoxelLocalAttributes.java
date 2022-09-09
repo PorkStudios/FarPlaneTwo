@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.voxel.client.struct;
@@ -27,7 +26,7 @@ import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
 import net.daporkchop.fp2.gl.attribute.annotation.FieldsAsArrayAttribute;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarConvert;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarExpand;
-import net.daporkchop.fp2.gl.attribute.annotation.ScalarType;
+import net.daporkchop.fp2.gl.attribute.annotation.ScalarTransform;
 
 /**
  * @author DaPorkchop_
@@ -41,7 +40,7 @@ public class VoxelLocalAttributes {
     @FieldsAsArrayAttribute(
             attribute = @Attribute(name = "light"),
             names = { "lightBlock", "lightSky" },
-            scalarType = @ScalarType(convert = {
+            scalarType = @ScalarTransform(interpret = {
                     @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED),
                     @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true)
             }),
@@ -50,7 +49,7 @@ public class VoxelLocalAttributes {
     public byte lightSky;
 
     @Attribute
-    @ScalarType(expand = @ScalarExpand(
+    @ScalarTransform(expand = @ScalarExpand(
             value = ScalarExpand.Type.INT_ARGB8_TO_BYTE_VECTOR_RGBA, alpha = false,
             thenConvert = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true)))
     public int color;
@@ -58,7 +57,7 @@ public class VoxelLocalAttributes {
     @FieldsAsArrayAttribute(
             attribute = @Attribute(name = "pos"),
             names = { "posX", "posY", "posZ" },
-            scalarType = @ScalarType(convert = {
+            scalarType = @ScalarTransform(interpret = {
                     @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED),
                     @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = false)
             }),

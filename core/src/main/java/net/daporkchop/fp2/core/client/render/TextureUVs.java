@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.client.render;
@@ -36,7 +35,7 @@ import net.daporkchop.fp2.gl.attribute.annotation.ArrayTransform;
 import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
 import net.daporkchop.fp2.gl.attribute.annotation.FieldsAsArrayAttribute;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarConvert;
-import net.daporkchop.fp2.gl.attribute.annotation.ScalarType;
+import net.daporkchop.fp2.gl.attribute.annotation.ScalarTransform;
 
 import java.util.List;
 
@@ -80,7 +79,7 @@ public interface TextureUVs {
         @FieldsAsArrayAttribute(
                 attribute = @Attribute(name = "texQuadList"),
                 names = { "texQuadListFirst", "texQuadListLast" },
-                scalarType = @ScalarType(convert = @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED)),
+                scalarType = @ScalarTransform(interpret = @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED)),
                 transform = @ArrayTransform(ArrayTransform.Type.TO_VECTOR))
         public final int texQuadListFirst;
         public final int texQuadListLast;

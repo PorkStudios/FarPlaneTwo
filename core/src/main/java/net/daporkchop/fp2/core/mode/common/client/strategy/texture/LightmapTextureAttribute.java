@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.common.client.strategy.texture;
@@ -23,14 +22,14 @@ package net.daporkchop.fp2.core.mode.common.client.strategy.texture;
 import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarConvert;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarExpand;
-import net.daporkchop.fp2.gl.attribute.annotation.ScalarType;
+import net.daporkchop.fp2.gl.attribute.annotation.ScalarTransform;
 
 /**
  * @author DaPorkchop_
  */
 public class LightmapTextureAttribute {
     @Attribute
-    @ScalarType(expand = @ScalarExpand(
+    @ScalarTransform(expand = @ScalarExpand(
             value = ScalarExpand.Type.INT_ARGB8_TO_BYTE_VECTOR_RGBA,
             thenConvert = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true)))
     public final int lightmap = 0;

@@ -15,12 +15,10 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.attribute;
 
-import lombok.NonNull;
 import net.daporkchop.fp2.common.util.capability.CloseableResource;
 
 /**
@@ -40,10 +38,12 @@ public interface AttributeWriter<S> extends CloseableResource {
     int size();
 
     /**
-     * Appends a new element with data from the given {@link S}.
-     *
-     * @param struct the struct containing the element data
-     * @return the index of the completed element
+     * @return a {@link S} instance for struct data to be written to
      */
-    int put(@NonNull S struct);
+    S next();
+
+    /**
+     * @return a {@link S} instance for struct data to be written to
+     */
+    S nextFromCopy();
 }
