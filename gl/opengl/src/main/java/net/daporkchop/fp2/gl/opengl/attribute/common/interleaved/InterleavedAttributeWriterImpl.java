@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.attribute.common.interleaved;
@@ -27,12 +26,13 @@ import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
 @Getter
-public final class InterleavedAttributeWriterImpl<F extends InterleavedAttributeFormatImpl<F, S>, S> implements AttributeWriter<S> {
+public abstract class InterleavedAttributeWriterImpl<F extends InterleavedAttributeFormatImpl<F, S>, S> implements AttributeWriter<S> {
     protected final OpenGL gl;
     protected final F format;
     protected final InterleavedStructFormat<S> structFormat;
@@ -43,10 +43,12 @@ public final class InterleavedAttributeWriterImpl<F extends InterleavedAttribute
     protected int index;
     protected int capacity;
 
-    public InterleavedAttributeWriterImpl(@NonNull F format) {
+    public InterleavedAttributeWriterImpl(@NonNull InterleavedStructFormat<S> structFormat, @NonNull F format) {
+        assert structFormat == format.structFormat();
+
         this.gl = format.gl();
         this.format = format;
-        this.structFormat = format.structFormat();
+        this.structFormat = structFormat;
 
         this.stride = this.structFormat.stride();
 
@@ -64,13 +66,24 @@ public final class InterleavedAttributeWriterImpl<F extends InterleavedAttribute
     }
 
     @Override
-    public int put(@NonNull S struct) {
+    public S next() {
         if (this.index + 1 == this.capacity) { //grow buffer if needed
             this.resize(this.capacity << 1);
         }
 
-        this.structFormat.copy(struct, null, this.baseAddr + this.index * this.stride);
-        return this.index++;
+        this.index++;
+        return uncheckedCast(this);
+    }
+
+    @Override
+    public S nextFromCopy() {
+        if (this.index + 1 == this.capacity) { //grow buffer if needed
+            this.resize(this.capacity << 1);
+        }
+
+        this.index++;
+        this.structFormat.copy(null, this.baseAddr + (this.index - 1) * this.stride, null, this.baseAddr + this.index * this.stride);
+        return uncheckedCast(this);
     }
 
     protected void resize(int capacity) {

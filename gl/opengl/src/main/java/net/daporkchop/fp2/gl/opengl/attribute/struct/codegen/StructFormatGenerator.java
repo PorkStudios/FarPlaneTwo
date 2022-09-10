@@ -17,7 +17,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.struct;
+package net.daporkchop.fp2.gl.opengl.attribute.struct.codegen;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -100,6 +100,10 @@ public class StructFormatGenerator {
     }
 
     private <S> InterleavedStructFormat<S> generateInterleaved(@NonNull InterleavedStructLayout layout) throws Exception {
+        if (true) {
+            return new InterleavedStructFormatClassLoader<S>(this.gl, layout).createFormat();
+        }
+
         String baseClassName = getInternalName(InterleavedStructFormat.class);
         String className = baseClassName + '$' + layout.layoutName() + '$' + getInternalName(layout.structInfo().clazz()).replace("/", "__");
         String structName = getInternalName(layout.structInfo().clazz());

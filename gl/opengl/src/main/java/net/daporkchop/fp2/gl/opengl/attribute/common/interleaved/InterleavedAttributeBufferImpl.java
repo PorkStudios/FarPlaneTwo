@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.attribute.common.interleaved;
@@ -79,7 +78,7 @@ public final class InterleavedAttributeBufferImpl<F extends InterleavedAttribute
         //no-op
     }
 
-    @Override
+    /*@Override
     public void setContents(@NonNull S struct) {
         this.structFormat.upload(struct, this.buffer);
         this.capacity = 1;
@@ -89,7 +88,7 @@ public final class InterleavedAttributeBufferImpl<F extends InterleavedAttribute
     public void setContents(@NonNull S... structs) {
         this.structFormat.upload(structs, this.buffer);
         this.capacity = structs.length;
-    }
+    }*/ //TODO
 
     @Override
     public void setContentsFrom(@NonNull AttributeBuffer<S> _buffer) {
