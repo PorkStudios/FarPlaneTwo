@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.attribute.struct.property;
@@ -36,28 +35,55 @@ import static org.objectweb.asm.Opcodes.*;
 @RequiredArgsConstructor
 @Getter
 public enum ComponentType {
-    UNSIGNED_BYTE(BYTE_SIZE, true, false, byte.class, GLSLPrimitiveType.UINT) {
+    UNSIGNED_BYTE(BYTE_SIZE, true, false, 1 << Byte.SIZE, byte.class, GLSLPrimitiveType.UINT) {
         @Override
         public void arrayLoad(@NonNull MethodVisitor mv) {
             BYTE.arrayLoad(mv);
         }
 
         @Override
+        public void arrayStore(@NonNull MethodVisitor mv) {
+            BYTE.arrayStore(mv);
+        }
+
+        @Override
         public void unsafeGet(@NonNull MethodVisitor mv) {
             BYTE.unsafeGet(mv);
-            mv.visitLdcInsn(0xFF);
-            mv.visitInsn(IAND);
+            this.truncateInteger(mv);
         }
 
         @Override
         public void unsafePut(@NonNull MethodVisitor mv) {
             BYTE.unsafePut(mv);
         }
+
+        @Override
+        public void truncateInteger(@NonNull MethodVisitor mv) {
+            mv.visitLdcInsn(0xFF);
+            mv.visitInsn(IAND);
+        }
+
+        @Override
+        public void convertToFloat(@NonNull MethodVisitor mv) {
+            this.truncateInteger(mv);
+            mv.visitInsn(I2F);
+        }
+
+        @Override
+        public void convertFromFloat(@NonNull MethodVisitor mv) {
+            mv.visitInsn(F2I);
+            this.truncateInteger(mv);
+        }
     },
-    BYTE(BYTE_SIZE, true, true, byte.class, GLSLPrimitiveType.INT) {
+    BYTE(BYTE_SIZE, true, true, -Byte.MIN_VALUE, byte.class, GLSLPrimitiveType.INT) {
         @Override
         public void arrayLoad(@NonNull MethodVisitor mv) {
             mv.visitInsn(BALOAD);
+        }
+
+        @Override
+        public void arrayStore(@NonNull MethodVisitor mv) {
+            mv.visitInsn(BASTORE);
         }
 
         @Override
@@ -70,13 +96,35 @@ public enum ComponentType {
             mv.visitInsn(I2B);
             mv.visitMethodInsn(INVOKESTATIC, "net/daporkchop/lib/unsafe/PUnsafe", "putByte", "(Ljava/lang/Object;JB)V", false);
         }
+
+        @Override
+        public void truncateInteger(@NonNull MethodVisitor mv) {
+            mv.visitInsn(I2B);
+        }
+
+        @Override
+        public void convertToFloat(@NonNull MethodVisitor mv) {
+            this.truncateInteger(mv);
+            mv.visitInsn(I2F);
+        }
+
+        @Override
+        public void convertFromFloat(@NonNull MethodVisitor mv) {
+            mv.visitInsn(F2I);
+            this.truncateInteger(mv);
+        }
     },
-    UNSIGNED_SHORT(SHORT_SIZE, true, false, short.class, GLSLPrimitiveType.UINT) {
+    UNSIGNED_SHORT(SHORT_SIZE, true, false, 1 << Short.SIZE, short.class, GLSLPrimitiveType.UINT) {
         @Override
         public void arrayLoad(@NonNull MethodVisitor mv) {
             SHORT.arrayLoad(mv);
             mv.visitLdcInsn(0xFFFF);
             mv.visitInsn(IAND);
+        }
+
+        @Override
+        public void arrayStore(@NonNull MethodVisitor mv) {
+            SHORT.arrayStore(mv);
         }
 
         @Override
@@ -90,11 +138,33 @@ public enum ComponentType {
         public void unsafePut(@NonNull MethodVisitor mv) {
             SHORT.unsafePut(mv);
         }
+
+        @Override
+        public void truncateInteger(@NonNull MethodVisitor mv) {
+            mv.visitInsn(I2C);
+        }
+
+        @Override
+        public void convertToFloat(@NonNull MethodVisitor mv) {
+            this.truncateInteger(mv);
+            mv.visitInsn(I2F);
+        }
+
+        @Override
+        public void convertFromFloat(@NonNull MethodVisitor mv) {
+            mv.visitInsn(F2I);
+            this.truncateInteger(mv);
+        }
     },
-    SHORT(SHORT_SIZE, true, true, short.class, GLSLPrimitiveType.INT) {
+    SHORT(SHORT_SIZE, true, true, -Short.MIN_VALUE, short.class, GLSLPrimitiveType.INT) {
         @Override
         public void arrayLoad(@NonNull MethodVisitor mv) {
             mv.visitInsn(SALOAD);
+        }
+
+        @Override
+        public void arrayStore(@NonNull MethodVisitor mv) {
+            mv.visitInsn(SASTORE);
         }
 
         @Override
@@ -107,11 +177,33 @@ public enum ComponentType {
             mv.visitInsn(I2S);
             mv.visitMethodInsn(INVOKESTATIC, "net/daporkchop/lib/unsafe/PUnsafe", "putShort", "(Ljava/lang/Object;JS)V", false);
         }
+
+        @Override
+        public void truncateInteger(@NonNull MethodVisitor mv) {
+            mv.visitInsn(I2S);
+        }
+
+        @Override
+        public void convertToFloat(@NonNull MethodVisitor mv) {
+            this.truncateInteger(mv);
+            mv.visitInsn(I2F);
+        }
+
+        @Override
+        public void convertFromFloat(@NonNull MethodVisitor mv) {
+            mv.visitInsn(F2I);
+            this.truncateInteger(mv);
+        }
     },
-    UNSIGNED_INT(INT_SIZE, true, false, int.class, GLSLPrimitiveType.UINT) {
+    UNSIGNED_INT(INT_SIZE, true, false, (float) (1L << (long) Integer.SIZE), int.class, GLSLPrimitiveType.UINT) {
         @Override
         public void arrayLoad(@NonNull MethodVisitor mv) {
             INT.arrayLoad(mv);
+        }
+
+        @Override
+        public void arrayStore(@NonNull MethodVisitor mv) {
+            INT.arrayStore(mv);
         }
 
         @Override
@@ -123,11 +215,38 @@ public enum ComponentType {
         public void unsafePut(@NonNull MethodVisitor mv) {
             INT.unsafePut(mv);
         }
+
+        @Override
+        public void truncateInteger(@NonNull MethodVisitor mv) {
+            //no-op
+        }
+
+        @Override
+        public void convertToFloat(@NonNull MethodVisitor mv) {
+            //unsigned integers need special handling because java doesn't support them...
+            mv.visitInsn(I2L);
+            mv.visitLdcInsn(0xFFFFFFFFL);
+            mv.visitInsn(LAND);
+            mv.visitInsn(L2F);
+        }
+
+        @Override
+        public void convertFromFloat(@NonNull MethodVisitor mv) {
+            mv.visitInsn(F2L);
+            mv.visitLdcInsn(0xFFFFFFFFL);
+            mv.visitInsn(LAND);
+            mv.visitInsn(L2I);
+        }
     },
-    INT(INT_SIZE, true, true, int.class, GLSLPrimitiveType.INT) {
+    INT(INT_SIZE, true, true, -((float) Integer.MIN_VALUE), int.class, GLSLPrimitiveType.INT) {
         @Override
         public void arrayLoad(@NonNull MethodVisitor mv) {
             mv.visitInsn(IALOAD);
+        }
+
+        @Override
+        public void arrayStore(@NonNull MethodVisitor mv) {
+            mv.visitInsn(IASTORE);
         }
 
         @Override
@@ -139,11 +258,36 @@ public enum ComponentType {
         public void unsafePut(@NonNull MethodVisitor mv) {
             mv.visitMethodInsn(INVOKESTATIC, "net/daporkchop/lib/unsafe/PUnsafe", "putInt", "(Ljava/lang/Object;JI)V", false);
         }
+
+        @Override
+        public void truncateInteger(@NonNull MethodVisitor mv) {
+            //no-op
+        }
+
+        @Override
+        public void convertToFloat(@NonNull MethodVisitor mv) {
+            mv.visitInsn(I2F);
+        }
+
+        @Override
+        public void convertFromFloat(@NonNull MethodVisitor mv) {
+            mv.visitInsn(F2I);
+        }
     },
-    FLOAT(FLOAT_SIZE, false, true, float.class, GLSLPrimitiveType.FLOAT) {
+    FLOAT(FLOAT_SIZE, false, true, Float.NaN, float.class, GLSLPrimitiveType.FLOAT) {
+        @Override
+        public float inverseNormalizationFactor() {
+            throw new UnsupportedOperationException("normalize float");
+        }
+
         @Override
         public void arrayLoad(@NonNull MethodVisitor mv) {
             mv.visitInsn(FALOAD);
+        }
+
+        @Override
+        public void arrayStore(@NonNull MethodVisitor mv) {
+            mv.visitInsn(FASTORE);
         }
 
         @Override
@@ -154,6 +298,21 @@ public enum ComponentType {
         @Override
         public void unsafePut(@NonNull MethodVisitor mv) {
             mv.visitMethodInsn(INVOKESTATIC, "net/daporkchop/lib/unsafe/PUnsafe", "putFloat", "(Ljava/lang/Object;JF)V", false);
+        }
+
+        @Override
+        public void truncateInteger(@NonNull MethodVisitor mv) {
+            throw new UnsupportedOperationException("truncate float");
+        }
+
+        @Override
+        public void convertToFloat(@NonNull MethodVisitor mv) {
+            throw new UnsupportedOperationException("convert float -> float");
+        }
+
+        @Override
+        public void convertFromFloat(@NonNull MethodVisitor mv) {
+            throw new UnsupportedOperationException("convert float -> float");
         }
     };
 
@@ -172,14 +331,28 @@ public enum ComponentType {
     private final boolean integer;
     private final boolean signed;
 
+    private final float inverseNormalizationFactor;
+
     @NonNull
     private final Class<?> javaPrimitive;
     @NonNull
     private final GLSLPrimitiveType glslPrimitive;
 
+    public float normalizationFactor() {
+        return 1.0f / this.inverseNormalizationFactor();
+    }
+
     public abstract void arrayLoad(@NonNull MethodVisitor mv);
+
+    public abstract void arrayStore(@NonNull MethodVisitor mv);
 
     public abstract void unsafeGet(@NonNull MethodVisitor mv);
 
     public abstract void unsafePut(@NonNull MethodVisitor mv);
+
+    public abstract void truncateInteger(@NonNull MethodVisitor mv);
+
+    public abstract void convertToFloat(@NonNull MethodVisitor mv);
+
+    public abstract void convertFromFloat(@NonNull MethodVisitor mv);
 }

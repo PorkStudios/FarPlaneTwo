@@ -47,7 +47,7 @@ public class StructLayouts {
                 long[] componentOffsets = new long[componentsProperty.components()];
                 for (int i = 0, col = 0; col < componentsProperty.cols(); col++) {
                     for (int row = 0; row < componentsProperty.rows(); row++, i++) {
-                        componentOffsets[i] = offset.getAndAdd(componentsProperty.componentType().size());
+                        componentOffsets[i] = offset.getAndAdd(componentsProperty.logicalStorageType().size());
                     }
                     offset.roundUp(alignment);
                 }
@@ -106,7 +106,7 @@ public class StructLayouts {
                     public Boolean withComponents(@NonNull StructProperty.Components property) {
                         ComponentInterpretation interpretation = property.componentInterpretation();
 
-                        if (property.componentType().integer()
+                        if (property.logicalStorageType().integer()
                             && !interpretation.outputType().integer()
                             && interpretation.outputType().signed()
                             && interpretation.normalized()) {
@@ -151,7 +151,7 @@ public class StructLayouts {
                     public TextureStructLayout.Member withComponents(@NonNull StructProperty.Components componentsProperty) {
                         long[] componentOffsets = new long[componentsProperty.components()];
                         for (int i = 0; i < componentsProperty.components(); i++) {
-                            componentOffsets[i] = stride.getAndAdd(componentsProperty.componentType().size());
+                            componentOffsets[i] = stride.getAndAdd(componentsProperty.logicalStorageType().size());
                         }
                         return new TextureStructLayout.RegularMember(0L, componentOffsets);
                     }

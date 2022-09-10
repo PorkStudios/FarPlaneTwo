@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.attribute.struct.property.transform;
@@ -36,7 +35,7 @@ import org.objectweb.asm.MethodVisitor;
 public class ArrayToVectorTransformProperty implements StructProperty.Components {
     private final Elements parent;
 
-    private final ComponentType componentType;
+    private final ComponentType logicalStorageType;
     private final ComponentInterpretation componentInterpretation;
 
     public ArrayToVectorTransformProperty(@NonNull StructProperty.Elements parent) {
@@ -44,10 +43,10 @@ public class ArrayToVectorTransformProperty implements StructProperty.Components
 
         //find component type of first element
         StructProperty element0 = parent.element(0);
-        this.componentType = element0.with(new TypedPropertyCallback<ComponentType>() {
+        this.logicalStorageType = element0.with(new TypedPropertyCallback<ComponentType>() {
             @Override
             public ComponentType withComponents(@NonNull Components componentsProperty) {
-                return componentsProperty.componentType();
+                return componentsProperty.logicalStorageType();
             }
 
             @Override
@@ -65,7 +64,7 @@ public class ArrayToVectorTransformProperty implements StructProperty.Components
 
     @Override
     public GLSLBasicType glslType() {
-        return GLSLTypeFactory.vec(this.componentType().glslPrimitive(), this.components());
+        return GLSLTypeFactory.vec(this.logicalStorageType().glslPrimitive(), this.components());
     }
 
     @Override

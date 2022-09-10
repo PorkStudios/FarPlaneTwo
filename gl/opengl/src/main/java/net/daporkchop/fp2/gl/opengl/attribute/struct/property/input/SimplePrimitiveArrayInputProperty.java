@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.attribute.struct.property.input;
@@ -68,13 +67,13 @@ public class SimplePrimitiveArrayInputProperty implements StructProperty.Element
 
         return StructPropertyFactory.processAnnotated(this.options, new StructProperty.Components() {
             @Override
-            public ComponentType componentType() {
+            public ComponentType logicalStorageType() {
                 return SimplePrimitiveArrayInputProperty.this.componentType;
             }
 
             @Override
             public GLSLBasicType glslType() {
-                return GLSLTypeFactory.vec(this.componentType().glslPrimitive(), this.components());
+                return GLSLTypeFactory.vec(this.logicalStorageType().glslPrimitive(), this.components());
             }
 
             @Override
@@ -95,7 +94,7 @@ public class SimplePrimitiveArrayInputProperty implements StructProperty.Element
                     //array is stored at structLvtIndex, we want to load the elementIndex-th element from it
                     mv.visitVarInsn(ALOAD, structLvtIndex);
                     mv.visitLdcInsn(elementIndex);
-                    this.componentType().arrayLoad(mv);
+                    this.logicalStorageType().arrayLoad(mv);
                 });
             }
         }, ((AnnotatedArrayType) this.field.getAnnotatedType()).getAnnotatedGenericComponentType());

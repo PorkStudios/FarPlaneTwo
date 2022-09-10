@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.attribute.struct.property.input;
@@ -38,17 +37,17 @@ import static org.objectweb.asm.Type.*;
  */
 @Getter
 public class ScalarInputProperty implements StructProperty.Components {
-    private final ComponentType componentType;
+    private final ComponentType logicalStorageType;
     private final Field field;
 
     public ScalarInputProperty(@NonNull Field field) {
-        this.componentType = ComponentType.from(field.getType());
+        this.logicalStorageType = ComponentType.from(field.getType());
         this.field = field;
     }
 
     @Override
     public GLSLBasicType glslType() {
-        return this.componentType().glslPrimitive();
+        return this.logicalStorageType().glslPrimitive();
     }
 
     @Override

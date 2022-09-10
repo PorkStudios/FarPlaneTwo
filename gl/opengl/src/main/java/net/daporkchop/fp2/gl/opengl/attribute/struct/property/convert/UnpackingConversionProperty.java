@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.attribute.struct.property.convert;
@@ -33,8 +32,8 @@ public class UnpackingConversionProperty extends AbstractConversionProperty {
     }
 
     @Override
-    public ComponentType componentType() {
-        switch (this.parent().componentType()) {
+    public ComponentType logicalStorageType() {
+        switch (this.parent().logicalStorageType()) {
             case UNSIGNED_BYTE:
             case UNSIGNED_SHORT:
                 return ComponentType.UNSIGNED_INT;
@@ -44,15 +43,15 @@ public class UnpackingConversionProperty extends AbstractConversionProperty {
             case UNSIGNED_INT:
             case INT:
             case FLOAT:
-                return this.parent().componentType();
+                return this.parent().logicalStorageType();
             default:
-                throw new IllegalArgumentException("unknown component type: " + this.parent().componentType());
+                throw new IllegalArgumentException("unknown component type: " + this.parent().logicalStorageType());
         }
     }
 
     @Override
     protected void convert(@NonNull MethodVisitor mv) {
-        switch (this.parent().componentType()) {
+        switch (this.parent().logicalStorageType()) {
             case UNSIGNED_BYTE:
             case UNSIGNED_SHORT:
             case BYTE:
@@ -65,7 +64,7 @@ public class UnpackingConversionProperty extends AbstractConversionProperty {
                 //nothing needs to be done, these are already correct
                 break;
             default:
-                throw new IllegalArgumentException("unknown component type: " + this.parent().componentType());
+                throw new IllegalArgumentException("unknown component type: " + this.parent().logicalStorageType());
         }
     }
 }

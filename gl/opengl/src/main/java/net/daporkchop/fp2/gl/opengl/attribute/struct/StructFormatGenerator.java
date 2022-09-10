@@ -32,6 +32,7 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFor
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.StructFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.TextureStructFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.InterleavedStructLayout;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.LayoutComponentStorage;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.StructLayout;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.TextureStructLayout;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.ComponentInterpretation;
@@ -333,7 +334,7 @@ public class StructFormatGenerator {
                         mv.visitInsn(LADD);
 
                         loader.load(structLvtIndex, lvtIndexAllocator, componentIndex);
-                        componentsProperty.componentType().unsafePut(mv);
+                        componentsProperty.logicalStorageType().unsafePut(mv);
                     }
                 });
             }
@@ -368,18 +369,23 @@ public class StructFormatGenerator {
             public void withComponents(@NonNull StructProperty.Components componentsProperty) {
                 checkArg(componentsProperty.components() == member.components(), "stage %s has %d components, but member %s has only %d!", componentsProperty, componentsProperty.components(), member, member.components());
 
-                ComponentInterpretation interpretation = componentsProperty.componentInterpretation();
-
                 int cols = componentsProperty.cols();
                 int rows = componentsProperty.rows();
 
                 for (int col = 0; col < cols; col++) {
+                    //ensure storage is identical for all components
+                    LayoutComponentStorage storage = member.component(col * rows).storage();
+                    for (int row = 0; row < rows; row++) {
+                        LayoutComponentStorage componentStorage = member.component(col * rows + row).storage();
+                        checkArg(storage.equals(componentStorage), "invalid storage for property: components in column must all use the same storage");
+                    }
+
                     //ensure component offsets are sequential in memory
                     long offset = member.component(col * rows).offset();
                     for (int row = 0; row < rows; row++) {
                         long componentOffset = member.component(col * rows + row).offset();
-                        long expectedOffset = offset + (long) interpretation.inputType().size() * row;
-                        checkArg(componentOffset == expectedOffset, "invalid offset for property: components need to be sequential in memory!");
+                        long expectedOffset = offset + (long) storage.physicalStorageType().size() * row;
+                        checkArg(componentOffset == expectedOffset, "invalid offset for property: components in column need to be sequential in memory!");
                     }
 
                     mv.visitVarInsn(ALOAD, apiLvtIndex); //api.<method>(
@@ -390,16 +396,16 @@ public class StructFormatGenerator {
                     mv.visitInsn(IADD);
 
                     mv.visitLdcInsn(rows); //GLint size,
-                    mv.visitFieldInsn(GETSTATIC, getInternalName(OpenGLConstants.class), "GL_" + interpretation.inputType(), "I"); //GLenum type,
+                    mv.visitFieldInsn(GETSTATIC, getInternalName(OpenGLConstants.class), "GL_" + storage.physicalStorageType(), "I"); //GLenum type,
 
-                    if (!interpretation.outputType().integer()) { //GLboolean normalized,
-                        mv.visitLdcInsn(interpretation.normalized());
+                    if (!storage.glslInterpretedType().integer()) { //GLboolean normalized,
+                        mv.visitLdcInsn(storage.interpretation().normalized());
                     }
 
                     mv.visitLdcInsn(toInt(layout.stride(), "stride")); //GLsizei stride,
                     mv.visitLdcInsn(member.component(col * rows).offset()); //const void* pointer);
 
-                    if (interpretation.outputType().integer()) { //<method>
+                    if (storage.glslInterpretedType().integer()) { //<method>
                         mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glVertexAttribIPointer", "(IIIIJ)V", true);
                     } else {
                         mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glVertexAttribPointer", "(IIIZIJ)V", true);
@@ -496,9 +502,9 @@ public class StructFormatGenerator {
 
             { //int textureInternalFormat
                 String components = "RGBA".substring(0, property.components());
-                int bitDepth = property.componentType().size() * Byte.SIZE;
+                int bitDepth = property.logicalStorageType().size() * Byte.SIZE;
                 String suffix;
-                if (property.componentType().integer()) {
+                if (property.logicalStorageType().integer()) {
                     suffix = !interpretation.outputType().integer() && interpretation.normalized()
                             ? interpretation.outputType().signed() ? "_SNORM" : ""
                             : interpretation.outputType().signed() ? "I" : "UI";
@@ -517,7 +523,7 @@ public class StructFormatGenerator {
             }
 
             { //int textureType
-                mv.visitFieldInsn(GETSTATIC, getInternalName(OpenGLConstants.class), "GL_" + property.componentType(), "I");
+                mv.visitFieldInsn(GETSTATIC, getInternalName(OpenGLConstants.class), "GL_" + property.logicalStorageType(), "I");
             }
 
             mv.visitMethodInsn(INVOKESPECIAL, baseClassName, "<init>", Type.getMethodDescriptor(Type.VOID_TYPE, Type.getObjectType(getInternalName(TextureStructLayout.class)), Type.INT_TYPE, Type.INT_TYPE, Type.INT_TYPE), false);
@@ -546,7 +552,7 @@ public class StructFormatGenerator {
                     mv.visitInsn(LADD);
 
                     loader.load(structLvtIndex, lvtIndexAllocator, componentIndex);
-                    property.componentType().unsafePut(mv);
+                    property.logicalStorageType().unsafePut(mv);
                 }
             });
 
@@ -573,14 +579,14 @@ public class StructFormatGenerator {
             for (int componentIndex = 0; componentIndex < property.components(); componentIndex++) {
                 mv.visitVarInsn(ALOAD, 2);
                 mv.visitVarInsn(LLOAD, 3);
-                mv.visitLdcInsn(componentIndex * (long) property.componentType().size());
+                mv.visitLdcInsn(componentIndex * (long) property.logicalStorageType().size());
                 mv.visitInsn(LADD);
 
                 mv.visitVarInsn(ILOAD, 1);
                 mv.visitLdcInsn((((2 - componentIndex) & 3) << 3));
                 mv.visitInsn(ISHR);
 
-                if (!property.componentType().integer() && interpretation.normalized() && interpretation.outputType().signed()) {
+                if (!property.logicalStorageType().integer() && interpretation.normalized() && interpretation.outputType().signed()) {
                     //the property is stored in memory as a float, which will be normalized while preserving the sign. convert to a byte
                     mv.visitInsn(I2B);
                 } else { //truncate to 8 bits
@@ -588,7 +594,7 @@ public class StructFormatGenerator {
                     mv.visitInsn(IAND);
                 }
 
-                if (!property.componentType().integer()) {
+                if (!property.logicalStorageType().integer()) {
                     mv.visitInsn(I2F);
                     if (interpretation.normalized()) {
                         mv.visitLdcInsn(interpretation.outputType().signed() ? (1.0f / 128.0f) : (1.0f / 256.0f));
@@ -596,7 +602,7 @@ public class StructFormatGenerator {
                     }
                 }
 
-                property.componentType().unsafePut(mv);
+                property.logicalStorageType().unsafePut(mv);
             }
 
             mv.visitInsn(RETURN);

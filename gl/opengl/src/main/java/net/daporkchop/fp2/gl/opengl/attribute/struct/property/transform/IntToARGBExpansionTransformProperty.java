@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.attribute.struct.property.transform;
@@ -40,7 +39,7 @@ public class IntToARGBExpansionTransformProperty implements StructProperty.Compo
     private final boolean alpha;
 
     public IntToARGBExpansionTransformProperty(@NonNull Components parent, boolean alpha) {
-        checkArg(parent.componentType() == ComponentType.INT, "parent component type must be %s (given: %s)", ComponentType.INT, parent.componentType());
+        checkArg(parent.logicalStorageType() == ComponentType.INT, "parent component type must be %s (given: %s)", ComponentType.INT, parent.logicalStorageType());
         checkArg(parent.components() == 1, "parent must have exactly one component (given: %d)", parent.components());
 
         this.parent = parent;
@@ -48,13 +47,13 @@ public class IntToARGBExpansionTransformProperty implements StructProperty.Compo
     }
 
     @Override
-    public ComponentType componentType() {
+    public ComponentType logicalStorageType() {
         return ComponentType.UNSIGNED_BYTE;
     }
 
     @Override
     public GLSLBasicType glslType() {
-        return GLSLTypeFactory.vec(this.componentType().glslPrimitive(), this.components());
+        return GLSLTypeFactory.vec(this.logicalStorageType().glslPrimitive(), this.components());
     }
 
     @Override

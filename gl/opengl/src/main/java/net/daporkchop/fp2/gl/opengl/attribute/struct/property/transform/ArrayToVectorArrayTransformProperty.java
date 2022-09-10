@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.attribute.struct.property.transform;
@@ -38,7 +37,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 public class ArrayToVectorArrayTransformProperty implements StructProperty.Elements {
     private final Elements parent;
 
-    private final ComponentType componentType;
+    private final ComponentType logicalStorageType;
     private final ComponentInterpretation componentInterpretation;
 
     private final int vectorComponents;
@@ -51,12 +50,12 @@ public class ArrayToVectorArrayTransformProperty implements StructProperty.Eleme
 
         //ensure element type only has 1 component
         StructProperty element0 = parent.element(0);
-        this.componentType = element0.with(new TypedPropertyCallback<ComponentType>() {
+        this.logicalStorageType = element0.with(new TypedPropertyCallback<ComponentType>() {
             @Override
             public ComponentType withComponents(@NonNull Components componentsProperty) {
                 checkArg(componentsProperty.components() == 1, "cannot construct vectors when the elements have %d compoenents!", componentsProperty.components());
 
-                return componentsProperty.componentType();
+                return componentsProperty.logicalStorageType();
             }
 
             @Override
@@ -83,8 +82,8 @@ public class ArrayToVectorArrayTransformProperty implements StructProperty.Eleme
 
         return new StructProperty.Components() {
             @Override
-            public ComponentType componentType() {
-                return ArrayToVectorArrayTransformProperty.this.componentType();
+            public ComponentType logicalStorageType() {
+                return ArrayToVectorArrayTransformProperty.this.logicalStorageType();
             }
 
             @Override
@@ -94,7 +93,7 @@ public class ArrayToVectorArrayTransformProperty implements StructProperty.Eleme
 
             @Override
             public GLSLBasicType glslType() {
-                return GLSLTypeFactory.vec(this.componentType().glslPrimitive(), this.components());
+                return GLSLTypeFactory.vec(this.logicalStorageType().glslPrimitive(), this.components());
             }
 
             @Override

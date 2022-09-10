@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.attribute.struct.property.convert;
@@ -42,11 +41,11 @@ public class IntegerToFloatConversionProperty {
         public Real(@NonNull Components parent) {
             super(parent);
 
-            checkArg(parent.componentType().integer(), "not an integer type: %s", parent.componentType());
+            checkArg(parent.logicalStorageType().integer(), "not an integer type: %s", parent.logicalStorageType());
         }
 
         @Override
-        public ComponentType componentType() {
+        public ComponentType logicalStorageType() {
             return ComponentType.FLOAT;
         }
 
@@ -57,7 +56,7 @@ public class IntegerToFloatConversionProperty {
 
         @Override
         protected void convert(@NonNull MethodVisitor mv) {
-            switch (this.parent().componentType()) {
+            switch (this.parent().logicalStorageType()) {
                 case UNSIGNED_BYTE:
                 case BYTE:
                 case UNSIGNED_SHORT:
@@ -72,7 +71,7 @@ public class IntegerToFloatConversionProperty {
                     mv.visitInsn(L2F);
                     break;
                 default:
-                    throw new IllegalArgumentException("unknown component type: " + this.parent().componentType());
+                    throw new IllegalArgumentException("unknown component type: " + this.parent().logicalStorageType());
             }
         }
     }

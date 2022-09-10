@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.attribute.struct.property;
@@ -34,6 +33,8 @@ import java.util.Map;
 import java.util.stream.IntStream;
 
 /**
+ * Defines a property in a struct, in such a way as it would be visible in shader code.
+ *
  * @author DaPorkchop_
  */
 public interface StructProperty {
@@ -79,10 +80,13 @@ public interface StructProperty {
             return callback.withComponents(this);
         }
 
-        ComponentType componentType();
+        /**
+         * @return the component type which the property is expected to be stored as
+         */
+        ComponentType logicalStorageType();
 
         default ComponentInterpretation componentInterpretation() {
-            return new ComponentInterpretation(this.componentType(), this.componentType().glslPrimitive(), false);
+            return new ComponentInterpretation(this.logicalStorageType().glslPrimitive(), false);
         }
 
         /**
@@ -107,21 +111,26 @@ public interface StructProperty {
             return this.cols() * this.rows();
         }
 
+        @Deprecated
         void load(@NonNull MethodVisitor mv, int structLvtIndex, int lvtIndexAllocator, @NonNull LoadCallback callback);
 
         /**
          * @author DaPorkchop_
          */
+        @Deprecated
         @FunctionalInterface
         interface LoadCallback {
+            @Deprecated
             void accept(int structLvtIndex, int lvtIndexAllocator, @NonNull Loader loader);
         }
 
         /**
          * @author DaPorkchop_
          */
+        @Deprecated
         @FunctionalInterface
         interface Loader {
+            @Deprecated
             void load(int structLvtIndex, int lvtIndexAllocator, int componentIndex);
         }
     }
@@ -154,6 +163,7 @@ public interface StructProperty {
             return IntStream.range(0, this.elements()).mapToObj(this::element).iterator();
         }
 
+        @Deprecated
         void load(@NonNull MethodVisitor mv, int structLvtIndex, int lvtIndexAllocator, @NonNull LoadCallback callback);
 
         /**
@@ -161,6 +171,7 @@ public interface StructProperty {
          */
         @FunctionalInterface
         interface LoadCallback {
+            @Deprecated
             void accept(int structLvtIndex, int lvtIndexAllocator);
         }
     }

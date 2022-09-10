@@ -338,7 +338,7 @@ public class TestLWJGL2 {
                         componentTypeVector = @AVectorType(components = 2,
                                 componentType = @AScalarType(value = byte.class,
                                         interpret = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = false)))))
-        void vec2Array(byte @ArrayLength(8) [] bytes);
+        UniformAttribs vec2Array(byte @ArrayLength(8) [] bytes);
     }
 
     public interface UniformArrayAttribs {

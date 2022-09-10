@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.attribute.struct.property.convert;
@@ -34,13 +33,13 @@ public class IntegerToUnsignedIntegerConversionProperty extends AbstractConversi
     public IntegerToUnsignedIntegerConversionProperty(@NonNull Components parent) {
         super(parent);
 
-        checkArg(parent.componentType().integer(), "not an integer type: %s", parent.componentType());
-        checkArg(parent.componentType().signed(), "not a signed type: %s", parent.componentType());
+        checkArg(parent.logicalStorageType().integer(), "not an integer type: %s", parent.logicalStorageType());
+        checkArg(parent.logicalStorageType().signed(), "not a signed type: %s", parent.logicalStorageType());
     }
 
     @Override
-    public ComponentType componentType() {
-        switch (this.parent().componentType()) {
+    public ComponentType logicalStorageType() {
+        switch (this.parent().logicalStorageType()) {
             case BYTE:
                 return ComponentType.UNSIGNED_BYTE;
             case SHORT:
@@ -48,13 +47,13 @@ public class IntegerToUnsignedIntegerConversionProperty extends AbstractConversi
             case INT:
                 return ComponentType.UNSIGNED_INT;
             default:
-                throw new IllegalArgumentException("unknown component type: " + this.parent().componentType());
+                throw new IllegalArgumentException("unknown component type: " + this.parent().logicalStorageType());
         }
     }
 
     @Override
     protected void convert(@NonNull MethodVisitor mv) {
-        switch (this.parent().componentType()) {
+        switch (this.parent().logicalStorageType()) {
             case BYTE:
                 mv.visitLdcInsn(0xFF);
                 break;
@@ -65,7 +64,7 @@ public class IntegerToUnsignedIntegerConversionProperty extends AbstractConversi
                 //we can't convert to an unsigned integer in java...
                 return;
             default:
-                throw new IllegalArgumentException("unknown component type: " + this.parent().componentType());
+                throw new IllegalArgumentException("unknown component type: " + this.parent().logicalStorageType());
         }
         mv.visitInsn(IAND);
     }

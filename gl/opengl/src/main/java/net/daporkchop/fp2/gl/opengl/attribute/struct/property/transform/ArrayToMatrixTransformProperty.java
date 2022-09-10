@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.attribute.struct.property.transform;
@@ -37,7 +36,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 public class ArrayToMatrixTransformProperty implements StructProperty.Components {
     private final StructProperty.Elements parent;
 
-    private final ComponentType componentType;
+    private final ComponentType logicalStorageType;
 
     private final int cols;
     private final int rows;
@@ -51,10 +50,10 @@ public class ArrayToMatrixTransformProperty implements StructProperty.Components
         this.rows = rows;
 
         //find component type of first element
-        this.componentType = parent.element(0).with(new TypedPropertyCallback<ComponentType>() {
+        this.logicalStorageType = parent.element(0).with(new TypedPropertyCallback<ComponentType>() {
             @Override
             public ComponentType withComponents(@NonNull Components componentsProperty) {
-                return componentsProperty.componentType();
+                return componentsProperty.logicalStorageType();
             }
 
             @Override
@@ -74,7 +73,7 @@ public class ArrayToMatrixTransformProperty implements StructProperty.Components
                 @Override
                 public void withComponents(@NonNull Components componentsProperty) {
                     checkArg(componentsProperty.components() == 1, "cannot construct matrix if any of the elements has more than one component!");
-                    checkArg(componentsProperty.componentType() == ArrayToMatrixTransformProperty.this.componentType, "cannot construct matrix if the component type is not uniform across all elements! expected: %s, found: %s", ArrayToMatrixTransformProperty.this.componentType, componentsProperty.componentType());
+                    checkArg(componentsProperty.logicalStorageType() == ArrayToMatrixTransformProperty.this.logicalStorageType, "cannot construct matrix if the component type is not uniform across all elements! expected: %s, found: %s", ArrayToMatrixTransformProperty.this.logicalStorageType, componentsProperty.logicalStorageType());
                 }
 
                 @Override
@@ -92,7 +91,7 @@ public class ArrayToMatrixTransformProperty implements StructProperty.Components
 
     @Override
     public GLSLBasicType glslType() {
-        return GLSLTypeFactory.mat(this.componentType.glslPrimitive(), this.cols, this.rows);
+        return GLSLTypeFactory.mat(this.logicalStorageType.glslPrimitive(), this.cols, this.rows);
     }
 
     @Override
