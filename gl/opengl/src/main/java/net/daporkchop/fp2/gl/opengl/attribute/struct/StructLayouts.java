@@ -85,14 +85,13 @@ public class StructLayouts {
         return InterleavedStructLayout.builder()
                 .structInfo(structInfo)
                 .layoutName("vertex_attribute_interleaved")
-                .unpacked(unpacked)
                 .member(member)
                 .stride(offset.value)
                 .build();
     }
 
     public <S> TextureStructLayout texture(@NonNull OpenGL gl, @NonNull StructInfo<S> structInfo) {
-        boolean unpacked = structInfo.packedProperty().with(new StructProperty.TypedPropertyCallback<Boolean>() {
+        boolean unpacked = structInfo.property().with(new StructProperty.TypedPropertyCallback<Boolean>() {
             @Override
             public Boolean withComponents(@NonNull StructProperty.Components componentsProperty) {
                 throw new UnsupportedOperationException();
@@ -137,7 +136,7 @@ public class StructLayouts {
         });
 
         MutableLong stride = new MutableLong();
-        TextureStructLayout.Member member = (unpacked ? structInfo.unpackedProperty() : structInfo.packedProperty()).with(new StructProperty.TypedPropertyCallback<TextureStructLayout.Member>() {
+        TextureStructLayout.Member member = structInfo.property().with(new StructProperty.TypedPropertyCallback<TextureStructLayout.Member>() {
             @Override
             public TextureStructLayout.Member withComponents(@NonNull StructProperty.Components componentsProperty) {
                 throw new UnsupportedOperationException();
@@ -179,7 +178,6 @@ public class StructLayouts {
         return TextureStructLayout.builder()
                 .structInfo(structInfo)
                 .layoutName("texture")
-                .unpacked(unpacked)
                 .stride(stride.value)
                 .member(member)
                 .build();

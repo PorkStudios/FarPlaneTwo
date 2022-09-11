@@ -49,16 +49,6 @@ public class StructInfo<S> {
         this.property = StructPropertyFactory.struct(clazz);
     }
 
-    @Deprecated
-    public StructProperty packedProperty() {
-        return this.property;
-    }
-
-    @Deprecated
-    public StructProperty unpackedProperty() {
-        return this.property;
-    }
-
     public String name() {
         return this.clazz.getSimpleName();
     }

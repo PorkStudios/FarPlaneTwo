@@ -262,12 +262,11 @@ public enum GLSLBlockMemoryLayout {
 
         @Override
         public <S> InterleavedStructLayout layout(@NonNull StructInfo<S> structInfo) {
-            MemberLayout layout = this.memberLayout(structInfo.unpackedProperty());
+            MemberLayout layout = this.memberLayout(structInfo.property());
 
             return InterleavedStructLayout.builder()
                     .structInfo(structInfo)
                     .layoutName(this.name().toLowerCase(Locale.ROOT).intern())
-                    .unpacked(true)
                     .member(this.toInterleaved(0L, layout))
                     .stride(layout.size())
                     .build();

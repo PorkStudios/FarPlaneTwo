@@ -34,13 +34,11 @@ public abstract class StructLayout<M extends StructLayout.Member<M, C>, C extend
     private final StructInfo<?> structInfo;
     private final String layoutName;
 
-    private final boolean unpacked;
-
     @NonNull
     private final M member;
 
     public StructProperty structProperty() {
-        return this.unpacked() ? this.structInfo().unpackedProperty() : this.structInfo().packedProperty();
+        return this.structInfo().property();
     }
 
     /**
