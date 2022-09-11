@@ -20,12 +20,15 @@
 package net.daporkchop.fp2.gl.opengl.attribute.struct.codegen;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.OpenGLConstants;
 import net.daporkchop.fp2.gl.opengl.attribute.common.AttributeFormatImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttributeFormatImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttributeWriterImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.InterleavedStructLayout;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.LayoutComponentStorage;
@@ -108,7 +111,7 @@ public class InterleavedStructFormatClassLoader<S> extends StructFormatClassLoad
 
         //AttributeWriter<S> writer(AttributeFormatImpl attributeFormat)
         {
-            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "writer", getMethodDescriptor(VOID_TYPE, getType(AttributeFormatImpl.class)), null, null);
+            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "writer", getMethodDescriptor(getType(InterleavedAttributeWriterImpl.class), getType(AttributeFormatImpl.class)), null, null);
 
             //return new ${ this.writerClassName() }(this, (InterleavedAttributeFormatImpl) attributeFormat);
             mv.visitTypeInsn(NEW, this.writerClassName());
@@ -126,7 +129,7 @@ public class InterleavedStructFormatClassLoader<S> extends StructFormatClassLoad
 
         //AttributeBuffer<S> buffer(AttributeFormatImpl attributeFormat, BufferUsage usage)
         {
-            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "buffer", getMethodDescriptor(VOID_TYPE, getType(AttributeFormatImpl.class), getType(BufferUsage.class)), null, null);
+            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "buffer", getMethodDescriptor(getType(InterleavedAttributeBufferImpl.class), getType(AttributeFormatImpl.class), getType(BufferUsage.class)), null, null);
 
             //return new ${ this.bufferClassName() }(this, (InterleavedAttributeFormatImpl) attributeFormat, usage);
             mv.visitTypeInsn(NEW, this.bufferClassName());

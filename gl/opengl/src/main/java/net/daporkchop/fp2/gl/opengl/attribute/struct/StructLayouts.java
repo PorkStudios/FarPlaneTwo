@@ -25,10 +25,12 @@ import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.gl.opengl.GLExtension;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.InterleavedStructLayout;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.LayoutComponentStorage;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.TextureStructLayout;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.ComponentInterpretation;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
 import net.daporkchop.lib.common.math.PMath;
+import net.daporkchop.lib.common.util.PArrays;
 
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -51,7 +53,8 @@ public class StructLayouts {
                     }
                     offset.roundUp(alignment);
                 }
-                return new InterleavedStructLayout.RegularMember(0L, componentOffsets);
+                return new InterleavedStructLayout.RegularMember(0L, componentOffsets,
+                        PArrays.filled(componentsProperty.components(), LayoutComponentStorage.class, LayoutComponentStorage.unchanged(componentsProperty)));
             }
 
             @Override
@@ -153,7 +156,8 @@ public class StructLayouts {
                         for (int i = 0; i < componentsProperty.components(); i++) {
                             componentOffsets[i] = stride.getAndAdd(componentsProperty.logicalStorageType().size());
                         }
-                        return new TextureStructLayout.RegularMember(0L, componentOffsets);
+                        return new TextureStructLayout.RegularMember(0L, componentOffsets,
+                                PArrays.filled(componentsProperty.components(), LayoutComponentStorage.class, LayoutComponentStorage.unchanged(componentsProperty)));
                     }
 
                     @Override

@@ -24,6 +24,7 @@ import lombok.NonNull;
 import lombok.With;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.ComponentInterpretation;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.ComponentType;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLPrimitiveType;
 import org.objectweb.asm.MethodVisitor;
 
@@ -36,6 +37,15 @@ import static org.objectweb.asm.Opcodes.*;
 @Data
 @With
 public final class LayoutComponentStorage {
+    @Deprecated
+    public static LayoutComponentStorage unchanged(@NonNull StructProperty.Components property) {
+        return new LayoutComponentStorage(property.logicalStorageType(), property.logicalStorageType(), property.componentInterpretation());
+    }
+
+    public static LayoutComponentStorage unpacked(@NonNull StructProperty.Components property) {
+        return new LayoutComponentStorage(property.logicalStorageType(), property.logicalStorageType().unpackedestForm(), property.componentInterpretation());
+    }
+
     @NonNull
     private final ComponentType logicalStorageType;
     @NonNull

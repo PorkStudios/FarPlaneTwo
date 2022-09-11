@@ -29,12 +29,13 @@ import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.attribute.AttributeWriter;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.attribute.annotation.AArrayType;
+import net.daporkchop.fp2.gl.attribute.annotation.AAttribute;
 import net.daporkchop.fp2.gl.attribute.annotation.AScalarType;
 import net.daporkchop.fp2.gl.attribute.annotation.AVectorType;
 import net.daporkchop.fp2.gl.attribute.annotation.ArrayLength;
 import net.daporkchop.fp2.gl.attribute.annotation.MethodAttribute;
-import net.daporkchop.fp2.gl.attribute.annotation.ScalarExpand;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarConvert;
+import net.daporkchop.fp2.gl.attribute.annotation.ScalarExpand;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarTransform;
 import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
@@ -179,10 +180,10 @@ public class TestLWJGL2 {
         AttributeBuffer<LocalAttribs> localBuffer_2_out = localFormat.createBuffer(BufferUsage.STREAM_COPY);
 
         try (AttributeWriter<LocalAttribs> writer = localFormat.createWriter()) {
-            writer.put(new LocalAttribs((byte) 16, (byte) 16));
-            writer.put(new LocalAttribs((byte) 16, (byte) 32));
-            writer.put(new LocalAttribs((byte) 32, (byte) 32));
-            writer.put(new LocalAttribs((byte) 32, (byte) 16));
+            writer.next().pos(16, 16);
+            writer.next().pos(16, 32);
+            writer.next().pos(32, 32);
+            writer.next().pos(32, 16);
 
             localBuffer_1.set(0, writer);
             localBuffer_2_in.setContentsFrom(localBuffer_1);
@@ -204,32 +205,50 @@ public class TestLWJGL2 {
         try (AttributeWriter<GlobalAttribs> writer = globalFormat.createWriter()) {
             for (int i = 0, color = -1, x = 0; x < 2; x++) {
                 for (int y = 0; y < 2; y++, color = 0xFF << (i << 3), i++) {
-                    writer.put(new GlobalAttribs((byte) (x * 32), (byte) (y * 32), 0xFF000000 | color));
+                    writer.next()
+                            .offset(x * 32, y * 32)
+                            .color(0xFF000000 | color);
                 }
             }
-            globalBuffer.set(0, writer);
+            globalBuffer.set(writer);
         }
 
         AttributeBuffer<UniformArrayAttribs> uniformArrayBuffer = uniformArrayFormat.createBuffer(BufferUsage.STATIC_DRAW);
-        uniformArrayBuffer.setContents(
-                new UniformArrayAttribs(0.5f, 1.0f, 1.0f),
-                new UniformArrayAttribs(1.0f, 0.5f, 1.0f),
-                new UniformArrayAttribs(1.0f, 1.0f, 0.5f));
+        try (AttributeWriter<UniformArrayAttribs> writer = uniformArrayFormat.createWriter()) {
+            writer.next().colorFactor(0.5f, 1.0f, 1.0f);
+            writer.next().colorFactor(1.0f, 0.5f, 1.0f);
+            writer.next().colorFactor(1.0f, 1.0f, 0.5f);
+
+            uniformArrayBuffer.set(0, writer);
+        }
 
         AttributeBuffer<UniformAttribs> uniformBuffer0 = uniformFormat.createBuffer(BufferUsage.STATIC_DRAW);
-        uniformBuffer0.setContents(new UniformAttribs((byte) 32, (byte) 32));
+        try (AttributeWriter<UniformAttribs> writer = uniformFormat.createWriter()) {
+            writer.next().scale((byte) 32, (byte) 32);
+
+            uniformBuffer0.set(writer);
+        }
 
         AttributeBuffer<UniformAttribs> uniformBuffer1 = uniformFormat.createBuffer(BufferUsage.STATIC_DRAW);
-        uniformBuffer1.setContents(new UniformAttribs((byte) -128, (byte) -128));
+        try (AttributeWriter<UniformAttribs> writer = uniformFormat.createWriter()) {
+            writer.next().scale((byte) -128, (byte) -128);
+
+            uniformBuffer1.set(writer);
+        }
 
         AttributeBuffer<UniformAttribs> uniformBuffer2 = uniformFormat.createBuffer(BufferUsage.STATIC_DRAW);
-        uniformBuffer2.setContents(new UniformAttribs((byte) -64, (byte) 32));
+        try (AttributeWriter<UniformAttribs> writer = uniformFormat.createWriter()) {
+            writer.next().scale((byte) -64, (byte) 32);
+
+            uniformBuffer2.set(writer);
+        }
 
         Texture2D<TextureAttribs> texture = textureFormat.createTexture(512, 512, 1);
         try (TextureWriter2D<TextureAttribs> writer = textureFormat.createWriter(512, 512)) {
             for (int x = 0; x < 512; x++) {
                 for (int y = 0; y < 512; y++) {
-                    writer.set(x, y, new TextureAttribs(ThreadLocalRandom.current().nextInt() | 0xFF000000));
+                    writer.setARGB(x, y, ThreadLocalRandom.current().nextInt() | 0xFF000000);
+                    //TODO: writer.set(x, y, new TextureAttribs(ThreadLocalRandom.current().nextInt() | 0xFF000000));
                 }
             }
 
@@ -313,7 +332,11 @@ public class TestLWJGL2 {
                                 .copy(localBuffer_2_out, localBuffer_2_in))
                 .build()) {
             while (!Display.isCloseRequested()) {
-                selectionUniformBuffer.setContents(new UniformSelectionAttribs(ThreadLocalRandom.current().nextInt() & 1));
+                try (AttributeWriter<UniformSelectionAttribs> writer = selectionUniformFormat.createWriter()) {
+                    writer.next().selectable(ThreadLocalRandom.current().nextInt() & 1);
+
+                    selectionUniformBuffer.set(writer);
+                }
 
                 cmdBuffer.execute();
 
@@ -323,62 +346,73 @@ public class TestLWJGL2 {
         }
     }
 
+    @AAttribute(name = "scale",
+            typeVector = @AVectorType(components = 2,
+                    componentType = @AScalarType(value = byte.class,
+                            interpret = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true))))
+    @AAttribute(name = "floatsAsVector",
+            typeVector = @AVectorType(components = 3, componentType = @AScalarType(float.class)))
+    @AAttribute(name = "vec2Array",
+            typeArray = @AArrayType(length = 4,
+                    componentTypeVector = @AVectorType(components = 2,
+                            componentType = @AScalarType(value = byte.class,
+                                    interpret = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = false)))))
     public interface UniformAttribs {
-        @MethodAttribute(
-                typeVector = @AVectorType(components = 2,
-                        componentType = @AScalarType(value = byte.class,
-                                interpret = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true))))
+        @MethodAttribute("scale")
         UniformAttribs scale(byte scaleX, byte scaleY);
 
-        @MethodAttribute(typeVector = @AVectorType(components = 3, componentType = @AScalarType(float.class)))
+        @MethodAttribute
         UniformAttribs floatsAsVector(float @ArrayLength(3) [] floats);
 
-        @MethodAttribute(
-                typeArray = @AArrayType(length = 4,
-                        componentTypeVector = @AVectorType(components = 2,
-                                componentType = @AScalarType(value = byte.class,
-                                        interpret = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = false)))))
+        @MethodAttribute
         UniformAttribs vec2Array(byte @ArrayLength(8) [] bytes);
     }
 
+    @AAttribute(name = "colorFactor",
+            typeVector = @AVectorType(components = 3, componentType = @AScalarType(float.class)))
     public interface UniformArrayAttribs {
-        @MethodAttribute(name = "colorFactor",
-                typeVector = @AVectorType(components = 3, componentType = @AScalarType(float.class)))
+        @MethodAttribute
         UniformArrayAttribs colorFactor(float colorFactorR, float colorFactorG, float colorFactorB);
     }
 
+    @AAttribute(name = "offset",
+            typeVector = @AVectorType(components = 2,
+                    componentType = @AScalarType(value = byte.class,
+                            interpret = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = false))))
+    @AAttribute(name = "color",
+            typeVector = @AVectorType(components = 4,
+                    componentType = @AScalarType(value = byte.class,
+                            interpret = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true))))
     public interface GlobalAttribs {
-        @MethodAttribute(
-                typeVector = @AVectorType(components = 2,
-                        componentType = @AScalarType(value = byte.class,
-                                interpret = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = false))))
+        @MethodAttribute
         GlobalAttribs offset(int offsetX, int offsetY);
 
-        @MethodAttribute(
-                typeVector = @AVectorType(components = 4,
-                        componentType = @AScalarType(value = byte.class,
-                                interpret = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true))))
+        @MethodAttribute
         GlobalAttribs color(@ScalarTransform(expand = @ScalarExpand(ScalarExpand.Type.INT_ARGB8_TO_BYTE_VECTOR_RGBA)) int color);
     }
 
+    @AAttribute(name = "pos",
+            typeVector = @AVectorType(components = 2,
+                    componentType = @AScalarType(value = byte.class,
+                            interpret = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = false))))
     public interface LocalAttribs {
-        @MethodAttribute(
-                typeVector = @AVectorType(components = 2,
-                        componentType = @AScalarType(value = byte.class,
-                                interpret = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = false))))
+        @MethodAttribute
         LocalAttribs pos(int posX, int posY);
     }
 
+    @AAttribute(name = "colorFactor",
+            typeVector = @AVectorType(components = 4,
+                    componentType = @AScalarType(value = byte.class,
+                            interpret = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true))))
     public interface TextureAttribs {
-        @MethodAttribute(
-                typeVector = @AVectorType(components = 4,
-                        componentType = @AScalarType(value = byte.class,
-                                interpret = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true))))
+        @MethodAttribute
         TextureAttribs colorFactor(@ScalarTransform(expand = @ScalarExpand(ScalarExpand.Type.INT_ARGB8_TO_BYTE_VECTOR_RGBA)) int colorFactor);
     }
 
+    @AAttribute(name = "selectable",
+            typeScalar = @AScalarType(int.class))
     public interface UniformSelectionAttribs {
-        @MethodAttribute(typeScalar = @AScalarType(int.class))
+        @MethodAttribute
         void selectable(int selectable);
     }
 }

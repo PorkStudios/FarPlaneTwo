@@ -17,18 +17,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.attribute.annotation;
+package net.daporkchop.fp2.gl.opengl.attribute.struct.property.basic;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import lombok.Data;
+import lombok.NonNull;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
+import net.daporkchop.lib.common.annotation.param.Positive;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.METHOD })
-public @interface MethodAttribute {
-    String value() default "";
+@Data
+public class BasicArrayProperty implements StructProperty.Elements {
+    @NonNull
+    protected final StructProperty componentType;
+    protected final @Positive int length;
+
+    @Override
+    public int elements() {
+        return this.length;
+    }
+
+    @Override
+    public StructProperty element(int elementIndex) {
+        checkIndex(this.length, elementIndex);
+        return this.componentType;
+    }
 }

@@ -37,6 +37,7 @@ import java.util.stream.IntStream;
  *
  * @author DaPorkchop_
  */
+//TODO: rename to AttributeType
 public interface StructProperty {
     void with(@NonNull PropertyCallback callback);
 
@@ -112,7 +113,9 @@ public interface StructProperty {
         }
 
         @Deprecated
-        void load(@NonNull MethodVisitor mv, int structLvtIndex, int lvtIndexAllocator, @NonNull LoadCallback callback);
+        default void load(@NonNull MethodVisitor mv, int structLvtIndex, int lvtIndexAllocator, @NonNull LoadCallback callback) {
+            throw new UnsupportedOperationException(this.getClass().getTypeName());
+        }
 
         /**
          * @author DaPorkchop_
@@ -164,7 +167,9 @@ public interface StructProperty {
         }
 
         @Deprecated
-        void load(@NonNull MethodVisitor mv, int structLvtIndex, int lvtIndexAllocator, @NonNull LoadCallback callback);
+        default void load(@NonNull MethodVisitor mv, int structLvtIndex, int lvtIndexAllocator, @NonNull LoadCallback callback) {
+            throw new UnsupportedOperationException(this.getClass().getTypeName());
+        }
 
         /**
          * @author DaPorkchop_
@@ -218,7 +223,9 @@ public interface StructProperty {
             return new GLSLStructType(this.structName(), fields.build());
         }
 
-        void load(@NonNull MethodVisitor mv, int structLvtIndex, int lvtIndexAllocator, @NonNull LoadCallback callback);
+        default void load(@NonNull MethodVisitor mv, int structLvtIndex, int lvtIndexAllocator, @NonNull LoadCallback callback) {
+            throw new UnsupportedOperationException(this.getClass().getTypeName());
+        }
 
         /**
          * @author DaPorkchop_

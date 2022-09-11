@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.attribute.struct;
@@ -39,13 +38,25 @@ import java.util.stream.IntStream;
 public class StructInfo<S> {
     protected final Class<S> clazz;
 
-    protected final StructProperty packedProperty;
-    protected final StructProperty unpackedProperty;
+    protected final StructProperty property;
 
     public StructInfo(@NonNull Class<S> clazz, @NonNull Map<String, String> nameOverrides) {
+        if (!nameOverrides.isEmpty()) {
+            System.err.println("ignoring name overrides: " + nameOverrides);
+        }
+
         this.clazz = clazz;
-        this.packedProperty = StructPropertyFactory.struct(StructPropertyFactory.Options.builder().unpacked(false).build(), clazz, nameOverrides);
-        this.unpackedProperty = StructPropertyFactory.struct(StructPropertyFactory.Options.builder().unpacked(true).build(), clazz, nameOverrides);
+        this.property = StructPropertyFactory.struct(clazz);
+    }
+
+    @Deprecated
+    public StructProperty packedProperty() {
+        return this.property;
+    }
+
+    @Deprecated
+    public StructProperty unpackedProperty() {
+        return this.property;
     }
 
     public String name() {
@@ -53,7 +64,7 @@ public class StructInfo<S> {
     }
 
     public List<GLSLField<?>> memberFields() {
-        return this.unpackedProperty().with(new StructProperty.TypedPropertyCallback<List<GLSLField<?>>>() {
+        return this.property().with(new StructProperty.TypedPropertyCallback<List<GLSLField<?>>>() {
             @Override
             public List<GLSLField<?>> withComponents(@NonNull StructProperty.Components componentsProperty) {
                 throw new UnsupportedOperationException();

@@ -19,6 +19,7 @@
 
 package net.daporkchop.fp2.gl.opengl.attribute.struct.property;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import lombok.Builder;
@@ -26,6 +27,12 @@ import lombok.Data;
 import lombok.NonNull;
 import lombok.With;
 import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.gl.attribute.annotation.AArrayType;
+import net.daporkchop.fp2.gl.attribute.annotation.AAttribute;
+import net.daporkchop.fp2.gl.attribute.annotation.AAttributes;
+import net.daporkchop.fp2.gl.attribute.annotation.AMatrixType;
+import net.daporkchop.fp2.gl.attribute.annotation.AScalarType;
+import net.daporkchop.fp2.gl.attribute.annotation.AVectorType;
 import net.daporkchop.fp2.gl.attribute.annotation.ArrayTransform;
 import net.daporkchop.fp2.gl.attribute.annotation.ArrayType;
 import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
@@ -33,6 +40,11 @@ import net.daporkchop.fp2.gl.attribute.annotation.FieldsAsArrayAttribute;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarConvert;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarExpand;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarTransform;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.property.basic.BasicArrayProperty;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.property.basic.BasicMatrixProperty;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.property.basic.BasicScalarProperty;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.property.basic.BasicStructProperty;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.property.basic.BasicVectorProperty;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.convert.IntegerToFloatConversionProperty;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.convert.IntegerToNormalizedFloatConversionProperty;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.convert.IntegerToUnsignedIntegerConversionProperty;
@@ -45,6 +57,7 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.property.transform.ArrayToM
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.transform.ArrayToVectorArrayTransformProperty;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.transform.ArrayToVectorTransformProperty;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.transform.IntToARGBExpansionTransformProperty;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLPrimitiveType;
 import net.daporkchop.lib.common.util.PorkUtil;
 import org.objectweb.asm.Type;
 
@@ -72,6 +85,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 @UtilityClass
 public class StructPropertyFactory {
+    @Deprecated
     public static StructProperty struct(@NonNull Options options, @NonNull Class<?> struct, @NonNull Map<String, String> nameOverrides) {
         Map<String, Field> fieldsByName = Stream.of(struct.getFields())
                 .filter(field -> (field.getModifiers() & Modifier.STATIC) == 0) //skip static fields
@@ -107,7 +121,8 @@ public class StructPropertyFactory {
 
                     String[] names = fieldsAsArrayAttribute.names();
                     checkArg(names.length > 0, "%s on %s must have at least one field name!", FieldsAsArrayAttribute.class, field);
-                    checkArg(Arrays.asList(names).contains(field.getName()), "%s on %s must include name of annotated field (%s) (given: %s)", FieldsAsArrayAttribute.class, field, field.getName(), Arrays.asList(names));
+                    checkArg(Arrays.asList(names)
+                            .contains(field.getName()), "%s on %s must include name of annotated field (%s) (given: %s)", FieldsAsArrayAttribute.class, field, field.getName(), Arrays.asList(names));
 
                     Field[] fields = Stream.of(names)
                             .map(n -> {
@@ -140,6 +155,7 @@ public class StructPropertyFactory {
         return new StructInputProperty(Type.getInternalName(struct), propertiesSorted.values().toArray(uncheckedCast(new Map.Entry[0])));
     }
 
+    @Deprecated
     public static StructProperty attributeFromField(@NonNull Options options, @NonNull Field field) {
         AnnotatedType annotatedType = field.getAnnotatedType();
 
@@ -167,6 +183,7 @@ public class StructPropertyFactory {
         }
     }
 
+    @Deprecated
     public static StructProperty processAnnotated(@NonNull Options options, @NonNull StructProperty property, @NonNull AnnotatedType annotatedType) {
         if (annotatedType instanceof AnnotatedArrayType) {
             throw new UnsupportedOperationException("don't know how to process type: " + annotatedType.getType());
@@ -177,6 +194,7 @@ public class StructPropertyFactory {
         }
     }
 
+    @Deprecated
     public static StructProperty.Components scalarType(@NonNull Options options, @NonNull StructProperty.Components property, @NonNull ScalarTransform scalarType) {
         StructProperty.Components converted = scalarConvert(options, property, scalarType.interpret());
         StructProperty.Components expanded = scalarExpand(options, converted, scalarType.expand());
@@ -184,6 +202,7 @@ public class StructPropertyFactory {
         return options.unpacked() ? new UnpackingConversionProperty(expanded) : expanded;
     }
 
+    @Deprecated
     public static StructProperty.Components scalarConvert(@NonNull Options options, @NonNull StructProperty.Components property, @NonNull ScalarConvert... conversions) {
         for (ScalarConvert conversion : conversions) {
             switch (conversion.value()) {
@@ -209,6 +228,7 @@ public class StructPropertyFactory {
         return property;
     }
 
+    @Deprecated
     public static StructProperty.Components scalarExpand(@NonNull Options options, @NonNull StructProperty.Components property, @NonNull ScalarExpand... expansions) {
         for (ScalarExpand expansion : expansions) {
             switch (expansion.value()) {
@@ -225,6 +245,7 @@ public class StructPropertyFactory {
         return property;
     }
 
+    @Deprecated
     public static StructProperty arrayTransform(@NonNull Options options, @NonNull StructProperty.Elements property, @NonNull ArrayTransform... transforms) {
         StructProperty transformedProperty = property;
         for (ArrayTransform transform : transforms) {
@@ -261,5 +282,173 @@ public class StructPropertyFactory {
     public static final class Options {
         @Builder.Default
         private final boolean unpacked = false;
+    }
+
+    public static StructProperty struct(@NonNull Class<?> struct) {
+        checkArg(struct.isInterface(), "struct type %s must be an interface", struct.getTypeName());
+        checkArg(struct.getInterfaces().length == 0, "struct type %s may not extend any interfaces", struct.getTypeName());
+
+        AAttribute[] attributes = null;
+        {
+            AAttributes annotation = struct.getAnnotation(AAttributes.class);
+            if (annotation != null) {
+                attributes = annotation.value();
+            }
+        }
+        if (attributes == null) {
+            AAttribute annotation = struct.getAnnotation(AAttribute.class);
+            if (annotation != null) {
+                attributes = new AAttribute[]{ annotation };
+            }
+        }
+        checkArg(attributes != null, "struct type %s has no attribute annotations", struct.getTypeName());
+
+        ImmutableMap.Builder<String, StructProperty> propertiesBuilder = ImmutableMap.builder();
+        for (AAttribute attribute : attributes) {
+            propertiesBuilder.put(attribute.name(), of(attribute));
+        }
+
+        return new BasicStructProperty(struct.getName(), uncheckedCast(propertiesBuilder.build().entrySet().toArray(new Map.Entry[0])));
+    }
+
+    private static StructProperty of(@NonNull AAttribute attribute) {
+        //determine the attribute type
+        int declaredAttributes = 0;
+
+        AArrayType[] typeArray = attribute.typeArray();
+        checkArg(typeArray.length <= 1, "more than one array attribute may not be declared");
+        if (typeArray.length == 1) {
+            declaredAttributes++;
+        }
+        AVectorType[] typeVector = attribute.typeVector();
+        checkArg(typeVector.length <= 1, "more than one vector attribute may not be declared");
+        if (typeVector.length == 1) {
+            declaredAttributes++;
+        }
+        AMatrixType[] typeMatrix = attribute.typeMatrix();
+        checkArg(typeMatrix.length <= 1, "more than one matrix attribute may not be declared");
+        if (typeMatrix.length == 1) {
+            declaredAttributes++;
+        }
+        AScalarType[] typeScalar = attribute.typeScalar();
+        checkArg(typeScalar.length <= 1, "more than one scalar attribute may not be declared");
+        if (typeScalar.length == 1) {
+            declaredAttributes++;
+        }
+
+        checkArg(declaredAttributes == 1, "exactly one attribute must be declared");
+
+        //parse the declared attribute type
+        if (typeArray.length == 1) {
+            return of(typeArray[0]);
+        } else if (typeVector.length == 1) {
+            return of(typeVector[0]);
+        } else if (typeMatrix.length == 1) {
+            return of(typeMatrix[0]);
+        } else /*if (typeScalar.length == 1)*/ {
+            return of(typeScalar[0]);
+        }
+    }
+
+    private static StructProperty.Elements of(@NonNull AArrayType type) {
+        //determine the component type
+        int declaredComponentTypes = 0;
+
+        AVectorType[] typeVector = type.componentTypeVector();
+        checkArg(typeVector.length <= 1, "more than one vector component type may not be declared");
+        if (typeVector.length == 1) {
+            declaredComponentTypes++;
+        }
+        AMatrixType[] typeMatrix = type.componentTypeMatrix();
+        checkArg(typeMatrix.length <= 1, "more than one matrix component type may not be declared");
+        if (typeMatrix.length == 1) {
+            declaredComponentTypes++;
+        }
+        AScalarType[] typeScalar = type.componentTypeScalar();
+        checkArg(typeScalar.length <= 1, "more than one scalar component type may not be declared");
+        if (typeScalar.length == 1) {
+            declaredComponentTypes++;
+        }
+
+        checkArg(declaredComponentTypes == 1, "exactly one component type must be declared");
+
+        //parse the component type
+        StructProperty.Components bottomComponentType;
+        if (typeVector.length == 1) {
+            bottomComponentType = of(typeVector[0]);
+        } else if (typeMatrix.length == 1) {
+            bottomComponentType = of(typeMatrix[0]);
+        } else /*if (typeScalar.length == 1)*/ {
+            bottomComponentType = of(typeScalar[0]);
+        }
+
+        //get and validate length
+        int[] lengths = type.length();
+        checkArg(lengths.length > 0, "array may not have 0 dimensions");
+        for (int length : lengths) {
+            checkArg(length > 0, "array may not have negative length");
+        }
+
+        //unroll array into a (chain) of BasicArrayProperty
+        StructProperty.Elements arrayType = new BasicArrayProperty(bottomComponentType, lengths[lengths.length - 1]);
+        for (int i = lengths.length - 2; i >= 0; i--) {
+            arrayType = new BasicArrayProperty(arrayType, lengths[i]);
+        }
+        return arrayType;
+    }
+
+    private static StructProperty.Components of(@NonNull AVectorType type) {
+        int components = type.components();
+        checkArg(components >= 1 && components <= 4, "illegal vector component count: %d", components);
+        
+        return new BasicVectorProperty(of(type.componentType()), components);
+    }
+
+    private static StructProperty.Components of(@NonNull AMatrixType type) {
+        int cols = type.cols();
+        checkArg(cols >= 2 && cols <= 4, "illegal vector column count: %d", cols);
+
+        int rows = type.rows();
+        checkArg(rows >= 2 && rows <= 4, "illegal vector row count: %d", rows);
+
+        return new BasicMatrixProperty(of(type.componentType()), cols, rows);
+    }
+
+    private static StructProperty.Components of(@NonNull AScalarType type) {
+        ComponentType logicalStorageType;
+        Class<?> rawLogicalStorageType = type.value();
+        checkArg(rawLogicalStorageType.isPrimitive(), "scalar type value must be a primitive class!");
+        if (rawLogicalStorageType == byte.class) {
+            logicalStorageType = ComponentType.BYTE;
+        } else if (rawLogicalStorageType == char.class) {
+            logicalStorageType = ComponentType.UNSIGNED_SHORT;
+        } else if (rawLogicalStorageType == short.class) {
+            logicalStorageType = ComponentType.SHORT;
+        } else if (rawLogicalStorageType == int.class) {
+            logicalStorageType = ComponentType.INT;
+        } else if (rawLogicalStorageType == float.class) {
+            logicalStorageType = ComponentType.FLOAT;
+        } else {
+            throw new IllegalArgumentException("unsupported scalar type value: " + rawLogicalStorageType);
+        }
+
+        ComponentInterpretation componentInterpretation = new ComponentInterpretation(logicalStorageType.glslPrimitive(), false);
+        for (ScalarConvert convert : type.interpret()) {
+            switch (convert.value()) {
+                case TO_UNSIGNED:
+                    checkArg(componentInterpretation.outputType().integer(), "floating-point type cannot be converted to unsigned!");
+                    checkArg(componentInterpretation.outputType().signed(), "unsigned type is already unsigned!");
+                    componentInterpretation = componentInterpretation.withOutputType(GLSLPrimitiveType.UINT);
+                    break;
+                case TO_FLOAT:
+                    checkArg(componentInterpretation.outputType().integer(), "floating-point type cannot be converted to floating-point!");
+                    componentInterpretation = new ComponentInterpretation(GLSLPrimitiveType.FLOAT, convert.normalized());
+                    break;
+                default:
+                    throw new IllegalArgumentException("unknown conversion: " + convert);
+            }
+        }
+
+        return new BasicScalarProperty(logicalStorageType, componentInterpretation);
     }
 }

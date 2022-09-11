@@ -17,18 +17,42 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.attribute.annotation;
+package net.daporkchop.fp2.gl.opengl.attribute.struct.property.basic;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import lombok.Data;
+import lombok.NonNull;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.property.ComponentInterpretation;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.property.ComponentType;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLBasicType;
 
 /**
  * @author DaPorkchop_
  */
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.METHOD })
-public @interface MethodAttribute {
-    String value() default "";
+@Data
+public class BasicScalarProperty implements StructProperty.Components {
+    @NonNull
+    protected final ComponentType logicalStorageType;
+    @NonNull
+    protected final ComponentInterpretation componentInterpretation;
+
+    @Override
+    public int cols() {
+        return 1;
+    }
+
+    @Override
+    public int rows() {
+        return 1;
+    }
+
+    @Override
+    public int components() {
+        return 1;
+    }
+
+    @Override
+    public GLSLBasicType glslType() {
+        return this.componentInterpretation.outputType();
+    }
 }

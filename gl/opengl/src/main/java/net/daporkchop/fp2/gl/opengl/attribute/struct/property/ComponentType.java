@@ -342,6 +342,12 @@ public enum ComponentType {
         return 1.0f / this.inverseNormalizationFactor();
     }
 
+    public ComponentType unpackedestForm() { //i don't care that this isn't a real word, it should be
+        return this.integer()
+                ? this.signed() ? INT : UNSIGNED_INT
+                : FLOAT;
+    }
+
     public abstract void arrayLoad(@NonNull MethodVisitor mv);
 
     public abstract void arrayStore(@NonNull MethodVisitor mv);
