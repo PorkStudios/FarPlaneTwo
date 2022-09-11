@@ -25,6 +25,9 @@ import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLPrimitiveType;
 import org.objectweb.asm.MethodVisitor;
 
+import java.util.IdentityHashMap;
+import java.util.Map;
+
 import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.objectweb.asm.Opcodes.*;
@@ -36,6 +39,18 @@ import static org.objectweb.asm.Opcodes.*;
 @Getter
 public enum ComponentType {
     UNSIGNED_BYTE(BYTE_SIZE, true, false, 1 << Byte.SIZE, byte.class, GLSLPrimitiveType.UINT) {
+        @Override
+        public void load(@NonNull MethodVisitor mv, int lvtIndex) {
+            mv.visitVarInsn(ILOAD, lvtIndex);
+            this.truncateInteger(mv);
+        }
+
+        @Override
+        public void store(@NonNull MethodVisitor mv, int lvtIndex) {
+            this.truncateInteger(mv);
+            mv.visitVarInsn(ISTORE, lvtIndex);
+        }
+
         @Override
         public void arrayLoad(@NonNull MethodVisitor mv) {
             BYTE.arrayLoad(mv);
@@ -77,6 +92,18 @@ public enum ComponentType {
     },
     BYTE(BYTE_SIZE, true, true, -Byte.MIN_VALUE, byte.class, GLSLPrimitiveType.INT) {
         @Override
+        public void load(@NonNull MethodVisitor mv, int lvtIndex) {
+            mv.visitVarInsn(ILOAD, lvtIndex);
+            this.truncateInteger(mv);
+        }
+
+        @Override
+        public void store(@NonNull MethodVisitor mv, int lvtIndex) {
+            this.truncateInteger(mv);
+            mv.visitVarInsn(ISTORE, lvtIndex);
+        }
+
+        @Override
         public void arrayLoad(@NonNull MethodVisitor mv) {
             mv.visitInsn(BALOAD);
         }
@@ -116,27 +143,36 @@ public enum ComponentType {
     },
     UNSIGNED_SHORT(SHORT_SIZE, true, false, 1 << Short.SIZE, short.class, GLSLPrimitiveType.UINT) {
         @Override
+        public void load(@NonNull MethodVisitor mv, int lvtIndex) {
+            mv.visitVarInsn(ILOAD, lvtIndex);
+            this.truncateInteger(mv);
+        }
+
+        @Override
+        public void store(@NonNull MethodVisitor mv, int lvtIndex) {
+            this.truncateInteger(mv);
+            mv.visitVarInsn(ISTORE, lvtIndex);
+        }
+
+        @Override
         public void arrayLoad(@NonNull MethodVisitor mv) {
-            SHORT.arrayLoad(mv);
-            mv.visitLdcInsn(0xFFFF);
-            mv.visitInsn(IAND);
+            mv.visitInsn(CALOAD);
         }
 
         @Override
         public void arrayStore(@NonNull MethodVisitor mv) {
-            SHORT.arrayStore(mv);
+            mv.visitInsn(CASTORE);
         }
 
         @Override
         public void unsafeGet(@NonNull MethodVisitor mv) {
-            SHORT.unsafeGet(mv);
-            mv.visitLdcInsn(0xFFFF);
-            mv.visitInsn(IAND);
+            mv.visitMethodInsn(INVOKESTATIC, "net/daporkchop/lib/unsafe/PUnsafe", "getChar", "(Ljava/lang/Object;J)C", false);
         }
 
         @Override
         public void unsafePut(@NonNull MethodVisitor mv) {
-            SHORT.unsafePut(mv);
+            mv.visitInsn(I2C);
+            mv.visitMethodInsn(INVOKESTATIC, "net/daporkchop/lib/unsafe/PUnsafe", "putChar", "(Ljava/lang/Object;JC)V", false);
         }
 
         @Override
@@ -157,6 +193,18 @@ public enum ComponentType {
         }
     },
     SHORT(SHORT_SIZE, true, true, -Short.MIN_VALUE, short.class, GLSLPrimitiveType.INT) {
+        @Override
+        public void load(@NonNull MethodVisitor mv, int lvtIndex) {
+            mv.visitVarInsn(ILOAD, lvtIndex);
+            this.truncateInteger(mv);
+        }
+
+        @Override
+        public void store(@NonNull MethodVisitor mv, int lvtIndex) {
+            this.truncateInteger(mv);
+            mv.visitVarInsn(ISTORE, lvtIndex);
+        }
+
         @Override
         public void arrayLoad(@NonNull MethodVisitor mv) {
             mv.visitInsn(SALOAD);
@@ -196,6 +244,16 @@ public enum ComponentType {
         }
     },
     UNSIGNED_INT(INT_SIZE, true, false, (float) (1L << (long) Integer.SIZE), int.class, GLSLPrimitiveType.UINT) {
+        @Override
+        public void load(@NonNull MethodVisitor mv, int lvtIndex) {
+            mv.visitVarInsn(ILOAD, lvtIndex);
+        }
+
+        @Override
+        public void store(@NonNull MethodVisitor mv, int lvtIndex) {
+            mv.visitVarInsn(ISTORE, lvtIndex);
+        }
+
         @Override
         public void arrayLoad(@NonNull MethodVisitor mv) {
             INT.arrayLoad(mv);
@@ -240,6 +298,16 @@ public enum ComponentType {
     },
     INT(INT_SIZE, true, true, -((float) Integer.MIN_VALUE), int.class, GLSLPrimitiveType.INT) {
         @Override
+        public void load(@NonNull MethodVisitor mv, int lvtIndex) {
+            mv.visitVarInsn(ILOAD, lvtIndex);
+        }
+
+        @Override
+        public void store(@NonNull MethodVisitor mv, int lvtIndex) {
+            mv.visitVarInsn(ISTORE, lvtIndex);
+        }
+
+        @Override
         public void arrayLoad(@NonNull MethodVisitor mv) {
             mv.visitInsn(IALOAD);
         }
@@ -275,6 +343,16 @@ public enum ComponentType {
         }
     },
     FLOAT(FLOAT_SIZE, false, true, Float.NaN, float.class, GLSLPrimitiveType.FLOAT) {
+        @Override
+        public void load(@NonNull MethodVisitor mv, int lvtIndex) {
+            mv.visitVarInsn(FLOAD, lvtIndex);
+        }
+
+        @Override
+        public void store(@NonNull MethodVisitor mv, int lvtIndex) {
+            mv.visitVarInsn(FSTORE, lvtIndex);
+        }
+
         @Override
         public float inverseNormalizationFactor() {
             throw new UnsupportedOperationException("normalize float");
@@ -316,14 +394,24 @@ public enum ComponentType {
         }
     };
 
+    private static final Map<Class<?>, ComponentType> PRIMITIVE_CLASSES_TO_COMPONENT_TYPES = new IdentityHashMap<>();
+
+    static {
+        PRIMITIVE_CLASSES_TO_COMPONENT_TYPES.put(byte.class, BYTE);
+        PRIMITIVE_CLASSES_TO_COMPONENT_TYPES.put(char.class, UNSIGNED_SHORT);
+        PRIMITIVE_CLASSES_TO_COMPONENT_TYPES.put(short.class, SHORT);
+        PRIMITIVE_CLASSES_TO_COMPONENT_TYPES.put(int.class, INT);
+        PRIMITIVE_CLASSES_TO_COMPONENT_TYPES.put(float.class, FLOAT);
+    }
+
     public static ComponentType from(@NonNull Class<?> clazz) {
         checkArg(clazz.isPrimitive(), "not a primitive type: %s", clazz);
 
-        for (ComponentType type : values()) {
-            if (type.signed() && type.javaPrimitive() == clazz) {
-                return type;
-            }
+        ComponentType componentType = PRIMITIVE_CLASSES_TO_COMPONENT_TYPES.get(clazz);
+        if (componentType != null) {
+            return componentType;
         }
+
         throw new IllegalArgumentException("don't know how to handle " + clazz);
     }
 
@@ -347,6 +435,10 @@ public enum ComponentType {
                 ? this.signed() ? INT : UNSIGNED_INT
                 : FLOAT;
     }
+
+    public abstract void load(@NonNull MethodVisitor mv, int lvtIndex);
+
+    public abstract void store(@NonNull MethodVisitor mv, int lvtIndex);
 
     public abstract void arrayLoad(@NonNull MethodVisitor mv);
 
