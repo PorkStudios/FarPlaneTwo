@@ -42,19 +42,22 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @UtilityClass
 public class StructLayouts {
-    private InterleavedStructLayout.Member interleaved(@NonNull MutableLong offset, long alignment, @NonNull StructProperty property) {
+    private InterleavedStructLayout.Member interleaved(@NonNull MutableLong offset, long alignment, @NonNull StructProperty property, boolean unpacked) {
         return property.with(new StructProperty.TypedPropertyCallback<InterleavedStructLayout.Member>() {
             @Override
             public InterleavedStructLayout.Member withComponents(@NonNull StructProperty.Components componentsProperty) {
                 long[] componentOffsets = new long[componentsProperty.components()];
                 for (int i = 0, col = 0; col < componentsProperty.cols(); col++) {
                     for (int row = 0; row < componentsProperty.rows(); row++, i++) {
-                        componentOffsets[i] = offset.getAndAdd(componentsProperty.logicalStorageType().size());
+                        componentOffsets[i] = offset.getAndAdd(unpacked
+                                ? componentsProperty.componentInterpretation().outputType().size()
+                                : componentsProperty.logicalStorageType().size());
                     }
                     offset.roundUp(alignment);
                 }
                 return new InterleavedStructLayout.RegularMember(0L, componentOffsets,
-                        PArrays.filled(componentsProperty.components(), LayoutComponentStorage.class, LayoutComponentStorage.unchanged(componentsProperty)));
+                        PArrays.filled(componentsProperty.components(), LayoutComponentStorage.class,
+                                unpacked ? LayoutComponentStorage.unpacked(componentsProperty) : LayoutComponentStorage.unchanged(componentsProperty)));
             }
 
             @Override
@@ -69,7 +72,7 @@ public class StructLayouts {
 
             private InterleavedStructLayout.Member withNested(@NonNull Stream<StructProperty> nestedProperty) {
                 return new InterleavedStructLayout.NestedMember(nestedProperty
-                        .map(property -> interleaved(offset, alignment, property))
+                        .map(property -> interleaved(offset, alignment, property, unpacked))
                         .toArray(InterleavedStructLayout.Member[]::new));
             }
         });
@@ -77,7 +80,7 @@ public class StructLayouts {
 
     public <S> InterleavedStructLayout vertexAttributesInterleaved(@NonNull OpenGL gl, @NonNull StructInfo<S> structInfo, boolean unpacked) {
         MutableLong offset = new MutableLong();
-        InterleavedStructLayout.Member member = interleaved(offset, gl.vertexAttributeAlignment(), unpacked ? structInfo.unpackedProperty() : structInfo.packedProperty());
+        InterleavedStructLayout.Member member = interleaved(offset, gl.vertexAttributeAlignment(), structInfo.property(), unpacked);
 
         return InterleavedStructLayout.builder()
                 .structInfo(structInfo)
