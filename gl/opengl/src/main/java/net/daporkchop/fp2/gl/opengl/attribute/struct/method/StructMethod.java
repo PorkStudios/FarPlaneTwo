@@ -17,18 +17,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.attribute.annotation;
+package net.daporkchop.fp2.gl.opengl.attribute.struct.method;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import lombok.NonNull;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.StructLayout;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.property.ComponentType;
+import org.objectweb.asm.MethodVisitor;
+
+import java.util.function.IntConsumer;
 
 /**
  * @author DaPorkchop_
  */
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.METHOD })
-public @interface MethodAttribute {
-    String value() default "";
+public interface StructMethod {
+    int lvtIndexStart();
+
+    /**
+     * @author DaPorkchop_
+     */
+    interface Setter extends StructMethod {
+        <M extends StructLayout.Member<M, C>, C extends StructLayout.Component> void forEachComponent(@NonNull MethodVisitor mv, int lvtIndexAllocator, @NonNull M containingMember, @NonNull ComponentCallback<C> callback);
+
+        /**
+         * @author DaPorkchop_
+         */
+        @FunctionalInterface
+        interface ComponentCallback<C extends StructLayout.Component> {
+            void withComponent(int lvtIndexAllocator, @NonNull C component, @NonNull ComponentType inputComponentType, @NonNull IntConsumer loadComponentFromArgs);
+        }
+    }
 }

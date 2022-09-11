@@ -34,7 +34,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @Getter
-public final class InterleavedAttributeBufferImpl<F extends InterleavedAttributeFormatImpl<F, S>, S> extends AttributeBufferImpl<F, S> {
+public abstract class InterleavedAttributeBufferImpl<F extends InterleavedAttributeFormatImpl<F, S>, S> extends AttributeBufferImpl<F, S> {
     protected final InterleavedStructFormat<S> structFormat;
 
     protected final GLBuffer buffer;

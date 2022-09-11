@@ -51,7 +51,7 @@ public class SimplePrimitiveArrayMethodParameter implements MethodParameter {
     }
 
     @Override
-    public void load(@NonNull MethodVisitor mv, int structLvtIndexIn, int lvtIndexAllocatorIn, @NonNull LoadCallback callback) {
+    public void load(@NonNull MethodVisitor mv, int lvtIndexAllocatorIn, @NonNull LoadCallback callback) {
         //check array length and throw IllegalArgumentException if it's different than expected
         Label label = new Label();
         mv.visitVarInsn(ALOAD, this.arrayLvtIndex);
@@ -67,7 +67,7 @@ public class SimplePrimitiveArrayMethodParameter implements MethodParameter {
 
         mv.visitLabel(label);
 
-        callback.accept(structLvtIndexIn, lvtIndexAllocatorIn, (structLvtIndex, lvtIndexAllocator, componentIndex) -> {
+        callback.accept(lvtIndexAllocatorIn, (lvtIndexAllocator, componentIndex) -> {
             checkIndex(this.arrayLength, componentIndex);
 
             mv.visitVarInsn(ALOAD, this.arrayLvtIndex);

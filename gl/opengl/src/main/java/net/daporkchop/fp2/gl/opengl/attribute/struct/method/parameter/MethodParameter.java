@@ -31,14 +31,14 @@ public interface MethodParameter {
 
     int components();
 
-    void load(@NonNull MethodVisitor mv, int structLvtIndex, int lvtIndexAllocator, @NonNull LoadCallback callback);
+    void load(@NonNull MethodVisitor mv, int lvtIndexAllocator, @NonNull LoadCallback callback);
 
     /**
      * @author DaPorkchop_
      */
     @FunctionalInterface
     interface LoadCallback {
-        void accept(int structLvtIndex, int lvtIndexAllocator, @NonNull Loader loader);
+        void accept(int lvtIndexAllocator, @NonNull Loader loader);
     }
 
     /**
@@ -46,6 +46,6 @@ public interface MethodParameter {
      */
     @FunctionalInterface
     interface Loader {
-        void load(int structLvtIndex, int lvtIndexAllocator, int componentIndex);
+        void load(int lvtIndexAllocator, int componentIndex);
     }
 }

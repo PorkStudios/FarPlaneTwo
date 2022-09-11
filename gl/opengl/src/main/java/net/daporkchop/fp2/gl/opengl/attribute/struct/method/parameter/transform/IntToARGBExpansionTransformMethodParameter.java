@@ -53,15 +53,15 @@ public class IntToARGBExpansionTransformMethodParameter implements MethodParamet
     }
 
     @Override
-    public void load(@NonNull MethodVisitor mv, int structLvtIndexIn, int lvtIndexAllocatorIn, @NonNull LoadCallback callback) {
-        this.parent.load(mv, structLvtIndexIn, lvtIndexAllocatorIn, (structLvtIndexFromParent, lvtIndexAllocatorFromParent, loader) -> {
+    public void load(@NonNull MethodVisitor mv, int lvtIndexAllocatorIn, @NonNull LoadCallback callback) {
+        this.parent.load(mv, lvtIndexAllocatorIn, (lvtIndexAllocatorFromParent, loader) -> {
             int argbLvtIndex = lvtIndexAllocatorFromParent++;
 
             //load the 0th component (which is an int) and store it in the LVT
-            loader.load(structLvtIndexFromParent, lvtIndexAllocatorFromParent, 0);
+            loader.load(lvtIndexAllocatorFromParent, 0);
             mv.visitVarInsn(ISTORE, argbLvtIndex);
 
-            callback.accept(argbLvtIndex, lvtIndexAllocatorFromParent, (structLvtIndex, lvtIndexAllocator, componentIndex) -> {
+            callback.accept(lvtIndexAllocatorFromParent, (lvtIndexAllocator, componentIndex) -> {
                 checkIndex(this.components(), componentIndex);
 
                 mv.visitVarInsn(ILOAD, argbLvtIndex);

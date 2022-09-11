@@ -17,36 +17,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.struct.method.parameter.convert;
+package net.daporkchop.fp2.gl.attribute.annotation;
 
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.method.parameter.MethodParameter;
-import org.objectweb.asm.MethodVisitor;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-@Getter
-public abstract class AbstractConversionMethodParameter implements MethodParameter {
-    @NonNull
-    private final MethodParameter parent;
-
-    @Override
-    public int components() {
-        return this.parent.components();
-    }
-
-    @Override
-    public void load(@NonNull MethodVisitor mv, int lvtIndexAllocatorIn, @NonNull LoadCallback callback) {
-        this.parent.load(mv, lvtIndexAllocatorIn, (lvtIndexAllocatorFromParent, parentLoader) ->
-                callback.accept(lvtIndexAllocatorFromParent, (lvtIndexAllocator, componentIndex) -> {
-                    parentLoader.load(lvtIndexAllocator, componentIndex);
-                    this.convert(mv);
-                }));
-    }
-
-    protected abstract void convert(@NonNull MethodVisitor mv);
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ ElementType.METHOD })
+public @interface AttributeSetter {
+    String value() default "";
 }

@@ -48,8 +48,8 @@ public class UnionMethodParameter implements MethodParameter {
     }
 
     @Override
-    public void load(@NonNull MethodVisitor mv, int structLvtIndexIn, int lvtIndexAllocatorIn, @NonNull LoadCallback callback) {
-        callback.accept(structLvtIndexIn, lvtIndexAllocatorIn, (structLvtIndex, lvtIndexAllocator, componentIndex) -> {
+    public void load(@NonNull MethodVisitor mv, int lvtIndexAllocatorIn, @NonNull LoadCallback callback) {
+        callback.accept(lvtIndexAllocatorIn, (lvtIndexAllocator, componentIndex) -> {
             //find the corresponding component in the list
             //TODO: optimize this with a binary search
             int total = 0;
@@ -59,8 +59,8 @@ public class UnionMethodParameter implements MethodParameter {
                     int realComponentIndex = componentIndex - total;
 
                     //TODO: generate more optimized code by not exiting the load callback for every component access
-                    delegate.load(mv, structLvtIndex, lvtIndexAllocator,
-                            (structLvtIndex1, lvtIndexAllocator1, loader) -> loader.load(structLvtIndex1, lvtIndexAllocator1, realComponentIndex));
+                    delegate.load(mv, lvtIndexAllocator,
+                            (lvtIndexAllocator1, loader) -> loader.load(lvtIndexAllocator1, realComponentIndex));
                 }
                 total += components;
             }

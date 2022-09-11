@@ -20,7 +20,6 @@
 package net.daporkchop.fp2.gl.opengl.attribute.struct.codegen;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
@@ -32,10 +31,14 @@ import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttr
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.InterleavedStructLayout;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.LayoutComponentStorage;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.method.StructMethod;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.method.StructMethodFactory;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.signature.SignatureWriter;
+
+import java.lang.reflect.Method;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.objectweb.asm.Opcodes.*;
@@ -116,10 +119,9 @@ public class InterleavedStructFormatClassLoader<S> extends StructFormatClassLoad
             //return new ${ this.writerClassName() }(this, (InterleavedAttributeFormatImpl) attributeFormat);
             mv.visitTypeInsn(NEW, this.writerClassName());
             mv.visitInsn(DUP);
-            mv.visitVarInsn(ALOAD, 0);
             mv.visitVarInsn(ALOAD, 1);
             mv.visitTypeInsn(CHECKCAST, getInternalName(InterleavedAttributeFormatImpl.class));
-            mv.visitMethodInsn(INVOKESPECIAL, this.writerClassName(), "<init>", getMethodDescriptor(VOID_TYPE, getType(InterleavedStructFormat.class), getType(InterleavedAttributeFormatImpl.class)), false);
+            mv.visitMethodInsn(INVOKESPECIAL, this.writerClassName(), "<init>", getMethodDescriptor(VOID_TYPE, getType(InterleavedAttributeFormatImpl.class)), false);
 
             mv.visitInsn(ARETURN);
 
@@ -134,11 +136,10 @@ public class InterleavedStructFormatClassLoader<S> extends StructFormatClassLoad
             //return new ${ this.bufferClassName() }(this, (InterleavedAttributeFormatImpl) attributeFormat, usage);
             mv.visitTypeInsn(NEW, this.bufferClassName());
             mv.visitInsn(DUP);
-            mv.visitVarInsn(ALOAD, 0);
             mv.visitVarInsn(ALOAD, 1);
             mv.visitTypeInsn(CHECKCAST, getInternalName(InterleavedAttributeFormatImpl.class));
             mv.visitVarInsn(ALOAD, 2);
-            mv.visitMethodInsn(INVOKESPECIAL, this.bufferClassName(), "<init>", getMethodDescriptor(VOID_TYPE, getType(InterleavedStructFormat.class), getType(InterleavedAttributeFormatImpl.class), getType(BufferUsage.class)), false);
+            mv.visitMethodInsn(INVOKESPECIAL, this.bufferClassName(), "<init>", getMethodDescriptor(VOID_TYPE, getType(InterleavedAttributeFormatImpl.class), getType(BufferUsage.class)), false);
 
             mv.visitInsn(ARETURN);
 
@@ -226,11 +227,92 @@ public class InterleavedStructFormatClassLoader<S> extends StructFormatClassLoad
 
     @Override
     protected byte[] generateBufferClass() {
-        return new byte[0];
+        String superclassName = getInternalName(InterleavedAttributeBufferImpl.class);
+        String className = this.bufferClassName();
+        String structName = getInternalName(this.layout.structInfo().clazz());
+
+        ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
+
+        writer.visit(V1_8, ACC_PUBLIC | ACC_FINAL, className, null, superclassName, null);
+
+        { //constructor
+            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "<init>", getMethodDescriptor(VOID_TYPE, getType(InterleavedAttributeFormatImpl.class), getType(BufferUsage.class)), null, null);
+
+            mv.visitVarInsn(ALOAD, 0);
+            mv.visitVarInsn(ALOAD, 1);
+            mv.visitVarInsn(ALOAD, 2);
+            mv.visitMethodInsn(INVOKESPECIAL, superclassName, "<init>", getMethodDescriptor(VOID_TYPE, getType(InterleavedAttributeFormatImpl.class), getType(BufferUsage.class)), false);
+            mv.visitInsn(RETURN);
+
+            mv.visitMaxs(0, 0);
+            mv.visitEnd();
+        }
+
+        return this.finish(writer, structName + ' ' + className);
     }
 
     @Override
     protected byte[] generateWriterClass() {
-        return new byte[0];
+        String superclassName = getInternalName(InterleavedAttributeWriterImpl.class);
+        String className = this.writerClassName();
+        String structName = getInternalName(this.layout.structInfo().clazz());
+
+        ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
+
+        writer.visit(V1_8, ACC_PUBLIC | ACC_FINAL, className, null, superclassName,
+                new String[]{ structName }); //implement the top-level struct type to avoid unnecessary allocations
+
+        { //constructor
+            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "<init>", getMethodDescriptor(VOID_TYPE, getType(InterleavedAttributeFormatImpl.class)), null, null);
+
+            mv.visitVarInsn(ALOAD, 0);
+            mv.visitVarInsn(ALOAD, 1);
+            mv.visitMethodInsn(INVOKESPECIAL, superclassName, "<init>", getMethodDescriptor(VOID_TYPE, getType(InterleavedAttributeFormatImpl.class)), false);
+            mv.visitInsn(RETURN);
+
+            mv.visitMaxs(0, 0);
+            mv.visitEnd();
+        }
+
+        //implement all interface methods
+        for (Method method : this.layout.structInfo().clazz().getMethods()) {
+            StructMethod structMethod = StructMethodFactory.createFromMethod((StructProperty.Fields) this.layout.structProperty(), method);
+
+            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, method.getName(), getMethodDescriptor(method), null, null);
+
+            int lvtIndex = structMethod.lvtIndexStart();
+
+            int addrLvtIndex = lvtIndex;
+            lvtIndex += LONG_TYPE.getSize();
+            mv.visitVarInsn(ALOAD, 0);
+            mv.visitFieldInsn(GETFIELD, superclassName, "baseAddr", LONG_TYPE.getDescriptor());
+            mv.visitVarInsn(ALOAD, 0);
+            mv.visitFieldInsn(GETFIELD, superclassName, "index", INT_TYPE.getDescriptor());
+            mv.visitInsn(I2L);
+            mv.visitLdcInsn(this.layout.stride());
+            mv.visitInsn(LMUL);
+            mv.visitInsn(LADD);
+            mv.visitVarInsn(LSTORE, addrLvtIndex);
+
+            ((StructMethod.Setter) structMethod).forEachComponent(mv, lvtIndex, this.layout.member(),
+                    (lvtIndexAllocator, component, inputComponentType, loadComponentFromArgs) -> {
+                        mv.visitInsn(ACONST_NULL);
+                        mv.visitVarInsn(LLOAD, addrLvtIndex);
+                        mv.visitLdcInsn(component.offset());
+                        mv.visitInsn(LADD);
+
+                        loadComponentFromArgs.accept(lvtIndexAllocator); //load input component
+                        component.storage().input2physical(mv, lvtIndexAllocator, inputComponentType);
+                        component.storage().physicalStorageType().unsafePut(mv);
+                    });
+
+            mv.visitVarInsn(ALOAD, 0);
+            mv.visitInsn(ARETURN);
+
+            mv.visitMaxs(0, 0);
+            mv.visitEnd();
+        }
+
+        return this.finish(writer, structName + ' ' + className);
     }
 }

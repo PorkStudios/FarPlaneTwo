@@ -207,6 +207,10 @@ public interface StructProperty {
             return this.field(fieldIndex).getValue();
         }
 
+        default int fieldNameIndex(@NonNull String fieldName) {
+            return IntStream.range(0, this.fields()).filter(i -> fieldName.equals(this.fieldName(i))).findAny().getAsInt();
+        }
+
         @Override
         default Iterator<Map.Entry<String, StructProperty>> iterator() {
             return IntStream.range(0, this.fields()).mapToObj(this::field).iterator();

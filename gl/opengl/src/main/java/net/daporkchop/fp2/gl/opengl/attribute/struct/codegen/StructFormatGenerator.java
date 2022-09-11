@@ -546,7 +546,7 @@ public class StructFormatGenerator {
             mv.visitVarInsn(ASTORE, 1);
 
             //copy each component
-            property.load(mv, 1, 5, (structLvtIndex, lvtIndexAllocator, loader) -> {
+            /*property.load(mv, 1, 5, (structLvtIndex, lvtIndexAllocator, loader) -> {
                 for (int componentIndex = 0; componentIndex < property.components(); componentIndex++) {
                     TextureStructLayout.Component component = member.component(componentIndex);
 
@@ -558,7 +558,7 @@ public class StructFormatGenerator {
                     loader.load(structLvtIndex, lvtIndexAllocator, componentIndex);
                     property.logicalStorageType().unsafePut(mv);
                 }
-            });
+            });*/ //TODO: this
 
             mv.visitInsn(RETURN);
 

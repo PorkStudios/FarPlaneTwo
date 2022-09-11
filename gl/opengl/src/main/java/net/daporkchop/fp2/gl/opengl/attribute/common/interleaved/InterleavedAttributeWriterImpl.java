@@ -43,12 +43,10 @@ public abstract class InterleavedAttributeWriterImpl<F extends InterleavedAttrib
     protected int index;
     protected int capacity;
 
-    public InterleavedAttributeWriterImpl(@NonNull InterleavedStructFormat<S> structFormat, @NonNull F format) {
-        assert structFormat == format.structFormat();
-
+    public InterleavedAttributeWriterImpl(@NonNull F format) {
         this.gl = format.gl();
         this.format = format;
-        this.structFormat = structFormat;
+        this.structFormat = format.structFormat();
 
         this.stride = this.structFormat.stride();
 

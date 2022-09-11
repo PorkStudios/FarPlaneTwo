@@ -42,8 +42,8 @@ public class ScalarArgumentMethodParameter implements MethodParameter {
     }
 
     @Override
-    public void load(@NonNull MethodVisitor mv, int structLvtIndexIn, int lvtIndexAllocatorIn, @NonNull LoadCallback callback) {
-        callback.accept(structLvtIndexIn, lvtIndexAllocatorIn, (structLvtIndex, lvtIndexAllocator, componentIndex) -> {
+    public void load(@NonNull MethodVisitor mv, int lvtIndexAllocatorIn, @NonNull LoadCallback callback) {
+        callback.accept(lvtIndexAllocatorIn, (lvtIndexAllocator, componentIndex) -> {
             checkIndex(1, componentIndex);
             this.componentType.load(mv, this.argumentLvtIndex);
         });
