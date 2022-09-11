@@ -288,6 +288,8 @@ public class InterleavedStructFormatClassLoader<S> extends StructFormatClassLoad
             mv.visitFieldInsn(GETFIELD, superclassName, "baseAddr", LONG_TYPE.getDescriptor());
             mv.visitVarInsn(ALOAD, 0);
             mv.visitFieldInsn(GETFIELD, superclassName, "index", INT_TYPE.getDescriptor());
+            mv.visitLdcInsn(1);
+            mv.visitInsn(ISUB);
             mv.visitInsn(I2L);
             mv.visitLdcInsn(this.layout.stride());
             mv.visitInsn(LMUL);

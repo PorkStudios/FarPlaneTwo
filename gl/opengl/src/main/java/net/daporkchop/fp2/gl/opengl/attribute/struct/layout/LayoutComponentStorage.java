@@ -43,7 +43,22 @@ public final class LayoutComponentStorage {
     }
 
     public static LayoutComponentStorage unpacked(@NonNull StructProperty.Components property) {
-        return new LayoutComponentStorage(property.logicalStorageType(), property.logicalStorageType().unpackedestForm(), property.componentInterpretation());
+        ComponentType physicalStorageType;
+        switch (property.componentInterpretation().outputType()) {
+            case INT:
+                physicalStorageType = ComponentType.INT;
+                break;
+            case UINT:
+                physicalStorageType = ComponentType.UNSIGNED_INT;
+                break;
+            case FLOAT:
+                physicalStorageType = ComponentType.FLOAT;
+                break;
+            default:
+                throw new IllegalArgumentException(property.componentInterpretation().outputType().name());
+        }
+
+        return new LayoutComponentStorage(property.logicalStorageType(), physicalStorageType, property.componentInterpretation());
     }
 
     @NonNull
@@ -60,12 +75,16 @@ public final class LayoutComponentStorage {
     private void convertComponentTypes(@NonNull MethodVisitor mv, int lvtIndexAllocator, @NonNull ComponentType srcType, @NonNull ComponentType dstType) {
         if (srcType.integer()) {
             if (dstType.integer()) {
-                if (!srcType.signed() || !dstType.signed()) { //i'm pretty sure this should never occur in practice
-                    throw new UnsupportedOperationException();
+                if (srcType.signed() == dstType.signed()) {
+                    //truncate source type to the destination type's level of precision
+                    dstType.truncateInteger(mv);
+                } else if (srcType.signed()) { //source type is signed, destination type is not
+                    //truncate source type to the destination type's level of precision (this will discard high two's compliment bits)
+                    dstType.truncateInteger(mv);
+                } else { //source type is unsigned, destination type is signed
+                    //truncate source type to the destination type's level of precision (this will implicitly sign-extend the values after truncation)
+                    dstType.truncateInteger(mv);
                 }
-
-                //truncate source type to the destination type's level of precision
-                dstType.truncateInteger(mv);
             } else { //need to convert source type to float
                 srcType.convertToFloat(mv);
             }
@@ -84,6 +103,11 @@ public final class LayoutComponentStorage {
 
     public void logical2physical(@NonNull MethodVisitor mv, int lvtIndexAllocator) {
         this.convertComponentTypes(mv, lvtIndexAllocator, this.logicalStorageType, this.physicalStorageType);
+
+        if (this.logicalStorageType.integer() && !this.physicalStorageType.integer() && this.interpretation.normalized()) { //the type needs to be normalized
+            mv.visitLdcInsn(this.logicalStorageType.normalizationFactor());
+            mv.visitInsn(FMUL);
+        }
     }
 
     public void input2physical(@NonNull MethodVisitor mv, int lvtIndexAllocator, @NonNull ComponentType inputType) {

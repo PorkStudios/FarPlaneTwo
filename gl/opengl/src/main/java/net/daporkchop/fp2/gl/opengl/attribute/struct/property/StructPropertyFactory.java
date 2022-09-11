@@ -438,7 +438,8 @@ public class StructPropertyFactory {
                 case TO_UNSIGNED:
                     checkArg(componentInterpretation.outputType().integer(), "floating-point type cannot be converted to unsigned!");
                     checkArg(componentInterpretation.outputType().signed(), "unsigned type is already unsigned!");
-                    componentInterpretation = componentInterpretation.withOutputType(GLSLPrimitiveType.UINT);
+                    //componentInterpretation = componentInterpretation.withOutputType(GLSLPrimitiveType.UINT);
+                    logicalStorageType = logicalStorageType.toUnsigned();
                     break;
                 case TO_FLOAT:
                     checkArg(componentInterpretation.outputType().integer(), "floating-point type cannot be converted to floating-point!");

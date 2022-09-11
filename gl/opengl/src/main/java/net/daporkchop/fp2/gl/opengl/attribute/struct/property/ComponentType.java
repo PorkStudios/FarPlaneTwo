@@ -430,10 +430,11 @@ public enum ComponentType {
         return 1.0f / this.inverseNormalizationFactor();
     }
 
-    public ComponentType unpackedestForm() { //i don't care that this isn't a real word, it should be
-        return this.integer()
-                ? this.signed() ? INT : UNSIGNED_INT
-                : FLOAT;
+    public ComponentType toUnsigned() {
+        assert this.integer() : "not an integer type!";
+        assert this.signed() : "not a signed type!";
+
+        return values()[this.ordinal() & ~1];
     }
 
     public abstract void load(@NonNull MethodVisitor mv, int lvtIndex);
