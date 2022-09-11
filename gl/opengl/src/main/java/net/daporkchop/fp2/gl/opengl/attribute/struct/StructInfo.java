@@ -26,7 +26,6 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructPropertyFactory;
 
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -40,11 +39,7 @@ public class StructInfo<S> {
 
     protected final StructProperty property;
 
-    public StructInfo(@NonNull Class<S> clazz, @NonNull Map<String, String> nameOverrides) {
-        if (!nameOverrides.isEmpty()) {
-            System.err.println("ignoring name overrides: " + nameOverrides);
-        }
-
+    public StructInfo(@NonNull Class<S> clazz) {
         this.clazz = clazz;
         this.property = StructPropertyFactory.struct(clazz);
     }

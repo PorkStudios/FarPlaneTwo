@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.attribute.texture;
@@ -28,11 +27,6 @@ import net.daporkchop.fp2.gl.attribute.texture.TextureFormatBuilder;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.StructInfo;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import static net.daporkchop.lib.common.util.PValidation.*;
-
 /**
  * @author DaPorkchop_
  */
@@ -44,15 +38,7 @@ public abstract class TextureFormatBuilderImpl<S, F extends BaseTextureFormat<S>
     @NonNull
     protected final Class<S> clazz;
 
-    protected final Map<String, String> nameOverrides = new HashMap<>();
-
-    @Override
-    public TextureFormatBuilder<F> rename(@NonNull String originalName, @NonNull String newName) {
-        checkState(this.nameOverrides.putIfAbsent(originalName, newName) == null, "name %s cannot be overridden twice!", originalName);
-        return this;
-    }
-
     public StructInfo<S> structInfo() {
-        return new StructInfo<>(this.clazz, this.nameOverrides);
+        return new StructInfo<>(this.clazz);
     }
 }

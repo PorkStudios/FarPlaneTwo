@@ -128,7 +128,6 @@ public class TestLWJGL2 {
         TextureFormat2D<TextureAttribs> textureFormat = gl.createTextureFormat2D(TextureAttribs.class).build();
         AttributeFormat<LocalAttribs> localFormat = gl.createAttributeFormat(LocalAttribs.class)
                 .useFor(AttributeUsage.DRAW_LOCAL, AttributeUsage.TRANSFORM_INPUT, AttributeUsage.TRANSFORM_OUTPUT)
-                .rename("pos", "posRenamed")
                 .build();
         AttributeFormat<UniformSelectionAttribs> selectionUniformFormat = gl.createAttributeFormat(UniformSelectionAttribs.class).useFor(AttributeUsage.UNIFORM).build();
 
