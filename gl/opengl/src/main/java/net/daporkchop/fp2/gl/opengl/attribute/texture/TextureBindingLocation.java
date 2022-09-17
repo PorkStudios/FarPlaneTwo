@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.attribute.texture;
@@ -26,7 +25,6 @@ import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLType;
 import net.daporkchop.fp2.gl.opengl.command.state.MutableState;
 import net.daporkchop.fp2.gl.opengl.command.state.StateProperties;
 import net.daporkchop.fp2.gl.opengl.layout.LayoutEntry;
@@ -37,13 +35,13 @@ import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
 /**
  * @author DaPorkchop_
  */
-public class TextureBindingLocation<S, B extends BaseTextureImpl<?, S>> implements BindingLocation<B> {
-    protected final LayoutEntry<? extends BaseTextureFormatImpl<?, S>> layout;
+public class TextureBindingLocation<B extends BaseTextureImpl<?>> implements BindingLocation<B> {
+    protected final LayoutEntry<? extends BaseTextureFormatImpl<?>> layout;
 
     protected final TextureTarget target;
     protected final int unit;
 
-    public TextureBindingLocation(@NonNull LayoutEntry<? extends BaseTextureFormatImpl<?, S>> layout, @NonNull TextureTarget target, @NonNull BindingLocationAssigner assigner) {
+    public TextureBindingLocation(@NonNull LayoutEntry<? extends BaseTextureFormatImpl<?>> layout, @NonNull TextureTarget target, @NonNull BindingLocationAssigner assigner) {
         this.layout = layout;
         this.target = target;
         this.unit = assigner.textureUnit();

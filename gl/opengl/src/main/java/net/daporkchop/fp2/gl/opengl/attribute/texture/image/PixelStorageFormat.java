@@ -17,24 +17,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.attribute.texture;
+package net.daporkchop.fp2.gl.opengl.attribute.texture.image;
 
-import lombok.NonNull;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatChannel;
 
 /**
  * @author DaPorkchop_
  */
-public interface TextureFormat2D extends BaseTextureFormat {
-    TextureWriter2D createWriter(int width, int height);
+public interface PixelStorageFormat {
+    int glFormat();
 
-    Texture2D createTexture(int width, int height, int levels);
+    int glType();
 
-    /**
-     * Wraps a texture which was created externally and is identified by an implementation-dependent ID.
-     *
-     * @param id the texture ID
-     * @return the wrapped texture
-     * @throws UnsupportedOperationException if the implementation does not support wrapping textures
-     */
-    Texture2D wrapExternalTexture(@NonNull Object id) throws UnsupportedOperationException;
+    ImmutableMap<PixelFormatChannel, Integer> channelsToBitDepths();
+
+    default ImmutableSet<PixelFormatChannel> channels() {
+        return this.channelsToBitDepths().keySet();
+    }
 }

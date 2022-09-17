@@ -17,24 +17,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.attribute.texture;
-
-import lombok.NonNull;
+package net.daporkchop.fp2.gl.attribute.texture.image;
 
 /**
+ * The channel value range which may be stored in a pixel format.
+ *
  * @author DaPorkchop_
  */
-public interface TextureFormat2D extends BaseTextureFormat {
-    TextureWriter2D createWriter(int width, int height);
-
-    Texture2D createTexture(int width, int height, int levels);
-
+public enum PixelFormatChannelRange {
     /**
-     * Wraps a texture which was created externally and is identified by an implementation-dependent ID.
-     *
-     * @param id the texture ID
-     * @return the wrapped texture
-     * @throws UnsupportedOperationException if the implementation does not support wrapping textures
+     * Values are clamped to fit within the range {@code [-1, 1]}.
      */
-    Texture2D wrapExternalTexture(@NonNull Object id) throws UnsupportedOperationException;
+    ZERO_TO_ONE,
+    /**
+     * Values are clamped to fit within the range {@code [0, 1]}.
+     */
+    NEGATIVE_ONE_TO_ONE,
+    /**
+     * Values are not clamped.
+     */
+    INFINITY
 }

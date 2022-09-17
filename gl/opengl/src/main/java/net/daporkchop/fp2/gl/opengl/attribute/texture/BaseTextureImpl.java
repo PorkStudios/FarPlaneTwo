@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.attribute.texture;
@@ -32,8 +31,8 @@ import java.util.function.IntConsumer;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class BaseTextureImpl<F extends BaseTextureFormatImpl<F, S>, S> extends BaseAttributeBufferImpl<F> implements BaseTexture<S> {
-    protected final TextureStructFormat<S> structFormat;
+public abstract class BaseTextureImpl<F extends BaseTextureFormatImpl<F>> extends BaseAttributeBufferImpl<F> implements BaseTexture {
+    protected final TextureStructFormat<Object> structFormat;
 
     protected final int id;
     protected final boolean managed;

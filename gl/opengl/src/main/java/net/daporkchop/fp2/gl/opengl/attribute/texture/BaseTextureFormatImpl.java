@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.attribute.texture;
@@ -29,7 +28,6 @@ import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.TextureStructFormat;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLType;
 
 import java.util.EnumSet;
 import java.util.List;
@@ -39,14 +37,14 @@ import java.util.Set;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class BaseTextureFormatImpl<F extends BaseTextureFormatImpl<F, S>, S> extends BaseAttributeFormatImpl<F> implements BaseTextureFormat<S> {
+public abstract class BaseTextureFormatImpl<F extends BaseTextureFormatImpl<F>> extends BaseAttributeFormatImpl<F> implements BaseTextureFormat {
     public static final Set<AttributeUsage> VALID_USAGES = ImmutableSet.copyOf(EnumSet.of(
             AttributeUsage.TEXTURE
     ));
 
-    private final TextureStructFormat<S> structFormat;
+    private final TextureStructFormat<Object> structFormat;
 
-    public BaseTextureFormatImpl(@NonNull OpenGL gl, @NonNull TextureStructFormat<S> structFormat) {
+    public BaseTextureFormatImpl(@NonNull OpenGL gl, @NonNull TextureStructFormat<Object> structFormat) {
         super(gl);
 
         this.structFormat = structFormat;

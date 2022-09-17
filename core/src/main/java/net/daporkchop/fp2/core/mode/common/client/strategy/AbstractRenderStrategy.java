@@ -39,8 +39,6 @@ import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.common.client.AbstractFarRenderer;
 import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutput;
 import net.daporkchop.fp2.core.mode.common.client.index.IRenderIndex;
-import net.daporkchop.fp2.core.mode.common.client.strategy.texture.LightmapTextureAttribute;
-import net.daporkchop.fp2.core.mode.common.client.strategy.texture.TerrainTextureAttribute;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
@@ -75,10 +73,10 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
     protected final AttributeFormat<GlobalUniformAttributes> uniformFormat;
     protected final AttributeBuffer<GlobalUniformAttributes> uniformBuffer;
 
-    protected final TextureFormat2D<TerrainTextureAttribute> textureFormatTerrain;
-    protected final Texture2D<TerrainTextureAttribute> textureTerrain;
-    protected final TextureFormat2D<LightmapTextureAttribute> textureFormatLightmap;
-    protected final Texture2D<LightmapTextureAttribute> textureLightmap;
+    protected final TextureFormat2D textureFormatTerrain;
+    protected final Texture2D textureTerrain;
+    protected final TextureFormat2D textureFormatLightmap;
+    protected final Texture2D textureLightmap;
 
     protected final TextureUVs textureUVs;
 
@@ -96,9 +94,9 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
         this.uniformFormat = this.gl.createAttributeFormat(GlobalUniformAttributes.class).useFor(AttributeUsage.UNIFORM).build();
         this.uniformBuffer = this.uniformFormat.createBuffer(BufferUsage.STATIC_DRAW);
 
-        this.textureFormatTerrain = this.gl.createTextureFormat2D(TerrainTextureAttribute.class).build();
+        this.textureFormatTerrain = this.gl.createTextureFormat2D().build();
         this.textureTerrain = this.textureFormatTerrain.wrapExternalTexture(this.levelRenderer.terrainTextureId());
-        this.textureFormatLightmap = this.gl.createTextureFormat2D(LightmapTextureAttribute.class).build();
+        this.textureFormatLightmap = this.gl.createTextureFormat2D().build();
         this.textureLightmap = this.textureFormatLightmap.wrapExternalTexture(this.levelRenderer.lightmapTextureId());
 
         this.textureUVs = this.levelRenderer.textureUVs();

@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.attribute.texture;
@@ -32,13 +31,13 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @Getter
-public class Texture2DImpl<S> extends BaseTextureImpl<TextureFormat2DImpl<S>, S> implements Texture2D<S> {
+public class Texture2DImpl extends BaseTextureImpl<TextureFormat2DImpl> implements Texture2D {
     protected final int width;
     protected final int height;
     protected final int levels;
     protected final int stride;
 
-    public Texture2DImpl(@NonNull TextureFormat2DImpl<S> formatIn, int width, int height, int levels) {
+    public Texture2DImpl(@NonNull TextureFormat2DImpl formatIn, int width, int height, int levels) {
         super(formatIn);
 
         this.width = positive(width, "width");
@@ -61,8 +60,8 @@ public class Texture2DImpl<S> extends BaseTextureImpl<TextureFormat2DImpl<S>, S>
     }
 
     @Override
-    public void set(int level, int xOffset, int yOffset, @NonNull TextureWriter2D<S> _writer) {
-        TextureWriter2DImpl<S> writer = (TextureWriter2DImpl<S>) _writer;
+    public void set(int level, int xOffset, int yOffset, @NonNull TextureWriter2D _writer) {
+        TextureWriter2DImpl<Object> writer = (TextureWriter2DImpl<Object>) _writer;
         checkIndex(this.levels, level);
         checkRangeLen(this.width >> level, xOffset, writer.width);
         checkRangeLen(this.height >> level, yOffset, writer.height);

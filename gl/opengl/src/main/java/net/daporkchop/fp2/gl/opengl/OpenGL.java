@@ -36,6 +36,8 @@ import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormatBuilder;
+import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormat;
+import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatBuilder;
 import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.draw.DrawLayoutBuilder;
@@ -57,6 +59,7 @@ import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.codegen.StructFormatGenerator;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureFormat2DImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureFormatBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.texture.image.PixelFormatBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.opengl.buffer.SimpleGLBufferImpl;
 import net.daporkchop.fp2.gl.opengl.buffer.UploadCopyingGLBufferImpl;
@@ -258,10 +261,15 @@ public class OpenGL implements GL {
     }
 
     @Override
-    public <S> TextureFormatBuilder<TextureFormat2D<S>> createTextureFormat2D(@NonNull Class<S> clazz) {
-        return new TextureFormatBuilderImpl<S, TextureFormat2D<S>>(this, clazz) {
+    public PixelFormatBuilder.TypeSelectionStage createPixelFormat() {
+        return new PixelFormatBuilderImpl(this);
+    }
+
+    @Override
+    public TextureFormatBuilder<TextureFormat2D> createTextureFormat2D(@NonNull PixelFormat pixelFormat) {
+        return new TextureFormatBuilderImpl<TextureFormat2D>(this) {
             @Override
-            public TextureFormat2D<S> build() {
+            public TextureFormat2D build() {
                 return new TextureFormat2DImpl<>(this);
             }
         };

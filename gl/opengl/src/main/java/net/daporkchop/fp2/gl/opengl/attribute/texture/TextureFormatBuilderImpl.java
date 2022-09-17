@@ -32,13 +32,11 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.StructInfo;
  */
 @RequiredArgsConstructor
 @Getter
-public abstract class TextureFormatBuilderImpl<S, F extends BaseTextureFormat<S>> implements TextureFormatBuilder<F> {
+public abstract class TextureFormatBuilderImpl<F extends BaseTextureFormat> implements TextureFormatBuilder<F> {
     @NonNull
     protected final OpenGL gl;
-    @NonNull
-    protected final Class<S> clazz;
 
-    public StructInfo<S> structInfo() {
+    public StructInfo<Object> structInfo() {
         return new StructInfo<>(this.clazz);
     }
 }

@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.attribute.texture;
@@ -37,30 +36,30 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @Getter
-public class TextureFormat2DImpl<S> extends BaseTextureFormatImpl<TextureFormat2DImpl<S>, S> implements TextureFormat2D<S> {
-    public TextureFormat2DImpl(@NonNull TextureFormatBuilderImpl<S, TextureFormat2D<S>> builder) {
+public class TextureFormat2DImpl extends BaseTextureFormatImpl<TextureFormat2DImpl> implements TextureFormat2D {
+    public TextureFormat2DImpl(@NonNull TextureFormatBuilderImpl<TextureFormat2D> builder) {
         super(builder.gl(), builder.gl().structFormatGenerator().getTexture(StructLayouts.texture(builder.gl(), builder.structInfo())));
     }
 
     @Override
-    public BindingLocation<?> bindingLocation(@NonNull LayoutEntry<TextureFormat2DImpl<S>> layout, @NonNull BindingLocationAssigner assigner) {
+    public BindingLocation<?> bindingLocation(@NonNull LayoutEntry<TextureFormat2DImpl> layout, @NonNull BindingLocationAssigner assigner) {
         checkArg(layout.usage() == AttributeUsage.TEXTURE, "unsupported usage: %s", layout.usage());
 
-        return new TextureBindingLocation<S, Texture2DImpl<S>>(layout, TextureTarget.TEXTURE_2D, assigner);
+        return new TextureBindingLocation<Texture2DImpl>(layout, TextureTarget.TEXTURE_2D, assigner);
     }
 
     @Override
-    public TextureWriter2D<S> createWriter(int width, int height) {
+    public TextureWriter2D createWriter(int width, int height) {
         return new TextureWriter2DImpl<>(this, width, height);
     }
 
     @Override
-    public Texture2D<S> createTexture(int width, int height, int levels) {
-        return new Texture2DImpl<>(this, width, height, levels);
+    public Texture2D createTexture(int width, int height, int levels) {
+        return new Texture2DImpl(this, width, height, levels);
     }
 
     @Override
-    public Texture2D<S> wrapExternalTexture(@NonNull Object id) throws UnsupportedOperationException {
+    public Texture2D wrapExternalTexture(@NonNull Object id) throws UnsupportedOperationException {
         return new WrappedTexture2DImpl<>(this, (Integer) id);
     }
 }

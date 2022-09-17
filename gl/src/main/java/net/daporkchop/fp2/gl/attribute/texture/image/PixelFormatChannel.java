@@ -17,24 +17,52 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.attribute.texture;
+package net.daporkchop.fp2.gl.attribute.texture.image;
 
-import lombok.NonNull;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.Set;
 
 /**
+ * The channels which may be used in a pixel format.
+ *
  * @author DaPorkchop_
  */
-public interface TextureFormat2D extends BaseTextureFormat {
-    TextureWriter2D createWriter(int width, int height);
+@RequiredArgsConstructor
+@Getter
+public enum PixelFormatChannel {
+    /**
+     * The red color channel.
+     * <p>
+     * Does not depend on any other channels.
+     */
+    RED(Collections.emptySet()),
+    /**
+     * The green color channel.
+     * <p>
+     * Depends on the {@link #RED} channel.
+     */
+    GREEN(Collections.unmodifiableSet(EnumSet.of(RED))),
+    /**
+     * The blue color channel.
+     * <p>
+     * Depends on the {@link #RED} and {@link #GREEN} channels.
+     */
+    BLUE(Collections.unmodifiableSet(EnumSet.of(RED, GREEN))),
+    /**
+     * The alpha color channel.
+     * <p>
+     * Depends on the {@link #RED}, {@link #GREEN} and {@link #BLUE} channels.
+     */
+    ALPHA(Collections.unmodifiableSet(EnumSet.of(RED, GREEN, BLUE)));
 
-    Texture2D createTexture(int width, int height, int levels);
+    //TODO: add support for depth and/or stencil textures?
 
     /**
-     * Wraps a texture which was created externally and is identified by an implementation-dependent ID.
-     *
-     * @param id the texture ID
-     * @return the wrapped texture
-     * @throws UnsupportedOperationException if the implementation does not support wrapping textures
+     * A set of {@link PixelFormatChannel} which must be present in a pixel format in order for this pixel format channel to be used.
      */
-    Texture2D wrapExternalTexture(@NonNull Object id) throws UnsupportedOperationException;
+    private final Set<PixelFormatChannel> depends;
 }

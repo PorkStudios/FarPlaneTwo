@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl;
@@ -26,6 +25,8 @@ import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormatBuilder;
+import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormat;
+import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatBuilder;
 import net.daporkchop.fp2.gl.command.CommandBuffer;
 import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
@@ -109,13 +110,17 @@ public interface GL extends AutoCloseable {
     <S> AttributeFormatBuilder<S> createAttributeFormat(@NonNull Class<S> clazz);
 
     /**
-     * Gets a {@link TextureFormat2D} for the given struct class.
+     * @return a builder for constructing a new {@link PixelFormat}
+     */
+    PixelFormatBuilder.TypeSelectionStage createPixelFormat();
+
+    /**
+     * Gets a {@link TextureFormat2D} for the given {@link PixelFormat pixel format}.
      *
-     * @param clazz the struct class
-     * @param <S>   the struct type
+     * @param pixelFormat the {@link PixelFormat pixel format}
      * @return a {@link TextureFormat2D}
      */
-    <S> TextureFormatBuilder<TextureFormat2D<S>> createTextureFormat2D(@NonNull Class<S> clazz);
+    TextureFormatBuilder<TextureFormat2D> createTextureFormat2D(@NonNull PixelFormat pixelFormat);
 
     //
     // DRAW

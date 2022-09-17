@@ -17,24 +17,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.attribute.texture;
+package net.daporkchop.fp2.gl.attribute.texture.image;
 
-import lombok.NonNull;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @author DaPorkchop_
  */
-public interface TextureFormat2D extends BaseTextureFormat {
-    TextureWriter2D createWriter(int width, int height);
-
-    Texture2D createTexture(int width, int height, int levels);
+public interface PixelFormat {
+    /**
+     * @return the {@link PixelFormatChannelType type} of this pixel format's channels
+     */
+    PixelFormatChannelType channelType();
 
     /**
-     * Wraps a texture which was created externally and is identified by an implementation-dependent ID.
-     *
-     * @param id the texture ID
-     * @return the wrapped texture
-     * @throws UnsupportedOperationException if the implementation does not support wrapping textures
+     * @return the {@link PixelFormatChannelRange range} of this pixel format's channels
      */
-    Texture2D wrapExternalTexture(@NonNull Object id) throws UnsupportedOperationException;
+    PixelFormatChannelRange channelRange();
+
+    /**
+     * @return the {@link PixelFormatChannel channels} present in this pixel format
+     */
+    Set<PixelFormatChannel> channels();
+
+    /**
+     * @return a {@link Map} indicating the requested bit depth for each channel
+     */
+    Map<PixelFormatChannel, Integer> bitDepthPerChannel();
 }
