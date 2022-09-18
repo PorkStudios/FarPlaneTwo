@@ -112,7 +112,7 @@ public interface GL extends AutoCloseable {
     /**
      * @return a builder for constructing a new {@link PixelFormat}
      */
-    PixelFormatBuilder.TypeSelectionStage createPixelFormat();
+    PixelFormatBuilder.ChannelSelectionStage createPixelFormat();
 
     /**
      * Gets a {@link TextureFormat2D} for the given {@link PixelFormat pixel format}.

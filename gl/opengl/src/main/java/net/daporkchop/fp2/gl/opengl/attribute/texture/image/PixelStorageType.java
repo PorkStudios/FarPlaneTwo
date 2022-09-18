@@ -28,6 +28,9 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.objectweb.asm.Opcodes.*;
 
 /**
+ * The {@code type} parameter of a pixel transfer function defines how many bits each of the components defined by the {@code format} take up. There are two kinds of
+ * {@code type} values: values that specify each component as a separate byte value, or values that pack multiple components into a single value.
+ *
  * @author DaPorkchop_
  */
 public interface PixelStorageType {

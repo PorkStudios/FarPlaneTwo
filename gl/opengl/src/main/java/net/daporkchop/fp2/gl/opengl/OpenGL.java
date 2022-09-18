@@ -60,6 +60,7 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.codegen.StructFormatGenerat
 import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureFormat2DImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureFormatBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.image.PixelFormatBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.texture.image.PixelFormatFactory;
 import net.daporkchop.fp2.gl.opengl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.opengl.buffer.SimpleGLBufferImpl;
 import net.daporkchop.fp2.gl.opengl.buffer.UploadCopyingGLBufferImpl;
@@ -129,6 +130,7 @@ public class OpenGL implements GL {
     protected final Allocator directMemoryAllocator = new DirectMemoryAllocator();
 
     protected final StructFormatGenerator structFormatGenerator = new StructFormatGenerator(this);
+    protected final PixelFormatFactory pixelFormatFactory;
 
     protected final LoadingCache<AttributeFormatBuilderImpl<?>, AttributeFormat<?>> attributeFormatCache = CacheBuilder.newBuilder()
             .weakValues()
@@ -209,6 +211,8 @@ public class OpenGL implements GL {
 
         //compatibility hacks
         this.vertexAttributeAlignment = this.isOfficialAmdDriver() ? INT_SIZE : 1;
+
+        this.pixelFormatFactory = new PixelFormatFactory(this);
     }
 
     private boolean isOfficialAmdDriver() {
@@ -261,7 +265,7 @@ public class OpenGL implements GL {
     }
 
     @Override
-    public PixelFormatBuilder.TypeSelectionStage createPixelFormat() {
+    public PixelFormatBuilder.ChannelSelectionStage createPixelFormat() {
         return new PixelFormatBuilderImpl(this);
     }
 

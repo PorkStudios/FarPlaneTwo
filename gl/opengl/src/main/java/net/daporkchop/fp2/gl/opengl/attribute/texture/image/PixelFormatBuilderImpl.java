@@ -132,6 +132,6 @@ public class PixelFormatBuilderImpl implements PixelFormatBuilder.ChannelSelecti
 
     @Override
     public PixelFormat build() {
-        return null;
+        return this.gl.pixelFormatFactory().build(this);
     }
 }

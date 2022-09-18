@@ -19,21 +19,25 @@
 
 package net.daporkchop.fp2.gl.opengl.attribute.texture.image;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableList;
 import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatChannel;
+import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatChannelType;
 
 /**
+ * The {@code format} parameter of a pixel transfer function defines the following:
+ * <ul>
+ *     <li>The basic type of data that is being read/written from/to: Color, depth, stencil, or depth/stencil. This must match the image format of the image being
+ *     read/written from/to.</li>
+ *     <li>The order of the individual components within each pixel.</li>
+ *     <li>For color values, whether or not the data should be converted to/from floating-point values when being read/written. For more details, see below.</li>
+ * </ul>
+ *
  * @author DaPorkchop_
  */
 public interface PixelStorageFormat {
     int glFormat();
 
-    int glType();
+    PixelFormatChannelType type();
 
-    ImmutableMap<PixelFormatChannel, Integer> channelsToBitDepths();
-
-    default ImmutableSet<PixelFormatChannel> channels() {
-        return this.channelsToBitDepths().keySet();
-    }
+    ImmutableList<PixelFormatChannel> channels();
 }

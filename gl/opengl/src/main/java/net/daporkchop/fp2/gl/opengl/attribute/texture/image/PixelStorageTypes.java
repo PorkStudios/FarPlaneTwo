@@ -20,19 +20,23 @@
 package net.daporkchop.fp2.gl.opengl.attribute.texture.image;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatChannel;
 import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatChannelType;
-import net.daporkchop.fp2.gl.opengl.OpenGLConstants;
+import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.lib.common.util.PArrays;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 
+import java.util.Collections;
 import java.util.List;
-import java.util.stream.IntStream;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.common.util.TypeSize.*;
@@ -44,47 +48,115 @@ import static org.objectweb.asm.Type.*;
 /**
  * @author DaPorkchop_
  */
-@SuppressWarnings("UnstableApiUsage")
-@UtilityClass
 public class PixelStorageTypes {
-    public static final ImmutableList<PixelStorageType> BYTE = IntStream.rangeClosed(1, 4)
-            .mapToObj(components -> new AbstractPrimitiveStorageType(GL_BYTE, PixelFormatChannelType.INTEGER, BYTE_TYPE, BYTE_SIZE, components))
-            .collect(ImmutableList.toImmutableList());
+    protected final OpenGL gl;
 
-    public static final ImmutableList<PixelStorageType> UNSIGNED_BYTE = IntStream.rangeClosed(1, 4)
-            .mapToObj(components -> new AbstractPrimitiveStorageType(GL_UNSIGNED_BYTE, PixelFormatChannelType.UNSIGNED_INTEGER, BYTE_TYPE, BYTE_SIZE, components))
-            .collect(ImmutableList.toImmutableList());
+    protected final List<PixelStorageType> all;
 
-    public static final ImmutableList<PixelStorageType> SHORT = IntStream.rangeClosed(1, 4)
-            .mapToObj(components -> new AbstractPrimitiveStorageType(GL_SHORT, PixelFormatChannelType.INTEGER, SHORT_TYPE, SHORT_SIZE, components))
-            .collect(ImmutableList.toImmutableList());
+    protected final Map<Integer, List<PixelStorageType>> byComponents;
 
-    public static final ImmutableList<PixelStorageType> UNSIGNED_SHORT = IntStream.rangeClosed(1, 4)
-            .mapToObj(components -> new AbstractPrimitiveStorageType(GL_UNSIGNED_SHORT, PixelFormatChannelType.UNSIGNED_INTEGER, CHAR_TYPE, CHAR_SIZE, components))
-            .collect(ImmutableList.toImmutableList());
+    public PixelStorageTypes(@NonNull OpenGL gl) {
+        this.gl = gl;
 
-    public static final ImmutableList<PixelStorageType> INT = IntStream.rangeClosed(1, 4)
-            .mapToObj(components -> new AbstractPrimitiveStorageType(GL_INT, PixelFormatChannelType.INTEGER, INT_TYPE, INT_SIZE, components))
-            .collect(ImmutableList.toImmutableList());
+        ImmutableList.Builder<PixelStorageType> builder = ImmutableList.builder();
 
-    public static final ImmutableList<PixelStorageType> UNSIGNED_INT = IntStream.rangeClosed(1, 4)
-            .mapToObj(components -> new AbstractPrimitiveStorageType(GL_UNSIGNED_INT, PixelFormatChannelType.UNSIGNED_INTEGER, INT_TYPE, INT_SIZE, components))
-            .collect(ImmutableList.toImmutableList());
+        //regular primitive types
+        for (int components = 1; components <= 4; components++) {
+            builder.add(new SimplePrimitiveStorageType(GL_BYTE, PixelFormatChannelType.INTEGER, BYTE_TYPE, BYTE_SIZE, components));
+            builder.add(new SimplePrimitiveStorageType(GL_UNSIGNED_BYTE, PixelFormatChannelType.UNSIGNED_INTEGER, BYTE_TYPE, BYTE_SIZE, components));
+            builder.add(new SimplePrimitiveStorageType(GL_SHORT, PixelFormatChannelType.INTEGER, SHORT_TYPE, SHORT_SIZE, components));
+            builder.add(new SimplePrimitiveStorageType(GL_UNSIGNED_SHORT, PixelFormatChannelType.UNSIGNED_INTEGER, CHAR_TYPE, CHAR_SIZE, components));
+            builder.add(new SimplePrimitiveStorageType(GL_INT, PixelFormatChannelType.INTEGER, INT_TYPE, INT_SIZE, components));
+            builder.add(new SimplePrimitiveStorageType(GL_UNSIGNED_INT, PixelFormatChannelType.UNSIGNED_INTEGER, INT_TYPE, INT_SIZE, components));
+            builder.add(new SimplePrimitiveStorageType(GL_FLOAT, PixelFormatChannelType.FLOATING_POINT, FLOAT_TYPE, FLOAT_SIZE, components));
+        }
 
-    public static final ImmutableList<PixelStorageType> FLOAT = IntStream.rangeClosed(1, 4)
-            .mapToObj(components -> new AbstractPrimitiveStorageType(GL_FLOAT, PixelFormatChannelType.FLOATING_POINT, FLOAT_TYPE, FLOAT_SIZE, components))
-            .collect(ImmutableList.toImmutableList());
+        this.all = builder.build();
 
-    public static final ImmutableList<PixelStorageType> ALL = Stream.of(BYTE, UNSIGNED_BYTE, SHORT, UNSIGNED_SHORT, INT, UNSIGNED_INT, FLOAT)
-            .flatMap(List::stream)
-            .collect(ImmutableList.toImmutableList());
+        //noinspection UnstableApiUsage
+        this.byComponents = ImmutableMap.copyOf(this.all.stream().collect(Collectors.groupingBy(
+                PixelStorageType::components,
+                ImmutableList.toImmutableList())));
+    }
+
+    public Stream<PixelStorageType> all() {
+        return this.all.stream();
+    }
+
+    public PixelStorageType getOptimalStorageTypeFor(@NonNull PixelFormatBuilderImpl builder, @NonNull PixelStorageFormat storageFormat) {
+        checkArg(builder.type() == storageFormat.type(), "builder requested type %s, but storage format has %s", builder.type(), storageFormat.type());
+
+        return this.byComponents.getOrDefault(storageFormat.channels().size(), Collections.emptyList())
+                .stream()
+                .filter(storageType -> {
+                    PixelFormatChannelType genericType = storageType.genericType();
+
+                    switch (storageFormat.type()) {
+                        case FLOATING_POINT: //the storage format outputs floating-point values
+                            switch (builder.range()) { //depending on the range, we can accept normalized fixed-point values computed from integers
+                                case ZERO_TO_ONE:
+                                    if (genericType == PixelFormatChannelType.INTEGER) { //signed integers cannot be normalized to range [0, 1]
+                                        return false;
+                                    }
+                                    break;
+                                case NEGATIVE_ONE_TO_ONE:
+                                    if (genericType == PixelFormatChannelType.UNSIGNED_INTEGER) { //unsigned integers cannot be normalized to range [-1, 1]
+                                        return false;
+                                    }
+                                    break;
+                                case INFINITY:
+                                    if (genericType
+                                        != PixelFormatChannelType.FLOATING_POINT) { //integers will always be normalized when converted to a floating-point storage format
+                                        return false;
+                                    }
+                                    break;
+                                default:
+                                    throw new IllegalArgumentException(Objects.toString(builder.range()));
+                            }
+                            break;
+                        case INTEGER:
+                        case UNSIGNED_INTEGER:
+                            if (genericType != storageFormat.type()) { //only consider using integer types of the same sign
+                                return false;
+                            }
+                            break;
+                        default:
+                            throw new IllegalArgumentException(Objects.toString(storageFormat.type()));
+                    }
+
+                    //make sure all the channels have a sufficient bit depth
+                    Map<PixelFormatChannel, Integer> builderBitDepths = builder.channelsToMinimumBitDepths();
+                    List<PixelFormatChannel> formatChannels = storageFormat.channels();
+                    List<Integer> typeBitDepths = storageType.bitDepths();
+
+                    for (int component = 0; component < formatChannels.size(); component++) {
+                        PixelFormatChannel channel = formatChannels.get(component);
+                        int typeBitDepth = typeBitDepths.get(component);
+                        Integer builderBitDepth = builderBitDepths.get(channel);
+
+                        if (builderBitDepth == null) { //it doesn't matter what the type's bit depth is, because the user said they don't care
+                            continue;
+                        }
+
+                        if (builderBitDepth > typeBitDepth) { //the user has requested a bit depth greater than what the current format provides
+                            return false;
+                        } else { //the format's bit depth is sufficiently large to meet the user's requirements
+                            //noinspection UnnecessaryContinue
+                            continue;
+                        }
+                    }
+
+                    return true;
+                })
+                .findFirst().orElseThrow(() -> new IllegalArgumentException("unable to determine storage type for " + builder));
+    }
 
     /**
      * @author DaPorkchop_
      */
     @RequiredArgsConstructor
     @Getter
-    private static class AbstractPrimitiveStorageType implements PixelStorageType {
+    private static class SimplePrimitiveStorageType implements PixelStorageType {
         private final int glType;
         private final PixelFormatChannelType genericType;
         private final Type asmType;

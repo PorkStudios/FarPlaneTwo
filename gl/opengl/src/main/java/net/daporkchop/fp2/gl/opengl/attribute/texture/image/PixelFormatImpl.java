@@ -21,36 +21,47 @@ package net.daporkchop.fp2.gl.opengl.attribute.texture.image;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import lombok.Data;
+import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormat;
 import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatChannel;
 import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatChannelRange;
 import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatChannelType;
+import net.daporkchop.fp2.gl.opengl.OpenGL;
 
 /**
- * Implementation of {@link PixelFormat}.
- *
  * @author DaPorkchop_
  */
-public interface PixelInternalFormat extends Comparable<PixelInternalFormat> {
-    PixelFormatChannelType channelType();
+@Data
+public class PixelFormatImpl implements PixelFormat {
+    @NonNull
+    protected final OpenGL gl;
 
-    PixelFormatChannelRange channelRange();
+    @NonNull
+    protected final PixelInternalFormat internalFormat;
 
-    ImmutableMap<PixelFormatChannel, Integer> bitDepthPerChannel();
-
-    default ImmutableSet<PixelFormatChannel> channels() {
-        return this.bitDepthPerChannel().keySet();
-    }
-
-    /**
-     * @return the size of a single texel using this pixel format, in bytes
-     */
-    int sizeBytes();
+    @NonNull
+    protected final PixelStorageFormat storageFormat;
+    @NonNull
+    protected final PixelStorageType storageType;
 
     @Override
-    default int compareTo(PixelInternalFormat o) {
-        return Integer.compare(this.sizeBytes(), o.sizeBytes());
+    public PixelFormatChannelType channelType() {
+        return this.internalFormat.channelType();
     }
 
-    int glInternalFormat();
+    @Override
+    public PixelFormatChannelRange channelRange() {
+        return this.internalFormat.channelRange();
+    }
+
+    @Override
+    public ImmutableSet<PixelFormatChannel> channels() {
+        return this.internalFormat.channels();
+    }
+
+    @Override
+    public ImmutableMap<PixelFormatChannel, Integer> bitDepthPerChannel() {
+        return this.internalFormat.bitDepthPerChannel();
+    }
 }
