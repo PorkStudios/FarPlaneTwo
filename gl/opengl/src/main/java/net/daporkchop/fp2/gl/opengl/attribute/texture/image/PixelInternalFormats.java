@@ -31,6 +31,7 @@ import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatChannel;
 import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatChannelRange;
 import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatChannelType;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.OpenGLConstants;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -197,12 +198,24 @@ public class PixelInternalFormats {
         @NonNull
         private final PixelFormatChannelRange channelRange;
 
+        private String toString;
+
         @Getter(AccessLevel.NONE)
         protected int sizeBytes = -1;
 
         @Override
         public int sizeBytes() {
             return this.sizeBytes >= 0 ? this.sizeBytes : this.sizeBytes0();
+        }
+
+        @Override
+        public String toString() {
+            if (this.toString == null) { //compute
+                this.toString = OpenGL.class.desiredAssertionStatus()
+                        ? OpenGLConstants.getNameIfPossible(this.glInternalFormat).orElseGet(() -> String.valueOf(this.glInternalFormat).intern())
+                        : String.valueOf(this.glInternalFormat).intern();
+            }
+            return this.toString;
         }
 
         protected int sizeBytes0() {

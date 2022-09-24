@@ -17,51 +17,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.attribute.texture.image;
-
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-
-import java.util.Collections;
-import java.util.Set;
+package net.daporkchop.fp2.gl.opengl.attribute.struct.type;
 
 /**
- * The channels which may be used in a pixel format.
- *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-@Getter
-public enum PixelFormatChannel {
-    /**
-     * The red color channel.
-     * <p>
-     * Does not depend on any other channels.
-     */
-    RED(Collections.emptySet()),
-    /**
-     * The green color channel.
-     * <p>
-     * Depends on the {@link #RED} channel.
-     */
-    GREEN(Collections.singleton(RED)),
-    /**
-     * The blue color channel.
-     * <p>
-     * Depends on the {@link #RED} and {@link #GREEN} channels.
-     */
-    BLUE(Collections.singleton(GREEN)),
-    /**
-     * The alpha color channel.
-     * <p>
-     * Depends on the {@link #RED}, {@link #GREEN} and {@link #BLUE} channels.
-     */
-    ALPHA(Collections.singleton(BLUE));
-
-    //TODO: add support for depth and/or stencil textures?
-
-    /**
-     * A set of {@link PixelFormatChannel} which must be present in a pixel format in order for this pixel format channel to be used.
-     */
-    private final Set<PixelFormatChannel> depends;
+public interface GLSLOpaqueType extends GLSLType {
 }

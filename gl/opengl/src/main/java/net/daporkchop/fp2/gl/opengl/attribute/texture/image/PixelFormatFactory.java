@@ -19,6 +19,8 @@
 
 package net.daporkchop.fp2.gl.opengl.attribute.texture.image;
 
+import com.google.common.collect.Interner;
+import com.google.common.collect.Interners;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
@@ -27,12 +29,15 @@ import net.daporkchop.fp2.gl.opengl.OpenGL;
  * @author DaPorkchop_
  */
 @Getter
+@SuppressWarnings("UnstableApiUsage")
 public class PixelFormatFactory {
     protected final OpenGL gl;
 
     protected final PixelStorageFormats storageFormats;
     protected final PixelStorageTypes storageTypes;
     protected final PixelInternalFormats internalFormats;
+
+    private final Interner<PixelFormatImpl> pixelFormatInterner = Interners.newWeakInterner();
 
     public PixelFormatFactory(@NonNull OpenGL gl) {
         this.gl = gl;
@@ -47,6 +52,6 @@ public class PixelFormatFactory {
         PixelStorageFormat storageFormat = this.storageFormats.getOptimalStorageFormatFor(builder);
         PixelStorageType storageType = this.storageTypes.getOptimalStorageTypeFor(builder, storageFormat);
 
-        return new PixelFormatImpl(this.gl, internalFormat, storageFormat, storageType);
+        return this.pixelFormatInterner.intern(new PixelFormatImpl(this.gl, internalFormat, storageFormat, storageType));
     }
 }

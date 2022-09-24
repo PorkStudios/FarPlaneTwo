@@ -43,10 +43,13 @@ public class Texture2DImpl extends BaseTextureImpl<TextureFormat2DImpl> implemen
         this.width = positive(width, "width");
         this.height = positive(height, "height");
         this.levels = positive(levels, "levels");
-        this.stride = toInt(this.structFormat.stride(), "stride");
+        this.stride = -1; //TODO: toInt(this.structFormat.stride(), "stride");
+        if (true) {
+            throw new UnsupportedOperationException();
+        }
 
         this.bindAnyUnit(TextureTarget.TEXTURE_2D, target -> {
-            int internalFormat = this.structFormat.textureInternalFormat();
+            /*int internalFormat = this.structFormat.textureInternalFormat();
             int format = this.structFormat.textureFormat();
             int type = this.structFormat.textureType();
 
@@ -55,19 +58,25 @@ public class Texture2DImpl extends BaseTextureImpl<TextureFormat2DImpl> implemen
             }
 
             this.gl.api().glTexParameter(target, GL_TEXTURE_BASE_LEVEL, 0);
-            this.gl.api().glTexParameter(target, GL_TEXTURE_MAX_LEVEL, levels - 1);
+            this.gl.api().glTexParameter(target, GL_TEXTURE_MAX_LEVEL, levels - 1);*/
+            if (true) { //TODO
+                throw new UnsupportedOperationException();
+            }
         });
     }
 
     @Override
     public void set(int level, int xOffset, int yOffset, @NonNull TextureWriter2D _writer) {
-        TextureWriter2DImpl<Object> writer = (TextureWriter2DImpl<Object>) _writer;
+        TextureWriter2DImpl writer = (TextureWriter2DImpl) _writer;
         checkIndex(this.levels, level);
         checkRangeLen(this.width >> level, xOffset, writer.width);
         checkRangeLen(this.height >> level, yOffset, writer.height);
 
         this.bindAnyUnit(TextureTarget.TEXTURE_2D, target -> {
-            this.gl.api().glTexSubImage2D(target, level, xOffset, yOffset, writer.width, writer.height, this.structFormat.textureFormat(), this.structFormat.textureType(), writer.addr);
+            //TODO: this.gl.api().glTexSubImage2D(target, level, xOffset, yOffset, writer.width, writer.height, this.structFormat.textureFormat(), this.structFormat.textureType(), writer.addr);
+            if (true) {
+                throw new UnsupportedOperationException();
+            }
         });
     }
 }

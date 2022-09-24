@@ -32,14 +32,11 @@ import java.util.function.IntConsumer;
  */
 @Getter
 public abstract class BaseTextureImpl<F extends BaseTextureFormatImpl<F>> extends BaseAttributeBufferImpl<F> implements BaseTexture {
-    protected final TextureStructFormat<Object> structFormat;
-
     protected final int id;
     protected final boolean managed;
 
     public BaseTextureImpl(@NonNull F format) {
         super(format);
-        this.structFormat = format.structFormat();
 
         this.id = this.gl.api().glGenTexture();
         this.managed = true;
@@ -48,7 +45,6 @@ public abstract class BaseTextureImpl<F extends BaseTextureFormatImpl<F>> extend
 
     public BaseTextureImpl(@NonNull F format, int id) {
         super(format);
-        this.structFormat = format.structFormat();
 
         this.id = id;
         this.managed = false;

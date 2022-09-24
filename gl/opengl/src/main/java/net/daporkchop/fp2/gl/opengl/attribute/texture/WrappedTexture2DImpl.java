@@ -30,7 +30,7 @@ import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
 /**
  * @author DaPorkchop_
  */
-public class WrappedTexture2DImpl<S> extends BaseTextureImpl<TextureFormat2DImpl> implements Texture2D {
+public class WrappedTexture2DImpl extends BaseTextureImpl<TextureFormat2DImpl> implements Texture2D {
     public WrappedTexture2DImpl(@NonNull TextureFormat2DImpl format, int id) {
         super(format, id);
     }

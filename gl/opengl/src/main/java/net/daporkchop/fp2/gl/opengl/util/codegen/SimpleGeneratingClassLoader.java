@@ -17,51 +17,38 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.attribute.texture.image;
+package net.daporkchop.fp2.gl.opengl.util.codegen;
 
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import lombok.NonNull;
 
-import java.util.Collections;
-import java.util.Set;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.function.BiConsumer;
+import java.util.function.Supplier;
 
 /**
- * The channels which may be used in a pixel format.
- *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-@Getter
-public enum PixelFormatChannel {
-    /**
-     * The red color channel.
-     * <p>
-     * Does not depend on any other channels.
-     */
-    RED(Collections.emptySet()),
-    /**
-     * The green color channel.
-     * <p>
-     * Depends on the {@link #RED} channel.
-     */
-    GREEN(Collections.singleton(RED)),
-    /**
-     * The blue color channel.
-     * <p>
-     * Depends on the {@link #RED} and {@link #GREEN} channels.
-     */
-    BLUE(Collections.singleton(GREEN)),
-    /**
-     * The alpha color channel.
-     * <p>
-     * Depends on the {@link #RED}, {@link #GREEN} and {@link #BLUE} channels.
-     */
-    ALPHA(Collections.singleton(BLUE));
+public abstract class SimpleGeneratingClassLoader extends GeneratingClassLoader {
+    @Getter(lazy = true)
+    private final Map<String, Supplier<byte[]>> classGenerators = this.buildClassGenerators();
 
-    //TODO: add support for depth and/or stencil textures?
+    private Map<String, Supplier<byte[]>> buildClassGenerators() {
+        Map<String, Supplier<byte[]>> map = new TreeMap<>();
+        this.registerClassGenerators((name, generator) -> map.put(name.intern(), generator));
+        return map;
+    }
 
-    /**
-     * A set of {@link PixelFormatChannel} which must be present in a pixel format in order for this pixel format channel to be used.
-     */
-    private final Set<PixelFormatChannel> depends;
+    protected abstract void registerClassGenerators(@NonNull BiConsumer<String, Supplier<byte[]>> register);
+
+    @Override
+    protected Class<?> findClass(String name) throws ClassNotFoundException {
+        Supplier<byte[]> generator = this.classGenerators().remove(name);
+        if (generator != null) {
+            return this.defineClass(name, generator.get());
+        }
+
+        throw new ClassNotFoundException(name);
+    }
 }

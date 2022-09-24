@@ -26,6 +26,7 @@ import net.daporkchop.fp2.gl.attribute.texture.BaseTextureFormat;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormatBuilder;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.StructInfo;
+import net.daporkchop.fp2.gl.opengl.attribute.texture.image.PixelFormatImpl;
 
 /**
  * @author DaPorkchop_
@@ -35,8 +36,6 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.StructInfo;
 public abstract class TextureFormatBuilderImpl<F extends BaseTextureFormat> implements TextureFormatBuilder<F> {
     @NonNull
     protected final OpenGL gl;
-
-    public StructInfo<Object> structInfo() {
-        return new StructInfo<>(this.clazz);
-    }
+    @NonNull
+    protected final PixelFormatImpl pixelFormat;
 }

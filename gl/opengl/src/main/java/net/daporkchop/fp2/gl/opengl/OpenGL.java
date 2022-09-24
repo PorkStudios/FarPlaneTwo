@@ -61,6 +61,7 @@ import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureFormat2DImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureFormatBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.image.PixelFormatBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.image.PixelFormatFactory;
+import net.daporkchop.fp2.gl.opengl.attribute.texture.image.PixelFormatImpl;
 import net.daporkchop.fp2.gl.opengl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.opengl.buffer.SimpleGLBufferImpl;
 import net.daporkchop.fp2.gl.opengl.buffer.UploadCopyingGLBufferImpl;
@@ -271,10 +272,10 @@ public class OpenGL implements GL {
 
     @Override
     public TextureFormatBuilder<TextureFormat2D> createTextureFormat2D(@NonNull PixelFormat pixelFormat) {
-        return new TextureFormatBuilderImpl<TextureFormat2D>(this) {
+        return new TextureFormatBuilderImpl<TextureFormat2D>(this, (PixelFormatImpl) pixelFormat) {
             @Override
             public TextureFormat2D build() {
-                return new TextureFormat2DImpl<>(this);
+                return OpenGL.this.structFormatGenerator().getTexture2D(this.pixelFormat);
             }
         };
     }

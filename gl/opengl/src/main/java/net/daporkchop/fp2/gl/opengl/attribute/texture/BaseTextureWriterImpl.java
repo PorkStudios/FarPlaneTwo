@@ -34,12 +34,10 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 public abstract class BaseTextureWriterImpl<F extends BaseTextureFormatImpl<F>> implements BaseTextureWriter {
     protected final OpenGL gl;
     protected final F formatImpl;
-    protected final TextureStructFormat<Object> structFormat;
 
     public BaseTextureWriterImpl(@NonNull F format) {
         this.gl = format.gl();
         this.formatImpl = format;
-        this.structFormat = format.structFormat();
     }
 
     @Override

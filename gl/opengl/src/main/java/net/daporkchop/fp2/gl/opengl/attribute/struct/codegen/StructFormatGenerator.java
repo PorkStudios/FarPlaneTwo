@@ -35,6 +35,9 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.StructLayout;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.TextureStructLayout;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.ComponentInterpretation;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
+import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureFormat2DImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.texture.codegen.TextureFormat2DClassLoader;
+import net.daporkchop.fp2.gl.opengl.attribute.texture.image.PixelFormatImpl;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
@@ -83,7 +86,11 @@ public class StructFormatGenerator {
         mv.visitLabel(tail);
     }
 
-    protected final Cache<StructLayout<?, ?>, StructFormat<?, ?>> cache = CacheBuilder.newBuilder()
+    protected final Cache<StructLayout<?, ?>, StructFormat<?, ?>> cacheStructInterleaved = CacheBuilder.newBuilder()
+            .weakValues()
+            .build();
+
+    protected final Cache<PixelFormatImpl, TextureFormat2DImpl> cacheTexture2D = CacheBuilder.newBuilder()
             .weakValues()
             .build();
 
@@ -92,14 +99,15 @@ public class StructFormatGenerator {
 
     @SneakyThrows(ExecutionException.class)
     public <S> InterleavedStructFormat<S> getInterleaved(@NonNull InterleavedStructLayout layout) {
-        return uncheckedCast(this.cache.get(layout, () -> new InterleavedStructFormatClassLoader<S>(this.gl, layout).createFormat()));
+        return uncheckedCast(this.cacheStructInterleaved.get(layout, () -> new InterleavedStructFormatClassLoader<S>(this.gl, layout).createFormat()));
     }
 
     @SneakyThrows(ExecutionException.class)
-    public <S> TextureStructFormat<S> getTexture(@NonNull TextureStructLayout layout) {
-        return uncheckedCast(this.cache.get(layout, () -> this.generateTexture(layout)));
+    public TextureFormat2DImpl getTexture2D(@NonNull PixelFormatImpl pixelFormat) {
+        return this.cacheTexture2D.get(pixelFormat, () -> new TextureFormat2DClassLoader(this.gl, pixelFormat).createFormat());
     }
 
+    @Deprecated
     private <S> TextureStructFormat<S> generateTexture(@NonNull TextureStructLayout layout) throws Exception {
         TextureStructLayout.Member member = layout.member();
 

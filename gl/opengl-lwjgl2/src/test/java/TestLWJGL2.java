@@ -35,6 +35,7 @@ import net.daporkchop.fp2.gl.attribute.annotation.AttributeSetter;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarConvert;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarExpand;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarTransform;
+import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
 import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormat;
 import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatChannelRange;
 import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatChannelType;
@@ -136,9 +137,11 @@ public class TestLWJGL2 {
         PixelFormat pixelFormat = gl.createPixelFormat()
                 .rgba()
                 .type(PixelFormatChannelType.FLOATING_POINT)
-                .range(PixelFormatChannelRange.ZERO_TO_ONE)
+                .range(PixelFormatChannelRange.NEGATIVE_ONE_TO_ONE)
                 .minBitDepth(8)
                 .build();
+
+        TextureFormat2D textureFormat = gl.createTextureFormat2D(pixelFormat).build();
 
         DrawLayout drawLayout = gl.createDrawLayout()
                 .withUniform(uniformFormat)

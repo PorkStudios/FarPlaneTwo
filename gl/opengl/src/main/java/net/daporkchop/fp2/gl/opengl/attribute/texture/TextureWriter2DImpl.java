@@ -28,7 +28,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public class TextureWriter2DImpl<S> extends BaseTextureWriterImpl<TextureFormat2DImpl> implements TextureWriter2D {
+public abstract class TextureWriter2DImpl extends BaseTextureWriterImpl<TextureFormat2DImpl> implements TextureWriter2D {
     protected final int width;
     protected final int height;
     protected final int stride;
@@ -40,7 +40,10 @@ public class TextureWriter2DImpl<S> extends BaseTextureWriterImpl<TextureFormat2
 
         this.width = positive(width, "width");
         this.height = positive(height, "height");
-        this.stride = toInt(this.structFormat.stride(), "stride");
+        this.stride = -1; //TODO: toInt(this.structFormat.stride(), "stride");
+        if (true) {
+            throw new UnsupportedOperationException();
+        }
 
         this.addr = this.gl.directMemoryAllocator().alloc(multiplyExact(multiplyExact(this.width, this.height), this.stride));
     }
@@ -50,15 +53,15 @@ public class TextureWriter2DImpl<S> extends BaseTextureWriterImpl<TextureFormat2
         this.gl.directMemoryAllocator().free(this.addr);
     }
 
-    @Override
-    public void set(int x, int y, @NonNull S struct) {
+    /*@Override
+    public void set(int x, int y, Object struct) {
         checkIndex(this.width, x);
         checkIndex(this.height, y);
 
         //well, it *isn't* being implicitly cast to a long - it's quite EXPLICITLY being cast to a long! no clue why intellij has decided to warn me about this...
         //noinspection IntegerMultiplicationImplicitCastToLong
         this.structFormat.copy(struct, null, this.addr + (long) ((y * this.width + x) * this.stride));
-    }
+    }*/
 
     @Override
     public void setUnsignedNormalizedARGB8(int x, int y, int argb) {
@@ -66,6 +69,9 @@ public class TextureWriter2DImpl<S> extends BaseTextureWriterImpl<TextureFormat2
         checkIndex(this.height, y);
 
         //noinspection IntegerMultiplicationImplicitCastToLong
-        this.structFormat.copyFromARGB(argb, null, this.addr + (long) ((y * this.width + x) * this.stride));
+        //TODO: this.structFormat.copyFromARGB(argb, null, this.addr + (long) ((y * this.width + x) * this.stride));
+        if (true) {
+            throw new UnsupportedOperationException();
+        }
     }
 }

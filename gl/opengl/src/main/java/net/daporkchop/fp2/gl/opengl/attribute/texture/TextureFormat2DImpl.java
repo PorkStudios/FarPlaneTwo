@@ -25,9 +25,11 @@ import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureWriter2D;
+import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.StructLayouts;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLSamplerType;
 import net.daporkchop.fp2.gl.opengl.layout.LayoutEntry;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -36,9 +38,9 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @Getter
-public class TextureFormat2DImpl extends BaseTextureFormatImpl<TextureFormat2DImpl> implements TextureFormat2D {
-    public TextureFormat2DImpl(@NonNull TextureFormatBuilderImpl<TextureFormat2D> builder) {
-        super(builder.gl(), builder.gl().structFormatGenerator().getTexture(StructLayouts.texture(builder.gl(), builder.structInfo())));
+public abstract class TextureFormat2DImpl extends BaseTextureFormatImpl<TextureFormat2DImpl> implements TextureFormat2D {
+    public TextureFormat2DImpl(@NonNull OpenGL gl, @NonNull String name, @NonNull GLSLSamplerType glslType) {
+        super(gl, name, glslType);
     }
 
     @Override
@@ -50,7 +52,8 @@ public class TextureFormat2DImpl extends BaseTextureFormatImpl<TextureFormat2DIm
 
     @Override
     public TextureWriter2D createWriter(int width, int height) {
-        return new TextureWriter2DImpl<>(this, width, height);
+        //return new TextureWriter2DImpl(this, width, height);
+        throw new UnsupportedOperationException(); //TODO
     }
 
     @Override
@@ -60,6 +63,6 @@ public class TextureFormat2DImpl extends BaseTextureFormatImpl<TextureFormat2DIm
 
     @Override
     public Texture2D wrapExternalTexture(@NonNull Object id) throws UnsupportedOperationException {
-        return new WrappedTexture2DImpl<>(this, (Integer) id);
+        return new WrappedTexture2DImpl(this, (Integer) id);
     }
 }

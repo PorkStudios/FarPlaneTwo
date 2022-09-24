@@ -19,6 +19,7 @@
 
 package net.daporkchop.fp2.gl.opengl.attribute.texture;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import lombok.Getter;
 import lombok.NonNull;
@@ -28,6 +29,7 @@ import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.TextureStructFormat;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLSamplerType;
 
 import java.util.EnumSet;
 import java.util.List;
@@ -42,12 +44,14 @@ public abstract class BaseTextureFormatImpl<F extends BaseTextureFormatImpl<F>> 
             AttributeUsage.TEXTURE
     ));
 
-    private final TextureStructFormat<Object> structFormat;
+    private final String name;
+    private final GLSLSamplerType glslType;
 
-    public BaseTextureFormatImpl(@NonNull OpenGL gl, @NonNull TextureStructFormat<Object> structFormat) {
+    public BaseTextureFormatImpl(@NonNull OpenGL gl, @NonNull String name, @NonNull GLSLSamplerType glslType) {
         super(gl);
 
-        this.structFormat = structFormat;
+        this.name = name;
+        this.glslType = glslType;
     }
 
     @Override
@@ -56,17 +60,15 @@ public abstract class BaseTextureFormatImpl<F extends BaseTextureFormatImpl<F>> 
     }
 
     @Override
-    public long size() {
-        return this.structFormat.totalSize();
-    }
+    public abstract long size();
 
     @Override
     public String rawName() {
-        return this.structFormat.structName();
+        throw new UnsupportedOperationException("texture format cannot have a raw name");
     }
 
     @Override
     public List<GLSLField<?>> rawAttributeFields() {
-        return this.structFormat.glslFields();
+        return ImmutableList.of(new GLSLField<>(this.glslType, this.name));
     }
 }

@@ -28,6 +28,7 @@ import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatChannel;
 import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatChannelType;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.OpenGLConstants;
 
 import java.util.Collections;
 import java.util.List;
@@ -110,5 +111,17 @@ public class PixelStorageFormats {
         protected final PixelFormatChannelType type;
         @NonNull
         protected final ImmutableList<PixelFormatChannel> channels;
+
+        private String toString;
+
+        @Override
+        public String toString() {
+            if (this.toString == null) { //compute
+                this.toString = OpenGL.class.desiredAssertionStatus()
+                        ? OpenGLConstants.getNameIfPossible(this.glFormat).orElseGet(() -> String.valueOf(this.glFormat).intern())
+                        : String.valueOf(this.glFormat).intern();
+            }
+            return this.toString;
+        }
     }
 }

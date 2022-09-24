@@ -108,7 +108,7 @@ public class PixelFormatBuilderImpl implements PixelFormatBuilder.ChannelSelecti
 
     @Override
     public PixelFormatBuilder minBitDepth(@Positive int minimumBitDepth) {
-        checkIndex(1, 32, minimumBitDepth);
+        checkIndex(1, 33, minimumBitDepth);
 
         //replace all minimum bit depths
         this.channelsToMinimumBitDepths.replaceAll((channel, oldMinimumBitDepth) -> minimumBitDepth);
@@ -121,7 +121,10 @@ public class PixelFormatBuilderImpl implements PixelFormatBuilder.ChannelSelecti
         //validate arguments
         minimumBitDepths.forEach((channel, minimumBitDepth) -> {
             checkArg(this.channelsToMinimumBitDepths.containsKey(channel), "channel %s isn't defined by this pixel format!", channel);
-            checkIndex(1, 32, minimumBitDepth);
+
+            if (minimumBitDepth != null) {
+                checkIndex(1, 33, minimumBitDepth);
+            }
         });
 
         //store all minimum bit depths

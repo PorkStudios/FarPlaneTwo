@@ -27,6 +27,7 @@ import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatChannel;
 import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatChannelType;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.OpenGLConstants;
 import net.daporkchop.lib.common.util.PArrays;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import org.objectweb.asm.MethodVisitor;
@@ -164,6 +165,8 @@ public class PixelStorageTypes {
 
         private final int components;
 
+        private String toString;
+
         @Getter(lazy = true)
         private final ImmutableList<Integer> bitDepths = this.bitDepths0();
 
@@ -249,6 +252,16 @@ public class PixelStorageTypes {
                     mv.visitInsn(IAND);
                 }
             });
+        }
+
+        @Override
+        public String toString() {
+            if (this.toString == null) { //compute
+                this.toString = OpenGL.class.desiredAssertionStatus()
+                        ? OpenGLConstants.getNameIfPossible(this.glType).orElseGet(() -> String.valueOf(this.glType).intern())
+                        : String.valueOf(this.glType).intern();
+            }
+            return this.toString;
         }
     }
 }

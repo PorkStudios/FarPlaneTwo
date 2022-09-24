@@ -17,14 +17,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.struct.codegen;
+package net.daporkchop.fp2.gl.opengl.attribute.texture.codegen;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.format.StructFormat;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.StructLayout;
+import net.daporkchop.fp2.gl.opengl.attribute.texture.BaseTextureFormatImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.texture.image.PixelFormatImpl;
 import net.daporkchop.fp2.gl.opengl.util.codegen.SimpleGeneratingClassLoader;
+import net.daporkchop.lib.common.annotation.param.Positive;
 
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
@@ -35,26 +36,30 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public abstract class StructFormatClassLoader<S, L extends StructLayout<?, ?>, F extends StructFormat<S, L>> extends SimpleGeneratingClassLoader {
+public abstract class TextureFormatClassLoader<F extends BaseTextureFormatImpl<F>> extends SimpleGeneratingClassLoader {
     @NonNull
     protected final OpenGL gl;
     @NonNull
-    protected final L layout;
+    protected final PixelFormatImpl pixelFormat;
+
+    protected final @Positive int dimensions;
+
+    protected abstract String dimensionName(int dimension);
 
     protected String formatClassName() {
-        return "StructFormatImpl";
+        return "TextureFormat" + this.dimensions + "DImpl";
     }
 
     protected abstract byte[] generateFormatClass();
 
-    protected String bufferClassName() {
-        return "AttributeBufferImpl";
+    protected String textureClassName() {
+        return "Texture" + this.dimensions + "DImpl";
     }
 
-    protected abstract byte[] generateBufferClass();
+    protected abstract byte[] generateTextureClass();
 
     protected String writerClassName() {
-        return "AttributeWriterImpl";
+        return "TextureWriter" + this.dimensions + "DImpl";
     }
 
     protected abstract byte[] generateWriterClass();
@@ -62,12 +67,12 @@ public abstract class StructFormatClassLoader<S, L extends StructLayout<?, ?>, F
     @Override
     protected void registerClassGenerators(@NonNull BiConsumer<String, Supplier<byte[]>> register) {
         register.accept(this.formatClassName(), this::generateFormatClass);
-        register.accept(this.bufferClassName(), this::generateBufferClass);
+        register.accept(this.textureClassName(), this::generateTextureClass);
         register.accept(this.writerClassName(), this::generateWriterClass);
     }
 
     public F createFormat() throws Exception {
         Class<?> formatClass = this.loadClass(this.formatClassName());
-        return uncheckedCast(formatClass.getConstructor(OpenGL.class, this.layout.getClass()).newInstance(this.gl, this.layout));
+        return uncheckedCast(formatClass.getConstructor(OpenGL.class, String.class).newInstance(this.gl, ""));
     }
 }
