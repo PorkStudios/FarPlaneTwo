@@ -211,7 +211,7 @@ public class PixelInternalFormats {
         @Override
         public String toString() {
             if (this.toString == null) { //compute
-                this.toString = OpenGL.class.desiredAssertionStatus()
+                this.toString = OpenGL.DEBUG
                         ? OpenGLConstants.getNameIfPossible(this.glInternalFormat).orElseGet(() -> String.valueOf(this.glInternalFormat).intern())
                         : String.valueOf(this.glInternalFormat).intern();
             }

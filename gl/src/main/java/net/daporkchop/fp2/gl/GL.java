@@ -118,9 +118,10 @@ public interface GL extends AutoCloseable {
      * Gets a {@link TextureFormat2D} for the given {@link PixelFormat pixel format}.
      *
      * @param pixelFormat the {@link PixelFormat pixel format}
+     * @param name
      * @return a {@link TextureFormat2D}
      */
-    TextureFormatBuilder<TextureFormat2D> createTextureFormat2D(@NonNull PixelFormat pixelFormat);
+    TextureFormatBuilder<TextureFormat2D> createTextureFormat2D(@NonNull PixelFormat pixelFormat, @NonNull String name);
 
     //
     // DRAW

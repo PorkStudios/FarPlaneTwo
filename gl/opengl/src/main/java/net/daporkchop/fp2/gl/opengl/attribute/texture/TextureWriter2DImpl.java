@@ -21,6 +21,9 @@ package net.daporkchop.fp2.gl.opengl.attribute.texture;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.texture.TextureWriter2D;
+import net.daporkchop.lib.unsafe.PUnsafe;
+
+import java.util.concurrent.ThreadLocalRandom;
 
 import static java.lang.Math.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -31,21 +34,16 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 public abstract class TextureWriter2DImpl extends BaseTextureWriterImpl<TextureFormat2DImpl> implements TextureWriter2D {
     protected final int width;
     protected final int height;
-    protected final int stride;
 
     protected final long addr;
 
-    public TextureWriter2DImpl(@NonNull TextureFormat2DImpl format, int width, int height) {
+    public TextureWriter2DImpl(@NonNull TextureFormat2DImpl format, int width, int height, long stride) {
         super(format);
 
         this.width = positive(width, "width");
         this.height = positive(height, "height");
-        this.stride = -1; //TODO: toInt(this.structFormat.stride(), "stride");
-        if (true) {
-            throw new UnsupportedOperationException();
-        }
 
-        this.addr = this.gl.directMemoryAllocator().alloc(multiplyExact(multiplyExact(this.width, this.height), this.stride));
+        this.addr = this.gl.directMemoryAllocator().alloc(multiplyExact(multiplyExact(width, height), positive(stride, "stride")));
     }
 
     @Override

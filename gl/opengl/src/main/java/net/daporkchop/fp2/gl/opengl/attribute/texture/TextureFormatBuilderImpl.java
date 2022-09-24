@@ -38,4 +38,6 @@ public abstract class TextureFormatBuilderImpl<F extends BaseTextureFormat> impl
     protected final OpenGL gl;
     @NonNull
     protected final PixelFormatImpl pixelFormat;
+    @NonNull
+    protected final String name;
 }

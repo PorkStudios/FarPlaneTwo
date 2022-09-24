@@ -23,7 +23,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import lombok.Data;
 import lombok.NonNull;
-import lombok.ToString;
 import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormat;
 import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatChannel;
 import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatChannelRange;
@@ -35,7 +34,6 @@ import net.daporkchop.fp2.gl.opengl.OpenGL;
  */
 @Data
 public class PixelFormatImpl implements PixelFormat {
-    @ToString.Exclude
     protected final OpenGL gl;
 
     protected final PixelInternalFormat internalFormat;
@@ -68,5 +66,10 @@ public class PixelFormatImpl implements PixelFormat {
     @Override
     public ImmutableMap<PixelFormatChannel, Integer> bitDepthPerChannel() {
         return this.internalFormat.bitDepthPerChannel();
+    }
+
+    @Override
+    public String toString() {
+        return "internalFormat=" + this.internalFormat + ",storageFormat=" + this.storageFormat + ",storageType=" + this.storageType;
     }
 }

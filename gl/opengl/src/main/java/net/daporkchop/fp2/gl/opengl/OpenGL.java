@@ -57,7 +57,6 @@ import net.daporkchop.fp2.gl.draw.shader.VertexShader;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.codegen.StructFormatGenerator;
-import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureFormat2DImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureFormatBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.image.PixelFormatBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.image.PixelFormatFactory;
@@ -115,6 +114,9 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @Getter
 public class OpenGL implements GL {
     public static final boolean DEBUG = Boolean.getBoolean("fp2.gl.opengl.debug");
+
+    //the :gl:opengl package name, including the trailing '.'
+    public static final String OPENGL_PACKAGE = OpenGL.class.getTypeName().substring(0, OpenGL.class.getTypeName().length() - OpenGL.class.getSimpleName().length()).intern();
 
     public static final String OPENGL_NAMESPACE = "fp2_gl_opengl";
 
@@ -271,11 +273,11 @@ public class OpenGL implements GL {
     }
 
     @Override
-    public TextureFormatBuilder<TextureFormat2D> createTextureFormat2D(@NonNull PixelFormat pixelFormat) {
-        return new TextureFormatBuilderImpl<TextureFormat2D>(this, (PixelFormatImpl) pixelFormat) {
+    public TextureFormatBuilder<TextureFormat2D> createTextureFormat2D(@NonNull PixelFormat pixelFormat, @NonNull String name) {
+        return new TextureFormatBuilderImpl<TextureFormat2D>(this, (PixelFormatImpl) pixelFormat, name) {
             @Override
             public TextureFormat2D build() {
-                return OpenGL.this.structFormatGenerator().getTexture2D(this.pixelFormat);
+                return OpenGL.this.structFormatGenerator().getTexture2D(this.pixelFormat, this.name);
             }
         };
     }

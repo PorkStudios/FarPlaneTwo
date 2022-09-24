@@ -42,7 +42,7 @@ public interface PixelStorageType {
 
     ImmutableList<Integer> bitDepths();
 
-    int size();
+    int totalSizeBytes();
 
     default void loadAllToLvt(@NonNull MethodVisitor mv, int lvtIndexAllocator, @NonNull int[] dstLvtIndices) {
         checkArg(dstLvtIndices.length == this.components());

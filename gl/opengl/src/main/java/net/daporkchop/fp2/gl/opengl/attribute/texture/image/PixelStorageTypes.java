@@ -40,6 +40,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.lang.Math.*;
 import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -161,7 +162,7 @@ public class PixelStorageTypes {
         private final int glType;
         private final PixelFormatChannelType genericType;
         private final Type asmType;
-        private final int size;
+        private final int componentSizeBytes;
 
         private final int components;
 
@@ -171,7 +172,12 @@ public class PixelStorageTypes {
         private final ImmutableList<Integer> bitDepths = this.bitDepths0();
 
         protected ImmutableList<Integer> bitDepths0() {
-            return ImmutableList.copyOf(PArrays.filled(this.components, Integer.class, this.size << 3));
+            return ImmutableList.copyOf(PArrays.filled(this.components, Integer.class, this.componentSizeBytes << 3));
+        }
+
+        @Override
+        public int totalSizeBytes() {
+            return multiplyExact(this.componentSizeBytes, this.components);
         }
 
         @Override
@@ -191,7 +197,7 @@ public class PixelStorageTypes {
                 mv.visitVarInsn(LLOAD, offsetLvtIndex);
 
                 if (componentIndex != 0) { //add component offset if necessary
-                    mv.visitLdcInsn((long) componentIndex * this.size);
+                    mv.visitLdcInsn((long) componentIndex * this.componentSizeBytes);
                     mv.visitInsn(LADD);
                 }
 
@@ -201,7 +207,7 @@ public class PixelStorageTypes {
                         getMethodDescriptor(this.asmType, getType(Object.class), LONG_TYPE), false);
 
                 if (this.genericType == PixelFormatChannelType.UNSIGNED_INTEGER && this.asmType != INT_TYPE) {
-                    mv.visitLdcInsn((1 << (this.size << 3)) - 1);
+                    mv.visitLdcInsn((1 << (this.componentSizeBytes << 3)) - 1);
                     mv.visitInsn(IAND);
                 }
             });
@@ -226,7 +232,7 @@ public class PixelStorageTypes {
                 mv.visitVarInsn(LLOAD, offsetLvtIndex);
 
                 if (componentIndex != 0) { //add component offset if necessary
-                    mv.visitLdcInsn((long) componentIndex * this.size);
+                    mv.visitLdcInsn((long) componentIndex * this.componentSizeBytes);
                     mv.visitInsn(LADD);
                 }
 
@@ -248,7 +254,7 @@ public class PixelStorageTypes {
                         getMethodDescriptor(VOID_TYPE, getType(Object.class), LONG_TYPE, this.asmType), false);
 
                 if (this.genericType == PixelFormatChannelType.UNSIGNED_INTEGER && this.asmType != INT_TYPE) {
-                    mv.visitLdcInsn((1 << (this.size << 3)) - 1);
+                    mv.visitLdcInsn((1 << (this.componentSizeBytes << 3)) - 1);
                     mv.visitInsn(IAND);
                 }
             });
@@ -257,7 +263,7 @@ public class PixelStorageTypes {
         @Override
         public String toString() {
             if (this.toString == null) { //compute
-                this.toString = OpenGL.class.desiredAssertionStatus()
+                this.toString = OpenGL.DEBUG
                         ? OpenGLConstants.getNameIfPossible(this.glType).orElseGet(() -> String.valueOf(this.glType).intern())
                         : String.valueOf(this.glType).intern();
             }

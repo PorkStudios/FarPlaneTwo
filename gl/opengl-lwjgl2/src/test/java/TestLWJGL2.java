@@ -35,7 +35,9 @@ import net.daporkchop.fp2.gl.attribute.annotation.AttributeSetter;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarConvert;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarExpand;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarTransform;
+import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
+import net.daporkchop.fp2.gl.attribute.texture.TextureWriter2D;
 import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormat;
 import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatChannelRange;
 import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatChannelType;
@@ -137,11 +139,11 @@ public class TestLWJGL2 {
         PixelFormat pixelFormat = gl.createPixelFormat()
                 .rgba()
                 .type(PixelFormatChannelType.FLOATING_POINT)
-                .range(PixelFormatChannelRange.NEGATIVE_ONE_TO_ONE)
+                .range(PixelFormatChannelRange.ZERO_TO_ONE)
                 .minBitDepth(8)
                 .build();
 
-        TextureFormat2D textureFormat = gl.createTextureFormat2D(pixelFormat).build();
+        TextureFormat2D textureFormat = gl.createTextureFormat2D(pixelFormat, "colorFactor").build();
 
         DrawLayout drawLayout = gl.createDrawLayout()
                 .withUniform(uniformFormat)
@@ -411,18 +413,6 @@ public class TestLWJGL2 {
     public interface LocalAttribs {
         @AttributeSetter
         LocalAttribs pos(int posX, int posY);
-    }
-
-    @AAttribute(name = "colorFactor",
-            typeVector = @AVectorType(components = 4,
-                    componentType = @AScalarType(value = byte.class,
-                            interpret = {
-                                    @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED),
-                                    @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true)
-                            })))
-    public interface TextureAttribs {
-        @AttributeSetter
-        TextureAttribs colorFactor(@ScalarTransform(expand = @ScalarExpand(ScalarExpand.Type.INT_ARGB8_TO_BYTE_VECTOR_RGBA)) int colorFactor);
     }
 
     @AAttribute(name = "selectable",

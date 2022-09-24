@@ -51,15 +51,10 @@ public abstract class TextureFormat2DImpl extends BaseTextureFormatImpl<TextureF
     }
 
     @Override
-    public TextureWriter2D createWriter(int width, int height) {
-        //return new TextureWriter2DImpl(this, width, height);
-        throw new UnsupportedOperationException(); //TODO
-    }
+    public abstract TextureWriter2D createWriter(int width, int height); //implemented in generated code
 
     @Override
-    public Texture2D createTexture(int width, int height, int levels) {
-        return new Texture2DImpl(this, width, height, levels);
-    }
+    public abstract Texture2D createTexture(int width, int height, int levels); //implemented in generated code
 
     @Override
     public Texture2D wrapExternalTexture(@NonNull Object id) throws UnsupportedOperationException {

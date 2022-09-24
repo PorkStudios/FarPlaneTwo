@@ -19,14 +19,18 @@
 
 package net.daporkchop.fp2.gl.opengl.attribute.texture.codegen;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.BaseTextureFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.image.PixelFormatImpl;
 import net.daporkchop.fp2.gl.opengl.util.codegen.SimpleGeneratingClassLoader;
 import net.daporkchop.lib.common.annotation.param.Positive;
 
+import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
@@ -44,22 +48,32 @@ public abstract class TextureFormatClassLoader<F extends BaseTextureFormatImpl<F
 
     protected final @Positive int dimensions;
 
+    protected final Cache<String, F> cachedFormatsByName = CacheBuilder.newBuilder()
+            .weakValues()
+            .build();
+
     protected abstract String dimensionName(int dimension);
 
+    protected abstract Class<?> baseFormatClass();
+
     protected String formatClassName() {
-        return "TextureFormat" + this.dimensions + "DImpl";
+        return "TextureFormat" + this.dimensions + "DImpl_" + this.pixelFormat;
     }
 
     protected abstract byte[] generateFormatClass();
 
+    protected abstract Class<?> baseTextureClass();
+
     protected String textureClassName() {
-        return "Texture" + this.dimensions + "DImpl";
+        return "Texture" + this.dimensions + "DImpl_" + this.pixelFormat;
     }
 
     protected abstract byte[] generateTextureClass();
 
+    protected abstract Class<?> baseWriterClass();
+
     protected String writerClassName() {
-        return "TextureWriter" + this.dimensions + "DImpl";
+        return "TextureWriter" + this.dimensions + "DImpl_" + this.pixelFormat;
     }
 
     protected abstract byte[] generateWriterClass();
@@ -71,8 +85,11 @@ public abstract class TextureFormatClassLoader<F extends BaseTextureFormatImpl<F
         register.accept(this.writerClassName(), this::generateWriterClass);
     }
 
-    public F createFormat() throws Exception {
-        Class<?> formatClass = this.loadClass(this.formatClassName());
-        return uncheckedCast(formatClass.getConstructor(OpenGL.class, String.class).newInstance(this.gl, ""));
+    @SneakyThrows(ExecutionException.class)
+    public F createFormat(@NonNull String name) {
+        return this.cachedFormatsByName.get(name.intern(), () -> {
+            Class<?> formatClass = this.loadClass(this.formatClassName());
+            return uncheckedCast(formatClass.getConstructor(OpenGL.class, String.class).newInstance(this.gl, name.intern()));
+        });
     }
 }

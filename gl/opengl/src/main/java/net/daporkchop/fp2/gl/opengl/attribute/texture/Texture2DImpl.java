@@ -31,11 +31,10 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @Getter
-public class Texture2DImpl extends BaseTextureImpl<TextureFormat2DImpl> implements Texture2D {
+public abstract class Texture2DImpl extends BaseTextureImpl<TextureFormat2DImpl> implements Texture2D {
     protected final int width;
     protected final int height;
     protected final int levels;
-    protected final int stride;
 
     public Texture2DImpl(@NonNull TextureFormat2DImpl formatIn, int width, int height, int levels) {
         super(formatIn);
@@ -43,25 +42,18 @@ public class Texture2DImpl extends BaseTextureImpl<TextureFormat2DImpl> implemen
         this.width = positive(width, "width");
         this.height = positive(height, "height");
         this.levels = positive(levels, "levels");
-        this.stride = -1; //TODO: toInt(this.structFormat.stride(), "stride");
-        if (true) {
-            throw new UnsupportedOperationException();
-        }
 
         this.bindAnyUnit(TextureTarget.TEXTURE_2D, target -> {
-            /*int internalFormat = this.structFormat.textureInternalFormat();
-            int format = this.structFormat.textureFormat();
-            int type = this.structFormat.textureType();
+            int internalFormat = this.gl_internalFormat();
+            int format = this.gl_format();
+            int type = this.gl_type();
 
             for (int level = 0; level < levels; level++) {
                 this.gl.api().glTexImage2D(target, level, internalFormat, width >> level, height >> level, format, type, 0L);
             }
 
             this.gl.api().glTexParameter(target, GL_TEXTURE_BASE_LEVEL, 0);
-            this.gl.api().glTexParameter(target, GL_TEXTURE_MAX_LEVEL, levels - 1);*/
-            if (true) { //TODO
-                throw new UnsupportedOperationException();
-            }
+            this.gl.api().glTexParameter(target, GL_TEXTURE_MAX_LEVEL, levels - 1);
         });
     }
 
@@ -73,10 +65,7 @@ public class Texture2DImpl extends BaseTextureImpl<TextureFormat2DImpl> implemen
         checkRangeLen(this.height >> level, yOffset, writer.height);
 
         this.bindAnyUnit(TextureTarget.TEXTURE_2D, target -> {
-            //TODO: this.gl.api().glTexSubImage2D(target, level, xOffset, yOffset, writer.width, writer.height, this.structFormat.textureFormat(), this.structFormat.textureType(), writer.addr);
-            if (true) {
-                throw new UnsupportedOperationException();
-            }
+            this.gl.api().glTexSubImage2D(target, level, xOffset, yOffset, writer.width, writer.height, this.gl_format(), this.gl_type(), writer.addr);
         });
     }
 }

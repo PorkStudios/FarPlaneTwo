@@ -117,7 +117,7 @@ public class PixelStorageFormats {
         @Override
         public String toString() {
             if (this.toString == null) { //compute
-                this.toString = OpenGL.class.desiredAssertionStatus()
+                this.toString = OpenGL.DEBUG
                         ? OpenGLConstants.getNameIfPossible(this.glFormat).orElseGet(() -> String.valueOf(this.glFormat).intern())
                         : String.valueOf(this.glFormat).intern();
             }

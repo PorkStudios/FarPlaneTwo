@@ -67,4 +67,16 @@ public abstract class BaseTextureImpl<F extends BaseTextureFormatImpl<F>> extend
             this.gl.api().glBindTexture(target.target(), oldBufferTexture);
         }
     }
+
+    protected int gl_internalFormat() {
+        throw new UnsupportedOperationException();
+    }
+
+    protected int gl_format() {
+        throw new UnsupportedOperationException();
+    }
+
+    protected int gl_type() {
+        throw new UnsupportedOperationException();
+    }
 }

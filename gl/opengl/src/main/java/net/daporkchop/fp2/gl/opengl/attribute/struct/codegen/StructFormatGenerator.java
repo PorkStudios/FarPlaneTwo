@@ -90,7 +90,7 @@ public class StructFormatGenerator {
             .weakValues()
             .build();
 
-    protected final Cache<PixelFormatImpl, TextureFormat2DImpl> cacheTexture2D = CacheBuilder.newBuilder()
+    protected final Cache<PixelFormatImpl, TextureFormat2DClassLoader> cacheTexture2D = CacheBuilder.newBuilder()
             .weakValues()
             .build();
 
@@ -103,8 +103,8 @@ public class StructFormatGenerator {
     }
 
     @SneakyThrows(ExecutionException.class)
-    public TextureFormat2DImpl getTexture2D(@NonNull PixelFormatImpl pixelFormat) {
-        return this.cacheTexture2D.get(pixelFormat, () -> new TextureFormat2DClassLoader(this.gl, pixelFormat).createFormat());
+    public TextureFormat2DImpl getTexture2D(@NonNull PixelFormatImpl pixelFormat, @NonNull String name) {
+        return this.cacheTexture2D.get(pixelFormat, () -> new TextureFormat2DClassLoader(this.gl, pixelFormat)).createFormat(name);
     }
 
     @Deprecated
