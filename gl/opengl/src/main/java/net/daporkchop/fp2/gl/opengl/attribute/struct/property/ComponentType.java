@@ -120,7 +120,6 @@ public enum ComponentType {
 
         @Override
         public void unsafePut(@NonNull MethodVisitor mv) {
-            mv.visitInsn(I2B);
             mv.visitMethodInsn(INVOKESTATIC, "net/daporkchop/lib/unsafe/PUnsafe", "putByte", "(Ljava/lang/Object;JB)V", false);
         }
 
@@ -171,7 +170,6 @@ public enum ComponentType {
 
         @Override
         public void unsafePut(@NonNull MethodVisitor mv) {
-            mv.visitInsn(I2C);
             mv.visitMethodInsn(INVOKESTATIC, "net/daporkchop/lib/unsafe/PUnsafe", "putChar", "(Ljava/lang/Object;JC)V", false);
         }
 
@@ -222,7 +220,6 @@ public enum ComponentType {
 
         @Override
         public void unsafePut(@NonNull MethodVisitor mv) {
-            mv.visitInsn(I2S);
             mv.visitMethodInsn(INVOKESTATIC, "net/daporkchop/lib/unsafe/PUnsafe", "putShort", "(Ljava/lang/Object;JS)V", false);
         }
 
