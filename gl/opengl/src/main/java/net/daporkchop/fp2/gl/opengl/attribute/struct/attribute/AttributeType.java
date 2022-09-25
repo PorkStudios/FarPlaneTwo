@@ -17,7 +17,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.struct.property;
+package net.daporkchop.fp2.gl.opengl.attribute.struct.attribute;
 
 import com.google.common.collect.ImmutableMap;
 import lombok.NonNull;
@@ -26,7 +26,6 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLBasicType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLStructType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLTypeFactory;
-import org.objectweb.asm.MethodVisitor;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -37,47 +36,46 @@ import java.util.stream.IntStream;
  *
  * @author DaPorkchop_
  */
-//TODO: rename to AttributeType
-public interface StructProperty {
-    void with(@NonNull PropertyCallback callback);
+public interface AttributeType {
+    void with(@NonNull Callback callback);
 
-    <T> T with(@NonNull TypedPropertyCallback<T> callback);
+    <T> T with(@NonNull TypedCallback<T> callback);
 
     GLSLType glslType();
 
     /**
      * @author DaPorkchop_
      */
-    interface PropertyCallback {
-        void withComponents(@NonNull Components componentsProperty);
+    interface Callback {
+        void withComponents(@NonNull Components componentsType);
 
-        void withElements(@NonNull Elements elementsProperty);
+        void withElements(@NonNull Elements elementsType);
 
-        void withFields(@NonNull Fields fieldsProperty);
+        void withFields(@NonNull Fields fieldsType);
     }
 
     /**
      * @author DaPorkchop_
      */
-    interface TypedPropertyCallback<T> {
-        T withComponents(@NonNull Components componentsProperty);
+    interface TypedCallback<T> {
+        T withComponents(@NonNull Components componentsType);
 
-        T withElements(@NonNull Elements elementsProperty);
+        T withElements(@NonNull Elements elementsType);
 
-        T withFields(@NonNull Fields fieldsProperty);
+        T withFields(@NonNull Fields fieldsType);
     }
 
     /**
      * @author DaPorkchop_
      */
-    interface Components extends StructProperty {
+    interface Components extends AttributeType {
         @Override
-        default void with(@NonNull PropertyCallback callback) {
+        default void with(@NonNull Callback callback) {
             callback.withComponents(this);
         }
 
         @Override
-        default <T> T with(@NonNull TypedPropertyCallback<T> callback) {
+        default <T> T with(@NonNull TypedCallback<T> callback) {
             return callback.withComponents(this);
         }
 
@@ -111,99 +109,58 @@ public interface StructProperty {
         default int components() {
             return this.cols() * this.rows();
         }
-
-        @Deprecated
-        default void load(@NonNull MethodVisitor mv, int structLvtIndex, int lvtIndexAllocator, @NonNull LoadCallback callback) {
-            throw new UnsupportedOperationException(this.getClass().getTypeName());
-        }
-
-        /**
-         * @author DaPorkchop_
-         */
-        @Deprecated
-        @FunctionalInterface
-        interface LoadCallback {
-            @Deprecated
-            void accept(int structLvtIndex, int lvtIndexAllocator, @NonNull Loader loader);
-        }
-
-        /**
-         * @author DaPorkchop_
-         */
-        @Deprecated
-        @FunctionalInterface
-        interface Loader {
-            @Deprecated
-            void load(int structLvtIndex, int lvtIndexAllocator, int componentIndex);
-        }
     }
 
     /**
      * @author DaPorkchop_
      */
-    interface Elements extends StructProperty, Iterable<StructProperty> {
+    interface Elements extends AttributeType {
         @Override
-        default void with(@NonNull PropertyCallback callback) {
+        default void with(@NonNull Callback callback) {
             callback.withElements(this);
         }
 
         @Override
-        default <T> T with(@NonNull TypedPropertyCallback<T> callback) {
+        default <T> T with(@NonNull TypedCallback<T> callback) {
             return callback.withElements(this);
         }
 
         int elements();
 
-        StructProperty element(int elementIndex);
+        @Deprecated
+        AttributeType element(int elementIndex);
+
+        AttributeType componentType();
 
         @Override
         default GLSLArrayType glslType() {
-            return GLSLTypeFactory.array(this.element(0).glslType(), this.elements());
-        }
-
-        @Override
-        default Iterator<StructProperty> iterator() {
-            return IntStream.range(0, this.elements()).mapToObj(this::element).iterator();
-        }
-
-        @Deprecated
-        default void load(@NonNull MethodVisitor mv, int structLvtIndex, int lvtIndexAllocator, @NonNull LoadCallback callback) {
-            throw new UnsupportedOperationException(this.getClass().getTypeName());
-        }
-
-        /**
-         * @author DaPorkchop_
-         */
-        @FunctionalInterface
-        interface LoadCallback {
-            @Deprecated
-            void accept(int structLvtIndex, int lvtIndexAllocator);
+            return GLSLTypeFactory.array(this.componentType().glslType(), this.elements());
         }
     }
 
     /**
      * @author DaPorkchop_
      */
-    interface Fields extends StructProperty, Iterable<Map.Entry<String, StructProperty>> {
+    interface Fields extends AttributeType, Iterable<Map.Entry<String, AttributeType>> {
         @Override
-        default void with(@NonNull PropertyCallback callback) {
+        default void with(@NonNull Callback callback) {
             callback.withFields(this);
         }
 
         @Override
-        default <T> T with(@NonNull TypedPropertyCallback<T> callback) {
+        default <T> T with(@NonNull TypedCallback<T> callback) {
             return callback.withFields(this);
         }
 
         int fields();
 
-        Map.Entry<String, StructProperty> field(int fieldIndex);
+        Map.Entry<String, AttributeType> field(int fieldIndex);
 
         default String fieldName(int fieldIndex) {
             return this.field(fieldIndex).getKey();
         }
 
-        default StructProperty fieldProperty(int fieldIndex) {
+        default AttributeType fieldProperty(int fieldIndex) {
             return this.field(fieldIndex).getValue();
         }
 
@@ -212,7 +169,7 @@ public interface StructProperty {
         }
 
         @Override
-        default Iterator<Map.Entry<String, StructProperty>> iterator() {
+        default Iterator<Map.Entry<String, AttributeType>> iterator() {
             return IntStream.range(0, this.fields()).mapToObj(this::field).iterator();
         }
 
@@ -221,22 +178,10 @@ public interface StructProperty {
         @Override
         default GLSLType glslType() {
             ImmutableMap.Builder<String, GLSLType> fields = ImmutableMap.builder();
-            for (Map.Entry<String, StructProperty> entry : this) {
+            for (Map.Entry<String, AttributeType> entry : this) {
                 fields.put(entry.getKey(), entry.getValue().glslType());
             }
             return new GLSLStructType(this.structName(), fields.build());
-        }
-
-        default void load(@NonNull MethodVisitor mv, int structLvtIndex, int lvtIndexAllocator, @NonNull LoadCallback callback) {
-            throw new UnsupportedOperationException(this.getClass().getTypeName());
-        }
-
-        /**
-         * @author DaPorkchop_
-         */
-        @FunctionalInterface
-        interface LoadCallback {
-            void accept(int structLvtIndex, int lvtIndexAllocator);
         }
     }
 }

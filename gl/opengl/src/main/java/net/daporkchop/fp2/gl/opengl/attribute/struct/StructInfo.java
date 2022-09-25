@@ -22,8 +22,8 @@ package net.daporkchop.fp2.gl.opengl.attribute.struct;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructPropertyFactory;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.AttributeType;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.StructPropertyFactory;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -37,7 +37,7 @@ import java.util.stream.IntStream;
 public class StructInfo<S> {
     protected final Class<S> clazz;
 
-    protected final StructProperty property;
+    protected final AttributeType property;
 
     public StructInfo(@NonNull Class<S> clazz) {
         this.clazz = clazz;
@@ -49,20 +49,20 @@ public class StructInfo<S> {
     }
 
     public List<GLSLField<?>> memberFields() {
-        return this.property().with(new StructProperty.TypedPropertyCallback<List<GLSLField<?>>>() {
+        return this.property().with(new AttributeType.TypedCallback<List<GLSLField<?>>>() {
             @Override
-            public List<GLSLField<?>> withComponents(@NonNull StructProperty.Components componentsProperty) {
+            public List<GLSLField<?>> withComponents(@NonNull AttributeType.Components componentsType) {
                 throw new UnsupportedOperationException();
             }
 
             @Override
-            public List<GLSLField<?>> withElements(@NonNull StructProperty.Elements elementsProperty) {
+            public List<GLSLField<?>> withElements(@NonNull AttributeType.Elements elementsType) {
                 throw new UnsupportedOperationException();
             }
 
             @Override
-            public List<GLSLField<?>> withFields(@NonNull StructProperty.Fields fieldsProperty) {
-                return IntStream.range(0, fieldsProperty.fields()).mapToObj(fieldsProperty::field)
+            public List<GLSLField<?>> withFields(@NonNull AttributeType.Fields fieldsType) {
+                return IntStream.range(0, fieldsType.fields()).mapToObj(fieldsType::field)
                         .map(entry -> new GLSLField<>(entry.getValue().glslType(), entry.getKey()))
                         .collect(Collectors.toList());
             }

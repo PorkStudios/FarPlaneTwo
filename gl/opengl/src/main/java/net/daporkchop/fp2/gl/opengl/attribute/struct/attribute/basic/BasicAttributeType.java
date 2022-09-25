@@ -17,32 +17,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.struct.property.basic;
+package net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.basic;
 
 import lombok.Data;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
-import net.daporkchop.lib.common.annotation.param.Positive;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.AttributeType;
 
-import static net.daporkchop.lib.common.util.PValidation.*;
+import java.util.Map;
 
 /**
  * @author DaPorkchop_
  */
 @Data
-public class BasicArrayProperty implements StructProperty.Elements {
+public class BasicAttributeType implements AttributeType.Fields {
     @NonNull
-    protected final StructProperty componentType;
-    protected final @Positive int length;
+    private final String structName;
+    @NonNull
+    private final Map.Entry<String, AttributeType>[] properties;
 
     @Override
-    public int elements() {
-        return this.length;
+    public int fields() {
+        return this.properties.length;
     }
 
     @Override
-    public StructProperty element(int elementIndex) {
-        checkIndex(this.length, elementIndex);
-        return this.componentType;
+    public Map.Entry<String, AttributeType> field(int elementIndex) {
+        return this.properties[elementIndex];
     }
 }

@@ -33,7 +33,7 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.InterleavedStructLay
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.LayoutComponentStorage;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.method.StructMethod;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.method.StructMethodFactory;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.AttributeType;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.signature.SignatureWriter;
@@ -150,15 +150,15 @@ public class InterleavedStructFormatClassLoader<S> extends StructFormatClassLoad
         return this.finish(writer, structName + ' ' + className);
     }
 
-    private void configureVao(@NonNull MethodVisitor mv, @NonNull InterleavedStructLayout layout, @NonNull StructProperty property, @NonNull InterleavedStructLayout.Member member, int apiLvtIndex, int locationsLvtIndex, int iLvtIndex) {
-        property.with(new StructProperty.PropertyCallback() {
+    private void configureVao(@NonNull MethodVisitor mv, @NonNull InterleavedStructLayout layout, @NonNull AttributeType property, @NonNull InterleavedStructLayout.Member member, int apiLvtIndex, int locationsLvtIndex, int iLvtIndex) {
+        property.with(new AttributeType.Callback() {
             @Override
-            public void withComponents(@NonNull StructProperty.Components componentsProperty) {
-                checkArg(componentsProperty.components()
-                         == member.components(), "stage %s has %d components, but member %s has only %d!", componentsProperty, componentsProperty.components(), member, member.components());
+            public void withComponents(@NonNull AttributeType.Components componentsType) {
+                checkArg(componentsType.components()
+                         == member.components(), "stage %s has %d components, but member %s has only %d!", componentsType, componentsType.components(), member, member.components());
 
-                int cols = componentsProperty.cols();
-                int rows = componentsProperty.rows();
+                int cols = componentsType.cols();
+                int rows = componentsType.rows();
 
                 for (int col = 0; col < cols; col++) {
                     //ensure storage is identical for all components
@@ -204,22 +204,22 @@ public class InterleavedStructFormatClassLoader<S> extends StructFormatClassLoad
             }
 
             @Override
-            public void withElements(@NonNull StructProperty.Elements elementsProperty) {
-                checkArg(elementsProperty.elements()
-                         == member.children(), "stage %s has %d elements, but member %s has only %d!", elementsProperty, elementsProperty.elements(), member, member.children());
+            public void withElements(@NonNull AttributeType.Elements elementsType) {
+                checkArg(elementsType.elements()
+                         == member.children(), "stage %s has %d elements, but member %s has only %d!", elementsType, elementsType.elements(), member, member.children());
 
-                for (int elementIndex = 0; elementIndex < elementsProperty.elements(); elementIndex++) {
-                    InterleavedStructFormatClassLoader.this.configureVao(mv, layout, elementsProperty.element(elementIndex), member.child(elementIndex), apiLvtIndex, locationsLvtIndex, iLvtIndex);
+                for (int elementIndex = 0; elementIndex < elementsType.elements(); elementIndex++) {
+                    InterleavedStructFormatClassLoader.this.configureVao(mv, layout, elementsType.componentType(), member.child(elementIndex), apiLvtIndex, locationsLvtIndex, iLvtIndex);
                 }
             }
 
             @Override
-            public void withFields(@NonNull StructProperty.Fields fieldsProperty) {
-                checkArg(fieldsProperty.fields()
-                         == member.children(), "stage %s has %d fields, but member %s has only %d!", fieldsProperty, fieldsProperty.fields(), member, member.children());
+            public void withFields(@NonNull AttributeType.Fields fieldsType) {
+                checkArg(fieldsType.fields()
+                         == member.children(), "stage %s has %d fields, but member %s has only %d!", fieldsType, fieldsType.fields(), member, member.children());
 
-                for (int fieldIndex = 0; fieldIndex < fieldsProperty.fields(); fieldIndex++) {
-                    InterleavedStructFormatClassLoader.this.configureVao(mv, layout, fieldsProperty.fieldProperty(fieldIndex), member.child(fieldIndex), apiLvtIndex, locationsLvtIndex, iLvtIndex);
+                for (int fieldIndex = 0; fieldIndex < fieldsType.fields(); fieldIndex++) {
+                    InterleavedStructFormatClassLoader.this.configureVao(mv, layout, fieldsType.fieldProperty(fieldIndex), member.child(fieldIndex), apiLvtIndex, locationsLvtIndex, iLvtIndex);
                 }
             }
         });
@@ -276,7 +276,7 @@ public class InterleavedStructFormatClassLoader<S> extends StructFormatClassLoad
 
         //implement all interface methods
         for (Method method : this.layout.structInfo().clazz().getMethods()) {
-            StructMethod structMethod = StructMethodFactory.createFromMethod((StructProperty.Fields) this.layout.structProperty(), method);
+            StructMethod structMethod = StructMethodFactory.createFromMethod((AttributeType.Fields) this.layout.structProperty(), method);
 
             MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, method.getName(), getMethodDescriptor(method), null, null);
 

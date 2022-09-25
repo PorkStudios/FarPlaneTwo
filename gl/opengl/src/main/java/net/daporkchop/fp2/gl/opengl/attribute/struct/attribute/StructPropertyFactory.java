@@ -17,7 +17,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.struct.property;
+package net.daporkchop.fp2.gl.opengl.attribute.struct.attribute;
 
 import com.google.common.collect.ImmutableMap;
 import lombok.NonNull;
@@ -29,11 +29,11 @@ import net.daporkchop.fp2.gl.attribute.annotation.AMatrixType;
 import net.daporkchop.fp2.gl.attribute.annotation.AScalarType;
 import net.daporkchop.fp2.gl.attribute.annotation.AVectorType;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarConvert;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.property.basic.BasicArrayProperty;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.property.basic.BasicMatrixProperty;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.property.basic.BasicScalarProperty;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.property.basic.BasicStructProperty;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.property.basic.BasicVectorProperty;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.basic.BasicArrayAttributeType;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.basic.BasicMatrixAttributeType;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.basic.BasicScalarAttributeType;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.basic.BasicAttributeType;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.basic.BasicVectorAttributeType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLPrimitiveType;
 
 import java.util.Map;
@@ -46,7 +46,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 @UtilityClass
 public class StructPropertyFactory {
-    public static StructProperty struct(@NonNull Class<?> struct) {
+    public static AttributeType struct(@NonNull Class<?> struct) {
         checkArg(struct.isInterface(), "struct type %s must be an interface", struct.getTypeName());
         checkArg(struct.getInterfaces().length == 0, "struct type %s may not extend any interfaces", struct.getTypeName());
 
@@ -65,15 +65,15 @@ public class StructPropertyFactory {
         }
         checkArg(attributes != null, "struct type %s has no attribute annotations", struct.getTypeName());
 
-        ImmutableMap.Builder<String, StructProperty> propertiesBuilder = ImmutableMap.builder();
+        ImmutableMap.Builder<String, AttributeType> propertiesBuilder = ImmutableMap.builder();
         for (AAttribute attribute : attributes) {
             propertiesBuilder.put(attribute.name(), of(attribute));
         }
 
-        return new BasicStructProperty(struct.getName(), uncheckedCast(propertiesBuilder.build().entrySet().toArray(new Map.Entry[0])));
+        return new BasicAttributeType(struct.getName(), uncheckedCast(propertiesBuilder.build().entrySet().toArray(new Map.Entry[0])));
     }
 
-    private static StructProperty of(@NonNull AAttribute attribute) {
+    private static AttributeType of(@NonNull AAttribute attribute) {
         //determine the attribute type
         int declaredAttributes = 0;
 
@@ -112,7 +112,7 @@ public class StructPropertyFactory {
         }
     }
 
-    private static StructProperty.Elements of(@NonNull AArrayType type) {
+    private static AttributeType.Elements of(@NonNull AArrayType type) {
         //determine the component type
         int declaredComponentTypes = 0;
 
@@ -135,7 +135,7 @@ public class StructPropertyFactory {
         checkArg(declaredComponentTypes == 1, "exactly one component type must be declared");
 
         //parse the component type
-        StructProperty.Components bottomComponentType;
+        AttributeType.Components bottomComponentType;
         if (typeVector.length == 1) {
             bottomComponentType = of(typeVector[0]);
         } else if (typeMatrix.length == 1) {
@@ -152,31 +152,31 @@ public class StructPropertyFactory {
         }
 
         //unroll array into a (chain) of BasicArrayProperty
-        StructProperty.Elements arrayType = new BasicArrayProperty(bottomComponentType, lengths[lengths.length - 1]);
+        AttributeType.Elements arrayType = new BasicArrayAttributeType(bottomComponentType, lengths[lengths.length - 1]);
         for (int i = lengths.length - 2; i >= 0; i--) {
-            arrayType = new BasicArrayProperty(arrayType, lengths[i]);
+            arrayType = new BasicArrayAttributeType(arrayType, lengths[i]);
         }
         return arrayType;
     }
 
-    private static StructProperty.Components of(@NonNull AVectorType type) {
+    private static AttributeType.Components of(@NonNull AVectorType type) {
         int components = type.components();
         checkArg(components >= 1 && components <= 4, "illegal vector component count: %d", components);
 
-        return new BasicVectorProperty(of(type.componentType()), components);
+        return new BasicVectorAttributeType(of(type.componentType()), components);
     }
 
-    private static StructProperty.Components of(@NonNull AMatrixType type) {
+    private static AttributeType.Components of(@NonNull AMatrixType type) {
         int cols = type.cols();
         checkArg(cols >= 2 && cols <= 4, "illegal vector column count: %d", cols);
 
         int rows = type.rows();
         checkArg(rows >= 2 && rows <= 4, "illegal vector row count: %d", rows);
 
-        return new BasicMatrixProperty(of(type.componentType()), cols, rows);
+        return new BasicMatrixAttributeType(of(type.componentType()), cols, rows);
     }
 
-    private static StructProperty.Components of(@NonNull AScalarType type) {
+    private static AttributeType.Components of(@NonNull AScalarType type) {
         ComponentType logicalStorageType;
         Class<?> rawLogicalStorageType = type.value();
         checkArg(rawLogicalStorageType.isPrimitive(), "scalar type value must be a primitive class!");
@@ -212,6 +212,6 @@ public class StructPropertyFactory {
             }
         }
 
-        return new BasicScalarProperty(logicalStorageType, componentInterpretation);
+        return new BasicScalarAttributeType(logicalStorageType, componentInterpretation);
     }
 }

@@ -17,7 +17,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.struct.property;
+package net.daporkchop.fp2.gl.opengl.attribute.struct.attribute;
 
 import lombok.Getter;
 import lombok.NonNull;

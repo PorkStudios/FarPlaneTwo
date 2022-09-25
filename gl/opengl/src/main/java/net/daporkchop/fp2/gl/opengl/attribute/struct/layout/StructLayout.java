@@ -23,7 +23,7 @@ import lombok.Data;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.StructInfo;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.AttributeType;
 
 /**
  * @author DaPorkchop_
@@ -37,7 +37,7 @@ public abstract class StructLayout<M extends StructLayout.Member<M, C>, C extend
     @NonNull
     private final M member;
 
-    public StructProperty structProperty() {
+    public AttributeType structProperty() {
         return this.structInfo().property();
     }
 

@@ -23,7 +23,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.method.parameter.MethodParameter;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.property.ComponentType;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.ComponentType;
 import org.objectweb.asm.MethodVisitor;
 
 import static net.daporkchop.lib.common.util.PValidation.*;

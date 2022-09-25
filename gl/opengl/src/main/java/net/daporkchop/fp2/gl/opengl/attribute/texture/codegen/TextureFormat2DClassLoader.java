@@ -32,7 +32,7 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.method.parameter.MethodPara
 import net.daporkchop.fp2.gl.opengl.attribute.struct.method.parameter.MethodParameterFactory;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.method.parameter.input.ScalarArgumentMethodParameter;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.method.parameter.transform.IntToARGBExpansionTransformMethodParameter;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.property.ComponentType;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.ComponentType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLPrimitiveType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLSamplerType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLTypeFactory;

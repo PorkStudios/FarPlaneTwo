@@ -17,31 +17,39 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.struct.property.basic;
+package net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.basic;
 
 import lombok.Data;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
-
-import java.util.Map;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.ComponentInterpretation;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.ComponentType;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.AttributeType;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLBasicType;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLTypeFactory;
+import net.daporkchop.lib.common.annotation.param.Positive;
 
 /**
  * @author DaPorkchop_
  */
 @Data
-public class BasicStructProperty implements StructProperty.Fields {
+public class BasicMatrixAttributeType implements AttributeType.Components {
     @NonNull
-    private final String structName;
-    @NonNull
-    private final Map.Entry<String, StructProperty>[] properties;
+    protected final AttributeType.Components componentType;
+    protected final @Positive int cols;
+    protected final @Positive int rows;
 
     @Override
-    public int fields() {
-        return this.properties.length;
+    public ComponentType logicalStorageType() {
+        return this.componentType.logicalStorageType();
     }
 
     @Override
-    public Map.Entry<String, StructProperty> field(int elementIndex) {
-        return this.properties[elementIndex];
+    public ComponentInterpretation componentInterpretation() {
+        return this.componentType.componentInterpretation();
+    }
+
+    @Override
+    public GLSLBasicType glslType() {
+        return GLSLTypeFactory.mat(this.componentType.glslType().primitive(), this.cols, this.rows);
     }
 }

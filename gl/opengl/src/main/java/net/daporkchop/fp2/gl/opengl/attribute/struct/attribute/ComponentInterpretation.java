@@ -17,49 +17,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.struct.property.basic;
+package net.daporkchop.fp2.gl.opengl.attribute.struct.attribute;
 
 import lombok.Data;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.property.ComponentInterpretation;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.property.ComponentType;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLBasicType;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLTypeFactory;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLVectorType;
-import net.daporkchop.lib.common.annotation.param.Positive;
+import lombok.With;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLPrimitiveType;
 
 /**
  * @author DaPorkchop_
  */
 @Data
-public class BasicVectorProperty implements StructProperty.Components {
+@With
+public final class ComponentInterpretation {
     @NonNull
-    protected final StructProperty.Components componentType;
-    protected final @Positive int components;
+    private final GLSLPrimitiveType outputType;
 
-    @Override
-    public int cols() {
-        return 1;
-    }
-
-    @Override
-    public int rows() {
-        return this.components;
-    }
-
-    @Override
-    public ComponentType logicalStorageType() {
-        return this.componentType.logicalStorageType();
-    }
-
-    @Override
-    public ComponentInterpretation componentInterpretation() {
-        return this.componentType.componentInterpretation();
-    }
-
-    @Override
-    public GLSLBasicType glslType() {
-        return GLSLTypeFactory.vec(this.componentType.glslType().primitive(), this.components);
-    }
+    private final boolean normalized;
 }

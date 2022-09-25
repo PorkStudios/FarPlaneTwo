@@ -20,7 +20,7 @@
 package net.daporkchop.fp2.gl.opengl.attribute.struct.method.parameter;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.property.ComponentType;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.ComponentType;
 import org.objectweb.asm.MethodVisitor;
 
 /**

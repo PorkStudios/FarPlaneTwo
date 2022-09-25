@@ -33,8 +33,8 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.format.TextureStructFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.InterleavedStructLayout;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.StructLayout;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.TextureStructLayout;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.property.ComponentInterpretation;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.ComponentInterpretation;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.AttributeType;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureFormat2DImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.codegen.TextureFormat2DClassLoader;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.image.PixelFormatImpl;
@@ -111,32 +111,32 @@ public class StructFormatGenerator {
     private <S> TextureStructFormat<S> generateTexture(@NonNull TextureStructLayout layout) throws Exception {
         TextureStructLayout.Member member = layout.member();
 
-        StructProperty.Components property = layout.structProperty().with(new StructProperty.TypedPropertyCallback<StructProperty.Components>() {
+        AttributeType.Components property = layout.structProperty().with(new AttributeType.TypedCallback<AttributeType.Components>() {
             @Override
-            public StructProperty.Components withComponents(@NonNull StructProperty.Components componentsProperty) {
+            public AttributeType.Components withComponents(@NonNull AttributeType.Components componentsType) {
                 throw new UnsupportedOperationException();
             }
 
             @Override
-            public StructProperty.Components withElements(@NonNull StructProperty.Elements elementsProperty) {
+            public AttributeType.Components withElements(@NonNull AttributeType.Elements elementsType) {
                 throw new UnsupportedOperationException();
             }
 
             @Override
-            public StructProperty.Components withFields(@NonNull StructProperty.Fields fieldsProperty) {
-                return fieldsProperty.fieldProperty(0).with(new StructProperty.TypedPropertyCallback<StructProperty.Components>() {
+            public AttributeType.Components withFields(@NonNull AttributeType.Fields fieldsType) {
+                return fieldsType.fieldProperty(0).with(new AttributeType.TypedCallback<AttributeType.Components>() {
                     @Override
-                    public StructProperty.Components withComponents(@NonNull StructProperty.Components componentsProperty) {
-                        return componentsProperty;
+                    public AttributeType.Components withComponents(@NonNull AttributeType.Components componentsType) {
+                        return componentsType;
                     }
 
                     @Override
-                    public StructProperty.Components withElements(@NonNull StructProperty.Elements elementsProperty) {
+                    public AttributeType.Components withElements(@NonNull AttributeType.Elements elementsType) {
                         throw new UnsupportedOperationException();
                     }
 
                     @Override
-                    public StructProperty.Components withFields(@NonNull StructProperty.Fields fieldsProperty) {
+                    public AttributeType.Components withFields(@NonNull AttributeType.Fields fieldsType) {
                         throw new UnsupportedOperationException();
                     }
                 });

@@ -29,7 +29,8 @@ import net.daporkchop.fp2.gl.attribute.annotation.AttributeSetter;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.StructLayout;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.method.parameter.MethodParameter;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.method.parameter.MethodParameterFactory;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.AttributeType;
+import net.daporkchop.lib.common.util.PorkUtil;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 
@@ -49,7 +50,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @UtilityClass
 public class StructMethodFactory {
-    public static StructMethod createFromMethod(@NonNull StructProperty.Fields property, @NonNull Method method) {
+    public static StructMethod createFromMethod(@NonNull AttributeType.Fields property, @NonNull Method method) {
         checkArg(method.getReturnType() == method.getDeclaringClass(), "method %s must have the same return type as the class in which it is declared!", method);
         checkArg((method.getModifiers() & Modifier.STATIC) == 0, "method %s may not be static!", method);
 
@@ -68,7 +69,7 @@ public class StructMethodFactory {
         throw new UnsupportedOperationException(method.toString());
     }
 
-    private static StructMethod.Setter digestParametersForSetter(@NonNull StructProperty property, int memberIndex, int lvtIndex, @NonNull Iterator<Parameter> iterator) {
+    private static StructMethod.Setter digestParametersForSetter(@NonNull AttributeType attributeType, int memberIndex, int lvtIndex, @NonNull Iterator<Parameter> iterator) {
         Parameter parameter = iterator.next();
         if (parameter.isAnnotationPresent(ArrayIndex.class)) { //the parameter is an array index
             checkArg(parameter.getType() == int.class, "parameter annotated as @%s must be int", ArrayIndex.class);
@@ -86,7 +87,7 @@ public class StructMethodFactory {
         //group all the method parameters into a single virtual parameter containing all the components
         MethodParameter methodParameter = MethodParameterFactory.union(methodParameters.toArray(new MethodParameter[0]));
 
-        return new SetterImpl(property, methodParameter, lvtIndex, memberIndex);
+        return new SetterImpl(attributeType, methodParameter, lvtIndex, memberIndex);
     }
 
     /**
@@ -95,7 +96,7 @@ public class StructMethodFactory {
     @RequiredArgsConstructor
     private static class SetterImpl implements StructMethod.Setter {
         @NonNull
-        private final StructProperty property;
+        private final AttributeType property;
         @NonNull
         private final MethodParameter parameter;
         @Getter

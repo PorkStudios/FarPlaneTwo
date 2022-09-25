@@ -23,7 +23,7 @@ import lombok.Data;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.InterleavedStructLayout;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.LayoutComponentStorage;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.AttributeType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLBasicType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLMatrixType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLPrimitiveType;
@@ -52,15 +52,15 @@ public enum GLSLBlockMemoryLayout {
      * @see <a href="https://www.khronos.org/registry/OpenGL/specs/gl/glspec45.core.pdf#page=159>OpenGL 4.5, Section 7.6.2.2, page 137</a>
      */
     STD140 {
-        private MemberLayout memberLayout(@NonNull StructProperty property) {
-            return property.with(new StructProperty.TypedPropertyCallback<MemberLayout>() {
+        private MemberLayout memberLayout(@NonNull AttributeType property) {
+            return property.with(new AttributeType.TypedCallback<MemberLayout>() {
                 @Override
-                public MemberLayout.Basic withComponents(@NonNull StructProperty.Components componentsProperty) {
+                public MemberLayout.Basic withComponents(@NonNull AttributeType.Components componentsType) {
                     long alignment;
                     long size;
                     long[] componentOffsets;
 
-                    GLSLBasicType type = componentsProperty.glslType().ensureValid();
+                    GLSLBasicType type = componentsType.glslType().ensureValid();
                     if (type instanceof GLSLPrimitiveType) {
                         //1. If the member is a scalar consuming N basic machine units, the base align-
                         //   ment is N.
@@ -110,16 +110,16 @@ public enum GLSLBlockMemoryLayout {
                     }
 
                     return new MemberLayout.Basic(alignment, size, componentOffsets,
-                            PArrays.filled(componentsProperty.components(), LayoutComponentStorage.class, LayoutComponentStorage.unpacked(componentsProperty)));
+                            PArrays.filled(componentsType.components(), LayoutComponentStorage.class, LayoutComponentStorage.unpacked(componentsType)));
                 }
 
                 @Override
-                public MemberLayout.Array withElements(@NonNull StructProperty.Elements elementsProperty) {
+                public MemberLayout.Array withElements(@NonNull AttributeType.Elements elementsType) {
                     //all array elements will have the same type, so we can just query the 0th element
 
-                    return elementsProperty.element(0).with(new StructProperty.TypedPropertyCallback<MemberLayout.Array>() {
+                    return elementsType.componentType().with(new AttributeType.TypedCallback<MemberLayout.Array>() {
                         @Override
-                        public MemberLayout.Array withComponents(@NonNull StructProperty.Components componentsProperty) {
+                        public MemberLayout.Array withComponents(@NonNull AttributeType.Components componentsType) {
                             //4. If the member is an array of scalars or vectors, the base alignment and array
                             //   stride are set to match the base alignment of a single array element, according
                             //   to rules (1), (2), and (3), and rounded up to the base alignment of a vec4. The
@@ -136,44 +136,44 @@ public enum GLSLBlockMemoryLayout {
                             //   components each, according to rule (4).
 
                             @SuppressWarnings("UnqualifiedMethodAccess")
-                            MemberLayout elementLayout = memberLayout(componentsProperty);
+                            MemberLayout elementLayout = memberLayout(componentsType);
 
-                            if (componentsProperty.cols() == 1) { //not a matrix, the array elements are all vectors or scalars
+                            if (componentsType.cols() == 1) { //not a matrix, the array elements are all vectors or scalars
                                 //round alignment and stride up to multiple of vec4
                                 elementLayout = new MemberLayout.Basic(
                                         PMath.roundUp(elementLayout.alignment(), 4 * FLOAT_SIZE),
                                         PMath.roundUp(elementLayout.size(), 4 * FLOAT_SIZE),
                                         ((MemberLayout.Basic) elementLayout).componentOffsets,
-                                        PArrays.filled(componentsProperty.components(), LayoutComponentStorage.class, LayoutComponentStorage.unpacked(componentsProperty)));
+                                        PArrays.filled(componentsType.components(), LayoutComponentStorage.class, LayoutComponentStorage.unpacked(componentsType)));
                             } else { //this is a matrix type
                                 //matrices are always interpreted as R vectors with C components each, even if they're not used in an array, so we can use
                                 // the existing elementLayout with no additional changes.
                             }
 
-                            return new MemberLayout.Array(elementLayout, elementsProperty.elements());
+                            return new MemberLayout.Array(elementLayout, elementsType.elements());
                         }
 
                         @Override
-                        public MemberLayout.Array withElements(@NonNull StructProperty.Elements elementsProperty) {
+                        public MemberLayout.Array withElements(@NonNull AttributeType.Elements elementsType) {
                             //we can't support this without a hard dependency on ARB_arrays_of_arrays
                             throw new UnsupportedOperationException("arrays of arrays are not supported!");
                         }
 
                         @Override
-                        public MemberLayout.Array withFields(@NonNull StructProperty.Fields fieldsProperty) {
+                        public MemberLayout.Array withFields(@NonNull AttributeType.Fields fieldsType) {
                             //10. If the member is an array of S structures, the S elements of the array are laid
                             //    out in order, according to rule (9).
 
                             @SuppressWarnings("UnqualifiedMethodAccess")
-                            MemberLayout elementLayout = memberLayout(fieldsProperty);
+                            MemberLayout elementLayout = memberLayout(fieldsType);
 
-                            return new MemberLayout.Array(elementLayout, elementsProperty.elements());
+                            return new MemberLayout.Array(elementLayout, elementsType.elements());
                         }
                     });
                 }
 
                 @Override
-                public MemberLayout.Struct withFields(@NonNull StructProperty.Fields fieldsProperty) {
+                public MemberLayout.Struct withFields(@NonNull AttributeType.Fields fieldsType) {
                     //9. If the member is a structure, the base alignment of the structure is N , where
                     //   N is the largest base alignment value of any of its members, and rounded
                     //   up to the base alignment of a vec4. The individual members of this sub-
@@ -184,7 +184,7 @@ public enum GLSLBlockMemoryLayout {
                     //   the next multiple of the base alignment of the structure.
 
                     @SuppressWarnings("UnqualifiedMethodAccess")
-                    MemberLayout[] fieldLayouts = IntStream.range(0, fieldsProperty.fields()).mapToObj(fieldsProperty::fieldProperty)
+                    MemberLayout[] fieldLayouts = IntStream.range(0, fieldsType.fields()).mapToObj(fieldsType::fieldProperty)
                             .map(field -> memberLayout(field))
                             .toArray(MemberLayout[]::new);
 

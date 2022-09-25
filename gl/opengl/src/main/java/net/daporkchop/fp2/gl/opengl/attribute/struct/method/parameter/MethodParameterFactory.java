@@ -31,7 +31,7 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.method.parameter.input.Mult
 import net.daporkchop.fp2.gl.opengl.attribute.struct.method.parameter.input.ScalarArgumentMethodParameter;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.method.parameter.transform.IntToARGBExpansionTransformMethodParameter;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.method.parameter.transform.UnionMethodParameter;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.property.ComponentType;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.ComponentType;
 import net.daporkchop.lib.common.util.PorkUtil;
 
 import java.lang.reflect.AnnotatedArrayType;

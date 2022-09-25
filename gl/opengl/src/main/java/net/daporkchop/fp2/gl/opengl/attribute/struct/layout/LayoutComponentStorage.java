@@ -22,9 +22,9 @@ package net.daporkchop.fp2.gl.opengl.attribute.struct.layout;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.With;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.property.ComponentInterpretation;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.property.ComponentType;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.ComponentInterpretation;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.ComponentType;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.AttributeType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLPrimitiveType;
 import org.objectweb.asm.MethodVisitor;
 
@@ -38,11 +38,11 @@ import static org.objectweb.asm.Opcodes.*;
 @With
 public final class LayoutComponentStorage {
     @Deprecated
-    public static LayoutComponentStorage unchanged(@NonNull StructProperty.Components property) {
+    public static LayoutComponentStorage unchanged(@NonNull AttributeType.Components property) {
         return new LayoutComponentStorage(property.logicalStorageType(), property.logicalStorageType(), property.componentInterpretation());
     }
 
-    public static LayoutComponentStorage unpacked(@NonNull StructProperty.Components property) {
+    public static LayoutComponentStorage unpacked(@NonNull AttributeType.Components property) {
         ComponentType physicalStorageType;
         switch (property.componentInterpretation().outputType()) {
             case INT:

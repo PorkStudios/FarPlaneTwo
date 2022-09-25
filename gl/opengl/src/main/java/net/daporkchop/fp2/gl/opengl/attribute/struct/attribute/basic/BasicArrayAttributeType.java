@@ -17,39 +17,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.struct.property.basic;
+package net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.basic;
 
 import lombok.Data;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.property.ComponentInterpretation;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.property.ComponentType;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLBasicType;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLTypeFactory;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.AttributeType;
 import net.daporkchop.lib.common.annotation.param.Positive;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
 @Data
-public class BasicMatrixProperty implements StructProperty.Components {
+public class BasicArrayAttributeType implements AttributeType.Elements {
     @NonNull
-    protected final StructProperty.Components componentType;
-    protected final @Positive int cols;
-    protected final @Positive int rows;
+    protected final AttributeType componentType;
+    protected final @Positive int length;
 
     @Override
-    public ComponentType logicalStorageType() {
-        return this.componentType.logicalStorageType();
+    public int elements() {
+        return this.length;
     }
 
     @Override
-    public ComponentInterpretation componentInterpretation() {
-        return this.componentType.componentInterpretation();
-    }
-
-    @Override
-    public GLSLBasicType glslType() {
-        return GLSLTypeFactory.mat(this.componentType.glslType().primitive(), this.cols, this.rows);
+    public AttributeType element(int elementIndex) {
+        checkIndex(this.length, elementIndex);
+        return this.componentType;
     }
 }

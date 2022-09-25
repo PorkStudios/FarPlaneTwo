@@ -17,20 +17,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute.struct.property.basic;
+package net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.basic;
 
 import lombok.Data;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.property.ComponentInterpretation;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.property.ComponentType;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.ComponentInterpretation;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.ComponentType;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.AttributeType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLBasicType;
 
 /**
  * @author DaPorkchop_
  */
 @Data
-public class BasicScalarProperty implements StructProperty.Components {
+public class BasicScalarAttributeType implements AttributeType.Components {
     @NonNull
     protected final ComponentType logicalStorageType;
     @NonNull
