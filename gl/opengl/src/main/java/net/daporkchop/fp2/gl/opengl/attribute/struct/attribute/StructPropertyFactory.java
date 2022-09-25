@@ -36,6 +36,8 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.basic.BasicAttrib
 import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.basic.BasicVectorAttributeType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLPrimitiveType;
 
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Map;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -64,6 +66,9 @@ public class StructPropertyFactory {
             }
         }
         checkArg(attributes != null, "struct type %s has no attribute annotations", struct.getTypeName());
+
+        //sort attributes by their sort key
+        Arrays.sort(attributes, Comparator.comparingInt(AAttribute::sort));
 
         ImmutableMap.Builder<String, AttributeType> propertiesBuilder = ImmutableMap.builder();
         for (AAttribute attribute : attributes) {

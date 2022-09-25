@@ -34,7 +34,9 @@ import java.lang.annotation.Target;
 @Inherited
 @Repeatable(AAttributes.class)
 public @interface AAttribute {
-    String name() default "";
+    String name();
+
+    int sort() default 0;
 
     /**
      * If non-empty, the attribute's component type is set to the vector type.
