@@ -28,9 +28,12 @@ import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.attribute.AttributeWriter;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
+import net.daporkchop.fp2.gl.attribute.annotation.AArrayType;
 import net.daporkchop.fp2.gl.attribute.annotation.AAttribute;
 import net.daporkchop.fp2.gl.attribute.annotation.AScalarType;
 import net.daporkchop.fp2.gl.attribute.annotation.AVectorType;
+import net.daporkchop.fp2.gl.attribute.annotation.ArrayIndex;
+import net.daporkchop.fp2.gl.attribute.annotation.ArrayLength;
 import net.daporkchop.fp2.gl.attribute.annotation.AttributeSetter;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarConvert;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarExpand;
@@ -376,26 +379,31 @@ public class TestLWJGL2 {
             typeVector = @AVectorType(components = 2,
                     componentType = @AScalarType(value = byte.class,
                             interpret = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true))))
-    /*@AAttribute(name = "floatsAsVector",
-            typeVector = @AVectorType(components = 3, componentType = @AScalarType(float.class)))*/
-    /*@AAttribute(name = "vec2Array",
+    @AAttribute(name = "floatsAsVector",
+            typeVector = @AVectorType(components = 3, componentType = @AScalarType(float.class)))
+    @AAttribute(name = "vec2Array",
             typeArray = @AArrayType(length = 4,
                     componentTypeVector = @AVectorType(components = 2,
                             componentType = @AScalarType(value = byte.class,
-                                    interpret = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = false)))))*/
+                                    interpret = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = false)))))
     public interface UniformAttribs {
         @AttributeSetter("scale")
         UniformAttribs scale(byte scaleX, byte scaleY);
 
-        /*@AttributeSetter
+        @AttributeSetter
         UniformAttribs floatsAsVector(float f0, float f1, float f2);
 
         @AttributeSetter
-        UniformAttribs floatsAsVector(float @ArrayLength(3) [] f);*/
+        UniformAttribs floatsAsVector(float @ArrayLength(3) [] f);
 
-        //TODO: make this work
-        /*@MethodAttribute
-        UniformAttribs vec2Array(@ArrayIndex int index, byte @ArrayLength(2) [] bytes);*/
+        @AttributeSetter
+        UniformAttribs vec2Array(byte @ArrayLength(8) [] bytes);
+
+        @AttributeSetter
+        UniformAttribs vec2Array(byte @ArrayLength(4) [] @ArrayLength(2) [] bytes);
+
+        @AttributeSetter
+        UniformAttribs vec2Array(@ArrayIndex int index, byte @ArrayLength(2) [] bytes);
     }
 
     @AAttribute(name = "colorFactor",

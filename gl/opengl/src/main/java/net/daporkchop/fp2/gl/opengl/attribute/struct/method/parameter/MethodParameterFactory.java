@@ -27,14 +27,16 @@ import net.daporkchop.fp2.gl.attribute.annotation.ScalarExpand;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarTransform;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.method.parameter.convert.IntegerToFloatConversionMethodParameter;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.method.parameter.convert.IntegerToUnsignedIntegerConversionMethodParameter;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.method.parameter.input.MultidimensionalArrayElementLoadingMethodParameter;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.method.parameter.input.ScalarArgumentMethodParameter;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.method.parameter.input.SimplePrimitiveArrayMethodParameter;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.method.parameter.transform.IntToARGBExpansionTransformMethodParameter;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.method.parameter.transform.UnionMethodParameter;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.ComponentType;
+import net.daporkchop.lib.common.util.PorkUtil;
 
 import java.lang.reflect.AnnotatedArrayType;
 import java.lang.reflect.AnnotatedType;
+import java.util.Arrays;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -71,19 +73,27 @@ public class MethodParameterFactory {
     }
 
     private static MethodParameter createFromArray(@NonNull AnnotatedArrayType annotatedArrayType, int argumentLvtIndex) {
-        //TODO: this doesn't support arrays of arrays
+        int[] arrayLengths = PorkUtil.EMPTY_INT_ARRAY;
 
-        ArrayLength lengthAnnotation = annotatedArrayType.getAnnotation(ArrayLength.class);
-        checkArg(lengthAnnotation != null, "array must be annotated with @%s", ArrayLength.class);
+        do {
+            ArrayLength lengthAnnotation = annotatedArrayType.getAnnotation(ArrayLength.class);
+            checkArg(lengthAnnotation != null, "array must be annotated with @%s", ArrayLength.class);
 
-        int length = positive(lengthAnnotation.value(), "length");
+            //append the current array dimension's length to the arrayLengths array
+            arrayLengths = Arrays.copyOf(arrayLengths, arrayLengths.length + 1);
+            arrayLengths[arrayLengths.length - 1] = positive(lengthAnnotation.value(), "length");
 
-        AnnotatedType annotatedComponentType = annotatedArrayType.getAnnotatedGenericComponentType();
-        Class<?> rawComponentType = (Class<?>) annotatedComponentType.getType(); //assume it's a class
-        checkArg(rawComponentType.isPrimitive(), "input parameter type must be primitive! %s", rawComponentType);
+            AnnotatedType annotatedComponentType = annotatedArrayType.getAnnotatedGenericComponentType();
+            if (annotatedComponentType instanceof AnnotatedArrayType) { //component type is an array, making this an array of arrays!
+                annotatedArrayType = (AnnotatedArrayType) annotatedComponentType;
+            } else { //this is the bottom array level
+                Class<?> rawComponentType = (Class<?>) annotatedComponentType.getType(); //assume it's a class
+                checkArg(rawComponentType.isPrimitive(), "input parameter type must be primitive! %s", rawComponentType);
 
-        ComponentType componentType = ComponentType.from(rawComponentType);
-        return scalarTransform(new SimplePrimitiveArrayMethodParameter(componentType, argumentLvtIndex, length), annotatedComponentType.getAnnotation(ScalarTransform.class));
+                ComponentType componentType = ComponentType.from(rawComponentType);
+                return scalarTransform(new MultidimensionalArrayElementLoadingMethodParameter(componentType, argumentLvtIndex, arrayLengths), annotatedComponentType.getAnnotation(ScalarTransform.class));
+            }
+        } while (true);
     }
 
     private static MethodParameter createFromScalar(@NonNull AnnotatedType annotatedType, int argumentLvtIndex) {

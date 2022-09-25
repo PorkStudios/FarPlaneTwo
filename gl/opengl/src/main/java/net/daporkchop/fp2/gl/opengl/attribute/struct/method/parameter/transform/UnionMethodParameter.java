@@ -25,45 +25,55 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.method.parameter.MethodPara
 import net.daporkchop.fp2.gl.opengl.attribute.struct.property.ComponentType;
 import org.objectweb.asm.MethodVisitor;
 
+import java.util.Arrays;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
+
 /**
  * @author DaPorkchop_
  */
 @Data
 public class UnionMethodParameter implements MethodParameter {
-    @NonNull
     protected final MethodParameter[] delegates;
 
-    @Override
-    public ComponentType componentType() {
-        return this.delegates[0].componentType();
-    }
+    protected final ComponentType componentType;
 
-    @Override
-    public int components() {
+    protected final int components;
+    protected final int[] componentsBinarySearchIndex;
+
+    public UnionMethodParameter(@NonNull MethodParameter... delegates) {
+        checkArg(delegates.length > 0, "at least one delegate must be given!");
+
+        this.componentType = delegates[0].componentType();
+
         int components = 0;
-        for (MethodParameter delegate : this.delegates) {
+        this.componentsBinarySearchIndex = new int[delegates.length];
+        for (int i = 0; i < delegates.length; i++) {
+            MethodParameter delegate = delegates[i];
+            checkArg(delegate.componentType() == this.componentType, "all delegates must have the same component type");
+
+            this.componentsBinarySearchIndex[i] = components;
             components += delegate.components();
         }
-        return components;
+        this.components = components;
+
+        this.delegates = delegates.clone();
     }
 
     @Override
     public void load(@NonNull MethodVisitor mv, int lvtIndexAllocatorIn, @NonNull LoadCallback callback) {
         callback.accept(lvtIndexAllocatorIn, (lvtIndexAllocator, componentIndex) -> {
-            //find the corresponding component in the list
-            //TODO: optimize this with a binary search
-            int total = 0;
-            for (MethodParameter delegate : this.delegates) {
-                int components = delegate.components();
-                if (componentIndex >= total && componentIndex < total + components) {
-                    int realComponentIndex = componentIndex - total;
+            checkIndex(this.components(), componentIndex);
 
-                    //TODO: generate more optimized code by not exiting the load callback for every component access
-                    delegate.load(mv, lvtIndexAllocator,
-                            (lvtIndexAllocator1, loader) -> loader.load(lvtIndexAllocator1, realComponentIndex));
-                }
-                total += components;
-            }
+            //find the corresponding component in the list
+            int delegateIndex = Arrays.binarySearch(this.componentsBinarySearchIndex, componentIndex);
+            int mask = delegateIndex >> 31; //branchless implementation of (delegateIndex >= 0 ? delegateIndex : (-(delegateIndex + 1) - 1))
+            delegateIndex = (delegateIndex ^ mask) + mask;
+
+            //TODO: generate more optimized code by not exiting the load callback for every component access
+            int realComponentIndex = componentIndex - this.componentsBinarySearchIndex[delegateIndex];
+            this.delegates[delegateIndex].load(mv, lvtIndexAllocator,
+                    (lvtIndexAllocator1, loader) -> loader.load(lvtIndexAllocator1, realComponentIndex));
         });
     }
 }
