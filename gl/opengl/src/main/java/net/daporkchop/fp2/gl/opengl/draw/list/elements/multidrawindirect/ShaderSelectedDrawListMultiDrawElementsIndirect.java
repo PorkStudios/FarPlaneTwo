@@ -21,8 +21,8 @@ package net.daporkchop.fp2.gl.opengl.draw.list.elements.multidrawindirect;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.api.util.Identifier;
-import net.daporkchop.fp2.gl.attribute.annotation.AAttribute;
-import net.daporkchop.fp2.gl.attribute.annotation.AScalarType;
+import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
+import net.daporkchop.fp2.gl.attribute.annotation.ScalarType;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
@@ -138,11 +138,11 @@ public class ShaderSelectedDrawListMultiDrawElementsIndirect extends DrawListMul
      *
      * @author DaPorkchop_
      */
-    @AAttribute(sort = 0, name = "count", typeScalar = @AScalarType(int.class))
-    @AAttribute(sort = 1, name = "instanceCount", typeScalar = @AScalarType(int.class))
-    @AAttribute(sort = 2, name = "firstIndex", typeScalar = @AScalarType(int.class))
-    @AAttribute(sort = 3, name = "baseVertex", typeScalar = @AScalarType(int.class))
-    @AAttribute(sort = 4, name = "baseInstance", typeScalar = @AScalarType(int.class))
+    @Attribute(sort = 0, name = "count", typeScalar = @ScalarType(int.class))
+    @Attribute(sort = 1, name = "instanceCount", typeScalar = @ScalarType(int.class))
+    @Attribute(sort = 2, name = "firstIndex", typeScalar = @ScalarType(int.class))
+    @Attribute(sort = 3, name = "baseVertex", typeScalar = @ScalarType(int.class))
+    @Attribute(sort = 4, name = "baseInstance", typeScalar = @ScalarType(int.class))
     public interface Command {
         @AttributeSetter
         Command count(int count);

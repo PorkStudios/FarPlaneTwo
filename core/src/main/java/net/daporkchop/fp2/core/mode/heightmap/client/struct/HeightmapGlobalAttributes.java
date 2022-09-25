@@ -19,15 +19,15 @@
 
 package net.daporkchop.fp2.core.mode.heightmap.client.struct;
 
-import net.daporkchop.fp2.gl.attribute.annotation.AAttribute;
-import net.daporkchop.fp2.gl.attribute.annotation.AScalarType;
-import net.daporkchop.fp2.gl.attribute.annotation.AVectorType;
+import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
+import net.daporkchop.fp2.gl.attribute.annotation.ScalarType;
+import net.daporkchop.fp2.gl.attribute.annotation.VectorType;
 import net.daporkchop.fp2.gl.attribute.annotation.AttributeSetter;
 
 /**
  * @author DaPorkchop_
  */
-@AAttribute(name = "tilePos", typeVector = @AVectorType(components = 3, componentType = @AScalarType(int.class)))
+@Attribute(name = "tilePos", typeVector = @VectorType(components = 3, componentType = @ScalarType(int.class)))
 public interface HeightmapGlobalAttributes {
     @AttributeSetter
     HeightmapGlobalAttributes tilePos(int x, int z, int level);

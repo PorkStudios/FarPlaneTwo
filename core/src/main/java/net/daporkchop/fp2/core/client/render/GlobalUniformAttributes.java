@@ -19,10 +19,10 @@
 
 package net.daporkchop.fp2.core.client.render;
 
-import net.daporkchop.fp2.gl.attribute.annotation.AAttribute;
-import net.daporkchop.fp2.gl.attribute.annotation.AMatrixType;
-import net.daporkchop.fp2.gl.attribute.annotation.AScalarType;
-import net.daporkchop.fp2.gl.attribute.annotation.AVectorType;
+import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
+import net.daporkchop.fp2.gl.attribute.annotation.MatrixType;
+import net.daporkchop.fp2.gl.attribute.annotation.ScalarType;
+import net.daporkchop.fp2.gl.attribute.annotation.VectorType;
 import net.daporkchop.fp2.gl.attribute.annotation.ArrayLength;
 import net.daporkchop.fp2.gl.attribute.annotation.AttributeSetter;
 
@@ -30,18 +30,18 @@ import net.daporkchop.fp2.gl.attribute.annotation.AttributeSetter;
  * @author DaPorkchop_
  */
 //camera
-@AAttribute(name = "modelViewProjectionMatrix", typeMatrix = @AMatrixType(cols = 4, rows = 4, componentType = @AScalarType(float.class)))
-@AAttribute(name = "positionFloor", typeVector = @AVectorType(components = 3, componentType = @AScalarType(int.class)))
-@AAttribute(name = "positionFrac", typeVector = @AVectorType(components = 3, componentType = @AScalarType(float.class)))
+@Attribute(name = "modelViewProjectionMatrix", typeMatrix = @MatrixType(cols = 4, rows = 4, componentType = @ScalarType(float.class)))
+@Attribute(name = "positionFloor", typeVector = @VectorType(components = 3, componentType = @ScalarType(int.class)))
+@Attribute(name = "positionFrac", typeVector = @VectorType(components = 3, componentType = @ScalarType(float.class)))
 //fog
-@AAttribute(name = "fogColor", typeVector = @AVectorType(components = 4, componentType = @AScalarType(float.class)))
-@AAttribute(name = "fogMode", typeScalar = @AScalarType(int.class))
-@AAttribute(name = "fogDensity", typeScalar = @AScalarType(float.class))
-@AAttribute(name = "fogStart", typeScalar = @AScalarType(float.class))
-@AAttribute(name = "fogEnd", typeScalar = @AScalarType(float.class))
-@AAttribute(name = "fogScale", typeScalar = @AScalarType(float.class))
+@Attribute(name = "fogColor", typeVector = @VectorType(components = 4, componentType = @ScalarType(float.class)))
+@Attribute(name = "fogMode", typeScalar = @ScalarType(int.class))
+@Attribute(name = "fogDensity", typeScalar = @ScalarType(float.class))
+@Attribute(name = "fogStart", typeScalar = @ScalarType(float.class))
+@Attribute(name = "fogEnd", typeScalar = @ScalarType(float.class))
+@Attribute(name = "fogScale", typeScalar = @ScalarType(float.class))
 //misc. GL state
-@AAttribute(name = "alphaRefCutout", typeScalar = @AScalarType(float.class))
+@Attribute(name = "alphaRefCutout", typeScalar = @ScalarType(float.class))
 public interface GlobalUniformAttributes {
     //
     // camera

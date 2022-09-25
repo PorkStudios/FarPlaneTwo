@@ -30,23 +30,16 @@ import java.lang.annotation.Target;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({})
-public @interface AMatrixType {
+public @interface VectorType {
     /**
-     * The number of matrix rows. Must be in range [1,4]
+     * The number of vector components. Must be in range [1,4]
      *
-     * @return the matrix' row count
+     * @return the vector's width
      */
-    @Positive int rows();
+    @Positive int components();
 
     /**
-     * The number of matrix columns. Must be in range [1,4]
-     *
-     * @return the matrix' column count
+     * @return the vector's component type
      */
-    @Positive int cols();
-
-    /**
-     * @return the matrix' component type
-     */
-    AScalarType componentType();
+    ScalarType componentType();
 }

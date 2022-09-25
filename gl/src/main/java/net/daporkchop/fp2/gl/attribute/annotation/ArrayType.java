@@ -30,7 +30,7 @@ import java.lang.annotation.Target;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({})
-public @interface AArrayType {
+public @interface ArrayType {
     /**
      * The number of dimensions in the array type. At least one value must be given.
      * <p>
@@ -49,7 +49,7 @@ public @interface AArrayType {
      *
      * @return the vector component type
      */
-    AVectorType[] componentTypeVector() default {};
+    VectorType[] componentTypeVector() default {};
 
     /**
      * If non-empty, the array type's component type is set to the matrix type.
@@ -60,7 +60,7 @@ public @interface AArrayType {
      *
      * @return the matrix component type
      */
-    AMatrixType[] componentTypeMatrix() default {};
+    MatrixType[] componentTypeMatrix() default {};
 
     /**
      * If non-empty, the array type's component type is set to the scalar type.
@@ -71,5 +71,5 @@ public @interface AArrayType {
      *
      * @return the scalar component type
      */
-    AScalarType[] componentTypeScalar() default {};
+    ScalarType[] componentTypeScalar() default {};
 }

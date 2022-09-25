@@ -19,8 +19,8 @@
 
 package net.daporkchop.fp2.gl.attribute.annotation;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Inherited;
+import net.daporkchop.lib.common.annotation.param.Positive;
+
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
@@ -29,8 +29,24 @@ import java.lang.annotation.Target;
  * @author DaPorkchop_
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.TYPE})
-@Inherited
-public @interface AAttributes {
-    AAttribute[] value();
+@Target({})
+public @interface MatrixType {
+    /**
+     * The number of matrix rows. Must be in range [1,4]
+     *
+     * @return the matrix' row count
+     */
+    @Positive int rows();
+
+    /**
+     * The number of matrix columns. Must be in range [1,4]
+     *
+     * @return the matrix' column count
+     */
+    @Positive int cols();
+
+    /**
+     * @return the matrix' component type
+     */
+    ScalarType componentType();
 }

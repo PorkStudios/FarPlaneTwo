@@ -20,10 +20,10 @@
 package net.daporkchop.fp2.core.client;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.annotation.AArrayType;
-import net.daporkchop.fp2.gl.attribute.annotation.AAttribute;
-import net.daporkchop.fp2.gl.attribute.annotation.AScalarType;
-import net.daporkchop.fp2.gl.attribute.annotation.AVectorType;
+import net.daporkchop.fp2.gl.attribute.annotation.ArrayType;
+import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
+import net.daporkchop.fp2.gl.attribute.annotation.ScalarType;
+import net.daporkchop.fp2.gl.attribute.annotation.VectorType;
 import net.daporkchop.fp2.gl.attribute.annotation.ArrayIndex;
 import net.daporkchop.fp2.gl.attribute.annotation.ArrayLength;
 import net.daporkchop.fp2.gl.attribute.annotation.AttributeSetter;
@@ -66,10 +66,10 @@ public interface IFrustum {
     /**
      * @author DaPorkchop_
      */
-    @AAttribute(name = "clippingPlaneCount", typeScalar = @AScalarType(value = int.class, interpret = @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED)))
-    @AAttribute(name = "clippingPlanes", typeArray = @AArrayType(length = ClippingPlanes.PLANES_MAX,
-            componentTypeVector = @AVectorType(components = 4,
-                    componentType = @AScalarType(float.class))))
+    @Attribute(name = "clippingPlaneCount", typeScalar = @ScalarType(value = int.class, interpret = @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED)))
+    @Attribute(name = "clippingPlanes", typeArray = @ArrayType(length = ClippingPlanes.PLANES_MAX,
+            componentTypeVector = @VectorType(components = 4,
+                    componentType = @ScalarType(float.class))))
     interface ClippingPlanes {
         int PLANES_MAX = 10;
 

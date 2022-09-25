@@ -28,7 +28,7 @@ import java.lang.annotation.Target;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({})
-public @interface AScalarType {
+public @interface ScalarType {
     Class<?> value();
 
     ScalarConvert[] interpret() default {};

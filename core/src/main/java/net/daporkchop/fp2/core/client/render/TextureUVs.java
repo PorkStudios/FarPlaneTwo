@@ -29,9 +29,9 @@ import net.daporkchop.fp2.core.event.AbstractReloadEvent;
 import net.daporkchop.fp2.core.util.Direction;
 import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
-import net.daporkchop.fp2.gl.attribute.annotation.AAttribute;
-import net.daporkchop.fp2.gl.attribute.annotation.AScalarType;
-import net.daporkchop.fp2.gl.attribute.annotation.AVectorType;
+import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
+import net.daporkchop.fp2.gl.attribute.annotation.ScalarType;
+import net.daporkchop.fp2.gl.attribute.annotation.VectorType;
 import net.daporkchop.fp2.gl.attribute.annotation.AttributeSetter;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarConvert;
 
@@ -71,7 +71,7 @@ public interface TextureUVs {
     /**
      * @author DaPorkchop_
      */
-    @AAttribute(name = "texQuadList", typeVector = @AVectorType(components = 2, componentType = @AScalarType(value = int.class, interpret = @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED))))
+    @Attribute(name = "texQuadList", typeVector = @VectorType(components = 2, componentType = @ScalarType(value = int.class, interpret = @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED))))
     interface QuadList {
         @AttributeSetter
         QuadList texQuadList(int texQuadListFirst, int texQuadListLast);
@@ -80,8 +80,8 @@ public interface TextureUVs {
     /**
      * @author DaPorkchop_
      */
-    @AAttribute(name = "texQuadList", typeVector = @AVectorType(components = 2, componentType = @AScalarType(value = int.class, interpret = @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED))))
-    @AAttribute(name = "tint", typeScalar = @AScalarType(float.class))
+    @Attribute(name = "texQuadList", typeVector = @VectorType(components = 2, componentType = @ScalarType(value = int.class, interpret = @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED))))
+    @Attribute(name = "tint", typeScalar = @ScalarType(float.class))
     interface PackedBakedQuad {
         @AttributeSetter
         PackedBakedQuad texQuadCoord(float s, float t, float p, float q);

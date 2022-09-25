@@ -28,10 +28,10 @@ import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.attribute.AttributeWriter;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
-import net.daporkchop.fp2.gl.attribute.annotation.AArrayType;
-import net.daporkchop.fp2.gl.attribute.annotation.AAttribute;
-import net.daporkchop.fp2.gl.attribute.annotation.AScalarType;
-import net.daporkchop.fp2.gl.attribute.annotation.AVectorType;
+import net.daporkchop.fp2.gl.attribute.annotation.ArrayType;
+import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
+import net.daporkchop.fp2.gl.attribute.annotation.ScalarType;
+import net.daporkchop.fp2.gl.attribute.annotation.VectorType;
 import net.daporkchop.fp2.gl.attribute.annotation.ArrayIndex;
 import net.daporkchop.fp2.gl.attribute.annotation.ArrayLength;
 import net.daporkchop.fp2.gl.attribute.annotation.AttributeSetter;
@@ -41,7 +41,6 @@ import net.daporkchop.fp2.gl.attribute.annotation.ScalarTransform;
 import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureWriter2D;
-import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormat;
 import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatChannelRange;
 import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatChannelType;
 import net.daporkchop.fp2.gl.command.CommandBuffer;
@@ -375,16 +374,16 @@ public class TestLWJGL2 {
         }
     }
 
-    @AAttribute(name = "scale",
-            typeVector = @AVectorType(components = 2,
-                    componentType = @AScalarType(value = byte.class,
+    @Attribute(name = "scale",
+            typeVector = @VectorType(components = 2,
+                    componentType = @ScalarType(value = byte.class,
                             interpret = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true))))
-    @AAttribute(name = "floatsAsVector",
-            typeVector = @AVectorType(components = 3, componentType = @AScalarType(float.class)))
-    @AAttribute(name = "vec2Array",
-            typeArray = @AArrayType(length = 4,
-                    componentTypeVector = @AVectorType(components = 2,
-                            componentType = @AScalarType(value = byte.class,
+    @Attribute(name = "floatsAsVector",
+            typeVector = @VectorType(components = 3, componentType = @ScalarType(float.class)))
+    @Attribute(name = "vec2Array",
+            typeArray = @ArrayType(length = 4,
+                    componentTypeVector = @VectorType(components = 2,
+                            componentType = @ScalarType(value = byte.class,
                                     interpret = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = false)))))
     public interface UniformAttribs {
         @AttributeSetter("scale")
@@ -406,20 +405,20 @@ public class TestLWJGL2 {
         UniformAttribs vec2Array(@ArrayIndex int index, byte @ArrayLength(2) [] bytes);
     }
 
-    @AAttribute(name = "colorFactor",
-            typeVector = @AVectorType(components = 3, componentType = @AScalarType(float.class)))
+    @Attribute(name = "colorFactor",
+            typeVector = @VectorType(components = 3, componentType = @ScalarType(float.class)))
     public interface UniformArrayAttribs {
         @AttributeSetter
         UniformArrayAttribs colorFactor(float colorFactorR, float colorFactorG, float colorFactorB);
     }
 
-    @AAttribute(name = "offset",
-            typeVector = @AVectorType(components = 2,
-                    componentType = @AScalarType(value = byte.class,
+    @Attribute(name = "offset",
+            typeVector = @VectorType(components = 2,
+                    componentType = @ScalarType(value = byte.class,
                             interpret = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = false))))
-    @AAttribute(name = "color",
-            typeVector = @AVectorType(components = 4,
-                    componentType = @AScalarType(value = byte.class,
+    @Attribute(name = "color",
+            typeVector = @VectorType(components = 4,
+                    componentType = @ScalarType(value = byte.class,
                             interpret = {
                                     @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED),
                                     @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true)
@@ -432,17 +431,17 @@ public class TestLWJGL2 {
         GlobalAttribs color(@ScalarTransform(expand = @ScalarExpand(ScalarExpand.Type.INT_ARGB8_TO_BYTE_VECTOR_RGBA)) int color);
     }
 
-    @AAttribute(name = "pos",
-            typeVector = @AVectorType(components = 2,
-                    componentType = @AScalarType(value = byte.class,
+    @Attribute(name = "pos",
+            typeVector = @VectorType(components = 2,
+                    componentType = @ScalarType(value = byte.class,
                             interpret = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = false))))
     public interface LocalAttribs {
         @AttributeSetter
         LocalAttribs pos(int posX, int posY);
     }
 
-    @AAttribute(name = "selectable",
-            typeScalar = @AScalarType(int.class))
+    @Attribute(name = "selectable",
+            typeScalar = @ScalarType(int.class))
     public interface UniformSelectionAttribs {
         @AttributeSetter
         UniformSelectionAttribs selectable(int selectable);

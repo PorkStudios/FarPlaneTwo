@@ -19,9 +19,9 @@
 
 package net.daporkchop.fp2.core.mode.heightmap.client.struct;
 
-import net.daporkchop.fp2.gl.attribute.annotation.AAttribute;
-import net.daporkchop.fp2.gl.attribute.annotation.AScalarType;
-import net.daporkchop.fp2.gl.attribute.annotation.AVectorType;
+import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
+import net.daporkchop.fp2.gl.attribute.annotation.ScalarType;
+import net.daporkchop.fp2.gl.attribute.annotation.VectorType;
 import net.daporkchop.fp2.gl.attribute.annotation.AttributeSetter;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarConvert;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarExpand;
@@ -30,18 +30,18 @@ import net.daporkchop.fp2.gl.attribute.annotation.ScalarTransform;
 /**
  * @author DaPorkchop_
  */
-@AAttribute(name = "state", typeScalar = @AScalarType(int.class))
-@AAttribute(name = "light", typeVector = @AVectorType(components = 2, componentType = @AScalarType(value = byte.class, interpret = {
+@Attribute(name = "state", typeScalar = @ScalarType(int.class))
+@Attribute(name = "light", typeVector = @VectorType(components = 2, componentType = @ScalarType(value = byte.class, interpret = {
         @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED),
         @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true)
 })))
-@AAttribute(name = "color", typeVector = @AVectorType(components = 4, componentType = @AScalarType(value = byte.class, interpret = {
+@Attribute(name = "color", typeVector = @VectorType(components = 4, componentType = @ScalarType(value = byte.class, interpret = {
         @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED),
         @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true)
 })))
-@AAttribute(name = "posHoriz", typeVector = @AVectorType(components = 3, componentType = @AScalarType(value = byte.class, interpret = @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED))))
-@AAttribute(name = "heightInt", typeScalar = @AScalarType(int.class))
-@AAttribute(name = "heightFrac", typeScalar = @AScalarType(value = byte.class, interpret = {
+@Attribute(name = "posHoriz", typeVector = @VectorType(components = 3, componentType = @ScalarType(value = byte.class, interpret = @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED))))
+@Attribute(name = "heightInt", typeScalar = @ScalarType(int.class))
+@Attribute(name = "heightFrac", typeScalar = @ScalarType(value = byte.class, interpret = {
         @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED),
         @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = false)
 }))

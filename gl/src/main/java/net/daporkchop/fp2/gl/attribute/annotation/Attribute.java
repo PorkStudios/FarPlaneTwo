@@ -32,8 +32,8 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.TYPE })
 @Inherited
-@Repeatable(AAttributes.class)
-public @interface AAttribute {
+@Repeatable(Attributes.class)
+public @interface Attribute {
     String name();
 
     int sort() default 0;
@@ -47,7 +47,7 @@ public @interface AAttribute {
      *
      * @return the array component type
      */
-    AArrayType[] typeArray() default {};
+    ArrayType[] typeArray() default {};
 
     /**
      * If non-empty, the attribute's component type is set to the vector type.
@@ -58,7 +58,7 @@ public @interface AAttribute {
      *
      * @return the vector component type
      */
-    AVectorType[] typeVector() default {};
+    VectorType[] typeVector() default {};
 
     /**
      * If non-empty, the attribute's component type is set to the matrix type.
@@ -69,7 +69,7 @@ public @interface AAttribute {
      *
      * @return the matrix component type
      */
-    AMatrixType[] typeMatrix() default {};
+    MatrixType[] typeMatrix() default {};
 
     /**
      * If non-empty, the attribute's component type is set to the scalar type.
@@ -80,5 +80,5 @@ public @interface AAttribute {
      *
      * @return the scalar component type
      */
-    AScalarType[] typeScalar() default {};
+    ScalarType[] typeScalar() default {};
 }

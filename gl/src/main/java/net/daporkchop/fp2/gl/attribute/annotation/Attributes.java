@@ -19,8 +19,8 @@
 
 package net.daporkchop.fp2.gl.attribute.annotation;
 
-import net.daporkchop.lib.common.annotation.param.Positive;
-
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
@@ -29,17 +29,8 @@ import java.lang.annotation.Target;
  * @author DaPorkchop_
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({})
-public @interface AVectorType {
-    /**
-     * The number of vector components. Must be in range [1,4]
-     *
-     * @return the vector's width
-     */
-    @Positive int components();
-
-    /**
-     * @return the vector's component type
-     */
-    AScalarType componentType();
+@Target({ ElementType.TYPE})
+@Inherited
+public @interface Attributes {
+    Attribute[] value();
 }

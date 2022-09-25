@@ -22,12 +22,12 @@ package net.daporkchop.fp2.gl.opengl.attribute.struct.attribute;
 import com.google.common.collect.ImmutableMap;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.gl.attribute.annotation.AArrayType;
-import net.daporkchop.fp2.gl.attribute.annotation.AAttribute;
-import net.daporkchop.fp2.gl.attribute.annotation.AAttributes;
-import net.daporkchop.fp2.gl.attribute.annotation.AMatrixType;
-import net.daporkchop.fp2.gl.attribute.annotation.AScalarType;
-import net.daporkchop.fp2.gl.attribute.annotation.AVectorType;
+import net.daporkchop.fp2.gl.attribute.annotation.ArrayType;
+import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
+import net.daporkchop.fp2.gl.attribute.annotation.Attributes;
+import net.daporkchop.fp2.gl.attribute.annotation.MatrixType;
+import net.daporkchop.fp2.gl.attribute.annotation.ScalarType;
+import net.daporkchop.fp2.gl.attribute.annotation.VectorType;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarConvert;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.basic.BasicArrayAttributeType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.basic.BasicMatrixAttributeType;
@@ -52,52 +52,52 @@ public class StructPropertyFactory {
         checkArg(struct.isInterface(), "struct type %s must be an interface", struct.getTypeName());
         checkArg(struct.getInterfaces().length == 0, "struct type %s may not extend any interfaces", struct.getTypeName());
 
-        AAttribute[] attributes = null;
+        Attribute[] attributes = null;
         {
-            AAttributes annotation = struct.getAnnotation(AAttributes.class);
+            Attributes annotation = struct.getAnnotation(Attributes.class);
             if (annotation != null) {
                 attributes = annotation.value();
             }
         }
         if (attributes == null) {
-            AAttribute annotation = struct.getAnnotation(AAttribute.class);
+            Attribute annotation = struct.getAnnotation(Attribute.class);
             if (annotation != null) {
-                attributes = new AAttribute[]{ annotation };
+                attributes = new Attribute[]{ annotation };
             }
         }
         checkArg(attributes != null, "struct type %s has no attribute annotations", struct.getTypeName());
 
         //sort attributes by their sort key
-        Arrays.sort(attributes, Comparator.comparingInt(AAttribute::sort));
+        Arrays.sort(attributes, Comparator.comparingInt(Attribute::sort));
 
         ImmutableMap.Builder<String, AttributeType> propertiesBuilder = ImmutableMap.builder();
-        for (AAttribute attribute : attributes) {
+        for (Attribute attribute : attributes) {
             propertiesBuilder.put(attribute.name(), of(attribute));
         }
 
         return new BasicAttributeType(struct.getName(), uncheckedCast(propertiesBuilder.build().entrySet().toArray(new Map.Entry[0])));
     }
 
-    private static AttributeType of(@NonNull AAttribute attribute) {
+    private static AttributeType of(@NonNull Attribute attribute) {
         //determine the attribute type
         int declaredAttributes = 0;
 
-        AArrayType[] typeArray = attribute.typeArray();
+        ArrayType[] typeArray = attribute.typeArray();
         checkArg(typeArray.length <= 1, "more than one array attribute may not be declared");
         if (typeArray.length == 1) {
             declaredAttributes++;
         }
-        AVectorType[] typeVector = attribute.typeVector();
+        VectorType[] typeVector = attribute.typeVector();
         checkArg(typeVector.length <= 1, "more than one vector attribute may not be declared");
         if (typeVector.length == 1) {
             declaredAttributes++;
         }
-        AMatrixType[] typeMatrix = attribute.typeMatrix();
+        MatrixType[] typeMatrix = attribute.typeMatrix();
         checkArg(typeMatrix.length <= 1, "more than one matrix attribute may not be declared");
         if (typeMatrix.length == 1) {
             declaredAttributes++;
         }
-        AScalarType[] typeScalar = attribute.typeScalar();
+        ScalarType[] typeScalar = attribute.typeScalar();
         checkArg(typeScalar.length <= 1, "more than one scalar attribute may not be declared");
         if (typeScalar.length == 1) {
             declaredAttributes++;
@@ -117,21 +117,21 @@ public class StructPropertyFactory {
         }
     }
 
-    private static AttributeType.Elements of(@NonNull AArrayType type) {
+    private static AttributeType.Elements of(@NonNull ArrayType type) {
         //determine the component type
         int declaredComponentTypes = 0;
 
-        AVectorType[] typeVector = type.componentTypeVector();
+        VectorType[] typeVector = type.componentTypeVector();
         checkArg(typeVector.length <= 1, "more than one vector component type may not be declared");
         if (typeVector.length == 1) {
             declaredComponentTypes++;
         }
-        AMatrixType[] typeMatrix = type.componentTypeMatrix();
+        MatrixType[] typeMatrix = type.componentTypeMatrix();
         checkArg(typeMatrix.length <= 1, "more than one matrix component type may not be declared");
         if (typeMatrix.length == 1) {
             declaredComponentTypes++;
         }
-        AScalarType[] typeScalar = type.componentTypeScalar();
+        ScalarType[] typeScalar = type.componentTypeScalar();
         checkArg(typeScalar.length <= 1, "more than one scalar component type may not be declared");
         if (typeScalar.length == 1) {
             declaredComponentTypes++;
@@ -164,14 +164,14 @@ public class StructPropertyFactory {
         return arrayType;
     }
 
-    private static AttributeType.Components of(@NonNull AVectorType type) {
+    private static AttributeType.Components of(@NonNull VectorType type) {
         int components = type.components();
         checkArg(components >= 1 && components <= 4, "illegal vector component count: %d", components);
 
         return new BasicVectorAttributeType(of(type.componentType()), components);
     }
 
-    private static AttributeType.Components of(@NonNull AMatrixType type) {
+    private static AttributeType.Components of(@NonNull MatrixType type) {
         int cols = type.cols();
         checkArg(cols >= 2 && cols <= 4, "illegal vector column count: %d", cols);
 
@@ -181,7 +181,7 @@ public class StructPropertyFactory {
         return new BasicMatrixAttributeType(of(type.componentType()), cols, rows);
     }
 
-    private static AttributeType.Components of(@NonNull AScalarType type) {
+    private static AttributeType.Components of(@NonNull ScalarType type) {
         ComponentType logicalStorageType;
         Class<?> rawLogicalStorageType = type.value();
         checkArg(rawLogicalStorageType.isPrimitive(), "scalar type value must be a primitive class!");

@@ -24,9 +24,8 @@ import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
-import net.daporkchop.fp2.gl.attribute.annotation.AAttribute;
-import net.daporkchop.fp2.gl.attribute.annotation.AScalarType;
-import net.daporkchop.fp2.gl.attribute.annotation.AttributeSetter;
+import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
+import net.daporkchop.fp2.gl.attribute.annotation.ScalarType;
 import net.daporkchop.fp2.gl.draw.list.DrawCommandArrays;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
@@ -138,10 +137,10 @@ public class ShaderSelectedDrawListMultiDrawArraysIndirect extends DrawListMulti
      *
      * @author DaPorkchop_
      */
-    @AAttribute(name = "count", typeScalar = @AScalarType(int.class))
-    @AAttribute(name = "instanceCount", typeScalar = @AScalarType(int.class))
-    @AAttribute(name = "first", typeScalar = @AScalarType(int.class))
-    @AAttribute(name = "baseInstance", typeScalar = @AScalarType(int.class))
+    @Attribute(name = "count", typeScalar = @ScalarType(int.class))
+    @Attribute(name = "instanceCount", typeScalar = @ScalarType(int.class))
+    @Attribute(name = "first", typeScalar = @ScalarType(int.class))
+    @Attribute(name = "baseInstance", typeScalar = @ScalarType(int.class))
     public interface Command {
     }
 }
