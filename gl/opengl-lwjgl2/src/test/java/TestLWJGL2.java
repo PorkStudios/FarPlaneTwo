@@ -209,10 +209,10 @@ public class TestLWJGL2 {
         AttributeBuffer<LocalAttribs> localBuffer_2_out = localFormat.createBuffer(BufferUsage.STREAM_COPY);
 
         try (AttributeWriter<LocalAttribs> writer = localFormat.createWriter()) {
-            writer.next().pos(16, 16);
-            writer.next().pos(16, 32);
-            writer.next().pos(32, 32);
-            writer.next().pos(32, 16);
+            writer.append().pos(16, 16);
+            writer.append().pos(16, 32);
+            writer.append().pos(32, 32);
+            writer.append().pos(32, 16);
 
             localBuffer_1.set(0, writer);
             localBuffer_2_in.setContentsFrom(localBuffer_1);
@@ -234,7 +234,7 @@ public class TestLWJGL2 {
         try (AttributeWriter<GlobalAttribs> writer = globalFormat.createWriter()) {
             for (int i = 0, color = -1, x = 0; x < 2; x++) {
                 for (int y = 0; y < 2; y++, color = 0xFF << (i << 3), i++) {
-                    writer.next()
+                    writer.append()
                             .offset(x * 32, y * 32)
                             .color(0xFF000000 | color);
                 }
@@ -244,30 +244,30 @@ public class TestLWJGL2 {
 
         AttributeBuffer<UniformArrayAttribs> uniformArrayBuffer = uniformArrayFormat.createBuffer(BufferUsage.STATIC_DRAW);
         try (AttributeWriter<UniformArrayAttribs> writer = uniformArrayFormat.createWriter()) {
-            writer.next().colorFactor(0.5f, 1.0f, 1.0f);
-            writer.next().colorFactor(1.0f, 0.5f, 1.0f);
-            writer.next().colorFactor(1.0f, 1.0f, 0.5f);
+            writer.append().colorFactor(0.5f, 1.0f, 1.0f);
+            writer.append().colorFactor(1.0f, 0.5f, 1.0f);
+            writer.append().colorFactor(1.0f, 1.0f, 0.5f);
 
             uniformArrayBuffer.set(writer);
         }
 
         AttributeBuffer<UniformAttribs> uniformBuffer0 = uniformFormat.createBuffer(BufferUsage.STATIC_DRAW);
         try (AttributeWriter<UniformAttribs> writer = uniformFormat.createWriter()) {
-            writer.next().scale((byte) 32, (byte) 32);
+            writer.append().scale((byte) 32, (byte) 32);
 
             uniformBuffer0.set(writer);
         }
 
         AttributeBuffer<UniformAttribs> uniformBuffer1 = uniformFormat.createBuffer(BufferUsage.STATIC_DRAW);
         try (AttributeWriter<UniformAttribs> writer = uniformFormat.createWriter()) {
-            writer.next().scale((byte) -128, (byte) -128);
+            writer.append().scale((byte) -128, (byte) -128);
 
             uniformBuffer1.set(writer);
         }
 
         AttributeBuffer<UniformAttribs> uniformBuffer2 = uniformFormat.createBuffer(BufferUsage.STATIC_DRAW);
         try (AttributeWriter<UniformAttribs> writer = uniformFormat.createWriter()) {
-            writer.next().scale((byte) -64, (byte) 32);
+            writer.append().scale((byte) -64, (byte) 32);
 
             uniformBuffer2.set(writer);
         }
@@ -361,7 +361,7 @@ public class TestLWJGL2 {
                 .build()) {
             while (!Display.isCloseRequested()) {
                 try (AttributeWriter<UniformSelectionAttribs> writer = selectionUniformFormat.createWriter()) {
-                    writer.next().selectable(ThreadLocalRandom.current().nextInt() & 1);
+                    writer.append().selectable(ThreadLocalRandom.current().nextInt() & 1);
 
                     selectionUniformBuffer.set(writer);
                 }

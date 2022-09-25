@@ -38,12 +38,33 @@ public interface AttributeWriter<S> extends CloseableResource {
     int size();
 
     /**
-     * @return a {@link S} instance for struct data to be written to
+     * @return the writer's current position
      */
-    S next();
+    int position();
+
+    /**
+     * @return the {@link S} instance at the current position
+     */
+    S current();
 
     /**
      * @return a {@link S} instance for struct data to be written to
      */
-    S nextFromCopy();
+    S append();
+
+    /**
+     * Copies the attribute values at the given source index to the given destination index.
+     *
+     * @param src the source index
+     * @param dst the destination index
+     */
+    AttributeWriter<S> copy(int src, int dst);
+
+    /**
+     * Copies the attribute values at the given source index to the given destination index.
+     *
+     * @param src the source index
+     * @param dst the destination index
+     */
+    AttributeWriter<S> copy(int src, int dst, int length);
 }

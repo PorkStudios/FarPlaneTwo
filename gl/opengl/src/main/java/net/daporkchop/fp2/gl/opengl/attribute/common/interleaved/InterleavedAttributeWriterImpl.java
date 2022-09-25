@@ -24,6 +24,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.AttributeWriter;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
+import net.daporkchop.lib.unsafe.PUnsafe;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
@@ -40,7 +41,7 @@ public abstract class InterleavedAttributeWriterImpl<F extends InterleavedAttrib
     protected long baseAddr;
     protected final long stride;
 
-    protected int index;
+    protected int index = -1;
     protected int capacity;
 
     public InterleavedAttributeWriterImpl(@NonNull F format) {
@@ -60,27 +61,25 @@ public abstract class InterleavedAttributeWriterImpl<F extends InterleavedAttrib
 
     @Override
     public int size() {
-        return this.index;
+        return this.index + 1;
     }
 
     @Override
-    public S next() {
-        if (this.index + 1 == this.capacity) { //grow buffer if needed
-            this.resize(this.capacity << 1);
-        }
+    public int position() {
+        return this.index + 1; //currently the writer is unable to seek, so this is the same as size()
+    }
 
-        this.index++;
+    @Override
+    public S current() {
         return uncheckedCast(this);
     }
 
     @Override
-    public S nextFromCopy() {
-        if (this.index + 1 == this.capacity) { //grow buffer if needed
+    public S append() {
+        if (++this.index == this.capacity) { //grow buffer if needed
             this.resize(this.capacity << 1);
         }
 
-        this.index++;
-        this.structFormat.copy(null, this.baseAddr + (this.index - 1) * this.stride, null, this.baseAddr + this.index * this.stride);
         return uncheckedCast(this);
     }
 
@@ -89,5 +88,23 @@ public abstract class InterleavedAttributeWriterImpl<F extends InterleavedAttrib
 
         this.capacity = capacity;
         this.baseAddr = this.gl.directMemoryAllocator().realloc(this.baseAddr, capacity * this.stride);
+    }
+
+    @Override
+    public AttributeWriter<S> copy(int src, int dst) {
+        checkIndex(this.capacity, src);
+        checkIndex(this.capacity, dst);
+
+        this.structFormat.copy(null, this.baseAddr + src * this.stride, null, this.baseAddr + dst * this.stride);
+        return this;
+    }
+
+    @Override
+    public AttributeWriter<S> copy(int src, int dst, int length) {
+        checkRangeLen(this.capacity, src, length);
+        checkRangeLen(this.capacity, dst, length);
+
+        PUnsafe.copyMemory(this.baseAddr + src * this.stride, this.baseAddr + dst * this.stride, length * this.stride);
+        return this;
     }
 }
