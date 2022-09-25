@@ -20,10 +20,8 @@
 package net.daporkchop.fp2.core.client.render;
 
 import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import net.daporkchop.fp2.api.event.ReturningEvent;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
@@ -31,11 +29,11 @@ import net.daporkchop.fp2.core.event.AbstractReloadEvent;
 import net.daporkchop.fp2.core.util.Direction;
 import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
-import net.daporkchop.fp2.gl.attribute.annotation.ArrayTransform;
-import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
-import net.daporkchop.fp2.gl.attribute.annotation.FieldsAsArrayAttribute;
+import net.daporkchop.fp2.gl.attribute.annotation.AAttribute;
+import net.daporkchop.fp2.gl.attribute.annotation.AScalarType;
+import net.daporkchop.fp2.gl.attribute.annotation.AVectorType;
+import net.daporkchop.fp2.gl.attribute.annotation.AttributeSetter;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarConvert;
-import net.daporkchop.fp2.gl.attribute.annotation.ScalarTransform;
 
 import java.util.List;
 
@@ -73,35 +71,23 @@ public interface TextureUVs {
     /**
      * @author DaPorkchop_
      */
-    @RequiredArgsConstructor
-    @EqualsAndHashCode
-    final class QuadList {
-        @FieldsAsArrayAttribute(
-                attribute = @Attribute(name = "texQuadList"),
-                names = { "texQuadListFirst", "texQuadListLast" },
-                scalarType = @ScalarTransform(interpret = @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED)),
-                transform = @ArrayTransform(ArrayTransform.Type.TO_VECTOR))
-        public final int texQuadListFirst;
-        public final int texQuadListLast;
+    @AAttribute(name = "texQuadList", typeVector = @AVectorType(components = 2, componentType = @AScalarType(value = int.class, interpret = @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED))))
+    interface QuadList {
+        @AttributeSetter
+        QuadList texQuadList(int texQuadListFirst, int texQuadListLast);
     }
 
     /**
      * @author DaPorkchop_
      */
-    @RequiredArgsConstructor
-    @EqualsAndHashCode
-    final class PackedBakedQuad {
-        @FieldsAsArrayAttribute(
-                attribute = @Attribute(name = "texQuadCoord"),
-                names = { "texQuadCoordS", "texQuadCoordT", "texQuadCoordP", "texQuadCoordQ" },
-                transform = @ArrayTransform(ArrayTransform.Type.TO_VECTOR))
-        public final float texQuadCoordS;
-        public final float texQuadCoordT;
-        public final float texQuadCoordP;
-        public final float texQuadCoordQ;
+    @AAttribute(name = "texQuadList", typeVector = @AVectorType(components = 2, componentType = @AScalarType(value = int.class, interpret = @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED))))
+    @AAttribute(name = "tint", typeScalar = @AScalarType(float.class))
+    interface PackedBakedQuad {
+        @AttributeSetter
+        PackedBakedQuad texQuadCoord(float s, float t, float p, float q);
 
-        @Attribute
-        public final float texQuadTint;
+        @AttributeSetter
+        PackedBakedQuad texQuadTint(float tint);
     }
 
     /**

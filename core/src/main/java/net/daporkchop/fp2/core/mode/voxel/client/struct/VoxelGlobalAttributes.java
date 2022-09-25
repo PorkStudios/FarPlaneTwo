@@ -15,29 +15,20 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.voxel.client.struct;
 
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
-import net.daporkchop.fp2.gl.attribute.annotation.ArrayTransform;
-import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
-import net.daporkchop.fp2.gl.attribute.annotation.FieldsAsArrayAttribute;
+import net.daporkchop.fp2.gl.attribute.annotation.AAttribute;
+import net.daporkchop.fp2.gl.attribute.annotation.AScalarType;
+import net.daporkchop.fp2.gl.attribute.annotation.AVectorType;
+import net.daporkchop.fp2.gl.attribute.annotation.AttributeSetter;
 
 /**
  * @author DaPorkchop_
  */
-@AllArgsConstructor
-@NoArgsConstructor
-public class VoxelGlobalAttributes {
-    @FieldsAsArrayAttribute(
-            attribute = @Attribute(name = "tilePos"),
-            names = { "tilePosX", "tilePosY", "tilePosZ", "tilePosLevel" },
-            transform = @ArrayTransform(ArrayTransform.Type.TO_VECTOR))
-    public int tilePosX;
-    public int tilePosY;
-    public int tilePosZ;
-    public int tilePosLevel;
+@AAttribute(name = "tilePos", typeVector = @AVectorType(components = 4, componentType = @AScalarType(int.class)))
+public interface VoxelGlobalAttributes {
+    @AttributeSetter
+    VoxelGlobalAttributes tilePos(int x, int y, int z, int level);
 }

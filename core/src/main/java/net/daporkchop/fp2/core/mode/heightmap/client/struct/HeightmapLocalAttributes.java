@@ -19,11 +19,10 @@
 
 package net.daporkchop.fp2.core.mode.heightmap.client.struct;
 
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
-import net.daporkchop.fp2.gl.attribute.annotation.ArrayTransform;
-import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
-import net.daporkchop.fp2.gl.attribute.annotation.FieldsAsArrayAttribute;
+import net.daporkchop.fp2.gl.attribute.annotation.AAttribute;
+import net.daporkchop.fp2.gl.attribute.annotation.AScalarType;
+import net.daporkchop.fp2.gl.attribute.annotation.AVectorType;
+import net.daporkchop.fp2.gl.attribute.annotation.AttributeSetter;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarConvert;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarExpand;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarTransform;
@@ -31,45 +30,40 @@ import net.daporkchop.fp2.gl.attribute.annotation.ScalarTransform;
 /**
  * @author DaPorkchop_
  */
-@AllArgsConstructor
-@NoArgsConstructor
-public class HeightmapLocalAttributes {
-    @Attribute
-    public int state;
+@AAttribute(name = "state", typeScalar = @AScalarType(int.class))
+@AAttribute(name = "light", typeVector = @AVectorType(components = 2, componentType = @AScalarType(value = byte.class, interpret = {
+        @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED),
+        @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true)
+})))
+@AAttribute(name = "color", typeVector = @AVectorType(components = 4, componentType = @AScalarType(value = byte.class, interpret = {
+        @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED),
+        @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true)
+})))
+@AAttribute(name = "posHoriz", typeVector = @AVectorType(components = 3, componentType = @AScalarType(value = byte.class, interpret = @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED))))
+@AAttribute(name = "heightInt", typeScalar = @AScalarType(int.class))
+@AAttribute(name = "heightFrac", typeScalar = @AScalarType(value = byte.class, interpret = {
+        @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED),
+        @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = false)
+}))
+public interface HeightmapLocalAttributes {
+    @AttributeSetter
+    HeightmapLocalAttributes state(int state);
 
-    @FieldsAsArrayAttribute(
-            attribute = @Attribute(name = "light"),
-            names = { "lightBlock", "lightSky" },
-            scalarType = @ScalarTransform(interpret = {
-                    @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED),
-                    @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true)
-            }),
-            transform = @ArrayTransform(ArrayTransform.Type.TO_VECTOR))
-    public byte lightBlock;
-    public byte lightSky;
+    @AttributeSetter
+    HeightmapLocalAttributes light(int block, int sky);
 
-    @Attribute
-    @ScalarTransform(expand = @ScalarExpand(
-            value = ScalarExpand.Type.INT_ARGB8_TO_BYTE_VECTOR_RGBA, alpha = false,
-            thenConvert = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true)))
-    public int color;
+    @AttributeSetter
+    HeightmapLocalAttributes color(@ScalarTransform(expand = @ScalarExpand(ScalarExpand.Type.INT_ARGB8_TO_BYTE_VECTOR_RGBA)) int argb8);
 
-    @FieldsAsArrayAttribute(
-            attribute = @Attribute(name = "posHoriz"),
-            names = { "posHorizX", "posHorizZ" },
-            scalarType = @ScalarTransform(interpret = @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED)),
-            transform = @ArrayTransform(ArrayTransform.Type.TO_VECTOR))
-    public byte posHorizX;
-    public byte posHorizZ;
+    @AttributeSetter
+    HeightmapLocalAttributes color(int r, int g, int b, int a);
 
-    @Attribute
-    @ScalarTransform(interpret = @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED))
-    public int heightInt;
+    @AttributeSetter
+    HeightmapLocalAttributes posHoriz(int x, int z);
 
-    @Attribute
-    @ScalarTransform(interpret = {
-            @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED),
-            @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = false)
-    })
-    public byte heightFrac;
+    @AttributeSetter
+    HeightmapLocalAttributes heightInt(int heightInt);
+
+    @AttributeSetter
+    HeightmapLocalAttributes heightFrac(int heightFrac);
 }

@@ -20,11 +20,14 @@
 package net.daporkchop.fp2.core.client;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.annotation.ArrayTransform;
-import net.daporkchop.fp2.gl.attribute.annotation.ArrayType;
-import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
+import net.daporkchop.fp2.gl.attribute.annotation.AArrayType;
+import net.daporkchop.fp2.gl.attribute.annotation.AAttribute;
+import net.daporkchop.fp2.gl.attribute.annotation.AScalarType;
+import net.daporkchop.fp2.gl.attribute.annotation.AVectorType;
+import net.daporkchop.fp2.gl.attribute.annotation.ArrayIndex;
+import net.daporkchop.fp2.gl.attribute.annotation.ArrayLength;
+import net.daporkchop.fp2.gl.attribute.annotation.AttributeSetter;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarConvert;
-import net.daporkchop.fp2.gl.attribute.annotation.ScalarTransform;
 
 /**
  * A view frustum which can check for intersection with objects.
@@ -63,34 +66,47 @@ public interface IFrustum {
     /**
      * @author DaPorkchop_
      */
-    final class ClippingPlanes {
-        public static final int PLANES_MAX = 10;
+    @AAttribute(name = "clippingPlaneCount", typeScalar = @AScalarType(value = int.class, interpret = @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED)))
+    @AAttribute(name = "clippingPlanes", typeArray = @AArrayType(length = ClippingPlanes.PLANES_MAX,
+            componentTypeVector = @AVectorType(components = 4,
+                    componentType = @AScalarType(float.class))))
+    interface ClippingPlanes {
+        int PLANES_MAX = 10;
 
-        @Attribute
-        @ScalarTransform(interpret = @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED))
-        public int clippingPlaneCount = 0;
+        @AttributeSetter
+        ClippingPlanes clippingPlaneCount(int clippingPlaneCount);
 
-        @Attribute
-        public final float @ArrayType(length = PLANES_MAX * 4, transform = @ArrayTransform(value = ArrayTransform.Type.TO_VECTOR_ARRAY, vectorComponents = 4)) [] clippingPlanes = new float[PLANES_MAX * 4];
+        @AttributeSetter
+        ClippingPlanes clippingPlanes(float @ArrayLength(PLANES_MAX * 4) [] clippingPlanes);
 
-        public ClippingPlanes put(float x, float y, float z, float w) {
-            assert this.clippingPlaneCount < PLANES_MAX : this.clippingPlaneCount;
+        @AttributeSetter
+        ClippingPlanes clippingPlanes(@ArrayIndex int planeIndex, float x, float y, float z, float w);
 
-            this.clippingPlanes[this.clippingPlaneCount * 4 + 0] = x;
-            this.clippingPlanes[this.clippingPlaneCount * 4 + 1] = y;
-            this.clippingPlanes[this.clippingPlaneCount * 4 + 2] = z;
-            this.clippingPlanes[this.clippingPlaneCount * 4 + 3] = w;
-            this.clippingPlaneCount++;
+        @AttributeSetter
+        ClippingPlanes clippingPlanes(@ArrayIndex int planeIndex, float @ArrayLength(4) [] plane);
+
+        default ClippingPlanes put(float x, float y, float z, float w) {
+            //assert this.clippingPlaneCount < PLANES_MAX : this.clippingPlaneCount;
+
+            int clippingPlaneCount = -1; //TODO: this.clippingPlaneCount();
+            if (true) {
+                throw new UnsupportedOperationException();
+            }
+            this.clippingPlanes(clippingPlaneCount, x, y, z, w);
+            this.clippingPlaneCount(clippingPlaneCount + 1);
 
             return this;
         }
 
-        public ClippingPlanes put(@NonNull float[] plane) {
-            assert this.clippingPlaneCount < PLANES_MAX : this.clippingPlaneCount;
-            assert plane.length == 4 : plane.length;
+        default ClippingPlanes put(@NonNull float[] plane) {
+            //assert this.clippingPlaneCount < PLANES_MAX : this.clippingPlaneCount;
 
-            System.arraycopy(plane, 0, this.clippingPlanes, this.clippingPlaneCount * 4, 4);
-            this.clippingPlaneCount++;
+            int clippingPlaneCount = -1; //TODO: this.clippingPlaneCount();
+            if (true) {
+                throw new UnsupportedOperationException();
+            }
+            this.clippingPlanes(clippingPlaneCount, plane);
+            this.clippingPlaneCount(clippingPlaneCount + 1);
 
             return this;
         }
