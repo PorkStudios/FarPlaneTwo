@@ -24,6 +24,7 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.StructLayout;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.ComponentType;
 import org.objectweb.asm.MethodVisitor;
 
+import java.util.BitSet;
 import java.util.function.IntConsumer;
 
 /**
@@ -36,14 +37,35 @@ public interface StructMethod {
      * @author DaPorkchop_
      */
     interface Setter extends StructMethod {
-        <M extends StructLayout.Member<M, C>, C extends StructLayout.Component> void forEachComponent(@NonNull MethodVisitor mv, int lvtIndexAllocator, @NonNull M containingMember, @NonNull ComponentCallback<C> callback);
+        <M extends StructLayout.Member<M, C>, C extends StructLayout.Component> void visit(@NonNull MethodVisitor mv, int lvtIndexAllocator, @NonNull M rootMember, @NonNull Callback<M, C> callback);
+
+        /**
+         * @author DaPorkchop_
+         */
+        interface Callback<M extends StructLayout.Member<M, C>, C extends StructLayout.Component> {
+            void visitComponentFixed(int lvtIndexAllocator, @NonNull M parent, int localComponentIndex, @NonNull C component, @NonNull ComponentType inputComponentType, @NonNull LoaderCallback componentValueLoader);
+
+            void visitComponentIndexed(int lvtIndexAllocator, @NonNull M parent, @NonNull BitSet possibleLocalComponentIndices, @NonNull LoaderCallback localComponentIndexLoader, @NonNull ComponentType inputComponentType, @NonNull LoaderCallback componentValueLoader);
+
+            void visitChildFixed(int lvtIndexAllocator, @NonNull M parent, int localChildIndex, @NonNull M child, @NonNull ChildCallback<M, C> childCallback);
+
+            void visitChildIndexed(int lvtIndexAllocator, @NonNull M parent, @NonNull BitSet possibleLocalChildIndices, @NonNull LoaderCallback localChildIndexLoader, @NonNull ChildCallback<M, C> childCallback);
+        }
 
         /**
          * @author DaPorkchop_
          */
         @FunctionalInterface
-        interface ComponentCallback<C extends StructLayout.Component> {
-            void withComponent(int lvtIndexAllocator, @NonNull C component, @NonNull ComponentType inputComponentType, @NonNull IntConsumer loadComponentFromArgs);
+        interface ChildCallback<M extends StructLayout.Member<M, C>, C extends StructLayout.Component> {
+            void visitChild(int lvtIndexAllocator, @NonNull Callback<M, C> next);
+        }
+
+        /**
+         * @author DaPorkchop_
+         */
+        @FunctionalInterface
+        interface LoaderCallback {
+            void load(int lvtIndexAllocator);
         }
     }
 }

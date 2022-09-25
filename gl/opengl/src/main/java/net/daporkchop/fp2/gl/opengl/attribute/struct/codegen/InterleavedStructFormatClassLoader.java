@@ -28,6 +28,7 @@ import net.daporkchop.fp2.gl.opengl.attribute.common.AttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttributeWriterImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.ComponentType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.InterleavedStructLayout;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.LayoutComponentStorage;
@@ -39,6 +40,8 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.signature.SignatureWriter;
 
 import java.lang.reflect.Method;
+import java.util.BitSet;
+import java.util.OptionalLong;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.objectweb.asm.Opcodes.*;
@@ -296,17 +299,7 @@ public class InterleavedStructFormatClassLoader<S> extends StructFormatClassLoad
             mv.visitInsn(LADD);
             mv.visitVarInsn(LSTORE, addrLvtIndex);
 
-            ((StructMethod.Setter) structMethod).forEachComponent(mv, lvtIndex, this.layout.member(),
-                    (lvtIndexAllocator, component, inputComponentType, loadComponentFromArgs) -> {
-                        mv.visitInsn(ACONST_NULL);
-                        mv.visitVarInsn(LLOAD, addrLvtIndex);
-                        mv.visitLdcInsn(component.offset());
-                        mv.visitInsn(LADD);
-
-                        loadComponentFromArgs.accept(lvtIndexAllocator); //load input component
-                        component.storage().input2physical(mv, lvtIndexAllocator, inputComponentType);
-                        component.storage().physicalStorageType().unsafePut(mv);
-                    });
+            ((StructMethod.Setter) structMethod).visit(mv, lvtIndex, this.layout.member(), this.visitStructMethod(mv, addrLvtIndex, 0L));
 
             mv.visitVarInsn(ALOAD, 0);
             mv.visitInsn(ARETURN);
@@ -316,5 +309,73 @@ public class InterleavedStructFormatClassLoader<S> extends StructFormatClassLoad
         }
 
         return this.finish(writer, structName + ' ' + className);
+    }
+
+    protected StructMethod.Setter.Callback<InterleavedStructLayout.Member, InterleavedStructLayout.Component> visitStructMethod(@NonNull MethodVisitor mv, int addrLvtIndex, long offsetOffset) {
+        return new StructMethod.Setter.Callback<InterleavedStructLayout.Member, InterleavedStructLayout.Component>() {
+            @Override
+            public void visitComponentFixed(int lvtIndexAllocator, @NonNull InterleavedStructLayout.Member parent, int localComponentIndex, @NonNull InterleavedStructLayout.Component component, @NonNull ComponentType inputComponentType, @NonNull StructMethod.Setter.LoaderCallback componentValueLoader) {
+                mv.visitInsn(ACONST_NULL);
+                mv.visitVarInsn(LLOAD, addrLvtIndex);
+                mv.visitLdcInsn(component.offset() - offsetOffset);
+                mv.visitInsn(LADD);
+
+                componentValueLoader.load(lvtIndexAllocator); //load input component
+                component.storage().input2physical(mv, lvtIndexAllocator, inputComponentType);
+                component.storage().physicalStorageType().unsafePut(mv);
+            }
+
+            @Override
+            public void visitComponentIndexed(int lvtIndexAllocator, @NonNull InterleavedStructLayout.Member parent, @NonNull BitSet possibleLocalComponentIndices, @NonNull StructMethod.Setter.LoaderCallback localComponentIndexLoader, @NonNull ComponentType inputComponentType, @NonNull StructMethod.Setter.LoaderCallback componentValueLoader) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public void visitChildFixed(int lvtIndexAllocator, @NonNull InterleavedStructLayout.Member parent, int localChildIndex, @NonNull InterleavedStructLayout.Member child, @NonNull StructMethod.Setter.ChildCallback<InterleavedStructLayout.Member, InterleavedStructLayout.Component> childCallback) {
+                childCallback.visitChild(lvtIndexAllocator, this);
+            }
+
+            @Override
+            public void visitChildIndexed(int lvtIndexAllocator, @NonNull InterleavedStructLayout.Member parent, @NonNull BitSet possibleLocalChildIndices, @NonNull StructMethod.Setter.LoaderCallback localChildIndexLoader, @NonNull StructMethod.Setter.ChildCallback<InterleavedStructLayout.Member, InterleavedStructLayout.Component> childCallback) {
+                int lowestPossibleChildIndex = possibleLocalChildIndices.nextSetBit(0);
+                int highestPossibleChildIndex = possibleLocalChildIndices.length() - 1;
+
+                long lowestOffset = InterleavedStructFormatClassLoader.this.computeOffset(parent.child(lowestPossibleChildIndex));
+                long highestOffset = InterleavedStructFormatClassLoader.this.computeOffset(parent.child(highestPossibleChildIndex));
+                checkState(lowestOffset < highestOffset, "child offsets are out-of-order");
+                long stride = (highestOffset - lowestOffset) / (highestPossibleChildIndex - lowestPossibleChildIndex);
+                for (int i = lowestPossibleChildIndex; i >= 0; i = possibleLocalChildIndices.nextSetBit(i + 1)) {
+                    checkState(lowestOffset + stride * i == InterleavedStructFormatClassLoader.this.computeOffset(parent.child(i)), "child offsets must have uniform stride");
+                }
+
+                mv.visitVarInsn(LLOAD, addrLvtIndex);
+                mv.visitLdcInsn(lowestOffset);
+                mv.visitInsn(LADD);
+                localChildIndexLoader.load(lvtIndexAllocator);
+                mv.visitInsn(I2L);
+                mv.visitLdcInsn(stride);
+                mv.visitInsn(LMUL);
+                mv.visitInsn(LADD);
+
+                int nextAddrLvtIndex = lvtIndexAllocator++;
+                mv.visitVarInsn(LSTORE, nextAddrLvtIndex);
+
+                childCallback.visitChild(lvtIndexAllocator, InterleavedStructFormatClassLoader.this.visitStructMethod(mv, nextAddrLvtIndex, lowestOffset));
+            }
+        };
+    }
+
+    protected long computeOffset(@NonNull InterleavedStructLayout.Member member) {
+        long offset = Long.MAX_VALUE;
+        for (int i = 0; i < member.children(); i++) {
+            offset = Math.min(offset, this.computeOffset(member.child(i)));
+        }
+
+        for (int i = 0; i < member.components(); i++) {
+            offset = Math.min(offset, member.component(i).offset());
+        }
+
+        checkState(offset != Long.MAX_VALUE, "member has no components!");
+        return offset;
     }
 }
