@@ -130,20 +130,39 @@ public class TestLWJGL2 {
         AttributeFormat<UniformAttribs> uniformFormat = gl.createAttributeFormat(UniformAttribs.class).useFor(AttributeUsage.UNIFORM).build();
         AttributeFormat<UniformArrayAttribs> uniformArrayFormat = gl.createAttributeFormat(UniformArrayAttribs.class).useFor(AttributeUsage.UNIFORM_ARRAY).build();
         AttributeFormat<GlobalAttribs> globalFormat = gl.createAttributeFormat(GlobalAttribs.class).useFor(AttributeUsage.DRAW_GLOBAL).build();
-        TextureFormat2D<TextureAttribs> textureFormat = gl.createTextureFormat2D(TextureAttribs.class).build();
+        TextureFormat2D textureFormat = gl.createTextureFormat2D(gl.createPixelFormat()
+                .rgba()
+                .type(PixelFormatChannelType.FLOATING_POINT)
+                .range(PixelFormatChannelRange.ZERO_TO_ONE)
+                .minBitDepth(8)
+                .build(), "colorFactor").build();
         AttributeFormat<LocalAttribs> localFormat = gl.createAttributeFormat(LocalAttribs.class)
                 .useFor(AttributeUsage.DRAW_LOCAL, AttributeUsage.TRANSFORM_INPUT, AttributeUsage.TRANSFORM_OUTPUT)
                 .build();
         AttributeFormat<UniformSelectionAttribs> selectionUniformFormat = gl.createAttributeFormat(UniformSelectionAttribs.class).useFor(AttributeUsage.UNIFORM).build();
 
-        PixelFormat pixelFormat = gl.createPixelFormat()
-                .rgba()
-                .type(PixelFormatChannelType.FLOATING_POINT)
-                .range(PixelFormatChannelRange.ZERO_TO_ONE)
-                .minBitDepth(8)
-                .build();
+        if (false) { //debug stuff: allocate texture formats so i can read the method bytecode
+            gl.createTextureFormat2D(gl.createPixelFormat()
+                    .rgb()
+                    .type(PixelFormatChannelType.FLOATING_POINT)
+                    .range(PixelFormatChannelRange.NEGATIVE_ONE_TO_ONE)
+                    .minBitDepth(16)
+                    .build(), "colorFactor").build().createWriter(1, 1);
 
-        TextureFormat2D textureFormat = gl.createTextureFormat2D(pixelFormat, "colorFactor").build();
+            gl.createTextureFormat2D(gl.createPixelFormat()
+                    .rgb()
+                    .type(PixelFormatChannelType.INTEGER)
+                    .range(PixelFormatChannelRange.INFINITY)
+                    .minBitDepth(16)
+                    .build(), "colorFactor").build().createWriter(1, 1);
+
+            gl.createTextureFormat2D(gl.createPixelFormat()
+                    .rgb()
+                    .type(PixelFormatChannelType.FLOATING_POINT)
+                    .range(PixelFormatChannelRange.INFINITY)
+                    .minBitDepth(30)
+                    .build(), "colorFactor").build().createWriter(1, 1);
+        }
 
         DrawLayout drawLayout = gl.createDrawLayout()
                 .withUniform(uniformFormat)
@@ -251,12 +270,11 @@ public class TestLWJGL2 {
             uniformBuffer2.set(writer);
         }
 
-        Texture2D<TextureAttribs> texture = textureFormat.createTexture(512, 512, 1);
-        try (TextureWriter2D<TextureAttribs> writer = textureFormat.createWriter(512, 512)) {
+        Texture2D texture = textureFormat.createTexture(512, 512, 1);
+        try (TextureWriter2D writer = textureFormat.createWriter(512, 512)) {
             for (int x = 0; x < 512; x++) {
                 for (int y = 0; y < 512; y++) {
-                    writer.setARGB(x, y, ThreadLocalRandom.current().nextInt() | 0xFF000000);
-                    //TODO: writer.set(x, y, new TextureAttribs(ThreadLocalRandom.current().nextInt() | 0xFF000000));
+                    writer.setNormalizedUnsignedARGB8(x, y, ThreadLocalRandom.current().nextInt() | 0xFF000000);
                 }
             }
 

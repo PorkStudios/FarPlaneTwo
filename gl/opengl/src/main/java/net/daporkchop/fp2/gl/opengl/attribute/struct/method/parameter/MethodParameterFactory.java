@@ -124,7 +124,9 @@ public class MethodParameterFactory {
         for (ScalarExpand expansion : expansions) {
             switch (expansion.value()) {
                 case INT_ARGB8_TO_BYTE_VECTOR_RGBA:
-                    parameter = new IntToARGBExpansionTransformMethodParameter(parameter, expansion.alpha());
+                    parameter = new IntToARGBExpansionTransformMethodParameter(parameter,
+                            expansion.alpha() ? IntToARGBExpansionTransformMethodParameter.UnpackOrder.RGBA : IntToARGBExpansionTransformMethodParameter.UnpackOrder.RGB,
+                            false);
                     break;
                 default:
                     throw new IllegalArgumentException("unknown expansion: " + expansion);

@@ -21,9 +21,6 @@ package net.daporkchop.fp2.gl.opengl.attribute.texture;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.texture.TextureWriter2D;
-import net.daporkchop.lib.unsafe.PUnsafe;
-
-import java.util.concurrent.ThreadLocalRandom;
 
 import static java.lang.Math.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -60,16 +57,4 @@ public abstract class TextureWriter2DImpl extends BaseTextureWriterImpl<TextureF
         //noinspection IntegerMultiplicationImplicitCastToLong
         this.structFormat.copy(struct, null, this.addr + (long) ((y * this.width + x) * this.stride));
     }*/
-
-    @Override
-    public void setUnsignedNormalizedARGB8(int x, int y, int argb) {
-        checkIndex(this.width, x);
-        checkIndex(this.height, y);
-
-        //noinspection IntegerMultiplicationImplicitCastToLong
-        //TODO: this.structFormat.copyFromARGB(argb, null, this.addr + (long) ((y * this.width + x) * this.stride));
-        if (true) {
-            throw new UnsupportedOperationException();
-        }
-    }
 }

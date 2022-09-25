@@ -240,23 +240,18 @@ public class PixelStorageTypes {
                 mv.visitInsn(POP2);
 
                 //TODO: see if this is really necessary
-                if (this.asmType == BYTE_TYPE) {
+                /*if (this.asmType == BYTE_TYPE) {
                     mv.visitInsn(I2B);
                 } else if (this.asmType == SHORT_TYPE) {
                     mv.visitInsn(I2S);
                 } else if (this.asmType == CHAR_TYPE) {
                     mv.visitInsn(I2C);
-                }
+                }*/
 
                 String name = this.asmType.getClassName();
                 mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class),
                         "put" + Character.toUpperCase(name.charAt(0)) + name.substring(1),
                         getMethodDescriptor(VOID_TYPE, getType(Object.class), LONG_TYPE, this.asmType), false);
-
-                if (this.genericType == PixelFormatChannelType.UNSIGNED_INTEGER && this.asmType != INT_TYPE) {
-                    mv.visitLdcInsn((1 << (this.componentSizeBytes << 3)) - 1);
-                    mv.visitInsn(IAND);
-                }
             });
         }
 

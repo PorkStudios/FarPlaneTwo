@@ -26,11 +26,11 @@ package net.daporkchop.fp2.gl.attribute.texture.image;
  */
 public enum PixelFormatChannelRange {
     /**
-     * Values are clamped to fit within the range {@code [-1, 1]}.
+     * Values are clamped to fit within the range {@code [0, 1]}.
      */
     ZERO_TO_ONE,
     /**
-     * Values are clamped to fit within the range {@code [0, 1]}.
+     * Values are clamped to fit within the range {@code [-1, 1]}.
      */
     NEGATIVE_ONE_TO_ONE,
     /**

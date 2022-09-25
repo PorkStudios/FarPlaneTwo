@@ -22,6 +22,7 @@ package net.daporkchop.fp2.gl.attribute.texture;
 /**
  * @author DaPorkchop_
  */
+@SuppressWarnings("unused")
 public interface TextureWriter2D extends BaseTextureWriter {
     @Override
     TextureFormat2D format();
@@ -95,7 +96,7 @@ public interface TextureWriter2D extends BaseTextureWriter {
      * @param y the texel's Y coordinate
      * @param r the new R component value
      */
-    void setUnsignedNormalized8bR(int x, int y, int r);
+    void setNormalizedUnsigned8bR(int x, int y, int r);
 
     /**
      * Sets the texel's R component at the given coordinates to the floating-point value computed by interpreting the given integer as a 16-bit signed integer, and
@@ -123,7 +124,7 @@ public interface TextureWriter2D extends BaseTextureWriter {
      * @param y the texel's Y coordinate
      * @param r the new R component value
      */
-    void setUnsignedNormalized16bR(int x, int y, int r);
+    void setNormalizedUnsigned16bR(int x, int y, int r);
 
     /**
      * Sets the texel's R component at the given coordinates to the floating-point value computed by interpreting the given integer as a 32-bit signed integer, and
@@ -151,7 +152,7 @@ public interface TextureWriter2D extends BaseTextureWriter {
      * @param y the texel's Y coordinate
      * @param r the new R component value
      */
-    void setUnsignedNormalized32bR(int x, int y, int r);
+    void setNormalizedUnsigned32bR(int x, int y, int r);
 
     //
     // G
@@ -222,7 +223,7 @@ public interface TextureWriter2D extends BaseTextureWriter {
      * @param y the texel's Y coordinate
      * @param g the new G component value
      */
-    void setUnsignedNormalized8bG(int x, int y, int g);
+    void setNormalizedUnsigned8bG(int x, int y, int g);
 
     /**
      * Sets the texel's G component at the given coordinates to the floating-point value computed by interpreting the given integer as a 16-bit signed integer, and
@@ -250,7 +251,7 @@ public interface TextureWriter2D extends BaseTextureWriter {
      * @param y the texel's Y coordinate
      * @param g the new G component value
      */
-    void setUnsignedNormalized16bG(int x, int y, int g);
+    void setNormalizedUnsigned16bG(int x, int y, int g);
 
     /**
      * Sets the texel's G component at the given coordinates to the floating-point value computed by interpreting the given integer as a 32-bit signed integer, and
@@ -278,7 +279,7 @@ public interface TextureWriter2D extends BaseTextureWriter {
      * @param y the texel's Y coordinate
      * @param g the new G component value
      */
-    void setUnsignedNormalized32bG(int x, int y, int g);
+    void setNormalizedUnsigned32bG(int x, int y, int g);
 
     //
     // B
@@ -349,7 +350,7 @@ public interface TextureWriter2D extends BaseTextureWriter {
      * @param y the texel's Y coordinate
      * @param b the new B component value
      */
-    void setUnsignedNormalized8bB(int x, int y, int b);
+    void setNormalizedUnsigned8bB(int x, int y, int b);
 
     /**
      * Sets the texel's B component at the given coordinates to the floating-point value computed by interpreting the given integer as a 16-bit signed integer, and
@@ -377,7 +378,7 @@ public interface TextureWriter2D extends BaseTextureWriter {
      * @param y the texel's Y coordinate
      * @param b the new B component value
      */
-    void setUnsignedNormalized16bB(int x, int y, int b);
+    void setNormalizedUnsigned16bB(int x, int y, int b);
 
     /**
      * Sets the texel's B component at the given coordinates to the floating-point value computed by interpreting the given integer as a 32-bit signed integer, and
@@ -405,7 +406,7 @@ public interface TextureWriter2D extends BaseTextureWriter {
      * @param y the texel's Y coordinate
      * @param b the new B component value
      */
-    void setUnsignedNormalized32bB(int x, int y, int b);
+    void setNormalizedUnsigned32bB(int x, int y, int b);
 
     //
     // A
@@ -476,7 +477,7 @@ public interface TextureWriter2D extends BaseTextureWriter {
      * @param y the texel's Y coordinate
      * @param a the new A component value
      */
-    void setUnsignedNormalized8bA(int x, int y, int a);
+    void setNormalizedUnsigned8bA(int x, int y, int a);
 
     /**
      * Sets the texel's A component at the given coordinates to the floating-point value computed by interpreting the given integer as a 16-bit signed integer, and
@@ -504,7 +505,7 @@ public interface TextureWriter2D extends BaseTextureWriter {
      * @param y the texel's Y coordinate
      * @param a the new A component value
      */
-    void setUnsignedNormalized16bA(int x, int y, int a);
+    void setNormalizedUnsigned16bA(int x, int y, int a);
 
     /**
      * Sets the texel's A component at the given coordinates to the floating-point value computed by interpreting the given integer as a 32-bit signed integer, and
@@ -532,7 +533,7 @@ public interface TextureWriter2D extends BaseTextureWriter {
      * @param y the texel's Y coordinate
      * @param a the new A component value
      */
-    void setUnsignedNormalized32bA(int x, int y, int a);
+    void setNormalizedUnsigned32bA(int x, int y, int a);
 
     //
     // R
@@ -623,7 +624,7 @@ public interface TextureWriter2D extends BaseTextureWriter {
      * @param b the new B component value
      * @param a the new A component value
      */
-    void setUnsignedNormalized8bRGBA(int x, int y, int r, int g, int b, int a);
+    void setNormalizedUnsigned8bRGBA(int x, int y, int r, int g, int b, int a);
 
     /**
      * Sets the texel's R, G, B and A components at the given coordinates to the floating-point values computed by interpreting the given integers as 16-bit signed
@@ -659,7 +660,7 @@ public interface TextureWriter2D extends BaseTextureWriter {
      * @param b the new B component value
      * @param a the new A component value
      */
-    void setUnsignedNormalized16bRGBA(int x, int y, int r, int g, int b, int a);
+    void setNormalizedUnsigned16bRGBA(int x, int y, int r, int g, int b, int a);
 
     /**
      * Sets the texel's R, G, B and A components at the given coordinates to the floating-point values computed by interpreting the given integers as 32-bit signed
@@ -695,7 +696,7 @@ public interface TextureWriter2D extends BaseTextureWriter {
      * @param b the new B component value
      * @param a the new A component value
      */
-    void setUnsignedNormalized32bRGBA(int x, int y, int r, int g, int b, int a);
+    void setNormalizedUnsigned32bRGBA(int x, int y, int r, int g, int b, int a);
 
     //
     // ARGB8888
@@ -759,5 +760,5 @@ public interface TextureWriter2D extends BaseTextureWriter {
      * @param y    the texel's Y coordinate
      * @param argb the new R, G, B and A component values, ARGB8888-packed into a single {@code int}
      */
-    void setUnsignedNormalizedARGB8(int x, int y, int argb);
+    void setNormalizedUnsignedARGB8(int x, int y, int argb);
 }
