@@ -59,9 +59,11 @@ public interface IFrustum {
     boolean intersectsBB(double minX, double minY, double minZ, double maxX, double maxY, double maxZ);
 
     /**
-     * @return the clipping planes which define this view frustum
+     * Extracts the clipping planes which define this view frustum and stores them in the given {@link ClippingPlanes} instance.
+     *
+     * @param clippingPlanes the {@link ClippingPlanes} instance to store the clipping planes in
      */
-    ClippingPlanes clippingPlanes();
+    void configureClippingPlanes(@NonNull ClippingPlanes clippingPlanes);
 
     /**
      * @author DaPorkchop_
@@ -79,36 +81,10 @@ public interface IFrustum {
         @AttributeSetter
         ClippingPlanes clippingPlanes(float @ArrayLength(PLANES_MAX * 4) [] clippingPlanes);
 
-        @AttributeSetter
-        ClippingPlanes clippingPlanes(@ArrayIndex int planeIndex, float x, float y, float z, float w);
+        @AttributeSetter("clippingPlanes")
+        ClippingPlanes clippingPlane(@ArrayIndex int planeIndex, float x, float y, float z, float w);
 
-        @AttributeSetter
-        ClippingPlanes clippingPlanes(@ArrayIndex int planeIndex, float @ArrayLength(4) [] plane);
-
-        default ClippingPlanes put(float x, float y, float z, float w) {
-            //assert this.clippingPlaneCount < PLANES_MAX : this.clippingPlaneCount;
-
-            int clippingPlaneCount = -1; //TODO: this.clippingPlaneCount();
-            if (true) {
-                throw new UnsupportedOperationException();
-            }
-            this.clippingPlanes(clippingPlaneCount, x, y, z, w);
-            this.clippingPlaneCount(clippingPlaneCount + 1);
-
-            return this;
-        }
-
-        default ClippingPlanes put(@NonNull float[] plane) {
-            //assert this.clippingPlaneCount < PLANES_MAX : this.clippingPlaneCount;
-
-            int clippingPlaneCount = -1; //TODO: this.clippingPlaneCount();
-            if (true) {
-                throw new UnsupportedOperationException();
-            }
-            this.clippingPlanes(clippingPlaneCount, plane);
-            this.clippingPlaneCount(clippingPlaneCount + 1);
-
-            return this;
-        }
+        @AttributeSetter("clippingPlanes")
+        ClippingPlanes clippingPlane(@ArrayIndex int planeIndex, float @ArrayLength(4) [] plane);
     }
 }

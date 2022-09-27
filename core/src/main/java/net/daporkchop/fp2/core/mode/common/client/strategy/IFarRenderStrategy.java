@@ -20,7 +20,7 @@
 package net.daporkchop.fp2.core.mode.common.client.strategy;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.core.client.render.GlobalUniformAttributes;
+import net.daporkchop.fp2.core.client.render.RenderInfo;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
@@ -71,7 +71,7 @@ public interface IFarRenderStrategy<POS extends IFarPos, T extends IFarTile, BO 
 
     TransformShaderBuilder configureSelectionShader(@NonNull TransformShaderBuilder builder, int level);
 
-    void render(@NonNull IRenderIndex<POS, BO, DB, DC> index, @NonNull GlobalUniformAttributes globalUniformAttributes);
+    void render(@NonNull IRenderIndex<POS, BO, DB, DC> index, @NonNull RenderInfo renderInfo);
 
     @Override
     int refCnt();

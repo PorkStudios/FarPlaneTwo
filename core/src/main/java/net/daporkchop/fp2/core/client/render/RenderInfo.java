@@ -17,27 +17,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.mode.api.client;
+package net.daporkchop.fp2.core.client.render;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.core.client.IFrustum;
-import net.daporkchop.fp2.core.client.render.RenderInfo;
-import net.daporkchop.fp2.core.debug.util.DebugStats;
-import net.daporkchop.lib.common.misc.release.Releasable;
 
 /**
+ * Provides information about the current render state when preparing to render a frame.
+ *
  * @author DaPorkchop_
  */
-public interface IFarRenderer extends Releasable {
-    int LAYER_SOLID = 0;
-    int LAYER_CUTOUT = LAYER_SOLID + 1;
-    int LAYER_TRANSPARENT = LAYER_CUTOUT + 1;
-
-    int LAYERS = LAYER_TRANSPARENT + 1;
-
-    void prepare(@NonNull IFrustum frustum);
-
-    void render(@NonNull RenderInfo renderInfo);
-
-    DebugStats.Renderer stats();
+public interface RenderInfo {
+    /**
+     * Extracts the global uniform attribute values from the current renderer state and stores them in the given {@link GlobalUniformAttributes} instance.
+     *
+     * @param attributes the {@link GlobalUniformAttributes} instance to store the global uniform attribute values in
+     */
+    void configureGlobalUniformAttributes(@NonNull GlobalUniformAttributes attributes);
 }

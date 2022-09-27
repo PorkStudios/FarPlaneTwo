@@ -20,6 +20,7 @@
 package net.daporkchop.fp2.core.client.render;
 
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -34,6 +35,7 @@ import net.daporkchop.fp2.gl.attribute.annotation.ScalarType;
 import net.daporkchop.fp2.gl.attribute.annotation.VectorType;
 import net.daporkchop.fp2.gl.attribute.annotation.AttributeSetter;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarConvert;
+import net.daporkchop.lib.common.annotation.param.NotNegative;
 
 import java.util.List;
 
@@ -58,36 +60,67 @@ public interface TextureUVs {
         }.fire();
     }
 
-    AttributeFormat<QuadList> listsFormat();
+    AttributeFormat<QuadListAttribute> listsFormat();
 
-    AttributeBuffer<QuadList> listsBuffer();
+    AttributeBuffer<QuadListAttribute> listsBuffer();
 
-    AttributeFormat<PackedBakedQuad> quadsFormat();
+    AttributeFormat<PackedBakedQuadAttribute> quadsFormat();
 
-    AttributeBuffer<PackedBakedQuad> quadsBuffer();
+    AttributeBuffer<PackedBakedQuadAttribute> quadsBuffer();
 
     int state2index(int state);
 
     /**
      * @author DaPorkchop_
      */
-    @Attribute(name = "texQuadList", typeVector = @VectorType(components = 2, componentType = @ScalarType(value = int.class, interpret = @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED))))
-    interface QuadList {
-        @AttributeSetter
-        QuadList texQuadList(int texQuadListFirst, int texQuadListLast);
+    @Data
+    final class QuadList {
+        private final @NotNegative int texQuadListFirst;
+        private final @NotNegative int texQuadListLast;
     }
 
     /**
      * @author DaPorkchop_
      */
     @Attribute(name = "texQuadList", typeVector = @VectorType(components = 2, componentType = @ScalarType(value = int.class, interpret = @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED))))
-    @Attribute(name = "tint", typeScalar = @ScalarType(float.class))
-    interface PackedBakedQuad {
+    interface QuadListAttribute {
         @AttributeSetter
-        PackedBakedQuad texQuadCoord(float s, float t, float p, float q);
+        QuadListAttribute texQuadList(int texQuadListFirst, int texQuadListLast);
+
+        default QuadListAttribute copyFrom(QuadList quadList) {
+            return this.texQuadList(quadList.texQuadListFirst(), quadList.texQuadListLast());
+        }
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @Data
+    final class PackedBakedQuad {
+        private final float texQuadCoordS;
+        private final float texQuadCoordT;
+        private final float texQuadCoordP;
+        private final float texQuadCoordQ;
+
+        private final float texQuadTint;
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @Attribute(name = "texQuadCoord", typeVector = @VectorType(components = 2, componentType = @ScalarType(value = int.class, interpret = @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED))))
+    @Attribute(name = "tint", typeScalar = @ScalarType(float.class))
+    interface PackedBakedQuadAttribute {
+        @AttributeSetter
+        PackedBakedQuadAttribute texQuadCoord(float s, float t, float p, float q);
 
         @AttributeSetter
-        PackedBakedQuad texQuadTint(float tint);
+        PackedBakedQuadAttribute texQuadTint(float tint);
+
+        default PackedBakedQuadAttribute copyFrom(PackedBakedQuad quad) {
+            return this.texQuadCoord(quad.texQuadCoordS(), quad.texQuadCoordT(), quad.texQuadCoordP(), quad.texQuadCoordQ())
+                    .texQuadTint(quad.texQuadTint());
+        }
     }
 
     /**

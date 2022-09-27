@@ -15,11 +15,11 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.core.client.renderer.culling;
 
+import lombok.NonNull;
 import net.daporkchop.fp2.core.client.IFrustum;
 import net.minecraft.client.renderer.culling.ClippingHelper;
 import net.minecraft.client.renderer.culling.Frustum;
@@ -52,14 +52,12 @@ public abstract class MixinFrustum implements IFrustum {
     public abstract boolean isBoxInFrustum(double p_78548_1_, double p_78548_3_, double p_78548_5_, double p_78548_7_, double p_78548_9_, double p_78548_11_);
 
     @Override
-    public ClippingPlanes clippingPlanes() {
-        ClippingPlanes clippingPlanes = new ClippingPlanes();
+    public void configureClippingPlanes(@NonNull ClippingPlanes clippingPlanes) {
+        float[][] frustum = this.clippingHelper.frustum;
 
-        //add all planes from the clipping helper to the ClippingPlanes instance
-        for (float[] plane : this.clippingHelper.frustum) {
-            clippingPlanes.put(plane);
+        clippingPlanes.clippingPlaneCount(frustum.length);
+        for (int i = 0; i < frustum.length; i++) {
+            clippingPlanes.clippingPlane(i, frustum[i]);
         }
-
-        return clippingPlanes;
     }
 }

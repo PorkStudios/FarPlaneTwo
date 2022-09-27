@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.heightmap.client;
@@ -95,14 +94,14 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
         }
 
         //write globals
-        output.globals().put(new HeightmapGlobalAttributes(pos.x(), pos.z(), pos.level()));
+        output.globals().append()
+                .tilePos(pos.x(), pos.z(), pos.level());
 
         final int level = pos.level();
         final int blockX = pos.blockX();
         final int blockZ = pos.blockZ();
 
         final HeightmapData data = new HeightmapData();
-        final HeightmapLocalAttributes attributes = new HeightmapLocalAttributes();
 
         final int[] map = new int[HT_VERTS * HT_VERTS * MAX_LAYERS];
         Arrays.fill(map, -1);
@@ -127,7 +126,8 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
                         int x = dx + (((i >> 1) & 1) << HT_SHIFT);
                         int z = dz + ((i & 1) << HT_SHIFT);
 
-                        map[vertexMapIndex(x, z, layer)] = this.writeVertex(blockX, blockZ, level, src, x, z, layer, output.verts(), data, attributes);
+                        this.writeVertex(blockX, blockZ, level, src, x, z, layer, data, output.verts().append());
+                        map[vertexMapIndex(x, z, layer)] = output.verts().position();
                     }
                 }
             }
@@ -194,7 +194,7 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
         }
     }
 
-    private int writeVertex(int baseX, int baseZ, int level, HeightmapTile tile, int x, int z, int layer, AttributeWriter<HeightmapLocalAttributes> out, HeightmapData data, HeightmapLocalAttributes attributes) {
+    private void writeVertex(int baseX, int baseZ, int level, HeightmapTile tile, int x, int z, int layer, HeightmapData data, HeightmapLocalAttributes attributes) {
         baseX += (x & HT_VOXELS) << level;
         baseZ += (z & HT_VOXELS) << level;
 
@@ -203,7 +203,7 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
         final int blockX = baseX + ((x & HT_MASK) << level);
         final int blockZ = baseZ + ((z & HT_MASK) << level);
 
-        attributes.state = this.textureUVs.state2index(data.state);
+        attributes.state(this.textureUVs.state2index(data.state));
 
         int blockLight = data.light & 0xF;
         int skyLight = data.light >> 4;
@@ -211,16 +211,12 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
         //  the upper 4 bits for the regular light level (which is in range [0,15]) results in a float range of [0,15/16]. additionally, we set
         //  the bottom 4 bits to 0b1000. this is equivalent to an offset of 0.5 texels, which prevents blending artifacts when sampling right along
         //  the edge of a texture.
-        attributes.lightBlock = (byte) ((blockLight << 4) | 8);
-        attributes.lightSky = (byte) ((skyLight << 4) | 8);
+        attributes.light((blockLight << 4) | 8, (skyLight << 4) | 8);
 
-        attributes.color = this.levelRenderer.tintFactorForStateInBiomeAtPos(data.state, data.biome, blockX, data.height_int, blockZ);
+        attributes.color(this.levelRenderer.tintFactorForStateInBiomeAtPos(data.state, data.biome, blockX, data.height_int, blockZ));
 
-        attributes.posHorizX = (byte) x;
-        attributes.posHorizZ = (byte) z;
-        attributes.heightInt = data.height_int;
-        attributes.heightFrac = (byte) data.height_frac;
-
-        return out.put(attributes);
+        attributes.posHoriz(x, z)
+                .heightInt(data.height_int)
+                .heightFrac(data.height_frac);
     }
 }
