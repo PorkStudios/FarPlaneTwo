@@ -71,7 +71,7 @@ public abstract class InterleavedAttributeWriterImpl<F extends InterleavedAttrib
 
     @Override
     public S current() {
-        checkState(this.index > 0, "writer is empty!");
+        checkState(this.index >= 0, "writer is empty!");
         return uncheckedCast(this);
     }
 
