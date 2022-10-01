@@ -32,6 +32,7 @@ import net.daporkchop.lib.common.annotation.param.Positive;
 
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static net.daporkchop.lib.common.util.PorkUtil.*;
@@ -79,10 +80,10 @@ public abstract class TextureFormatClassLoader<F extends BaseTextureFormatImpl<F
     protected abstract byte[] generateWriterClass();
 
     @Override
-    protected void registerClassGenerators(@NonNull BiConsumer<String, Supplier<byte[]>> register) {
-        register.accept(this.formatClassName(), this::generateFormatClass);
-        register.accept(this.textureClassName(), this::generateTextureClass);
-        register.accept(this.writerClassName(), this::generateWriterClass);
+    protected void registerClassGenerators(@NonNull BiConsumer<String, Supplier<byte[]>> registerGenerator, @NonNull Consumer<Class<?>> registerClass) {
+        registerGenerator.accept(this.formatClassName(), this::generateFormatClass);
+        registerGenerator.accept(this.textureClassName(), this::generateTextureClass);
+        registerGenerator.accept(this.writerClassName(), this::generateWriterClass);
     }
 
     @SneakyThrows(ExecutionException.class)

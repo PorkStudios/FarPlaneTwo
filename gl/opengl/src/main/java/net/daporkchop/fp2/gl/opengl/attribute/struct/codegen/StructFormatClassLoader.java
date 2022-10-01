@@ -27,6 +27,7 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.StructLayout;
 import net.daporkchop.fp2.gl.opengl.util.codegen.SimpleGeneratingClassLoader;
 
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static net.daporkchop.lib.common.util.PorkUtil.*;
@@ -66,11 +67,15 @@ public abstract class StructFormatClassLoader<S, L extends StructLayout<?, ?>, F
     protected abstract byte[] generateHandleClass();
 
     @Override
-    protected void registerClassGenerators(@NonNull BiConsumer<String, Supplier<byte[]>> register) {
-        register.accept(this.formatClassName(), this::generateFormatClass);
-        register.accept(this.bufferClassName(), this::generateBufferClass);
-        register.accept(this.writerClassName(), this::generateWriterClass);
-        register.accept(this.handleClassName(), this::generateHandleClass);
+    protected void registerClassGenerators(@NonNull BiConsumer<String, Supplier<byte[]>> registerGenerator, @NonNull Consumer<Class<?>> registerClass) {
+        registerGenerator.accept(this.formatClassName(), this::generateFormatClass);
+        registerGenerator.accept(this.bufferClassName(), this::generateBufferClass);
+        registerGenerator.accept(this.writerClassName(), this::generateWriterClass);
+        registerGenerator.accept(this.handleClassName(), this::generateHandleClass);
+
+        //make the struct interface visible from the generated classloader (if it comes from a different classloader than the one which loaded the gl:opengl module,
+        //  it wouldn't be visible to the generated classes)
+        registerClass.accept(this.layout.structInfo().clazz());
     }
 
     public F createFormat() throws Exception {

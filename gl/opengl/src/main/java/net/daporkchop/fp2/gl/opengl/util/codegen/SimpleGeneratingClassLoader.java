@@ -21,10 +21,12 @@ package net.daporkchop.fp2.gl.opengl.util.codegen;
 
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.lib.common.util.PorkUtil;
 
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
@@ -32,21 +34,38 @@ import java.util.function.Supplier;
  */
 public abstract class SimpleGeneratingClassLoader extends GeneratingClassLoader {
     @Getter(lazy = true)
-    private final Map<String, Supplier<byte[]>> classGenerators = this.buildClassGenerators();
+    private final Map<String, Object> entries = this.buildEntries();
 
-    private Map<String, Supplier<byte[]>> buildClassGenerators() {
-        Map<String, Supplier<byte[]>> map = new TreeMap<>();
-        this.registerClassGenerators((name, generator) -> map.put(name.intern(), generator));
+    private Map<String, Object> buildEntries() {
+        Map<String, Object> map = new TreeMap<>();
+        this.registerClassGenerators(
+                (name, generator) -> map.put(name.intern(), generator),
+                clazz -> {
+                    //check to make sure that the class doesn't come from one of this classloader's parents, because if it does there's no need to load it ourselves
+                    for (ClassLoader parent = this.getParent(); parent != null; parent = parent.getParent()) {
+                        if (clazz.getClassLoader() == parent) {
+                            return;
+                        }
+                    }
+
+                    map.put(clazz.getName().intern(), clazz);
+                });
         return map;
     }
 
-    protected abstract void registerClassGenerators(@NonNull BiConsumer<String, Supplier<byte[]>> register);
+    protected abstract void registerClassGenerators(@NonNull BiConsumer<String, Supplier<byte[]>> registerGenerator, @NonNull Consumer<Class<?>> registerClass);
 
     @Override
     protected Class<?> findClass(String name) throws ClassNotFoundException {
-        Supplier<byte[]> generator = this.classGenerators().remove(name);
-        if (generator != null) {
-            return this.defineClass(name, generator.get());
+        Object value = this.entries().remove(name);
+        if (value != null) {
+            if (value instanceof Class) {
+                return (Class<?>) value;
+            } else if (value instanceof Supplier) {
+                return this.defineClass(name, PorkUtil.<Supplier<byte[]>>uncheckedCast(value).get());
+            } else {
+                throw new IllegalArgumentException(PorkUtil.className(value));
+            }
         }
 
         throw new ClassNotFoundException(name);
