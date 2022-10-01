@@ -22,6 +22,7 @@ package net.daporkchop.fp2.gl.opengl.draw.list.arrays.multidrawindirect;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
@@ -137,10 +138,10 @@ public class ShaderSelectedDrawListMultiDrawArraysIndirect extends DrawListMulti
      *
      * @author DaPorkchop_
      */
-    @Attribute(name = "count", typeScalar = @ScalarType(int.class))
-    @Attribute(name = "instanceCount", typeScalar = @ScalarType(int.class))
-    @Attribute(name = "first", typeScalar = @ScalarType(int.class))
-    @Attribute(name = "baseInstance", typeScalar = @ScalarType(int.class))
-    public interface Command {
+    @Attribute(sort = 0, name = "count", typeScalar = @ScalarType(int.class))
+    @Attribute(sort = 1, name = "instanceCount", typeScalar = @ScalarType(int.class))
+    @Attribute(sort = 2, name = "first", typeScalar = @ScalarType(int.class))
+    @Attribute(sort = 3, name = "baseInstance", typeScalar = @ScalarType(int.class))
+    public interface Command extends AttributeStruct {
     }
 }

@@ -30,6 +30,7 @@ import net.daporkchop.fp2.core.event.AbstractReloadEvent;
 import net.daporkchop.fp2.core.util.Direction;
 import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarType;
 import net.daporkchop.fp2.gl.attribute.annotation.VectorType;
@@ -83,7 +84,7 @@ public interface TextureUVs {
      * @author DaPorkchop_
      */
     @Attribute(name = "texQuadList", typeVector = @VectorType(components = 2, componentType = @ScalarType(value = int.class, interpret = @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED))))
-    interface QuadListAttribute {
+    interface QuadListAttribute extends AttributeStruct {
         @AttributeSetter
         QuadListAttribute texQuadList(int texQuadListFirst, int texQuadListLast);
 
@@ -110,7 +111,7 @@ public interface TextureUVs {
      */
     @Attribute(name = "texQuadCoord", typeVector = @VectorType(components = 2, componentType = @ScalarType(value = int.class, interpret = @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED))))
     @Attribute(name = "tint", typeScalar = @ScalarType(float.class))
-    interface PackedBakedQuadAttribute {
+    interface PackedBakedQuadAttribute extends AttributeStruct {
         @AttributeSetter
         PackedBakedQuadAttribute texQuadCoord(float s, float t, float p, float q);
 

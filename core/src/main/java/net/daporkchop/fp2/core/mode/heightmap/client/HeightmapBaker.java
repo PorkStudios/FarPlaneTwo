@@ -95,7 +95,8 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
 
         //write globals
         output.globals().append()
-                .tilePos(pos.x(), pos.z(), pos.level());
+                .tilePos(pos.x(), pos.z(), pos.level())
+                .close();
 
         final int level = pos.level();
         final int blockX = pos.blockX();
@@ -126,7 +127,7 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
                         int x = dx + (((i >> 1) & 1) << HT_SHIFT);
                         int z = dz + ((i & 1) << HT_SHIFT);
 
-                        this.writeVertex(blockX, blockZ, level, src, x, z, layer, data, output.verts().append());
+                        this.writeVertex(blockX, blockZ, level, src, x, z, layer, data, output.verts());
                         map[vertexMapIndex(x, z, layer)] = output.verts().position();
                     }
                 }
@@ -194,7 +195,7 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
         }
     }
 
-    private void writeVertex(int baseX, int baseZ, int level, HeightmapTile tile, int x, int z, int layer, HeightmapData data, HeightmapLocalAttributes attributes) {
+    private void writeVertex(int baseX, int baseZ, int level, HeightmapTile tile, int x, int z, int layer, HeightmapData data, AttributeWriter<HeightmapLocalAttributes> writer) {
         baseX += (x & HT_VOXELS) << level;
         baseZ += (z & HT_VOXELS) << level;
 
@@ -203,20 +204,22 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
         final int blockX = baseX + ((x & HT_MASK) << level);
         final int blockZ = baseZ + ((z & HT_MASK) << level);
 
-        attributes.state(this.textureUVs.state2index(data.state));
+        try (HeightmapLocalAttributes attributes = writer.append()) {
+            attributes.state(this.textureUVs.state2index(data.state));
 
-        int blockLight = data.light & 0xF;
-        int skyLight = data.light >> 4;
-        //sky and block light are one unsigned byte each, and are interpreted as normalized floats. since the lightmap texture is 16x16, using
-        //  the upper 4 bits for the regular light level (which is in range [0,15]) results in a float range of [0,15/16]. additionally, we set
-        //  the bottom 4 bits to 0b1000. this is equivalent to an offset of 0.5 texels, which prevents blending artifacts when sampling right along
-        //  the edge of a texture.
-        attributes.light((blockLight << 4) | 8, (skyLight << 4) | 8);
+            int blockLight = data.light & 0xF;
+            int skyLight = data.light >> 4;
+            //sky and block light are one unsigned byte each, and are interpreted as normalized floats. since the lightmap texture is 16x16, using
+            //  the upper 4 bits for the regular light level (which is in range [0,15]) results in a float range of [0,15/16]. additionally, we set
+            //  the bottom 4 bits to 0b1000. this is equivalent to an offset of 0.5 texels, which prevents blending artifacts when sampling right along
+            //  the edge of a texture.
+            attributes.light((blockLight << 4) | 8, (skyLight << 4) | 8);
 
-        attributes.color(this.levelRenderer.tintFactorForStateInBiomeAtPos(data.state, data.biome, blockX, data.height_int, blockZ));
+            attributes.color(this.levelRenderer.tintFactorForStateInBiomeAtPos(data.state, data.biome, blockX, data.height_int, blockZ));
 
-        attributes.posHoriz(x, z)
-                .heightInt(data.height_int)
-                .heightFrac(data.height_frac);
+            attributes.posHoriz(x, z)
+                    .heightInt(data.height_int)
+                    .heightFrac(data.height_frac);
+        }
     }
 }

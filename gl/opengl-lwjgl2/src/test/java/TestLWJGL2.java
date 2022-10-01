@@ -25,6 +25,7 @@ import net.daporkchop.fp2.common.util.exception.ResourceNotFoundException;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.attribute.AttributeWriter;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
@@ -209,10 +210,10 @@ public class TestLWJGL2 {
         AttributeBuffer<LocalAttribs> localBuffer_2_out = localFormat.createBuffer(BufferUsage.STREAM_COPY);
 
         try (AttributeWriter<LocalAttribs> writer = localFormat.createWriter()) {
-            writer.append().pos(16, 16);
-            writer.append().pos(16, 32);
-            writer.append().pos(32, 32);
-            writer.append().pos(32, 16);
+            writer.append().pos(16, 16).close();
+            writer.append().pos(16, 32).close();
+            writer.append().pos(32, 32).close();
+            writer.append().pos(32, 16).close();
 
             localBuffer_1.set(0, writer);
             localBuffer_2_in.setContentsFrom(localBuffer_1);
@@ -244,30 +245,30 @@ public class TestLWJGL2 {
 
         AttributeBuffer<UniformArrayAttribs> uniformArrayBuffer = uniformArrayFormat.createBuffer(BufferUsage.STATIC_DRAW);
         try (AttributeWriter<UniformArrayAttribs> writer = uniformArrayFormat.createWriter()) {
-            writer.append().colorFactor(0.5f, 1.0f, 1.0f);
-            writer.append().colorFactor(1.0f, 0.5f, 1.0f);
-            writer.append().colorFactor(1.0f, 1.0f, 0.5f);
+            writer.append().colorFactor(0.5f, 1.0f, 1.0f).close();
+            writer.append().colorFactor(1.0f, 0.5f, 1.0f).close();
+            writer.append().colorFactor(1.0f, 1.0f, 0.5f).close();
 
             uniformArrayBuffer.set(writer);
         }
 
         AttributeBuffer<UniformAttribs> uniformBuffer0 = uniformFormat.createBuffer(BufferUsage.STATIC_DRAW);
         try (AttributeWriter<UniformAttribs> writer = uniformFormat.createWriter()) {
-            writer.append().scale((byte) 32, (byte) 32);
+            writer.append().scale((byte) 32, (byte) 32).close();
 
             uniformBuffer0.set(writer);
         }
 
         AttributeBuffer<UniformAttribs> uniformBuffer1 = uniformFormat.createBuffer(BufferUsage.STATIC_DRAW);
         try (AttributeWriter<UniformAttribs> writer = uniformFormat.createWriter()) {
-            writer.append().scale((byte) -128, (byte) -128);
+            writer.append().scale((byte) -128, (byte) -128).close();
 
             uniformBuffer1.set(writer);
         }
 
         AttributeBuffer<UniformAttribs> uniformBuffer2 = uniformFormat.createBuffer(BufferUsage.STATIC_DRAW);
         try (AttributeWriter<UniformAttribs> writer = uniformFormat.createWriter()) {
-            writer.append().scale((byte) -64, (byte) 32);
+            writer.append().scale((byte) -64, (byte) 32).close();
 
             uniformBuffer2.set(writer);
         }
@@ -361,7 +362,7 @@ public class TestLWJGL2 {
                 .build()) {
             while (!Display.isCloseRequested()) {
                 try (AttributeWriter<UniformSelectionAttribs> writer = selectionUniformFormat.createWriter()) {
-                    writer.append().selectable(ThreadLocalRandom.current().nextInt() & 1);
+                    writer.append().selectable(ThreadLocalRandom.current().nextInt() & 1).close();
 
                     selectionUniformBuffer.set(writer);
                 }
@@ -385,7 +386,7 @@ public class TestLWJGL2 {
                     componentTypeVector = @VectorType(components = 2,
                             componentType = @ScalarType(value = byte.class,
                                     interpret = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = false)))))
-    public interface UniformAttribs {
+    public interface UniformAttribs extends AttributeStruct {
         @AttributeSetter("scale")
         UniformAttribs scale(byte scaleX, byte scaleY);
 
@@ -407,7 +408,7 @@ public class TestLWJGL2 {
 
     @Attribute(name = "colorFactor",
             typeVector = @VectorType(components = 3, componentType = @ScalarType(float.class)))
-    public interface UniformArrayAttribs {
+    public interface UniformArrayAttribs extends AttributeStruct {
         @AttributeSetter
         UniformArrayAttribs colorFactor(float colorFactorR, float colorFactorG, float colorFactorB);
     }
@@ -423,7 +424,7 @@ public class TestLWJGL2 {
                                     @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED),
                                     @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true)
                             })))
-    public interface GlobalAttribs {
+    public interface GlobalAttribs extends AttributeStruct {
         @AttributeSetter
         GlobalAttribs offset(int offsetX, int offsetY);
 
@@ -435,14 +436,14 @@ public class TestLWJGL2 {
             typeVector = @VectorType(components = 2,
                     componentType = @ScalarType(value = byte.class,
                             interpret = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = false))))
-    public interface LocalAttribs {
+    public interface LocalAttribs extends AttributeStruct {
         @AttributeSetter
         LocalAttribs pos(int posX, int posY);
     }
 
     @Attribute(name = "selectable",
             typeScalar = @ScalarType(int.class))
-    public interface UniformSelectionAttribs {
+    public interface UniformSelectionAttribs extends AttributeStruct {
         @AttributeSetter
         UniformSelectionAttribs selectable(int selectable);
     }

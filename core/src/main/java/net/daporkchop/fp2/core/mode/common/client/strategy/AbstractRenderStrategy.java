@@ -142,7 +142,9 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
         }
 
         //update uniforms
-        renderInfo.configureGlobalUniformAttributes(this.uniformWriter.current());
+        try (GlobalUniformAttributes globalUniformAttributes = this.uniformWriter.current()) {
+            renderInfo.configureGlobalUniformAttributes(globalUniformAttributes);
+        }
         this.uniformBuffer.set(this.uniformWriter);
         assert this.uniformBuffer.capacity() == 1;
 

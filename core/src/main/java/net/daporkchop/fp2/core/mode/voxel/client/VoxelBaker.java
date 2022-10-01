@@ -109,7 +109,8 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
 
         //write globals
         output.globals().append()
-                .tilePos(pos.x(), pos.y(), pos.z(), pos.level());
+                .tilePos(pos.x(), pos.y(), pos.z(), pos.level())
+                .close();
 
         ArrayAllocator<int[]> alloc = GlobalAllocators.ALLOC_INT.get();
         int[] map = alloc.atLeast(cb(VT_VERTS) * EDGE_COUNT);
@@ -171,7 +172,8 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
         //  the edge of a texture.
         vertices.append()
                 .light((blockLight << 4) | 8, (skyLight << 4) | 8)
-                .pos((x << POS_FRACT_SHIFT) + data.x, (y << POS_FRACT_SHIFT) + data.y, (z << POS_FRACT_SHIFT) + data.z);
+                .pos((x << POS_FRACT_SHIFT) + data.x, (y << POS_FRACT_SHIFT) + data.y, (z << POS_FRACT_SHIFT) + data.z)
+                .close();
 
         boolean first = true;
         EDGES:
@@ -184,13 +186,14 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
             }
 
             if (!first) {
-                vertices.append();
+                vertices.append().close();
                 vertices.copy(vertices.position() - 1, vertices.position());
             }
 
             vertices.current()
                     .state(this.textureUVs.state2index(data.states[edge]))
-                    .color(this.levelRenderer.tintFactorForStateInBiomeAtPos(data.states[edge], data.biome, blockX, blockY, blockZ));
+                    .color(this.levelRenderer.tintFactorForStateInBiomeAtPos(data.states[edge], data.biome, blockX, blockY, blockZ))
+                    .close();
 
             map[baseMapIndex + edge] = vertices.position();
             first = false;

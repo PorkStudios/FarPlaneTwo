@@ -19,6 +19,7 @@
 
 package net.daporkchop.fp2.core.mode.voxel.client.struct;
 
+import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarType;
 import net.daporkchop.fp2.gl.attribute.annotation.VectorType;
@@ -28,7 +29,7 @@ import net.daporkchop.fp2.gl.attribute.annotation.AttributeSetter;
  * @author DaPorkchop_
  */
 @Attribute(name = "tilePos", typeVector = @VectorType(components = 4, componentType = @ScalarType(int.class)))
-public interface VoxelGlobalAttributes {
+public interface VoxelGlobalAttributes extends AttributeStruct {
     @AttributeSetter
     VoxelGlobalAttributes tilePos(int x, int y, int z, int level);
 }

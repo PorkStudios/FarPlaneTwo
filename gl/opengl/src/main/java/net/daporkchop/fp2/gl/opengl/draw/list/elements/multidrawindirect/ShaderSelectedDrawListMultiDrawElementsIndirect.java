@@ -21,6 +21,7 @@ package net.daporkchop.fp2.gl.opengl.draw.list.elements.multidrawindirect;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.api.util.Identifier;
+import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarType;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
@@ -143,7 +144,7 @@ public class ShaderSelectedDrawListMultiDrawElementsIndirect extends DrawListMul
     @Attribute(sort = 2, name = "firstIndex", typeScalar = @ScalarType(int.class))
     @Attribute(sort = 3, name = "baseVertex", typeScalar = @ScalarType(int.class))
     @Attribute(sort = 4, name = "baseInstance", typeScalar = @ScalarType(int.class))
-    public interface Command {
+    public interface Command extends AttributeStruct {
         @AttributeSetter
         Command count(int count);
 

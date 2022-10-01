@@ -83,7 +83,9 @@ public class GPUCulledRenderIndex<POS extends IFarPos, BO extends IBakeOutput, D
         //set clipping planes uniform
         {
             AttributeWriter<IFrustum.ClippingPlanes> writer = this.clippingPlanesUniformWriter();
-            frustum.configureClippingPlanes(writer.current());
+            try (IFrustum.ClippingPlanes clippingPlanes = writer.current()) {
+                frustum.configureClippingPlanes(clippingPlanes);
+            }
 
             this.clippingPlanesUniformBuffer().set(writer);
             assert this.clippingPlanesUniformBuffer.capacity() == 1;

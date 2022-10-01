@@ -19,6 +19,7 @@
 
 package net.daporkchop.fp2.core.client.render;
 
+import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
 import net.daporkchop.fp2.gl.attribute.annotation.MatrixType;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarType;
@@ -42,7 +43,7 @@ import net.daporkchop.fp2.gl.attribute.annotation.AttributeSetter;
 @Attribute(name = "fogScale", typeScalar = @ScalarType(float.class))
 //misc. GL state
 @Attribute(name = "alphaRefCutout", typeScalar = @ScalarType(float.class))
-public interface GlobalUniformAttributes {
+public interface GlobalUniformAttributes extends AttributeStruct {
     //
     // camera
     //

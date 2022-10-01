@@ -148,7 +148,7 @@ public abstract class AbstractTextureUVs extends AbstractReleasable implements T
             for (int i = 0, len = distinctQuadsById.size(); i < len; i++) {
                 List<PackedBakedQuad> quads = distinctQuadsById.get(i);
                 quadIdToList[i] = new QuadList(quadsOut.size(), quadsOut.size() + quads.size());
-                quads.forEach(quad -> quadsOut.append().copyFrom(quad));
+                quads.forEach(quad -> quadsOut.append().copyFrom(quad).close());
             }
 
             this.quadsBuffer().set(quadsOut);
@@ -157,7 +157,7 @@ public abstract class AbstractTextureUVs extends AbstractReleasable implements T
         try (AttributeWriter<QuadListAttribute> listsOut = this.listsFormat().createWriter()) {
             for (int[] faceIds : distinctIndicesById) {
                 for (int i : faceIds) {
-                    listsOut.append().copyFrom(quadIdToList[i]);
+                    listsOut.append().copyFrom(quadIdToList[i]).close();
                 }
             }
 

@@ -20,6 +20,7 @@
 package net.daporkchop.fp2.core.client;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.annotation.ArrayType;
 import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarType;
@@ -72,7 +73,7 @@ public interface IFrustum {
     @Attribute(name = "clippingPlanes", typeArray = @ArrayType(length = ClippingPlanes.PLANES_MAX,
             componentTypeVector = @VectorType(components = 4,
                     componentType = @ScalarType(float.class))))
-    interface ClippingPlanes {
+    interface ClippingPlanes extends AttributeStruct {
         int PLANES_MAX = 10;
 
         @AttributeSetter

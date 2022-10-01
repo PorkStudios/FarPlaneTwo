@@ -17,19 +17,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.mode.heightmap.client.struct;
+package net.daporkchop.fp2.gl.attribute;
 
-import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
-import net.daporkchop.fp2.gl.attribute.annotation.ScalarType;
-import net.daporkchop.fp2.gl.attribute.annotation.VectorType;
-import net.daporkchop.fp2.gl.attribute.annotation.AttributeSetter;
 
 /**
+ * Base interface for all struct types which will declare {@link Attribute attributes}.
+ *
  * @author DaPorkchop_
  */
-@Attribute(name = "tilePos", typeVector = @VectorType(components = 3, componentType = @ScalarType(int.class)))
-public interface HeightmapGlobalAttributes extends AttributeStruct {
-    @AttributeSetter
-    HeightmapGlobalAttributes tilePos(int x, int z, int level);
+public interface AttributeStruct extends AutoCloseable {
+    @Override
+    void close();
 }

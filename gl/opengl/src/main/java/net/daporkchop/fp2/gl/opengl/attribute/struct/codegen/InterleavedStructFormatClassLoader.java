@@ -367,8 +367,17 @@ public class InterleavedStructFormatClassLoader<S> extends StructFormatClassLoad
             mv.visitEnd();
         }
 
+        { //close()
+            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "close", getMethodDescriptor(VOID_TYPE), null, null);
+
+            mv.visitInsn(RETURN);
+
+            mv.visitMaxs(0, 0);
+            mv.visitEnd();
+        }
+
         //implement all interface methods
-        for (Method method : this.layout.structInfo().clazz().getMethods()) {
+        for (Method method : this.layout.structInfo().clazz().getDeclaredMethods()) {
             StructMethod structMethod = StructMethodFactory.createFromMethod((AttributeType.Fields) this.layout.structProperty(), method);
 
             MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, method.getName(), getMethodDescriptor(method), null, null);

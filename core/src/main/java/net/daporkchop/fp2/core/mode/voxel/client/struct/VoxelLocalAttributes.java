@@ -19,6 +19,7 @@
 
 package net.daporkchop.fp2.core.mode.voxel.client.struct;
 
+import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarType;
 import net.daporkchop.fp2.gl.attribute.annotation.VectorType;
@@ -43,7 +44,7 @@ import net.daporkchop.fp2.gl.attribute.annotation.ScalarTransform;
         @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED),
         @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = false)
 })))
-public interface VoxelLocalAttributes {
+public interface VoxelLocalAttributes extends AttributeStruct {
     @AttributeSetter
     VoxelLocalAttributes state(int state);
 

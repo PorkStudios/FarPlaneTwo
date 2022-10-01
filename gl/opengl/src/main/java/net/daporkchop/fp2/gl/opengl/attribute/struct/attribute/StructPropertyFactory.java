@@ -22,6 +22,7 @@ package net.daporkchop.fp2.gl.opengl.attribute.struct.attribute;
 import com.google.common.collect.ImmutableMap;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.annotation.ArrayType;
 import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
 import net.daporkchop.fp2.gl.attribute.annotation.Attributes;
@@ -50,7 +51,10 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 public class StructPropertyFactory {
     public static AttributeType struct(@NonNull Class<?> struct) {
         checkArg(struct.isInterface(), "struct type %s must be an interface", struct.getTypeName());
-        checkArg(struct.getInterfaces().length == 0, "struct type %s may not extend any interfaces", struct.getTypeName());
+        {
+            Class<?>[] interfaces = struct.getInterfaces();
+            checkArg(interfaces.length == 1 && interfaces[0] == AttributeStruct.class, "struct type %s must extend %s, and may not extend any other interface", struct.getTypeName(), AttributeStruct.class.getTypeName());
+        }
 
         Attribute[] attributes = null;
         {
