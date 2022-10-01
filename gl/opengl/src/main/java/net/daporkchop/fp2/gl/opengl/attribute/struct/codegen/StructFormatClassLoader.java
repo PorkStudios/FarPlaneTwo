@@ -59,11 +59,18 @@ public abstract class StructFormatClassLoader<S, L extends StructLayout<?, ?>, F
 
     protected abstract byte[] generateWriterClass();
 
+    protected String handleClassName() {
+        return "AttributeHandleImpl";
+    }
+
+    protected abstract byte[] generateHandleClass();
+
     @Override
     protected void registerClassGenerators(@NonNull BiConsumer<String, Supplier<byte[]>> register) {
         register.accept(this.formatClassName(), this::generateFormatClass);
         register.accept(this.bufferClassName(), this::generateBufferClass);
         register.accept(this.writerClassName(), this::generateWriterClass);
+        register.accept(this.handleClassName(), this::generateHandleClass);
     }
 
     public F createFormat() throws Exception {

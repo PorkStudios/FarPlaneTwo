@@ -35,13 +35,17 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.LayoutComponentStora
 import net.daporkchop.fp2.gl.opengl.attribute.struct.method.StructMethod;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.method.StructMethodFactory;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.AttributeType;
+import net.daporkchop.lib.common.util.PValidation;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.signature.SignatureWriter;
 
 import java.lang.reflect.Method;
 import java.util.BitSet;
 import java.util.OptionalLong;
+import java.util.stream.Stream;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.objectweb.asm.Opcodes.*;
@@ -277,6 +281,92 @@ public class InterleavedStructFormatClassLoader<S> extends StructFormatClassLoad
             mv.visitEnd();
         }
 
+        { //current()
+            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "current", getMethodDescriptor(getType(Object.class)), null, null);
+
+            //super.current();
+            mv.visitVarInsn(ALOAD, 0);
+            mv.visitMethodInsn(INVOKESPECIAL, superclassName, "current", getMethodDescriptor(getType(Object.class)), false);
+            mv.visitInsn(POP);
+
+            mv.visitTypeInsn(NEW, this.handleClassName());
+            mv.visitInsn(DUP);
+
+            mv.visitVarInsn(ALOAD, 0);
+            mv.visitFieldInsn(GETFIELD, className, "baseAddr", LONG_TYPE.getDescriptor());
+            mv.visitVarInsn(ALOAD, 0);
+            mv.visitFieldInsn(GETFIELD, className, "index", INT_TYPE.getDescriptor());
+            mv.visitInsn(I2L);
+            mv.visitLdcInsn(this.layout.stride());
+            mv.visitInsn(LMUL);
+            mv.visitInsn(LADD);
+            mv.visitMethodInsn(INVOKESPECIAL, this.handleClassName(), "<init>", getMethodDescriptor(VOID_TYPE, LONG_TYPE), false);
+
+            mv.visitInsn(ARETURN);
+
+            mv.visitMaxs(0, 0);
+            mv.visitEnd();
+        }
+
+        { //append()
+            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "append", getMethodDescriptor(getType(Object.class)), null, null);
+
+            //super.append();
+            mv.visitVarInsn(ALOAD, 0);
+            mv.visitMethodInsn(INVOKESPECIAL, superclassName, "append", getMethodDescriptor(getType(Object.class)), false);
+            mv.visitInsn(POP);
+
+            mv.visitTypeInsn(NEW, this.handleClassName());
+            mv.visitInsn(DUP);
+
+            mv.visitVarInsn(ALOAD, 0);
+            mv.visitFieldInsn(GETFIELD, className, "baseAddr", LONG_TYPE.getDescriptor());
+            mv.visitVarInsn(ALOAD, 0);
+            mv.visitFieldInsn(GETFIELD, className, "index", INT_TYPE.getDescriptor());
+            mv.visitInsn(I2L);
+            mv.visitLdcInsn(this.layout.stride());
+            mv.visitInsn(LMUL);
+            mv.visitInsn(LADD);
+            mv.visitMethodInsn(INVOKESPECIAL, this.handleClassName(), "<init>", getMethodDescriptor(VOID_TYPE, LONG_TYPE), false);
+
+            mv.visitInsn(ARETURN);
+
+            mv.visitMaxs(0, 0);
+            mv.visitEnd();
+        }
+
+        return this.finish(writer, structName + ' ' + className);
+    }
+
+    @Override
+    protected byte[] generateHandleClass() {
+        String superclassName = getInternalName(Object.class);
+        String className = this.handleClassName();
+        String structName = getInternalName(this.layout.structInfo().clazz());
+
+        ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
+
+        writer.visit(V1_8, ACC_PUBLIC | ACC_FINAL, className, null, superclassName,
+                new String[]{ structName });
+
+        writer.visitField(ACC_PUBLIC | ACC_FINAL, "address", LONG_TYPE.getDescriptor(), null, null).visitEnd();
+
+        { //constructor
+            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "<init>", getMethodDescriptor(VOID_TYPE, LONG_TYPE), null, null);
+
+            mv.visitVarInsn(ALOAD, 0);
+            mv.visitMethodInsn(INVOKESPECIAL, superclassName, "<init>", getMethodDescriptor(VOID_TYPE), false);
+
+            mv.visitVarInsn(ALOAD, 0);
+            mv.visitVarInsn(LLOAD, 1);
+            mv.visitFieldInsn(PUTFIELD, className, "address", LONG_TYPE.getDescriptor());
+
+            mv.visitInsn(RETURN);
+
+            mv.visitMaxs(0, 0);
+            mv.visitEnd();
+        }
+
         //implement all interface methods
         for (Method method : this.layout.structInfo().clazz().getMethods()) {
             StructMethod structMethod = StructMethodFactory.createFromMethod((AttributeType.Fields) this.layout.structProperty(), method);
@@ -288,13 +378,7 @@ public class InterleavedStructFormatClassLoader<S> extends StructFormatClassLoad
             int addrLvtIndex = lvtIndex;
             lvtIndex += LONG_TYPE.getSize();
             mv.visitVarInsn(ALOAD, 0);
-            mv.visitFieldInsn(GETFIELD, superclassName, "baseAddr", LONG_TYPE.getDescriptor());
-            mv.visitVarInsn(ALOAD, 0);
-            mv.visitFieldInsn(GETFIELD, superclassName, "index", INT_TYPE.getDescriptor());
-            mv.visitInsn(I2L);
-            mv.visitLdcInsn(this.layout.stride());
-            mv.visitInsn(LMUL);
-            mv.visitInsn(LADD);
+            mv.visitFieldInsn(GETFIELD, className, "address", LONG_TYPE.getDescriptor());
             mv.visitVarInsn(LSTORE, addrLvtIndex);
 
             ((StructMethod.Setter) structMethod).visit(mv, lvtIndex, this.layout.member(), this.visitStructMethod(mv, addrLvtIndex, 0L));

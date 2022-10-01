@@ -70,18 +70,19 @@ public abstract class InterleavedAttributeWriterImpl<F extends InterleavedAttrib
     }
 
     @Override
-    public S current() {
+    public S current() { //overridden by generated implementation to return the real struct interface value
         checkState(this.index >= 0, "writer is empty!");
-        return uncheckedCast(this);
+
+        return null;
     }
 
     @Override
-    public S append() {
+    public S append() { //overridden by generated implementation to return the real struct interface value
         if (++this.index == this.capacity) { //grow buffer if needed
             this.resize(this.capacity << 1);
         }
 
-        return uncheckedCast(this);
+        return null;
     }
 
     protected void resize(int capacity) {
