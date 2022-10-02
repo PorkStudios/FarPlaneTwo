@@ -23,6 +23,8 @@ import lombok.NonNull;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.common.asm.DelegatingClassLoader;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.lib.common.annotation.param.Positive;
+import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
@@ -32,6 +34,8 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 
 import static net.daporkchop.fp2.common.util.TypeSize.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 import static org.objectweb.asm.Opcodes.*;
 import static org.objectweb.asm.Type.*;
 
@@ -40,6 +44,8 @@ import static org.objectweb.asm.Type.*;
  */
 public abstract class GeneratingClassLoader extends DelegatingClassLoader {
     protected static final boolean WRITE_CLASSES = GeneratingClassLoader.class.desiredAssertionStatus();
+
+    protected static final long MEMCPY_USE_UNSAFE_THRESHOLD = Long.getLong(preventInline("fp2.gl.opengl.") + "memCpyUseUnsafeThreshold", 64L);
 
     protected GeneratingClassLoader() {
         super(OpenGL.class.getClassLoader());
@@ -53,8 +59,63 @@ public abstract class GeneratingClassLoader extends DelegatingClassLoader {
     //
 
     @SuppressWarnings("SameParameterValue")
-    protected void generateMemcpy(@NonNull MethodVisitor mv, int srcBaseLvtIndex, int srcOffsetLvtIndex, int dstBaseLvtIndex, int dstOffsetLvtIndex, long size) {
-        //generate a sequence of instructions emulating a simply memcpy by copying one long at a time, and padding it with ints/shorts/bytes if not an exact multiple
+    protected void generateMemcpy(@NonNull MethodVisitor mv, int srcOffsetLvtIndex, int dstOffsetLvtIndex, @Positive long size) {
+        if (positive(size, "size") >= MEMCPY_USE_UNSAFE_THRESHOLD) { //copy is larger than the configured threshold, delegate to PUnsafe.copyMemory()
+            mv.visitVarInsn(LLOAD, dstOffsetLvtIndex);
+            mv.visitVarInsn(LLOAD, srcOffsetLvtIndex);
+            mv.visitLdcInsn(size);
+            mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "copyMemory", getMethodDescriptor(VOID_TYPE, LONG_TYPE, LONG_TYPE, LONG_TYPE), PUnsafe.class.isInterface());
+            return;
+        }
+
+        //generate a sequence of instructions emulating a simple memcpy by copying one long at a time, and padding it with ints/shorts/bytes if not an exact multiple
+        for (long pos = 0L; pos < size; ) {
+            //dst
+            mv.visitVarInsn(LLOAD, dstOffsetLvtIndex);
+            mv.visitLdcInsn(pos);
+            mv.visitInsn(LADD);
+
+            //src
+            mv.visitVarInsn(LLOAD, srcOffsetLvtIndex);
+            mv.visitLdcInsn(pos);
+            mv.visitInsn(LADD);
+
+            //find the biggest integer type <= the remaining size and copy exactly one of it
+            if (size - pos >= LONG_SIZE) {
+                mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "getLong", getMethodDescriptor(LONG_TYPE, LONG_TYPE), PUnsafe.class.isInterface());
+                mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "putLong", getMethodDescriptor(VOID_TYPE, LONG_TYPE, LONG_TYPE), PUnsafe.class.isInterface());
+                pos += LONG_SIZE;
+            } else if (size - pos >= INT_SIZE) {
+                mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "getInt", getMethodDescriptor(INT_TYPE, LONG_TYPE), PUnsafe.class.isInterface());
+                mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "putInt", getMethodDescriptor(VOID_TYPE, LONG_TYPE, INT_TYPE), PUnsafe.class.isInterface());
+                pos += INT_SIZE;
+            } else if (size - pos >= SHORT_SIZE) {
+                mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "getShort", getMethodDescriptor(SHORT_TYPE, LONG_TYPE), PUnsafe.class.isInterface());
+                mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "putShort", getMethodDescriptor(VOID_TYPE, LONG_TYPE, SHORT_TYPE), PUnsafe.class.isInterface());
+                pos += SHORT_SIZE;
+            } else if (size - pos >= BYTE_SIZE) {
+                mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "getByte", getMethodDescriptor(BYTE_TYPE, LONG_TYPE), PUnsafe.class.isInterface());
+                mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "putByte", getMethodDescriptor(VOID_TYPE, LONG_TYPE, BYTE_TYPE), PUnsafe.class.isInterface());
+                pos += BYTE_SIZE;
+            } else {
+                throw new IllegalArgumentException(String.valueOf(size - pos));
+            }
+        }
+    }
+
+    @SuppressWarnings("SameParameterValue")
+    protected void generateMemcpy(@NonNull MethodVisitor mv, int srcBaseLvtIndex, int srcOffsetLvtIndex, int dstBaseLvtIndex, int dstOffsetLvtIndex, @Positive long size) {
+        if (positive(size, "size") >= MEMCPY_USE_UNSAFE_THRESHOLD) { //copy is larger than the configured threshold, delegate to PUnsafe.copyMemory()
+            mv.visitVarInsn(ALOAD, dstBaseLvtIndex);
+            mv.visitVarInsn(LLOAD, dstOffsetLvtIndex);
+            mv.visitVarInsn(ALOAD, srcBaseLvtIndex);
+            mv.visitVarInsn(LLOAD, srcOffsetLvtIndex);
+            mv.visitLdcInsn(size);
+            mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "copyMemory", getMethodDescriptor(VOID_TYPE, getType(Object.class), LONG_TYPE, getType(Object.class), LONG_TYPE, LONG_TYPE), PUnsafe.class.isInterface());
+            return;
+        }
+
+        //generate a sequence of instructions emulating a simple memcpy by copying one long at a time, and padding it with ints/shorts/bytes if not an exact multiple
         for (long pos = 0L; pos < size; ) {
             //dst
             mv.visitVarInsn(ALOAD, dstBaseLvtIndex);
@@ -70,20 +131,20 @@ public abstract class GeneratingClassLoader extends DelegatingClassLoader {
 
             //find the biggest integer type <= the remaining size and copy exactly one of it
             if (size - pos >= LONG_SIZE) {
-                mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "getLong", getMethodDescriptor(LONG_TYPE, getType(Object.class), LONG_TYPE), false);
-                mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "putLong", getMethodDescriptor(VOID_TYPE, getType(Object.class), LONG_TYPE, LONG_TYPE), false);
+                mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "getLong", getMethodDescriptor(LONG_TYPE, getType(Object.class), LONG_TYPE), PUnsafe.class.isInterface());
+                mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "putLong", getMethodDescriptor(VOID_TYPE, getType(Object.class), LONG_TYPE, LONG_TYPE), PUnsafe.class.isInterface());
                 pos += LONG_SIZE;
             } else if (size - pos >= INT_SIZE) {
-                mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "getInt", getMethodDescriptor(INT_TYPE, getType(Object.class), LONG_TYPE), false);
-                mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "putInt", getMethodDescriptor(VOID_TYPE, getType(Object.class), LONG_TYPE, INT_TYPE), false);
+                mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "getInt", getMethodDescriptor(INT_TYPE, getType(Object.class), LONG_TYPE), PUnsafe.class.isInterface());
+                mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "putInt", getMethodDescriptor(VOID_TYPE, getType(Object.class), LONG_TYPE, INT_TYPE), PUnsafe.class.isInterface());
                 pos += INT_SIZE;
             } else if (size - pos >= SHORT_SIZE) {
-                mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "getShort", getMethodDescriptor(SHORT_TYPE, getType(Object.class), LONG_TYPE), false);
-                mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "putShort", getMethodDescriptor(VOID_TYPE, getType(Object.class), LONG_TYPE, SHORT_TYPE), false);
+                mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "getShort", getMethodDescriptor(SHORT_TYPE, getType(Object.class), LONG_TYPE), PUnsafe.class.isInterface());
+                mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "putShort", getMethodDescriptor(VOID_TYPE, getType(Object.class), LONG_TYPE, SHORT_TYPE), PUnsafe.class.isInterface());
                 pos += SHORT_SIZE;
             } else if (size - pos >= BYTE_SIZE) {
-                mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "getByte", getMethodDescriptor(BYTE_TYPE, getType(Object.class), LONG_TYPE), false);
-                mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "putByte", getMethodDescriptor(VOID_TYPE, getType(Object.class), LONG_TYPE, BYTE_TYPE), false);
+                mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "getByte", getMethodDescriptor(BYTE_TYPE, getType(Object.class), LONG_TYPE), PUnsafe.class.isInterface());
+                mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "putByte", getMethodDescriptor(VOID_TYPE, getType(Object.class), LONG_TYPE, BYTE_TYPE), PUnsafe.class.isInterface());
                 pos += BYTE_SIZE;
             } else {
                 throw new IllegalArgumentException(String.valueOf(size - pos));

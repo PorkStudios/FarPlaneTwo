@@ -28,23 +28,22 @@ import net.daporkchop.fp2.gl.opengl.attribute.common.AttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttributeWriterImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.AttributeType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.ComponentType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.InterleavedStructFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.InterleavedStructLayout;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.LayoutComponentStorage;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.method.StructMethod;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.method.StructMethodFactory;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.AttributeType;
-import net.daporkchop.lib.common.util.PValidation;
+import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.signature.SignatureWriter;
 
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.BitSet;
-import java.util.OptionalLong;
 import java.util.stream.Stream;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -255,6 +254,9 @@ public class InterleavedStructFormatClassLoader<S> extends StructFormatClassLoad
             mv.visitEnd();
         }
 
+        //implement all _withStride methods
+        this.generateOverridesFor_withStride(writer, InterleavedAttributeBufferImpl.class);
+
         return this.finish(writer, structName + ' ' + className);
     }
 
@@ -281,59 +283,18 @@ public class InterleavedStructFormatClassLoader<S> extends StructFormatClassLoad
             mv.visitEnd();
         }
 
-        { //current()
-            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "current", getMethodDescriptor(getType(Object.class)), null, null);
+        { //copyBetweenAddresses(long src, long dst)
+            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "copyBetweenAddresses", getMethodDescriptor(VOID_TYPE, LONG_TYPE, LONG_TYPE), null, null);
 
-            //super.current();
-            mv.visitVarInsn(ALOAD, 0);
-            mv.visitMethodInsn(INVOKESPECIAL, superclassName, "current", getMethodDescriptor(getType(Object.class)), false);
-            mv.visitInsn(POP);
-
-            mv.visitTypeInsn(NEW, this.handleClassName());
-            mv.visitInsn(DUP);
-
-            mv.visitVarInsn(ALOAD, 0);
-            mv.visitFieldInsn(GETFIELD, className, "baseAddr", LONG_TYPE.getDescriptor());
-            mv.visitVarInsn(ALOAD, 0);
-            mv.visitFieldInsn(GETFIELD, className, "index", INT_TYPE.getDescriptor());
-            mv.visitInsn(I2L);
-            mv.visitLdcInsn(this.layout.stride());
-            mv.visitInsn(LMUL);
-            mv.visitInsn(LADD);
-            mv.visitMethodInsn(INVOKESPECIAL, this.handleClassName(), "<init>", getMethodDescriptor(VOID_TYPE, LONG_TYPE), false);
-
-            mv.visitInsn(ARETURN);
+            this.generateMemcpy(mv, 1, 3, this.layout.stride());
+            mv.visitInsn(RETURN);
 
             mv.visitMaxs(0, 0);
             mv.visitEnd();
         }
 
-        { //append()
-            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "append", getMethodDescriptor(getType(Object.class)), null, null);
-
-            //super.append();
-            mv.visitVarInsn(ALOAD, 0);
-            mv.visitMethodInsn(INVOKESPECIAL, superclassName, "append", getMethodDescriptor(getType(Object.class)), false);
-            mv.visitInsn(POP);
-
-            mv.visitTypeInsn(NEW, this.handleClassName());
-            mv.visitInsn(DUP);
-
-            mv.visitVarInsn(ALOAD, 0);
-            mv.visitFieldInsn(GETFIELD, className, "baseAddr", LONG_TYPE.getDescriptor());
-            mv.visitVarInsn(ALOAD, 0);
-            mv.visitFieldInsn(GETFIELD, className, "index", INT_TYPE.getDescriptor());
-            mv.visitInsn(I2L);
-            mv.visitLdcInsn(this.layout.stride());
-            mv.visitInsn(LMUL);
-            mv.visitInsn(LADD);
-            mv.visitMethodInsn(INVOKESPECIAL, this.handleClassName(), "<init>", getMethodDescriptor(VOID_TYPE, LONG_TYPE), false);
-
-            mv.visitInsn(ARETURN);
-
-            mv.visitMaxs(0, 0);
-            mv.visitEnd();
-        }
+        //implement all _withStride methods
+        this.generateOverridesFor_withStride(writer, InterleavedAttributeWriterImpl.class);
 
         return this.finish(writer, structName + ' ' + className);
     }
@@ -436,7 +397,8 @@ public class InterleavedStructFormatClassLoader<S> extends StructFormatClassLoad
                 checkState(lowestOffset < highestOffset, "child offsets are out-of-order");
                 long stride = (highestOffset - lowestOffset) / (highestPossibleChildIndex - lowestPossibleChildIndex);
                 for (int i = lowestPossibleChildIndex; i >= 0; i = possibleLocalChildIndices.nextSetBit(i + 1)) {
-                    checkState(lowestOffset + stride * i == InterleavedStructFormatClassLoader.this.computeOffset(parent.child(i)), "child offsets must have uniform stride");
+                    checkState(lowestOffset + stride * i
+                               == InterleavedStructFormatClassLoader.this.computeOffset(parent.child(i)), "child offsets must have uniform stride");
                 }
 
                 mv.visitVarInsn(LLOAD, addrLvtIndex);
@@ -468,5 +430,83 @@ public class InterleavedStructFormatClassLoader<S> extends StructFormatClassLoad
 
         checkState(offset != Long.MAX_VALUE, "member has no components!");
         return offset;
+    }
+
+    protected void generateOverridesFor_withStride(@NonNull ClassVisitor writer, @NonNull Class<?> superclass) {
+        //generate non-stride variants of all _withStride methods
+        for (Method method : superclass.getDeclaredMethods()) {
+            if (method.getName().endsWith("_withStride")) {
+                //delegate to super method with stride as a constant parameter
+
+                Class<?> returnType = method.getReturnType();
+                Class<?>[] parameters = method.getParameterTypes();
+                assert parameters[parameters.length - 1] == long.class : method + " must accept long as its final parameter";
+                parameters = Arrays.copyOf(parameters, parameters.length - 1);
+
+                MethodVisitor mv = writer.visitMethod(ACC_PUBLIC,
+                        method.getName().substring(0, method.getName().length() - "_withStride".length()),
+                        getMethodDescriptor(getType(returnType), Stream.of(parameters).map(Type::getType).toArray(Type[]::new)),
+                        null, null);
+
+                mv.visitVarInsn(ALOAD, 0);
+                { //original parameters
+                    int lvtIndex = 1;
+                    for (Class<?> parameter : parameters) {
+                        Type type = getType(parameter);
+                        mv.visitVarInsn(type.getOpcode(ILOAD), lvtIndex);
+                        lvtIndex += type.getSize();
+                    }
+                }
+                mv.visitLdcInsn(this.layout.stride()); //stride
+                mv.visitMethodInsn(INVOKESPECIAL, getInternalName(superclass), method.getName(), getMethodDescriptor(method), false);
+                mv.visitInsn(getType(returnType).getOpcode(IRETURN));
+
+                mv.visitMaxs(0, 0);
+                mv.visitEnd();
+            } else if (method.getName().endsWith("_withStride_returnHandleFromAddr")) {
+                //delegate to super method with stride as a constant parameter, and wrap the returned address in a new handle instance
+
+                assert method.getReturnType() == long.class : method + " must return long";
+                Class<?>[] parameters = method.getParameterTypes();
+                assert parameters[parameters.length - 1] == long.class : method + " must accept long as its final parameter";
+                parameters = Arrays.copyOf(parameters, parameters.length - 1);
+
+                MethodVisitor mv = writer.visitMethod(ACC_PUBLIC,
+                        method.getName().substring(0, method.getName().length() - "_withStride_returnHandleFromAddr".length()),
+                        getMethodDescriptor(
+                                //get the raw type of the struct parameter type
+                                getType(Stream.of(InterleavedAttributeWriterImpl.class.getTypeParameters())
+                                        .filter(typeVariable -> "S".equals(typeVariable.getName()))
+                                        .findAny()
+                                        .map(typeVariable -> {
+                                            java.lang.reflect.Type[] bounds = typeVariable.getBounds();
+                                            return bounds.length == 0 ? Object.class : (Class<?>) bounds[0];
+                                        })
+                                        .get()),
+                                Stream.of(parameters).map(Type::getType).toArray(Type[]::new)),
+                        null, null);
+
+                mv.visitTypeInsn(NEW, this.handleClassName());
+                mv.visitInsn(DUP);
+
+                mv.visitVarInsn(ALOAD, 0);
+                { //original parameters
+                    int lvtIndex = 1;
+                    for (Class<?> parameter : parameters) {
+                        Type type = getType(parameter);
+                        mv.visitVarInsn(type.getOpcode(ILOAD), lvtIndex);
+                        lvtIndex += type.getSize();
+                    }
+                }
+                mv.visitLdcInsn(this.layout.stride()); //stride
+                mv.visitMethodInsn(INVOKESPECIAL, getInternalName(superclass), method.getName(), getMethodDescriptor(method), false);
+
+                mv.visitMethodInsn(INVOKESPECIAL, this.handleClassName(), "<init>", getMethodDescriptor(VOID_TYPE, LONG_TYPE), false);
+                mv.visitInsn(ARETURN);
+
+                mv.visitMaxs(0, 0);
+                mv.visitEnd();
+            }
+        }
     }
 }

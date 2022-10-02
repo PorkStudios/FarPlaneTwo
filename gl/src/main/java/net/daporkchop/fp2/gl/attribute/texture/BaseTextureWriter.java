@@ -19,14 +19,14 @@
 
 package net.daporkchop.fp2.gl.attribute.texture;
 
-import net.daporkchop.fp2.common.util.capability.CloseableResource;
+import net.daporkchop.fp2.gl.attribute.BaseAttributeAccess;
 
 /**
  * A buffer in client memory for writing texture data.
  *
  * @author DaPorkchop_
  */
-public interface BaseTextureWriter extends CloseableResource {
+public interface BaseTextureWriter extends BaseAttributeAccess {
     /**
      * @return the {@link BaseTextureFormat} used by this writer
      */

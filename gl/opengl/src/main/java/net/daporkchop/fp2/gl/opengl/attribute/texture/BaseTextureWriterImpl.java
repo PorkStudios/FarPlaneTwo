@@ -19,29 +19,15 @@
 
 package net.daporkchop.fp2.gl.opengl.attribute.texture;
 
-import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.texture.BaseTextureWriter;
-import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.format.TextureStructFormat;
-
-import static net.daporkchop.lib.common.util.PorkUtil.*;
+import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeAccessImpl;
 
 /**
  * @author DaPorkchop_
  */
-@Getter
-public abstract class BaseTextureWriterImpl<F extends BaseTextureFormatImpl<F>> implements BaseTextureWriter {
-    protected final OpenGL gl;
-    protected final F formatImpl;
-
+public abstract class BaseTextureWriterImpl<F extends BaseTextureFormatImpl<F>> extends BaseAttributeAccessImpl<F> implements BaseTextureWriter {
     public BaseTextureWriterImpl(@NonNull F format) {
-        this.gl = format.gl();
-        this.formatImpl = format;
-    }
-
-    @Override
-    public F format() {
-        return uncheckedCast(this.formatImpl);
+        super(format);
     }
 }

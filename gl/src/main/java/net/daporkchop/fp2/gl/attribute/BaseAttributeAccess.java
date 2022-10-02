@@ -17,25 +17,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.opengl.attribute;
+package net.daporkchop.fp2.gl.attribute;
 
-import lombok.Getter;
-import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.BaseAttributeBuffer;
-import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.common.util.capability.CloseableResource;
 
 /**
- * Common parent class for attribute buffer implementations.
+ * Dummy interface which serves as a root type for all attribute access families.
  *
  * @author DaPorkchop_
  */
-@Getter
-public abstract class BaseAttributeBufferImpl<F extends BaseAttributeFormatImpl<F>> implements BaseAttributeBuffer {
-    protected final OpenGL gl;
-    private final F format;
-
-    public BaseAttributeBufferImpl(@NonNull F format) {
-        this.gl = format.gl();
-        this.format = format;
-    }
+public interface BaseAttributeAccess extends CloseableResource {
+    /**
+     * @return the {@link AttributeFormat} used by this writer
+     */
+    BaseAttributeFormat format();
 }

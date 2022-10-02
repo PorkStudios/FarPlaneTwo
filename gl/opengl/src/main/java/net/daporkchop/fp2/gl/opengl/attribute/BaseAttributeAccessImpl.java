@@ -21,20 +21,20 @@ package net.daporkchop.fp2.gl.opengl.attribute;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.BaseAttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.BaseAttributeAccess;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 
 /**
- * Common parent class for attribute buffer implementations.
+ * Common parent class for attribute access implementations.
  *
  * @author DaPorkchop_
  */
 @Getter
-public abstract class BaseAttributeBufferImpl<F extends BaseAttributeFormatImpl<F>> implements BaseAttributeBuffer {
+public abstract class BaseAttributeAccessImpl<F extends BaseAttributeFormatImpl<F>> implements BaseAttributeAccess {
     protected final OpenGL gl;
     private final F format;
 
-    public BaseAttributeBufferImpl(@NonNull F format) {
+    public BaseAttributeAccessImpl(@NonNull F format) {
         this.gl = format.gl();
         this.format = format;
     }

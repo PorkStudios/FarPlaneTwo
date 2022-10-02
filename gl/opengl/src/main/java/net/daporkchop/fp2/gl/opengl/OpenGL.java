@@ -107,13 +107,14 @@ import java.util.stream.Stream;
 import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
 @Getter
 public class OpenGL implements GL {
-    public static final boolean DEBUG = Boolean.getBoolean("fp2.gl.opengl.debug");
+    public static final boolean DEBUG = Boolean.getBoolean(preventInline("fp2.gl.opengl.") + "debug");
 
     //the :gl:opengl package name, including the trailing '.'
     public static final String OPENGL_PACKAGE = OpenGL.class.getTypeName().substring(0, OpenGL.class.getTypeName().length() - OpenGL.class.getSimpleName().length()).intern();
