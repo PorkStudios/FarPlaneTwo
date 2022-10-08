@@ -44,7 +44,6 @@ import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeUsage;
-import net.daporkchop.fp2.gl.attribute.AttributeWriter;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
@@ -76,7 +75,6 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
 
     protected final AttributeFormat<GlobalUniformAttributes> uniformFormat;
     protected final AttributeBuffer<GlobalUniformAttributes> uniformBuffer;
-    protected final AttributeWriter<GlobalUniformAttributes> uniformWriter;
 
     protected final TextureFormat2D textureFormatTerrain;
     protected final Texture2D textureTerrain;
@@ -98,8 +96,6 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
 
         this.uniformFormat = this.gl.createAttributeFormat(GlobalUniformAttributes.class).useFor(AttributeUsage.UNIFORM).build();
         this.uniformBuffer = this.uniformFormat.createBuffer(BufferUsage.STATIC_DRAW);
-        this.uniformWriter = this.uniformFormat.createWriter();
-        this.uniformWriter.append();
 
         this.textureFormatTerrain = this.gl.createTextureFormat2D(
                 this.gl.createPixelFormat().rgba().type(PixelFormatChannelType.FLOATING_POINT).range(PixelFormatChannelRange.ZERO_TO_ONE).build(),
@@ -127,9 +123,8 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
 
     @Override
     protected void doRelease() {
-        //close uniform buffer and associated writer
-        try (AttributeBuffer<GlobalUniformAttributes> uniformBuffer = this.uniformBuffer;
-             AttributeWriter<GlobalUniformAttributes> uniformWriter = this.uniformWriter) {
+        //close uniform buffer
+        try (AttributeBuffer<GlobalUniformAttributes> uniformBuffer = this.uniformBuffer) {
             fp2().eventBus().unregister(this);
         }
     }
@@ -142,10 +137,9 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
         }
 
         //update uniforms
-        try (GlobalUniformAttributes globalUniformAttributes = this.uniformWriter.current()) {
+        try (GlobalUniformAttributes globalUniformAttributes = this.uniformBuffer.setToSingle()) {
             renderInfo.configureGlobalUniformAttributes(globalUniformAttributes);
         }
-        this.uniformBuffer.set(this.uniformWriter);
         assert this.uniformBuffer.capacity() == 1;
 
         //execute command buffer

@@ -31,7 +31,6 @@ import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeUsage;
-import net.daporkchop.fp2.gl.attribute.AttributeWriter;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
 import net.daporkchop.fp2.gl.draw.DrawMode;
@@ -58,7 +57,6 @@ public class GPUCulledRenderIndex<POS extends IFarPos, BO extends IBakeOutput, D
 
     private AttributeFormat<IFrustum.ClippingPlanes> clippingPlanesUniformFormat;
     private AttributeBuffer<IFrustum.ClippingPlanes> clippingPlanesUniformBuffer;
-    private AttributeWriter<IFrustum.ClippingPlanes> clippingPlanesUniformWriter;
 
     public <T extends IFarTile> GPUCulledRenderIndex(@NonNull IFarRenderStrategy<POS, T, BO, DB, DC> strategy) {
         super(strategy);
@@ -66,9 +64,8 @@ public class GPUCulledRenderIndex<POS extends IFarPos, BO extends IBakeOutput, D
 
     @Override
     protected void doRelease() {
-        //close uniform buffer and associated writer
-        try (AttributeBuffer<IFrustum.ClippingPlanes> clippingPlanesUniformBuffer = this.clippingPlanesUniformBuffer;
-             AttributeWriter<IFrustum.ClippingPlanes> clippingPlanesUniformWriter = this.clippingPlanesUniformWriter) {
+        //close uniform buffer
+        try (AttributeBuffer<IFrustum.ClippingPlanes> clippingPlanesUniformBuffer = this.clippingPlanesUniformBuffer) {
             super.doRelease();
         }
     }
@@ -81,15 +78,10 @@ public class GPUCulledRenderIndex<POS extends IFarPos, BO extends IBakeOutput, D
     @Override
     public void select(@NonNull IFrustum frustum) {
         //set clipping planes uniform
-        {
-            AttributeWriter<IFrustum.ClippingPlanes> writer = this.clippingPlanesUniformWriter();
-            try (IFrustum.ClippingPlanes clippingPlanes = writer.current()) {
-                frustum.configureClippingPlanes(clippingPlanes);
-            }
-
-            this.clippingPlanesUniformBuffer().set(writer);
-            assert this.clippingPlanesUniformBuffer.capacity() == 1;
+        try (IFrustum.ClippingPlanes clippingPlanes = this.clippingPlanesUniformBuffer().setToSingle()) {
+            frustum.configureClippingPlanes(clippingPlanes);
         }
+        assert this.clippingPlanesUniformBuffer.capacity() == 1;
 
         for (AbstractRenderIndex.Level level : this.levels) {
             level.select(frustum);
@@ -111,16 +103,6 @@ public class GPUCulledRenderIndex<POS extends IFarPos, BO extends IBakeOutput, D
             return this.clippingPlanesUniformBuffer;
         } else {
             return this.clippingPlanesUniformBuffer = this.clippingPlanesUniformFormat().createBuffer(BufferUsage.STATIC_DRAW);
-        }
-    }
-
-    private AttributeWriter<IFrustum.ClippingPlanes> clippingPlanesUniformWriter() {
-        if (this.clippingPlanesUniformWriter != null) {
-            return this.clippingPlanesUniformWriter;
-        } else {
-            AttributeWriter<IFrustum.ClippingPlanes> clippingPlanesUniformWriter = this.clippingPlanesUniformWriter = this.clippingPlanesUniformFormat().createWriter();
-            clippingPlanesUniformWriter.append();
-            return clippingPlanesUniformWriter;
         }
     }
 
