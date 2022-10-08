@@ -21,6 +21,10 @@ package net.daporkchop.fp2.gl.opengl.attribute.struct.codegen;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeStruct;
+import net.daporkchop.fp2.gl.attribute.AttributeWriter;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.StructFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.StructLayout;
@@ -42,36 +46,58 @@ public abstract class StructFormatClassLoader<S, L extends StructLayout<?, ?>, F
     @NonNull
     protected final L layout;
 
+    protected abstract String generatedClassNamePrefix();
+
+    protected String generatedClassNameSuffix() {
+        return "layout='" + this.layout.layoutName() + "',struct=" + this.layout.structInfo().clazz().getTypeName().replace('.', '_');
+    }
+
+    protected abstract Class<?> baseFormatClass();
+
     protected String formatClassName() {
-        return "StructFormatImpl";
+        return this.generatedClassNamePrefix() + AttributeFormat.class.getSimpleName() + "Impl_" + this.generatedClassNameSuffix();
     }
 
     protected abstract byte[] generateFormatClass();
 
+    protected abstract Class<?> baseBufferClass();
+
     protected String bufferClassName() {
-        return "AttributeBufferImpl";
+        return this.generatedClassNamePrefix() + AttributeBuffer.class.getSimpleName() + "Impl_" + this.generatedClassNameSuffix();
     }
 
     protected abstract byte[] generateBufferClass();
 
+    protected abstract Class<?> baseWriterClass();
+
     protected String writerClassName() {
-        return "AttributeWriterImpl";
+        return this.generatedClassNamePrefix() + AttributeWriter.class.getSimpleName() + "Impl_" + this.generatedClassNameSuffix();
     }
 
     protected abstract byte[] generateWriterClass();
 
+    protected abstract Class<?> baseHandleClass();
+
     protected String handleClassName() {
-        return "AttributeHandleImpl";
+        return this.generatedClassNamePrefix() + AttributeStruct.class.getSimpleName() + "Impl_" + this.generatedClassNameSuffix();
     }
 
     protected abstract byte[] generateHandleClass();
+
+    protected String handleSetToSingleInternalName() {
+        return this.generatedClassNamePrefix() + AttributeStruct.class.getSimpleName() + "Impl_setToSingle_" + this.generatedClassNameSuffix();
+    }
+
+    protected abstract byte[] generateHandleSetToSingleClass();
 
     @Override
     protected void registerClassGenerators(@NonNull BiConsumer<String, Supplier<byte[]>> registerGenerator, @NonNull Consumer<Class<?>> registerClass) {
         registerGenerator.accept(this.formatClassName(), this::generateFormatClass);
         registerGenerator.accept(this.bufferClassName(), this::generateBufferClass);
         registerGenerator.accept(this.writerClassName(), this::generateWriterClass);
+
         registerGenerator.accept(this.handleClassName(), this::generateHandleClass);
+        registerGenerator.accept(this.handleSetToSingleInternalName(), this::generateHandleSetToSingleClass);
 
         //make the struct interface visible from the generated classloader (if it comes from a different classloader than the one which loaded the gl:opengl module,
         //  it wouldn't be visible to the generated classes)

@@ -27,11 +27,13 @@ import net.daporkchop.lib.common.annotation.param.Positive;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.function.IntConsumer;
 
 import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -150,6 +152,57 @@ public abstract class GeneratingClassLoader extends DelegatingClassLoader {
                 throw new IllegalArgumentException(String.valueOf(size - pos));
             }
         }
+    }
+
+    protected void generateTryFinally(@NonNull MethodVisitor mv, int lvtIndexAllocator, @NonNull IntConsumer tryGenerator, @NonNull IntConsumer finallyGenerator) {
+        Label start = new Label();
+        Label end = new Label();
+        Label handler = new Label();
+        Label tail = new Label();
+
+        mv.visitTryCatchBlock(start, end, handler, null);
+
+        //try
+        mv.visitLabel(start);
+        tryGenerator.accept(lvtIndexAllocator);
+        mv.visitLabel(end);
+
+        //finally
+        finallyGenerator.accept(lvtIndexAllocator);
+
+        //jump to tail
+        mv.visitJumpInsn(GOTO, tail);
+
+        //exception handler: finally, then re-throw exception
+        mv.visitLabel(handler);
+        finallyGenerator.accept(lvtIndexAllocator);
+        mv.visitInsn(ATHROW);
+
+        mv.visitLabel(tail);
+    }
+
+    protected void generateTryWithCleanupOnException(@NonNull MethodVisitor mv, int lvtIndexAllocator, @NonNull IntConsumer tryGenerator, @NonNull IntConsumer exceptionalCleanupGenerator) {
+        Label start = new Label();
+        Label end = new Label();
+        Label handler = new Label();
+        Label tail = new Label();
+
+        mv.visitTryCatchBlock(start, end, handler, null);
+
+        //try
+        mv.visitLabel(start);
+        tryGenerator.accept(lvtIndexAllocator);
+        mv.visitLabel(end);
+
+        //jump to tail
+        mv.visitJumpInsn(GOTO, tail);
+
+        //exception handler: clean up, then re-throw exception
+        mv.visitLabel(handler);
+        exceptionalCleanupGenerator.accept(lvtIndexAllocator);
+        mv.visitInsn(ATHROW);
+
+        mv.visitLabel(tail);
     }
 
     @SneakyThrows(IOException.class)

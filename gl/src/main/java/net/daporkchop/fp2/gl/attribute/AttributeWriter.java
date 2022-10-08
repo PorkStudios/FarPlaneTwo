@@ -107,7 +107,7 @@ public interface AttributeWriter<S> extends BaseAttributeAccess {
      * @param src the source index
      * @param dst the destination index
      */
-    AttributeWriter<S> copy(int src, int dst);
+    AttributeWriter<S> copy(@NotNegative int src, @NotNegative int dst);
 
     /**
      * Copies the attribute values at the given source index to the given destination index.

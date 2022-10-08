@@ -103,4 +103,19 @@ public interface AttributeBuffer<S> extends BaseAttributeBuffer {
      * @param writer     a {@link AttributeWriter} containing the sequence of attribute data elements to copy
      */
     void set(int startIndex, @NonNull AttributeWriter<S> writer);
+
+    /**
+     * Gets an instance of {@link S the attribute struct type} which serves as a handle to write a single element of attribute data. When the instance is
+     * {@link AttributeStruct#close() closed}, this buffer's {@link #capacity() capacity} will be set to {@code 1} and its contents set to the data values written to
+     * the handle.
+     * <p>
+     * The handle must be {@link AttributeStruct#close() closed} once the user has finished writing the data. Any changes made to this buffer's contents or capacity after
+     * this method is invoked will be silently overwritten when the handle is
+     * {@link AttributeStruct#close() closed}.
+     * <p>
+     * The handle's contents are initially undefined.
+     *
+     * @return a {@link S handle} for writing attribute values to and setting this buffer's contents
+     */
+    S setToSingle();
 }

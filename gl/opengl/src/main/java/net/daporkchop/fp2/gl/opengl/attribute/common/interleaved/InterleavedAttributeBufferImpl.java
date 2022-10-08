@@ -27,6 +27,7 @@ import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.opengl.attribute.common.AttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.buffer.GLBuffer;
 import net.daporkchop.lib.common.annotation.param.Positive;
+import net.daporkchop.lib.unsafe.PUnsafe;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -83,18 +84,6 @@ public abstract class InterleavedAttributeBufferImpl<F extends InterleavedAttrib
         //no-op
     }
 
-    /*@Override
-    public void setContents(@NonNull S struct) {
-        this.structFormat.upload(struct, this.buffer);
-        this.capacity = 1;
-    }
-
-    @Override
-    public void setContents(@NonNull S... structs) {
-        this.structFormat.upload(structs, this.buffer);
-        this.capacity = structs.length;
-    }*/ //TODO
-
     @Override
     public void setContentsFrom(@NonNull AttributeBuffer<S> _buffer) {
         InterleavedAttributeBufferImpl<F, S> buffer = (InterleavedAttributeBufferImpl<F, S>) _buffer;
@@ -132,5 +121,21 @@ public abstract class InterleavedAttributeBufferImpl<F extends InterleavedAttrib
         checkRangeLen(this.capacity, startIndex, writer.size());
 
         this.buffer.uploadRange(startIndex * stride, writer.baseAddr, writer.size() * stride);
+    }
+
+    /**
+     * Generated code overrides this and delegates to {@link #setToSingle_withStride(long, long)} with the stride as an additional parameter.
+     */
+    @Override
+    public abstract S setToSingle();
+
+    /**
+     * Generated code overrides this and delegates to {@link #setToSingle_withStride(long, long)} with the stride as an additional parameter.
+     */
+    public abstract void setToSingle(long addr);
+
+    protected void setToSingle_withStride(long addr, @Positive long stride) {
+        this.capacity = 1;
+        this.buffer.upload(addr, stride);
     }
 }

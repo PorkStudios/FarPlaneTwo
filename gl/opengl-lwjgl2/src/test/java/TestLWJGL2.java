@@ -260,10 +260,8 @@ public class TestLWJGL2 {
         }
 
         AttributeBuffer<UniformAttribs> uniformBuffer1 = uniformFormat.createBuffer(BufferUsage.STATIC_DRAW);
-        try (AttributeWriter<UniformAttribs> writer = uniformFormat.createWriter()) {
-            writer.append().scale((byte) -128, (byte) -128).close();
-
-            uniformBuffer1.set(writer);
+        try (UniformAttribs writer = uniformBuffer1.setToSingle()) {
+            writer.scale((byte) -128, (byte) -128);
         }
 
         AttributeBuffer<UniformAttribs> uniformBuffer2 = uniformFormat.createBuffer(BufferUsage.STATIC_DRAW);
