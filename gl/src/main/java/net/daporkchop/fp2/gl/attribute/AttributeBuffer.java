@@ -20,6 +20,7 @@
 package net.daporkchop.fp2.gl.attribute;
 
 import lombok.NonNull;
+import net.daporkchop.lib.common.annotation.param.Positive;
 
 /**
  * A resizeable array of attribute data in server memory.
@@ -110,12 +111,25 @@ public interface AttributeBuffer<S> extends BaseAttributeBuffer {
      * the handle.
      * <p>
      * The handle must be {@link AttributeStruct#close() closed} once the user has finished writing the data. Any changes made to this buffer's contents or capacity after
-     * this method is invoked will be silently overwritten when the handle is
-     * {@link AttributeStruct#close() closed}.
+     * this method is invoked will be silently overwritten when the handle is {@link AttributeStruct#close() closed}.
      * <p>
      * The handle's contents are initially undefined.
      *
      * @return a {@link S handle} for writing attribute values to and setting this buffer's contents
      */
     S setToSingle();
+
+    /**
+     * Gets an instance of {@link AttributeArray} for {@link S the attribute struct type} which serves as a handle to write multiple elements of attribute data. When the
+     * instance is {@link AttributeArray#close() closed}, this buffer's {@link #capacity() capacity} will be set to {@code length} and its contents set to the data
+     * values written to the array.
+     * <p>
+     * The array must be {@link AttributeArray#close() closed} once the user has finished writing the data. Any changes made to this buffer's contents or capacity after
+     * this method is invoked will be silently overwritten when the array is {@link AttributeArray#close() closed}.
+     * <p>
+     * The array's contents are initially undefined.
+     *
+     * @return an {@link AttributeArray} for writing attribute values to and setting this buffer's contents
+     */
+    AttributeArray<S> setToMany(@Positive int length);
 }

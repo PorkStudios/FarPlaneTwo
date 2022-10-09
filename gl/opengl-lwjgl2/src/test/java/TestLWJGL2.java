@@ -23,6 +23,7 @@ import lombok.SneakyThrows;
 import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.common.util.exception.ResourceNotFoundException;
 import net.daporkchop.fp2.gl.GL;
+import net.daporkchop.fp2.gl.attribute.AttributeArray;
 import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;

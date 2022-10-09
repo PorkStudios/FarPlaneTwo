@@ -131,7 +131,7 @@ public abstract class InterleavedAttributeWriterImpl<F extends InterleavedAttrib
     }
 
     /**
-     * Generated code overrides this and delegates to {@link #resize_withStride(int, long)} with the stride as an additional parameter.
+     * Generated code overrides this and delegates to {@link #copy_withStride(int, int, long)} with the stride as an additional parameter.
      */
     @Override
     public abstract AttributeWriter<S> copy(@NotNegative int src, @NotNegative int dst);

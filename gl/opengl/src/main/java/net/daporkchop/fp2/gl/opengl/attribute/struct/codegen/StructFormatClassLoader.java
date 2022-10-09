@@ -21,6 +21,7 @@ package net.daporkchop.fp2.gl.opengl.attribute.struct.codegen;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.gl.attribute.AttributeArray;
 import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
@@ -90,6 +91,20 @@ public abstract class StructFormatClassLoader<S, L extends StructLayout<?, ?>, F
 
     protected abstract byte[] generateHandleSetToSingleClass();
 
+    protected abstract Class<?> baseArrayClass();
+
+    protected String arrayClassName() {
+        return this.generatedClassNamePrefix() + AttributeArray.class.getSimpleName() + "Impl_" + this.generatedClassNameSuffix();
+    }
+
+    protected abstract byte[] generateArrayClass();
+
+    protected String arraySetToManyInternalName() {
+        return this.generatedClassNamePrefix() + AttributeArray.class.getSimpleName() + "Impl_setToMany_" + this.generatedClassNameSuffix();
+    }
+
+    protected abstract byte[] generateArraySetToManyClass();
+
     @Override
     protected void registerClassGenerators(@NonNull BiConsumer<String, Supplier<byte[]>> registerGenerator, @NonNull Consumer<Class<?>> registerClass) {
         registerGenerator.accept(this.formatClassName(), this::generateFormatClass);
@@ -98,6 +113,9 @@ public abstract class StructFormatClassLoader<S, L extends StructLayout<?, ?>, F
 
         registerGenerator.accept(this.handleClassName(), this::generateHandleClass);
         registerGenerator.accept(this.handleSetToSingleInternalName(), this::generateHandleSetToSingleClass);
+
+        registerGenerator.accept(this.arrayClassName(), this::generateArrayClass);
+        registerGenerator.accept(this.arraySetToManyInternalName(), this::generateArraySetToManyClass);
 
         //make the struct interface visible from the generated classloader (if it comes from a different classloader than the one which loaded the gl:opengl module,
         //  it wouldn't be visible to the generated classes)

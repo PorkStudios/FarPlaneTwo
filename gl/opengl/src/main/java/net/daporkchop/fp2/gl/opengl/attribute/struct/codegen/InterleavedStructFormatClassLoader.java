@@ -20,11 +20,14 @@
 package net.daporkchop.fp2.gl.opengl.attribute.struct.codegen;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.attribute.AttributeArray;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.OpenGLConstants;
+import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.common.AttributeFormatImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttributeArrayImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.common.interleaved.InterleavedAttributeWriterImpl;
@@ -251,7 +254,6 @@ public class InterleavedStructFormatClassLoader<S> extends StructFormatClassLoad
     protected byte[] generateBufferClass() {
         String superclassName = getInternalName(this.baseBufferClass());
         String className = this.bufferClassName();
-        String structName = getInternalName(this.layout.structInfo().clazz());
 
         ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
 
@@ -316,6 +318,47 @@ public class InterleavedStructFormatClassLoader<S> extends StructFormatClassLoad
             mv.visitEnd();
         }
 
+        { //AttributeArray<S> setToMany(int length)
+            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "setToMany", getMethodDescriptor(getType(AttributeArray.class), INT_TYPE), null, null);
+
+            int baseLvtIndexAllocator = 2;
+
+            int addrLvtIndex = baseLvtIndexAllocator;
+            baseLvtIndexAllocator += LONG_TYPE.getSize();
+
+            mv.visitVarInsn(ILOAD, 1);
+            mv.visitInsn(I2L);
+            mv.visitLdcInsn(this.layout.stride());
+            mv.visitInsn(LMUL);
+            mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "allocateMemory", getMethodDescriptor(LONG_TYPE, LONG_TYPE), PUnsafe.class.isInterface());
+            mv.visitVarInsn(LSTORE, addrLvtIndex);
+
+            this.generateTryWithCleanupOnException(mv, baseLvtIndexAllocator,
+                    innerLvtIndexAllocator -> {
+                        mv.visitTypeInsn(NEW, this.arraySetToManyInternalName());
+                        mv.visitInsn(DUP);
+
+                        mv.visitVarInsn(ALOAD, 0);
+                        mv.visitMethodInsn(INVOKEVIRTUAL, className, "format", getMethodDescriptor(getType(BaseAttributeFormatImpl.class)), false);
+                        mv.visitTypeInsn(CHECKCAST, getInternalName(InterleavedAttributeFormatImpl.class));
+                        mv.visitVarInsn(LLOAD, addrLvtIndex);
+                        mv.visitVarInsn(ILOAD, 1);
+                        mv.visitVarInsn(ALOAD, 0);
+                        mv.visitMethodInsn(INVOKESPECIAL, this.arraySetToManyInternalName(), "<init>",
+                                getMethodDescriptor(VOID_TYPE, getType(InterleavedAttributeFormatImpl.class), LONG_TYPE, INT_TYPE, getType('L' + className.replace('.', '/') + ';')),
+                                false);
+
+                        mv.visitInsn(ARETURN);
+                    },
+                    innerLvtIndexAllocator -> {
+                        mv.visitVarInsn(LLOAD, addrLvtIndex);
+                        mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "freeMemory", getMethodDescriptor(VOID_TYPE, LONG_TYPE), PUnsafe.class.isInterface());
+                    });
+
+            mv.visitMaxs(0, 0);
+            mv.visitEnd();
+        }
+
         return this.finish(writer, className);
     }
 
@@ -328,12 +371,10 @@ public class InterleavedStructFormatClassLoader<S> extends StructFormatClassLoad
     protected byte[] generateWriterClass() {
         String superclassName = getInternalName(this.baseWriterClass());
         String className = this.writerClassName();
-        String structName = getInternalName(this.layout.structInfo().clazz());
 
         ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
 
-        writer.visit(V1_8, ACC_PUBLIC | ACC_FINAL, className, null, superclassName,
-                new String[]{ structName }); //implement the top-level struct type to avoid unnecessary allocations
+        writer.visit(V1_8, ACC_PUBLIC | ACC_FINAL, className, null, superclassName, null);
 
         { //constructor
             MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "<init>", getMethodDescriptor(VOID_TYPE, getType(InterleavedAttributeFormatImpl.class)), null, null);
@@ -540,7 +581,7 @@ public class InterleavedStructFormatClassLoader<S> extends StructFormatClassLoad
                         mv.visitVarInsn(ALOAD, 0);
                         mv.visitMethodInsn(INVOKESPECIAL, superclassName, "close", getMethodDescriptor(VOID_TYPE), false);
 
-                        //this.buffer.setContentsTo(this.address);
+                        //this.buffer.setToSingle(this.address);
                         mv.visitVarInsn(ALOAD, 0);
                         mv.visitFieldInsn(GETFIELD, className, "buffer", getType('L' + this.bufferClassName().replace('.', '/') + ';').getDescriptor());
                         mv.visitVarInsn(ALOAD, 0);
@@ -559,6 +600,119 @@ public class InterleavedStructFormatClassLoader<S> extends StructFormatClassLoad
             mv.visitMaxs(0, 0);
             mv.visitEnd();
         }
+
+        return this.finish(writer, className);
+    }
+
+    @Override
+    protected Class<?> baseArrayClass() {
+        return InterleavedAttributeArrayImpl.class;
+    }
+
+    @Override
+    protected byte[] generateArrayClass() {
+        String superclassName = getInternalName(this.baseArrayClass());
+        String className = this.arrayClassName();
+
+        ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
+
+        writer.visit(V1_8, ACC_PUBLIC, className, null, superclassName, null);
+
+        { //constructor
+            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "<init>", getMethodDescriptor(VOID_TYPE, getType(InterleavedAttributeFormatImpl.class), LONG_TYPE, INT_TYPE), null, null);
+
+            mv.visitVarInsn(ALOAD, 0);
+            mv.visitVarInsn(ALOAD, 1);
+            mv.visitVarInsn(LLOAD, 2);
+            mv.visitVarInsn(ILOAD, 4);
+            mv.visitMethodInsn(INVOKESPECIAL, superclassName, "<init>", getMethodDescriptor(VOID_TYPE, getType(InterleavedAttributeFormatImpl.class), LONG_TYPE, INT_TYPE), false);
+            mv.visitInsn(RETURN);
+
+            mv.visitMaxs(0, 0);
+            mv.visitEnd();
+        }
+
+        { //copyBetweenAddresses(long src, long dst)
+            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "copyBetweenAddresses", getMethodDescriptor(VOID_TYPE, LONG_TYPE, LONG_TYPE), null, null);
+
+            this.generateMemcpy(mv, 1, 3, this.layout.stride());
+            mv.visitInsn(RETURN);
+
+            mv.visitMaxs(0, 0);
+            mv.visitEnd();
+        }
+
+        //implement all _withStride methods
+        this.generateOverridesFor_withStride(writer, this.baseArrayClass());
+
+        return this.finish(writer, className);
+    }
+
+    @Override
+    protected byte[] generateArraySetToManyClass() {
+        String superclassName = this.arrayClassName();
+        String className = this.arraySetToManyInternalName();
+
+        ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
+
+        writer.visit(V1_8, ACC_PUBLIC, className, null, superclassName, null);
+
+        writer.visitField(ACC_PUBLIC | ACC_FINAL, "buffer", getType('L' + this.bufferClassName().replace('.', '/') + ';').getDescriptor(), null, null).visitEnd();
+
+        { //constructor
+            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "<init>", getMethodDescriptor(VOID_TYPE,
+                    getType(InterleavedAttributeFormatImpl.class), LONG_TYPE, INT_TYPE, getType('L' + this.bufferClassName().replace('.', '/') + ';')),
+                    null, null);
+
+            mv.visitVarInsn(ALOAD, 0);
+            mv.visitVarInsn(ALOAD, 1);
+            mv.visitVarInsn(LLOAD, 2);
+            mv.visitVarInsn(ILOAD, 4);
+            mv.visitMethodInsn(INVOKESPECIAL, superclassName, "<init>", getMethodDescriptor(VOID_TYPE, getType(InterleavedAttributeFormatImpl.class), LONG_TYPE, INT_TYPE), false);
+
+            mv.visitVarInsn(ALOAD, 0);
+            mv.visitVarInsn(ALOAD, 5);
+            mv.visitFieldInsn(PUTFIELD, className, "buffer", getType('L' + this.bufferClassName().replace('.', '/') + ';').getDescriptor());
+
+            mv.visitInsn(RETURN);
+
+            mv.visitMaxs(0, 0);
+            mv.visitEnd();
+        }
+
+        { //close()
+            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "close", getMethodDescriptor(VOID_TYPE), null, null);
+
+            this.generateTryFinally(mv, 1,
+                    lvtIndexAllocator -> {
+                        //super.close();
+                        mv.visitVarInsn(ALOAD, 0);
+                        mv.visitMethodInsn(INVOKESPECIAL, superclassName, "close", getMethodDescriptor(VOID_TYPE), false);
+
+                        //this.buffer.setToMany(this.baseAddr, this.length);
+                        mv.visitVarInsn(ALOAD, 0);
+                        mv.visitFieldInsn(GETFIELD, className, "buffer", getType('L' + this.bufferClassName().replace('.', '/') + ';').getDescriptor());
+                        mv.visitVarInsn(ALOAD, 0);
+                        mv.visitFieldInsn(GETFIELD, superclassName, "baseAddr", LONG_TYPE.getDescriptor());
+                        mv.visitVarInsn(ALOAD, 0);
+                        mv.visitFieldInsn(GETFIELD, superclassName, "length", INT_TYPE.getDescriptor());
+                        mv.visitMethodInsn(INVOKEVIRTUAL, this.bufferClassName(), "setToMany", getMethodDescriptor(VOID_TYPE, LONG_TYPE, INT_TYPE), false);
+                    },
+                    lvtIndexAllocator -> {
+                        //PUnsafe.freeMemory(this.address);
+                        mv.visitVarInsn(ALOAD, 0);
+                        mv.visitFieldInsn(GETFIELD, superclassName, "baseAddr", LONG_TYPE.getDescriptor());
+                        mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "freeMemory", getMethodDescriptor(VOID_TYPE, LONG_TYPE), PUnsafe.class.isInterface());
+                    });
+
+            mv.visitInsn(RETURN);
+
+            mv.visitMaxs(0, 0);
+            mv.visitEnd();
+        }
+
+        //implement all _withStride methods
+        this.generateOverridesFor_withStride(writer, this.baseArrayClass());
 
         return this.finish(writer, className);
     }

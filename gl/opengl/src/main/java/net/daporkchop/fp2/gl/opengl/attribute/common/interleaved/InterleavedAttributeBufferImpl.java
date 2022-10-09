@@ -21,6 +21,7 @@ package net.daporkchop.fp2.gl.opengl.attribute.common.interleaved;
 
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.attribute.AttributeArray;
 import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.AttributeWriter;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
@@ -137,5 +138,21 @@ public abstract class InterleavedAttributeBufferImpl<F extends InterleavedAttrib
     protected void setToSingle_withStride(long addr, @Positive long stride) {
         this.capacity = 1;
         this.buffer.upload(addr, stride);
+    }
+
+    /**
+     * Generated code overrides this and delegates to {@link #setToSingle_withStride(long, long)} with the stride as an additional parameter.
+     */
+    @Override
+    public abstract AttributeArray<S> setToMany(@Positive int length);
+
+    /**
+     * Generated code overrides this and delegates to {@link #setToSingle_withStride(long, long)} with the stride as an additional parameter.
+     */
+    public abstract void setToMany(long addr, @Positive int length);
+
+    protected void setToMany_withStride(long addr, @Positive int length, @Positive long stride) {
+        this.capacity = length;
+        this.buffer.upload(addr, length * stride);
     }
 }
