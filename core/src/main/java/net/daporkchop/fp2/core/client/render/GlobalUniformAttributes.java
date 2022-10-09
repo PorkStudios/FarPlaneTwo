@@ -15,75 +15,74 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.client.render;
 
-import net.daporkchop.fp2.gl.attribute.annotation.ArrayTransform;
-import net.daporkchop.fp2.gl.attribute.annotation.ArrayType;
+import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
-import net.daporkchop.fp2.gl.attribute.annotation.FieldsAsArrayAttribute;
+import net.daporkchop.fp2.gl.attribute.annotation.MatrixType;
+import net.daporkchop.fp2.gl.attribute.annotation.ScalarType;
+import net.daporkchop.fp2.gl.attribute.annotation.VectorType;
+import net.daporkchop.fp2.gl.attribute.annotation.ArrayLength;
+import net.daporkchop.fp2.gl.attribute.annotation.AttributeSetter;
 
 /**
  * @author DaPorkchop_
  */
-public class GlobalUniformAttributes {
+//camera
+@Attribute(name = "modelViewProjectionMatrix", typeMatrix = @MatrixType(cols = 4, rows = 4, componentType = @ScalarType(float.class)))
+@Attribute(name = "positionFloor", typeVector = @VectorType(components = 3, componentType = @ScalarType(int.class)))
+@Attribute(name = "positionFrac", typeVector = @VectorType(components = 3, componentType = @ScalarType(float.class)))
+//fog
+@Attribute(name = "fogColor", typeVector = @VectorType(components = 4, componentType = @ScalarType(float.class)))
+@Attribute(name = "fogMode", typeScalar = @ScalarType(int.class))
+@Attribute(name = "fogDensity", typeScalar = @ScalarType(float.class))
+@Attribute(name = "fogStart", typeScalar = @ScalarType(float.class))
+@Attribute(name = "fogEnd", typeScalar = @ScalarType(float.class))
+@Attribute(name = "fogScale", typeScalar = @ScalarType(float.class))
+//misc. GL state
+@Attribute(name = "alphaRefCutout", typeScalar = @ScalarType(float.class))
+public interface GlobalUniformAttributes extends AttributeStruct {
     //
     // camera
     //
 
-    @Attribute
-    public final float @ArrayType(length = 16, transform = @ArrayTransform(value = ArrayTransform.Type.TO_MATRIX, matrixCols = 4, matrixRows = 4)) [] modelViewProjectionMatrix = new float[16];
+    @AttributeSetter
+    GlobalUniformAttributes modelViewProjectionMatrix(float @ArrayLength(16) [] modelViewProjectionMatrix);
 
-    @FieldsAsArrayAttribute(
-            attribute = @Attribute(name = "positionFloor"),
-            names = { "positionFloorX", "positionFloorY", "positionFloorZ" },
-            transform = @ArrayTransform(ArrayTransform.Type.TO_VECTOR))
-    public int positionFloorX;
-    public int positionFloorY;
-    public int positionFloorZ;
+    @AttributeSetter
+    GlobalUniformAttributes positionFloor(int x, int y, int z);
 
-    @FieldsAsArrayAttribute(
-            attribute = @Attribute(name = "positionFrac"),
-            names = { "positionFracX", "positionFracY", "positionFracZ" },
-            transform = @ArrayTransform(ArrayTransform.Type.TO_VECTOR))
-    public float positionFracX;
-    public float positionFracY;
-    public float positionFracZ;
+    @AttributeSetter
+    GlobalUniformAttributes positionFrac(float x, float y, float z);
 
     //
     // fog
     //
 
-    @FieldsAsArrayAttribute(
-            attribute = @Attribute(name = "fogColor"),
-            names = { "fogColorR", "fogColorG", "fogColorB", "fogColorA" },
-            transform = @ArrayTransform(ArrayTransform.Type.TO_VECTOR))
-    public float fogColorR;
-    public float fogColorG;
-    public float fogColorB;
-    public float fogColorA;
+    @AttributeSetter
+    GlobalUniformAttributes fogColor(float r, float g, float b, float a);
 
-    @Attribute
-    public int fogMode;
+    @AttributeSetter
+    GlobalUniformAttributes fogMode(int fogMode);
 
-    @Attribute
-    public float fogDensity;
+    @AttributeSetter
+    GlobalUniformAttributes fogDensity(float fogDensity);
 
-    @Attribute
-    public float fogStart;
+    @AttributeSetter
+    GlobalUniformAttributes fogStart(float fogStart);
 
-    @Attribute
-    public float fogEnd;
+    @AttributeSetter
+    GlobalUniformAttributes fogEnd(float fogEnd);
 
-    @Attribute
-    public float fogScale;
+    @AttributeSetter
+    GlobalUniformAttributes fogScale(float fogScale);
 
     //
     // misc. GL state
     //
 
-    @Attribute
-    public float alphaRefCutout;
+    @AttributeSetter
+    GlobalUniformAttributes alphaRefCutout(float alphaRefCutout);
 }

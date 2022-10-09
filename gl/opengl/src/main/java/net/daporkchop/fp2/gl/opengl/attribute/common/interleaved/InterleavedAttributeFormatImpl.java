@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.attribute.common.interleaved;
@@ -37,15 +36,5 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 public abstract class InterleavedAttributeFormatImpl<F extends InterleavedAttributeFormatImpl<F, S>, S> extends AttributeFormatImpl<F, S, InterleavedStructFormat<S>> {
     public InterleavedAttributeFormatImpl(@NonNull OpenGL gl, @NonNull InterleavedStructLayout structLayout) {
         super(gl, gl.structFormatGenerator().getInterleaved(structLayout));
-    }
-
-    @Override
-    public AttributeWriter<S> createWriter() {
-        return new InterleavedAttributeWriterImpl<F, S>(uncheckedCast(this));
-    }
-
-    @Override
-    public AttributeBuffer<S> createBuffer(@NonNull BufferUsage usage) {
-        return new InterleavedAttributeBufferImpl<F, S>(uncheckedCast(this), usage);
     }
 }

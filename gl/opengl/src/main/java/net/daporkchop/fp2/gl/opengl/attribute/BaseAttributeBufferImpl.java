@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.attribute;
@@ -24,8 +23,6 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.BaseAttributeBuffer;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
-
-import java.util.stream.Stream;
 
 /**
  * Common parent class for attribute buffer implementations.
@@ -40,9 +37,5 @@ public abstract class BaseAttributeBufferImpl<F extends BaseAttributeFormatImpl<
     public BaseAttributeBufferImpl(@NonNull F format) {
         this.gl = format.gl();
         this.format = format;
-    }
-
-    public Stream<BaseAttributeBufferImpl<?>> selfAndChildren() {
-        return Stream.of(this);
     }
 }

@@ -19,12 +19,17 @@
 
 package net.daporkchop.fp2.gl.opengl;
 
+import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
+import org.objectweb.asm.MethodVisitor;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Optional;
+
+import static org.objectweb.asm.Opcodes.*;
+import static org.objectweb.asm.Type.*;
 
 /**
  * Container class which stores all of the OpenGL parameter constants.
@@ -2414,5 +2419,18 @@ public class OpenGLConstants {
         return matchingField != null
                 ? Optional.of(matchingField.getName()) //exactly one matching field was found
                 : Optional.empty();
+    }
+
+    public static void visitGLConstant(@NonNull MethodVisitor mv, int constant) {
+        if (OpenGL.DEBUG) { //debug mode - try to load constant by doing a GETSTATIC on the field in OpenGLConstants with a matching value (assuming there's exactly one)
+            Optional<String> name = getNameIfPossible(constant);
+            if (name.isPresent()) {
+                mv.visitFieldInsn(GETSTATIC, getInternalName(OpenGLConstants.class), name.get(), INT_TYPE.getDescriptor());
+                return;
+            }
+        }
+
+        //load the constant value using a standard LDC instruction
+        mv.visitLdcInsn(constant);
     }
 }

@@ -23,7 +23,6 @@ import com.google.common.collect.ImmutableMap;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.gl.command.BlendFactor;
 import net.daporkchop.fp2.gl.command.BlendOp;
@@ -31,8 +30,6 @@ import net.daporkchop.fp2.gl.command.Compare;
 import net.daporkchop.fp2.gl.command.StencilOperation;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
-import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.OpenGLConstants;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureTarget;
 import net.daporkchop.fp2.gl.opengl.buffer.BufferTarget;
 import net.daporkchop.fp2.gl.opengl.buffer.IndexedBufferTarget;
@@ -50,11 +47,8 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -341,26 +335,6 @@ public class StateProperties {
 
     public final Map<TextureTarget, StateValueProperty<Integer>>[] BOUND_TEXTURE = uncheckedCast(PArrays.filledBy(80, Map[]::new, unit ->
             Stream.of(TextureTarget.values()).collect(ImmutableMap.toImmutableMap(Function.identity(), target -> new TextureBindingProperty(target, unit)))));
-
-    //
-    //
-    // METHODS
-    //
-    //
-
-    private static void visitGLConstant(@NonNull MethodVisitor mv, int constant) {
-        DEBUG:
-        if (OpenGL.DEBUG) { //debug mode - try to load constant by doing a GETSTATIC on the field in OpenGLConstants with a matching value (assuming there's exactly one)
-            Optional<String> name = OpenGLConstants.getNameIfPossible(constant);
-            if (name.isPresent()) {
-                mv.visitFieldInsn(GETSTATIC, getInternalName(OpenGLConstants.class), name.get(), INT_TYPE.getDescriptor());
-                return;
-            }
-        }
-
-        //load the constant value using a standard LDC instruction
-        mv.visitLdcInsn(constant);
-    }
 
     //
     //

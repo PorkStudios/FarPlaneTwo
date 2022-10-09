@@ -15,16 +15,19 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.attribute.struct.format;
 
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.AttributeWriter;
+import net.daporkchop.fp2.gl.attribute.BufferUsage;
+import net.daporkchop.fp2.gl.opengl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.attribute.common.AttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.StructLayout;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLType;
 
 import java.util.List;
 
@@ -33,12 +36,14 @@ import java.util.List;
  */
 @Getter
 public abstract class StructFormat<S, L extends StructLayout<?, ?>> {
+    protected final OpenGL gl;
     protected final String layoutName;
 
     protected final String structName;
     protected final List<GLSLField<?>> glslFields;
 
-    public StructFormat(@NonNull L layout) {
+    public StructFormat(@NonNull OpenGL gl, @NonNull L layout) {
+        this.gl = gl;
         this.layoutName = layout.layoutName();
 
         this.structName = layout.structInfo().name();
@@ -51,10 +56,12 @@ public abstract class StructFormat<S, L extends StructLayout<?, ?>> {
     public abstract long totalSize();
 
     /**
-     * Creates a deep clone of the given struct instance.
-     *
-     * @param struct the source instance
-     * @return the cloned instance
+     * @return a new {@link AttributeWriter} for the struct type
      */
-    public abstract S clone(@NonNull S struct);
+    public abstract AttributeWriter<S> writer(@NonNull AttributeFormatImpl<?, S, ?> attributeFormat);
+
+    /**
+     * @return a new {@link AttributeBuffer} for the struct type
+     */
+    public abstract AttributeBuffer<S> buffer(@NonNull AttributeFormatImpl<?, S, ?> attributeFormat, @NonNull BufferUsage usage);
 }

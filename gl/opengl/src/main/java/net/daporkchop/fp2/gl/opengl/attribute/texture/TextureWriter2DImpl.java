@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.attribute.texture;
@@ -29,21 +28,19 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public class TextureWriter2DImpl<S> extends BaseTextureWriterImpl<TextureFormat2DImpl<S>, S> implements TextureWriter2D<S> {
+public abstract class TextureWriter2DImpl extends BaseTextureWriterImpl<TextureFormat2DImpl> implements TextureWriter2D {
     protected final int width;
     protected final int height;
-    protected final int stride;
 
     protected final long addr;
 
-    public TextureWriter2DImpl(@NonNull TextureFormat2DImpl<S> format, int width, int height) {
+    public TextureWriter2DImpl(@NonNull TextureFormat2DImpl format, int width, int height, long stride) {
         super(format);
 
         this.width = positive(width, "width");
         this.height = positive(height, "height");
-        this.stride = toInt(this.structFormat.stride(), "stride");
 
-        this.addr = this.gl.directMemoryAllocator().alloc(multiplyExact(multiplyExact(this.width, this.height), this.stride));
+        this.addr = this.gl.directMemoryAllocator().alloc(multiplyExact(multiplyExact(width, height), positive(stride, "stride")));
     }
 
     @Override
@@ -51,22 +48,13 @@ public class TextureWriter2DImpl<S> extends BaseTextureWriterImpl<TextureFormat2
         this.gl.directMemoryAllocator().free(this.addr);
     }
 
-    @Override
-    public void set(int x, int y, @NonNull S struct) {
+    /*@Override
+    public void set(int x, int y, Object struct) {
         checkIndex(this.width, x);
         checkIndex(this.height, y);
 
         //well, it *isn't* being implicitly cast to a long - it's quite EXPLICITLY being cast to a long! no clue why intellij has decided to warn me about this...
         //noinspection IntegerMultiplicationImplicitCastToLong
         this.structFormat.copy(struct, null, this.addr + (long) ((y * this.width + x) * this.stride));
-    }
-
-    @Override
-    public void setARGB(int x, int y, int argb) {
-        checkIndex(this.width, x);
-        checkIndex(this.height, y);
-
-        //noinspection IntegerMultiplicationImplicitCastToLong
-        this.structFormat.copyFromARGB(argb, null, this.addr + (long) ((y * this.width + x) * this.stride));
-    }
+    }*/
 }

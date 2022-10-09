@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.layout;
@@ -90,7 +89,7 @@ public interface BaseLayoutBuilder<BUILDER extends BaseLayoutBuilder<BUILDER, L>
      * @param format the format of the texture
      * @see #with(AttributeUsage, BaseAttributeFormat)
      */
-    default BUILDER withTexture(@NonNull TextureFormat2D<?> format) {
+    default BUILDER withTexture(@NonNull TextureFormat2D format) {
         return this.with(AttributeUsage.TEXTURE, format);
     }
 

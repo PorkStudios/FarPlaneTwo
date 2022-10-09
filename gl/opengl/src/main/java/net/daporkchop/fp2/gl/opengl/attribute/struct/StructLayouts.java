@@ -25,10 +25,12 @@ import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.gl.opengl.GLExtension;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.InterleavedStructLayout;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.LayoutComponentStorage;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.TextureStructLayout;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.property.ComponentInterpretation;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.ComponentInterpretation;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.AttributeType;
 import net.daporkchop.lib.common.math.PMath;
+import net.daporkchop.lib.common.util.PArrays;
 
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -40,33 +42,37 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @UtilityClass
 public class StructLayouts {
-    private InterleavedStructLayout.Member interleaved(@NonNull MutableLong offset, long alignment, @NonNull StructProperty property) {
-        return property.with(new StructProperty.TypedPropertyCallback<InterleavedStructLayout.Member>() {
+    private InterleavedStructLayout.Member interleaved(@NonNull MutableLong offset, long alignment, @NonNull AttributeType property, boolean unpacked) {
+        return property.with(new AttributeType.TypedCallback<InterleavedStructLayout.Member>() {
             @Override
-            public InterleavedStructLayout.Member withComponents(@NonNull StructProperty.Components componentsProperty) {
-                long[] componentOffsets = new long[componentsProperty.components()];
-                for (int i = 0, col = 0; col < componentsProperty.cols(); col++) {
-                    for (int row = 0; row < componentsProperty.rows(); row++, i++) {
-                        componentOffsets[i] = offset.getAndAdd(componentsProperty.componentType().size());
+            public InterleavedStructLayout.Member withComponents(@NonNull AttributeType.Components componentsType) {
+                long[] componentOffsets = new long[componentsType.components()];
+                for (int i = 0, col = 0; col < componentsType.cols(); col++) {
+                    for (int row = 0; row < componentsType.rows(); row++, i++) {
+                        componentOffsets[i] = offset.getAndAdd(unpacked
+                                ? componentsType.componentInterpretation().outputType().size()
+                                : componentsType.logicalStorageType().size());
                     }
                     offset.roundUp(alignment);
                 }
-                return new InterleavedStructLayout.RegularMember(0L, componentOffsets);
+                return new InterleavedStructLayout.RegularMember(0L, componentOffsets,
+                        PArrays.filled(componentsType.components(), LayoutComponentStorage.class,
+                                unpacked ? LayoutComponentStorage.unpacked(componentsType) : LayoutComponentStorage.unchanged(componentsType)));
             }
 
             @Override
-            public InterleavedStructLayout.Member withElements(@NonNull StructProperty.Elements elementsProperty) {
-                return this.withNested(IntStream.range(0, elementsProperty.elements()).mapToObj(elementsProperty::element));
+            public InterleavedStructLayout.Member withElements(@NonNull AttributeType.Elements elementsType) {
+                return this.withNested(IntStream.range(0, elementsType.elements()).mapToObj(i -> elementsType.componentType()));
             }
 
             @Override
-            public InterleavedStructLayout.Member withFields(@NonNull StructProperty.Fields fieldsProperty) {
-                return this.withNested(IntStream.range(0, fieldsProperty.fields()).mapToObj(fieldsProperty::fieldProperty));
+            public InterleavedStructLayout.Member withFields(@NonNull AttributeType.Fields fieldsType) {
+                return this.withNested(IntStream.range(0, fieldsType.fields()).mapToObj(fieldsType::fieldProperty));
             }
 
-            private InterleavedStructLayout.Member withNested(@NonNull Stream<StructProperty> nestedProperty) {
+            private InterleavedStructLayout.Member withNested(@NonNull Stream<AttributeType> nestedProperty) {
                 return new InterleavedStructLayout.NestedMember(nestedProperty
-                        .map(property -> interleaved(offset, alignment, property))
+                        .map(property -> interleaved(offset, alignment, property, unpacked))
                         .toArray(InterleavedStructLayout.Member[]::new));
             }
         });
@@ -74,39 +80,38 @@ public class StructLayouts {
 
     public <S> InterleavedStructLayout vertexAttributesInterleaved(@NonNull OpenGL gl, @NonNull StructInfo<S> structInfo, boolean unpacked) {
         MutableLong offset = new MutableLong();
-        InterleavedStructLayout.Member member = interleaved(offset, gl.vertexAttributeAlignment(), unpacked ? structInfo.unpackedProperty() : structInfo.packedProperty());
+        InterleavedStructLayout.Member member = interleaved(offset, gl.vertexAttributeAlignment(), structInfo.property(), unpacked);
 
         return InterleavedStructLayout.builder()
                 .structInfo(structInfo)
                 .layoutName("vertex_attribute_interleaved")
-                .unpacked(unpacked)
                 .member(member)
                 .stride(offset.value)
                 .build();
     }
 
     public <S> TextureStructLayout texture(@NonNull OpenGL gl, @NonNull StructInfo<S> structInfo) {
-        boolean unpacked = structInfo.packedProperty().with(new StructProperty.TypedPropertyCallback<Boolean>() {
+        boolean unpacked = structInfo.property().with(new AttributeType.TypedCallback<Boolean>() {
             @Override
-            public Boolean withComponents(@NonNull StructProperty.Components componentsProperty) {
+            public Boolean withComponents(@NonNull AttributeType.Components componentsType) {
                 throw new UnsupportedOperationException();
             }
 
             @Override
-            public Boolean withElements(@NonNull StructProperty.Elements elementsProperty) {
+            public Boolean withElements(@NonNull AttributeType.Elements elementsType) {
                 throw new UnsupportedOperationException();
             }
 
             @Override
-            public Boolean withFields(@NonNull StructProperty.Fields fieldsProperty) {
-                checkArg(fieldsProperty.fields() == 1, "expected exactly one field, but found %d! %s", fieldsProperty.fields(), structInfo);
+            public Boolean withFields(@NonNull AttributeType.Fields fieldsType) {
+                checkArg(fieldsType.fields() == 1, "expected exactly one field, but found %d! %s", fieldsType.fields(), structInfo);
 
-                return fieldsProperty.fieldProperty(0).with(new StructProperty.TypedPropertyCallback<Boolean>() {
+                return fieldsType.fieldProperty(0).with(new AttributeType.TypedCallback<Boolean>() {
                     @Override
-                    public Boolean withComponents(@NonNull StructProperty.Components property) {
-                        ComponentInterpretation interpretation = property.componentInterpretation();
+                    public Boolean withComponents(@NonNull AttributeType.Components componentsType) {
+                        ComponentInterpretation interpretation = componentsType.componentInterpretation();
 
-                        if (property.componentType().integer()
+                        if (componentsType.logicalStorageType().integer()
                             && !interpretation.outputType().integer()
                             && interpretation.outputType().signed()
                             && interpretation.normalized()) {
@@ -118,12 +123,12 @@ public class StructLayouts {
                     }
 
                     @Override
-                    public Boolean withElements(@NonNull StructProperty.Elements elementsProperty) {
+                    public Boolean withElements(@NonNull AttributeType.Elements elementsType) {
                         throw new UnsupportedOperationException();
                     }
 
                     @Override
-                    public Boolean withFields(@NonNull StructProperty.Fields fieldsProperty) {
+                    public Boolean withFields(@NonNull AttributeType.Fields fieldsType) {
                         throw new UnsupportedOperationException();
                     }
                 });
@@ -131,38 +136,39 @@ public class StructLayouts {
         });
 
         MutableLong stride = new MutableLong();
-        TextureStructLayout.Member member = (unpacked ? structInfo.unpackedProperty() : structInfo.packedProperty()).with(new StructProperty.TypedPropertyCallback<TextureStructLayout.Member>() {
+        TextureStructLayout.Member member = structInfo.property().with(new AttributeType.TypedCallback<TextureStructLayout.Member>() {
             @Override
-            public TextureStructLayout.Member withComponents(@NonNull StructProperty.Components componentsProperty) {
+            public TextureStructLayout.Member withComponents(@NonNull AttributeType.Components componentsType) {
                 throw new UnsupportedOperationException();
             }
 
             @Override
-            public TextureStructLayout.Member withElements(@NonNull StructProperty.Elements elementsProperty) {
+            public TextureStructLayout.Member withElements(@NonNull AttributeType.Elements elementsType) {
                 throw new UnsupportedOperationException();
             }
 
             @Override
-            public TextureStructLayout.Member withFields(@NonNull StructProperty.Fields fieldsProperty) {
-                checkArg(fieldsProperty.fields() == 1, "expected exactly one field, but found %d! %s", fieldsProperty.fields(), structInfo);
+            public TextureStructLayout.Member withFields(@NonNull AttributeType.Fields fieldsType) {
+                checkArg(fieldsType.fields() == 1, "expected exactly one field, but found %d! %s", fieldsType.fields(), structInfo);
 
-                return fieldsProperty.fieldProperty(0).with(new StructProperty.TypedPropertyCallback<TextureStructLayout.Member>() {
+                return fieldsType.fieldProperty(0).with(new AttributeType.TypedCallback<TextureStructLayout.Member>() {
                     @Override
-                    public TextureStructLayout.Member withComponents(@NonNull StructProperty.Components componentsProperty) {
-                        long[] componentOffsets = new long[componentsProperty.components()];
-                        for (int i = 0; i < componentsProperty.components(); i++) {
-                            componentOffsets[i] = stride.getAndAdd(componentsProperty.componentType().size());
+                    public TextureStructLayout.Member withComponents(@NonNull AttributeType.Components componentsType) {
+                        long[] componentOffsets = new long[componentsType.components()];
+                        for (int i = 0; i < componentsType.components(); i++) {
+                            componentOffsets[i] = stride.getAndAdd(componentsType.logicalStorageType().size());
                         }
-                        return new TextureStructLayout.RegularMember(0L, componentOffsets);
+                        return new TextureStructLayout.RegularMember(0L, componentOffsets,
+                                PArrays.filled(componentsType.components(), LayoutComponentStorage.class, LayoutComponentStorage.unchanged(componentsType)));
                     }
 
                     @Override
-                    public TextureStructLayout.Member withElements(@NonNull StructProperty.Elements elementsProperty) {
+                    public TextureStructLayout.Member withElements(@NonNull AttributeType.Elements elementsType) {
                         throw new UnsupportedOperationException();
                     }
 
                     @Override
-                    public TextureStructLayout.Member withFields(@NonNull StructProperty.Fields fieldsProperty) {
+                    public TextureStructLayout.Member withFields(@NonNull AttributeType.Fields fieldsType) {
                         throw new UnsupportedOperationException();
                     }
                 });
@@ -172,7 +178,6 @@ public class StructLayouts {
         return TextureStructLayout.builder()
                 .structInfo(structInfo)
                 .layoutName("texture")
-                .unpacked(unpacked)
                 .stride(stride.value)
                 .member(member)
                 .build();

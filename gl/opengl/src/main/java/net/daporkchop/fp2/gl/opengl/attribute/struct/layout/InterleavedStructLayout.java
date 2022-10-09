@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.attribute.struct.layout;
@@ -55,10 +54,22 @@ public class InterleavedStructLayout extends StructLayout<InterleavedStructLayou
      * @author DaPorkchop_
      */
     @Data
+    protected static final class ComponentImpl implements Component {
+        private final long offset;
+        @NonNull
+        private final LayoutComponentStorage storage;
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @Data
     public static final class RegularMember implements Member {
         private final long offset;
         @NonNull
         private final long[] componentOffsets;
+        @NonNull
+        private final LayoutComponentStorage[] componentStorages;
 
         @Override
         public int components() {
@@ -68,7 +79,9 @@ public class InterleavedStructLayout extends StructLayout<InterleavedStructLayou
         @Override
         public Component component(int componentIndex) {
             checkIndex(this.componentOffsets.length, componentIndex);
-            return () -> this.offset + this.componentOffsets[componentIndex];
+            return new ComponentImpl(
+                    this.offset + this.componentOffsets[componentIndex],
+                    this.componentStorages[componentIndex]);
         }
 
         @Override

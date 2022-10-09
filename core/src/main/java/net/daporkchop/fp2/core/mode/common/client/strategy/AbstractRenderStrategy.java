@@ -29,6 +29,7 @@ import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.core.client.render.GlobalUniformAttributes;
 import net.daporkchop.fp2.core.client.render.LevelRenderer;
+import net.daporkchop.fp2.core.client.render.RenderInfo;
 import net.daporkchop.fp2.core.client.render.TextureUVs;
 import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;
 import net.daporkchop.fp2.core.client.shader.ShaderMacros;
@@ -39,8 +40,6 @@ import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.common.client.AbstractFarRenderer;
 import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutput;
 import net.daporkchop.fp2.core.mode.common.client.index.IRenderIndex;
-import net.daporkchop.fp2.core.mode.common.client.strategy.texture.LightmapTextureAttribute;
-import net.daporkchop.fp2.core.mode.common.client.strategy.texture.TerrainTextureAttribute;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
@@ -48,6 +47,8 @@ import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
+import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatChannelRange;
+import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatChannelType;
 import net.daporkchop.fp2.gl.command.CommandBuffer;
 import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
@@ -75,10 +76,10 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
     protected final AttributeFormat<GlobalUniformAttributes> uniformFormat;
     protected final AttributeBuffer<GlobalUniformAttributes> uniformBuffer;
 
-    protected final TextureFormat2D<TerrainTextureAttribute> textureFormatTerrain;
-    protected final Texture2D<TerrainTextureAttribute> textureTerrain;
-    protected final TextureFormat2D<LightmapTextureAttribute> textureFormatLightmap;
-    protected final Texture2D<LightmapTextureAttribute> textureLightmap;
+    protected final TextureFormat2D textureFormatTerrain;
+    protected final Texture2D textureTerrain;
+    protected final TextureFormat2D textureFormatLightmap;
+    protected final Texture2D textureLightmap;
 
     protected final TextureUVs textureUVs;
 
@@ -96,9 +97,15 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
         this.uniformFormat = this.gl.createAttributeFormat(GlobalUniformAttributes.class).useFor(AttributeUsage.UNIFORM).build();
         this.uniformBuffer = this.uniformFormat.createBuffer(BufferUsage.STATIC_DRAW);
 
-        this.textureFormatTerrain = this.gl.createTextureFormat2D(TerrainTextureAttribute.class).build();
+        this.textureFormatTerrain = this.gl.createTextureFormat2D(
+                this.gl.createPixelFormat().rgba().type(PixelFormatChannelType.FLOATING_POINT).range(PixelFormatChannelRange.ZERO_TO_ONE).build(),
+                "terrain"
+        ).build();
         this.textureTerrain = this.textureFormatTerrain.wrapExternalTexture(this.levelRenderer.terrainTextureId());
-        this.textureFormatLightmap = this.gl.createTextureFormat2D(LightmapTextureAttribute.class).build();
+        this.textureFormatLightmap = this.gl.createTextureFormat2D(
+                this.gl.createPixelFormat().rgba().type(PixelFormatChannelType.FLOATING_POINT).range(PixelFormatChannelRange.ZERO_TO_ONE).build(),
+                "lightmap"
+        ).build();
         this.textureLightmap = this.textureFormatLightmap.wrapExternalTexture(this.levelRenderer.lightmapTextureId());
 
         this.textureUVs = this.levelRenderer.textureUVs();
@@ -116,20 +123,24 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
 
     @Override
     protected void doRelease() {
-        fp2().eventBus().unregister(this);
-
-        this.uniformBuffer.close();
+        //close uniform buffer
+        try (AttributeBuffer<GlobalUniformAttributes> uniformBuffer = this.uniformBuffer) {
+            fp2().eventBus().unregister(this);
+        }
     }
 
     @Override
-    public void render(@NonNull IRenderIndex<POS, BO, DB, DC> index, @NonNull GlobalUniformAttributes globalUniformAttributes) {
+    public void render(@NonNull IRenderIndex<POS, BO, DB, DC> index, @NonNull RenderInfo renderInfo) {
         //rebuild command buffer if needed
         if (this.commandBuffer == null || this.lastMacrosSnapshot != this.macros.snapshot()) {
             this.rebuildCommandBuffer(index);
         }
 
         //update uniforms
-        this.uniformBuffer.setContents(globalUniformAttributes);
+        try (GlobalUniformAttributes globalUniformAttributes = this.uniformBuffer.setToSingle()) {
+            renderInfo.configureGlobalUniformAttributes(globalUniformAttributes);
+        }
+        assert this.uniformBuffer.capacity() == 1;
 
         //execute command buffer
         this.commandBuffer.execute();

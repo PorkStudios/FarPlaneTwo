@@ -15,37 +15,19 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.attribute.texture;
 
-import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.texture.BaseTextureFormat;
 import net.daporkchop.fp2.gl.attribute.texture.BaseTextureWriter;
-import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.format.TextureStructFormat;
-
-import static net.daporkchop.lib.common.util.PorkUtil.*;
+import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeAccessImpl;
 
 /**
  * @author DaPorkchop_
  */
-@Getter
-public abstract class BaseTextureWriterImpl<F extends BaseTextureFormatImpl<F, S>, S> implements BaseTextureWriter<S> {
-    protected final OpenGL gl;
-    protected final F formatImpl;
-    protected final TextureStructFormat<S> structFormat;
-
+public abstract class BaseTextureWriterImpl<F extends BaseTextureFormatImpl<F>> extends BaseAttributeAccessImpl<F> implements BaseTextureWriter {
     public BaseTextureWriterImpl(@NonNull F format) {
-        this.gl = format.gl();
-        this.formatImpl = format;
-        this.structFormat = format.structFormat();
-    }
-
-    @Override
-    public F format() {
-        return uncheckedCast(this.formatImpl);
+        super(format);
     }
 }
