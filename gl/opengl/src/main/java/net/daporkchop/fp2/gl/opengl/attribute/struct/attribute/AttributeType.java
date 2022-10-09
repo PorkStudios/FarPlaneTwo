@@ -29,6 +29,7 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLTypeFactory;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.stream.IntStream;
 
 /**
@@ -165,7 +166,7 @@ public interface AttributeType {
         }
 
         default int fieldNameIndex(@NonNull String fieldName) {
-            return IntStream.range(0, this.fields()).filter(i -> fieldName.equals(this.fieldName(i))).findAny().getAsInt();
+            return IntStream.range(0, this.fields()).filter(i -> fieldName.equals(this.fieldName(i))).findAny().orElseThrow(() -> new NoSuchElementException("no such field: '" + fieldName + '\''));
         }
 
         @Override

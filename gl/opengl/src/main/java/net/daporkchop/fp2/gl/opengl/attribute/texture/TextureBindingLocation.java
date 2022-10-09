@@ -25,12 +25,15 @@ import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLBasicType;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLSamplerType;
 import net.daporkchop.fp2.gl.opengl.command.state.MutableState;
 import net.daporkchop.fp2.gl.opengl.command.state.StateProperties;
 import net.daporkchop.fp2.gl.opengl.layout.LayoutEntry;
 import net.daporkchop.fp2.gl.opengl.shader.ShaderType;
 
 import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
@@ -75,17 +78,19 @@ public class TextureBindingLocation<B extends BaseTextureImpl<?>> implements Bin
 
     @Override
     public void generateGLSL(@NonNull ShaderType type, @NonNull StringBuilder builder) {
-        GLSLField<?> field = this.layout.attributeFields().findFirst().get();
+        GLSLField<GLSLSamplerType> field = uncheckedCast(this.layout.attributeFields().findFirst().get());
+        String swizzle = field.type().components() == 4 ? "" : ".rgba".substring(0, field.type().components() + 1);
+
         builder.append("uniform ").append(this.target.glslSamplerName()).append(" sampler_").append(field.name()).append(";\n");
 
         builder.append(field.declaration()).append("(in vec").append(this.target.coordVectorComponents()).append(" coord) {\n");
-        builder.append("    return texture(sampler_").append(field.name()).append(", coord);\n");
+        builder.append("    return texture(sampler_").append(field.name()).append(", coord)").append(swizzle).append(";\n");
         builder.append("}\n");
 
         builder.append(field.declaration()).append("(in vec").append(this.target.coordVectorComponents()).append(" coord, ")
                 .append("in vec").append(this.target.gradientVectorComponents()).append(" gradX, ")
                 .append("in vec").append(this.target.gradientVectorComponents()).append(" gradY) {\n");
-        builder.append("    return textureGrad(sampler_").append(field.name()).append(", coord, gradX, gradY);\n");
+        builder.append("    return textureGrad(sampler_").append(field.name()).append(", coord, gradX, gradY)").append(swizzle).append(";\n");
         builder.append("}\n");
     }
 
