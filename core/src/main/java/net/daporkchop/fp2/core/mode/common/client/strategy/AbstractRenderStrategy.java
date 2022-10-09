@@ -103,7 +103,7 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
         ).build();
         this.textureTerrain = this.textureFormatTerrain.wrapExternalTexture(this.levelRenderer.terrainTextureId());
         this.textureFormatLightmap = this.gl.createTextureFormat2D(
-                this.gl.createPixelFormat().rg().type(PixelFormatChannelType.FLOATING_POINT).range(PixelFormatChannelRange.ZERO_TO_ONE).build(),
+                this.gl.createPixelFormat().rgba().type(PixelFormatChannelType.FLOATING_POINT).range(PixelFormatChannelRange.ZERO_TO_ONE).build(),
                 "lightmap"
         ).build();
         this.textureLightmap = this.textureFormatLightmap.wrapExternalTexture(this.levelRenderer.lightmapTextureId());

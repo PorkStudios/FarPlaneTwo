@@ -36,7 +36,7 @@ import net.daporkchop.fp2.gl.attribute.annotation.ScalarTransform;
         @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED),
         @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true)
 })))
-@Attribute(name = "color", typeVector = @VectorType(components = 4, componentType = @ScalarType(value = byte.class, interpret = {
+@Attribute(name = "color", typeVector = @VectorType(components = 3, componentType = @ScalarType(value = byte.class, interpret = {
         @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED),
         @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true)
 })))
@@ -54,10 +54,10 @@ public interface HeightmapLocalAttributes extends AttributeStruct {
     HeightmapLocalAttributes light(int block, int sky);
 
     @AttributeSetter
-    HeightmapLocalAttributes color(@ScalarTransform(expand = @ScalarExpand(ScalarExpand.Type.INT_ARGB8_TO_BYTE_VECTOR_RGBA)) int argb8);
+    HeightmapLocalAttributes color(@ScalarTransform(expand = @ScalarExpand(value = ScalarExpand.Type.INT_ARGB8_TO_BYTE_VECTOR_RGBA, alpha = false)) int argb8);
 
     @AttributeSetter
-    HeightmapLocalAttributes color(int r, int g, int b, int a);
+    HeightmapLocalAttributes color(int r, int g, int b);
 
     @AttributeSetter
     HeightmapLocalAttributes posHoriz(int x, int z);

@@ -36,7 +36,7 @@ import net.daporkchop.fp2.gl.attribute.annotation.ScalarTransform;
         @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED),
         @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true)
 })))
-@Attribute(name = "color", typeVector = @VectorType(components = 4, componentType = @ScalarType(value = byte.class, interpret = {
+@Attribute(name = "color", typeVector = @VectorType(components = 3, componentType = @ScalarType(value = byte.class, interpret = {
         @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED),
         @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true)
 })))
@@ -52,10 +52,10 @@ public interface VoxelLocalAttributes extends AttributeStruct {
     VoxelLocalAttributes light(int block, int sky);
 
     @AttributeSetter
-    VoxelLocalAttributes color(@ScalarTransform(expand = @ScalarExpand(ScalarExpand.Type.INT_ARGB8_TO_BYTE_VECTOR_RGBA)) int argb8);
+    VoxelLocalAttributes color(@ScalarTransform(expand = @ScalarExpand(value = ScalarExpand.Type.INT_ARGB8_TO_BYTE_VECTOR_RGBA, alpha = false)) int argb8);
 
     @AttributeSetter
-    VoxelLocalAttributes color(int r, int g, int b, int a);
+    VoxelLocalAttributes color(int r, int g, int b);
 
     @AttributeSetter
     VoxelLocalAttributes pos(int x, int y, int z);
