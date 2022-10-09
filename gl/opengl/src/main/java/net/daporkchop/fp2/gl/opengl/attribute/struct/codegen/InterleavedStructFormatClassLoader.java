@@ -449,7 +449,10 @@ public class InterleavedStructFormatClassLoader<S> extends StructFormatClassLoad
 
         //implement all interface methods
         for (Method method : this.layout.structInfo().clazz().getDeclaredMethods()) {
-            StructMethod structMethod = StructMethodFactory.createFromMethod((AttributeType.Fields) this.layout.structProperty(), method);
+            StructMethod structMethod = StructMethodFactory.createFromMethod((AttributeType.Fields) this.layout.structProperty(), method).orElse(null);
+            if (structMethod == null) { //no StructMethod could be made from the given method
+                continue;
+            }
 
             MethodVisitor mv = writer.visitMethod(ACC_PUBLIC | ACC_FINAL, method.getName(), getMethodDescriptor(method), null, null);
 

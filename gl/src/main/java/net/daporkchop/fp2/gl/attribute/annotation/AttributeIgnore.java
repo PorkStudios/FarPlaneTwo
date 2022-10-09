@@ -17,18 +17,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.attribute;
+package net.daporkchop.fp2.gl.attribute.annotation;
 
-import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
-import net.daporkchop.fp2.gl.attribute.annotation.AttributeIgnore;
+import net.daporkchop.fp2.gl.GL;
+import net.daporkchop.fp2.gl.attribute.AttributeStruct;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
- * Base interface for all struct types which will declare {@link Attribute attributes}.
+ * When placed on a method declared in a {@link AttributeStruct struct interface}, indicates that the annotated method serves only as a convenience method and should
+ * be ignored by the {@link GL implementation}.
  *
  * @author DaPorkchop_
  */
-public interface AttributeStruct extends AutoCloseable {
-    @Override
-    @AttributeIgnore
-    void close();
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ ElementType.METHOD })
+@Inherited
+public @interface AttributeIgnore {
 }

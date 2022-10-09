@@ -26,6 +26,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.gl.attribute.annotation.ArrayIndex;
+import net.daporkchop.fp2.gl.attribute.annotation.AttributeIgnore;
 import net.daporkchop.fp2.gl.attribute.annotation.AttributeSetter;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.AttributeType;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.StructLayout;
@@ -42,6 +43,7 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 
 import static java.lang.Math.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -54,7 +56,7 @@ import static org.objectweb.asm.Opcodes.*;
  */
 @UtilityClass
 public class StructMethodFactory {
-    public static StructMethod createFromMethod(@NonNull AttributeType.Fields property, @NonNull Method method) {
+    public static Optional<StructMethod> createFromMethod(@NonNull AttributeType.Fields property, @NonNull Method method) {
         checkArg(method.getReturnType() == method.getDeclaringClass(), "method %s must have the same return type as the class in which it is declared!", method);
         checkArg((method.getModifiers() & Modifier.STATIC) == 0, "method %s may not be static!", method);
 
@@ -67,7 +69,9 @@ public class StructMethodFactory {
 
             int fieldIndex = property.fieldNameIndex(attributeName);
 
-            return new ChildSpecificSetter(digestParametersForSetter(property.fieldProperty(fieldIndex), 1, Iterators.forArray(method.getParameters())), fieldIndex);
+            return Optional.of(new ChildSpecificSetter(digestParametersForSetter(property.fieldProperty(fieldIndex), 1, Iterators.forArray(method.getParameters())), fieldIndex));
+        } else if (method.isAnnotationPresent(AttributeIgnore.class)) {
+            return Optional.empty();
         }
 
         throw new UnsupportedOperationException(method.toString());
