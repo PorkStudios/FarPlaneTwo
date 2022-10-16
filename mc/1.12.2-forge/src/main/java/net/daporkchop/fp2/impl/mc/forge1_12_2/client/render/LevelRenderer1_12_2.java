@@ -21,7 +21,6 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.client.render;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
 import net.daporkchop.fp2.core.client.render.LevelRenderer;
 import net.daporkchop.fp2.gl.GL;
@@ -30,7 +29,10 @@ import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.client.renderer.IMixi
 import net.daporkchop.fp2.impl.mc.forge1_12_2.client.world.level.FLevelClient1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.ResourceProvider1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.SingleBiomeBlockAccess;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.util.Util1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.world.registry.GameRegistry1_12_2;
+import net.daporkchop.lib.common.misc.threadlocal.TL;
+import net.daporkchop.lib.common.pool.recycler.Recycler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.math.BlockPos;
 
@@ -39,6 +41,8 @@ import net.minecraft.util.math.BlockPos;
  */
 @Getter
 public class LevelRenderer1_12_2 implements LevelRenderer, AutoCloseable {
+    protected static final TL<SingleBiomeBlockAccess> SINGLE_BIOME_BLOCK_ACCESS_CACHE = TL.initializedWith(SingleBiomeBlockAccess::new);
+
     protected final Minecraft mc;
     protected final GL gl;
 
@@ -92,7 +96,16 @@ public class LevelRenderer1_12_2 implements LevelRenderer, AutoCloseable {
 
     @Override
     public int tintFactorForStateInBiomeAtPos(int state, int biome, int x, int y, int z) {
-        return this.mc.getBlockColors().colorMultiplier(this.registry.id2state(state), new SingleBiomeBlockAccess().biome(this.registry.id2biome(biome)), new BlockPos(x, y, z), 0);
+        Recycler<BlockPos.MutableBlockPos> recycler = Util1_12_2.MUTABLEBLOCKPOS_RECYCLER.get();
+        BlockPos.MutableBlockPos pos = recycler.allocate().setPos(x, y, z);
+
+        int colorMultiplier = this.mc.getBlockColors().colorMultiplier(
+                this.registry.id2state(state),
+                SINGLE_BIOME_BLOCK_ACCESS_CACHE.get().biome(this.registry.id2biome(biome)),
+                pos, 0);
+
+        recycler.release(pos);
+        return colorMultiplier;
     }
 
     @Override

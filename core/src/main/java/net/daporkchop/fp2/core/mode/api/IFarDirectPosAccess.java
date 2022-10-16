@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.api;
@@ -33,7 +32,7 @@ import java.util.Set;
  *
  * @author DaPorkchop_
  */
-public interface IFarDirectPosAccess<POS extends IFarPos> {
+public interface IFarDirectPosAccess<POS extends IFarPos> extends IFarPosCodec<POS> {
     /**
      * @return the number of spatial dimensions required to represent this position
      */
@@ -42,7 +41,7 @@ public interface IFarDirectPosAccess<POS extends IFarPos> {
     /**
      * @return the off-heap size of a position, in bytes
      */
-    long posSize();
+    long size();
 
     /**
      * Stores a position off-heap at the given memory address.
@@ -50,7 +49,7 @@ public interface IFarDirectPosAccess<POS extends IFarPos> {
      * @param pos  the position
      * @param addr the memory address
      */
-    void storePos(@NonNull POS pos, long addr);
+    void store(POS pos, long addr);
 
     /**
      * Loads the position at the give memory address onto the Java heap.
@@ -58,7 +57,7 @@ public interface IFarDirectPosAccess<POS extends IFarPos> {
      * @param addr the memory address
      * @return the position
      */
-    POS loadPos(long addr);
+    POS load(long addr);
 
     /**
      * Gets the position's offset along the given axis.

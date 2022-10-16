@@ -15,12 +15,21 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl;
 
+import lombok.NonNull;
+import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
+import org.objectweb.asm.MethodVisitor;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.Optional;
+
+import static org.objectweb.asm.Opcodes.*;
+import static org.objectweb.asm.Type.*;
 
 /**
  * Container class which stores all of the OpenGL parameter constants.
@@ -2391,4 +2400,37 @@ public class OpenGLConstants {
     public static final int GL_MAX_VIEWS_OVR = 0x9631;
     public static final int GL_FRAMEBUFFER_INCOMPLETE_VIEW_TARGETS_OVR = 0x9633;
     public static final int GL_OVR_multiview2 = 1;
+
+    @SneakyThrows(IllegalAccessException.class)
+    public static Optional<String> getNameIfPossible(int constant) {
+        Field matchingField = null;
+        for (Field field : OpenGLConstants.class.getFields()) {
+            if ((field.getModifiers() & Modifier.STATIC) != 0
+                && field.getType() == int.class
+                && !field.getName().endsWith("_EXT")
+                && ((Integer) field.get(null)) == constant) {
+                if (matchingField != null) { //there are multiple matching fields!
+                    return Optional.empty();
+                }
+                matchingField = field;
+            }
+        }
+
+        return matchingField != null
+                ? Optional.of(matchingField.getName()) //exactly one matching field was found
+                : Optional.empty();
+    }
+
+    public static void visitGLConstant(@NonNull MethodVisitor mv, int constant) {
+        if (OpenGL.DEBUG) { //debug mode - try to load constant by doing a GETSTATIC on the field in OpenGLConstants with a matching value (assuming there's exactly one)
+            Optional<String> name = getNameIfPossible(constant);
+            if (name.isPresent()) {
+                mv.visitFieldInsn(GETSTATIC, getInternalName(OpenGLConstants.class), name.get(), INT_TYPE.getDescriptor());
+                return;
+            }
+        }
+
+        //load the constant value using a standard LDC instruction
+        mv.visitLdcInsn(constant);
+    }
 }

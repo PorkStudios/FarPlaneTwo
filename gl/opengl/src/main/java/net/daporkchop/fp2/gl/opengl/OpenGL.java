@@ -36,6 +36,8 @@ import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormatBuilder;
+import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormat;
+import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatBuilder;
 import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.draw.DrawLayoutBuilder;
@@ -54,9 +56,11 @@ import net.daporkchop.fp2.gl.draw.shader.FragmentShader;
 import net.daporkchop.fp2.gl.draw.shader.VertexShader;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatType;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.StructFormatGenerator;
-import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureFormat2DImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.codegen.StructFormatGenerator;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureFormatBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.texture.image.PixelFormatBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.texture.image.PixelFormatFactory;
+import net.daporkchop.fp2.gl.opengl.attribute.texture.image.PixelFormatImpl;
 import net.daporkchop.fp2.gl.opengl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.opengl.buffer.SimpleGLBufferImpl;
 import net.daporkchop.fp2.gl.opengl.buffer.UploadCopyingGLBufferImpl;
@@ -103,13 +107,17 @@ import java.util.stream.Stream;
 import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
 @Getter
 public class OpenGL implements GL {
-    public static final boolean DEBUG = Boolean.getBoolean("fp2.gl.opengl.debug");
+    public static final boolean DEBUG = Boolean.getBoolean(preventInline("fp2.gl.opengl.") + "debug");
+
+    //the :gl:opengl package name, including the trailing '.'
+    public static final String OPENGL_PACKAGE = OpenGL.class.getTypeName().substring(0, OpenGL.class.getTypeName().length() - OpenGL.class.getSimpleName().length()).intern();
 
     public static final String OPENGL_NAMESPACE = "fp2_gl_opengl";
 
@@ -125,7 +133,8 @@ public class OpenGL implements GL {
 
     protected final Allocator directMemoryAllocator = new DirectMemoryAllocator();
 
-    protected final StructFormatGenerator structFormatGenerator = new StructFormatGenerator();
+    protected final StructFormatGenerator structFormatGenerator = new StructFormatGenerator(this);
+    protected final PixelFormatFactory pixelFormatFactory;
 
     protected final LoadingCache<AttributeFormatBuilderImpl<?>, AttributeFormat<?>> attributeFormatCache = CacheBuilder.newBuilder()
             .weakValues()
@@ -206,6 +215,8 @@ public class OpenGL implements GL {
 
         //compatibility hacks
         this.vertexAttributeAlignment = this.isOfficialAmdDriver() ? INT_SIZE : 1;
+
+        this.pixelFormatFactory = new PixelFormatFactory(this);
     }
 
     private boolean isOfficialAmdDriver() {
@@ -258,11 +269,16 @@ public class OpenGL implements GL {
     }
 
     @Override
-    public <S> TextureFormatBuilder<TextureFormat2D<S>> createTextureFormat2D(@NonNull Class<S> clazz) {
-        return new TextureFormatBuilderImpl<S, TextureFormat2D<S>>(this, clazz) {
+    public PixelFormatBuilder.ChannelSelectionStage createPixelFormat() {
+        return new PixelFormatBuilderImpl(this);
+    }
+
+    @Override
+    public TextureFormatBuilder<TextureFormat2D> createTextureFormat2D(@NonNull PixelFormat pixelFormat, @NonNull String name) {
+        return new TextureFormatBuilderImpl<TextureFormat2D>(this, (PixelFormatImpl) pixelFormat, name) {
             @Override
-            public TextureFormat2D<S> build() {
-                return new TextureFormat2DImpl<>(this);
+            public TextureFormat2D build() {
+                return OpenGL.this.structFormatGenerator().getTexture2D(this.pixelFormat, this.name);
             }
         };
     }

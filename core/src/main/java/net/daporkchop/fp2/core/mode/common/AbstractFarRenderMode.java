@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.common;
@@ -24,20 +23,21 @@ import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
+import net.daporkchop.fp2.core.mode.api.IFarPosCodec;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarServerContext;
-import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
-import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
-import net.daporkchop.fp2.core.server.player.IFarPlayerServer;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
-import net.daporkchop.fp2.core.util.SimpleRecycler;
+import net.daporkchop.fp2.core.server.player.IFarPlayerServer;
+import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
+import net.daporkchop.lib.common.pool.recycler.Recycler;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.reference.cache.Cached;
@@ -51,7 +51,7 @@ import static net.daporkchop.fp2.core.FP2Core.*;
  */
 @RequiredArgsConstructor
 public abstract class AbstractFarRenderMode<POS extends IFarPos, T extends IFarTile> implements IFarRenderMode<POS, T> {
-    protected final Cached<SimpleRecycler<T>> recyclerRef = Cached.threadLocal(() -> new SimpleRecycler.OfReusablePersistent<>(this::newTile), ReferenceStrength.SOFT);
+    protected final Cached<Recycler<T>> recyclerRef = Cached.threadLocal(() -> Recycler.unbounded(this::newTile, T::reset), ReferenceStrength.SOFT);
 
     @Getter(lazy = true)
     private final String name = REGISTRY.getName(this);
@@ -102,12 +102,15 @@ public abstract class AbstractFarRenderMode<POS extends IFarPos, T extends IFarT
     public abstract IFarClientContext<POS, T> clientContext(@NonNull IFarLevelClient level, @NonNull FP2Config config);
 
     @Override
-    public SimpleRecycler<T> tileRecycler() {
+    public Recycler<T> tileRecycler() {
         return this.recyclerRef.get();
     }
 
     @Override
     public abstract IFarDirectPosAccess<POS> directPosAccess();
+
+    @Override
+    public abstract IFarPosCodec<POS> posCodec();
 
     @Override
     public abstract POS readPos(@NonNull ByteBuf buf);

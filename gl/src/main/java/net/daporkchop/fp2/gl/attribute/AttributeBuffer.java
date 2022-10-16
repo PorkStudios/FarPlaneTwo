@@ -15,12 +15,12 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.attribute;
 
 import lombok.NonNull;
+import net.daporkchop.lib.common.annotation.param.Positive;
 
 /**
  * A resizeable array of attribute data in server memory.
@@ -78,30 +78,6 @@ public interface AttributeBuffer<S> extends BaseAttributeBuffer {
     void invalidate(int startIndex, int count);
 
     /**
-     * Sets this buffer's contents to exactly the given struct, discarding any existing data and modifying its capacity.
-     *
-     * @param struct the struct containing the element data
-     */
-    default void setContents(@NonNull S struct) {
-        if (this.capacity() != 1) {
-            this.capacity(1);
-        }
-        this.set(0, struct);
-    }
-
-    /**
-     * Sets this buffer's contents to exactly the given array of structs, discarding any existing data and modifying its capacity.
-     *
-     * @param structs the structs containing the element data
-     */
-    default void setContents(@NonNull S... structs) {
-        if (this.capacity() != structs.length) {
-            this.capacity(structs.length);
-        }
-        this.set(0, structs);
-    }
-
-    /**
      * Sets this buffer's contents to a copy of the data from the given buffer, discarding any existing data and modifying its capacity.
      *
      * @param buffer the buffer containing the element data. Must use the same {@link AttributeFormat}
@@ -109,31 +85,16 @@ public interface AttributeBuffer<S> extends BaseAttributeBuffer {
     void setContentsFrom(@NonNull AttributeBuffer<S> buffer);
 
     /**
-     * Copies the attribute data from the given struct into this buffer.
+     * Copies the attribute data from the given {@link AttributeWriter} into this buffer, discarding any existing data and modifying its capacity.
      *
-     * @param index  the index of the element to modify
-     * @param struct the struct containing the element data
+     * @param writer a {@link AttributeWriter} containing the sequence of attribute data elements to copy
      */
-    default void set(int index, @NonNull S struct) {
-        try (AttributeWriter<S> writer = this.format().createWriter()) {
-            writer.put(struct);
-            this.set(index, writer);
+    default void set(@NonNull AttributeWriter<S> writer) {
+        int size = writer.size();
+        if (this.capacity() != size) {
+            this.capacity(size);
         }
-    }
-
-    /**
-     * Copies the attribute data from the given structs into this buffer.
-     *
-     * @param startIndex the destination index for the first attribute data element
-     * @param structs    the structs containing the element data
-     */
-    default void set(int startIndex, @NonNull S... structs) {
-        try (AttributeWriter<S> writer = this.format().createWriter()) {
-            for (S struct : structs) {
-                writer.put(struct);
-            }
-            this.set(startIndex, writer);
-        }
+        this.set(0, writer);
     }
 
     /**
@@ -144,4 +105,31 @@ public interface AttributeBuffer<S> extends BaseAttributeBuffer {
      */
     void set(int startIndex, @NonNull AttributeWriter<S> writer);
 
+    /**
+     * Gets an instance of {@link S the attribute struct type} which serves as a handle to write a single element of attribute data. When the instance is
+     * {@link AttributeStruct#close() closed}, this buffer's {@link #capacity() capacity} will be set to {@code 1} and its contents set to the data values written to
+     * the handle.
+     * <p>
+     * The handle must be {@link AttributeStruct#close() closed} once the user has finished writing the data. Any changes made to this buffer's contents or capacity after
+     * this method is invoked will be silently overwritten when the handle is {@link AttributeStruct#close() closed}.
+     * <p>
+     * The handle's contents are initially undefined.
+     *
+     * @return a {@link S handle} for writing attribute values to and setting this buffer's contents
+     */
+    S setToSingle();
+
+    /**
+     * Gets an instance of {@link AttributeArray} for {@link S the attribute struct type} which serves as a handle to write multiple elements of attribute data. When the
+     * instance is {@link AttributeArray#close() closed}, this buffer's {@link #capacity() capacity} will be set to {@code length} and its contents set to the data
+     * values written to the array.
+     * <p>
+     * The array must be {@link AttributeArray#close() closed} once the user has finished writing the data. Any changes made to this buffer's contents or capacity after
+     * this method is invoked will be silently overwritten when the array is {@link AttributeArray#close() closed}.
+     * <p>
+     * The array's contents are initially undefined.
+     *
+     * @return an {@link AttributeArray} for writing attribute values to and setting this buffer's contents
+     */
+    AttributeArray<S> setToMany(@Positive int length);
 }

@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cc.exactfblocklevel;
@@ -93,12 +92,12 @@ public class CCExactFBlockLevelHolder1_12 extends AbstractCubesExactFBlockLevelH
 
     protected final AtomicInteger generatedCount = new AtomicInteger();
 
-    public CCExactFBlockLevelHolder1_12(@NonNull WorldServer world) {
-        super(((IMixinWorldServer) world).fp2_levelServer(), Integer.numberOfTrailingZeros(Coords.cubeToMinBlock(1)));
+    public CCExactFBlockLevelHolder1_12(@NonNull IFarLevelServer level) {
+        super(level, Integer.numberOfTrailingZeros(Coords.cubeToMinBlock(1)));
 
-        this.generator = ((ICubicWorldServer) world).getCubeGenerator();
+        this.generator = ((ICubicWorldServer) level.implLevel()).getCubeGenerator();
 
-        this.emptyStorage = new ExtendedBlockStorage(0, world.provider.hasSkyLight());
+        this.emptyStorage = new ExtendedBlockStorage(0, ((WorldServer) level.implLevel()).provider.hasSkyLight());
 
         this.columnsExistCache = Datastructures.INSTANCE.nDimensionalIntSegtreeSet()
                 .dimensions(2)

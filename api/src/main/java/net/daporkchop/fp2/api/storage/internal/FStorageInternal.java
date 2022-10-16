@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.api.storage.internal;
@@ -61,7 +60,7 @@ public interface FStorageInternal extends AutoCloseable {
      * @param action the function
      */
     default void readRun(@NonNull ThrowingConsumer<? super FStorageReadAccess, ? extends FStorageException> action) throws FStorageException {
-        this.readAtomicGet(access -> {
+        this.readGet(access -> {
             action.acceptThrowing(access);
             return null;
         });
@@ -80,7 +79,27 @@ public interface FStorageInternal extends AutoCloseable {
      * @param action the function
      * @return the function's return value
      */
-    <R> R readGet(@NonNull ThrowingFunction<? super FStorageReadAccess, ? extends R, ? extends FStorageException> action) throws FStorageException;
+    default <R> R readGet(@NonNull ThrowingFunction<? super FStorageReadAccess, ? extends R, ? extends FStorageException> action) throws FStorageException {
+        return this.readGet(action, result -> {});
+    }
+
+    /**
+     * Runs the given function with a {@link FStorageReadAccess} providing read-only access to this storage's data and returns the result.
+     * <p>
+     * The read operations performed using the {@link FStorageReadAccess} passed to the function are not necessarily performed atomically. Modifications performed
+     * while the function is being executed may be visible.
+     * <p>
+     * Any {@link FStorageException}s thrown inside the function must be re-thrown without modification, as they may be treated specially by the implementation.
+     * <p>
+     * Note that the implementation may choose to invoke the function more than once. The user code must be able to handle this, and should treat each invocation as if it were the first.
+     *
+     * @param action  the function
+     * @param cleanup a function which may be invoked if the implementation detects that it will have to invoke the main function again after it has already been invoked and
+     *                provided a return value. This allows the user to immediately release any resources owned by the old return value, as it will never be made accessible
+     *                to the user again.
+     * @return the function's return value
+     */
+    <R> R readGet(@NonNull ThrowingFunction<? super FStorageReadAccess, ? extends R, ? extends FStorageException> action, @NonNull ThrowingConsumer<R, ? extends FStorageException> cleanup) throws FStorageException;
 
     /**
      * Runs the given function with a {@link FStorageReadAccess} providing read-only access to this storage's data.
@@ -114,7 +133,27 @@ public interface FStorageInternal extends AutoCloseable {
      * @param action the function
      * @return the function's return value
      */
-    <R> R readAtomicGet(@NonNull ThrowingFunction<? super FStorageReadAccess, ? extends R, ? extends FStorageException> action) throws FStorageException;
+    default <R> R readAtomicGet(@NonNull ThrowingFunction<? super FStorageReadAccess, ? extends R, ? extends FStorageException> action) throws FStorageException {
+        return this.readAtomicGet(action, result -> {});
+    }
+
+    /**
+     * Runs the given function with a {@link FStorageReadAccess} providing read-only access to this storage's data and returns the result.
+     * <p>
+     * The read operations performed using the {@link FStorageReadAccess} passed to the function are performed atomically. Modifications performed while the function
+     * is being executed will not be visible.
+     * <p>
+     * Any {@link FStorageException}s thrown inside the function must be re-thrown without modification, as they may be treated specially by the implementation.
+     * <p>
+     * Note that the implementation may choose to invoke the function more than once. The user code must be able to handle this, and should treat each invocation as if it were the first.
+     *
+     * @param action  the function
+     * @param cleanup a function which may be invoked if the implementation detects that it will have to invoke the main function again after it has already been invoked and
+     *                provided a return value. This allows the user to immediately release any resources owned by the old return value, as it will never be made accessible
+     *                to the user again.
+     * @return the function's return value
+     */
+    <R> R readAtomicGet(@NonNull ThrowingFunction<? super FStorageReadAccess, ? extends R, ? extends FStorageException> action, @NonNull ThrowingConsumer<R, ? extends FStorageException> cleanup) throws FStorageException;
 
     /**
      * Runs the given function with a {@link FStorageWriteAccess} providing write-only access to this storage's data.
@@ -146,7 +185,26 @@ public interface FStorageInternal extends AutoCloseable {
      * @param action the function
      * @return the function's return value
      */
-    <R> R writeAtomicGet(@NonNull ThrowingFunction<? super FStorageWriteAccess, ? extends R, ? extends FStorageException> action) throws FStorageException;
+    default <R> R writeAtomicGet(@NonNull ThrowingFunction<? super FStorageWriteAccess, ? extends R, ? extends FStorageException> action) throws FStorageException {
+        return this.writeAtomicGet(action, result -> {});
+    }
+
+    /**
+     * Runs the given function with a {@link FStorageWriteAccess} providing write-only access to this storage's data and returns the result.
+     * <p>
+     * The write operations performed using the {@link FStorageWriteAccess} passed to the function are performed atomically.
+     * <p>
+     * Any {@link FStorageException}s thrown inside the function must be re-thrown without modification, as they may be treated specially by the implementation.
+     * <p>
+     * Note that the implementation may choose to invoke the function more than once. The user code must be able to handle this, and should treat each invocation as if it were the first.
+     *
+     * @param action  the function
+     * @param cleanup a function which may be invoked if the implementation detects that it will have to invoke the main function again after it has already been invoked and
+     *                provided a return value. This allows the user to immediately release any resources owned by the old return value, as it will never be made accessible
+     *                to the user again.
+     * @return the function's return value
+     */
+    <R> R writeAtomicGet(@NonNull ThrowingFunction<? super FStorageWriteAccess, ? extends R, ? extends FStorageException> action, @NonNull ThrowingConsumer<R, ? extends FStorageException> cleanup) throws FStorageException;
 
     /**
      * Runs the given function with a {@link FStorageAccess} providing read and write access to this storage's data and returns the result.
@@ -178,7 +236,26 @@ public interface FStorageInternal extends AutoCloseable {
      * @param action the function
      * @return the function's return value
      */
-    <R> R transactAtomicGet(@NonNull ThrowingFunction<? super FStorageAccess, ? extends R, ? extends FStorageException> action) throws FStorageException;
+    default <R> R transactAtomicGet(@NonNull ThrowingFunction<? super FStorageAccess, ? extends R, ? extends FStorageException> action) throws FStorageException {
+        return this.transactAtomicGet(action, result -> {});
+    }
+
+    /**
+     * Runs the given function with a {@link FStorageAccess} providing read and write access to this storage's data and returns the result.
+     * <p>
+     * The read and write operations performed using the {@link FStorageAccess} passed to the function are performed atomically.
+     * <p>
+     * Any {@link FStorageException}s thrown inside the function must be re-thrown without modification, as they may be treated specially by the implementation.
+     * <p>
+     * Note that the implementation may choose to invoke the function more than once. The user code must be able to handle this, and should treat each invocation as if it were the first.
+     *
+     * @param action  the function
+     * @param cleanup a function which may be invoked if the implementation detects that it will have to invoke the main function again after it has already been invoked and
+     *                provided a return value. This allows the user to immediately release any resources owned by the old return value, as it will never be made accessible
+     *                to the user again.
+     * @return the function's return value
+     */
+    <R> R transactAtomicGet(@NonNull ThrowingFunction<? super FStorageAccess, ? extends R, ? extends FStorageException> action, @NonNull ThrowingConsumer<R, ? extends FStorageException> cleanup) throws FStorageException;
 
     //
     // TOKEN

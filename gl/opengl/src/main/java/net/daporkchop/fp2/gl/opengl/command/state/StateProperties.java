@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.command.state;
@@ -24,7 +23,6 @@ import com.google.common.collect.ImmutableMap;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.gl.command.BlendFactor;
 import net.daporkchop.fp2.gl.command.BlendOp;
@@ -32,8 +30,6 @@ import net.daporkchop.fp2.gl.command.Compare;
 import net.daporkchop.fp2.gl.command.StencilOperation;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
-import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.OpenGLConstants;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureTarget;
 import net.daporkchop.fp2.gl.opengl.buffer.BufferTarget;
 import net.daporkchop.fp2.gl.opengl.buffer.IndexedBufferTarget;
@@ -51,8 +47,6 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -341,36 +335,6 @@ public class StateProperties {
 
     public final Map<TextureTarget, StateValueProperty<Integer>>[] BOUND_TEXTURE = uncheckedCast(PArrays.filledBy(80, Map[]::new, unit ->
             Stream.of(TextureTarget.values()).collect(ImmutableMap.toImmutableMap(Function.identity(), target -> new TextureBindingProperty(target, unit)))));
-
-    //
-    //
-    // METHODS
-    //
-    //
-
-    @SneakyThrows(IllegalAccessException.class)
-    private static void visitGLConstant(@NonNull MethodVisitor mv, int constant) {
-        DEBUG:
-        if (OpenGL.DEBUG) { //debug mode - try to load constant by doing a GETSTATIC on the field in OpenGLConstants with a matching value (assuming there's exactly one)
-            Field matchingField = null;
-            for (Field field : OpenGLConstants.class.getFields()) {
-                if ((field.getModifiers() & Modifier.STATIC) != 0 && field.getType() == int.class && !field.getName().endsWith("_EXT") && ((Integer) field.get(null)) == constant) {
-                    if (matchingField != null) { //there are multiple matching fields!
-                        break DEBUG;
-                    }
-                    matchingField = field;
-                }
-            }
-
-            if (matchingField != null) { //exactly one matching field was found
-                mv.visitFieldInsn(GETSTATIC, getInternalName(OpenGLConstants.class), matchingField.getName(), INT_TYPE.getDescriptor());
-                return;
-            }
-        }
-
-        //load the constant value using a standard LDC instruction
-        mv.visitLdcInsn(constant);
-    }
 
     //
     //

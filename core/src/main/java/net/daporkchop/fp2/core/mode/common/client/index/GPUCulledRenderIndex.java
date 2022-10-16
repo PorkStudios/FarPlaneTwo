@@ -15,12 +15,10 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.common.client.index;
 
-import lombok.Getter;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
@@ -65,6 +63,14 @@ public class GPUCulledRenderIndex<POS extends IFarPos, BO extends IBakeOutput, D
     }
 
     @Override
+    protected void doRelease() {
+        //close uniform buffer
+        try (AttributeBuffer<IFrustum.ClippingPlanes> clippingPlanesUniformBuffer = this.clippingPlanesUniformBuffer) {
+            super.doRelease();
+        }
+    }
+
+    @Override
     protected AbstractRenderIndex<POS, BO, DB, DC, ShaderSelectedDrawList<DC>>.Level createLevel(int level) {
         return new Level(level);
     }
@@ -72,7 +78,10 @@ public class GPUCulledRenderIndex<POS extends IFarPos, BO extends IBakeOutput, D
     @Override
     public void select(@NonNull IFrustum frustum) {
         //set clipping planes uniform
-        this.clippingPlanesUniformBuffer().setContents(frustum.clippingPlanes());
+        try (IFrustum.ClippingPlanes clippingPlanes = this.clippingPlanesUniformBuffer().setToSingle()) {
+            frustum.configureClippingPlanes(clippingPlanes);
+        }
+        assert this.clippingPlanesUniformBuffer.capacity() == 1;
 
         for (AbstractRenderIndex.Level level : this.levels) {
             level.select(frustum);

@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.attribute.texture;
@@ -27,9 +26,9 @@ import lombok.NonNull;
  *
  * @author DaPorkchop_
  */
-public interface Texture2D<S> extends BaseTexture<S> {
+public interface Texture2D extends BaseTexture {
     @Override
-    TextureFormat2D<S> format();
+    TextureFormat2D format();
 
     /**
      * @return the width of this texture
@@ -46,5 +45,5 @@ public interface Texture2D<S> extends BaseTexture<S> {
      */
     int levels();
 
-    void set(int level, int xOffset, int yOffset, @NonNull TextureWriter2D<S> writer);
+    void set(int level, int xOffset, int yOffset, @NonNull TextureWriter2D writer);
 }

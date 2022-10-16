@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.api.storage.internal.access;
@@ -24,6 +23,8 @@ import lombok.NonNull;
 import net.daporkchop.fp2.api.storage.FStorageException;
 import net.daporkchop.fp2.api.storage.internal.FStorageColumn;
 
+import java.nio.ByteBuffer;
+
 /**
  * Interface defining an iterator, which allows iterating across the entries in a single {@link FStorageColumn column}.
  *
@@ -31,7 +32,7 @@ import net.daporkchop.fp2.api.storage.internal.FStorageColumn;
  */
 public interface FStorageIterator extends AutoCloseable {
     /**
-     * @return whether or not the iterator is currently valid
+     * @return whether iterator is currently valid
      */
     boolean isValid() throws FStorageException;
 
@@ -41,7 +42,11 @@ public interface FStorageIterator extends AutoCloseable {
 
     void seekCeil(@NonNull byte[] key) throws FStorageException;
 
+    void seekCeil(@NonNull ByteBuffer key) throws FStorageException;
+
     void seekFloor(@NonNull byte[] key) throws FStorageException;
+
+    void seekFloor(@NonNull ByteBuffer key) throws FStorageException;
 
     void next() throws FStorageException;
 
@@ -49,7 +54,11 @@ public interface FStorageIterator extends AutoCloseable {
 
     byte[] key() throws FStorageException;
 
+    int key(@NonNull ByteBuffer key) throws FStorageException;
+
     byte[] value() throws FStorageException;
+
+    int value(@NonNull ByteBuffer value) throws FStorageException;
 
     @Override
     void close() throws FStorageException;

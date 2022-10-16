@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.api.client;
@@ -25,7 +24,7 @@ import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
-import net.daporkchop.lib.unsafe.capability.Releasable;
+import net.daporkchop.lib.common.misc.release.Releasable;
 
 import java.util.stream.Stream;
 
@@ -35,6 +34,13 @@ import java.util.stream.Stream;
  * @author DaPorkchop_
  */
 public interface IFarTileCache<POS extends IFarPos, T extends IFarTile> extends Releasable {
+    /**
+     * Adds the given tile into the cache.
+     * <p>
+     * Ownership of the tile is transferred to the cache.
+     *
+     * @param tile the tile to add
+     */
     void receiveTile(@NonNull ITileSnapshot<POS, T> tile);
 
     void unloadTile(@NonNull POS pos);
@@ -58,6 +64,8 @@ public interface IFarTileCache<POS extends IFarPos, T extends IFarTile> extends 
 
     /**
      * Gets the given tile at the given position from the cache.
+     * <p>
+     * The tile is retained before being returned, i.e. ownership is transferred to the caller.
      *
      * @param position the position
      * @return the tile at the given position, or {@code null} if the tile wasn't present in the cache
@@ -66,6 +74,8 @@ public interface IFarTileCache<POS extends IFarPos, T extends IFarTile> extends 
 
     /**
      * Gets the given tiles at the given positions from the cache.
+     * <p>
+     * Each of the tiles is retained before being returned, i.e. ownership is transferred to the caller.
      *
      * @param positions the positions
      * @return the tiles at the given positions. Tiles that were not present in the cache will be {@code null}
@@ -82,6 +92,9 @@ public interface IFarTileCache<POS extends IFarPos, T extends IFarTile> extends 
     interface Listener<POS extends IFarPos, T extends IFarTile> {
         /**
          * Fired when a new tile is added to the cache.
+         * <p>
+         * Ownership of the tile is <strong>not</strong> transferred to the listener. The listener must explicitly retain the tile if it wishes to preserve its reference
+         * beyond the scope of this method.
          *
          * @param tile the tile
          */
@@ -89,6 +102,9 @@ public interface IFarTileCache<POS extends IFarPos, T extends IFarTile> extends 
 
         /**
          * Fired when a tile's contents are changed.
+         * <p>
+         * Ownership of the tile is <strong>not</strong> transferred to the listener. The listener must explicitly retain the tile if it wishes to preserve its reference
+         * beyond the scope of this method.
          *
          * @param tile the tile
          */

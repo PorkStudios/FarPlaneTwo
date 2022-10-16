@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.common.client.index;
@@ -45,7 +44,7 @@ import net.daporkchop.fp2.gl.draw.list.DrawListBuilder;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
 import net.daporkchop.lib.common.util.GenericMatcher;
-import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
+import net.daporkchop.lib.common.util.exception.AlreadyReleasedException;
 
 import java.lang.reflect.Array;
 import java.util.List;
@@ -169,7 +168,7 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
             this.growFunction = growFunction;
 
             this.directPosAccess = AbstractRenderIndex.this.strategy.mode().directPosAccess();
-            this.positionSize = this.directPosAccess.posSize();
+            this.positionSize = this.directPosAccess.size();
 
             this.positionsToHandles.defaultReturnValue(-1);
 
@@ -225,7 +224,7 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
 
                 this.positionsToHandles.put(pos, handle);
 
-                this.directPosAccess.storePos(pos, this.positionsAddr + handle * this.positionSize);
+                this.directPosAccess.store(pos, this.positionsAddr + handle * this.positionSize);
 
                 //if the node is selectable, set its render outputs
                 if (pos.level() == 0 || AbstractRenderIndex.this.renderablePositions.contains(pos)) {

@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cc;
@@ -50,7 +49,6 @@ import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cc.exactfblocklevel.CCExact
 import net.daporkchop.fp2.impl.mc.forge1_12_2.server.world.FCube1_12_2;
 import net.daporkchop.lib.math.vector.Vec3i;
 import net.minecraft.world.World;
-import net.minecraft.world.WorldServer;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.Mod;
@@ -126,7 +124,7 @@ public class FP2CubicChunks {
                 constrain = @Constrain(before = "vanilla_world_exact_fblocklevel"))
         public Optional<ExactFBlockLevelHolder> getExactFBlockLevel(GetExactFBlockLevelEvent event) {
             return this.isCubicWorld(event.level())
-                    ? Optional.of(new CCExactFBlockLevelHolder1_12((WorldServer) event.level().implLevel()))
+                    ? Optional.of(new CCExactFBlockLevelHolder1_12(event.level()))
                     : Optional.empty();
         }
 

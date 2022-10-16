@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.exactfblocklevel;
@@ -27,7 +26,9 @@ import net.daporkchop.fp2.api.world.level.BlockLevelConstants;
 import net.daporkchop.fp2.api.world.level.GenerationNotAllowedException;
 import net.daporkchop.fp2.core.minecraft.world.chunks.AbstractChunksExactFBlockLevelHolder;
 import net.daporkchop.fp2.core.minecraft.world.chunks.AbstractPrefetchedChunksExactFBlockLevel;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.util.Util1_12_2;
 import net.daporkchop.lib.common.math.BinMath;
+import net.daporkchop.lib.common.pool.recycler.Recycler;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
 import net.minecraft.tileentity.TileEntity;
@@ -60,19 +61,35 @@ public class PrefetchedChunksFBlockLevel1_12 extends AbstractPrefetchedChunksExa
 
     @Override
     protected int getState(int x, int y, int z, Chunk chunk) throws GenerationNotAllowedException {
-        BlockPos pos = new BlockPos(x, y, z);
-        return this.registry().state2id(chunk.getBlockState(pos).getActualState(this, pos));
+        Recycler<BlockPos.MutableBlockPos> recycler = Util1_12_2.MUTABLEBLOCKPOS_RECYCLER.get();
+        BlockPos.MutableBlockPos pos = recycler.allocate().setPos(x, y, z);
+
+        int state = this.registry().state2id(chunk.getBlockState(pos).getActualState(this, pos));
+
+        recycler.release(pos);
+        return state;
     }
 
     @Override
     protected int getBiome(int x, int y, int z, Chunk chunk) throws GenerationNotAllowedException {
-        return this.registry().biome2id(chunk.getBiome(new BlockPos(x, y, z), null));
+        Recycler<BlockPos.MutableBlockPos> recycler = Util1_12_2.MUTABLEBLOCKPOS_RECYCLER.get();
+        BlockPos.MutableBlockPos pos = recycler.allocate().setPos(x, y, z);
+
+        int biome = this.registry().biome2id(chunk.getBiome(pos, null));
+
+        recycler.release(pos);
+        return biome;
     }
 
     @Override
     protected byte getLight(int x, int y, int z, Chunk chunk) throws GenerationNotAllowedException {
-        BlockPos pos = new BlockPos(x, y, z);
-        return BlockLevelConstants.packLight(chunk.getLightFor(EnumSkyBlock.SKY, pos), chunk.getLightFor(EnumSkyBlock.BLOCK, pos));
+        Recycler<BlockPos.MutableBlockPos> recycler = Util1_12_2.MUTABLEBLOCKPOS_RECYCLER.get();
+        BlockPos.MutableBlockPos pos = recycler.allocate().setPos(x, y, z);
+
+        byte packedLight = BlockLevelConstants.packLight(chunk.getLightFor(EnumSkyBlock.SKY, pos), chunk.getLightFor(EnumSkyBlock.BLOCK, pos));
+
+        recycler.release(pos);
+        return packedLight;
     }
 
     // IBlockAccess

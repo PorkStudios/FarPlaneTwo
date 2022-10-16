@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.heightmap;
@@ -25,9 +24,14 @@ import io.netty.buffer.Unpooled;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
+import net.daporkchop.fp2.core.util.serialization.variable.IVariableSizeRecyclingCodec;
+import net.daporkchop.lib.binary.stream.DataIn;
+import net.daporkchop.lib.binary.stream.DataOut;
 import net.daporkchop.lib.common.system.PlatformInfo;
 import net.daporkchop.lib.unsafe.PCleaner;
 import net.daporkchop.lib.unsafe.PUnsafe;
+
+import java.io.IOException;
 
 import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.fp2.core.mode.heightmap.HeightmapConstants.*;
@@ -73,15 +77,48 @@ public class HeightmapTile implements IFarTile {
     public static final int ENTRY_SIZE_BYTES = INDEX_SIZE_BYTES + LAYER_SIZE_BYTES * MAX_LAYERS;
     public static final int TILE_SIZE_BYTES = ENTRY_SIZE_BYTES * ENTRY_COUNT;
 
+    public static final IVariableSizeRecyclingCodec<HeightmapTile> CODEC = new IVariableSizeRecyclingCodec<HeightmapTile>() {
+        @Override
+        public long maxSize() {
+            return TILE_SIZE_BYTES;
+        }
+
+        @Override
+        public void load(@NonNull HeightmapTile tile, @NonNull DataIn in) throws IOException {
+            if (PlatformInfo.IS_LITTLE_ENDIAN) {
+                //copy everything in one go
+                in.readFully(Unpooled.wrappedBuffer(tile.addr, TILE_SIZE_BYTES, false).writerIndex(0));
+            } else {
+                //read individual ints (reversing the byte order each time)
+                for (long addr = tile.addr, end = addr + TILE_SIZE_BYTES; addr != end; addr += INT_SIZE) {
+                    PUnsafe.putInt(addr, in.readIntLE());
+                }
+            }
+        }
+
+        @Override
+        public void store(@NonNull HeightmapTile tile, @NonNull DataOut out) throws IOException {
+            if (PlatformInfo.IS_LITTLE_ENDIAN) {
+                //copy everything in one go
+                out.write(Unpooled.wrappedBuffer(tile.addr, TILE_SIZE_BYTES, false));
+            } else {
+                //write individual ints (reversing the byte order each time)
+                for (long addr = tile.addr, end = addr + TILE_SIZE_BYTES; addr != end; addr += INT_SIZE) {
+                    out.writeIntLE(PUnsafe.getInt(addr));
+                }
+            }
+        }
+    };
+
     public static int layerFlag(int layer) {
         checkArg(layer >= 0 && layer < MAX_LAYERS, "layer index out of bounds (%d)", layer);
         return 1 << layer;
     }
 
     static int entryOffset(int x, int z) {
-        assert x >= 0 && x < HT_VOXELS: "x=" + x;
-        assert z >= 0 && z < HT_VOXELS: "z=" + z;
-        
+        assert x >= 0 && x < HT_VOXELS : "x=" + x;
+        assert z >= 0 && z < HT_VOXELS : "z=" + z;
+
         return (x * HT_VOXELS + z) * ENTRY_SIZE_BYTES;
     }
 
@@ -186,6 +223,11 @@ public class HeightmapTile implements IFarTile {
             //clear the layer data
             PUnsafe.setMemory(this.addr + layerOffset(x, z, layer), LAYER_SIZE_BYTES, (byte) 0);
         }
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return false; //heightmap tiles are never empty
     }
 
     @Override

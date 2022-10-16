@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gradle.natives;
@@ -55,6 +54,8 @@ public final class Natives {
     public static final Optional<Path> CLANG_PATH = FP2GradlePlugin.findInPath("clang++");
     public static final Optional<Path> TAR_PATH = FP2GradlePlugin.findInPath("tar");
 
+    public static final boolean CAN_COMPILE = CLANG_PATH.isPresent() && TAR_PATH.isPresent();
+
     @SneakyThrows({ InterruptedException.class, IOException.class })
     public static void launchProcessAndWait(List<String> command) {
         Process process = new ProcessBuilder().redirectErrorStream(true).command(command).start();
@@ -79,10 +80,6 @@ public final class Natives {
     protected final Project project;
 
     public Natives register() {
-        if (!CLANG_PATH.isPresent() || !TAR_PATH.isPresent()) { //do nothing
-            return this;
-        }
-
         NativesExtension extension = this.project.getExtensions().create("natives", NativesExtension.class);
 
         this.project.afterEvaluate(_project -> {
@@ -96,6 +93,11 @@ public final class Natives {
                     sourceSet.getOutput().dir(Collections.singletonMap("builtBy", ROOT_TASK_NAME), dir);
                     return dir;
                 });
+
+                if (!CAN_COMPILE) {
+                    System.err.printf("one or more required tools is not available, not compiling native module '%s' for project '%s'\n", module.getName(), this.project.getPath());
+                    return;
+                }
 
                 extension.getOperatingSystems().forEach(operatingSystem -> {
                     operatingSystem.getSupportedArchitectures().get().forEach(architecture -> {

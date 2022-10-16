@@ -15,55 +15,48 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.voxel.client.struct;
 
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
-import net.daporkchop.fp2.gl.attribute.annotation.ArrayTransform;
+import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
-import net.daporkchop.fp2.gl.attribute.annotation.FieldsAsArrayAttribute;
+import net.daporkchop.fp2.gl.attribute.annotation.ScalarType;
+import net.daporkchop.fp2.gl.attribute.annotation.VectorType;
+import net.daporkchop.fp2.gl.attribute.annotation.AttributeSetter;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarConvert;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarExpand;
-import net.daporkchop.fp2.gl.attribute.annotation.ScalarType;
+import net.daporkchop.fp2.gl.attribute.annotation.ScalarTransform;
 
 /**
  * @author DaPorkchop_
  */
-@AllArgsConstructor
-@NoArgsConstructor
-public class VoxelLocalAttributes {
-    @Attribute
-    public int state;
+@Attribute(name = "state", typeScalar = @ScalarType(int.class))
+@Attribute(name = "light", typeVector = @VectorType(components = 2, componentType = @ScalarType(value = byte.class, interpret = {
+        @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED),
+        @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true)
+})))
+@Attribute(name = "color", typeVector = @VectorType(components = 3, componentType = @ScalarType(value = byte.class, interpret = {
+        @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED),
+        @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true)
+})))
+@Attribute(name = "pos", typeVector = @VectorType(components = 3, componentType = @ScalarType(value = byte.class, interpret = {
+        @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED),
+        @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = false)
+})))
+public interface VoxelLocalAttributes extends AttributeStruct {
+    @AttributeSetter
+    VoxelLocalAttributes state(int state);
 
-    @FieldsAsArrayAttribute(
-            attribute = @Attribute(name = "light"),
-            names = { "lightBlock", "lightSky" },
-            scalarType = @ScalarType(convert = {
-                    @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED),
-                    @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true)
-            }),
-            transform = @ArrayTransform(ArrayTransform.Type.TO_VECTOR))
-    public byte lightBlock;
-    public byte lightSky;
+    @AttributeSetter
+    VoxelLocalAttributes light(int block, int sky);
 
-    @Attribute
-    @ScalarType(expand = @ScalarExpand(
-            value = ScalarExpand.Type.INT_ARGB8_TO_BYTE_VECTOR_RGBA, alpha = false,
-            thenConvert = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true)))
-    public int color;
+    @AttributeSetter
+    VoxelLocalAttributes color(@ScalarTransform(expand = @ScalarExpand(value = ScalarExpand.Type.INT_ARGB8_TO_BYTE_VECTOR_RGBA, alpha = false)) int argb8);
 
-    @FieldsAsArrayAttribute(
-            attribute = @Attribute(name = "pos"),
-            names = { "posX", "posY", "posZ" },
-            scalarType = @ScalarType(convert = {
-                    @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED),
-                    @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = false)
-            }),
-            transform = @ArrayTransform(ArrayTransform.Type.TO_VECTOR))
-    public byte posX;
-    public byte posY;
-    public byte posZ;
+    @AttributeSetter
+    VoxelLocalAttributes color(int r, int g, int b);
+
+    @AttributeSetter
+    VoxelLocalAttributes pos(int x, int y, int z);
 }

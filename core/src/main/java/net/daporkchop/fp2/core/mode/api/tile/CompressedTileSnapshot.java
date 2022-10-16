@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.api.tile;
@@ -23,18 +22,25 @@ package net.daporkchop.fp2.core.mode.api.tile;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
-import lombok.AccessLevel;
-import lombok.Getter;
 import lombok.NonNull;
+import lombok.SneakyThrows;
+import net.daporkchop.fp2.common.util.DirectBufferHackery;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
-import net.daporkchop.fp2.core.util.SimpleRecycler;
+import net.daporkchop.fp2.core.util.serialization.variable.IVariableSizeRecyclingCodec;
+import net.daporkchop.lib.binary.stream.DataIn;
+import net.daporkchop.lib.common.annotation.BorrowOwnership;
+import net.daporkchop.lib.common.pool.recycler.Recycler;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.reference.cache.Cached;
 import net.daporkchop.lib.compression.zstd.Zstd;
 import net.daporkchop.lib.compression.zstd.ZstdDeflater;
 import net.daporkchop.lib.compression.zstd.ZstdInflater;
+import net.daporkchop.lib.unsafe.PCleaner;
+import net.daporkchop.lib.unsafe.PUnsafe;
+
+import java.io.IOException;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -43,33 +49,31 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  *
  * @author DaPorkchop_
  */
-@Getter
-public class CompressedTileSnapshot<POS extends IFarPos, T extends IFarTile> implements ITileSnapshot<POS, T> {
+public class CompressedTileSnapshot<POS extends IFarPos, T extends IFarTile> extends AbstractTileSnapshot<POS, T> {
     protected static final Cached<ZstdDeflater> ZSTD_DEF = Cached.threadLocal(() -> Zstd.PROVIDER.deflater(Zstd.PROVIDER.deflateOptions()), ReferenceStrength.WEAK);
     protected static final Cached<ZstdInflater> ZSTD_INF = Cached.threadLocal(() -> Zstd.PROVIDER.inflater(Zstd.PROVIDER.inflateOptions()), ReferenceStrength.WEAK);
 
-    @NonNull
-    protected final POS pos;
-    protected final long timestamp;
+    protected CompressedTileSnapshot(@BorrowOwnership @NonNull TileSnapshot<POS, T> src) {
+        super(src.pos(), src.timestamp());
 
-    @Getter(AccessLevel.NONE)
-    protected final byte[] data;
-
-    public CompressedTileSnapshot(@NonNull TileSnapshot<POS, T> src) {
-        this.pos = src.pos();
-        this.timestamp = src.timestamp();
-
-        if (src.data == null) { //no data
-            this.data = null;
+        if (src.data == 0L) { //no data
+            this.data = 0L;
         } else { //source snapshot has some data, let's compress it
-            ByteBuf compressed = ByteBufAllocator.DEFAULT.buffer(Zstd.PROVIDER.compressBound(src.data.length));
+            int length = _data_length(src.data); //assume this field is aligned
+
+            ByteBuf compressed = ByteBufAllocator.DEFAULT.buffer(Zstd.PROVIDER.compressBound(length));
             try {
                 //compress data
-                checkState(ZSTD_DEF.get().compress(Unpooled.wrappedBuffer(src.data), compressed));
+                checkState(ZSTD_DEF.get().compress(Unpooled.wrappedBuffer(_data_payload(src.data), length, false), compressed));
+                int compressedLength = compressed.readableBytes();
 
-                //copy compressed data into a byte array
-                this.data = new byte[compressed.readableBytes()];
-                compressed.readBytes(this.data);
+                //allocate buffer space
+                this.data = PUnsafe.allocateMemory(DATA_SIZE(compressedLength));
+                this.cleaner = PCleaner.cleaner(this, this.data);
+
+                //populate data buffer
+                _data_length(this.data, compressedLength);
+                compressed.readBytes(DirectBufferHackery.wrapByte(_data_payload(this.data), compressedLength));
             } finally {
                 compressed.release();
             }
@@ -77,10 +81,13 @@ public class CompressedTileSnapshot<POS extends IFarPos, T extends IFarTile> imp
     }
 
     @Override
-    public T loadTile(@NonNull SimpleRecycler<T> recycler) {
-        if (this.data != null) {
+    @SneakyThrows(IOException.class)
+    public T loadTile(@NonNull Recycler<T> recycler, @NonNull IVariableSizeRecyclingCodec<T> codec) {
+        this.ensureNotReleased();
+
+        if (this.data != 0L) {
             //allocate buffers
-            ByteBuf compressed = Unpooled.wrappedBuffer(this.data);
+            ByteBuf compressed = Unpooled.wrappedBuffer(_data_payload(this.data), _data_length(this.data), false);
             ByteBuf uncompressed = ByteBufAllocator.DEFAULT.buffer(Zstd.PROVIDER.frameContentSize(compressed));
             try {
                 //decompress data
@@ -88,7 +95,9 @@ public class CompressedTileSnapshot<POS extends IFarPos, T extends IFarTile> imp
 
                 //initialize tile from decompressed data
                 T tile = recycler.allocate();
-                tile.read(uncompressed);
+                try (DataIn in = DataIn.wrapView(uncompressed)) {
+                    codec.load(tile, in);
+                }
                 return tile;
             } finally {
                 uncompressed.release();
@@ -101,37 +110,55 @@ public class CompressedTileSnapshot<POS extends IFarPos, T extends IFarTile> imp
 
     @Override
     public boolean isEmpty() {
-        return this.data == null;
+        this.ensureNotReleased();
+
+        return this.data == 0L;
     }
 
     @Override
     public ITileSnapshot<POS, T> compressed() {
+        this.ensureNotReleased();
+
         return this; //we're already compressed!
     }
 
     @Override
     public ITileSnapshot<POS, T> uncompressed() {
-        byte[] uncompressedData = null;
-        if (this.data != null) {
-            //allocate buffer
-            uncompressedData = new byte[Zstd.PROVIDER.frameContentSize(Unpooled.wrappedBuffer(this.data))];
+        this.ensureNotReleased();
 
-            //decompress data
-            checkState(ZSTD_INF.get().decompress(Unpooled.wrappedBuffer(this.data), Unpooled.wrappedBuffer(uncompressedData).clear()));
+        if (this.data == 0L) { //this tile is empty!
+            return TileSnapshot.of(this.pos(), this.timestamp());
+        } else {
+            //allocate buffers
+            ByteBuf compressed = Unpooled.wrappedBuffer(_data_payload(this.data), _data_length(this.data), false);
+            ByteBuf uncompressed = ByteBufAllocator.DEFAULT.directBuffer(Zstd.PROVIDER.frameContentSize(compressed));
+            try {
+                //decompress data
+                checkState(ZSTD_INF.get().decompress(compressed, uncompressed));
+
+                //construct an ordinary snapshot from the uncompressed data
+                return TileSnapshot.of(this.pos(), this.timestamp(), uncompressed.memoryAddress(), uncompressed.readableBytes());
+            } finally {
+                uncompressed.release();
+                //no need to release compressed buffer, since it's just wrapping a memory address
+            }
         }
-
-        return new TileSnapshot<>(this.pos, this.timestamp, uncompressedData);
     }
 
     @Override
     public DebugStats.TileSnapshot stats() {
-        if (this.data == null) { //this tile is empty!
+        this.ensureNotReleased();
+
+        if (this.data == 0L) { //this tile is empty!
             return DebugStats.TileSnapshot.ZERO;
         } else {
+            int compressedLength = _data_length(this.data);
+            int uncompressedLength = Zstd.PROVIDER.frameContentSize(Unpooled.wrappedBuffer(_data_payload(this.data), compressedLength, false));
+
             return DebugStats.TileSnapshot.builder()
-                    .allocatedSpace(this.data.length)
-                    .totalSpace(this.data.length)
-                    .uncompressedSize(Zstd.PROVIDER.frameContentSize(Unpooled.wrappedBuffer(this.data)))
+                    .allocatedSpace(compressedLength)
+                    .totalSpace(compressedLength)
+                    .uncompressedSize(uncompressedLength)
                     .build();
         }
     }

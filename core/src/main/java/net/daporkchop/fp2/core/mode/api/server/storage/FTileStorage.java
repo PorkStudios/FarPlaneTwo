@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.api.server.storage;
@@ -29,6 +28,7 @@ import net.daporkchop.fp2.core.mode.api.tile.ITileMetadata;
 import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
 import net.daporkchop.lib.primitive.list.LongList;
 import net.daporkchop.lib.primitive.list.array.LongArrayList;
+import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -66,7 +66,13 @@ public interface FTileStorage<POS extends IFarPos, T extends IFarTile> extends F
      */
     default List<ITileSnapshot<POS, T>> multiSnapshot(@NonNull List<POS> positions) {
         List<ITileSnapshot<POS, T>> out = new ArrayList<>(positions.size());
-        positions.forEach(pos -> out.add(this.handleFor(pos).snapshot()));
+        try {
+            positions.forEach(pos -> out.add(this.handleFor(pos).snapshot()));
+        } catch (Throwable t) {
+            //TODO: release() could throw an exception
+            out.forEach(ITileSnapshot::release); //release all tiles allocated so far
+            PUnsafe.throwException(t); //rethrow original exception
+        }
         return out;
     }
 

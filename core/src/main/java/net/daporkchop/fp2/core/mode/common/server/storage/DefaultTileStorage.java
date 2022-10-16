@@ -22,46 +22,43 @@ package net.daporkchop.fp2.core.mode.common.server.storage;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import com.google.common.collect.ImmutableList;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import lombok.NonNull;
-import lombok.SneakyThrows;
 import net.daporkchop.fp2.api.storage.FStorageException;
 import net.daporkchop.fp2.api.storage.external.FStorageItemFactory;
 import net.daporkchop.fp2.api.storage.internal.FStorageColumn;
 import net.daporkchop.fp2.api.storage.internal.FStorageColumnHintsInternal;
 import net.daporkchop.fp2.api.storage.internal.FStorageInternal;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
+import net.daporkchop.fp2.core.mode.api.IFarPosCodec;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.server.storage.FTileStorage;
 import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
-import net.daporkchop.fp2.core.mode.api.tile.ITileMetadata;
-import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
-import net.daporkchop.fp2.core.mode.api.tile.TileSnapshot;
 import net.daporkchop.fp2.core.mode.common.server.AbstractFarTileProvider;
+import net.daporkchop.fp2.core.util.GlobalAllocators;
+import net.daporkchop.fp2.core.util.datastructure.java.list.ArraySliceAsList;
+import net.daporkchop.fp2.core.util.datastructure.java.list.ListUtils;
+import net.daporkchop.fp2.core.util.serialization.variable.IVariableSizeRecyclingCodec;
+import net.daporkchop.lib.common.pool.array.ArrayAllocator;
+import net.daporkchop.lib.common.reference.ReferenceStrength;
+import net.daporkchop.lib.common.reference.cache.Cached;
 import net.daporkchop.lib.common.system.PlatformInfo;
-import net.daporkchop.lib.common.util.PArrays;
-import net.daporkchop.lib.primitive.list.LongList;
-import net.daporkchop.lib.primitive.list.array.LongArrayList;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.BitSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.stream.Collectors;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.fp2.core.FP2Core.*;
-import static net.daporkchop.fp2.core.mode.api.tile.ITileMetadata.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -74,23 +71,62 @@ public class DefaultTileStorage<POS extends IFarPos, T extends IFarTile> impleme
     protected static final String COLUMN_NAME_DIRTY_TIMESTAMP = "dirty_timestamp";
     protected static final String COLUMN_NAME_DATA = "data";
 
+    protected static final Cached<ArrayAllocator<ByteBuffer[]>> ALLOC_BYTEBUFFER_ARRAY = GlobalAllocators.getArrayAllocatorForComponentType(ByteBuffer.class);
+    protected static final Cached<ArrayAllocator<List<ByteBuffer>>> ALLOC_BYTEBUFFER_LIST = Cached.threadLocal(() -> new ArrayAllocator<List<ByteBuffer>>() {
+        final ArrayAllocator<ByteBuffer[]> delegate = ALLOC_BYTEBUFFER_ARRAY.get();
+
+        @Override
+        public List<ByteBuffer> atLeast(int length) {
+            return this.exactly(length);
+        }
+
+        @Override
+        public List<ByteBuffer> exactly(int length) {
+            //allocate an array, then wrap it in a List of exactly the requested length
+            ByteBuffer[] array = this.delegate.atLeast(length);
+            return ArraySliceAsList.wrap(array, 0, length);
+        }
+
+        @Override
+        public void release(@NonNull List<ByteBuffer> list) {
+            //unwrap the list and return an array
+            ByteBuffer[] array = ((ArraySliceAsList<ByteBuffer>) list).array();
+            Arrays.fill(array, 0, list.size(), null); //null out all elements in the array
+            this.delegate.release(array);
+        }
+    }, ReferenceStrength.WEAK);
+
+    @Deprecated
     protected static long readLongLE(@NonNull byte[] src) {
-        return readLongLE(src, 0);
+        checkRangeLen(src.length, 0, Long.BYTES);
+        return readLongLE(src, PUnsafe.arrayByteElementOffset(0));
     }
 
+    @Deprecated
     protected static long readLongLE(@NonNull byte[] src, int index) {
         checkRangeLen(src.length, index, Long.BYTES);
+        return readLongLE(src, PUnsafe.arrayByteElementOffset(index));
+    }
 
-        long val = PUnsafe.getLong(src, PUnsafe.ARRAY_BYTE_BASE_OFFSET + index);
+    @Deprecated
+    protected static long readLongLE(long addr) {
+        return readLongLE(null, addr);
+    }
+
+    @Deprecated
+    protected static long readLongLE(Object base, long offset) {
+        long val = PUnsafe.getLong(base, offset);
         return PlatformInfo.IS_BIG_ENDIAN ? Long.reverseBytes(val) : val;
     }
 
+    @Deprecated
     protected static byte[] writeLongLE(long val) {
         byte[] dst = new byte[Long.BYTES];
         writeLongLE(dst, 0, val);
         return dst;
     }
 
+    @Deprecated
     protected static void writeLongLE(@NonNull byte[] dst, int index, long val) {
         checkRangeLen(dst.length, index, Long.BYTES);
 
@@ -120,7 +156,7 @@ public class DefaultTileStorage<POS extends IFarPos, T extends IFarTile> impleme
         return new FStorageItemFactory<FTileStorage<POS, T>>() {
             @Override
             public ConfigurationResult configure(@NonNull ConfigurationCallback callback) {
-                int expectedPositionSize = toIntExact(tileProvider.mode().directPosAccess().posSize());
+                int expectedPositionSize = toIntExact(tileProvider.mode().posCodec().size());
 
                 //register the columns
                 callback.registerColumn(COLUMN_NAME_TIMESTAMP, //tile timestamp
@@ -159,11 +195,20 @@ public class DefaultTileStorage<POS extends IFarPos, T extends IFarTile> impleme
     }
 
     protected final AbstractFarTileProvider<POS, T> tileProvider;
+    protected final IFarPosCodec<POS> posCodec;
+    protected final IVariableSizeRecyclingCodec<T> tileCodec;
+
     protected final FStorageInternal storageInternal;
 
     protected final FStorageColumn columnTimestamp;
     protected final FStorageColumn columnDirtyTimestamp;
     protected final FStorageColumn columnData;
+
+    //immutable two-element list containing the following: [this.columnTimestamp, this.columnData]
+    protected final List<FStorageColumn> listColumns_Timestamp_Data;
+
+    //immutable two-element list containing the following: [this.columnTimestamp, this.columnDirtyTimestamp]
+    protected final List<FStorageColumn> listColumns_Timestamp_DirtyTimestamp;
 
     protected final Set<Listener<POS, T>> listeners = new CopyOnWriteArraySet<>();
 
@@ -174,12 +219,18 @@ public class DefaultTileStorage<POS extends IFarPos, T extends IFarTile> impleme
 
     protected DefaultTileStorage(@NonNull AbstractFarTileProvider<POS, T> tileProvider, @NonNull FStorageInternal storageInternal) {
         this.tileProvider = tileProvider;
+        this.posCodec = tileProvider.mode().posCodec();
+        this.tileCodec = tileProvider.mode().tileCodec();
+
         this.storageInternal = storageInternal;
 
         Map<String, FStorageColumn> columns = storageInternal.getColumns();
         this.columnTimestamp = Objects.requireNonNull(columns.get(COLUMN_NAME_TIMESTAMP), COLUMN_NAME_TIMESTAMP);
         this.columnDirtyTimestamp = Objects.requireNonNull(columns.get(COLUMN_NAME_DIRTY_TIMESTAMP), COLUMN_NAME_DIRTY_TIMESTAMP);
         this.columnData = Objects.requireNonNull(columns.get(COLUMN_NAME_DATA), COLUMN_NAME_DATA);
+
+        this.listColumns_Timestamp_Data = ListUtils.immutableListOf(this.columnTimestamp, this.columnData);
+        this.listColumns_Timestamp_DirtyTimestamp = ListUtils.immutableListOf(this.columnTimestamp, this.columnDirtyTimestamp);
     }
 
     @Override
@@ -192,7 +243,7 @@ public class DefaultTileStorage<POS extends IFarPos, T extends IFarTile> impleme
         return this.handleCache.getUnchecked(pos);
     }
 
-    @Override
+    /*@Override
     @SneakyThrows(FStorageException.class)
     public List<ITileSnapshot<POS, T>> multiSnapshot(@NonNull List<POS> positions) {
         int length = positions.size();
@@ -203,22 +254,76 @@ public class DefaultTileStorage<POS extends IFarPos, T extends IFarTile> impleme
 
         //read from storage
         List<byte[]> valueBytes = this.storageInternal.readGet(access -> {
-            //prepare parameter arrays for MultiGet
-            int doubleLength = multiplyExact(length, 2);
-            FStorageColumn[] columns = new FStorageColumn[doubleLength];
-            byte[][] keys = new byte[doubleLength][];
+            int posSize = toIntExact(this.posCodec.size());
+            int tileMaxSize = toIntExact(this.tileCodec.maxSize());
 
-            for (int i = 0; i < doubleLength; ) {
-                byte[] keyBytes = positions.get(i >> 1).toBytes();
+            ArrayAllocator<int[]> intArrayAlloc = ALLOC_INT.get();
+            ArrayAllocator<ByteBuffer[]> byteBufferArrayAlloc = ALLOC_BYTEBUFFER_ARRAY.get();
+            Recycler<ByteBuffer> byteBufferRecycler = FAKE_DIRECT_BYTEBUFFER_RECYCLER.get();
 
-                columns[i] = this.columnTimestamp;
-                keys[i++] = keyBytes;
-                columns[i] = this.columnData;
-                keys[i++] = keyBytes;
+            //helper variables for array sizes
+
+            //allocate temporary arrays for the value sizes
+            int[] sizes = intArrayAlloc.atLeast(multiplyExact(length, 2));
+
+            //allocate an array of direct ByteBuffers
+            int tmpBuffersKeysOffset = 0;
+            int tmpBuffersTimestampsTilesOffset = tmpBuffersKeysOffset + length;
+            int tmpBufferCount = tmpBuffersTimestampsTilesOffset + multiplyExact(length, 2);
+            //TODO: ByteBuffer[] tmpBuffers = byteBufferRecycler.allocate(tmpBufferCount, byteBufferArrayAlloc);
+            ByteBuffer[] tmpBuffers = byteBufferArrayAlloc.atLeast(tmpBufferCount);
+            for (int i = 0; i < tmpBufferCount; i++) {
+                tmpBuffers[i] = byteBufferRecycler.allocate();
             }
 
-            //read all timestamps and values simultaneously
-            return access.multiGet(Arrays.asList(columns), Arrays.asList(keys));
+            //allocate temporary off-heap buffer for serialized keys, tile timestamps and tile data
+            long bufferKeysOffset = 0L;
+            long bufferTimestampsTilesOffset = addExact(bufferKeysOffset, multiplyExact(length, posSize));
+            long buffer = PUnsafe.allocateMemory(addExact(bufferTimestampsTilesOffset, addExact(multiplyExact(length, (long) tileMaxSize), multiplyExact(length, (long) LONG_SIZE))));
+            try {
+                long bufferKeys = buffer + bufferKeysOffset;
+                long bufferTimestampsTiles = buffer + bufferTimestampsTilesOffset;
+
+                { //serialize keys
+                    int i = 0;
+                    for (long addr = bufferKeys; i < length; i++, addr += posSize) {
+                        this.posCodec.store(positions.get(i), addr);
+
+                        //configure buffer
+                        DirectBufferHackery.reset(tmpBuffers[tmpBuffersKeysOffset + i], addr, posSize);
+                    }
+                }
+
+                { //configure buffers for timestamps and data
+                    int i = 0;
+                    for (long addr = bufferTimestampsTiles; i < length; ) {
+                        DirectBufferHackery.reset(tmpBuffers[tmpBuffersTimestampsTilesOffset + i++], addr, LONG_SIZE);
+                        addr += LONG_SIZE;
+                        DirectBufferHackery.reset(tmpBuffers[tmpBuffersTimestampsTilesOffset + i++], addr, LONG_SIZE);
+                        addr += tileMaxSize;
+                    }
+                }
+
+                //read all timestamps and values simultaneously
+                checkState(access.multiGet(
+                        ListUtils.repeatSequence(ImmutableList.of(this.columnTimestamp, this.columnData), length),
+                        ListUtils.repeatElements(ArraySliceAsList.wrap(tmpBuffers, tmpBuffersKeysOffset, length), 2),
+                        ArraySliceAsList.wrap(tmpBuffers, tmpBuffersTimestampsTilesOffset, length * 2),
+                        sizes));
+
+                //TODO: actually do something with the retrieved data
+                throw new UnsupportedOperationException();
+            } finally {
+                PUnsafe.freeMemory(buffer);
+                //TODO: byteBufferRecycler.release(tmpBuffers, tmpBufferCount, byteBufferArrayAlloc);
+                for (int i = 0; i < tmpBufferCount; i++) {
+                    byteBufferRecycler.release(tmpBuffers[i]);
+                }
+                Arrays.fill(tmpBuffers, 0, tmpBufferCount, null);
+                byteBufferArrayAlloc.release(tmpBuffers);
+
+                intArrayAlloc.release(sizes);
+            }
         });
 
         //construct snapshots
@@ -468,7 +573,7 @@ public class DefaultTileStorage<POS extends IFarPos, T extends IFarTile> impleme
             }
             return out;
         });
-    }
+    }*/
 
     @Override
     public void addListener(@NonNull Listener<POS, T> listener) {

@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.common.ctx;
@@ -37,12 +36,14 @@ import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUnloadTiles
 import net.daporkchop.fp2.core.server.player.IFarPlayerServer;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
+import net.daporkchop.lib.common.annotation.TransferOwnership;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
+import java.util.function.BiFunction;
 
 import static net.daporkchop.fp2.core.debug.FP2Debug.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -165,14 +166,21 @@ public abstract class AbstractFarServerContext<POS extends IFarPos, T extends IF
         this.tracker.close();
     }
 
+    protected BiFunction<Optional<TileSnapshot<POS, T>>, Optional<TileSnapshot<POS, T>>, Optional<TileSnapshot<POS, T>>> sendQueueMergeOperator() {
+        return (prev, next) -> {
+            prev.ifPresent(TileSnapshot::release);
+            return next;
+        };
+    }
+
     @Override
-    public void sendTile(@NonNull TileSnapshot<POS, T> snapshot) {
+    public void sendTile(@TransferOwnership @NonNull TileSnapshot<POS, T> snapshot) {
         if (this.closed) { //this context has been closed - silently discard all tile data
             return;
         }
 
         synchronized (this.sendQueue) {
-            this.sendQueue.put(snapshot.pos(), Optional.of(snapshot));
+            this.sendQueue.merge(snapshot.pos(), Optional.of(snapshot), this.sendQueueMergeOperator());
         }
     }
 
@@ -183,7 +191,7 @@ public abstract class AbstractFarServerContext<POS extends IFarPos, T extends IF
         }
 
         synchronized (this.sendQueue) {
-            this.sendQueue.put(pos, Optional.empty());
+            this.sendQueue.merge(pos, Optional.empty(), this.sendQueueMergeOperator());
         }
     }
 
@@ -194,7 +202,7 @@ public abstract class AbstractFarServerContext<POS extends IFarPos, T extends IF
         }
 
         synchronized (this.sendQueue) {
-            positions.forEach(pos -> this.sendQueue.put(pos, Optional.empty()));
+            positions.forEach(pos -> this.sendQueue.merge(pos, Optional.empty(), this.sendQueueMergeOperator()));
         }
     }
 }

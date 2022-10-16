@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.common.server;
@@ -32,9 +31,11 @@ import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.core.mode.api.tile.ITileMetadata;
 import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
 import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
-import net.daporkchop.fp2.core.util.SimpleRecycler;
+import net.daporkchop.lib.common.pool.recycler.Recycler;
+import net.daporkchop.fp2.core.util.serialization.variable.IVariableSizeRecyclingCodec;
 import net.daporkchop.fp2.core.util.threading.scheduler.Scheduler;
 import net.daporkchop.fp2.core.util.threading.scheduler.SharedFutureScheduler;
+import net.daporkchop.lib.common.util.PArrays;
 import net.daporkchop.lib.primitive.lambda.ObjObjLongConsumer;
 import net.daporkchop.lib.primitive.list.LongList;
 import net.daporkchop.lib.primitive.list.array.LongArrayList;
@@ -86,7 +87,8 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
                 break;
             case UPDATE:
                 this.provider.storage().multiDirtyTimestamp(positions)
-                        .forEach((LongConsumer) minimumTimestamp -> out.add(minimumTimestamp == ITileMetadata.TIMESTAMP_BLANK ? ITileMetadata.TIMESTAMP_GENERATED : minimumTimestamp));
+                        .forEach((LongConsumer) minimumTimestamp ->
+                                out.add(minimumTimestamp == ITileMetadata.TIMESTAMP_BLANK ? ITileMetadata.TIMESTAMP_GENERATED : minimumTimestamp));
                 break;
             default:
                 throw new IllegalArgumentException("unknown stage: " + stage);
@@ -170,8 +172,9 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
             state.tryAcquire(batchPositions, SharedFutureScheduler.AcquisitionStrategy.TRY_STEAL_EXISTING_OR_CREATE);
         });
 
-        SimpleRecycler<T> tileRecycler = this.provider.mode().tileRecycler();
-        T[] tiles = tileRecycler.allocate(state.positions().size(), this.provider.mode()::tileArray);
+        Recycler<T> tileRecycler = this.provider.mode().tileRecycler();
+        //TODO: T[] tiles = tileRecycler.allocate(state.positions().size(), this.provider.mode()::tileArray);
+        T[] tiles = PArrays.filledFrom(state.positions().size(), this.provider.mode()::tileArray, tileRecycler::allocate);
         try {
             //generate tile
             this.provider.generatorRough().generate(state.positions().toArray(this.provider.mode().posArray(state.positions().size())), tiles);
@@ -181,7 +184,11 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
                     StreamSupport.stream(state.minimumTimestamps().spliterator(), false).map(ITileMetadata::ofTimestamp).collect(Collectors.toList()),
                     Arrays.asList(tiles));
         } finally {
-            tileRecycler.release(tiles);
+            //TODO: tileRecycler.release(tiles);
+            for (T tile : tiles) {
+                tileRecycler.release(tile);
+            }
+            Arrays.fill(tiles, null);
         }
 
         //notify callback
@@ -189,7 +196,9 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
     }
 
     protected void generateExact(@NonNull State state, boolean allowGeneration) throws GenerationNotAllowedException {
-        try (FBlockLevel exactWorld = this.provider.world().exactBlockLevelHolder().worldFor(allowGeneration ? ExactFBlockLevelHolder.AllowGenerationRequirement.ALLOWED : ExactFBlockLevelHolder.AllowGenerationRequirement.NOT_ALLOWED)) {
+        try (FBlockLevel exactWorld = this.provider.world().exactBlockLevelHolder().worldFor(allowGeneration
+                ? ExactFBlockLevelHolder.AllowGenerationRequirement.ALLOWED
+                : ExactFBlockLevelHolder.AllowGenerationRequirement.NOT_ALLOWED)) {
             //try to steal tasks required to make this a batch
             this.provider.generatorExact().batchGenerationGroup(exactWorld, state.positions()).ifPresent(batchPositions -> {
                 //ensure the original position is contained in the list
@@ -200,8 +209,9 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
             });
 
             //actually do exact generation
-            SimpleRecycler<T> tileRecycler = this.provider.mode().tileRecycler();
-            T[] tiles = tileRecycler.allocate(state.positions().size(), this.provider.mode()::tileArray);
+            Recycler<T> tileRecycler = this.provider.mode().tileRecycler();
+            //TODO: T[] tiles = tileRecycler.allocate(state.positions().size(), this.provider.mode()::tileArray);
+            T[] tiles = PArrays.filledFrom(state.positions().size(), this.provider.mode()::tileArray, tileRecycler::allocate);
             try {
                 //generate tile
                 this.provider.generatorExact().generate(exactWorld, state.positions().toArray(this.provider.mode().posArray(state.positions().size())), tiles);
@@ -211,7 +221,11 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
                         StreamSupport.stream(state.minimumTimestamps().spliterator(), false).map(ITileMetadata::ofTimestamp).collect(Collectors.toList()),
                         Arrays.asList(tiles));
             } finally {
-                tileRecycler.release(tiles);
+                //TODO: tileRecycler.release(tiles);
+                for (T tile : tiles) {
+                    tileRecycler.release(tile);
+                }
+                Arrays.fill(tiles, null);
             }
 
             //notify callback
@@ -239,45 +253,52 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
                 //no null checks are necessary, because we're only snapshotting the input positions which are valid, and therefore all snapshots will be non-null
                 .collect(Collectors.toMap(ITileSnapshot::pos, Function.identity()));
 
-        if (state.considerExit()) {
-            return;
-        }
-
-        //scale each position individually
-        SimpleRecycler<T> tileRecycler = this.provider.mode().tileRecycler();
-        state.forEachPositionHandleTimestamp((pos, handle, minimumTimestamp) -> {
-            List<POS> srcPositions = this.provider.scaler().inputs(pos);
-
-            T[] srcs = this.provider.mode().tileArray(srcPositions.size());
-            T dst = tileRecycler.allocate();
-            try {
-                //inflate tile snapshots where necessary
-                for (int i = 0; i < srcPositions.size(); i++) {
-                    //tile is only guaranteed to have been generated if it's at a valid position (we filter out invalid
-                    // positions above in the scatterGather call)
-                    if (this.provider.coordLimits().contains(srcPositions.get(i))) {
-                        srcs[i] = snapshotsByPosition.get(srcPositions.get(i)).loadTile(tileRecycler);
-                    }
-                }
-
-                //actually do scaling
-                this.provider.scaler().scale(srcs, dst);
-
-                //update handle contents
-                handle.set(ITileMetadata.ofTimestamp(minimumTimestamp), dst);
-            } finally {
-                //release all allocated tile instances
-                tileRecycler.release(dst);
-                for (T src : srcs) {
-                    if (src != null) {
-                        tileRecycler.release(src);
-                    }
-                }
+        try {
+            if (state.considerExit()) {
+                return;
             }
-        });
 
-        //all tiles have been scaled, mark the tasks as complete
-        state.completeAll();
+            //scale each position individually
+            Recycler<T> tileRecycler = this.provider.mode().tileRecycler();
+            state.forEachPositionHandleTimestamp((pos, handle, minimumTimestamp) -> {
+                List<POS> srcPositions = this.provider.scaler().inputs(pos);
+
+                T[] srcs = this.provider.mode().tileArray(srcPositions.size());
+                T dst = tileRecycler.allocate();
+                try {
+                    IVariableSizeRecyclingCodec<T> codec = this.provider.mode().tileCodec();
+
+                    //inflate tile snapshots where necessary
+                    for (int i = 0; i < srcPositions.size(); i++) {
+                        //tile is only guaranteed to have been generated if it's at a valid position (we filter out invalid
+                        // positions above in the scatterGather call)
+                        if (this.provider.coordLimits().contains(srcPositions.get(i))) {
+                            srcs[i] = snapshotsByPosition.get(srcPositions.get(i)).loadTile(tileRecycler, codec);
+                        }
+                    }
+
+                    //actually do scaling
+                    this.provider.scaler().scale(srcs, dst);
+
+                    //update handle contents
+                    handle.set(ITileMetadata.ofTimestamp(minimumTimestamp), dst);
+                } finally {
+                    //release all allocated tile instances
+                    tileRecycler.release(dst);
+                    for (T src : srcs) {
+                        if (src != null) {
+                            tileRecycler.release(src);
+                        }
+                    }
+                }
+            });
+
+            //all tiles have been scaled, mark the tasks as complete
+            state.completeAll();
+        } finally {
+            //TODO: release() could throw an exception
+            snapshotsByPosition.values().forEach(ITileSnapshot::release);
+        }
     }
 
     /**
@@ -323,7 +344,8 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
             positions.forEach(pos -> checkArg(TileWorker.this.provider.coordLimits().contains(pos), "tile position is outside coordinate limits: %s", pos));
 
             LongList minimumTimestamps = TileWorker.this.minimumTimestamps(this.stage, positions);
-            minimumTimestamps.forEach((LongConsumer) minimumTimestamp -> checkState(this.worldTimestamp >= minimumTimestamp, "worldTimestamp (%d) is less than minimumTimestamp (%d)?!?", this.worldTimestamp, minimumTimestamp));
+            minimumTimestamps.forEach((LongConsumer) minimumTimestamp -> checkState(this.worldTimestamp >= minimumTimestamp,
+                    "worldTimestamp (%d) is less than minimumTimestamp (%d)?!?", this.worldTimestamp, minimumTimestamp));
 
             positions.forEach(pos -> {
                 checkState(this.allPositions.add(pos), "position %s has already been acquired!", pos);

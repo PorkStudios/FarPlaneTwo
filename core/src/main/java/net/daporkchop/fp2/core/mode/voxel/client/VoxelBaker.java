@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.voxel.client;
@@ -109,7 +108,9 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
         }
 
         //write globals
-        output.globals().put(new VoxelGlobalAttributes(pos.x(), pos.y(), pos.z(), pos.level()));
+        output.globals().append()
+                .tilePos(pos.x(), pos.y(), pos.z(), pos.level())
+                .close();
 
         ArrayAllocator<int[]> alloc = GlobalAllocators.ALLOC_INT.get();
         int[] map = alloc.atLeast(cb(VT_VERTS) * EDGE_COUNT);
@@ -128,9 +129,7 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
 
     protected void writeVertices(VoxelTile[] srcs, int blockX, int blockY, int blockZ, int level, int[] map, AttributeWriter<VoxelLocalAttributes> verts) {
         final VoxelData data = new VoxelData();
-        final VoxelLocalAttributes attributes = new VoxelLocalAttributes();
 
-        int indexCounter = 0;
         for (int i = 0; i < 8; i++) {
             VoxelTile src = srcs[i];
             if (src == null) {
@@ -147,14 +146,14 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
                             continue;
                         }
 
-                        indexCounter = this.writeVertex(blockX, blockY, blockZ, level, dx + (((i >> 2) & 1) << VT_SHIFT), dy + (((i >> 1) & 1) << VT_SHIFT), dz + ((i & 1) << VT_SHIFT), data, verts, attributes, map, indexCounter);
+                        this.writeVertex(blockX, blockY, blockZ, level, dx + (((i >> 2) & 1) << VT_SHIFT), dy + (((i >> 1) & 1) << VT_SHIFT), dz + ((i & 1) << VT_SHIFT), data, verts, map);
                     }
                 }
             }
         }
     }
 
-    protected int writeVertex(int baseX, int baseY, int baseZ, int level, int x, int y, int z, VoxelData data, AttributeWriter<VoxelLocalAttributes> vertices, VoxelLocalAttributes attributes, int[] map, int indexCounter) {
+    protected void writeVertex(int baseX, int baseY, int baseZ, int level, int x, int y, int z, VoxelData data, AttributeWriter<VoxelLocalAttributes> vertices, int[] map) {
         baseX += (x & VT_VOXELS) << level;
         baseY += (y & VT_VOXELS) << level;
         baseZ += (z & VT_VOXELS) << level;
@@ -171,13 +170,12 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
         //  the upper 4 bits for the regular light level (which is in range [0,15]) results in a float range of [0,15/16]. additionally, we set
         //  the bottom 4 bits to 0b1000. this is equivalent to an offset of 0.5 texels, which prevents blending artifacts when sampling right along
         //  the edge of a texture.
-        attributes.lightBlock = (byte) ((blockLight << 4) | 8);
-        attributes.lightSky = (byte) ((skyLight << 4) | 8);
+        vertices.append()
+                .light((blockLight << 4) | 8, (skyLight << 4) | 8)
+                .pos((x << POS_FRACT_SHIFT) + data.x, (y << POS_FRACT_SHIFT) + data.y, (z << POS_FRACT_SHIFT) + data.z)
+                .close();
 
-        attributes.posX = (byte) ((x << POS_FRACT_SHIFT) + data.x);
-        attributes.posY = (byte) ((y << POS_FRACT_SHIFT) + data.y);
-        attributes.posZ = (byte) ((z << POS_FRACT_SHIFT) + data.z);
-
+        boolean first = true;
         EDGES:
         for (int edge = 0; edge < EDGE_COUNT; edge++) {
             for (int j = 0; j < edge; j++) {
@@ -187,12 +185,19 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
                 }
             }
 
-            attributes.state = this.textureUVs.state2index(data.states[edge]);
-            attributes.color = this.levelRenderer.tintFactorForStateInBiomeAtPos(data.states[edge], data.biome, blockX, blockY, blockZ);
+            if (!first) {
+                vertices.append().close();
+                vertices.copy(vertices.position() - 1, vertices.position());
+            }
 
-            map[baseMapIndex + edge] = vertices.put(attributes);
+            vertices.current()
+                    .state(this.textureUVs.state2index(data.states[edge]))
+                    .color(this.levelRenderer.tintFactorForStateInBiomeAtPos(data.states[edge], data.biome, blockX, blockY, blockZ))
+                    .close();
+
+            map[baseMapIndex + edge] = vertices.position();
+            first = false;
         }
-        return indexCounter;
     }
 
     protected void writeIndices(VoxelTile src, int[] map, IndexWriter[] indices) {

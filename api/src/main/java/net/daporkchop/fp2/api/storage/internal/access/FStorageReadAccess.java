@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.api.storage.internal.access;
@@ -25,6 +24,7 @@ import net.daporkchop.fp2.api.storage.FStorageException;
 import net.daporkchop.fp2.api.storage.internal.FStorageColumn;
 import net.daporkchop.fp2.api.storage.internal.FStorageInternal;
 
+import java.nio.ByteBuffer;
 import java.util.List;
 
 /**
@@ -46,6 +46,19 @@ public interface FStorageReadAccess {
     byte[] get(@NonNull FStorageColumn column, @NonNull byte[] key) throws FStorageException;
 
     /**
+     * Gets the value associated with the given key in the given storage column.
+     * <p>
+     * This is a read operation.
+     *
+     * @param column the storage column
+     * @param key    the key
+     * @param value  the {@link ByteBuffer} which the value is to be loaded into
+     * @return the size of the value, or {@code -1} if it could not be found
+     * @throws FStorageException if the operation fails
+     */
+    int get(@NonNull FStorageColumn column, @NonNull ByteBuffer key, @NonNull ByteBuffer value) throws FStorageException;
+
+    /**
      * Atomically gets the values associated with the given keys in the given storage columns. The operation is performed atomically.
      * <p>
      * This is a read operation.
@@ -58,22 +71,34 @@ public interface FStorageReadAccess {
     List<byte[]> multiGet(@NonNull List<FStorageColumn> columns, @NonNull List<byte[]> keys) throws FStorageException;
 
     /**
+     * Atomically gets the values associated with the given keys in the given storage columns. The operation is performed atomically.
+     * <p>
+     * This is a read operation.
+     *
+     * @param columns the storage columns
+     * @param keys    the keys
+     * @param values  the {@link ByteBuffer}s to which the values are to be loaded into
+     * @param sizes   an array whose elements will be updated to indicate the size of each value, or contain {@code -1} if the corresponding key could not be found
+     * @return {@code true} if there was enough space for every value, {@code false} otherwise (meaning that at least one buffer needs to be resized before trying again)
+     * @throws FStorageException if the operation fails
+     */
+    boolean multiGet(@NonNull List<FStorageColumn> columns, @NonNull List<ByteBuffer> keys, @NonNull List<ByteBuffer> values, @NonNull int[] sizes) throws FStorageException;
+
+    /**
      * Gets an {@link FStorageIterator iterator} for iterating over the entries in the given storage column.
      * <p>
-     * This, and all of the methods defined in {@link FStorageIterator}, are read operations.
+     * This, and all methods defined in {@link FStorageIterator}, are read operations.
      *
      * @param column the storage column
      * @return the {@link FStorageIterator iterator}
      * @throws FStorageException if the operation fails
      */
-    default FStorageIterator iterator(@NonNull FStorageColumn column) throws FStorageException {
-        return this.iterator(column, null, null);
-    }
+    FStorageIterator iterator(@NonNull FStorageColumn column) throws FStorageException;
 
     /**
      * Gets an {@link FStorageIterator iterator} for iterating over a given range of entries in the given storage column.
      * <p>
-     * This, and all of the methods defined in {@link FStorageIterator}, are read operations.
+     * This, and all the methods defined in {@link FStorageIterator}, are read operations.
      *
      * @param column           the storage column
      * @param fromKeyInclusive the lower bound of the iteration range (inclusive), or {@code null} if no explicit lower bound is requested
@@ -82,4 +107,17 @@ public interface FStorageReadAccess {
      * @throws FStorageException if the operation fails
      */
     FStorageIterator iterator(@NonNull FStorageColumn column, byte[] fromKeyInclusive, byte[] toKeyExclusive) throws FStorageException;
+
+    /**
+     * Gets an {@link FStorageIterator iterator} for iterating over a given range of entries in the given storage column.
+     * <p>
+     * This, and all the methods defined in {@link FStorageIterator}, are read operations.
+     *
+     * @param column           the storage column
+     * @param fromKeyInclusive the lower bound of the iteration range (inclusive), or {@code null} if no explicit lower bound is requested
+     * @param toKeyExclusive   the upper bound of the iteration range (exclusive), or {@code null} if no explicit upper bound is requested
+     * @return the {@link FStorageIterator iterator}
+     * @throws FStorageException if the operation fails
+     */
+    FStorageIterator iterator(@NonNull FStorageColumn column, ByteBuffer fromKeyInclusive, ByteBuffer toKeyExclusive) throws FStorageException;
 }

@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.client.render.common;
@@ -35,10 +34,11 @@ import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeUsage;
+import net.daporkchop.fp2.gl.attribute.AttributeWriter;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.lib.primitive.map.ObjIntMap;
 import net.daporkchop.lib.primitive.map.open.ObjIntOpenHashMap;
-import net.daporkchop.lib.unsafe.util.AbstractReleasable;
+import net.daporkchop.lib.common.misc.release.AbstractReleasable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -55,21 +55,21 @@ import static net.daporkchop.fp2.core.FP2Core.*;
 public abstract class AbstractTextureUVs extends AbstractReleasable implements TextureUVs {
     protected final FGameRegistry registry;
 
-    protected final AttributeFormat<QuadList> listsFormat;
-    protected final AttributeBuffer<QuadList> listsBuffer;
+    protected final AttributeFormat<QuadListAttribute> listsFormat;
+    protected final AttributeBuffer<QuadListAttribute> listsBuffer;
 
-    protected final AttributeFormat<PackedBakedQuad> quadsFormat;
-    protected final AttributeBuffer<PackedBakedQuad> quadsBuffer;
+    protected final AttributeFormat<PackedBakedQuadAttribute> quadsFormat;
+    protected final AttributeBuffer<PackedBakedQuadAttribute> quadsBuffer;
 
     protected int[] stateIdToIndexId;
 
     public AbstractTextureUVs(@NonNull FGameRegistry registry, @NonNull GL gl) {
         this.registry = registry;
 
-        this.listsFormat = gl.createAttributeFormat(QuadList.class).useFor(AttributeUsage.UNIFORM_ARRAY).build();
+        this.listsFormat = gl.createAttributeFormat(QuadListAttribute.class).useFor(AttributeUsage.UNIFORM_ARRAY).build();
         this.listsBuffer = this.listsFormat.createBuffer(BufferUsage.STATIC_DRAW);
 
-        this.quadsFormat = gl.createAttributeFormat(PackedBakedQuad.class).useFor(AttributeUsage.UNIFORM_ARRAY).build();
+        this.quadsFormat = gl.createAttributeFormat(PackedBakedQuadAttribute.class).useFor(AttributeUsage.UNIFORM_ARRAY).build();
         this.quadsBuffer = this.quadsFormat.createBuffer(BufferUsage.STATIC_DRAW);
 
         fp2().eventBus().registerWeak(this);
@@ -144,21 +144,25 @@ public abstract class AbstractTextureUVs extends AbstractReleasable implements T
         this.stateIdToIndexId = realStateIdToIndexId;
 
         QuadList[] quadIdToList = new QuadList[distinctQuadsById.size()];
-        List<PackedBakedQuad> quadsOut = new ArrayList<>(distinctQuadsById.size());
-        for (int i = 0, len = distinctQuadsById.size(); i < len; i++) {
-            List<PackedBakedQuad> quads = distinctQuadsById.get(i);
-            quadIdToList[i] = new QuadList(quadsOut.size(), quadsOut.size() + quads.size());
-            quadsOut.addAll(quads);
-        }
-        this.quadsBuffer.setContents(quadsOut.toArray(new PackedBakedQuad[0]));
-
-        List<QuadList> listsOut = new ArrayList<>(quadIdToList.length);
-        for (int[] faceIds : distinctIndicesById) {
-            for (int i : faceIds) {
-                listsOut.add(quadIdToList[i]);
+        try (AttributeWriter<PackedBakedQuadAttribute> quadsOut = this.quadsFormat().createWriter()) {
+            for (int i = 0, len = distinctQuadsById.size(); i < len; i++) {
+                List<PackedBakedQuad> quads = distinctQuadsById.get(i);
+                quadIdToList[i] = new QuadList(quadsOut.size(), quadsOut.size() + quads.size());
+                quads.forEach(quad -> quadsOut.append().copyFrom(quad).close());
             }
+
+            this.quadsBuffer().set(quadsOut);
         }
-        this.listsBuffer.setContents(listsOut.toArray(new QuadList[0]));
+
+        try (AttributeWriter<QuadListAttribute> listsOut = this.listsFormat().createWriter()) {
+            for (int[] faceIds : distinctIndicesById) {
+                for (int i : faceIds) {
+                    listsOut.append().copyFrom(quadIdToList[i]).close();
+                }
+            }
+
+            this.listsBuffer().set(listsOut);
+        }
     }
 
     @Override

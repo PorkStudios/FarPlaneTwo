@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.attribute.texture;
@@ -32,15 +31,12 @@ import java.util.function.IntConsumer;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class BaseTextureImpl<F extends BaseTextureFormatImpl<F, S>, S> extends BaseAttributeBufferImpl<F> implements BaseTexture<S> {
-    protected final TextureStructFormat<S> structFormat;
-
+public abstract class BaseTextureImpl<F extends BaseTextureFormatImpl<F>> extends BaseAttributeBufferImpl<F> implements BaseTexture {
     protected final int id;
     protected final boolean managed;
 
     public BaseTextureImpl(@NonNull F format) {
         super(format);
-        this.structFormat = format.structFormat();
 
         this.id = this.gl.api().glGenTexture();
         this.managed = true;
@@ -49,7 +45,6 @@ public abstract class BaseTextureImpl<F extends BaseTextureFormatImpl<F, S>, S> 
 
     public BaseTextureImpl(@NonNull F format, int id) {
         super(format);
-        this.structFormat = format.structFormat();
 
         this.id = id;
         this.managed = false;
@@ -71,5 +66,17 @@ public abstract class BaseTextureImpl<F extends BaseTextureFormatImpl<F, S>, S> 
         } finally {
             this.gl.api().glBindTexture(target.target(), oldBufferTexture);
         }
+    }
+
+    protected int gl_internalFormat() {
+        throw new UnsupportedOperationException();
+    }
+
+    protected int gl_format() {
+        throw new UnsupportedOperationException();
+    }
+
+    protected int gl_type() {
+        throw new UnsupportedOperationException();
     }
 }

@@ -15,13 +15,12 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.common.client.strategy;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.core.client.render.GlobalUniformAttributes;
+import net.daporkchop.fp2.core.client.render.RenderInfo;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
@@ -40,7 +39,7 @@ import net.daporkchop.fp2.gl.transform.TransformLayoutBuilder;
 import net.daporkchop.fp2.gl.transform.binding.TransformBindingBuilder;
 import net.daporkchop.fp2.gl.transform.shader.TransformShaderBuilder;
 import net.daporkchop.lib.common.misc.refcount.RefCounted;
-import net.daporkchop.lib.unsafe.util.exception.AlreadyReleasedException;
+import net.daporkchop.lib.common.util.exception.AlreadyReleasedException;
 
 /**
  * @author DaPorkchop_
@@ -72,7 +71,7 @@ public interface IFarRenderStrategy<POS extends IFarPos, T extends IFarTile, BO 
 
     TransformShaderBuilder configureSelectionShader(@NonNull TransformShaderBuilder builder, int level);
 
-    void render(@NonNull IRenderIndex<POS, BO, DB, DC> index, @NonNull GlobalUniformAttributes globalUniformAttributes);
+    void render(@NonNull IRenderIndex<POS, BO, DB, DC> index, @NonNull RenderInfo renderInfo);
 
     @Override
     int refCnt();

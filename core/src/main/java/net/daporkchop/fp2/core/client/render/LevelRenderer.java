@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.client.render;
@@ -61,20 +60,23 @@ public interface LevelRenderer {
      */
     TerrainRenderingBlockedTracker blockedTracker();
 
+    /**
+     * @return the {@link TextureUVs} instance used in this level
+     */
     TextureUVs textureUVs();
 
     /**
-     * @return the {@link GL} used in this world
+     * @return the {@link GL} used in this level
      */
     GL gl();
 
     /**
-     * @return the GL-implementation-specific ID for the terrain texture
+     * @return the {@link GL}-implementation-specific ID for the terrain texture
      */
     Object terrainTextureId();
 
     /**
-     * @return the GL-implementation-specific ID for the lightmap texture
+     * @return the {@link GL}-implementation-specific ID for the lightmap texture
      */
     Object lightmapTextureId();
 }

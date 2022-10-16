@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.voxel;
@@ -25,8 +24,13 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
+import net.daporkchop.fp2.core.util.serialization.variable.IVariableSizeRecyclingCodec;
+import net.daporkchop.lib.binary.stream.DataIn;
+import net.daporkchop.lib.binary.stream.DataOut;
 import net.daporkchop.lib.unsafe.PCleaner;
 import net.daporkchop.lib.unsafe.PUnsafe;
+
+import java.io.IOException;
 
 import static net.daporkchop.fp2.core.mode.voxel.VoxelConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -38,6 +42,14 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @Getter
 public class VoxelTile implements IFarTile {
+    static {
+        //we copy values directly between int[] and off-heap memory
+        PUnsafe.requireTightlyPackedPrimitiveArrays();
+
+        //we assume unaligned memory accesses are supported
+        PUnsafe.requireUnalignedAccess();
+    }
+
     //layout (in ints):
     //0: (dx << 24) | (dy << 16) | (dz << 8) | edges
     //                                       ^ 2 bits are free
@@ -55,6 +67,61 @@ public class VoxelTile implements IFarTile {
 
     public static final int ENTRY_FULL_SIZE_BYTES = ENTRY_DATA_SIZE * 4 + 2;
     public static final int TILE_SIZE = INDEX_SIZE + ENTRY_FULL_SIZE_BYTES * ENTRY_COUNT;
+
+    public static final IVariableSizeRecyclingCodec<VoxelTile> CODEC = new IVariableSizeRecyclingCodec<VoxelTile>() {
+        @Override
+        public long maxSize() {
+            return TILE_SIZE;
+        }
+
+        @Override
+        public void load(@NonNull VoxelTile tile, @NonNull DataIn in) throws IOException {
+            tile.reset();
+
+            int count = tile.count = in.readIntLE();
+
+            long addr = tile.addr + INDEX_SIZE;
+            for (int i = 0; i < count; i++) { //copy data
+                int pos = in.readUnsignedShortLE();
+
+                PUnsafe.putShort(tile.addr + pos * 2L, (short) i); //put data slot into index
+
+                PUnsafe.putChar(addr, (char) pos); //prefix data with pos
+                addr += 2L;
+                for (int j = 0; j < ENTRY_DATA_SIZE; j++, addr += 4L) {
+                    PUnsafe.putUnalignedInt(addr, in.readIntLE());
+                }
+            }
+        }
+
+        @Override
+        public void store(@NonNull VoxelTile tile, @NonNull DataOut out) throws IOException {
+            //first pass: determine number of set voxels for length prefix
+            //TODO: modify tile data format so that we don't need a length prefix
+            int count = 0;
+            for (int i = 0; i < ENTRY_COUNT; i++) { //iterate through the index and search for set voxels
+                int index = PUnsafe.getShort(tile.addr + i * 2L);
+                if (index >= 0) { //voxel is set
+                    count++;
+                }
+            }
+
+            //second pass: actually write data
+            out.writeIntLE(count);
+            for (int i = 0; i < ENTRY_COUNT; i++) { //iterate through the index and search for set voxels
+                int index = PUnsafe.getShort(tile.addr + i * 2L);
+                if (index >= 0) { //voxel is set
+                    //write position
+                    out.writeShortLE(i);
+
+                    long data = tile.addr + INDEX_SIZE + index * ENTRY_DATA_SIZE_BYTES;
+                    for (int j = 0; j < ENTRY_DATA_SIZE; j++) { //write voxel data
+                        out.writeIntLE(PUnsafe.getUnalignedInt(data + j * 4L));
+                    }
+                }
+            }
+        }
+    };
 
     static int index(int x, int y, int z) {
         assert x >= 0 && x < VT_VOXELS : "x=" + x;
@@ -167,6 +234,11 @@ public class VoxelTile implements IFarTile {
     }
 
     @Override
+    public boolean isEmpty() {
+        return this.count == 0;
+    }
+
+    @Override
     public void reset() {
         this.extra = 0L;
 
@@ -206,12 +278,12 @@ public class VoxelTile implements IFarTile {
         dst.writeIntLE(-1);
 
         int count = 0;
-        for (int i = 0; i < VoxelTile.ENTRY_COUNT; i++) { //iterate through the index and search for set voxels
+        for (int i = 0; i < ENTRY_COUNT; i++) { //iterate through the index and search for set voxels
             int index = PUnsafe.getShort(this.addr + i * 2L);
             if (index >= 0) { //voxel is set
                 dst.writeShortLE(i); //write position
-                long base = this.addr + VoxelTile.INDEX_SIZE + index * VoxelTile.ENTRY_DATA_SIZE_BYTES;
-                for (int j = 0; j < VoxelTile.ENTRY_DATA_SIZE; j++) { //write voxel data
+                long base = this.addr + INDEX_SIZE + index * ENTRY_DATA_SIZE_BYTES;
+                for (int j = 0; j < ENTRY_DATA_SIZE; j++) { //write voxel data
                     dst.writeIntLE(PUnsafe.getInt(base + j * 4L));
                 }
                 count++;

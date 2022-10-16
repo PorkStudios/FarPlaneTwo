@@ -15,12 +15,10 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.attribute.texture;
 
-import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 
 /**
@@ -29,16 +27,6 @@ import net.daporkchop.fp2.gl.attribute.AttributeFormat;
  * @author DaPorkchop_
  */
 public interface TextureFormatBuilder<F extends BaseTextureFormat> {
-    /**
-     * Registers an attribute name override.
-     * <p>
-     * The attribute with the given original name will be visible in shaders under the given new name.
-     *
-     * @param originalName the original name
-     * @param newName      the new name
-     */
-    TextureFormatBuilder<F> rename(@NonNull String originalName, @NonNull String newName);
-
     /**
      * @return the constructed {@link AttributeFormat}
      */

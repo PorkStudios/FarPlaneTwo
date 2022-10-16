@@ -15,12 +15,13 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.attribute.annotation;
 
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
@@ -29,9 +30,55 @@ import java.lang.annotation.Target;
  * @author DaPorkchop_
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.FIELD })
+@Target({ ElementType.TYPE })
+@Inherited
+@Repeatable(Attributes.class)
 public @interface Attribute {
+    String name();
+
     int sort() default 0;
 
-    String name() default "";
+    /**
+     * If non-empty, the attribute's component type is set to the vector type.
+     * <p>
+     * More than one vector component type may not be given.
+     * <p>
+     * More than one of {@link #typeArray()}, {@link #typeVector()}, {@link #typeMatrix()} and {@link #typeScalar()} may not be set at the same time.
+     *
+     * @return the array component type
+     */
+    ArrayType[] typeArray() default {};
+
+    /**
+     * If non-empty, the attribute's component type is set to the vector type.
+     * <p>
+     * More than one vector component type may not be given.
+     * <p>
+     * More than one of {@link #typeArray()}, {@link #typeVector()}, {@link #typeMatrix()} and {@link #typeScalar()} may not be set at the same time.
+     *
+     * @return the vector component type
+     */
+    VectorType[] typeVector() default {};
+
+    /**
+     * If non-empty, the attribute's component type is set to the matrix type.
+     * <p>
+     * More than one matrix component type may not be given.
+     * <p>
+     * More than one of {@link #typeArray()}, {@link #typeVector()}, {@link #typeMatrix()} and {@link #typeScalar()} may not be set at the same time.
+     *
+     * @return the matrix component type
+     */
+    MatrixType[] typeMatrix() default {};
+
+    /**
+     * If non-empty, the attribute's component type is set to the scalar type.
+     * <p>
+     * More than one scalar component type may not be given.
+     * <p>
+     * More than one of {@link #typeArray()}, {@link #typeVector()}, {@link #typeMatrix()} and {@link #typeScalar()} may not be set at the same time.
+     *
+     * @return the scalar component type
+     */
+    ScalarType[] typeScalar() default {};
 }

@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.attribute.common;
@@ -63,13 +62,13 @@ public abstract class AttributeBufferImpl<F extends AttributeFormatImpl<F, S, ?>
 
             @Override
             public void emitCode(@NonNull State effectiveState, @NonNull AbstractCommandBufferBuilder builder, @NonNull MethodWriter<CodegenArgs> writer) {
-                FieldHandle<AttributeBufferImpl<?, ?>> srcHandle = builder.makeFieldHandle(getType(dst.getClass()), AttributeBufferImpl.this);
-                FieldHandle<AttributeBufferImpl<?, ?>> dstHandle = builder.makeFieldHandle(getType(dst.getClass()), dst);
+                FieldHandle<AttributeBufferImpl<?, ?>> srcHandle = builder.makeFieldHandle(getType(AttributeBufferImpl.class), AttributeBufferImpl.this);
+                FieldHandle<AttributeBufferImpl<?, ?>> dstHandle = builder.makeFieldHandle(getType(AttributeBufferImpl.class), dst);
 
                 writer.write((mv, args) -> {
                     dstHandle.get(mv);
                     srcHandle.get(mv);
-                    mv.visitMethodInsn(INVOKEVIRTUAL, getInternalName(dst.getClass()), "setContentsFrom", getMethodDescriptor(VOID_TYPE, getType(AttributeBuffer.class)), false);
+                    mv.visitMethodInsn(INVOKEVIRTUAL, getInternalName(AttributeBufferImpl.class), "setContentsFrom", getMethodDescriptor(VOID_TYPE, getType(AttributeBuffer.class)), false);
                 });
             }
         });

@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.attribute.texture;
@@ -31,8 +30,8 @@ import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
 /**
  * @author DaPorkchop_
  */
-public class WrappedTexture2DImpl<S> extends BaseTextureImpl<TextureFormat2DImpl<S>, S> implements Texture2D<S> {
-    public WrappedTexture2DImpl(@NonNull TextureFormat2DImpl<S> format, int id) {
+public class WrappedTexture2DImpl extends BaseTextureImpl<TextureFormat2DImpl> implements Texture2D {
+    public WrappedTexture2DImpl(@NonNull TextureFormat2DImpl format, int id) {
         super(format, id);
     }
 
@@ -63,7 +62,7 @@ public class WrappedTexture2DImpl<S> extends BaseTextureImpl<TextureFormat2DImpl
     }
 
     @Override
-    public void set(int level, int xOffset, int yOffset, @NonNull TextureWriter2D<S> writer) {
+    public void set(int level, int xOffset, int yOffset, @NonNull TextureWriter2D writer) {
         throw new UnsupportedOperationException();
     }
 }

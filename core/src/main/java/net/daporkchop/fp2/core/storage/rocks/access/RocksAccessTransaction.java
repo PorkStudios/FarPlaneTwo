@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.storage.rocks.access;
@@ -34,6 +33,7 @@ import org.rocksdb.RocksIterator;
 import org.rocksdb.Snapshot;
 import org.rocksdb.Transaction;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
 
@@ -45,8 +45,9 @@ import static net.daporkchop.fp2.core.storage.rocks.RocksStorage.*;
  *
  * @author DaPorkchop_
  */
+//TODO: this will be able to be optimized much better once https://github.com/facebook/rocksdb/pull/10163 is merged
 @Getter
-public class RocksAccessTransaction implements FStorageAccess, AutoCloseable {
+public class RocksAccessTransaction implements FStorageAccess, ArrayOnlyFStorageAccess, AutoCloseable {
     protected final Transaction transaction;
 
     protected final ReadOptions readOptions;
@@ -104,7 +105,8 @@ public class RocksAccessTransaction implements FStorageAccess, AutoCloseable {
                 for (int i = 0; i < keysArray.length; ) {
                     int batchSize = min(keysArray.length - i, MAX_BATCH_SIZE);
 
-                    byte[][] tmp = this.transaction.multiGetForUpdate(this.readOptions, handles.subList(i, i + batchSize), Arrays.copyOfRange(keysArray, i, i + batchSize));
+                    byte[][] tmp = this.transaction.multiGetForUpdate(this.readOptions, handles.subList(i, i + batchSize), Arrays.copyOfRange(keysArray, i, i
+                                                                                                                                                            + batchSize));
                     System.arraycopy(tmp, 0, result, i, batchSize);
 
                     i += batchSize;

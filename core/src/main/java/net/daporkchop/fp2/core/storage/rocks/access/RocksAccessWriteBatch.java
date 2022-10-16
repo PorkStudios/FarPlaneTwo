@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.storage.rocks.access;
@@ -28,6 +27,8 @@ import net.daporkchop.fp2.core.storage.rocks.RocksStorageColumn;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.WriteBatch;
 
+import java.nio.ByteBuffer;
+
 import static net.daporkchop.fp2.core.storage.rocks.RocksStorage.*;
 
 /**
@@ -35,7 +36,8 @@ import static net.daporkchop.fp2.core.storage.rocks.RocksStorage.*;
  *
  * @author DaPorkchop_
  */
-public class RocksAccessWriteBatch extends WriteBatch implements FStorageWriteAccess {
+//TODO: rocksdbjni doesn't provide any versions of deleteRange which take ByteBuffer for the key parameters
+public class RocksAccessWriteBatch extends WriteBatch implements FStorageWriteAccess, ArrayOnlyFStorageWriteAccess {
     @Override
     public void put(@NonNull FStorageColumn column, @NonNull byte[] key, @NonNull byte[] value) throws FStorageException {
         try {
@@ -46,7 +48,25 @@ public class RocksAccessWriteBatch extends WriteBatch implements FStorageWriteAc
     }
 
     @Override
+    public void put(@NonNull FStorageColumn column, @NonNull ByteBuffer key, @NonNull ByteBuffer value) throws FStorageException {
+        try {
+            this.put(((RocksStorageColumn) column).handle(), key, value);
+        } catch (RocksDBException e) {
+            throw wrapException(e);
+        }
+    }
+
+    @Override
     public void delete(@NonNull FStorageColumn column, @NonNull byte[] key) throws FStorageException {
+        try {
+            this.delete(((RocksStorageColumn) column).handle(), key);
+        } catch (RocksDBException e) {
+            throw wrapException(e);
+        }
+    }
+
+    @Override
+    public void delete(@NonNull FStorageColumn column, @NonNull ByteBuffer key) throws FStorageException {
         try {
             this.delete(((RocksStorageColumn) column).handle(), key);
         } catch (RocksDBException e) {

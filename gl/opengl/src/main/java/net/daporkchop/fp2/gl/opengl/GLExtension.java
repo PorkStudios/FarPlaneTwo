@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl;
@@ -51,6 +50,7 @@ public enum GLExtension {
     },
 
     //OpenGL 3.1
+    GL_EXT_texture_snorm(GLVersion.OpenGL31, false),
     GL_ARB_draw_instanced(GLVersion.OpenGL31, false),
     GL_ARB_copy_buffer(GLVersion.OpenGL31, false),
     GL_NV_primitive_restart(GLVersion.OpenGL31, false),

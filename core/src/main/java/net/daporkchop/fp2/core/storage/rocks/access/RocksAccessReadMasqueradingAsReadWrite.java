@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.storage.rocks.access;
@@ -29,6 +28,7 @@ import net.daporkchop.fp2.api.storage.internal.access.FStorageAccess;
 import net.daporkchop.fp2.api.storage.internal.access.FStorageIterator;
 import net.daporkchop.fp2.api.storage.internal.access.FStorageReadAccess;
 
+import java.nio.ByteBuffer;
 import java.util.List;
 
 /**
@@ -52,8 +52,18 @@ public class RocksAccessReadMasqueradingAsReadWrite implements FStorageAccess {
     }
 
     @Override
+    public int get(@NonNull FStorageColumn column, @NonNull ByteBuffer key, @NonNull ByteBuffer value) throws FStorageException {
+        return this.delegate.get(column, key, value);
+    }
+
+    @Override
     public List<byte[]> multiGet(@NonNull List<FStorageColumn> columnFamilies, @NonNull List<byte[]> keys) throws FStorageException {
         return this.delegate.multiGet(columnFamilies, keys);
+    }
+
+    @Override
+    public boolean multiGet(@NonNull List<FStorageColumn> columns, @NonNull List<ByteBuffer> keys, @NonNull List<ByteBuffer> values, @NonNull int[] sizes) throws FStorageException {
+        return this.delegate.multiGet(columns, keys, values, sizes);
     }
 
     @Override
@@ -63,6 +73,11 @@ public class RocksAccessReadMasqueradingAsReadWrite implements FStorageAccess {
 
     @Override
     public FStorageIterator iterator(@NonNull FStorageColumn column, byte[] fromKeyInclusive, byte[] toKeyExclusive) throws FStorageException {
+        return this.delegate.iterator(column, fromKeyInclusive, toKeyExclusive);
+    }
+
+    @Override
+    public FStorageIterator iterator(@NonNull FStorageColumn column, ByteBuffer fromKeyInclusive, ByteBuffer toKeyExclusive) throws FStorageException {
         return this.delegate.iterator(column, fromKeyInclusive, toKeyExclusive);
     }
 
@@ -76,12 +91,27 @@ public class RocksAccessReadMasqueradingAsReadWrite implements FStorageAccess {
     }
 
     @Override
+    public void put(@NonNull FStorageColumn column, @NonNull ByteBuffer key, @NonNull ByteBuffer value) throws FStorageException {
+        throw new UnsupportedOperationException("read-only");
+    }
+
+    @Override
     public void delete(@NonNull FStorageColumn column, @NonNull byte[] key) throws FStorageException {
         throw new UnsupportedOperationException("read-only");
     }
 
     @Override
+    public void delete(@NonNull FStorageColumn column, @NonNull ByteBuffer key) throws FStorageException {
+        throw new UnsupportedOperationException("read-only");
+    }
+
+    @Override
     public void deleteRange(@NonNull FStorageColumn column, @NonNull byte[] fromKeyInclusive, @NonNull byte[] toKeyExclusive) throws FStorageException {
+        throw new UnsupportedOperationException("read-only");
+    }
+
+    @Override
+    public void deleteRange(@NonNull FStorageColumn column, @NonNull ByteBuffer fromKeyInclusive, @NonNull ByteBuffer toKeyExclusive) throws FStorageException {
         throw new UnsupportedOperationException("read-only");
     }
 }

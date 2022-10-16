@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.util;
@@ -25,19 +24,10 @@ import lombok.NonNull;
 
 /**
  * A type whose state may be persisted to a binary format, and restored later.
- * <p>
- * The state may also be reset, in order to allow instances to be re-used without reallocation.
  *
  * @author DaPorkchop_
  */
-public interface IReusablePersistent {
-    /**
-     * Resets this instance's contents.
-     * <p>
-     * After being reset, the instance's state will be the same as if it were newly constructed.
-     */
-    void reset();
-
+public interface IReusablePersistent extends IReusable {
     /**
      * Restores this instance's state from the data in the given {@link ByteBuf}.
      * <p>
@@ -45,6 +35,7 @@ public interface IReusablePersistent {
      *
      * @param src the {@link ByteBuf} to read from
      */
+    @Deprecated
     void read(@NonNull ByteBuf src);
 
     /**
@@ -57,5 +48,6 @@ public interface IReusablePersistent {
      * @param dst the {@link ByteBuf} to write to
      * @return whether or not this instance is empty
      */
+    @Deprecated
     boolean write(@NonNull ByteBuf dst);
 }
