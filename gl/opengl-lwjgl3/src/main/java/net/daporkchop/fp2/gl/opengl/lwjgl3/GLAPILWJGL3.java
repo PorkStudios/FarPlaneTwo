@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.lwjgl3;
@@ -23,7 +22,7 @@ package net.daporkchop.fp2.gl.opengl.lwjgl3;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.GLVersion;
-import net.daporkchop.lib.common.function.throwing.EPredicate;
+import net.daporkchop.lib.common.function.exception.EPredicate;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import org.lwjgl.opengl.ARBCopyBuffer;
 import org.lwjgl.opengl.ARBDrawElementsBaseVertex;
