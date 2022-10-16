@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.core.client;
@@ -24,6 +23,7 @@ import net.daporkchop.fp2.core.client.player.IFarPlayerClient;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.threading.futureexecutor.ClientThreadMarkedFutureExecutor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.profiler.Profiler;
+import org.lwjgl.opengl.PixelFormat;
 import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -31,6 +31,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
@@ -87,5 +88,29 @@ public abstract class MixinMinecraft implements ClientThreadMarkedFutureExecutor
                     shift = At.Shift.AFTER))
     private void fp2_notifyContextReady(CallbackInfo ci) { //gross hack to ensure that the client config packet isn't sent until the client is ready
         fp2().client().currentPlayer().ifPresent(IFarPlayerClient::ready);
+    }
+
+    @ModifyArg(method = "Lnet/minecraft/client/Minecraft;createDisplay()V",
+            at = @At(value = "INVOKE",
+                    target = "Lorg/lwjgl/opengl/Display;create(Lorg/lwjgl/opengl/PixelFormat;)V"),
+            index = 0,
+            require = 1, allow = 1)
+    private PixelFormat fp2_createDisplay_add8bitsOfStencilToPixelFormat(PixelFormat pixelFormat) {
+        //make sure we have at least 8 bits of stencil data to work with!
+        //  we already change this in MixinFramebuffer, but we want to request it for the default framebuffer as well in case FBOs aren't supported (afaik this would only
+        //  be the case on very old OpenGL versions, or if OptiFine's "Fast Render" is enabled)
+
+        return pixelFormat.getStencilBits() < 8
+                ? pixelFormat.withStencilBits(8) //request 8 bits of stencil depth
+                : pixelFormat; //there are already at least 8 bits of stencil (vanilla doesn't use this, so this would only happen if changed by another mod)
+    }
+
+    @Inject(method = "Lnet/minecraft/client/Minecraft;createDisplay()V",
+            at = @At(value = "INVOKE",
+                    target = "Lorg/apache/logging/log4j/Logger;error(Ljava/lang/String;Ljava/lang/Throwable;)V",
+                    shift = At.Shift.AFTER),
+            require = 1, allow = 1)
+    private void fp2_createDisplay_notifySetPixelFormatFailed(CallbackInfo ci) {
+        throw new IllegalStateException("LWJGL was unable to set the pixel format!\nThis could cause FarPlaneTwo to break, crashing the game to be safe!");
     }
 }
