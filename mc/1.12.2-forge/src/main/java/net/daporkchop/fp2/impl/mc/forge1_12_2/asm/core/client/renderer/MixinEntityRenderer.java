@@ -167,6 +167,7 @@ public abstract class MixinEntityRenderer {
             //store the matrix into the GlobalUniformAttributes
             attributes.modelViewProjectionMatrix(modelViewProjectionMatrix);
         } finally {
+            alloc.release(modelViewProjectionMatrix);
             alloc.release(projection);
             alloc.release(modelView);
         }
