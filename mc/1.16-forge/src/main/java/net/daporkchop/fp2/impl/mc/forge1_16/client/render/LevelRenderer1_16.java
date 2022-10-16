@@ -31,7 +31,10 @@ import net.daporkchop.fp2.impl.mc.forge1_16.asm.interfaz.client.renderer.IMixinW
 import net.daporkchop.fp2.impl.mc.forge1_16.client.world.level.FLevelClient1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.util.BiomeColorBlockDisplayReader1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.util.ResourceProvider1_16;
+import net.daporkchop.fp2.impl.mc.forge1_16.util.Util1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.world.registry.GameRegistry1_16;
+import net.daporkchop.lib.common.misc.threadlocal.TL;
+import net.daporkchop.lib.common.pool.recycler.Recycler;
 import net.minecraft.block.BlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderType;
@@ -45,6 +48,8 @@ import net.minecraft.util.math.BlockPos;
 @RequiredArgsConstructor
 @Getter
 public class LevelRenderer1_16 implements LevelRenderer, AutoCloseable {
+    protected static final TL<BiomeColorBlockDisplayReader1_16> BIOME_COLOR_BLOCK_DISPLAY_READER_CACHE = TL.initializedWith(BiomeColorBlockDisplayReader1_16::new);
+
     private static int toLayerIndex(RenderType type) {
         if (type == RenderType.solid()) {
             return IFarRenderer.LAYER_SOLID;
@@ -106,8 +111,15 @@ public class LevelRenderer1_16 implements LevelRenderer, AutoCloseable {
 
     @Override
     public int tintFactorForStateInBiomeAtPos(int state, int biome, int x, int y, int z) {
-        return this.mc.getBlockColors()
-                .getColor(this.registry.id2state(state), new BiomeColorBlockDisplayReader1_16(this.registry.id2biome(biome)), new BlockPos(x, y, z), 0);
+        Recycler<BlockPos.Mutable> recycler = Util1_16.MUTABLEBLOCKPOS_RECYCLER.get();
+        BlockPos.Mutable pos = recycler.allocate().set(x, y, z);
+
+        int colorMultiplier = this.mc.getBlockColors().getColor(this.registry.id2state(state),
+                BIOME_COLOR_BLOCK_DISPLAY_READER_CACHE.get().biome(this.registry.id2biome(biome)),
+                pos, 0);
+
+        recycler.release(pos);
+        return colorMultiplier;
     }
 
     @Override

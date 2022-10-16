@@ -35,7 +35,7 @@ import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.world.server.ATChunkManager1_
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.interfaz.world.chunk.storage.IMixinIOWorker1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.interfaz.world.server.IMixinServerWorld1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.server.world.level.FLevelServer1_16;
-import net.daporkchop.lib.common.function.throwing.ERunnable;
+import net.daporkchop.lib.common.function.exception.ERunnable;
 import net.daporkchop.lib.math.vector.Vec2i;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.NBTUtil;

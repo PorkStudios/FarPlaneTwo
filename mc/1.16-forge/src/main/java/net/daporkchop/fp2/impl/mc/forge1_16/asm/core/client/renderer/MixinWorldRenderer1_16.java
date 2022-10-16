@@ -181,7 +181,7 @@ public abstract class MixinWorldRenderer1_16 implements IMixinWorldRenderer1_16 
                 this.level.getProfiler().push("fp2_render_post");
 
                 this.minecraft.getModelManager().getAtlas(AtlasTexture.LOCATION_BLOCKS).setBlurMipmap(false, this.minecraft.options.mipmapLevels > 0);
-                renderer.render(this.globalUniformAttributes(activeRenderInfo, matrixStack, projectionMatrix));
+                renderer.render(attributes -> this.fp2_globalUniformAttributes(attributes, activeRenderInfo, matrixStack, projectionMatrix));
                 this.minecraft.getModelManager().getAtlas(AtlasTexture.LOCATION_BLOCKS).restoreLastBlurMipmap();
 
                 this.level.getProfiler().pop();
@@ -190,44 +190,39 @@ public abstract class MixinWorldRenderer1_16 implements IMixinWorldRenderer1_16 
     }
 
     @Unique
-    private GlobalUniformAttributes globalUniformAttributes(ActiveRenderInfo activeRenderInfo, MatrixStack matrixStack, Matrix4f projectionMatrix) {
-        GlobalUniformAttributes attributes = new GlobalUniformAttributes();
-
+    private void fp2_globalUniformAttributes(GlobalUniformAttributes attributes, ActiveRenderInfo activeRenderInfo, MatrixStack matrixStack, Matrix4f projectionMatrix) {
         { //camera
-            this.initModelViewProjectionMatrix(attributes, matrixStack, projectionMatrix);
+            this.fp2_initModelViewProjectionMatrix(attributes, matrixStack, projectionMatrix);
 
             double x = activeRenderInfo.getPosition().x();
             double y = activeRenderInfo.getPosition().y();
             double z = activeRenderInfo.getPosition().z();
 
-            attributes.positionFloorX = floorI(x);
-            attributes.positionFloorY = floorI(y);
-            attributes.positionFloorZ = floorI(z);
-
-            attributes.positionFracX = (float) frac(x);
-            attributes.positionFracY = (float) frac(y);
-            attributes.positionFracZ = (float) frac(z);
+            attributes.positionFloor(floorI(x), floorI(y), floorI(z));
+            attributes.positionFrac((float) frac(x), (float) frac(y), (float) frac(z));
         }
 
         { //fog
-            attributes.fogColorR = ATFogRenderer1_16.getFogRed();
-            attributes.fogColorG = ATFogRenderer1_16.getFogGreen();
-            attributes.fogColorB = ATFogRenderer1_16.getFogBlue();
-            attributes.fogColorA = 1.0f;
+            attributes.fogColor(ATFogRenderer1_16.getFogRed(), ATFogRenderer1_16.getFogGreen(), ATFogRenderer1_16.getFogBlue(), 1.0f);
 
-            attributes.fogMode = glGetInteger(GL_FOG_MODE);
+            int fogMode = glGetInteger(GL_FOG_MODE);
 
-            attributes.fogDensity = glGetFloat(GL_FOG_DENSITY);
-            attributes.fogStart = glGetFloat(GL_FOG_START);
-            attributes.fogEnd = glGetFloat(GL_FOG_END);
-            attributes.fogScale = 1.0f / (attributes.fogEnd - attributes.fogStart);
+            float fogDensity = glGetFloat(GL_FOG_DENSITY);
+            float fogStart = glGetFloat(GL_FOG_START);
+            float fogEnd = glGetFloat(GL_FOG_END);
 
             //i can't use glGetBoolean(GL_FOG) to check if fog is enabled because 1.16 turns it on and off again for every chunk section.
             //  instead, i check if fog mode is EXP2 and density is 0, because that's what is configured by FogRenderer.setupNoFog().
             //TODO: figure out if this will still work with OptiFine's option to disable fog
-            if (attributes.fogMode == GL_EXP2 && attributes.fogDensity == 0.0f) {
-                attributes.fogMode = 0;
+            if (fogMode == GL_EXP2 && fogDensity == 0.0f) {
+                fogMode = 0;
             }
+
+            attributes.fogMode(fogMode)
+                    .fogDensity(fogDensity)
+                    .fogStart(fogStart)
+                    .fogEnd(fogEnd)
+                    .fogScale(1.0f / (fogEnd - fogStart));
         }
 
         { //misc. GL state
@@ -235,29 +230,32 @@ public abstract class MixinWorldRenderer1_16 implements IMixinWorldRenderer1_16 
             //  to an alpha test reference value of 0.5.
             //in OptiFine, both RenderType.CUTOUT and RenderType.CUTOUT_MIPPED are created with setAlphaState(CUTOUT_MIPPED_ALPHA), which
             //  corresponds to an alpha test reference value of 0.1.
-            attributes.alphaRefCutout = OFHelper1_16.OF ? 0.1f : 0.5f;
+            attributes.alphaRefCutout(OFHelper1_16.OF ? 0.1f : 0.5f);
         }
-
-        return attributes;
     }
 
     @Unique
-    private void initModelViewProjectionMatrix(GlobalUniformAttributes attributes, MatrixStack matrixStack, Matrix4f projectionMatrix) {
+    private void fp2_initModelViewProjectionMatrix(GlobalUniformAttributes attributes, MatrixStack matrixStack, Matrix4f projectionMatrix) {
         ArrayAllocator<float[]> alloc = GlobalAllocators.ALLOC_FLOAT.get();
 
-        float[] modelView = alloc.atLeast(MatrixHelper.MAT4_ELEMENTS);
-        float[] projection = alloc.atLeast(MatrixHelper.MAT4_ELEMENTS);
+        float[] modelView = alloc.exactly(MatrixHelper.MAT4_ELEMENTS);
+        float[] projection = alloc.exactly(MatrixHelper.MAT4_ELEMENTS);
+        float[] modelViewProjectionMatrix = alloc.exactly(MatrixHelper.MAT4_ELEMENTS);
         try {
             //load both matrices into arrays
             matrixStack.last().pose().store(FloatBuffer.wrap(modelView));
             projectionMatrix.store(FloatBuffer.wrap(projection));
 
             //pre-multiply matrices on CPU to avoid having to do it per-vertex on GPU
-            MatrixHelper.multiply4x4(projection, modelView, attributes.modelViewProjectionMatrix);
+            MatrixHelper.multiply4x4(projection, modelView, modelViewProjectionMatrix);
 
             //offset the projected points' depth values to avoid z-fighting with vanilla terrain
-            MatrixHelper.offsetDepth(attributes.modelViewProjectionMatrix, fp2().client().isReverseZ() ? -0.00001f : 0.00001f);
+            MatrixHelper.offsetDepth(modelViewProjectionMatrix, fp2().client().isReverseZ() ? -0.00001f : 0.00001f);
+
+            //store the matrix into the GlobalUniformAttributes
+            attributes.modelViewProjectionMatrix(modelViewProjectionMatrix);
         } finally {
+            alloc.release(modelViewProjectionMatrix);
             alloc.release(projection);
             alloc.release(modelView);
         }

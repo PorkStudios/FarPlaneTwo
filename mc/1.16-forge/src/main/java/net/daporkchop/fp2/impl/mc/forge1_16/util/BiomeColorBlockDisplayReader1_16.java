@@ -15,13 +15,14 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_16.util;
 
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import net.minecraft.block.BlockState;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.tileentity.TileEntity;
@@ -38,10 +39,11 @@ import javax.annotation.Nullable;
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
+@Getter
+@Setter
 public class BiomeColorBlockDisplayReader1_16 implements IBlockDisplayReader {
     @NonNull
-    protected final Biome biome;
+    protected Biome biome;
 
     @Override
     public float getShade(Direction dir, boolean shade) {

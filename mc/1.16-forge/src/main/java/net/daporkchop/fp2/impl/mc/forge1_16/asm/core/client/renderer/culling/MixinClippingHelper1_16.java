@@ -15,11 +15,11 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_16.asm.core.client.renderer.culling;
 
+import lombok.NonNull;
 import net.daporkchop.fp2.core.client.IFrustum;
 import net.minecraft.client.renderer.culling.ClippingHelper;
 import net.minecraft.util.math.vector.Vector4f;
@@ -50,11 +50,13 @@ public abstract class MixinClippingHelper1_16 implements IFrustum {
     }
 
     @Override
-    public ClippingPlanes clippingPlanes() {
-        ClippingPlanes clippingPlanes = new ClippingPlanes();
-        for (Vector4f plane : this.frustumData) {
-            clippingPlanes.put(plane.x(), plane.y(), plane.z(), plane.w());
+    public void configureClippingPlanes(@NonNull ClippingPlanes clippingPlanes) {
+        Vector4f[] frustum = this.frustumData;
+
+        clippingPlanes.clippingPlaneCount(frustum.length);
+        for (int i = 0; i < frustum.length; i++) {
+            Vector4f plane = frustum[i];
+            clippingPlanes.clippingPlane(i, plane.x(), plane.y(), plane.z(), plane.w());
         }
-        return clippingPlanes;
     }
 }

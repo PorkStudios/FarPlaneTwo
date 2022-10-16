@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_16.util;
@@ -23,12 +22,23 @@ package net.daporkchop.fp2.impl.mc.forge1_16.util;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.core.util.Direction;
+import net.daporkchop.lib.common.pool.recycler.Recycler;
+import net.daporkchop.lib.common.reference.ReferenceStrength;
+import net.daporkchop.lib.common.reference.cache.Cached;
+import net.minecraft.util.math.BlockPos;
 
 /**
  * @author DaPorkchop_
  */
 @UtilityClass
 public class Util1_16 {
+    /**
+     * A thread-local {@link Recycler} for {@link BlockPos.Mutable} instances.
+     */
+    public static final Cached<Recycler<BlockPos.Mutable>> MUTABLEBLOCKPOS_RECYCLER = Cached.threadLocal(
+            () -> Recycler.bounded(BlockPos.Mutable::new, 32),
+            ReferenceStrength.WEAK);
+
     private final net.minecraft.util.Direction[] DIRECTION_TO_FACING = {
             net.minecraft.util.Direction.EAST, //POSITIVE_X
             net.minecraft.util.Direction.UP, //POSITIVE_Y
