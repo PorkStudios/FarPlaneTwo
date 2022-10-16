@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.voxel.server.gen.exact;
@@ -106,12 +105,12 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
 
         try {
             //query all world data at once
-            world.query(FBlockLevel.Query.of(
-                    new FBlockLevel.OriginSizeStrideQueryShape(
+            world.query(FBlockLevel.DataQuery.of(
+                    new FBlockLevel.OriginSizeStrideDataQueryShape(
                             posIn.blockX() + CACHE_MIN - 1, posIn.blockY() + CACHE_MIN - 1, posIn.blockZ() + CACHE_MIN - 1,
                             CACHE_SIZE, CACHE_SIZE, CACHE_SIZE,
                             1, 1, 1),
-                    new FBlockLevel.BandArraysQueryOutput(stateCache, 0, 1, biomeCache, 0, 1, lightCache, 0, 1, cb(CACHE_SIZE))));
+                    new FBlockLevel.BandArraysDataQueryOutput(stateCache, 0, 1, biomeCache, 0, 1, lightCache, 0, 1, cb(CACHE_SIZE))));
 
             //use bit flags to identify voxel types rather than reading from the world each time to keep innermost loop head tight and cache-friendly
             this.populateTypeMapFromStateMap(stateCache, typeCache);

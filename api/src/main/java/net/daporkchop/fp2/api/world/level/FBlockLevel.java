@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.api.world.level;
@@ -39,9 +38,9 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * Each voxel contains multiple independent data values, stored in separate channels ("bands"). The following bands are used:<br>
  * <table>
  *     <tr><th>Name</th><th>Type</th><th>Description</th></tr>
- *     <tr><td>{@link BlockLevelConstants#BAND_ORDINAL_STATES State}</td><td>{@code int}</td><td>A state ID, as returned by the corresponding methods in {@link FGameRegistry}</td></tr>
- *     <tr><td>{@link BlockLevelConstants#BAND_ORDINAL_BIOMES Biome}</td><td>{@code int}</td><td>A biome ID, as returned by the corresponding methods in {@link FGameRegistry}</td></tr>
- *     <tr><td>{@link BlockLevelConstants#BAND_ORDINAL_LIGHT Light}</td><td>{@code byte}</td><td>Block+sky light levels, as returned by {@link BlockLevelConstants#packLight(int, int)}</td></tr>
+ *     <tr><td>{@link BlockLevelConstants#DATA_BAND_ORDINAL_STATES State}</td><td>{@code int}</td><td>A state ID, as returned by the corresponding methods in {@link FGameRegistry}</td></tr>
+ *     <tr><td>{@link BlockLevelConstants#DATA_BAND_ORDINAL_BIOMES Biome}</td><td>{@code int}</td><td>A biome ID, as returned by the corresponding methods in {@link FGameRegistry}</td></tr>
+ *     <tr><td>{@link BlockLevelConstants#DATA_BAND_ORDINAL_LIGHT Light}</td><td>{@code byte}</td><td>Block+sky light levels, as returned by {@link BlockLevelConstants#packLight(int, int)}</td></tr>
  * </table><br>
  * More bands may be added in the future as necessary.
  * <p>
@@ -50,7 +49,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * Data at a given voxel position is in one of three possible availability states:<br>
  * <ul>
  *     <li><strong>Exists</strong>: the data at the given position exists and is accessible.</li>
- *     <li><strong>Ungenerated</strong>: the data at the given position has not yet been generated, and does not exist. Depending on whether or not the world
+ *     <li><strong>Ungenerated</strong>: the data at the given position has not yet been generated, and does not exist. Depending on whether the world
  *     {@link #generationAllowed() allows generation}, attempting to access ungenerated data will either cause the data to be generated (and therefore transition to
  *     <i>Exists</i> for future queries), or will cause {@link GenerationNotAllowedException} to be thrown.</li>
  *     <li><strong>Out-of-Bounds</strong>: the given position is outside of the world's {@link #dataLimits() coordinate limits} and cannot exist in any case. Attempts
@@ -98,7 +97,7 @@ public interface FBlockLevel extends AutoCloseable {
     FGameRegistry registry();
 
     /**
-     * @return whether or not this world allows generating data which is not known
+     * @return whether this world allows generating data which is not known
      */
     boolean generationAllowed();
 
@@ -117,7 +116,7 @@ public interface FBlockLevel extends AutoCloseable {
     //
 
     /**
-     * Checks whether or not <strong>any</strong> data in the given AABB exists.
+     * Checks whether <strong>any</strong> data in the given AABB exists.
      * <p>
      * Note that this checks for data which <i>exists</i>, not merely <i>accessible</i>. Voxel positions which are out-of-bounds or whose data could be generated if requested are
      * not considered by this.
@@ -130,12 +129,12 @@ public interface FBlockLevel extends AutoCloseable {
      * @param maxX the maximum X coordinate (exclusive)
      * @param maxY the maximum Y coordinate (exclusive)
      * @param maxZ the maximum Z coordinate (exclusive)
-     * @return whether or not any block data in the given AABB is known
+     * @return whether any block data in the given AABB is known
      */
     boolean containsAnyData(int minX, int minY, int minZ, int maxX, int maxY, int maxZ);
 
     /**
-     * Checks whether or not <strong>any</strong> data in the given AABB is known.
+     * Checks whether <strong>any</strong> data in the given AABB is known.
      *
      * @see #containsAnyData(int, int, int, int, int, int)
      */
@@ -223,47 +222,47 @@ public interface FBlockLevel extends AutoCloseable {
     /**
      * Issues a bulk data retrieval query.
      *
-     * @param query the {@link Query query} which describes the position(s) to query the data from, which data bands should be accessed, and where the retrieved data should be stored
+     * @param query the {@link DataQuery query} which describes the position(s) to query the data from, which data bands should be accessed, and where the retrieved data should be stored
      * @throws GenerationNotAllowedException if the data at any of the queried voxel positions is not generated and this world doesn't allow generation
      */
-    default void query(@NonNull Query query) throws GenerationNotAllowedException {
-        this.query(new Query[]{ query }); //delegate to bulk implementation
+    default void query(@NonNull DataQuery query) throws GenerationNotAllowedException {
+        this.query(new DataQuery[]{ query }); //delegate to bulk implementation
     }
 
     /**
      * Issues multiple bulk data retrieval queries.
      *
-     * @param queries an array of {@link Query queries} which describe the position(s) to query the data from, which data bands should be accessed, and where the retrieved data should be stored
+     * @param queries an array of {@link DataQuery queries} which describe the position(s) to query the data from, which data bands should be accessed, and where the retrieved data should be stored
      * @throws GenerationNotAllowedException if the data at any of the queried voxel positions is not generated and this world doesn't allow generation
      */
-    default void query(@NonNull Query... queries) throws GenerationNotAllowedException {
+    default void query(@NonNull DataQuery... queries) throws GenerationNotAllowedException {
         //ensure all queries are valid
-        for (Query query : queries) {
+        for (DataQuery query : queries) {
             requireNonNull(query, "query").validate();
         }
 
         //dispatch queries
-        for (Query query : queries) {
+        for (DataQuery query : queries) {
             query.validate(); //validate again to potentially help JIT
 
-            QueryShape shape = query.shape();
-            QueryOutput output = query.output();
+            DataQueryShape shape = query.shape();
+            DataQueryOutput output = query.output();
 
             int enabledBands = output.enabledBands();
             shape.forEach((index, x, y, z) -> {
-                //initialize variables to throwaway values (they won't be used if the band is disabled)
+                //initialize variables to throwaway values (they won't be used if the data band is disabled)
                 int state = 0;
                 int biome = 0;
                 byte light = 0;
 
                 //read values if corresponding bands are enabled
-                if (BlockLevelConstants.isBandEnabled(enabledBands, BlockLevelConstants.BAND_ORDINAL_STATES)) {
+                if (BlockLevelConstants.isDataBandEnabled(enabledBands, BlockLevelConstants.DATA_BAND_ORDINAL_STATES)) {
                     state = this.getState(x, y, z);
                 }
-                if (BlockLevelConstants.isBandEnabled(enabledBands, BlockLevelConstants.BAND_ORDINAL_BIOMES)) {
+                if (BlockLevelConstants.isDataBandEnabled(enabledBands, BlockLevelConstants.DATA_BAND_ORDINAL_BIOMES)) {
                     biome = this.getBiome(x, y, z);
                 }
-                if (BlockLevelConstants.isBandEnabled(enabledBands, BlockLevelConstants.BAND_ORDINAL_LIGHT)) {
+                if (BlockLevelConstants.isDataBandEnabled(enabledBands, BlockLevelConstants.DATA_BAND_ORDINAL_LIGHT)) {
                     light = this.getLight(x, y, z);
                 }
 
@@ -277,11 +276,11 @@ public interface FBlockLevel extends AutoCloseable {
      * Describes a query's shape.
      * <p>
      * A query shape consists of a sequence of voxel positions, indexed from {@code 0} (inclusive) to {@link #count()} (exclusive). It describes the positions of the voxels which
-     * the query will access, as well as the order in which the query's results will be written to the {@link QueryOutput output}.
+     * the query will access, as well as the order in which the query's results will be written to the {@link DataQueryOutput output}.
      *
      * @author DaPorkchop_
      */
-    interface QueryShape {
+    interface DataQueryShape {
         /**
          * Ensures that this query's state is valid, throwing an exception if not.
          * <p>
@@ -380,12 +379,12 @@ public interface FBlockLevel extends AutoCloseable {
     }
 
     /**
-     * A simple {@link QueryShape} which consists of a single position.
+     * A simple {@link DataQueryShape} which consists of a single position.
      *
      * @author DaPorkchop_
      */
     @Data
-    final class SinglePointQueryShape implements QueryShape {
+    final class SinglePointDataQueryShape implements DataQueryShape {
         private final int x;
         private final int y;
         private final int z;
@@ -429,14 +428,14 @@ public interface FBlockLevel extends AutoCloseable {
     }
 
     /**
-     * A simple {@link QueryShape} which consists of multiple positions. Positions are defined by three user-provided arrays, one for each axis.
+     * A simple {@link DataQueryShape} which consists of multiple positions. Positions are defined by three user-provided arrays, one for each axis.
      * <p>
      * Positions are returned in the order they are present in the arrays.
      *
      * @author DaPorkchop_
      */
     @Data
-    final class MultiPointsQueryShape implements QueryShape {
+    final class MultiPointsDataQueryShape implements DataQueryShape {
         @NonNull
         private final int[] x;
         private final int xOffset;
@@ -500,14 +499,14 @@ public interface FBlockLevel extends AutoCloseable {
     }
 
     /**
-     * A simple {@link QueryShape} which consists of an origin position, and per-axis sample counts and strides.
+     * A simple {@link DataQueryShape} which consists of an origin position, and per-axis sample counts and strides.
      * <p>
      * Positions are returned in XYZ order.
      *
      * @author DaPorkchop_
      */
     @Data
-    final class OriginSizeStrideQueryShape implements QueryShape {
+    final class OriginSizeStrideDataQueryShape implements DataQueryShape {
         private final int originX;
         private final int originY;
         private final int originZ;
@@ -579,7 +578,7 @@ public interface FBlockLevel extends AutoCloseable {
      *
      * @author DaPorkchop_
      */
-    interface QueryOutput {
+    interface DataQueryOutput {
         /**
          * Ensures that this output's state is valid, throwing an exception if not.
          * <p>
@@ -593,7 +592,7 @@ public interface FBlockLevel extends AutoCloseable {
 
         /**
          * @return a bitfield indicating which bands are enabled for this output
-         * @see BlockLevelConstants#isBandEnabled(int, int)
+         * @see BlockLevelConstants#isDataBandEnabled(int, int)
          */
         int enabledBands();
 
@@ -605,7 +604,7 @@ public interface FBlockLevel extends AutoCloseable {
         /**
          * Sets the state value at the given output index.
          * <p>
-         * If this output does not have the {@link BlockLevelConstants#BAND_ORDINAL_STATES "states" band} enabled, the value will be silently discarded.
+         * If this output does not have the {@link BlockLevelConstants#DATA_BAND_ORDINAL_STATES "states" data band} enabled, the value will be silently discarded.
          *
          * @param index the output index
          * @param state the new state value
@@ -615,7 +614,7 @@ public interface FBlockLevel extends AutoCloseable {
         /**
          * Sets the biome value at the given output index.
          * <p>
-         * If this output does not have the {@link BlockLevelConstants#BAND_ORDINAL_BIOMES "biome" band} enabled, the value will be silently discarded.
+         * If this output does not have the {@link BlockLevelConstants#DATA_BAND_ORDINAL_BIOMES "biome" data band} enabled, the value will be silently discarded.
          *
          * @param index the output index
          * @param biome the new biome value
@@ -625,7 +624,7 @@ public interface FBlockLevel extends AutoCloseable {
         /**
          * Sets the light value at the given output index.
          * <p>
-         * If this output does not have the {@link BlockLevelConstants#BAND_ORDINAL_LIGHT "light" band} enabled, the value will be silently discarded.
+         * If this output does not have the {@link BlockLevelConstants#DATA_BAND_ORDINAL_LIGHT "light" data band} enabled, the value will be silently discarded.
          *
          * @param index the output index
          * @param light the new light value
@@ -656,11 +655,11 @@ public interface FBlockLevel extends AutoCloseable {
     }
 
     /**
-     * A simple {@link QueryOutput} consisting of a separate array for each band.
+     * A simple {@link DataQueryOutput} consisting of a separate array for each data band.
      * <p>
-     * Each band array is described by the following:
+     * Each data band array is described by the following:
      * <ul>
-     *     <li>the array to which output is to be written, or {@code null} if the band is to be disabled</li>
+     *     <li>the array to which output is to be written, or {@code null} if the data band is to be disabled</li>
      *     <li>the offset at which to begin writing values to the array. Should be {@code 0} to begin writing at the beginning of the array</li>
      *     <li>the stride between values written to the array. Should be {@code 1} for tightly-packed output</li>
      * </ul>
@@ -668,7 +667,7 @@ public interface FBlockLevel extends AutoCloseable {
      * @author DaPorkchop_
      */
     @Data
-    final class BandArraysQueryOutput implements QueryOutput {
+    final class BandArraysDataQueryOutput implements DataQueryOutput {
         private final int[] statesArray;
         private final int statesOffset;
         private final int statesStride;
@@ -706,13 +705,13 @@ public interface FBlockLevel extends AutoCloseable {
         public int enabledBands() {
             int bands = 0;
             if (this.statesArray != null) {
-                bands |= BlockLevelConstants.bandFlag(BlockLevelConstants.BAND_ORDINAL_STATES);
+                bands |= BlockLevelConstants.dataBandFlag(BlockLevelConstants.DATA_BAND_ORDINAL_STATES);
             }
             if (this.biomesArray != null) {
-                bands |= BlockLevelConstants.bandFlag(BlockLevelConstants.BAND_ORDINAL_BIOMES);
+                bands |= BlockLevelConstants.dataBandFlag(BlockLevelConstants.DATA_BAND_ORDINAL_BIOMES);
             }
             if (this.lightArray != null) {
-                bands |= BlockLevelConstants.bandFlag(BlockLevelConstants.BAND_ORDINAL_LIGHT);
+                bands |= BlockLevelConstants.dataBandFlag(BlockLevelConstants.DATA_BAND_ORDINAL_LIGHT);
             }
             return bands;
         }
@@ -765,15 +764,15 @@ public interface FBlockLevel extends AutoCloseable {
      * <p>
      * A query consists of:
      * <ul>
-     *     <li>a {@link QueryShape} containing the positions of the voxels to get the values at</li>
-     *     <li>a {@link QueryOutput} defining which values to read, and to which the retrieved values will be written</li>
+     *     <li>a {@link DataQueryShape} containing the positions of the voxels to get the values at</li>
+     *     <li>a {@link DataQueryOutput} defining which values to read, and to which the retrieved values will be written</li>
      * </ul>
      *
      * @author DaPorkchop_
      */
-    interface Query {
-        static Query of(@NonNull QueryShape shape, @NonNull QueryOutput output) {
-            return new Query() {
+    interface DataQuery {
+        static DataQuery of(@NonNull FBlockLevel.DataQueryShape shape, @NonNull FBlockLevel.DataQueryOutput output) {
+            return new DataQuery() {
                 @Override
                 public void validate() throws RuntimeException {
                     shape.validate();
@@ -785,12 +784,12 @@ public interface FBlockLevel extends AutoCloseable {
                 }
 
                 @Override
-                public QueryShape shape() {
+                public DataQueryShape shape() {
                     return shape;
                 }
 
                 @Override
-                public QueryOutput output() {
+                public DataQueryOutput output() {
                     return output;
                 }
             };
@@ -808,13 +807,13 @@ public interface FBlockLevel extends AutoCloseable {
         void validate() throws RuntimeException;
 
         /**
-         * @return the query's {@link QueryShape shape}
+         * @return the query's {@link DataQueryShape shape}
          */
-        QueryShape shape();
+        DataQueryShape shape();
 
         /**
-         * @return the query's {@link QueryOutput output}
+         * @return the query's {@link DataQueryOutput output}
          */
-        QueryOutput output();
+        DataQueryOutput output();
     }
 }

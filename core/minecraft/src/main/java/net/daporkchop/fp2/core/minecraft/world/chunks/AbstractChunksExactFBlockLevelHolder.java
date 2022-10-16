@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.minecraft.world.chunks;
@@ -174,18 +173,18 @@ public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends Abstra
     /**
      * Gets a {@link List} of the chunk positions which need to be prefetched in order to respond to a query with the given shape.
      *
-     * @param shape the {@link FBlockLevel.QueryShape query's shape}
+     * @param shape the {@link FBlockLevel.DataQueryShape query's shape}
      * @return the positions of the chunks to prefetch
      */
-    public List<Vec2i> getChunkPositionsToPrefetch(@NonNull FBlockLevel.QueryShape shape) {
+    public List<Vec2i> getChunkPositionsToPrefetch(@NonNull FBlockLevel.DataQueryShape shape) {
         if (shape.count() == 0) { //the shape contains no points, we don't need to prefetch anything
             return Collections.emptyList();
-        } else if (shape instanceof FBlockLevel.SinglePointQueryShape) {
-            return this.getChunkPositionsToPrefetch((FBlockLevel.SinglePointQueryShape) shape);
-        } else if (shape instanceof FBlockLevel.OriginSizeStrideQueryShape) {
-            return this.getChunkPositionsToPrefetch((FBlockLevel.OriginSizeStrideQueryShape) shape);
-        } else if (shape instanceof FBlockLevel.MultiPointsQueryShape) {
-            return this.getChunkPositionsToPrefetch((FBlockLevel.MultiPointsQueryShape) shape);
+        } else if (shape instanceof FBlockLevel.SinglePointDataQueryShape) {
+            return this.getChunkPositionsToPrefetch((FBlockLevel.SinglePointDataQueryShape) shape);
+        } else if (shape instanceof FBlockLevel.OriginSizeStrideDataQueryShape) {
+            return this.getChunkPositionsToPrefetch((FBlockLevel.OriginSizeStrideDataQueryShape) shape);
+        } else if (shape instanceof FBlockLevel.MultiPointsDataQueryShape) {
+            return this.getChunkPositionsToPrefetch((FBlockLevel.MultiPointsDataQueryShape) shape);
         } else {
             return this.getChunkPositionsToPrefetchGeneric(shape);
         }
@@ -194,10 +193,10 @@ public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends Abstra
     /**
      * Gets a {@link List} of the chunk positions which need to be prefetched in order to respond to a group of queries with the given shapes.
      *
-     * @param shapes the {@link FBlockLevel.QueryShape queries' shapes}
+     * @param shapes the {@link FBlockLevel.DataQueryShape queries' shapes}
      * @return the positions of the chunks to prefetch
      */
-    public List<Vec2i> getChunkPositionsToPrefetch(@NonNull FBlockLevel.QueryShape... shapes) {
+    public List<Vec2i> getChunkPositionsToPrefetch(@NonNull FBlockLevel.DataQueryShape... shapes) {
         switch (shapes.length) {
             case 0: //there are no shapes, we don't need to prefetch anything
                 return Collections.emptyList();
@@ -210,7 +209,7 @@ public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends Abstra
             NDimensionalIntSet set = Datastructures.INSTANCE.nDimensionalIntSet().dimensions(2).threadSafe(false).build();
 
             //add the positions for each shape to the set
-            for (FBlockLevel.QueryShape shape : shapes) {
+            for (FBlockLevel.DataQueryShape shape : shapes) {
                 this.getChunkPositionsToPrefetch(set, shape);
             }
 
@@ -221,33 +220,33 @@ public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends Abstra
         }
     }
 
-    protected void getChunkPositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull FBlockLevel.QueryShape shape) {
+    protected void getChunkPositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull FBlockLevel.DataQueryShape shape) {
         if (shape.count() == 0) { //the shape contains no points, we don't need to prefetch anything
             //no-op
-        } else if (shape instanceof FBlockLevel.SinglePointQueryShape) {
-            this.getChunkPositionsToPrefetch(set, (FBlockLevel.SinglePointQueryShape) shape);
-        } else if (shape instanceof FBlockLevel.OriginSizeStrideQueryShape) {
-            this.getChunkPositionsToPrefetch(set, (FBlockLevel.OriginSizeStrideQueryShape) shape);
-        } else if (shape instanceof FBlockLevel.MultiPointsQueryShape) {
-            this.getChunkPositionsToPrefetch(set, (FBlockLevel.MultiPointsQueryShape) shape);
+        } else if (shape instanceof FBlockLevel.SinglePointDataQueryShape) {
+            this.getChunkPositionsToPrefetch(set, (FBlockLevel.SinglePointDataQueryShape) shape);
+        } else if (shape instanceof FBlockLevel.OriginSizeStrideDataQueryShape) {
+            this.getChunkPositionsToPrefetch(set, (FBlockLevel.OriginSizeStrideDataQueryShape) shape);
+        } else if (shape instanceof FBlockLevel.MultiPointsDataQueryShape) {
+            this.getChunkPositionsToPrefetch(set, (FBlockLevel.MultiPointsDataQueryShape) shape);
         } else {
             this.getChunkPositionsToPrefetchGeneric(set, shape);
         }
     }
 
-    protected List<Vec2i> getChunkPositionsToPrefetch(@NonNull FBlockLevel.SinglePointQueryShape shape) {
+    protected List<Vec2i> getChunkPositionsToPrefetch(@NonNull FBlockLevel.SinglePointDataQueryShape shape) {
         return this.isValidPosition(shape.x(), shape.y(), shape.z())
                 ? Collections.singletonList(Vec2i.of(shape.x() >> this.chunkShift(), shape.z() >> this.chunkShift()))
                 : Collections.emptyList();
     }
 
-    protected void getChunkPositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull FBlockLevel.SinglePointQueryShape shape) {
+    protected void getChunkPositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull FBlockLevel.SinglePointDataQueryShape shape) {
         if (this.isValidPosition(shape.x(), shape.y(), shape.z())) {
             set.add(shape.x() >> this.chunkShift(), shape.z() >> this.chunkShift());
         }
     }
 
-    protected List<Vec2i> getChunkPositionsToPrefetch(@NonNull FBlockLevel.OriginSizeStrideQueryShape shape) {
+    protected List<Vec2i> getChunkPositionsToPrefetch(@NonNull FBlockLevel.OriginSizeStrideDataQueryShape shape) {
         shape.validate();
 
         if (!this.isAnyPointValid(shape)) { //no points are valid, there's no reason to check anything
@@ -259,7 +258,7 @@ public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends Abstra
         }
     }
 
-    protected void getChunkPositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull FBlockLevel.OriginSizeStrideQueryShape shape) {
+    protected void getChunkPositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull FBlockLevel.OriginSizeStrideDataQueryShape shape) {
         shape.validate();
 
         if (!this.isAnyPointValid(shape)) { //no points are valid, there's no reason to check anything
@@ -271,7 +270,7 @@ public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends Abstra
         }
     }
 
-    protected List<Vec2i> getChunkPositionsToPrefetchRegularAABB(@NonNull FBlockLevel.OriginSizeStrideQueryShape shape) {
+    protected List<Vec2i> getChunkPositionsToPrefetchRegularAABB(@NonNull FBlockLevel.OriginSizeStrideDataQueryShape shape) {
         shape.validate();
 
         //we assume that at least one Y coordinate is valid, meaning that the entire chunk needs to be prefetched as long as the horizontal coordinates are valid
@@ -292,7 +291,7 @@ public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends Abstra
         return positions;
     }
 
-    protected void getChunkPositionsToPrefetchRegularAABB(@NonNull NDimensionalIntSet set, @NonNull FBlockLevel.OriginSizeStrideQueryShape shape) {
+    protected void getChunkPositionsToPrefetchRegularAABB(@NonNull NDimensionalIntSet set, @NonNull FBlockLevel.OriginSizeStrideDataQueryShape shape) {
         shape.validate();
 
         //we assume that at least one Y coordinate is valid, meaning that the entire chunk needs to be prefetched as long as the horizontal coordinates are valid
@@ -311,7 +310,7 @@ public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends Abstra
         }
     }
 
-    protected List<Vec2i> getChunkPositionsToPrefetchSparseAABB(@NonNull FBlockLevel.OriginSizeStrideQueryShape shape) {
+    protected List<Vec2i> getChunkPositionsToPrefetchSparseAABB(@NonNull FBlockLevel.OriginSizeStrideDataQueryShape shape) {
         shape.validate();
 
         //we assume that at least one Y coordinate is valid, meaning that the entire chunk needs to be prefetched as long as the horizontal coordinates are valid
@@ -326,7 +325,7 @@ public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends Abstra
         return positions;
     }
 
-    protected void getChunkPositionsToPrefetchSparseAABB(@NonNull NDimensionalIntSet set, @NonNull FBlockLevel.OriginSizeStrideQueryShape shape) {
+    protected void getChunkPositionsToPrefetchSparseAABB(@NonNull NDimensionalIntSet set, @NonNull FBlockLevel.OriginSizeStrideDataQueryShape shape) {
         shape.validate();
 
         //we assume that at least one Y coordinate is valid, meaning that the entire chunk needs to be prefetched as long as the horizontal coordinates are valid
@@ -339,17 +338,17 @@ public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends Abstra
         chunkXSupplier.accept(chunkX -> chunkZSupplier.accept(chunkZ -> set.add(chunkX, chunkZ)));
     }
 
-    protected List<Vec2i> getChunkPositionsToPrefetch(@NonNull FBlockLevel.MultiPointsQueryShape shape) {
+    protected List<Vec2i> getChunkPositionsToPrefetch(@NonNull FBlockLevel.MultiPointsDataQueryShape shape) {
         //delegate to generic method, it's already the fastest possible approach for this shape implementation
         return this.getChunkPositionsToPrefetchGeneric(shape);
     }
 
-    protected void getChunkPositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull FBlockLevel.MultiPointsQueryShape shape) {
+    protected void getChunkPositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull FBlockLevel.MultiPointsDataQueryShape shape) {
         //delegate to generic method, it's already the fastest possible approach for this shape implementation
         this.getChunkPositionsToPrefetchGeneric(set, shape);
     }
 
-    protected List<Vec2i> getChunkPositionsToPrefetchGeneric(@NonNull FBlockLevel.QueryShape shape) {
+    protected List<Vec2i> getChunkPositionsToPrefetchGeneric(@NonNull FBlockLevel.DataQueryShape shape) {
         shape.validate();
 
         {
@@ -369,7 +368,7 @@ public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends Abstra
         }
     }
 
-    protected void getChunkPositionsToPrefetchGeneric(@NonNull NDimensionalIntSet set, @NonNull FBlockLevel.QueryShape shape) {
+    protected void getChunkPositionsToPrefetchGeneric(@NonNull NDimensionalIntSet set, @NonNull FBlockLevel.DataQueryShape shape) {
         shape.validate();
 
         //iterate over every position, recording all the ones which are valid
