@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,15 +15,12 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
-package net.daporkchop.fp2.core.util;
+package net.daporkchop.fp2.api.util;
 
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.lib.math.vector.Vec3i;
 
 /**
  * @author DaPorkchop_
@@ -31,15 +28,16 @@ import net.daporkchop.lib.math.vector.Vec3i;
 @RequiredArgsConstructor
 @Getter
 public enum Direction {
-    POSITIVE_X(Vec3i.of(1, 0, 0)),
-    POSITIVE_Y(Vec3i.of(0, 1, 0)),
-    POSITIVE_Z(Vec3i.of(0, 0, 1)),
-    NEGATIVE_X(Vec3i.of(-1, 0, 0)),
-    NEGATIVE_Y(Vec3i.of(0, -1, 0)),
-    NEGATIVE_Z(Vec3i.of(0, 0, -1));
+    POSITIVE_X(1, 0, 0),
+    POSITIVE_Y(0, 1, 0),
+    POSITIVE_Z(0, 0, 1),
+    NEGATIVE_X(-1, 0, 0),
+    NEGATIVE_Y(0, -1, 0),
+    NEGATIVE_Z(0, 0, -1);
 
     public static final Direction[] VALUES = values();
-    
-    @NonNull
-    private final Vec3i vector;
+
+    private final int x;
+    private final int y;
+    private final int z;
 }

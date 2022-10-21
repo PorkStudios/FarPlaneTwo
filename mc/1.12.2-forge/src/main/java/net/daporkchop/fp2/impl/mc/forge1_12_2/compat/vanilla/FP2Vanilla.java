@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla;
@@ -144,7 +143,7 @@ public class FP2Vanilla {
         if (state.getBlock() == Blocks.WATER || state.getBlock() == Blocks.FLOWING_WATER) {
             String spriteName;
             double spriteFactor;
-            if (event.direction().vector().z() == 0) { //(POSITIVE|NEGATIVE)_Z
+            if (event.direction().z() == 0) { //(POSITIVE|NEGATIVE)_Z
                 spriteName = "minecraft:blocks/water_still";
                 spriteFactor = 16.0d;
             } else {
@@ -168,7 +167,7 @@ public class FP2Vanilla {
         if (state.getBlock() == Blocks.LAVA || state.getBlock() == Blocks.FLOWING_LAVA) {
             String spriteName;
             double spriteFactor;
-            if (event.direction().vector().z() == 0) { //(POSITIVE|NEGATIVE)_Z
+            if (event.direction().z() == 0) { //(POSITIVE|NEGATIVE)_Z
                 spriteName = "minecraft:blocks/lava_still";
                 spriteFactor = 16.0d;
             } else {

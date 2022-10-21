@@ -21,7 +21,7 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.util;
 
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.core.util.Direction;
+import net.daporkchop.fp2.api.util.Direction;
 import net.daporkchop.lib.common.pool.recycler.Recycler;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.reference.cache.Cached;
