@@ -98,19 +98,7 @@ public class BlockLevelConstants {
     // TYPE TRANSITION CONSTANTS
     //
 
-    public static final byte TYPE_TRANSITION_NODATA;
-
-    private static final byte TYPE_TRANSITIONS_REGULAR;
-    private static final byte TYPE_TRANSITIONS_ALL;
-
-    static {
-        int idx = BLOCK_TYPES * BLOCK_TYPES;
-
-        TYPE_TRANSITIONS_REGULAR = (byte) idx;
-
-        TYPE_TRANSITION_NODATA = (byte) idx++;
-        TYPE_TRANSITIONS_ALL = (byte) idx;
-    }
+    private static final byte TYPE_TRANSITIONS = (byte) BLOCK_TYPES * BLOCK_TYPES;
 
     //
     // TYPE TRANSITION OUTPUT BAND ORDINALS
@@ -121,8 +109,7 @@ public class BlockLevelConstants {
      * <p>
      * Type transitions are represented as a {@code byte}, and information can be extracted from them using the corresponding methods in {@link BlockLevelConstants}:<br>
      * <ul>
-     *     <li>{@link #isTypeTransitionRegular(byte)}</li>
-     *     <li>{@link #isTypeTransitionNoData(byte)}</li>
+     *     <li>{@link #isValidTypeTransition(byte)}</li>
      *     <li>{@link #getTypeTransitionFromType(byte)}</li>
      *     <li>{@link #getTypeTransitionToType(byte)}</li>
      * </ul>
@@ -151,9 +138,16 @@ public class BlockLevelConstants {
     public static final int TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_COORDS_Z = 3;
 
     /**
+     * Ordinal of the "skipped NoData" type transition query output band.
+     * <p>
+     * "Skipped NoData" values are represented as a {@code boolean}.
+     */
+    public static final int TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_SKIPPED_NODATA = 4;
+
+    /**
      * The number of type transition query output bands that exist.
      */
-    public static final int TYPE_TRANSITION_OUTPUT_BANDS = 4;
+    public static final int TYPE_TRANSITION_OUTPUT_BANDS = 5;
 
     //
     // BLOCK TYPE HELPERS
@@ -297,69 +291,48 @@ public class BlockLevelConstants {
     //
 
     /**
-     * Checks whether the given {@code byte} is a valid type transition descriptor.
+     * Checks whether the given {@code byte} is a valid type transition ordinal.
      *
      * @param typeTransition the {@code byte}
-     * @return whether the given {@code int} is a valid type transition descriptor
+     * @return whether the given {@code byte} is a valid type transition ordinal
      */
-    public static boolean isValidTypeTransitionDescriptor(byte typeTransition) {
-        return ((TYPE_TRANSITIONS_ALL - 1) & TYPE_TRANSITIONS_ALL) == 0 //check if TYPE_TRANSITIONS_ALL is a power of two, if so we can use an optimized implementation
-                ? (typeTransition & (TYPE_TRANSITIONS_ALL - 1)) == typeTransition
-                : typeTransition >= 0 && typeTransition < TYPE_TRANSITIONS_ALL;
+    public static boolean isValidTypeTransition(byte typeTransition) {
+        //noinspection ConstantConditions
+        return ((TYPE_TRANSITIONS - 1) & TYPE_TRANSITIONS) == 0 //check if TYPE_TRANSITIONS is a power of two, if so we can use an optimized implementation
+                ? (typeTransition & (TYPE_TRANSITIONS - 1)) == typeTransition
+                : typeTransition >= 0 && typeTransition < TYPE_TRANSITIONS;
     }
 
     /**
-     * Checks whether the given type transition represents a regular transition between block types.
+     * Gets the block type being transitioned from in the given type transition ordinal.
      *
-     * @param typeTransition the type transition
-     * @return whether the given type transition represents a regular transition between block types
-     */
-    public static boolean isTypeTransitionRegular(byte typeTransition) {
-        assert isValidTypeTransitionDescriptor(typeTransition) : "illegal type transition " + typeTransition;
-        return typeTransition < TYPE_TRANSITIONS_REGULAR;
-    }
-
-    /**
-     * Assuming the given type transition represents a regular transition between block types, gets the block type being transitioned from.
-     *
-     * @param typeTransition the type transition
+     * @param typeTransition the type transition ordinal
      * @return the block type being transitioned from
      */
     public static int getTypeTransitionFromType(byte typeTransition) {
-        assert isTypeTransitionRegular(typeTransition) : "not a regular type transition " + typeTransition;
+        assert isValidTypeTransition(typeTransition) : "not a valid type transition " + typeTransition;
         return typeTransition % BLOCK_TYPES;
     }
 
     /**
-     * Assuming the given type transition represents a regular transition between block types, gets the block type being transitioned to.
+     * Gets the block type being transitioned to in the given type transition ordinal.
      *
-     * @param typeTransition the type transition
+     * @param typeTransition the type transition ordinal
      * @return the block type being transitioned to
      */
     public static int getTypeTransitionToType(byte typeTransition) {
-        assert isTypeTransitionRegular(typeTransition) : "not a regular type transition " + typeTransition;
+        assert isValidTypeTransition(typeTransition) : "not a valid type transition " + typeTransition;
         return typeTransition / BLOCK_TYPES;
     }
 
     /**
-     * Checks whether the given type transition represents a range in which data is missing.
-     *
-     * @param typeTransition the type transition
-     * @return whether the given type transition represents a range in which data is missing
-     */
-    public static boolean isTypeTransitionNoData(byte typeTransition) {
-        assert isValidTypeTransitionDescriptor(typeTransition) : "illegal type transition " + typeTransition;
-        return typeTransition == TYPE_TRANSITION_NODATA;
-    }
-
-    /**
-     * Gets the type transition ordinal representing a regular transition from the given block type to the given block type.
+     * Gets the type transition ordinal representing a transition from the given block type to the given block type.
      *
      * @param fromBlockTypeOrdinal the ordinal of the block type being transitioned from
      * @param toBlockTypeOrdinal   the ordinal of the block type being transitioned to
      * @return the type transition ordinal
      */
-    public static byte getTypeTransitionRegular(int fromBlockTypeOrdinal, int toBlockTypeOrdinal) {
+    public static byte getTypeTransition(int fromBlockTypeOrdinal, int toBlockTypeOrdinal) {
         assert isValidBlockType(fromBlockTypeOrdinal) : "illegal block type ordinal " + fromBlockTypeOrdinal;
         assert isValidBlockType(toBlockTypeOrdinal) : "illegal block type ordinal " + toBlockTypeOrdinal;
         return (byte) (toBlockTypeOrdinal * BLOCK_TYPES + fromBlockTypeOrdinal);

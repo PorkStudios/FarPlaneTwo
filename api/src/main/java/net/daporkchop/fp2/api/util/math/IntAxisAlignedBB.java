@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.api.util.math;
@@ -31,12 +30,12 @@ import lombok.Data;
  */
 @Data
 public final class IntAxisAlignedBB {
-    protected final int minX;
-    protected final int minY;
-    protected final int minZ;
-    protected final int maxX;
-    protected final int maxY;
-    protected final int maxZ;
+    private final int minX;
+    private final int minY;
+    private final int minZ;
+    private final int maxX;
+    private final int maxY;
+    private final int maxZ;
 
     /**
      * @return the size of this AABB along the X axis
@@ -60,12 +59,12 @@ public final class IntAxisAlignedBB {
     }
 
     /**
-     * Checks whether or not the given point is contained by this bounding box.
+     * Checks whether the given point is contained by this bounding box.
      *
      * @param x the point's X coordinate
      * @param y the point's Y coordinate
      * @param z the point's Z coordinate
-     * @return whether or not the given point is contained by this bounding box
+     * @return whether the given point is contained by this bounding box
      */
     public boolean contains(int x, int y, int z) {
         return x >= this.minX && x < this.maxX && y >= this.minY && y < this.maxY && z >= this.minZ && z < this.maxZ;

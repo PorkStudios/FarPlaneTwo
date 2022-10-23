@@ -22,12 +22,14 @@ package net.daporkchop.fp2.core.minecraft.world.chunks;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.api.util.Direction;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.fp2.api.world.level.GenerationNotAllowedException;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.lib.math.vector.Vec2i;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -127,5 +129,12 @@ public class AbstractChunksExactFBlockLevel<CHUNK> implements FBlockLevel {
 
         //prefetch all the chunks, then delegate the actual query execution to AbstractPrefetchedChunksExactFBlockLevel
         this.holder.prefetchedWorld(this.generationAllowed, this.holder.multiGetChunks(prefetchPositions, this.generationAllowed)).query(queries);
+    }
+
+    @Override
+    public int getNextTypeTransitions(@NonNull Direction direction, int x, int y, int z,
+                                      @NonNull Collection<@NonNull TypeTransitionQueryInterestFilter> filters,
+                                      @NonNull TypeTransitionOutput output) {
+        return 0;
     }
 }

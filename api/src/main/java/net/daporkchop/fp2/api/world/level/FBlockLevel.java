@@ -283,44 +283,40 @@ public interface FBlockLevel extends AutoCloseable {
     //
 
     /**
-     * Searches for the next transition(s) from one block type to another, starting at the given position and iterating in the given direction. The query will continue
-     * searching until one of the following events occurs:<br>
+     * Searches for the next transition(s) from one block type to another, starting at the given position (exclusive) and iterating in the given direction. The query will
+     * continue searching until one of the following events occurs:<br>
      * <ul>
      *     <li>one of the given {@link TypeTransitionQueryInterestFilter filters}' {@link TypeTransitionQueryInterestFilter#abortAfterHitCount abortAfterHitCount} limit
      *     is exceeded</li>
      *     <li>the {@link TypeTransitionOutput}'s capacity is exceeded, and no more output can be stored in it</li>
+     *     <li>the current position goes beyond this level's {@link #dataLimits() data limits}</li>
      * </ul>
      * <p>
      * When a transition between block types is encountered, it is checked against all the given {@link TypeTransitionQueryInterestFilter filters}. If it matches at
      * least one filter, the transition's type transition descriptor and the XYZ coordinates of the block being transitioned to are stored in the next available index of
      * the given {@link TypeTransitionOutput output}.
+     * <p>
+     * The type transitions between data which exists and data which doesn't exist, as well as between non-existent voxels are not defined. If a query requires the
+     * implementation to access voxel data which doesn't exist, this could result in, among other things, seemingly "impossible" sequences of transitions (e.g. two
+     * transitions from {@link BlockLevelConstants#BLOCK_TYPE_INVISIBLE invisible} to {@link BlockLevelConstants#BLOCK_TYPE_OPAQUE} in a row with no other transitions
+     * between them). To avoid this problem, the {@link TypeTransitionOutput output} has a special output band: the
+     * {@link BlockLevelConstants#TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_SKIPPED_NODATA "skipped NoData" type transition query output band}, which is an array of
+     * {@code boolean}s. A value of {@code true} for an individual transition indicates the implementation may have skipped one or more non-existent voxels prior to
+     * encountering the current transition.
      *
-     * @param x             the X coordinate to begin iteration from
-     * @param y             the Y coordinate to begin iteration from
-     * @param z             the Z coordinate to begin iteration from
-     * @param direction     the direction to iterate in
-     * @param filters       a {@link Collection} of the {@link TypeTransitionQueryInterestFilter filters} to use for selecting which type transitions to include in the
-     *                      {@link TypeTransitionOutput output}. Type transitions which at least one of the filters will be written to the output. If the given
-     *                      {@link Collection} is {@link Collection#isEmpty() empty}, no filtering will be applied.
-     * @param output        a {@link TypeTransitionOutput output} to store the encountered type transitions in
-     * @param includeNoData a {@code boolean} value indicating whether {@link BlockLevelConstants#isTypeTransitionNoData(byte) NoData} transitions should be included in
-     *                      the output if supported by the implementation. If a query requires the implementation to access voxel data which doesn't
-     *                      <strong>exist</strong>, the type transitions along the border of existent and non-existent data, as well as between non-existent voxels are
-     *                      not known. This could result in, among other things, seemingly "impossible" sequences of transitions (e.g. two transitions from
-     *                      {@link BlockLevelConstants#BLOCK_TYPE_INVISIBLE invisible} to {@link BlockLevelConstants#BLOCK_TYPE_OPAQUE} in a row with no other transitions
-     *                      between them).
-     *                      <p>
-     *                      If {@code false}, the user will not be informed if the implementation has to skip a range of non-existent voxels.
-     *                      <p>
-     *                      If {@code true}, if the implementation may have skipped one or more non-existent voxels prior to a regular transition between block types
-     *                      which is to be included in the output, it will first write a single {@link BlockLevelConstants#isTypeTransitionNoData(byte) NoData} transition
-     *                      to the output with undefined coordinates.
+     * @param direction the direction to iterate in
+     * @param x         the X coordinate to begin iteration from
+     * @param y         the Y coordinate to begin iteration from
+     * @param z         the Z coordinate to begin iteration from
+     * @param filters   a {@link Collection} of the {@link TypeTransitionQueryInterestFilter filters} to use for selecting which type transitions to include in the
+     *                  {@link TypeTransitionOutput output}. Type transitions which at least one of the filters will be written to the output. If the given
+     *                  {@link Collection} is {@link Collection#isEmpty() empty}, no filtering will be applied.
+     * @param output    a {@link TypeTransitionOutput output} to store the encountered type transitions in
      * @return the number of elements written to the {@link TypeTransitionOutput output}
      */
-    int getNextTypeTransitions(int x, int y, int z, @NonNull Direction direction,
+    int getNextTypeTransitions(@NonNull Direction direction, int x, int y, int z,
                                @NonNull Collection<@NonNull TypeTransitionQueryInterestFilter> filters,
-                               @NonNull TypeTransitionOutput output,
-                               boolean includeNoData);
+                               @NonNull TypeTransitionOutput output);
 
     //
     // BULK TYPE TRANSITION SEARCH QUERIES
@@ -787,7 +783,7 @@ public interface FBlockLevel extends AutoCloseable {
 
         @Override
         public void setBiome(int index, int biome) {
-            notNegative(index, "index");
+            checkIndex(this.count, index);
             if (this.biomesArray != null) {
                 //we assume our state is valid, and since we know that the index is valid we can be sure there will be no overflows here
                 this.biomesArray[this.biomesOffset + this.biomesStride * index] = biome;
@@ -796,7 +792,7 @@ public interface FBlockLevel extends AutoCloseable {
 
         @Override
         public void setLight(int index, byte light) {
-            notNegative(index, "index");
+            checkIndex(this.count, index);
             if (this.lightArray != null) {
                 //we assume our state is valid, and since we know that the index is valid we can be sure there will be no overflows here
                 this.lightArray[this.lightOffset + this.lightStride * index] = light;
@@ -805,7 +801,7 @@ public interface FBlockLevel extends AutoCloseable {
 
         @Override
         public void setStateBiomesLight(int index, int state, int biome, byte light) {
-            notNegative(index, "index");
+            checkIndex(this.count, index);
             if (this.statesArray != null) {
                 //we assume our state is valid, and since we know that the index is valid we can be sure there will be no overflows here
                 this.statesArray[this.statesOffset + this.statesStride * index] = state;
@@ -1036,6 +1032,17 @@ public interface FBlockLevel extends AutoCloseable {
         void setZ(int index, int z);
 
         /**
+         * Sets the Z coordinate value at the given output index.
+         * <p>
+         * If this output does not have the {@link BlockLevelConstants#TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_SKIPPED_NODATA "skipped NoData" type transition query output band}
+         * enabled, the value will be silently discarded.
+         *
+         * @param index         the output index
+         * @param skippedNoData the new "skipped NoData" value
+         */
+        void setSkippedNoData(int index, boolean skippedNoData);
+
+        /**
          * Sets the values in multiple bands at the given output index.
          * <p>
          * Conceptually implemented by
@@ -1044,20 +1051,23 @@ public interface FBlockLevel extends AutoCloseable {
          * this.setX(index, x);
          * this.setY(index, y);
          * this.setZ(index, z);
+         * this.setSkippedNoData(index, skippedNoData);
          * }</pre></blockquote>
          * except the implementation has the opportunity to optimize this beyond what the user could write.
          *
          * @param index          the output index
          * @param typeTransition the new type transition descriptor value
-         * @param x              the new x coordinate
-         * @param y              the new y coordinate
-         * @param z              the new z coordinate
+         * @param x              the new x coordinate value
+         * @param y              the new y coordinate value
+         * @param z              the new z coordinate value
+         * @param skippedNoData  the new "skipped NoData" value
          */
-        default void setTypeTransitionXYZ(int index, byte typeTransition, int x, int y, int z) {
+        default void setAll(int index, byte typeTransition, int x, int y, int z, boolean skippedNoData) {
             this.setTypeTransition(index, typeTransition);
             this.setX(index, x);
             this.setY(index, y);
             this.setZ(index, z);
+            this.setSkippedNoData(index, skippedNoData);
         }
     }
 
@@ -1091,6 +1101,10 @@ public interface FBlockLevel extends AutoCloseable {
         private final int zCoordinatesOffset;
         private final int zCoordinatesStride;
 
+        private final boolean[] skippedNoDataArray;
+        private final int skippedNoDataOffset;
+        private final int skippedNoDataStride;
+
         private final int count;
 
         @Override
@@ -1101,20 +1115,24 @@ public interface FBlockLevel extends AutoCloseable {
             //make sure all the indices fit within the given arrays for the provided offset and stride
             if (this.count != 0) {
                 if (this.typeTransitionsArray != null) {
-                    checkRangeLen(this.typeTransitionsArray.length, this.typeTransitionsOffset, multiplyExact(positive(this.typeTransitionsStride, "statesStride"), this.count)
-                                                                                                - this.typeTransitionsOffset);
+                    checkRangeLen(this.typeTransitionsArray.length, this.typeTransitionsOffset,
+                            multiplyExact(positive(this.typeTransitionsStride, "statesStride"), this.count) - this.typeTransitionsOffset);
                 }
                 if (this.xCoordinatesArray != null) {
-                    checkRangeLen(this.xCoordinatesArray.length, this.xCoordinatesOffset, multiplyExact(positive(this.xCoordinatesStride, "xCoordinatesStride"), this.count)
-                                                                                          - this.xCoordinatesOffset);
+                    checkRangeLen(this.xCoordinatesArray.length, this.xCoordinatesOffset,
+                            multiplyExact(positive(this.xCoordinatesStride, "xCoordinatesStride"), this.count) - this.xCoordinatesOffset);
                 }
                 if (this.yCoordinatesArray != null) {
-                    checkRangeLen(this.yCoordinatesArray.length, this.yCoordinatesOffset, multiplyExact(positive(this.yCoordinatesStride, "yCoordinatesStride"), this.count)
-                                                                                          - this.yCoordinatesOffset);
+                    checkRangeLen(this.yCoordinatesArray.length, this.yCoordinatesOffset,
+                            multiplyExact(positive(this.yCoordinatesStride, "yCoordinatesStride"), this.count) - this.yCoordinatesOffset);
                 }
                 if (this.zCoordinatesArray != null) {
-                    checkRangeLen(this.zCoordinatesArray.length, this.zCoordinatesOffset, multiplyExact(positive(this.zCoordinatesStride, "zCoordinatesStride"), this.count)
-                                                                                          - this.zCoordinatesOffset);
+                    checkRangeLen(this.zCoordinatesArray.length, this.zCoordinatesOffset,
+                            multiplyExact(positive(this.zCoordinatesStride, "zCoordinatesStride"), this.count) - this.zCoordinatesOffset);
+                }
+                if (this.skippedNoDataArray != null) {
+                    checkRangeLen(this.skippedNoDataArray.length, this.zCoordinatesOffset,
+                            multiplyExact(positive(this.zCoordinatesStride, "skippedNoDataStride"), this.count) - this.zCoordinatesOffset);
                 }
             }
         }
@@ -1134,6 +1152,9 @@ public interface FBlockLevel extends AutoCloseable {
             if (this.zCoordinatesArray != null) {
                 bands |= BlockLevelConstants.dataBandFlag(BlockLevelConstants.TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_COORDS_Z);
             }
+            if (this.skippedNoDataArray != null) {
+                bands |= BlockLevelConstants.dataBandFlag(BlockLevelConstants.TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_SKIPPED_NODATA);
+            }
             return bands;
         }
 
@@ -1148,7 +1169,7 @@ public interface FBlockLevel extends AutoCloseable {
 
         @Override
         public void setX(int index, int x) {
-            notNegative(index, "index");
+            checkIndex(this.count, index);
             if (this.xCoordinatesArray != null) {
                 //we assume our state is valid, and since we know that the index is valid we can be sure there will be no overflows here
                 this.xCoordinatesArray[this.xCoordinatesOffset + this.xCoordinatesStride * index] = x;
@@ -1157,7 +1178,7 @@ public interface FBlockLevel extends AutoCloseable {
 
         @Override
         public void setY(int index, int y) {
-            notNegative(index, "index");
+            checkIndex(this.count, index);
             if (this.yCoordinatesArray != null) {
                 //we assume our state is valid, and since we know that the index is valid we can be sure there will be no overflows here
                 this.yCoordinatesArray[this.yCoordinatesOffset + this.yCoordinatesStride * index] = y;
@@ -1166,7 +1187,7 @@ public interface FBlockLevel extends AutoCloseable {
 
         @Override
         public void setZ(int index, int z) {
-            notNegative(index, "index");
+            checkIndex(this.count, index);
             if (this.zCoordinatesArray != null) {
                 //we assume our state is valid, and since we know that the index is valid we can be sure there will be no overflows here
                 this.zCoordinatesArray[this.zCoordinatesOffset + this.zCoordinatesStride * index] = z;
@@ -1174,8 +1195,17 @@ public interface FBlockLevel extends AutoCloseable {
         }
 
         @Override
-        public void setTypeTransitionXYZ(int index, byte typeTransition, int x, int y, int z) {
-            notNegative(index, "index");
+        public void setSkippedNoData(int index, boolean skippedNoData) {
+            checkIndex(this.count, index);
+            if (this.skippedNoDataArray != null) {
+                //we assume our state is valid, and since we know that the index is valid we can be sure there will be no overflows here
+                this.skippedNoDataArray[this.skippedNoDataOffset + this.skippedNoDataStride * index] = skippedNoData;
+            }
+        }
+
+        @Override
+        public void setAll(int index, byte typeTransition, int x, int y, int z, boolean skippedNoData) {
+            checkIndex(this.count, index);
             if (this.typeTransitionsArray != null) {
                 //we assume our state is valid, and since we know that the index is valid we can be sure there will be no overflows here
                 this.typeTransitionsArray[this.typeTransitionsOffset + this.typeTransitionsStride * index] = typeTransition;
@@ -1188,6 +1218,9 @@ public interface FBlockLevel extends AutoCloseable {
             }
             if (this.zCoordinatesArray != null) {
                 this.zCoordinatesArray[this.zCoordinatesOffset + this.zCoordinatesStride * index] = z;
+            }
+            if (this.skippedNoDataArray != null) {
+                this.skippedNoDataArray[this.skippedNoDataOffset + this.skippedNoDataStride * index] = skippedNoData;
             }
         }
     }
