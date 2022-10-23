@@ -19,10 +19,15 @@
 
 package net.daporkchop.fp2.api.world.level;
 
+import lombok.Builder;
 import lombok.Data;
 import lombok.NonNull;
+import net.daporkchop.fp2.api.util.Direction;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
+import net.daporkchop.lib.common.annotation.ThreadSafe;
+
+import java.util.Collection;
 
 import static java.lang.Math.*;
 import static java.util.Objects.*;
@@ -76,6 +81,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  *
  * @author DaPorkchop_
  */
+@ThreadSafe(except = "close")
 public interface FBlockLevel extends AutoCloseable {
     /**
      * Closes this world, immediately releasing any internally allocated resources.
@@ -271,6 +277,58 @@ public interface FBlockLevel extends AutoCloseable {
             });
         }
     }
+
+    //
+    // INDIVIDUAL TYPE TRANSITION SEARCH QUERIES
+    //
+
+    /**
+     * Searches for the next transition(s) from one block type to another, starting at the given position and iterating in the given direction. The query will continue
+     * searching until one of the following events occurs:<br>
+     * <ul>
+     *     <li>one of the given {@link TypeTransitionQueryInterestFilter filters}' {@link TypeTransitionQueryInterestFilter#abortAfterHitCount abortAfterHitCount} limit
+     *     is exceeded</li>
+     *     <li>the {@link TypeTransitionOutput}'s capacity is exceeded, and no more output can be stored in it</li>
+     * </ul>
+     * <p>
+     * When a transition between block types is encountered, it is checked against all the given {@link TypeTransitionQueryInterestFilter filters}. If it matches at
+     * least one filter, the transition's type transition descriptor and the XYZ coordinates of the block being transitioned to are stored in the next available index of
+     * the given {@link TypeTransitionOutput output}.
+     *
+     * @param x             the X coordinate to begin iteration from
+     * @param y             the Y coordinate to begin iteration from
+     * @param z             the Z coordinate to begin iteration from
+     * @param direction     the direction to iterate in
+     * @param filters       a {@link Collection} of the {@link TypeTransitionQueryInterestFilter filters} to use for selecting which type transitions to include in the
+     *                      {@link TypeTransitionOutput output}. Type transitions which at least one of the filters will be written to the output. If the given
+     *                      {@link Collection} is {@link Collection#isEmpty() empty}, no filtering will be applied.
+     * @param output        a {@link TypeTransitionOutput output} to store the encountered type transitions in
+     * @param includeNoData a {@code boolean} value indicating whether {@link BlockLevelConstants#isTypeTransitionNoData(byte) NoData} transitions should be included in
+     *                      the output if supported by the implementation. If a query requires the implementation to access voxel data which doesn't
+     *                      <strong>exist</strong>, the type transitions along the border of existent and non-existent data, as well as between non-existent voxels are
+     *                      not known. This could result in, among other things, seemingly "impossible" sequences of transitions (e.g. two transitions from
+     *                      {@link BlockLevelConstants#BLOCK_TYPE_INVISIBLE invisible} to {@link BlockLevelConstants#BLOCK_TYPE_OPAQUE} in a row with no other transitions
+     *                      between them).
+     *                      <p>
+     *                      If {@code false}, the user will not be informed if the implementation has to skip a range of non-existent voxels.
+     *                      <p>
+     *                      If {@code true}, if the implementation may have skipped one or more non-existent voxels prior to a regular transition between block types
+     *                      which is to be included in the output, it will first write a single {@link BlockLevelConstants#isTypeTransitionNoData(byte) NoData} transition
+     *                      to the output with undefined coordinates.
+     * @return the number of elements written to the {@link TypeTransitionOutput output}
+     */
+    int getNextTypeTransitions(int x, int y, int z, @NonNull Direction direction,
+                               @NonNull Collection<@NonNull TypeTransitionQueryInterestFilter> filters,
+                               @NonNull TypeTransitionOutput output,
+                               boolean includeNoData);
+
+    //
+    // BULK TYPE TRANSITION SEARCH QUERIES
+    //
+
+    //
+    // DATA QUERY CLASSES
+    //
 
     /**
      * Describes a query's shape.
@@ -492,7 +550,9 @@ public interface FBlockLevel extends AutoCloseable {
             this.validate();
 
             //iterate over every position
-            for (int index = 0, xIndex = this.xOffset, yIndex = this.yOffset, zIndex = this.zOffset; index < this.count; index++, xIndex += this.xStride, yIndex += this.yStride, zIndex += this.zStride) {
+            for (int index = 0, xIndex = this.xOffset, yIndex = this.yOffset, zIndex = this.zOffset;
+                 index < this.count;
+                 index++, xIndex += this.xStride, yIndex += this.yStride, zIndex += this.zStride) {
                 action.accept(index, this.x[xIndex], this.y[yIndex], this.z[zIndex]);
             }
         }
@@ -815,5 +875,320 @@ public interface FBlockLevel extends AutoCloseable {
          * @return the query's {@link DataQueryOutput output}
          */
         DataQueryOutput output();
+    }
+
+    //
+    // TYPE TRANSITION SEARCH QUERY CLASSES
+    //
+
+    /**
+     * Describes which transitions are of interest to a type transition search query.
+     *
+     * @author DaPorkchop_
+     */
+    @Data
+    @Builder
+    final class TypeTransitionQueryInterestFilter {
+        /**
+         * A bitfield indicating which block types are allowed as the block type being transitioned from. Transitions from block types not included in this bitfield will
+         * be ignored.
+         * <p>
+         * The bitfield must be non-empty (i.e. at least one bit must be set). It may be {@link BlockLevelConstants#allBlockTypes() full}, in which case transitions from
+         * any block type will be included.
+         */
+        private final int fromTypes;
+
+        /**
+         * A bitfield indicating which block types are allowed as the block type being transitioned to. Transitions to block types not included in this bitfield will
+         * be ignored.
+         * <p>
+         * The bitfield must be non-empty (i.e. at least one bit must be set). It may be {@link BlockLevelConstants#allBlockTypes() full}, in which case transitions from
+         * any block type will be included.
+         */
+        private final int toTypes;
+
+        /**
+         * Indicates the maximum number of hits matching this filter to include in the output. Once this number of transitions matching this filter have been output, any
+         * subsequent hits matching this filter will not be included in the output.
+         * <p>
+         * Special values:<br>
+         * <ul>
+         *     <li>if {@code < 0}, the filter will be allowed to write an unlimited number of output values without being disabled.</li>
+         *     <li>if {@code == 0}, transitions matching this filter will never be included in the output <i>(unless they also match another filter)</i>. This option is
+         *     intended to be used with {@link #abortAfterHitCount}, in order to permit filters which serve only to abort the query once hit some number of times without
+         *     affecting the output.</li>
+         * </ul>
+         */
+        private final int disableAfterHitCount;
+
+        /**
+         * Indicates the maximum number of hits matching this filter to allow. Once this filter has been hit this number of times, the query will be aborted and no
+         * further values will be written to the output.
+         * <p>
+         * Note that transitions which match this filter but are not written to the output due to the value of {@link #disableAfterHitCount} being exceeded still count
+         * towards the total number of hits.
+         * <p>
+         * Special values:<br>
+         * <ul>
+         *     <li>if {@code < 0}, the filter will be allowed to be hit an unlimited number of times without aborting the query.</li>
+         *     <li>if {@code == 0}, the query will be aborted immediately.</li>
+         * </ul>
+         */
+        private final int abortAfterHitCount;
+
+        private TypeTransitionQueryInterestFilter(int fromTypes, int toTypes, int disableAfterHitCount, int abortAfterHitCount) {
+            checkArg(BlockLevelConstants.isValidBlockTypeSet(fromTypes), "invalid bitfield in fromTypes: %d", fromTypes);
+            checkArg(BlockLevelConstants.isValidBlockTypeSet(toTypes), "invalid bitfield in toTypes: %d", toTypes);
+
+            this.fromTypes = fromTypes;
+            this.toTypes = toTypes;
+            this.disableAfterHitCount = disableAfterHitCount;
+            this.abortAfterHitCount = abortAfterHitCount;
+        }
+
+        /**
+         * Checks whether a transition from the given type to the given type matches this filter.
+         *
+         * @param fromType the type being transitioned from
+         * @param toType   the type being transitioned to
+         * @return whether a transition from the given type to the given type matches this filter
+         */
+        public boolean transitionMatches(int fromType, int toType) {
+            return BlockLevelConstants.isBlockTypeEnabled(this.fromTypes, fromType)
+                   && BlockLevelConstants.isBlockTypeEnabled(this.toTypes, toType);
+        }
+    }
+
+    /**
+     * Describes target for a type transition query's output to be written to.
+     * <p>
+     * A type transition query output consists of a sequence of data values, indexed from {@code 0} (inclusive) to {@link #count()} (exclusive). Each value is broken up
+     * into multiple "bands", each of which contain a separate category of information. Bands may be enabled or disabled individually, allowing users to query only the
+     * data they're interested in without wasting processing time reading unneeded values or allocating throwaway buffers.
+     *
+     * @author DaPorkchop_
+     */
+    interface TypeTransitionOutput {
+        /**
+         * Ensures that this output's state is valid, throwing an exception if not.
+         * <p>
+         * If this method is not called and the output's state is invalid, the behavior of all other methods is undefined.
+         * <p>
+         * It is recommended to call this once per method body before using an output instance, as it could allow the JVM to optimize the code more aggressively.
+         *
+         * @throws RuntimeException if the output's state is invalid
+         */
+        void validate() throws RuntimeException;
+
+        /**
+         * @return a bitfield indicating which bands are enabled for this output
+         * @see BlockLevelConstants#isTypeTransitionQueryOutputBandEnabled(int, int)
+         */
+        int enabledBands();
+
+        /**
+         * @return the number of output slots which will be read by this query
+         */
+        int count();
+
+        /**
+         * Sets the type transition value at the given output index.
+         * <p>
+         * If this output does not have the {@link BlockLevelConstants#TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_TRANSITIONS "type transitions" type transition query output band}
+         * enabled, the value will be silently discarded.
+         *
+         * @param index          the output index
+         * @param typeTransition the new type transition value
+         */
+        void setTypeTransition(int index, byte typeTransition);
+
+        /**
+         * Sets the X coordinate value at the given output index.
+         * <p>
+         * If this output does not have the {@link BlockLevelConstants#TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_COORDS_X "X coordinates" type transition query output band}
+         * enabled, the value will be silently discarded.
+         *
+         * @param index the output index
+         * @param x     the new x coordinate value
+         */
+        void setX(int index, int x);
+
+        /**
+         * Sets the Y coordinate value at the given output index.
+         * <p>
+         * If this output does not have the {@link BlockLevelConstants#TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_COORDS_Y "Y coordinates" type transition query output band}
+         * enabled, the value will be silently discarded.
+         *
+         * @param index the output index
+         * @param y     the new y coordinate value
+         */
+        void setY(int index, int y);
+
+        /**
+         * Sets the Z coordinate value at the given output index.
+         * <p>
+         * If this output does not have the {@link BlockLevelConstants#TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_COORDS_Z "Z coordinates" type transition query output band}
+         * enabled, the value will be silently discarded.
+         *
+         * @param index the output index
+         * @param z     the new z coordinate value
+         */
+        void setZ(int index, int z);
+
+        /**
+         * Sets the values in multiple bands at the given output index.
+         * <p>
+         * Conceptually implemented by
+         * <blockquote><pre>{@code
+         * this.setTypeTransition(index, typeTransition);
+         * this.setX(index, x);
+         * this.setY(index, y);
+         * this.setZ(index, z);
+         * }</pre></blockquote>
+         * except the implementation has the opportunity to optimize this beyond what the user could write.
+         *
+         * @param index          the output index
+         * @param typeTransition the new type transition descriptor value
+         * @param x              the new x coordinate
+         * @param y              the new y coordinate
+         * @param z              the new z coordinate
+         */
+        default void setTypeTransitionXYZ(int index, byte typeTransition, int x, int y, int z) {
+            this.setTypeTransition(index, typeTransition);
+            this.setX(index, x);
+            this.setY(index, y);
+            this.setZ(index, z);
+        }
+    }
+
+    /**
+     * A simple {@link TypeTransitionOutput} consisting of a separate array for each type transition query output band.
+     * <p>
+     * Each type transition query output band array is described by the following:
+     * <ul>
+     *     <li>the array to which output is to be written, or {@code null} if the type transition query output band is to be disabled</li>
+     *     <li>the offset at which to begin writing values to the array. Should be {@code 0} to begin writing at the beginning of the array</li>
+     *     <li>the stride between values written to the array. Should be {@code 1} for tightly-packed output</li>
+     * </ul>
+     *
+     * @author DaPorkchop_
+     */
+    @Data
+    final class BandArraysTypeTransitionOutput implements TypeTransitionOutput {
+        private final byte[] typeTransitionsArray;
+        private final int typeTransitionsOffset;
+        private final int typeTransitionsStride;
+
+        private final int[] xCoordinatesArray;
+        private final int xCoordinatesOffset;
+        private final int xCoordinatesStride;
+
+        private final int[] yCoordinatesArray;
+        private final int yCoordinatesOffset;
+        private final int yCoordinatesStride;
+
+        private final int[] zCoordinatesArray;
+        private final int zCoordinatesOffset;
+        private final int zCoordinatesStride;
+
+        private final int count;
+
+        @Override
+        public void validate() throws RuntimeException {
+            //make sure count is valid
+            notNegative(this.count, "count");
+
+            //make sure all the indices fit within the given arrays for the provided offset and stride
+            if (this.count != 0) {
+                if (this.typeTransitionsArray != null) {
+                    checkRangeLen(this.typeTransitionsArray.length, this.typeTransitionsOffset, multiplyExact(positive(this.typeTransitionsStride, "statesStride"), this.count)
+                                                                                                - this.typeTransitionsOffset);
+                }
+                if (this.xCoordinatesArray != null) {
+                    checkRangeLen(this.xCoordinatesArray.length, this.xCoordinatesOffset, multiplyExact(positive(this.xCoordinatesStride, "xCoordinatesStride"), this.count)
+                                                                                          - this.xCoordinatesOffset);
+                }
+                if (this.yCoordinatesArray != null) {
+                    checkRangeLen(this.yCoordinatesArray.length, this.yCoordinatesOffset, multiplyExact(positive(this.yCoordinatesStride, "yCoordinatesStride"), this.count)
+                                                                                          - this.yCoordinatesOffset);
+                }
+                if (this.zCoordinatesArray != null) {
+                    checkRangeLen(this.zCoordinatesArray.length, this.zCoordinatesOffset, multiplyExact(positive(this.zCoordinatesStride, "zCoordinatesStride"), this.count)
+                                                                                          - this.zCoordinatesOffset);
+                }
+            }
+        }
+
+        @Override
+        public int enabledBands() {
+            int bands = 0;
+            if (this.typeTransitionsArray != null) {
+                bands |= BlockLevelConstants.dataBandFlag(BlockLevelConstants.TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_TRANSITIONS);
+            }
+            if (this.xCoordinatesArray != null) {
+                bands |= BlockLevelConstants.dataBandFlag(BlockLevelConstants.TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_COORDS_X);
+            }
+            if (this.yCoordinatesArray != null) {
+                bands |= BlockLevelConstants.dataBandFlag(BlockLevelConstants.TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_COORDS_Y);
+            }
+            if (this.zCoordinatesArray != null) {
+                bands |= BlockLevelConstants.dataBandFlag(BlockLevelConstants.TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_COORDS_Z);
+            }
+            return bands;
+        }
+
+        @Override
+        public void setTypeTransition(int index, byte typeTransition) {
+            checkIndex(this.count, index);
+            if (this.typeTransitionsArray != null) {
+                //we assume our state is valid, and since we know that the index is valid we can be sure there will be no overflows here
+                this.typeTransitionsArray[this.typeTransitionsOffset + this.typeTransitionsStride * index] = typeTransition;
+            }
+        }
+
+        @Override
+        public void setX(int index, int x) {
+            notNegative(index, "index");
+            if (this.xCoordinatesArray != null) {
+                //we assume our state is valid, and since we know that the index is valid we can be sure there will be no overflows here
+                this.xCoordinatesArray[this.xCoordinatesOffset + this.xCoordinatesStride * index] = x;
+            }
+        }
+
+        @Override
+        public void setY(int index, int y) {
+            notNegative(index, "index");
+            if (this.yCoordinatesArray != null) {
+                //we assume our state is valid, and since we know that the index is valid we can be sure there will be no overflows here
+                this.yCoordinatesArray[this.yCoordinatesOffset + this.yCoordinatesStride * index] = y;
+            }
+        }
+
+        @Override
+        public void setZ(int index, int z) {
+            notNegative(index, "index");
+            if (this.zCoordinatesArray != null) {
+                //we assume our state is valid, and since we know that the index is valid we can be sure there will be no overflows here
+                this.zCoordinatesArray[this.zCoordinatesOffset + this.zCoordinatesStride * index] = z;
+            }
+        }
+
+        @Override
+        public void setTypeTransitionXYZ(int index, byte typeTransition, int x, int y, int z) {
+            notNegative(index, "index");
+            if (this.typeTransitionsArray != null) {
+                //we assume our state is valid, and since we know that the index is valid we can be sure there will be no overflows here
+                this.typeTransitionsArray[this.typeTransitionsOffset + this.typeTransitionsStride * index] = typeTransition;
+            }
+            if (this.xCoordinatesArray != null) {
+                this.xCoordinatesArray[this.xCoordinatesOffset + this.xCoordinatesStride * index] = x;
+            }
+            if (this.yCoordinatesArray != null) {
+                this.yCoordinatesArray[this.yCoordinatesOffset + this.yCoordinatesStride * index] = y;
+            }
+            if (this.zCoordinatesArray != null) {
+                this.zCoordinatesArray[this.zCoordinatesOffset + this.zCoordinatesStride * index] = z;
+            }
+        }
     }
 }

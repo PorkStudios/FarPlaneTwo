@@ -24,9 +24,6 @@ import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.api.world.registry.FExtendedStateRegistryData;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 
-import java.util.function.Consumer;
-import java.util.function.Function;
-
 /**
  * Constants and helper methods for users and implementors of {@link FBlockLevel}.
  *
@@ -59,6 +56,13 @@ public class BlockLevelConstants {
      */
     public static final int BLOCK_TYPE_OPAQUE = 2;
 
+    /**
+     * The number of block types that exist.
+     *
+     * @see FExtendedStateRegistryData#type(int)
+     */
+    public static final int BLOCK_TYPES = 3;
+
     //
     // DATA BAND ORDINALS
     //
@@ -85,9 +89,171 @@ public class BlockLevelConstants {
      */
     public static final int DATA_BAND_ORDINAL_LIGHT = 2;
 
+    /**
+     * The number of data bands that exist.
+     */
+    public static final int DATA_BANDS = 3;
+
+    //
+    // TYPE TRANSITION CONSTANTS
+    //
+
+    public static final byte TYPE_TRANSITION_NODATA;
+
+    private static final byte TYPE_TRANSITIONS_REGULAR;
+    private static final byte TYPE_TRANSITIONS_ALL;
+
+    static {
+        int idx = BLOCK_TYPES * BLOCK_TYPES;
+
+        TYPE_TRANSITIONS_REGULAR = (byte) idx;
+
+        TYPE_TRANSITION_NODATA = (byte) idx++;
+        TYPE_TRANSITIONS_ALL = (byte) idx;
+    }
+
+    //
+    // TYPE TRANSITION OUTPUT BAND ORDINALS
+    //
+
+    /**
+     * Ordinal of the "type transitions" type transition query output band.
+     * <p>
+     * Type transitions are represented as a {@code byte}, and information can be extracted from them using the corresponding methods in {@link BlockLevelConstants}:<br>
+     * <ul>
+     *     <li>{@link #isTypeTransitionRegular(byte)}</li>
+     *     <li>{@link #isTypeTransitionNoData(byte)}</li>
+     *     <li>{@link #getTypeTransitionFromType(byte)}</li>
+     *     <li>{@link #getTypeTransitionToType(byte)}</li>
+     * </ul>
+     */
+    public static final int TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_TRANSITIONS = 0;
+
+    /**
+     * Ordinal of the x coordinates type transition query output band.
+     * <p>
+     * X coordinates are represented as an {@code int}.
+     */
+    public static final int TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_COORDS_X = 1;
+
+    /**
+     * Ordinal of the y coordinates type transition query output band.
+     * <p>
+     * Y coordinates are represented as an {@code int}.
+     */
+    public static final int TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_COORDS_Y = 2;
+
+    /**
+     * Ordinal of the Z coordinates type transition query output band.
+     * <p>
+     * Z coordinates are represented as an {@code int}.
+     */
+    public static final int TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_COORDS_Z = 3;
+
+    /**
+     * The number of type transition query output bands that exist.
+     */
+    public static final int TYPE_TRANSITION_OUTPUT_BANDS = 4;
+
+    //
+    // BLOCK TYPE HELPERS
+    //
+
+    /**
+     * Checks if the given ordinal number corresponds to a valid block type.
+     *
+     * @param blockTypeOrdinal the ordinal number
+     * @return whether the given ordinal number corresponds to a valid block type
+     */
+    public static boolean isValidBlockType(int blockTypeOrdinal) {
+        //noinspection ConstantConditions
+        return ((BLOCK_TYPES - 1) & BLOCK_TYPES) == 0 //check if BLOCK_TYPES is a power of two, if so we can use an optimized implementation
+                ? (blockTypeOrdinal & (BLOCK_TYPES - 1)) == blockTypeOrdinal
+                : blockTypeOrdinal >= 0 && blockTypeOrdinal < BLOCK_TYPES;
+    }
+
+    /**
+     * Checks if the given bitfield represents a valid set of block types.
+     *
+     * @param blockTypeBitfield the bitfield
+     * @return whether the given bitfield represents a valid set of block types
+     */
+    public static boolean isValidBlockTypeSet(int blockTypeBitfield) {
+        //noinspection ConstantConditions
+        return BLOCK_TYPES == Integer.SIZE
+               || (blockTypeBitfield & ((1 << BLOCK_TYPES) - 1)) == blockTypeBitfield;
+    }
+
+    /**
+     * Gets a flag indicating that the block type with the given ordinal number is enabled.
+     *
+     * @param blockTypeOrdinal the ordinal number of the block type
+     * @return a flag indicating that the block type with the given ordinal number is enabled
+     */
+    public static int blockTypeFlag(int blockTypeOrdinal) {
+        assert isValidDataBand(blockTypeOrdinal) : "illegal block type ordinal " + blockTypeOrdinal;
+        return 1 << blockTypeOrdinal;
+    }
+
+    /**
+     * Gets an {@code int} with bits set indicating that the block types with the given ordinal numbers are enabled.
+     *
+     * @param blockTypeOrdinals the ordinal numbers of the block types
+     * @return a set of bits indicating that the block types with the given ordinal numbers are enabled
+     */
+    public static int blockTypeFlags(int @NonNull ... blockTypeOrdinals) {
+        int flags = 0;
+        for (int blockTypeOrdinal : blockTypeOrdinals) {
+            flags |= blockTypeFlag(blockTypeOrdinal);
+        }
+        return flags;
+    }
+
+    /**
+     * @return a bitfield indicating every block type is enabled
+     */
+    public static int allBlockTypes() {
+        return (1 << BLOCK_TYPES) - 1;
+    }
+
+    /**
+     * Checks whether a block type is enabled.
+     *
+     * @param enabledBlockTypes a bitfield indicating which block types are enabled
+     * @param blockTypeOrdinal  the ordinal number of the block type to check for
+     * @return whether the block type is enabled
+     */
+    public static boolean isBlockTypeEnabled(int enabledBlockTypes, int blockTypeOrdinal) {
+        assert isValidBlockType(blockTypeOrdinal) : "illegal block type ordinal " + blockTypeOrdinal;
+        return (enabledBlockTypes & (1 << blockTypeOrdinal)) != 0;
+    }
+
+    /**
+     * Checks whether every block type is enabled.
+     *
+     * @param enabledBlockTypes a bitfield indicating which block types are enabled
+     * @return whether every block type is enabled
+     */
+    public static boolean isAllBlockTypesEnabled(int enabledBlockTypes) {
+        return enabledBlockTypes == allBlockTypes();
+    }
+
     //
     // DATA BAND HELPERS
     //
+
+    /**
+     * Checks if the given ordinal number corresponds to a valid data band.
+     *
+     * @param dataBandOrdinal the ordinal number
+     * @return whether the given ordinal number corresponds to a valid data band
+     */
+    public static boolean isValidDataBand(int dataBandOrdinal) {
+        //noinspection ConstantConditions
+        return ((DATA_BANDS - 1) & DATA_BANDS) == 0 //check if DATA_BANDS is a power of two, if so we can use an optimized implementation
+                ? (dataBandOrdinal & (DATA_BANDS - 1)) == dataBandOrdinal
+                : dataBandOrdinal >= 0 && dataBandOrdinal < DATA_BANDS;
+    }
 
     /**
      * Gets a flag indicating that the data band with the given ordinal number is enabled.
@@ -95,9 +261,23 @@ public class BlockLevelConstants {
      * @param dataBandOrdinal the ordinal number of the data band
      * @return a flag indicating that the data band with the given ordinal number is enabled
      */
-    static int dataBandFlag(int dataBandOrdinal) {
-        assert (dataBandOrdinal & 0x1F) == dataBandOrdinal : "illegal data band ordinal " + dataBandOrdinal;
+    public static int dataBandFlag(int dataBandOrdinal) {
+        assert isValidDataBand(dataBandOrdinal) : "illegal data band ordinal " + dataBandOrdinal;
         return 1 << dataBandOrdinal;
+    }
+
+    /**
+     * Gets an {@code int} with bits set indicating that the data bands with the given ordinal numbers are enabled.
+     *
+     * @param dataBandOrdinals the ordinal numbers of the data bands
+     * @return a set of bits indicating that the data bands with the given ordinal numbers are enabled
+     */
+    public static int dataBandFlags(int @NonNull ... dataBandOrdinals) {
+        int flags = 0;
+        for (int dataBandOrdinal : dataBandOrdinals) {
+            flags |= dataBandFlag(dataBandOrdinal);
+        }
+        return flags;
     }
 
     /**
@@ -107,9 +287,136 @@ public class BlockLevelConstants {
      * @param dataBandOrdinal  the ordinal number of the data band to check for
      * @return whether the data band is enabled
      */
-    static boolean isDataBandEnabled(int enabledDataBands, int dataBandOrdinal) {
-        assert (dataBandOrdinal & 0x1F) == dataBandOrdinal : "illegal data band ordinal " + dataBandOrdinal;
+    public static boolean isDataBandEnabled(int enabledDataBands, int dataBandOrdinal) {
+        assert isValidDataBand(dataBandOrdinal) : "illegal data band ordinal " + dataBandOrdinal;
         return (enabledDataBands & (1 << dataBandOrdinal)) != 0;
+    }
+
+    //
+    // TYPE TRANSITION SEARCH HELPERS
+    //
+
+    /**
+     * Checks whether the given {@code byte} is a valid type transition descriptor.
+     *
+     * @param typeTransition the {@code byte}
+     * @return whether the given {@code int} is a valid type transition descriptor
+     */
+    public static boolean isValidTypeTransitionDescriptor(byte typeTransition) {
+        return ((TYPE_TRANSITIONS_ALL - 1) & TYPE_TRANSITIONS_ALL) == 0 //check if TYPE_TRANSITIONS_ALL is a power of two, if so we can use an optimized implementation
+                ? (typeTransition & (TYPE_TRANSITIONS_ALL - 1)) == typeTransition
+                : typeTransition >= 0 && typeTransition < TYPE_TRANSITIONS_ALL;
+    }
+
+    /**
+     * Checks whether the given type transition represents a regular transition between block types.
+     *
+     * @param typeTransition the type transition
+     * @return whether the given type transition represents a regular transition between block types
+     */
+    public static boolean isTypeTransitionRegular(byte typeTransition) {
+        assert isValidTypeTransitionDescriptor(typeTransition) : "illegal type transition " + typeTransition;
+        return typeTransition < TYPE_TRANSITIONS_REGULAR;
+    }
+
+    /**
+     * Assuming the given type transition represents a regular transition between block types, gets the block type being transitioned from.
+     *
+     * @param typeTransition the type transition
+     * @return the block type being transitioned from
+     */
+    public static int getTypeTransitionFromType(byte typeTransition) {
+        assert isTypeTransitionRegular(typeTransition) : "not a regular type transition " + typeTransition;
+        return typeTransition % BLOCK_TYPES;
+    }
+
+    /**
+     * Assuming the given type transition represents a regular transition between block types, gets the block type being transitioned to.
+     *
+     * @param typeTransition the type transition
+     * @return the block type being transitioned to
+     */
+    public static int getTypeTransitionToType(byte typeTransition) {
+        assert isTypeTransitionRegular(typeTransition) : "not a regular type transition " + typeTransition;
+        return typeTransition / BLOCK_TYPES;
+    }
+
+    /**
+     * Checks whether the given type transition represents a range in which data is missing.
+     *
+     * @param typeTransition the type transition
+     * @return whether the given type transition represents a range in which data is missing
+     */
+    public static boolean isTypeTransitionNoData(byte typeTransition) {
+        assert isValidTypeTransitionDescriptor(typeTransition) : "illegal type transition " + typeTransition;
+        return typeTransition == TYPE_TRANSITION_NODATA;
+    }
+
+    /**
+     * Gets the type transition ordinal representing a regular transition from the given block type to the given block type.
+     *
+     * @param fromBlockTypeOrdinal the ordinal of the block type being transitioned from
+     * @param toBlockTypeOrdinal   the ordinal of the block type being transitioned to
+     * @return the type transition ordinal
+     */
+    public static byte getTypeTransitionRegular(int fromBlockTypeOrdinal, int toBlockTypeOrdinal) {
+        assert isValidBlockType(fromBlockTypeOrdinal) : "illegal block type ordinal " + fromBlockTypeOrdinal;
+        assert isValidBlockType(toBlockTypeOrdinal) : "illegal block type ordinal " + toBlockTypeOrdinal;
+        return (byte) (toBlockTypeOrdinal * BLOCK_TYPES + fromBlockTypeOrdinal);
+    }
+
+    //
+    // TYPE TRANSITION QUERY OUTPUT BAND HELPERS
+    //
+
+    /**
+     * Checks if the given ordinal number corresponds to a valid type transition query output band.
+     *
+     * @param typeTransitionQueryOutputBandOrdinal the ordinal number
+     * @return whether the given ordinal number corresponds to a valid type transition query output band
+     */
+    public static boolean isValidTypeTransitionQueryOutputBand(int typeTransitionQueryOutputBandOrdinal) {
+        //noinspection ConstantConditions
+        return ((TYPE_TRANSITION_OUTPUT_BANDS - 1) & TYPE_TRANSITION_OUTPUT_BANDS) == 0 //check if DATA_BANDS is a power of two, if so we can use an optimized implementation
+                ? (typeTransitionQueryOutputBandOrdinal & (TYPE_TRANSITION_OUTPUT_BANDS - 1)) == typeTransitionQueryOutputBandOrdinal
+                : typeTransitionQueryOutputBandOrdinal >= 0 && typeTransitionQueryOutputBandOrdinal < TYPE_TRANSITION_OUTPUT_BANDS;
+    }
+
+    /**
+     * Gets a flag indicating that the type transition query output band with the given ordinal number is enabled.
+     *
+     * @param typeTransitionQueryOutputBandOrdinal the ordinal number of the type transition query output band
+     * @return a flag indicating that the type transition query output band with the given ordinal number is enabled
+     */
+    public static int typeTransitionQueryOutputBandFlag(int typeTransitionQueryOutputBandOrdinal) {
+        assert isValidTypeTransitionQueryOutputBand(typeTransitionQueryOutputBandOrdinal) : "illegal type transition query output band ordinal " + typeTransitionQueryOutputBandOrdinal;
+        return 1 << typeTransitionQueryOutputBandOrdinal;
+    }
+
+    /**
+     * Gets an {@code int} with bits set indicating that the type transition query output bands with the given ordinal numbers are enabled.
+     *
+     * @param typeTransitionQueryOutputBandOrdinals the ordinal numbers of the type transition query output bands
+     * @return a set of bits indicating that the type transition query output bands with the given ordinal numbers are enabled
+     */
+    public static int typeTransitionQueryOutputBandFlags(int @NonNull ... typeTransitionQueryOutputBandOrdinals) {
+        int flags = 0;
+        for (int typeTransitionQueryOutputBandOrdinal : typeTransitionQueryOutputBandOrdinals) {
+            flags |= typeTransitionQueryOutputBandFlag(typeTransitionQueryOutputBandOrdinal);
+        }
+        return flags;
+    }
+
+    /**
+     * Checks whether a type transition query output band is enabled.
+     *
+     * @param enabledTypeTransitionQueryOutputBands a bitfield indicating which type transition query output bands are enabled
+     * @param typeTransitionQueryOutputBandOrdinal  the ordinal number of the type transition query output band to check for
+     * @return whether the type transition query output band is enabled
+     */
+    public static boolean isTypeTransitionQueryOutputBandEnabled(int enabledTypeTransitionQueryOutputBands, int typeTransitionQueryOutputBandOrdinal) {
+        assert isValidTypeTransitionQueryOutputBand(typeTransitionQueryOutputBandOrdinal) : "illegal type transition query output band ordinal " + typeTransitionQueryOutputBandOrdinal;
+        return (enabledTypeTransitionQueryOutputBands & (1 << typeTransitionQueryOutputBandOrdinal)) != 0;
     }
 
     //
@@ -134,7 +441,8 @@ public class BlockLevelConstants {
      * @return the sky light value
      */
     public static int unpackSkyLight(byte packedLight) {
-        return (packedLight & 0xFF) >>> 4; //i'm pretty sure that doing it in this order will allow JIT to interpret it as an unsigned byte, thus reducing it to a simple shift
+        return (packedLight & 0xFF)
+               >>> 4; //i'm pretty sure that doing it in this order will allow JIT to interpret it as an unsigned byte, thus reducing it to a simple shift
     }
 
     /**
@@ -145,92 +453,5 @@ public class BlockLevelConstants {
      */
     public static int unpackBlockLight(byte packedLight) {
         return packedLight & 0xF;
-    }
-
-    //
-    // QUERYSHAPE-IMPLEMENTATION-SPECIFIC OPTIMIZATION HELPERS
-    //
-
-    /**
-     * Invokes a {@link TypedQueryShapeConsumer} with the given {@link FBlockLevel.DataQueryShape} as a parameter, automatically calling a type-specific method variant if possible.
-     *
-     * @param shape  the {@link FBlockLevel.DataQueryShape}
-     * @param action the {@link TypedQueryShapeConsumer}
-     */
-    public static void withQueryShape(@NonNull FBlockLevel.DataQueryShape shape, @NonNull TypedQueryShapeConsumer action) {
-        if (shape instanceof FBlockLevel.SinglePointDataQueryShape) {
-            action.acceptPoint((FBlockLevel.SinglePointDataQueryShape) shape);
-        } else if (shape instanceof FBlockLevel.MultiPointsDataQueryShape) {
-            action.acceptPoints((FBlockLevel.MultiPointsDataQueryShape) shape);
-        } else if (shape instanceof FBlockLevel.OriginSizeStrideDataQueryShape) {
-            action.acceptOriginSizeStride((FBlockLevel.OriginSizeStrideDataQueryShape) shape);
-        } else {
-            action.acceptGeneric(shape);
-        }
-    }
-
-    /**
-     * Invokes a {@link TypedQueryShapeFunction} with the given {@link FBlockLevel.DataQueryShape} as a parameter, automatically calling a type-specific method variant if possible.
-     *
-     * @param shape  the {@link FBlockLevel.DataQueryShape}
-     * @param action the {@link TypedQueryShapeFunction}
-     * @return the {@link TypedQueryShapeFunction}'s return value
-     */
-    public static <R> R fromQueryShape(@NonNull FBlockLevel.DataQueryShape shape, @NonNull TypedQueryShapeFunction<R> action) {
-        if (shape instanceof FBlockLevel.SinglePointDataQueryShape) {
-            return action.applyPoint((FBlockLevel.SinglePointDataQueryShape) shape);
-        } else if (shape instanceof FBlockLevel.MultiPointsDataQueryShape) {
-            return action.applyPoints((FBlockLevel.MultiPointsDataQueryShape) shape);
-        } else if (shape instanceof FBlockLevel.OriginSizeStrideDataQueryShape) {
-            return action.applyOriginSizeStride((FBlockLevel.OriginSizeStrideDataQueryShape) shape);
-        } else {
-            return action.applyGeneric(shape);
-        }
-    }
-
-    /**
-     * A {@link Consumer}-syle callback function which accepts a {@link FBlockLevel.DataQueryShape}. Multiple methods are provided in order to allow optimized implementations for specific
-     * {@link FBlockLevel.DataQueryShape} implementations.
-     *
-     * @author DaPorkchop_
-     */
-    @FunctionalInterface
-    public interface TypedQueryShapeConsumer {
-        default void acceptPoint(@NonNull FBlockLevel.SinglePointDataQueryShape shape) {
-            this.acceptGeneric(shape);
-        }
-
-        default void acceptPoints(@NonNull FBlockLevel.MultiPointsDataQueryShape shape) {
-            this.acceptGeneric(shape);
-        }
-
-        default void acceptOriginSizeStride(@NonNull FBlockLevel.OriginSizeStrideDataQueryShape shape) {
-            this.acceptGeneric(shape);
-        }
-
-        void acceptGeneric(@NonNull FBlockLevel.DataQueryShape shape);
-    }
-
-    /**
-     * A {@link Function}-syle callback function which accepts a {@link FBlockLevel.DataQueryShape}. Multiple methods are provided in order to allow optimized implementations for specific
-     * {@link FBlockLevel.DataQueryShape} implementations.
-     *
-     * @author DaPorkchop_
-     */
-    @FunctionalInterface
-    public interface TypedQueryShapeFunction<R> {
-        default R applyPoint(@NonNull FBlockLevel.SinglePointDataQueryShape shape) {
-            return this.applyGeneric(shape);
-        }
-
-        default R applyPoints(@NonNull FBlockLevel.MultiPointsDataQueryShape shape) {
-            return this.applyGeneric(shape);
-        }
-
-        default R applyOriginSizeStride(@NonNull FBlockLevel.OriginSizeStrideDataQueryShape shape) {
-            return this.applyGeneric(shape);
-        }
-
-        R applyGeneric(@NonNull FBlockLevel.DataQueryShape shape);
     }
 }
