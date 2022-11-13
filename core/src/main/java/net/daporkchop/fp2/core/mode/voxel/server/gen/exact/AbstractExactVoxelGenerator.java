@@ -23,6 +23,9 @@ import lombok.NonNull;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.fp2.api.world.level.GenerationNotAllowedException;
+import net.daporkchop.fp2.api.world.level.query.BatchDataQuery;
+import net.daporkchop.fp2.api.world.level.query.DataQueryBatchOutput;
+import net.daporkchop.fp2.api.world.level.query.shape.PointsQueryShape;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.core.mode.voxel.VoxelData;
@@ -105,12 +108,12 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
 
         try {
             //query all world data at once
-            world.query(FBlockLevel.DataQuery.of(
-                    new FBlockLevel.OriginSizeStrideDataQueryShape(
+            world.query(BatchDataQuery.of(
+                    new PointsQueryShape.OriginSizeStridePointsQueryShape(
                             posIn.blockX() + CACHE_MIN - 1, posIn.blockY() + CACHE_MIN - 1, posIn.blockZ() + CACHE_MIN - 1,
                             CACHE_SIZE, CACHE_SIZE, CACHE_SIZE,
                             1, 1, 1),
-                    new FBlockLevel.BandArraysDataQueryOutput(stateCache, 0, 1, biomeCache, 0, 1, lightCache, 0, 1, cb(CACHE_SIZE))));
+                    new DataQueryBatchOutput.BandArraysDataQueryBatchOutput(stateCache, 0, 1, biomeCache, 0, 1, lightCache, 0, 1, cb(CACHE_SIZE))));
 
             //use bit flags to identify voxel types rather than reading from the world each time to keep innermost loop head tight and cache-friendly
             this.populateTypeMapFromStateMap(stateCache, typeCache);

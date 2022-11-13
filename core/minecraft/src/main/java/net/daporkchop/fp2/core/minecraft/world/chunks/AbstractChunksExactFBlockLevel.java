@@ -26,6 +26,11 @@ import net.daporkchop.fp2.api.util.Direction;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.fp2.api.world.level.GenerationNotAllowedException;
+import net.daporkchop.fp2.api.world.level.query.TypeTransitionSingleOutput;
+import net.daporkchop.fp2.api.world.level.query.BatchDataQuery;
+import net.daporkchop.fp2.api.world.level.query.DataQueryBatchOutput;
+import net.daporkchop.fp2.api.world.level.query.TypeTransitionFilter;
+import net.daporkchop.fp2.api.world.level.query.shape.PointsQueryShape;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.lib.math.vector.Vec2i;
 
@@ -83,7 +88,7 @@ public class AbstractChunksExactFBlockLevel<CHUNK> implements FBlockLevel {
         //delegate to a query because it'll delegate to AbstractPrefetchedChunksExactFBlockLevel, which can access neighboring chunks if Block#getActualState accesses a
         //  state which goes over a cube/column border. this is slow, but i don't care because the single getter methods are dumb and bad anyway.
         int[] buf = new int[1];
-        this.query(DataQuery.of(new SinglePointDataQueryShape(x, y, z), new BandArraysDataQueryOutput(buf, 0, 1, null, 0, 0, null, 0, 0, 1)));
+        this.query(BatchDataQuery.of(new PointsQueryShape.SinglePointPointsQueryShape(x, y, z), new DataQueryBatchOutput.BandArraysDataQueryBatchOutput(buf, 0, 1, null, 0, 0, null, 0, 0, 1)));
         return buf[0];
     }
 
@@ -92,7 +97,7 @@ public class AbstractChunksExactFBlockLevel<CHUNK> implements FBlockLevel {
         //delegate to a query because it'll delegate to AbstractPrefetchedChunksExactFBlockLevel, which can access neighboring chunks if Block#getActualState accesses a
         //  state which goes over a cube/column border. this is slow, but i don't care because the single getter methods are dumb and bad anyway.
         int[] buf = new int[1];
-        this.query(DataQuery.of(new SinglePointDataQueryShape(x, y, z), new BandArraysDataQueryOutput(null, 0, 0, buf, 0, 1, null, 0, 0, 1)));
+        this.query(BatchDataQuery.of(new PointsQueryShape.SinglePointPointsQueryShape(x, y, z), new DataQueryBatchOutput.BandArraysDataQueryBatchOutput(null, 0, 0, buf, 0, 1, null, 0, 0, 1)));
         return buf[0];
     }
 
@@ -101,12 +106,12 @@ public class AbstractChunksExactFBlockLevel<CHUNK> implements FBlockLevel {
         //delegate to a query because it'll delegate to AbstractPrefetchedChunksExactFBlockLevel, which can access neighboring chunks if Block#getActualState accesses a
         //  state which goes over a cube/column border. this is slow, but i don't care because the single getter methods are dumb and bad anyway.
         byte[] buf = new byte[1];
-        this.query(DataQuery.of(new SinglePointDataQueryShape(x, y, z), new BandArraysDataQueryOutput(null, 0, 0, null, 0, 0, buf, 0, 1, 1)));
+        this.query(BatchDataQuery.of(new PointsQueryShape.SinglePointPointsQueryShape(x, y, z), new DataQueryBatchOutput.BandArraysDataQueryBatchOutput(null, 0, 0, null, 0, 0, buf, 0, 1, 1)));
         return buf[0];
     }
 
     @Override
-    public void query(@NonNull DataQuery query) throws GenerationNotAllowedException {
+    public void query(@NonNull BatchDataQuery query) throws GenerationNotAllowedException {
         //ensure query is valid
         query.validate();
 
@@ -118,14 +123,14 @@ public class AbstractChunksExactFBlockLevel<CHUNK> implements FBlockLevel {
     }
 
     @Override
-    public void query(@NonNull DataQuery... queries) throws GenerationNotAllowedException {
+    public void query(@NonNull BatchDataQuery... queries) throws GenerationNotAllowedException {
         //ensure all queries are valid
-        for (DataQuery query : queries) {
+        for (BatchDataQuery query : queries) {
             requireNonNull(query, "query").validate();
         }
 
         //figure out which chunks need to be prefetched
-        List<Vec2i> prefetchPositions = this.holder.getChunkPositionsToPrefetch(Stream.of(queries).map(DataQuery::shape).toArray(DataQueryShape[]::new));
+        List<Vec2i> prefetchPositions = this.holder.getChunkPositionsToPrefetch(Stream.of(queries).map(BatchDataQuery::shape).toArray(PointsQueryShape[]::new));
 
         //prefetch all the chunks, then delegate the actual query execution to AbstractPrefetchedChunksExactFBlockLevel
         this.holder.prefetchedWorld(this.generationAllowed, this.holder.multiGetChunks(prefetchPositions, this.generationAllowed)).query(queries);
@@ -133,8 +138,8 @@ public class AbstractChunksExactFBlockLevel<CHUNK> implements FBlockLevel {
 
     @Override
     public int getNextTypeTransitions(@NonNull Direction direction, int x, int y, int z,
-                                      @NonNull Collection<@NonNull TypeTransitionQueryInterestFilter> filters,
-                                      @NonNull TypeTransitionOutput output) {
+                                      @NonNull Collection<@NonNull TypeTransitionFilter> filters,
+                                      @NonNull TypeTransitionSingleOutput output) {
         return 0;
     }
 }

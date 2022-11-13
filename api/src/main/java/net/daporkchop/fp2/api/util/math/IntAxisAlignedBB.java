@@ -69,4 +69,34 @@ public final class IntAxisAlignedBB {
     public boolean contains(int x, int y, int z) {
         return x >= this.minX && x < this.maxX && y >= this.minY && y < this.maxY && z >= this.minZ && z < this.maxZ;
     }
+
+    /**
+     * Checks whether the given X coordinate is contained by this bounding box. Only the X axis is taken into account.
+     *
+     * @param x the X coordinate
+     * @return whether the given X coordinate is contained by this bounding box
+     */
+    public boolean containsX(int x) {
+        return x >= this.minX && x < this.maxX;
+    }
+
+    /**
+     * Checks whether the given Y coordinate is contained by this bounding box. Only the Y axis is taken into account.
+     *
+     * @param y the Y coordinate
+     * @return whether the given Y coordinate is contained by this bounding box
+     */
+    public boolean containsY(int y) {
+        return y >= this.minY && y < this.maxY;
+    }
+
+    /**
+     * Checks whether the given Z coordinate is contained by this bounding box. Only the Z axis is taken into account.
+     *
+     * @param z the Z coordinate
+     * @return whether the given Z coordinate is contained by this bounding box
+     */
+    public boolean containsZ(int z) {
+        return z >= this.minZ && z < this.maxZ;
+    }
 }
