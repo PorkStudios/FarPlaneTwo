@@ -122,6 +122,14 @@ public interface GLAPI {
 
     void glStencilOp(int sfail, int dpfail, int dppass);
 
+    void glPushClientAttrib(int mask);
+
+    void glPopClientAttrib();
+
+    void glPushAttrib(int mask);
+
+    void glPopAttrib();
+
     //
     //
     // OpenGL 1.2
@@ -151,6 +159,8 @@ public interface GLAPI {
     //
 
     void glMultiDrawArrays(int mode, long first, long count, int drawcount);
+
+    void glMultiDrawElements(int mode, long count, int type, long indices, int drawcount);
 
     void glBlendColor(float red, float green, float blue, float alpha);
 

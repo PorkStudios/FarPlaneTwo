@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.attribute.struct.type;
@@ -55,5 +54,17 @@ public class GLSLTypeFactory {
 
     public static GLSLArrayType array(@NonNull GLSLType elementType, int length) {
         return new GLSLArrayType(elementType, length);
+    }
+
+    public static GLSLSamplerType sampler(@NonNull GLSLPrimitiveType primitive, int components) {
+        switch (components) {
+            case 1:
+            case 2:
+            case 3:
+            case 4:
+                return new GLSLSamplerType(primitive, components);
+            default:
+                throw new IllegalArgumentException("cannot create sampler with " + components + " components");
+        }
     }
 }

@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.buffer;
@@ -41,32 +40,16 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-@Getter
-public final class GLBuffer implements GLResource {
-    protected final OpenGL gl;
-    protected final GLAPI api;
+public interface GLBuffer extends GLResource {
+    /**
+     * @return the ID of the corresponding OpenGL Buffer Object
+     */
+    int id();
 
-    protected long capacity = -1L;
-
-    protected final int id;
-    protected final int usage;
-
-    public GLBuffer(@NonNull OpenGL gl, @NonNull BufferUsage usage) {
-        this.gl = gl;
-        this.api = gl.api();
-        this.usage = GLEnumUtil.from(usage);
-
-        this.id = this.api.glGenBuffer();
-        this.gl.resourceArena().register(this, this.id, this.api::glDeleteBuffer);
-
-        //TODO: figure out if i can safely get rid of this
-        this.capacity(0L);
-    }
-
-    @Override
-    public void close() {
-        this.gl.resourceArena().delete(this);
-    }
+    /**
+     * @return this buffer's current capacity
+     */
+    long capacity();
 
     /**
      * Sets the capacity of this buffer.
@@ -75,11 +58,7 @@ public final class GLBuffer implements GLResource {
      *
      * @param capacity the new capacity
      */
-    public void capacity(long capacity) {
-        this.bind(BufferTarget.ARRAY_BUFFER, target -> {
-            this.api.glBufferData(target.id(), this.capacity = notNegative(capacity, "capacity"), 0L, this.usage);
-        });
-    }
+    void capacity(long capacity);
 
     /**
      * Sets the capacity of this buffer.
@@ -91,30 +70,7 @@ public final class GLBuffer implements GLResource {
      *
      * @param capacity the new capacity
      */
-    public void resize(long capacity) {
-        long retainedCapacity = min(this.capacity, notNegative(capacity, "capacity"));
-
-        if (retainedCapacity <= 0L) { //previous capacity was unset, so no data needs to be retained
-            this.capacity(capacity);
-            return;
-        } else if (this.capacity == capacity) { //capacity remains unchanged, nothing to do!
-            return;
-        }
-
-        long buffer = PUnsafe.allocateMemory(retainedCapacity);
-        try {
-            //download data to main memory
-            this.downloadRange(0L, buffer, retainedCapacity);
-
-            //update capacity
-            this.capacity(capacity);
-
-            //re-upload retained data
-            this.uploadRange(0L, buffer, retainedCapacity);
-        } finally {
-            PUnsafe.freeMemory(buffer);
-        }
-    }
+    void resize(long capacity);
 
     /**
      * Sets the buffer contents.
@@ -122,56 +78,21 @@ public final class GLBuffer implements GLResource {
      * @param addr the base address of the data to upload
      * @param size the size of the data (in bytes)
      */
-    public void upload(long addr, long size) {
-        notNegative(size, "size");
-
-        this.bind(BufferTarget.ARRAY_BUFFER, target -> {
-            this.api.glBufferData(target.id(), size, addr, this.usage);
-            this.capacity = size;
-        });
-    }
+    void upload(long addr, long size);
 
     /**
      * Sets the buffer contents.
      *
      * @param data the {@link ByteBuffer} containing the data to upload
      */
-    public void upload(@NonNull ByteBuffer data) {
-        this.bind(BufferTarget.ARRAY_BUFFER, target -> {
-            this.api.glBufferData(target.id(), data, this.usage);
-            this.capacity = data.remaining();
-        });
-    }
+    void upload(@NonNull ByteBuffer data);
 
     /**
      * Sets the buffer contents.
      *
      * @param data the {@link ByteBuf} containing the data to upload
      */
-    public void upload(@NonNull ByteBuf data) {
-        if (data.nioBufferCount() == 1) { //fast path: upload whole buffer contents at once
-            this.upload(data.nioBuffer());
-        } else { //slower fallback path for composite buffers
-            this.uploadComposite(data);
-        }
-    }
-
-    protected void uploadComposite(@NonNull ByteBuf data) {
-        this.bind(BufferTarget.ARRAY_BUFFER, target -> {
-            int readableBytes = data.readableBytes();
-
-            //initialize storage
-            this.api.glBufferData(target.id(), readableBytes, 0L, this.usage);
-            this.capacity = readableBytes;
-
-            //upload each data block individually
-            long offset = 0L;
-            for (ByteBuffer nioBuffer : data.nioBuffers()) {
-                this.api.glBufferSubData(target.id(), offset, nioBuffer);
-                offset += nioBuffer.remaining();
-            }
-        });
-    }
+    void upload(@NonNull ByteBuf data);
 
     /**
      * Updates the buffer contents in a certain range.
@@ -180,13 +101,7 @@ public final class GLBuffer implements GLResource {
      * @param addr  the base address of the data to upload
      * @param size  the size of the data (in bytes)
      */
-    public void uploadRange(long start, long addr, long size) {
-        checkRangeLen(this.capacity, start, size);
-
-        this.bind(BufferTarget.ARRAY_BUFFER, target -> {
-            this.api.glBufferSubData(target.id(), start, size, addr);
-        });
-    }
+    void uploadRange(long start, long addr, long size);
 
     /**
      * Updates the buffer contents in a certain range.
@@ -194,13 +109,7 @@ public final class GLBuffer implements GLResource {
      * @param start the offset of the range inside the buffer (in bytes)
      * @param data  the {@link ByteBuffer} containing the data to upload
      */
-    public void uploadRange(long start, @NonNull ByteBuffer data) {
-        checkRangeLen(this.capacity, start, data.remaining());
-
-        this.bind(BufferTarget.ARRAY_BUFFER, target -> {
-            this.api.glBufferSubData(target.id(), start, data);
-        });
-    }
+    void uploadRange(long start, @NonNull ByteBuffer data);
 
     /**
      * Updates the buffer contents in a certain range.
@@ -208,26 +117,7 @@ public final class GLBuffer implements GLResource {
      * @param start the offset of the range inside the buffer (in bytes)
      * @param data  the {@link ByteBuf} containing the data to upload
      */
-    public void uploadRange(long start, @NonNull ByteBuf data) {
-        if (data.nioBufferCount() == 1) { //fast path: upload whole buffer contents at once
-            this.uploadRange(start, data.nioBuffer());
-        } else { //slower fallback path for composite buffers
-            this.uploadRangeComposite(start, data);
-        }
-    }
-
-    protected void uploadRangeComposite(long start, @NonNull ByteBuf data) {
-        checkRangeLen(this.capacity, start, data.readableBytes());
-
-        this.bind(BufferTarget.ARRAY_BUFFER, target -> {
-            //upload each data block individually
-            long offset = start;
-            for (ByteBuffer nioBuffer : data.nioBuffers()) {
-                this.api.glBufferSubData(target.id(), offset, nioBuffer);
-                offset += nioBuffer.remaining();
-            }
-        });
-    }
+    void uploadRange(long start, @NonNull ByteBuf data);
 
     /**
      * Downloads the buffer contents in a certain range.
@@ -236,13 +126,7 @@ public final class GLBuffer implements GLResource {
      * @param addr  the base address where the data should be stored
      * @param size  the size of the data (in bytes)
      */
-    public void downloadRange(long start, long addr, long size) {
-        checkRangeLen(this.capacity, start, size);
-
-        this.bind(BufferTarget.ARRAY_BUFFER, target -> {
-            this.api.glGetBufferSubData(target.id(), start, size, addr);
-        });
-    }
+    void downloadRange(long start, long addr, long size);
 
     /**
      * Downloads the buffer contents in a certain range.
@@ -250,13 +134,7 @@ public final class GLBuffer implements GLResource {
      * @param start the offset of the range inside the buffer (in bytes)
      * @param data  the {@link ByteBuffer} where the data should be stored
      */
-    public void downloadRange(long start, @NonNull ByteBuffer data) {
-        checkRangeLen(this.capacity, start, data.remaining());
-
-        this.bind(BufferTarget.ARRAY_BUFFER, target -> {
-            this.api.glGetBufferSubData(target.id(), start, data);
-        });
-    }
+    void downloadRange(long start, @NonNull ByteBuffer data);
 
     /**
      * Copies a range of data from the given source buffer into this buffer.
@@ -266,14 +144,7 @@ public final class GLBuffer implements GLResource {
      * @param dstOffset the offset in this buffer to begin copying to
      * @param size      the number of bytes to copy
      */
-    public void copyRange(@NonNull GLBuffer src, long srcOffset, long dstOffset, long size) {
-        checkRangeLen(src.capacity(), srcOffset, size);
-        checkRangeLen(this.capacity, dstOffset, size);
-
-        src.bind(BufferTarget.COPY_READ_BUFFER, srcTarget -> this.bind(BufferTarget.COPY_WRITE_BUFFER, dstTarget -> {
-            this.api.glCopyBufferSubData(srcTarget.id(), dstTarget.id(), srcOffset, dstOffset, size);
-        }));
-    }
+    void copyRange(@NonNull GLBuffer src, long srcOffset, long dstOffset, long size);
 
     /**
      * Copies a range of data from this buffer into the given destination buffer.
@@ -283,42 +154,22 @@ public final class GLBuffer implements GLResource {
      * @param dstOffset the offset in the destination buffer to begin copying to
      * @param size      the number of bytes to copy
      */
-    public void copyRange(long srcOffset, @NonNull GLBuffer dst, long dstOffset, long size) {
-        dst.copyRange(this, srcOffset, dstOffset, size);
-    }
+    void copyRange(long srcOffset, @NonNull GLBuffer dst, long dstOffset, long size);
 
-    public void bind(@NonNull BufferTarget target, @NonNull Consumer<BufferTarget> callback) {
-        int old = this.api.glGetInteger(target.binding());
-        try {
-            this.api.glBindBuffer(target.id(), this.id);
-
-            callback.accept(target);
-        } finally {
-            this.api.glBindBuffer(target.id(), old);
-        }
-    }
+    /**
+     * Executes the given action with this buffer bound to the given {@link BufferTarget buffer binding target}.
+     *
+     * @param target   the {@link BufferTarget buffer binding target} to bind the buffer to
+     * @param callback the action to run
+     */
+    void bind(@NonNull BufferTarget target, @NonNull Consumer<BufferTarget> callback);
 
     /**
      * Maps this buffer's contents into client address space and passes the mapping address to the given callback function before unmapping the buffer again.
      *
-     * @param read     whether or not the mapping may be read from
-     * @param write    whether or not the mapping may be written to
+     * @param read     whether the mapping may be read from
+     * @param write    whether the mapping may be written to
      * @param callback the callback function
      */
-    public void map(boolean read, boolean write, @NonNull LongConsumer callback) {
-        assert read || write : "at least one of read or write must be enabled!";
-
-        int access = read
-                ? write ? GL_READ_WRITE : GL_READ_ONLY
-                : write ? GL_WRITE_ONLY : -1;
-
-        this.bind(BufferTarget.ARRAY_BUFFER, target -> {
-            long addr = this.api.glMapBuffer(target.id(), access);
-            try {
-                callback.accept(addr);
-            } finally {
-                this.api.glUnmapBuffer(target.id());
-            }
-        });
-    }
+    void map(boolean read, boolean write, @NonNull LongConsumer callback);
 }

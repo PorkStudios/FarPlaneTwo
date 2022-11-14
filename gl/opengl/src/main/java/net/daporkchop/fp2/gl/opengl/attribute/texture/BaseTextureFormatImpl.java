@@ -15,11 +15,11 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.attribute.texture;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import lombok.Getter;
 import lombok.NonNull;
@@ -29,7 +29,7 @@ import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.TextureStructFormat;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLType;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLSamplerType;
 
 import java.util.EnumSet;
 import java.util.List;
@@ -39,17 +39,19 @@ import java.util.Set;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class BaseTextureFormatImpl<F extends BaseTextureFormatImpl<F, S>, S> extends BaseAttributeFormatImpl<F> implements BaseTextureFormat<S> {
+public abstract class BaseTextureFormatImpl<F extends BaseTextureFormatImpl<F>> extends BaseAttributeFormatImpl<F> implements BaseTextureFormat {
     public static final Set<AttributeUsage> VALID_USAGES = ImmutableSet.copyOf(EnumSet.of(
             AttributeUsage.TEXTURE
     ));
 
-    private final TextureStructFormat<S> structFormat;
+    private final String name;
+    private final GLSLSamplerType glslType;
 
-    public BaseTextureFormatImpl(@NonNull OpenGL gl, @NonNull TextureStructFormat<S> structFormat) {
+    public BaseTextureFormatImpl(@NonNull OpenGL gl, @NonNull String name, @NonNull GLSLSamplerType glslType) {
         super(gl);
 
-        this.structFormat = structFormat;
+        this.name = name;
+        this.glslType = glslType;
     }
 
     @Override
@@ -58,17 +60,15 @@ public abstract class BaseTextureFormatImpl<F extends BaseTextureFormatImpl<F, S
     }
 
     @Override
-    public long size() {
-        return this.structFormat.totalSize();
-    }
+    public abstract long size();
 
     @Override
     public String rawName() {
-        return this.structFormat.structName();
+        throw new UnsupportedOperationException("texture format cannot have a raw name");
     }
 
     @Override
     public List<GLSLField<?>> rawAttributeFields() {
-        return this.structFormat.glslFields();
+        return ImmutableList.of(new GLSLField<>(this.glslType, this.name));
     }
 }

@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.layout.binding;
@@ -78,7 +77,7 @@ public interface BaseBindingBuilder<BUILDER extends BaseBindingBuilder<BUILDER, 
      * @param texture the texture
      * @see #with(AttributeUsage, BaseAttributeBuffer)
      */
-    default BUILDER withTexture(@NonNull Texture2D<?> texture) {
+    default BUILDER withTexture(@NonNull Texture2D texture) {
         return this.with(AttributeUsage.TEXTURE, texture);
     }
 

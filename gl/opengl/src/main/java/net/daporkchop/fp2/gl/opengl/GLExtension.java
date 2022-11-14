@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl;
@@ -33,12 +32,25 @@ import lombok.RequiredArgsConstructor;
 public enum GLExtension {
     GL_ARB_compatibility(GLVersion.OpenGL30, false) {
         @Override
+        protected boolean core(@NonNull OpenGL gl) {
+            return false;
+        }
+
+        @Override
         public boolean supported(@NonNull OpenGL gl) {
-            return gl.extensions().contains(this);
+            if (gl.version().compareTo(GLVersion.OpenGL30) <= 0) { //3.0: compatibility features are all available on 3.0
+                //they may be removed if forward compatibility is enabled, however that would still be overridden by the presence of ARB_compatibility
+                return !gl.forwardCompatibility() || gl.extensions().contains(this);
+            } else if (gl.version().compareTo(GLVersion.OpenGL31) <= 0) { //3.1: compatibility features only available if ARB_compatibility is present
+                return gl.extensions().contains(this);
+            } else { //3.2+: compatibility features only available in compat profile, or if ARB_compatibility is present
+                return gl.profile() == GLProfile.COMPAT || gl.extensions().contains(this);
+            }
         }
     },
 
     //OpenGL 3.1
+    GL_EXT_texture_snorm(GLVersion.OpenGL31, false),
     GL_ARB_draw_instanced(GLVersion.OpenGL31, false),
     GL_ARB_copy_buffer(GLVersion.OpenGL31, false),
     GL_NV_primitive_restart(GLVersion.OpenGL31, false),
@@ -177,7 +189,7 @@ public enum GLExtension {
      *
      * @param gl the context
      */
-    public boolean core(@NonNull OpenGL gl) {
+    protected boolean core(@NonNull OpenGL gl) {
         return this.coreVersion != null && gl.version().compareTo(this.coreVersion) >= 0;
     }
 

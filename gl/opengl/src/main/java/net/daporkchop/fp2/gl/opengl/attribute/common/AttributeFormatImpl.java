@@ -15,14 +15,16 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.attribute.common;
 
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeWriter;
+import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.BaseAttributeFormatImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.GLSLField;
@@ -57,5 +59,15 @@ public abstract class AttributeFormatImpl<F extends AttributeFormatImpl<F, S, SF
     @Override
     public List<GLSLField<?>> rawAttributeFields() {
         return this.structFormat.glslFields();
+    }
+
+    @Override
+    public AttributeWriter<S> createWriter() {
+        return this.structFormat().writer(this);
+    }
+
+    @Override
+    public AttributeBuffer<S> createBuffer(@NonNull BufferUsage usage) {
+        return this.structFormat().buffer(this, usage);
     }
 }

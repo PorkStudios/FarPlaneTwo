@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl;
@@ -24,6 +23,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableSet;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.common.GlobalProperties;
@@ -36,6 +36,8 @@ import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormatBuilder;
+import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormat;
+import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatBuilder;
 import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.draw.DrawLayoutBuilder;
@@ -54,10 +56,14 @@ import net.daporkchop.fp2.gl.draw.shader.FragmentShader;
 import net.daporkchop.fp2.gl.draw.shader.VertexShader;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.AttributeFormatType;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.StructFormatGenerator;
-import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureFormat2DImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.codegen.StructFormatGenerator;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureFormatBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.texture.image.PixelFormatBuilderImpl;
+import net.daporkchop.fp2.gl.opengl.attribute.texture.image.PixelFormatFactory;
+import net.daporkchop.fp2.gl.opengl.attribute.texture.image.PixelFormatImpl;
 import net.daporkchop.fp2.gl.opengl.buffer.GLBuffer;
+import net.daporkchop.fp2.gl.opengl.buffer.SimpleGLBufferImpl;
+import net.daporkchop.fp2.gl.opengl.buffer.UploadCopyingGLBufferImpl;
 import net.daporkchop.fp2.gl.opengl.command.CommandBufferBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.draw.DrawLayoutBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.draw.DrawLayoutImpl;
@@ -89,6 +95,8 @@ import net.daporkchop.fp2.gl.transform.TransformLayout;
 import net.daporkchop.fp2.gl.transform.TransformLayoutBuilder;
 import net.daporkchop.fp2.gl.transform.shader.TransformShaderBuilder;
 import net.daporkchop.fp2.gl.transform.shader.TransformShaderProgramBuilder;
+import net.daporkchop.lib.common.pool.handle.HandledPool;
+import net.daporkchop.lib.common.reference.ReferenceStrength;
 
 import java.util.Set;
 import java.util.function.Supplier;
@@ -98,13 +106,18 @@ import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
 @Getter
 public class OpenGL implements GL {
-    public static final boolean DEBUG = Boolean.getBoolean("fp2.gl.opengl.debug");
+    public static final boolean DEBUG = Boolean.getBoolean(preventInline("fp2.gl.opengl.") + "debug");
+
+    //the :gl:opengl package name, including the trailing '.'
+    public static final String OPENGL_PACKAGE = OpenGL.class.getTypeName().substring(0, OpenGL.class.getTypeName().length() - OpenGL.class.getSimpleName().length()).intern();
 
     public static final String OPENGL_NAMESPACE = "fp2_gl_opengl";
 
@@ -113,13 +126,15 @@ public class OpenGL implements GL {
     protected final GLVersion version;
     protected final GLProfile profile;
     protected final Set<GLExtension> extensions;
+    protected final boolean forwardCompatibility;
 
     protected final ResourceArena resourceArena = new ResourceArena();
     protected final ResourceProvider resourceProvider;
 
     protected final Allocator directMemoryAllocator = new DirectMemoryAllocator();
 
-    protected final StructFormatGenerator structFormatGenerator = new StructFormatGenerator();
+    protected final StructFormatGenerator structFormatGenerator = new StructFormatGenerator(this);
+    protected final PixelFormatFactory pixelFormatFactory;
 
     protected final LoadingCache<AttributeFormatBuilderImpl<?>, AttributeFormat<?>> attributeFormatCache = CacheBuilder.newBuilder()
             .weakValues()
@@ -129,12 +144,23 @@ public class OpenGL implements GL {
 
     protected final boolean preserveInputGlState;
 
+    protected final HandledPool<GLBuffer> tmpBufferPool = HandledPool.global(() -> this.createBuffer(BufferUsage.STREAM_DRAW), ReferenceStrength.WEAK, 16);
+
+    @Getter(AccessLevel.NONE)
+    protected boolean closed = false;
+
     protected OpenGL(@NonNull OpenGLBuilder builder) {
         this.resourceProvider = ResourceProvider.selectingByNamespace(OPENGL_NAMESPACE, ResourceProvider.loadingClassResources(OpenGL.class), builder.resourceProvider);
 
-        this.api = GlobalProperties.find(OpenGL.class, "opengl")
-                .<Supplier<GLAPI>>getInstance("api.supplier")
-                .get();
+        {
+            GLAPI api = GlobalProperties.find(OpenGL.class, "opengl")
+                    .<Supplier<GLAPI>>getInstance("api.supplier")
+                    .get();
+            if (DEBUG) { //debug mode is enabled, check for errors
+                api = ErrorCheckingWrapperGLAPI.wrap(this, api);
+            }
+            this.api = api;
+        }
 
         this.version = this.api.version();
         this.preserveInputGlState = true;
@@ -170,14 +196,27 @@ public class OpenGL implements GL {
 
             boolean compat = (contextProfileMask & GL_CONTEXT_COMPATIBILITY_PROFILE_BIT) != 0;
             boolean core = (contextProfileMask & GL_CONTEXT_CORE_PROFILE_BIT) != 0;
-            boolean forwards = this.version.compareTo(GLVersion.OpenGL31) >= 0
-                               && !(this.extensions.contains(GLExtension.GL_ARB_compatibility) || (contextFlags & GL_CONTEXT_FLAG_FORWARD_COMPATIBLE_BIT) != 0);
+            this.forwardCompatibility = (contextFlags & GL_CONTEXT_FLAG_FORWARD_COMPATIBLE_BIT) != 0;
 
-            this.profile = !core && !forwards ? GLProfile.COMPAT : GLProfile.CORE;
+            if (this.version.compareTo(GLVersion.OpenGL31) <= 0) { // <= 3.1, profiles don't exist yet
+                this.profile = GLProfile.UNKNOWN;
+            } else { // >= 3.2
+                assert !(compat && core) : "a context can't be using both core and compatibility profiles at once!";
+
+                if (compat) {
+                    this.profile = GLProfile.COMPAT;
+                } else if (core) {
+                    this.profile = GLProfile.CORE;
+                } else {
+                    this.profile = GLProfile.UNKNOWN;
+                }
+            }
         }
 
         //compatibility hacks
         this.vertexAttributeAlignment = this.isOfficialAmdDriver() ? INT_SIZE : 1;
+
+        this.pixelFormatFactory = new PixelFormatFactory(this);
     }
 
     private boolean isOfficialAmdDriver() {
@@ -193,7 +232,9 @@ public class OpenGL implements GL {
     }
 
     public GLBuffer createBuffer(@NonNull BufferUsage usage) {
-        return new GLBuffer(this, usage);
+        return GLExtension.GL_ARB_copy_buffer.supported(this)
+                ? new UploadCopyingGLBufferImpl(this, usage)
+                : new SimpleGLBufferImpl(this, usage);
     }
 
     @Override
@@ -203,7 +244,9 @@ public class OpenGL implements GL {
 
     @Override
     public void close() {
+        this.ensureOpen();
         this.resourceArena.release();
+        this.closed = true;
     }
 
     @Override
@@ -226,11 +269,16 @@ public class OpenGL implements GL {
     }
 
     @Override
-    public <S> TextureFormatBuilder<TextureFormat2D<S>> createTextureFormat2D(@NonNull Class<S> clazz) {
-        return new TextureFormatBuilderImpl<S, TextureFormat2D<S>>(this, clazz) {
+    public PixelFormatBuilder.ChannelSelectionStage createPixelFormat() {
+        return new PixelFormatBuilderImpl(this);
+    }
+
+    @Override
+    public TextureFormatBuilder<TextureFormat2D> createTextureFormat2D(@NonNull PixelFormat pixelFormat, @NonNull String name) {
+        return new TextureFormatBuilderImpl<TextureFormat2D>(this, (PixelFormatImpl) pixelFormat, name) {
             @Override
-            public TextureFormat2D<S> build() {
-                return new TextureFormat2DImpl<>(this);
+            public TextureFormat2D build() {
+                return OpenGL.this.structFormatGenerator().getTexture2D(this.pixelFormat, this.name);
             }
         };
     }
@@ -331,5 +379,13 @@ public class OpenGL implements GL {
     @Override
     public TransformShaderProgramBuilder createTransformShaderProgram(@NonNull TransformLayout layout) {
         return new TransformShaderProgramBuilderImpl(this, (TransformLayoutImpl) layout);
+    }
+
+    //
+    // INTERNAL
+    //
+
+    public void ensureOpen() {
+        checkState(!this.closed, "context closed!");
     }
 }

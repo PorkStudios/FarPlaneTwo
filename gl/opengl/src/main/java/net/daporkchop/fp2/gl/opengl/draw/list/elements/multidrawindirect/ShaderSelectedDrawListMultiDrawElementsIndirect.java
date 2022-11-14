@@ -15,18 +15,19 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.draw.list.elements.multidrawindirect;
 
-import lombok.Data;
 import lombok.NonNull;
-import net.daporkchop.fp2.common.util.Identifier;
+import net.daporkchop.fp2.api.util.Identifier;
+import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
+import net.daporkchop.fp2.gl.attribute.annotation.ScalarType;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
+import net.daporkchop.fp2.gl.attribute.annotation.AttributeSetter;
 import net.daporkchop.fp2.gl.draw.list.DrawCommandIndexed;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
@@ -138,21 +139,25 @@ public class ShaderSelectedDrawListMultiDrawElementsIndirect extends DrawListMul
      *
      * @author DaPorkchop_
      */
-    @Data
-    public static final class Command {
-        @Attribute(sort = 0)
-        public final int count;
+    @Attribute(sort = 0, name = "count", typeScalar = @ScalarType(int.class))
+    @Attribute(sort = 1, name = "instanceCount", typeScalar = @ScalarType(int.class))
+    @Attribute(sort = 2, name = "firstIndex", typeScalar = @ScalarType(int.class))
+    @Attribute(sort = 3, name = "baseVertex", typeScalar = @ScalarType(int.class))
+    @Attribute(sort = 4, name = "baseInstance", typeScalar = @ScalarType(int.class))
+    public interface Command extends AttributeStruct {
+        @AttributeSetter
+        Command count(int count);
 
-        @Attribute(sort = 1)
-        public final int instanceCount;
+        @AttributeSetter
+        Command instanceCount(int instanceCount);
 
-        @Attribute(sort = 2)
-        public final int firstIndex;
+        @AttributeSetter
+        Command firstIndex(int firstIndex);
 
-        @Attribute(sort = 3)
-        public final int baseVertex;
+        @AttributeSetter
+        Command baseVertex(int baseVertex);
 
-        @Attribute(sort = 4)
-        public final int baseInstance;
+        @AttributeSetter
+        Command baseInstance(int baseInstance);
     }
 }

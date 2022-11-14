@@ -9,12 +9,16 @@ build/
 out/
 run/
 
+# C++ files
+CMakeLists.txt
+cmake-build-debug/
+
 # misc.
 *.class
 *.log
 *.so
 *.dll
-/logs/
+logs/
 
 classes/
 

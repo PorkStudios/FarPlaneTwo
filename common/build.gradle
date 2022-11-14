@@ -19,6 +19,8 @@
  */
 
 dependencies {
+    apiShade project(":api")
+
     apiShade "net.daporkchop.lib:common:$porklibVersion"
     implementationShade "net.daporkchop.lib:primitive:$porklibVersion"
 

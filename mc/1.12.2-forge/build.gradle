@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,49 +18,27 @@
  *
  */
 
-buildscript {
-    repositories {
-        maven {
-            name = "Minecraft Forge"
-            url = "https://maven.minecraftforge.net/"
-        }
-        maven {
-            name = "SpongePowered"
-            url = "https://repo.spongepowered.org/maven"
-        }
-    }
-    dependencies {
-        classpath "net.minecraftforge.gradle:ForgeGradle:5.1.+"
-        classpath "org.spongepowered:mixingradle:0.7-SNAPSHOT"
-    }
-}
-
-plugins {
-    id "com.github.johnrengelman.shadow" version "7.1.0"
-}
-
-apply plugin: "net.minecraftforge.gradle"
-apply plugin: "org.spongepowered.mixin"
-
-ext {
-    mappingsChannel = "stable"
-    mappingsVersion = "39-1.12"
-
-    minecraftforgeVersion = "14.23.5.2855"
-    minecraftVersion = "1.12.2"
-}
+apply from: "${project.rootDir}/mc/forge.gradle"
+apply from: "${project.rootDir}/natives/natives.gradle"
 
 minecraft {
     mappings mappingsChannel, mappingsVersion
 
-    accessTransformer = file("../../src/main/resources/META-INF/fp2_at.cfg")
-
     runs {
         client {
             workingDirectory "../../run"
+            ideaModule "${project.rootProject.name}${project.path.replace(':', '.')}.main"
 
-            property "forge.logging.markers", "SCAN,REGISTRIES,REGISTRYDUMP"
             property "forge.logging.console.level", "debug"
+
+            property "fp2.debug", "true"
+            property "fp2.gl.opengl.debug", "true"
+
+            mods {
+                fp2 {
+                    source sourceSets.main
+                }
+            }
         }
     }
 }
@@ -71,7 +49,7 @@ minecraft {
     mappings = "$mcpmappingsVersion"
     makeObfSourceJar = false
 
-    coreMod = "net.daporkchop.fp2.asm.FP2MixinLoader"
+    coreMod = "net.daporkchop.fp2.impl.mc.forge1_12_2.asm.FP2MixinLoader"
 
     def args = [
             "-Dmixin.checks.interfaces=true",
@@ -88,16 +66,6 @@ minecraft {
     serverJvmArgs += args
 }*/
 
-sourceSets.main {
-    java.srcDirs = ["../../src/main/java"]
-    resources.srcDirs = ["../../src/main/resources"]
-}
-
-sourceSets.test {
-    java.srcDirs = ["../../src/test/java"]
-    resources.srcDirs = ["../../src/test/resources"]
-}
-
 repositories {
     maven { //needed for CWG
         name = "elytradev"
@@ -109,14 +77,9 @@ repositories {
 }
 
 dependencies {
-    minecraft "net.minecraftforge:forge:$minecraftVersion-$minecraftforgeVersion"
-
-    //shade project(path: ":gl", configuration: "shade")
-
-    implementation project(":gl")
     runtimeOnlyShade project(":gl:opengl-lwjgl2")
 
-    implementationShade project(":common")
+    implementationShade project(":core:minecraft")
 
     implementationShade("net.daporkchop.lib:compression-zstd:$porklibVersion") {
         exclude group: "io.netty"
@@ -124,7 +87,10 @@ dependencies {
     implementationShade("net.daporkchop.lib:concurrent:$porklibVersion") {
         exclude group: "io.netty"
     }
-    implementationShade("net.daporkchop.lib:noise:$porklibVersion") {
+    implementationShade("net.daporkchop.lib:logging:$porklibVersion") {
+        exclude group: "io.netty"
+    }
+    implementationShade("net.daporkchop.lib:math:$porklibVersion") {
         exclude group: "io.netty"
     }
     implementationShade("net.daporkchop.lib:primitive:$porklibVersion") {
@@ -133,19 +99,8 @@ dependencies {
 
     implementationProvided "net.daporkchop:forgerocks:$rocksdbVersion-$minecraftVersion"
 
-    implementationProvided "io.github.opencubicchunks:cubicchunks:1.12.2-0.0-SNAPSHOT:dev"
-    //implementation "com.github.OpenCubicChunks.CubicChunks:cubicchunks:355923c35c:dev"
-    implementationProvided "io.github.opencubicchunks:cubicworldgen:1.12.2-0.0-SNAPSHOT:dev"
-    //implementation fg.deobf("io.github.opencubicchunks:cubicworldgen:1.12.2-0.0-SNAPSHOT")
-
-    if (ideaSyncActive.toBoolean()) {
-        //intellij is present - we don't want it to register mixin as an annotation processor, so we just add it as a standard dependency.
-        //  if we don't do this, the intellij annotation processors will get totally screwed up
-        implementationProvided "org.spongepowered:mixin:$mixinVersion"
-    } else {
-        //register mixin as a standard annotation processor
-        annotationProcessor "org.spongepowered:mixin:$mixinVersion:processor"
-    }
+    implementationProvided fg.deobf(fp2.deleteMixin("io.github.opencubicchunks:cubicchunks:1.12.2-0.0-SNAPSHOT"))
+    implementationProvided fg.deobf("io.github.opencubicchunks:cubicworldgen:1.12.2-0.0-SNAPSHOT")
 }
 
 processResources {
@@ -173,26 +128,21 @@ mixin {
     add sourceSets.main, "mixins.fp2.refmap.json"
 }
 
-if (System.getProperty("os.name", "").toLowerCase().replaceAll("[^a-z0-9]+", "").startsWith("windows")) {
-    System.out.println("You are running Windows, which is bad and you should feel bad.\nThis means that native libraries will not be built.")
-} else {
-    task compileNatives(type: Exec) {
-        workingDir "$projectDir/../.."
-        commandLine "make",
-                "-f", "src/main/native/project.mk",
-                String.format("-j%d", Runtime.getRuntime().availableProcessors())
+natives.modules {
+    register("cwg-noise") {
+        sourceSet = sourceSets.main
+        root = "net/daporkchop/fp2/impl/mc/forge1_12_2/compat/cwg/noise"
+        simd = true
     }
-
-    compileJava.dependsOn(compileNatives)
-
-    task cleanNatives(type: Exec) {
-        workingDir "$projectDir/../.."
-        commandLine "make",
-                "-f", "src/main/native/project.mk",
-                "clean"
+    register("vanilla-biomes") {
+        sourceSet = sourceSets.main
+        root = "net/daporkchop/fp2/impl/mc/forge1_12_2/compat/vanilla/biome/layer/c"
+        simd = true
     }
-
-    clean.dependsOn(cleanNatives)
+    x86 {
+        sourceSet = sourceSets.main
+        root = "net/daporkchop/fp2/impl/mc/forge1_12_2/compat/x86"
+    }
 }
 
 //completely disable normal jar
@@ -216,13 +166,12 @@ shadowJar {
 
     manifest {
         attributes(
-                "MixinConfigs": "mixins.fp2.core.json",
+                "MixinConfigs": "mixins.fp2.at.json,mixins.fp2.core.json,mixins.fp2.fixes.json,mixins.fp2.debug.json",
                 "tweakClass": "org.spongepowered.asm.launch.MixinTweaker",
                 "TweakOrder": 0,
                 "FMLCorePluginContainsFMLMod": "true",
-                "FMLCorePlugin": "net.daporkchop.fp2.asm.FP2MixinLoader",
-                "ForceLoadAsMod": "true",
-                "FMLAT": "fp2_at.cfg"
+                "FMLCorePlugin": "net.daporkchop.fp2.impl.mc.forge1_12_2.asm.FP2MixinLoader",
+                "ForceLoadAsMod": "true"
         )
     }
 }

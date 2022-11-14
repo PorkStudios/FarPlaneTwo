@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.command.state;
@@ -24,7 +23,6 @@ import com.google.common.collect.ImmutableMap;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.gl.command.BlendFactor;
 import net.daporkchop.fp2.gl.command.BlendOp;
@@ -32,8 +30,6 @@ import net.daporkchop.fp2.gl.command.Compare;
 import net.daporkchop.fp2.gl.command.StencilOperation;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
-import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.OpenGLConstants;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureTarget;
 import net.daporkchop.fp2.gl.opengl.buffer.BufferTarget;
 import net.daporkchop.fp2.gl.opengl.buffer.IndexedBufferTarget;
@@ -51,8 +47,6 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -75,7 +69,7 @@ public class StateProperties {
         public Stream<StateValueProperty<?>> depends(@NonNull State state) {
             return state.getOrDef(RASTERIZER_DISCARD)
                     ? RASTERIZER_DISCARD.depends(state) //none of these properties do anything if RASTERIZER_DISCARD is enabled
-                    : Stream.of(RASTERIZER_DISCARD, BLEND, COLOR_MASK, CULL, STENCIL).flatMap(property -> property.depends(state));
+                    : Stream.of(RASTERIZER_DISCARD, BLEND, COLOR_MASK, CULL, DEPTH, STENCIL).flatMap(property -> property.depends(state));
         }
     };
 
@@ -93,6 +87,11 @@ public class StateProperties {
         @Override
         protected Stream<StateValueProperty<?>> dependenciesWhenEnabled(@NonNull State state) {
             return Stream.of(BLEND_FACTORS, BLEND_OPS).flatMap(property -> property.depends(state));
+        }
+
+        @Override
+        public boolean canBackupRestoreToLegacyAttributeStack() {
+            return true;
         }
     };
 
@@ -113,6 +112,11 @@ public class StateProperties {
                     Stream.of(this),
                     state.getOrDef(this).usesUserColor() ? BLEND_COLOR.depends(state) : Stream.empty());
         }
+
+        @Override
+        public boolean canBackupRestoreToLegacyAttributeStack() {
+            return true;
+        }
     };
 
     public final StateValueProperty<BlendOps> BLEND_OPS = new StructContainingMultipleIntegersProperty<BlendOps>(new BlendOps(BlendOp.ADD, BlendOp.ADD),
@@ -123,15 +127,30 @@ public class StateProperties {
             visitGLConstant(mv, GLEnumUtil.from(value.rgb()));
             visitGLConstant(mv, GLEnumUtil.from(value.a()));
         }
+
+        @Override
+        public boolean canBackupRestoreToLegacyAttributeStack() {
+            return true;
+        }
     };
 
-    public final StateValueProperty<Color4f> BLEND_COLOR = new ColorProperty("glBlendColor", GL_BLEND_COLOR);
+    public final StateValueProperty<Color4f> BLEND_COLOR = new ColorProperty("glBlendColor", GL_BLEND_COLOR) {
+        @Override
+        public boolean canBackupRestoreToLegacyAttributeStack() {
+            return true;
+        }
+    };
 
     //
     // COLOR
     //
 
-    public final StateValueProperty<Color4f> CLEAR_COLOR = new ColorProperty("glClearColor", GL_COLOR_CLEAR_VALUE);
+    public final StateValueProperty<Color4f> CLEAR_COLOR = new ColorProperty("glClearColor", GL_COLOR_CLEAR_VALUE) {
+        @Override
+        public boolean canBackupRestoreToLegacyAttributeStack() {
+            return true;
+        }
+    };
 
     public final StateValueProperty<Color4b> COLOR_MASK = new SimpleStateValueProperty<Color4b>(new Color4b(true, true, true, true)) {
         @Override
@@ -169,13 +188,23 @@ public class StateProperties {
                 mv.visitVarInsn(ILOAD, lvtIndexBase + i);
             }
         }
+
+        @Override
+        public boolean canBackupRestoreToLegacyAttributeStack() {
+            return true;
+        }
     };
 
     //
     // BACKFACE CULLING
     //
 
-    public final StateValueProperty<Boolean> CULL = new FixedFunctionStateEnableProperty(GL_CULL_FACE);
+    public final StateValueProperty<Boolean> CULL = new FixedFunctionStateEnableProperty(GL_CULL_FACE){
+        @Override
+        public boolean canBackupRestoreToLegacyAttributeStack() {
+            return true;
+        }
+    };
 
     //
     // DEPTH
@@ -186,13 +215,33 @@ public class StateProperties {
         protected Stream<StateValueProperty<?>> dependenciesWhenEnabled(@NonNull State state) {
             return Stream.of(DEPTH_COMPARE, DEPTH_WRITE_MASK).flatMap(property -> property.depends(state));
         }
+
+        @Override
+        public boolean canBackupRestoreToLegacyAttributeStack() {
+            return true;
+        }
     };
 
-    public final StateValueProperty<Double> DEPTH_CLEAR = new DoubleSimpleStateValueProperty(0.0d, "glClearDepth", GL_DEPTH_CLEAR_VALUE);
+    public final StateValueProperty<Double> DEPTH_CLEAR = new DoubleSimpleStateValueProperty(0.0d, "glClearDepth", GL_DEPTH_CLEAR_VALUE) {
+        @Override
+        public boolean canBackupRestoreToLegacyAttributeStack() {
+            return true;
+        }
+    };
 
-    public final StateValueProperty<Compare> DEPTH_COMPARE = new IntegerSimpleStateValueProperty<>(Compare.LESS, GLEnumUtil::from, "glDepthFunc", GL_DEPTH_FUNC);
+    public final StateValueProperty<Compare> DEPTH_COMPARE = new IntegerSimpleStateValueProperty<Compare>(Compare.LESS, GLEnumUtil::from, "glDepthFunc", GL_DEPTH_FUNC) {
+        @Override
+        public boolean canBackupRestoreToLegacyAttributeStack() {
+            return true;
+        }
+    };
 
-    public final StateValueProperty<Boolean> DEPTH_WRITE_MASK = new BooleanSimpleStateValueProperty(true, "glDepthMask", GL_DEPTH_WRITEMASK);
+    public final StateValueProperty<Boolean> DEPTH_WRITE_MASK = new BooleanSimpleStateValueProperty(true, "glDepthMask", GL_DEPTH_WRITEMASK) {
+        @Override
+        public boolean canBackupRestoreToLegacyAttributeStack() {
+            return true;
+        }
+    };
 
     //
     // STENCIL
@@ -203,11 +252,26 @@ public class StateProperties {
         protected Stream<StateValueProperty<?>> dependenciesWhenEnabled(@NonNull State state) {
             return Stream.of(STENCIL_MASK, STENCIL_FUNC, STENCIL_OP).flatMap(property -> property.depends(state));
         }
+
+        @Override
+        public boolean canBackupRestoreToLegacyAttributeStack() {
+            return true;
+        }
     };
 
-    public final StateValueProperty<Integer> STENCIL_CLEAR = new IntegerSimpleStateValueProperty<>(0, Function.identity(), "glClearStencil", GL_STENCIL_CLEAR_VALUE);
+    public final StateValueProperty<Integer> STENCIL_CLEAR = new IntegerSimpleStateValueProperty<Integer>(0, Function.identity(), "glClearStencil", GL_STENCIL_CLEAR_VALUE) {
+        @Override
+        public boolean canBackupRestoreToLegacyAttributeStack() {
+            return true;
+        }
+    };
 
-    public final StateValueProperty<Integer> STENCIL_MASK = new IntegerSimpleStateValueProperty<>(0, Function.identity(), "glStencilMask", GL_STENCIL_WRITEMASK);
+    public final StateValueProperty<Integer> STENCIL_MASK = new IntegerSimpleStateValueProperty<Integer>(0, Function.identity(), "glStencilMask", GL_STENCIL_WRITEMASK) {
+        @Override
+        public boolean canBackupRestoreToLegacyAttributeStack() {
+            return true;
+        }
+    };
 
     public final StateValueProperty<StencilFunc> STENCIL_FUNC = new StructContainingMultipleIntegersProperty<StencilFunc>(new StencilFunc(Compare.ALWAYS, 0, -1),
             "glStencilFunc",
@@ -217,6 +281,11 @@ public class StateProperties {
             visitGLConstant(mv, GLEnumUtil.from(value.compare()));
             mv.visitLdcInsn(value.reference());
             mv.visitLdcInsn(value.mask());
+        }
+
+        @Override
+        public boolean canBackupRestoreToLegacyAttributeStack() {
+            return true;
         }
     };
 
@@ -228,6 +297,11 @@ public class StateProperties {
             visitGLConstant(mv, GLEnumUtil.from(value.fail()));
             visitGLConstant(mv, GLEnumUtil.from(value.pass()));
             visitGLConstant(mv, GLEnumUtil.from(value.depthFail()));
+        }
+
+        @Override
+        public boolean canBackupRestoreToLegacyAttributeStack() {
+            return true;
         }
     };
 
@@ -261,36 +335,6 @@ public class StateProperties {
 
     public final Map<TextureTarget, StateValueProperty<Integer>>[] BOUND_TEXTURE = uncheckedCast(PArrays.filledBy(80, Map[]::new, unit ->
             Stream.of(TextureTarget.values()).collect(ImmutableMap.toImmutableMap(Function.identity(), target -> new TextureBindingProperty(target, unit)))));
-
-    //
-    //
-    // METHODS
-    //
-    //
-
-    @SneakyThrows(IllegalAccessException.class)
-    private static void visitGLConstant(@NonNull MethodVisitor mv, int constant) {
-        DEBUG:
-        if (OpenGL.DEBUG) { //debug mode - try to load constant by doing a GETSTATIC on the field in OpenGLConstants with a matching value (assuming there's exactly one)
-            Field matchingField = null;
-            for (Field field : OpenGLConstants.class.getFields()) {
-                if ((field.getModifiers() & Modifier.STATIC) != 0 && field.getType() == int.class && !field.getName().endsWith("_EXT") && ((Integer) field.get(null)) == constant) {
-                    if (matchingField != null) { //there are multiple matching fields!
-                        break DEBUG;
-                    }
-                    matchingField = field;
-                }
-            }
-
-            if (matchingField != null) { //exactly one matching field was found
-                mv.visitFieldInsn(GETSTATIC, getInternalName(OpenGLConstants.class), matchingField.getName(), INT_TYPE.getDescriptor());
-                return;
-            }
-        }
-
-        //load the constant value using a standard LDC instruction
-        mv.visitLdcInsn(constant);
-    }
 
     //
     //

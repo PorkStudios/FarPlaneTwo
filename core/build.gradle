@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -19,7 +19,33 @@
  */
 
 dependencies {
-    implementation project(":gl")
+    apiShade project(":api")
+    apiShade project(":common")
+    apiShade project(":gl")
 
-    implementation "org.rocksdb:rocksdbjni:$rocksdbVersion"
+    implementationProvided "org.ow2.asm:asm-debug-all:$asmVersion"
+    implementationProvided "it.unimi.dsi:fastutil:$fastutilVersion"
+    implementationProvided "com.google.code.gson:gson:$gsonVersion"
+    implementationProvided "com.google.guava:guava:$guavaVersion"
+    implementationProvided "io.netty:netty-all:$nettyVersion"
+    implementationProvided "org.rocksdb:rocksdbjni:$rocksdbVersion"
+
+    apiShade("net.daporkchop.lib:compression-zstd:$porklibVersion") {
+        exclude group: "io.netty"
+    }
+    apiShade("net.daporkchop.lib:concurrent:$porklibVersion") {
+        exclude group: "io.netty"
+    }
+    apiShade("net.daporkchop.lib:logging:$porklibVersion") {
+        exclude group: "io.netty"
+    }
+    apiShade("net.daporkchop.lib:math:$porklibVersion") {
+        exclude group: "io.netty"
+    }
+    apiShade("net.daporkchop.lib:primitive:$porklibVersion") {
+        exclude group: "io.netty"
+    }
+    apiShade("net.daporkchop.lib:reflection:$porklibVersion") {
+        exclude group: "io.netty"
+    }
 }

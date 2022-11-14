@@ -15,18 +15,18 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.draw.list.arrays.multidrawindirect;
 
-import lombok.Data;
 import lombok.NonNull;
-import net.daporkchop.fp2.common.util.Identifier;
-import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
+import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
+import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
+import net.daporkchop.fp2.gl.attribute.annotation.ScalarType;
 import net.daporkchop.fp2.gl.draw.list.DrawCommandArrays;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
@@ -138,18 +138,10 @@ public class ShaderSelectedDrawListMultiDrawArraysIndirect extends DrawListMulti
      *
      * @author DaPorkchop_
      */
-    @Data
-    public static final class Command {
-        @Attribute(sort = 0)
-        public final int count;
-
-        @Attribute(sort = 1)
-        public final int instanceCount;
-
-        @Attribute(sort = 2)
-        public final int first;
-
-        @Attribute(sort = 3)
-        public final int baseInstance;
+    @Attribute(sort = 0, name = "count", typeScalar = @ScalarType(int.class))
+    @Attribute(sort = 1, name = "instanceCount", typeScalar = @ScalarType(int.class))
+    @Attribute(sort = 2, name = "first", typeScalar = @ScalarType(int.class))
+    @Attribute(sort = 3, name = "baseInstance", typeScalar = @ScalarType(int.class))
+    public interface Command extends AttributeStruct {
     }
 }

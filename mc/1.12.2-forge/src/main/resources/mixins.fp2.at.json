@@ -1,0 +1,29 @@
+{
+  "required": true,
+  "compatibilityLevel": "JAVA_8",
+  "package": "net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at",
+  "refmap": "mixins.fp2.refmap.json",
+  "client": [
+    "client.gui.ATGuiButton1_12",
+    "client.gui.ATGuiScreen1_12",
+    "client.multiplayer.ATWorldClient1_12",
+    "client.network.ATNetHandlerPlayClient1_12",
+    "client.renderer.ATEntityRenderer1_12",
+    "client.renderer.ATRenderChunk1_12",
+    "client.renderer.ATRenderGlobal1_12",
+    "client.renderer.ATRenderGlobal__ContainerLocalRenderInformation1_12",
+    "client.renderer.ATViewFrustum1_12",
+    "client.ATMinecraft1_12"
+  ],
+  "mixins": [
+    "server.ATMinecraftServer1_12",
+    "world.biome.ATBiomeProvider1_12",
+    "world.chunk.storage.ATAnvilChunkLoader1_12",
+    "world.chunk.storage.ATRegionFile1_12",
+    "world.gen.layer.ATGenLayer1_12",
+    "world.gen.layer.ATGenLayerBiome1_12",
+    "world.gen.layer.ATGenLayerEdge1_12",
+    "world.gen.layer.ATGenLayerHills1_12",
+    "world.gen.layer.ATGenLayerRiverMix1_12"
+  ]
+}

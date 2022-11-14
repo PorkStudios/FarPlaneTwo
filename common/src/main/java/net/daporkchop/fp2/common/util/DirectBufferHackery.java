@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,19 +15,22 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.common.util;
 
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
+import net.daporkchop.lib.common.pool.recycler.Recycler;
+import net.daporkchop.lib.common.reference.ReferenceStrength;
+import net.daporkchop.lib.common.reference.cache.Cached;
 import net.daporkchop.lib.common.system.PlatformInfo;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
@@ -52,23 +55,44 @@ public class DirectBufferHackery {
     private final Class<IntBuffer> INT = PorkUtil.classForName("java.nio.DirectIntBufferU");
     private final Class<FloatBuffer> FLOAT = PorkUtil.classForName("java.nio.DirectFloatBufferU");
     private final Class<DoubleBuffer> DOUBLE = PorkUtil.classForName("java.nio.DirectDoubleBufferU");
+    
+    private static final Cached<Recycler<ByteBuffer>> FAKE_BYTEBUFFER_RECYCLER = Cached.threadLocal(() -> Recycler.unbounded(DirectBufferHackery::emptyByte), ReferenceStrength.SOFT);
+    private static final Cached<Recycler<IntBuffer>> FAKE_INTBUFFER_RECYCLER = Cached.threadLocal(() -> Recycler.unbounded(DirectBufferHackery::emptyInt), ReferenceStrength.SOFT);
+    private static final Cached<Recycler<FloatBuffer>> FAKE_FLOATBUFFER_RECYCLER = Cached.threadLocal(() -> Recycler.unbounded(DirectBufferHackery::emptyFloat), ReferenceStrength.SOFT);
+    private static final Cached<Recycler<DoubleBuffer>> FAKE_DOUBLEBUFFER_RECYCLER = Cached.threadLocal(() -> Recycler.unbounded(DirectBufferHackery::emptyDouble), ReferenceStrength.SOFT);
 
-    public void reset(@NonNull Buffer buffer, long address, int capacity) {
+    public <B extends Buffer> B reset(@NonNull B buffer, long address, int capacity) {
         checkState(buffer.isDirect(), "buffer isn't direct! %s", buffer);
 
         PUnsafe.putInt(buffer, BUFFER_CAPACITY_OFFSET, capacity);
         PUnsafe.putLong(buffer, BUFFER_ADDRESS_OFFSET, address);
         buffer.clear();
+        return buffer;
     }
 
     public ByteBuffer emptyByte() {
-        return PUnsafe.allocateInstance(BYTE);
+        ByteBuffer buffer = PUnsafe.allocateInstance(BYTE);
+        buffer.order(ByteOrder.nativeOrder());
+        return buffer;
     }
 
     public static ByteBuffer wrapByte(long address, int capacity) {
         ByteBuffer buffer = emptyByte();
         reset(buffer, address, capacity);
         return buffer;
+    }
+    
+    /**
+     * Gets a {@link Recycler} for fake direct {@link ByteBuffer}s whose contents are undefined, but may be redirected to a requested memory address using
+     * {@link #reset(Buffer, long, int)}.
+     * <p>
+     * The returned {@link Recycler} is only valid in the current thread!
+     *
+     * @return a {@link Recycler} for fake direct buffers
+     * @see #reset(Buffer, long, int) 
+     */
+    public static Recycler<ByteBuffer> byteRecycler() {
+        return FAKE_BYTEBUFFER_RECYCLER.get();
     }
 
     public IntBuffer emptyInt() {
@@ -81,6 +105,19 @@ public class DirectBufferHackery {
         return buffer;
     }
 
+    /**
+     * Gets a {@link Recycler} for fake direct {@link IntBuffer}s whose contents are undefined, but may be redirected to a requested memory address using
+     * {@link #reset(Buffer, long, int)}.
+     * <p>
+     * The returned {@link Recycler} is only valid in the current thread!
+     *
+     * @return a {@link Recycler} for fake direct buffers
+     * @see #reset(Buffer, long, int)
+     */
+    public static Recycler<IntBuffer> intRecycler() {
+        return FAKE_INTBUFFER_RECYCLER.get();
+    }
+
     public FloatBuffer emptyFloat() {
         return PUnsafe.allocateInstance(FLOAT);
     }
@@ -91,6 +128,19 @@ public class DirectBufferHackery {
         return buffer;
     }
 
+    /**
+     * Gets a {@link Recycler} for fake direct {@link FloatBuffer}s whose contents are undefined, but may be redirected to a requested memory address using
+     * {@link #reset(Buffer, long, int)}.
+     * <p>
+     * The returned {@link Recycler} is only valid in the current thread!
+     *
+     * @return a {@link Recycler} for fake direct buffers
+     * @see #reset(Buffer, long, int)
+     */
+    public static Recycler<FloatBuffer> floatRecycler() {
+        return FAKE_FLOATBUFFER_RECYCLER.get();
+    }
+
     public DoubleBuffer emptyDouble() {
         return PUnsafe.allocateInstance(DOUBLE);
     }
@@ -99,5 +149,18 @@ public class DirectBufferHackery {
         DoubleBuffer buffer = emptyDouble();
         reset(buffer, address, capacity);
         return buffer;
+    }
+
+    /**
+     * Gets a {@link Recycler} for fake direct {@link DoubleBuffer}s whose contents are undefined, but may be redirected to a requested memory address using
+     * {@link #reset(Buffer, long, int)}.
+     * <p>
+     * The returned {@link Recycler} is only valid in the current thread!
+     *
+     * @return a {@link Recycler} for fake direct buffers
+     * @see #reset(Buffer, long, int)
+     */
+    public static Recycler<DoubleBuffer> doubleRecycler() {
+        return FAKE_DOUBLEBUFFER_RECYCLER.get();
     }
 }

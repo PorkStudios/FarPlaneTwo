@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.attribute.struct.layout;
@@ -24,7 +23,7 @@ import lombok.Data;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.StructInfo;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.AttributeType;
 
 /**
  * @author DaPorkchop_
@@ -35,13 +34,11 @@ public abstract class StructLayout<M extends StructLayout.Member<M, C>, C extend
     private final StructInfo<?> structInfo;
     private final String layoutName;
 
-    private final boolean unpacked;
-
     @NonNull
     private final M member;
 
-    public StructProperty structProperty() {
-        return this.unpacked() ? this.structInfo().unpackedProperty() : this.structInfo().packedProperty();
+    public AttributeType structProperty() {
+        return this.structInfo().property();
     }
 
     /**
@@ -62,5 +59,7 @@ public abstract class StructLayout<M extends StructLayout.Member<M, C>, C extend
      */
     public interface Component {
         long offset();
+
+        LayoutComponentStorage storage();
     }
 }

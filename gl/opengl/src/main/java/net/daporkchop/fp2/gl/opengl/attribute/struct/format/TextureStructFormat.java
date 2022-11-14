@@ -15,13 +15,13 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.attribute.struct.format;
 
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.TextureStructLayout;
 
 /**
@@ -34,8 +34,8 @@ public abstract class TextureStructFormat<S> extends StructFormat<S, TextureStru
     protected final int textureFormat;
     protected final int textureType;
 
-    public TextureStructFormat(@NonNull TextureStructLayout layout, int textureInternalFormat, int textureFormat, int textureType) {
-        super(layout);
+    public TextureStructFormat(@NonNull OpenGL gl, @NonNull TextureStructLayout layout, int textureInternalFormat, int textureFormat, int textureType) {
+        super(gl, layout);
 
         this.stride = layout.stride();
         this.textureInternalFormat = textureInternalFormat;

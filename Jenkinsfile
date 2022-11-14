@@ -67,12 +67,12 @@ pipeline {
         }
         stage("Natives") {
             steps {
-                sh "./gradlew compileNatives -x test"
+                sh "./gradlew natives -x test"
             }
         }
         stage("Build") {
             steps {
-                sh "./gradlew build -x compileNatives -x test"
+                sh "./gradlew build -x test"
             }
             post {
                 success {
@@ -82,10 +82,10 @@ pipeline {
         }
         stage("Test") {
             steps {
-                sh "./gradlew test -x compileNatives"
+                sh "./gradlew test"
             }
             post {
-                success {
+                always {
                     junit "**/build/test-results/**/*.xml"
                 }
             }
@@ -106,7 +106,7 @@ pipeline {
             deleteDir()
 
             withCredentials([string(credentialsId: "daporkchop_discord_webhook", variable: "discordWebhook")]) {
-                discordSend thumbnail: "https://raw.githubusercontent.com/PorkStudios/FarPlaneTwo/${BRANCH_NAME}/src/main/resources/assets/fp2/textures/logo.png",
+                discordSend thumbnail: "https://raw.githubusercontent.com/PorkStudios/FarPlaneTwo/${BRANCH_NAME}/core/src/main/resources/assets/fp2/textures/logo.png",
                         result: currentBuild.currentResult,
                         description: getDiscordMessage(),
                         link: env.BUILD_URL,

@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.attribute.struct;
@@ -23,11 +22,10 @@ package net.daporkchop.fp2.gl.opengl.attribute.struct;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructProperty;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.property.StructPropertyFactory;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.AttributeType;
+import net.daporkchop.fp2.gl.opengl.attribute.struct.attribute.StructPropertyFactory;
 
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -39,13 +37,11 @@ import java.util.stream.IntStream;
 public class StructInfo<S> {
     protected final Class<S> clazz;
 
-    protected final StructProperty packedProperty;
-    protected final StructProperty unpackedProperty;
+    protected final AttributeType property;
 
-    public StructInfo(@NonNull Class<S> clazz, @NonNull Map<String, String> nameOverrides) {
+    public StructInfo(@NonNull Class<S> clazz) {
         this.clazz = clazz;
-        this.packedProperty = StructPropertyFactory.struct(StructPropertyFactory.Options.builder().unpacked(false).build(), clazz, nameOverrides);
-        this.unpackedProperty = StructPropertyFactory.struct(StructPropertyFactory.Options.builder().unpacked(true).build(), clazz, nameOverrides);
+        this.property = StructPropertyFactory.struct(clazz);
     }
 
     public String name() {
@@ -53,20 +49,20 @@ public class StructInfo<S> {
     }
 
     public List<GLSLField<?>> memberFields() {
-        return this.unpackedProperty().with(new StructProperty.TypedPropertyCallback<List<GLSLField<?>>>() {
+        return this.property().with(new AttributeType.TypedCallback<List<GLSLField<?>>>() {
             @Override
-            public List<GLSLField<?>> withComponents(@NonNull StructProperty.Components componentsProperty) {
+            public List<GLSLField<?>> withComponents(@NonNull AttributeType.Components componentsType) {
                 throw new UnsupportedOperationException();
             }
 
             @Override
-            public List<GLSLField<?>> withElements(@NonNull StructProperty.Elements elementsProperty) {
+            public List<GLSLField<?>> withElements(@NonNull AttributeType.Elements elementsType) {
                 throw new UnsupportedOperationException();
             }
 
             @Override
-            public List<GLSLField<?>> withFields(@NonNull StructProperty.Fields fieldsProperty) {
-                return IntStream.range(0, fieldsProperty.fields()).mapToObj(fieldsProperty::field)
+            public List<GLSLField<?>> withFields(@NonNull AttributeType.Fields fieldsType) {
+                return IntStream.range(0, fieldsType.fields()).mapToObj(fieldsType::field)
                         .map(entry -> new GLSLField<>(entry.getValue().glslType(), entry.getKey()))
                         .collect(Collectors.toList());
             }

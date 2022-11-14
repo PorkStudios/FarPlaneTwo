@@ -15,17 +15,13 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.attribute;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import lombok.ToString;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
 import net.daporkchop.fp2.gl.attribute.AttributeUsage;
@@ -34,11 +30,8 @@ import net.daporkchop.fp2.gl.opengl.attribute.struct.StructInfo;
 
 import java.util.Arrays;
 import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
 
-import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
@@ -53,13 +46,6 @@ public class AttributeFormatBuilderImpl<S> implements AttributeFormatBuilder<S> 
     protected final Class<S> clazz;
 
     protected final Set<AttributeUsage> usages = EnumSet.noneOf(AttributeUsage.class);
-    protected final Map<String, String> nameOverrides = new HashMap<>();
-
-    @Override
-    public AttributeFormatBuilder<S> rename(@NonNull String originalName, @NonNull String newName) {
-        checkState(this.nameOverrides.putIfAbsent(originalName, newName) == null, "name %s cannot be overridden twice!", originalName);
-        return this;
-    }
 
     @Override
     public AttributeFormatBuilder<S> useFor(@NonNull AttributeUsage usage) {
@@ -79,6 +65,6 @@ public class AttributeFormatBuilderImpl<S> implements AttributeFormatBuilder<S> 
     }
 
     public StructInfo<S> structInfo() {
-        return new StructInfo<>(this.clazz, this.nameOverrides);
+        return new StructInfo<>(this.clazz);
     }
 }

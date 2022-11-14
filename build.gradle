@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2022 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,6 +18,29 @@
  *
  */
 
+//global buildscript dependencies! these are inherited by all subprojects
+buildscript {
+    repositories {
+        maven {
+            name = "Gradle"
+            url = "https://plugins.gradle.org/m2/"
+        }
+        maven {
+            name = "Minecraft Forge"
+            url = "https://maven.minecraftforge.net/"
+        }
+        maven {
+            name = "SpongePowered"
+            url = "https://repo.spongepowered.org/maven"
+        }
+    }
+    dependencies {
+        classpath "gradle.plugin.com.github.johnrengelman:shadow:7.1.0"
+        classpath "net.minecraftforge.gradle:ForgeGradle:5.1.+"
+        classpath "org.spongepowered:mixingradle:0.7-SNAPSHOT"
+    }
+}
+
 import org.gradle.api.internal.artifacts.dependencies.DefaultProjectDependency
 
 //this can't be set in gradle.properties since it's dynamic
@@ -33,6 +56,7 @@ allprojects {
 subprojects {
     apply plugin: "java"
     apply plugin: "java-library"
+    apply plugin: "fp2"
 
     if (ideaSyncActive.toBoolean()) {
         apply plugin: "idea"
@@ -144,8 +168,15 @@ subprojects {
 
         testImplementation project(path: project.path, configuration: "provided_")
 
-        testImplementation "junit:junit:$junitVersion"
+        testImplementation "org.junit.jupiter:junit-jupiter:$junitVersion"
         testCompileOnly "org.projectlombok:lombok:$lombokVersion"
         testAnnotationProcessor "org.projectlombok:lombok:$lombokVersion"
+    }
+
+    test {
+        useJUnitPlatform()
+        testLogging {
+            events "passed", "skipped", "failed"
+        }
     }
 }

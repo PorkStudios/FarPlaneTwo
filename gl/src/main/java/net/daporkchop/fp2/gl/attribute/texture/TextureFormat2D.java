@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.attribute.texture;
@@ -25,10 +24,10 @@ import lombok.NonNull;
 /**
  * @author DaPorkchop_
  */
-public interface TextureFormat2D<S> extends BaseTextureFormat<S> {
-    TextureWriter2D<S> createWriter(int width, int height);
+public interface TextureFormat2D extends BaseTextureFormat {
+    TextureWriter2D createWriter(int width, int height);
 
-    Texture2D<S> createTexture(int width, int height, int levels);
+    Texture2D createTexture(int width, int height, int levels);
 
     /**
      * Wraps a texture which was created externally and is identified by an implementation-dependent ID.
@@ -37,5 +36,5 @@ public interface TextureFormat2D<S> extends BaseTextureFormat<S> {
      * @return the wrapped texture
      * @throws UnsupportedOperationException if the implementation does not support wrapping textures
      */
-    Texture2D<S> wrapExternalTexture(@NonNull Object id) throws UnsupportedOperationException;
+    Texture2D wrapExternalTexture(@NonNull Object id) throws UnsupportedOperationException;
 }
