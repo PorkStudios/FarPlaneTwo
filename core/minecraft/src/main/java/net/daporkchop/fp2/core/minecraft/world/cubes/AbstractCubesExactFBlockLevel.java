@@ -29,6 +29,7 @@ import net.daporkchop.fp2.api.world.level.query.BatchDataQuery;
 import net.daporkchop.fp2.api.world.level.query.DataQueryBatchOutput;
 import net.daporkchop.fp2.api.world.level.query.shape.PointsQueryShape;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
+import net.daporkchop.fp2.core.minecraft.world.AbstractExactFBlockLevel;
 import net.daporkchop.lib.math.vector.Vec3i;
 
 import java.util.List;
@@ -49,7 +50,7 @@ import static java.util.Objects.*;
  */
 @RequiredArgsConstructor
 @Getter
-public class AbstractCubesExactFBlockLevel<CUBE> implements FBlockLevel {
+public class AbstractCubesExactFBlockLevel<CUBE> extends AbstractExactFBlockLevel {
     @NonNull
     private final AbstractCubesExactFBlockLevelHolder<CUBE> holder;
     private final boolean generationAllowed;

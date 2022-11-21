@@ -22,19 +22,16 @@ package net.daporkchop.fp2.core.minecraft.world.chunks;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.api.util.Direction;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.fp2.api.world.level.GenerationNotAllowedException;
-import net.daporkchop.fp2.api.world.level.query.TypeTransitionSingleOutput;
 import net.daporkchop.fp2.api.world.level.query.BatchDataQuery;
 import net.daporkchop.fp2.api.world.level.query.DataQueryBatchOutput;
-import net.daporkchop.fp2.api.world.level.query.TypeTransitionFilter;
 import net.daporkchop.fp2.api.world.level.query.shape.PointsQueryShape;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
+import net.daporkchop.fp2.core.minecraft.world.AbstractExactFBlockLevel;
 import net.daporkchop.lib.math.vector.Vec2i;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -53,7 +50,7 @@ import static java.util.Objects.*;
  */
 @RequiredArgsConstructor
 @Getter
-public class AbstractChunksExactFBlockLevel<CHUNK> implements FBlockLevel {
+public class AbstractChunksExactFBlockLevel<CHUNK> extends AbstractExactFBlockLevel {
     @NonNull
     private final AbstractChunksExactFBlockLevelHolder<CHUNK> holder;
     private final boolean generationAllowed;
@@ -134,12 +131,5 @@ public class AbstractChunksExactFBlockLevel<CHUNK> implements FBlockLevel {
 
         //prefetch all the chunks, then delegate the actual query execution to AbstractPrefetchedChunksExactFBlockLevel
         this.holder.prefetchedWorld(this.generationAllowed, this.holder.multiGetChunks(prefetchPositions, this.generationAllowed)).query(queries);
-    }
-
-    @Override
-    public int getNextTypeTransitions(@NonNull Direction direction, int x, int y, int z,
-                                      @NonNull Collection<@NonNull TypeTransitionFilter> filters,
-                                      @NonNull TypeTransitionSingleOutput output) {
-        return 0;
     }
 }

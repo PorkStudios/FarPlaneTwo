@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.minecraft.world.cubes;
@@ -27,6 +26,7 @@ import net.daporkchop.fp2.api.world.level.BlockLevelConstants;
 import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.fp2.api.world.level.GenerationNotAllowedException;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
+import net.daporkchop.fp2.core.minecraft.world.AbstractPrefetchedExactFBlockLevel;
 import net.daporkchop.lib.math.vector.Vec3i;
 import net.daporkchop.lib.primitive.map.open.ObjObjOpenHashMap;
 
@@ -42,7 +42,7 @@ import java.util.Map;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractPrefetchedCubesExactFBlockLevel<CUBE> implements FBlockLevel {
+public abstract class AbstractPrefetchedCubesExactFBlockLevel<CUBE> extends AbstractPrefetchedExactFBlockLevel {
     private final AbstractCubesExactFBlockLevelHolder<CUBE> holder;
     private final boolean generationAllowed;
 

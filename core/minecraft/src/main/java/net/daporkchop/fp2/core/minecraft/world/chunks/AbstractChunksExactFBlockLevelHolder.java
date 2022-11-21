@@ -25,7 +25,10 @@ import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.fp2.api.world.level.GenerationNotAllowedException;
+import net.daporkchop.fp2.api.world.level.query.TypeTransitionFilter;
+import net.daporkchop.fp2.api.world.level.query.TypeTransitionSingleOutput;
 import net.daporkchop.fp2.api.world.level.query.shape.PointsQueryShape;
+import net.daporkchop.fp2.api.world.registry.FExtendedStateRegistryData;
 import net.daporkchop.fp2.core.minecraft.util.threading.asynccache.AsyncCacheNBT;
 import net.daporkchop.fp2.core.minecraft.world.AbstractExactFBlockLevelHolder;
 import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
@@ -57,7 +60,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends AbstractExactFBlockLevelHolder {
+public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends AbstractExactFBlockLevelHolder<AbstractPrefetchedChunksExactFBlockLevel<CHUNK>> {
     private final NDimensionalIntSegtreeSet chunksExistIndex;
     private final AsyncCacheNBT<Vec2i, ?, CHUNK, ?> chunkCache;
 
@@ -163,7 +166,9 @@ public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends Abstra
 
     public List<CHUNK> multiGetChunks(@NonNull List<Vec2i> chunkPositions, boolean allowGeneration) throws GenerationNotAllowedException {
         //collect all futures into an array first in order to issue all tasks at once before blocking, thus ensuring maximum parallelism
-        LazyFutureTask<CHUNK>[] chunkFutures = uncheckedCast(chunkPositions.stream().map(pos -> this.chunkCache.get(pos, allowGeneration)).toArray(LazyFutureTask[]::new));
+        LazyFutureTask<CHUNK>[] chunkFutures = uncheckedCast(chunkPositions.stream()
+                .map(pos -> this.chunkCache.get(pos, allowGeneration))
+                .toArray(LazyFutureTask[]::new));
 
         //wait for all the futures to complete
         List<CHUNK> chunks = LazyFutureTask.scatterGather(chunkFutures);
@@ -317,8 +322,10 @@ public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends Abstra
         //we assume that at least one Y coordinate is valid, meaning that the entire chunk needs to be prefetched as long as the horizontal coordinates are valid
 
         //find chunk X,Z coordinates
-        Consumer<IntConsumer> chunkXSupplier = this.chunkCoordSupplier(shape.originX(), shape.sizeX(), shape.strideX(), this.bounds().minX(), this.bounds().maxX(), this.chunkShift(), this.chunkSize());
-        Consumer<IntConsumer> chunkZSupplier = this.chunkCoordSupplier(shape.originZ(), shape.sizeZ(), shape.strideZ(), this.bounds().minZ(), this.bounds().maxZ(), this.chunkShift(), this.chunkSize());
+        Consumer<IntConsumer> chunkXSupplier = this.chunkCoordSupplier(shape.originX(), shape.sizeX(), shape.strideX(), this.bounds().minX(), this.bounds()
+                .maxX(), this.chunkShift(), this.chunkSize());
+        Consumer<IntConsumer> chunkZSupplier = this.chunkCoordSupplier(shape.originZ(), shape.sizeZ(), shape.strideZ(), this.bounds().minZ(), this.bounds()
+                .maxZ(), this.chunkShift(), this.chunkSize());
 
         //collect all positions to a list
         List<Vec2i> positions = new ArrayList<>();
@@ -332,8 +339,10 @@ public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends Abstra
         //we assume that at least one Y coordinate is valid, meaning that the entire chunk needs to be prefetched as long as the horizontal coordinates are valid
 
         //find chunk X,Z coordinates
-        Consumer<IntConsumer> chunkXSupplier = this.chunkCoordSupplier(shape.originX(), shape.sizeX(), shape.strideX(), this.bounds().minX(), this.bounds().maxX(), this.chunkShift(), this.chunkSize());
-        Consumer<IntConsumer> chunkZSupplier = this.chunkCoordSupplier(shape.originZ(), shape.sizeZ(), shape.strideZ(), this.bounds().minZ(), this.bounds().maxZ(), this.chunkShift(), this.chunkSize());
+        Consumer<IntConsumer> chunkXSupplier = this.chunkCoordSupplier(shape.originX(), shape.sizeX(), shape.strideX(), this.bounds().minX(), this.bounds()
+                .maxX(), this.chunkShift(), this.chunkSize());
+        Consumer<IntConsumer> chunkZSupplier = this.chunkCoordSupplier(shape.originZ(), shape.sizeZ(), shape.strideZ(), this.bounds().minZ(), this.bounds()
+                .maxZ(), this.chunkShift(), this.chunkSize());
 
         //add all positions to the set
         chunkXSupplier.accept(chunkX -> chunkZSupplier.accept(chunkZ -> set.add(chunkX, chunkZ)));
@@ -378,5 +387,56 @@ public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends Abstra
                 set.add(x >> this.chunkShift(), z >> this.chunkShift());
             }
         });
+    }
+
+    //
+    // getNextTypeTransitions() IMPLEMENTATIONS
+    //
+
+    @Override
+    protected int getNextTypeTransitions(int x, int y, int z, int dx, int dy, int dz,
+                                         @NonNull IntAxisAlignedBB dataLimits,
+                                         @NonNull List<@NonNull TypeTransitionFilter> filters, @NonNull int[] filterHitCounts,
+                                         @NonNull TypeTransitionSingleOutput output,
+                                         @NonNull FExtendedStateRegistryData extendedStateRegistryData,
+                                         AbstractPrefetchedChunksExactFBlockLevel<CHUNK> prefetchedLevel) {
+        //we know that exactly one of (dx,dy,dz) is non-zero
+        return dy != 0
+                //searching along the Y axis, which we have special handling for
+                ? this.getNextTypeTransitionsVertical(x, y, z, dy, dataLimits, filters, filterHitCounts, output, extendedStateRegistryData, prefetchedLevel)
+                //searching along some other axis
+                : this.getNextTypeTransitionsHorizontal(x, y, z, dx, dz, dataLimits, filters, filterHitCounts, output, extendedStateRegistryData, prefetchedLevel);
+    }
+
+    protected int getNextTypeTransitionsVertical(int x, int y, int z, int dy,
+                                                 @NonNull IntAxisAlignedBB dataLimits,
+                                                 @NonNull List<@NonNull TypeTransitionFilter> filters, @NonNull int[] filterHitCounts,
+                                                 @NonNull TypeTransitionSingleOutput output,
+                                                 @NonNull FExtendedStateRegistryData extendedStateRegistryData,
+                                                 AbstractPrefetchedChunksExactFBlockLevel<CHUNK> prefetchedLevel) {
+        int writtenCount = 0;
+        int lastType;
+        boolean skippedNoData = false;
+
+        //TODO: oh god how do i represent the case where everything is NoData/NoData at the end
+        CHUNK chunk = null;
+        if (prefetchedLevel != null) { //there's a prefetched level, so the chunk might already be prefetched
+            chunk = prefetchedLevel.getPrefetchedChunk(x, y, z);
+        }
+
+        return writtenCount;
+    }
+
+    protected int getNextTypeTransitionsHorizontal(int x, int y, int z, int dx, int dz,
+                                                   @NonNull IntAxisAlignedBB dataLimits,
+                                                   @NonNull List<@NonNull TypeTransitionFilter> filters, @NonNull int[] filterHitCounts,
+                                                   @NonNull TypeTransitionSingleOutput output,
+                                                   @NonNull FExtendedStateRegistryData extendedStateRegistryData,
+                                                   AbstractPrefetchedChunksExactFBlockLevel<CHUNK> prefetchedLevel) {
+        int writtenCount = 0;
+        int lastType;
+        boolean skippedNoData = false;
+
+        return writtenCount;
     }
 }

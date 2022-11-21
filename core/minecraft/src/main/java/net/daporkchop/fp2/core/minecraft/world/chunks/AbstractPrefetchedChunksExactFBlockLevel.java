@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.minecraft.world.chunks;
@@ -27,6 +26,7 @@ import net.daporkchop.fp2.api.world.level.BlockLevelConstants;
 import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.fp2.api.world.level.GenerationNotAllowedException;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
+import net.daporkchop.fp2.core.minecraft.world.AbstractPrefetchedExactFBlockLevel;
 import net.daporkchop.lib.common.math.BinMath;
 import net.daporkchop.lib.primitive.map.LongObjMap;
 import net.daporkchop.lib.primitive.map.open.LongObjOpenHashMap;
@@ -42,7 +42,7 @@ import java.util.List;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractPrefetchedChunksExactFBlockLevel<CHUNK> implements FBlockLevel {
+public abstract class AbstractPrefetchedChunksExactFBlockLevel<CHUNK> extends AbstractPrefetchedExactFBlockLevel {
     private final AbstractChunksExactFBlockLevelHolder<CHUNK> holder;
     private final boolean generationAllowed;
 

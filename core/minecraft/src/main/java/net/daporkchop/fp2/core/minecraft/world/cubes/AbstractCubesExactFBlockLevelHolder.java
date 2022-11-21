@@ -57,7 +57,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractCubesExactFBlockLevelHolder<CUBE> extends AbstractExactFBlockLevelHolder {
+public abstract class AbstractCubesExactFBlockLevelHolder<CUBE> extends AbstractExactFBlockLevelHolder<AbstractPrefetchedCubesExactFBlockLevel<CUBE>> {
     private final NDimensionalIntSegtreeSet cubesExistIndex;
     private final AsyncCacheNBT<Vec3i, ?, CUBE, ?> cubeCache;
 
