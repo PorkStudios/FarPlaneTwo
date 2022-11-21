@@ -23,6 +23,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.api.util.Direction;
 import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.fp2.api.world.level.query.shape.PointsQueryShape;
+import net.daporkchop.lib.common.annotation.param.NotNegative;
 
 import java.util.List;
 
@@ -30,7 +31,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * Container object representing a batch type transition query - a query for executing multiple
- * {@link FBlockLevel#getNextTypeTransitions(Direction, int, int, int, List, TypeTransitionSingleOutput) type transition searches} at once.
+ * {@link FBlockLevel#getNextTypeTransitions(Direction, int, int, int, long, List, TypeTransitionSingleOutput) type transition searches} at once.
  * <p>
  * A batch type transition query consists of:
  * <ul>
@@ -41,13 +42,15 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 public interface BatchTypeTransitionQuery {
-    static BatchTypeTransitionQuery of(@NonNull Direction direction, @NonNull List<@NonNull TypeTransitionFilter> filters,
+    static BatchTypeTransitionQuery of(@NonNull Direction direction, @NotNegative long maxDistance,
+                                       @NonNull List<@NonNull TypeTransitionFilter> filters,
                                        @NonNull PointsQueryShape shape, @NonNull TypeTransitionBatchOutput output) {
         return new BatchTypeTransitionQuery() {
             @Override
             public void validate() throws RuntimeException {
                 shape.validate();
                 output.validate();
+                notNegative(maxDistance, "maxDistance");
 
                 int shapeCount = shape.count();
                 int outputSlots = output.slots();
@@ -57,6 +60,11 @@ public interface BatchTypeTransitionQuery {
             @Override
             public Direction direction() {
                 return direction;
+            }
+
+            @Override
+            public @NotNegative long maxDistance() {
+                return maxDistance;
             }
 
             @Override
@@ -91,6 +99,11 @@ public interface BatchTypeTransitionQuery {
      * @return the query's {@link Direction search direction}
      */
     Direction direction();
+
+    /**
+     * @return the query's maximum search distance
+     */
+    @NotNegative long maxDistance();
 
     /**
      * @return the query's {@link TypeTransitionFilter filters}

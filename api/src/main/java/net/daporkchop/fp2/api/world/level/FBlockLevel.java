@@ -32,6 +32,7 @@ import net.daporkchop.fp2.api.world.level.query.shape.PointsQueryShape;
 import net.daporkchop.fp2.api.world.registry.FExtendedStateRegistryData;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.lib.common.annotation.ThreadSafe;
+import net.daporkchop.lib.common.annotation.param.NotNegative;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +40,7 @@ import java.util.RandomAccess;
 
 import static java.lang.Math.*;
 import static java.util.Objects.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * A read-only world consisting of voxels at integer coordinates.
@@ -299,6 +301,7 @@ public interface FBlockLevel extends AutoCloseable {
      *     is exceeded</li>
      *     <li>the {@link TypeTransitionSingleOutput}'s capacity is exceeded, and no more output can be stored in it</li>
      *     <li>the current position goes beyond this level's {@link #dataLimits() data limits}</li>
+     *     <li>the current position is more than {@code maxDistance} voxels away from the origin point</li>
      * </ul>
      * <p>
      * When a transition between block types is encountered, it is checked against all the given {@link TypeTransitionFilter filters}. If it matches at
@@ -313,20 +316,26 @@ public interface FBlockLevel extends AutoCloseable {
      * {@code boolean}s. A value of {@code true} for an individual transition indicates the implementation may have skipped one or more non-existent voxels prior to
      * encountering the current transition.
      *
-     * @param direction the direction to iterate in
-     * @param x         the X coordinate to begin iteration from
-     * @param y         the Y coordinate to begin iteration from
-     * @param z         the Z coordinate to begin iteration from
-     * @param filters   a {@link List} of the {@link TypeTransitionFilter filters} to use for selecting which type transitions to include in the
-     *                  {@link TypeTransitionSingleOutput output}. Type transitions which at least one of the filters will be written to the output. If the given
-     *                  {@link List} is {@link List#isEmpty() empty}, no filtering will be applied.
-     * @param output    a {@link TypeTransitionSingleOutput output} to store the encountered type transitions in
+     * @param direction   the direction to iterate in
+     * @param x           the X coordinate to begin iteration from
+     * @param y           the Y coordinate to begin iteration from
+     * @param z           the Z coordinate to begin iteration from
+     * @param maxDistance the maximum number of voxels to iterate through. The voxel being transitioned to is not included in this total: if {@code maxDistance} is
+     *                    {@code 1L}, only the transition from {@code (x,y,z)} to
+     * @param filters     a {@link List} of the {@link TypeTransitionFilter filters} to use for selecting which type transitions to include in the
+     *                    {@link TypeTransitionSingleOutput output}. Type transitions which at least one of the filters will be written to the output. If the given
+     *                    {@link List} is {@link List#isEmpty() empty}, no filtering will be applied.
+     * @param output      a {@link TypeTransitionSingleOutput output} to store the encountered type transitions in
      * @return the number of elements written to the {@link TypeTransitionSingleOutput output}
      */
-    default int getNextTypeTransitions(@NonNull Direction direction, int x, int y, int z,
+    default int getNextTypeTransitions(@NonNull Direction direction, int x, int y, int z, @NotNegative long maxDistance,
                                        @NonNull List<@NonNull TypeTransitionFilter> filters,
                                        @NonNull TypeTransitionSingleOutput output) {
         output.validate(); //this could potentially help JIT?
+
+        if (notNegative(maxDistance, "maxDistance") == 0L) { //already reached the maximum search distance
+            return 0;
+        }
 
         final int outputCount = output.count();
         if (outputCount <= 0) { //we've already run out of output space lol
@@ -364,6 +373,7 @@ public interface FBlockLevel extends AutoCloseable {
 
         int[] filterHitCounts = new int[filters.size()];
 
+        long distance = 0L;
         int writtenCount = 0;
         int lastType;
         boolean skippedNoData = false;
@@ -378,7 +388,7 @@ public interface FBlockLevel extends AutoCloseable {
         }
 
         //increment coordinates by one step, and abort if they exceed the data limits
-        while (dataLimits.contains(x = addExact(x, dx), y = addExact(y, dy), z = addExact(z, dz))) {
+        while (dataLimits.contains(x = addExact(x, dx), y = addExact(y, dy), z = addExact(z, dz)) && distance++ < maxDistance) {
             int nextType;
             try {
                 nextType = extendedStateRegistryData.type(this.getState(x, y, z));
@@ -465,13 +475,14 @@ public interface FBlockLevel extends AutoCloseable {
             query.validate(); //validate again to potentially help JIT
 
             Direction direction = query.direction();
+            long maxDistance = query.maxDistance();
             List<@NonNull TypeTransitionFilter> filters = query.filters();
             PointsQueryShape shape = query.shape();
             TypeTransitionBatchOutput output = query.output();
 
             //dispatch a separate query for each point and store it in the corresponding slot index
             shape.forEach((index, x, y, z) -> {
-                int length = this.getNextTypeTransitions(direction, x, y, z, filters, output.slot(index));
+                int length = this.getNextTypeTransitions(direction, x, y, z, maxDistance, filters, output.slot(index));
                 output.setLength(index, length);
             });
         }
