@@ -33,9 +33,10 @@ import net.daporkchop.fp2.api.world.registry.FExtendedStateRegistryData;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.lib.common.annotation.ThreadSafe;
 
-import java.util.Collection;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.RandomAccess;
 
-import static java.lang.Integer.*;
 import static java.lang.Math.*;
 import static java.util.Objects.*;
 
@@ -316,66 +317,54 @@ public interface FBlockLevel extends AutoCloseable {
      * @param x         the X coordinate to begin iteration from
      * @param y         the Y coordinate to begin iteration from
      * @param z         the Z coordinate to begin iteration from
-     * @param filters   a {@link Collection} of the {@link TypeTransitionFilter filters} to use for selecting which type transitions to include in the
+     * @param filters   a {@link List} of the {@link TypeTransitionFilter filters} to use for selecting which type transitions to include in the
      *                  {@link TypeTransitionSingleOutput output}. Type transitions which at least one of the filters will be written to the output. If the given
-     *                  {@link Collection} is {@link Collection#isEmpty() empty}, no filtering will be applied.
+     *                  {@link List} is {@link List#isEmpty() empty}, no filtering will be applied.
      * @param output    a {@link TypeTransitionSingleOutput output} to store the encountered type transitions in
      * @return the number of elements written to the {@link TypeTransitionSingleOutput output}
      */
     default int getNextTypeTransitions(@NonNull Direction direction, int x, int y, int z,
-                                       @NonNull Collection<@NonNull TypeTransitionFilter> filters,
+                                       @NonNull List<@NonNull TypeTransitionFilter> filters,
                                        @NonNull TypeTransitionSingleOutput output) {
         output.validate(); //this could potentially help JIT?
 
-        final IntAxisAlignedBB dataLimits = this.dataLimits();
-
-        final FExtendedStateRegistryData extendedStateRegistryData = this.registry().extendedStateRegistryData();
-
         final int outputCount = output.count();
-        int writtenCount = 0;
-
         if (outputCount <= 0) { //we've already run out of output space lol
             return 0;
         }
 
-        final int dx = direction.x();
-        final int dy = direction.y();
-        final int dz = direction.z();
-
-        if (!dataLimits.contains(x, y, z)) { //the given position is already outside the world's data limits
-            //check if the point will ever intersect the data limits if stepping in the given direction
-            if ((dx == 0
-                    ? dataLimits.containsX(x) //the X coordinate will never change, it must be within the data limits in order to ever intersect it
-                    : (dx < 0) == (dataLimits.minX() < x)) //make sure the X coordinate is increasing towards the data limits - if it's moving away it'll never intersect
-                  //ditto for Y and Z axes
-                && (dy == 0 ? dataLimits.containsY(y) : (dy < 0) == (dataLimits.minY() < y))
-                && (dz == 0 ? dataLimits.containsZ(z) : (dz < 0) == (dataLimits.minZ() < z))) {
-                //the data limits will eventually be intersected, let's jump directly to the position one voxel before entering
-                if (dx != 0) {
-                    x = dx < 0 ? dataLimits.maxX() : decrementExact(dataLimits.minX());
-                }
-                if (dy != 0) {
-                    y = dy < 0 ? dataLimits.maxY() : decrementExact(dataLimits.minY());
-                }
-                if (dz != 0) {
-                    z = dz < 0 ? dataLimits.maxZ() : decrementExact(dataLimits.minZ());
-                }
-            } else {
-                //the data limits will never be intersected, so there's nothing left to do
-                return 0;
-            }
+        //ensure that the filters list supports constant-time random access
+        if (!(filters instanceof RandomAccess)) {
+            filters = new ArrayList<>(filters);
         }
 
-        TypeTransitionFilter[] filtersArray = filters.toArray(new TypeTransitionFilter[0]);
-        int[] filterHitCounts = new int[filtersArray.length];
-
-        //before reading any block data, let's check if any filter requests that we abort the query immediately
-        for (TypeTransitionFilter filter : filtersArray) {
+        //before going any further, let's check if any filter requests that we abort the query immediately
+        for (TypeTransitionFilter filter : filters) {
             if (filter.shouldAbort(0)) {
                 return 0;
             }
         }
 
+        final IntAxisAlignedBB dataLimits = this.dataLimits();
+        final FExtendedStateRegistryData extendedStateRegistryData = this.registry().extendedStateRegistryData();
+
+        final int dx = direction.x();
+        final int dy = direction.y();
+        final int dz = direction.z();
+
+        if (!BlockLevelConstants.willVectorIntersectAABB(dataLimits, x, y, z, direction)) {
+            //the data limits will never be intersected, so there's nothing left to do
+            return 0;
+        } else if (!dataLimits.contains(x, y, z)) {
+            //the starting position is outside the data limits, but the search will eventually reach the data limits. jump directly to the position one voxel before
+            x = BlockLevelConstants.jumpXCoordinateToExclusiveAABB(dataLimits, x, y, z, direction);
+            y = BlockLevelConstants.jumpYCoordinateToExclusiveAABB(dataLimits, x, y, z, direction);
+            z = BlockLevelConstants.jumpZCoordinateToExclusiveAABB(dataLimits, x, y, z, direction);
+        }
+
+        int[] filterHitCounts = new int[filters.size()];
+
+        int writtenCount = 0;
         int lastType;
         boolean skippedNoData = false;
 
@@ -410,8 +399,8 @@ public interface FBlockLevel extends AutoCloseable {
                 // the hit count for EVERY filter that reported a match, even though we'll never write more than one value into the output.
                 boolean transitionMatches = false;
                 boolean abort = false;
-                for (int filterIndex = 0; filterIndex < filtersArray.length; filterIndex++) {
-                    TypeTransitionFilter filter = filtersArray[filterIndex];
+                for (int filterIndex = 0; filterIndex < filters.size(); filterIndex++) {
+                    TypeTransitionFilter filter = filters.get(filterIndex);
                     if (!filter.shouldDisable(filterHitCounts[filterIndex]) //the filter isn't disabled
                         && filter.transitionMatches(lastType, nextType)) { //the type transition matches the filter!
                         transitionMatches = true;
@@ -476,7 +465,7 @@ public interface FBlockLevel extends AutoCloseable {
             query.validate(); //validate again to potentially help JIT
 
             Direction direction = query.direction();
-            Collection<@NonNull TypeTransitionFilter> filters = query.filters();
+            List<@NonNull TypeTransitionFilter> filters = query.filters();
             PointsQueryShape shape = query.shape();
             TypeTransitionBatchOutput output = query.output();
 

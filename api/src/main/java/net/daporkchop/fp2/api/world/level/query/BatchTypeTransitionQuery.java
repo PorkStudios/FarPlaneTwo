@@ -24,13 +24,13 @@ import net.daporkchop.fp2.api.util.Direction;
 import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.fp2.api.world.level.query.shape.PointsQueryShape;
 
-import java.util.Collection;
+import java.util.List;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * Container object representing a batch type transition query - a query for executing multiple
- * {@link FBlockLevel#getNextTypeTransitions(Direction, int, int, int, Collection, TypeTransitionSingleOutput) type transition searches} at once.
+ * {@link FBlockLevel#getNextTypeTransitions(Direction, int, int, int, List, TypeTransitionSingleOutput) type transition searches} at once.
  * <p>
  * A batch type transition query consists of:
  * <ul>
@@ -41,7 +41,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 public interface BatchTypeTransitionQuery {
-    static BatchTypeTransitionQuery of(@NonNull Direction direction, @NonNull Collection<@NonNull TypeTransitionFilter> filters,
+    static BatchTypeTransitionQuery of(@NonNull Direction direction, @NonNull List<@NonNull TypeTransitionFilter> filters,
                                        @NonNull PointsQueryShape shape, @NonNull TypeTransitionBatchOutput output) {
         return new BatchTypeTransitionQuery() {
             @Override
@@ -60,7 +60,7 @@ public interface BatchTypeTransitionQuery {
             }
 
             @Override
-            public Collection<@NonNull TypeTransitionFilter> filters() {
+            public List<@NonNull TypeTransitionFilter> filters() {
                 return filters;
             }
 
@@ -95,7 +95,7 @@ public interface BatchTypeTransitionQuery {
     /**
      * @return the query's {@link TypeTransitionFilter filters}
      */
-    Collection<@NonNull TypeTransitionFilter> filters();
+    List<@NonNull TypeTransitionFilter> filters();
 
     /**
      * @return the query's {@link PointsQueryShape shape}

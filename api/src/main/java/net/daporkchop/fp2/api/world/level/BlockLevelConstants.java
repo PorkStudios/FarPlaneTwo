@@ -21,8 +21,12 @@ package net.daporkchop.fp2.api.world.level;
 
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.api.util.Direction;
+import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.api.world.registry.FExtendedStateRegistryData;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
+
+import static java.lang.Math.*;
 
 /**
  * Constants and helper methods for users and implementors of {@link FBlockLevel}.
@@ -350,7 +354,8 @@ public class BlockLevelConstants {
      */
     public static boolean isValidTypeTransitionQueryOutputBand(int typeTransitionQueryOutputBandOrdinal) {
         //noinspection ConstantConditions
-        return ((TYPE_TRANSITION_OUTPUT_BANDS - 1) & TYPE_TRANSITION_OUTPUT_BANDS) == 0 //check if DATA_BANDS is a power of two, if so we can use an optimized implementation
+        return ((TYPE_TRANSITION_OUTPUT_BANDS - 1) & TYPE_TRANSITION_OUTPUT_BANDS)
+               == 0 //check if DATA_BANDS is a power of two, if so we can use an optimized implementation
                 ? (typeTransitionQueryOutputBandOrdinal & (TYPE_TRANSITION_OUTPUT_BANDS - 1)) == typeTransitionQueryOutputBandOrdinal
                 : typeTransitionQueryOutputBandOrdinal >= 0 && typeTransitionQueryOutputBandOrdinal < TYPE_TRANSITION_OUTPUT_BANDS;
     }
@@ -362,7 +367,8 @@ public class BlockLevelConstants {
      * @return a flag indicating that the type transition query output band with the given ordinal number is enabled
      */
     public static int typeTransitionQueryOutputBandFlag(int typeTransitionQueryOutputBandOrdinal) {
-        assert isValidTypeTransitionQueryOutputBand(typeTransitionQueryOutputBandOrdinal) : "illegal type transition query output band ordinal " + typeTransitionQueryOutputBandOrdinal;
+        assert isValidTypeTransitionQueryOutputBand(typeTransitionQueryOutputBandOrdinal) : "illegal type transition query output band ordinal "
+                                                                                            + typeTransitionQueryOutputBandOrdinal;
         return 1 << typeTransitionQueryOutputBandOrdinal;
     }
 
@@ -388,7 +394,8 @@ public class BlockLevelConstants {
      * @return whether the type transition query output band is enabled
      */
     public static boolean isTypeTransitionQueryOutputBandEnabled(int enabledTypeTransitionQueryOutputBands, int typeTransitionQueryOutputBandOrdinal) {
-        assert isValidTypeTransitionQueryOutputBand(typeTransitionQueryOutputBandOrdinal) : "illegal type transition query output band ordinal " + typeTransitionQueryOutputBandOrdinal;
+        assert isValidTypeTransitionQueryOutputBand(typeTransitionQueryOutputBandOrdinal) : "illegal type transition query output band ordinal "
+                                                                                            + typeTransitionQueryOutputBandOrdinal;
         return (enabledTypeTransitionQueryOutputBands & (1 << typeTransitionQueryOutputBandOrdinal)) != 0;
     }
 
@@ -426,5 +433,153 @@ public class BlockLevelConstants {
      */
     public static int unpackBlockLight(byte packedLight) {
         return packedLight & 0xF;
+    }
+
+    //
+    // getNextTypeTransitions() IMPLEMENTATION HELPERS
+    //
+
+    /**
+     * Checks if a vector starting at the given voxel position and pointing in the given {@link Direction direction} will ever intersect the given
+     * {@link IntAxisAlignedBB AABB}.
+     *
+     * @param aabb      the {@link IntAxisAlignedBB AABB}
+     * @param x         the vector's origin X coordinate
+     * @param y         the vector's origin Y coordinate
+     * @param z         the vector's origin Z coordinate
+     * @param direction the vector's direction
+     * @return {@code true} if the vector will ever intersect the given {@link IntAxisAlignedBB AABB}, {@code false} otherwise
+     */
+    public static boolean willVectorIntersectAABB(@NonNull IntAxisAlignedBB aabb, int x, int y, int z, @NonNull Direction direction) {
+        return aabb.contains(x, y, z) //if the origin point is already inside the AABB, then it's pretty obvious that they intersect
+               //otherwise, check to see if the position will ever intersect it. there are two cases for each axis:
+               // - if an axis is static, it must already intersect the AABB's bounds on that axis, as that axis' coordinate value will never change
+               // - if an axis is changing, it must be increasing/decreasing towards the AABB and not away from it
+               || (
+                       (direction.x() == 0
+                               ? aabb.containsX(x) //the X coordinate will never change, it must be within the data limits in order to ever intersect it
+                               : (direction.x() < 0) == (aabb.minX() < x))
+                       //make sure the X coordinate is increasing towards the data limits - if it's moving away it'll never intersect
+                       //ditto for Y and Z axes
+                       && (direction.y() == 0 ? aabb.containsY(y) : (direction.y() < 0) == (aabb.minY() < y))
+                       && (direction.z() == 0 ? aabb.containsZ(z) : (direction.z() < 0) == (aabb.minZ() < z))
+               );
+    }
+
+    /**
+     * Given a vector starting at the given voxel position and pointing in the given {@link Direction direction}, advances along the length of the vector until a position
+     * is found which {@link IntAxisAlignedBB#contains(int, int, int) intersects} the given {@link IntAxisAlignedBB AABB}, and returns the X coordinate value from
+     * immediately before. In other words, if the X coordinate value is outside the given {@link IntAxisAlignedBB AABB}, skips to the X last coordinate immediately before
+     * entering the given {@link IntAxisAlignedBB AABB}.
+     * <p>
+     * This method is implemented as if by
+     * <blockquote><pre>{@code
+     * int lastX = x, lastY = y, lastZ = z;
+     * int nextX = x, nextY = y, nextZ = z;
+     * while (!aabb.contains(nextX, nextY, nextZ)) {
+     *     nextX = Math.addExact(lastX = nextX, direction.x());
+     *     nextY = Math.addExact(lastY = nextY, direction.y());
+     *     nextZ = Math.addExact(lastZ = nextZ, direction.z());
+     * }
+     * return lastX;
+     * }</pre></blockquote>
+     * <p>
+     * This method assumes that the given vector will eventually intersect the given {@link IntAxisAlignedBB AABB}, and will result in undefined behavior if this is not
+     * the case. If uncertain, use {@link #willVectorIntersectAABB(IntAxisAlignedBB, int, int, int, Direction)} to verify before returning anything.
+     *
+     * @param aabb      the {@link IntAxisAlignedBB AABB}
+     * @param x         the vector's origin X coordinate
+     * @param y         the vector's origin Y coordinate
+     * @param z         the vector's origin Z coordinate
+     * @param direction the vector's direction
+     * @return returns the X coordinate value
+     */
+    public static int jumpXCoordinateToExclusiveAABB(@NonNull IntAxisAlignedBB aabb, int x, int y, int z, @NonNull Direction direction) {
+        assert willVectorIntersectAABB(aabb, x, y, z, direction) : "the given vector: (" + x + ',' + y + ',' + z + "),dir=" + direction + " will never intersect " + aabb;
+
+        if (!aabb.containsX(x) //the origin point isn't already inside the AABB
+            && direction.x() != 0) { //the vector is parallel to the X axis
+            return direction.x() < 0 ? aabb.maxX() : decrementExact(aabb.minX());
+        } else {
+            return x;
+        }
+    }
+
+    /**
+     * Given a vector starting at the given voxel position and pointing in the given {@link Direction direction}, advances along the length of the vector until a position
+     * is found which {@link IntAxisAlignedBB#contains(int, int, int) intersects} the given {@link IntAxisAlignedBB AABB}, and returns the Y coordinate value from
+     * immediately before. In other words, if the Y coordinate value is outside the given {@link IntAxisAlignedBB AABB}, skips to the Y last coordinate immediately before
+     * entering the given {@link IntAxisAlignedBB AABB}.
+     * <p>
+     * This method is implemented as if by
+     * <blockquote><pre>{@code
+     * int lastX = x, lastY = y, lastZ = z;
+     * int nextX = x, nextY = y, nextZ = z;
+     * while (!aabb.contains(nextX, nextY, nextZ)) {
+     *     nextX = Math.addExact(lastX = nextX, direction.x());
+     *     nextY = Math.addExact(lastY = nextY, direction.y());
+     *     nextZ = Math.addExact(lastZ = nextZ, direction.z());
+     * }
+     * return lastY;
+     * }</pre></blockquote>
+     * <p>
+     * This method assumes that the given vector will eventually intersect the given {@link IntAxisAlignedBB AABB}, and will result in undefined behavior if this is not
+     * the case. If uncertain, use {@link #willVectorIntersectAABB(IntAxisAlignedBB, int, int, int, Direction)} to verify before returning anything.
+     *
+     * @param aabb      the {@link IntAxisAlignedBB AABB}
+     * @param x         the vector's origin X coordinate
+     * @param y         the vector's origin Y coordinate
+     * @param z         the vector's origin Z coordinate
+     * @param direction the vector's direction
+     * @return returns the Y coordinate value
+     */
+    public static int jumpYCoordinateToExclusiveAABB(@NonNull IntAxisAlignedBB aabb, int x, int y, int z, @NonNull Direction direction) {
+        assert willVectorIntersectAABB(aabb, x, y, z, direction) : "the given vector: (" + x + ',' + y + ',' + z + "),dir=" + direction + " will never intersect " + aabb;
+
+        if (!aabb.containsY(y) //the origin point isn't already inside the AABB
+            && direction.y() != 0) { //the vector is parallel to the Y axis
+            return direction.y() < 0 ? aabb.maxY() : decrementExact(aabb.minY());
+        } else {
+            return y;
+        }
+    }
+
+    /**
+     * Given a vector starting at the given voxel position and pointing in the given {@link Direction direction}, advances along the length of the vector until a position
+     * is found which {@link IntAxisAlignedBB#contains(int, int, int) intersects} the given {@link IntAxisAlignedBB AABB}, and returns the Z coordinate value from
+     * immediately before. In other words, if the Z coordinate value is outside the given {@link IntAxisAlignedBB AABB}, skips to the Z last coordinate immediately before
+     * entering the given {@link IntAxisAlignedBB AABB}.
+     * <p>
+     * This method is implemented as if by
+     * <blockquote><pre>{@code
+     * int lastX = x, lastY = y, lastZ = z;
+     * int nextX = x, nextY = y, nextZ = z;
+     * while (!aabb.contains(nextX, nextY, nextZ)) {
+     *     nextX = Math.addExact(lastX = nextX, direction.x());
+     *     nextY = Math.addExact(lastY = nextY, direction.y());
+     *     nextZ = Math.addExact(lastZ = nextZ, direction.z());
+     * }
+     * return lastZ;
+     * }</pre></blockquote>
+     * <p>
+     * This method assumes that the given vector will eventually intersect the given {@link IntAxisAlignedBB AABB}, and will result in undefined behavior if this is not
+     * the case. If uncertain, use {@link #willVectorIntersectAABB(IntAxisAlignedBB, int, int, int, Direction)} to verify before returning anything.
+     *
+     * @param aabb      the {@link IntAxisAlignedBB AABB}
+     * @param x         the vector's origin X coordinate
+     * @param y         the vector's origin Y coordinate
+     * @param z         the vector's origin Z coordinate
+     * @param direction the vector's direction
+     * @return returns the Z coordinate value
+     */
+    public static int jumpZCoordinateToExclusiveAABB(@NonNull IntAxisAlignedBB aabb, int x, int y, int z, @NonNull Direction direction) {
+        assert willVectorIntersectAABB(aabb, x, y, z, direction) : "the given vector: (" + x + ',' + y + ',' + z + "),dir=" + direction + " will never intersect " + aabb;
+
+        if (!aabb.containsZ(z) //the origin point isn't already inside the AABB
+            && direction.z() != 0) { //the vector is parallel to the Y axis
+            return direction.z() < 0 ? aabb.maxZ() : decrementExact(aabb.minZ());
+        } else {
+            return z;
+        }
     }
 }
