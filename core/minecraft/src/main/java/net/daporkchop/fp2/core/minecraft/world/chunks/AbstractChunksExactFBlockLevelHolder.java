@@ -39,6 +39,7 @@ import net.daporkchop.fp2.core.util.datastructure.Datastructures;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSegtreeSet;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSet;
 import net.daporkchop.fp2.core.util.threading.lazy.LazyFutureTask;
+import net.daporkchop.lib.common.annotation.param.Positive;
 import net.daporkchop.lib.math.vector.Vec2i;
 
 import java.util.ArrayList;
@@ -394,7 +395,7 @@ public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends Abstra
     //
 
     @Override
-    protected int getNextTypeTransitions(int x, int y, int z, int dx, int dy, int dz,
+    protected int getNextTypeTransitions(int x, int y, int z, int dx, int dy, int dz, @Positive long maxDistance,
                                          @NonNull IntAxisAlignedBB dataLimits,
                                          @NonNull List<@NonNull TypeTransitionFilter> filters, @NonNull int[] filterHitCounts,
                                          @NonNull TypeTransitionSingleOutput output,
@@ -403,31 +404,59 @@ public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends Abstra
         //we know that exactly one of (dx,dy,dz) is non-zero
         return dy != 0
                 //searching along the Y axis, which we have special handling for
-                ? this.getNextTypeTransitionsVertical(x, y, z, dy, dataLimits, filters, filterHitCounts, output, extendedStateRegistryData, prefetchedLevel)
+                ? this.getNextTypeTransitionsVertical(x, y, z, dy, maxDistance, dataLimits, filters, filterHitCounts, output, extendedStateRegistryData, prefetchedLevel)
                 //searching along some other axis
-                : this.getNextTypeTransitionsHorizontal(x, y, z, dx, dz, dataLimits, filters, filterHitCounts, output, extendedStateRegistryData, prefetchedLevel);
+                : this.getNextTypeTransitionsHorizontal(x, y, z, dx, dz, maxDistance, dataLimits, filters, filterHitCounts, output, extendedStateRegistryData, prefetchedLevel);
     }
 
-    protected int getNextTypeTransitionsVertical(int x, int y, int z, int dy,
+    protected int getNextTypeTransitionsVertical(int x, int y, int z, int dy, @Positive long maxDistance,
                                                  @NonNull IntAxisAlignedBB dataLimits,
                                                  @NonNull List<@NonNull TypeTransitionFilter> filters, @NonNull int[] filterHitCounts,
                                                  @NonNull TypeTransitionSingleOutput output,
                                                  @NonNull FExtendedStateRegistryData extendedStateRegistryData,
                                                  AbstractPrefetchedChunksExactFBlockLevel<CHUNK> prefetchedLevel) {
-        int writtenCount = 0;
-        int lastType;
-        boolean skippedNoData = false;
-
-        //TODO: oh god how do i represent the case where everything is NoData/NoData at the end
         CHUNK chunk = null;
-        if (prefetchedLevel != null) { //there's a prefetched level, so the chunk might already be prefetched
+        if (prefetchedLevel != null) { //a prefetched level was provided, the chunk might be prefetched
             chunk = prefetchedLevel.getPrefetchedChunk(x, y, z);
+        } else { //obtain an instanced of a prefetched level so that we can read block data from the chunk (once we have it)
+            prefetchedLevel = this.prefetchedWorld(false, Collections.emptyList());
+        }
+
+        if (chunk == null) { //the chunk wasn't already prefetched, try to load it (without generating it)
+            try {
+                chunk = this.getChunk(x >> this.chunkShift(), z >> this.chunkShift(), false);
+
+                //we don't need to save the loaded chunk into prefetchedLevel's cache, as it wouldn't do that anyway
+                //  (see AbstractPrefetchedChunksExactFBlockLevel#getOrLoadChunk(int, int, int))
+            } catch (GenerationNotAllowedException e) {
+                //chunk doesn't exist -> the whole thing is NoData
+                return 0;
+            }
+        }
+
+        //now that we have a chunk, we can iterate through the blocks
+        int writtenCount = 0;
+        int lastType = -1;
+
+        for (int distance = 0; y >= this.minHeight && distance <= maxDistance; distance++, y = addExact(y, dy)) {
+            int nextType;
+            try {
+                nextType = prefetchedLevel.getState(x, y, z, chunk);
+            } catch (GenerationNotAllowedException e) {
+                throw new IllegalStateException(e); //should be impossible
+            }
+
+            if (distance != 0 //if this isn't the first step, we can compare with the previous block type
+                && lastType != nextType) {
+            }
+
+            lastType = nextType;
         }
 
         return writtenCount;
     }
 
-    protected int getNextTypeTransitionsHorizontal(int x, int y, int z, int dx, int dz,
+    protected int getNextTypeTransitionsHorizontal(int x, int y, int z, int dx, int dz, @Positive long maxDistance,
                                                    @NonNull IntAxisAlignedBB dataLimits,
                                                    @NonNull List<@NonNull TypeTransitionFilter> filters, @NonNull int[] filterHitCounts,
                                                    @NonNull TypeTransitionSingleOutput output,

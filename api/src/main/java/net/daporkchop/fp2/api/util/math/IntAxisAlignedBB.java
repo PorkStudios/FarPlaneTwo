@@ -20,6 +20,11 @@
 package net.daporkchop.fp2.api.util.math;
 
 import lombok.Data;
+import lombok.NonNull;
+import net.daporkchop.lib.common.annotation.param.NotNegative;
+
+import static java.lang.Math.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * A 3-dimensional axis-aligned bounding box using {@code int} coordinates.
@@ -98,5 +103,73 @@ public final class IntAxisAlignedBB {
      */
     public boolean containsZ(int z) {
         return z >= this.minZ && z < this.maxZ;
+    }
+
+    /**
+     * Checks whether this bounding box contains the bounding box defined by the given coordinates.
+     *
+     * @param minX the other bounding box' minimum X coordinate (inclusive)
+     * @param minY the other bounding box' minimum Y coordinate (inclusive)
+     * @param minZ the other bounding box' minimum Z coordinate (inclusive)
+     * @param maxX the other bounding box' maximum X coordinate (exclusive)
+     * @param maxY the other bounding box' maximum Y coordinate (exclusive)
+     * @param maxZ the other bounding box' maximum Z coordinate (exclusive)
+     * @return whether this bounding box contains the bounding box defined by the given coordinates
+     */
+    public boolean contains(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+        return this.minX <= minX && this.minY <= minY && this.minZ <= minZ
+               && this.maxX >= maxX && this.maxY >= maxY && this.maxZ >= maxZ;
+    }
+
+    /**
+     * Checks whether this bounding box contains the given bounding box.
+     *
+     * @param bb the other bounding box
+     * @return whether this bounding box contains the given bounding box
+     */
+    public boolean contains(@NonNull IntAxisAlignedBB bb) {
+        return this.contains(bb.minX, bb.minY, bb.minZ, bb.maxX, bb.maxY, bb.maxZ);
+    }
+
+    /**
+     * Checks whether this bounding box intersects the bounding box defined by the given coordinates.
+     *
+     * @param minX the other bounding box' minimum X coordinate (inclusive)
+     * @param minY the other bounding box' minimum Y coordinate (inclusive)
+     * @param minZ the other bounding box' minimum Z coordinate (inclusive)
+     * @param maxX the other bounding box' maximum X coordinate (exclusive)
+     * @param maxY the other bounding box' maximum Y coordinate (exclusive)
+     * @param maxZ the other bounding box' maximum Z coordinate (exclusive)
+     * @return whether this bounding box intersects the bounding box defined by the given coordinates
+     */
+    public boolean intersects(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+        return this.minX < maxX && this.minY < maxY && this.minZ < maxZ
+               && this.maxX > minX && this.maxY > minY && this.maxZ > minZ;
+    }
+
+    /**
+     * Checks whether this bounding box intersects the given bounding box.
+     *
+     * @param bb the other bounding box
+     * @return whether this bounding box intersects the given bounding box
+     */
+    public boolean intersects(@NonNull IntAxisAlignedBB bb) {
+        return this.intersects(bb.minX, bb.minY, bb.minZ, bb.maxX, bb.maxY, bb.maxZ);
+    }
+
+    /**
+     * Expands this bounding box by the given number of coordinate units in every direction.
+     *
+     * @param d the number of coordinate units to expand this bounding box by
+     * @return a {@link IntAxisAlignedBB bounding box}
+     */
+    public IntAxisAlignedBB expand(@NotNegative int d) {
+        if (notNegative(d, "d") == 0) { //the AABB's size won't be changed
+            return this;
+        }
+
+        return new IntAxisAlignedBB(
+                subtractExact(this.minX, d), subtractExact(this.minY, d), subtractExact(this.minZ, d),
+                addExact(this.maxX, d), addExact(this.maxY, d), addExact(this.maxZ, d));
     }
 }

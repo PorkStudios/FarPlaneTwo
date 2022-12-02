@@ -321,7 +321,7 @@ public interface FBlockLevel extends AutoCloseable {
      * @param y           the Y coordinate to begin iteration from
      * @param z           the Z coordinate to begin iteration from
      * @param maxDistance the maximum number of voxels to iterate through. The voxel being transitioned to is not included in this total: if {@code maxDistance} is
-     *                    {@code 1L}, only the transition from {@code (x,y,z)} to
+     *                    {@code 1L}, the transition from {@code (x,y,z)} to {@code (x+dx,y+dy,z+dz)} will still be checked
      * @param filters     a {@link List} of the {@link TypeTransitionFilter filters} to use for selecting which type transitions to include in the
      *                    {@link TypeTransitionSingleOutput output}. Type transitions which at least one of the filters will be written to the output. If the given
      *                    {@link List} is {@link List#isEmpty() empty}, no filtering will be applied.
@@ -361,11 +361,12 @@ public interface FBlockLevel extends AutoCloseable {
         final int dy = direction.y();
         final int dz = direction.z();
 
-        if (!BlockLevelConstants.willVectorIntersectAABB(dataLimits, x, y, z, direction)) {
+        if (!BlockLevelConstants.willVectorIntersectAABB(dataLimits, x, y, z, direction, maxDistance)) {
             //the data limits will never be intersected, so there's nothing left to do
             return 0;
         } else if (!dataLimits.contains(x, y, z)) {
             //the starting position is outside the data limits, but the search will eventually reach the data limits. jump directly to the position one voxel before
+            maxDistance -= BlockLevelConstants.jumpToExclusiveDistance(dataLimits, x, y, z, direction, maxDistance);
             x = BlockLevelConstants.jumpXCoordinateToExclusiveAABB(dataLimits, x, y, z, direction);
             y = BlockLevelConstants.jumpYCoordinateToExclusiveAABB(dataLimits, x, y, z, direction);
             z = BlockLevelConstants.jumpZCoordinateToExclusiveAABB(dataLimits, x, y, z, direction);
@@ -388,7 +389,9 @@ public interface FBlockLevel extends AutoCloseable {
         }
 
         //increment coordinates by one step, and abort if they exceed the data limits
-        while (dataLimits.contains(x = addExact(x, dx), y = addExact(y, dy), z = addExact(z, dz)) && distance++ < maxDistance) {
+        for (boolean prevValid = true, nextValid;
+             ((nextValid = dataLimits.contains(x = addExact(x, dx), y = addExact(y, dy), z = addExact(z, dz))) || prevValid) && distance++ < maxDistance;
+             prevValid = nextValid) {
             int nextType;
             try {
                 nextType = extendedStateRegistryData.type(this.getState(x, y, z));

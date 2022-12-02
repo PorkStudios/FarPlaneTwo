@@ -28,6 +28,7 @@ import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import java.util.Collection;
 
 import static java.lang.Math.*;
+import static net.daporkchop.fp2.api.world.level.BlockLevelConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -323,19 +324,19 @@ public interface TypeTransitionBatchOutput {
         public int enabledBands() {
             int bands = 0;
             if (this.typeTransitionsArray != null) {
-                bands |= BlockLevelConstants.dataBandFlag(BlockLevelConstants.TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_TRANSITIONS);
+                bands |= typeTransitionQueryOutputBandFlag(TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_TRANSITIONS);
             }
             if (this.xCoordinatesArray != null) {
-                bands |= BlockLevelConstants.dataBandFlag(BlockLevelConstants.TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_COORDS_X);
+                bands |= typeTransitionQueryOutputBandFlag(TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_COORDS_X);
             }
             if (this.yCoordinatesArray != null) {
-                bands |= BlockLevelConstants.dataBandFlag(BlockLevelConstants.TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_COORDS_Y);
+                bands |= typeTransitionQueryOutputBandFlag(TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_COORDS_Y);
             }
             if (this.zCoordinatesArray != null) {
-                bands |= BlockLevelConstants.dataBandFlag(BlockLevelConstants.TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_COORDS_Z);
+                bands |= typeTransitionQueryOutputBandFlag(TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_COORDS_Z);
             }
             if (this.skippedNoDataArray != null) {
-                bands |= BlockLevelConstants.dataBandFlag(BlockLevelConstants.TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_SKIPPED_NODATA);
+                bands |= typeTransitionQueryOutputBandFlag(TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_SKIPPED_NODATA);
             }
             return bands;
         }

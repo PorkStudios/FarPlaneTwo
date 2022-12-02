@@ -32,6 +32,8 @@ import net.daporkchop.fp2.api.world.registry.FExtendedStateRegistryData;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
+import net.daporkchop.lib.common.annotation.param.NotNegative;
+import net.daporkchop.lib.common.annotation.param.Positive;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 
 import java.util.ArrayList;
@@ -42,6 +44,7 @@ import java.util.function.IntConsumer;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.core.util.GlobalAllocators.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
@@ -116,13 +119,17 @@ public abstract class AbstractExactFBlockLevelHolder<PREFETCHED extends Abstract
     /**
      * @param prefetchedLevel the existing {@link PREFETCHED prefetched level} which the query is being executed in, or {@code null} if it is not being executed in a
      *                        prefetched level
-     * @see FBlockLevel#getNextTypeTransitions(Direction, int, int, int, List, TypeTransitionSingleOutput)
+     * @see FBlockLevel#getNextTypeTransitions(Direction, int, int, int, long, List, TypeTransitionSingleOutput)
      */
-    public final int getNextTypeTransitions(@NonNull Direction direction, int x, int y, int z,
+    public final int getNextTypeTransitions(@NonNull Direction direction, int x, int y, int z, @NotNegative long maxDistance,
                                             @NonNull List<@NonNull TypeTransitionFilter> filters,
                                             @NonNull TypeTransitionSingleOutput output,
                                             PREFETCHED prefetchedLevel) {
         output.validate(); //this could potentially help JIT?
+
+        if (notNegative(maxDistance, "maxDistance") == 0L) { //already reached the maximum search distance
+            return 0;
+        }
 
         final int outputCount = output.count();
         if (outputCount <= 0) { //we've already run out of output space lol
@@ -143,11 +150,12 @@ public abstract class AbstractExactFBlockLevelHolder<PREFETCHED extends Abstract
 
         final IntAxisAlignedBB dataLimits = this.bounds();
 
-        if (!BlockLevelConstants.willVectorIntersectAABB(dataLimits, x, y, z, direction)) {
+        if (!BlockLevelConstants.willVectorIntersectAABB(dataLimits, x, y, z, direction, maxDistance)) {
             //the data limits will never be intersected, so there's nothing left to do
             return 0;
         } else if (!dataLimits.contains(x, y, z)) {
             //the starting position is outside the data limits, but the search will eventually reach the data limits. jump directly to the position one voxel before
+            maxDistance -= BlockLevelConstants.jumpToExclusiveDistance(dataLimits, x, y, z, direction, maxDistance);
             int nextX = BlockLevelConstants.jumpXCoordinateToExclusiveAABB(dataLimits, x, y, z, direction);
             int nextY = BlockLevelConstants.jumpYCoordinateToExclusiveAABB(dataLimits, x, y, z, direction);
             int nextZ = BlockLevelConstants.jumpZCoordinateToExclusiveAABB(dataLimits, x, y, z, direction);
@@ -168,7 +176,7 @@ public abstract class AbstractExactFBlockLevelHolder<PREFETCHED extends Abstract
 
         //now that we've done all the complex argument validation, delegate to the real implementation
         int writtenCount = this.getNextTypeTransitions(
-                x, y, z, direction.x(), direction.y(), direction.z(),
+                x, y, z, direction.x(), direction.y(), direction.z(), maxDistance,
                 dataLimits, filters, filterHitCounts, output, this.registry().extendedStateRegistryData(), prefetchedLevel);
 
         //release the temporary array again
@@ -177,7 +185,7 @@ public abstract class AbstractExactFBlockLevelHolder<PREFETCHED extends Abstract
     }
 
     /**
-     * The real implementation of {@link #getNextTypeTransitions(Direction, int, int, int, List, TypeTransitionSingleOutput, AbstractPrefetchedExactFBlockLevel)}, which
+     * The real implementation of {@link #getNextTypeTransitions(Direction, int, int, int, long, List, TypeTransitionSingleOutput, AbstractPrefetchedExactFBlockLevel)}, which
      * is called after all the arguments have been validated.
      *
      * @param x                         the X coordinate to begin iteration from
@@ -189,6 +197,7 @@ public abstract class AbstractExactFBlockLevelHolder<PREFETCHED extends Abstract
      *                                  {@code dx}, {@code dy} and {@code dz} will be non-zero; the other two will be {@code 0}.
      * @param dz                        the iteration direction's step along the Z axis. The value may be one of {@code 0}, {@code 1} or {@code -1}. Exactly one of
      *                                  {@code dx}, {@code dy} and {@code dz} will be non-zero; the other two will be {@code 0}.
+     * @param maxDistance               the maximum number of voxels to iterate
      * @param dataLimits                this level's {@link FBlockLevel#dataLimits() data limits}
      * @param filters                   the {@link TypeTransitionFilter type transition filters} to use
      * @param filterHitCounts           an {@code int[]} to use for tracking the number of times each filter has been hit. The array's length is guaranteed to be greater
@@ -198,9 +207,9 @@ public abstract class AbstractExactFBlockLevelHolder<PREFETCHED extends Abstract
      * @param prefetchedLevel           the existing {@link PREFETCHED prefetched level} which the query is being executed in, or {@code null} if it is not being executed
      *                                  in a prefetched level
      * @return the number of elements written to the {@link TypeTransitionSingleOutput output}
-     * @see FBlockLevel#getNextTypeTransitions(Direction, int, int, int, List, TypeTransitionSingleOutput)
+     * @see FBlockLevel#getNextTypeTransitions(Direction, int, int, int, long, List, TypeTransitionSingleOutput)
      */
-    protected abstract int getNextTypeTransitions(int x, int y, int z, int dx, int dy, int dz,
+    protected abstract int getNextTypeTransitions(int x, int y, int z, int dx, int dy, int dz, @Positive long maxDistance,
                                                   @NonNull IntAxisAlignedBB dataLimits,
                                                   @NonNull List<@NonNull TypeTransitionFilter> filters, @NonNull int[] filterHitCounts,
                                                   @NonNull TypeTransitionSingleOutput output,

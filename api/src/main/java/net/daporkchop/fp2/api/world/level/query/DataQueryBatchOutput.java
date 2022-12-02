@@ -23,6 +23,7 @@ import lombok.Data;
 import net.daporkchop.fp2.api.world.level.BlockLevelConstants;
 
 import static java.lang.Math.*;
+import static net.daporkchop.fp2.api.world.level.BlockLevelConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -160,13 +161,13 @@ public interface DataQueryBatchOutput {
         public int enabledBands() {
             int bands = 0;
             if (this.statesArray != null) {
-                bands |= BlockLevelConstants.dataBandFlag(BlockLevelConstants.DATA_BAND_ORDINAL_STATES);
+                bands |= dataBandFlag(DATA_BAND_ORDINAL_STATES);
             }
             if (this.biomesArray != null) {
-                bands |= BlockLevelConstants.dataBandFlag(BlockLevelConstants.DATA_BAND_ORDINAL_BIOMES);
+                bands |= dataBandFlag(DATA_BAND_ORDINAL_BIOMES);
             }
             if (this.lightArray != null) {
-                bands |= BlockLevelConstants.dataBandFlag(BlockLevelConstants.DATA_BAND_ORDINAL_LIGHT);
+                bands |= dataBandFlag(DATA_BAND_ORDINAL_LIGHT);
             }
             return bands;
         }

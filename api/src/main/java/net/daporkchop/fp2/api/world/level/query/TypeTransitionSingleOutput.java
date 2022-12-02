@@ -23,10 +23,12 @@ import lombok.Data;
 import net.daporkchop.fp2.api.util.Direction;
 import net.daporkchop.fp2.api.world.level.BlockLevelConstants;
 import net.daporkchop.fp2.api.world.level.FBlockLevel;
+import net.daporkchop.lib.common.annotation.param.NotNegative;
 
 import java.util.Collection;
 
 import static java.lang.Math.*;
+import static net.daporkchop.fp2.api.world.level.BlockLevelConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -160,6 +162,20 @@ public interface TypeTransitionSingleOutput {
      */
     @Data
     final class BandArraysTypeTransitionSingleOutput implements TypeTransitionSingleOutput {
+        public static BandArraysTypeTransitionSingleOutput createWithCount(@NotNegative int count) {
+            return createWithCount(count, allTypeTransitionQueryOutputBands());
+        }
+
+        public static BandArraysTypeTransitionSingleOutput createWithCount(@NotNegative int count, int enabledBands) {
+            return new BandArraysTypeTransitionSingleOutput(
+                    isTypeTransitionQueryOutputBandEnabled(enabledBands, TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_TRANSITIONS) ? new byte[count] : null, 0, 1,
+                    isTypeTransitionQueryOutputBandEnabled(enabledBands, TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_COORDS_Y) ? new int[count] : null, 0, 1,
+                    isTypeTransitionQueryOutputBandEnabled(enabledBands, TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_COORDS_Z) ? new int[count] : null, 0, 1,
+                    isTypeTransitionQueryOutputBandEnabled(enabledBands, TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_COORDS_X) ? new int[count] : null, 0, 1,
+                    isTypeTransitionQueryOutputBandEnabled(enabledBands, TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_SKIPPED_NODATA) ? new boolean[count] : null, 0, 1,
+                    count);
+        }
+        
         private final byte[] typeTransitionsArray;
         private final int typeTransitionsOffset;
         private final int typeTransitionsStride;
@@ -216,19 +232,19 @@ public interface TypeTransitionSingleOutput {
         public int enabledBands() {
             int bands = 0;
             if (this.typeTransitionsArray != null) {
-                bands |= BlockLevelConstants.dataBandFlag(BlockLevelConstants.TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_TRANSITIONS);
+                bands |= typeTransitionQueryOutputBandFlag(TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_TRANSITIONS);
             }
             if (this.xCoordinatesArray != null) {
-                bands |= BlockLevelConstants.dataBandFlag(BlockLevelConstants.TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_COORDS_X);
+                bands |= typeTransitionQueryOutputBandFlag(TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_COORDS_X);
             }
             if (this.yCoordinatesArray != null) {
-                bands |= BlockLevelConstants.dataBandFlag(BlockLevelConstants.TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_COORDS_Y);
+                bands |= typeTransitionQueryOutputBandFlag(TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_COORDS_Y);
             }
             if (this.zCoordinatesArray != null) {
-                bands |= BlockLevelConstants.dataBandFlag(BlockLevelConstants.TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_COORDS_Z);
+                bands |= typeTransitionQueryOutputBandFlag(TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_COORDS_Z);
             }
             if (this.skippedNoDataArray != null) {
-                bands |= BlockLevelConstants.dataBandFlag(BlockLevelConstants.TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_SKIPPED_NODATA);
+                bands |= typeTransitionQueryOutputBandFlag(TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_SKIPPED_NODATA);
             }
             return bands;
         }

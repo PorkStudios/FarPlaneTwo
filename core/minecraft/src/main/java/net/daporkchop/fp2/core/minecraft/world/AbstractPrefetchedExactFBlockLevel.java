@@ -24,6 +24,7 @@ import net.daporkchop.fp2.api.util.Direction;
 import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.fp2.api.world.level.query.TypeTransitionFilter;
 import net.daporkchop.fp2.api.world.level.query.TypeTransitionSingleOutput;
+import net.daporkchop.lib.common.annotation.param.NotNegative;
 
 import java.util.List;
 
@@ -36,10 +37,10 @@ public abstract class AbstractPrefetchedExactFBlockLevel implements FBlockLevel 
     protected abstract AbstractExactFBlockLevelHolder<?> holder();
 
     @Override
-    public int getNextTypeTransitions(@NonNull Direction direction, int x, int y, int z,
+    public int getNextTypeTransitions(@NonNull Direction direction, int x, int y, int z, @NotNegative long maxDistance,
                                       @NonNull List<@NonNull TypeTransitionFilter> filters,
                                       @NonNull TypeTransitionSingleOutput output) {
         //delegate to holder
-        return this.holder().getNextTypeTransitions(direction, x, y, z, filters, output, uncheckedCast(this));
+        return this.holder().getNextTypeTransitions(direction, x, y, z, maxDistance, filters, output, uncheckedCast(this));
     }
 }

@@ -24,6 +24,10 @@ import lombok.Data;
 import net.daporkchop.fp2.api.world.level.BlockLevelConstants;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 
+import java.util.Collections;
+import java.util.List;
+
+import static net.daporkchop.fp2.api.world.level.BlockLevelConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -34,6 +38,40 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @Data
 @Builder
 public final class TypeTransitionFilter {
+    private static final TypeTransitionFilter OUTPUT_NOTHING_FILTER = new TypeTransitionFilter(blockTypeFlags(), blockTypeFlags(), -1, -1);
+    private static final TypeTransitionFilter OUTPUT_EVERYTHING_FILTER = new TypeTransitionFilter(allBlockTypes(), allBlockTypes(), -1, -1);
+    
+    private static final List<TypeTransitionFilter> OUTPUT_NOTHING_FILTER_LIST = Collections.singletonList(OUTPUT_NOTHING_FILTER);
+    private static final List<TypeTransitionFilter> OUTPUT_EVERYTHING_FILTER_LIST = Collections.singletonList(OUTPUT_EVERYTHING_FILTER);
+
+    /**
+     * @return a {@link TypeTransitionFilter} which matches nothing
+     */
+    public static TypeTransitionFilter outputNothingFilter() {
+        return OUTPUT_NOTHING_FILTER;
+    }
+
+    /**
+     * @return a {@link List} containing a single {@link TypeTransitionFilter} which {@link #outputNothingFilter() matches nothing}
+     */
+    public static List<TypeTransitionFilter> outputNothingFilterList() {
+        return OUTPUT_NOTHING_FILTER_LIST;
+    }
+
+    /**
+     * @return a {@link TypeTransitionFilter} which matches everything
+     */
+    public static TypeTransitionFilter outputEverythingFilter() {
+        return OUTPUT_EVERYTHING_FILTER;
+    }
+
+    /**
+     * @return a {@link List} containing a single {@link TypeTransitionFilter} which {@link #outputEverythingFilter() matches everything}
+     */
+    public static List<TypeTransitionFilter> outputEverythingFilterList() {
+        return OUTPUT_EVERYTHING_FILTER_LIST;
+    }
+
     /**
      * A bitfield indicating which block types are allowed as the block type being transitioned from. Transitions from block types not included in this bitfield will
      * be ignored.
@@ -82,8 +120,8 @@ public final class TypeTransitionFilter {
     private final int abortAfterHitCount;
 
     private TypeTransitionFilter(int fromTypes, int toTypes, int disableAfterHitCount, int abortAfterHitCount) {
-        checkArg(BlockLevelConstants.isValidBlockTypeSet(fromTypes), "invalid bitfield in fromTypes: %d", fromTypes);
-        checkArg(BlockLevelConstants.isValidBlockTypeSet(toTypes), "invalid bitfield in toTypes: %d", toTypes);
+        checkArg(isValidBlockTypeSet(fromTypes), "invalid bitfield in fromTypes: %d", fromTypes);
+        checkArg(isValidBlockTypeSet(toTypes), "invalid bitfield in toTypes: %d", toTypes);
 
         this.fromTypes = fromTypes;
         this.toTypes = toTypes;
@@ -99,8 +137,8 @@ public final class TypeTransitionFilter {
      * @return whether a transition from the given type to the given type matches this filter
      */
     public boolean transitionMatches(int fromType, int toType) {
-        return BlockLevelConstants.isBlockTypeEnabled(this.fromTypes, fromType)
-               && BlockLevelConstants.isBlockTypeEnabled(this.toTypes, toType);
+        return isBlockTypeEnabled(this.fromTypes, fromType)
+               && isBlockTypeEnabled(this.toTypes, toType);
     }
 
     /**

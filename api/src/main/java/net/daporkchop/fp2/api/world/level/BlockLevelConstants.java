@@ -23,8 +23,12 @@ import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.api.util.Direction;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
+import net.daporkchop.fp2.api.world.level.query.TypeTransitionSingleOutput;
 import net.daporkchop.fp2.api.world.registry.FExtendedStateRegistryData;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
+import net.daporkchop.lib.common.annotation.param.Positive;
+
+import java.util.List;
 
 import static java.lang.Math.*;
 
@@ -279,6 +283,15 @@ public class BlockLevelConstants {
     }
 
     /**
+     * Gets an {@code int} with bits set indicating that the all data bands are enabled.
+     *
+     * @return a set of bits indicating that all data bands are enabled
+     */
+    public static int allDataBands() {
+        return (1 << DATA_BANDS) - 1;
+    }
+
+    /**
      * Checks whether a data band is enabled.
      *
      * @param enabledDataBands a bitfield indicating which data bands are enabled
@@ -387,6 +400,15 @@ public class BlockLevelConstants {
     }
 
     /**
+     * Gets an {@code int} with bits set indicating that the all type transition query output bands are enabled.
+     *
+     * @return a set of bits indicating that all type transition query output bands are enabled
+     */
+    public static int allTypeTransitionQueryOutputBands() {
+        return (1 << TYPE_TRANSITION_OUTPUT_BANDS) - 1;
+    }
+
+    /**
      * Checks whether a type transition query output band is enabled.
      *
      * @param enabledTypeTransitionQueryOutputBands a bitfield indicating which type transition query output bands are enabled
@@ -443,27 +465,43 @@ public class BlockLevelConstants {
      * Checks if a vector starting at the given voxel position and pointing in the given {@link Direction direction} will ever intersect the given
      * {@link IntAxisAlignedBB AABB}.
      *
-     * @param aabb      the {@link IntAxisAlignedBB AABB}
-     * @param x         the vector's origin X coordinate
-     * @param y         the vector's origin Y coordinate
-     * @param z         the vector's origin Z coordinate
-     * @param direction the vector's direction
+     * @param aabb        the {@link IntAxisAlignedBB AABB}
+     * @param x           the vector's origin X coordinate
+     * @param y           the vector's origin Y coordinate
+     * @param z           the vector's origin Z coordinate
+     * @param direction   the vector's direction
+     * @param maxDistance the vector's maximum length. See {@link FBlockLevel#getNextTypeTransitions(Direction, int, int, int, long, List, TypeTransitionSingleOutput)}
+     *                    for a more detailed description.
      * @return {@code true} if the vector will ever intersect the given {@link IntAxisAlignedBB AABB}, {@code false} otherwise
      */
-    public static boolean willVectorIntersectAABB(@NonNull IntAxisAlignedBB aabb, int x, int y, int z, @NonNull Direction direction) {
+    public static boolean willVectorIntersectAABB(@NonNull IntAxisAlignedBB aabb, int x, int y, int z, @NonNull Direction direction, @Positive long maxDistance) {
         return aabb.contains(x, y, z) //if the origin point is already inside the AABB, then it's pretty obvious that they intersect
-               //otherwise, check to see if the position will ever intersect it. there are two cases for each axis:
-               // - if an axis is static, it must already intersect the AABB's bounds on that axis, as that axis' coordinate value will never change
-               // - if an axis is changing, it must be increasing/decreasing towards the AABB and not away from it
-               || (
-                       (direction.x() == 0
-                               ? aabb.containsX(x) //the X coordinate will never change, it must be within the data limits in order to ever intersect it
-                               : (direction.x() < 0) == (aabb.minX() < x))
-                       //make sure the X coordinate is increasing towards the data limits - if it's moving away it'll never intersect
-                       //ditto for Y and Z axes
-                       && (direction.y() == 0 ? aabb.containsY(y) : (direction.y() < 0) == (aabb.minY() < y))
-                       && (direction.z() == 0 ? aabb.containsZ(z) : (direction.z() < 0) == (aabb.minZ() < z))
-               );
+               || (willVectorIntersectAABB_1d(x, direction.x(), aabb.minX(), aabb.maxX(), maxDistance)
+                   && willVectorIntersectAABB_1d(y, direction.y(), aabb.minY(), aabb.maxY(), maxDistance)
+                   && willVectorIntersectAABB_1d(z, direction.z(), aabb.minZ(), aabb.maxZ(), maxDistance));
+    }
+
+    private static boolean willVectorIntersectAABB_1d(int coord, int direction, int min, int max, @Positive long maxDistance) {
+        //otherwise, check to see if the position will ever intersect it. there are two cases for each axis:
+        // - if an axis is static, it must already intersect the AABB's bounds on that axis, as that axis' coordinate value will never change
+        // - if an axis is changing, it must be:
+        //   - increasing/decreasing towards the AABB and not away from it
+        //   - at most maxDistance away from the position immediately outside the AABB
+        return direction == 0
+               ? coord >= min && coord < max
+               : (direction < 0) == (min < coord) && max((long) coord - max, (long) min - 1L - coord) <= maxDistance;
+    }
+
+    public static long jumpToExclusiveDistance(@NonNull IntAxisAlignedBB aabb, int x, int y, int z, @NonNull Direction direction, @Positive long maxDistance) {
+        assert willVectorIntersectAABB(aabb, x, y, z, direction, maxDistance) : "the given vector: (" + x + ',' + y + ',' + z + "),dir=" + direction + " will never intersect " + aabb;
+
+        long dx = abs((long) x - jumpXCoordinateToExclusiveAABB(aabb, x, y, z, direction));
+        long dy = abs((long) y - jumpYCoordinateToExclusiveAABB(aabb, x, y, z, direction));
+        long dz = abs((long) z - jumpZCoordinateToExclusiveAABB(aabb, x, y, z, direction));
+
+        long jumpDistance = max(max(dx, dy), dz);
+        assert jumpDistance <= maxDistance : "cannot jump " + jumpDistance + " voxels when maxDistance is " + maxDistance;
+        return jumpDistance;
     }
 
     /**
@@ -485,7 +523,7 @@ public class BlockLevelConstants {
      * }</pre></blockquote>
      * <p>
      * This method assumes that the given vector will eventually intersect the given {@link IntAxisAlignedBB AABB}, and will result in undefined behavior if this is not
-     * the case. If uncertain, use {@link #willVectorIntersectAABB(IntAxisAlignedBB, int, int, int, Direction)} to verify before returning anything.
+     * the case. If uncertain, use {@link #willVectorIntersectAABB(IntAxisAlignedBB, int, int, int, Direction, long)} to verify before returning anything.
      *
      * @param aabb      the {@link IntAxisAlignedBB AABB}
      * @param x         the vector's origin X coordinate
@@ -495,7 +533,7 @@ public class BlockLevelConstants {
      * @return returns the X coordinate value
      */
     public static int jumpXCoordinateToExclusiveAABB(@NonNull IntAxisAlignedBB aabb, int x, int y, int z, @NonNull Direction direction) {
-        assert willVectorIntersectAABB(aabb, x, y, z, direction) : "the given vector: (" + x + ',' + y + ',' + z + "),dir=" + direction + " will never intersect " + aabb;
+        assert willVectorIntersectAABB(aabb, x, y, z, direction, Long.MAX_VALUE) : "the given vector: (" + x + ',' + y + ',' + z + "),dir=" + direction + " will never intersect " + aabb;
 
         if (!aabb.containsX(x) //the origin point isn't already inside the AABB
             && direction.x() != 0) { //the vector is parallel to the X axis
@@ -524,7 +562,7 @@ public class BlockLevelConstants {
      * }</pre></blockquote>
      * <p>
      * This method assumes that the given vector will eventually intersect the given {@link IntAxisAlignedBB AABB}, and will result in undefined behavior if this is not
-     * the case. If uncertain, use {@link #willVectorIntersectAABB(IntAxisAlignedBB, int, int, int, Direction)} to verify before returning anything.
+     * the case. If uncertain, use {@link #willVectorIntersectAABB(IntAxisAlignedBB, int, int, int, Direction, long)} to verify before returning anything.
      *
      * @param aabb      the {@link IntAxisAlignedBB AABB}
      * @param x         the vector's origin X coordinate
@@ -534,7 +572,7 @@ public class BlockLevelConstants {
      * @return returns the Y coordinate value
      */
     public static int jumpYCoordinateToExclusiveAABB(@NonNull IntAxisAlignedBB aabb, int x, int y, int z, @NonNull Direction direction) {
-        assert willVectorIntersectAABB(aabb, x, y, z, direction) : "the given vector: (" + x + ',' + y + ',' + z + "),dir=" + direction + " will never intersect " + aabb;
+        assert willVectorIntersectAABB(aabb, x, y, z, direction, Long.MAX_VALUE) : "the given vector: (" + x + ',' + y + ',' + z + "),dir=" + direction + " will never intersect " + aabb;
 
         if (!aabb.containsY(y) //the origin point isn't already inside the AABB
             && direction.y() != 0) { //the vector is parallel to the Y axis
@@ -563,7 +601,7 @@ public class BlockLevelConstants {
      * }</pre></blockquote>
      * <p>
      * This method assumes that the given vector will eventually intersect the given {@link IntAxisAlignedBB AABB}, and will result in undefined behavior if this is not
-     * the case. If uncertain, use {@link #willVectorIntersectAABB(IntAxisAlignedBB, int, int, int, Direction)} to verify before returning anything.
+     * the case. If uncertain, use {@link #willVectorIntersectAABB(IntAxisAlignedBB, int, int, int, Direction, long)} to verify before returning anything.
      *
      * @param aabb      the {@link IntAxisAlignedBB AABB}
      * @param x         the vector's origin X coordinate
@@ -573,7 +611,7 @@ public class BlockLevelConstants {
      * @return returns the Z coordinate value
      */
     public static int jumpZCoordinateToExclusiveAABB(@NonNull IntAxisAlignedBB aabb, int x, int y, int z, @NonNull Direction direction) {
-        assert willVectorIntersectAABB(aabb, x, y, z, direction) : "the given vector: (" + x + ',' + y + ',' + z + "),dir=" + direction + " will never intersect " + aabb;
+        assert willVectorIntersectAABB(aabb, x, y, z, direction, Long.MAX_VALUE) : "the given vector: (" + x + ',' + y + ',' + z + "),dir=" + direction + " will never intersect " + aabb;
 
         if (!aabb.containsZ(z) //the origin point isn't already inside the AABB
             && direction.z() != 0) { //the vector is parallel to the Y axis
