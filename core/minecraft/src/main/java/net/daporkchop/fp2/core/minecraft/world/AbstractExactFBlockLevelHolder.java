@@ -149,6 +149,11 @@ public abstract class AbstractExactFBlockLevelHolder<PREFETCHED extends Abstract
         }
 
         final IntAxisAlignedBB dataLimits = this.bounds();
+        final FExtendedStateRegistryData extendedStateRegistryData = this.registry().extendedStateRegistryData();
+
+        final int dx = direction.x();
+        final int dy = direction.y();
+        final int dz = direction.z();
 
         if (!BlockLevelConstants.willVectorIntersectAABB(dataLimits, x, y, z, direction, maxDistance)) {
             //the data limits will never be intersected, so there's nothing left to do
@@ -172,15 +177,16 @@ public abstract class AbstractExactFBlockLevelHolder<PREFETCHED extends Abstract
 
         //allocate a temporary array for storing the per-filter hit counts
         ArrayAllocator<int[]> alloc = ALLOC_INT.get();
-        int[] filterHitCounts = alloc.atLeast(filters.size());
+        //TODO: int[] filterHitCounts = alloc.atLeast(filters.size());
+        int[] filterHitCounts = new int[filters.size()];
 
         //now that we've done all the complex argument validation, delegate to the real implementation
         int writtenCount = this.getNextTypeTransitions(
-                x, y, z, direction.x(), direction.y(), direction.z(), maxDistance,
-                dataLimits, filters, filterHitCounts, output, this.registry().extendedStateRegistryData(), prefetchedLevel);
+                x, y, z, dx, dy, dz, maxDistance,
+                dataLimits, filters, filterHitCounts, output, extendedStateRegistryData, prefetchedLevel);
 
         //release the temporary array again
-        alloc.release(filterHitCounts);
+        //TODO: alloc.release(filterHitCounts);
         return writtenCount;
     }
 
@@ -215,6 +221,37 @@ public abstract class AbstractExactFBlockLevelHolder<PREFETCHED extends Abstract
                                                   @NonNull TypeTransitionSingleOutput output,
                                                   @NonNull FExtendedStateRegistryData extendedStateRegistryData,
                                                   PREFETCHED prefetchedLevel);
+
+    protected static boolean checkTransitionFiltersResult_transitionMatches(int result) {
+        assert (result & 3) == result : "invalid result value???";
+        return (result & 1) != 0;
+    }
+
+    protected static boolean checkTransitionFiltersResult_abort(int result) {
+        assert (result & 3) == result : "invalid result value???";
+        return (result & 2) != 0;
+    }
+
+    protected static int checkTransitionFilters(int lastType, int nextType, List<@NonNull TypeTransitionFilter> filters, int[] filterHitCounts) {
+        assert lastType != nextType;
+
+        //check if the transition matches any of the provided filters. we iterate over every filter even if we find a match, because we need to increment
+        // the hit count for EVERY filter that reported a match, even though we'll never write more than one value into the output.
+        int out = 0;
+        for (int filterIndex = 0; filterIndex < filters.size(); filterIndex++) {
+            TypeTransitionFilter filter = filters.get(filterIndex);
+            if (!filter.shouldDisable(filterHitCounts[filterIndex]) //the filter isn't disabled
+                && filter.transitionMatches(lastType, nextType)) { //the type transition matches the filter!
+                out |= 1; //transitionMatches = true;
+                filterHitCounts[filterIndex]++;
+
+                if (filter.shouldAbort(filterHitCounts[filterIndex])) { //the filter wants us to abort this query after we finish writing the current value
+                    out |= 2; //abort = true;
+                }
+            }
+        }
+        return out;
+    }
 
     //
     // Generic coordinate utilities, used when computing prefetching regions

@@ -367,9 +367,18 @@ public interface FBlockLevel extends AutoCloseable {
         } else if (!dataLimits.contains(x, y, z)) {
             //the starting position is outside the data limits, but the search will eventually reach the data limits. jump directly to the position one voxel before
             maxDistance -= BlockLevelConstants.jumpToExclusiveDistance(dataLimits, x, y, z, direction, maxDistance);
-            x = BlockLevelConstants.jumpXCoordinateToExclusiveAABB(dataLimits, x, y, z, direction);
-            y = BlockLevelConstants.jumpYCoordinateToExclusiveAABB(dataLimits, x, y, z, direction);
-            z = BlockLevelConstants.jumpZCoordinateToExclusiveAABB(dataLimits, x, y, z, direction);
+            int nextX = BlockLevelConstants.jumpXCoordinateToExclusiveAABB(dataLimits, x, y, z, direction);
+            int nextY = BlockLevelConstants.jumpYCoordinateToExclusiveAABB(dataLimits, x, y, z, direction);
+            int nextZ = BlockLevelConstants.jumpZCoordinateToExclusiveAABB(dataLimits, x, y, z, direction);
+
+            assert !dataLimits.contains(nextX, nextY, nextZ)
+                    : "jump: position should be outside the level's bounds";
+            assert dataLimits.contains(addExact(nextX, direction.x()), addExact(nextY, direction.y()), addExact(nextZ, direction.z()))
+                    : "jump: position+1 should be inside the level's bounds";
+
+            x = nextX;
+            y = nextY;
+            z = nextZ;
         }
 
         int[] filterHitCounts = new int[filters.size()];
@@ -389,9 +398,9 @@ public interface FBlockLevel extends AutoCloseable {
         }
 
         //increment coordinates by one step, and abort if they exceed the data limits
-        for (boolean prevValid = true, nextValid;
-             ((nextValid = dataLimits.contains(x = addExact(x, dx), y = addExact(y, dy), z = addExact(z, dz))) || prevValid) && distance++ < maxDistance;
-             prevValid = nextValid) {
+        for (boolean lastInBounds = true, nextInBounds;
+             distance++ < maxDistance && ((nextInBounds = dataLimits.contains(x = addExact(x, dx), y = addExact(y, dy), z = addExact(z, dz))) || lastInBounds);
+             lastInBounds = nextInBounds) {
             int nextType;
             try {
                 nextType = extendedStateRegistryData.type(this.getState(x, y, z));

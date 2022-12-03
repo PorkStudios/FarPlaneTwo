@@ -23,6 +23,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
+import net.daporkchop.fp2.api.world.level.BlockLevelConstants;
 import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.fp2.api.world.level.GenerationNotAllowedException;
 import net.daporkchop.fp2.api.world.level.query.TypeTransitionFilter;
@@ -409,12 +410,18 @@ public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends Abstra
                 : this.getNextTypeTransitionsHorizontal(x, y, z, dx, dz, maxDistance, dataLimits, filters, filterHitCounts, output, extendedStateRegistryData, prefetchedLevel);
     }
 
+    /**
+     * Special case for a vertical type transition search: load a single chunk and iterate down within it.
+     */
     protected int getNextTypeTransitionsVertical(int x, int y, int z, int dy, @Positive long maxDistance,
-                                                 @NonNull IntAxisAlignedBB dataLimits,
-                                                 @NonNull List<@NonNull TypeTransitionFilter> filters, @NonNull int[] filterHitCounts,
-                                                 @NonNull TypeTransitionSingleOutput output,
-                                                 @NonNull FExtendedStateRegistryData extendedStateRegistryData,
+                                                 IntAxisAlignedBB dataLimits,
+                                                 List<@NonNull TypeTransitionFilter> filters, int[] filterHitCounts,
+                                                 TypeTransitionSingleOutput output,
+                                                 FExtendedStateRegistryData extendedStateRegistryData,
                                                  AbstractPrefetchedChunksExactFBlockLevel<CHUNK> prefetchedLevel) {
+        output.validate();
+        int outputCount = output.count();
+
         CHUNK chunk = null;
         if (prefetchedLevel != null) { //a prefetched level was provided, the chunk might be prefetched
             chunk = prefetchedLevel.getPrefetchedChunk(x, y, z);
@@ -430,41 +437,145 @@ public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends Abstra
                 //  (see AbstractPrefetchedChunksExactFBlockLevel#getOrLoadChunk(int, int, int))
             } catch (GenerationNotAllowedException e) {
                 //chunk doesn't exist -> the whole thing is NoData
+                //TODO: output something to indicate that everything was NoData
                 return 0;
             }
         }
 
         //now that we have a chunk, we can iterate through the blocks
+        long distance = 0L;
         int writtenCount = 0;
         int lastType = -1;
 
-        for (int distance = 0; y >= this.minHeight && distance <= maxDistance; distance++, y = addExact(y, dy)) {
+        do {
             int nextType;
-            try {
-                nextType = prefetchedLevel.getState(x, y, z, chunk);
-            } catch (GenerationNotAllowedException e) {
-                throw new IllegalStateException(e); //should be impossible
+            if (this.isValidY(y)) {
+                //the y coordinate is inside the chunk, read from the chunk
+                try {
+                    nextType = extendedStateRegistryData.type(prefetchedLevel.getState(x, y, z, chunk));
+                } catch (GenerationNotAllowedException e) {
+                    throw new IllegalStateException(e); //should be impossible
+                }
+            } else {
+                //y coordinate is outside the data limits, return default (air)
+                nextType = extendedStateRegistryData.type(0);
             }
 
-            if (distance != 0 //if this isn't the first step, we can compare with the previous block type
-                && lastType != nextType) {
+            if (lastType >= 0 //this isn't the first block
+                && lastType != nextType) { //the types are different -> this is a type transition!
+                //check if the transition matches any of the provided filters
+                int checkResult = checkTransitionFilters(lastType, nextType, filters, filterHitCounts);
+
+                if (checkTransitionFiltersResult_transitionMatches(checkResult)) {
+                    output.setAll(writtenCount, BlockLevelConstants.getTypeTransition(lastType, nextType), x, y, z, false);
+                    if (++writtenCount == outputCount) { //the output is now full!
+                        break;
+                    }
+                }
+
+                if (checkTransitionFiltersResult_abort(checkResult)) {
+                    break;
+                }
             }
 
+            //save the current type as the last type so that we can continue to the next voxel
             lastType = nextType;
-        }
+        } while (distance++ < maxDistance //we haven't reached the end of the search distance
+                 && (this.isValidY(y = addExact(y, dy)) || this.isValidY(y - dy))); //this position or the position before is/was valid
 
         return writtenCount;
     }
 
     protected int getNextTypeTransitionsHorizontal(int x, int y, int z, int dx, int dz, @Positive long maxDistance,
-                                                   @NonNull IntAxisAlignedBB dataLimits,
-                                                   @NonNull List<@NonNull TypeTransitionFilter> filters, @NonNull int[] filterHitCounts,
-                                                   @NonNull TypeTransitionSingleOutput output,
-                                                   @NonNull FExtendedStateRegistryData extendedStateRegistryData,
+                                                   IntAxisAlignedBB dataLimits,
+                                                   List<@NonNull TypeTransitionFilter> filters, int[] filterHitCounts,
+                                                   TypeTransitionSingleOutput output,
+                                                   FExtendedStateRegistryData extendedStateRegistryData,
                                                    AbstractPrefetchedChunksExactFBlockLevel<CHUNK> prefetchedLevel) {
+        output.validate();
+        int outputCount = output.count();
+
+        if (prefetchedLevel == null) { //obtain an instanced of a prefetched level so that we can read block data from the chunk (once we have it)
+            prefetchedLevel = this.prefetchedWorld(false, Collections.emptyList());
+        }
+
+        CHUNK chunk = null;
+        int chunkX = Integer.MIN_VALUE;
+        int chunkZ = Integer.MIN_VALUE;
+
+        //iterate through the blocks, loading chunks as we go
+        //this is pretty slow, but will probably never be used so i don't really care all too much
+
+        long distance = 0L;
         int writtenCount = 0;
-        int lastType;
+        int lastType = -1;
         boolean skippedNoData = false;
+
+        do {
+            if (chunkX != (x >> this.chunkShift()) || chunkZ != (z >> this.chunkShift())) {
+                //we've iterated beyond the currently loaded chunk, load a new one
+                chunkX = x >> this.chunkShift();
+                chunkZ = z >> this.chunkShift();
+
+                chunk = prefetchedLevel.getPrefetchedChunk(x, y, z);
+
+                if (chunk == null) { //the chunk wasn't already prefetched, try to load it (without generating it)
+                    try {
+                        chunk = this.getChunk(x >> this.chunkShift(), z >> this.chunkShift(), false);
+
+                        //we don't need to save the loaded chunk into prefetchedLevel's cache, as it wouldn't do that anyway
+                        //  (see AbstractPrefetchedChunksExactFBlockLevel#getOrLoadChunk(int, int, int))
+                    } catch (GenerationNotAllowedException e) {
+                        //chunk doesn't exist -> the whole thing is NoData
+                        //allow the chunk to be null so that we'll interpret it as NoData values
+                    }
+                }
+            }
+
+            if (chunk == null) { //NoData
+                lastType = -1;
+                skippedNoData = true;
+                continue;
+            }
+
+            int nextType;
+            if (this.isValidXZ(x, z)) {
+                //the y coordinate is inside the chunk, read from the chunk
+                try {
+                    nextType = extendedStateRegistryData.type(prefetchedLevel.getState(x, y, z, chunk));
+                } catch (GenerationNotAllowedException e) {
+                    throw new IllegalStateException(e); //should be impossible
+                }
+            } else {
+                //y coordinate is outside the data limits, return default (air)
+                nextType = extendedStateRegistryData.type(0);
+            }
+
+            if (lastType >= 0 //this isn't the first block
+                && lastType != nextType) { //the types are different -> this is a type transition!
+                //check if the transition matches any of the provided filters
+                int checkResult = checkTransitionFilters(lastType, nextType, filters, filterHitCounts);
+
+                if (checkTransitionFiltersResult_transitionMatches(checkResult)) {
+                    output.setAll(writtenCount, BlockLevelConstants.getTypeTransition(lastType, nextType), x, y, z, skippedNoData);
+
+                    //reset the skippedNoData flag, since any previously skipped ranges of NoData values have already been reported
+                    skippedNoData = false;
+
+                    if (++writtenCount == outputCount) { //the output is now full!
+                        break;
+                    }
+                }
+
+                if (checkTransitionFiltersResult_abort(checkResult)) {
+                    break;
+                }
+            }
+
+            //save the current type as the last type so that we can continue to the next voxel
+            lastType = nextType;
+        } while (distance++ < maxDistance //we haven't reached the end of the search distance
+                 && (this.isValidXZ(x = addExact(x, dx), z = addExact(z, dz)) || this.isValidXZ(x - dx, z - dz))); //this position or the position before is/was valid
 
         return writtenCount;
     }

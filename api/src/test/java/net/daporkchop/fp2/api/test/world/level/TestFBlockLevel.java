@@ -31,9 +31,12 @@ import net.daporkchop.fp2.api.world.registry.FExtendedBiomeRegistryData;
 import net.daporkchop.fp2.api.world.registry.FExtendedStateRegistryData;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.stream.IntStream;
 
+import static java.lang.Math.*;
 import static net.daporkchop.fp2.api.world.level.BlockLevelConstants.*;
 import static net.daporkchop.fp2.api.world.level.query.TypeTransitionFilter.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -47,52 +50,75 @@ public class TestFBlockLevel {
     // default implementation of getNextTypeTransitions()
     //
 
-    @Test
-    public void testGetNextTypeTransitions_sampleCount_nearDataLimits() {
+    @ParameterizedTest
+    @EnumSource(value = Direction.class, names = {"NEGATIVE_X", "NEGATIVE_Y", "NEGATIVE_Z"})
+    public void testGetNextTypeTransitions_sampleCount_nearDataLimits(Direction direction) {
         //make sure that we take exactly the right number of samples when close to the level's data limits
 
         TypeTransitionSingleOutput output = TypeTransitionSingleOutput.BandArraysTypeTransitionSingleOutput.createWithCount(64);
 
-        try (FBlockLevel level = AbstractDummyFBlockLevel.alwaysOpaque(new IntAxisAlignedBB(-16, -16, -16, 16, 16, 16))) {
+        int fx = abs(direction.x());
+        int fy = abs(direction.y());
+        int fz = abs(direction.z());
+
+        try (FBlockLevel level = this.dummyLevelOpaque(new IntAxisAlignedBB(-16, -16, -16, 16, 16, 16))) {
             //upper edge
-            assertEquals(0, level.getNextTypeTransitions(Direction.NEGATIVE_Y, 0, 20, 0, 3L, outputEverythingFilterList(), output));
-            assertEquals(0, level.getNextTypeTransitions(Direction.NEGATIVE_Y, 0, 20, 0, 4L, outputEverythingFilterList(), output));
-            assertEquals(1, level.getNextTypeTransitions(Direction.NEGATIVE_Y, 0, 20, 0, 5L, outputEverythingFilterList(), output));
-            assertEquals(1, level.getNextTypeTransitions(Direction.NEGATIVE_Y, 0, 16, 0, 5L, outputEverythingFilterList(), output));
-            assertEquals(1, level.getNextTypeTransitions(Direction.NEGATIVE_Y, 0, 16, 0, 1L, outputEverythingFilterList(), output));
-            assertEquals(0, level.getNextTypeTransitions(Direction.NEGATIVE_Y, 0, 16, 0, 0L, outputEverythingFilterList(), output));
-            assertEquals(0, level.getNextTypeTransitions(Direction.NEGATIVE_Y, 0, 15, 0, 5L, outputEverythingFilterList(), output));
+            assertEquals(0, level.getNextTypeTransitions(direction, 20 * fx, 20 * fy, 20 * fz, 3L, outputEverythingFilterList(), output));
+            assertEquals(0, level.getNextTypeTransitions(direction, 20 * fx, 20 * fy, 20 * fz, 4L, outputEverythingFilterList(), output));
+            assertEquals(1, level.getNextTypeTransitions(direction, 20 * fx, 20 * fy, 20 * fz, 5L, outputEverythingFilterList(), output));
+            assertEquals(1, level.getNextTypeTransitions(direction, 16 * fx, 16 * fy, 16 * fz, 5L, outputEverythingFilterList(), output));
+            assertEquals(1, level.getNextTypeTransitions(direction, 16 * fx, 16 * fy, 16 * fz, 1L, outputEverythingFilterList(), output));
+            assertEquals(0, level.getNextTypeTransitions(direction, 16 * fx, 16 * fy, 16 * fz, 0L, outputEverythingFilterList(), output));
+            assertEquals(0, level.getNextTypeTransitions(direction, 15 * fx, 15 * fy, 15 * fz, 5L, outputEverythingFilterList(), output));
 
             //in the top and out the bottom
-            assertEquals(2, level.getNextTypeTransitions(Direction.NEGATIVE_Y, 0, 20, 0, Long.MAX_VALUE, outputEverythingFilterList(), output));
-            assertEquals(1, level.getNextTypeTransitions(Direction.NEGATIVE_Y, 0, 15, 0, Long.MAX_VALUE, outputEverythingFilterList(), output));
+            assertEquals(2, level.getNextTypeTransitions(direction, 20 * fx, 20 * fy, 20 * fz, Long.MAX_VALUE, outputEverythingFilterList(), output));
+            assertEquals(1, level.getNextTypeTransitions(direction, 15 * fx, 15 * fy, 15 * fz, Long.MAX_VALUE, outputEverythingFilterList(), output));
 
             //lower edge
-            assertEquals(0, level.getNextTypeTransitions(Direction.NEGATIVE_Y, 0, -10, 0, 5L, outputEverythingFilterList(), output));
-            assertEquals(0, level.getNextTypeTransitions(Direction.NEGATIVE_Y, 0, -10, 0, 6L, outputEverythingFilterList(), output));
-            assertEquals(1, level.getNextTypeTransitions(Direction.NEGATIVE_Y, 0, -10, 0, 7L, outputEverythingFilterList(), output));
-            assertEquals(0, level.getNextTypeTransitions(Direction.NEGATIVE_Y, 0, -15, 0, 1L, outputEverythingFilterList(), output));
-            assertEquals(1, level.getNextTypeTransitions(Direction.NEGATIVE_Y, 0, -15, 0, 2L, outputEverythingFilterList(), output));
-            assertEquals(1, level.getNextTypeTransitions(Direction.NEGATIVE_Y, 0, -16, 0, 1L, outputEverythingFilterList(), output));
-            assertEquals(0, level.getNextTypeTransitions(Direction.NEGATIVE_Y, 0, -16, 0, 0L, outputEverythingFilterList(), output));
-            assertEquals(0, level.getNextTypeTransitions(Direction.NEGATIVE_Y, 0, -17, 0, Long.MAX_VALUE, outputEverythingFilterList(), output));
+            assertEquals(0, level.getNextTypeTransitions(direction, -10 * fx, -10 * fy, -10 * fz, 5L, outputEverythingFilterList(), output));
+            assertEquals(0, level.getNextTypeTransitions(direction, -10 * fx, -10 * fy, -10 * fz, 6L, outputEverythingFilterList(), output));
+            assertEquals(1, level.getNextTypeTransitions(direction, -10 * fx, -10 * fy, -10 * fz, 7L, outputEverythingFilterList(), output));
+            assertEquals(0, level.getNextTypeTransitions(direction, -15 * fx, -15 * fy, -15 * fz, 1L, outputEverythingFilterList(), output));
+            assertEquals(1, level.getNextTypeTransitions(direction, -15 * fx, -15 * fy, -15 * fz, 2L, outputEverythingFilterList(), output));
+            assertEquals(1, level.getNextTypeTransitions(direction, -16 * fx, -16 * fy, -16 * fz, 1L, outputEverythingFilterList(), output));
+            assertEquals(0, level.getNextTypeTransitions(direction, -16 * fx, -16 * fy, -16 * fz, 0L, outputEverythingFilterList(), output));
+            assertEquals(0, level.getNextTypeTransitions(direction, -17 * fx, -17 * fy, -17 * fz, Long.MAX_VALUE, outputEverythingFilterList(), output));
         }
     }
 
     @Test
-    public void testGetNextTypeTransitions_overflow() {
+    public void testGetNextTypeTransitions_overflow_vertical() {
         //make sure we take exactly the right number of samples when the coordinates are very big and would cause overflows
 
         TypeTransitionSingleOutput output = TypeTransitionSingleOutput.BandArraysTypeTransitionSingleOutput.createWithCount(64);
 
-        try (FBlockLevel level = AbstractDummyFBlockLevel.checkerboard(new IntAxisAlignedBB(Integer.MIN_VALUE, Integer.MIN_VALUE + 1, -10, -100, 100, 10))) {
+        try (FBlockLevel level = this.dummyLevelCheckerboard(new IntAxisAlignedBB(Integer.MIN_VALUE, Integer.MIN_VALUE + 1, -10, -100, 100, 10))) {
             //jumping down to lower coordinates, jump distance just within the int limit
             assertEquals(0, level.getNextTypeTransitions(Direction.NEGATIVE_Y, -101, Integer.MAX_VALUE, 0, Integer.MAX_VALUE - 101L, outputEverythingFilterList(), output));
             assertEquals(0, level.getNextTypeTransitions(Direction.NEGATIVE_Y, -101, Integer.MAX_VALUE, 0, Integer.MAX_VALUE - 100L, outputEverythingFilterList(), output));
             assertEquals(1, level.getNextTypeTransitions(Direction.NEGATIVE_Y, -101, Integer.MAX_VALUE, 0, Integer.MAX_VALUE - 99L, outputEverythingFilterList(), output));
             assertEquals(2, level.getNextTypeTransitions(Direction.NEGATIVE_Y, -101, Integer.MAX_VALUE, 0, Integer.MAX_VALUE - 98L, outputEverythingFilterList(), output));
             assertEquals(0, level.getNextTypeTransitions(Direction.NEGATIVE_Y, -101, Integer.MAX_VALUE, 11, Integer.MAX_VALUE - 98L, outputEverythingFilterList(), output));
+        }
 
+        try (FBlockLevel level = this.dummyLevelCheckerboard(new IntAxisAlignedBB(100, -100, -10, Integer.MAX_VALUE, Integer.MAX_VALUE - 1, 10))) {
+            //jumping up to higher coordinates, jump distance just within the int limit
+            assertEquals(0, level.getNextTypeTransitions(Direction.POSITIVE_Y, 101, Integer.MIN_VALUE, 0, Integer.MAX_VALUE - 101L, outputEverythingFilterList(), output));
+            assertEquals(0, level.getNextTypeTransitions(Direction.POSITIVE_Y, 101, Integer.MIN_VALUE, 0, Integer.MAX_VALUE - 100L, outputEverythingFilterList(), output));
+            assertEquals(1, level.getNextTypeTransitions(Direction.POSITIVE_Y, 101, Integer.MIN_VALUE, 0, Integer.MAX_VALUE - 99L, outputEverythingFilterList(), output));
+            assertEquals(2, level.getNextTypeTransitions(Direction.POSITIVE_Y, 101, Integer.MIN_VALUE, 0, Integer.MAX_VALUE - 98L, outputEverythingFilterList(), output));
+            assertEquals(0, level.getNextTypeTransitions(Direction.POSITIVE_Y, 101, Integer.MIN_VALUE, 11, Integer.MAX_VALUE - 98L, outputEverythingFilterList(), output));
+        }
+    }
+
+    @Test
+    public void testGetNextTypeTransitions_overflow_horizontal() {
+        //make sure we take exactly the right number of samples when the coordinates are very big and would cause overflows
+
+        TypeTransitionSingleOutput output = TypeTransitionSingleOutput.BandArraysTypeTransitionSingleOutput.createWithCount(64);
+
+        try (FBlockLevel level = this.dummyLevelCheckerboard(new IntAxisAlignedBB(Integer.MIN_VALUE, Integer.MIN_VALUE + 1, -10, -100, 100, 10))) {
             //jumping down to lower coordinates, jump distance just beyond the int limit
             assertEquals(0, level.getNextTypeTransitions(Direction.NEGATIVE_X, Integer.MAX_VALUE, 0, 0, Integer.MAX_VALUE + 99L, outputEverythingFilterList(), output));
             assertEquals(0, level.getNextTypeTransitions(Direction.NEGATIVE_X, Integer.MAX_VALUE, 0, 0, Integer.MAX_VALUE + 99L, outputEverythingFilterList(), output));
@@ -101,14 +127,7 @@ public class TestFBlockLevel {
             assertEquals(0, level.getNextTypeTransitions(Direction.NEGATIVE_X, Integer.MAX_VALUE, 0, 11, Integer.MAX_VALUE + 102L, outputEverythingFilterList(), output));
         }
 
-        try (FBlockLevel level = AbstractDummyFBlockLevel.checkerboard(new IntAxisAlignedBB(100, -100, -10, Integer.MAX_VALUE, Integer.MAX_VALUE - 1, 10))) {
-            //jumping up to higher coordinates, jump distance just within the int limit
-            assertEquals(0, level.getNextTypeTransitions(Direction.POSITIVE_Y, 101, Integer.MIN_VALUE, 0, Integer.MAX_VALUE - 101L, outputEverythingFilterList(), output));
-            assertEquals(0, level.getNextTypeTransitions(Direction.POSITIVE_Y, 101, Integer.MIN_VALUE, 0, Integer.MAX_VALUE - 100L, outputEverythingFilterList(), output));
-            assertEquals(1, level.getNextTypeTransitions(Direction.POSITIVE_Y, 101, Integer.MIN_VALUE, 0, Integer.MAX_VALUE - 99L, outputEverythingFilterList(), output));
-            assertEquals(2, level.getNextTypeTransitions(Direction.POSITIVE_Y, 101, Integer.MIN_VALUE, 0, Integer.MAX_VALUE - 98L, outputEverythingFilterList(), output));
-            assertEquals(0, level.getNextTypeTransitions(Direction.POSITIVE_Y, 101, Integer.MIN_VALUE, 11, Integer.MAX_VALUE - 98L, outputEverythingFilterList(), output));
-
+        try (FBlockLevel level = this.dummyLevelCheckerboard(new IntAxisAlignedBB(100, -100, -10, Integer.MAX_VALUE, Integer.MAX_VALUE - 1, 10))) {
             //jumping up to higher coordinates, jump distance just within the int limit
             assertEquals(0, level.getNextTypeTransitions(Direction.POSITIVE_X, Integer.MIN_VALUE, 0, 0, Integer.MAX_VALUE + 99L, outputEverythingFilterList(), output));
             assertEquals(0, level.getNextTypeTransitions(Direction.POSITIVE_X, Integer.MIN_VALUE, 0, 0, Integer.MAX_VALUE + 99L, outputEverythingFilterList(), output));
@@ -118,32 +137,37 @@ public class TestFBlockLevel {
         }
     }
 
+    protected FBlockLevel dummyLevelOpaque(IntAxisAlignedBB bounds) {
+        return new AbstractDummyFBlockLevel(bounds, this.alwaysOpaque());
+    }
+
+    protected FBlockLevel dummyLevelCheckerboard(IntAxisAlignedBB bounds) {
+        return new AbstractDummyFBlockLevel(bounds, this.checkerboard());
+    }
+
+    @FunctionalInterface
+    protected interface IntIntIntToIntFunction {
+        int apply(int x, int y, int z);
+    }
+
+    protected IntIntIntToIntFunction alwaysOpaque() {
+        return (x, y, z) -> BLOCK_TYPE_OPAQUE;
+    }
+
+    protected IntIntIntToIntFunction checkerboard() {
+        //noinspection ConstantConditions
+        assert BLOCK_TYPE_OPAQUE == BLOCK_TYPE_TRANSPARENT + 1; //check this just in case i change the constants in the future
+
+        return (x, y, z) -> ((x ^ y ^ z) & 1) + BLOCK_TYPE_TRANSPARENT;
+    }
+
     @RequiredArgsConstructor
     @Getter
-    private static abstract class AbstractDummyFBlockLevel implements FBlockLevel {
-        public static FBlockLevel alwaysOpaque(IntAxisAlignedBB dataLimits) {
-            return new AbstractDummyFBlockLevel(dataLimits) {
-                @Override
-                public int getState(int x, int y, int z) throws GenerationNotAllowedException {
-                    return this.dataLimits().contains(x, y, z) ? BLOCK_TYPE_OPAQUE : BLOCK_TYPE_INVISIBLE;
-                }
-            };
-        }
-
-        public static FBlockLevel checkerboard(IntAxisAlignedBB dataLimits) {
-            //noinspection ConstantConditions
-            assert BLOCK_TYPE_OPAQUE == BLOCK_TYPE_TRANSPARENT + 1; //check this just in case i change the constants in the future
-
-            return new AbstractDummyFBlockLevel(dataLimits) {
-                @Override
-                public int getState(int x, int y, int z) throws GenerationNotAllowedException {
-                    return this.dataLimits().contains(x, y, z) ? ((x ^ y ^ z) & 1) + BLOCK_TYPE_TRANSPARENT : BLOCK_TYPE_INVISIBLE;
-                }
-            };
-        }
-
+    protected static class AbstractDummyFBlockLevel implements FBlockLevel {
         @NonNull
         private final IntAxisAlignedBB dataLimits;
+        @NonNull
+        private final IntIntIntToIntFunction blockFunction;
 
         @Override
         public void close() {
@@ -171,6 +195,11 @@ public class TestFBlockLevel {
         }
 
         @Override
+        public int getState(int x, int y, int z) throws GenerationNotAllowedException {
+            return this.dataLimits.contains(x, y, z) ? this.blockFunction.apply(x, y, z) : BLOCK_TYPE_INVISIBLE;
+        }
+
+        @Override
         public int getBiome(int x, int y, int z) throws GenerationNotAllowedException {
             return 0;
         }
@@ -181,7 +210,7 @@ public class TestFBlockLevel {
         }
     }
 
-    private static final class DummyTypeRegistry implements FGameRegistry {
+    protected static final class DummyTypeRegistry implements FGameRegistry {
         public static final DummyTypeRegistry INSTANCE = new DummyTypeRegistry();
 
         @Override
