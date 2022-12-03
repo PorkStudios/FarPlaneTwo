@@ -28,6 +28,7 @@ import net.daporkchop.fp2.api.world.level.query.DataQueryBatchOutput;
 import net.daporkchop.fp2.api.world.level.query.TypeTransitionBatchOutput;
 import net.daporkchop.fp2.api.world.level.query.TypeTransitionFilter;
 import net.daporkchop.fp2.api.world.level.query.TypeTransitionSingleOutput;
+import net.daporkchop.fp2.api.world.level.query.shape.AABBsQueryShape;
 import net.daporkchop.fp2.api.world.level.query.shape.PointsQueryShape;
 import net.daporkchop.fp2.api.world.registry.FExtendedStateRegistryData;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
@@ -35,6 +36,7 @@ import net.daporkchop.lib.common.annotation.ThreadSafe;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.List;
 import java.util.RandomAccess;
 
@@ -155,6 +157,21 @@ public interface FBlockLevel extends AutoCloseable {
      */
     default boolean containsAnyData(@NonNull IntAxisAlignedBB bb) {
         return this.containsAnyData(bb.minX(), bb.minY(), bb.minZ(), bb.maxX(), bb.maxY(), bb.maxZ());
+    }
+
+    /**
+     * For each of the given AABBs: checks whether <strong>any</strong> data in the given AABB is known.
+     *
+     * @return a {@link BitSet} with each value set to the result of calling {@link #containsAnyData(IntAxisAlignedBB)} with the given AABB at the corresponding index
+     * @see #containsAnyData(int, int, int, int, int, int)
+     */
+    default BitSet containsAnyData(@NonNull AABBsQueryShape query) {
+        query.validate();
+        int count = query.count();
+
+        BitSet out = new BitSet(count);
+        query.forEach((index, minX, minY, minZ, maxX, maxY, maxZ) -> out.set(index, this.containsAnyData(minX, minY, minZ, maxX, maxY, maxZ)));
+        return out;
     }
 
     /**

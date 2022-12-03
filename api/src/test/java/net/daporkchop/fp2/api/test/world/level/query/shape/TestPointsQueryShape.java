@@ -44,7 +44,7 @@ public class TestPointsQueryShape {
             int y = ThreadLocalRandom.current().nextInt(Integer.MIN_VALUE, Integer.MAX_VALUE);
             int z = ThreadLocalRandom.current().nextInt(Integer.MIN_VALUE, Integer.MAX_VALUE);
 
-            this.testQueryShape(new PointsQueryShape.SinglePointPointsQueryShape(x, y, z));
+            this.testQueryShape(new PointsQueryShape.Single(x, y, z));
         });
     }
 
@@ -57,7 +57,7 @@ public class TestPointsQueryShape {
             int[] y = ThreadLocalRandom.current().ints(count).toArray();
             int[] z = ThreadLocalRandom.current().ints(count).toArray();
 
-            this.testQueryShape(new PointsQueryShape.MultiPointsPointsQueryShape(x, 0, 1, y, 0, 1, z, 0, 1, count));
+            this.testQueryShape(new PointsQueryShape.Multi(x, 0, 1, y, 0, 1, z, 0, 1, count));
         });
 
         //interleaved
@@ -65,7 +65,7 @@ public class TestPointsQueryShape {
             int count = ThreadLocalRandom.current().nextInt(4096);
             int[] positions = ThreadLocalRandom.current().ints(count * 3).toArray();
 
-            this.testQueryShape(new PointsQueryShape.MultiPointsPointsQueryShape(positions, 0, 3, positions, 1, 3, positions, 2, 3, count));
+            this.testQueryShape(new PointsQueryShape.Multi(positions, 0, 3, positions, 1, 3, positions, 2, 3, count));
         });
     }
 
@@ -82,7 +82,7 @@ public class TestPointsQueryShape {
             int strideY = ThreadLocalRandom.current().nextInt(65536);
             int strideZ = ThreadLocalRandom.current().nextInt(65536);
 
-            this.testQueryShape(new PointsQueryShape.OriginSizeStridePointsQueryShape(originX, originY, originZ, sizeX, sizeY, sizeZ, strideX, strideY, strideZ));
+            this.testQueryShape(new PointsQueryShape.OriginSizeStride(originX, originY, originZ, sizeX, sizeY, sizeZ, strideX, strideY, strideZ));
         });
     }
 

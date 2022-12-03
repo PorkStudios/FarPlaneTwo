@@ -257,7 +257,7 @@ public abstract class AbstractExactFBlockLevelHolder<PREFETCHED extends Abstract
     // Generic coordinate utilities, used when computing prefetching regions
     //
 
-    protected boolean isAnyPointValid(@NonNull PointsQueryShape.OriginSizeStridePointsQueryShape shape) {
+    protected boolean isAnyPointValid(@NonNull PointsQueryShape.OriginSizeStride shape) {
         return this.isAnyPointValid(shape.originX(), shape.sizeX(), shape.strideX(), this.bounds.minX(), this.bounds.maxX())
                && this.isAnyPointValid(shape.originY(), shape.sizeY(), shape.strideY(), this.bounds.minY(), this.bounds.maxY())
                && this.isAnyPointValid(shape.originZ(), shape.sizeZ(), shape.strideZ(), this.bounds.minZ(), this.bounds.maxZ());

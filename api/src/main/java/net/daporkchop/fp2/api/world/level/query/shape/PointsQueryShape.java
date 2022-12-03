@@ -137,7 +137,7 @@ public interface PointsQueryShape {
      * @author DaPorkchop_
      */
     @Data
-    final class SinglePointPointsQueryShape implements PointsQueryShape {
+    final class Single implements PointsQueryShape {
         private final int x;
         private final int y;
         private final int z;
@@ -188,7 +188,7 @@ public interface PointsQueryShape {
      * @author DaPorkchop_
      */
     @Data
-    final class MultiPointsPointsQueryShape implements PointsQueryShape {
+    final class Multi implements PointsQueryShape {
         @NonNull
         private final int[] x;
         private final int xOffset;
@@ -261,7 +261,7 @@ public interface PointsQueryShape {
      * @author DaPorkchop_
      */
     @Data
-    final class OriginSizeStridePointsQueryShape implements PointsQueryShape {
+    final class OriginSizeStride implements PointsQueryShape {
         private final int originX;
         private final int originY;
         private final int originZ;

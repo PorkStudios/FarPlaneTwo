@@ -176,12 +176,12 @@ public abstract class AbstractCubesExactFBlockLevelHolder<CUBE> extends Abstract
     public List<Vec3i> getCubePositionsToPrefetch(@NonNull PointsQueryShape shape) {
         if (shape.count() == 0) { //the shape contains no points, we don't need to prefetch anything
             return Collections.emptyList();
-        } else if (shape instanceof PointsQueryShape.SinglePointPointsQueryShape) {
-            return this.getCubePositionsToPrefetch((PointsQueryShape.SinglePointPointsQueryShape) shape);
-        } else if (shape instanceof PointsQueryShape.OriginSizeStridePointsQueryShape) {
-            return this.getCubePositionsToPrefetch((PointsQueryShape.OriginSizeStridePointsQueryShape) shape);
-        } else if (shape instanceof PointsQueryShape.MultiPointsPointsQueryShape) {
-            return this.getCubePositionsToPrefetch((PointsQueryShape.MultiPointsPointsQueryShape) shape);
+        } else if (shape instanceof PointsQueryShape.Single) {
+            return this.getCubePositionsToPrefetch((PointsQueryShape.Single) shape);
+        } else if (shape instanceof PointsQueryShape.OriginSizeStride) {
+            return this.getCubePositionsToPrefetch((PointsQueryShape.OriginSizeStride) shape);
+        } else if (shape instanceof PointsQueryShape.Multi) {
+            return this.getCubePositionsToPrefetch((PointsQueryShape.Multi) shape);
         } else {
             return this.getCubePositionsToPrefetchGeneric(shape);
         }
@@ -220,30 +220,30 @@ public abstract class AbstractCubesExactFBlockLevelHolder<CUBE> extends Abstract
     protected void getCubePositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull PointsQueryShape shape) {
         if (shape.count() == 0) { //the shape contains no points, we don't need to prefetch anything
             //no-op
-        } else if (shape instanceof PointsQueryShape.SinglePointPointsQueryShape) {
-            this.getCubePositionsToPrefetch(set, (PointsQueryShape.SinglePointPointsQueryShape) shape);
-        } else if (shape instanceof PointsQueryShape.OriginSizeStridePointsQueryShape) {
-            this.getCubePositionsToPrefetch(set, (PointsQueryShape.OriginSizeStridePointsQueryShape) shape);
-        } else if (shape instanceof PointsQueryShape.MultiPointsPointsQueryShape) {
-            this.getCubePositionsToPrefetch(set, (PointsQueryShape.MultiPointsPointsQueryShape) shape);
+        } else if (shape instanceof PointsQueryShape.Single) {
+            this.getCubePositionsToPrefetch(set, (PointsQueryShape.Single) shape);
+        } else if (shape instanceof PointsQueryShape.OriginSizeStride) {
+            this.getCubePositionsToPrefetch(set, (PointsQueryShape.OriginSizeStride) shape);
+        } else if (shape instanceof PointsQueryShape.Multi) {
+            this.getCubePositionsToPrefetch(set, (PointsQueryShape.Multi) shape);
         } else {
             this.getCubePositionsToPrefetchGeneric(set, shape);
         }
     }
 
-    protected List<Vec3i> getCubePositionsToPrefetch(@NonNull PointsQueryShape.SinglePointPointsQueryShape shape) {
+    protected List<Vec3i> getCubePositionsToPrefetch(@NonNull PointsQueryShape.Single shape) {
         return this.isValidPosition(shape.x(), shape.y(), shape.z())
                 ? Collections.singletonList(Vec3i.of(shape.x() >> this.cubeShift(), shape.y() >> this.cubeShift(), shape.z() >> this.cubeShift()))
                 : Collections.emptyList();
     }
 
-    protected void getCubePositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull PointsQueryShape.SinglePointPointsQueryShape shape) {
+    protected void getCubePositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull PointsQueryShape.Single shape) {
         if (this.isValidPosition(shape.x(), shape.y(), shape.z())) {
             set.add(shape.x() >> this.cubeShift(), shape.y() >> this.cubeShift(), shape.z() >> this.cubeShift());
         }
     }
 
-    protected List<Vec3i> getCubePositionsToPrefetch(@NonNull PointsQueryShape.OriginSizeStridePointsQueryShape shape) {
+    protected List<Vec3i> getCubePositionsToPrefetch(@NonNull PointsQueryShape.OriginSizeStride shape) {
         shape.validate();
 
         if (!this.isAnyPointValid(shape)) { //no points are valid, there's no reason to check anything
@@ -255,7 +255,7 @@ public abstract class AbstractCubesExactFBlockLevelHolder<CUBE> extends Abstract
         }
     }
 
-    protected void getCubePositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull PointsQueryShape.OriginSizeStridePointsQueryShape shape) {
+    protected void getCubePositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull PointsQueryShape.OriginSizeStride shape) {
         shape.validate();
 
         if (!this.isAnyPointValid(shape)) { //no points are valid, there's no reason to check anything
@@ -267,7 +267,7 @@ public abstract class AbstractCubesExactFBlockLevelHolder<CUBE> extends Abstract
         }
     }
 
-    protected List<Vec3i> getCubePositionsToPrefetchRegularAABB(@NonNull PointsQueryShape.OriginSizeStridePointsQueryShape shape) {
+    protected List<Vec3i> getCubePositionsToPrefetchRegularAABB(@NonNull PointsQueryShape.OriginSizeStride shape) {
         shape.validate();
 
         //find min and max cube coordinates (upper bound is inclusive)
@@ -290,7 +290,7 @@ public abstract class AbstractCubesExactFBlockLevelHolder<CUBE> extends Abstract
         return positions;
     }
 
-    protected void getCubePositionsToPrefetchRegularAABB(@NonNull NDimensionalIntSet set, @NonNull PointsQueryShape.OriginSizeStridePointsQueryShape shape) {
+    protected void getCubePositionsToPrefetchRegularAABB(@NonNull NDimensionalIntSet set, @NonNull PointsQueryShape.OriginSizeStride shape) {
         shape.validate();
 
         //find min and max cube coordinates (upper bound is inclusive)
@@ -311,7 +311,7 @@ public abstract class AbstractCubesExactFBlockLevelHolder<CUBE> extends Abstract
         }
     }
 
-    protected List<Vec3i> getCubePositionsToPrefetchSparseAABB(@NonNull PointsQueryShape.OriginSizeStridePointsQueryShape shape) {
+    protected List<Vec3i> getCubePositionsToPrefetchSparseAABB(@NonNull PointsQueryShape.OriginSizeStride shape) {
         shape.validate();
 
         //find cube X,Y,Z coordinates
@@ -325,7 +325,7 @@ public abstract class AbstractCubesExactFBlockLevelHolder<CUBE> extends Abstract
         return positions;
     }
 
-    protected void getCubePositionsToPrefetchSparseAABB(@NonNull NDimensionalIntSet set, @NonNull PointsQueryShape.OriginSizeStridePointsQueryShape shape) {
+    protected void getCubePositionsToPrefetchSparseAABB(@NonNull NDimensionalIntSet set, @NonNull PointsQueryShape.OriginSizeStride shape) {
         shape.validate();
 
         //find cube X,Y,Z coordinates
@@ -337,12 +337,12 @@ public abstract class AbstractCubesExactFBlockLevelHolder<CUBE> extends Abstract
         cubeXSupplier.accept(cubeX -> cubeYSupplier.accept(cubeY -> cubeZSupplier.accept(cubeZ -> set.add(cubeX, cubeY, cubeZ))));
     }
 
-    protected List<Vec3i> getCubePositionsToPrefetch(@NonNull PointsQueryShape.MultiPointsPointsQueryShape shape) {
+    protected List<Vec3i> getCubePositionsToPrefetch(@NonNull PointsQueryShape.Multi shape) {
         //delegate to generic method, it's already the fastest possible approach for this shape implementation
         return this.getCubePositionsToPrefetchGeneric(shape);
     }
 
-    protected void getCubePositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull PointsQueryShape.MultiPointsPointsQueryShape shape) {
+    protected void getCubePositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull PointsQueryShape.Multi shape) {
         //delegate to generic method, it's already the fastest possible approach for this shape implementation
         this.getCubePositionsToPrefetchGeneric(set, shape);
     }

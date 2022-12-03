@@ -25,14 +25,14 @@ import net.daporkchop.fp2.api.world.level.BlockLevelConstants;
 import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 
-import java.util.Collection;
+import java.util.List;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.api.world.level.BlockLevelConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
- * Describes a target for a single {@link FBlockLevel#getNextTypeTransitions(Direction, int, int, int, Collection, TypeTransitionSingleOutput) type transition search}'s
+ * Describes a target for a single {@link FBlockLevel#getNextTypeTransitions(Direction, int, int, int, long, List, TypeTransitionSingleOutput)} type transition search}'s
  * output to be written to.
  * <p>
  * A type transition query output consists of a sequence of data values, indexed from {@code 0} (inclusive) to {@link #count()} (exclusive). Each value is broken up
@@ -161,13 +161,13 @@ public interface TypeTransitionSingleOutput {
      * @author DaPorkchop_
      */
     @Data
-    final class BandArraysTypeTransitionSingleOutput implements TypeTransitionSingleOutput {
-        public static BandArraysTypeTransitionSingleOutput createWithCount(@NotNegative int count) {
+    final class BandArrays implements TypeTransitionSingleOutput {
+        public static BandArrays createWithCount(@NotNegative int count) {
             return createWithCount(count, allTypeTransitionQueryOutputBands());
         }
 
-        public static BandArraysTypeTransitionSingleOutput createWithCount(@NotNegative int count, int enabledBands) {
-            return new BandArraysTypeTransitionSingleOutput(
+        public static BandArrays createWithCount(@NotNegative int count, int enabledBands) {
+            return new BandArrays(
                     isTypeTransitionQueryOutputBandEnabled(enabledBands, TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_TRANSITIONS) ? new byte[count] : null, 0, 1,
                     isTypeTransitionQueryOutputBandEnabled(enabledBands, TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_COORDS_Y) ? new int[count] : null, 0, 1,
                     isTypeTransitionQueryOutputBandEnabled(enabledBands, TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_COORDS_Z) ? new int[count] : null, 0, 1,

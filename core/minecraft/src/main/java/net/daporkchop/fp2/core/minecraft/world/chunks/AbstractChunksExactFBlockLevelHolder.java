@@ -187,12 +187,12 @@ public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends Abstra
     public List<Vec2i> getChunkPositionsToPrefetch(@NonNull PointsQueryShape shape) {
         if (shape.count() == 0) { //the shape contains no points, we don't need to prefetch anything
             return Collections.emptyList();
-        } else if (shape instanceof PointsQueryShape.SinglePointPointsQueryShape) {
-            return this.getChunkPositionsToPrefetch((PointsQueryShape.SinglePointPointsQueryShape) shape);
-        } else if (shape instanceof PointsQueryShape.OriginSizeStridePointsQueryShape) {
-            return this.getChunkPositionsToPrefetch((PointsQueryShape.OriginSizeStridePointsQueryShape) shape);
-        } else if (shape instanceof PointsQueryShape.MultiPointsPointsQueryShape) {
-            return this.getChunkPositionsToPrefetch((PointsQueryShape.MultiPointsPointsQueryShape) shape);
+        } else if (shape instanceof PointsQueryShape.Single) {
+            return this.getChunkPositionsToPrefetch((PointsQueryShape.Single) shape);
+        } else if (shape instanceof PointsQueryShape.OriginSizeStride) {
+            return this.getChunkPositionsToPrefetch((PointsQueryShape.OriginSizeStride) shape);
+        } else if (shape instanceof PointsQueryShape.Multi) {
+            return this.getChunkPositionsToPrefetch((PointsQueryShape.Multi) shape);
         } else {
             return this.getChunkPositionsToPrefetchGeneric(shape);
         }
@@ -231,30 +231,30 @@ public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends Abstra
     protected void getChunkPositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull PointsQueryShape shape) {
         if (shape.count() == 0) { //the shape contains no points, we don't need to prefetch anything
             //no-op
-        } else if (shape instanceof PointsQueryShape.SinglePointPointsQueryShape) {
-            this.getChunkPositionsToPrefetch(set, (PointsQueryShape.SinglePointPointsQueryShape) shape);
-        } else if (shape instanceof PointsQueryShape.OriginSizeStridePointsQueryShape) {
-            this.getChunkPositionsToPrefetch(set, (PointsQueryShape.OriginSizeStridePointsQueryShape) shape);
-        } else if (shape instanceof PointsQueryShape.MultiPointsPointsQueryShape) {
-            this.getChunkPositionsToPrefetch(set, (PointsQueryShape.MultiPointsPointsQueryShape) shape);
+        } else if (shape instanceof PointsQueryShape.Single) {
+            this.getChunkPositionsToPrefetch(set, (PointsQueryShape.Single) shape);
+        } else if (shape instanceof PointsQueryShape.OriginSizeStride) {
+            this.getChunkPositionsToPrefetch(set, (PointsQueryShape.OriginSizeStride) shape);
+        } else if (shape instanceof PointsQueryShape.Multi) {
+            this.getChunkPositionsToPrefetch(set, (PointsQueryShape.Multi) shape);
         } else {
             this.getChunkPositionsToPrefetchGeneric(set, shape);
         }
     }
 
-    protected List<Vec2i> getChunkPositionsToPrefetch(@NonNull PointsQueryShape.SinglePointPointsQueryShape shape) {
+    protected List<Vec2i> getChunkPositionsToPrefetch(@NonNull PointsQueryShape.Single shape) {
         return this.isValidPosition(shape.x(), shape.y(), shape.z())
                 ? Collections.singletonList(Vec2i.of(shape.x() >> this.chunkShift(), shape.z() >> this.chunkShift()))
                 : Collections.emptyList();
     }
 
-    protected void getChunkPositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull PointsQueryShape.SinglePointPointsQueryShape shape) {
+    protected void getChunkPositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull PointsQueryShape.Single shape) {
         if (this.isValidPosition(shape.x(), shape.y(), shape.z())) {
             set.add(shape.x() >> this.chunkShift(), shape.z() >> this.chunkShift());
         }
     }
 
-    protected List<Vec2i> getChunkPositionsToPrefetch(@NonNull PointsQueryShape.OriginSizeStridePointsQueryShape shape) {
+    protected List<Vec2i> getChunkPositionsToPrefetch(@NonNull PointsQueryShape.OriginSizeStride shape) {
         shape.validate();
 
         if (!this.isAnyPointValid(shape)) { //no points are valid, there's no reason to check anything
@@ -266,7 +266,7 @@ public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends Abstra
         }
     }
 
-    protected void getChunkPositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull PointsQueryShape.OriginSizeStridePointsQueryShape shape) {
+    protected void getChunkPositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull PointsQueryShape.OriginSizeStride shape) {
         shape.validate();
 
         if (!this.isAnyPointValid(shape)) { //no points are valid, there's no reason to check anything
@@ -278,7 +278,7 @@ public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends Abstra
         }
     }
 
-    protected List<Vec2i> getChunkPositionsToPrefetchRegularAABB(@NonNull PointsQueryShape.OriginSizeStridePointsQueryShape shape) {
+    protected List<Vec2i> getChunkPositionsToPrefetchRegularAABB(@NonNull PointsQueryShape.OriginSizeStride shape) {
         shape.validate();
 
         //we assume that at least one Y coordinate is valid, meaning that the entire chunk needs to be prefetched as long as the horizontal coordinates are valid
@@ -299,7 +299,7 @@ public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends Abstra
         return positions;
     }
 
-    protected void getChunkPositionsToPrefetchRegularAABB(@NonNull NDimensionalIntSet set, @NonNull PointsQueryShape.OriginSizeStridePointsQueryShape shape) {
+    protected void getChunkPositionsToPrefetchRegularAABB(@NonNull NDimensionalIntSet set, @NonNull PointsQueryShape.OriginSizeStride shape) {
         shape.validate();
 
         //we assume that at least one Y coordinate is valid, meaning that the entire chunk needs to be prefetched as long as the horizontal coordinates are valid
@@ -318,7 +318,7 @@ public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends Abstra
         }
     }
 
-    protected List<Vec2i> getChunkPositionsToPrefetchSparseAABB(@NonNull PointsQueryShape.OriginSizeStridePointsQueryShape shape) {
+    protected List<Vec2i> getChunkPositionsToPrefetchSparseAABB(@NonNull PointsQueryShape.OriginSizeStride shape) {
         shape.validate();
 
         //we assume that at least one Y coordinate is valid, meaning that the entire chunk needs to be prefetched as long as the horizontal coordinates are valid
@@ -335,7 +335,7 @@ public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends Abstra
         return positions;
     }
 
-    protected void getChunkPositionsToPrefetchSparseAABB(@NonNull NDimensionalIntSet set, @NonNull PointsQueryShape.OriginSizeStridePointsQueryShape shape) {
+    protected void getChunkPositionsToPrefetchSparseAABB(@NonNull NDimensionalIntSet set, @NonNull PointsQueryShape.OriginSizeStride shape) {
         shape.validate();
 
         //we assume that at least one Y coordinate is valid, meaning that the entire chunk needs to be prefetched as long as the horizontal coordinates are valid
@@ -350,12 +350,12 @@ public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends Abstra
         chunkXSupplier.accept(chunkX -> chunkZSupplier.accept(chunkZ -> set.add(chunkX, chunkZ)));
     }
 
-    protected List<Vec2i> getChunkPositionsToPrefetch(@NonNull PointsQueryShape.MultiPointsPointsQueryShape shape) {
+    protected List<Vec2i> getChunkPositionsToPrefetch(@NonNull PointsQueryShape.Multi shape) {
         //delegate to generic method, it's already the fastest possible approach for this shape implementation
         return this.getChunkPositionsToPrefetchGeneric(shape);
     }
 
-    protected void getChunkPositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull PointsQueryShape.MultiPointsPointsQueryShape shape) {
+    protected void getChunkPositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull PointsQueryShape.Multi shape) {
         //delegate to generic method, it's already the fastest possible approach for this shape implementation
         this.getChunkPositionsToPrefetchGeneric(set, shape);
     }

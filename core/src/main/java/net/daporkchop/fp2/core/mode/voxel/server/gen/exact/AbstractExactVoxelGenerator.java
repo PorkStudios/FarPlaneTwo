@@ -109,11 +109,11 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
         try {
             //query all world data at once
             world.query(BatchDataQuery.of(
-                    new PointsQueryShape.OriginSizeStridePointsQueryShape(
+                    new PointsQueryShape.OriginSizeStride(
                             posIn.blockX() + CACHE_MIN - 1, posIn.blockY() + CACHE_MIN - 1, posIn.blockZ() + CACHE_MIN - 1,
                             CACHE_SIZE, CACHE_SIZE, CACHE_SIZE,
                             1, 1, 1),
-                    new DataQueryBatchOutput.BandArraysDataQueryBatchOutput(stateCache, 0, 1, biomeCache, 0, 1, lightCache, 0, 1, cb(CACHE_SIZE))));
+                    new DataQueryBatchOutput.BandArrays(stateCache, 0, 1, biomeCache, 0, 1, lightCache, 0, 1, cb(CACHE_SIZE))));
 
             //use bit flags to identify voxel types rather than reading from the world each time to keep innermost loop head tight and cache-friendly
             this.populateTypeMapFromStateMap(stateCache, typeCache);

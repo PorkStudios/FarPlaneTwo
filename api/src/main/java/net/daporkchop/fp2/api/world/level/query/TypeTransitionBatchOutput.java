@@ -237,7 +237,7 @@ public interface TypeTransitionBatchOutput {
      * @author DaPorkchop_
      */
     @Data
-    final class BandArraysTypeTransitionBatchOutput implements TypeTransitionBatchOutput {
+    final class BandArrays implements TypeTransitionBatchOutput {
         @NonNull
         private final int[] lengthsArray;
         private final int lengthsOffset;

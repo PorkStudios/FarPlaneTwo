@@ -123,7 +123,7 @@ public interface DataQueryBatchOutput {
      * @author DaPorkchop_
      */
     @Data
-    final class BandArraysDataQueryBatchOutput implements DataQueryBatchOutput {
+    final class BandArrays implements DataQueryBatchOutput {
         private final int[] statesArray;
         private final int statesOffset;
         private final int statesStride;

@@ -55,7 +55,7 @@ public class TestFBlockLevel {
     public void testGetNextTypeTransitions_sampleCount_nearDataLimits(Direction direction) {
         //make sure that we take exactly the right number of samples when close to the level's data limits
 
-        TypeTransitionSingleOutput output = TypeTransitionSingleOutput.BandArraysTypeTransitionSingleOutput.createWithCount(64);
+        TypeTransitionSingleOutput output = TypeTransitionSingleOutput.BandArrays.createWithCount(64);
 
         int fx = abs(direction.x());
         int fy = abs(direction.y());
@@ -91,7 +91,7 @@ public class TestFBlockLevel {
     public void testGetNextTypeTransitions_overflow_vertical() {
         //make sure we take exactly the right number of samples when the coordinates are very big and would cause overflows
 
-        TypeTransitionSingleOutput output = TypeTransitionSingleOutput.BandArraysTypeTransitionSingleOutput.createWithCount(64);
+        TypeTransitionSingleOutput output = TypeTransitionSingleOutput.BandArrays.createWithCount(64);
 
         try (FBlockLevel level = this.dummyLevelCheckerboard(new IntAxisAlignedBB(Integer.MIN_VALUE, Integer.MIN_VALUE + 1, -10, -100, 100, 10))) {
             //jumping down to lower coordinates, jump distance just within the int limit
@@ -116,7 +116,7 @@ public class TestFBlockLevel {
     public void testGetNextTypeTransitions_overflow_horizontal() {
         //make sure we take exactly the right number of samples when the coordinates are very big and would cause overflows
 
-        TypeTransitionSingleOutput output = TypeTransitionSingleOutput.BandArraysTypeTransitionSingleOutput.createWithCount(64);
+        TypeTransitionSingleOutput output = TypeTransitionSingleOutput.BandArrays.createWithCount(64);
 
         try (FBlockLevel level = this.dummyLevelCheckerboard(new IntAxisAlignedBB(Integer.MIN_VALUE, Integer.MIN_VALUE + 1, -10, -100, 100, 10))) {
             //jumping down to lower coordinates, jump distance just beyond the int limit

@@ -85,7 +85,7 @@ public class AbstractChunksExactFBlockLevel<CHUNK> extends AbstractExactFBlockLe
         //delegate to a query because it'll delegate to AbstractPrefetchedChunksExactFBlockLevel, which can access neighboring chunks if Block#getActualState accesses a
         //  state which goes over a cube/column border. this is slow, but i don't care because the single getter methods are dumb and bad anyway.
         int[] buf = new int[1];
-        this.query(BatchDataQuery.of(new PointsQueryShape.SinglePointPointsQueryShape(x, y, z), new DataQueryBatchOutput.BandArraysDataQueryBatchOutput(buf, 0, 1, null, 0, 0, null, 0, 0, 1)));
+        this.query(BatchDataQuery.of(new PointsQueryShape.Single(x, y, z), new DataQueryBatchOutput.BandArrays(buf, 0, 1, null, 0, 0, null, 0, 0, 1)));
         return buf[0];
     }
 
@@ -94,7 +94,7 @@ public class AbstractChunksExactFBlockLevel<CHUNK> extends AbstractExactFBlockLe
         //delegate to a query because it'll delegate to AbstractPrefetchedChunksExactFBlockLevel, which can access neighboring chunks if Block#getActualState accesses a
         //  state which goes over a cube/column border. this is slow, but i don't care because the single getter methods are dumb and bad anyway.
         int[] buf = new int[1];
-        this.query(BatchDataQuery.of(new PointsQueryShape.SinglePointPointsQueryShape(x, y, z), new DataQueryBatchOutput.BandArraysDataQueryBatchOutput(null, 0, 0, buf, 0, 1, null, 0, 0, 1)));
+        this.query(BatchDataQuery.of(new PointsQueryShape.Single(x, y, z), new DataQueryBatchOutput.BandArrays(null, 0, 0, buf, 0, 1, null, 0, 0, 1)));
         return buf[0];
     }
 
@@ -103,7 +103,7 @@ public class AbstractChunksExactFBlockLevel<CHUNK> extends AbstractExactFBlockLe
         //delegate to a query because it'll delegate to AbstractPrefetchedChunksExactFBlockLevel, which can access neighboring chunks if Block#getActualState accesses a
         //  state which goes over a cube/column border. this is slow, but i don't care because the single getter methods are dumb and bad anyway.
         byte[] buf = new byte[1];
-        this.query(BatchDataQuery.of(new PointsQueryShape.SinglePointPointsQueryShape(x, y, z), new DataQueryBatchOutput.BandArraysDataQueryBatchOutput(null, 0, 0, null, 0, 0, buf, 0, 1, 1)));
+        this.query(BatchDataQuery.of(new PointsQueryShape.Single(x, y, z), new DataQueryBatchOutput.BandArrays(null, 0, 0, null, 0, 0, buf, 0, 1, 1)));
         return buf[0];
     }
 
