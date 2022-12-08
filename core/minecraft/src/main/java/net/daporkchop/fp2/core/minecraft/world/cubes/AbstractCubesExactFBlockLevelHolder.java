@@ -25,9 +25,13 @@ import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.fp2.api.world.level.GenerationNotAllowedException;
+import net.daporkchop.fp2.api.world.level.query.TypeTransitionFilter;
+import net.daporkchop.fp2.api.world.level.query.TypeTransitionSingleOutput;
 import net.daporkchop.fp2.api.world.level.query.shape.PointsQueryShape;
+import net.daporkchop.fp2.api.world.registry.FExtendedStateRegistryData;
 import net.daporkchop.fp2.core.minecraft.util.threading.asynccache.AsyncCacheNBT;
 import net.daporkchop.fp2.core.minecraft.world.AbstractExactFBlockLevelHolder;
+import net.daporkchop.fp2.core.minecraft.world.chunks.AbstractPrefetchedChunksExactFBlockLevel;
 import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
 import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
 import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
@@ -36,6 +40,7 @@ import net.daporkchop.fp2.core.util.datastructure.Datastructures;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSegtreeSet;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSet;
 import net.daporkchop.fp2.core.util.threading.lazy.LazyFutureTask;
+import net.daporkchop.lib.common.annotation.param.Positive;
 import net.daporkchop.lib.math.vector.Vec3i;
 
 import java.util.ArrayList;
@@ -376,5 +381,19 @@ public abstract class AbstractCubesExactFBlockLevelHolder<CUBE> extends Abstract
                 set.add(x >> this.cubeShift(), y >> this.cubeShift(), z >> this.cubeShift());
             }
         });
+    }
+
+    //
+    // getNextTypeTransitions() IMPLEMENTATIONS
+    //
+
+    @Override
+    protected int getNextTypeTransitions(int x, int y, int z, int dx, int dy, int dz, @Positive long maxDistance,
+                                         @NonNull IntAxisAlignedBB dataLimits,
+                                         @NonNull List<@NonNull TypeTransitionFilter> filters, @NonNull int[] filterHitCounts,
+                                         @NonNull TypeTransitionSingleOutput output,
+                                         @NonNull FExtendedStateRegistryData extendedStateRegistryData,
+                                         AbstractPrefetchedCubesExactFBlockLevel<CUBE> prefetchedLevel) {
+        throw new UnsupportedOperationException(); //TODO
     }
 }

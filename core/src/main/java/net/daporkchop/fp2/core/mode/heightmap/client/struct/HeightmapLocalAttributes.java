@@ -40,7 +40,7 @@ import net.daporkchop.fp2.gl.attribute.annotation.ScalarTransform;
         @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED),
         @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true)
 })))
-@Attribute(name = "posHoriz", typeVector = @VectorType(components = 3, componentType = @ScalarType(value = byte.class, interpret = @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED))))
+@Attribute(name = "posHoriz", typeVector = @VectorType(components = 2, componentType = @ScalarType(value = byte.class, interpret = @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED))))
 @Attribute(name = "heightInt", typeScalar = @ScalarType(int.class))
 @Attribute(name = "heightFrac", typeScalar = @ScalarType(value = byte.class, interpret = {
         @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED),

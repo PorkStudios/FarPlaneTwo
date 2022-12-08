@@ -15,14 +15,17 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.heightmap.server.gen.exact;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.api.util.Direction;
+import net.daporkchop.fp2.api.world.level.BlockLevelConstants;
 import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.fp2.api.world.level.GenerationNotAllowedException;
+import net.daporkchop.fp2.api.world.level.query.TypeTransitionFilter;
+import net.daporkchop.fp2.api.world.level.query.TypeTransitionSingleOutput;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.core.mode.common.server.gen.AbstractFarGenerator;
@@ -33,6 +36,7 @@ import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 
 import java.util.Arrays;
 
+import static net.daporkchop.fp2.api.world.level.BlockLevelConstants.*;
 import static net.daporkchop.fp2.core.mode.heightmap.HeightmapConstants.*;
 
 /**
@@ -43,7 +47,29 @@ public abstract class AbstractExactHeightmapGenerator extends AbstractFarGenerat
         super(world, provider);
     }
 
-    protected abstract void computeElevations(@NonNull FBlockLevel world, @NonNull int[] elevations, int blockX, int blockZ);
+    protected void computeElevations(@NonNull FBlockLevel world, @NonNull int[] elevations, int blockX, int blockZ) {
+        //TODO: this is absolutely disgusting!
+        world.getNextTypeTransitions(Direction.NEGATIVE_Y, blockX, Integer.MAX_VALUE, blockZ, Integer.MAX_VALUE * 2L,
+                Arrays.asList(
+                        TypeTransitionFilter.builder()
+                                .fromTypes(blockTypeFlag(BLOCK_TYPE_INVISIBLE))
+                                .toTypes(blockTypeFlag(BLOCK_TYPE_TRANSPARENT))
+                                .disableAfterHitCount(elevations.length - 1).abortAfterHitCount(-1)
+                                .build(),
+                        TypeTransitionFilter.builder()
+                                .fromTypes(allBlockTypes() & ~blockTypeFlag(BLOCK_TYPE_OPAQUE))
+                                .toTypes(blockTypeFlag(BLOCK_TYPE_OPAQUE))
+                                .disableAfterHitCount(-1).abortAfterHitCount(1)
+                                .build()
+                ),
+                new TypeTransitionSingleOutput.BandArrays(
+                        null, 0, 0,
+                        null, 0, 0,
+                        elevations, 0, 1,
+                        null, 0, 0,
+                        null, 0, 0,
+                        elevations.length));
+    }
 
     @Override
     public void generate(@NonNull FBlockLevel world, @NonNull HeightmapPos posIn, @NonNull HeightmapTile tile) throws GenerationNotAllowedException {
@@ -67,7 +93,7 @@ public abstract class AbstractExactHeightmapGenerator extends AbstractFarGenerat
                         data.state = world.getState(blockX, elevation, blockZ);
                         data.biome = world.getBiome(blockX, elevation, blockZ);
                         data.height_int = elevation + 1;
-                        data.light = world.getLight(blockX, elevation + 1, blockZ);
+                        data.light = world.getLight(blockX, elevation + 1, blockZ) & 0xFF;
 
                         if (layer == WATER_LAYER) {
                             data.height_frac = HEIGHT_FRAC_LIQUID;

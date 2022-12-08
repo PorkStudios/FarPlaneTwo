@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.heightmap.server.gen.exact;
@@ -37,9 +36,9 @@ public class VanillaHeightmapGenerator extends AbstractExactHeightmapGenerator {
         super(world, provider);
     }
 
-    @Override
-    protected void computeElevations(@NonNull FBlockLevel world, @NonNull int[] elevations, int blockX, int blockZ) {
-        throw new UnsupportedOperationException(); //TODO
+//    @Override
+//    protected void computeElevations(@NonNull FBlockLevel world, @NonNull int[] elevations, int blockX, int blockZ) {
+//        throw new UnsupportedOperationException(); //TODO
         /*int y = world.getTopBlockY(blockX, blockZ);
         if (y < Y_LIMIT) { //there are no blocks in this column, therefore nothing to do
             return;
@@ -67,5 +66,5 @@ public class VanillaHeightmapGenerator extends AbstractExactHeightmapGenerator {
                 elevations[EXTRA_LAYERS[usedExtraLayers++]] = y;
             }
         }*/
-    }
+//    }
 }
