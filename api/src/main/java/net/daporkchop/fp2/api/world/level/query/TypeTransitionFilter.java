@@ -149,7 +149,7 @@ public final class TypeTransitionFilter {
      */
     public boolean shouldDisable(@NotNegative int hitCount) {
         return this.disableAfterHitCount == 0
-               || (this.disableAfterHitCount > 0 && this.disableAfterHitCount < hitCount);
+               || (this.disableAfterHitCount > 0 && this.disableAfterHitCount <= hitCount);
     }
 
     /**
@@ -159,7 +159,7 @@ public final class TypeTransitionFilter {
      * @return whether the current query should be aborted
      */
     public boolean shouldAbort(@NotNegative int hitCount) {
-        return this.disableAfterHitCount == 0
-               || (this.disableAfterHitCount > 0 && this.disableAfterHitCount < hitCount);
+        return this.abortAfterHitCount == 0
+               || (this.abortAfterHitCount > 0 && this.abortAfterHitCount <= hitCount);
     }
 }

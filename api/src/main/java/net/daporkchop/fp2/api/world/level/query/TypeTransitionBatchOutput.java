@@ -25,14 +25,14 @@ import net.daporkchop.fp2.api.util.Direction;
 import net.daporkchop.fp2.api.world.level.BlockLevelConstants;
 import net.daporkchop.fp2.api.world.level.FBlockLevel;
 
-import java.util.Collection;
+import java.util.List;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.api.world.level.BlockLevelConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
- * Describes a target for multiple {@link FBlockLevel#getNextTypeTransitions(Direction, int, int, int, Collection, TypeTransitionSingleOutput) type transition searches}'
+ * Describes a target for multiple {@link FBlockLevel#getNextTypeTransitions(Direction, int, int, int, long, List, TypeTransitionSingleOutput)}  type transition searches}'
  * output to be written to.
  * <p>
  * A type transition query output consists of a sequence of data values, indexed from {@code 0} (inclusive) to {@link #count()} (exclusive). Each value is broken up
@@ -79,6 +79,14 @@ public interface TypeTransitionBatchOutput {
     void setLength(int slot, int length);
 
     /**
+     * Gets the length of the slot with the given index.
+     *
+     * @param slot   the output slot
+     * @return the length for the slot
+     */
+    int getLength(int slot);
+
+    /**
      * Sets the type transition value at the given output index.
      * <p>
      * If this output does not have the {@link BlockLevelConstants#TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_TRANSITIONS "type transitions" type transition query output band}
@@ -89,6 +97,18 @@ public interface TypeTransitionBatchOutput {
      * @param typeTransition the new type transition value
      */
     void setTypeTransition(int slot, int index, byte typeTransition);
+
+    /**
+     * Gets the type transition value at the given output index.
+     * <p>
+     * If this output does not have the {@link BlockLevelConstants#TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_TRANSITIONS "type transitions" type transition query output band}
+     * enabled, the value will be silently discarded.
+     *
+     * @param slot           the output slot
+     * @param index          the output index
+     * @return the type transition value
+     */
+    byte getTypeTransition(int slot, int index);
 
     /**
      * Sets the X coordinate value at the given output index.
@@ -103,6 +123,18 @@ public interface TypeTransitionBatchOutput {
     void setX(int slot, int index, int x);
 
     /**
+     * Gets the X coordinate value at the given output index.
+     * <p>
+     * If this output does not have the {@link BlockLevelConstants#TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_COORDS_X "X coordinates" type transition query output band}
+     * enabled, the value will be silently discarded.
+     *
+     * @param slot  the output slot
+     * @param index the output index
+     * @return     the x coordinate value
+     */
+    int getX(int slot, int index);
+
+    /**
      * Sets the Y coordinate value at the given output index.
      * <p>
      * If this output does not have the {@link BlockLevelConstants#TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_COORDS_Y "Y coordinates" type transition query output band}
@@ -113,6 +145,18 @@ public interface TypeTransitionBatchOutput {
      * @param y     the new y coordinate value
      */
     void setY(int slot, int index, int y);
+
+    /**
+     * Gets the Y coordinate value at the given output index.
+     * <p>
+     * If this output does not have the {@link BlockLevelConstants#TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_COORDS_Y "Y coordinates" type transition query output band}
+     * enabled, the value will be silently discarded.
+     *
+     * @param slot  the output slot
+     * @param index the output index
+     * @return     the y coordinate value
+     */
+    int getY(int slot, int index);
 
     /**
      * Sets the Z coordinate value at the given output index.
@@ -127,6 +171,18 @@ public interface TypeTransitionBatchOutput {
     void setZ(int slot, int index, int z);
 
     /**
+     * Gets the Z coordinate value at the given output index.
+     * <p>
+     * If this output does not have the {@link BlockLevelConstants#TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_COORDS_Z "Z coordinates" type transition query output band}
+     * enabled, the value will be silently discarded.
+     *
+     * @param slot  the output slot
+     * @param index the output index
+     * @return     the z coordinate value
+     */
+    int getZ(int slot, int index);
+
+    /**
      * Sets the Z coordinate value at the given output index.
      * <p>
      * If this output does not have the {@link BlockLevelConstants#TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_SKIPPED_NODATA "skipped NoData" type transition query output band}
@@ -137,6 +193,18 @@ public interface TypeTransitionBatchOutput {
      * @param skippedNoData the new "skipped NoData" value
      */
     void setSkippedNoData(int slot, int index, boolean skippedNoData);
+
+    /**
+     * Gets the Z coordinate value at the given output index.
+     * <p>
+     * If this output does not have the {@link BlockLevelConstants#TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_SKIPPED_NODATA "skipped NoData" type transition query output band}
+     * enabled, the value will be silently discarded.
+     *
+     * @param slot          the output slot
+     * @param index         the output index
+     * @return the "skipped NoData" value
+     */
+    boolean getSkippedNoData(int slot, int index);
 
     /**
      * Sets the values in multiple bands at the given output index.
@@ -198,8 +266,18 @@ public interface TypeTransitionBatchOutput {
             }
 
             @Override
+            public byte getTypeTransition(int index) {
+                return TypeTransitionBatchOutput.this.getTypeTransition(slot, index);
+            }
+
+            @Override
             public void setX(int index, int x) {
                 TypeTransitionBatchOutput.this.setX(slot, index, x);
+            }
+
+            @Override
+            public int getX(int index) {
+                return TypeTransitionBatchOutput.this.getX(slot, index);
             }
 
             @Override
@@ -208,13 +286,28 @@ public interface TypeTransitionBatchOutput {
             }
 
             @Override
+            public int getY(int index) {
+                return TypeTransitionBatchOutput.this.getY(slot, index);
+            }
+
+            @Override
             public void setZ(int index, int z) {
                 TypeTransitionBatchOutput.this.setZ(slot, index, z);
             }
 
             @Override
+            public int getZ(int index) {
+                return TypeTransitionBatchOutput.this.getZ(slot, index);
+            }
+
+            @Override
             public void setSkippedNoData(int index, boolean skippedNoData) {
                 TypeTransitionBatchOutput.this.setSkippedNoData(slot, index, skippedNoData);
+            }
+
+            @Override
+            public boolean getSkippedNoData(int index) {
+                return TypeTransitionBatchOutput.this.getSkippedNoData(slot, index);
             }
 
             @Override
@@ -283,39 +376,34 @@ public interface TypeTransitionBatchOutput {
                         multiplyExact(positive(this.lengthsStride, "lengthsStride"), this.count) - this.lengthsOffset);
 
                 if (this.typeTransitionsArray != null) {
-                    checkRangeLen(this.typeTransitionsArray.length, this.typeTransitionsOffset,
-                            addExact(
-                                    multiplyExact(positive(this.typeTransitionsSlotStride, "typeTransitionsSlotStride"), this.slots),
-                                    multiplyExact(positive(this.typeTransitionsIndexStride, "typeTransitionsIndexStride"), this.count)
-                            ) - this.typeTransitionsOffset);
+                    int allSlotsLength = multiplyExact(positive(this.typeTransitionsSlotStride, "typeTransitionsSlotStride"), this.slots);
+                    int indexSize = multiplyExact(positive(this.typeTransitionsIndexStride, "typeTransitionsIndexStride"), this.count);
+                    int lastIndexPos = addExact(this.typeTransitionsSlotStride * (this.slots - 1), this.typeTransitionsIndexStride * this.count);
+                    checkRangeLen(this.typeTransitionsArray.length, this.typeTransitionsOffset, lastIndexPos);
                 }
                 if (this.xCoordinatesArray != null) {
-                    checkRangeLen(this.xCoordinatesArray.length, this.xCoordinatesOffset,
-                            addExact(
-                                    multiplyExact(positive(this.xCoordinatesSlotStride, "xCoordinatesSlotStride"), this.slots),
-                                    multiplyExact(positive(this.xCoordinatesIndexStride, "xCoordinatesIndexStride"), this.count)
-                            ) - this.xCoordinatesOffset);
+                    int allSlotsLength = multiplyExact(positive(this.xCoordinatesSlotStride, "xCoordinatesSlotStride"), this.slots);
+                    int indexSize = multiplyExact(positive(this.xCoordinatesIndexStride, "xCoordinatesIndexStride"), this.count);
+                    int lastIndexPos = addExact(this.xCoordinatesSlotStride * (this.slots - 1), this.xCoordinatesIndexStride * this.count);
+                    checkRangeLen(this.xCoordinatesArray.length, this.xCoordinatesOffset, lastIndexPos);
                 }
                 if (this.yCoordinatesArray != null) {
-                    checkRangeLen(this.yCoordinatesArray.length, this.yCoordinatesOffset,
-                            addExact(
-                                    multiplyExact(positive(this.yCoordinatesSlotStride, "yCoordinatesSlotStride"), this.slots),
-                                    multiplyExact(positive(this.yCoordinatesIndexStride, "yCoordinatesIndexStride"), this.count)
-                            ) - this.yCoordinatesOffset);
+                    int allSlotsLength = multiplyExact(positive(this.yCoordinatesSlotStride, "yCoordinatesSlotStride"), this.slots);
+                    int indexSize = multiplyExact(positive(this.yCoordinatesIndexStride, "yCoordinatesIndexStride"), this.count);
+                    int lastIndexPos = addExact(this.yCoordinatesSlotStride * (this.slots - 1), this.yCoordinatesIndexStride * this.count);
+                    checkRangeLen(this.yCoordinatesArray.length, this.yCoordinatesOffset, lastIndexPos);
                 }
                 if (this.zCoordinatesArray != null) {
-                    checkRangeLen(this.zCoordinatesArray.length, this.zCoordinatesOffset,
-                            addExact(
-                                    multiplyExact(positive(this.zCoordinatesSlotStride, "zCoordinatesSlotStride"), this.slots),
-                                    multiplyExact(positive(this.zCoordinatesIndexStride, "zCoordinatesIndexStride"), this.count)
-                            ) - this.zCoordinatesOffset);
+                    int allSlotsLength = multiplyExact(positive(this.zCoordinatesSlotStride, "zCoordinatesSlotStride"), this.slots);
+                    int indexSize = multiplyExact(positive(this.zCoordinatesIndexStride, "zCoordinatesIndexStride"), this.count);
+                    int lastIndexPos = addExact(this.zCoordinatesSlotStride * (this.slots - 1), this.zCoordinatesIndexStride * this.count);
+                    checkRangeLen(this.zCoordinatesArray.length, this.zCoordinatesOffset, lastIndexPos);
                 }
                 if (this.skippedNoDataArray != null) {
-                    checkRangeLen(this.skippedNoDataArray.length, this.skippedNoDataOffset,
-                            addExact(
-                                    multiplyExact(positive(this.skippedNoDataSlotStride, "skippedNoDataSlotStride"), this.slots),
-                                    multiplyExact(positive(this.skippedNoDataIndexStride, "skippedNoDataIndexStride"), this.count)
-                            ) - this.skippedNoDataOffset);
+                    int allSlotsLength = multiplyExact(positive(this.skippedNoDataSlotStride, "skippedNoDataSlotStride"), this.slots);
+                    int indexSize = multiplyExact(positive(this.skippedNoDataIndexStride, "skippedNoDataIndexStride"), this.count);
+                    int lastIndexPos = addExact(this.skippedNoDataSlotStride * (this.slots - 1), this.skippedNoDataIndexStride * this.count);
+                    checkRangeLen(this.skippedNoDataArray.length, this.skippedNoDataOffset, lastIndexPos);
                 }
             }
         }
@@ -350,6 +438,12 @@ public interface TypeTransitionBatchOutput {
         }
 
         @Override
+        public int getLength(int slot) {
+            checkIndex(this.slots, slot);
+            return this.lengthsArray[this.lengthsOffset + this.lengthsStride * slot];
+        }
+
+        @Override
         public void setTypeTransition(int slot, int index, byte typeTransition) {
             checkIndex(this.slots, slot);
             checkIndex(this.count, index);
@@ -357,6 +451,14 @@ public interface TypeTransitionBatchOutput {
                 //we assume our state is valid, and since we know that the slot and index are valid we can be sure there will be no overflows here
                 this.typeTransitionsArray[this.typeTransitionsOffset + this.typeTransitionsSlotStride * slot + this.typeTransitionsIndexStride * index] = typeTransition;
             }
+        }
+
+        @Override
+        public byte getTypeTransition(int slot, int index) {
+            checkIndex(this.slots, slot);
+            checkIndex(this.count, index);
+            checkState(this.typeTransitionsArray != null);
+            return this.typeTransitionsArray[this.typeTransitionsOffset + this.typeTransitionsSlotStride * slot + this.typeTransitionsIndexStride * index];
         }
 
         @Override
@@ -370,6 +472,14 @@ public interface TypeTransitionBatchOutput {
         }
 
         @Override
+        public int getX(int slot, int index) {
+            checkIndex(this.slots, slot);
+            checkIndex(this.count, index);
+            checkState(this.xCoordinatesArray != null);
+            return this.xCoordinatesArray[this.xCoordinatesOffset + this.xCoordinatesSlotStride * slot + this.xCoordinatesIndexStride * index];
+        }
+
+        @Override
         public void setY(int slot, int index, int y) {
             checkIndex(this.slots, slot);
             checkIndex(this.count, index);
@@ -377,6 +487,14 @@ public interface TypeTransitionBatchOutput {
                 //we assume our state is valid, and since we know that the slot and index are valid we can be sure there will be no overflows here
                 this.yCoordinatesArray[this.yCoordinatesOffset + this.yCoordinatesSlotStride * slot + this.yCoordinatesIndexStride * index] = y;
             }
+        }
+
+        @Override
+        public int getY(int slot, int index) {
+            checkIndex(this.slots, slot);
+            checkIndex(this.count, index);
+            checkState(this.yCoordinatesArray != null);
+            return this.yCoordinatesArray[this.yCoordinatesOffset + this.yCoordinatesSlotStride * slot + this.yCoordinatesIndexStride * index];
         }
 
         @Override
@@ -390,6 +508,14 @@ public interface TypeTransitionBatchOutput {
         }
 
         @Override
+        public int getZ(int slot, int index) {
+            checkIndex(this.slots, slot);
+            checkIndex(this.count, index);
+            checkState(this.zCoordinatesArray != null);
+            return this.zCoordinatesArray[this.zCoordinatesOffset + this.zCoordinatesSlotStride * slot + this.zCoordinatesIndexStride * index];
+        }
+
+        @Override
         public void setSkippedNoData(int slot, int index, boolean skippedNoData) {
             checkIndex(this.slots, slot);
             checkIndex(this.count, index);
@@ -397,6 +523,14 @@ public interface TypeTransitionBatchOutput {
                 //we assume our state is valid, and since we know that the slot and index are valid we can be sure there will be no overflows here
                 this.skippedNoDataArray[this.skippedNoDataOffset + this.skippedNoDataSlotStride * slot + this.skippedNoDataIndexStride * index] = skippedNoData;
             }
+        }
+
+        @Override
+        public boolean getSkippedNoData(int slot, int index) {
+            checkIndex(this.slots, slot);
+            checkIndex(this.count, index);
+            checkState(this.skippedNoDataArray != null);
+            return this.skippedNoDataArray[this.skippedNoDataOffset + this.skippedNoDataSlotStride * slot + this.skippedNoDataIndexStride * index];
         }
 
         @Override

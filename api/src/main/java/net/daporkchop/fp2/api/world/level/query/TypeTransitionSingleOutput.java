@@ -77,6 +77,17 @@ public interface TypeTransitionSingleOutput {
     void setTypeTransition(int index, byte typeTransition);
 
     /**
+     * Gets the type transition value at the given output index.
+     * <p>
+     * If this output does not have the {@link BlockLevelConstants#TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_TRANSITIONS "type transitions" type transition query output band}
+     * enabled, this method will throw {@link IllegalStateException}.
+     *
+     * @param index the output index
+     * @return the type transition value at the requested index
+     */
+    byte getTypeTransition(int index);
+
+    /**
      * Sets the X coordinate value at the given output index.
      * <p>
      * If this output does not have the {@link BlockLevelConstants#TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_COORDS_X "X coordinates" type transition query output band}
@@ -86,6 +97,17 @@ public interface TypeTransitionSingleOutput {
      * @param x     the new x coordinate value
      */
     void setX(int index, int x);
+
+    /**
+     * Gets the X coordinate value at the given output index.
+     * <p>
+     * If this output does not have the {@link BlockLevelConstants#TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_COORDS_X "X coordinates" type transition query output band}
+     * enabled, this method will throw {@link IllegalStateException}.
+     *
+     * @param index the output index
+     * @return the x coordinate value
+     */
+    int getX(int index);
 
     /**
      * Sets the Y coordinate value at the given output index.
@@ -99,6 +121,17 @@ public interface TypeTransitionSingleOutput {
     void setY(int index, int y);
 
     /**
+     * Gets the Y coordinate value at the given output index.
+     * <p>
+     * If this output does not have the {@link BlockLevelConstants#TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_COORDS_Y "Y coordinates" type transition query output band}
+     * enabled, this method will throw {@link IllegalStateException}.
+     *
+     * @param index the output index
+     * @return the y coordinate value
+     */
+    int getY(int index);
+
+    /**
      * Sets the Z coordinate value at the given output index.
      * <p>
      * If this output does not have the {@link BlockLevelConstants#TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_COORDS_Z "Z coordinates" type transition query output band}
@@ -110,7 +143,18 @@ public interface TypeTransitionSingleOutput {
     void setZ(int index, int z);
 
     /**
-     * Sets the Z coordinate value at the given output index.
+     * Gets the Z coordinate value at the given output index.
+     * <p>
+     * If this output does not have the {@link BlockLevelConstants#TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_COORDS_Z "Z coordinates" type transition query output band}
+     * enabled, this method will throw {@link IllegalStateException}.
+     *
+     * @param index the output index
+     * @return the z coordinate value
+     */
+    int getZ(int index);
+
+    /**
+     * Sets the "skipped NoData" flag at the given output index.
      * <p>
      * If this output does not have the {@link BlockLevelConstants#TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_SKIPPED_NODATA "skipped NoData" type transition query output band}
      * enabled, the value will be silently discarded.
@@ -119,6 +163,17 @@ public interface TypeTransitionSingleOutput {
      * @param skippedNoData the new "skipped NoData" value
      */
     void setSkippedNoData(int index, boolean skippedNoData);
+
+    /**
+     * Gets the "skipped NoData" flag at the given output index.
+     * <p>
+     * If this output does not have the {@link BlockLevelConstants#TYPE_TRANSITION_OUTPUT_BAND_ORDINAL_SKIPPED_NODATA "skipped NoData" type transition query output band}
+     * enabled, this method will throw {@link IllegalStateException}.
+     *
+     * @param index the output index
+     * @return the "skipped NoData" value
+     */
+    boolean getSkippedNoData(int index);
 
     /**
      * Sets the values in multiple bands at the given output index.
@@ -259,12 +314,26 @@ public interface TypeTransitionSingleOutput {
         }
 
         @Override
+        public byte getTypeTransition(int index) {
+            checkIndex(this.count, index);
+            checkState(this.typeTransitionsArray != null);
+            return this.typeTransitionsArray[this.typeTransitionsOffset + this.typeTransitionsStride * index];
+        }
+
+        @Override
         public void setX(int index, int x) {
             checkIndex(this.count, index);
             if (this.xCoordinatesArray != null) {
                 //we assume our state is valid, and since we know that the index is valid we can be sure there will be no overflows here
                 this.xCoordinatesArray[this.xCoordinatesOffset + this.xCoordinatesStride * index] = x;
             }
+        }
+
+        @Override
+        public int getX(int index) {
+            checkIndex(this.count, index);
+            checkState(this.xCoordinatesArray != null);
+            return this.xCoordinatesArray[this.xCoordinatesOffset + this.xCoordinatesStride * index];
         }
 
         @Override
@@ -277,6 +346,13 @@ public interface TypeTransitionSingleOutput {
         }
 
         @Override
+        public int getY(int index) {
+            checkIndex(this.count, index);
+            checkState(this.yCoordinatesArray != null);
+            return this.yCoordinatesArray[this.yCoordinatesOffset + this.yCoordinatesStride * index];
+        }
+
+        @Override
         public void setZ(int index, int z) {
             checkIndex(this.count, index);
             if (this.zCoordinatesArray != null) {
@@ -286,12 +362,26 @@ public interface TypeTransitionSingleOutput {
         }
 
         @Override
+        public int getZ(int index) {
+            checkIndex(this.count, index);
+            checkState(this.zCoordinatesArray != null);
+            return this.zCoordinatesArray[this.zCoordinatesOffset + this.zCoordinatesStride * index];
+        }
+
+        @Override
         public void setSkippedNoData(int index, boolean skippedNoData) {
             checkIndex(this.count, index);
             if (this.skippedNoDataArray != null) {
                 //we assume our state is valid, and since we know that the index is valid we can be sure there will be no overflows here
                 this.skippedNoDataArray[this.skippedNoDataOffset + this.skippedNoDataStride * index] = skippedNoData;
             }
+        }
+
+        @Override
+        public boolean getSkippedNoData(int index) {
+            checkIndex(this.count, index);
+            checkState(this.skippedNoDataArray != null);
+            return this.skippedNoDataArray[this.skippedNoDataOffset + this.skippedNoDataStride * index];
         }
 
         @Override

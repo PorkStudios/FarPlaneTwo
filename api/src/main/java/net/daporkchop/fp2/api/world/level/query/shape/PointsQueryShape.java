@@ -279,9 +279,9 @@ public interface PointsQueryShape {
             multiplyExact(multiplyExact(notNegative(this.sizeX, "sizeX"), notNegative(this.sizeY, "sizeY")), notNegative(this.sizeZ, "sizeZ"));
 
             //make sure there will be no overflow when computing the actual voxel positions
-            addExact(this.originX, multiplyExact(notNegative(this.strideX, "strideX"), this.sizeX));
-            addExact(this.originY, multiplyExact(notNegative(this.strideY, "strideY"), this.sizeY));
-            addExact(this.originZ, multiplyExact(notNegative(this.strideZ, "strideZ"), this.sizeZ));
+            addExact(this.originX, multiplyExact(notNegative(this.strideX, "strideX"), positive(this.sizeX, "sizeX") - 1));
+            addExact(this.originY, multiplyExact(notNegative(this.strideY, "strideY"), positive(this.sizeY, "sizeY") - 1));
+            addExact(this.originZ, multiplyExact(notNegative(this.strideZ, "strideZ"), positive(this.sizeZ, "sizeZ") - 1));
         }
 
         @Override
