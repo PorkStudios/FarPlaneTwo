@@ -143,9 +143,15 @@ public abstract class AbstractExactHeightmapGenerator extends AbstractFarGenerat
         }
 
         HeightmapData data = new HeightmapData();
+        FExtendedStateRegistryData extendedStateRegistryData = world.registry().extendedStateRegistryData();
 
         for (int slot = 0, blockSampleIndex = 0, x = 0; x < HT_VOXELS; x++) {
             for (int z = 0; z < HT_VOXELS; z++, slot++) {
+                assert DEFAULT_LAYER == 0 && WATER_LAYER == 1; //we assume this is the case
+
+                boolean foundLiquid = false;
+                int remainingLayersAllocator = 2;
+
                 for (int layer = 0, slotLength = typeTransitionBatchOutput.getLength(slot); layer < slotLength; layer++, blockSampleIndex += BLOCK_SAMPLE_STRIDE_PER_LAYER) {
                     int elevation = typeTransitionBatchOutput.getY(slot, layer);
 
@@ -158,14 +164,24 @@ public abstract class AbstractExactHeightmapGenerator extends AbstractFarGenerat
                     int tileLayer;
                     switch (getTypeTransitionToType(transition)) {
                         case BLOCK_TYPE_TRANSPARENT:
-                            //TODO: add separate support for the water layer
-                            /*if (layer == WATER_LAYER) {
+                            if (hasAnyStateFlags(extendedStateRegistryData.stateInfo(data.state), STATE_FLAG_LIQUID)) {
+                                if (!foundLiquid) { //the first liquid we encounter goes on the water layer
+                                    foundLiquid = true;
+                                    tileLayer = WATER_LAYER;
+                                } else if ((tileLayer = remainingLayersAllocator++) >= MAX_LAYERS) {
+                                    continue;
+                                }
+
+                                data.secondaryConnection = tileLayer;
                                 data.height_frac = HEIGHT_FRAC_LIQUID;
-                                data.secondaryConnection = WATER_LAYER;
-                            }*/
-                            assert DEFAULT_LAYER == 0; //we assume this is the case
-                            tileLayer = layer + 1;
-                            data.height_frac = 0;
+                            } else {
+                                if ((tileLayer = remainingLayersAllocator++) >= MAX_LAYERS) {
+                                    continue;
+                                }
+
+                                data.secondaryConnection = DEFAULT_LAYER;
+                                data.height_frac = 0;
+                            }
                             break;
                         case BLOCK_TYPE_OPAQUE:
                             assert layer + 1 == slotLength : "opaque block isn't the last block in the array?";
@@ -176,7 +192,6 @@ public abstract class AbstractExactHeightmapGenerator extends AbstractFarGenerat
                         default:
                             throw new IllegalStateException("unexpected type transition " + getTypeTransitionToType(transition));
                     }
-
 
                     tile.setLayer(x, z, tileLayer, data);
                 }

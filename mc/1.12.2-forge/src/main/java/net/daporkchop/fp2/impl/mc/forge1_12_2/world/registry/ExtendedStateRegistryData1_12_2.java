@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.world.registry;
@@ -42,19 +41,40 @@ public final class ExtendedStateRegistryData1_12_2 implements FExtendedStateRegi
         }
     }
 
+    private static int stateInfo(IBlockState state) {
+        int flags = 0;
+        if (state.getMaterial().isLiquid()) {
+            flags |= STATE_FLAG_LIQUID;
+        }
+        return flags;
+    }
+
     private final GameRegistry1_12_2 registry;
 
     private final byte[] types;
+    private final byte[] stateInfo;
 
     public ExtendedStateRegistryData1_12_2(@NonNull GameRegistry1_12_2 registry) {
         this.registry = registry;
 
-        this.types = new byte[registry.states().max().getAsInt() + 1];
-        registry.states().forEach(state -> this.types[state] = (byte) type(registry.id2state(state)));
+        int stateCount = registry.states().max().getAsInt() + 1;
+        this.types = new byte[stateCount];
+        this.stateInfo = new byte[stateCount];
+
+        registry.states().forEach(state -> {
+            IBlockState vanillaState = registry.id2state(state);
+            this.types[state] = (byte) type(vanillaState);
+            this.stateInfo[state] = (byte) stateInfo(vanillaState);
+        });
     }
 
     @Override
     public int type(int state) throws IndexOutOfBoundsException {
         return this.types[state] & 0xFF;
+    }
+
+    @Override
+    public int stateInfo(int state) throws IndexOutOfBoundsException {
+        return this.stateInfo[state] & 0xFF;
     }
 }
