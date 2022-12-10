@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.heightmap.client;
@@ -25,6 +24,8 @@ import lombok.NonNull;
 import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;
+import net.daporkchop.fp2.core.client.shader.ShaderMacros;
+import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.core.mode.common.client.AbstractFarRenderer;
 import net.daporkchop.fp2.core.mode.common.client.ICullingStrategy;
 import net.daporkchop.fp2.core.mode.common.client.bake.IRenderBaker;
@@ -57,6 +58,7 @@ public class ShaderBasedHeightmapRenderStrategy extends AbstractMultipassIndexed
     protected final DrawLayout drawLayout;
 
     protected final ReloadableShaderProgram<DrawShaderProgram> blockShader;
+    protected final ReloadableShaderProgram<DrawShaderProgram> blockShaderCutout;
     protected final ReloadableShaderProgram<DrawShaderProgram> stencilShader;
 
     public ShaderBasedHeightmapRenderStrategy(@NonNull AbstractFarRenderer<HeightmapPos, HeightmapTile> farRenderer) {
@@ -79,6 +81,9 @@ public class ShaderBasedHeightmapRenderStrategy extends AbstractMultipassIndexed
         this.blockShader = ReloadableShaderProgram.draw(this.gl, this.drawLayout, this.macros,
                 Identifier.from(FP2Core.MODID, "shaders/vert/heightmap/heightmap.vert"),
                 Identifier.from(FP2Core.MODID, "shaders/frag/block.frag"));
+        this.blockShaderCutout = ReloadableShaderProgram.draw(this.gl, this.drawLayout, new ShaderMacros.Mutable(this.macros).define("FP2_CUTOUT"),
+                Identifier.from(FP2Core.MODID, "shaders/vert/heightmap/heightmap.vert"),
+                Identifier.from(FP2Core.MODID, "shaders/frag/block.frag"));
         this.stencilShader = ReloadableShaderProgram.draw(this.gl, this.drawLayout, this.macros,
                 Identifier.from(FP2Core.MODID, "shaders/vert/heightmap/heightmap.vert"),
                 Identifier.from(FP2Core.MODID, "shaders/frag/stencil.frag"));
@@ -86,7 +91,15 @@ public class ShaderBasedHeightmapRenderStrategy extends AbstractMultipassIndexed
 
     @Override
     public DrawShaderProgram blockShader(int level, int layer) {
-        return this.blockShader.get(); //TODO: this doesn't support CUTOUT
+        switch (layer) {
+            case IFarRenderer.LAYER_SOLID:
+            case IFarRenderer.LAYER_TRANSPARENT:
+                return this.blockShader.get();
+            case IFarRenderer.LAYER_CUTOUT:
+                return this.blockShaderCutout.get();
+            default:
+                throw new IllegalArgumentException("invalid layer: " + layer);
+        }
     }
 
     @Override
@@ -124,6 +137,7 @@ public class ShaderBasedHeightmapRenderStrategy extends AbstractMultipassIndexed
         super.doRelease();
 
         this.blockShader.close();
+        this.blockShaderCutout.close();
         this.stencilShader.close();
     }
 }
