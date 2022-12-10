@@ -275,6 +275,11 @@ public class TestFBlockLevel {
             public int type(int state) throws IndexOutOfBoundsException {
                 return checkIndex(BLOCK_TYPES, state);
             }
+
+            @Override
+            public int stateInfo(int state) throws IndexOutOfBoundsException {
+                return 0;
+            }
         }
     }
 }

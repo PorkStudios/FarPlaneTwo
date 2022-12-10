@@ -72,6 +72,15 @@ public class BlockLevelConstants {
     public static final int BLOCK_TYPES = 3;
 
     //
+    // STATE INFO FLAGS
+    //
+
+    /**
+     * Indicates that the block type is a liquid.
+     */
+    public static final int STATE_FLAG_LIQUID = 1;
+
+    //
     // DATA BAND ORDINALS
     //
 
@@ -238,6 +247,32 @@ public class BlockLevelConstants {
      */
     public static boolean isAllBlockTypesEnabled(int enabledBlockTypes) {
         return enabledBlockTypes == allBlockTypes();
+    }
+
+    //
+    // STATE INFO FLAG HELPERS
+    //
+
+    /**
+     * Checks whether the given {@link FExtendedStateRegistryData#stateInfo(int) block state info flags} value contains all of the expected flags.
+     *
+     * @param stateInfo     the {@link FExtendedStateRegistryData#stateInfo(int) block state info flags}
+     * @param expectedFlags the flags to check for, combined using bitwise OR
+     * @return whether the given {@link FExtendedStateRegistryData#stateInfo(int) block state info flags} value contains all of the expected flags
+     */
+    public static boolean hasAllStateFlags(int stateInfo, int expectedFlags) {
+        return (stateInfo & expectedFlags) == expectedFlags;
+    }
+
+    /**
+     * Checks whether the given {@link FExtendedStateRegistryData#stateInfo(int) block state info flags} value contains at least one of the expected flags.
+     *
+     * @param stateInfo     the {@link FExtendedStateRegistryData#stateInfo(int) block state info flags}
+     * @param expectedFlags the flags to check for, combined using bitwise OR
+     * @return whether the given {@link FExtendedStateRegistryData#stateInfo(int) block state info flags} value contains at least one of the expected flags
+     */
+    public static boolean hasAnyStateFlags(int stateInfo, int expectedFlags) {
+        return (stateInfo & expectedFlags) != 0;
     }
 
     //

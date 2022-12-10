@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.api.world.registry;
@@ -48,4 +47,18 @@ public interface FExtendedStateRegistryData {
      * @throws IndexOutOfBoundsException if {@code state} is not a valid state ID
      */
     int type(int state) throws IndexOutOfBoundsException;
+
+    /**
+     * Gets an {@code int} describing the block type for the given state ID.
+     * <p>
+     * The resulting value will consist of zero or more of the following values combined together using a binary OR operation:
+     * <ul>
+     *     <li>{@link BlockLevelConstants#STATE_FLAG_LIQUID}</li>
+     * </ul>
+     *
+     * @param state the state ID
+     * @return the block type's state descriptor flags
+     * @throws IndexOutOfBoundsException if {@code state} is not a valid state ID
+     */
+    int stateInfo(int state) throws IndexOutOfBoundsException;
 }
