@@ -17,24 +17,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.server;
+package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.fixes.server.integrated;
 
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.server.ATMinecraftServer1_12;
+import net.minecraft.crash.CrashReport;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.management.PlayerList;
+import net.minecraft.server.integrated.IntegratedServer;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.gen.Accessor;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * @author DaPorkchop_
  */
-@Mixin(MinecraftServer.class)
-public interface ATMinecraftServer1_12 {
-    @Accessor
-    PlayerList getPlayerList();
+@Mixin(IntegratedServer.class)
+public abstract class MixinIntegratedServer1_12 extends MinecraftServer {
+    protected MixinIntegratedServer1_12() {
+        super(null, null, null, null, null, null, null);
+    }
 
-    @Accessor
-    Thread getServerThread();
-
-    @Accessor
-    void setServerRunning(boolean serverRunning);
+    @Inject(method = "Lnet/minecraft/server/integrated/IntegratedServer;finalTick(Lnet/minecraft/crash/CrashReport;)V",
+            at = @At("HEAD"),
+            require = 1, allow = 1)
+    private void fp2_finalTick_avoidClientThreadDeadlock(CrashReport report, CallbackInfo ci) {
+        ((ATMinecraftServer1_12) this).setServerRunning(false);
+    }
 }

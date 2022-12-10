@@ -5,6 +5,7 @@
   "refmap": "mixins.fp2.refmap.json",
   "client": [
     "client.renderer.texture.MixinTextureUtil",
+    "server.integrated.MixinIntegratedServer1_12",
     "world.biome.MixinBiome1_12",
     "world.biome.MixinBiomeColorHelper1_12"
   ],
