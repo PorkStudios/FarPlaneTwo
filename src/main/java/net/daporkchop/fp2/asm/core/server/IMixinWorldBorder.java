@@ -8,4 +8,7 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 public interface IMixinWorldBorder {
     @Accessor("startDiameter")
     double getWorldBorderStartDiameter();
+
+    @Accessor("worldSize")
+    int getWorldSize();
 }
