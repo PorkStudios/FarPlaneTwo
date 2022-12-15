@@ -31,6 +31,7 @@ import io.netty.buffer.ByteBufAllocator;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.FP2;
+import net.daporkchop.fp2.asm.core.server.IMixinWorldBorder;
 import net.daporkchop.fp2.util.math.IntAxisAlignedBB;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
@@ -213,8 +214,7 @@ public class Constants {
             minY = ((ICubicWorld) world).getMinHeight();
             maxY = ((ICubicWorld) world).getMaxHeight() - 1;
         }
-
-        final int HORIZONTAL_LIMIT = 30_000_000; //TODO: hard-coding this is probably a bad idea, but there don't seem to be any variables or methods i can use to get it
+        final int HORIZONTAL_LIMIT = (int)(((IMixinWorldBorder)world.getWorldBorder()).getWorldBorderStartDiameter()/2.0D);
         return new IntAxisAlignedBB(-HORIZONTAL_LIMIT, minY, -HORIZONTAL_LIMIT, HORIZONTAL_LIMIT, maxY, HORIZONTAL_LIMIT);
     }
 
