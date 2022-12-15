@@ -214,7 +214,7 @@ public class Constants {
             minY = ((ICubicWorld) world).getMinHeight();
             maxY = ((ICubicWorld) world).getMaxHeight() - 1;
         }
-        final int HORIZONTAL_LIMIT = (int)(((IMixinWorldBorder)world.getWorldBorder()).getWorldBorderStartDiameter()/2.0D);
+        final int HORIZONTAL_LIMIT = ((IMixinWorldBorder)world.getWorldBorder()).getWorldSize();
         return new IntAxisAlignedBB(-HORIZONTAL_LIMIT, minY, -HORIZONTAL_LIMIT, HORIZONTAL_LIMIT, maxY, HORIZONTAL_LIMIT);
     }
 
