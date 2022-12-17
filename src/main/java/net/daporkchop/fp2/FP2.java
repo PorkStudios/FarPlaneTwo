@@ -49,7 +49,7 @@ import static net.daporkchop.fp2.util.Constants.*;
  */
 @Mod(modid = MODID,
         useMetadata = true,
-        dependencies = "required-after:forgerocks@[6.28.2-1.12.2,);after:cubicchunks@[1.12.2-0.0.1188.0,)",
+        dependencies = "required-after:forgerocks@[7.3.1,);after:cubicchunks@[1.12.2-0.0.1188.0,)",
         acceptedMinecraftVersions = "1.12.2")
 public class FP2 {
     public static final String MODID = "fp2";
