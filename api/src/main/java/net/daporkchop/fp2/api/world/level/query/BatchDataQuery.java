@@ -19,9 +19,12 @@
 
 package net.daporkchop.fp2.api.world.level.query;
 
+import lombok.Builder;
+import lombok.Data;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.fp2.api.world.level.query.shape.PointsQueryShape;
+import net.daporkchop.lib.common.annotation.param.NotNegative;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -32,34 +35,48 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * <ul>
  *     <li>a {@link PointsQueryShape} containing the positions of the voxels to get the values at</li>
  *     <li>a {@link DataQueryBatchOutput} defining which values to read, and to which the retrieved values will be written</li>
+ *     <li>a sample resolution, as described in {@link FBlockLevel}</li>
+ *     <li>a {@link QuerySamplingMode sampling mode}, as described in {@link FBlockLevel}</li>
  * </ul>
  *
  * @author DaPorkchop_
  */
-public interface BatchDataQuery {
-    static BatchDataQuery of(@NonNull PointsQueryShape shape, @NonNull DataQueryBatchOutput output) {
-        return new BatchDataQuery() {
-            @Override
-            public void validate() throws RuntimeException {
-                shape.validate();
-                output.validate();
-
-                int shapeCount = shape.count();
-                int outputCount = output.count();
-                checkState(shapeCount >= outputCount, "shape contains %d points, but output only has space for %d!", shapeCount, outputCount);
-            }
-
-            @Override
-            public PointsQueryShape shape() {
-                return shape;
-            }
-
-            @Override
-            public DataQueryBatchOutput output() {
-                return output;
-            }
-        };
+@Builder
+@Data
+public final class BatchDataQuery {
+    @Deprecated
+    public static BatchDataQuery of(@NonNull PointsQueryShape shape, @NonNull DataQueryBatchOutput output) {
+        return builder().shape(shape).output(output).build();
     }
+
+    /**
+     * The query's {@link PointsQueryShape shape}.
+     */
+    @NonNull
+    private final PointsQueryShape shape;
+
+    /**
+     * The query's {@link DataQueryBatchOutput output}.
+     */
+    @NonNull
+    private final DataQueryBatchOutput output;
+
+    /**
+     * The query's sample resolution.
+     *
+     * @see FBlockLevel
+     */
+    @Builder.Default
+    private final @NotNegative int sampleResolution = 0;
+
+    /**
+     * The query's {@link QuerySamplingMode sampling mode}.
+     *
+     * @see FBlockLevel
+     */
+    @Builder.Default
+    @NonNull
+    private final QuerySamplingMode samplingMode = QuerySamplingMode.DONT_CARE;
 
     /**
      * Ensures that this query's state is valid, throwing an exception if not.
@@ -70,15 +87,14 @@ public interface BatchDataQuery {
      *
      * @throws RuntimeException if the query's state is invalid
      */
-    void validate() throws RuntimeException;
+    public void validate() throws RuntimeException {
+        this.shape.validate();
+        this.output.validate();
 
-    /**
-     * @return the query's {@link PointsQueryShape shape}
-     */
-    PointsQueryShape shape();
+        int shapeCount = this.shape.count();
+        int outputCount = this.output.count();
+        checkState(shapeCount >= outputCount, "shape contains %d points, but output only has space for %d!", shapeCount, outputCount);
 
-    /**
-     * @return the query's {@link DataQueryBatchOutput output}
-     */
-    DataQueryBatchOutput output();
+        notNegative(this.sampleResolution, "sampleResolution");
+    }
 }

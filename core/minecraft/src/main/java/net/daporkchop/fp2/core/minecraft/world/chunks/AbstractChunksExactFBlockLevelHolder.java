@@ -26,6 +26,7 @@ import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.api.world.level.BlockLevelConstants;
 import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.fp2.api.world.level.GenerationNotAllowedException;
+import net.daporkchop.fp2.api.world.level.query.QuerySamplingMode;
 import net.daporkchop.fp2.api.world.level.query.TypeTransitionFilter;
 import net.daporkchop.fp2.api.world.level.query.TypeTransitionSingleOutput;
 import net.daporkchop.fp2.api.world.level.query.shape.PointsQueryShape;
@@ -40,6 +41,7 @@ import net.daporkchop.fp2.core.util.datastructure.Datastructures;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSegtreeSet;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSet;
 import net.daporkchop.fp2.core.util.threading.lazy.LazyFutureTask;
+import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.common.annotation.param.Positive;
 import net.daporkchop.lib.math.vector.Vec2i;
 
@@ -396,18 +398,19 @@ public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends Abstra
     //
 
     @Override
-    protected int getNextTypeTransitions(int x, int y, int z, int dx, int dy, int dz, @Positive long maxDistance,
+    protected int getNextTypeTransitions(int x, int y, int z, int dx, int dy, int dz, long maxDistance,
                                          @NonNull IntAxisAlignedBB dataLimits,
                                          @NonNull List<@NonNull TypeTransitionFilter> filters, @NonNull int[] filterHitCounts,
                                          @NonNull TypeTransitionSingleOutput output,
                                          @NonNull FExtendedStateRegistryData extendedStateRegistryData,
+                                         @NotNegative int sampleResolution, @NonNull QuerySamplingMode samplingMode,
                                          AbstractPrefetchedChunksExactFBlockLevel<CHUNK> prefetchedLevel) {
         //we know that exactly one of (dx,dy,dz) is non-zero
         return dy != 0
                 //searching along the Y axis, which we have special handling for
-                ? this.getNextTypeTransitionsVertical(x, y, z, dy, maxDistance, dataLimits, filters, filterHitCounts, output, extendedStateRegistryData, prefetchedLevel)
+                ? this.getNextTypeTransitionsVertical(x, y, z, dy, maxDistance, dataLimits, filters, filterHitCounts, output, extendedStateRegistryData, sampleResolution, samplingMode, prefetchedLevel)
                 //searching along some other axis
-                : this.getNextTypeTransitionsHorizontal(x, y, z, dx, dz, maxDistance, dataLimits, filters, filterHitCounts, output, extendedStateRegistryData, prefetchedLevel);
+                : this.getNextTypeTransitionsHorizontal(x, y, z, dx, dz, maxDistance, dataLimits, filters, filterHitCounts, output, extendedStateRegistryData, sampleResolution, samplingMode, prefetchedLevel);
     }
 
     /**
@@ -418,6 +421,7 @@ public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends Abstra
                                                  List<@NonNull TypeTransitionFilter> filters, int[] filterHitCounts,
                                                  TypeTransitionSingleOutput output,
                                                  FExtendedStateRegistryData extendedStateRegistryData,
+                                                 @NotNegative int sampleResolution, QuerySamplingMode samplingMode,
                                                  AbstractPrefetchedChunksExactFBlockLevel<CHUNK> prefetchedLevel) {
         output.validate();
         int outputCount = output.count();
@@ -491,6 +495,7 @@ public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends Abstra
                                                    List<@NonNull TypeTransitionFilter> filters, int[] filterHitCounts,
                                                    TypeTransitionSingleOutput output,
                                                    FExtendedStateRegistryData extendedStateRegistryData,
+                                                   @NotNegative int sampleResolution, QuerySamplingMode samplingMode,
                                                    AbstractPrefetchedChunksExactFBlockLevel<CHUNK> prefetchedLevel) {
         output.validate();
         int outputCount = output.count();

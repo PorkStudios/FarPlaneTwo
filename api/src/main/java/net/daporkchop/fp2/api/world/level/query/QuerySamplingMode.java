@@ -17,30 +17,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.minecraft.world;
+package net.daporkchop.fp2.api.world.level.query;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.api.util.Direction;
 import net.daporkchop.fp2.api.world.level.FBlockLevel;
-import net.daporkchop.fp2.api.world.level.query.QuerySamplingMode;
-import net.daporkchop.fp2.api.world.level.query.TypeTransitionFilter;
-import net.daporkchop.fp2.api.world.level.query.TypeTransitionSingleOutput;
-import net.daporkchop.lib.common.annotation.param.NotNegative;
-
-import java.util.List;
 
 /**
+ * A mode used for sampling voxel data from an {@link FBlockLevel}.
+ *
  * @author DaPorkchop_
+ * @see FBlockLevel
  */
-public abstract class AbstractExactFBlockLevel implements FBlockLevel {
-    protected abstract AbstractExactFBlockLevelHolder<?> holder();
-
-    @Override
-    public int getNextTypeTransitions(@NonNull Direction direction, int x, int y, int z, long maxDistance,
-                                      @NonNull List<@NonNull TypeTransitionFilter> filters,
-                                      @NonNull TypeTransitionSingleOutput output,
-                                      @NotNegative int sampleResolution, @NonNull QuerySamplingMode samplingMode) {
-        //delegate to holder, using null as the prefetched world since this isn't a prefetched world
-        return this.holder().getNextTypeTransitions(direction, x, y, z, maxDistance, filters, output, sampleResolution, samplingMode, null);
-    }
+public enum QuerySamplingMode {
+    /**
+     * Indicates that the user does not care how the implementation determines the representative voxel data for a sample.
+     */
+    DONT_CARE,
+    /**
+     * Indicates that the user is attempting to determine the shape of the terrain surface, and is not interested in interior samples (voxels whose contents are entirely
+     * obscured beneath the surface).
+     */
+    SURFACE,
+    /**
+     * Indicates that the user is interested in all blocks in the queried volume, and that the representative selection should not be biased towards surface blocks.
+     */
+    VOLUME,
 }

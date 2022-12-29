@@ -32,7 +32,7 @@ import static net.daporkchop.fp2.api.world.level.BlockLevelConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
- * Describes a target for a single {@link FBlockLevel#getNextTypeTransitions(Direction, int, int, int, long, List, TypeTransitionSingleOutput)} type transition search}'s
+ * Describes a target for a single {@link FBlockLevel#getNextTypeTransitions(Direction, int, int, int, long, List, TypeTransitionSingleOutput, int, QuerySamplingMode)} type transition search}'s
  * output to be written to.
  * <p>
  * A type transition query output consists of a sequence of data values, indexed from {@code 0} (inclusive) to {@link #count()} (exclusive). Each value is broken up

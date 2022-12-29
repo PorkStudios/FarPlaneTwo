@@ -25,6 +25,7 @@ import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.api.world.level.query.BatchDataQuery;
 import net.daporkchop.fp2.api.world.level.query.BatchTypeTransitionQuery;
 import net.daporkchop.fp2.api.world.level.query.DataQueryBatchOutput;
+import net.daporkchop.fp2.api.world.level.query.QuerySamplingMode;
 import net.daporkchop.fp2.api.world.level.query.TypeTransitionBatchOutput;
 import net.daporkchop.fp2.api.world.level.query.TypeTransitionFilter;
 import net.daporkchop.fp2.api.world.level.query.TypeTransitionSingleOutput;
@@ -46,8 +47,6 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * A read-only world consisting of voxels at integer coordinates.
- * <p>
- * Implementations <strong>must</strong> be thread-safe.
  * <p>
  * <h2>Voxel Data and Bands</h2>
  * <p>
@@ -87,7 +86,62 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  *     <li>A stride of exactly {@code 1} indicates that the voxels to be sampled are tightly packed. Implementations are required to return the exact information which would
  *     exist at the given position.</li>
  *     <li>All strides {@code > 1} indicate that voxels to be sampled have the given spacing between each voxel. Samples are taken every {@code stride} voxels, where each sample
- *     consists of a value which most accurately represents all of the voxels in the {@code stride²} area (for the 2-dimensional case) or {@code stride³} volume (for the 3-dimensional case).</li>
+ *     consists of a value which most accurately represents all of the voxels in the {@code stride}<sup>2</sup> area (for the 2-dimensional case) or
+ *     {@code stride}<sup>3</sup> volume (for the 3-dimensional case).</li>
+ * </ul>
+ * <p>
+ * <h2>Data Sampling</h2>
+ * <p>
+ * All data retrieval operations accept parameters which indicate how the operation should sample voxel data from the world: the <strong>sample resolution</strong> and
+ * <strong>sampling mode</strong>.
+ * <p>
+ * <h3>Sample Resolution</h3>
+ * The sample resolution is a {@link NotNegative not-negative} {@code int} which indicates the estimated distance (in units of voxels) between voxels that will be
+ * sampled. It serves as a hint to the implementation that the user is reading voxel data over a large area, but with a distance of approximately {@code sampleResolution}
+ * voxels between each sampled position (along each axis), and wishes to permit the implementation to return any value which it considers to "<strong>represent</strong>"
+ * the the blocks contained in the <strong>sampling volume</strong> corresponding to the voxel position being accessed.
+ * <p>
+ * A sample resolution of exactly {@code 0} is considered the "standard", in that the query is requesting the exact block data at the requested position, and the sampling
+ * mode is ignored. Implementations <strong>must</strong> respect this, and <strong>must not</strong> attempt to apply any optimizations which could result in returning
+ * data which differs from the block stored at exactly the requested voxel position when the sample resolution is {@code 0}.
+ * <p>
+ * <h3>Sampling Mode</h3>
+ * The {@link QuerySamplingMode sampling mode} is an {@code enum} which provides a hint to the implementation as to how the data will be used, and may affect how the data
+ * value to represent a sampling volume is chosen. It is ignored if the sample resolution is exactly {@code 0}. See the individual enum properties for further information
+ * as to their individual meanings.
+ * <p>
+ * <h3>Sampling Volume</h3>
+ * When choosing the data to return when sampling the voxel at a given position, the implementation may take all of the voxels in the position's sampling volume into
+ * account. The sampling volume for a given voxel position is an implementation-defined axis-aligned cuboid which contains the voxel position and has a side length of
+ * no more than {@code 2 * roundUpToNextPowerOfTwo(sampleResolution)}, and may be arbitrarily aligned.
+ * <p>
+ * <i>Most implementations will use cubic volumes with a side length of either {@code roundUpToNextPowerOfTwo(sampleResolution)} or {@code sampleResolution}, with the
+ * volume being aligned to integer multiples of the side length.</i>
+ * <p>
+ * <h2>Notes to Implementors</h2>
+ * <p>
+ * Implementations <strong>must</strong> be thread-safe. <sub>Implementors which achieve thread-safety by slapping {@code synchronized} on everything will be sentenced
+ * to a long, painful death by being buried alive in the mountain of CPU cores which were left underutilized as a direct result of their lazy programming.</sub>
+ * <p>
+ * Ideally, all implementors would override every method declared in this interface, and would have several implementations of each method internally, each optimized for
+ * specific cases. However, even though this is (obviously) not realistically possible, there are still some methods and/or edge cases for which implementors
+ * <strong>should</strong> add specific optimized implementations. Specifically, in addition to methods without a default implementation, implementations are strongly
+ * advised to override and provide optimized implementations for <strong>at least</strong> the following methods:<br>
+ * <ul>
+ *     <li>
+ *         {@link #query(BatchDataQuery)}<br>
+ *         <i>For implementations returning "real" data from persistent storage, consider prefetching all of the data into memory before beginning to copy data into the
+ *         output buffer.</i><br>
+ *         <i>Also consider optimizing for specific {@link PointsQueryShape} types, most importantly {@link PointsQueryShape.OriginSizeStride}.</i><br>
+ *     </li>
+ *     <li>
+ *         {@link #getNextTypeTransitions(Direction, int, int, int, long, List, TypeTransitionSingleOutput, int, QuerySamplingMode)}<br>
+ *         <i>For implementations returning "real" data from persistent storage, consider using a spatial datastructure to efficiently scan for type transitions in
+ *         logarithmic time.</i><br>
+ *         <i>For implementations returning "fake" data generated on-the-fly, consider using techniques such as binary searching to efficiently scan for type
+ *         transitions in logarithmic time.</i><br>
+ *         <i>Consider optimizing for specific {@link Direction direction}s, most importantly {@link Direction#NEGATIVE_Y} and {@link Direction#POSITIVE_Y}</i><br>
+ *     </li>
  * </ul>
  *
  * @author DaPorkchop_
@@ -217,35 +271,41 @@ public interface FBlockLevel extends AutoCloseable {
     /**
      * Gets the state at the given voxel position.
      *
-     * @param x the X coordinate
-     * @param y the Y coordinate
-     * @param z the Z coordinate
+     * @param x                the X coordinate
+     * @param y                the Y coordinate
+     * @param z                the Z coordinate
+     * @param sampleResolution the sampling resolution to use
+     * @param samplingMode     the {@link QuerySamplingMode sampling mode} to use
      * @return the state
      * @throws GenerationNotAllowedException if the data at the given voxel position is not generated and this world doesn't allow generation
      */
-    int getState(int x, int y, int z) throws GenerationNotAllowedException;
+    int getState(int x, int y, int z, @NotNegative int sampleResolution, @NonNull QuerySamplingMode samplingMode) throws GenerationNotAllowedException;
 
     /**
      * Gets the biome at the given voxel position.
      *
-     * @param x the X coordinate
-     * @param y the Y coordinate
-     * @param z the Z coordinate
+     * @param x                the X coordinate
+     * @param y                the Y coordinate
+     * @param z                the Z coordinate
+     * @param sampleResolution the sampling resolution to use
+     * @param samplingMode     the {@link QuerySamplingMode sampling mode} to use
      * @return the biome
      * @throws GenerationNotAllowedException if the data at the given voxel position is not generated and this world doesn't allow generation
      */
-    int getBiome(int x, int y, int z) throws GenerationNotAllowedException;
+    int getBiome(int x, int y, int z, @NotNegative int sampleResolution, @NonNull QuerySamplingMode samplingMode) throws GenerationNotAllowedException;
 
     /**
      * Gets the packed block/sky light at the given voxel position.
      *
-     * @param x the X coordinate
-     * @param y the Y coordinate
-     * @param z the Z coordinate
+     * @param x                the X coordinate
+     * @param y                the Y coordinate
+     * @param z                the Z coordinate
+     * @param sampleResolution the sampling resolution to use
+     * @param samplingMode     the {@link QuerySamplingMode sampling mode} to use
      * @return the packed light levels
      * @throws GenerationNotAllowedException if the data at the given voxel position is not generated and this world doesn't allow generation
      */
-    byte getLight(int x, int y, int z) throws GenerationNotAllowedException;
+    byte getLight(int x, int y, int z, @NotNegative int sampleResolution, @NonNull QuerySamplingMode samplingMode) throws GenerationNotAllowedException;
 
     //
     // BULK DATA QUERIES
@@ -281,6 +341,8 @@ public interface FBlockLevel extends AutoCloseable {
 
             PointsQueryShape shape = query.shape();
             DataQueryBatchOutput output = query.output();
+            int sampleResolution = query.sampleResolution();
+            QuerySamplingMode samplingMode = query.samplingMode();
 
             int enabledBands = output.enabledBands();
             shape.forEach((index, x, y, z) -> {
@@ -291,13 +353,13 @@ public interface FBlockLevel extends AutoCloseable {
 
                 //read values if corresponding bands are enabled
                 if (BlockLevelConstants.isDataBandEnabled(enabledBands, BlockLevelConstants.DATA_BAND_ORDINAL_STATES)) {
-                    state = this.getState(x, y, z);
+                    state = this.getState(x, y, z, sampleResolution, samplingMode);
                 }
                 if (BlockLevelConstants.isDataBandEnabled(enabledBands, BlockLevelConstants.DATA_BAND_ORDINAL_BIOMES)) {
-                    biome = this.getBiome(x, y, z);
+                    biome = this.getBiome(x, y, z, sampleResolution, samplingMode);
                 }
                 if (BlockLevelConstants.isDataBandEnabled(enabledBands, BlockLevelConstants.DATA_BAND_ORDINAL_LIGHT)) {
-                    light = this.getLight(x, y, z);
+                    light = this.getLight(x, y, z, sampleResolution, samplingMode);
                 }
 
                 //store values in query output
@@ -333,21 +395,28 @@ public interface FBlockLevel extends AutoCloseable {
      * {@code boolean}s. A value of {@code true} for an individual transition indicates the implementation may have skipped one or more non-existent voxels prior to
      * encountering the current transition.
      *
-     * @param direction   the direction to iterate in
-     * @param x           the X coordinate to begin iteration from
-     * @param y           the Y coordinate to begin iteration from
-     * @param z           the Z coordinate to begin iteration from
-     * @param maxDistance the maximum number of voxels to iterate through. The voxel being transitioned to is not included in this total: if {@code maxDistance} is
-     *                    {@code 1L}, the transition from {@code (x,y,z)} to {@code (x+dx,y+dy,z+dz)} will still be checked
-     * @param filters     a {@link List} of the {@link TypeTransitionFilter filters} to use for selecting which type transitions to include in the
-     *                    {@link TypeTransitionSingleOutput output}. Type transitions which at least one of the filters will be written to the output. If the given
-     *                    {@link List} is {@link List#isEmpty() empty}, no filtering will be applied.
-     * @param output      a {@link TypeTransitionSingleOutput output} to store the encountered type transitions in
+     * @param direction        the direction to iterate in
+     * @param x                the X coordinate to begin iteration from
+     * @param y                the Y coordinate to begin iteration from
+     * @param z                the Z coordinate to begin iteration from
+     * @param maxDistance      the maximum number of voxels to iterate through. The voxel being transitioned to is not included in this total: if {@code maxDistance} is
+     *                         {@code 1L}, the transition from {@code (x,y,z)} to {@code (x+dx,y+dy,z+dz)} will still be checked
+     * @param filters          a {@link List} of the {@link TypeTransitionFilter filters} to use for selecting which type transitions to include in the
+     *                         {@link TypeTransitionSingleOutput output}. Type transitions which at least one of the filters will be written to the output. If the given
+     *                         {@link List} is {@link List#isEmpty() empty}, no filtering will be applied.
+     * @param output           a {@link TypeTransitionSingleOutput output} to store the encountered type transitions in
+     * @param sampleResolution the sampling resolution to use
+     * @param samplingMode     the {@link QuerySamplingMode sampling mode} to use
      * @return the number of elements written to the {@link TypeTransitionSingleOutput output}
      */
-    default int getNextTypeTransitions(@NonNull Direction direction, int x, int y, int z, @NotNegative long maxDistance,
+    default int getNextTypeTransitions(@NonNull Direction direction, int x, int y, int z, long maxDistance,
                                        @NonNull List<@NonNull TypeTransitionFilter> filters,
-                                       @NonNull TypeTransitionSingleOutput output) {
+                                       @NonNull TypeTransitionSingleOutput output,
+                                       @NotNegative int sampleResolution, @NonNull QuerySamplingMode samplingMode) {
+        //we can't respect the original values, so just overwrite them
+        sampleResolution = 0;
+        samplingMode = QuerySamplingMode.DONT_CARE;
+
         output.validate(); //this could potentially help JIT?
 
         if (notNegative(maxDistance, "maxDistance") == 0L) { //already reached the maximum search distance
@@ -407,7 +476,7 @@ public interface FBlockLevel extends AutoCloseable {
 
         //determine the initial block type
         try {
-            lastType = extendedStateRegistryData.type(this.getState(x, y, z));
+            lastType = extendedStateRegistryData.type(this.getState(x, y, z, sampleResolution, samplingMode));
         } catch (GenerationNotAllowedException e) {
             //we already encountered a NoData value!
             lastType = -1;
@@ -420,7 +489,7 @@ public interface FBlockLevel extends AutoCloseable {
              lastInBounds = nextInBounds) {
             int nextType;
             try {
-                nextType = extendedStateRegistryData.type(this.getState(x, y, z));
+                nextType = extendedStateRegistryData.type(this.getState(x, y, z, sampleResolution, samplingMode));
             } catch (GenerationNotAllowedException e) {
                 //found a NoData value, remember that we encountered it and resume search
                 lastType = -1;
@@ -508,10 +577,12 @@ public interface FBlockLevel extends AutoCloseable {
             List<@NonNull TypeTransitionFilter> filters = query.filters();
             PointsQueryShape shape = query.shape();
             TypeTransitionBatchOutput output = query.output();
+            int sampleResolution = query.sampleResolution();
+            QuerySamplingMode samplingMode = query.samplingMode();
 
             //dispatch a separate query for each point and store it in the corresponding slot index
             shape.forEach((index, x, y, z) -> {
-                int length = this.getNextTypeTransitions(direction, x, y, z, maxDistance, filters, output.slot(index));
+                int length = this.getNextTypeTransitions(direction, x, y, z, maxDistance, filters, output.slot(index), sampleResolution, samplingMode);
                 output.setLength(index, length);
             });
         }

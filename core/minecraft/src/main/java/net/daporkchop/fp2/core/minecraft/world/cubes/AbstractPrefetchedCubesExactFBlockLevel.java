@@ -25,8 +25,10 @@ import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.api.world.level.BlockLevelConstants;
 import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.fp2.api.world.level.GenerationNotAllowedException;
+import net.daporkchop.fp2.api.world.level.query.QuerySamplingMode;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.fp2.core.minecraft.world.AbstractPrefetchedExactFBlockLevel;
+import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.math.vector.Vec3i;
 import net.daporkchop.lib.primitive.map.open.ObjObjOpenHashMap;
 
@@ -129,7 +131,7 @@ public abstract class AbstractPrefetchedCubesExactFBlockLevel<CUBE> extends Abst
     }
 
     @Override
-    public int getState(int x, int y, int z) throws GenerationNotAllowedException {
+    public int getState(int x, int y, int z, @NotNegative int sampleResolution, QuerySamplingMode samplingMode) throws GenerationNotAllowedException {
         if (!this.holder.isValidPosition(x, y, z)) { //position is outside world, return 0
             return 0;
         }
@@ -143,7 +145,7 @@ public abstract class AbstractPrefetchedCubesExactFBlockLevel<CUBE> extends Abst
     protected abstract int getState(int x, int y, int z, CUBE cube) throws GenerationNotAllowedException;
 
     @Override
-    public int getBiome(int x, int y, int z) throws GenerationNotAllowedException {
+    public int getBiome(int x, int y, int z, @NotNegative int sampleResolution, QuerySamplingMode samplingMode) throws GenerationNotAllowedException {
         if (!this.holder.isValidPosition(x, y, z)) { //position is outside world, return 0
             return 0;
         }
@@ -157,7 +159,7 @@ public abstract class AbstractPrefetchedCubesExactFBlockLevel<CUBE> extends Abst
     protected abstract int getBiome(int x, int y, int z, CUBE cube) throws GenerationNotAllowedException;
 
     @Override
-    public byte getLight(int x, int y, int z) throws GenerationNotAllowedException {
+    public byte getLight(int x, int y, int z, @NotNegative int sampleResolution, QuerySamplingMode samplingMode) throws GenerationNotAllowedException {
         if (!this.holder.isValidPosition(x, y, z)) { //position is outside world, return default
             return y >= this.holder.bounds().maxY()
                     ? BlockLevelConstants.packLight(15, 0) //y coordinates are high, return full sky light

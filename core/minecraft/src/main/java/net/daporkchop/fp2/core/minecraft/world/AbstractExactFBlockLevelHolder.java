@@ -25,6 +25,7 @@ import net.daporkchop.fp2.api.util.Direction;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.api.world.level.BlockLevelConstants;
 import net.daporkchop.fp2.api.world.level.FBlockLevel;
+import net.daporkchop.fp2.api.world.level.query.QuerySamplingMode;
 import net.daporkchop.fp2.api.world.level.query.TypeTransitionFilter;
 import net.daporkchop.fp2.api.world.level.query.TypeTransitionSingleOutput;
 import net.daporkchop.fp2.api.world.level.query.shape.PointsQueryShape;
@@ -33,7 +34,6 @@ import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
-import net.daporkchop.lib.common.annotation.param.Positive;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 
 import java.util.ArrayList;
@@ -119,11 +119,12 @@ public abstract class AbstractExactFBlockLevelHolder<PREFETCHED extends Abstract
     /**
      * @param prefetchedLevel the existing {@link PREFETCHED prefetched level} which the query is being executed in, or {@code null} if it is not being executed in a
      *                        prefetched level
-     * @see FBlockLevel#getNextTypeTransitions(Direction, int, int, int, long, List, TypeTransitionSingleOutput)
+     * @see FBlockLevel#getNextTypeTransitions(Direction, int, int, int, long, List, TypeTransitionSingleOutput, int, QuerySamplingMode)
      */
-    public final int getNextTypeTransitions(@NonNull Direction direction, int x, int y, int z, @NotNegative long maxDistance,
+    public final int getNextTypeTransitions(@NonNull Direction direction, int x, int y, int z, long maxDistance,
                                             @NonNull List<@NonNull TypeTransitionFilter> filters,
                                             @NonNull TypeTransitionSingleOutput output,
+                                            @NotNegative int sampleResolution, @NonNull QuerySamplingMode samplingMode,
                                             PREFETCHED prefetchedLevel) {
         output.validate(); //this could potentially help JIT?
 
@@ -183,7 +184,7 @@ public abstract class AbstractExactFBlockLevelHolder<PREFETCHED extends Abstract
         //now that we've done all the complex argument validation, delegate to the real implementation
         int writtenCount = this.getNextTypeTransitions(
                 x, y, z, dx, dy, dz, maxDistance,
-                dataLimits, filters, filterHitCounts, output, extendedStateRegistryData, prefetchedLevel);
+                dataLimits, filters, filterHitCounts, output, extendedStateRegistryData, sampleResolution, samplingMode, prefetchedLevel);
 
         //release the temporary array again
         //TODO: alloc.release(filterHitCounts);
@@ -191,7 +192,7 @@ public abstract class AbstractExactFBlockLevelHolder<PREFETCHED extends Abstract
     }
 
     /**
-     * The real implementation of {@link #getNextTypeTransitions(Direction, int, int, int, long, List, TypeTransitionSingleOutput, AbstractPrefetchedExactFBlockLevel)}, which
+     * The real implementation of {@link #getNextTypeTransitions(Direction, int, int, int, long, List, TypeTransitionSingleOutput, int, QuerySamplingMode, AbstractPrefetchedExactFBlockLevel)}, which
      * is called after all the arguments have been validated.
      *
      * @param x                         the X coordinate to begin iteration from
@@ -210,16 +211,19 @@ public abstract class AbstractExactFBlockLevelHolder<PREFETCHED extends Abstract
      *                                  than or equal to {@code filters.size()}.
      * @param output                    the {@link TypeTransitionSingleOutput output} to store the encountered type transitions in
      * @param extendedStateRegistryData this level's {@link FExtendedStateRegistryData}
+     * @param sampleResolution          the sample resolution, as described in {@link FBlockLevel}
+     * @param samplingMode              the {@link QuerySamplingMode sampling mode}, as described in {@link FBlockLevel}
      * @param prefetchedLevel           the existing {@link PREFETCHED prefetched level} which the query is being executed in, or {@code null} if it is not being executed
      *                                  in a prefetched level
      * @return the number of elements written to the {@link TypeTransitionSingleOutput output}
-     * @see FBlockLevel#getNextTypeTransitions(Direction, int, int, int, long, List, TypeTransitionSingleOutput)
+     * @see FBlockLevel#getNextTypeTransitions(Direction, int, int, int, long, List, TypeTransitionSingleOutput, int, net.daporkchop.fp2.api.world.level.query.QuerySamplingMode)
      */
-    protected abstract int getNextTypeTransitions(int x, int y, int z, int dx, int dy, int dz, @Positive long maxDistance,
+    protected abstract int getNextTypeTransitions(int x, int y, int z, int dx, int dy, int dz, long maxDistance,
                                                   @NonNull IntAxisAlignedBB dataLimits,
                                                   @NonNull List<@NonNull TypeTransitionFilter> filters, @NonNull int[] filterHitCounts,
                                                   @NonNull TypeTransitionSingleOutput output,
                                                   @NonNull FExtendedStateRegistryData extendedStateRegistryData,
+                                                  @NotNegative int sampleResolution, @NonNull QuerySamplingMode samplingMode,
                                                   PREFETCHED prefetchedLevel);
 
     protected static boolean checkTransitionFiltersResult_transitionMatches(int result) {

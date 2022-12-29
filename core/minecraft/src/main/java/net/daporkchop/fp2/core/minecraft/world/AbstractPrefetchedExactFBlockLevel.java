@@ -22,6 +22,8 @@ package net.daporkchop.fp2.core.minecraft.world;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.util.Direction;
 import net.daporkchop.fp2.api.world.level.FBlockLevel;
+import net.daporkchop.fp2.api.world.level.GenerationNotAllowedException;
+import net.daporkchop.fp2.api.world.level.query.QuerySamplingMode;
 import net.daporkchop.fp2.api.world.level.query.TypeTransitionFilter;
 import net.daporkchop.fp2.api.world.level.query.TypeTransitionSingleOutput;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
@@ -37,10 +39,26 @@ public abstract class AbstractPrefetchedExactFBlockLevel implements FBlockLevel 
     protected abstract AbstractExactFBlockLevelHolder<?> holder();
 
     @Override
-    public int getNextTypeTransitions(@NonNull Direction direction, int x, int y, int z, @NotNegative long maxDistance,
+    public int getNextTypeTransitions(@NonNull Direction direction, int x, int y, int z, long maxDistance,
                                       @NonNull List<@NonNull TypeTransitionFilter> filters,
-                                      @NonNull TypeTransitionSingleOutput output) {
+                                      @NonNull TypeTransitionSingleOutput output,
+                                      @NotNegative int sampleResolution, @NonNull QuerySamplingMode samplingMode) {
         //delegate to holder
-        return this.holder().getNextTypeTransitions(direction, x, y, z, maxDistance, filters, output, uncheckedCast(this));
+        return this.holder().getNextTypeTransitions(direction, x, y, z, maxDistance, filters, output, sampleResolution, samplingMode, uncheckedCast(this));
     }
+
+    //override the simple getters to remove @NonNull annotation from the sampling mode - it's not used, and since is this an internal class we don't have to worry about
+    // strictly following the API rules, so we can save ourselves the effort of including the null checks
+
+    @Override
+    @SuppressWarnings("NullableProblems")
+    public abstract int getState(int x, int y, int z, @NotNegative int sampleResolution, QuerySamplingMode samplingMode) throws GenerationNotAllowedException;
+
+    @Override
+    @SuppressWarnings("NullableProblems")
+    public abstract int getBiome(int x, int y, int z, @NotNegative int sampleResolution, QuerySamplingMode samplingMode) throws GenerationNotAllowedException;
+
+    @Override
+    @SuppressWarnings("NullableProblems")
+    public abstract byte getLight(int x, int y, int z, @NotNegative int sampleResolution, QuerySamplingMode samplingMode) throws GenerationNotAllowedException;
 }

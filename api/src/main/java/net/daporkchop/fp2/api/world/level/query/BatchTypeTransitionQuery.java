@@ -19,6 +19,8 @@
 
 package net.daporkchop.fp2.api.world.level.query;
 
+import lombok.Builder;
+import lombok.Data;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.util.Direction;
 import net.daporkchop.fp2.api.world.level.FBlockLevel;
@@ -31,58 +33,77 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * Container object representing a batch type transition query - a query for executing multiple
- * {@link FBlockLevel#getNextTypeTransitions(Direction, int, int, int, long, List, TypeTransitionSingleOutput) type transition searches} at once.
+ * {@link FBlockLevel#getNextTypeTransitions(Direction, int, int, int, long, List, TypeTransitionSingleOutput, int, QuerySamplingMode) type transition searches} at once.
  * <p>
  * A batch type transition query consists of:
  * <ul>
+ *     <li>a {@link Direction} to iterate in</li>
+ *     <li>a maximum iteration distance, as described in {@link FBlockLevel#getNextTypeTransitions(Direction, int, int, int, long, List, TypeTransitionSingleOutput, int, QuerySamplingMode)}</li>
+ *     <li>a {@link List} of {@link TypeTransitionFilter}s describing the type transitions to search for</li>
  *     <li>a {@link PointsQueryShape} containing the positions of the voxels to begin iteration at</li>
  *     <li>a {@link TypeTransitionBatchOutput} defining which values to read, and to which the retrieved values will be written</li>
+ *     <li>a sample resolution, as described in {@link FBlockLevel}</li>
+ *     <li>a {@link QuerySamplingMode sampling mode}, as described in {@link FBlockLevel}</li>
  * </ul>
  *
  * @author DaPorkchop_
  */
-public interface BatchTypeTransitionQuery {
-    static BatchTypeTransitionQuery of(@NonNull Direction direction, @NotNegative long maxDistance,
+@Builder
+@Data
+public final class BatchTypeTransitionQuery {
+    @Deprecated
+    public static BatchTypeTransitionQuery of(@NonNull Direction direction, @NotNegative long maxDistance,
                                        @NonNull List<@NonNull TypeTransitionFilter> filters,
                                        @NonNull PointsQueryShape shape, @NonNull TypeTransitionBatchOutput output) {
-        return new BatchTypeTransitionQuery() {
-            @Override
-            public void validate() throws RuntimeException {
-                shape.validate();
-                output.validate();
-                notNegative(maxDistance, "maxDistance");
-
-                int shapeCount = shape.count();
-                int outputSlots = output.slots();
-                checkState(shapeCount >= outputSlots, "shape contains %d points, but output only has space for %d slots!", shapeCount, outputSlots);
-            }
-
-            @Override
-            public Direction direction() {
-                return direction;
-            }
-
-            @Override
-            public @NotNegative long maxDistance() {
-                return maxDistance;
-            }
-
-            @Override
-            public List<@NonNull TypeTransitionFilter> filters() {
-                return filters;
-            }
-
-            @Override
-            public PointsQueryShape shape() {
-                return shape;
-            }
-
-            @Override
-            public TypeTransitionBatchOutput output() {
-                return output;
-            }
-        };
+        return builder().direction(direction).maxDistance(maxDistance).filters(filters).shape(shape).output(output).build();
     }
+
+    /**
+     * The query's {@link Direction search direction}.
+     */
+    @NonNull
+    private final Direction direction;
+
+    /**
+     * The query's maximum search distance.
+     */
+    @Builder.Default
+    private final @NotNegative long maxDistance = Long.MAX_VALUE;
+
+    /**
+     * The query's {@link TypeTransitionFilter filters}.
+     */
+    @NonNull
+    private final List<@NonNull TypeTransitionFilter> filters;
+
+    /**
+     * The query's {@link PointsQueryShape shape}.
+     */
+    @NonNull
+    private final PointsQueryShape shape;
+
+    /**
+     * The query's {@link TypeTransitionBatchOutput output}.
+     */
+    @NonNull
+    private final TypeTransitionBatchOutput output;
+
+    /**
+     * The query's sample resolution.
+     *
+     * @see FBlockLevel
+     */
+    @Builder.Default
+    private final @NotNegative int sampleResolution = 0;
+
+    /**
+     * The query's {@link QuerySamplingMode sampling mode}.
+     *
+     * @see FBlockLevel
+     */
+    @Builder.Default
+    @NonNull
+    private final QuerySamplingMode samplingMode = QuerySamplingMode.DONT_CARE;
 
     /**
      * Ensures that this query's state is valid, throwing an exception if not.
@@ -93,30 +114,15 @@ public interface BatchTypeTransitionQuery {
      *
      * @throws RuntimeException if the query's state is invalid
      */
-    void validate() throws RuntimeException;
+    public void validate() throws RuntimeException {
+        this.shape.validate();
+        this.output.validate();
+        notNegative(this.maxDistance, "maxDistance");
 
-    /**
-     * @return the query's {@link Direction search direction}
-     */
-    Direction direction();
+        int shapeCount = this.shape.count();
+        int outputSlots = this.output.slots();
+        checkState(shapeCount >= outputSlots, "shape contains %d points, but output only has space for %d slots!", shapeCount, outputSlots);
 
-    /**
-     * @return the query's maximum search distance
-     */
-    @NotNegative long maxDistance();
-
-    /**
-     * @return the query's {@link TypeTransitionFilter filters}
-     */
-    List<@NonNull TypeTransitionFilter> filters();
-
-    /**
-     * @return the query's {@link PointsQueryShape shape}
-     */
-    PointsQueryShape shape();
-
-    /**
-     * @return the query's {@link TypeTransitionBatchOutput output}
-     */
-    TypeTransitionBatchOutput output();
+        notNegative(this.sampleResolution, "sampleResolution");
+    }
 }

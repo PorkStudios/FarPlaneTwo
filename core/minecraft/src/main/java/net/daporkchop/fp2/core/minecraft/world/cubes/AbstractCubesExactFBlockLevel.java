@@ -27,9 +27,11 @@ import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.fp2.api.world.level.GenerationNotAllowedException;
 import net.daporkchop.fp2.api.world.level.query.BatchDataQuery;
 import net.daporkchop.fp2.api.world.level.query.DataQueryBatchOutput;
+import net.daporkchop.fp2.api.world.level.query.QuerySamplingMode;
 import net.daporkchop.fp2.api.world.level.query.shape.PointsQueryShape;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.fp2.core.minecraft.world.AbstractExactFBlockLevel;
+import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.math.vector.Vec3i;
 
 import java.util.List;
@@ -81,7 +83,7 @@ public class AbstractCubesExactFBlockLevel<CUBE> extends AbstractExactFBlockLeve
     }
 
     @Override
-    public int getState(int x, int y, int z) throws GenerationNotAllowedException {
+    public int getState(int x, int y, int z, @NotNegative int sampleResolution, @NonNull QuerySamplingMode samplingMode) throws GenerationNotAllowedException {
         //delegate to a query because it'll delegate to AbstractPrefetchedCubesExactFBlockLevel, which can access neighboring chunks if Block#getActualState accesses a
         //  state which goes over a cube/column border. this is slow, but i don't care because the single getter methods are dumb and bad anyway.
         int[] buf = new int[1];
@@ -90,7 +92,7 @@ public class AbstractCubesExactFBlockLevel<CUBE> extends AbstractExactFBlockLeve
     }
 
     @Override
-    public int getBiome(int x, int y, int z) throws GenerationNotAllowedException {
+    public int getBiome(int x, int y, int z, @NotNegative int sampleResolution, @NonNull QuerySamplingMode samplingMode) throws GenerationNotAllowedException {
         //delegate to a query because it'll delegate to AbstractPrefetchedCubesExactFBlockLevel, which can access neighboring chunks if Block#getActualState accesses a
         //  state which goes over a cube/column border. this is slow, but i don't care because the single getter methods are dumb and bad anyway.
         int[] buf = new int[1];
@@ -99,7 +101,7 @@ public class AbstractCubesExactFBlockLevel<CUBE> extends AbstractExactFBlockLeve
     }
 
     @Override
-    public byte getLight(int x, int y, int z) throws GenerationNotAllowedException {
+    public byte getLight(int x, int y, int z, @NotNegative int sampleResolution, @NonNull QuerySamplingMode samplingMode) throws GenerationNotAllowedException {
         //delegate to a query because it'll delegate to AbstractPrefetchedCubesExactFBlockLevel, which can access neighboring chunks if Block#getActualState accesses a
         //  state which goes over a cube/column border. this is slow, but i don't care because the single getter methods are dumb and bad anyway.
         byte[] buf = new byte[1];

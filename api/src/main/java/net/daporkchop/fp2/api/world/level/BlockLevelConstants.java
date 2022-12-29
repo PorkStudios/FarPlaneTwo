@@ -505,7 +505,7 @@ public class BlockLevelConstants {
      * @param y           the vector's origin Y coordinate
      * @param z           the vector's origin Z coordinate
      * @param direction   the vector's direction
-     * @param maxDistance the vector's maximum length. See {@link FBlockLevel#getNextTypeTransitions(Direction, int, int, int, long, List, TypeTransitionSingleOutput)}
+     * @param maxDistance the vector's maximum length. See {@link FBlockLevel#getNextTypeTransitions(Direction, int, int, int, long, List, TypeTransitionSingleOutput, int, net.daporkchop.fp2.api.world.level.query.QuerySamplingMode)}
      *                    for a more detailed description.
      * @return {@code true} if the vector will ever intersect the given {@link IntAxisAlignedBB AABB}, {@code false} otherwise
      */
