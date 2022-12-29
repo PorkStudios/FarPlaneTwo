@@ -65,27 +65,27 @@ public class TestFBlockLevel {
 
         try (FBlockLevel level = this.dummyLevelOpaque(new IntAxisAlignedBB(-16, -16, -16, 16, 16, 16))) {
             //upper edge
-            assertEquals(0, level.getNextTypeTransitions(direction, 20 * fx, 20 * fy, 20 * fz, 3L, outputEverythingFilterList(), output, , ));
-            assertEquals(0, level.getNextTypeTransitions(direction, 20 * fx, 20 * fy, 20 * fz, 4L, outputEverythingFilterList(), output, , ));
-            assertEquals(1, level.getNextTypeTransitions(direction, 20 * fx, 20 * fy, 20 * fz, 5L, outputEverythingFilterList(), output, , ));
-            assertEquals(1, level.getNextTypeTransitions(direction, 16 * fx, 16 * fy, 16 * fz, 5L, outputEverythingFilterList(), output, , ));
-            assertEquals(1, level.getNextTypeTransitions(direction, 16 * fx, 16 * fy, 16 * fz, 1L, outputEverythingFilterList(), output, , ));
-            assertEquals(0, level.getNextTypeTransitions(direction, 16 * fx, 16 * fy, 16 * fz, 0L, outputEverythingFilterList(), output, , ));
-            assertEquals(0, level.getNextTypeTransitions(direction, 15 * fx, 15 * fy, 15 * fz, 5L, outputEverythingFilterList(), output, , ));
+            assertEquals(0, level.getNextTypeTransitions(direction, 20 * fx, 20 * fy, 20 * fz, 3L, outputEverythingFilterList(), output, 0, QuerySamplingMode.DONT_CARE));
+            assertEquals(0, level.getNextTypeTransitions(direction, 20 * fx, 20 * fy, 20 * fz, 4L, outputEverythingFilterList(), output, 0, QuerySamplingMode.DONT_CARE));
+            assertEquals(1, level.getNextTypeTransitions(direction, 20 * fx, 20 * fy, 20 * fz, 5L, outputEverythingFilterList(), output, 0, QuerySamplingMode.DONT_CARE));
+            assertEquals(1, level.getNextTypeTransitions(direction, 16 * fx, 16 * fy, 16 * fz, 5L, outputEverythingFilterList(), output, 0, QuerySamplingMode.DONT_CARE));
+            assertEquals(1, level.getNextTypeTransitions(direction, 16 * fx, 16 * fy, 16 * fz, 1L, outputEverythingFilterList(), output, 0, QuerySamplingMode.DONT_CARE));
+            assertEquals(0, level.getNextTypeTransitions(direction, 16 * fx, 16 * fy, 16 * fz, 0L, outputEverythingFilterList(), output, 0, QuerySamplingMode.DONT_CARE));
+            assertEquals(0, level.getNextTypeTransitions(direction, 15 * fx, 15 * fy, 15 * fz, 5L, outputEverythingFilterList(), output, 0, QuerySamplingMode.DONT_CARE));
 
             //in the top and out the bottom
-            assertEquals(2, level.getNextTypeTransitions(direction, 20 * fx, 20 * fy, 20 * fz, Long.MAX_VALUE, outputEverythingFilterList(), output, , ));
-            assertEquals(1, level.getNextTypeTransitions(direction, 15 * fx, 15 * fy, 15 * fz, Long.MAX_VALUE, outputEverythingFilterList(), output, , ));
+            assertEquals(2, level.getNextTypeTransitions(direction, 20 * fx, 20 * fy, 20 * fz, Long.MAX_VALUE, outputEverythingFilterList(), output, 0, QuerySamplingMode.DONT_CARE));
+            assertEquals(1, level.getNextTypeTransitions(direction, 15 * fx, 15 * fy, 15 * fz, Long.MAX_VALUE, outputEverythingFilterList(), output, 0, QuerySamplingMode.DONT_CARE));
 
             //lower edge
-            assertEquals(0, level.getNextTypeTransitions(direction, -10 * fx, -10 * fy, -10 * fz, 5L, outputEverythingFilterList(), output, , ));
-            assertEquals(0, level.getNextTypeTransitions(direction, -10 * fx, -10 * fy, -10 * fz, 6L, outputEverythingFilterList(), output, , ));
-            assertEquals(1, level.getNextTypeTransitions(direction, -10 * fx, -10 * fy, -10 * fz, 7L, outputEverythingFilterList(), output, , ));
-            assertEquals(0, level.getNextTypeTransitions(direction, -15 * fx, -15 * fy, -15 * fz, 1L, outputEverythingFilterList(), output, , ));
-            assertEquals(1, level.getNextTypeTransitions(direction, -15 * fx, -15 * fy, -15 * fz, 2L, outputEverythingFilterList(), output, , ));
-            assertEquals(1, level.getNextTypeTransitions(direction, -16 * fx, -16 * fy, -16 * fz, 1L, outputEverythingFilterList(), output, , ));
-            assertEquals(0, level.getNextTypeTransitions(direction, -16 * fx, -16 * fy, -16 * fz, 0L, outputEverythingFilterList(), output, , ));
-            assertEquals(0, level.getNextTypeTransitions(direction, -17 * fx, -17 * fy, -17 * fz, Long.MAX_VALUE, outputEverythingFilterList(), output, , ));
+            assertEquals(0, level.getNextTypeTransitions(direction, -10 * fx, -10 * fy, -10 * fz, 5L, outputEverythingFilterList(), output, 0, QuerySamplingMode.DONT_CARE));
+            assertEquals(0, level.getNextTypeTransitions(direction, -10 * fx, -10 * fy, -10 * fz, 6L, outputEverythingFilterList(), output, 0, QuerySamplingMode.DONT_CARE));
+            assertEquals(1, level.getNextTypeTransitions(direction, -10 * fx, -10 * fy, -10 * fz, 7L, outputEverythingFilterList(), output, 0, QuerySamplingMode.DONT_CARE));
+            assertEquals(0, level.getNextTypeTransitions(direction, -15 * fx, -15 * fy, -15 * fz, 1L, outputEverythingFilterList(), output, 0, QuerySamplingMode.DONT_CARE));
+            assertEquals(1, level.getNextTypeTransitions(direction, -15 * fx, -15 * fy, -15 * fz, 2L, outputEverythingFilterList(), output, 0, QuerySamplingMode.DONT_CARE));
+            assertEquals(1, level.getNextTypeTransitions(direction, -16 * fx, -16 * fy, -16 * fz, 1L, outputEverythingFilterList(), output, 0, QuerySamplingMode.DONT_CARE));
+            assertEquals(0, level.getNextTypeTransitions(direction, -16 * fx, -16 * fy, -16 * fz, 0L, outputEverythingFilterList(), output, 0, QuerySamplingMode.DONT_CARE));
+            assertEquals(0, level.getNextTypeTransitions(direction, -17 * fx, -17 * fy, -17 * fz, Long.MAX_VALUE, outputEverythingFilterList(), output, 0, QuerySamplingMode.DONT_CARE));
         }
     }
 
@@ -97,20 +97,20 @@ public class TestFBlockLevel {
 
         try (FBlockLevel level = this.dummyLevelCheckerboard(new IntAxisAlignedBB(Integer.MIN_VALUE, Integer.MIN_VALUE + 1, -10, -100, 100, 10))) {
             //jumping down to lower coordinates, jump distance just within the int limit
-            assertEquals(0, level.getNextTypeTransitions(Direction.NEGATIVE_Y, -101, Integer.MAX_VALUE, 0, Integer.MAX_VALUE - 101L, outputEverythingFilterList(), output, , ));
-            assertEquals(0, level.getNextTypeTransitions(Direction.NEGATIVE_Y, -101, Integer.MAX_VALUE, 0, Integer.MAX_VALUE - 100L, outputEverythingFilterList(), output, , ));
-            assertEquals(1, level.getNextTypeTransitions(Direction.NEGATIVE_Y, -101, Integer.MAX_VALUE, 0, Integer.MAX_VALUE - 99L, outputEverythingFilterList(), output, , ));
-            assertEquals(2, level.getNextTypeTransitions(Direction.NEGATIVE_Y, -101, Integer.MAX_VALUE, 0, Integer.MAX_VALUE - 98L, outputEverythingFilterList(), output, , ));
-            assertEquals(0, level.getNextTypeTransitions(Direction.NEGATIVE_Y, -101, Integer.MAX_VALUE, 11, Integer.MAX_VALUE - 98L, outputEverythingFilterList(), output, , ));
+            assertEquals(0, level.getNextTypeTransitions(Direction.NEGATIVE_Y, -101, Integer.MAX_VALUE, 0, Integer.MAX_VALUE - 101L, outputEverythingFilterList(), output, 0, QuerySamplingMode.DONT_CARE));
+            assertEquals(0, level.getNextTypeTransitions(Direction.NEGATIVE_Y, -101, Integer.MAX_VALUE, 0, Integer.MAX_VALUE - 100L, outputEverythingFilterList(), output, 0, QuerySamplingMode.DONT_CARE));
+            assertEquals(1, level.getNextTypeTransitions(Direction.NEGATIVE_Y, -101, Integer.MAX_VALUE, 0, Integer.MAX_VALUE - 99L, outputEverythingFilterList(), output, 0, QuerySamplingMode.DONT_CARE));
+            assertEquals(2, level.getNextTypeTransitions(Direction.NEGATIVE_Y, -101, Integer.MAX_VALUE, 0, Integer.MAX_VALUE - 98L, outputEverythingFilterList(), output, 0, QuerySamplingMode.DONT_CARE));
+            assertEquals(0, level.getNextTypeTransitions(Direction.NEGATIVE_Y, -101, Integer.MAX_VALUE, 11, Integer.MAX_VALUE - 98L, outputEverythingFilterList(), output, 0, QuerySamplingMode.DONT_CARE));
         }
 
         try (FBlockLevel level = this.dummyLevelCheckerboard(new IntAxisAlignedBB(100, -100, -10, Integer.MAX_VALUE, Integer.MAX_VALUE - 1, 10))) {
             //jumping up to higher coordinates, jump distance just within the int limit
-            assertEquals(0, level.getNextTypeTransitions(Direction.POSITIVE_Y, 101, Integer.MIN_VALUE, 0, Integer.MAX_VALUE - 101L, outputEverythingFilterList(), output, , ));
-            assertEquals(0, level.getNextTypeTransitions(Direction.POSITIVE_Y, 101, Integer.MIN_VALUE, 0, Integer.MAX_VALUE - 100L, outputEverythingFilterList(), output, , ));
-            assertEquals(1, level.getNextTypeTransitions(Direction.POSITIVE_Y, 101, Integer.MIN_VALUE, 0, Integer.MAX_VALUE - 99L, outputEverythingFilterList(), output, , ));
-            assertEquals(2, level.getNextTypeTransitions(Direction.POSITIVE_Y, 101, Integer.MIN_VALUE, 0, Integer.MAX_VALUE - 98L, outputEverythingFilterList(), output, , ));
-            assertEquals(0, level.getNextTypeTransitions(Direction.POSITIVE_Y, 101, Integer.MIN_VALUE, 11, Integer.MAX_VALUE - 98L, outputEverythingFilterList(), output, , ));
+            assertEquals(0, level.getNextTypeTransitions(Direction.POSITIVE_Y, 101, Integer.MIN_VALUE, 0, Integer.MAX_VALUE - 101L, outputEverythingFilterList(), output, 0, QuerySamplingMode.DONT_CARE));
+            assertEquals(0, level.getNextTypeTransitions(Direction.POSITIVE_Y, 101, Integer.MIN_VALUE, 0, Integer.MAX_VALUE - 100L, outputEverythingFilterList(), output, 0, QuerySamplingMode.DONT_CARE));
+            assertEquals(1, level.getNextTypeTransitions(Direction.POSITIVE_Y, 101, Integer.MIN_VALUE, 0, Integer.MAX_VALUE - 99L, outputEverythingFilterList(), output, 0, QuerySamplingMode.DONT_CARE));
+            assertEquals(2, level.getNextTypeTransitions(Direction.POSITIVE_Y, 101, Integer.MIN_VALUE, 0, Integer.MAX_VALUE - 98L, outputEverythingFilterList(), output, 0, QuerySamplingMode.DONT_CARE));
+            assertEquals(0, level.getNextTypeTransitions(Direction.POSITIVE_Y, 101, Integer.MIN_VALUE, 11, Integer.MAX_VALUE - 98L, outputEverythingFilterList(), output, 0, QuerySamplingMode.DONT_CARE));
         }
     }
 
@@ -122,20 +122,20 @@ public class TestFBlockLevel {
 
         try (FBlockLevel level = this.dummyLevelCheckerboard(new IntAxisAlignedBB(Integer.MIN_VALUE, Integer.MIN_VALUE + 1, -10, -100, 100, 10))) {
             //jumping down to lower coordinates, jump distance just beyond the int limit
-            assertEquals(0, level.getNextTypeTransitions(Direction.NEGATIVE_X, Integer.MAX_VALUE, 0, 0, Integer.MAX_VALUE + 99L, outputEverythingFilterList(), output, , ));
-            assertEquals(0, level.getNextTypeTransitions(Direction.NEGATIVE_X, Integer.MAX_VALUE, 0, 0, Integer.MAX_VALUE + 99L, outputEverythingFilterList(), output, , ));
-            assertEquals(1, level.getNextTypeTransitions(Direction.NEGATIVE_X, Integer.MAX_VALUE, 0, 0, Integer.MAX_VALUE + 101L, outputEverythingFilterList(), output, , ));
-            assertEquals(2, level.getNextTypeTransitions(Direction.NEGATIVE_X, Integer.MAX_VALUE, 0, 0, Integer.MAX_VALUE + 102L, outputEverythingFilterList(), output, , ));
-            assertEquals(0, level.getNextTypeTransitions(Direction.NEGATIVE_X, Integer.MAX_VALUE, 0, 11, Integer.MAX_VALUE + 102L, outputEverythingFilterList(), output, , ));
+            assertEquals(0, level.getNextTypeTransitions(Direction.NEGATIVE_X, Integer.MAX_VALUE, 0, 0, Integer.MAX_VALUE + 99L, outputEverythingFilterList(), output, 0, QuerySamplingMode.DONT_CARE));
+            assertEquals(0, level.getNextTypeTransitions(Direction.NEGATIVE_X, Integer.MAX_VALUE, 0, 0, Integer.MAX_VALUE + 99L, outputEverythingFilterList(), output, 0, QuerySamplingMode.DONT_CARE));
+            assertEquals(1, level.getNextTypeTransitions(Direction.NEGATIVE_X, Integer.MAX_VALUE, 0, 0, Integer.MAX_VALUE + 101L, outputEverythingFilterList(), output, 0, QuerySamplingMode.DONT_CARE));
+            assertEquals(2, level.getNextTypeTransitions(Direction.NEGATIVE_X, Integer.MAX_VALUE, 0, 0, Integer.MAX_VALUE + 102L, outputEverythingFilterList(), output, 0, QuerySamplingMode.DONT_CARE));
+            assertEquals(0, level.getNextTypeTransitions(Direction.NEGATIVE_X, Integer.MAX_VALUE, 0, 11, Integer.MAX_VALUE + 102L, outputEverythingFilterList(), output, 0, QuerySamplingMode.DONT_CARE));
         }
 
         try (FBlockLevel level = this.dummyLevelCheckerboard(new IntAxisAlignedBB(100, -100, -10, Integer.MAX_VALUE, Integer.MAX_VALUE - 1, 10))) {
             //jumping up to higher coordinates, jump distance just within the int limit
-            assertEquals(0, level.getNextTypeTransitions(Direction.POSITIVE_X, Integer.MIN_VALUE, 0, 0, Integer.MAX_VALUE + 99L, outputEverythingFilterList(), output, , ));
-            assertEquals(0, level.getNextTypeTransitions(Direction.POSITIVE_X, Integer.MIN_VALUE, 0, 0, Integer.MAX_VALUE + 99L, outputEverythingFilterList(), output, , ));
-            assertEquals(1, level.getNextTypeTransitions(Direction.POSITIVE_X, Integer.MIN_VALUE, 0, 0, Integer.MAX_VALUE + 101L, outputEverythingFilterList(), output, , ));
-            assertEquals(2, level.getNextTypeTransitions(Direction.POSITIVE_X, Integer.MIN_VALUE, 0, 0, Integer.MAX_VALUE + 102L, outputEverythingFilterList(), output, , ));
-            assertEquals(0, level.getNextTypeTransitions(Direction.POSITIVE_X, Integer.MIN_VALUE, 0, 11, Integer.MAX_VALUE + 102L, outputEverythingFilterList(), output, , ));
+            assertEquals(0, level.getNextTypeTransitions(Direction.POSITIVE_X, Integer.MIN_VALUE, 0, 0, Integer.MAX_VALUE + 99L, outputEverythingFilterList(), output, 0, QuerySamplingMode.DONT_CARE));
+            assertEquals(0, level.getNextTypeTransitions(Direction.POSITIVE_X, Integer.MIN_VALUE, 0, 0, Integer.MAX_VALUE + 99L, outputEverythingFilterList(), output, 0, QuerySamplingMode.DONT_CARE));
+            assertEquals(1, level.getNextTypeTransitions(Direction.POSITIVE_X, Integer.MIN_VALUE, 0, 0, Integer.MAX_VALUE + 101L, outputEverythingFilterList(), output, 0, QuerySamplingMode.DONT_CARE));
+            assertEquals(2, level.getNextTypeTransitions(Direction.POSITIVE_X, Integer.MIN_VALUE, 0, 0, Integer.MAX_VALUE + 102L, outputEverythingFilterList(), output, 0, QuerySamplingMode.DONT_CARE));
+            assertEquals(0, level.getNextTypeTransitions(Direction.POSITIVE_X, Integer.MIN_VALUE, 0, 11, Integer.MAX_VALUE + 102L, outputEverythingFilterList(), output, 0, QuerySamplingMode.DONT_CARE));
         }
     }
 
