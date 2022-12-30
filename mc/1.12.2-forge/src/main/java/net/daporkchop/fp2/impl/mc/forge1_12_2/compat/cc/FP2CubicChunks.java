@@ -38,9 +38,9 @@ import net.daporkchop.fp2.core.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.core.mode.voxel.server.VoxelTileProvider;
 import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
 import net.daporkchop.fp2.core.server.event.GetCoordinateLimitsEvent;
-import net.daporkchop.fp2.core.server.event.GetExactFBlockLevelEvent;
+import net.daporkchop.fp2.core.server.event.GetFBlockLevelHolderEvent;
 import net.daporkchop.fp2.core.server.event.GetTerrainGeneratorEvent;
-import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
+import net.daporkchop.fp2.core.server.world.FBlockLevelHolder;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.world.IMixinWorldServer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cc.exactfblocklevel.CCExactFBlockLevelHolder1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.server.world.FCube1_12_2;
@@ -119,7 +119,7 @@ public class FP2CubicChunks {
 
         @FEventHandler(name = "cubicchunks_world_exact_fblocklevel",
                 constrain = @Constrain(before = "vanilla_world_exact_fblocklevel"))
-        public Optional<ExactFBlockLevelHolder> getExactFBlockLevel(GetExactFBlockLevelEvent event) {
+        public Optional<FBlockLevelHolder.Exact> getExactFBlockLevel(GetFBlockLevelHolderEvent<FBlockLevelHolder.Exact> event) {
             return this.isCubicWorld(event.level())
                     ? Optional.of(new CCExactFBlockLevelHolder1_12(event.level()))
                     : Optional.empty();

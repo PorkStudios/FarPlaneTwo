@@ -32,9 +32,9 @@ import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.core.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.core.mode.voxel.server.VoxelTileProvider;
 import net.daporkchop.fp2.core.server.event.GetCoordinateLimitsEvent;
-import net.daporkchop.fp2.core.server.event.GetExactFBlockLevelEvent;
+import net.daporkchop.fp2.core.server.event.GetFBlockLevelHolderEvent;
 import net.daporkchop.fp2.core.server.event.GetTerrainGeneratorEvent;
-import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
+import net.daporkchop.fp2.core.server.world.FBlockLevelHolder;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.exactfblocklevel.VanillaExactFBlockLevelHolder1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.generator.heightmap.FlatHeightmapGenerator;
@@ -84,7 +84,7 @@ public class FP2Vanilla {
     }
 
     @FEventHandler(name = "vanilla_world_exact_fblocklevel")
-    public ExactFBlockLevelHolder getExactFBlockLevel(GetExactFBlockLevelEvent event) {
+    public FBlockLevelHolder.Exact getExactFBlockLevel(GetFBlockLevelHolderEvent<FBlockLevelHolder.Exact> event) {
         return new VanillaExactFBlockLevelHolder1_12((FLevelServer1_12) event.level());
     }
 

@@ -191,7 +191,7 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
     }
 
     public boolean canGenerateRough(@NonNull POS pos) {
-        return this.generatorRough != null && this.generatorRough.canGenerate(, pos);
+        return this.generatorRough != null && this.generatorRough.canGenerate(this.world.roughBlockLevelHolder().orElse(null), pos);
     }
 
     protected void scheduleForUpdate(@NonNull POS pos) {

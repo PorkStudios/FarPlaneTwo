@@ -26,26 +26,45 @@ import net.daporkchop.fp2.common.util.capability.CloseableResource;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 
 /**
- * A container which provides instances of {@link FBlockLevel} for accessing rough block data in a {@link IFarLevelServer}.
+ * A container which provides instances of {@link FBlockLevel}.
  *
  * @author DaPorkchop_
  */
-public interface ExactFBlockLevelHolder extends FBlockLevelDataAvailability, CloseableResource {
-    /**
-     * Gets an {@link FBlockLevel} instance for given requirement of whether or not generation should be allowed.
-     *
-     * @param requirement whether or not generation should be allowed
-     * @return an {@link FBlockLevel} instance matching the given requirement
-     */
-    FBlockLevel worldFor(@NonNull AllowGenerationRequirement requirement);
-
+public interface FBlockLevelHolder extends FBlockLevelDataAvailability, CloseableResource {
     /**
      * {@inheritDoc}
      * <p>
-     * When this holder is closed, all the {@link FBlockLevel} instances created by it will produce undefined behavior, even if not yet closed.
+     * When this holder is closed, all the {@link FBlockLevel} instances returned by it will produce undefined behavior, even if not yet closed.
      */
     @Override
     void close();
+
+    /**
+     * A container which provides instances of {@link FBlockLevel} for accessing exact block data in a {@link IFarLevelServer}.
+     *
+     * @author DaPorkchop_
+     */
+    interface Exact extends FBlockLevelHolder {
+        /**
+         * Gets an {@link FBlockLevel} instance for given requirement of whether or not generation should be allowed.
+         *
+         * @param requirement whether or not generation should be allowed
+         * @return an {@link FBlockLevel} instance matching the given requirement
+         */
+        FBlockLevel levelFor(@NonNull AllowGenerationRequirement requirement);
+    }
+
+    /**
+     * A container which provides instances of {@link FBlockLevel} for accessing rough block data in a {@link IFarLevelServer}.
+     *
+     * @author DaPorkchop_
+     */
+    interface Rough extends FBlockLevelHolder {
+        /**
+         * @return an {@link FBlockLevel} instance
+         */
+        FBlockLevel level();
+    }
 
     /**
      * Controls whether or not generation should be allowed when requesting an {@link FBlockLevel} instance.

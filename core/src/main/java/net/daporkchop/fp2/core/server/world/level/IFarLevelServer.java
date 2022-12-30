@@ -27,8 +27,7 @@ import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarLevel;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
-import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
-import net.daporkchop.fp2.core.server.world.RoughFBlockLevelHolder;
+import net.daporkchop.fp2.core.server.world.FBlockLevelHolder;
 import net.daporkchop.fp2.core.server.world.TerrainGeneratorInfo;
 
 import java.nio.file.Path;
@@ -68,14 +67,14 @@ public interface IFarLevelServer extends IFarLevel, FLevelServer {
     TerrainGeneratorInfo terrainGeneratorInfo();
 
     /**
-     * @return an {@link ExactFBlockLevelHolder} for accessing this level's exact {@link FBlockLevel}
+     * @return an {@link FBlockLevelHolder.Exact} for accessing this level's exact {@link FBlockLevel}
      */
-    ExactFBlockLevelHolder exactBlockLevelHolder();
+    FBlockLevelHolder.Exact exactBlockLevelHolder();
 
     /**
-     * @return an {@link ExactFBlockLevelHolder} for accessing this level's rough {@link FBlockLevel}, if any
+     * @return an {@link FBlockLevelHolder.Exact} for accessing this level's rough {@link FBlockLevel}, if any
      */
-    Optional<RoughFBlockLevelHolder> roughBlockLevelHolder();
+    Optional<FBlockLevelHolder.Rough> roughBlockLevelHolder();
 
     /**
      * @return this level's sea level

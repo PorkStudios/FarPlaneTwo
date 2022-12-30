@@ -40,12 +40,11 @@ import net.daporkchop.fp2.core.minecraft.world.cubes.AbstractCubesExactFBlockLev
 import net.daporkchop.fp2.core.minecraft.world.cubes.AbstractPrefetchedCubesExactFBlockLevel;
 import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
 import net.daporkchop.fp2.core.server.event.TickEndEvent;
-import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
+import net.daporkchop.fp2.core.server.world.FBlockLevelHolder;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.util.datastructure.Datastructures;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSegtreeSet;
 import net.daporkchop.fp2.core.util.threading.futurecache.IAsyncCache;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.world.IMixinWorldServer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cc.biome.Column2dBiomeAccessWrapper;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cc.biome.CubeBiomeAccessWrapper;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cc.cube.CubeWithoutWorld;
@@ -67,7 +66,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
- * Default implementation of {@link ExactFBlockLevelHolder} for cubic chunks worlds.
+ * Default implementation of {@link FBlockLevelHolder.Exact} for cubic chunks worlds.
  *
  * @author DaPorkchop_
  */

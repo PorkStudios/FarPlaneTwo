@@ -28,6 +28,7 @@ import net.daporkchop.fp2.core.mode.voxel.VoxelData;
 import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.core.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.core.mode.voxel.server.gen.rough.AbstractRoughVoxelGenerator;
+import net.daporkchop.fp2.core.server.world.FBlockLevelHolder;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cwg.CWGContext;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
@@ -56,7 +57,7 @@ public class CWGVoxelGenerator extends AbstractRoughVoxelGenerator<CWGContext> {
     }
 
     @Override
-    public boolean canGenerate(FBlockLevel roughLevel, @NonNull VoxelPos pos) {
+    public boolean canGenerate(FBlockLevelHolder.Rough roughLevelHolder, @NonNull VoxelPos pos) {
         return true;
     }
 

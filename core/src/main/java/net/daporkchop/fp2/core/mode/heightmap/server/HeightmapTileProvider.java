@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.heightmap.server;
@@ -30,7 +29,7 @@ import net.daporkchop.fp2.core.mode.heightmap.HeightmapTile;
 import net.daporkchop.fp2.core.mode.heightmap.server.tracking.HeightmapTrackerManager;
 import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
 import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
-import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
+import net.daporkchop.fp2.core.server.world.FBlockLevelHolder;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 
 /**
@@ -51,7 +50,7 @@ public abstract class HeightmapTileProvider extends AbstractFarTileProvider<Heig
         int x = pos.blockX();
         int z = pos.blockZ();
         int sideLength = pos.sideLength();
-        try (FBlockLevel world = this.world().exactBlockLevelHolder().worldFor(ExactFBlockLevelHolder.AllowGenerationRequirement.DONT_CARE)) {
+        try (FBlockLevel world = this.world().exactBlockLevelHolder().levelFor(FBlockLevelHolder.AllowGenerationRequirement.DONT_CARE)) {
             return world.containsAnyData(x, Integer.MIN_VALUE, z, x + sideLength, Integer.MAX_VALUE, z + sideLength);
         }
     }

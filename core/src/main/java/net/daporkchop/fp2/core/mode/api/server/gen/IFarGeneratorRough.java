@@ -21,10 +21,12 @@ package net.daporkchop.fp2.core.mode.api.server.gen;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.api.world.level.FBlockLevel;
+import net.daporkchop.fp2.api.world.level.FBlockLevelDataAvailability;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.server.IFarServerResourceCreationEvent;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
+import net.daporkchop.fp2.core.server.world.FBlockLevelHolder;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -87,12 +89,14 @@ public interface IFarGeneratorRough<POS extends IFarPos, T extends IFarTile> ext
      * <p>
      * The position must be valid (within the world's coordinate limits)!
      *
-     * @param roughLevel a rough {@link FBlockLevel} instance providing access to rough block data in the level. May be {@code null} if the level does not have a
-     *                   rough {@link FBlockLevel}
-     * @param pos        the position to check
+     * @param roughLevelHolder an instance of {@link FBlockLevelHolder.Rough} providing access to rough block data availability in the level. May be {@code null} if the
+     *                         level does not have a rough {@link FBlockLevel}. Note that for performance reasons, implementors are discouraged from
+     *                         {@link FBlockLevelHolder.Rough#level() creating new rough level instances} within this method - if possible, only methods exposed by
+     *                         {@link FBlockLevelDataAvailability} should be used
+     * @param pos              the position to check
      * @return whether or not rough generation is possible
      */
-    boolean canGenerate(FBlockLevel roughLevel, @NonNull POS pos);
+    boolean canGenerate(FBlockLevelHolder.Rough roughLevelHolder, @NonNull POS pos);
 
     /**
      * Generates a rough estimate of the terrain in the given tile.

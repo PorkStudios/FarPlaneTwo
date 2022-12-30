@@ -26,7 +26,7 @@ import lombok.SneakyThrows;
 import net.daporkchop.fp2.core.minecraft.util.threading.asynccache.AsyncCacheNBT;
 import net.daporkchop.fp2.core.minecraft.world.chunks.AbstractChunksExactFBlockLevelHolder;
 import net.daporkchop.fp2.core.minecraft.world.chunks.AbstractPrefetchedChunksExactFBlockLevel;
-import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
+import net.daporkchop.fp2.core.server.world.FBlockLevelHolder;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.util.datastructure.Datastructures;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSegtreeSet;
@@ -46,7 +46,7 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * Default implementation of {@link ExactFBlockLevelHolder} for vanilla worlds.
+ * Default implementation of {@link FBlockLevelHolder.Exact} for vanilla worlds.
  *
  * @author DaPorkchop_
  */

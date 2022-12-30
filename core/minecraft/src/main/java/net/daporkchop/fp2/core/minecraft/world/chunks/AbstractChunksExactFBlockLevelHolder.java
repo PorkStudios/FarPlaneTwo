@@ -35,7 +35,7 @@ import net.daporkchop.fp2.core.minecraft.util.threading.asynccache.AsyncCacheNBT
 import net.daporkchop.fp2.core.minecraft.world.AbstractExactFBlockLevelHolder;
 import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
 import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
-import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
+import net.daporkchop.fp2.core.server.world.FBlockLevelHolder;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.util.datastructure.Datastructures;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSegtreeSet;
@@ -57,7 +57,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
- * Base implementation of an {@link ExactFBlockLevelHolder} which serves a Minecraft-style world made up of chunk columns.
+ * Base implementation of an {@link FBlockLevelHolder.Exact} which serves a Minecraft-style world made up of chunk columns.
  * <p>
  * Serves as a shared base for implementations of {@link FBlockLevel} which are based on it.
  *
@@ -122,7 +122,7 @@ public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends Abstra
     }
 
     @Override
-    public FBlockLevel worldFor(@NonNull AllowGenerationRequirement requirement) {
+    public FBlockLevel levelFor(@NonNull AllowGenerationRequirement requirement) {
         return this.regularWorld(requirement == AllowGenerationRequirement.ALLOWED);
     }
 

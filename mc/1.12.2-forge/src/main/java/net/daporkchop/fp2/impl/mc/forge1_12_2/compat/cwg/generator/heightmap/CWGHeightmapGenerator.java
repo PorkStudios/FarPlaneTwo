@@ -28,6 +28,7 @@ import net.daporkchop.fp2.core.mode.heightmap.HeightmapData;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapTile;
 import net.daporkchop.fp2.core.mode.heightmap.server.gen.rough.AbstractRoughHeightmapGenerator;
+import net.daporkchop.fp2.core.server.world.FBlockLevelHolder;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cwg.CWGContext;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
@@ -75,7 +76,7 @@ public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
     }
 
     @Override
-    public boolean canGenerate(FBlockLevel roughLevel, @NonNull HeightmapPos pos) {
+    public boolean canGenerate(FBlockLevelHolder.Rough roughLevelHolder, @NonNull HeightmapPos pos) {
         return true;
     }
 

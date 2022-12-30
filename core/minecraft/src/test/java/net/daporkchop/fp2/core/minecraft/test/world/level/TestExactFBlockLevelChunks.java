@@ -38,8 +38,7 @@ import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
-import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
-import net.daporkchop.fp2.core.server.world.RoughFBlockLevelHolder;
+import net.daporkchop.fp2.core.server.world.FBlockLevelHolder;
 import net.daporkchop.fp2.core.server.world.TerrainGeneratorInfo;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSegtreeSet;
@@ -61,12 +60,12 @@ import static net.daporkchop.fp2.api.world.level.BlockLevelConstants.*;
 public class TestExactFBlockLevelChunks extends TestFBlockLevel {
     @Override
     protected FBlockLevel dummyLevelOpaque(IntAxisAlignedBB bounds) {
-        return new DummyChunksIFarLevelServer(bounds, 4, this.alwaysOpaque()).exactBlockLevelHolder().worldFor(ExactFBlockLevelHolder.AllowGenerationRequirement.DONT_CARE);
+        return new DummyChunksIFarLevelServer(bounds, 4, this.alwaysOpaque()).exactBlockLevelHolder().levelFor(FBlockLevelHolder.AllowGenerationRequirement.DONT_CARE);
     }
 
     @Override
     protected FBlockLevel dummyLevelCheckerboard(IntAxisAlignedBB bounds) {
-        return new DummyChunksIFarLevelServer(bounds, 4, this.checkerboard()).exactBlockLevelHolder().worldFor(ExactFBlockLevelHolder.AllowGenerationRequirement.DONT_CARE);
+        return new DummyChunksIFarLevelServer(bounds, 4, this.checkerboard()).exactBlockLevelHolder().levelFor(FBlockLevelHolder.AllowGenerationRequirement.DONT_CARE);
     }
 
     protected static class DummyChunksExactFBlockLevelHolder extends AbstractChunksExactFBlockLevelHolder<DummyChunk> {
@@ -139,7 +138,7 @@ public class TestExactFBlockLevelChunks extends TestFBlockLevel {
     @Getter
     protected static class DummyChunksIFarLevelServer implements IFarLevelServer {
         protected final IntAxisAlignedBB coordLimits;
-        protected final ExactFBlockLevelHolder exactBlockLevelHolder;
+        protected final FBlockLevelHolder.Exact exactBlockLevelHolder;
 
         protected final FEventBus eventBus = new EventBus();
 
@@ -209,7 +208,7 @@ public class TestExactFBlockLevelChunks extends TestFBlockLevel {
         }
 
         @Override
-        public Optional<RoughFBlockLevelHolder> roughBlockLevelHolder() {
+        public Optional<FBlockLevelHolder.Rough> roughBlockLevelHolder() {
             throw new UnsupportedOperationException();
         }
     }

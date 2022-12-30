@@ -29,6 +29,7 @@ import net.daporkchop.fp2.core.mode.heightmap.HeightmapData;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapTile;
 import net.daporkchop.fp2.core.mode.heightmap.server.gen.rough.AbstractRoughHeightmapGenerator;
+import net.daporkchop.fp2.core.server.world.FBlockLevelHolder;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
@@ -129,7 +130,7 @@ public class FlatHeightmapGenerator extends AbstractRoughHeightmapGenerator {
     }
 
     @Override
-    public boolean canGenerate(FBlockLevel roughLevel, @NonNull HeightmapPos pos) {
+    public boolean canGenerate(FBlockLevelHolder.Rough roughLevelHolder, @NonNull HeightmapPos pos) {
         return true;
     }
 
