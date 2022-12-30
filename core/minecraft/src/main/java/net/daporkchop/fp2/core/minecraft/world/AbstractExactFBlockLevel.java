@@ -19,21 +19,64 @@
 
 package net.daporkchop.fp2.core.minecraft.world;
 
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.api.util.Direction;
+import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.fp2.api.world.level.query.QuerySamplingMode;
 import net.daporkchop.fp2.api.world.level.query.TypeTransitionFilter;
 import net.daporkchop.fp2.api.world.level.query.TypeTransitionSingleOutput;
+import net.daporkchop.fp2.api.world.level.query.shape.AABBsQueryShape;
+import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 
+import java.util.BitSet;
 import java.util.List;
 
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractExactFBlockLevel implements FBlockLevel {
-    protected abstract AbstractExactFBlockLevelHolder<?> holder();
+@Getter
+public abstract class AbstractExactFBlockLevel<HOLDER extends AbstractExactFBlockLevelHolder<?>> implements FBlockLevel {
+    private final HOLDER holder;
+
+    //values from this.holder, hoisted into local fields to reduce pointer chasing
+    private final FGameRegistry registry;
+    private final IntAxisAlignedBB dataLimits;
+
+    public AbstractExactFBlockLevel(@NonNull HOLDER holder) {
+        this.holder = holder;
+
+        this.registry = holder.registry();
+        this.dataLimits = holder.dataLimits();
+    }
+
+    @Override
+    public boolean containsAnyData(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+        return this.holder.containsAnyData(minX, minY, minZ, maxX, maxY, maxZ);
+    }
+
+    @Override
+    public boolean containsAnyData(@NonNull IntAxisAlignedBB bb) {
+        return this.holder.containsAnyData(bb);
+    }
+
+    @Override
+    public BitSet containsAnyData(@NonNull AABBsQueryShape query) {
+        return this.holder.containsAnyData(query);
+    }
+
+    @Override
+    public IntAxisAlignedBB guaranteedDataAvailableVolume(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+        return this.holder.guaranteedDataAvailableVolume(minX, minY, minZ, maxX, maxY, maxZ);
+    }
+
+    @Override
+    public IntAxisAlignedBB guaranteedDataAvailableVolume(@NonNull IntAxisAlignedBB bb) {
+        return this.holder.guaranteedDataAvailableVolume(bb);
+    }
 
     @Override
     public int getNextTypeTransitions(@NonNull Direction direction, int x, int y, int z, long maxDistance,
@@ -41,6 +84,6 @@ public abstract class AbstractExactFBlockLevel implements FBlockLevel {
                                       @NonNull TypeTransitionSingleOutput output,
                                       @NotNegative int sampleResolution, @NonNull QuerySamplingMode samplingMode) {
         //delegate to holder, using null as the prefetched world since this isn't a prefetched world
-        return this.holder().getNextTypeTransitions(direction, x, y, z, maxDistance, filters, output, sampleResolution, samplingMode, null);
+        return this.holder.getNextTypeTransitions(direction, x, y, z, maxDistance, filters, output, sampleResolution, samplingMode, null);
     }
 }

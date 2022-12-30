@@ -53,12 +53,12 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 public abstract class AbstractExactFBlockLevelHolder<PREFETCHED extends AbstractPrefetchedExactFBlockLevel> implements ExactFBlockLevelHolder {
     private final IFarLevelServer world;
     private final FGameRegistry registry;
-    private final IntAxisAlignedBB bounds;
+    private final IntAxisAlignedBB dataLimits;
 
     public AbstractExactFBlockLevelHolder(@NonNull IFarLevelServer world) {
         this.world = world;
         this.registry = world.registry();
-        this.bounds = world.coordLimits();
+        this.dataLimits = world.coordLimits();
     }
 
     //
@@ -72,7 +72,7 @@ public abstract class AbstractExactFBlockLevelHolder<PREFETCHED extends Abstract
      * @return whether the Y coordinate is valid
      */
     public boolean isValidY(int y) {
-        return y >= this.bounds.minY() && y < this.bounds.maxY();
+        return y >= this.dataLimits.minY() && y < this.dataLimits.maxY();
     }
 
     /**
@@ -83,7 +83,7 @@ public abstract class AbstractExactFBlockLevelHolder<PREFETCHED extends Abstract
      * @return whether the X,Z coordinates are valid
      */
     public boolean isValidXZ(int x, int z) {
-        return x >= this.bounds.minX() && x < this.bounds.maxX() && z >= this.bounds.minZ() && z < this.bounds.maxZ();
+        return x >= this.dataLimits.minX() && x < this.dataLimits.maxX() && z >= this.dataLimits.minZ() && z < this.dataLimits.maxZ();
     }
 
     /**
@@ -95,7 +95,7 @@ public abstract class AbstractExactFBlockLevelHolder<PREFETCHED extends Abstract
      * @return whether the given point is valid
      */
     public boolean isValidPosition(int x, int y, int z) {
-        return this.bounds.contains(x, y, z);
+        return this.dataLimits.contains(x, y, z);
     }
 
     //
@@ -149,7 +149,7 @@ public abstract class AbstractExactFBlockLevelHolder<PREFETCHED extends Abstract
             }
         }
 
-        final IntAxisAlignedBB dataLimits = this.bounds();
+        final IntAxisAlignedBB dataLimits = this.dataLimits();
         final FExtendedStateRegistryData extendedStateRegistryData = this.registry().extendedStateRegistryData();
 
         final int dx = direction.x();
@@ -262,9 +262,9 @@ public abstract class AbstractExactFBlockLevelHolder<PREFETCHED extends Abstract
     //
 
     protected boolean isAnyPointValid(@NonNull PointsQueryShape.OriginSizeStride shape) {
-        return this.isAnyPointValid(shape.originX(), shape.sizeX(), shape.strideX(), this.bounds.minX(), this.bounds.maxX())
-               && this.isAnyPointValid(shape.originY(), shape.sizeY(), shape.strideY(), this.bounds.minY(), this.bounds.maxY())
-               && this.isAnyPointValid(shape.originZ(), shape.sizeZ(), shape.strideZ(), this.bounds.minZ(), this.bounds.maxZ());
+        return this.isAnyPointValid(shape.originX(), shape.sizeX(), shape.strideX(), this.dataLimits.minX(), this.dataLimits.maxX())
+               && this.isAnyPointValid(shape.originY(), shape.sizeY(), shape.strideY(), this.dataLimits.minY(), this.dataLimits.maxY())
+               && this.isAnyPointValid(shape.originZ(), shape.sizeZ(), shape.strideZ(), this.dataLimits.minZ(), this.dataLimits.maxZ());
     }
 
     protected boolean isAnyPointValid(int origin, int size, int stride, int min, int max) {

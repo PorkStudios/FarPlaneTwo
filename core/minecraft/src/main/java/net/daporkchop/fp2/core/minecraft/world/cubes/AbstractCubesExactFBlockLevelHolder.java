@@ -276,12 +276,12 @@ public abstract class AbstractCubesExactFBlockLevelHolder<CUBE> extends Abstract
         shape.validate();
 
         //find min and max cube coordinates (upper bound is inclusive)
-        int minX = max(shape.originX(), this.bounds().minX()) >> this.cubeShift();
-        int minY = max(shape.originY(), this.bounds().minY()) >> this.cubeShift();
-        int minZ = max(shape.originZ(), this.bounds().minZ()) >> this.cubeShift();
-        int maxX = min(shape.originX() + shape.sizeX() - 1, this.bounds().maxX() - 1) >> this.cubeShift();
-        int maxY = min(shape.originY() + shape.sizeY() - 1, this.bounds().maxY() - 1) >> this.cubeShift();
-        int maxZ = min(shape.originZ() + shape.sizeZ() - 1, this.bounds().maxZ() - 1) >> this.cubeShift();
+        int minX = max(shape.originX(), this.dataLimits().minX()) >> this.cubeShift();
+        int minY = max(shape.originY(), this.dataLimits().minY()) >> this.cubeShift();
+        int minZ = max(shape.originZ(), this.dataLimits().minZ()) >> this.cubeShift();
+        int maxX = min(shape.originX() + shape.sizeX() - 1, this.dataLimits().maxX() - 1) >> this.cubeShift();
+        int maxY = min(shape.originY() + shape.sizeY() - 1, this.dataLimits().maxY() - 1) >> this.cubeShift();
+        int maxZ = min(shape.originZ() + shape.sizeZ() - 1, this.dataLimits().maxZ() - 1) >> this.cubeShift();
 
         //collect all positions to a list
         List<Vec3i> positions = new ArrayList<>(multiplyExact(multiplyExact(maxX - minX + 1, maxY - minY + 1), maxZ - minZ + 1));
@@ -299,12 +299,12 @@ public abstract class AbstractCubesExactFBlockLevelHolder<CUBE> extends Abstract
         shape.validate();
 
         //find min and max cube coordinates (upper bound is inclusive)
-        int minX = max(shape.originX(), this.bounds().minX()) >> this.cubeShift();
-        int minY = max(shape.originY(), this.bounds().minY()) >> this.cubeShift();
-        int minZ = max(shape.originZ(), this.bounds().minZ()) >> this.cubeShift();
-        int maxX = min(shape.originX() + shape.sizeX() - 1, this.bounds().maxX() - 1) >> this.cubeShift();
-        int maxY = min(shape.originY() + shape.sizeY() - 1, this.bounds().maxY() - 1) >> this.cubeShift();
-        int maxZ = min(shape.originZ() + shape.sizeZ() - 1, this.bounds().maxZ() - 1) >> this.cubeShift();
+        int minX = max(shape.originX(), this.dataLimits().minX()) >> this.cubeShift();
+        int minY = max(shape.originY(), this.dataLimits().minY()) >> this.cubeShift();
+        int minZ = max(shape.originZ(), this.dataLimits().minZ()) >> this.cubeShift();
+        int maxX = min(shape.originX() + shape.sizeX() - 1, this.dataLimits().maxX() - 1) >> this.cubeShift();
+        int maxY = min(shape.originY() + shape.sizeY() - 1, this.dataLimits().maxY() - 1) >> this.cubeShift();
+        int maxZ = min(shape.originZ() + shape.sizeZ() - 1, this.dataLimits().maxZ() - 1) >> this.cubeShift();
 
         //add all positions to the set
         for (int cubeX = minX; cubeX <= maxX; cubeX++) {
@@ -320,9 +320,9 @@ public abstract class AbstractCubesExactFBlockLevelHolder<CUBE> extends Abstract
         shape.validate();
 
         //find cube X,Y,Z coordinates
-        Consumer<IntConsumer> cubeXSupplier = this.chunkCoordSupplier(shape.originX(), shape.sizeX(), shape.strideX(), this.bounds().minX(), this.bounds().maxX(), this.cubeShift(), this.cubeSize());
-        Consumer<IntConsumer> cubeYSupplier = this.chunkCoordSupplier(shape.originY(), shape.sizeY(), shape.strideY(), this.bounds().minY(), this.bounds().maxY(), this.cubeShift(), this.cubeSize());
-        Consumer<IntConsumer> cubeZSupplier = this.chunkCoordSupplier(shape.originZ(), shape.sizeZ(), shape.strideZ(), this.bounds().minZ(), this.bounds().maxZ(), this.cubeShift(), this.cubeSize());
+        Consumer<IntConsumer> cubeXSupplier = this.chunkCoordSupplier(shape.originX(), shape.sizeX(), shape.strideX(), this.dataLimits().minX(), this.dataLimits().maxX(), this.cubeShift(), this.cubeSize());
+        Consumer<IntConsumer> cubeYSupplier = this.chunkCoordSupplier(shape.originY(), shape.sizeY(), shape.strideY(), this.dataLimits().minY(), this.dataLimits().maxY(), this.cubeShift(), this.cubeSize());
+        Consumer<IntConsumer> cubeZSupplier = this.chunkCoordSupplier(shape.originZ(), shape.sizeZ(), shape.strideZ(), this.dataLimits().minZ(), this.dataLimits().maxZ(), this.cubeShift(), this.cubeSize());
 
         //collect all positions to a list
         List<Vec3i> positions = new ArrayList<>();
@@ -334,9 +334,9 @@ public abstract class AbstractCubesExactFBlockLevelHolder<CUBE> extends Abstract
         shape.validate();
 
         //find cube X,Y,Z coordinates
-        Consumer<IntConsumer> cubeXSupplier = this.chunkCoordSupplier(shape.originX(), shape.sizeX(), shape.strideX(), this.bounds().minX(), this.bounds().maxX(), this.cubeShift(), this.cubeSize());
-        Consumer<IntConsumer> cubeYSupplier = this.chunkCoordSupplier(shape.originY(), shape.sizeY(), shape.strideY(), this.bounds().minY(), this.bounds().maxY(), this.cubeShift(), this.cubeSize());
-        Consumer<IntConsumer> cubeZSupplier = this.chunkCoordSupplier(shape.originZ(), shape.sizeZ(), shape.strideZ(), this.bounds().minZ(), this.bounds().maxZ(), this.cubeShift(), this.cubeSize());
+        Consumer<IntConsumer> cubeXSupplier = this.chunkCoordSupplier(shape.originX(), shape.sizeX(), shape.strideX(), this.dataLimits().minX(), this.dataLimits().maxX(), this.cubeShift(), this.cubeSize());
+        Consumer<IntConsumer> cubeYSupplier = this.chunkCoordSupplier(shape.originY(), shape.sizeY(), shape.strideY(), this.dataLimits().minY(), this.dataLimits().maxY(), this.cubeShift(), this.cubeSize());
+        Consumer<IntConsumer> cubeZSupplier = this.chunkCoordSupplier(shape.originZ(), shape.sizeZ(), shape.strideZ(), this.dataLimits().minZ(), this.dataLimits().maxZ(), this.cubeShift(), this.cubeSize());
 
         //add all positions to the set
         cubeXSupplier.accept(cubeX -> cubeYSupplier.accept(cubeY -> cubeZSupplier.accept(cubeZ -> set.add(cubeX, cubeY, cubeZ))));

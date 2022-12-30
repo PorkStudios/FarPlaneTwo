@@ -44,23 +44,18 @@ import java.util.Map;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractPrefetchedCubesExactFBlockLevel<CUBE> extends AbstractPrefetchedExactFBlockLevel {
-    private final AbstractCubesExactFBlockLevelHolder<CUBE> holder;
+public abstract class AbstractPrefetchedCubesExactFBlockLevel<CUBE> extends AbstractPrefetchedExactFBlockLevel<AbstractCubesExactFBlockLevelHolder<CUBE>> {
     private final boolean generationAllowed;
 
     private final int cubeShift;
 
     private final Map<Vec3i, CUBE> cubes; //TODO: some kind of 3int -> obj hashmap
 
-    private final FGameRegistry registry;
-
     public AbstractPrefetchedCubesExactFBlockLevel(@NonNull AbstractCubesExactFBlockLevelHolder<CUBE> holder, boolean generationAllowed, @NonNull List<CUBE> cubes) {
-        this.holder = holder;
+        super(holder);
         this.generationAllowed = generationAllowed;
 
         this.cubeShift = holder.cubeShift();
-
-        this.registry = holder.registry();
 
         this.cubes = new ObjObjOpenHashMap<>(cubes.size());
         cubes.forEach(cube -> this.cubes.put(this.cubePosition(cube), cube));
@@ -77,21 +72,6 @@ public abstract class AbstractPrefetchedCubesExactFBlockLevel<CUBE> extends Abst
     @Override
     public void close() {
         //no-op, all resources are owned by AbstractCubesExactFBlockLevelHolder
-    }
-
-    @Override
-    public IntAxisAlignedBB dataLimits() {
-        return this.holder.bounds();
-    }
-
-    @Override
-    public boolean containsAnyData(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
-        return this.holder.containsAnyData(minX, minY, minZ, maxX, maxY, maxZ);
-    }
-
-    @Override
-    public IntAxisAlignedBB guaranteedDataAvailableVolume(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
-        return this.holder.guaranteedDataAvailableVolume(minX, minY, minZ, maxX, maxY, maxZ);
     }
 
     /**
@@ -132,7 +112,7 @@ public abstract class AbstractPrefetchedCubesExactFBlockLevel<CUBE> extends Abst
 
     @Override
     public int getState(int x, int y, int z, @NotNegative int sampleResolution, QuerySamplingMode samplingMode) throws GenerationNotAllowedException {
-        if (!this.holder.isValidPosition(x, y, z)) { //position is outside world, return 0
+        if (!this.holder().isValidPosition(x, y, z)) { //position is outside world, return 0
             return 0;
         }
 
@@ -146,7 +126,7 @@ public abstract class AbstractPrefetchedCubesExactFBlockLevel<CUBE> extends Abst
 
     @Override
     public int getBiome(int x, int y, int z, @NotNegative int sampleResolution, QuerySamplingMode samplingMode) throws GenerationNotAllowedException {
-        if (!this.holder.isValidPosition(x, y, z)) { //position is outside world, return 0
+        if (!this.holder().isValidPosition(x, y, z)) { //position is outside world, return 0
             return 0;
         }
 
@@ -160,8 +140,8 @@ public abstract class AbstractPrefetchedCubesExactFBlockLevel<CUBE> extends Abst
 
     @Override
     public byte getLight(int x, int y, int z, @NotNegative int sampleResolution, QuerySamplingMode samplingMode) throws GenerationNotAllowedException {
-        if (!this.holder.isValidPosition(x, y, z)) { //position is outside world, return default
-            return y >= this.holder.bounds().maxY()
+        if (!this.holder().isValidPosition(x, y, z)) { //position is outside world, return default
+            return y >= this.dataLimits().maxY()
                     ? BlockLevelConstants.packLight(15, 0) //y coordinates are high, return full sky light
                     : BlockLevelConstants.packLight(0, 0);
         }

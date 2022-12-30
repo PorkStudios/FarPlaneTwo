@@ -15,13 +15,13 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.server.world;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.api.world.level.FBlockLevel;
+import net.daporkchop.fp2.api.world.level.FBlockLevelDataAvailability;
 import net.daporkchop.fp2.common.util.capability.CloseableResource;
 
 /**
@@ -29,7 +29,7 @@ import net.daporkchop.fp2.common.util.capability.CloseableResource;
  *
  * @author DaPorkchop_
  */
-public interface ExactFBlockLevelHolder extends CloseableResource {
+public interface ExactFBlockLevelHolder extends FBlockLevelDataAvailability, CloseableResource {
     /**
      * Gets an {@link FBlockLevel} instance for given requirement of whether or not generation should be allowed.
      *

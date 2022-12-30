@@ -50,36 +50,19 @@ import static java.util.Objects.*;
  *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
 @Getter
-public class AbstractChunksExactFBlockLevel<CHUNK> extends AbstractExactFBlockLevel {
-    @NonNull
-    private final AbstractChunksExactFBlockLevelHolder<CHUNK> holder;
+public class AbstractChunksExactFBlockLevel<CHUNK> extends AbstractExactFBlockLevel<AbstractChunksExactFBlockLevelHolder<CHUNK>> {
     private final boolean generationAllowed;
+
+    public AbstractChunksExactFBlockLevel(@NonNull AbstractChunksExactFBlockLevelHolder<CHUNK> holder, boolean generationAllowed) {
+        super(holder);
+
+        this.generationAllowed = generationAllowed;
+    }
 
     @Override
     public void close() {
         //no-op, all resources are owned by AbstractChunksExactFBlockLevelHolder
-    }
-
-    @Override
-    public FGameRegistry registry() {
-        return this.holder.registry();
-    }
-
-    @Override
-    public IntAxisAlignedBB dataLimits() {
-        return this.holder.bounds();
-    }
-
-    @Override
-    public boolean containsAnyData(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
-        return this.holder.containsAnyData(minX, minY, minZ, maxX, maxY, maxZ);
-    }
-
-    @Override
-    public IntAxisAlignedBB guaranteedDataAvailableVolume(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
-        return this.holder.guaranteedDataAvailableVolume(minX, minY, minZ, maxX, maxY, maxZ);
     }
 
     @Override
@@ -115,10 +98,10 @@ public class AbstractChunksExactFBlockLevel<CHUNK> extends AbstractExactFBlockLe
         query.validate();
 
         //figure out which chunks need to be prefetched
-        List<Vec2i> prefetchPositions = this.holder.getChunkPositionsToPrefetch(query.shape());
+        List<Vec2i> prefetchPositions = this.holder().getChunkPositionsToPrefetch(query.shape());
 
         //prefetch all the chunks, then delegate the actual query execution to AbstractPrefetchedChunksExactFBlockLevel
-        this.holder.prefetchedWorld(this.generationAllowed, this.holder.multiGetChunks(prefetchPositions, this.generationAllowed)).query(query);
+        this.holder().prefetchedWorld(this.generationAllowed, this.holder().multiGetChunks(prefetchPositions, this.generationAllowed)).query(query);
     }
 
     @Override
@@ -129,9 +112,9 @@ public class AbstractChunksExactFBlockLevel<CHUNK> extends AbstractExactFBlockLe
         }
 
         //figure out which chunks need to be prefetched
-        List<Vec2i> prefetchPositions = this.holder.getChunkPositionsToPrefetch(Stream.of(queries).map(BatchDataQuery::shape).toArray(PointsQueryShape[]::new));
+        List<Vec2i> prefetchPositions = this.holder().getChunkPositionsToPrefetch(Stream.of(queries).map(BatchDataQuery::shape).toArray(PointsQueryShape[]::new));
 
         //prefetch all the chunks, then delegate the actual query execution to AbstractPrefetchedChunksExactFBlockLevel
-        this.holder.prefetchedWorld(this.generationAllowed, this.holder.multiGetChunks(prefetchPositions, this.generationAllowed)).query(queries);
+        this.holder().prefetchedWorld(this.generationAllowed, this.holder().multiGetChunks(prefetchPositions, this.generationAllowed)).query(queries);
     }
 }

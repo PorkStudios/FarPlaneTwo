@@ -29,7 +29,6 @@ import net.daporkchop.fp2.api.world.level.query.QuerySamplingMode;
 import net.daporkchop.fp2.api.world.level.query.TypeTransitionBatchOutput;
 import net.daporkchop.fp2.api.world.level.query.TypeTransitionFilter;
 import net.daporkchop.fp2.api.world.level.query.TypeTransitionSingleOutput;
-import net.daporkchop.fp2.api.world.level.query.shape.AABBsQueryShape;
 import net.daporkchop.fp2.api.world.level.query.shape.PointsQueryShape;
 import net.daporkchop.fp2.api.world.registry.FExtendedStateRegistryData;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
@@ -37,7 +36,6 @@ import net.daporkchop.lib.common.annotation.ThreadSafe;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 
 import java.util.ArrayList;
-import java.util.BitSet;
 import java.util.List;
 import java.util.RandomAccess;
 
@@ -46,7 +44,7 @@ import static java.util.Objects.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
- * A read-only world consisting of voxels at integer coordinates.
+ * A read-only level consisting of voxels at integer coordinates.
  * <p>
  * <h2>Voxel Data and Bands</h2>
  * <p>
@@ -64,10 +62,10 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * Data at a given voxel position is in one of three possible availability states:<br>
  * <ul>
  *     <li><strong>Exists</strong>: the data at the given position exists and is accessible.</li>
- *     <li><strong>Ungenerated</strong>: the data at the given position has not yet been generated, and does not exist. Depending on whether the world
+ *     <li><strong>Ungenerated</strong>: the data at the given position has not yet been generated, and does not exist. Depending on whether the level
  *     {@link #generationAllowed() allows generation}, attempting to access ungenerated data will either cause the data to be generated (and therefore transition to
  *     <i>Exists</i> for future queries), or will cause {@link GenerationNotAllowedException} to be thrown.</li>
- *     <li><strong>Out-of-Bounds</strong>: the given position is outside of the world's {@link #dataLimits() coordinate limits} and cannot exist in any case. Attempts
+ *     <li><strong>Out-of-Bounds</strong>: the given position is outside of the level's {@link #dataLimits() coordinate limits} and cannot exist in any case. Attempts
  *     to access out-of-bounds data will always succeed, but will return some predetermined value (possibly dependent on the position) rather than "real" data. However,
  *     even though out-of-bounds data is always accessible, it is not considered by methods such as {@link #containsAnyData}, as they report <i>existence</i> of data
  *     rather than <i>accessibility</i> of data.</li>
@@ -92,7 +90,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * <p>
  * <h2>Data Sampling</h2>
  * <p>
- * All data retrieval operations accept parameters which indicate how the operation should sample voxel data from the world: the <strong>sample resolution</strong> and
+ * All data retrieval operations accept parameters which indicate how the operation should sample voxel data from the level: the <strong>sample resolution</strong> and
  * <strong>sampling mode</strong>.
  * <p>
  * <h3>Sample Resolution</h3>
@@ -129,6 +127,12 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * advised to override and provide optimized implementations for <strong>at least</strong> the following methods:<br>
  * <ul>
  *     <li>
+ *         {@link #guaranteedDataAvailableVolume(int, int, int, int, int, int)}<br>
+ *         <i>For implementations returning "real" data from persistent storage, consider growing the supplied bounding box up to the on-disk chunk/fragment/shard/...
+ *         granularity of the underlying storage format.</i><br>
+ *         <i>For implementations returning "fake" data generated on-the-fly, consider growing the supplied bounding box up to the granularity of any internal caches.</i><br>
+ *     </li>
+ *     <li>
  *         {@link #query(BatchDataQuery)}<br>
  *         <i>For implementations returning "real" data from persistent storage, consider prefetching all of the data into memory before beginning to copy data into the
  *         output buffer.</i><br>
@@ -138,7 +142,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  *         {@link #getNextTypeTransitions(Direction, int, int, int, long, List, TypeTransitionSingleOutput, int, QuerySamplingMode)}<br>
  *         <i>For implementations returning "real" data from persistent storage, consider using a spatial datastructure to efficiently scan for type transitions in
  *         logarithmic time.</i><br>
- *         <i>For implementations returning "fake" data generated on-the-fly, consider using techniques such as binary searching to efficiently scan for type
+ *         <i>For implementations returning "fake" data generated on-the-fly, consider using techniques such as binary search to efficiently scan for type
  *         transitions in logarithmic time.</i><br>
  *         <i>Consider optimizing for specific {@link Direction direction}s, most importantly {@link Direction#NEGATIVE_Y} and {@link Direction#POSITIVE_Y}</i><br>
  *     </li>
@@ -147,13 +151,13 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @ThreadSafe(except = "close")
-public interface FBlockLevel extends AutoCloseable {
+public interface FBlockLevel extends FBlockLevelDataAvailability, AutoCloseable {
     /**
-     * Closes this world, immediately releasing any internally allocated resources.
+     * Closes this level, immediately releasing any internally allocated resources.
      * <p>
      * Once closed, all of this instance's methods will produce undefined behavior when called.
      * <p>
-     * If not manually closed, a world will be implicitly closed when the instance is garbage-collected.
+     * If not manually closed, a level will be implicitly closed when the instance is garbage-collected.
      */
     @Override
     void close();
@@ -163,106 +167,14 @@ public interface FBlockLevel extends AutoCloseable {
     //
 
     /**
-     * @return the {@link FGameRegistry} instance used by this world
+     * @return the {@link FGameRegistry} instance used by this level
      */
     FGameRegistry registry();
 
     /**
-     * @return whether this world allows generating data which is not known
+     * @return whether this level allows generating data which is not known
      */
     boolean generationAllowed();
-
-    /**
-     * Gets the AABB in which this world contains data.
-     * <p>
-     * This is not the volume in which queries may be made, but rather the volume in which valid data may be returned. Queries may be made at any valid 32-bit integer coordinates,
-     * however all queries outside the data limits will return some predetermined value.
-     *
-     * @return the AABB in which this world contains data
-     */
-    IntAxisAlignedBB dataLimits();
-
-    //
-    // DATA AVAILABILITY
-    //
-
-    /**
-     * Checks whether <strong>any</strong> data in the given AABB exists.
-     * <p>
-     * Note that this checks for data which <i>exists</i>, not merely <i>accessible</i>. Voxel positions which are out-of-bounds or whose data could be generated if requested are
-     * not considered by this.
-     * <p>
-     * Implementations <i>may</i> choose to allow false positives to be returned, but must <i>never</i> return false negatives.
-     *
-     * @param minX the minimum X coordinate (inclusive)
-     * @param minY the minimum Y coordinate (inclusive)
-     * @param minZ the minimum Z coordinate (inclusive)
-     * @param maxX the maximum X coordinate (exclusive)
-     * @param maxY the maximum Y coordinate (exclusive)
-     * @param maxZ the maximum Z coordinate (exclusive)
-     * @return whether any block data in the given AABB is known
-     */
-    boolean containsAnyData(int minX, int minY, int minZ, int maxX, int maxY, int maxZ);
-
-    /**
-     * Checks whether <strong>any</strong> data in the given AABB is known.
-     *
-     * @see #containsAnyData(int, int, int, int, int, int)
-     */
-    default boolean containsAnyData(@NonNull IntAxisAlignedBB bb) {
-        return this.containsAnyData(bb.minX(), bb.minY(), bb.minZ(), bb.maxX(), bb.maxY(), bb.maxZ());
-    }
-
-    /**
-     * For each of the given AABBs: checks whether <strong>any</strong> data in the given AABB is known.
-     *
-     * @return a {@link BitSet} with each value set to the result of calling {@link #containsAnyData(IntAxisAlignedBB)} with the given AABB at the corresponding index
-     * @see #containsAnyData(int, int, int, int, int, int)
-     */
-    default BitSet containsAnyData(@NonNull AABBsQueryShape query) {
-        query.validate();
-        int count = query.count();
-
-        BitSet out = new BitSet(count);
-        query.forEach((index, minX, minY, minZ, maxX, maxY, maxZ) -> out.set(index, this.containsAnyData(minX, minY, minZ, maxX, maxY, maxZ)));
-        return out;
-    }
-
-    /**
-     * Gets the AABB in which block data is guaranteed to be accessible if all the block data in the given AABB is accessible.
-     * <p>
-     * In other words, if generation is disallowed and a query to every point in the given AABB would succeed, it is safe to assume that querying any point in the AABB(s)
-     * returned by this method would be successful.
-     * <p>
-     * If the world is broken up into smaller pieces (chunks/cubes/columns/shards/whatever-you-want-to-call-them), accessing block data requires these pieces to be loaded
-     * into memory. Depending on the size of pieces, the size of the query, and the query's alignment relative to the pieces it would load, much of the loaded data could
-     * end up unused. This method provides a way for users to retrieve the volume of data which would actually be accessible for a given query, therefore allowing users to
-     * increase their query size to minimize wasted resources. Since a single block in a piece being generated means that all of the data in the piece has been generated,
-     * it is obviously safe to issue a query anywhere in the piece without causing issues.
-     * <p>
-     * Note that the AABB(s) returned by this method may extend beyond the world's {@link #dataLimits() data limits}.
-     *
-     * @param minX the minimum X coordinate (inclusive)
-     * @param minY the minimum Y coordinate (inclusive)
-     * @param minZ the minimum Z coordinate (inclusive)
-     * @param maxX the maximum X coordinate (exclusive)
-     * @param maxY the maximum Y coordinate (exclusive)
-     * @param maxZ the maximum Z coordinate (exclusive)
-     * @return the volume intersecting the given AABB which are guaranteed to be known if all the block data in the given AABB is known
-     */
-    default IntAxisAlignedBB guaranteedDataAvailableVolume(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
-        //default: make no assumptions about internal data representation, return exactly the queried bounding box
-        return new IntAxisAlignedBB(minX, minY, minZ, maxX, maxY, maxZ);
-    }
-
-    /**
-     * Gets the AABB in which block data is guaranteed to be accessible if all the block data in the given AABB is accessible.
-     *
-     * @see #guaranteedDataAvailableVolume(int, int, int, int, int, int)
-     */
-    default IntAxisAlignedBB guaranteedDataAvailableVolume(@NonNull IntAxisAlignedBB bb) {
-        return this.guaranteedDataAvailableVolume(bb.minX(), bb.minY(), bb.minZ(), bb.maxX(), bb.maxY(), bb.maxZ());
-    }
 
     //
     // INDIVIDUAL DATA QUERIES
@@ -277,7 +189,7 @@ public interface FBlockLevel extends AutoCloseable {
      * @param sampleResolution the sampling resolution to use
      * @param samplingMode     the {@link QuerySamplingMode sampling mode} to use
      * @return the state
-     * @throws GenerationNotAllowedException if the data at the given voxel position is not generated and this world doesn't allow generation
+     * @throws GenerationNotAllowedException if the data at the given voxel position is not generated and this level doesn't allow generation
      */
     int getState(int x, int y, int z, @NotNegative int sampleResolution, @NonNull QuerySamplingMode samplingMode) throws GenerationNotAllowedException;
 
@@ -290,7 +202,7 @@ public interface FBlockLevel extends AutoCloseable {
      * @param sampleResolution the sampling resolution to use
      * @param samplingMode     the {@link QuerySamplingMode sampling mode} to use
      * @return the biome
-     * @throws GenerationNotAllowedException if the data at the given voxel position is not generated and this world doesn't allow generation
+     * @throws GenerationNotAllowedException if the data at the given voxel position is not generated and this level doesn't allow generation
      */
     int getBiome(int x, int y, int z, @NotNegative int sampleResolution, @NonNull QuerySamplingMode samplingMode) throws GenerationNotAllowedException;
 
@@ -303,7 +215,7 @@ public interface FBlockLevel extends AutoCloseable {
      * @param sampleResolution the sampling resolution to use
      * @param samplingMode     the {@link QuerySamplingMode sampling mode} to use
      * @return the packed light levels
-     * @throws GenerationNotAllowedException if the data at the given voxel position is not generated and this world doesn't allow generation
+     * @throws GenerationNotAllowedException if the data at the given voxel position is not generated and this level doesn't allow generation
      */
     byte getLight(int x, int y, int z, @NotNegative int sampleResolution, @NonNull QuerySamplingMode samplingMode) throws GenerationNotAllowedException;
 
@@ -316,7 +228,7 @@ public interface FBlockLevel extends AutoCloseable {
      *
      * @param query the {@link BatchDataQuery query} which describes the position(s) to query the data from, which data bands should be accessed, and where the retrieved
      *              data should be stored
-     * @throws GenerationNotAllowedException if the data at any of the queried voxel positions is not generated and this world doesn't allow generation
+     * @throws GenerationNotAllowedException if the data at any of the queried voxel positions is not generated and this level doesn't allow generation
      */
     default void query(@NonNull BatchDataQuery query) throws GenerationNotAllowedException {
         this.query(new BatchDataQuery[]{ query }); //delegate to bulk implementation
@@ -327,7 +239,7 @@ public interface FBlockLevel extends AutoCloseable {
      *
      * @param queries an array of {@link BatchDataQuery queries} which describe the position(s) to query the data from, which data bands should be accessed, and where the
      *                retrieved data should be stored
-     * @throws GenerationNotAllowedException if the data at any of the queried voxel positions is not generated and this world doesn't allow generation
+     * @throws GenerationNotAllowedException if the data at any of the queried voxel positions is not generated and this level doesn't allow generation
      */
     default void query(@NonNull BatchDataQuery... queries) throws GenerationNotAllowedException {
         //ensure all queries are valid

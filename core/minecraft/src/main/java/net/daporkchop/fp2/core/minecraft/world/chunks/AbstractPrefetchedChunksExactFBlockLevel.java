@@ -44,23 +44,18 @@ import java.util.List;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractPrefetchedChunksExactFBlockLevel<CHUNK> extends AbstractPrefetchedExactFBlockLevel {
-    private final AbstractChunksExactFBlockLevelHolder<CHUNK> holder;
+public abstract class AbstractPrefetchedChunksExactFBlockLevel<CHUNK> extends AbstractPrefetchedExactFBlockLevel<AbstractChunksExactFBlockLevelHolder<CHUNK>> {
     private final boolean generationAllowed;
 
     private final int chunkShift;
 
     private final LongObjMap<CHUNK> chunks;
 
-    private final FGameRegistry registry;
-
     public AbstractPrefetchedChunksExactFBlockLevel(@NonNull AbstractChunksExactFBlockLevelHolder<CHUNK> holder, boolean generationAllowed, @NonNull List<CHUNK> chunks) {
-        this.holder = holder;
+        super(holder);
         this.generationAllowed = generationAllowed;
 
         this.chunkShift = holder.chunkShift();
-
-        this.registry = holder.registry();
 
         this.chunks = new LongObjOpenHashMap<>(chunks.size());
         chunks.forEach(chunk -> this.chunks.put(this.packedChunkPosition(chunk), chunk));
@@ -77,21 +72,6 @@ public abstract class AbstractPrefetchedChunksExactFBlockLevel<CHUNK> extends Ab
     @Override
     public void close() {
         //no-op, all resources are owned by AbstractChunksExactFBlockLevelHolder
-    }
-
-    @Override
-    public IntAxisAlignedBB dataLimits() {
-        return this.holder.bounds();
-    }
-
-    @Override
-    public boolean containsAnyData(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
-        return this.holder.containsAnyData(minX, minY, minZ, maxX, maxY, maxZ);
-    }
-
-    @Override
-    public IntAxisAlignedBB guaranteedDataAvailableVolume(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
-        return this.holder.guaranteedDataAvailableVolume(minX, minY, minZ, maxX, maxY, maxZ);
     }
 
     /**
@@ -132,7 +112,7 @@ public abstract class AbstractPrefetchedChunksExactFBlockLevel<CHUNK> extends Ab
 
     @Override
     public int getState(int x, int y, int z, @NotNegative int sampleResolution, QuerySamplingMode samplingMode) throws GenerationNotAllowedException {
-        if (!this.holder.isValidPosition(x, y, z)) { //position is outside world, return 0
+        if (!this.holder().isValidPosition(x, y, z)) { //position is outside world, return 0
             return 0;
         }
 
@@ -146,7 +126,7 @@ public abstract class AbstractPrefetchedChunksExactFBlockLevel<CHUNK> extends Ab
 
     @Override
     public int getBiome(int x, int y, int z, @NotNegative int sampleResolution, QuerySamplingMode samplingMode) throws GenerationNotAllowedException {
-        if (!this.holder.isValidPosition(x, y, z)) { //position is outside world, return 0
+        if (!this.holder().isValidPosition(x, y, z)) { //position is outside world, return 0
             return 0;
         }
 
@@ -160,8 +140,8 @@ public abstract class AbstractPrefetchedChunksExactFBlockLevel<CHUNK> extends Ab
 
     @Override
     public byte getLight(int x, int y, int z, @NotNegative int sampleResolution, QuerySamplingMode samplingMode) throws GenerationNotAllowedException {
-        if (!this.holder.isValidPosition(x, y, z)) { //position is outside world, return default
-            return y >= this.holder.bounds().maxY()
+        if (!this.holder().isValidPosition(x, y, z)) { //position is outside world, return default
+            return y >= this.dataLimits().maxY()
                     ? BlockLevelConstants.packLight(15, 0) //y coordinates are high, return full sky light
                     : BlockLevelConstants.packLight(0, 0);
         }

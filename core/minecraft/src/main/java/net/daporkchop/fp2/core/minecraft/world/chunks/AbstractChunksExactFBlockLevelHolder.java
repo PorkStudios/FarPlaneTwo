@@ -78,8 +78,8 @@ public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends Abstra
 
         this.chunkShift = positive(chunkShift, "chunkShift");
 
-        this.minHeight = this.bounds().minY();
-        this.maxHeight = this.bounds().maxY();
+        this.minHeight = this.dataLimits().minY();
+        this.maxHeight = this.dataLimits().maxY();
 
         this.chunksExistIndex = this.createChunksExistIndex(level);
         this.chunkCache = this.createChunkCache(level);
@@ -286,10 +286,10 @@ public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends Abstra
         //we assume that at least one Y coordinate is valid, meaning that the entire chunk needs to be prefetched as long as the horizontal coordinates are valid
 
         //find min and max chunk coordinates (upper bound is inclusive)
-        int minX = max(shape.originX(), this.bounds().minX()) >> this.chunkShift();
-        int minZ = max(shape.originZ(), this.bounds().minZ()) >> this.chunkShift();
-        int maxX = min(shape.originX() + shape.sizeX() - 1, this.bounds().maxX() - 1) >> this.chunkShift();
-        int maxZ = min(shape.originZ() + shape.sizeZ() - 1, this.bounds().maxZ() - 1) >> this.chunkShift();
+        int minX = max(shape.originX(), this.dataLimits().minX()) >> this.chunkShift();
+        int minZ = max(shape.originZ(), this.dataLimits().minZ()) >> this.chunkShift();
+        int maxX = min(shape.originX() + shape.sizeX() - 1, this.dataLimits().maxX() - 1) >> this.chunkShift();
+        int maxZ = min(shape.originZ() + shape.sizeZ() - 1, this.dataLimits().maxZ() - 1) >> this.chunkShift();
 
         //collect all positions to a list
         List<Vec2i> positions = new ArrayList<>(multiplyExact(maxX - minX + 1, maxZ - minZ + 1));
@@ -307,10 +307,10 @@ public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends Abstra
         //we assume that at least one Y coordinate is valid, meaning that the entire chunk needs to be prefetched as long as the horizontal coordinates are valid
 
         //find min and max chunk coordinates (upper bound is inclusive)
-        int minX = max(shape.originX(), this.bounds().minX()) >> this.chunkShift();
-        int minZ = max(shape.originZ(), this.bounds().minZ()) >> this.chunkShift();
-        int maxX = min(shape.originX() + shape.sizeX() - 1, this.bounds().maxX() - 1) >> this.chunkShift();
-        int maxZ = min(shape.originZ() + shape.sizeZ() - 1, this.bounds().maxZ() - 1) >> this.chunkShift();
+        int minX = max(shape.originX(), this.dataLimits().minX()) >> this.chunkShift();
+        int minZ = max(shape.originZ(), this.dataLimits().minZ()) >> this.chunkShift();
+        int maxX = min(shape.originX() + shape.sizeX() - 1, this.dataLimits().maxX() - 1) >> this.chunkShift();
+        int maxZ = min(shape.originZ() + shape.sizeZ() - 1, this.dataLimits().maxZ() - 1) >> this.chunkShift();
 
         //add all positions to the set
         for (int chunkX = minX; chunkX <= maxX; chunkX++) {
@@ -326,9 +326,9 @@ public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends Abstra
         //we assume that at least one Y coordinate is valid, meaning that the entire chunk needs to be prefetched as long as the horizontal coordinates are valid
 
         //find chunk X,Z coordinates
-        Consumer<IntConsumer> chunkXSupplier = this.chunkCoordSupplier(shape.originX(), shape.sizeX(), shape.strideX(), this.bounds().minX(), this.bounds()
+        Consumer<IntConsumer> chunkXSupplier = this.chunkCoordSupplier(shape.originX(), shape.sizeX(), shape.strideX(), this.dataLimits().minX(), this.dataLimits()
                 .maxX(), this.chunkShift(), this.chunkSize());
-        Consumer<IntConsumer> chunkZSupplier = this.chunkCoordSupplier(shape.originZ(), shape.sizeZ(), shape.strideZ(), this.bounds().minZ(), this.bounds()
+        Consumer<IntConsumer> chunkZSupplier = this.chunkCoordSupplier(shape.originZ(), shape.sizeZ(), shape.strideZ(), this.dataLimits().minZ(), this.dataLimits()
                 .maxZ(), this.chunkShift(), this.chunkSize());
 
         //collect all positions to a list
@@ -343,9 +343,9 @@ public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends Abstra
         //we assume that at least one Y coordinate is valid, meaning that the entire chunk needs to be prefetched as long as the horizontal coordinates are valid
 
         //find chunk X,Z coordinates
-        Consumer<IntConsumer> chunkXSupplier = this.chunkCoordSupplier(shape.originX(), shape.sizeX(), shape.strideX(), this.bounds().minX(), this.bounds()
+        Consumer<IntConsumer> chunkXSupplier = this.chunkCoordSupplier(shape.originX(), shape.sizeX(), shape.strideX(), this.dataLimits().minX(), this.dataLimits()
                 .maxX(), this.chunkShift(), this.chunkSize());
-        Consumer<IntConsumer> chunkZSupplier = this.chunkCoordSupplier(shape.originZ(), shape.sizeZ(), shape.strideZ(), this.bounds().minZ(), this.bounds()
+        Consumer<IntConsumer> chunkZSupplier = this.chunkCoordSupplier(shape.originZ(), shape.sizeZ(), shape.strideZ(), this.dataLimits().minZ(), this.dataLimits()
                 .maxZ(), this.chunkShift(), this.chunkSize());
 
         //add all positions to the set

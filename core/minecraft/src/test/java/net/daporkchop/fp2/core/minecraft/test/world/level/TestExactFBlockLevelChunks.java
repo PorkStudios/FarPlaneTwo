@@ -22,7 +22,6 @@ package net.daporkchop.fp2.core.minecraft.test.world.level;
 import lombok.Data;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.api.event.FEventBus;
 import net.daporkchop.fp2.api.storage.external.FStorageCategory;
 import net.daporkchop.fp2.api.test.world.level.TestFBlockLevel;
@@ -115,7 +114,7 @@ public class TestExactFBlockLevelChunks extends TestFBlockLevel {
                 @Override
                 protected int getState(int x, int y, int z, DummyChunk dummyChunk) throws GenerationNotAllowedException {
                     //TODO: this should account for the case where part of a chunk extends outside the bounds
-                    return this.holder().bounds().contains(x, y, z) ? DummyChunksExactFBlockLevelHolder.this.blockFunction.apply(x, y, z) : BLOCK_TYPE_INVISIBLE;
+                    return this.holder().dataLimits().contains(x, y, z) ? DummyChunksExactFBlockLevelHolder.this.blockFunction.apply(x, y, z) : BLOCK_TYPE_INVISIBLE;
                 }
 
                 @Override
