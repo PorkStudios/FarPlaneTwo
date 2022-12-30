@@ -67,7 +67,7 @@ public class DefaultExactHeightmapGenerator extends AbstractFarGenerator<Heightm
     }
 
     @Override
-    public void generate(@NonNull FBlockLevel world, @NonNull HeightmapPos posIn, @NonNull HeightmapTile tile) throws GenerationNotAllowedException {
+    public void generate(@NonNull FBlockLevel exactLevel, FBlockLevel roughLevel, @NonNull HeightmapPos posIn, @NonNull HeightmapTile tile) throws GenerationNotAllowedException {
         int baseX = posIn.x() << HT_SHIFT;
         int baseZ = posIn.z() << HT_SHIFT;
 
@@ -88,7 +88,7 @@ public class DefaultExactHeightmapGenerator extends AbstractFarGenerator<Heightm
                 null, 0, 0, 0,
                 HT_VOXELS * HT_VOXELS, MAX_LAYERS);
 
-        world.query(BatchTypeTransitionQuery.of(
+        exactLevel.query(BatchTypeTransitionQuery.of(
                 Direction.NEGATIVE_Y, Integer.MAX_VALUE * 2L, TYPE_TRANSITION_FILTERS,
                 new PointsQueryShape.OriginSizeStride(baseX, Integer.MAX_VALUE, baseZ, HT_VOXELS, 1, HT_VOXELS, 1, 1, 1),
                 typeTransitionBatchOutput));
@@ -125,7 +125,7 @@ public class DefaultExactHeightmapGenerator extends AbstractFarGenerator<Heightm
             }
 
             try {
-                world.query(BatchDataQuery.of(
+                exactLevel.query(BatchDataQuery.of(
                         new PointsQueryShape.Multi(xs, 0, 1, ys, 0, 1, zs, 0, 1, samplePoints),
                         new DataQueryBatchOutput.BandArrays(states, 0, 1, biomes, 0, 1, lights, 0, 1, samplePoints)));
             } catch (GenerationNotAllowedException e) {
@@ -140,7 +140,7 @@ public class DefaultExactHeightmapGenerator extends AbstractFarGenerator<Heightm
         }
 
         HeightmapData data = new HeightmapData();
-        FExtendedStateRegistryData extendedStateRegistryData = world.registry().extendedStateRegistryData();
+        FExtendedStateRegistryData extendedStateRegistryData = exactLevel.registry().extendedStateRegistryData();
 
         for (int slot = 0, blockSampleIndex = 0, x = 0; x < HT_VOXELS; x++) {
             for (int z = 0; z < HT_VOXELS; z++, slot++) {

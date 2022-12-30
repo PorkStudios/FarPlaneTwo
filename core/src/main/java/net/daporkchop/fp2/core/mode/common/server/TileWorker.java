@@ -31,10 +31,11 @@ import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.core.mode.api.tile.ITileMetadata;
 import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
 import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
-import net.daporkchop.lib.common.pool.recycler.Recycler;
+import net.daporkchop.fp2.core.server.world.RoughFBlockLevelHolder;
 import net.daporkchop.fp2.core.util.serialization.variable.IVariableSizeRecyclingCodec;
 import net.daporkchop.fp2.core.util.threading.scheduler.Scheduler;
 import net.daporkchop.fp2.core.util.threading.scheduler.SharedFutureScheduler;
+import net.daporkchop.lib.common.pool.recycler.Recycler;
 import net.daporkchop.lib.common.util.PArrays;
 import net.daporkchop.lib.primitive.lambda.ObjObjLongConsumer;
 import net.daporkchop.lib.primitive.list.LongList;
@@ -163,44 +164,47 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
     protected void generateRough(@NonNull State state) {
         state.positions().forEach(pos -> checkArg(this.provider.canGenerateRough(pos), "cannot do rough generation at %s!", pos));
 
-        //try to steal tasks required to make this a batch
-        this.provider.generatorRough().batchGenerationGroup(state.positions()).ifPresent(batchPositions -> {
-            //ensure the original position is contained in the list
-            checkState(batchPositions.containsAll(state.positions()), "batch group for %s doesn't contain all of its inputs! given: %s", state.positions(), batchPositions);
+        try (FBlockLevel roughLevel = this.provider.world().roughBlockLevelHolder().map(RoughFBlockLevelHolder::level).orElse(null)) {
+            //try to steal tasks required to make this a batch
+            this.provider.generatorRough().batchGenerationGroup(roughLevel, state.positions()).ifPresent(batchPositions -> {
+                //ensure the original position is contained in the list
+                checkState(batchPositions.containsAll(state.positions()), "batch group for %s doesn't contain all of its inputs! given: %s", state.positions(), batchPositions);
 
-            //try to acquire all the positions
-            state.tryAcquire(batchPositions, SharedFutureScheduler.AcquisitionStrategy.TRY_STEAL_EXISTING_OR_CREATE);
-        });
+                //try to acquire all the positions
+                state.tryAcquire(batchPositions, SharedFutureScheduler.AcquisitionStrategy.TRY_STEAL_EXISTING_OR_CREATE);
+            });
 
-        Recycler<T> tileRecycler = this.provider.mode().tileRecycler();
-        //TODO: T[] tiles = tileRecycler.allocate(state.positions().size(), this.provider.mode()::tileArray);
-        T[] tiles = PArrays.filledFrom(state.positions().size(), this.provider.mode()::tileArray, tileRecycler::allocate);
-        try {
-            //generate tile
-            this.provider.generatorRough().generate(state.positions().toArray(this.provider.mode().posArray(state.positions().size())), tiles);
+            Recycler<T> tileRecycler = this.provider.mode().tileRecycler();
+            //TODO: T[] tiles = tileRecycler.allocate(state.positions().size(), this.provider.mode()::tileArray);
+            T[] tiles = PArrays.filledFrom(state.positions().size(), this.provider.mode()::tileArray, tileRecycler::allocate);
+            try {
+                //generate tile
+                this.provider.generatorRough().generate(roughLevel, state.positions().toArray(this.provider.mode().posArray(state.positions().size())), tiles);
 
-            //update tile contents
-            this.provider.storage().multiSet(state.positions(),
-                    StreamSupport.stream(state.minimumTimestamps().spliterator(), false).map(ITileMetadata::ofTimestamp).collect(Collectors.toList()),
-                    Arrays.asList(tiles));
-        } finally {
-            //TODO: tileRecycler.release(tiles);
-            for (T tile : tiles) {
-                tileRecycler.release(tile);
+                //update tile contents
+                this.provider.storage().multiSet(state.positions(),
+                        StreamSupport.stream(state.minimumTimestamps().spliterator(), false).map(ITileMetadata::ofTimestamp).collect(Collectors.toList()),
+                        Arrays.asList(tiles));
+            } finally {
+                //TODO: tileRecycler.release(tiles);
+                for (T tile : tiles) {
+                    tileRecycler.release(tile);
+                }
+                Arrays.fill(tiles, null);
             }
-            Arrays.fill(tiles, null);
-        }
 
-        //notify callback
-        state.completeAll();
+            //notify callback
+            state.completeAll();
+        }
     }
 
     protected void generateExact(@NonNull State state, boolean allowGeneration) throws GenerationNotAllowedException {
-        try (FBlockLevel exactWorld = this.provider.world().exactBlockLevelHolder().worldFor(allowGeneration
+        try (FBlockLevel exactLevel = this.provider.world().exactBlockLevelHolder().worldFor(allowGeneration
                 ? ExactFBlockLevelHolder.AllowGenerationRequirement.ALLOWED
-                : ExactFBlockLevelHolder.AllowGenerationRequirement.NOT_ALLOWED)) {
+                : ExactFBlockLevelHolder.AllowGenerationRequirement.NOT_ALLOWED);
+             FBlockLevel roughLevel = this.provider.world().roughBlockLevelHolder().map(RoughFBlockLevelHolder::level).orElse(null)) {
             //try to steal tasks required to make this a batch
-            this.provider.generatorExact().batchGenerationGroup(exactWorld, state.positions()).ifPresent(batchPositions -> {
+            this.provider.generatorExact().batchGenerationGroup(exactLevel, roughLevel, state.positions()).ifPresent(batchPositions -> {
                 //ensure the original position is contained in the list
                 checkState(batchPositions.containsAll(state.positions()), "batch group for %s doesn't contain all of its inputs! given: %s", state.positions(), batchPositions);
 
@@ -214,7 +218,7 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
             T[] tiles = PArrays.filledFrom(state.positions().size(), this.provider.mode()::tileArray, tileRecycler::allocate);
             try {
                 //generate tile
-                this.provider.generatorExact().generate(exactWorld, state.positions().toArray(this.provider.mode().posArray(state.positions().size())), tiles);
+                this.provider.generatorExact().generate(exactLevel, roughLevel, state.positions().toArray(this.provider.mode().posArray(state.positions().size())), tiles);
 
                 //update tile contents
                 this.provider.storage().multiSet(state.positions(),

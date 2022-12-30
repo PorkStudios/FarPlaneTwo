@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.voxel.server.gen;
@@ -33,8 +32,11 @@ import static net.daporkchop.fp2.core.mode.voxel.VoxelConstants.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 
 /**
+ * Base class containing common code shared among all voxel generators.
+ *
  * @author DaPorkchop_
  */
+@SuppressWarnings("PointlessArithmeticExpression")
 public abstract class AbstractVoxelGenerator extends AbstractFarGenerator<VoxelPos, VoxelTile> {
     public static final int CACHE_MIN = -1;
     public static final int CACHE_MAX = VT_VOXELS + 1;
@@ -66,7 +68,7 @@ public abstract class AbstractVoxelGenerator extends AbstractFarGenerator<VoxelP
 
     protected final Cached<byte[]> typeMapCache = Cached.threadLocal(() -> new byte[cb(CACHE_SIZE)], ReferenceStrength.WEAK);
 
-    public AbstractVoxelGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<VoxelPos, VoxelTile> provider) {
-        super(world, provider);
+    public AbstractVoxelGenerator(@NonNull IFarLevelServer level, @NonNull IFarTileProvider<VoxelPos, VoxelTile> provider) {
+        super(level, provider);
     }
 }

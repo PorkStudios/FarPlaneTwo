@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.api.server.gen;
@@ -36,7 +35,7 @@ public interface IFarGenerator<POS extends IFarPos, T extends IFarTile> {
     /**
      * @return the {@link IFarLevelServer world} that this generator generates tiles in
      */
-    IFarLevelServer world();
+    IFarLevelServer level();
 
     /**
      * @return the {@link IFarTileProvider tile provider} that this generator generates tiles for

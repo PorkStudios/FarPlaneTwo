@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.voxel.server.gen.rough;
@@ -41,13 +40,15 @@ import static net.daporkchop.lib.common.math.PMath.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
+ * Base class containing common code shared among all voxel rough generators.
+ *
  * @author DaPorkchop_
  */
 public abstract class AbstractRoughVoxelGenerator<PARAM> extends AbstractVoxelGenerator implements IFarGeneratorRough<VoxelPos, VoxelTile> {
     protected final Cached<double[][]> densityMapCache = Cached.threadLocal(() -> new double[2][cb(CACHE_SIZE)], ReferenceStrength.WEAK);
 
-    public AbstractRoughVoxelGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<VoxelPos, VoxelTile> provider) {
-        super(world, provider);
+    public AbstractRoughVoxelGenerator(@NonNull IFarLevelServer level, @NonNull IFarTileProvider<VoxelPos, VoxelTile> provider) {
+        super(level, provider);
     }
 
     protected byte[] populateTypeMapFromDensityMap(@NonNull double[][] densityMap) {

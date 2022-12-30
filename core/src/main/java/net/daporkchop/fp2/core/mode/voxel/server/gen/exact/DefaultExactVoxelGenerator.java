@@ -47,6 +47,8 @@ import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
+ * The default exact generator for voxel mode. Generates an exact voxel tile based on the level's exact {@link FBlockLevel}.
+ *
  * @author DaPorkchop_
  */
 public class DefaultExactVoxelGenerator extends AbstractVoxelGenerator implements IFarGeneratorExact<VoxelPos, VoxelTile> {
@@ -55,13 +57,15 @@ public class DefaultExactVoxelGenerator extends AbstractVoxelGenerator implement
     }
 
     @Override
-    public Optional<Set<VoxelPos>> batchGenerationGroup(@NonNull FBlockLevel world, @NonNull VoxelPos pos) {
+    public Optional<Set<VoxelPos>> batchGenerationGroup(@NonNull FBlockLevel exactLevel, FBlockLevel roughLevel, @NonNull VoxelPos pos) {
         checkArg(pos.level() == 0, "can only exact generate at level 0, not %d!", pos.level());
+
+        //TODO: also take the rough level into account, if present
 
         IntAxisAlignedBB initialBB = new IntAxisAlignedBB(
                 pos.blockX() + CACHE_MIN, pos.blockY() + CACHE_MIN, pos.blockZ() + CACHE_MIN,
                 pos.blockX() + CACHE_MAX, pos.blockY() + CACHE_MAX, pos.blockZ() + CACHE_MAX);
-        IntAxisAlignedBB dataAvailableBB = world.guaranteedDataAvailableVolume(initialBB);
+        IntAxisAlignedBB dataAvailableBB = exactLevel.guaranteedDataAvailableVolume(initialBB);
 
         //the bounding boxes are identical, so there's no point in batching
         if (initialBB.equals(dataAvailableBB)) {
@@ -94,7 +98,7 @@ public class DefaultExactVoxelGenerator extends AbstractVoxelGenerator implement
     }
 
     @Override
-    public void generate(@NonNull FBlockLevel world, @NonNull VoxelPos posIn, @NonNull VoxelTile tile) throws GenerationNotAllowedException {
+    public void generate(@NonNull FBlockLevel exactLevel, FBlockLevel roughLevel, @NonNull VoxelPos posIn, @NonNull VoxelTile tile) throws GenerationNotAllowedException {
         checkArg(posIn.level() == 0, "can only exact generate at level 0, not %d!", posIn.level());
 
         ArrayAllocator<int[]> intAlloc = GlobalAllocators.ALLOC_INT.get();
@@ -108,7 +112,7 @@ public class DefaultExactVoxelGenerator extends AbstractVoxelGenerator implement
 
         try {
             //query all world data at once
-            world.query(BatchDataQuery.of(
+            exactLevel.query(BatchDataQuery.of(
                     new PointsQueryShape.OriginSizeStride(
                             posIn.blockX() + CACHE_MIN - 1, posIn.blockY() + CACHE_MIN - 1, posIn.blockZ() + CACHE_MIN - 1,
                             CACHE_SIZE, CACHE_SIZE, CACHE_SIZE,

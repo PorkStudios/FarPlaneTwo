@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.common.server.gen;
@@ -32,11 +31,13 @@ import net.daporkchop.fp2.core.mode.api.server.gen.IFarGenerator;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 
 /**
+ * Base class containing common code shared among all generators.
+ *
  * @author DaPorkchop_
  */
 @Getter
 public abstract class AbstractFarGenerator<POS extends IFarPos, T extends IFarTile> implements IFarGenerator<POS, T> {
-    private final IFarLevelServer world;
+    private final IFarLevelServer level;
     private final IFarTileProvider<POS, T> provider;
 
     private final FGameRegistry registry;
@@ -45,14 +46,14 @@ public abstract class AbstractFarGenerator<POS extends IFarPos, T extends IFarTi
 
     private final int seaLevel;
 
-    public AbstractFarGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<POS, T> provider) {
-        this.world = world;
+    public AbstractFarGenerator(@NonNull IFarLevelServer level, @NonNull IFarTileProvider<POS, T> provider) {
+        this.level = level;
         this.provider = provider;
 
-        this.registry = world.registry();
+        this.registry = level.registry();
         this.extendedBiomeRegistryData = this.registry.extendedBiomeRegistryData();
         this.extendedStateRegistryData = this.registry.extendedStateRegistryData();
 
-        this.seaLevel = world.seaLevel();
+        this.seaLevel = level.seaLevel();
     }
 }

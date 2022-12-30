@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cwg.generator.heightmap;
@@ -23,6 +22,7 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cwg.generator.heightmap;
 import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.IBiomeBlockReplacer;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.world.level.BlockLevelConstants;
+import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapData;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
@@ -41,6 +41,8 @@ import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 
 /**
+ * Heightmap rough generator for CubicWorldGen's "CustomCubic" world type.
+ *
  * @author DaPorkchop_
  */
 public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
@@ -73,12 +75,12 @@ public class CWGHeightmapGenerator extends AbstractRoughHeightmapGenerator {
     }
 
     @Override
-    public boolean canGenerate(@NonNull HeightmapPos pos) {
+    public boolean canGenerate(FBlockLevel roughLevel, @NonNull HeightmapPos pos) {
         return true;
     }
 
     @Override
-    public void generate(@NonNull HeightmapPos posIn, @NonNull HeightmapTile tile) {
+    public void generate(FBlockLevel roughLevel, @NonNull HeightmapPos posIn, @NonNull HeightmapTile tile) {
         int level = posIn.level();
         int baseX = posIn.blockX();
         int baseZ = posIn.blockZ();

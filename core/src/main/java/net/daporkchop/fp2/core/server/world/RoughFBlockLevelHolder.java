@@ -20,14 +20,16 @@
 package net.daporkchop.fp2.core.server.world;
 
 import net.daporkchop.fp2.api.world.level.FBlockLevel;
+import net.daporkchop.fp2.api.world.level.FBlockLevelDataAvailability;
 import net.daporkchop.fp2.common.util.capability.CloseableResource;
+import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 
 /**
- * A container which provides instances of {@link FBlockLevel}.
+ * A container which provides instances of {@link FBlockLevel} for accessing rough block data in a {@link IFarLevelServer}.
  *
  * @author DaPorkchop_
  */
-public interface RoughFBlockLevelHolder extends CloseableResource {
+public interface RoughFBlockLevelHolder extends FBlockLevelDataAvailability, CloseableResource {
     /**
      * @return an {@link FBlockLevel} instance
      */

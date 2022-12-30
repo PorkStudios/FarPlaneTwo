@@ -23,9 +23,10 @@ import lombok.NonNull;
 import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.fp2.api.world.level.FBlockLevelDataAvailability;
 import net.daporkchop.fp2.common.util.capability.CloseableResource;
+import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 
 /**
- * A container which provides instances of {@link FBlockLevel}.
+ * A container which provides instances of {@link FBlockLevel} for accessing rough block data in a {@link IFarLevelServer}.
  *
  * @author DaPorkchop_
  */

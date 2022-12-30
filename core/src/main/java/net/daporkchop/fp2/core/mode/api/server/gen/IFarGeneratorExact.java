@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.api.server.gen;
@@ -44,7 +43,8 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 public interface IFarGeneratorExact<POS extends IFarPos, T extends IFarTile> extends IFarGenerator<POS, T> {
     /**
-     * Gets an {@link Optional} {@link Collection} containing all the tile positions which may be generated at the same time as the tile at the given position to potentially achieve better performance.
+     * Gets an {@link Optional} {@link Collection} containing all the tile positions which may be generated at the same time as the tile at the given position to
+     * potentially achieve better performance.
      * <p>
      * If an empty {@link Optional} is returned, no batching will be done and the tile will be generated individually.
      * <p>
@@ -54,20 +54,23 @@ public interface IFarGeneratorExact<POS extends IFarPos, T extends IFarTile> ext
      *     <li>all of the positions must be valid (i.e. within the provider's {@link IFarCoordLimits coordinate limits})</li>
      *     <li>the positions must be chosen such that generation can only fail with a {@link GenerationNotAllowedException} if the input position would have failed. Conversely,
      *     if the input position would have been able to be generated successfully, generation for the whole batch <strong>must</strong> succeed. As thi is entirely dependent
-     *     on the world's internal data representation, it is recommended to use {@link FBlockLevel#guaranteedDataAvailableVolume} to determine which data is guaranteed
+     *     on the level's internal data representation, it is recommended to use {@link FBlockLevel#guaranteedDataAvailableVolume} to determine which data is guaranteed
      *     to be available if the data necessary for generating the input position is.</li>
      * </ul>
      *
-     * @param world the {@link FBlockLevel} instance providing access to block data in the world
-     * @param pos   the position of the tile to generate
+     * @param exactLevel an exact {@link FBlockLevel} instance providing access to block data in the level
+     * @param roughLevel a rough {@link FBlockLevel} instance providing access to rough block data in the level. May be {@code null} if the level does not have a
+     *                   rough {@link FBlockLevel}
+     * @param pos        the position of the tile to generate
      * @return an {@link Optional} {@link Collection} containing all the tile positions which may be generated at the same time
      */
-    default Optional<? extends Collection<POS>> batchGenerationGroup(@NonNull FBlockLevel world, @NonNull POS pos) {
+    default Optional<? extends Collection<POS>> batchGenerationGroup(@NonNull FBlockLevel exactLevel, FBlockLevel roughLevel, @NonNull POS pos) {
         return Optional.empty(); //don't do batch generation by default
     }
 
     /**
-     * Gets an {@link Optional} {@link Collection} containing all the tile positions which may be generated at the same time as the tiles at the given positions to potentially achieve better performance.
+     * Gets an {@link Optional} {@link Collection} containing all the tile positions which may be generated at the same time as the tiles at the given positions to
+     * potentially achieve better performance.
      * <p>
      * If an empty {@link Optional} is returned, no additional batching will be done.
      * <p>
@@ -77,18 +80,20 @@ public interface IFarGeneratorExact<POS extends IFarPos, T extends IFarTile> ext
      *     <li>all of the positions must be valid (i.e. within the provider's {@link IFarCoordLimits coordinate limits})</li>
      *     <li>the positions must be chosen such that generation can only fail with a {@link GenerationNotAllowedException} if the input position would have failed. Conversely,
      *     if the input position would have been able to be generated successfully, generation for the whole batch <strong>must</strong> succeed. As thi is entirely dependent
-     *     on the world's internal data representation, it is recommended to use {@link FBlockLevel#guaranteedDataAvailableVolume} to determine which data is guaranteed
+     *     on the level's internal data representation, it is recommended to use {@link FBlockLevel#guaranteedDataAvailableVolume} to determine which data is guaranteed
      *     to be available if the data necessary for generating the input position is.</li>
      * </ul>
      *
-     * @param world     the {@link FBlockLevel} instance providing access to block data in the world
-     * @param positions the position of the tile to generate
+     * @param exactLevel an exact {@link FBlockLevel} instance providing access to block data in the level
+     * @param roughLevel a rough {@link FBlockLevel} instance providing access to rough block data in the level. May be {@code null} if the level does not have a
+     *                   rough {@link FBlockLevel}
+     * @param positions  the positions of the tiles to generate
      * @return an {@link Optional} {@link Collection} containing all the tile positions which may be generated at the same time
      */
-    default Optional<? extends Collection<POS>> batchGenerationGroup(@NonNull FBlockLevel world, @NonNull Collection<POS> positions) {
+    default Optional<? extends Collection<POS>> batchGenerationGroup(@NonNull FBlockLevel exactLevel, FBlockLevel roughLevel, @NonNull Collection<POS> positions) {
         Set<POS> set = null;
         for (POS pos : positions) {
-            Optional<? extends Collection<POS>> optionalBatchGroup = this.batchGenerationGroup(world, pos);
+            Optional<? extends Collection<POS>> optionalBatchGroup = this.batchGenerationGroup(exactLevel, roughLevel, pos);
             if (optionalBatchGroup.isPresent()) {
                 if (set == null) { //create set if it doesn't exist
                     //clone the input collection to ensure that all of the original input positions will be included
@@ -106,26 +111,30 @@ public interface IFarGeneratorExact<POS extends IFarPos, T extends IFarTile> ext
     /**
      * Generates the terrain in the given tile.
      *
-     * @param world the {@link FBlockLevel} instance providing access to block data in the world
-     * @param pos   the position of the tile to generate
-     * @param tile  the tile to generate
-     * @throws GenerationNotAllowedException if the generator attempts to access terrain which is not generated, and the given {@link FBlockLevel} does not allow generation
+     * @param exactLevel an exact {@link FBlockLevel} instance providing access to block data in the level
+     * @param roughLevel a rough {@link FBlockLevel} instance providing access to rough block data in the level. May be {@code null} if the level does not have a
+     *                   rough {@link FBlockLevel}
+     * @param pos        the position of the tile to generate
+     * @param tile       the tile to generate
+     * @throws GenerationNotAllowedException if the generator attempts to access terrain which is not generated, and the given exact {@link FBlockLevel} does not allow generation
      */
-    void generate(@NonNull FBlockLevel world, @NonNull POS pos, @NonNull T tile) throws GenerationNotAllowedException;
+    void generate(@NonNull FBlockLevel exactLevel, FBlockLevel roughLevel, @NonNull POS pos, @NonNull T tile) throws GenerationNotAllowedException;
 
     /**
      * Generates the terrain in the given tiles.
      *
-     * @param world     the {@link FBlockLevel} instance providing access to block data in the world
-     * @param positions the positions of the tiles to generate
-     * @param tiles     the tiles to generate
-     * @throws GenerationNotAllowedException if the generator attempts to access terrain which is not generated, and the given {@link FBlockLevel} does not allow generation
+     * @param exactLevel an exact {@link FBlockLevel} instance providing access to block data in the level
+     * @param roughLevel a rough {@link FBlockLevel} instance providing access to rough block data in the level. May be {@code null} if the level does not have a
+     *                   rough {@link FBlockLevel}
+     * @param positions  the positions of the tiles to generate
+     * @param tiles      the tiles to generate
+     * @throws GenerationNotAllowedException if the generator attempts to access terrain which is not generated, and the given exact {@link FBlockLevel} does not allow generation
      */
-    default void generate(@NonNull FBlockLevel world, @NonNull POS[] positions, @NonNull T[] tiles) throws GenerationNotAllowedException {
+    default void generate(@NonNull FBlockLevel exactLevel, FBlockLevel roughLevel, @NonNull POS[] positions, @NonNull T[] tiles) throws GenerationNotAllowedException {
         checkArg(positions.length == tiles.length, "positions (%d) and tiles (%d) must have same number of elements!", positions.length, tiles.length);
 
         for (int i = 0; i < positions.length; i++) {
-            this.generate(world, positions[i], tiles[i]);
+            this.generate(exactLevel, roughLevel, positions[i], tiles[i]);
         }
     }
 

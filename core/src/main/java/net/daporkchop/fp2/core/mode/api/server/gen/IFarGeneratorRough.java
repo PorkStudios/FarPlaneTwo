@@ -15,12 +15,12 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.api.server.gen;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.server.IFarServerResourceCreationEvent;
@@ -45,10 +45,12 @@ public interface IFarGeneratorRough<POS extends IFarPos, T extends IFarTile> ext
      * <p>
      * If an empty {@link Optional} is returned, no batching will be done and the tile will be generated individually.
      *
-     * @param pos the position of the tile to generate
+     * @param roughLevel a rough {@link FBlockLevel} instance providing access to rough block data in the level. May be {@code null} if the level does not have a
+     *                   rough {@link FBlockLevel}
+     * @param pos        the position of the tile to generate
      * @return an {@link Optional} {@link Collection} containing all the tile positions which may be generated at the same time
      */
-    default Optional<? extends Collection<POS>> batchGenerationGroup(@NonNull POS pos) {
+    default Optional<? extends Collection<POS>> batchGenerationGroup(FBlockLevel roughLevel, @NonNull POS pos) {
         return Optional.empty(); //don't do batch generation by default
     }
 
@@ -57,13 +59,15 @@ public interface IFarGeneratorRough<POS extends IFarPos, T extends IFarTile> ext
      * <p>
      * If an empty {@link Optional} is returned, no additional batching will be done.
      *
-     * @param positions the position of the tile to generate
+     * @param roughLevel a rough {@link FBlockLevel} instance providing access to rough block data in the level. May be {@code null} if the level does not have a
+     *                   rough {@link FBlockLevel}
+     * @param positions  the position of the tile to generate
      * @return an {@link Optional} {@link Collection} containing all the tile positions which may be generated at the same time
      */
-    default Optional<? extends Collection<POS>> batchGenerationGroup(@NonNull Collection<POS> positions) {
+    default Optional<? extends Collection<POS>> batchGenerationGroup(FBlockLevel roughLevel, @NonNull Collection<POS> positions) {
         Set<POS> set = null;
         for (POS pos : positions) {
-            Optional<? extends Collection<POS>> optionalBatchGroup = this.batchGenerationGroup(pos);
+            Optional<? extends Collection<POS>> optionalBatchGroup = this.batchGenerationGroup(roughLevel, pos);
             if (optionalBatchGroup.isPresent()) {
                 if (set == null) { //create set if it doesn't exist
                     //clone the input collection to ensure that all of the original input positions will be included
@@ -83,30 +87,36 @@ public interface IFarGeneratorRough<POS extends IFarPos, T extends IFarTile> ext
      * <p>
      * The position must be valid (within the world's coordinate limits)!
      *
-     * @param pos the position to check
+     * @param roughLevel a rough {@link FBlockLevel} instance providing access to rough block data in the level. May be {@code null} if the level does not have a
+     *                   rough {@link FBlockLevel}
+     * @param pos        the position to check
      * @return whether or not rough generation is possible
      */
-    boolean canGenerate(@NonNull POS pos);
+    boolean canGenerate(FBlockLevel roughLevel, @NonNull POS pos);
 
     /**
      * Generates a rough estimate of the terrain in the given tile.
      *
-     * @param pos  the position of the tile to generate
-     * @param tile the tile to generate
+     * @param roughLevel a rough {@link FBlockLevel} instance providing access to rough block data in the level. May be {@code null} if the level does not have a
+     *                   rough {@link FBlockLevel}
+     * @param pos        the position of the tile to generate
+     * @param tile       the tile to generate
      */
-    void generate(@NonNull POS pos, @NonNull T tile);
+    void generate(FBlockLevel roughLevel, @NonNull POS pos, @NonNull T tile);
 
     /**
      * Generates a rough estimate of the terrain in the given tiles.
      *
-     * @param positions the positions of the tiles to generate
-     * @param tiles     the tiles to generate
+     * @param roughLevel a rough {@link FBlockLevel} instance providing access to rough block data in the level. May be {@code null} if the level does not have a
+     *                   rough {@link FBlockLevel}
+     * @param positions  the positions of the tiles to generate
+     * @param tiles      the tiles to generate
      */
-    default void generate(@NonNull POS[] positions, @NonNull T[] tiles) {
+    default void generate(FBlockLevel roughLevel, @NonNull POS[] positions, @NonNull T[] tiles) {
         checkArg(positions.length == tiles.length, "positions (%d) and tiles (%d) must have same number of elements!", positions.length, tiles.length);
 
         for (int i = 0; i < positions.length; i++) {
-            this.generate(positions[i], tiles[i]);
+            this.generate(roughLevel, positions[i], tiles[i]);
         }
     }
 

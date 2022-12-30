@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cwg.generator.voxel;
@@ -23,6 +22,7 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cwg.generator.voxel;
 import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.IBiomeBlockReplacer;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.world.level.BlockLevelConstants;
+import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.voxel.VoxelData;
 import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
@@ -42,24 +42,26 @@ import static java.lang.Math.*;
 import static net.daporkchop.fp2.core.mode.voxel.VoxelConstants.*;
 
 /**
+ * Voxel rough generator for CubicWorldGen's "CustomCubic" world type.
+ *
  * @author DaPorkchop_
  */
 public class CWGVoxelGenerator extends AbstractRoughVoxelGenerator<CWGContext> {
     protected final Cached<CWGContext> ctx;
 
-    public CWGVoxelGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<VoxelPos, VoxelTile> provider) {
-        super(world, provider);
+    public CWGVoxelGenerator(@NonNull IFarLevelServer level, @NonNull IFarTileProvider<VoxelPos, VoxelTile> provider) {
+        super(level, provider);
 
-        this.ctx = Cached.threadLocal(() -> new CWGContext(this.registry(), (WorldServer) world.implLevel(), CACHE_SIZE, 2, VT_SHIFT), ReferenceStrength.WEAK);
+        this.ctx = Cached.threadLocal(() -> new CWGContext(this.registry(), (WorldServer) level.implLevel(), CACHE_SIZE, 2, VT_SHIFT), ReferenceStrength.WEAK);
     }
 
     @Override
-    public boolean canGenerate(@NonNull VoxelPos pos) {
+    public boolean canGenerate(FBlockLevel roughLevel, @NonNull VoxelPos pos) {
         return true;
     }
 
     @Override
-    public void generate(@NonNull VoxelPos pos, @NonNull VoxelTile tile) {
+    public void generate(FBlockLevel roughLevel, @NonNull VoxelPos pos, @NonNull VoxelTile tile) {
         int level = pos.level();
         int baseX = pos.blockX();
         int baseY = pos.blockY();

@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.generator.heightmap;
@@ -24,6 +23,7 @@ import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.world.level.BlockLevelConstants;
+import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapData;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
@@ -43,7 +43,7 @@ import static net.daporkchop.fp2.api.world.level.BlockLevelConstants.*;
 import static net.daporkchop.fp2.core.mode.heightmap.HeightmapConstants.*;
 
 /**
- * Rough heightmap generator for the vanilla superflat world type.
+ * Heightmap rough generator for vanilla's "Superflat" world type.
  *
  * @author DaPorkchop_
  */
@@ -129,12 +129,12 @@ public class FlatHeightmapGenerator extends AbstractRoughHeightmapGenerator {
     }
 
     @Override
-    public boolean canGenerate(@NonNull HeightmapPos pos) {
+    public boolean canGenerate(FBlockLevel roughLevel, @NonNull HeightmapPos pos) {
         return true;
     }
 
     @Override
-    public void generate(@NonNull HeightmapPos pos, @NonNull HeightmapTile tile) {
+    public void generate(FBlockLevel roughLevel, @NonNull HeightmapPos pos, @NonNull HeightmapTile tile) {
         for (int layer = 0; layer < MAX_LAYERS; layer++) {
             HeightmapData data = this.datas[layer];
             if (data == null) { //the layer is unused, skip it
