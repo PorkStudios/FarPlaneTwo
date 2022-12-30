@@ -32,10 +32,13 @@ import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
+import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
+import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.core.mode.common.AbstractFarRenderMode;
 import net.daporkchop.fp2.core.mode.heightmap.ctx.HeightmapClientContext;
 import net.daporkchop.fp2.core.mode.heightmap.ctx.HeightmapServerContext;
+import net.daporkchop.fp2.core.mode.heightmap.server.gen.exact.DefaultExactHeightmapGenerator;
 import net.daporkchop.fp2.core.mode.heightmap.server.scale.HeightmapScalerMinMax;
 import net.daporkchop.fp2.core.server.player.IFarPlayerServer;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
@@ -46,6 +49,7 @@ import net.daporkchop.lib.binary.stream.DataOut;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Optional;
 
 import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.fp2.core.mode.heightmap.HeightmapConstants.*;
@@ -61,13 +65,27 @@ public class HeightmapRenderMode extends AbstractFarRenderMode<HeightmapPos, Hei
     }
 
     @Override
-    protected AbstractExactGeneratorCreationEvent exactGeneratorCreationEvent(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<HeightmapPos, HeightmapTile> provider) {
-        return new AbstractExactGeneratorCreationEvent(world, provider) {};
+    protected AbstractExactGeneratorCreationEvent exactGeneratorCreationEvent(@NonNull IFarLevelServer level, @NonNull IFarTileProvider<HeightmapPos, HeightmapTile> provider) {
+        return new AbstractExactGeneratorCreationEvent(level, provider) {};
     }
 
     @Override
-    protected AbstractRoughGeneratorCreationEvent roughGeneratorCreationEvent(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<HeightmapPos, HeightmapTile> provider) {
-        return new AbstractRoughGeneratorCreationEvent(world, provider) {};
+    protected IFarGeneratorExact<HeightmapPos, HeightmapTile> defaultExactGenerator(@NonNull IFarLevelServer level, @NonNull IFarTileProvider<HeightmapPos, HeightmapTile> provider) {
+        return new DefaultExactHeightmapGenerator(level, provider);
+    }
+
+    @Override
+    protected AbstractRoughGeneratorCreationEvent roughGeneratorCreationEvent(@NonNull IFarLevelServer level, @NonNull IFarTileProvider<HeightmapPos, HeightmapTile> provider) {
+        return new AbstractRoughGeneratorCreationEvent(level, provider) {};
+    }
+
+    @Override
+    protected Optional<IFarGeneratorRough<HeightmapPos, HeightmapTile>> defaultRoughGenerator(@NonNull IFarLevelServer level, @NonNull IFarTileProvider<HeightmapPos, HeightmapTile> provider) {
+        if (level.roughBlockLevelHolder().isPresent()) {
+            throw new UnsupportedOperationException(); //TODO
+        }
+
+        return Optional.empty();
     }
 
     @Override
@@ -81,13 +99,13 @@ public class HeightmapRenderMode extends AbstractFarRenderMode<HeightmapPos, Hei
     }
 
     @Override
-    public IFarScaler<HeightmapPos, HeightmapTile> scaler(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<HeightmapPos, HeightmapTile> provider) {
-        return new HeightmapScalerMinMax(world, provider);
+    public IFarScaler<HeightmapPos, HeightmapTile> scaler(@NonNull IFarLevelServer level, @NonNull IFarTileProvider<HeightmapPos, HeightmapTile> provider) {
+        return new HeightmapScalerMinMax(level, provider);
     }
 
     @Override
-    public IFarServerContext<HeightmapPos, HeightmapTile> serverContext(@NonNull IFarPlayerServer player, @NonNull IFarLevelServer world, @NonNull FP2Config config) {
-        return new HeightmapServerContext(player, world, config, this);
+    public IFarServerContext<HeightmapPos, HeightmapTile> serverContext(@NonNull IFarPlayerServer player, @NonNull IFarLevelServer level, @NonNull FP2Config config) {
+        return new HeightmapServerContext(player, level, config, this);
     }
 
     @Override

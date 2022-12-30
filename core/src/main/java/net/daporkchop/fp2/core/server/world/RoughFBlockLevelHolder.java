@@ -15,22 +15,29 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
-package net.daporkchop.fp2.core.mode.voxel.server.gen.exact;
+package net.daporkchop.fp2.core.server.world;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
-import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
-import net.daporkchop.fp2.core.mode.voxel.VoxelTile;
-import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
+import net.daporkchop.fp2.api.world.level.FBlockLevel;
+import net.daporkchop.fp2.common.util.capability.CloseableResource;
 
 /**
+ * A container which provides instances of {@link FBlockLevel}.
+ *
  * @author DaPorkchop_
  */
-public class CCVoxelGenerator extends AbstractExactVoxelGenerator {
-    public CCVoxelGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<VoxelPos, VoxelTile> provider) {
-        super(world, provider);
-    }
+public interface RoughFBlockLevelHolder extends CloseableResource {
+    /**
+     * @return an {@link FBlockLevel} instance
+     */
+    FBlockLevel level();
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * When this holder is closed, all the {@link FBlockLevel} instances created by it will produce undefined behavior, even if not yet closed.
+     */
+    @Override
+    void close();
 }

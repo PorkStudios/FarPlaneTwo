@@ -15,22 +15,26 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
-package net.daporkchop.fp2.core.mode.voxel.server.gen.exact;
+package net.daporkchop.fp2.core.server.event;
 
+import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
-import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
-import net.daporkchop.fp2.core.mode.voxel.VoxelTile;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.api.event.ReturningEvent;
+import net.daporkchop.fp2.api.world.level.FBlockLevel;
+import net.daporkchop.fp2.core.server.world.RoughFBlockLevelHolder;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 
 /**
+ * Fired in order to retrieve the rough {@link FBlockLevel} for estimating the block data in a given {@link IFarLevelServer}.
+ *
  * @author DaPorkchop_
  */
-public class VanillaVoxelGenerator extends AbstractExactVoxelGenerator {
-    public VanillaVoxelGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<VoxelPos, VoxelTile> provider) {
-        super(world, provider);
-    }
+@RequiredArgsConstructor
+@Getter
+public class GetRoughFBlockLevelEvent implements ReturningEvent<RoughFBlockLevelHolder> {
+    @NonNull
+    protected final IFarLevelServer level;
 }

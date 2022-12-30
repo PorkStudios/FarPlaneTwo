@@ -40,6 +40,7 @@ import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
+import net.daporkchop.fp2.core.server.world.RoughFBlockLevelHolder;
 import net.daporkchop.fp2.core.server.world.TerrainGeneratorInfo;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSegtreeSet;
@@ -50,6 +51,7 @@ import net.daporkchop.lib.math.vector.Vec2i;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 
 import static net.daporkchop.fp2.api.world.level.BlockLevelConstants.*;
@@ -204,6 +206,11 @@ public class TestExactFBlockLevelChunks extends TestFBlockLevel {
 
         @Override
         public int seaLevel() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Optional<RoughFBlockLevelHolder> roughBlockLevelHolder() {
             throw new UnsupportedOperationException();
         }
     }

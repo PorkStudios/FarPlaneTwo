@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.common.server;
@@ -43,6 +42,8 @@ import net.daporkchop.fp2.core.mode.common.server.storage.DefaultTileStorage;
 import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
 import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
 import net.daporkchop.fp2.core.server.event.TickEndEvent;
+import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
+import net.daporkchop.fp2.core.server.world.RoughFBlockLevelHolder;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.util.threading.scheduler.ApproximatelyPrioritizedSharedFutureScheduler;
 import net.daporkchop.fp2.core.util.threading.scheduler.Scheduler;
@@ -50,10 +51,12 @@ import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
+import javax.swing.text.html.Option;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
@@ -91,7 +94,7 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
 
         this.coordLimits = mode.tileCoordLimits(world.coordLimits());
 
-        this.generatorRough = this.mode().roughGenerator(world, this);
+        this.generatorRough = this.mode().roughGenerator(world, this).orElse(null);
         this.generatorExact = this.mode().exactGenerator(world, this);
 
         if (this.generatorRough == null) {
@@ -133,8 +136,7 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
                 e.addSuppressed(e1);
             }
 
-            PUnsafe.throwException(e); //rethrow exception
-            throw new AssertionError(); //impossible
+            throw PUnsafe.throwException(e); //rethrow exception
         }
     }
 

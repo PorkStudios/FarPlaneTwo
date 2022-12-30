@@ -32,10 +32,13 @@ import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
+import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
+import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.core.mode.common.AbstractFarRenderMode;
 import net.daporkchop.fp2.core.mode.voxel.ctx.VoxelClientContext;
 import net.daporkchop.fp2.core.mode.voxel.ctx.VoxelServerContext;
+import net.daporkchop.fp2.core.mode.voxel.server.gen.exact.DefaultExactVoxelGenerator;
 import net.daporkchop.fp2.core.mode.voxel.server.scale.VoxelScalerIntersection;
 import net.daporkchop.fp2.core.server.player.IFarPlayerServer;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
@@ -46,6 +49,7 @@ import net.daporkchop.lib.binary.stream.DataOut;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Optional;
 
 import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.fp2.core.mode.voxel.VoxelConstants.*;
@@ -61,13 +65,27 @@ public class VoxelRenderMode extends AbstractFarRenderMode<VoxelPos, VoxelTile> 
     }
 
     @Override
-    protected AbstractExactGeneratorCreationEvent exactGeneratorCreationEvent(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<VoxelPos, VoxelTile> provider) {
-        return new AbstractExactGeneratorCreationEvent(world, provider) {};
+    protected AbstractExactGeneratorCreationEvent exactGeneratorCreationEvent(@NonNull IFarLevelServer level, @NonNull IFarTileProvider<VoxelPos, VoxelTile> provider) {
+        return new AbstractExactGeneratorCreationEvent(level, provider) {};
     }
 
     @Override
-    protected AbstractRoughGeneratorCreationEvent roughGeneratorCreationEvent(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<VoxelPos, VoxelTile> provider) {
-        return new AbstractRoughGeneratorCreationEvent(world, provider) {};
+    protected IFarGeneratorExact<VoxelPos, VoxelTile> defaultExactGenerator(@NonNull IFarLevelServer level, @NonNull IFarTileProvider<VoxelPos, VoxelTile> provider) {
+        return new DefaultExactVoxelGenerator(level, provider);
+    }
+
+    @Override
+    protected AbstractRoughGeneratorCreationEvent roughGeneratorCreationEvent(@NonNull IFarLevelServer level, @NonNull IFarTileProvider<VoxelPos, VoxelTile> provider) {
+        return new AbstractRoughGeneratorCreationEvent(level, provider) {};
+    }
+
+    @Override
+    protected Optional<IFarGeneratorRough<VoxelPos, VoxelTile>> defaultRoughGenerator(@NonNull IFarLevelServer level, @NonNull IFarTileProvider<VoxelPos, VoxelTile> provider) {
+        if (level.roughBlockLevelHolder().isPresent()) {
+            throw new UnsupportedOperationException(); //TODO
+        }
+
+        return Optional.empty();
     }
 
     @Override
@@ -81,13 +99,13 @@ public class VoxelRenderMode extends AbstractFarRenderMode<VoxelPos, VoxelTile> 
     }
 
     @Override
-    public IFarScaler<VoxelPos, VoxelTile> scaler(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<VoxelPos, VoxelTile> provider) {
-        return new VoxelScalerIntersection(world, provider);
+    public IFarScaler<VoxelPos, VoxelTile> scaler(@NonNull IFarLevelServer level, @NonNull IFarTileProvider<VoxelPos, VoxelTile> provider) {
+        return new VoxelScalerIntersection(level, provider);
     }
 
     @Override
-    public IFarServerContext<VoxelPos, VoxelTile> serverContext(@NonNull IFarPlayerServer player, @NonNull IFarLevelServer world, @NonNull FP2Config config) {
-        return new VoxelServerContext(player, world, config, this);
+    public IFarServerContext<VoxelPos, VoxelTile> serverContext(@NonNull IFarPlayerServer player, @NonNull IFarLevelServer level, @NonNull FP2Config config) {
+        return new VoxelServerContext(player, level, config, this);
     }
 
     @Override

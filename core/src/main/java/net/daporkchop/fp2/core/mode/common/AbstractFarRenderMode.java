@@ -42,6 +42,8 @@ import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.reference.cache.Cached;
 
+import java.util.Optional;
+
 import static net.daporkchop.fp2.core.FP2Core.*;
 
 /**
@@ -62,41 +64,46 @@ public abstract class AbstractFarRenderMode<POS extends IFarPos, T extends IFarT
     @Getter
     protected final int tileShift;
 
-    protected abstract AbstractExactGeneratorCreationEvent exactGeneratorCreationEvent(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<POS, T> provider);
+    protected abstract AbstractExactGeneratorCreationEvent exactGeneratorCreationEvent(@NonNull IFarLevelServer level, @NonNull IFarTileProvider<POS, T> provider);
 
-    protected abstract AbstractRoughGeneratorCreationEvent roughGeneratorCreationEvent(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<POS, T> provider);
+    protected abstract IFarGeneratorExact<POS, T> defaultExactGenerator(@NonNull IFarLevelServer level, @NonNull IFarTileProvider<POS, T> provider);
+
+    protected abstract AbstractRoughGeneratorCreationEvent roughGeneratorCreationEvent(@NonNull IFarLevelServer level, @NonNull IFarTileProvider<POS, T> provider);
+
+    protected abstract Optional<IFarGeneratorRough<POS, T>> defaultRoughGenerator(@NonNull IFarLevelServer level, @NonNull IFarTileProvider<POS, T> provider);
 
     protected abstract T newTile();
 
     @Override
-    public IFarGeneratorExact<POS, T> exactGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<POS, T> provider) {
-        return fp2().eventBus().fireAndGetFirst(this.exactGeneratorCreationEvent(world, provider))
-                .orElseThrow(() -> new IllegalStateException(PStrings.fastFormat(
-                        "no exact generator available for world '%s', mode:%s",
-                        world.id(),
-                        this.name()
-                )));
+    public IFarGeneratorExact<POS, T> exactGenerator(@NonNull IFarLevelServer level, @NonNull IFarTileProvider<POS, T> provider) {
+        return fp2().eventBus().fireAndGetFirst(this.exactGeneratorCreationEvent(level, provider))
+                .orElseGet(() -> this.defaultExactGenerator(level, provider));
     }
 
     @Override
-    public IFarGeneratorRough<POS, T> roughGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<POS, T> provider) {
-        return fp2().eventBus().fireAndGetFirst(this.roughGeneratorCreationEvent(world, provider)).orElse(null);
+    public Optional<IFarGeneratorRough<POS, T>> roughGenerator(@NonNull IFarLevelServer level, @NonNull IFarTileProvider<POS, T> provider) {
+        Optional<IFarGeneratorRough<POS, T>> optionalRoughGeneratorFromEvent = fp2().eventBus().fireAndGetFirst(this.roughGeneratorCreationEvent(level, provider));
+        if (optionalRoughGeneratorFromEvent.isPresent()) { //use the one provided by the event, if any
+            return optionalRoughGeneratorFromEvent;
+        }
+
+        return this.defaultRoughGenerator(level, provider);
     }
 
     protected abstract AbstractTileProviderCreationEvent tileProviderCreationEvent(@NonNull IFarLevelServer world);
 
     @Override
-    public IFarTileProvider<POS, T> tileProvider(@NonNull IFarLevelServer world) {
-        return fp2().eventBus().fireAndGetFirst(this.tileProviderCreationEvent(world))
+    public IFarTileProvider<POS, T> tileProvider(@NonNull IFarLevelServer level) {
+        return fp2().eventBus().fireAndGetFirst(this.tileProviderCreationEvent(level))
                 .orElseThrow(() -> new IllegalStateException(PStrings.fastFormat(
                         "No tile provider available for world '%s', mode:%s",
-                        world.id(),
+                        level.id(),
                         this.name()
                 )));
     }
 
     @Override
-    public abstract IFarServerContext<POS, T> serverContext(@NonNull IFarPlayerServer player, @NonNull IFarLevelServer world, @NonNull FP2Config config);
+    public abstract IFarServerContext<POS, T> serverContext(@NonNull IFarPlayerServer player, @NonNull IFarLevelServer level, @NonNull FP2Config config);
 
     @Override
     public abstract IFarClientContext<POS, T> clientContext(@NonNull IFarLevelClient level, @NonNull FP2Config config);

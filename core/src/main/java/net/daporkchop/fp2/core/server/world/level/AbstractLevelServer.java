@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.server.world.level;
@@ -37,8 +36,10 @@ import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.server.event.GetCoordinateLimitsEvent;
 import net.daporkchop.fp2.core.server.event.GetExactFBlockLevelEvent;
+import net.daporkchop.fp2.core.server.event.GetRoughFBlockLevelEvent;
 import net.daporkchop.fp2.core.server.world.AbstractWorldServer;
 import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
+import net.daporkchop.fp2.core.server.world.RoughFBlockLevelHolder;
 import net.daporkchop.fp2.core.world.level.AbstractLevel;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
@@ -67,6 +68,7 @@ public abstract class AbstractLevelServer<F extends FP2Core,
     private final IntAxisAlignedBB coordLimits;
 
     private final ExactFBlockLevelHolder exactBlockLevelHolder;
+    private final RoughFBlockLevelHolder roughBlockLevelHolder;
 
     public AbstractLevelServer(@NonNull F fp2, IMPL_LEVEL implLevel, @NonNull WORLD world, @NonNull Identifier id, @NonNull FGameRegistry registry) {
         super(fp2, implLevel, world, id);
@@ -86,8 +88,11 @@ public abstract class AbstractLevelServer<F extends FP2Core,
         //determine the level's coordinate limits
         this.coordLimits = this.getForInit(() -> this.fp2().eventBus().fireAndGetFirst(new GetCoordinateLimitsEvent(this)).get());
 
-        //create an exactFBlockHolder for the level
+        //create an ExactFBlockLevelHolder for the level
         this.exactBlockLevelHolder = this.getForInit(() -> this.fp2().eventBus().fireAndGetFirst(new GetExactFBlockLevelEvent(this)).get());
+
+        //create a  RoughFBlockLevelHolder for the level
+        this.roughBlockLevelHolder = this.getForInit(() -> this.fp2().eventBus().fireAndGetFirst(new GetRoughFBlockLevelEvent(this)).orElse(null));
 
         //open a tile provider for each registered render mode
         this.runForInit(() -> IFarRenderMode.REGISTRY.forEachEntry((_name, mode) -> this.loadedTileProviders.put(mode, mode.tileProvider(this))));
@@ -99,7 +104,8 @@ public abstract class AbstractLevelServer<F extends FP2Core,
         //noinspection Convert2MethodRef
         try (AutoCloseable closeSuper = () -> super.doClose();
              FStorageCategory storageCategory = this.storageCategory;
-             ExactFBlockLevelHolder exactBlockLevelHolder = this.exactBlockLevelHolder) {
+             ExactFBlockLevelHolder exactBlockLevelHolder = this.exactBlockLevelHolder;
+             RoughFBlockLevelHolder roughFBlockLevelHolder = this.roughBlockLevelHolder) {
             class State implements BiConsumer<IFarRenderMode<?, ?>, IFarTileProvider<?, ?>> {
                 Throwable cause = null;
 
@@ -141,5 +147,10 @@ public abstract class AbstractLevelServer<F extends FP2Core,
     @Override
     public void forEachTileProvider(@NonNull BiConsumer<? super IFarRenderMode<?, ?>, ? super IFarTileProvider<?, ?>> action) {
         this.loadedTileProviders.forEach(action);
+    }
+
+    @Override
+    public Optional<RoughFBlockLevelHolder> roughBlockLevelHolder() {
+        return Optional.ofNullable(this.roughBlockLevelHolder);
     }
 }

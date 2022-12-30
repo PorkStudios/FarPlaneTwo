@@ -30,15 +30,12 @@ import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarLevel;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
-import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapTile;
 import net.daporkchop.fp2.core.mode.heightmap.server.HeightmapTileProvider;
-import net.daporkchop.fp2.core.mode.heightmap.server.gen.exact.CCHeightmapGenerator;
 import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
 import net.daporkchop.fp2.core.mode.voxel.VoxelTile;
 import net.daporkchop.fp2.core.mode.voxel.server.VoxelTileProvider;
-import net.daporkchop.fp2.core.mode.voxel.server.gen.exact.CCVoxelGenerator;
 import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
 import net.daporkchop.fp2.core.server.event.GetCoordinateLimitsEvent;
 import net.daporkchop.fp2.core.server.event.GetExactFBlockLevelEvent;
@@ -133,24 +130,6 @@ public class FP2CubicChunks {
         public Optional<Object> getTerrainGenerator(GetTerrainGeneratorEvent event) {
             return this.isCubicWorld(event.world())
                     ? Optional.of(((ICubicWorldServer) event.world().implLevel()).getCubeGenerator())
-                    : Optional.empty();
-        }
-
-        //exact generators
-
-        @FEventHandler(name = "cubicchunks_heightmap_generator_exact",
-                constrain = @Constrain(before = "vanilla_heightmap_generator_exact"))
-        public Optional<IFarGeneratorExact<HeightmapPos, HeightmapTile>> createHeightmapGeneratorExact(IFarGeneratorExact.CreationEvent<HeightmapPos, HeightmapTile> event) {
-            return this.isCubicWorld(event.world())
-                    ? Optional.of(new CCHeightmapGenerator(event.world(), event.provider()))
-                    : Optional.empty();
-        }
-
-        @FEventHandler(name = "cubicchunks_voxel_generator_exact",
-                constrain = @Constrain(before = "vanilla_voxel_generator_exact"))
-        public Optional<IFarGeneratorExact<VoxelPos, VoxelTile>> createVoxelGeneratorExact(IFarGeneratorExact.CreationEvent<VoxelPos, VoxelTile> event) {
-            return this.isCubicWorld(event.world())
-                    ? Optional.of(new CCVoxelGenerator(event.world(), event.provider()))
                     : Optional.empty();
         }
 

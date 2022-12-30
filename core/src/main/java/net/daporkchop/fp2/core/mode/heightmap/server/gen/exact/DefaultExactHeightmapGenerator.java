@@ -22,7 +22,6 @@ package net.daporkchop.fp2.core.mode.heightmap.server.gen.exact;
 import com.google.common.collect.ImmutableList;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.util.Direction;
-import net.daporkchop.fp2.api.world.level.BlockLevelConstants;
 import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.fp2.api.world.level.GenerationNotAllowedException;
 import net.daporkchop.fp2.api.world.level.query.BatchDataQuery;
@@ -30,7 +29,6 @@ import net.daporkchop.fp2.api.world.level.query.BatchTypeTransitionQuery;
 import net.daporkchop.fp2.api.world.level.query.DataQueryBatchOutput;
 import net.daporkchop.fp2.api.world.level.query.TypeTransitionBatchOutput;
 import net.daporkchop.fp2.api.world.level.query.TypeTransitionFilter;
-import net.daporkchop.fp2.api.world.level.query.TypeTransitionSingleOutput;
 import net.daporkchop.fp2.api.world.level.query.shape.PointsQueryShape;
 import net.daporkchop.fp2.api.world.registry.FExtendedStateRegistryData;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
@@ -42,7 +40,6 @@ import net.daporkchop.fp2.core.mode.heightmap.HeightmapTile;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 
-import java.util.Arrays;
 import java.util.List;
 
 import static net.daporkchop.fp2.api.world.level.BlockLevelConstants.*;
@@ -52,7 +49,7 @@ import static net.daporkchop.fp2.core.util.GlobalAllocators.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractExactHeightmapGenerator extends AbstractFarGenerator<HeightmapPos, HeightmapTile> implements IFarGeneratorExact<HeightmapPos, HeightmapTile> {
+public class DefaultExactHeightmapGenerator extends AbstractFarGenerator<HeightmapPos, HeightmapTile> implements IFarGeneratorExact<HeightmapPos, HeightmapTile> {
     private static final List<TypeTransitionFilter> TYPE_TRANSITION_FILTERS = ImmutableList.of(
             TypeTransitionFilter.builder()
                     .fromTypes(blockTypeFlag(BLOCK_TYPE_INVISIBLE))
@@ -65,7 +62,7 @@ public abstract class AbstractExactHeightmapGenerator extends AbstractFarGenerat
                     .disableAfterHitCount(-1).abortAfterHitCount(1)
                     .build());
 
-    public AbstractExactHeightmapGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<HeightmapPos, HeightmapTile> provider) {
+    public DefaultExactHeightmapGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<HeightmapPos, HeightmapTile> provider) {
         super(world, provider);
     }
 

@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.server.world.level;
@@ -29,10 +28,12 @@ import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarLevel;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
+import net.daporkchop.fp2.core.server.world.RoughFBlockLevelHolder;
 import net.daporkchop.fp2.core.server.world.TerrainGeneratorInfo;
 
 import java.nio.file.Path;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 
 /**
@@ -70,6 +71,11 @@ public interface IFarLevelServer extends IFarLevel, FLevelServer {
      * @return an {@link ExactFBlockLevelHolder} for accessing this level's exact {@link FBlockLevel}
      */
     ExactFBlockLevelHolder exactBlockLevelHolder();
+
+    /**
+     * @return an {@link ExactFBlockLevelHolder} for accessing this level's rough {@link FBlockLevel}, if any
+     */
+    Optional<RoughFBlockLevelHolder> roughBlockLevelHolder();
 
     /**
      * @return this level's sea level

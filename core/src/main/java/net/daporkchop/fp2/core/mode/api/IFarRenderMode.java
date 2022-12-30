@@ -40,6 +40,7 @@ import net.daporkchop.lib.binary.stream.DataIn;
 import net.daporkchop.lib.binary.stream.DataOut;
 
 import java.io.IOException;
+import java.util.Optional;
 
 /**
  * @author DaPorkchop_
@@ -68,49 +69,49 @@ public interface IFarRenderMode<POS extends IFarPos, T extends IFarTile> {
     int storageVersion();
 
     /**
-     * Creates a new {@link IFarTileProvider} for the given vanilla world.
+     * Creates a new {@link IFarTileProvider} for the given {@link IFarLevelServer level}.
      *
-     * @param world the vanilla world
+     * @param level the {@link IFarLevelServer level}
      * @return the new {@link IFarTileProvider}
      */
-    IFarTileProvider<POS, T> tileProvider(@NonNull IFarLevelServer world);
+    IFarTileProvider<POS, T> tileProvider(@NonNull IFarLevelServer level);
 
     /**
-     * Creates a new {@link IFarGeneratorExact exact generator} for the given {@link IFarLevelServer world} and {@link IFarTileProvider tile provider}.
+     * Creates a new {@link IFarGeneratorExact exact generator} for the given {@link IFarLevelServer level} and {@link IFarTileProvider tile provider}.
      *
-     * @param world    the {@link IFarLevelServer world}
+     * @param level    the {@link IFarLevelServer level}
      * @param provider the {@link IFarTileProvider tile provider}
      * @return the new {@link IFarGeneratorExact exact generator}
      */
-    IFarGeneratorExact<POS, T> exactGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<POS, T> provider);
+    IFarGeneratorExact<POS, T> exactGenerator(@NonNull IFarLevelServer level, @NonNull IFarTileProvider<POS, T> provider);
 
     /**
-     * Creates a new {@link IFarGeneratorRough rough generator} for the given {@link IFarLevelServer world} and {@link IFarTileProvider tile provider}.
+     * Creates a new {@link IFarGeneratorRough rough generator} for the given {@link IFarLevelServer level} and {@link IFarTileProvider tile provider}.
      *
-     * @param world    the {@link IFarLevelServer world}
+     * @param level    the {@link IFarLevelServer level}
      * @param provider the {@link IFarTileProvider tile provider}
      * @return the new {@link IFarGeneratorRough rough generator}, or {@code null} if none is available
      */
-    IFarGeneratorRough<POS, T> roughGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<POS, T> provider);
+    Optional<IFarGeneratorRough<POS, T>> roughGenerator(@NonNull IFarLevelServer level, @NonNull IFarTileProvider<POS, T> provider);
 
     /**
-     * Creates a new {@link IFarScaler scaler} for the given {@link IFarLevelServer world} and {@link IFarTileProvider tile provider}.
+     * Creates a new {@link IFarScaler scaler} for the given {@link IFarLevelServer level} and {@link IFarTileProvider tile provider}.
      *
-     * @param world    the {@link IFarLevelServer world}
+     * @param level    the {@link IFarLevelServer level}
      * @param provider the {@link IFarTileProvider tile provider}
      * @return the new {@link IFarScaler scaler}
      */
-    IFarScaler<POS, T> scaler(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<POS, T> provider);
+    IFarScaler<POS, T> scaler(@NonNull IFarLevelServer level, @NonNull IFarTileProvider<POS, T> provider);
 
     /**
-     * Creates a new {@link IFarServerContext} for the given player in the given world.
+     * Creates a new {@link IFarServerContext} for the given player in the given level.
      *
      * @param player the player
-     * @param world  the world
+     * @param level  the level
      * @param config
      * @return the new {@link IFarServerContext}
      */
-    IFarServerContext<POS, T> serverContext(@NonNull IFarPlayerServer player, @NonNull IFarLevelServer world, @NonNull FP2Config config);
+    IFarServerContext<POS, T> serverContext(@NonNull IFarPlayerServer player, @NonNull IFarLevelServer level, @NonNull FP2Config config);
 
     /**
      * Creates a new {@link IFarClientContext} for the given level.
