@@ -17,32 +17,44 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.minecraft.world;
+package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cwg.generator;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.api.util.Direction;
+import net.daporkchop.fp2.api.world.level.GenerationNotAllowedException;
 import net.daporkchop.fp2.api.world.level.query.QuerySamplingMode;
-import net.daporkchop.fp2.api.world.level.query.TypeTransitionFilter;
-import net.daporkchop.fp2.api.world.level.query.TypeTransitionSingleOutput;
-import net.daporkchop.fp2.core.world.level.block.AbstractFBlockLevel;
+import net.daporkchop.fp2.core.world.level.block.rough.AbstractRoughFBlockLevel;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
-
-import java.util.List;
 
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractExactFBlockLevel<HOLDER extends AbstractExactFBlockLevelHolder<?>> extends AbstractFBlockLevel<HOLDER> {
-    public AbstractExactFBlockLevel(@NonNull HOLDER holder) {
+public class CWGRoughFBlockLevel1_12 extends AbstractRoughFBlockLevel<CWGRoughFBlockLevelHolder1_12> {
+    public CWGRoughFBlockLevel1_12(@NonNull CWGRoughFBlockLevelHolder1_12 holder) {
         super(holder);
     }
 
     @Override
-    public int getNextTypeTransitions(@NonNull Direction direction, int x, int y, int z, long maxDistance,
-                                      @NonNull List<@NonNull TypeTransitionFilter> filters,
-                                      @NonNull TypeTransitionSingleOutput output,
-                                      @NotNegative int sampleResolution, @NonNull QuerySamplingMode samplingMode) {
-        //delegate to holder, using null as the prefetched world since this isn't a prefetched world
-        return this.holder().getNextTypeTransitions(direction, x, y, z, maxDistance, filters, output, sampleResolution, samplingMode, null);
+    public void close() {
+        //no-op
+    }
+
+    @Override
+    public boolean generationAllowed() {
+        return false;
+    }
+
+    @Override
+    public int getState(int x, int y, int z, @NotNegative int sampleResolution, @NonNull QuerySamplingMode samplingMode) throws GenerationNotAllowedException {
+        return 0; //TODO
+    }
+
+    @Override
+    public int getBiome(int x, int y, int z, @NotNegative int sampleResolution, @NonNull QuerySamplingMode samplingMode) throws GenerationNotAllowedException {
+        return 0; //TODO
+    }
+
+    @Override
+    public byte getLight(int x, int y, int z, @NotNegative int sampleResolution, @NonNull QuerySamplingMode samplingMode) throws GenerationNotAllowedException {
+        return 0; //TODO
     }
 }

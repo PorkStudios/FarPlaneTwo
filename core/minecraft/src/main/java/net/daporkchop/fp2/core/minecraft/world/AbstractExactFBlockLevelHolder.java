@@ -19,7 +19,6 @@
 
 package net.daporkchop.fp2.core.minecraft.world;
 
-import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.util.Direction;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
@@ -28,11 +27,10 @@ import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.fp2.api.world.level.query.QuerySamplingMode;
 import net.daporkchop.fp2.api.world.level.query.TypeTransitionFilter;
 import net.daporkchop.fp2.api.world.level.query.TypeTransitionSingleOutput;
-import net.daporkchop.fp2.api.world.level.query.shape.PointsQueryShape;
 import net.daporkchop.fp2.api.world.registry.FExtendedStateRegistryData;
-import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.fp2.core.server.world.FBlockLevelHolder;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
+import net.daporkchop.fp2.core.world.level.block.AbstractFBlockLevelHolder;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 
@@ -49,68 +47,10 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-@Getter
-public abstract class AbstractExactFBlockLevelHolder<PREFETCHED extends AbstractPrefetchedExactFBlockLevel> implements FBlockLevelHolder.Exact {
-    private final IFarLevelServer world;
-    private final FGameRegistry registry;
-    private final IntAxisAlignedBB dataLimits;
-
-    public AbstractExactFBlockLevelHolder(@NonNull IFarLevelServer world) {
-        this.world = world;
-        this.registry = world.registry();
-        this.dataLimits = world.coordLimits();
+public abstract class AbstractExactFBlockLevelHolder<PREFETCHED extends AbstractPrefetchedExactFBlockLevel> extends AbstractFBlockLevelHolder implements FBlockLevelHolder.Exact {
+    public AbstractExactFBlockLevelHolder(@NonNull IFarLevelServer level) {
+        super(level);
     }
-
-    //
-    // Generic coordinate utilities
-    //
-
-    /**
-     * Checks whether the given Y coordinate is within the world's vertical limits.
-     *
-     * @param y the Y coordinate to check
-     * @return whether the Y coordinate is valid
-     */
-    public boolean isValidY(int y) {
-        return y >= this.dataLimits.minY() && y < this.dataLimits.maxY();
-    }
-
-    /**
-     * Checks whether the given X,Z coordinates are within the world's horizontal limits.
-     *
-     * @param x the X coordinate of the position to check
-     * @param z the Z coordinate of the position to check
-     * @return whether the X,Z coordinates are valid
-     */
-    public boolean isValidXZ(int x, int z) {
-        return x >= this.dataLimits.minX() && x < this.dataLimits.maxX() && z >= this.dataLimits.minZ() && z < this.dataLimits.maxZ();
-    }
-
-    /**
-     * Checks whether the given point is within the world's limits.
-     *
-     * @param x the point's X coordinate
-     * @param y the point's Y coordinate
-     * @param z the point's Z coordinate
-     * @return whether the given point is valid
-     */
-    public boolean isValidPosition(int x, int y, int z) {
-        return this.dataLimits.contains(x, y, z);
-    }
-
-    //
-    // Shared implementations of FBlockLevel's data availability accessors
-    //
-
-    /**
-     * @see FBlockLevel#containsAnyData
-     */
-    public abstract boolean containsAnyData(int minX, int minY, int minZ, int maxX, int maxY, int maxZ);
-
-    /**
-     * @see FBlockLevel#guaranteedDataAvailableVolume
-     */
-    public abstract IntAxisAlignedBB guaranteedDataAvailableVolume(int minX, int minY, int minZ, int maxX, int maxY, int maxZ);
 
     //
     // Shared implementations of FBlockLevel's type transition search methods
@@ -178,17 +118,16 @@ public abstract class AbstractExactFBlockLevelHolder<PREFETCHED extends Abstract
 
         //allocate a temporary array for storing the per-filter hit counts
         ArrayAllocator<int[]> alloc = ALLOC_INT.get();
-        //TODO: int[] filterHitCounts = alloc.atLeast(filters.size());
-        int[] filterHitCounts = new int[filters.size()];
+        int[] filterHitCounts = alloc.atLeast(filters.size());
 
-        //now that we've done all the complex argument validation, delegate to the real implementation
-        int writtenCount = this.getNextTypeTransitions(
-                x, y, z, dx, dy, dz, maxDistance,
-                dataLimits, filters, filterHitCounts, output, extendedStateRegistryData, sampleResolution, samplingMode, prefetchedLevel);
-
-        //release the temporary array again
-        //TODO: alloc.release(filterHitCounts);
-        return writtenCount;
+        try {
+            //now that we've done all the complex argument validation, delegate to the real implementation
+            return this.getNextTypeTransitions(
+                    x, y, z, dx, dy, dz, maxDistance,
+                    dataLimits, filters, filterHitCounts, output, extendedStateRegistryData, sampleResolution, samplingMode, prefetchedLevel);
+        } finally {
+            alloc.release(filterHitCounts);
+        }
     }
 
     /**
@@ -226,58 +165,9 @@ public abstract class AbstractExactFBlockLevelHolder<PREFETCHED extends Abstract
                                                   @NotNegative int sampleResolution, @NonNull QuerySamplingMode samplingMode,
                                                   PREFETCHED prefetchedLevel);
 
-    protected static boolean checkTransitionFiltersResult_transitionMatches(int result) {
-        assert (result & 3) == result : "invalid result value???";
-        return (result & 1) != 0;
-    }
-
-    protected static boolean checkTransitionFiltersResult_abort(int result) {
-        assert (result & 3) == result : "invalid result value???";
-        return (result & 2) != 0;
-    }
-
-    protected static int checkTransitionFilters(int lastType, int nextType, List<@NonNull TypeTransitionFilter> filters, int[] filterHitCounts) {
-        assert lastType != nextType;
-
-        //check if the transition matches any of the provided filters. we iterate over every filter even if we find a match, because we need to increment
-        // the hit count for EVERY filter that reported a match, even though we'll never write more than one value into the output.
-        int out = 0;
-        for (int filterIndex = 0; filterIndex < filters.size(); filterIndex++) {
-            TypeTransitionFilter filter = filters.get(filterIndex);
-            if (!filter.shouldDisable(filterHitCounts[filterIndex]) //the filter isn't disabled
-                && filter.transitionMatches(lastType, nextType)) { //the type transition matches the filter!
-                out |= 1; //transitionMatches = true;
-                filterHitCounts[filterIndex]++;
-
-                if (filter.shouldAbort(filterHitCounts[filterIndex])) { //the filter wants us to abort this query after we finish writing the current value
-                    out |= 2; //abort = true;
-                }
-            }
-        }
-        return out;
-    }
-
     //
-    // Generic coordinate utilities, used when computing prefetching regions
+    // Generic coordinate utilities, used for computing prefetching regions
     //
-
-    protected boolean isAnyPointValid(@NonNull PointsQueryShape.OriginSizeStride shape) {
-        return this.isAnyPointValid(shape.originX(), shape.sizeX(), shape.strideX(), this.dataLimits.minX(), this.dataLimits.maxX())
-               && this.isAnyPointValid(shape.originY(), shape.sizeY(), shape.strideY(), this.dataLimits.minY(), this.dataLimits.maxY())
-               && this.isAnyPointValid(shape.originZ(), shape.sizeZ(), shape.strideZ(), this.dataLimits.minZ(), this.dataLimits.maxZ());
-    }
-
-    protected boolean isAnyPointValid(int origin, int size, int stride, int min, int max) {
-        //this could probably be implemented way faster, but i really don't care because this will never be called with a size larger than like 20
-
-        for (int i = 0, pos = origin; i < size; i++, pos += stride) {
-            if (pos >= min && pos < max) { //the point is valid
-                return true;
-            }
-        }
-
-        return false; //no points were valid
-    }
 
     protected Consumer<IntConsumer> chunkCoordSupplier(int origin, int size, int stride, int min, int max, int chunkShift, int chunkSize) {
         if (stride >= chunkSize) {

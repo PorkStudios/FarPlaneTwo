@@ -91,7 +91,7 @@ public interface IFarGeneratorRough<POS extends IFarPos, T extends IFarTile> ext
      *
      * @param roughLevelHolder an instance of {@link FBlockLevelHolder.Rough} providing access to rough block data availability in the level. May be {@code null} if the
      *                         level does not have a rough {@link FBlockLevel}. Note that for performance reasons, implementors are discouraged from
-     *                         {@link FBlockLevelHolder.Rough#level() creating new rough level instances} within this method - if possible, only methods exposed by
+     *                         {@link FBlockLevelHolder.Rough#blockLevel() creating new rough level instances} within this method - if possible, only methods exposed by
      *                         {@link FBlockLevelDataAvailability} should be used
      * @param pos              the position to check
      * @return whether or not rough generation is possible

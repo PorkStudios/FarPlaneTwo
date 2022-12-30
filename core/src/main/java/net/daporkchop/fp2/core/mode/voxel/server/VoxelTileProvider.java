@@ -51,7 +51,7 @@ public abstract class VoxelTileProvider extends AbstractFarTileProvider<VoxelPos
         int y = pos.blockY();
         int z = pos.blockZ();
         int sideLength = pos.sideLength();
-        try (FBlockLevel world = this.world().exactBlockLevelHolder().levelFor(FBlockLevelHolder.AllowGenerationRequirement.DONT_CARE)) {
+        try (FBlockLevel world = this.world().exactBlockLevelHolder().blockLevel(FBlockLevelHolder.AllowGenerationRequirement.DONT_CARE)) {
             return world.containsAnyData(x, y, z, x + sideLength, y + sideLength, z + sideLength);
         }
     }

@@ -40,6 +40,7 @@ import net.daporkchop.fp2.core.util.datastructure.Datastructures;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSegtreeSet;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSet;
 import net.daporkchop.fp2.core.util.threading.lazy.LazyFutureTask;
+import net.daporkchop.fp2.core.world.level.block.BlockLevelImplUtil;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.math.vector.Vec3i;
 
@@ -109,7 +110,7 @@ public abstract class AbstractCubesExactFBlockLevelHolder<CUBE> extends Abstract
     }
 
     @Override
-    public FBlockLevel levelFor(@NonNull AllowGenerationRequirement requirement) {
+    public FBlockLevel blockLevel(@NonNull AllowGenerationRequirement requirement) {
         return this.regularWorld(requirement == AllowGenerationRequirement.ALLOWED);
     }
 
@@ -251,7 +252,7 @@ public abstract class AbstractCubesExactFBlockLevelHolder<CUBE> extends Abstract
     protected List<Vec3i> getCubePositionsToPrefetch(@NonNull PointsQueryShape.OriginSizeStride shape) {
         shape.validate();
 
-        if (!this.isAnyPointValid(shape)) { //no points are valid, there's no reason to check anything
+        if (!BlockLevelImplUtil.isAnyPointValid(this, shape)) { //no points are valid, there's no reason to check anything
             return Collections.emptyList();
         } else if (shape.strideX() == 1 && shape.strideY() == 1 && shape.strideZ() == 1) { //shape is an ordinary AABB
             return this.getCubePositionsToPrefetchRegularAABB(shape);
@@ -263,7 +264,7 @@ public abstract class AbstractCubesExactFBlockLevelHolder<CUBE> extends Abstract
     protected void getCubePositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull PointsQueryShape.OriginSizeStride shape) {
         shape.validate();
 
-        if (!this.isAnyPointValid(shape)) { //no points are valid, there's no reason to check anything
+        if (!BlockLevelImplUtil.isAnyPointValid(this, shape)) { //no points are valid, there's no reason to check anything
             //no-op
         } else if (shape.strideX() == 1 && shape.strideY() == 1 && shape.strideZ() == 1) { //shape is an ordinary AABB
             this.getCubePositionsToPrefetchRegularAABB(set, shape);

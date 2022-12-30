@@ -60,12 +60,12 @@ import static net.daporkchop.fp2.api.world.level.BlockLevelConstants.*;
 public class TestExactFBlockLevelChunks extends TestFBlockLevel {
     @Override
     protected FBlockLevel dummyLevelOpaque(IntAxisAlignedBB bounds) {
-        return new DummyChunksIFarLevelServer(bounds, 4, this.alwaysOpaque()).exactBlockLevelHolder().levelFor(FBlockLevelHolder.AllowGenerationRequirement.DONT_CARE);
+        return new DummyChunksIFarLevelServer(bounds, 4, this.alwaysOpaque()).exactBlockLevelHolder().blockLevel(FBlockLevelHolder.AllowGenerationRequirement.DONT_CARE);
     }
 
     @Override
     protected FBlockLevel dummyLevelCheckerboard(IntAxisAlignedBB bounds) {
-        return new DummyChunksIFarLevelServer(bounds, 4, this.checkerboard()).exactBlockLevelHolder().levelFor(FBlockLevelHolder.AllowGenerationRequirement.DONT_CARE);
+        return new DummyChunksIFarLevelServer(bounds, 4, this.checkerboard()).exactBlockLevelHolder().blockLevel(FBlockLevelHolder.AllowGenerationRequirement.DONT_CARE);
     }
 
     protected static class DummyChunksExactFBlockLevelHolder extends AbstractChunksExactFBlockLevelHolder<DummyChunk> {

@@ -41,6 +41,7 @@ import net.daporkchop.fp2.core.util.datastructure.Datastructures;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSegtreeSet;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSet;
 import net.daporkchop.fp2.core.util.threading.lazy.LazyFutureTask;
+import net.daporkchop.fp2.core.world.level.block.BlockLevelImplUtil;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.common.annotation.param.Positive;
 import net.daporkchop.lib.math.vector.Vec2i;
@@ -53,6 +54,7 @@ import java.util.function.IntConsumer;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
+import static net.daporkchop.fp2.core.world.level.block.BlockLevelImplUtil.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
@@ -122,7 +124,7 @@ public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends Abstra
     }
 
     @Override
-    public FBlockLevel levelFor(@NonNull AllowGenerationRequirement requirement) {
+    public FBlockLevel blockLevel(@NonNull AllowGenerationRequirement requirement) {
         return this.regularWorld(requirement == AllowGenerationRequirement.ALLOWED);
     }
 
@@ -259,7 +261,7 @@ public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends Abstra
     protected List<Vec2i> getChunkPositionsToPrefetch(@NonNull PointsQueryShape.OriginSizeStride shape) {
         shape.validate();
 
-        if (!this.isAnyPointValid(shape)) { //no points are valid, there's no reason to check anything
+        if (!BlockLevelImplUtil.isAnyPointValid(this, shape)) { //no points are valid, there's no reason to check anything
             return Collections.emptyList();
         } else if (shape.strideX() == 1 && shape.strideY() == 1 && shape.strideZ() == 1) { //shape is an ordinary AABB
             return this.getChunkPositionsToPrefetchRegularAABB(shape);
@@ -271,7 +273,7 @@ public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends Abstra
     protected void getChunkPositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull PointsQueryShape.OriginSizeStride shape) {
         shape.validate();
 
-        if (!this.isAnyPointValid(shape)) { //no points are valid, there's no reason to check anything
+        if (!BlockLevelImplUtil.isAnyPointValid(this, shape)) { //no points are valid, there's no reason to check anything
             //no-op
         } else if (shape.strideX() == 1 && shape.strideY() == 1 && shape.strideZ() == 1) { //shape is an ordinary AABB
             this.getChunkPositionsToPrefetchRegularAABB(set, shape);

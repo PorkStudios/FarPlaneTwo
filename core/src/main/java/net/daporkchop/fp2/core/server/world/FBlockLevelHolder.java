@@ -51,7 +51,7 @@ public interface FBlockLevelHolder extends FBlockLevelDataAvailability, Closeabl
          * @param requirement whether or not generation should be allowed
          * @return an {@link FBlockLevel} instance matching the given requirement
          */
-        FBlockLevel levelFor(@NonNull AllowGenerationRequirement requirement);
+        FBlockLevel blockLevel(@NonNull AllowGenerationRequirement requirement);
     }
 
     /**
@@ -63,7 +63,7 @@ public interface FBlockLevelHolder extends FBlockLevelDataAvailability, Closeabl
         /**
          * @return an {@link FBlockLevel} instance
          */
-        FBlockLevel level();
+        FBlockLevel blockLevel();
     }
 
     /**

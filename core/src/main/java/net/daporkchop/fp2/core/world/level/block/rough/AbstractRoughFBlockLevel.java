@@ -17,32 +17,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.minecraft.world;
+package net.daporkchop.fp2.core.world.level.block.rough;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.api.util.Direction;
-import net.daporkchop.fp2.api.world.level.query.QuerySamplingMode;
-import net.daporkchop.fp2.api.world.level.query.TypeTransitionFilter;
-import net.daporkchop.fp2.api.world.level.query.TypeTransitionSingleOutput;
 import net.daporkchop.fp2.core.world.level.block.AbstractFBlockLevel;
-import net.daporkchop.lib.common.annotation.param.NotNegative;
-
-import java.util.List;
 
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractExactFBlockLevel<HOLDER extends AbstractExactFBlockLevelHolder<?>> extends AbstractFBlockLevel<HOLDER> {
-    public AbstractExactFBlockLevel(@NonNull HOLDER holder) {
+public abstract class AbstractRoughFBlockLevel<HOLDER extends AbstractRoughFBlockLevelHolder> extends AbstractFBlockLevel<HOLDER> {
+    public AbstractRoughFBlockLevel(@NonNull HOLDER holder) {
         super(holder);
-    }
-
-    @Override
-    public int getNextTypeTransitions(@NonNull Direction direction, int x, int y, int z, long maxDistance,
-                                      @NonNull List<@NonNull TypeTransitionFilter> filters,
-                                      @NonNull TypeTransitionSingleOutput output,
-                                      @NotNegative int sampleResolution, @NonNull QuerySamplingMode samplingMode) {
-        //delegate to holder, using null as the prefetched world since this isn't a prefetched world
-        return this.holder().getNextTypeTransitions(direction, x, y, z, maxDistance, filters, output, sampleResolution, samplingMode, null);
     }
 }

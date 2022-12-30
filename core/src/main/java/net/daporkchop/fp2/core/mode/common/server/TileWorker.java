@@ -163,7 +163,7 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
     protected void generateRough(@NonNull State state) {
         state.positions().forEach(pos -> checkArg(this.provider.canGenerateRough(pos), "cannot do rough generation at %s!", pos));
 
-        try (FBlockLevel roughLevel = this.provider.world().roughBlockLevelHolder().map(FBlockLevelHolder.Rough::level).orElse(null)) {
+        try (FBlockLevel roughLevel = this.provider.world().roughBlockLevelHolder().map(FBlockLevelHolder.Rough::blockLevel).orElse(null)) {
             //try to steal tasks required to make this a batch
             this.provider.generatorRough().batchGenerationGroup(roughLevel, state.positions()).ifPresent(batchPositions -> {
                 //ensure the original position is contained in the list
@@ -198,10 +198,10 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
     }
 
     protected void generateExact(@NonNull State state, boolean allowGeneration) throws GenerationNotAllowedException {
-        try (FBlockLevel exactLevel = this.provider.world().exactBlockLevelHolder().levelFor(allowGeneration
+        try (FBlockLevel exactLevel = this.provider.world().exactBlockLevelHolder().blockLevel(allowGeneration
                 ? FBlockLevelHolder.AllowGenerationRequirement.ALLOWED
                 : FBlockLevelHolder.AllowGenerationRequirement.NOT_ALLOWED);
-             FBlockLevel roughLevel = this.provider.world().roughBlockLevelHolder().map(FBlockLevelHolder.Rough::level).orElse(null)) {
+             FBlockLevel roughLevel = this.provider.world().roughBlockLevelHolder().map(FBlockLevelHolder.Rough::blockLevel).orElse(null)) {
             //try to steal tasks required to make this a batch
             this.provider.generatorExact().batchGenerationGroup(exactLevel, roughLevel, state.positions()).ifPresent(batchPositions -> {
                 //ensure the original position is contained in the list

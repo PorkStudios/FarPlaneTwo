@@ -50,7 +50,7 @@ public abstract class HeightmapTileProvider extends AbstractFarTileProvider<Heig
         int x = pos.blockX();
         int z = pos.blockZ();
         int sideLength = pos.sideLength();
-        try (FBlockLevel world = this.world().exactBlockLevelHolder().levelFor(FBlockLevelHolder.AllowGenerationRequirement.DONT_CARE)) {
+        try (FBlockLevel world = this.world().exactBlockLevelHolder().blockLevel(FBlockLevelHolder.AllowGenerationRequirement.DONT_CARE)) {
             return world.containsAnyData(x, Integer.MIN_VALUE, z, x + sideLength, Integer.MAX_VALUE, z + sideLength);
         }
     }
