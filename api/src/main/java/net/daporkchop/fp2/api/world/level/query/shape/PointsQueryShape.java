@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -279,9 +279,9 @@ public interface PointsQueryShape {
             multiplyExact(multiplyExact(notNegative(this.sizeX, "sizeX"), notNegative(this.sizeY, "sizeY")), notNegative(this.sizeZ, "sizeZ"));
 
             //make sure there will be no overflow when computing the actual voxel positions
-            addExact(this.originX, multiplyExact(notNegative(this.strideX, "strideX"), positive(this.sizeX, "sizeX") - 1));
-            addExact(this.originY, multiplyExact(notNegative(this.strideY, "strideY"), positive(this.sizeY, "sizeY") - 1));
-            addExact(this.originZ, multiplyExact(notNegative(this.strideZ, "strideZ"), positive(this.sizeZ, "sizeZ") - 1));
+            addExact(this.originX, multiplyExact(notNegative(this.strideX, "strideX"), max(notNegative(this.sizeX, "sizeX") - 1, 0)));
+            addExact(this.originY, multiplyExact(notNegative(this.strideY, "strideY"), max(notNegative(this.sizeY, "sizeY") - 1, 0)));
+            addExact(this.originZ, multiplyExact(notNegative(this.strideZ, "strideZ"), max(notNegative(this.sizeZ, "sizeZ") - 1, 0)));
         }
 
         @Override

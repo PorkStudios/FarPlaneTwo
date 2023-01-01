@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -27,7 +27,9 @@ import java.util.BitSet;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
 
+import static java.lang.Math.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * @author DaPorkchop_
@@ -71,6 +73,7 @@ public class TestPointsQueryShape {
 
     @Test
     public void testQueryShape_OriginSizeStride() {
+        //random test cases
         IntStream.range(0, 1024).parallel().forEach(_unused -> {
             int originX = ThreadLocalRandom.current().nextInt(Integer.MIN_VALUE >> 1, Integer.MAX_VALUE >> 1);
             int originY = ThreadLocalRandom.current().nextInt(Integer.MIN_VALUE >> 1, Integer.MAX_VALUE >> 1);
@@ -84,6 +87,39 @@ public class TestPointsQueryShape {
 
             this.testQueryShape(new PointsQueryShape.OriginSizeStride(originX, originY, originZ, sizeX, sizeY, sizeZ, strideX, strideY, strideZ));
         });
+
+        //specific test cases:
+
+        //origin at integer limits is okay, as long as it isn't exceeded
+        for (int origin : new int[]{ Integer.MIN_VALUE, Integer.MAX_VALUE }) {
+            int originSign = origin > 0 ? 1 : -1;
+
+            for (int stride = 0; stride <= 64; stride = max(stride << 1, 1)) {
+                this.testQueryShape(new PointsQueryShape.OriginSizeStride(origin, 0, 0, 1, 16, 16, stride, 1, 1));
+                this.testQueryShape(new PointsQueryShape.OriginSizeStride(0, origin, 0, 16, 1, 16, 1, stride, 1));
+                this.testQueryShape(new PointsQueryShape.OriginSizeStride(0, 0, origin, 16, 16, 1, 1, 1, stride));
+            }
+
+            this.testQueryShape(new PointsQueryShape.OriginSizeStride(origin, 0, 0, 2, 16, 16, 0, 1, 1));
+            this.testQueryShape(new PointsQueryShape.OriginSizeStride(0, origin, 0, 16, 2, 16, 1, 0, 1));
+            this.testQueryShape(new PointsQueryShape.OriginSizeStride(0, 0, origin, 16, 16, 2, 1, 1, 0));
+
+            this.testQueryShape(new PointsQueryShape.OriginSizeStride(origin, 0, 0, 0, 16, 16, 2 * originSign, 1, 1));
+            this.testQueryShape(new PointsQueryShape.OriginSizeStride(0, origin, 0, 16, 0, 16, 1, 2 * originSign, 1));
+            this.testQueryShape(new PointsQueryShape.OriginSizeStride(0, 0, origin, 16, 16, 0, 1, 1, 2 * originSign));
+        }
+
+        //origin at integer limits is not okay if it's exceeded
+        for (int origin : new int[]{ Integer.MIN_VALUE, Integer.MAX_VALUE }) {
+            int originSign = origin > 0 ? 1 : -1;
+
+            for (int _stride = 1 * originSign; abs(_stride) <= 64; _stride <<= 1) {
+                int stride = _stride;
+                assertThrows(RuntimeException.class, () -> this.testQueryShape(new PointsQueryShape.OriginSizeStride(origin, 0, 0, 2, 16, 16, stride, 1, 1)));
+                assertThrows(RuntimeException.class, () -> this.testQueryShape(new PointsQueryShape.OriginSizeStride(0, origin, 0, 16, 2, 16, 1, stride, 1)));
+                assertThrows(RuntimeException.class, () -> this.testQueryShape(new PointsQueryShape.OriginSizeStride(0, 0, origin, 16, 16, 2, 1, 1, stride)));
+            }
+        }
     }
 
     private void testQueryShape(@NonNull PointsQueryShape shape) {
