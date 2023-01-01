@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -44,6 +44,8 @@ import net.minecraft.world.chunk.storage.AnvilChunkLoader;
 
 import java.io.IOException;
 import java.util.List;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * Default implementation of {@link ExactFBlockLevelHolder} for vanilla worlds.
@@ -94,7 +96,7 @@ public class VanillaExactFBlockLevelHolder1_12 extends AbstractChunksExactFBlock
         @Override
         protected Chunk parseNBT(@NonNull Vec2i key, @NonNull Object param, @NonNull NBTTagCompound nbt) {
             Chunk chunk = ((ATAnvilChunkLoader1_12) this.io).invokeCheckedReadChunkFromNBT(this.world, key.x(), key.y(), nbt);
-            return chunk.isTerrainPopulated() ? chunk : null;
+            return chunk != null && chunk.isTerrainPopulated() && chunk.isLightPopulated() ? chunk : null;
         }
 
         @Override
@@ -102,7 +104,7 @@ public class VanillaExactFBlockLevelHolder1_12 extends AbstractChunksExactFBlock
         protected Chunk loadFromDisk(@NonNull Vec2i key, @NonNull Object param) {
             Object[] data = this.io.loadChunk__Async(this.world, key.x(), key.y());
             Chunk chunk = data != null ? (Chunk) data[0] : null;
-            return chunk != null && chunk.isTerrainPopulated() ? chunk : null;
+            return chunk != null && chunk.isTerrainPopulated() && chunk.isLightPopulated() ? chunk : null;
         }
 
         @Override
@@ -117,6 +119,27 @@ public class VanillaExactFBlockLevelHolder1_12 extends AbstractChunksExactFBlock
                 this.world.getChunk(x + 1, z);
                 this.world.getChunk(x + 1, z + 1);
                 this.world.getChunk(x, z + 1);
+
+                checkState(chunk.isTerrainPopulated(), "chunk at (%d, %d) couldn't be populated!", x, z);
+
+                //make sure that the chunk is fully lit
+                if (!chunk.isLightPopulated()) {
+                    //try to light the chunk without loading any additional chunks
+                    chunk.checkLight();
+
+                    if (!chunk.isLightPopulated()) {
+                        //load all the chunks all around the chunk, in the hopes that that will be enough
+                        for (int dx = -1; dx <= 1; dx++) {
+                            for (int dz = -1; dz <= 1; dz++) {
+                                this.world.getChunk(x + dx, z + dz);
+                            }
+                        }
+                        chunk.checkLight();
+
+                        //if that isn't enough, we throw our hands up in despair and then die
+                        checkState(chunk.isLightPopulated(), "chunk at (%d, %d) couldn't be lit!", x, z);
+                    }
+                }
 
                 this.io.saveChunk(this.world, chunk);
             }).join();
