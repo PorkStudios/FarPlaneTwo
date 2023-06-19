@@ -31,6 +31,7 @@ import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
 import net.daporkchop.fp2.core.mode.heightmap.HeightmapTile;
 import net.daporkchop.fp2.core.mode.heightmap.client.struct.HeightmapGlobalAttributes;
 import net.daporkchop.fp2.core.mode.heightmap.client.struct.HeightmapLocalAttributes;
+import net.daporkchop.fp2.gl.draw.index.IndexWriter;
 
 import java.util.Arrays;
 import java.util.BitSet;
@@ -46,14 +47,15 @@ import static net.daporkchop.fp2.core.mode.heightmap.HeightmapTile.*;
  */
 @RequiredArgsConstructor
 public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile, IndexedBakeOutput<HeightmapGlobalAttributes, HeightmapLocalAttributes>> {
-    protected static int vertexMapIndex(int x, int z, int layer) {
-        return (x * HT_VERTS + z) * MAX_LAYERS + layer;
+    protected static int vertexMapIndex(int x, int z, int layer, boolean blockyMesh) {
+        return ((x * HT_VERTS + z) * MAX_LAYERS + layer) << (blockyMesh ? 2 : 0);
     }
 
     @NonNull
     protected final LevelRenderer levelRenderer;
     @NonNull
     protected final TextureUVs textureUVs;
+    protected final boolean forceBlockyMesh;
 
     @Override
     public Stream<HeightmapPos> bakeOutputs(@NonNull HeightmapPos srcPos) {
@@ -104,7 +106,10 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
 
         final HeightmapData data = new HeightmapData();
 
-        final int[] map = new int[HT_VERTS * HT_VERTS * MAX_LAYERS];
+        final boolean blockyMesh = this.forceBlockyMesh;
+        final int blockyShift = blockyMesh ? 2 : 0;
+
+        final int[] map = new int[(HT_VERTS * HT_VERTS * MAX_LAYERS) << blockyShift];
         Arrays.fill(map, -1);
 
         //write vertices and build index
@@ -127,7 +132,18 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
                         int z = dz + ((i & 1) << HT_SHIFT);
 
                         this.writeVertex(blockX, blockZ, level, src, x, z, layer, data, output.verts());
-                        map[vertexMapIndex(x, z, layer)] = output.verts().position();
+                        map[vertexMapIndex(x, z, layer, blockyMesh)] = output.verts().position();
+
+                        if (blockyMesh) {
+                            int srcIndex = output.verts().size() - 1;
+                            for (int corner = 1; corner <= 3; corner++) {
+                                output.verts().appendUninitialized()
+                                        .copy(srcIndex, output.verts().position()).current()
+                                        .posHoriz(x + (corner >> 1), z + (corner & 1))
+                                        .close();
+                                map[vertexMapIndex(x, z, layer, blockyMesh) + corner] = output.verts().position();
+                            }
+                        }
                     }
                 }
             }
@@ -145,15 +161,23 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
                     srcs[0]._getLayerUnchecked(x, z, layer, data);
 
                     int oppositeCorner, c0, c1, provoking;
-                    if ((provoking = map[vertexMapIndex(x, z, layer)]) < 0
-                        || ((c0 = map[vertexMapIndex(x, z + 1, layer)]) < 0 && (c0 = map[vertexMapIndex(x, z + 1, data.secondaryConnection)]) < 0)
-                        || ((c1 = map[vertexMapIndex(x + 1, z, layer)]) < 0 && (c1 = map[vertexMapIndex(x + 1, z, data.secondaryConnection)]) < 0)
-                        || ((oppositeCorner = map[vertexMapIndex(x + 1, z + 1, layer)]) < 0 && (oppositeCorner = map[vertexMapIndex(x + 1, z + 1, data.secondaryConnection)]) < 0)) {
+                    int oppositeCornerLayer, c0Layer, c1Layer;
+                    if ((provoking = map[vertexMapIndex(x, z, layer, blockyMesh)]) < 0
+                        || ((c0 = map[vertexMapIndex(x, z + 1, c0Layer = layer, blockyMesh)]) < 0 && (c0 = map[vertexMapIndex(x, z + 1, c0Layer = data.secondaryConnection, blockyMesh)]) < 0)
+                        || ((c1 = map[vertexMapIndex(x + 1, z, c1Layer = layer, blockyMesh)]) < 0 && (c1 = map[vertexMapIndex(x + 1, z, c1Layer = data.secondaryConnection, blockyMesh)]) < 0)
+                        || ((oppositeCorner = map[vertexMapIndex(x + 1, z + 1, oppositeCornerLayer = layer, blockyMesh)]) < 0 && (oppositeCorner = map[vertexMapIndex(x + 1, z + 1, oppositeCornerLayer = data.secondaryConnection, blockyMesh)]) < 0)) {
                         continue; //skip if any of the vertices are missing
                     }
 
-                    output.indices()[this.levelRenderer.renderTypeForState(data.state)].appendQuad(oppositeCorner, c1, c0, provoking);
-                    rendered.set(vertexMapIndex(x, z, layer));
+                    IndexWriter writer = output.indices()[this.levelRenderer.renderTypeForState(data.state)];
+                    if (blockyMesh) {
+                        writer.appendQuad(map[vertexMapIndex(x, z, layer, blockyMesh) + 3], map[vertexMapIndex(x, z, layer, blockyMesh) + 2], map[vertexMapIndex(x, z, layer, blockyMesh) + 1], map[vertexMapIndex(x, z, layer, blockyMesh)])
+                                .appendQuad(map[vertexMapIndex(x, z + 1, c0Layer, blockyMesh) + 2], map[vertexMapIndex(x, z, layer, blockyMesh) + 3], map[vertexMapIndex(x, z + 1, c0Layer, blockyMesh)], map[vertexMapIndex(x, z, layer, blockyMesh) + 1])
+                                .appendQuad(map[vertexMapIndex(x + 1, z, c1Layer, blockyMesh) + 1], map[vertexMapIndex(x + 1, z, c1Layer, blockyMesh)], map[vertexMapIndex(x, z, layer, blockyMesh) + 3], map[vertexMapIndex(x, z, layer, blockyMesh) + 2]);
+                    } else {
+                        writer.appendQuad(oppositeCorner, c1, c0, provoking);
+                    }
+                    rendered.set(vertexMapIndex(x, z, layer, blockyMesh));
                 }
             }
         }
@@ -171,21 +195,27 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
                     layerFlags &= ~(1 << layer);
 
                     src._getLayerUnchecked(x & HT_MASK, z & HT_MASK, layer, data);
-                    int provoking = map[vertexMapIndex(x, z, layer)];
+                    int provoking = map[vertexMapIndex(x, z, layer, blockyMesh)];
 
                     for (int dx = -1; dx <= 1; dx += 2) {
                         for (int dz = -1; dz <= 1; dz += 2) {
                             int oppositeCorner, c0, c1;
+                            int oppositeCornerLayer, c0Layer, c1Layer;
                             if ((dx | dz) >= 0 //at least one offset must be negative - the +,+ quadrant is always handled properly by the first pass
                                 || x + dx == HT_VERTS || z + dz == HT_VERTS //avoid out of bounds (will never happen in negative direction)
-                                || rendered.get(vertexMapIndex(x + dx, z + dz, layer)) //face behind was rendered correctly
-                                || ((c0 = map[vertexMapIndex(x, z + dz, layer)]) < 0 && (c0 = map[vertexMapIndex(x, z + dz, data.secondaryConnection)]) < 0)
-                                || ((c1 = map[vertexMapIndex(x + dx, z, layer)]) < 0 && (c1 = map[vertexMapIndex(x + dx, z, data.secondaryConnection)]) < 0)
-                                || ((oppositeCorner = map[vertexMapIndex(x + dx, z + dz, layer)]) < 0 && (oppositeCorner = map[vertexMapIndex(x + dx, z + dz, data.secondaryConnection)]) < 0)) {
+                                || rendered.get(vertexMapIndex(x + dx, z + dz, layer, blockyMesh)) //face behind was rendered correctly
+                                || ((c0 = map[vertexMapIndex(x, z + dz, c0Layer = layer, blockyMesh)]) < 0 && (c0 = map[vertexMapIndex(x, z + dz, c0Layer = data.secondaryConnection, blockyMesh)]) < 0)
+                                || ((c1 = map[vertexMapIndex(x + dx, z, c1Layer = layer, blockyMesh)]) < 0 && (c1 = map[vertexMapIndex(x + dx, z, c1Layer = data.secondaryConnection, blockyMesh)]) < 0)
+                                || ((oppositeCorner = map[vertexMapIndex(x + dx, z + dz, oppositeCornerLayer = layer, blockyMesh)]) < 0 && (oppositeCorner = map[vertexMapIndex(x + dx, z + dz, oppositeCornerLayer = data.secondaryConnection, blockyMesh)]) < 0)) {
                                 continue; //skip if any of the vertices are missing
                             }
 
-                            output.indices()[this.levelRenderer.renderTypeForState(data.state)].appendQuad(oppositeCorner, c1, c0, provoking);
+                            IndexWriter writer = output.indices()[this.levelRenderer.renderTypeForState(data.state)];
+                            if (blockyMesh) {
+                                //TODO: this
+                            } else {
+                                writer.appendQuad(oppositeCorner, c1, c0, provoking);
+                            }
                         }
                     }
                 }

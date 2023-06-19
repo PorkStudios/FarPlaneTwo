@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -172,6 +172,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
 
                 IBakeOutput output = this.strategy.createBakeOutput();
                 try {
+                    this.renderer.context().config().quality().forceBlockyMesh();
                     this.baker.bake(pos, srcs, uncheckedCast(output));
 
                     this.updateData(pos, !output.isEmpty() ? Optional.of(output.retain()) : Optional.empty());

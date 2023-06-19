@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -62,6 +62,7 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
     protected final LevelRenderer levelRenderer;
     @NonNull
     protected final TextureUVs textureUVs;
+    protected final boolean forceBlockyMesh;
 
     @Override
     public Stream<VoxelPos> bakeOutputs(@NonNull VoxelPos srcPos) {
@@ -164,6 +165,8 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
         final int blockY = baseY + ((y & ~(y & VT_VOXELS)) << level);
         final int blockZ = baseZ + ((z & ~(z & VT_VOXELS)) << level);
 
+        final int fractMask = this.forceBlockyMesh ? 0 : -1;
+
         int blockLight = BlockLevelConstants.unpackBlockLight(data.light);
         int skyLight = BlockLevelConstants.unpackSkyLight(data.light);
         //sky and block light are one unsigned byte each, and are interpreted as normalized floats. since the lightmap texture is 16x16, using
@@ -172,7 +175,7 @@ public class VoxelBaker implements IRenderBaker<VoxelPos, VoxelTile, IndexedBake
         //  the edge of a texture.
         vertices.append()
                 .light((blockLight << 4) | 8, (skyLight << 4) | 8)
-                .pos((x << POS_FRACT_SHIFT) + data.x, (y << POS_FRACT_SHIFT) + data.y, (z << POS_FRACT_SHIFT) + data.z)
+                .pos((x << POS_FRACT_SHIFT) + (data.x & fractMask), (y << POS_FRACT_SHIFT) + (data.y & fractMask), (z << POS_FRACT_SHIFT) + (data.z & fractMask))
                 .close();
 
         boolean first = true;
