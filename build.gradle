@@ -58,14 +58,14 @@ subprojects {
     apply plugin: "java-library"
     apply plugin: "fp2"
 
-    if (ideaSyncActive.toBoolean()) {
+    if (ideaSyncActive) {
         apply plugin: "idea"
     }
 
     version = "$fp2Version"
     group = "net.daporkchop.fp2"
 
-    if (ideaSyncActive.toBoolean()) {
+    if (ideaSyncActive) {
         idea.module.inheritOutputDirs = true
     }
 
