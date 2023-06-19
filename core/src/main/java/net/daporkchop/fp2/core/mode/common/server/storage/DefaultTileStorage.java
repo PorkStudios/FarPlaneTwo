@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -22,9 +22,11 @@ package net.daporkchop.fp2.core.mode.common.server.storage;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.google.common.collect.ImmutableList;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import lombok.NonNull;
+import lombok.SneakyThrows;
 import net.daporkchop.fp2.api.storage.FStorageException;
 import net.daporkchop.fp2.api.storage.external.FStorageItemFactory;
 import net.daporkchop.fp2.api.storage.internal.FStorageColumn;
@@ -574,6 +576,12 @@ public class DefaultTileStorage<POS extends IFarPos, T extends IFarTile> impleme
             return out;
         });
     }*/
+
+    @Override
+    @SneakyThrows(FStorageException.class)
+    public void clear() {
+        this.storageInternal.clearColumns(ImmutableList.of(this.columnData, this.columnTimestamp, this.columnDirtyTimestamp));
+    }
 
     @Override
     public void addListener(@NonNull Listener<POS, T> listener) {

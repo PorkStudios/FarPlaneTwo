@@ -19,22 +19,13 @@
 
 package net.daporkchop.fp2.core.client.key;
 
-import lombok.NonNull;
-
-import java.util.Collections;
-import java.util.Set;
-
 /**
+ * A modifier key which may be added to a key binding.
+ *
  * @author DaPorkchop_
  */
-public interface KeyCategory {
-    default void addBinding(@NonNull String name, @NonNull String defaultKey, @NonNull Runnable handler) {
-        this.addBinding(name, defaultKey, Collections.emptySet(), handler);
-    }
-
-    default void addBinding(@NonNull String name, @NonNull String defaultKey, @NonNull KeyModifier defaultModifier, @NonNull Runnable handler) {
-        this.addBinding(name, defaultKey, Collections.singleton(defaultModifier), handler);
-    }
-
-    void addBinding(@NonNull String name, @NonNull String defaultKey, @NonNull Set<KeyModifier> defaultModifiers, @NonNull Runnable handler);
+public enum KeyModifier {
+    SHIFT,
+    CONTROL,
+    ALT,
 }

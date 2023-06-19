@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -41,6 +41,8 @@ import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -211,13 +213,16 @@ public abstract class AbstractTrackerManager<POS extends IFarPos, T extends IFar
     @CalledFromServerThread
     @Override
     public void dropAllTiles() {
-        /*Collection<IFarServerContext<POS, T>> trackedContextsSnapshot = new ArrayList<>(this.contexts.keySet());
-        trackedContextsSnapshot.forEach(this::playerRemove);
+        Collection<IFarServerContext<POS, T>> trackedContextsSnapshot = new ArrayList<>(this.trackers.keySet());
+
+        //send a null config to all players so that they end their session on this render mode
+        trackedContextsSnapshot.forEach(context -> context.player().fp2_IFarPlayer_serverConfig(null));
 
         //it should be reasonably safe to assume that all pending tasks will have been cancelled by now
+        this.tileProvider.storage().clear();
 
-        trackedContextsSnapshot.forEach(this::playerAdd);*/
-        //TODO: this
+        //re-send the global config to all players in order to trigger a new session
+        trackedContextsSnapshot.forEach(context -> context.player().fp2_IFarPlayer_serverConfig(context.player().fp2().globalConfig()));
     }
 
     protected void beginTracking(@NonNull AbstractTracker<POS, T, ?> tracker, @NonNull POS posIn) {
