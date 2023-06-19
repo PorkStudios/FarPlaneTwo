@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -119,10 +119,9 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
 
             for (int dx = 0; dx < maxX; dx++) {
                 for (int dz = 0; dz < maxZ; dz++) {
-                    for (int layerFlags = src._getLayerFlags(dx, dz), layer = 0; layer < MAX_LAYERS; layer++) {
-                        if ((layerFlags & layerFlag(layer)) == 0) { //layer is unset
-                            continue;
-                        }
+                    for (int layerFlags = src._getLayerFlags(dx, dz); layerFlags != 0; ) {
+                        int layer = Integer.numberOfTrailingZeros(layerFlags);
+                        layerFlags &= ~(1 << layer);
 
                         int x = dx + (((i >> 1) & 1) << HT_SHIFT);
                         int z = dz + ((i & 1) << HT_SHIFT);
@@ -139,10 +138,10 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
         //write indices
         for (int x = 0; x < HT_VOXELS; x++) {
             for (int z = 0; z < HT_VOXELS; z++) {
-                for (int layerFlags = srcs[0]._getLayerFlags(x, z), layer = 0; layer < MAX_LAYERS; layer++) {
-                    if ((layerFlags & layerFlag(layer)) == 0) { //layer is unset
-                        continue;
-                    }
+                for (int layerFlags = srcs[0]._getLayerFlags(x, z); layerFlags != 0; ) {
+                    int layer = Integer.numberOfTrailingZeros(layerFlags);
+                    layerFlags &= ~(1 << layer);
+
                     srcs[0]._getLayerUnchecked(x, z, layer, data);
 
                     int oppositeCorner, c0, c1, provoking;
@@ -167,10 +166,9 @@ public class HeightmapBaker implements IRenderBaker<HeightmapPos, HeightmapTile,
                     continue;
                 }
 
-                for (int layerFlags = src._getLayerFlags(x & HT_MASK, z & HT_MASK), layer = 0; layer < MAX_LAYERS; layer++) {
-                    if ((layerFlags & layerFlag(layer)) == 0) {  //layer is unset
-                        continue;
-                    }
+                for (int layerFlags = src._getLayerFlags(x & HT_MASK, z & HT_MASK); layerFlags != 0; ) {
+                    int layer = Integer.numberOfTrailingZeros(layerFlags);
+                    layerFlags &= ~(1 << layer);
 
                     src._getLayerUnchecked(x & HT_MASK, z & HT_MASK, layer, data);
                     int provoking = map[vertexMapIndex(x, z, layer)];
