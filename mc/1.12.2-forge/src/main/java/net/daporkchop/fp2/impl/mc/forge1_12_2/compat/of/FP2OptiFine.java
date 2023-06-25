@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -40,7 +40,7 @@ import static net.daporkchop.fp2.impl.mc.forge1_12_2.compat.of.OFHelper.*;
 /**
  * @author DaPorkchop_
  */
-@Mod(modid = "fp2_optifine", useMetadata = true, dependencies = "required-after:fp2")
+@Mod(modid = "fp2_optifine", useMetadata = true, dependencies = "required-after:fp2", clientSideOnly = true)
 public class FP2OptiFine {
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
