@@ -9,7 +9,9 @@ export LIBS_DIR		:=	$(NATIVE_DIR)/lib
 export COMPILE_DIR  :=  $(ROOT_DIR)/build/native
 export OUTPUT_DIR   :=  $(ROOT_DIR)/src/main/resources/net/daporkchop/fp2
 
-export CXXFLAGS		:=	-O2 -ffast-math -std=c++17 -Wno-attributes
+FLAGS				:=	-O2 -std=c++17 -Wno-attributes
+#workaround for https://gcc.gnu.org/bugzilla/show_bug.cgi?id=55522: don't use -ffast-math when linking, only when compiling
+export CXXFLAGS		:=	$(FLAGS) -ffast-math
 export LDFLAGS		:=	$(CXXFLAGS) -shared
 
 export MAKEFILES_	:=	$(wildcard $(NATIVE_DIR)/*.mk) $(wildcard $(TOOLCHAIN_DIR)/*.mk) $(wildcard $(TOOLCHAIN_DIR)/**/*.mk)
