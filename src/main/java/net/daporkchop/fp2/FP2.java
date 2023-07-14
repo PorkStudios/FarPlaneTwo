@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -49,7 +49,7 @@ import static net.daporkchop.fp2.util.Constants.*;
  */
 @Mod(modid = MODID,
         useMetadata = true,
-        dependencies = "required-after:forgerocks@[7.3.1,);after:cubicchunks@[1.12.2-0.0.1188.0,)",
+        dependencies = "required-after:forgerocks@[7.3.1,);after:cubicchunks@[1.12.2-0.0.1255.0,)",
         acceptedMinecraftVersions = "1.12.2")
 public class FP2 {
     public static final String MODID = "fp2";
