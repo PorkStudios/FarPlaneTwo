@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,16 +15,16 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.compat.cwg;
 
-import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.IBiomeBlockReplacer;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomCubicWorldType;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomGeneratorSettings;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.builder.BiomeSource;
+import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.replacer.IBiomeBlockReplacer;
 import lombok.NonNull;
+import lombok.SneakyThrows;
 import net.daporkchop.fp2.compat.cwg.noise.CWGNoiseProvider;
 import net.daporkchop.fp2.compat.vanilla.biome.BiomeHelper;
 import net.daporkchop.fp2.compat.vanilla.biome.IBiomeProvider;
@@ -34,9 +34,16 @@ import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.daporkchop.lib.math.grid.Grid3d;
 import net.daporkchop.lib.math.interpolation.Interpolation;
 import net.daporkchop.lib.math.interpolation.LinearInterpolation;
+import net.minecraft.block.state.IBlockState;
+import net.minecraft.init.Blocks;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.BiomeProvider;
+
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+import java.util.List;
 
 import static net.daporkchop.fp2.util.Constants.*;
 import static net.daporkchop.fp2.util.math.MathUtil.*;
@@ -51,12 +58,49 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 public class CWGContext {
+    private static final MethodHandle BIOMESOURCE_CTOR;
+    private static final MethodHandle V6_REPLACER_GETREPLACEDBLOCK_IMPL;
+
+    static {
+        try {
+            MethodHandles.Lookup lookup = MethodHandles.lookup();
+            if (CWGHelper.CWG_V6) {
+                Class<?> iBiomeBlockReplacerClass = Class.forName("io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.IBiomeBlockReplacer");
+                Class<?> biomeBlockReplacerConfigClass = Class.forName("io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.BiomeBlockReplacerConfig");
+
+                BIOMESOURCE_CTOR = MethodHandles.filterArguments(
+                        lookup.findConstructor(BiomeSource.class,
+                                MethodType.methodType(void.class, World.class, biomeBlockReplacerConfigClass, BiomeProvider.class, int.class)),
+                        1,
+                        lookup.findVirtual(CustomGeneratorSettings.class, "createBiomeBlockReplacerConfig",
+                                MethodType.methodType(biomeBlockReplacerConfigClass)));
+
+                V6_REPLACER_GETREPLACEDBLOCK_IMPL = MethodHandles.explicitCastArguments(
+                        lookup.findVirtual(iBiomeBlockReplacerClass, "getReplacedBlock",
+                                MethodType.methodType(IBlockState.class, IBlockState.class, int.class, int.class, int.class, double.class, double.class, double.class, double.class)),
+                        MethodType.methodType(IBlockState.class, Object.class, IBlockState.class, int.class, int.class, int.class, double.class, double.class, double.class, double.class));
+            } else {
+                BIOMESOURCE_CTOR = MethodHandles.filterArguments(
+                        lookup.findConstructor(BiomeSource.class,
+                                MethodType.methodType(void.class, World.class, List.class, BiomeProvider.class, int.class)),
+                        1,
+                        lookup.findGetter(CustomGeneratorSettings.class, "replacers", List.class));
+
+                V6_REPLACER_GETREPLACEDBLOCK_IMPL = null;
+            }
+        } catch (Exception e) {
+            throw new AssertionError(e);
+        }
+    }
+
     public final int size;
     public final int[] biomes;
 
     protected final IBiomeProvider biomeProvider;
     protected final BiomeWeightHelper weightHelper;
-    protected final IBiomeBlockReplacer[][] biomeBlockReplacers;
+
+    protected final Object[] biomeBlockReplacers;
+    protected final long[][] biomeBlockReplacerFlags;
 
     protected final CWGNoiseProvider.Configured configuredNoiseGen;
 
@@ -77,17 +121,26 @@ public class CWGContext {
     protected int cacheBaseX;
     protected int cacheBaseZ;
 
+    @SneakyThrows
     public CWGContext(@NonNull World world, int size, int smoothRadius) {
         this.size = notNegative(size, "size");
         this.biomes = new int[this.size * this.size];
 
         CustomGeneratorSettings conf = CustomGeneratorSettings.getFromWorld(world);
-        BiomeSource biomeSource = new BiomeSource(world, conf.createBiomeBlockReplacerConfig(), CustomCubicWorldType.makeBiomeProvider(world, conf), smoothRadius);
+        BiomeSource biomeSource = (BiomeSource) BIOMESOURCE_CTOR.invokeExact(world, conf, CustomCubicWorldType.makeBiomeProvider(world, conf), smoothRadius);
 
         this.biomeProvider = BiomeHelper.from(CWGHelper.getBiomeGen(biomeSource));
         this.weightHelper = new VanillaBiomeWeightHelper(0.0d, 1.0d, 0.0d, 1.0d, smoothRadius);
-        this.biomeBlockReplacers = CWGHelper.blockReplacerMapToArray(CWGHelper.getReplacerMap(biomeSource));
 
+        if (CWGHelper.CWG_V6) {
+            this.biomeBlockReplacers = CWGHelper.getReplacerMapToArray_V6(biomeSource);
+            this.biomeBlockReplacerFlags = null;
+        } else {
+            this.biomeBlockReplacers = conf.replacers.stream()
+                    .map(replacerConfig -> IBiomeBlockReplacer.create(world.getSeed(), replacerConfig))
+                    .toArray(IBiomeBlockReplacer[]::new);
+            this.biomeBlockReplacerFlags = CWGHelper.getReplacerFlagsToArray_V7(biomeSource);
+        }
         this.configuredNoiseGen = CWGNoiseProvider.INSTANCE.forSettings(conf, world.getSeed());
 
         this.heights = new double[this.size * this.size];
@@ -98,13 +151,35 @@ public class CWGContext {
     }
 
     /**
-     * Gets the block replacers for the given biome.
+     * Gets the block at the given position based on the given biome and density values.
      *
-     * @param biomeId the {@link Biome}
-     * @return an array of {@link IBiomeBlockReplacer}s used by the biome
+     * @see IBiomeBlockReplacer#getReplacedBlock(IBlockState, Biome, int, int, int, double, double, double, double)
      */
-    public IBiomeBlockReplacer[] replacersForBiome(int biomeId) {
-        return this.biomeBlockReplacers[biomeId];
+    public IBlockState getReplacedBlockInBiome(int biomeId, int blockX, int blockY, int blockZ, double nx, double ny, double nz, double density) {
+        return CWGHelper.CWG_V6
+                ? getReplacedBlockInBiome_v6(((Object[][]) this.biomeBlockReplacers)[biomeId], Blocks.AIR.getDefaultState(), blockX, blockY, blockZ, nx, ny, nz, density)
+                : getReplacedBlockInBiome_v7(this.biomeBlockReplacerFlags[biomeId], Blocks.AIR.getDefaultState(), Biome.getBiomeForId(biomeId), blockX, blockY, blockZ, nx, ny, nz, density, (IBiomeBlockReplacer[]) this.biomeBlockReplacers);
+    }
+
+    @SneakyThrows
+    private static IBlockState getReplacedBlockInBiome_v6(Object[] replacers, IBlockState state, int blockX, int blockY, int blockZ, double nx, double ny, double nz, double density) {
+        for (Object replacer : replacers) {
+            state = (IBlockState) V6_REPLACER_GETREPLACEDBLOCK_IMPL.invokeExact(replacer, state, blockX, blockY, blockZ, nx, ny, nz, density);
+        }
+        return state;
+    }
+
+    private static IBlockState getReplacedBlockInBiome_v7(long[] biomeBlockReplacerFlags, IBlockState state, Biome biome, int blockX, int blockY, int blockZ, double nx, double ny, double nz, double density, IBiomeBlockReplacer[] replacers) {
+        for (int wordIndex = 0; wordIndex < biomeBlockReplacerFlags.length; wordIndex++) {
+            long flags = biomeBlockReplacerFlags[wordIndex];
+            while (flags != 0L) {
+                int bitIndex = Long.numberOfTrailingZeros(flags);
+                flags &= ~(1L << bitIndex);
+
+                state = replacers[(wordIndex << 6) | bitIndex].getReplacedBlock(state, biome, blockX, blockY, blockZ, nx, ny, nz, density);
+            }
+        }
+        return state;
     }
 
     /**

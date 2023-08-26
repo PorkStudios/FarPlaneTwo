@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -52,8 +52,10 @@ import net.minecraft.world.gen.IChunkGenerator;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.FMLLog;
 import net.minecraftforge.fml.common.Loader;
+import net.minecraftforge.fml.common.ModContainer;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
+import net.minecraftforge.fml.common.versioning.ArtifactVersion;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
 import org.apache.logging.log4j.Level;
@@ -75,6 +77,7 @@ import java.nio.LongBuffer;
 import java.nio.ShortBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Optional;
 
 import static java.lang.Math.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
@@ -260,6 +263,19 @@ public class Constants {
         } catch (NoSuchMethodException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static Optional<ArtifactVersion> getModVersion(@NonNull String modid) {
+        Optional<ArtifactVersion> modVersion = Optional.empty();
+        if (Loader.isModLoaded(modid)) {
+            for (ModContainer container : Loader.instance().getActiveModList()) {
+                if (modid.equals(container.getModId())) {
+                    assert !modVersion.isPresent();
+                    modVersion = Optional.of(container.getProcessedVersion());
+                }
+            }
+        }
+        return modVersion;
     }
 
     //the following methods are copied from LWJGL's BufferUtils in order to ensure their availability on the dedicated server as well
