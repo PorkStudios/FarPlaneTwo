@@ -108,6 +108,12 @@ repositories {
     }
 }
 
+configurations.all {
+    resolutionStrategy {
+        force("net.minecraftforge:mergetool:0.2.3.3")
+    }
+}
+
 dependencies {
     minecraft "net.minecraftforge:forge:$minecraftVersion-$minecraftforgeVersion"
 

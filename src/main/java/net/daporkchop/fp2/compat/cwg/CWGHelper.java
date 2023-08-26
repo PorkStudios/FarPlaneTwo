@@ -40,7 +40,6 @@ import java.util.Map;
 @UtilityClass
 public class CWGHelper {
     public static final boolean CWG_V6 = new DefaultArtifactVersion(CustomCubicMod.class.getPackage().getImplementationVersion()).compareTo(new DefaultArtifactVersion("1.12.2-0.0.169.0-SNAPSHOT")) <= 0;
-           // && !"%%VERSION%%".equals(Constants.getModVersion("cubicgen").get().getVersionString());
 
     private static final long BIOMEBLOCKREPLACERS_OFFSET = PUnsafe.pork_getOffset(BiomeSource.class, "biomeBlockReplacers");
     private static final long BIOMEGEN_OFFSET = PUnsafe.pork_getOffset(BiomeSource.class, "biomeGen");
