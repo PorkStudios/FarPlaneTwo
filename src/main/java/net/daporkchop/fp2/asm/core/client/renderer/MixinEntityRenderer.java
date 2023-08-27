@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.asm.core.client.renderer;
@@ -104,6 +103,19 @@ public abstract class MixinEntityRenderer {
             //TODO: i need a better system for computing this
         }
         this.farPlaneDistance = farPlaneDistance;
+    }
+
+    @Redirect(method = "Lnet/minecraft/client/renderer/EntityRenderer;setupFog(IF)V",
+            at = @At(value = "FIELD",
+                    target = "Lnet/minecraft/client/renderer/EntityRenderer;farPlaneDistance:F"))
+    private float fp2_setupFog_lowerFogFarPlaneDistanceForSkyboxRendering(EntityRenderer entityRenderer, int startCoords, float partialTicks) {
+        float farPlaneDistance = this.farPlaneDistance;
+        if (startCoords == -1) {
+            //clamp the fog distance to the vanilla limit when the skybox is being rendered (this avoids sharp borders in the skybox when
+            // farPlaneDistance is higher than vanilla expects)
+            farPlaneDistance = Math.min(farPlaneDistance, 384.0f);
+        }
+        return farPlaneDistance;
     }
 
     //optifine changes this value for us, but we need to manually change it if optifine isn't around
