@@ -19,7 +19,6 @@
 
 package net.daporkchop.fp2.core.config;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import lombok.AccessLevel;
@@ -34,7 +33,6 @@ import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.With;
 import net.daporkchop.fp2.core.config.gui.container.ConfigGuiRenderDistanceContainer;
-import net.daporkchop.fp2.core.config.gui.element.ConfigGuiRenderModeButton;
 import net.daporkchop.lib.common.misc.Cloneable;
 import net.daporkchop.lib.common.util.PorkUtil;
 
@@ -42,12 +40,10 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.stream.Stream;
 
 import static java.lang.Math.*;
 import static java.nio.file.StandardCopyOption.*;
 import static java.nio.file.StandardOpenOption.*;
-import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
@@ -143,7 +139,6 @@ public final class FP2Config implements Cloneable<FP2Config> {
         return clientConfig.toBuilder()
                 .maxLevels(min(serverConfig.maxLevels(), clientConfig.maxLevels()))
                 .cutoffDistance(min(serverConfig.cutoffDistance(), clientConfig.cutoffDistance()))
-                .renderModes(Stream.of(clientConfig.renderModes()).filter(ImmutableSet.copyOf(serverConfig.renderModes())::contains).toArray(String[]::new))
                 .build();
     }
 
@@ -159,11 +154,6 @@ public final class FP2Config implements Cloneable<FP2Config> {
     @Config.GuiCategory(CATEGORY_RENDER_DISTANCE)
     @Config.GuiShowServerValue
     private final int cutoffDistance = preventInline(256);
-
-    @Builder.Default
-    @Config.GuiElementClass(ConfigGuiRenderModeButton.class)
-    @NonNull
-    private final String[] renderModes = fp2().renderModeNames();
 
     @Builder.Default
     @NonNull
@@ -186,10 +176,9 @@ public final class FP2Config implements Cloneable<FP2Config> {
      *
      * @return the cleaned config
      */
+    //TODO: do i want/need to keep this?
     public FP2Config clean() {
-        return this.withRenderModes(Stream.of(this.renderModes)
-                .filter(ImmutableSet.copyOf(fp2().renderModeNames())::contains)
-                .toArray(String[]::new));
+        return this;
     }
 
     /**
@@ -202,7 +191,6 @@ public final class FP2Config implements Cloneable<FP2Config> {
     @Override
     public FP2Config clone() {
         return this.toBuilder()
-                .renderModes(this.renderModes.clone())
                 .performance(this.performance.clone())
                 .compatibility(this.compatibility.clone())
                 .debug(this.debug.clone())

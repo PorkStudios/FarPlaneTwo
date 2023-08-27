@@ -55,8 +55,11 @@ import static net.daporkchop.fp2.core.engine.VoxelConstants.*;
  *
  * @author DaPorkchop_
  */
+@Deprecated
 public class VoxelRenderMode extends AbstractFarRenderMode<VoxelPos, VoxelTile> {
-    public VoxelRenderMode() {
+    public static final VoxelRenderMode INSTANCE = new VoxelRenderMode();
+
+    private VoxelRenderMode() {
         super(STORAGE_VERSION, VMAX_LODS, VT_SHIFT);
     }
 

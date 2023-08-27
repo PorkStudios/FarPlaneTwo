@@ -226,11 +226,6 @@ public class FP2Forge1_12_2 extends FP2Core implements ResourceProvider {
     }
 
     @Override
-    public String[] renderModeNames() {
-        return IFarRenderMode.REGISTRY.nameStream().toArray(String[]::new);
-    }
-
-    @Override
     public void unsupported(@NonNull String message) {
         this.log().alert(message);
         if (this.hasClient()) {

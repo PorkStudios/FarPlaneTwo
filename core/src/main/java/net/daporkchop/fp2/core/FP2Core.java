@@ -148,9 +148,6 @@ public abstract class FP2Core implements FP2 {
         return this.client().openScreen(factory);
     }
 
-    @Deprecated
-    public abstract String[] renderModeNames();
-
     /**
      * Sets the global {@link FP2Config}.
      *
@@ -178,7 +175,7 @@ public abstract class FP2Core implements FP2 {
     @FEventHandler
     protected void registerDefaultRenderModes(FRegisterEvent<IFarRenderMode<?, ?>> event) {
         event.registry()
-                .addLast(VoxelConstants.NAME, new VoxelRenderMode());
+                .addLast(VoxelConstants.NAME, VoxelRenderMode.INSTANCE);
     }
 
     @FEventHandler

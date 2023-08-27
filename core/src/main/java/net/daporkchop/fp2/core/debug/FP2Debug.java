@@ -82,14 +82,6 @@ public class FP2Debug {
                 fp2.client().chat().debug((fp2.globalConfig().debug().vanillaTerrainRendering() ? "§aEnabled" : "§cDisabled") + " vanilla terrain");
             });
             category.addBinding("rebuildUVs", "6", TextureUVs::reloadAll);
-            category.addBinding("toggleRenderMode", "5", () -> {
-                String[] oldModes = fp2.globalConfig().renderModes();
-                String[] newModes = new String[oldModes.length];
-                newModes[0] = oldModes[oldModes.length - 1];
-                System.arraycopy(oldModes, 0, newModes, 1, oldModes.length - 1);
-                fp2.globalConfig(fp2.globalConfig().withRenderModes(newModes));
-                fp2.client().chat().debug("§aSwitched render mode to §7" + newModes[0]);
-            });
             category.addBinding("toggleLevel0", "4", () -> {
                 FP2Config config = fp2.globalConfig();
                 fp2.globalConfig(config.withDebug(config.debug().withLevelZeroRendering(!config.debug().levelZeroRendering())));

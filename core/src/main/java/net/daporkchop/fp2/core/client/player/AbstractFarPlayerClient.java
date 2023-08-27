@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -27,6 +27,7 @@ import net.daporkchop.fp2.core.client.world.AbstractWorldClient;
 import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
+import net.daporkchop.fp2.core.engine.VoxelRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarTile;
@@ -269,8 +270,9 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
         return this.config;
     }
 
+    @Deprecated
     protected IFarRenderMode<?, ?> modeFor(FP2Config config) {
-        return config != null && config.renderModes().length != 0 ? IFarRenderMode.REGISTRY.get(config.renderModes()[0]) : null;
+        return config == null ? null : VoxelRenderMode.INSTANCE;
     }
 
     @CalledFromAnyThread
