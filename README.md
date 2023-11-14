@@ -14,16 +14,16 @@ The name is in reference to [Foghrye4's CWGFarPlaneView](https://www.curseforge.
 ## Installation
 *This is a Forge mod for Minecraft 1.12.2. Other versions WILL be supported in the future.*
 1) Install [Minecraft Forge](https://files.minecraftforge.net/net/minecraftforge/forge/index_1.12.2.html) for Minecraft 1.12.2.
-2) [Download](https://jenkins.daporkchop.net/job/PorkStudios/job/FarPlaneTwo/job/master/) the mod.
-3) Download these dependencies too:
-   - [ForgeRocks](https://www.curseforge.com/minecraft/mc-mods/forgerocks)
-   - [Mixin](https://www.curseforge.com/minecraft/mc-mods/mixin-0-7-0-8-compatibility)
+2) Download [<img src="https://static-beta.curseforge.com/images/favicon.ico" width="16">](https://www.curseforge.com/minecraft/mc-mods/farplanetwo) [<img src="https://jenkins.daporkchop.net/static/99ce6cec/favicon.ico" width="16">](https://jenkins.daporkchop.net/job/PorkStudios/job/FarPlaneTwo/job/master/) the mod.
+3) Download these dependencies too (click on the icon you want):
+   - ForgeRocks [<img src="https://static-beta.curseforge.com/images/favicon.ico" width="16">](https://www.curseforge.com/minecraft/mc-mods/forgerocks)
+   - Mixin [<img src="https://static-beta.curseforge.com/images/favicon.ico" width="16">](https://www.curseforge.com/minecraft/mc-mods/mixin-0-7-0-8-compatibility) [<img src="https://modrinth.com/favicon.ico" width="16">](https://modrinth.com/mod/mixincompat)
 
 For best results use cubic chunks and cubic world gen and set the world type to custom cubic.
 
 (Cubic Chunks bundles Mixin inside it, so don't use both cubic chunks and mixin together.)
-   - [Cubic Chunks](https://jenkins.daporkchop.net/job/OpenCubicChunks/job/CubicChunks/)
-   - [Cubic World Gen](https://jenkins.daporkchop.net/job/OpenCubicChunks/job/CubicWorldGen/)
+   - Cubic Chunks [<img src="https://jenkins.daporkchop.net/static/99ce6cec/favicon.ico" width="16">](https://jenkins.daporkchop.net/job/OpenCubicChunks/job/CubicChunks/)
+   - Cubic World Gen [<img src="https://jenkins.daporkchop.net/static/99ce6cec/favicon.ico" width="16">](https://jenkins.daporkchop.net/job/OpenCubicChunks/job/CubicWorldGen/)
 
 Some of the above pages should look a lot like this:
 
