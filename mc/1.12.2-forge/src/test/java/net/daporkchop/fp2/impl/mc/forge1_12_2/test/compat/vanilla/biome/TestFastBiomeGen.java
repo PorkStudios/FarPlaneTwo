@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,24 +15,28 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.test.compat.vanilla.biome;
 
+import jdk.internal.org.objectweb.asm.Type;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import net.daporkchop.fp2.core.util.GlobalAllocators;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.world.gen.layer.ATGenLayer1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.BiomeHelper;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.FastLayerProvider;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.IFastLayer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.IPaddedLayer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.IZoomingLayer;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.compat.CompatPaddedLayerWrapper;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.vanilla.GenLayerRandomValues;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.test.FP2Test;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.test.mixin.JUnitMixinRedirectorExtension;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
+import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.world.WorldType;
 import net.minecraft.world.gen.layer.GenLayer;
 import net.minecraft.world.gen.layer.GenLayerAddIsland;
@@ -60,7 +64,11 @@ import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Opcodes;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -98,6 +106,22 @@ public class TestFastBiomeGen {
     @Test
     public void testAddIsland() {
         this.testLayers(new GenLayerAddIsland(1L, new GenLayerRandomValues(0L, 2)), true);
+    }
+
+    @Test
+    public void testAddIsland_uncloneable0() {
+        this.testLayers(new UncloneableGenLayerAddIsland(1L, new GenLayerRandomValues(0L, 2)), true);
+    }
+
+    @Test
+    public void testAddIsland_uncloneable1() {
+        this.testLayers(new GenLayerAddIsland(2L, new UncloneableGenLayerAddIsland(1L, new GenLayerRandomValues(0L, 2))), true);
+    }
+
+    private static class UncloneableGenLayerAddIsland extends GenLayerAddIsland {
+        public UncloneableGenLayerAddIsland(long p_i2119_1_, GenLayer p_i2119_3_) {
+            super(p_i2119_1_, p_i2119_3_);
+        }
     }
 
     @Test
@@ -257,6 +281,10 @@ public class TestFastBiomeGen {
         }
 
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+        if (!(javaFast instanceof CompatPaddedLayerWrapper) && javaFast instanceof IPaddedLayer && BiomeHelper.getParents(vanilla).length == 1) {
+            this.testLayers(makeUncloneable(vanilla), testSingle);
+        }
     }
 
     private CompletableFuture<Void> testLayers(int x, int z, int sizeX, int sizeZ, boolean testSingle, GenLayer vanilla, @NonNull NamedLayer... layers) {
@@ -389,5 +417,29 @@ public class TestFastBiomeGen {
         protected final IFastLayer layer;
         @NonNull
         protected final String name;
+    }
+
+    @SneakyThrows
+    protected static GenLayer makeUncloneable(@NonNull GenLayer layer) {
+        ClassWriter cw = new ClassWriter(0);
+        cw.visit(Opcodes.V1_8, Opcodes.ACC_PUBLIC, Type.getInternalName(layer.getClass()) + "$Uncloneable", null, Type.getInternalName(layer.getClass()), null);
+        cw.visitEnd();
+
+        GenLayer clonedLayer = (GenLayer) PUnsafe.allocateInstance(PUnsafe.defineAnonymousClass(layer.getClass(), cw.toByteArray(), null));
+        for (Class<?> clazz = layer.getClass(); clazz != GenLayer.class; clazz = clazz.getSuperclass()) {
+            for (Field field : clazz.getDeclaredFields()) {
+                if ((field.getModifiers() & Modifier.STATIC) != 0) {
+                    continue;
+                }
+
+                checkState(field.getType().isPrimitive() || field.getType().isEnum(), "can't clone GenLayer of %s (contains non-cloneable field %s)", layer.getClass(), field);
+
+                field.setAccessible(true);
+                field.set(clonedLayer, field.get(layer));
+            }
+        }
+        ((ATGenLayer1_12) clonedLayer).setWorldGenSeed(((ATGenLayer1_12) layer).getWorldGenSeed());
+        ((ATGenLayer1_12) clonedLayer).setParent(((ATGenLayer1_12) layer).getParent());
+        return clonedLayer;
     }
 }

@@ -17,26 +17,41 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.world.gen.layer;
+package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer;
 
-import net.minecraft.world.gen.layer.GenLayer;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.gen.Accessor;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 
 /**
  * @author DaPorkchop_
  */
-@Mixin(GenLayer.class)
-public interface ATGenLayer1_12 {
-    @Accessor
-    long getWorldGenSeed();
+@RequiredArgsConstructor
+public abstract class AbstractForwardingFastLayer implements IFastLayer {
+    protected final IFastLayer delegate;
 
-    @Accessor
-    void setWorldGenSeed(long worldGenSeed);
+    @Override
+    public void init(@NonNull IFastLayer[] children) {
+        this.delegate.init(children);
+    }
 
-    @Accessor
-    GenLayer getParent();
+    @Override
+    public boolean shouldResetIntCacheAfterGet() {
+        return this.delegate.shouldResetIntCacheAfterGet();
+    }
 
-    @Accessor
-    void setParent(GenLayer parent);
+    @Override
+    public int getSingle(@NonNull ArrayAllocator<int[]> alloc, int x, int z) {
+        return this.delegate.getSingle(alloc, x, z);
+    }
+
+    @Override
+    public void getGrid(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int sizeX, int sizeZ, @NonNull int[] out) {
+        this.delegate.getGrid(alloc, x, z, sizeX, sizeZ, out);
+    }
+
+    @Override
+    public void multiGetGrids(@NonNull ArrayAllocator<int[]> alloc, int x, int z, int size, int dist, int depth, int count, @NonNull int[] out) {
+        this.delegate.multiGetGrids(alloc, x, z, size, dist, depth, count, out);
+    }
 }

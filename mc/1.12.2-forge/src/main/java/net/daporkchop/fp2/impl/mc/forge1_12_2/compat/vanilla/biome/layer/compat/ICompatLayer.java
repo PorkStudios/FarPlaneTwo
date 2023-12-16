@@ -17,26 +17,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.world.gen.layer;
-
-import net.minecraft.world.gen.layer.GenLayer;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.gen.Accessor;
+package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.compat;
 
 /**
+ * Marker interface to indicate that a {@link net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.IFastLayer} is
+ * a compatibility wrapper around a vanilla-style {@link net.minecraft.world.gen.layer.GenLayer} implementation.
+ *
  * @author DaPorkchop_
  */
-@Mixin(GenLayer.class)
-public interface ATGenLayer1_12 {
-    @Accessor
-    long getWorldGenSeed();
-
-    @Accessor
-    void setWorldGenSeed(long worldGenSeed);
-
-    @Accessor
-    GenLayer getParent();
-
-    @Accessor
-    void setParent(GenLayer parent);
+public interface ICompatLayer {
 }

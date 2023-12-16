@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome;
@@ -28,6 +27,7 @@ import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.IFastLa
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.weight.BiomeWeightHelper;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.minecraft.world.biome.BiomeProvider;
+import net.minecraft.world.gen.layer.IntCache;
 
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.VanillaTerrainGenConstants.*;
@@ -39,10 +39,14 @@ public class FastThreadSafeBiomeProvider implements IBiomeProvider {
     protected final IFastLayer biomeLayer;
     protected final IFastLayer generationLayer;
 
+    protected final boolean resetIntCacheAfterGet;
+
     public FastThreadSafeBiomeProvider(@NonNull BiomeProvider provider) {
         IFastLayer[] fastLayers = FastLayerProvider.INSTANCE.makeFast(((ATBiomeProvider1_12) provider).getGenBiomes(), ((ATBiomeProvider1_12) provider).getBiomeIndexLayer());
         this.biomeLayer = fastLayers[1];
         this.generationLayer = fastLayers[0];
+
+        this.resetIntCacheAfterGet = this.biomeLayer.shouldResetIntCacheAfterGet() || this.generationLayer.shouldResetIntCacheAfterGet();
     }
 
     @Override
@@ -60,6 +64,10 @@ public class FastThreadSafeBiomeProvider implements IBiomeProvider {
             this.generateBiomesAtHalfResolution(alloc, x >> GTH_SHIFT, z >> GTH_SHIFT, size, biomes, this.generationLayer);
         } else { //sample a "multigrid", with each sub-grid being a 1x1 grid - this is effectively the same as getGrid but with a customizable spacing between each sample point
             this.generationLayer.multiGetGrids(alloc, x >> GTH_SHIFT, z >> GTH_SHIFT, 1, 1 << (level - GTH_SHIFT), 0, size, biomes);
+        }
+
+        if (this.resetIntCacheAfterGet) {
+            IntCache.resetIntCache();
         }
     }
 
@@ -86,6 +94,10 @@ public class FastThreadSafeBiomeProvider implements IBiomeProvider {
             this.generateBiomesAndWeightedHeightsVariations_highres(x, z, level, size, biomes, heights, variations, weightHelper);
         } else { //biome layer isn't needed, because the samples are spaced at least 4 blocks apart
             this.generateBiomesAndWeightedHeightsVariations_lowres(x, z, level, size, biomes, heights, variations, weightHelper);
+        }
+
+        if (this.resetIntCacheAfterGet) {
+            IntCache.resetIntCache();
         }
     }
 
