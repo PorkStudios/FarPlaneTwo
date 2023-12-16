@@ -19,7 +19,6 @@
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.test.compat.vanilla.biome;
 
-import jdk.internal.org.objectweb.asm.Type;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -66,6 +65,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
