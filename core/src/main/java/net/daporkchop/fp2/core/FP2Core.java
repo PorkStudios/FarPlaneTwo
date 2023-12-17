@@ -36,8 +36,6 @@ import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.event.AbstractChangedEvent;
 import net.daporkchop.fp2.core.event.EventBus;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.core.mode.heightmap.HeightmapConstants;
-import net.daporkchop.fp2.core.mode.heightmap.HeightmapRenderMode;
 import net.daporkchop.fp2.core.engine.VoxelConstants;
 import net.daporkchop.fp2.core.engine.VoxelRenderMode;
 import net.daporkchop.fp2.core.network.RegisterPacketsEvent;
@@ -180,8 +178,7 @@ public abstract class FP2Core implements FP2 {
     @FEventHandler
     protected void registerDefaultRenderModes(FRegisterEvent<IFarRenderMode<?, ?>> event) {
         event.registry()
-                .addLast(VoxelConstants.NAME, new VoxelRenderMode())
-                .addLast(HeightmapConstants.NAME, new HeightmapRenderMode());
+                .addLast(VoxelConstants.NAME, new VoxelRenderMode());
     }
 
     @FEventHandler

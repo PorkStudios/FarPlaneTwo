@@ -20,9 +20,6 @@
 package net.daporkchop.fp2.core.test.util.datastructure;
 
 import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.core.mode.heightmap.HeightmapConstants;
-import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
-import net.daporkchop.fp2.core.mode.heightmap.util.HeightmapPosArrayList;
 import net.daporkchop.fp2.core.engine.VoxelConstants;
 import net.daporkchop.fp2.core.engine.VoxelPos;
 import net.daporkchop.fp2.core.engine.util.VoxelPosArrayList;
@@ -42,17 +39,12 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public class TestIFarPosList {
+public class TestVoxelPosList {
     protected static <POS extends IFarPos> void ensureEqual(List<POS> reference, List<POS> test) {
         checkState(reference.size() == test.size());
 
         checkState(reference.equals(test));
         checkState(test.equals(reference));
-    }
-
-    @Test
-    public void testHeightmapPosArrayList() {
-        this.testPosList(HeightmapPosArrayList::new, r -> new HeightmapPos(r.nextInt(0, HeightmapConstants.HMAX_LODS), r.nextInt(), r.nextInt()));
     }
 
     @Test

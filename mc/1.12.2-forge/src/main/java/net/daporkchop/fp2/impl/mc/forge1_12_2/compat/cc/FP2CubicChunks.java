@@ -31,10 +31,6 @@ import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarLevel;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
-import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
-import net.daporkchop.fp2.core.mode.heightmap.HeightmapTile;
-import net.daporkchop.fp2.core.mode.heightmap.server.HeightmapTileProvider;
-import net.daporkchop.fp2.core.mode.heightmap.server.gen.exact.CCHeightmapGenerator;
 import net.daporkchop.fp2.core.engine.VoxelPos;
 import net.daporkchop.fp2.core.engine.VoxelTile;
 import net.daporkchop.fp2.core.engine.server.VoxelTileProvider;
@@ -138,14 +134,6 @@ public class FP2CubicChunks {
 
         //exact generators
 
-        @FEventHandler(name = "cubicchunks_heightmap_generator_exact",
-                constrain = @Constrain(before = "vanilla_heightmap_generator_exact"))
-        public Optional<IFarGeneratorExact<HeightmapPos, HeightmapTile>> createHeightmapGeneratorExact(IFarGeneratorExact.CreationEvent<HeightmapPos, HeightmapTile> event) {
-            return this.isCubicWorld(event.world())
-                    ? Optional.of(new CCHeightmapGenerator(event.world(), event.provider()))
-                    : Optional.empty();
-        }
-
         @FEventHandler(name = "cubicchunks_voxel_generator_exact",
                 constrain = @Constrain(before = "vanilla_voxel_generator_exact"))
         public Optional<IFarGeneratorExact<VoxelPos, VoxelTile>> createVoxelGeneratorExact(IFarGeneratorExact.CreationEvent<VoxelPos, VoxelTile> event) {
@@ -155,14 +143,6 @@ public class FP2CubicChunks {
         }
 
         //tile providers
-
-        @FEventHandler(name = "cubicchunks_heightmap_tileprovider",
-                constrain = @Constrain(before = "vanilla_heightmap_tileprovider"))
-        public Optional<IFarTileProvider<HeightmapPos, HeightmapTile>> createHeightmapTileProvider(IFarTileProvider.CreationEvent<HeightmapPos, HeightmapTile> event) {
-            return this.isCubicWorld(event.world())
-                    ? Optional.of(new HeightmapTileProvider.CubicChunks(event.world(), event.mode()))
-                    : Optional.empty();
-        }
 
         @FEventHandler(name = "cubicchunks_voxel_tileprovider",
                 constrain = @Constrain(before = "vanilla_voxel_tileprovider"))

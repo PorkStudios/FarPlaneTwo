@@ -25,11 +25,6 @@ import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.core.client.render.TextureUVs;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
-import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
-import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
-import net.daporkchop.fp2.core.mode.heightmap.HeightmapTile;
-import net.daporkchop.fp2.core.mode.heightmap.server.HeightmapTileProvider;
-import net.daporkchop.fp2.core.mode.heightmap.server.gen.exact.VanillaHeightmapGenerator;
 import net.daporkchop.fp2.core.engine.VoxelPos;
 import net.daporkchop.fp2.core.engine.VoxelTile;
 import net.daporkchop.fp2.core.engine.server.VoxelTileProvider;
@@ -40,7 +35,6 @@ import net.daporkchop.fp2.core.server.event.GetTerrainGeneratorEvent;
 import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.exactfblocklevel.VanillaExactFBlockLevelHolder1_12;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.generator.heightmap.FlatHeightmapGenerator;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.server.world.level.FLevelServer1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.Util1_12_2;
 import net.minecraft.block.state.IBlockState;
@@ -98,11 +92,6 @@ public class FP2Vanilla {
 
     //exact generators
 
-    @FEventHandler(name = "vanilla_heightmap_generator_exact")
-    public IFarGeneratorExact<HeightmapPos, HeightmapTile> createHeightmapGeneratorExact(IFarGeneratorExact.CreationEvent<HeightmapPos, HeightmapTile> event) {
-        return new VanillaHeightmapGenerator(event.world(), event.provider());
-    }
-
     @FEventHandler(name = "vanilla_voxel_generator_exact")
     public IFarGeneratorExact<VoxelPos, VoxelTile> createVoxelGeneratorExact(IFarGeneratorExact.CreationEvent<VoxelPos, VoxelTile> event) {
         return new VanillaVoxelGenerator(event.world(), event.provider());
@@ -114,19 +103,7 @@ public class FP2Vanilla {
         return world.terrainGeneratorInfo().implGenerator() instanceof ChunkGeneratorFlat;
     }
 
-    @FEventHandler(name = "vanilla_heightmap_generator_rough_superflat")
-    public Optional<IFarGeneratorRough<HeightmapPos, HeightmapTile>> createHeightmapGeneratorRoughSuperflat(IFarGeneratorRough.CreationEvent<HeightmapPos, HeightmapTile> event) {
-        return this.isSuperflatWorld(event.world())
-                ? Optional.of(new FlatHeightmapGenerator(event.world(), event.provider()))
-                : Optional.empty();
-    }
-
     //tile providers
-
-    @FEventHandler(name = "vanilla_heightmap_tileprovider")
-    public IFarTileProvider<HeightmapPos, HeightmapTile> createHeightmapTileProvider(IFarTileProvider.CreationEvent<HeightmapPos, HeightmapTile> event) {
-        return new HeightmapTileProvider.Vanilla(event.world(), event.mode());
-    }
 
     @FEventHandler(name = "vanilla_voxel_tileprovider")
     public IFarTileProvider<VoxelPos, VoxelTile> createVoxelTileProvider(IFarTileProvider.CreationEvent<VoxelPos, VoxelTile> event) {

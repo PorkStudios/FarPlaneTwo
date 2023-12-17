@@ -27,12 +27,8 @@ import lombok.NoArgsConstructor;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
-import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
-import net.daporkchop.fp2.core.mode.heightmap.HeightmapTile;
 import net.daporkchop.fp2.core.engine.VoxelPos;
 import net.daporkchop.fp2.core.engine.VoxelTile;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cwg.generator.heightmap.CWGFlatHeightmapGenerator;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cwg.generator.heightmap.CWGHeightmapGenerator;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cwg.generator.voxel.CWGVoxelGenerator;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.Mod;
@@ -72,13 +68,6 @@ public class FP2CubicWorldGen {
             return cubicWorld.isCubicWorld() && cubicWorld.getCubeGenerator() instanceof CustomTerrainGenerator;
         }
 
-        @FEventHandler(name = "cubicworldgen_heightmap_generator_rough_customcubic")
-        public Optional<IFarGeneratorRough<HeightmapPos, HeightmapTile>> createHeightmapGeneratorRoughCustomCubic(IFarGeneratorRough.CreationEvent<HeightmapPos, HeightmapTile> event) {
-            return this.isCustomCubicWorld(event.world())
-                    ? Optional.of(new CWGHeightmapGenerator(event.world(), event.provider()))
-                    : Optional.empty();
-        }
-
         @FEventHandler(name = "cubicworldgen_voxel_generator_rough_customcubic")
         public Optional<IFarGeneratorRough<VoxelPos, VoxelTile>> createVoxelGeneratorRoughCustomCubic(IFarGeneratorRough.CreationEvent<VoxelPos, VoxelTile> event) {
             return this.isCustomCubicWorld(event.world())
@@ -88,16 +77,9 @@ public class FP2CubicWorldGen {
 
         //FlatCubic rough generators
 
-        protected boolean isFlatCubicWorld(IFarLevelServer world) {
+        private boolean isFlatCubicWorld(IFarLevelServer world) {
             ICubicWorldServer cubicWorld = (ICubicWorldServer) world.implLevel();
             return cubicWorld.isCubicWorld() && cubicWorld.getCubeGenerator() instanceof FlatTerrainProcessor;
-        }
-
-        @FEventHandler(name = "cubicworldgen_heightmap_generator_rough_flatcubic")
-        public Optional<IFarGeneratorRough<HeightmapPos, HeightmapTile>> createHeightmapGeneratorRoughFlatCubic(IFarGeneratorRough.CreationEvent<HeightmapPos, HeightmapTile> event) {
-            return this.isFlatCubicWorld(event.world())
-                    ? Optional.of(new CWGFlatHeightmapGenerator(event.world(), event.provider()))
-                    : Optional.empty();
         }
     }
 }
