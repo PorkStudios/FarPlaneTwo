@@ -27,6 +27,8 @@ import net.minecraft.world.gen.layer.IntCache;
 
 /**
  * Implementation of {@link IFastLayer} which automatically resets the {@link IntCache} after every access.
+ * <p>
+ * This must only be used at the very top of the layer tree, using this as the child of another layer could yield unexpected or incorrect results.
  *
  * @author DaPorkchop_
  */

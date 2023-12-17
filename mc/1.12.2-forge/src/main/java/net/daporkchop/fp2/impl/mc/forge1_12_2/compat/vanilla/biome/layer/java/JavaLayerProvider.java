@@ -23,6 +23,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.BiomeHelper;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.FastLayerProvider;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.IFastLayer;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.compat.AutoIntCacheResettingFastLayer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.compat.ICompatLayer;
 import net.minecraft.world.gen.layer.GenLayer;
 
@@ -84,7 +85,10 @@ public class JavaLayerProvider implements FastLayerProvider {
             fastLayer.init(fastChildren);
         }
 
-        return Arrays.stream(inputs).map(fastLayers::get).toArray(IFastLayer[]::new);
+        return Arrays.stream(inputs)
+                .map(fastLayers::get)
+                .map(layer -> layer.shouldResetIntCacheAfterGet() ? new AutoIntCacheResettingFastLayer(layer) : layer)
+                .toArray(IFastLayer[]::new);
     }
 
     @Override

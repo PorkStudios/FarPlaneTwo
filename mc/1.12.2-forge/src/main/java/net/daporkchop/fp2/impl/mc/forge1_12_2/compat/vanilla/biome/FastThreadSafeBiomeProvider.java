@@ -27,7 +27,6 @@ import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.IFastLa
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.weight.BiomeWeightHelper;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.minecraft.world.biome.BiomeProvider;
-import net.minecraft.world.gen.layer.IntCache;
 
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.VanillaTerrainGenConstants.*;
@@ -39,14 +38,11 @@ public class FastThreadSafeBiomeProvider implements IBiomeProvider {
     protected final IFastLayer biomeLayer;
     protected final IFastLayer generationLayer;
 
-    protected final boolean resetIntCacheAfterGet;
-
     public FastThreadSafeBiomeProvider(@NonNull BiomeProvider provider) {
         IFastLayer[] fastLayers = FastLayerProvider.INSTANCE.makeFast(((ATBiomeProvider1_12) provider).getGenBiomes(), ((ATBiomeProvider1_12) provider).getBiomeIndexLayer());
         this.biomeLayer = fastLayers[1];
         this.generationLayer = fastLayers[0];
-
-        this.resetIntCacheAfterGet = this.biomeLayer.shouldResetIntCacheAfterGet() || this.generationLayer.shouldResetIntCacheAfterGet();
+        assert !this.biomeLayer.shouldResetIntCacheAfterGet() && !this.generationLayer.shouldResetIntCacheAfterGet();
     }
 
     @Override
@@ -64,10 +60,6 @@ public class FastThreadSafeBiomeProvider implements IBiomeProvider {
             this.generateBiomesAtHalfResolution(alloc, x >> GTH_SHIFT, z >> GTH_SHIFT, size, biomes, this.generationLayer);
         } else { //sample a "multigrid", with each sub-grid being a 1x1 grid - this is effectively the same as getGrid but with a customizable spacing between each sample point
             this.generationLayer.multiGetGrids(alloc, x >> GTH_SHIFT, z >> GTH_SHIFT, 1, 1 << (level - GTH_SHIFT), 0, size, biomes);
-        }
-
-        if (this.resetIntCacheAfterGet) {
-            IntCache.resetIntCache();
         }
     }
 
@@ -94,10 +86,6 @@ public class FastThreadSafeBiomeProvider implements IBiomeProvider {
             this.generateBiomesAndWeightedHeightsVariations_highres(x, z, level, size, biomes, heights, variations, weightHelper);
         } else { //biome layer isn't needed, because the samples are spaced at least 4 blocks apart
             this.generateBiomesAndWeightedHeightsVariations_lowres(x, z, level, size, biomes, heights, variations, weightHelper);
-        }
-
-        if (this.resetIntCacheAfterGet) {
-            IntCache.resetIntCache();
         }
     }
 
