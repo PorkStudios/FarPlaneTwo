@@ -22,10 +22,10 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cwg.generator.voxel;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.world.level.BlockLevelConstants;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
-import net.daporkchop.fp2.core.mode.voxel.VoxelData;
-import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
-import net.daporkchop.fp2.core.mode.voxel.VoxelTile;
-import net.daporkchop.fp2.core.mode.voxel.server.gen.rough.AbstractRoughVoxelGenerator;
+import net.daporkchop.fp2.core.engine.VoxelData;
+import net.daporkchop.fp2.core.engine.VoxelPos;
+import net.daporkchop.fp2.core.engine.VoxelTile;
+import net.daporkchop.fp2.core.engine.server.gen.rough.AbstractRoughVoxelGenerator;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cwg.CWGContext;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
@@ -37,7 +37,7 @@ import net.minecraft.world.WorldServer;
 import java.util.Arrays;
 
 import static java.lang.Math.*;
-import static net.daporkchop.fp2.core.mode.voxel.VoxelConstants.*;
+import static net.daporkchop.fp2.core.engine.VoxelConstants.*;
 
 /**
  * @author DaPorkchop_
