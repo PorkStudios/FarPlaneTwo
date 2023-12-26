@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,14 +15,13 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.api.server.gen;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
+import net.daporkchop.fp2.core.engine.Tile;
+import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.mode.api.server.IFarServerResourceCreationEvent;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 
@@ -39,7 +38,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  *
  * @author DaPorkchop_
  */
-public interface IFarGeneratorRough<POS extends IFarPos, T extends IFarTile> extends IFarGenerator<POS, T> {
+public interface IFarGeneratorRough extends IFarGenerator {
     /**
      * Gets an {@link Optional} {@link Collection} containing all the tile positions which may be generated at the same time as the tile at the given position to potentially achieve better performance.
      * <p>
@@ -48,7 +47,7 @@ public interface IFarGeneratorRough<POS extends IFarPos, T extends IFarTile> ext
      * @param pos the position of the tile to generate
      * @return an {@link Optional} {@link Collection} containing all the tile positions which may be generated at the same time
      */
-    default Optional<? extends Collection<POS>> batchGenerationGroup(@NonNull POS pos) {
+    default Optional<? extends Collection<TilePos>> batchGenerationGroup(@NonNull TilePos pos) {
         return Optional.empty(); //don't do batch generation by default
     }
 
@@ -60,10 +59,10 @@ public interface IFarGeneratorRough<POS extends IFarPos, T extends IFarTile> ext
      * @param positions the position of the tile to generate
      * @return an {@link Optional} {@link Collection} containing all the tile positions which may be generated at the same time
      */
-    default Optional<? extends Collection<POS>> batchGenerationGroup(@NonNull Collection<POS> positions) {
-        Set<POS> set = null;
-        for (POS pos : positions) {
-            Optional<? extends Collection<POS>> optionalBatchGroup = this.batchGenerationGroup(pos);
+    default Optional<? extends Collection<TilePos>> batchGenerationGroup(@NonNull Collection<TilePos> positions) {
+        Set<TilePos> set = null;
+        for (TilePos pos : positions) {
+            Optional<? extends Collection<TilePos>> optionalBatchGroup = this.batchGenerationGroup(pos);
             if (optionalBatchGroup.isPresent()) {
                 if (set == null) { //create set if it doesn't exist
                     //clone the input collection to ensure that all of the original input positions will be included
@@ -86,7 +85,7 @@ public interface IFarGeneratorRough<POS extends IFarPos, T extends IFarTile> ext
      * @param pos the position to check
      * @return whether or not rough generation is possible
      */
-    boolean canGenerate(@NonNull POS pos);
+    boolean canGenerate(@NonNull TilePos pos);
 
     /**
      * Generates a rough estimate of the terrain in the given tile.
@@ -94,7 +93,7 @@ public interface IFarGeneratorRough<POS extends IFarPos, T extends IFarTile> ext
      * @param pos  the position of the tile to generate
      * @param tile the tile to generate
      */
-    void generate(@NonNull POS pos, @NonNull T tile);
+    void generate(@NonNull TilePos pos, @NonNull Tile tile);
 
     /**
      * Generates a rough estimate of the terrain in the given tiles.
@@ -102,7 +101,7 @@ public interface IFarGeneratorRough<POS extends IFarPos, T extends IFarTile> ext
      * @param positions the positions of the tiles to generate
      * @param tiles     the tiles to generate
      */
-    default void generate(@NonNull POS[] positions, @NonNull T[] tiles) {
+    default void generate(@NonNull TilePos[] positions, @NonNull Tile[] tiles) {
         checkArg(positions.length == tiles.length, "positions (%d) and tiles (%d) must have same number of elements!", positions.length, tiles.length);
 
         for (int i = 0; i < positions.length; i++) {
@@ -115,10 +114,10 @@ public interface IFarGeneratorRough<POS extends IFarPos, T extends IFarTile> ext
      *
      * @author DaPorkchop_
      */
-    interface CreationEvent<POS extends IFarPos, T extends IFarTile> extends IFarServerResourceCreationEvent<POS, T, IFarGeneratorRough<POS, T>> {
+    interface CreationEvent extends IFarServerResourceCreationEvent<IFarGeneratorRough> {
         /**
          * @return the {@link IFarTileProvider} which the {@link IFarGeneratorRough} will be created for
          */
-        IFarTileProvider<POS, T> provider();
+        IFarTileProvider provider();
     }
 }

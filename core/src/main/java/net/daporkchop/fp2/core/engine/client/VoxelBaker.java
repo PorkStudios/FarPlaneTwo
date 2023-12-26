@@ -48,7 +48,7 @@ import static net.daporkchop.fp2.core.engine.EngineConstants.*;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public class VoxelBaker implements IRenderBaker<TilePos, Tile, IndexedBakeOutput<VoxelGlobalAttributes, VoxelLocalAttributes>> {
+public class VoxelBaker implements IRenderBaker<IndexedBakeOutput<VoxelGlobalAttributes, VoxelLocalAttributes>> {
     protected static int vertexMapIndex(int dx, int dy, int dz, int i, int edge) {
         int j = CONNECTION_INDICES[i];
         int ddx = dx + ((j >> 2) & 1);

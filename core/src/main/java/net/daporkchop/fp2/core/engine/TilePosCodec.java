@@ -32,7 +32,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public final class TilePosCodec implements IFarPosCodec<TilePos> {
+public final class TilePosCodec implements IFarPosCodec {
     public static final TilePosCodec INSTANCE = new TilePosCodec();
 
     private static final int LEVEL_OFFSET = 0;

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -39,9 +39,9 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 @Setter
 public class SPacketTileData implements IPacket {
     @NonNull
-    protected IFarRenderMode<?, ?> mode;
+    protected IFarRenderMode mode;
     @NonNull
-    protected TileSnapshot<?, ?> tile;
+    protected TileSnapshot tile;
 
     @Override
     public void read(@NonNull DataIn in) throws IOException {

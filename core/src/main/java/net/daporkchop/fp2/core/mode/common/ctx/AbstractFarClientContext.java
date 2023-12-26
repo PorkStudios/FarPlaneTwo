@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.common.ctx;
@@ -24,9 +23,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
 import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.core.mode.api.client.IFarTileCache;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
@@ -41,17 +38,17 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractFarClientContext<POS extends IFarPos, T extends IFarTile> implements IFarClientContext<POS, T> {
-    protected final IFarRenderMode<POS, T> mode;
+public abstract class AbstractFarClientContext implements IFarClientContext {
+    protected final IFarRenderMode mode;
     protected final IFarLevelClient level;
-    protected final IFarTileCache<POS, T> tileCache;
+    protected final IFarTileCache tileCache;
 
     protected FP2Config config;
     protected IFarRenderer renderer;
 
     protected boolean closed = false;
 
-    public AbstractFarClientContext(@NonNull IFarLevelClient level, @NonNull FP2Config config, @NonNull IFarRenderMode<POS, T> mode) {
+    public AbstractFarClientContext(@NonNull IFarLevelClient level, @NonNull FP2Config config, @NonNull IFarRenderMode mode) {
         this.level = level;
         this.mode = mode;
         this.tileCache = this.tileCache0();
@@ -59,8 +56,8 @@ public abstract class AbstractFarClientContext<POS extends IFarPos, T extends IF
         this.notifyConfigChange(config);
     }
 
-    protected IFarTileCache<POS, T> tileCache0() {
-        return new FarTileCache<>();
+    protected IFarTileCache tileCache0() {
+        return new FarTileCache();
     }
 
     protected abstract IFarRenderer renderer0(IFarRenderer old, @NonNull FP2Config config);
@@ -97,7 +94,7 @@ public abstract class AbstractFarClientContext<POS extends IFarPos, T extends IF
         //do all cleanup on client thread
         this.level.workerManager().rootExecutor().execute(() -> {
             //try-with-resources to make sure everything gets cleaned up
-            try (IFarTileCache<POS, T> tileCache = this.tileCache;
+            try (IFarTileCache tileCache = this.tileCache;
                  IFarRenderer renderer = this.renderer) {
                 this.renderer = null;
             }

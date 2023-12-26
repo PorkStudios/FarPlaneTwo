@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -21,8 +21,8 @@ package net.daporkchop.fp2.core.mode.api.tile;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
+import net.daporkchop.fp2.core.engine.Tile;
+import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.lib.common.pool.recycler.Recycler;
 import net.daporkchop.fp2.core.util.serialization.variable.IVariableSizeRecyclingCodec;
 import net.daporkchop.lib.common.misc.refcount.RefCounted;
@@ -33,12 +33,12 @@ import net.daporkchop.lib.common.util.exception.AlreadyReleasedException;
  *
  * @author DaPorkchop_
  */
-public interface ITileSnapshot<POS extends IFarPos, T extends IFarTile> extends ITileMetadata, RefCounted {
+public interface ITileSnapshot extends ITileMetadata, RefCounted {
     @Override
     int refCnt();
 
     @Override
-    ITileSnapshot<POS, T> retain() throws AlreadyReleasedException;
+    ITileSnapshot retain() throws AlreadyReleasedException;
 
     @Override
     boolean release() throws AlreadyReleasedException;
@@ -46,15 +46,15 @@ public interface ITileSnapshot<POS extends IFarPos, T extends IFarTile> extends 
     /**
      * @return the tile's position
      */
-    POS pos();
+    TilePos pos();
 
     /**
-     * Allocates a {@link T} using the given {@link Recycler} and initializes it using the data stored in this snapshot.
+     * Allocates a {@link Tile} using the given {@link Recycler} and initializes it using the data stored in this snapshot.
      *
-     * @param recycler a {@link Recycler} to use for allocating instances of {@link T}
-     * @return the loaded {@link T}, or {@code null} if this snapshot is empty
+     * @param recycler a {@link Recycler} to use for allocating instances of {@link Tile}
+     * @return the loaded {@link Tile}, or {@code null} if this snapshot is empty
      */
-    T loadTile(@NonNull Recycler<T> recycler, @NonNull IVariableSizeRecyclingCodec<T> codec);
+    Tile loadTile(@NonNull Recycler<Tile> recycler, @NonNull IVariableSizeRecyclingCodec<Tile> codec);
 
     /**
      * @return whether or not this snapshot's tile data is empty
@@ -64,12 +64,12 @@ public interface ITileSnapshot<POS extends IFarPos, T extends IFarTile> extends 
     /**
      * @return this snapshot, with its tile data stored compressed in-memory
      */
-    ITileSnapshot<POS, T> compressed();
+    ITileSnapshot compressed();
 
     /**
      * @return this snapshot, with its tile data stored in-memory without compression
      */
-    ITileSnapshot<POS, T> uncompressed();
+    ITileSnapshot uncompressed();
 
     DebugStats.TileSnapshot stats();
 }

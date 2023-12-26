@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -23,8 +23,8 @@ import lombok.NonNull;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.common.util.DirectBufferHackery;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
+import net.daporkchop.fp2.core.engine.Tile;
+import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.util.serialization.variable.IVariableSizeRecyclingCodec;
 import net.daporkchop.lib.binary.stream.DataIn;
 import net.daporkchop.lib.binary.stream.DataOut;
@@ -39,22 +39,22 @@ import java.io.IOException;
 /**
  * @author DaPorkchop_
  */
-public class TileSnapshot<POS extends IFarPos, T extends IFarTile> extends AbstractTileSnapshot<POS, T> {
-    public static <POS extends IFarPos, T extends IFarTile> TileSnapshot<POS, T> readFromNetwork(@NonNull POS pos, @NonNull DataIn in) throws IOException {
-        return new TileSnapshot<>(pos, in);
+public class TileSnapshot extends AbstractTileSnapshot {
+    public static TileSnapshot readFromNetwork(@NonNull TilePos pos, @NonNull DataIn in) throws IOException {
+        return new TileSnapshot(pos, in);
     }
 
-    public static <POS extends IFarPos, T extends IFarTile> TileSnapshot<POS, T> of(@NonNull POS pos, long timestamp) {
-        return new TileSnapshot<>(pos, timestamp);
+    public static TileSnapshot of(@NonNull TilePos pos, long timestamp) {
+        return new TileSnapshot(pos, timestamp);
     }
 
-    public static <POS extends IFarPos, T extends IFarTile> TileSnapshot<POS, T> of(@NonNull POS pos, long timestamp, @BorrowOwnership long dataAddr, int dataLength) {
+    public static TileSnapshot of(@NonNull TilePos pos, long timestamp, @BorrowOwnership long dataAddr, int dataLength) {
         return dataLength < 0
-                ? new TileSnapshot<>(pos, timestamp) //negative length means there's no data
-                : new TileSnapshot<>(pos, timestamp, dataAddr, dataLength);
+                ? new TileSnapshot(pos, timestamp) //negative length means there's no data
+                : new TileSnapshot(pos, timestamp, dataAddr, dataLength);
     }
 
-    protected TileSnapshot(@NonNull POS pos, @NonNull DataIn in) throws IOException {
+    protected TileSnapshot(@NonNull TilePos pos, @NonNull DataIn in) throws IOException {
         super(pos, in.readVarLongZigZag());
 
         int length = in.readVarIntZigZag();
@@ -73,13 +73,13 @@ public class TileSnapshot<POS extends IFarPos, T extends IFarTile> extends Abstr
         }
     }
 
-    protected TileSnapshot(@NonNull POS pos, long timestamp) {
+    protected TileSnapshot(@NonNull TilePos pos, long timestamp) {
         super(pos, timestamp);
 
         this.data = 0L; //there is no data
     }
 
-    protected TileSnapshot(@NonNull POS pos, long timestamp, @BorrowOwnership long dataAddr, @NotNegative int dataLength) {
+    protected TileSnapshot(@NonNull TilePos pos, long timestamp, @BorrowOwnership long dataAddr, @NotNegative int dataLength) {
         super(pos, timestamp);
 
         if (dataLength == 0) { //special case for zero-length buffer which requires zero allocations
@@ -114,11 +114,11 @@ public class TileSnapshot<POS extends IFarPos, T extends IFarTile> extends Abstr
 
     @Override
     @SneakyThrows(IOException.class)
-    public T loadTile(@NonNull Recycler<T> recycler, @NonNull IVariableSizeRecyclingCodec<T> codec) {
+    public Tile loadTile(@NonNull Recycler<Tile> recycler, @NonNull IVariableSizeRecyclingCodec<Tile> codec) {
         this.ensureNotReleased();
 
         if (this.data != 0L) {
-            T tile = recycler.allocate();
+            Tile tile = recycler.allocate();
 
             int length = _data_length(this.data);
             try (DataIn in = DataIn.wrap(DirectBufferHackery.wrapByte(_data_payload(this.data), length))) {
@@ -138,14 +138,14 @@ public class TileSnapshot<POS extends IFarPos, T extends IFarTile> extends Abstr
     }
 
     @Override
-    public ITileSnapshot<POS, T> compressed() {
+    public ITileSnapshot compressed() {
         this.ensureNotReleased();
 
-        return new CompressedTileSnapshot<>(this);
+        return new CompressedTileSnapshot(this);
     }
 
     @Override
-    public ITileSnapshot<POS, T> uncompressed() {
+    public ITileSnapshot uncompressed() {
         this.ensureNotReleased();
 
         return this; //we're already uncompressed!

@@ -32,9 +32,9 @@ import net.daporkchop.fp2.api.storage.external.FStorageItemFactory;
 import net.daporkchop.fp2.api.storage.internal.FStorageColumn;
 import net.daporkchop.fp2.api.storage.internal.FStorageColumnHintsInternal;
 import net.daporkchop.fp2.api.storage.internal.FStorageInternal;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
+import net.daporkchop.fp2.core.engine.Tile;
+import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.mode.api.IFarPosCodec;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.server.storage.FTileStorage;
 import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.core.mode.common.server.AbstractFarTileProvider;
@@ -68,7 +68,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  *
  * @author DaPorkchop_
  */
-public class DefaultTileStorage<POS extends IFarPos, T extends IFarTile> implements FTileStorage<POS, T> {
+public class DefaultTileStorage implements FTileStorage {
     protected static final String COLUMN_NAME_TIMESTAMP = "timestamp";
     protected static final String COLUMN_NAME_DIRTY_TIMESTAMP = "dirty_timestamp";
     protected static final String COLUMN_NAME_DATA = "data";
@@ -135,7 +135,7 @@ public class DefaultTileStorage<POS extends IFarPos, T extends IFarTile> impleme
         PUnsafe.putLong(dst, PUnsafe.ARRAY_BYTE_BASE_OFFSET + index, PlatformInfo.IS_BIG_ENDIAN ? Long.reverseBytes(val) : val);
     }
 
-    public static <POS extends IFarPos, T extends IFarTile> FStorageItemFactory<FTileStorage<POS, T>> factory(@NonNull AbstractFarTileProvider<POS, T> tileProvider) {
+    public static FStorageItemFactory<FTileStorage> factory(@NonNull AbstractFarTileProvider tileProvider) {
         //build the token for the current tile storage
         byte[] currentToken;
         {
@@ -155,7 +155,7 @@ public class DefaultTileStorage<POS extends IFarPos, T extends IFarTile> impleme
             }
         }
 
-        return new FStorageItemFactory<FTileStorage<POS, T>>() {
+        return new FStorageItemFactory<FTileStorage>() {
             @Override
             public ConfigurationResult configure(@NonNull ConfigurationCallback callback) {
                 int expectedPositionSize = toIntExact(tileProvider.mode().posCodec().size());
@@ -190,15 +190,15 @@ public class DefaultTileStorage<POS extends IFarPos, T extends IFarTile> impleme
             }
 
             @Override
-            public FTileStorage<POS, T> create(@NonNull FStorageInternal storageInternal) {
-                return new DefaultTileStorage<>(tileProvider, storageInternal);
+            public FTileStorage create(@NonNull FStorageInternal storageInternal) {
+                return new DefaultTileStorage(tileProvider, storageInternal);
             }
         };
     }
 
-    protected final AbstractFarTileProvider<POS, T> tileProvider;
-    protected final IFarPosCodec<POS> posCodec;
-    protected final IVariableSizeRecyclingCodec<T> tileCodec;
+    protected final AbstractFarTileProvider tileProvider;
+    protected final IFarPosCodec posCodec;
+    protected final IVariableSizeRecyclingCodec<Tile> tileCodec;
 
     protected final FStorageInternal storageInternal;
 
@@ -212,14 +212,14 @@ public class DefaultTileStorage<POS extends IFarPos, T extends IFarTile> impleme
     //immutable two-element list containing the following: [this.columnTimestamp, this.columnDirtyTimestamp]
     protected final List<FStorageColumn> listColumns_Timestamp_DirtyTimestamp;
 
-    protected final Set<Listener<POS, T>> listeners = new CopyOnWriteArraySet<>();
+    protected final Set<Listener> listeners = new CopyOnWriteArraySet<>();
 
-    protected final LoadingCache<POS, ITileHandle<POS, T>> handleCache = CacheBuilder.newBuilder()
+    protected final LoadingCache<TilePos, ITileHandle> handleCache = CacheBuilder.newBuilder()
             .concurrencyLevel(fp2().globalConfig().performance().terrainThreads())
             .weakValues()
-            .build(CacheLoader.from(pos -> new DefaultTileHandle<>(pos, this)));
+            .build(CacheLoader.from(pos -> new DefaultTileHandle(pos, this)));
 
-    protected DefaultTileStorage(@NonNull AbstractFarTileProvider<POS, T> tileProvider, @NonNull FStorageInternal storageInternal) {
+    protected DefaultTileStorage(@NonNull AbstractFarTileProvider tileProvider, @NonNull FStorageInternal storageInternal) {
         this.tileProvider = tileProvider;
         this.posCodec = tileProvider.mode().posCodec();
         this.tileCodec = tileProvider.mode().tileCodec();
@@ -241,7 +241,7 @@ public class DefaultTileStorage<POS extends IFarPos, T extends IFarTile> impleme
     }
 
     @Override
-    public ITileHandle<POS, T> handleFor(@NonNull POS pos) {
+    public ITileHandle handleFor(@NonNull TilePos pos) {
         return this.handleCache.getUnchecked(pos);
     }
 
@@ -584,12 +584,12 @@ public class DefaultTileStorage<POS extends IFarPos, T extends IFarTile> impleme
     }
 
     @Override
-    public void addListener(@NonNull Listener<POS, T> listener) {
+    public void addListener(@NonNull Listener listener) {
         checkState(this.listeners.add(listener), "listener %s already added?!?", listener);
     }
 
     @Override
-    public void removeListener(@NonNull Listener<POS, T> listener) {
+    public void removeListener(@NonNull Listener listener) {
         checkState(this.listeners.remove(listener), "listener %s not present?!?", listener);
     }
 }

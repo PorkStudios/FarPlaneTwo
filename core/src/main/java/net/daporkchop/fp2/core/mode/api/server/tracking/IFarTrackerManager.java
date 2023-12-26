@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -20,8 +20,6 @@
 package net.daporkchop.fp2.core.mode.api.server.tracking;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
@@ -31,7 +29,7 @@ import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
  *
  * @author DaPorkchop_
  */
-public interface IFarTrackerManager<POS extends IFarPos, T extends IFarTile> extends AutoCloseable {
+public interface IFarTrackerManager extends AutoCloseable {
     /**
      * Begins tracking tiles for the given {@link IFarServerContext}.
      *
@@ -40,7 +38,7 @@ public interface IFarTrackerManager<POS extends IFarPos, T extends IFarTile> ext
      * @throws IllegalArgumentException if the given {@link IFarServerContext} is already being tracked
      */
     @CalledFromServerThread
-    IFarTracker<POS, T> beginTracking(@NonNull IFarServerContext<POS, T> context);
+    IFarTracker beginTracking(@NonNull IFarServerContext context);
 
     @CalledFromServerThread
     void dropAllTiles();

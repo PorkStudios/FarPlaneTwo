@@ -129,9 +129,9 @@ public class FP2Debug {
                 list.add("");
                 list.add("§lFarPlaneTwo (Client):");
 
-                IFarClientContext<?, ?> context = player.activeContext();
+                IFarClientContext context = player.activeContext();
                 if (context != null) {
-                    IFarTileCache<?, ?> tileCache = context.tileCache();
+                    IFarTileCache tileCache = context.tileCache();
                     if (tileCache != null) {
                         DebugStats.TileCache stats = tileCache.stats();
                         list.add("TileCache: " + numberFormat.format(stats.tileCountWithData()) + '/' + numberFormat.format(stats.tileCount())

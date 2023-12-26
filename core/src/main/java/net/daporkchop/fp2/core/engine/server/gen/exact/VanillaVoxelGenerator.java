@@ -21,15 +21,13 @@ package net.daporkchop.fp2.core.engine.server.gen.exact;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
-import net.daporkchop.fp2.core.engine.TilePos;
-import net.daporkchop.fp2.core.engine.Tile;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 
 /**
  * @author DaPorkchop_
  */
 public class VanillaVoxelGenerator extends AbstractExactVoxelGenerator {
-    public VanillaVoxelGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<TilePos, Tile> provider) {
+    public VanillaVoxelGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider provider) {
         super(world, provider);
     }
 }

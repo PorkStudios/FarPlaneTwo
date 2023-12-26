@@ -46,8 +46,8 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator implements IFarGeneratorExact<TilePos, Tile> {
-    public AbstractExactVoxelGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<TilePos, Tile> provider) {
+public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator implements IFarGeneratorExact {
+    public AbstractExactVoxelGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider provider) {
         super(world, provider);
     }
 

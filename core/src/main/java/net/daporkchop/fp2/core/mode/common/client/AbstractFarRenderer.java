@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -25,9 +25,7 @@ import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.client.render.LevelRenderer;
 import net.daporkchop.fp2.core.client.render.RenderInfo;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.mode.common.client.strategy.IFarRenderStrategy;
@@ -40,18 +38,18 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTile> extends AbstractReleasable implements IFarRenderer {
+public abstract class AbstractFarRenderer extends AbstractReleasable implements IFarRenderer {
     protected final LevelRenderer levelRenderer;
     protected final GL gl;
 
-    protected final IFarClientContext<POS, T> context;
-    protected final IFarRenderMode<POS, T> mode;
+    protected final IFarClientContext context;
+    protected final IFarRenderMode mode;
 
-    protected final BakeManager<POS, T> bakeManager;
+    protected final BakeManager bakeManager;
 
-    protected final IFarRenderStrategy<POS, T, ?, ?, ?> strategy;
+    protected final IFarRenderStrategy<?, ?, ?> strategy;
 
-    public AbstractFarRenderer(@NonNull IFarClientContext<POS, T> context) {
+    public AbstractFarRenderer(@NonNull IFarClientContext context) {
         this.context = context;
         this.mode = context.mode();
 
@@ -65,13 +63,13 @@ public abstract class AbstractFarRenderer<POS extends IFarPos, T extends IFarTil
     /**
      * @return the {@link IFarRenderStrategy} used by this renderer
      */
-    protected abstract IFarRenderStrategy<POS, T, ?, ?, ?> strategy0();
+    protected abstract IFarRenderStrategy<?, ?, ?> strategy0();
 
     /**
      * @return a new {@link BakeManager}
      */
-    protected BakeManager<POS, T> bakeManager0() {
-        return new BakeManager<>(this, this.context.tileCache());
+    protected BakeManager bakeManager0() {
+        return new BakeManager(this, this.context.tileCache());
     }
 
     @Override

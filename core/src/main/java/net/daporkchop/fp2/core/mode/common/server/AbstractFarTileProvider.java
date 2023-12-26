@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.common.server;
@@ -28,10 +27,9 @@ import lombok.SneakyThrows;
 import lombok.Synchronized;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.api.storage.FStorageException;
+import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.mode.api.IFarCoordLimits;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
@@ -64,28 +62,28 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFarTile> implements IFarTileProvider<POS, T> {
+public abstract class AbstractFarTileProvider implements IFarTileProvider {
     protected final IFarLevelServer world;
-    protected final IFarRenderMode<POS, T> mode;
+    protected final IFarRenderMode mode;
 
-    protected final IFarGeneratorRough<POS, T> generatorRough;
-    protected final IFarGeneratorExact<POS, T> generatorExact;
-    protected final IFarScaler<POS, T> scaler;
+    protected final IFarGeneratorRough generatorRough;
+    protected final IFarGeneratorExact generatorExact;
+    protected final IFarScaler scaler;
 
-    protected final FTileStorage<POS, T> storage;
+    protected final FTileStorage storage;
 
-    protected final IFarCoordLimits<POS> coordLimits;
+    protected final IFarCoordLimits coordLimits;
 
-    protected final IFarTrackerManager<POS, T> trackerManager;
+    protected final IFarTrackerManager trackerManager;
 
-    protected final Scheduler<PriorityTask<POS>, ITileHandle<POS, T>> scheduler; //TODO: make this global rather than per-mode and per-dimension
+    protected final Scheduler<PriorityTask, ITileHandle> scheduler; //TODO: make this global rather than per-mode and per-dimension
 
-    protected Set<POS> updatesPending = new ObjectRBTreeSet<>();
+    protected Set<TilePos> updatesPending = new ObjectRBTreeSet<>();
     protected long lastCompletedTick = -1L;
 
     protected boolean open = false;
 
-    public AbstractFarTileProvider(@NonNull IFarLevelServer world, @NonNull IFarRenderMode<POS, T> mode) {
+    public AbstractFarTileProvider(@NonNull IFarLevelServer world, @NonNull IFarRenderMode mode) {
         this.world = world;
         this.mode = mode;
 
@@ -108,7 +106,7 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
 
             //create the task scheduler
             this.scheduler = new ApproximatelyPrioritizedSharedFutureScheduler<>(
-                    scheduler -> new TileWorker<>(this, scheduler),
+                    scheduler -> new TileWorker(this, scheduler),
                     this.world.workerManager().createChildWorkerGroup()
                             .threads(fp2().globalConfig().performance().terrainThreads())
                             .threadFactory(PThreadFactories.builder().daemon().minPriority().collapsingId()
@@ -142,9 +140,9 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
     @SneakyThrows(FStorageException.class)
     public void close() {
         //try-with-resources to ensure that everything is closed
-        try (FTileStorage<POS, T> storage = this.storage;
-             Scheduler<PriorityTask<POS>, ITileHandle<POS, T>> scheduler = this.scheduler;
-             IFarTrackerManager<POS, T> trackerManager = this.trackerManager) {
+        try (FTileStorage storage = this.storage;
+             Scheduler<PriorityTask, ITileHandle> scheduler = this.scheduler;
+             IFarTrackerManager trackerManager = this.trackerManager) {
 
             if (this.open) { //the provider has been fully opened, we should unregister ourself from the event bus and flush all the queues
                 fp2().eventBus().unregister(this);
@@ -168,21 +166,21 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
         this.storage.close();*/
     }
 
-    protected abstract IFarTrackerManager<POS, T> createTracker();
+    protected abstract IFarTrackerManager createTracker();
 
-    protected abstract boolean anyVanillaTerrainExistsAt(@NonNull POS pos);
+    protected abstract boolean anyVanillaTerrainExistsAt(TilePos pos);
 
-    protected boolean anyVanillaTerrainExistsAt(@NonNull List<POS> positions) {
+    protected boolean anyVanillaTerrainExistsAt(@NonNull List<TilePos> positions) {
         return positions.stream().anyMatch(this::anyVanillaTerrainExistsAt);
     }
 
     @Override
-    public CompletableFuture<ITileHandle<POS, T>> requestLoad(@NonNull POS pos) {
+    public CompletableFuture<ITileHandle> requestLoad(TilePos pos) {
         return this.scheduler.schedule(TaskStage.LOAD.taskForPosition(pos));
     }
 
     @Override
-    public CompletableFuture<ITileHandle<POS, T>> requestUpdate(@NonNull POS pos) {
+    public CompletableFuture<ITileHandle> requestUpdate(TilePos pos) {
         return this.scheduler.schedule(TaskStage.UPDATE.taskForPosition(pos));
     }
 
@@ -192,19 +190,19 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
         return this.lastCompletedTick;
     }
 
-    public boolean canGenerateRough(@NonNull POS pos) {
+    public boolean canGenerateRough(@NonNull TilePos pos) {
         return this.generatorRough != null && this.generatorRough.canGenerate(pos);
     }
 
-    protected void scheduleForUpdate(@NonNull POS pos) {
+    protected void scheduleForUpdate(@NonNull TilePos pos) {
         this.scheduleForUpdate(ImmutableList.of(pos));
     }
 
-    protected void scheduleForUpdate(@NonNull POS... positions) {
+    protected void scheduleForUpdate(@NonNull TilePos... positions) {
         this.scheduleForUpdate(Arrays.asList(positions));
     }
 
-    protected void scheduleForUpdate(@NonNull Collection<POS> positions) {
+    protected void scheduleForUpdate(@NonNull Collection<TilePos> positions) {
         positions.forEach(pos -> checkArg(pos.level() == 0, "position must be at level 0! %s", pos));
 
         //noinspection SynchronizeOnNonFinalField
@@ -233,9 +231,9 @@ public abstract class AbstractFarTileProvider<POS extends IFarPos, T extends IFa
 
         if (!this.updatesPending.isEmpty()) {
             //iterate up through all of the scaler outputs and enqueue them all for marking as dirty
-            Collection<POS> last = this.updatesPending;
+            Collection<TilePos> last = this.updatesPending;
             for (int level = 0; level + 1 < this.mode.maxLevels(); level++) {
-                Collection<POS> next = this.scaler.uniqueOutputs(last);
+                Collection<TilePos> next = this.scaler.uniqueOutputs(last);
                 this.updatesPending.addAll(next);
                 last = next;
             }

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -22,7 +22,7 @@ package net.daporkchop.fp2.core.mode.common.client.index;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
+import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.fp2.gl.draw.list.DrawCommand;
@@ -39,7 +39,7 @@ import java.util.Optional;
  *
  * @author DaPorkchop_
  */
-public interface IRenderIndex<POS extends IFarPos, BO extends IBakeOutput, DB extends DrawBinding, DC extends DrawCommand> extends RefCounted {
+public interface IRenderIndex<BO extends IBakeOutput, DB extends DrawBinding, DC extends DrawCommand> extends RefCounted {
     /**
      * Executes multiple updates in bulk.
      * <p>
@@ -50,7 +50,7 @@ public interface IRenderIndex<POS extends IFarPos, BO extends IBakeOutput, DB ex
      * @param dataUpdates       the data updates to be applied
      * @param renderableUpdates the updates to tile renderability be applied
      */
-    void update(@NonNull Iterable<Map.Entry<POS, Optional<BO>>> dataUpdates, @NonNull Iterable<Map.Entry<POS, Boolean>> renderableUpdates);
+    void update(@NonNull Iterable<Map.Entry<TilePos, Optional<BO>>> dataUpdates, @NonNull Iterable<Map.Entry<TilePos, Boolean>> renderableUpdates);
 
     /**
      * Should be called before issuing any draw commands.
@@ -73,7 +73,7 @@ public interface IRenderIndex<POS extends IFarPos, BO extends IBakeOutput, DB ex
     int refCnt();
 
     @Override
-    IRenderIndex<POS, BO, DB, DC> retain() throws AlreadyReleasedException;
+    IRenderIndex<BO, DB, DC> retain() throws AlreadyReleasedException;
 
     @Override
     boolean release() throws AlreadyReleasedException;

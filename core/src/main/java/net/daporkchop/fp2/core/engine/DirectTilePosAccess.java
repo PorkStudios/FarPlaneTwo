@@ -44,7 +44,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public final class DirectTilePosAccess implements IFarDirectPosAccess<TilePos> {
+public final class DirectTilePosAccess implements IFarDirectPosAccess {
     public static final DirectTilePosAccess INSTANCE = new DirectTilePosAccess();
 
     /*

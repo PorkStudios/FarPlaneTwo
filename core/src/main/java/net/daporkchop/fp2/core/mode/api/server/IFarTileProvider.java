@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,16 +15,14 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.api.server;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.mode.api.IFarCoordLimits;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
@@ -39,44 +37,44 @@ import java.util.concurrent.CompletableFuture;
 /**
  * @author DaPorkchop_
  */
-public interface IFarTileProvider<POS extends IFarPos, T extends IFarTile> extends Closeable {
+public interface IFarTileProvider extends Closeable {
     IFarLevelServer world();
 
-    CompletableFuture<ITileHandle<POS, T>> requestLoad(@NonNull POS pos);
+    CompletableFuture<ITileHandle> requestLoad(@NonNull TilePos pos);
 
-    CompletableFuture<ITileHandle<POS, T>> requestUpdate(@NonNull POS pos);
+    CompletableFuture<ITileHandle> requestUpdate(@NonNull TilePos pos);
 
-    IFarCoordLimits<POS> coordLimits();
+    IFarCoordLimits coordLimits();
 
     /**
      * @return the (possibly {@code null}) {@link IFarGeneratorRough} used for rough generation of far terrain
      */
-    IFarGeneratorRough<POS, T> generatorRough();
+    IFarGeneratorRough generatorRough();
 
     /**
      * @return the {@link IFarGeneratorExact} used for block-accurate generation of far terrain
      */
-    IFarGeneratorExact<POS, T> generatorExact();
+    IFarGeneratorExact generatorExact();
 
     /**
      * @return the {@link IFarScaler} used for downscaling the far terrain tiles
      */
-    IFarScaler<POS, T> scaler();
+    IFarScaler scaler();
 
     /**
      * @return the {@link IFarTrackerManager} used by this world
      */
-    IFarTrackerManager<POS, T> trackerManager();
+    IFarTrackerManager trackerManager();
 
     /**
      * @return the {@link FTileStorage} used by this world
      */
-    FTileStorage<POS, T> storage();
+    FTileStorage storage();
 
     /**
      * @return the {@link IFarRenderMode} that this world is used by
      */
-    IFarRenderMode<POS, T> mode();
+    IFarRenderMode mode();
 
     /**
      * @return the current world timestamp
@@ -91,6 +89,6 @@ public interface IFarTileProvider<POS extends IFarPos, T extends IFarTile> exten
      *
      * @author DaPorkchop_
      */
-    interface CreationEvent<POS extends IFarPos, T extends IFarTile> extends IFarServerResourceCreationEvent<POS, T, IFarTileProvider<POS, T>> {
+    interface CreationEvent extends IFarServerResourceCreationEvent<IFarTileProvider> {
     }
 }

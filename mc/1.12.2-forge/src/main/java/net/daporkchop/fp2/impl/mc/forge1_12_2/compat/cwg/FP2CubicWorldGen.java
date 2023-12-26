@@ -27,8 +27,6 @@ import lombok.NoArgsConstructor;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
-import net.daporkchop.fp2.core.engine.TilePos;
-import net.daporkchop.fp2.core.engine.Tile;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cwg.generator.voxel.CWGVoxelGenerator;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.Mod;
@@ -69,7 +67,7 @@ public class FP2CubicWorldGen {
         }
 
         @FEventHandler(name = "cubicworldgen_voxel_generator_rough_customcubic")
-        public Optional<IFarGeneratorRough<TilePos, Tile>> createVoxelGeneratorRoughCustomCubic(IFarGeneratorRough.CreationEvent<TilePos, Tile> event) {
+        public Optional<IFarGeneratorRough> createVoxelGeneratorRoughCustomCubic(IFarGeneratorRough.CreationEvent event) {
             return this.isCustomCubicWorld(event.world())
                     ? Optional.of(new CWGVoxelGenerator(event.world(), event.provider()))
                     : Optional.empty();

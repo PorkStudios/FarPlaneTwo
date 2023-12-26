@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -25,6 +25,8 @@ import net.daporkchop.fp2.api.util.OrderedRegistry;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
 import net.daporkchop.fp2.core.config.FP2Config;
+import net.daporkchop.fp2.core.engine.Tile;
+import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.event.AbstractRegisterEvent;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarServerContext;
@@ -44,8 +46,8 @@ import java.io.IOException;
 /**
  * @author DaPorkchop_
  */
-public interface IFarRenderMode<POS extends IFarPos, T extends IFarTile> {
-    OrderedRegistry<IFarRenderMode<?, ?>> REGISTRY = new AbstractRegisterEvent<IFarRenderMode<?, ?>>() {}.fire().immutableRegistry();
+public interface IFarRenderMode {
+    OrderedRegistry<IFarRenderMode> REGISTRY = new AbstractRegisterEvent<IFarRenderMode>() {}.fire().immutableRegistry();
 
     /**
      * @return this storage version's name
@@ -73,7 +75,7 @@ public interface IFarRenderMode<POS extends IFarPos, T extends IFarTile> {
      * @param world the vanilla world
      * @return the new {@link IFarTileProvider}
      */
-    IFarTileProvider<POS, T> tileProvider(@NonNull IFarLevelServer world);
+    IFarTileProvider tileProvider(@NonNull IFarLevelServer world);
 
     /**
      * Creates a new {@link IFarGeneratorExact exact generator} for the given {@link IFarLevelServer world} and {@link IFarTileProvider tile provider}.
@@ -82,7 +84,7 @@ public interface IFarRenderMode<POS extends IFarPos, T extends IFarTile> {
      * @param provider the {@link IFarTileProvider tile provider}
      * @return the new {@link IFarGeneratorExact exact generator}
      */
-    IFarGeneratorExact<POS, T> exactGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<POS, T> provider);
+    IFarGeneratorExact exactGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider provider);
 
     /**
      * Creates a new {@link IFarGeneratorRough rough generator} for the given {@link IFarLevelServer world} and {@link IFarTileProvider tile provider}.
@@ -91,7 +93,7 @@ public interface IFarRenderMode<POS extends IFarPos, T extends IFarTile> {
      * @param provider the {@link IFarTileProvider tile provider}
      * @return the new {@link IFarGeneratorRough rough generator}, or {@code null} if none is available
      */
-    IFarGeneratorRough<POS, T> roughGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<POS, T> provider);
+    IFarGeneratorRough roughGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider provider);
 
     /**
      * Creates a new {@link IFarScaler scaler} for the given {@link IFarLevelServer world} and {@link IFarTileProvider tile provider}.
@@ -100,7 +102,7 @@ public interface IFarRenderMode<POS extends IFarPos, T extends IFarTile> {
      * @param provider the {@link IFarTileProvider tile provider}
      * @return the new {@link IFarScaler scaler}
      */
-    IFarScaler<POS, T> scaler(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<POS, T> provider);
+    IFarScaler scaler(@NonNull IFarLevelServer world, @NonNull IFarTileProvider provider);
 
     /**
      * Creates a new {@link IFarServerContext} for the given player in the given world.
@@ -110,7 +112,7 @@ public interface IFarRenderMode<POS extends IFarPos, T extends IFarTile> {
      * @param config
      * @return the new {@link IFarServerContext}
      */
-    IFarServerContext<POS, T> serverContext(@NonNull IFarPlayerServer player, @NonNull IFarLevelServer world, @NonNull FP2Config config);
+    IFarServerContext serverContext(@NonNull IFarPlayerServer player, @NonNull IFarLevelServer world, @NonNull FP2Config config);
 
     /**
      * Creates a new {@link IFarClientContext} for the given level.
@@ -119,27 +121,27 @@ public interface IFarRenderMode<POS extends IFarPos, T extends IFarTile> {
      * @param config
      * @return the new {@link IFarClientContext}
      */
-    IFarClientContext<POS, T> clientContext(@NonNull IFarLevelClient level, @NonNull FP2Config config);
+    IFarClientContext clientContext(@NonNull IFarLevelClient level, @NonNull FP2Config config);
 
     /**
      * @return a recycler for tile objects
      */
-    Recycler<T> tileRecycler();
+    Recycler<Tile> tileRecycler();
 
     /**
      * @return the {@link IFarDirectPosAccess} used by this render mode
      */
-    IFarDirectPosAccess<POS> directPosAccess();
+    IFarDirectPosAccess directPosAccess();
 
     /**
      * @return the {@link IFarPosCodec} used by this render mode to serialize tile positions for storage
      */
-    IFarPosCodec<POS> posCodec();
+    IFarPosCodec posCodec();
 
     /**
      * @return the {@link IVariableSizeRecyclingCodec} used by this render mode to serialize tiles for storage
      */
-    IVariableSizeRecyclingCodec<T> tileCodec();
+    IVariableSizeRecyclingCodec<Tile> tileCodec();
 
     /**
      * Creates a {@link IFarCoordLimits} for the given block coordinate limits as defined by the given {@link IntAxisAlignedBB}.
@@ -147,7 +149,7 @@ public interface IFarRenderMode<POS extends IFarPos, T extends IFarTile> {
      * @param blockCoordLimits the block coordinate limits
      * @return the {@link IFarCoordLimits}
      */
-    IFarCoordLimits<POS> tileCoordLimits(@NonNull IntAxisAlignedBB blockCoordLimits);
+    IFarCoordLimits tileCoordLimits(@NonNull IntAxisAlignedBB blockCoordLimits);
 
     /**
      * Reads a tile position from the given {@link ByteBuf}.
@@ -156,7 +158,7 @@ public interface IFarRenderMode<POS extends IFarPos, T extends IFarTile> {
      * @return the tile position
      */
     @Deprecated
-    POS readPos(@NonNull ByteBuf buf);
+    TilePos readPos(@NonNull ByteBuf buf);
 
     /**
      * Reads a tile position from the given {@link DataIn}.
@@ -164,7 +166,7 @@ public interface IFarRenderMode<POS extends IFarPos, T extends IFarTile> {
      * @param in the {@link DataIn} to read from
      * @return the tile position
      */
-    POS readPos(@NonNull DataIn in) throws IOException;
+    TilePos readPos(@NonNull DataIn in) throws IOException;
 
     /**
      * Reads a tile position from the given {@code byte[]}.
@@ -172,7 +174,7 @@ public interface IFarRenderMode<POS extends IFarPos, T extends IFarTile> {
      * @param arr the {@code byte[]} containing the tile position
      * @return the tile position
      */
-    POS readPos(@NonNull byte[] arr);
+    TilePos readPos(@NonNull byte[] arr);
 
     /**
      * Writes a tile position to the given {@link DataOut}.
@@ -180,7 +182,7 @@ public interface IFarRenderMode<POS extends IFarPos, T extends IFarTile> {
      * @param out the {@link DataOut} to write to
      * @param pos the tile position
      */
-    void writePos(@NonNull DataOut out, @NonNull POS pos) throws IOException;
+    void writePos(@NonNull DataOut out, @NonNull TilePos pos) throws IOException;
 
     /**
      * Writes a tile position to a {@code byte[]}.
@@ -188,15 +190,15 @@ public interface IFarRenderMode<POS extends IFarPos, T extends IFarTile> {
      * @param pos the tile position
      * @return a {@code byte[]} containing the written data
      */
-    byte[] writePos(@NonNull POS pos);
+    byte[] writePos(TilePos pos);
 
     /**
-     * @return an array of {@link POS}
+     * @return an array of {@link TilePos}
      */
-    POS[] posArray(int length);
+    TilePos[] posArray(int length);
 
     /**
-     * @return an array of {@link T}
+     * @return an array of {@link Tile}
      */
-    T[] tileArray(int length);
+    Tile[] tileArray(int length);
 }

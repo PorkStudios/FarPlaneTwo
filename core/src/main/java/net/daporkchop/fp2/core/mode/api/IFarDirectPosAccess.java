@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -21,6 +21,7 @@ package net.daporkchop.fp2.core.mode.api;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.client.IFrustum;
+import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.util.math.geometry.Volume;
 
 import java.util.Collection;
@@ -28,11 +29,11 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Provides access to an off-heap representation of a {@link IFarPos}.
+ * Provides access to an off-heap representation of a {@link TilePos}.
  *
  * @author DaPorkchop_
  */
-public interface IFarDirectPosAccess<POS extends IFarPos> extends IFarPosCodec<POS> {
+public interface IFarDirectPosAccess extends IFarPosCodec {
     /**
      * @return the number of spatial dimensions required to represent this position
      */
@@ -49,7 +50,7 @@ public interface IFarDirectPosAccess<POS extends IFarPos> extends IFarPosCodec<P
      * @param pos  the position
      * @param addr the memory address
      */
-    void store(POS pos, long addr);
+    void store(TilePos pos, long addr);
 
     /**
      * Loads the position at the give memory address onto the Java heap.
@@ -57,7 +58,7 @@ public interface IFarDirectPosAccess<POS extends IFarPos> extends IFarPosCodec<P
      * @param addr the memory address
      * @return the position
      */
-    POS load(long addr);
+    TilePos load(long addr);
 
     /**
      * Gets the position's offset along the given axis.
@@ -66,7 +67,7 @@ public interface IFarDirectPosAccess<POS extends IFarPos> extends IFarPosCodec<P
      * @param axis the axis number
      * @return the position's offset along the given axis
      */
-    int getAxisHeap(@NonNull POS pos, int axis);
+    int getAxisHeap(@NonNull TilePos pos, int axis);
 
     /**
      * Gets the position's offset along the given axis.
@@ -134,34 +135,34 @@ public interface IFarDirectPosAccess<POS extends IFarPos> extends IFarPosCodec<P
     boolean inFrustum(long addr, @NonNull IFrustum frustum);
 
     /**
-     * @return a new {@link Set} which can store positions of type {@link POS}
+     * @return a new {@link Set} which can store positions of type {@link TilePos}
      */
-    Set<POS> newPositionSet();
+    Set<TilePos> newPositionSet();
 
     /**
-     * Creates a new {@link Set} which can store positions of type {@link POS} and adds all the positions in the given {@link Collection} to it.
+     * Creates a new {@link Set} which can store positions of type {@link TilePos} and adds all the positions in the given {@link Collection} to it.
      *
      * @param src the {@link Collection} to clone
-     * @return a new {@link Set} which can store positions of type {@link POS} and contains all the positions from the given {@link Collection}
+     * @return a new {@link Set} which can store positions of type {@link TilePos} and contains all the positions from the given {@link Collection}
      */
-    Set<POS> clonePositionsAsSet(@NonNull Collection<POS> src);
+    Set<TilePos> clonePositionsAsSet(@NonNull Collection<TilePos> src);
 
     /**
-     * @return a new {@link List} which can store positions of type {@link POS}
+     * @return a new {@link List} which can store positions of type {@link TilePos}
      */
-    List<POS> newPositionList();
+    List<TilePos> newPositionList();
 
     /**
      * @param initialCapacity the initial size of the list
-     * @return a new {@link List} which can store positions of type {@link POS}
+     * @return a new {@link List} which can store positions of type {@link TilePos}
      */
-    List<POS> newPositionList(int initialCapacity);
+    List<TilePos> newPositionList(int initialCapacity);
 
     /**
-     * Creates a new {@link List} which can store positions of type {@link POS} and adds all the positions in the given {@link Collection} to it.
+     * Creates a new {@link List} which can store positions of type {@link TilePos} and adds all the positions in the given {@link Collection} to it.
      *
      * @param src the {@link Collection} to clone
-     * @return a new {@link List} which can store positions of type {@link POS} and contains all the positions from the given {@link Collection}
+     * @return a new {@link List} which can store positions of type {@link TilePos} and contains all the positions from the given {@link Collection}
      */
-    List<POS> clonePositionsAsList(@NonNull Collection<POS> src);
+    List<TilePos> clonePositionsAsList(@NonNull Collection<TilePos> src);
 }

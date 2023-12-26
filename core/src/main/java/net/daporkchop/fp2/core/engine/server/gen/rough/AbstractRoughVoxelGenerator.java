@@ -23,7 +23,6 @@ import lombok.NonNull;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.core.engine.TileData;
-import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.Tile;
 import net.daporkchop.fp2.core.engine.server.gen.AbstractVoxelGenerator;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
@@ -42,10 +41,10 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractRoughVoxelGenerator<PARAM> extends AbstractVoxelGenerator implements IFarGeneratorRough<TilePos, Tile> {
+public abstract class AbstractRoughVoxelGenerator<PARAM> extends AbstractVoxelGenerator implements IFarGeneratorRough {
     protected final Cached<double[][]> densityMapCache = Cached.threadLocal(() -> new double[2][cb(CACHE_SIZE)], ReferenceStrength.WEAK);
 
-    public AbstractRoughVoxelGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<TilePos, Tile> provider) {
+    public AbstractRoughVoxelGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider provider) {
         super(world, provider);
     }
 

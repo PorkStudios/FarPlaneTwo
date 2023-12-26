@@ -24,19 +24,17 @@ import net.daporkchop.fp2.core.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.common.server.tracking.AbstractTracker;
 import net.daporkchop.fp2.core.mode.common.server.tracking.AbstractTrackerManager;
-import net.daporkchop.fp2.core.engine.TilePos;
-import net.daporkchop.fp2.core.engine.Tile;
 
 /**
  * @author DaPorkchop_
  */
-public class VoxelTrackerManager extends AbstractTrackerManager<TilePos, Tile> {
-    public VoxelTrackerManager(@NonNull IFarTileProvider<TilePos, Tile> tileProvider) {
+public class VoxelTrackerManager extends AbstractTrackerManager {
+    public VoxelTrackerManager(@NonNull IFarTileProvider tileProvider) {
         super(tileProvider);
     }
 
     @Override
-    protected AbstractTracker<TilePos, Tile, ?> createTrackerFor(@NonNull IFarServerContext<TilePos, Tile> context) {
+    protected AbstractTracker<?> createTrackerFor(@NonNull IFarServerContext context) {
         return new VoxelTracker(this, context);
     }
 }

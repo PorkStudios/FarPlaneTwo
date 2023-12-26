@@ -45,7 +45,7 @@ import static net.daporkchop.fp2.core.engine.EngineConstants.*;
 public class CWGVoxelGenerator extends AbstractRoughVoxelGenerator<CWGContext> {
     protected final Cached<CWGContext> ctx;
 
-    public CWGVoxelGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<TilePos, Tile> provider) {
+    public CWGVoxelGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider provider) {
         super(world, provider);
 
         this.ctx = Cached.threadLocal(() -> new CWGContext(this.registry(), (WorldServer) world.implLevel(), CACHE_SIZE, 2, T_SHIFT), ReferenceStrength.WEAK);

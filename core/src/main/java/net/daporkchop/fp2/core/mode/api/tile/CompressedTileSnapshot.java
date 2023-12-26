@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -26,8 +26,7 @@ import lombok.NonNull;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.common.util.DirectBufferHackery;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
+import net.daporkchop.fp2.core.engine.Tile;
 import net.daporkchop.fp2.core.util.serialization.variable.IVariableSizeRecyclingCodec;
 import net.daporkchop.lib.binary.stream.DataIn;
 import net.daporkchop.lib.common.annotation.BorrowOwnership;
@@ -49,11 +48,11 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  *
  * @author DaPorkchop_
  */
-public class CompressedTileSnapshot<POS extends IFarPos, T extends IFarTile> extends AbstractTileSnapshot<POS, T> {
+public class CompressedTileSnapshot extends AbstractTileSnapshot {
     protected static final Cached<ZstdDeflater> ZSTD_DEF = Cached.threadLocal(() -> Zstd.PROVIDER.deflater(Zstd.PROVIDER.deflateOptions()), ReferenceStrength.WEAK);
     protected static final Cached<ZstdInflater> ZSTD_INF = Cached.threadLocal(() -> Zstd.PROVIDER.inflater(Zstd.PROVIDER.inflateOptions()), ReferenceStrength.WEAK);
 
-    protected CompressedTileSnapshot(@BorrowOwnership @NonNull TileSnapshot<POS, T> src) {
+    protected CompressedTileSnapshot(@BorrowOwnership @NonNull TileSnapshot src) {
         super(src.pos(), src.timestamp());
 
         if (src.data == 0L) { //no data
@@ -82,7 +81,7 @@ public class CompressedTileSnapshot<POS extends IFarPos, T extends IFarTile> ext
 
     @Override
     @SneakyThrows(IOException.class)
-    public T loadTile(@NonNull Recycler<T> recycler, @NonNull IVariableSizeRecyclingCodec<T> codec) {
+    public Tile loadTile(@NonNull Recycler<Tile> recycler, @NonNull IVariableSizeRecyclingCodec<Tile> codec) {
         this.ensureNotReleased();
 
         if (this.data != 0L) {
@@ -94,7 +93,7 @@ public class CompressedTileSnapshot<POS extends IFarPos, T extends IFarTile> ext
                 checkState(ZSTD_INF.get().decompress(compressed, uncompressed));
 
                 //initialize tile from decompressed data
-                T tile = recycler.allocate();
+                Tile tile = recycler.allocate();
                 try (DataIn in = DataIn.wrapView(uncompressed)) {
                     codec.load(tile, in);
                 }
@@ -116,14 +115,14 @@ public class CompressedTileSnapshot<POS extends IFarPos, T extends IFarTile> ext
     }
 
     @Override
-    public ITileSnapshot<POS, T> compressed() {
+    public ITileSnapshot compressed() {
         this.ensureNotReleased();
 
         return this; //we're already compressed!
     }
 
     @Override
-    public ITileSnapshot<POS, T> uncompressed() {
+    public ITileSnapshot uncompressed() {
         this.ensureNotReleased();
 
         if (this.data == 0L) { //this tile is empty!

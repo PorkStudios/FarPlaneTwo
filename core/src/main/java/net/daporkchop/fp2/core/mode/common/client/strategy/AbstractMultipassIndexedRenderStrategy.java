@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,14 +15,11 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.common.client.strategy;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.common.client.AbstractFarRenderer;
 import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutputStorage;
 import net.daporkchop.fp2.core.mode.common.client.bake.indexed.IndexedBakeOutput;
@@ -46,8 +43,8 @@ import static net.daporkchop.fp2.core.mode.common.client.RenderConstants.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractMultipassIndexedRenderStrategy<POS extends IFarPos, T extends IFarTile, SG, SL> extends AbstractRenderStrategy<POS, T, IndexedBakeOutput<SG, SL>, DrawBindingIndexed, DrawCommandIndexed> implements IMultipassRenderStrategy<POS, T, IndexedBakeOutput<SG, SL>, DrawBindingIndexed, DrawCommandIndexed> {
-    public AbstractMultipassIndexedRenderStrategy(@NonNull AbstractFarRenderer<POS, T> farRenderer) {
+public abstract class AbstractMultipassIndexedRenderStrategy<SG, SL> extends AbstractRenderStrategy<IndexedBakeOutput<SG, SL>, DrawBindingIndexed, DrawCommandIndexed> implements IMultipassRenderStrategy<IndexedBakeOutput<SG, SL>, DrawBindingIndexed, DrawCommandIndexed> {
+    public AbstractMultipassIndexedRenderStrategy(@NonNull AbstractFarRenderer farRenderer) {
         super(farRenderer);
     }
 
@@ -58,7 +55,7 @@ public abstract class AbstractMultipassIndexedRenderStrategy<POS extends IFarPos
     public abstract AttributeFormat<SL> vertexFormat();
 
     @Override
-    public IRenderIndex<POS, IndexedBakeOutput<SG, SL>, DrawBindingIndexed, DrawCommandIndexed> createIndex() {
+    public IRenderIndex<IndexedBakeOutput<SG, SL>, DrawBindingIndexed, DrawCommandIndexed> createIndex() {
         return fp2().globalConfig().performance().gpuFrustumCulling()
                 ? new GPUCulledRenderIndex<>(this)
                 : new CPUCulledRenderIndex<>(this);
@@ -90,7 +87,7 @@ public abstract class AbstractMultipassIndexedRenderStrategy<POS extends IFarPos
     }
 
     @Override
-    public void render(@NonNull CommandBufferBuilder builder, @NonNull IRenderIndex<POS, IndexedBakeOutput<SG, SL>, DrawBindingIndexed, DrawCommandIndexed> index) {
+    public void render(@NonNull CommandBufferBuilder builder, @NonNull IRenderIndex<IndexedBakeOutput<SG, SL>, DrawBindingIndexed, DrawCommandIndexed> index) {
         IMultipassRenderStrategy.super.render(builder, index);
     }
 }

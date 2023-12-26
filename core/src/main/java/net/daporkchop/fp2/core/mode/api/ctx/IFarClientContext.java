@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.api.ctx;
@@ -23,9 +22,7 @@ package net.daporkchop.fp2.core.mode.api.ctx;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
 import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.core.mode.api.client.IFarTileCache;
 import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
@@ -35,11 +32,11 @@ import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
  *
  * @author DaPorkchop_
  */
-public interface IFarClientContext<POS extends IFarPos, T extends IFarTile> extends AutoCloseable {
+public interface IFarClientContext extends AutoCloseable {
     /**
      * @return the render mode
      */
-    IFarRenderMode<POS, T> mode();
+    IFarRenderMode mode();
 
     /**
      * @return the world
@@ -49,7 +46,7 @@ public interface IFarClientContext<POS extends IFarPos, T extends IFarTile> exte
     /**
      * @return a cache for tiles used by this context
      */
-    IFarTileCache<POS, T> tileCache();
+    IFarTileCache tileCache();
 
     /**
      * @return the renderer currently used by this context

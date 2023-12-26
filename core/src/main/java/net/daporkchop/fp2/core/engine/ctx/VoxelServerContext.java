@@ -24,15 +24,13 @@ import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.mode.common.ctx.AbstractFarServerContext;
-import net.daporkchop.fp2.core.engine.TilePos;
-import net.daporkchop.fp2.core.engine.Tile;
 import net.daporkchop.fp2.core.server.player.IFarPlayerServer;
 
 /**
  * @author DaPorkchop_
  */
-public class VoxelServerContext extends AbstractFarServerContext<TilePos, Tile> {
-    public VoxelServerContext(@NonNull IFarPlayerServer player, @NonNull IFarLevelServer world, @NonNull FP2Config config, @NonNull IFarRenderMode<TilePos, Tile> mode) {
+public class VoxelServerContext extends AbstractFarServerContext {
+    public VoxelServerContext(@NonNull IFarPlayerServer player, @NonNull IFarLevelServer world, @NonNull FP2Config config, @NonNull IFarRenderMode mode) {
         super(player, world, config, mode);
     }
 }

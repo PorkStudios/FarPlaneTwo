@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -34,9 +34,7 @@ import net.daporkchop.fp2.core.client.render.TextureUVs;
 import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;
 import net.daporkchop.fp2.core.client.shader.ShaderMacros;
 import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.common.client.AbstractFarRenderer;
 import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutput;
 import net.daporkchop.fp2.core.mode.common.client.index.IRenderIndex;
@@ -65,12 +63,12 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFarTile, BO extends IBakeOutput, DB extends DrawBinding, DC extends DrawCommand> extends AbstractRefCounted implements IFarRenderStrategy<POS, T, BO, DB, DC> {
+public abstract class AbstractRenderStrategy<BO extends IBakeOutput, DB extends DrawBinding, DC extends DrawCommand> extends AbstractRefCounted implements IFarRenderStrategy<BO, DB, DC> {
     protected final Allocator alloc = new DirectMemoryAllocator();
 
-    protected final AbstractFarRenderer<POS, T> farRenderer;
+    protected final AbstractFarRenderer farRenderer;
     protected final LevelRenderer levelRenderer;
-    protected final IFarRenderMode<POS, T> mode;
+    protected final IFarRenderMode mode;
     protected final GL gl;
 
     protected final AttributeFormat<GlobalUniformAttributes> uniformFormat;
@@ -88,7 +86,7 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
 
     protected CommandBuffer commandBuffer;
 
-    public AbstractRenderStrategy(@NonNull AbstractFarRenderer<POS, T> farRenderer) {
+    public AbstractRenderStrategy(@NonNull AbstractFarRenderer farRenderer) {
         this.farRenderer = farRenderer;
         this.levelRenderer = farRenderer.levelRenderer();
         this.mode = farRenderer.mode();
@@ -116,7 +114,7 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
     }
 
     @Override
-    public IFarRenderStrategy<POS, T, BO, DB, DC> retain() throws AlreadyReleasedException {
+    public IFarRenderStrategy<BO, DB, DC> retain() throws AlreadyReleasedException {
         super.retain();
         return this;
     }
@@ -130,7 +128,7 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
     }
 
     @Override
-    public void render(@NonNull IRenderIndex<POS, BO, DB, DC> index, @NonNull RenderInfo renderInfo) {
+    public void render(@NonNull IRenderIndex<BO, DB, DC> index, @NonNull RenderInfo renderInfo) {
         //rebuild command buffer if needed
         if (this.commandBuffer == null || this.lastMacrosSnapshot != this.macros.snapshot()) {
             this.rebuildCommandBuffer(index);
@@ -146,7 +144,7 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
         this.commandBuffer.execute();
     }
 
-    protected void rebuildCommandBuffer(@NonNull IRenderIndex<POS, BO, DB, DC> index) {
+    protected void rebuildCommandBuffer(@NonNull IRenderIndex<BO, DB, DC> index) {
         if (this.commandBuffer != null) { //close the existing command buffer, if any
             this.commandBuffer.close();
             this.commandBuffer = null;
@@ -159,7 +157,7 @@ public abstract class AbstractRenderStrategy<POS extends IFarPos, T extends IFar
         this.commandBuffer = builder.build();
     }
 
-    public abstract void render(@NonNull CommandBufferBuilder builder, @NonNull IRenderIndex<POS, BO, DB, DC> index);
+    public abstract void render(@NonNull CommandBufferBuilder builder, @NonNull IRenderIndex<BO, DB, DC> index);
 
     @FEventHandler(constrain = @Constrain(monitor = true))
     protected void onShaderReloadComplete(FReloadEvent<ReloadableShaderProgram<?>> event) {

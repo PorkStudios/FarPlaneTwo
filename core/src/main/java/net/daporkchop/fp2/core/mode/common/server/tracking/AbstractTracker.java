@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -21,10 +21,9 @@ package net.daporkchop.fp2.core.mode.common.server.tracking;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
+import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.mode.api.IFarCoordLimits;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTracker;
 import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
@@ -55,26 +54,26 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  * @see AbstractTrackerManager
  */
-public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, STATE> implements IFarTracker<POS, T> {
-    protected final AbstractTrackerManager<POS, T> manager;
-    protected final IFarRenderMode<POS, T> mode;
+public abstract class AbstractTracker<STATE> implements IFarTracker {
+    protected final AbstractTrackerManager manager;
+    protected final IFarRenderMode mode;
 
-    protected final IFarServerContext<POS, T> context;
-    protected final IFarCoordLimits<POS> coordLimits;
+    protected final IFarServerContext context;
+    protected final IFarCoordLimits coordLimits;
 
     /**
      * The actual queue of positions to load.
      * <p>
      * May only be accessed while holding this tracker's lock. All operations other than polling additionally require that the queue be paused.
      */
-    protected final RecyclingArrayDeque<POS> queuedPositions = new RecyclingArrayDeque<>();
+    protected final RecyclingArrayDeque<TilePos> queuedPositions = new RecyclingArrayDeque<>();
 
     /**
      * The set of positions which are loaded.
      */
-    protected final Set<POS> loadedPositions;
-    protected final Set<POS> waitingPositions = ConcurrentHashMap.newKeySet();
-    protected final Queue<POS> doneWaitingPositions = new ConcurrentLinkedQueue<>();
+    protected final Set<TilePos> loadedPositions;
+    protected final Set<TilePos> waitingPositions = ConcurrentHashMap.newKeySet();
+    protected final Queue<TilePos> doneWaitingPositions = new ConcurrentLinkedQueue<>();
 
     //these are using a single object reference instead of flattened fields to allow the value to be replaced atomically. to ensure coherent access to the values,
     // readers must take care never to dereference the fields more than once.
@@ -86,7 +85,7 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
 
     protected long lastUpdateTime;
 
-    public AbstractTracker(@NonNull AbstractTrackerManager<POS, T> manager, @NonNull IFarServerContext<POS, T> context) {
+    public AbstractTracker(@NonNull AbstractTrackerManager manager, @NonNull IFarServerContext context) {
         this.manager = manager;
         this.mode = manager.tileProvider().mode();
 
@@ -140,7 +139,7 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
                     this.clearWaiting();
 
                     {
-                        Set<POS> untrackingPositions = this.mode.directPosAccess().newPositionSet();
+                        Set<TilePos> untrackingPositions = this.mode.directPosAccess().newPositionSet();
                         //actually update the tracking state (this is synchronized)
                         this.updateState(lastState, nextState, untrackingPositions);
 
@@ -159,7 +158,7 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
         this.updateWaiting();
     }
 
-    protected void updateState(STATE lastState, @NonNull STATE nextState, @NonNull Set<POS> untrackingPositions) {
+    protected void updateState(STATE lastState, @NonNull STATE nextState, @NonNull Set<TilePos> untrackingPositions) {
         long startTime = System.nanoTime();
 
         if (lastState != null) { //if lastState exists, we can diff the positions (which is faster than iterating over all of them)
@@ -227,7 +226,7 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
         assert this.isQueuePaused() : "queue must be paused";
 
         //move completed positions from waitingPositions to loadedPositions
-        for (POS pos; (pos = this.doneWaitingPositions.poll()) != null; ) {
+        for (TilePos pos; (pos = this.doneWaitingPositions.poll()) != null; ) {
             if (this.waitingPositions.remove(pos)) {
                 this.loadedPositions.add(pos);
             } else {
@@ -236,7 +235,7 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
         }
 
         //remove the rest of the waiting positions, stop tracking them and re-add them to the load queue
-        Set<POS> waitingPositions = this.mode.directPosAccess().clonePositionsAsSet(this.waitingPositions);
+        Set<TilePos> waitingPositions = this.mode.directPosAccess().clonePositionsAsSet(this.waitingPositions);
         this.waitingPositions.clear();
 
         //stop tracking all positions in the set
@@ -257,7 +256,7 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
         }
 
         int targetLoadQueueSize = fp2().globalConfig().performance().terrainThreads();
-        List<POS> positions = this.mode.directPosAccess().newPositionList();
+        List<TilePos> positions = this.mode.directPosAccess().newPositionList();
 
         do {
             if (this.isQueuePaused()) { //the tracker update thread has specifically requested to pause queue polling, so we shouldn't do anything here
@@ -279,7 +278,7 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
                 }
 
                 //move completed positions from waitingPositions to loadedPositions
-                for (POS pos; (pos = this.doneWaitingPositions.poll()) != null; ) {
+                for (TilePos pos; (pos = this.doneWaitingPositions.poll()) != null; ) {
                     if (this.waitingPositions.remove(pos)) {
                         this.loadedPositions.add(pos);
                     } else {
@@ -293,7 +292,7 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
 
                 //keep adding positions from the queue until waitingPositions has targetLoadQueueSize elements or the queue is drained
                 for (int count = targetLoadQueueSize - this.waitingPositions.size(); count > 0; count--) {
-                    POS pos = this.queuedPositions.poll();
+                    TilePos pos = this.queuedPositions.poll();
                     if (pos == null) { //nothing left in the queue, therefore nothing left to do!
                         break;
                     }
@@ -322,11 +321,11 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
      * @param snapshot a snapshot of the tile data
      */
     @CalledFromAnyThread
-    protected void notifyChanged(@BorrowOwnership @NonNull ITileSnapshot<POS, T> snapshot) {
+    protected void notifyChanged(@BorrowOwnership @NonNull ITileSnapshot snapshot) {
         try {
             this.context.sendTile(uncheckedCast(snapshot.retain()));
 
-            POS pos = snapshot.pos();
+            TilePos pos = snapshot.pos();
             if (this.waitingPositions.contains(pos)) { //this tile has been initially loaded
                 //mark the position as done waiting
                 checkState(this.doneWaitingPositions.add(pos), "couldn't mark completed position as done waiting: ", pos);
@@ -348,7 +347,7 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
      * @param pos the position of the tile which was unloaded
      */
     @CalledFromAnyThread
-    protected void notifyUnloaded(@NonNull POS pos) {
+    protected void notifyUnloaded(@NonNull TilePos pos) {
         this.context.sendTileUnload(pos);
     }
 
@@ -368,7 +367,7 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
             //untrack all positions
             //  (using temporary set to avoid CME)
             {
-                Set<POS> tmp = this.mode.directPosAccess().newPositionSet();
+                Set<TilePos> tmp = this.mode.directPosAccess().newPositionSet();
 
                 tmp.addAll(this.waitingPositions);
                 tmp.addAll(this.loadedPositions);
@@ -405,7 +404,7 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
      * @param context the {@link IFarServerContext} which we are tracking for
      * @return a new {@link STATE}
      */
-    protected abstract STATE currentState(@NonNull IFarServerContext<POS, T> context);
+    protected abstract STATE currentState(@NonNull IFarServerContext context);
 
     /**
      * Checks whether or not the difference between two given {@link STATE}s is sufficiently drastic to warrant triggering a tracking update.
@@ -422,7 +421,7 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
      * @param state    the {@link STATE}
      * @param callback a callback function which should be called once for every visible tile position
      */
-    protected abstract void allPositions(@NonNull STATE state, @NonNull Consumer<POS> callback);
+    protected abstract void allPositions(@NonNull STATE state, @NonNull Consumer<TilePos> callback);
 
     /**
      * Computes the tile positions whose visibility changed between two given {@link STATE}s.
@@ -432,7 +431,7 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
      * @param added    a callback function which should be called once for every tile position which was not visible in the old state but is now visible
      * @param removed  a callback function which should be called once for every tile position which was visible in the old state but is no longer visible
      */
-    protected abstract void deltaPositions(@NonNull STATE oldState, @NonNull STATE newState, @NonNull Consumer<POS> added, @NonNull Consumer<POS> removed);
+    protected abstract void deltaPositions(@NonNull STATE oldState, @NonNull STATE newState, @NonNull Consumer<TilePos> added, @NonNull Consumer<TilePos> removed);
 
     /**
      * Checks whether or not the given tile position is visible in the given state.
@@ -441,7 +440,7 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
      * @param pos   the tile position to check
      * @return whether or not the tile position is visible
      */
-    protected abstract boolean isVisible(@NonNull STATE state, @NonNull POS pos);
+    protected abstract boolean isVisible(@NonNull STATE state, @NonNull TilePos pos);
 
     /**
      * Gets a {@link Comparator} which can be used for sorting the tile positions visible in the given {@link STATE} by their load priority.
@@ -449,5 +448,5 @@ public abstract class AbstractTracker<POS extends IFarPos, T extends IFarTile, S
      * @param state the {@link STATE}
      * @return a {@link Comparator} for sorting visible tile positions
      */
-    protected abstract Comparator<POS> comparatorFor(@NonNull STATE state);
+    protected abstract Comparator<TilePos> comparatorFor(@NonNull STATE state);
 }

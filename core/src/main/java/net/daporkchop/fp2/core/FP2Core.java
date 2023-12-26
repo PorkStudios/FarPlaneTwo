@@ -173,7 +173,7 @@ public abstract class FP2Core implements FP2 {
     public abstract void unsupported(@NonNull String message);
 
     @FEventHandler
-    protected void registerDefaultRenderModes(FRegisterEvent<IFarRenderMode<?, ?>> event) {
+    protected void registerDefaultRenderModes(FRegisterEvent<IFarRenderMode> event) {
         event.registry()
                 .addLast(EngineConstants.NAME, VoxelRenderMode.INSTANCE);
     }

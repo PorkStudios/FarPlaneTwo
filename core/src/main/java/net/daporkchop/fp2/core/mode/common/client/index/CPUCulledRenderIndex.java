@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.common.client.index;
@@ -30,36 +29,33 @@ import net.daporkchop.fp2.gl.draw.list.DrawCommand;
 import net.daporkchop.fp2.gl.draw.list.DrawListBuilder;
 import net.daporkchop.fp2.gl.draw.list.selected.JavaSelectedDrawList;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.common.client.ICullingStrategy;
 import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutput;
 import net.daporkchop.fp2.core.mode.common.client.strategy.IFarRenderStrategy;
 
 import java.util.function.IntPredicate;
-import java.util.function.Supplier;
 
 /**
  * Implementation of {@link AbstractRenderIndex} which does frustum culling on the CPU.
  *
  * @author DaPorkchop_
  */
-public class CPUCulledRenderIndex<POS extends IFarPos, BO extends IBakeOutput, DB extends DrawBinding, DC extends DrawCommand> extends AbstractRenderIndex<POS, BO, DB, DC, JavaSelectedDrawList<DC>> {
+public class CPUCulledRenderIndex<BO extends IBakeOutput, DB extends DrawBinding, DC extends DrawCommand> extends AbstractRenderIndex<BO, DB, DC, JavaSelectedDrawList<DC>> {
     protected static final Allocator.GrowFunction GROW_FUNCTION = Allocator.GrowFunction.pow2(1L);
 
-    public <T extends IFarTile> CPUCulledRenderIndex(@NonNull IFarRenderStrategy<POS, T, BO, DB, DC> strategy) {
+    public CPUCulledRenderIndex(@NonNull IFarRenderStrategy<BO, DB, DC> strategy) {
         super(strategy);
     }
 
     @Override
-    protected AbstractRenderIndex<POS, BO, DB, DC, JavaSelectedDrawList<DC>>.Level createLevel(int level) {
+    protected AbstractRenderIndex<BO, DB, DC, JavaSelectedDrawList<DC>>.Level createLevel(int level) {
         return new Level(level);
     }
 
     /**
      * @author DaPorkchop_
      */
-    protected class Level extends AbstractRenderIndex<POS, BO, DB, DC, JavaSelectedDrawList<DC>>.Level {
+    protected class Level extends AbstractRenderIndex<BO, DB, DC, JavaSelectedDrawList<DC>>.Level {
         protected IntPredicate selector;
 
         public Level(int level) {

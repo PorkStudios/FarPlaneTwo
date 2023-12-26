@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,30 +15,29 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.common.server;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
+import net.daporkchop.fp2.core.engine.TilePos;
 
 import java.util.Comparator;
 
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
- * A combination of a {@link TaskStage} and a {@link POS}, representing a request to do some operation at a given tile position.
+ * A combination of a {@link TaskStage} and a {@link TilePos}, representing a request to do some operation at a given tile position.
  *
  * @author DaPorkchop_
  */
-public interface PriorityTask<POS extends IFarPos> {
+public interface PriorityTask {
     /**
      * @deprecated internal API, do not touch!
      */
     @Deprecated
     @SuppressWarnings("DeprecatedIsStillUsed")
-    Comparator<PriorityTask<?>> _APPROX_COMPARATOR = (a, b) -> {
+    Comparator<PriorityTask> _APPROX_COMPARATOR = (a, b) -> {
         int d;
         if ((d = a.stage().compareTo(b.stage())) == 0) {
             d = Integer.compare(a.pos().level(), b.pos().level());
@@ -50,7 +49,7 @@ public interface PriorityTask<POS extends IFarPos> {
      * @return a {@link Comparator} which is able to do approximate comparisons between {@link PriorityTask}s
      */
     @SuppressWarnings("Deprecation")
-    static <POS extends IFarPos> Comparator<PriorityTask<POS>> approxComparator() {
+    static <POS extends TilePos> Comparator<PriorityTask> approxComparator() {
         return uncheckedCast(_APPROX_COMPARATOR);
     }
 
@@ -61,8 +60,8 @@ public interface PriorityTask<POS extends IFarPos> {
      * @param pos   the {@link POS}
      * @return a {@link PriorityTask}
      */
-    static <POS extends IFarPos> PriorityTask<POS> forStageAndPosition(@NonNull TaskStage stage, @NonNull POS pos) {
-        return new PriorityTask<POS>() {
+    static <POS extends TilePos> PriorityTask forStageAndPosition(@NonNull TaskStage stage, @NonNull POS pos) {
+        return new PriorityTask() {
             @Override
             public TaskStage stage() {
                 return stage;
@@ -83,7 +82,7 @@ public interface PriorityTask<POS extends IFarPos> {
                 if (obj == this) {
                     return true;
                 } else if (obj instanceof PriorityTask) {
-                    PriorityTask<?> o = uncheckedCast(obj);
+                    PriorityTask o = uncheckedCast(obj);
                     return stage.equals(o.stage()) && pos.equals(o.pos());
                 } else {
                     return false;
@@ -105,5 +104,5 @@ public interface PriorityTask<POS extends IFarPos> {
     /**
      * @return the tile position where the task is to be executed
      */
-    POS pos();
+    TilePos pos();
 }

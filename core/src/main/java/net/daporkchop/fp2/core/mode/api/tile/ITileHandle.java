@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,28 +15,27 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.api.tile;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
+import net.daporkchop.fp2.core.engine.Tile;
+import net.daporkchop.fp2.core.engine.TilePos;
 
 /**
  * @author DaPorkchop_
  */
-public interface ITileHandle<POS extends IFarPos, T extends IFarTile> extends ITileMetadata {
+public interface ITileHandle extends ITileMetadata {
     /**
      * @return the tile's position
      */
-    POS pos();
+    TilePos pos();
 
     /**
      * @return a snapshot of this tile's current data and metadata, or {@code null} if the tile hasn't been initialized
      */
-    ITileSnapshot<POS, T> snapshot();
+    ITileSnapshot snapshot();
 
     /**
      * Atomically sets this tile's contents to the given data.
@@ -46,10 +45,10 @@ public interface ITileHandle<POS extends IFarPos, T extends IFarTile> extends IT
      * If the new timestamp is greater than or equal to the current dirty timestamp, the dirty timestamp will be cleared.
      *
      * @param metadata the tile's new metadata
-     * @param tile     an instance of {@link T} containing the new tile data
+     * @param tile     an instance of {@link Tile} containing the new tile data
      * @return whether or not the operation was able to be applied
      */
-    boolean set(@NonNull ITileMetadata metadata, @NonNull T tile);
+    boolean set(@NonNull ITileMetadata metadata, Tile tile);
 
     /**
      * @return the timestamp at which this tile was last marked as dirty, or {@link #TIMESTAMP_BLANK} if it isn't

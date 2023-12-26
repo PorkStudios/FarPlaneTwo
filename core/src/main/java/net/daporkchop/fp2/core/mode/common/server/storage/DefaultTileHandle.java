@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -25,8 +25,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.api.storage.FStorageException;
 import net.daporkchop.fp2.common.util.DirectBufferHackery;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
+import net.daporkchop.fp2.core.engine.Tile;
+import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.core.mode.api.tile.ITileMetadata;
 import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
@@ -50,12 +50,12 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public class DefaultTileHandle<POS extends IFarPos, T extends IFarTile> implements ITileHandle<POS, T> {
+public class DefaultTileHandle implements ITileHandle {
     @Getter
     @NonNull
-    protected final POS pos;
+    protected final TilePos pos;
     @NonNull
-    protected final DefaultTileStorage<POS, T> storage;
+    protected final DefaultTileStorage storage;
 
     @Override
     @SneakyThrows(FStorageException.class)
@@ -108,7 +108,7 @@ public class DefaultTileHandle<POS extends IFarPos, T extends IFarTile> implemen
 
     @Override
     @SneakyThrows(FStorageException.class)
-    public ITileSnapshot<POS, T> snapshot() {
+    public ITileSnapshot snapshot() {
         return this.storage.storageInternal.readGet(access -> {
             /*
              * struct buffer {
@@ -185,7 +185,7 @@ public class DefaultTileHandle<POS extends IFarPos, T extends IFarTile> implemen
 
     @Override
     @SneakyThrows(FStorageException.class)
-    public boolean set(@NonNull ITileMetadata metadata, @NonNull T tile) {
+    public boolean set(@NonNull ITileMetadata metadata, @NonNull Tile tile) {
         boolean result = this.storage.storageInternal.transactAtomicGet(access -> {
             /*
              * struct buffer {

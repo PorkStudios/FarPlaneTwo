@@ -21,9 +21,9 @@ package net.daporkchop.fp2.core.mode.common.client;
 
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.core.engine.Tile;
+import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.mode.api.IFarCoordLimits;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.client.IFarTileCache;
 import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
 import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutput;
@@ -57,24 +57,24 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @Getter
-public class BakeManager<POS extends IFarPos, T extends IFarTile> extends AbstractReleasable implements IFarTileCache.Listener<POS, T>, Consumer<POS>, Runnable {
-    protected final AbstractFarRenderer<POS, T> renderer;
-    protected final IFarRenderStrategy<POS, T, ?, ?, ?> strategy;
+public class BakeManager extends AbstractReleasable implements IFarTileCache.Listener, Consumer<TilePos>, Runnable {
+    protected final AbstractFarRenderer renderer;
+    protected final IFarRenderStrategy<?, ?, ?> strategy;
 
-    protected final IFarTileCache<POS, T> tileCache;
+    protected final IFarTileCache tileCache;
 
-    protected final IRenderIndex<POS, ?, ?, ?> index;
-    protected final IRenderBaker<POS, T, ?> baker;
+    protected final IRenderIndex<?, ?, ?> index;
+    protected final IRenderBaker<?> baker;
 
-    protected final Scheduler<POS, Void> bakeScheduler;
-    protected final IFarCoordLimits<POS> coordLimits;
+    protected final Scheduler<TilePos, Void> bakeScheduler;
+    protected final IFarCoordLimits coordLimits;
 
-    protected final Map<POS, Optional<IBakeOutput>> pendingDataUpdates = new ConcurrentHashMap<>();
-    protected final Map<POS, Boolean> pendingRenderableUpdates = new ConcurrentHashMap<>();
+    protected final Map<TilePos, Optional<IBakeOutput>> pendingDataUpdates = new ConcurrentHashMap<>();
+    protected final Map<TilePos, Boolean> pendingRenderableUpdates = new ConcurrentHashMap<>();
     protected final AtomicBoolean isBulkUpdateQueued = new AtomicBoolean();
     protected final Semaphore dataUpdatesLock = new Semaphore(fp2().globalConfig().performance().maxBakesProcessedPerFrame());
 
-    public BakeManager(@NonNull AbstractFarRenderer<POS, T> renderer, @NonNull IFarTileCache<POS, T> tileCache) {
+    public BakeManager(@NonNull AbstractFarRenderer renderer, @NonNull IFarTileCache tileCache) {
         this.renderer = renderer;
         this.strategy = renderer.strategy();
         this.tileCache = tileCache;
@@ -105,7 +105,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
         this.bakeScheduler.close();
 
         //release all of the bake outputs and remove them from the map
-        for (Iterator<POS> itr = this.pendingDataUpdates.keySet().iterator(); itr.hasNext(); ) {
+        for (Iterator<TilePos> itr = this.pendingDataUpdates.keySet().iterator(); itr.hasNext(); ) {
             this.pendingDataUpdates.computeIfPresent(itr.next(), (pos, output) -> {
                 output.ifPresent(IBakeOutput::release);
                 return null;
@@ -114,22 +114,22 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
     }
 
     @Override
-    public void tileAdded(@NonNull ITileSnapshot<POS, T> tile) {
+    public void tileAdded(@NonNull ITileSnapshot tile) {
         this.notifyOutputs(tile.pos());
     }
 
     @Override
-    public void tileModified(@NonNull ITileSnapshot<POS, T> tile) {
+    public void tileModified(@NonNull ITileSnapshot tile) {
         this.notifyOutputs(tile.pos());
     }
 
     @Override
-    public void tileRemoved(@NonNull POS pos) {
+    public void tileRemoved(@NonNull TilePos pos) {
         //schedule the tile itself for re-bake
         this.notifyOutputs(pos);
     }
 
-    protected void notifyOutputs(@NonNull POS pos) {
+    protected void notifyOutputs(@NonNull TilePos pos) {
         //schedule all of the positions affected by the tile for re-bake
         this.baker.bakeOutputs(pos).forEach(outputPos -> {
             if (!outputPos.isLevelValid()) { //output tile is at an invalid zoom level, skip it
@@ -148,11 +148,11 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
      */
     @Override
     @Deprecated
-    public void accept(@NonNull POS pos) { //this function is called from inside of bakeScheduler, which doesn't execute the task multiple times on the same position
+    public void accept(@NonNull TilePos pos) { //this function is called from inside of bakeScheduler, which doesn't execute the task multiple times on the same position
         this.checkSelfRenderable(pos);
         this.checkParentsRenderable(pos);
 
-        ITileSnapshot<POS, T>[] compressedInputTiles = uncheckedCast(this.tileCache.getTilesCached(this.baker.bakeInputs(pos)).toArray(ITileSnapshot[]::new));
+        ITileSnapshot[] compressedInputTiles = uncheckedCast(this.tileCache.getTilesCached(this.baker.bakeInputs(pos)).toArray(ITileSnapshot[]::new));
         try {
             if (compressedInputTiles[0] == null //tile isn't cached any more
                 || compressedInputTiles[0].isEmpty()) { //tile data is empty
@@ -160,10 +160,10 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
                 return;
             }
 
-            Recycler<T> recycler = this.renderer.mode().tileRecycler();
-            T[] srcs = this.renderer.mode().tileArray(compressedInputTiles.length);
+            Recycler<Tile> recycler = this.renderer.mode().tileRecycler();
+            Tile[] srcs = this.renderer.mode().tileArray(compressedInputTiles.length);
             try {
-                IVariableSizeRecyclingCodec<T> codec = this.renderer.mode().tileCodec();
+                IVariableSizeRecyclingCodec<Tile> codec = this.renderer.mode().tileCodec();
                 for (int i = 0; i < srcs.length; i++) { //inflate tiles
                     if (compressedInputTiles[i] != null) {
                         srcs[i] = compressedInputTiles[i].loadTile(recycler, codec);
@@ -180,14 +180,14 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
                     output.release();
                 }
             } finally { //release tiles again
-                for (T src : srcs) {
+                for (Tile src : srcs) {
                     if (src != null) {
                         recycler.release(src);
                     }
                 }
             }
         } finally {
-            for (ITileSnapshot<POS, T> tile : compressedInputTiles) {
+            for (ITileSnapshot tile : compressedInputTiles) {
                 if (tile != null) {
                     tile.release(); //TODO: release() could throw an exception
                 }
@@ -195,20 +195,20 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
         }
     }
 
-    protected void checkParentsRenderable(@NonNull POS posIn) {
-        PorkUtil.<Stream<POS>>uncheckedCast(posIn.up().allPositionsInBB(1, 1)).forEach(this::checkSelfRenderable);
+    protected void checkParentsRenderable(@NonNull TilePos posIn) {
+        PorkUtil.<Stream<TilePos>>uncheckedCast(posIn.up().allPositionsInBB(1, 1)).forEach(this::checkSelfRenderable);
     }
 
-    protected void checkSelfRenderable(@NonNull POS pos) {
+    protected void checkSelfRenderable(@NonNull TilePos pos) {
         if (this.coordLimits.contains(pos)) {
             this.updateRenderable(pos,
                     this.tileCache.getTileCached(pos) != null
-                    && (pos.level() == 0 || PorkUtil.<Stream<POS>>uncheckedCast(pos.down().allPositionsInBB(1, 3))
+                    && (pos.level() == 0 || PorkUtil.<Stream<TilePos>>uncheckedCast(pos.down().allPositionsInBB(1, 3))
                             .anyMatch(p -> this.coordLimits.contains(p) && this.tileCache.getTileCached(p) == null)));
         }
     }
 
-    protected void updateData(@NonNull POS pos, @NonNull Optional<IBakeOutput> optionalBakeOutput) {
+    protected void updateData(@NonNull TilePos pos, @NonNull Optional<IBakeOutput> optionalBakeOutput) {
         this.dataUpdatesLock.acquireUninterruptibly();
 
         this.pendingDataUpdates.merge(pos, optionalBakeOutput, (oldOutput, newOutput) -> {
@@ -223,7 +223,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
         }
     }
 
-    protected void updateRenderable(@NonNull POS pos, boolean renderable) {
+    protected void updateRenderable(@NonNull TilePos pos, boolean renderable) {
         this.pendingRenderableUpdates.put(pos, renderable);
 
         if (this.isBulkUpdateQueued.compareAndSet(false, true)) { //we won the race to enqueue a bulk update!
@@ -242,8 +242,8 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
         int dataUpdatesSize = this.pendingDataUpdates.size();
 
         //pre-allocate a bit of extra space in case it grows while we're iterating
-        List<Map.Entry<POS, Optional<IBakeOutput>>> dataUpdates = new ArrayList<>(dataUpdatesSize + (dataUpdatesSize >> 3));
-        for (Iterator<POS> itr = this.pendingDataUpdates.keySet().iterator(); itr.hasNext(); ) {
+        List<Map.Entry<TilePos, Optional<IBakeOutput>>> dataUpdates = new ArrayList<>(dataUpdatesSize + (dataUpdatesSize >> 3));
+        for (Iterator<TilePos> itr = this.pendingDataUpdates.keySet().iterator(); itr.hasNext(); ) {
             this.pendingDataUpdates.compute(itr.next(), (pos, output) -> {
                 dataUpdates.add(new AbstractMap.SimpleEntry<>(pos, output));
                 return null;
@@ -257,7 +257,7 @@ public class BakeManager<POS extends IFarPos, T extends IFarTile> extends Abstra
         int renderableUpdatesSize = this.pendingRenderableUpdates.size();
 
         //pre-allocate a bit of extra space in case it grows while we're iterating
-        List<Map.Entry<POS, Boolean>> renderableUpdates = new ArrayList<>(renderableUpdatesSize + (renderableUpdatesSize >> 3));
+        List<Map.Entry<TilePos, Boolean>> renderableUpdates = new ArrayList<>(renderableUpdatesSize + (renderableUpdatesSize >> 3));
         renderableUpdates.addAll(this.pendingRenderableUpdates.entrySet());
 
         //atomically remove the corresponding entries from the pending update queue

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -22,9 +22,8 @@ package net.daporkchop.fp2.core.mode.common.ctx;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
+import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTracker;
@@ -54,15 +53,15 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractFarServerContext<POS extends IFarPos, T extends IFarTile> implements IFarServerContext<POS, T> {
+public abstract class AbstractFarServerContext implements IFarServerContext {
     protected final IFarPlayerServer player;
     protected final IFarLevelServer world;
-    protected final IFarRenderMode<POS, T> mode;
-    protected final IFarTileProvider<POS, T> tileProvider;
+    protected final IFarRenderMode mode;
+    protected final IFarTileProvider tileProvider;
 
-    protected final IFarTracker<POS, T> tracker;
+    protected final IFarTracker tracker;
 
-    protected final Map<POS, Optional<TileSnapshot<POS, T>>> sendQueue = new TreeMap<>();
+    protected final Map<TilePos, Optional<TileSnapshot>> sendQueue = new TreeMap<>();
 
     protected FP2Config config;
 
@@ -70,7 +69,7 @@ public abstract class AbstractFarServerContext<POS extends IFarPos, T extends IF
 
     private int debugLastUpdateSent;
 
-    public AbstractFarServerContext(@NonNull IFarPlayerServer player, @NonNull IFarLevelServer world, @NonNull FP2Config config, @NonNull IFarRenderMode<POS, T> mode) {
+    public AbstractFarServerContext(@NonNull IFarPlayerServer player, @NonNull IFarLevelServer world, @NonNull FP2Config config, @NonNull IFarRenderMode mode) {
         this.player = player;
         this.world = world;
         this.mode = mode;
@@ -110,15 +109,15 @@ public abstract class AbstractFarServerContext<POS extends IFarPos, T extends IF
         }
 
         //make a snapshot of the queue contents, then clear it.
-        List<Map.Entry<POS, Optional<TileSnapshot<POS, T>>>> sendQueueSnapshot;
+        List<Map.Entry<TilePos, Optional<TileSnapshot>>> sendQueueSnapshot;
         synchronized (this.sendQueue) {
             sendQueueSnapshot = new ArrayList<>(this.sendQueue.entrySet());
             this.sendQueue.clear();
         }
 
         //group queue items by type
-        List<POS> unloadedPositions = this.mode.directPosAccess().newPositionList();
-        List<TileSnapshot<POS, T>> loadedSnapshots = new ArrayList<>();
+        List<TilePos> unloadedPositions = this.mode.directPosAccess().newPositionList();
+        List<TileSnapshot> loadedSnapshots = new ArrayList<>();
         sendQueueSnapshot.forEach(entry -> {
             if (entry.getValue().isPresent()) { //non-empty optional, the tile is being loaded
                 loadedSnapshots.add(entry.getValue().get());
@@ -166,7 +165,7 @@ public abstract class AbstractFarServerContext<POS extends IFarPos, T extends IF
         this.tracker.close();
     }
 
-    protected BiFunction<Optional<TileSnapshot<POS, T>>, Optional<TileSnapshot<POS, T>>, Optional<TileSnapshot<POS, T>>> sendQueueMergeOperator() {
+    protected BiFunction<Optional<TileSnapshot>, Optional<TileSnapshot>, Optional<TileSnapshot>> sendQueueMergeOperator() {
         return (prev, next) -> {
             prev.ifPresent(TileSnapshot::release);
             return next;
@@ -174,7 +173,7 @@ public abstract class AbstractFarServerContext<POS extends IFarPos, T extends IF
     }
 
     @Override
-    public void sendTile(@TransferOwnership @NonNull TileSnapshot<POS, T> snapshot) {
+    public void sendTile(@TransferOwnership @NonNull TileSnapshot snapshot) {
         if (this.closed) { //this context has been closed - silently discard all tile data
             return;
         }
@@ -185,7 +184,7 @@ public abstract class AbstractFarServerContext<POS extends IFarPos, T extends IF
     }
 
     @Override
-    public void sendTileUnload(@NonNull POS pos) {
+    public void sendTileUnload(@NonNull TilePos pos) {
         if (this.closed) { //this context has been closed - silently discard all tile data
             return;
         }
@@ -196,7 +195,7 @@ public abstract class AbstractFarServerContext<POS extends IFarPos, T extends IF
     }
 
     @Override
-    public void sendMultiTileUnload(@NonNull Iterable<POS> positions) {
+    public void sendMultiTileUnload(@NonNull Iterable<TilePos> positions) {
         if (this.closed) { //this context has been closed - silently discard all tile data
             return;
         }

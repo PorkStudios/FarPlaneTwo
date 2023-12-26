@@ -30,7 +30,7 @@ import static net.daporkchop.fp2.core.util.math.MathUtil.*;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public class TileCoordLimits implements IFarCoordLimits<TilePos> {
+public class TileCoordLimits implements IFarCoordLimits {
     protected final int minX;
     protected final int minY;
     protected final int minZ;

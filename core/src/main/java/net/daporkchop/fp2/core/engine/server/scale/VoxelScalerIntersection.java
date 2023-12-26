@@ -50,7 +50,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 //TODO: this needs a LOT of work
 //TODO: re-implement using something based on https://www.researchgate.net/publication/220792145_Model_Simplification_Using_Vertex-Clustering
-public class VoxelScalerIntersection extends AbstractFarGenerator<TilePos, Tile> implements IFarScaler<TilePos, Tile> {
+public class VoxelScalerIntersection extends AbstractFarGenerator implements IFarScaler {
     public static final int SRC_MIN = -4;
     public static final int SRC_MAX = (T_VOXELS << 1) + 4;
     //public static final int SRC_MIN = 0;
@@ -88,7 +88,7 @@ public class VoxelScalerIntersection extends AbstractFarGenerator<TilePos, Tile>
         return Vec3d.of(x + ((c >> 2) & 1) + 0.5d, y + ((c >> 1) & 1) + 0.5d, z + (c & 1) + 0.5d);
     }
 
-    public VoxelScalerIntersection(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<TilePos, Tile> provider) {
+    public VoxelScalerIntersection(@NonNull IFarLevelServer world, @NonNull IFarTileProvider provider) {
         super(world, provider);
     }
 

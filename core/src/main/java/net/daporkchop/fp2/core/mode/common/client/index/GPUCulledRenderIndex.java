@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -23,8 +23,6 @@ import lombok.NonNull;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.core.client.IFrustum;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutput;
 import net.daporkchop.fp2.core.mode.common.client.strategy.IFarRenderStrategy;
 import net.daporkchop.fp2.gl.GL;
@@ -52,13 +50,13 @@ import java.util.stream.Stream;
  *
  * @author DaPorkchop_
  */
-public class GPUCulledRenderIndex<POS extends IFarPos, BO extends IBakeOutput, DB extends DrawBinding, DC extends DrawCommand> extends AbstractRenderIndex<POS, BO, DB, DC, ShaderSelectedDrawList<DC>> {
+public class GPUCulledRenderIndex<BO extends IBakeOutput, DB extends DrawBinding, DC extends DrawCommand> extends AbstractRenderIndex<BO, DB, DC, ShaderSelectedDrawList<DC>> {
     protected static final Allocator.GrowFunction GROW_FUNCTION = Allocator.GrowFunction.pow2(64L);
 
     private AttributeFormat<IFrustum.ClippingPlanes> clippingPlanesUniformFormat;
     private AttributeBuffer<IFrustum.ClippingPlanes> clippingPlanesUniformBuffer;
 
-    public <T extends IFarTile> GPUCulledRenderIndex(@NonNull IFarRenderStrategy<POS, T, BO, DB, DC> strategy) {
+    public GPUCulledRenderIndex(@NonNull IFarRenderStrategy<BO, DB, DC> strategy) {
         super(strategy);
     }
 
@@ -71,7 +69,7 @@ public class GPUCulledRenderIndex<POS extends IFarPos, BO extends IBakeOutput, D
     }
 
     @Override
-    protected AbstractRenderIndex<POS, BO, DB, DC, ShaderSelectedDrawList<DC>>.Level createLevel(int level) {
+    protected AbstractRenderIndex<BO, DB, DC, ShaderSelectedDrawList<DC>>.Level createLevel(int level) {
         return new Level(level);
     }
 
@@ -109,7 +107,7 @@ public class GPUCulledRenderIndex<POS extends IFarPos, BO extends IBakeOutput, D
     /**
      * @author DaPorkchop_
      */
-    protected class Level extends AbstractRenderIndex<POS, BO, DB, DC, ShaderSelectedDrawList<DC>>.Level {
+    protected class Level extends AbstractRenderIndex<BO, DB, DC, ShaderSelectedDrawList<DC>>.Level {
         protected final TransformLayout selectionLayout;
         protected final TransformShaderProgram selectionShader;
 

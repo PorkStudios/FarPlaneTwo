@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,14 +15,11 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.common.client.strategy;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.gl.command.BlendFactor;
 import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
@@ -41,7 +38,7 @@ import static net.daporkchop.fp2.core.debug.FP2Debug.*;
 /**
  * @author DaPorkchop_
  */
-public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTile, BO extends IBakeOutput, DB extends DrawBinding, DC extends DrawCommand> extends IFarRenderStrategy<POS, T, BO, DB, DC> {
+public interface IMultipassRenderStrategy<BO extends IBakeOutput, DB extends DrawBinding, DC extends DrawCommand> extends IFarRenderStrategy<BO, DB, DC> {
     /*@Override
     default void render(@NonNull IRenderIndex<POS, BO, DB, DC> index, int layer, boolean pre) {
         if (layer == IFarRenderer.LAYER_CUTOUT && !pre) {
@@ -55,7 +52,7 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
         }
     }*/
 
-    default void render(@NonNull CommandBufferBuilder builder, @NonNull IRenderIndex<POS, BO, DB, DC> index) {
+    default void render(@NonNull CommandBufferBuilder builder, @NonNull IRenderIndex<BO, DB, DC> index) {
         this.preRender(builder);
 
         //in order to properly render overlapping layers while ensuring that low-detail levels always get placed on top of high-detail ones, we'll need to do the following:
@@ -90,7 +87,7 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
     default void postRender(@NonNull CommandBufferBuilder builder) {
     }
 
-    default void renderSolid(@NonNull CommandBufferBuilder builder, @NonNull IRenderIndex<POS, BO, DB, DC> index, int level) {
+    default void renderSolid(@NonNull CommandBufferBuilder builder, @NonNull IRenderIndex<BO, DB, DC> index, int level) {
         //GlStateManager.disableAlpha();
 
         builder.stencilOperation(StencilOperation.KEEP, StencilOperation.KEEP, StencilOperation.REPLACE)
@@ -102,7 +99,7 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
         //GlStateManager.enableAlpha();
     }
 
-    default void renderCutout(@NonNull CommandBufferBuilder builder, @NonNull IRenderIndex<POS, BO, DB, DC> index, int level) {
+    default void renderCutout(@NonNull CommandBufferBuilder builder, @NonNull IRenderIndex<BO, DB, DC> index, int level) {
         //MC.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).setBlurMipmap(false, MC.gameSettings.mipmapLevels > 0);
 
         builder.stencilOperation(StencilOperation.KEEP, StencilOperation.REPLACE, StencilOperation.REPLACE)
@@ -114,7 +111,7 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
         //MC.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
     }
 
-    default void renderTransparent(@NonNull CommandBufferBuilder builder, @NonNull IRenderIndex<POS, BO, DB, DC> index) {
+    default void renderTransparent(@NonNull CommandBufferBuilder builder, @NonNull IRenderIndex<BO, DB, DC> index) {
         this.renderTransparentStencilPass(builder, index);
 
         //don't want fragments to be rendered before the stencil pass can complete
@@ -123,7 +120,7 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
         this.renderTransparentFragmentPass(builder, index);
     }
 
-    default void renderTransparentStencilPass(@NonNull CommandBufferBuilder builder, @NonNull IRenderIndex<POS, BO, DB, DC> index) {
+    default void renderTransparentStencilPass(@NonNull CommandBufferBuilder builder, @NonNull IRenderIndex<BO, DB, DC> index) {
         builder.colorWrite(false, false, false, false);
         builder.depthWrite(false);
 
@@ -139,7 +136,7 @@ public interface IMultipassRenderStrategy<POS extends IFarPos, T extends IFarTil
         builder.colorWrite(true, true, true, true);
     }
 
-    default void renderTransparentFragmentPass(@NonNull CommandBufferBuilder builder, @NonNull IRenderIndex<POS, BO, DB, DC> index) {
+    default void renderTransparentFragmentPass(@NonNull CommandBufferBuilder builder, @NonNull IRenderIndex<BO, DB, DC> index) {
         builder.blendEnable();
         builder.blendFunctionSrc(BlendFactor.SRC_ALPHA, BlendFactor.ONE).blendFunctionDst(BlendFactor.ONE_MINUS_SRC_ALPHA, BlendFactor.ZERO);
 

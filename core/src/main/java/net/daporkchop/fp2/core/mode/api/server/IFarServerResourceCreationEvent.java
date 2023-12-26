@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,15 +15,12 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.api.server;
 
 import net.daporkchop.fp2.api.event.ReturningEvent;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 
 /**
@@ -34,7 +31,7 @@ import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
  * @param <R> the resource type
  * @author DaPorkchop_
  */
-public interface IFarServerResourceCreationEvent<POS extends IFarPos, T extends IFarTile, R> extends ReturningEvent<R> {
+public interface IFarServerResourceCreationEvent<R> extends ReturningEvent<R> {
     /**
      * @return the {@link IFarLevelServer} which a {@link R} will be created for
      */
@@ -43,5 +40,5 @@ public interface IFarServerResourceCreationEvent<POS extends IFarPos, T extends 
     /**
      * @return the {@link IFarRenderMode} which the {@link R} will be created for
      */
-    IFarRenderMode<POS, T> mode();
+    IFarRenderMode mode();
 }

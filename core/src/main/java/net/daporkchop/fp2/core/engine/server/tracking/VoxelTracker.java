@@ -25,7 +25,6 @@ import net.daporkchop.fp2.core.mode.common.server.tracking.AbstractTracker;
 import net.daporkchop.fp2.core.mode.common.server.tracking.AbstractTrackerManager;
 import net.daporkchop.fp2.core.mode.common.server.tracking.TrackingState;
 import net.daporkchop.fp2.core.engine.TilePos;
-import net.daporkchop.fp2.core.engine.Tile;
 
 import java.util.Comparator;
 import java.util.function.Consumer;
@@ -38,7 +37,7 @@ import static net.daporkchop.lib.common.math.PMath.*;
 /**
  * @author DaPorkchop_
  */
-public class VoxelTracker extends AbstractTracker<TilePos, Tile, TrackingState> {
+public class VoxelTracker extends AbstractTracker<TrackingState> {
     /**
      * The squared distance a player must move from their previous position in order to trigger a tracking update.
      * <p>
@@ -53,12 +52,12 @@ public class VoxelTracker extends AbstractTracker<TilePos, Tile, TrackingState> 
         return dx <= radius && dy <= radius && dz <= radius;
     }
 
-    public VoxelTracker(@NonNull AbstractTrackerManager<TilePos, Tile> manager, @NonNull IFarServerContext<TilePos, Tile> context) {
+    public VoxelTracker(@NonNull AbstractTrackerManager manager, @NonNull IFarServerContext context) {
         super(manager, context);
     }
 
     @Override
-    protected TrackingState currentState(@NonNull IFarServerContext<TilePos, Tile> context) {
+    protected TrackingState currentState(@NonNull IFarServerContext context) {
         return TrackingState.createDefault(context, T_SHIFT);
     }
 

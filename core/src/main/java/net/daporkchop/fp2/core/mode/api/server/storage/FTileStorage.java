@@ -21,8 +21,8 @@ package net.daporkchop.fp2.core.mode.api.server.storage;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.api.storage.external.FStorageItem;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
+import net.daporkchop.fp2.core.engine.Tile;
+import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.core.mode.api.tile.ITileMetadata;
 import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
@@ -40,21 +40,21 @@ import java.util.stream.Stream;
  *
  * @author DaPorkchop_
  */
-public interface FTileStorage<POS extends IFarPos, T extends IFarTile> extends FStorageItem {
+public interface FTileStorage extends FStorageItem {
     /**
      * Gets an {@link ITileHandle} for accessing the tile data at the given position.
      *
      * @param pos the position
      * @return an {@link ITileHandle}
      */
-    ITileHandle<POS, T> handleFor(@NonNull POS pos);
+    ITileHandle handleFor(@NonNull TilePos pos);
 
     /**
      * Takes snapshots of multiple tiles' data and metadata.
      * <p>
      * Conceptually implemented by
      * <blockquote><pre>{@code
-     * List<ITileSnapshot<POS, T>> out = new ArrayList<>(positions.size());
+     * List<ITileSnapshot> out = new ArrayList<>(positions.size());
      * positions.forEach(pos -> out.add(this.handleFor(pos).snapshot()));
      * return out;
      * }</pre></blockquote>
@@ -64,8 +64,8 @@ public interface FTileStorage<POS extends IFarPos, T extends IFarTile> extends F
      * @return snapshots of the tiles'
      * @see ITileHandle#snapshot()
      */
-    default List<ITileSnapshot<POS, T>> multiSnapshot(@NonNull List<POS> positions) {
-        List<ITileSnapshot<POS, T>> out = new ArrayList<>(positions.size());
+    default List<ITileSnapshot> multiSnapshot(@NonNull List<TilePos> positions) {
+        List<ITileSnapshot> out = new ArrayList<>(positions.size());
         try {
             positions.forEach(pos -> out.add(this.handleFor(pos).snapshot()));
         } catch (Throwable t) {
@@ -91,7 +91,7 @@ public interface FTileStorage<POS extends IFarPos, T extends IFarTile> extends F
      * @return the tiles' timestamps
      * @see ITileHandle#timestamp()
      */
-    default LongList multiTimestamp(@NonNull List<POS> positions) {
+    default LongList multiTimestamp(@NonNull List<TilePos> positions) {
         LongList out = new LongArrayList(positions.size());
         positions.forEach(pos -> out.add(this.handleFor(pos).timestamp()));
         return out;
@@ -114,9 +114,9 @@ public interface FTileStorage<POS extends IFarPos, T extends IFarTile> extends F
      * @param metadatas the new {@link ITileMetadata}s to use
      * @param tiles     the new tile datas to use
      * @return a {@link BitSet} indicating the tiles for which the operation was able to be applied
-     * @see ITileHandle#set(ITileMetadata, IFarTile)
+     * @see ITileHandle#set(ITileMetadata, Tile)
      */
-    default BitSet multiSet(@NonNull List<POS> positions, @NonNull List<ITileMetadata> metadatas, @NonNull List<T> tiles) {
+    default BitSet multiSet(@NonNull List<TilePos> positions, @NonNull List<ITileMetadata> metadatas, @NonNull List<Tile> tiles) {
         BitSet out = new BitSet(positions.size());
         for (int i = 0; i < positions.size(); i++) {
             out.set(i, this.handleFor(positions.get(i)).set(metadatas.get(i), tiles.get(i)));
@@ -139,7 +139,7 @@ public interface FTileStorage<POS extends IFarPos, T extends IFarTile> extends F
      * @return the timestamps at which multiple tiles were last marked as dirty
      * @see ITileHandle#dirtyTimestamp()
      */
-    default LongList multiDirtyTimestamp(@NonNull List<POS> positions) {
+    default LongList multiDirtyTimestamp(@NonNull List<TilePos> positions) {
         LongList out = new LongArrayList(positions.size());
         positions.forEach(pos -> out.add(this.handleFor(pos).dirtyTimestamp()));
         return out;
@@ -163,7 +163,7 @@ public interface FTileStorage<POS extends IFarPos, T extends IFarTile> extends F
      * @return a {@link BitSet} indicating the tiles for which the operation was able to be applied
      * @see ITileHandle#markDirty(long)
      */
-    default BitSet multiMarkDirty(@NonNull List<POS> positions, long dirtyTimestamp) {
+    default BitSet multiMarkDirty(@NonNull List<TilePos> positions, long dirtyTimestamp) {
         BitSet out = new BitSet(positions.size());
         for (int i = 0; i < positions.size(); i++) {
             out.set(i, this.handleFor(positions.get(i)).markDirty(dirtyTimestamp));
@@ -188,7 +188,7 @@ public interface FTileStorage<POS extends IFarPos, T extends IFarTile> extends F
      * @return a {@link BitSet} indicating the tiles for which the operation was able to be applied
      * @see ITileHandle#clearDirty()
      */
-    default BitSet multiClearDirty(@NonNull List<POS> positions) {
+    default BitSet multiClearDirty(@NonNull List<TilePos> positions) {
         BitSet out = new BitSet(positions.size());
         for (int i = 0; i < positions.size(); i++) {
             out.set(i, this.handleFor(positions.get(i)).clearDirty());
@@ -206,27 +206,27 @@ public interface FTileStorage<POS extends IFarPos, T extends IFarTile> extends F
      *
      * @param listener the {@link Listener} to add
      */
-    void addListener(@NonNull Listener<POS, T> listener);
+    void addListener(@NonNull Listener listener);
 
     /**
      * Removes a previously added {@link Listener}, preventing it from receiving any future notifications.
      *
      * @param listener the {@link Listener} to remove
      */
-    void removeListener(@NonNull Listener<POS, T> listener);
+    void removeListener(@NonNull Listener listener);
 
     /**
      * Listens for changes made to any data stored in a {@link FTileStorage}.
      *
      * @author DaPorkchop_
      */
-    interface Listener<POS extends IFarPos, T extends IFarTile> {
+    interface Listener {
         /**
          * Fired when the tiles at the given positions are modified.
          *
          * @param positions a distinct {@link Stream} of the modified positions
          */
-        void tilesChanged(@NonNull Stream<POS> positions);
+        void tilesChanged(@NonNull Stream<TilePos> positions);
 
         /**
          * Fired when the tiles at the given positions are marked as dirty.
@@ -235,6 +235,6 @@ public interface FTileStorage<POS extends IFarPos, T extends IFarTile> extends F
          *
          * @param positions a distinct {@link Stream} of the now dirty positions
          */
-        void tilesDirty(@NonNull Stream<POS> positions);
+        void tilesDirty(@NonNull Stream<TilePos> positions);
     }
 }

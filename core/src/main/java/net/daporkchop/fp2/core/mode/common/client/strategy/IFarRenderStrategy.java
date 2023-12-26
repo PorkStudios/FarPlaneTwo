@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -21,9 +21,7 @@ package net.daporkchop.fp2.core.mode.common.client.strategy;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.client.render.RenderInfo;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.common.client.ICullingStrategy;
 import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutput;
 import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutputStorage;
@@ -44,8 +42,8 @@ import net.daporkchop.lib.common.util.exception.AlreadyReleasedException;
 /**
  * @author DaPorkchop_
  */
-public interface IFarRenderStrategy<POS extends IFarPos, T extends IFarTile, BO extends IBakeOutput, DB extends DrawBinding, DC extends DrawCommand> extends RefCounted {
-    IFarRenderMode<POS, T> mode();
+public interface IFarRenderStrategy<BO extends IBakeOutput, DB extends DrawBinding, DC extends DrawCommand> extends RefCounted {
+    IFarRenderMode mode();
 
     ICullingStrategy cullingStrategy();
 
@@ -53,9 +51,9 @@ public interface IFarRenderStrategy<POS extends IFarPos, T extends IFarTile, BO 
 
     DrawLayout drawLayout();
 
-    IRenderIndex<POS, BO, DB, DC> createIndex();
+    IRenderIndex<BO, DB, DC> createIndex();
 
-    IRenderBaker<POS, T, BO> createBaker();
+    IRenderBaker<BO> createBaker();
 
     BO createBakeOutput();
 
@@ -71,13 +69,13 @@ public interface IFarRenderStrategy<POS extends IFarPos, T extends IFarTile, BO 
 
     TransformShaderBuilder configureSelectionShader(@NonNull TransformShaderBuilder builder, int level);
 
-    void render(@NonNull IRenderIndex<POS, BO, DB, DC> index, @NonNull RenderInfo renderInfo);
+    void render(@NonNull IRenderIndex<BO, DB, DC> index, @NonNull RenderInfo renderInfo);
 
     @Override
     int refCnt();
 
     @Override
-    IFarRenderStrategy<POS, T, BO, DB, DC> retain() throws AlreadyReleasedException;
+    IFarRenderStrategy<BO, DB, DC> retain() throws AlreadyReleasedException;
 
     @Override
     boolean release() throws AlreadyReleasedException;

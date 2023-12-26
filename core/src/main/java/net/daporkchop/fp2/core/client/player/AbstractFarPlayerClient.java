@@ -60,7 +60,7 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
     protected FP2Config serverConfig;
     protected FP2Config config;
 
-    protected IFarClientContext<?, ?> context;
+    protected IFarClientContext context;
 
     protected boolean handshakeReceived;
     protected boolean clientReady;
@@ -116,7 +116,7 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
         checkState(!this.sessionOpen, "a session is already open!");
         this.sessionOpen = true;
 
-        IFarRenderMode<?, ?> mode = this.modeFor(this.config);
+        IFarRenderMode mode = this.modeFor(this.config);
         this.fp2().log().info("beginning session with mode %s", mode);
 
         if (mode != null) {
@@ -175,7 +175,7 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
         checkState(this.sessionOpen, "no session is currently open!");
         checkState(this.context != null, "active session has no render mode!");
 
-        packet.positions().forEach(PorkUtil.<IFarTileCache<IFarPos, ?>>uncheckedCast(this.context.tileCache())::unloadTile);
+        packet.positions().forEach(this.context.tileCache()::unloadTile);
     }
 
     @CalledWithMonitor
@@ -252,7 +252,7 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
 
             //TODO: better solution than casting to AbstractWorldClient
             try (AutoCloseable unloadLevel = () -> ((AbstractWorldClient<?, ?, ?, ?, ?>) this.world()).unloadLevel(levelId); //unload the level, since we loaded it earlier
-                 IFarClientContext<?, ?> context = this.context) {
+                 IFarClientContext context = this.context) {
                 this.context = null;
             }
         }
@@ -271,13 +271,13 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
     }
 
     @Deprecated
-    protected IFarRenderMode<?, ?> modeFor(FP2Config config) {
+    protected IFarRenderMode modeFor(FP2Config config) {
         return config == null ? null : VoxelRenderMode.INSTANCE;
     }
 
     @CalledFromAnyThread
     @Override
-    public <POS extends IFarPos, T extends IFarTile> IFarClientContext<POS, T> activeContext() {
+    public <POS extends IFarPos, T extends IFarTile> IFarClientContext activeContext() {
         return uncheckedCast(this.context);
     }
 }

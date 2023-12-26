@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -23,10 +23,8 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
+import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
-import net.daporkchop.lib.common.annotation.param.Positive;
 import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
 import net.daporkchop.lib.common.system.PlatformInfo;
 import net.daporkchop.lib.common.util.exception.AlreadyReleasedException;
@@ -45,7 +43,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @RequiredArgsConstructor
 @Getter
-public abstract class AbstractTileSnapshot<POS extends IFarPos, T extends IFarTile> extends AbstractRefCounted implements ITileSnapshot<POS, T> {
+public abstract class AbstractTileSnapshot extends AbstractRefCounted implements ITileSnapshot {
     /*
      * struct data {
      *     int length;
@@ -84,7 +82,7 @@ public abstract class AbstractTileSnapshot<POS extends IFarPos, T extends IFarTi
     }
 
     @NonNull
-    protected final POS pos;
+    protected final TilePos pos;
     protected final long timestamp;
 
     @Getter(AccessLevel.NONE)
@@ -93,7 +91,7 @@ public abstract class AbstractTileSnapshot<POS extends IFarPos, T extends IFarTi
     protected PCleaner cleaner;
 
     @Override
-    public ITileSnapshot<POS, T> retain() throws AlreadyReleasedException {
+    public ITileSnapshot retain() throws AlreadyReleasedException {
         super.retain();
         return this;
     }

@@ -25,7 +25,6 @@ import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTrackerManager;
 import net.daporkchop.fp2.core.mode.common.server.AbstractFarTileProvider;
 import net.daporkchop.fp2.core.engine.TilePos;
-import net.daporkchop.fp2.core.engine.Tile;
 import net.daporkchop.fp2.core.engine.server.tracking.VoxelTrackerManager;
 import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
 import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
@@ -35,13 +34,13 @@ import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 /**
  * @author DaPorkchop_
  */
-public abstract class VoxelTileProvider extends AbstractFarTileProvider<TilePos, Tile> {
-    public VoxelTileProvider(@NonNull IFarLevelServer world, @NonNull IFarRenderMode<TilePos, Tile> mode) {
+public abstract class VoxelTileProvider extends AbstractFarTileProvider {
+    public VoxelTileProvider(@NonNull IFarLevelServer world, @NonNull IFarRenderMode mode) {
         super(world, mode);
     }
 
     @Override
-    protected IFarTrackerManager<TilePos, Tile> createTracker() {
+    protected IFarTrackerManager createTracker() {
         return new VoxelTrackerManager(this);
     }
 
@@ -60,7 +59,7 @@ public abstract class VoxelTileProvider extends AbstractFarTileProvider<TilePos,
      * @author DaPorkchop_
      */
     public static class Vanilla extends VoxelTileProvider {
-        public Vanilla(@NonNull IFarLevelServer world, @NonNull IFarRenderMode<TilePos, Tile> mode) {
+        public Vanilla(@NonNull IFarLevelServer world, @NonNull IFarRenderMode mode) {
             super(world, mode);
         }
 
@@ -89,7 +88,7 @@ public abstract class VoxelTileProvider extends AbstractFarTileProvider<TilePos,
      * @author DaPorkchop_
      */
     public static class CubicChunks extends VoxelTileProvider {
-        public CubicChunks(@NonNull IFarLevelServer world, @NonNull IFarRenderMode<TilePos, Tile> mode) {
+        public CubicChunks(@NonNull IFarLevelServer world, @NonNull IFarRenderMode mode) {
             super(world, mode);
         }
 

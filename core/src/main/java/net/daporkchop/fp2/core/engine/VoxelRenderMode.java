@@ -56,7 +56,7 @@ import static net.daporkchop.fp2.core.engine.EngineConstants.*;
  * @author DaPorkchop_
  */
 @Deprecated
-public class VoxelRenderMode extends AbstractFarRenderMode<TilePos, Tile> {
+public class VoxelRenderMode extends AbstractFarRenderMode {
     public static final VoxelRenderMode INSTANCE = new VoxelRenderMode();
 
     private VoxelRenderMode() {
@@ -64,12 +64,12 @@ public class VoxelRenderMode extends AbstractFarRenderMode<TilePos, Tile> {
     }
 
     @Override
-    protected AbstractExactGeneratorCreationEvent exactGeneratorCreationEvent(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<TilePos, Tile> provider) {
+    protected AbstractExactGeneratorCreationEvent exactGeneratorCreationEvent(@NonNull IFarLevelServer world, @NonNull IFarTileProvider provider) {
         return new AbstractExactGeneratorCreationEvent(world, provider) {};
     }
 
     @Override
-    protected AbstractRoughGeneratorCreationEvent roughGeneratorCreationEvent(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<TilePos, Tile> provider) {
+    protected AbstractRoughGeneratorCreationEvent roughGeneratorCreationEvent(@NonNull IFarLevelServer world, @NonNull IFarTileProvider provider) {
         return new AbstractRoughGeneratorCreationEvent(world, provider) {};
     }
 
@@ -84,27 +84,27 @@ public class VoxelRenderMode extends AbstractFarRenderMode<TilePos, Tile> {
     }
 
     @Override
-    public IFarScaler<TilePos, Tile> scaler(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<TilePos, Tile> provider) {
+    public IFarScaler scaler(@NonNull IFarLevelServer world, @NonNull IFarTileProvider provider) {
         return new VoxelScalerIntersection(world, provider);
     }
 
     @Override
-    public IFarServerContext<TilePos, Tile> serverContext(@NonNull IFarPlayerServer player, @NonNull IFarLevelServer world, @NonNull FP2Config config) {
+    public IFarServerContext serverContext(@NonNull IFarPlayerServer player, @NonNull IFarLevelServer world, @NonNull FP2Config config) {
         return new VoxelServerContext(player, world, config, this);
     }
 
     @Override
-    public IFarClientContext<TilePos, Tile> clientContext(@NonNull IFarLevelClient level, @NonNull FP2Config config) {
+    public IFarClientContext clientContext(@NonNull IFarLevelClient level, @NonNull FP2Config config) {
         return new VoxelClientContext(level, config, this);
     }
 
     @Override
-    public IFarDirectPosAccess<TilePos> directPosAccess() {
+    public IFarDirectPosAccess directPosAccess() {
         return DirectTilePosAccess.INSTANCE;
     }
 
     @Override
-    public IFarPosCodec<TilePos> posCodec() {
+    public IFarPosCodec posCodec() {
         return TilePosCodec.INSTANCE;
     }
 
@@ -114,7 +114,7 @@ public class VoxelRenderMode extends AbstractFarRenderMode<TilePos, Tile> {
     }
 
     @Override
-    public IFarCoordLimits<TilePos> tileCoordLimits(@NonNull IntAxisAlignedBB blockCoordLimits) {
+    public IFarCoordLimits tileCoordLimits(@NonNull IntAxisAlignedBB blockCoordLimits) {
         return new TileCoordLimits(
                 blockCoordLimits.minX(), blockCoordLimits.minY(), blockCoordLimits.minZ(),
                 blockCoordLimits.maxX(), blockCoordLimits.maxY(), blockCoordLimits.maxZ());

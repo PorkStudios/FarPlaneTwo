@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -20,8 +20,6 @@
 package net.daporkchop.fp2.core.mode.api.server.tracking;
 
 import net.daporkchop.fp2.core.debug.util.DebugStats;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
 
@@ -30,7 +28,7 @@ import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
  *
  * @author DaPorkchop_
  */
-public interface IFarTracker<POS extends IFarPos, T extends IFarTile> extends AutoCloseable {
+public interface IFarTracker extends AutoCloseable {
     /**
      * Updates this tracker.
      * <p>

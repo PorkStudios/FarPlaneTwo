@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,15 +15,12 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.server.world.level;
 
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.SneakyThrows;
-import net.daporkchop.fp2.api.storage.FStorageException;
 import net.daporkchop.fp2.api.storage.external.FStorageCategory;
 import net.daporkchop.fp2.api.storage.external.FStorageCategoryFactory;
 import net.daporkchop.fp2.api.util.Identifier;
@@ -62,7 +59,7 @@ public abstract class AbstractLevelServer<F extends FP2Core,
         IMPL_LEVEL, LEVEL extends AbstractLevelServer<F, IMPL_WORLD, WORLD, IMPL_LEVEL, LEVEL>> extends AbstractLevel<F, IMPL_WORLD, WORLD, IMPL_LEVEL, LEVEL> implements FLevelServer, IFarLevelServer {
     private final FStorageCategory storageCategory;
 
-    private final Map<IFarRenderMode<?, ?>, IFarTileProvider<?, ?>> loadedTileProviders = new IdentityHashMap<>();
+    private final Map<IFarRenderMode, IFarTileProvider> loadedTileProviders = new IdentityHashMap<>();
 
     private final IntAxisAlignedBB coordLimits;
 
@@ -100,11 +97,11 @@ public abstract class AbstractLevelServer<F extends FP2Core,
         try (AutoCloseable closeSuper = () -> super.doClose();
              FStorageCategory storageCategory = this.storageCategory;
              ExactFBlockLevelHolder exactBlockLevelHolder = this.exactBlockLevelHolder) {
-            class State implements BiConsumer<IFarRenderMode<?, ?>, IFarTileProvider<?, ?>> {
+            class State implements BiConsumer<IFarRenderMode, IFarTileProvider> {
                 Throwable cause = null;
 
                 @Override
-                public void accept(IFarRenderMode<?, ?> mode, IFarTileProvider<?, ?> tileProvider) {
+                public void accept(IFarRenderMode mode, IFarTileProvider tileProvider) {
                     try {
                         tileProvider.close();
                     } catch (Throwable t) {
@@ -130,8 +127,8 @@ public abstract class AbstractLevelServer<F extends FP2Core,
     }
 
     @Override
-    public <POS extends IFarPos, T extends IFarTile> IFarTileProvider<POS, T> tileProviderFor(@NonNull IFarRenderMode<POS, T> mode) throws NoSuchElementException {
-        IFarTileProvider<POS, T> tileProvider = uncheckedCast(this.loadedTileProviders.get(mode));
+    public <POS extends IFarPos, T extends IFarTile> IFarTileProvider tileProviderFor(@NonNull IFarRenderMode mode) throws NoSuchElementException {
+        IFarTileProvider tileProvider = uncheckedCast(this.loadedTileProviders.get(mode));
         if (tileProvider == null) {
             throw new NoSuchElementException("cannot get tile provider for invalid mode: " + mode);
         }
@@ -139,7 +136,7 @@ public abstract class AbstractLevelServer<F extends FP2Core,
     }
 
     @Override
-    public void forEachTileProvider(@NonNull BiConsumer<? super IFarRenderMode<?, ?>, ? super IFarTileProvider<?, ?>> action) {
+    public void forEachTileProvider(@NonNull BiConsumer<? super IFarRenderMode, ? super IFarTileProvider> action) {
         this.loadedTileProviders.forEach(action);
     }
 }

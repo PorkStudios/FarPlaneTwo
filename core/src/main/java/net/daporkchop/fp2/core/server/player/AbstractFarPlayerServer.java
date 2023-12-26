@@ -34,7 +34,6 @@ import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
 
 import java.util.Objects;
-import java.util.stream.Stream;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
@@ -49,8 +48,8 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
 
     protected IFarLevelServer world;
 
-    protected IFarRenderMode<?, ?> mode;
-    protected IFarServerContext<?, ?> context;
+    protected IFarRenderMode mode;
+    protected IFarServerContext context;
 
     protected boolean sessionOpen;
     protected boolean closed;
@@ -101,7 +100,7 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
             return;
         }
 
-        IFarRenderMode<?, ?> mode = mergedConfig == null ? null : VoxelRenderMode.INSTANCE;
+        IFarRenderMode mode = mergedConfig == null ? null : VoxelRenderMode.INSTANCE;
 
         if (this.mode == mode) { //render mode hasn't changed
             this.updateMergedConfig(mergedConfig);

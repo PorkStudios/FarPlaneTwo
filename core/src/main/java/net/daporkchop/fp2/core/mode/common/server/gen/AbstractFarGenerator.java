@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.mode.common.server.gen;
@@ -25,8 +24,6 @@ import lombok.NonNull;
 import net.daporkchop.fp2.api.world.registry.FExtendedBiomeRegistryData;
 import net.daporkchop.fp2.api.world.registry.FExtendedStateRegistryData;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGenerator;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
@@ -35,9 +32,9 @@ import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractFarGenerator<POS extends IFarPos, T extends IFarTile> implements IFarGenerator<POS, T> {
+public abstract class AbstractFarGenerator implements IFarGenerator {
     private final IFarLevelServer world;
-    private final IFarTileProvider<POS, T> provider;
+    private final IFarTileProvider provider;
 
     private final FGameRegistry registry;
     private final FExtendedBiomeRegistryData extendedBiomeRegistryData;
@@ -45,7 +42,7 @@ public abstract class AbstractFarGenerator<POS extends IFarPos, T extends IFarTi
 
     private final int seaLevel;
 
-    public AbstractFarGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<POS, T> provider) {
+    public AbstractFarGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider provider) {
         this.world = world;
         this.provider = provider;
 

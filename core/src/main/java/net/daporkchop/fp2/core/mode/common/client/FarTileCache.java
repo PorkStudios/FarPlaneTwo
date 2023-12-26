@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -21,8 +21,8 @@ package net.daporkchop.fp2.core.mode.common.client;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
+import net.daporkchop.fp2.core.engine.Tile;
+import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.mode.api.client.IFarTileCache;
 import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
 import net.daporkchop.lib.common.misc.release.AbstractReleasable;
@@ -46,15 +46,15 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 //TODO: this still has some race conditions - it's possible that addListener/removeListener might cause the listener to be notified twice for tiles that are
 // received/unloaded during the initial notification pass
 //TODO: handling in case an exception is thrown by a listener
-public class FarTileCache<POS extends IFarPos, T extends IFarTile> extends AbstractReleasable implements IFarTileCache<POS, T>, Function<POS, ITileSnapshot<POS, T>> {
-    protected final Map<POS, ITileSnapshot<POS, T>> tiles = new ConcurrentHashMap<>();
-    protected final Collection<Listener<POS, T>> listeners = new CopyOnWriteArraySet<>();
+public class FarTileCache extends AbstractReleasable implements IFarTileCache, Function<TilePos, ITileSnapshot> {
+    protected final Map<TilePos, ITileSnapshot> tiles = new ConcurrentHashMap<>();
+    protected final Collection<Listener> listeners = new CopyOnWriteArraySet<>();
 
     protected final AtomicReference<DebugStats.TileSnapshot> debug_tileStats = new AtomicReference<>(DebugStats.TileSnapshot.ZERO);
     protected final LongAdder debug_nonEmptyTileCount = new LongAdder();
 
     @Override
-    public void receiveTile(@NonNull ITileSnapshot<POS, T> tile) {
+    public void receiveTile(@NonNull ITileSnapshot tile) {
         this.assertNotReleased();
         this.tiles.compute(tile.pos(), (pos, old) -> {
             this.debug_updateStats(old, tile);
@@ -70,7 +70,7 @@ public class FarTileCache<POS extends IFarPos, T extends IFarTile> extends Abstr
     }
 
     @Override
-    public void unloadTile(@NonNull POS _pos) {
+    public void unloadTile(@NonNull TilePos _pos) {
         this.assertNotReleased();
         this.tiles.computeIfPresent(_pos, (pos, old) -> {
             this.debug_updateStats(old, null);
@@ -82,7 +82,7 @@ public class FarTileCache<POS extends IFarPos, T extends IFarTile> extends Abstr
     }
 
     @Override
-    public void addListener(@NonNull Listener<POS, T> listener, boolean notifyForExisting) {
+    public void addListener(@NonNull Listener listener, boolean notifyForExisting) {
         this.assertNotReleased();
         checkState(this.listeners.add(listener), "duplicate listener: %s", listener);
         if (notifyForExisting) {
@@ -95,7 +95,7 @@ public class FarTileCache<POS extends IFarPos, T extends IFarTile> extends Abstr
     }
 
     @Override
-    public void removeListener(@NonNull Listener<POS, T> listener, boolean notifyRemoval) {
+    public void removeListener(@NonNull Listener listener, boolean notifyRemoval) {
         this.assertNotReleased();
         checkState(this.listeners.remove(listener), "unknown listener: %s", listener);
         if (notifyRemoval) {
@@ -104,9 +104,9 @@ public class FarTileCache<POS extends IFarPos, T extends IFarTile> extends Abstr
     }
 
     @Override
-    public ITileSnapshot<POS, T> getTileCached(@NonNull POS position) {
+    public ITileSnapshot getTileCached(@NonNull TilePos position) {
         this.assertNotReleased();
-        ITileSnapshot<POS, T> snapshot = this.tiles.get(position);
+        ITileSnapshot snapshot = this.tiles.get(position);
         if (snapshot != null) {
             snapshot.retain();
         }
@@ -114,12 +114,12 @@ public class FarTileCache<POS extends IFarPos, T extends IFarTile> extends Abstr
     }
 
     @Override
-    public Stream<ITileSnapshot<POS, T>> getTilesCached(@NonNull Stream<POS> position) {
+    public Stream<ITileSnapshot> getTilesCached(@NonNull Stream<TilePos> position) {
         this.assertNotReleased();
         return position.map(this);
     }
 
-    protected void debug_updateStats(ITileSnapshot<POS, T> prev, ITileSnapshot<POS, T> next) {
+    protected void debug_updateStats(ITileSnapshot prev, ITileSnapshot next) {
         DebugStats.TileSnapshot prevStats = prev != null ? prev.stats() : DebugStats.TileSnapshot.ZERO;
         DebugStats.TileSnapshot nextStats = next != null ? next.stats() : DebugStats.TileSnapshot.ZERO;
 
@@ -147,8 +147,8 @@ public class FarTileCache<POS extends IFarPos, T extends IFarTile> extends Abstr
      */
     @Override
     @Deprecated
-    public ITileSnapshot<POS, T> apply(@NonNull POS pos) {
-        ITileSnapshot<POS, T> snapshot = this.tiles.get(pos);
+    public ITileSnapshot apply(@NonNull TilePos pos) {
+        ITileSnapshot snapshot = this.tiles.get(pos);
         if (snapshot != null) {
             snapshot.retain();
         }

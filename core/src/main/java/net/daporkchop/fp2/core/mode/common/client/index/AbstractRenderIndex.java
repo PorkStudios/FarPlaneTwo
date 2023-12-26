@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -27,9 +27,8 @@ import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
+import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.mode.api.IFarDirectPosAccess;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.common.client.ICullingStrategy;
 import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutput;
 import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutputStorage;
@@ -64,16 +63,16 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeOutput, DB extends DrawBinding, DC extends DrawCommand, DL extends DrawList<DC>> extends AbstractRefCounted implements IRenderIndex<POS, BO, DB, DC> {
-    protected final IFarRenderStrategy<POS, ?, BO, DB, DC> strategy;
+public abstract class AbstractRenderIndex<BO extends IBakeOutput, DB extends DrawBinding, DC extends DrawCommand, DL extends DrawList<DC>> extends AbstractRefCounted implements IRenderIndex<BO, DB, DC> {
+    protected final IFarRenderStrategy<BO, DB, DC> strategy;
     protected final ICullingStrategy cullingStrategy;
 
     protected final Allocator directMemoryAlloc = new DirectMemoryAllocator(true);
 
-    protected final Set<POS> renderablePositions;
+    protected final Set<TilePos> renderablePositions;
     protected final Level[] levels;
 
-    public <T extends IFarTile> AbstractRenderIndex(@NonNull IFarRenderStrategy<POS, T, BO, DB, DC> strategy) {
+    public AbstractRenderIndex(@NonNull IFarRenderStrategy<BO, DB, DC> strategy) {
         this.strategy = strategy;
         this.cullingStrategy = this.strategy.cullingStrategy();
         this.renderablePositions = this.strategy.mode().directPosAccess().newPositionSet();
@@ -87,7 +86,7 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
     protected abstract Level createLevel(int level);
 
     @Override
-    public IRenderIndex<POS, BO, DB, DC> retain() throws AlreadyReleasedException {
+    public IRenderIndex<BO, DB, DC> retain() throws AlreadyReleasedException {
         super.retain();
         return this;
     }
@@ -100,14 +99,14 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
     }
 
     @Override
-    public void update(@NonNull Iterable<Map.Entry<POS, Optional<BO>>> dataUpdates, @NonNull Iterable<Map.Entry<POS, Boolean>> renderableUpdates) {
+    public void update(@NonNull Iterable<Map.Entry<TilePos, Optional<BO>>> dataUpdates, @NonNull Iterable<Map.Entry<TilePos, Boolean>> renderableUpdates) {
         dataUpdates.forEach(update -> {
-            POS pos = update.getKey();
+            TilePos pos = update.getKey();
             this.levels[pos.level()].put(pos, update.getValue().orElse(null));
         });
 
         renderableUpdates.forEach(update -> {
-            POS pos = update.getKey();
+            TilePos pos = update.getKey();
             this.levels[pos.level()].updateSelectable(pos, update.getValue());
         });
     }
@@ -145,10 +144,10 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
      * @author DaPorkchop_
      */
     protected abstract class Level implements AutoCloseable {
-        protected final IFarDirectPosAccess<POS> directPosAccess;
+        protected final IFarDirectPosAccess directPosAccess;
         protected final int level;
 
-        protected final Object2IntMap<POS> positionsToHandles = new Object2IntOpenHashMap<>();
+        protected final Object2IntMap<TilePos> positionsToHandles = new Object2IntOpenHashMap<>();
 
         protected final long positionSize;
         protected long positionsAddr;
@@ -203,7 +202,7 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
             this.dirty = true;
         }
 
-        public void put(@NonNull POS pos, BO output) {
+        public void put(@NonNull TilePos pos, BO output) {
             int handle = this.positionsToHandles.removeInt(pos);
             if (handle >= 0) { //the position was already inserted, remove it
                 //delete the bake output from the storage using the saved handle
@@ -235,7 +234,7 @@ public abstract class AbstractRenderIndex<POS extends IFarPos, BO extends IBakeO
             this.dirty = true;
         }
 
-        public void updateSelectable(@NonNull POS pos, boolean selectable) {
+        public void updateSelectable(@NonNull TilePos pos, boolean selectable) {
             int handle = this.positionsToHandles.getInt(pos);
 
             if (selectable) {

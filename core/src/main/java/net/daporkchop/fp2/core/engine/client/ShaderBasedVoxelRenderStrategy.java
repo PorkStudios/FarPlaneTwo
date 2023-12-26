@@ -30,8 +30,6 @@ import net.daporkchop.fp2.core.mode.common.client.ICullingStrategy;
 import net.daporkchop.fp2.core.mode.common.client.bake.IRenderBaker;
 import net.daporkchop.fp2.core.mode.common.client.bake.indexed.IndexedBakeOutput;
 import net.daporkchop.fp2.core.mode.common.client.strategy.AbstractMultipassIndexedRenderStrategy;
-import net.daporkchop.fp2.core.engine.TilePos;
-import net.daporkchop.fp2.core.engine.Tile;
 import net.daporkchop.fp2.core.engine.client.struct.VoxelGlobalAttributes;
 import net.daporkchop.fp2.core.engine.client.struct.VoxelLocalAttributes;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
@@ -50,7 +48,7 @@ import static net.daporkchop.fp2.core.FP2Core.*;
  * @author DaPorkchop_
  */
 @Getter
-public class ShaderBasedVoxelRenderStrategy extends AbstractMultipassIndexedRenderStrategy<TilePos, Tile, VoxelGlobalAttributes, VoxelLocalAttributes> {
+public class ShaderBasedVoxelRenderStrategy extends AbstractMultipassIndexedRenderStrategy<VoxelGlobalAttributes, VoxelLocalAttributes> {
     protected final AttributeFormat<VoxelGlobalAttributes> globalFormat;
     protected final AttributeFormat<VoxelLocalAttributes> vertexFormat;
 
@@ -62,7 +60,7 @@ public class ShaderBasedVoxelRenderStrategy extends AbstractMultipassIndexedRend
     protected final ReloadableShaderProgram<DrawShaderProgram> blockShaderCutout;
     protected final ReloadableShaderProgram<DrawShaderProgram> stencilShader;
 
-    public ShaderBasedVoxelRenderStrategy(@NonNull AbstractFarRenderer<TilePos, Tile> farRenderer) {
+    public ShaderBasedVoxelRenderStrategy(@NonNull AbstractFarRenderer farRenderer) {
         super(farRenderer);
 
         this.globalFormat = this.gl.createAttributeFormat(VoxelGlobalAttributes.class).useFor(AttributeUsage.DRAW_GLOBAL, AttributeUsage.TRANSFORM_INPUT).build();
@@ -117,7 +115,7 @@ public class ShaderBasedVoxelRenderStrategy extends AbstractMultipassIndexedRend
     }
 
     @Override
-    public IRenderBaker<TilePos, Tile, IndexedBakeOutput<VoxelGlobalAttributes, VoxelLocalAttributes>> createBaker() {
+    public IRenderBaker<IndexedBakeOutput<VoxelGlobalAttributes, VoxelLocalAttributes>> createBaker() {
         return new VoxelBaker(this.levelRenderer, this.textureUVs, this.farRenderer().context().config().quality().forceBlockyMesh());
     }
 

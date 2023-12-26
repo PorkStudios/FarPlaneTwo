@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -21,9 +21,8 @@ package net.daporkchop.fp2.core.mode.api.ctx;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
+import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTracker;
 import net.daporkchop.fp2.core.mode.api.tile.TileSnapshot;
@@ -37,7 +36,7 @@ import net.daporkchop.lib.common.annotation.TransferOwnership;
  *
  * @author DaPorkchop_
  */
-public interface IFarServerContext<POS extends IFarPos, T extends IFarTile> extends AutoCloseable {
+public interface IFarServerContext extends AutoCloseable {
     /**
      * @return the player which this context belongs to
      */
@@ -51,17 +50,17 @@ public interface IFarServerContext<POS extends IFarPos, T extends IFarTile> exte
     /**
      * @return the render mode
      */
-    IFarRenderMode<POS, T> mode();
+    IFarRenderMode mode();
 
     /**
      * @return the {@link IFarTileProvider} used in this context
      */
-    IFarTileProvider<POS, T> tileProvider();
+    IFarTileProvider tileProvider();
 
     /**
      * @return the {@link IFarTracker} used by this context
      */
-    IFarTracker<POS, T> tracker();
+    IFarTracker tracker();
 
     /**
      * @return the config currently being used
@@ -98,19 +97,19 @@ public interface IFarServerContext<POS extends IFarPos, T extends IFarTile> exte
      *
      * @param snapshot a snapshot of the data to be sent
      */
-    void sendTile(@TransferOwnership @NonNull TileSnapshot<POS, T> snapshot);
+    void sendTile(@TransferOwnership @NonNull TileSnapshot snapshot);
 
     /**
      * Unloads the tile at the given position on the client.
      *
      * @param pos the position of the tile to unload
      */
-    void sendTileUnload(@NonNull POS pos);
+    void sendTileUnload(@NonNull TilePos pos);
 
     /**
      * Unloads the tiles at the given positions on the client.
      *
      * @param positions the positions of the tiles to unload
      */
-    void sendMultiTileUnload(@NonNull Iterable<POS> positions);
+    void sendMultiTileUnload(@NonNull Iterable<TilePos> positions);
 }

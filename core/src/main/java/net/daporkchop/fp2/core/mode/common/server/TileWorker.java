@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -25,8 +25,8 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.fp2.api.world.level.GenerationNotAllowedException;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
+import net.daporkchop.fp2.core.engine.Tile;
+import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.core.mode.api.tile.ITileMetadata;
 import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
@@ -59,13 +59,13 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public class TileWorker<POS extends IFarPos, T extends IFarTile> implements SharedFutureScheduler.WorkFunction<PriorityTask<POS>, ITileHandle<POS, T>> {
+public class TileWorker implements SharedFutureScheduler.WorkFunction<PriorityTask, ITileHandle> {
     @NonNull
-    protected final AbstractFarTileProvider<POS, T> provider;
+    protected final AbstractFarTileProvider provider;
     @NonNull
-    protected final Scheduler<PriorityTask<POS>, ITileHandle<POS, T>> scheduler;
+    protected final Scheduler<PriorityTask, ITileHandle> scheduler;
 
-    protected long minimumTimestamp(@NonNull TaskStage stage, @NonNull ITileHandle<POS, T> handle) {
+    protected long minimumTimestamp(@NonNull TaskStage stage, @NonNull ITileHandle handle) {
         switch (stage) {
             case LOAD:
                 return ITileMetadata.TIMESTAMP_GENERATED;
@@ -77,7 +77,7 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
         }
     }
 
-    protected LongList minimumTimestamps(@NonNull TaskStage stage, @NonNull List<POS> positions) {
+    protected LongList minimumTimestamps(@NonNull TaskStage stage, @NonNull List<TilePos> positions) {
         LongList out = new LongArrayList(positions.size());
         switch (stage) {
             case LOAD:
@@ -108,7 +108,7 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
     }
 
     @Override
-    public void work(@NonNull PriorityTask<POS> task, @NonNull SharedFutureScheduler.Callback<PriorityTask<POS>, ITileHandle<POS, T>> callback) {
+    public void work(@NonNull PriorityTask task, @NonNull SharedFutureScheduler.Callback<PriorityTask, ITileHandle> callback) {
         State state = new State(task, callback);
 
         if (state.considerExit()) {
@@ -172,9 +172,9 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
             state.tryAcquire(batchPositions, SharedFutureScheduler.AcquisitionStrategy.TRY_STEAL_EXISTING_OR_CREATE);
         });
 
-        Recycler<T> tileRecycler = this.provider.mode().tileRecycler();
+        Recycler<Tile> tileRecycler = this.provider.mode().tileRecycler();
         //TODO: T[] tiles = tileRecycler.allocate(state.positions().size(), this.provider.mode()::tileArray);
-        T[] tiles = PArrays.filledFrom(state.positions().size(), this.provider.mode()::tileArray, tileRecycler::allocate);
+        Tile[] tiles = PArrays.filledFrom(state.positions().size(), this.provider.mode()::tileArray, tileRecycler::allocate);
         try {
             //generate tile
             this.provider.generatorRough().generate(state.positions().toArray(this.provider.mode().posArray(state.positions().size())), tiles);
@@ -185,7 +185,7 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
                     Arrays.asList(tiles));
         } finally {
             //TODO: tileRecycler.release(tiles);
-            for (T tile : tiles) {
+            for (Tile tile : tiles) {
                 tileRecycler.release(tile);
             }
             Arrays.fill(tiles, null);
@@ -209,9 +209,9 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
             });
 
             //actually do exact generation
-            Recycler<T> tileRecycler = this.provider.mode().tileRecycler();
+            Recycler<Tile> tileRecycler = this.provider.mode().tileRecycler();
             //TODO: T[] tiles = tileRecycler.allocate(state.positions().size(), this.provider.mode()::tileArray);
-            T[] tiles = PArrays.filledFrom(state.positions().size(), this.provider.mode()::tileArray, tileRecycler::allocate);
+            Tile[] tiles = PArrays.filledFrom(state.positions().size(), this.provider.mode()::tileArray, tileRecycler::allocate);
             try {
                 //generate tile
                 this.provider.generatorExact().generate(exactWorld, state.positions().toArray(this.provider.mode().posArray(state.positions().size())), tiles);
@@ -222,7 +222,7 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
                         Arrays.asList(tiles));
             } finally {
                 //TODO: tileRecycler.release(tiles);
-                for (T tile : tiles) {
+                for (Tile tile : tiles) {
                     tileRecycler.release(tile);
                 }
                 Arrays.fill(tiles, null);
@@ -235,7 +235,7 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
 
     protected void generateScale(@NonNull State state) {
         //find input positions
-        List<POS> uniqueValidSourcePositions = this.provider.scaler().uniqueInputs(state.positions()).stream()
+        List<TilePos> uniqueValidSourcePositions = this.provider.scaler().uniqueInputs(state.positions()).stream()
                 .filter(this.provider.coordLimits()::contains)
                 .collect(Collectors.toList());
 
@@ -249,7 +249,7 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
         }
 
         //snapshot all tiles
-        Map<POS, ITileSnapshot<POS, T>> snapshotsByPosition = this.provider.storage().multiSnapshot(uniqueValidSourcePositions).stream()
+        Map<TilePos, ITileSnapshot> snapshotsByPosition = this.provider.storage().multiSnapshot(uniqueValidSourcePositions).stream()
                 //no null checks are necessary, because we're only snapshotting the input positions which are valid, and therefore all snapshots will be non-null
                 .collect(Collectors.toMap(ITileSnapshot::pos, Function.identity()));
 
@@ -259,14 +259,14 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
             }
 
             //scale each position individually
-            Recycler<T> tileRecycler = this.provider.mode().tileRecycler();
+            Recycler<Tile> tileRecycler = this.provider.mode().tileRecycler();
             state.forEachPositionHandleTimestamp((pos, handle, minimumTimestamp) -> {
-                List<POS> srcPositions = this.provider.scaler().inputs(pos);
+                List<TilePos> srcPositions = this.provider.scaler().inputs(pos);
 
-                T[] srcs = this.provider.mode().tileArray(srcPositions.size());
-                T dst = tileRecycler.allocate();
+                Tile[] srcs = this.provider.mode().tileArray(srcPositions.size());
+                Tile dst = tileRecycler.allocate();
                 try {
-                    IVariableSizeRecyclingCodec<T> codec = this.provider.mode().tileCodec();
+                    IVariableSizeRecyclingCodec<Tile> codec = this.provider.mode().tileCodec();
 
                     //inflate tile snapshots where necessary
                     for (int i = 0; i < srcPositions.size(); i++) {
@@ -285,7 +285,7 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
                 } finally {
                     //release all allocated tile instances
                     tileRecycler.release(dst);
-                    for (T src : srcs) {
+                    for (Tile src : srcs) {
                         if (src != null) {
                             tileRecycler.release(src);
                         }
@@ -307,18 +307,18 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
     @Getter
     protected class State {
         private final TaskStage stage;
-        private final SharedFutureScheduler.Callback<PriorityTask<POS>, ITileHandle<POS, T>> callback;
+        private final SharedFutureScheduler.Callback<PriorityTask, ITileHandle> callback;
 
         private final int level;
 
-        private final Set<POS> allPositions = new ObjectOpenHashSet<>();
-        private final List<POS> positions = TileWorker.this.provider.mode().directPosAccess().newPositionList();
-        private final List<ITileHandle<POS, T>> handles = new ArrayList<>();
+        private final Set<TilePos> allPositions = new ObjectOpenHashSet<>();
+        private final List<TilePos> positions = TileWorker.this.provider.mode().directPosAccess().newPositionList();
+        private final List<ITileHandle> handles = new ArrayList<>();
         private final LongList minimumTimestamps = new LongArrayList();
 
         private final long worldTimestamp = TileWorker.this.provider.currentTimestamp();
 
-        public State(@NonNull PriorityTask<POS> initialTask, @NonNull SharedFutureScheduler.Callback<PriorityTask<POS>, ITileHandle<POS, T>> callback) {
+        public State(@NonNull PriorityTask initialTask, @NonNull SharedFutureScheduler.Callback<PriorityTask, ITileHandle> callback) {
             this.stage = initialTask.stage();
             this.callback = callback;
 
@@ -326,10 +326,10 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
             this.add(initialTask.pos());
         }
 
-        private void add(@NonNull POS pos) {
+        private void add(@NonNull TilePos pos) {
             checkArg(TileWorker.this.provider.coordLimits().contains(pos), "tile position is outside coordinate limits: %s", pos);
 
-            ITileHandle<POS, T> handle = TileWorker.this.provider.storage().handleFor(pos);
+            ITileHandle handle = TileWorker.this.provider.storage().handleFor(pos);
 
             long minimumTimestamp = TileWorker.this.minimumTimestamp(this.stage, handle);
             checkState(this.worldTimestamp >= minimumTimestamp, "worldTimestamp (%d) is less than minimumTimestamp (%d)?!?", this.worldTimestamp, minimumTimestamp);
@@ -340,7 +340,7 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
             this.minimumTimestamps.add(minimumTimestamp);
         }
 
-        private void add(@NonNull List<POS> positions) {
+        private void add(@NonNull List<TilePos> positions) {
             positions.forEach(pos -> checkArg(TileWorker.this.provider.coordLimits().contains(pos), "tile position is outside coordinate limits: %s", pos));
 
             LongList minimumTimestamps = TileWorker.this.minimumTimestamps(this.stage, positions);
@@ -355,14 +355,14 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
             this.minimumTimestamps.addAll(minimumTimestamps);
         }
 
-        protected void tryAcquire(@NonNull Collection<POS> positions, @NonNull SharedFutureScheduler.AcquisitionStrategy strategy) {
+        protected void tryAcquire(@NonNull Collection<TilePos> positions, @NonNull SharedFutureScheduler.AcquisitionStrategy strategy) {
             //convert to PriorityTasks
-            List<PriorityTask<POS>> initialTasks = positions.stream()
+            List<PriorityTask> initialTasks = positions.stream()
                     .filter(pos -> !this.allPositions.contains(pos)) //skip positions which have already been acquired to avoid adding duplicates
                     .map(this.stage::taskForPosition).collect(Collectors.toList());
 
             //try to acquire the tasks
-            List<PriorityTask<POS>> acquiredTasks = this.callback.acquire(initialTasks, strategy);
+            List<PriorityTask> acquiredTasks = this.callback.acquire(initialTasks, strategy);
 
             //add the acquired tasks to this state
             this.add(acquiredTasks.stream().map(PriorityTask::pos).collect(Collectors.toList()));
@@ -401,7 +401,7 @@ public class TileWorker<POS extends IFarPos, T extends IFarTile> implements Shar
             return this.positions.isEmpty();
         }
 
-        public void forEachPositionHandleTimestamp(@NonNull ObjObjLongConsumer<POS, ITileHandle<POS, T>> action) {
+        public void forEachPositionHandleTimestamp(@NonNull ObjObjLongConsumer<TilePos, ITileHandle> action) {
             for (int i = 0; i < this.positions.size(); i++) {
                 action.accept(this.positions.get(i), this.handles.get(i), this.minimumTimestamps.get(i));
             }
