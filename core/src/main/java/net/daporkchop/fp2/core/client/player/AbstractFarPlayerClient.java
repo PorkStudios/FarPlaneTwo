@@ -28,10 +28,7 @@ import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.VoxelRenderMode;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
-import net.daporkchop.fp2.core.mode.api.client.IFarTileCache;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.network.packet.debug.server.SPacketDebugUpdateStatistics;
 import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
@@ -45,7 +42,6 @@ import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUpdateConfi
 import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromClientThread;
 import net.daporkchop.fp2.core.util.annotation.CalledWithMonitor;
-import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.Objects;
@@ -157,7 +153,7 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
         checkState(this.sessionOpen, "no session is currently open!");
         checkState(this.context != null, "active session has no render mode!");
 
-        this.context.tileCache().receiveTile(uncheckedCast(packet.tile()));
+        this.context.tileCache().receiveTile(packet.tile());
         //TODO: tile compression on the network thread is simply too expensive and causes lots of issues... we need congestion control
         //this.fp2_context.tileCache().receiveTile(uncheckedCast(packet.tile().compressed()));
     }
@@ -167,7 +163,7 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
         checkState(this.sessionOpen, "no session is currently open!");
         checkState(this.context != null, "active session has no render mode!");
 
-        this.context.tileCache().unloadTile(uncheckedCast(packet.pos()));
+        this.context.tileCache().unloadTile(packet.pos());
     }
 
     @CalledWithMonitor
@@ -277,7 +273,7 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
 
     @CalledFromAnyThread
     @Override
-    public <POS extends IFarPos, T extends IFarTile> IFarClientContext activeContext() {
-        return uncheckedCast(this.context);
+    public IFarClientContext activeContext() {
+        return this.context;
     }
 }

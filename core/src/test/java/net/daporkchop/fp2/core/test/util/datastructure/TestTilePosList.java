@@ -19,7 +19,6 @@
 
 package net.daporkchop.fp2.core.test.util.datastructure;
 
-import net.daporkchop.fp2.core.mode.api.IFarPos;
 import net.daporkchop.fp2.core.engine.EngineConstants;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.util.TilePosArrayList;
@@ -40,7 +39,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 public class TestTilePosList {
-    protected static <POS extends IFarPos> void ensureEqual(List<POS> reference, List<POS> test) {
+    protected static void ensureEqual(List<TilePos> reference, List<TilePos> test) {
         checkState(reference.size() == test.size());
 
         checkState(reference.equals(test));
@@ -52,16 +51,16 @@ public class TestTilePosList {
         this.testPosList(TilePosArrayList::new, r -> new TilePos(r.nextInt(0, EngineConstants.MAX_LODS), r.nextInt(), r.nextInt(), r.nextInt()));
     }
 
-    protected <POS extends IFarPos> void testPosList(Supplier<? extends List<POS>> listFactory, Function<ThreadLocalRandom, POS> randomPOSFunction) {
+    protected void testPosList(Supplier<? extends List<TilePos>> listFactory, Function<ThreadLocalRandom, TilePos> randomPOSFunction) {
         IntStream.range(0, 1024).parallel().forEach(_unused -> {
             ThreadLocalRandom r = ThreadLocalRandom.current();
 
-            List<POS> reference = new ArrayList<>();
-            List<POS> test = listFactory.get();
+            List<TilePos> reference = new ArrayList<>();
+            List<TilePos> test = listFactory.get();
 
             //append some random positions
             for (int i = 0; i < 1000; i++) {
-                POS pos = randomPOSFunction.apply(r);
+                TilePos pos = randomPOSFunction.apply(r);
                 reference.add(pos);
                 test.add(pos);
             }
@@ -71,7 +70,7 @@ public class TestTilePosList {
             //insert some random positions
             for (int i = 0; i < 32; i++) {
                 int index = r.nextInt(reference.size());
-                POS pos = randomPOSFunction.apply(r);
+                TilePos pos = randomPOSFunction.apply(r);
                 reference.add(index, pos);
                 test.add(index, pos);
             }
@@ -81,7 +80,7 @@ public class TestTilePosList {
             //replace some random positions
             for (int i = 0; i < 32; i++) {
                 int index = r.nextInt(reference.size());
-                POS pos = randomPOSFunction.apply(r);
+                TilePos pos = randomPOSFunction.apply(r);
                 reference.set(index, pos);
                 test.set(index, pos);
             }
@@ -91,8 +90,8 @@ public class TestTilePosList {
             //remove some positions at random indices
             for (int i = 0; i < 32; i++) {
                 int index = r.nextInt(reference.size());
-                POS p0 = reference.remove(index);
-                POS p1 = test.remove(index);
+                TilePos p0 = reference.remove(index);
+                TilePos p1 = test.remove(index);
                 checkState(Objects.equals(p0, p1));
             }
 
@@ -120,9 +119,9 @@ public class TestTilePosList {
             ensureEqual(reference, test);
 
             //duplicate the lists using addAll
-            List<POS> reference2 = new ArrayList<>();
+            List<TilePos> reference2 = new ArrayList<>();
             reference2.addAll(reference);
-            List<POS> test2 = listFactory.get();
+            List<TilePos> test2 = listFactory.get();
             test2.addAll(test);
 
             ensureEqual(reference, reference2);
@@ -142,7 +141,7 @@ public class TestTilePosList {
             //addAll the lists multiple time at random starting indices
             for (int i = 0; i < 32; i++) {
                 int index = r.nextInt(reference2.size());
-                List<POS> srcList = r.nextBoolean() ? reference : test;
+                List<TilePos> srcList = r.nextBoolean() ? reference : test;
                 reference2.addAll(index, srcList);
                 test2.addAll(index, srcList);
             }

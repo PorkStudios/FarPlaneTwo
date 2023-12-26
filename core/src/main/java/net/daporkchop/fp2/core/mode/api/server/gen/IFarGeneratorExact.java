@@ -22,6 +22,7 @@ package net.daporkchop.fp2.core.mode.api.server.gen;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.fp2.api.world.level.GenerationNotAllowedException;
+import net.daporkchop.fp2.core.engine.DirectTilePosAccess;
 import net.daporkchop.fp2.core.engine.Tile;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.mode.api.IFarCoordLimits;
@@ -91,7 +92,7 @@ public interface IFarGeneratorExact extends IFarGenerator {
             if (optionalBatchGroup.isPresent()) {
                 if (set == null) { //create set if it doesn't exist
                     //clone the input collection to ensure that all of the original input positions will be included
-                    set = this.provider().mode().directPosAccess().clonePositionsAsSet(positions);
+                    set = DirectTilePosAccess.clonePositionsAsSet(positions);
                 }
 
                 //add all positions to set

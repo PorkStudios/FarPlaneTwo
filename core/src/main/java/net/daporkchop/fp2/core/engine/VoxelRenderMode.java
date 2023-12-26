@@ -19,35 +19,23 @@
 
 package net.daporkchop.fp2.core.engine;
 
-import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import lombok.SneakyThrows;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
 import net.daporkchop.fp2.core.config.FP2Config;
+import net.daporkchop.fp2.core.engine.ctx.VoxelClientContext;
+import net.daporkchop.fp2.core.engine.ctx.VoxelServerContext;
+import net.daporkchop.fp2.core.engine.server.scale.VoxelScalerIntersection;
 import net.daporkchop.fp2.core.mode.api.IFarCoordLimits;
-import net.daporkchop.fp2.core.mode.api.IFarDirectPosAccess;
-import net.daporkchop.fp2.core.mode.api.IFarPosCodec;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.core.mode.common.AbstractFarRenderMode;
-import net.daporkchop.fp2.core.engine.ctx.VoxelClientContext;
-import net.daporkchop.fp2.core.engine.ctx.VoxelServerContext;
-import net.daporkchop.fp2.core.engine.server.scale.VoxelScalerIntersection;
 import net.daporkchop.fp2.core.server.player.IFarPlayerServer;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
-import net.daporkchop.fp2.core.util.math.MathUtil;
-import net.daporkchop.fp2.core.util.serialization.variable.IVariableSizeRecyclingCodec;
-import net.daporkchop.lib.binary.stream.DataIn;
-import net.daporkchop.lib.binary.stream.DataOut;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-
-import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.fp2.core.engine.EngineConstants.*;
 
 /**
@@ -61,6 +49,11 @@ public class VoxelRenderMode extends AbstractFarRenderMode {
 
     private VoxelRenderMode() {
         super(STORAGE_VERSION, MAX_LODS, T_SHIFT);
+    }
+
+    @Override
+    public String name() {
+        return NAME;
     }
 
     @Override
@@ -99,72 +92,9 @@ public class VoxelRenderMode extends AbstractFarRenderMode {
     }
 
     @Override
-    public IFarDirectPosAccess directPosAccess() {
-        return DirectTilePosAccess.INSTANCE;
-    }
-
-    @Override
-    public IFarPosCodec posCodec() {
-        return TilePosCodec.INSTANCE;
-    }
-
-    @Override
-    public IVariableSizeRecyclingCodec<Tile> tileCodec() {
-        return Tile.CODEC;
-    }
-
-    @Override
     public IFarCoordLimits tileCoordLimits(@NonNull IntAxisAlignedBB blockCoordLimits) {
         return new TileCoordLimits(
                 blockCoordLimits.minX(), blockCoordLimits.minY(), blockCoordLimits.minZ(),
                 blockCoordLimits.maxX(), blockCoordLimits.maxY(), blockCoordLimits.maxZ());
-    }
-
-    @Override
-    public TilePos readPos(@NonNull ByteBuf buf) {
-        return new TilePos(buf);
-    }
-
-    @Override
-    public TilePos readPos(@NonNull DataIn in) throws IOException {
-        int level = in.readUnsignedByte();
-
-        int interleavedHigh = in.readInt();
-        long interleavedLow = in.readLong();
-        int x = MathUtil.uninterleave3_0(interleavedLow, interleavedHigh);
-        int y = MathUtil.uninterleave3_1(interleavedLow, interleavedHigh);
-        int z = MathUtil.uninterleave3_2(interleavedLow, interleavedHigh);
-        return new TilePos(level, x, y, z);
-    }
-
-    @Override
-    @SneakyThrows(IOException.class)
-    public TilePos readPos(@NonNull byte[] arr) {
-        return this.readPos(DataIn.wrap(ByteBuffer.wrap(arr)));
-    }
-
-    @Override
-    public void writePos(@NonNull DataOut out, @NonNull TilePos pos) throws IOException {
-        out.writeByte(pos.level());
-        out.writeInt(MathUtil.interleaveBitsHigh(pos.x(), pos.y(), pos.z()));
-        out.writeLong(MathUtil.interleaveBits(pos.x(), pos.y(), pos.z()));
-    }
-
-    @Override
-    @SneakyThrows(IOException.class)
-    public byte[] writePos(@NonNull TilePos pos) {
-        byte[] arr = new byte[BYTE_SIZE + INT_SIZE + LONG_SIZE];
-        this.writePos(DataOut.wrap(ByteBuffer.wrap(arr)), pos);
-        return arr;
-    }
-
-    @Override
-    public TilePos[] posArray(int length) {
-        return new TilePos[length];
-    }
-
-    @Override
-    public Tile[] tileArray(int length) {
-        return new Tile[length];
     }
 }

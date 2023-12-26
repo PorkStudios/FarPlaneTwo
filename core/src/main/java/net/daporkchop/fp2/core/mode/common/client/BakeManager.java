@@ -30,13 +30,12 @@ import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutput;
 import net.daporkchop.fp2.core.mode.common.client.bake.IRenderBaker;
 import net.daporkchop.fp2.core.mode.common.client.index.IRenderIndex;
 import net.daporkchop.fp2.core.mode.common.client.strategy.IFarRenderStrategy;
-import net.daporkchop.lib.common.pool.recycler.Recycler;
-import net.daporkchop.fp2.core.util.serialization.variable.IVariableSizeRecyclingCodec;
 import net.daporkchop.fp2.core.util.threading.scheduler.NoFutureScheduler;
 import net.daporkchop.fp2.core.util.threading.scheduler.Scheduler;
-import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
-import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.common.misc.release.AbstractReleasable;
+import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
+import net.daporkchop.lib.common.pool.recycler.Recycler;
+import net.daporkchop.lib.common.util.PorkUtil;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -161,12 +160,11 @@ public class BakeManager extends AbstractReleasable implements IFarTileCache.Lis
             }
 
             Recycler<Tile> recycler = this.renderer.mode().tileRecycler();
-            Tile[] srcs = this.renderer.mode().tileArray(compressedInputTiles.length);
+            Tile[] srcs = new Tile[compressedInputTiles.length];
             try {
-                IVariableSizeRecyclingCodec<Tile> codec = this.renderer.mode().tileCodec();
                 for (int i = 0; i < srcs.length; i++) { //inflate tiles
                     if (compressedInputTiles[i] != null) {
-                        srcs[i] = compressedInputTiles[i].loadTile(recycler, codec);
+                        srcs[i] = compressedInputTiles[i].loadTile(recycler, Tile.CODEC);
                     }
                 }
 

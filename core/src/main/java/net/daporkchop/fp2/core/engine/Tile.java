@@ -23,7 +23,7 @@ import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
+import net.daporkchop.fp2.core.util.IReusablePersistent;
 import net.daporkchop.fp2.core.util.serialization.variable.IVariableSizeRecyclingCodec;
 import net.daporkchop.lib.binary.stream.DataIn;
 import net.daporkchop.lib.binary.stream.DataOut;
@@ -41,7 +41,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @Getter
-public class Tile implements IFarTile {
+public class Tile implements IReusablePersistent {
     static {
         //we copy values directly between int[] and off-heap memory
         PUnsafe.requireTightlyPackedPrimitiveArrays();
@@ -233,7 +233,9 @@ public class Tile implements IFarTile {
         return this;
     }
 
-    @Override
+    /**
+     * @return whether this tile is empty (contains no data)
+     */
     public boolean isEmpty() {
         return this.count == 0;
     }

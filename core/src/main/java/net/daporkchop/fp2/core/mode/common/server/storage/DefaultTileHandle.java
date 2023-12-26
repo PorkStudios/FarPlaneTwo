@@ -27,6 +27,7 @@ import net.daporkchop.fp2.api.storage.FStorageException;
 import net.daporkchop.fp2.common.util.DirectBufferHackery;
 import net.daporkchop.fp2.core.engine.Tile;
 import net.daporkchop.fp2.core.engine.TilePos;
+import net.daporkchop.fp2.core.engine.TilePosCodec;
 import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.core.mode.api.tile.ITileMetadata;
 import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
@@ -69,7 +70,7 @@ public class DefaultTileHandle implements ITileHandle {
              */
 
             final long bufferKeyOffset = 0L;
-            final int bufferKeySize = toIntExact(this.storage.posCodec.size());
+            final int bufferKeySize = toIntExact(TilePosCodec.size());
 
             final long bufferTimestampOffset = bufferKeyOffset + bufferKeySize;
             final int bufferTimestampSize = LONG_SIZE;
@@ -79,7 +80,7 @@ public class DefaultTileHandle implements ITileHandle {
             long buffer = PUnsafe.allocateMemory(bufferSize);
             try {
                 //serialize position
-                this.storage.posCodec.store(this.pos, buffer + bufferKeyOffset);
+                TilePosCodec.store(this.pos, buffer + bufferKeyOffset);
 
                 int size;
 
@@ -119,20 +120,20 @@ public class DefaultTileHandle implements ITileHandle {
              */
 
             final long bufferKeyOffset = 0L;
-            final int bufferKeySize = toIntExact(this.storage.posCodec.size());
+            final int bufferKeySize = toIntExact(TilePosCodec.size());
 
             final long bufferTimestampOffset = bufferKeyOffset + bufferKeySize;
             final int bufferTimestampSize = LONG_SIZE;
 
             final long bufferTileOffset = bufferTimestampOffset + bufferTimestampSize;
-            final int bufferTileSize = toIntExact(this.storage.tileCodec.maxSize());
+            final int bufferTileSize = toIntExact(Tile.CODEC.maxSize());
 
             final long bufferSize = bufferTileOffset + bufferTileSize;
 
             long buffer = PUnsafe.allocateMemory(bufferSize);
             try {
                 //serialize position
-                this.storage.posCodec.store(this.pos, buffer + bufferKeyOffset);
+                TilePosCodec.store(this.pos, buffer + bufferKeyOffset);
 
                 int sizeTimestamp;
                 int sizeTile;
@@ -197,7 +198,7 @@ public class DefaultTileHandle implements ITileHandle {
              */
 
             final long bufferKeyOffset = 0L;
-            final int bufferKeySize = toIntExact(this.storage.posCodec.size());
+            final int bufferKeySize = toIntExact(TilePosCodec.size());
 
             final long bufferTimestampOffset = bufferKeyOffset + bufferKeySize;
             final int bufferTimestampSize = LONG_SIZE;
@@ -206,14 +207,14 @@ public class DefaultTileHandle implements ITileHandle {
             final int bufferDirtyTimestampSize = LONG_SIZE;
 
             final long bufferTileOffset = bufferDirtyTimestampOffset + bufferDirtyTimestampSize;
-            final int bufferTileSize = toIntExact(this.storage.tileCodec.maxSize());
+            final int bufferTileSize = toIntExact(Tile.CODEC.maxSize());
 
             final long bufferSize = bufferTileOffset + bufferTileSize;
 
             long buffer = PUnsafe.allocateMemory(bufferSize);
             try {
                 //serialize position
-                this.storage.posCodec.store(this.pos, buffer + bufferKeyOffset);
+                TilePosCodec.store(this.pos, buffer + bufferKeyOffset);
 
                 int sizeTimestamp;
                 int sizeDirtyTimestamp;
@@ -308,7 +309,7 @@ public class DefaultTileHandle implements ITileHandle {
                     } else { //the tile isn't empty
                         //actually encode tile
                         try (DataOut out = DataOut.wrap(tileBuffer)) {
-                            this.storage.tileCodec.store(tile, out);
+                            Tile.CODEC.store(tile, out);
                         } catch (IOException e) {
                             throw PUnsafe.throwException(e); //sneaky rethrow
                         }
@@ -347,7 +348,7 @@ public class DefaultTileHandle implements ITileHandle {
              */
 
             final long bufferKeyOffset = 0L;
-            final int bufferKeySize = toIntExact(this.storage.posCodec.size());
+            final int bufferKeySize = toIntExact(TilePosCodec.size());
 
             final long bufferDirtyTimestampOffset = bufferKeyOffset + bufferKeySize;
             final int bufferDirtyTimestampSize = LONG_SIZE;
@@ -357,7 +358,7 @@ public class DefaultTileHandle implements ITileHandle {
             long buffer = PUnsafe.allocateMemory(bufferSize);
             try {
                 //serialize position
-                this.storage.posCodec.store(this.pos, buffer + bufferKeyOffset);
+                TilePosCodec.store(this.pos, buffer + bufferKeyOffset);
 
                 int size;
 
@@ -399,7 +400,7 @@ public class DefaultTileHandle implements ITileHandle {
              */
 
             final long bufferKeyOffset = 0L;
-            final int bufferKeySize = toIntExact(this.storage.posCodec.size());
+            final int bufferKeySize = toIntExact(TilePosCodec.size());
 
             final long bufferTimestampOffset = bufferKeyOffset + bufferKeySize;
             final int bufferTimestampSize = LONG_SIZE;
@@ -412,7 +413,7 @@ public class DefaultTileHandle implements ITileHandle {
             long buffer = PUnsafe.allocateMemory(bufferSize);
             try {
                 //serialize position
-                this.storage.posCodec.store(this.pos, buffer + bufferKeyOffset);
+                TilePosCodec.store(this.pos, buffer + bufferKeyOffset);
 
                 int sizeTimestamp;
                 int sizeDirtyTimestamp;
@@ -506,14 +507,14 @@ public class DefaultTileHandle implements ITileHandle {
              */
 
             final long bufferKeyOffset = 0L;
-            final int bufferKeySize = toIntExact(this.storage.posCodec.size());
+            final int bufferKeySize = toIntExact(TilePosCodec.size());
 
             final long bufferSize = bufferKeyOffset + bufferKeySize;
 
             long buffer = PUnsafe.allocateMemory(bufferSize);
             try {
                 //serialize position
-                this.storage.posCodec.store(this.pos, buffer + bufferKeyOffset);
+                TilePosCodec.store(this.pos, buffer + bufferKeyOffset);
 
                 int size;
 

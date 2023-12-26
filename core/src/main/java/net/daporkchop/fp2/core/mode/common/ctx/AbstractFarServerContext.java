@@ -22,6 +22,7 @@ package net.daporkchop.fp2.core.mode.common.ctx;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.config.FP2Config;
+import net.daporkchop.fp2.core.engine.DirectTilePosAccess;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarServerContext;
@@ -116,7 +117,7 @@ public abstract class AbstractFarServerContext implements IFarServerContext {
         }
 
         //group queue items by type
-        List<TilePos> unloadedPositions = this.mode.directPosAccess().newPositionList();
+        List<TilePos> unloadedPositions = DirectTilePosAccess.newPositionList();
         List<TileSnapshot> loadedSnapshots = new ArrayList<>();
         sendQueueSnapshot.forEach(entry -> {
             if (entry.getValue().isPresent()) { //non-empty optional, the tile is being loaded
@@ -132,15 +133,15 @@ public abstract class AbstractFarServerContext implements IFarServerContext {
             case 0: //there are no tiles to unload, do nothing
                 break;
             case 1: //we're only unloading a single tile
-                this.player.fp2_IFarPlayer_sendPacket(new SPacketUnloadTile().mode(this.mode).pos(unloadedPositions.get(0)));
+                this.player.fp2_IFarPlayer_sendPacket(new SPacketUnloadTile().pos(unloadedPositions.get(0)));
                 break;
             default: //we're unloading more than one tile, batch it into a single packet
-                this.player.fp2_IFarPlayer_sendPacket(new SPacketUnloadTiles().mode(this.mode).positions(unloadedPositions));
+                this.player.fp2_IFarPlayer_sendPacket(new SPacketUnloadTiles().positions(unloadedPositions));
                 break;
         }
 
         //send packets for loaded/updated tiles
-        loadedSnapshots.forEach(snapshot -> this.player.fp2_IFarPlayer_sendPacket(new SPacketTileData().mode(this.mode).tile(snapshot)));
+        loadedSnapshots.forEach(snapshot -> this.player.fp2_IFarPlayer_sendPacket(new SPacketTileData().tile(snapshot)));
     }
 
     private void debugUpdate() {

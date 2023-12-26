@@ -19,15 +19,11 @@
 
 package net.daporkchop.fp2.core.engine;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.core.util.math.MathUtil;
 
 import java.util.function.Function;
 import java.util.stream.IntStream;
@@ -42,80 +38,80 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-@Getter
 @ToString
-public class TilePos implements IFarPos {
+public class TilePos implements Comparable<TilePos> {
     protected final int level;
     protected final int x;
     protected final int y;
     protected final int z;
 
-    @Deprecated
-    public TilePos(@NonNull ByteBuf buf) {
-        this.level = buf.readUnsignedByte();
-
-        int interleavedHigh = buf.readInt();
-        long interleavedLow = buf.readLong();
-        this.x = MathUtil.uninterleave3_0(interleavedLow, interleavedHigh);
-        this.y = MathUtil.uninterleave3_1(interleavedLow, interleavedHigh);
-        this.z = MathUtil.uninterleave3_2(interleavedLow, interleavedHigh);
+    /**
+     * @return the level of detail at this position
+     */
+    public final int level() {
+        return this.level;
     }
 
-    @Override
-    public boolean isLevelValid() {
+    public final int x() {
+        return this.x;
+    }
+
+    public final int y() {
+        return this.y;
+    }
+
+    public final int z() {
+        return this.z;
+    }
+
+    /**
+     * @return whether or not this position's level is valid
+     */
+    public final boolean isLevelValid() {
         return this.level >= 0 && this.level < MAX_LODS;
     }
 
-    @Override
-    public void writePos(@NonNull ByteBuf dst) {
-        dst.writeByte(toByte(this.level))
-                .writeInt(MathUtil.interleaveBitsHigh(this.x, this.y, this.z))
-                .writeLong(MathUtil.interleaveBits(this.x, this.y, this.z));
-    }
-
-    @Override
-    public byte[] toBytes() {
-        byte[] arr = new byte[13];
-        this.writePos(Unpooled.wrappedBuffer(arr).clear());
-        return arr;
-    }
-
-    public int blockX() {
+    public final int blockX() {
         return this.x * T_VOXELS << this.level;
     }
 
-    public int blockY() {
+    public final int blockY() {
         return this.y * T_VOXELS << this.level;
     }
 
-    public int blockZ() {
+    public final int blockZ() {
         return this.z * T_VOXELS << this.level;
     }
 
-    public int sideLength() {
+    public final int sideLength() {
         return T_VOXELS << this.level;
     }
 
-    public int flooredChunkX() {
+    public final int flooredChunkX() {
         return this.blockX() >> 4;
     }
 
-    public int flooredChunkY() {
+    public final int flooredChunkY() {
         return this.blockY() >> 4;
     }
 
-    public int flooredChunkZ() {
+    public final int flooredChunkZ() {
         return this.blockZ() >> 4;
     }
 
-    public IntAxisAlignedBB bb() {
+    public final IntAxisAlignedBB bb() {
         return new IntAxisAlignedBB(
                 this.x << (T_SHIFT + this.level), this.y << (T_SHIFT + this.level), this.z << (T_SHIFT + this.level),
                 (this.x + 1) << (T_SHIFT + this.level), (this.y + 1) << (T_SHIFT + this.level), (this.z + 1) << (T_SHIFT + this.level));
     }
 
-    @Override
-    public TilePos upTo(int targetLevel) {
+    /**
+     * Gets the {@link TilePos} containing this position at the given lower level of detail.
+     *
+     * @param targetLevel the level of detail to go up to
+     * @return the {@link TilePos} containing this position at the given lower level of detail
+     */
+    public final TilePos upTo(int targetLevel) {
         if (targetLevel == this.level) {
             return this;
         }
@@ -125,13 +121,20 @@ public class TilePos implements IFarPos {
         return new TilePos(targetLevel, this.x >> shift, this.y >> shift, this.z >> shift);
     }
 
-    @Override
-    public TilePos up() {
+    /**
+     * @return the {@link TilePos} containing this position at a lower level of detail
+     */
+    public final TilePos up() {
         return new TilePos(this.level + 1, this.x >> 1, this.y >> 1, this.z >> 1);
     }
 
-    @Override
-    public TilePos downTo(int targetLevel) {
+    /**
+     * Gets the {@link TilePos} containing this position at the given higher level of detail.
+     *
+     * @param targetLevel the level of detail to go down to
+     * @return the {@link TilePos} containing this position at the given higher level of detail
+     */
+    public final TilePos downTo(int targetLevel) {
         if (targetLevel == this.level) {
             return this;
         }
@@ -141,14 +144,20 @@ public class TilePos implements IFarPos {
         return new TilePos(targetLevel, this.x << shift, this.y << shift, this.z << shift);
     }
 
-    @Override
-    public TilePos down() {
+    /**
+     * @return the {@link TilePos} containing this position at a higher level of detail
+     */
+    public final TilePos down() {
         return new TilePos(this.level - 1, this.x << 1, this.y << 1, this.z << 1);
     }
 
-    @Override
-    public boolean contains(@NonNull IFarPos posIn) {
-        TilePos pos = (TilePos) posIn;
+    /**
+     * Checks whether or not this position contains the given {@link TilePos}.
+     *
+     * @param pos the {@link TilePos} to check
+     * @return whether or not this position contains the given {@link TilePos}
+     */
+    public final boolean contains(@NonNull TilePos pos) {
         int d = this.level - pos.level;
         return d > 0
                && (this.x << d) >= pos.x && ((this.x + 1) << d) <= pos.x
@@ -156,8 +165,14 @@ public class TilePos implements IFarPos {
                && (this.z << d) >= pos.z && ((this.z + 1) << d) <= pos.z;
     }
 
-    @Override
-    public Stream<TilePos> allPositionsInBB(int offsetMin, int offsetMax) {
+    /**
+     * Gets a {@link Stream} containing all the unique positions in the a bounding box originating at this position.
+     * <p>
+     * The bounding box's corners are defined by adding/subtracting the given max/min offsets to this position's coordinates, respectively.
+     * <p>
+     * Both corners are inclusive.
+     */
+    public final Stream<TilePos> allPositionsInBB(int offsetMin, int offsetMax) {
         notNegative(offsetMin, "offsetMin");
         notNegative(offsetMax, "offsetMax");
 
@@ -181,9 +196,19 @@ public class TilePos implements IFarPos {
         }
     }
 
-    @Override
-    public int manhattanDistance(@NonNull IFarPos posIn) {
-        TilePos pos = (TilePos) posIn;
+    /**
+     * Gets the Manhattan distance to the given {@link TilePos}.
+     * <p>
+     * If the positions are at different detail levels, the distance is approximate.
+     * <p>
+     * Note that the distance may not be returned in blocks, but rather in arbitrary units. The only constraint is that it must remain consistent across
+     * levels (such that the distance between any two positions at the same level is always twice the distance between the positions with the same axis
+     * values one level lower).
+     *
+     * @param pos the {@link TilePos} to get the distance to
+     * @return the Manhattan distance to the given {@link TilePos}
+     */
+    public final int manhattanDistance(@NonNull TilePos pos) {
         if (this.level == pos.level) {
             return abs(this.x - pos.x) + abs(this.y - pos.y) + abs(this.z - pos.z);
         } else {
@@ -199,7 +224,7 @@ public class TilePos implements IFarPos {
     }
 
     @Override
-    public boolean equals(Object obj) {
+    public final boolean equals(Object obj) {
         if (obj == this) {
             return true;
         } else if (obj instanceof TilePos) {
@@ -211,27 +236,31 @@ public class TilePos implements IFarPos {
     }
 
     @Override
-    public int hashCode() {
+    public final int hashCode() {
         return this.x * 1317194159 + this.y * 1964379643 + this.z * 1656858407 + this.level;
     }
 
-    @Override
-    public long localHash() {
+    /**
+     * @return a locality-sensitive hash of this position
+     */
+    public final long localHash() {
         return interleaveBits(this.x, this.y, this.z);
     }
 
-    @Override
-    public int compareTo(IFarPos posIn) {
-        int d = Integer.compare(this.level, posIn.level());
-        if (d == 0) {
-            if (posIn instanceof TilePos) {
-                TilePos pos = (TilePos) posIn;
-                if ((d = Integer.compare(this.x, pos.x)) == 0 && (d = Integer.compare(this.z, pos.z)) == 0) {
-                    d = Integer.compare(this.y, pos.y);
-                }
-            } else {
-                return TilePos.class.getName().compareTo(posIn.getClass().getName());
-            }
+    /**
+     * Compares two positions in some arbitrary manner.
+     * <p>
+     * The function may be implemented in any way, but must be consistent and must only return {@code 0} for positions that are also considered
+     * identical by {@link Object#equals(Object)}.
+     * <p>
+     * Failure to implement this correctly will result in a deadlock of the rendering threads!
+     *
+     * @see Comparable#compareTo(Object)
+     */
+    public final int compareTo(TilePos pos) {
+        int d = Integer.compare(this.level, pos.level());
+        if (d == 0 && (d = Integer.compare(this.x, pos.x)) == 0 && (d = Integer.compare(this.z, pos.z)) == 0) {
+            d = Integer.compare(this.y, pos.y);
         }
         return d;
     }

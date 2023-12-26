@@ -24,8 +24,6 @@ import net.daporkchop.fp2.api.world.FWorldClient;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.network.IPacket;
 import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
@@ -67,7 +65,7 @@ public interface IFarPlayerClient extends AutoCloseable {
      * @return the currently active render context, or {@code null} if none are active
      */
     @CalledFromAnyThread
-    <POS extends IFarPos, T extends IFarTile> IFarClientContext activeContext();
+    IFarClientContext activeContext();
 
     /**
      * Closes this player, causing the active session (if any) to be closed.

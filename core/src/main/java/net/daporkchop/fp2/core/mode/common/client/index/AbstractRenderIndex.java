@@ -27,8 +27,8 @@ import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
+import net.daporkchop.fp2.core.engine.DirectTilePosAccess;
 import net.daporkchop.fp2.core.engine.TilePos;
-import net.daporkchop.fp2.core.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.core.mode.common.client.ICullingStrategy;
 import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutput;
 import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutputStorage;
@@ -75,7 +75,7 @@ public abstract class AbstractRenderIndex<BO extends IBakeOutput, DB extends Dra
     public AbstractRenderIndex(@NonNull IFarRenderStrategy<BO, DB, DC> strategy) {
         this.strategy = strategy;
         this.cullingStrategy = this.strategy.cullingStrategy();
-        this.renderablePositions = this.strategy.mode().directPosAccess().newPositionSet();
+        this.renderablePositions = DirectTilePosAccess.newPositionSet();
 
         this.levels = uncheckedCast(Array.newInstance(Level.class, this.strategy.mode().maxLevels()));
         for (int level = 0; level < this.levels.length; level++) {
@@ -144,12 +144,10 @@ public abstract class AbstractRenderIndex<BO extends IBakeOutput, DB extends Dra
      * @author DaPorkchop_
      */
     protected abstract class Level implements AutoCloseable {
-        protected final IFarDirectPosAccess directPosAccess;
         protected final int level;
 
         protected final Object2IntMap<TilePos> positionsToHandles = new Object2IntOpenHashMap<>();
 
-        protected final long positionSize;
         protected long positionsAddr;
 
         protected int capacity = -1;
@@ -165,9 +163,6 @@ public abstract class AbstractRenderIndex<BO extends IBakeOutput, DB extends Dra
         public Level(int level, @NonNull Allocator.GrowFunction growFunction) {
             this.level = level;
             this.growFunction = growFunction;
-
-            this.directPosAccess = AbstractRenderIndex.this.strategy.mode().directPosAccess();
-            this.positionSize = this.directPosAccess.size();
 
             this.positionsToHandles.defaultReturnValue(-1);
 
@@ -194,7 +189,7 @@ public abstract class AbstractRenderIndex<BO extends IBakeOutput, DB extends Dra
             this.capacity = toInt(this.growFunction.grow(this.capacity, 1));
 
             //resize memory blocks
-            this.positionsAddr = AbstractRenderIndex.this.directMemoryAlloc.realloc(this.positionsAddr, this.capacity * this.positionSize);
+            this.positionsAddr = AbstractRenderIndex.this.directMemoryAlloc.realloc(this.positionsAddr, this.capacity * DirectTilePosAccess.size());
             for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
                 this.commandBuffers[pass].resize(this.capacity);
             }
@@ -223,7 +218,7 @@ public abstract class AbstractRenderIndex<BO extends IBakeOutput, DB extends Dra
 
                 this.positionsToHandles.put(pos, handle);
 
-                this.directPosAccess.store(pos, this.positionsAddr + handle * this.positionSize);
+                DirectTilePosAccess.store(pos, this.positionsAddr + handle * DirectTilePosAccess.size());
 
                 //if the node is selectable, set its render outputs
                 if (pos.level() == 0 || AbstractRenderIndex.this.renderablePositions.contains(pos)) {

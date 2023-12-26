@@ -19,26 +19,17 @@
 
 package net.daporkchop.fp2.core.mode.common;
 
-import io.netty.buffer.ByteBuf;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
-import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.engine.Tile;
-import net.daporkchop.fp2.core.engine.TilePos;
-import net.daporkchop.fp2.core.mode.api.IFarDirectPosAccess;
-import net.daporkchop.fp2.core.mode.api.IFarPosCodec;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
-import net.daporkchop.fp2.core.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
-import net.daporkchop.fp2.core.server.player.IFarPlayerServer;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
-import net.daporkchop.lib.common.pool.recycler.Recycler;
 import net.daporkchop.lib.common.misc.string.PStrings;
+import net.daporkchop.lib.common.pool.recycler.Recycler;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.reference.cache.Cached;
 
@@ -53,8 +44,6 @@ import static net.daporkchop.fp2.core.FP2Core.*;
 public abstract class AbstractFarRenderMode implements IFarRenderMode {
     protected final Cached<Recycler<Tile>> recyclerRef = Cached.threadLocal(() -> Recycler.unbounded(this::newTile, Tile::reset), ReferenceStrength.SOFT);
 
-    @Getter(lazy = true)
-    private final String name = REGISTRY.getName(this);
     @Getter
     protected final int storageVersion;
     @Getter
@@ -96,30 +85,9 @@ public abstract class AbstractFarRenderMode implements IFarRenderMode {
     }
 
     @Override
-    public abstract IFarServerContext serverContext(@NonNull IFarPlayerServer player, @NonNull IFarLevelServer world, @NonNull FP2Config config);
-
-    @Override
-    public abstract IFarClientContext clientContext(@NonNull IFarLevelClient level, @NonNull FP2Config config);
-
-    @Override
     public Recycler<Tile> tileRecycler() {
         return this.recyclerRef.get();
     }
-
-    @Override
-    public abstract IFarDirectPosAccess directPosAccess();
-
-    @Override
-    public abstract IFarPosCodec posCodec();
-
-    @Override
-    public abstract TilePos readPos(@NonNull ByteBuf buf);
-
-    @Override
-    public abstract TilePos[] posArray(int length);
-
-    @Override
-    public abstract Tile[] tileArray(int length);
 
     @Override
     public String toString() {

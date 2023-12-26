@@ -19,11 +19,9 @@
 
 package net.daporkchop.fp2.core.engine;
 
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import lombok.NonNull;
+import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.core.client.IFrustum;
-import net.daporkchop.fp2.core.mode.api.IFarDirectPosAccess;
 import net.daporkchop.fp2.core.engine.util.TilePosArrayList;
 import net.daporkchop.fp2.core.engine.util.TilePosHashSet;
 import net.daporkchop.fp2.core.util.math.geometry.Volume;
@@ -36,17 +34,14 @@ import java.util.Set;
 import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.fp2.core.engine.EngineConstants.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
-import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
- * Implementation of {@link IFarDirectPosAccess} for {@link TilePos}.
+ * Helper class for storing {@link TilePos} instances off-heap.
  *
  * @author DaPorkchop_
  */
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-public final class DirectTilePosAccess implements IFarDirectPosAccess {
-    public static final DirectTilePosAccess INSTANCE = new DirectTilePosAccess();
-
+@UtilityClass
+public class DirectTilePosAccess {
     /*
      * struct Pos { // 16 bytes
      *   int x;
@@ -127,81 +122,93 @@ public final class DirectTilePosAccess implements IFarDirectPosAccess {
         PUnsafe.putInt(base, pos + _LEVEL_OFFSET, level);
     }
 
-    @Override
-    public int axisCount() {
-        return 3;
-    }
-
-    @Override
-    public long size() {
+    /**
+     * @return the off-heap size of a position, in bytes
+     */
+    public static long size() {
         return _SIZE;
     }
 
-    @Override
-    public void store(TilePos pos, long addr) {
+    /**
+     * Stores a position off-heap at the given memory address.
+     *
+     * @param pos  the position
+     * @param addr the memory address
+     */
+    public static void store(TilePos pos, long addr) {
         _x(addr, pos.x());
         _y(addr, pos.y());
         _z(addr, pos.z());
         _level(addr, pos.level());
     }
 
-    @Override
-    public void store(TilePos pos, Object base, long offset) {
+    public static void store(TilePos pos, Object base, long offset) {
         _x(base, offset, pos.x());
         _y(base, offset, pos.y());
         _z(base, offset, pos.z());
         _level(base, offset, pos.level());
     }
 
-    @Override
-    public TilePos load(long addr) {
+    /**
+     * Loads the position at the give memory address onto the Java heap.
+     *
+     * @param addr the memory address
+     * @return the position
+     */
+    public static TilePos load(long addr) {
         return new TilePos(_level(addr), _x(addr), _y(addr), _z(addr));
     }
 
-    @Override
-    public TilePos load(Object base, long offset) {
+    public static TilePos load(Object base, long offset) {
         return new TilePos(_level(base, offset), _x(base, offset), _y(base, offset), _z(base, offset));
     }
 
-    @Override
-    public int getAxisHeap(@NonNull TilePos pos, int axis) {
-        switch (axis) {
-            case 0:
-                return pos.x();
-            case 1:
-                return pos.y();
-            case 2:
-                return pos.z();
-            default:
-                throw new IllegalArgumentException("invalid axis number: " + axis);
-        }
-    }
-
-    @Override
-    public int getAxisDirect(long addr, int axis) {
-        return PUnsafe.getInt(addr + (long) checkIndex(3, axis) * INT_SIZE);
-    }
-
-    @Override
-    public boolean equalsPos(long addr1, long addr2) {
+    /**
+     * Checks the positions at the given memory addresses for equality.
+     * <p>
+     * Functionally identical to {@code loadPos(addr1).equals(loadPos(addr2))}.
+     *
+     * @return whether or not the two positions are equal
+     */
+    public static boolean equalsPos(long addr1, long addr2) {
         return _x(addr1) == _x(addr2)
-               && _y(addr1) == _y(addr2)
-               && _z(addr1) == _z(addr2)
-               && _level(addr1) == _level(addr2);
+                && _y(addr1) == _y(addr2)
+                && _z(addr1) == _z(addr2)
+                && _level(addr1) == _level(addr2);
     }
 
-    @Override
-    public int hashPos(long addr) {
+    /**
+     * Hashes the position at the given memory address.
+     * <p>
+     * Functionally identical to {@code loadPos(addr).localHash()}.
+     *
+     * @param addr the memory address
+     * @return the position's hash
+     */
+    public static int hashPos(long addr) {
         return _x(addr) * 1317194159 + _y(addr) * 1964379643 + _z(addr) * 1656858407 + _level(addr);
     }
 
-    @Override
-    public long localHashPos(long addr) {
+    /**
+     * Hashes the position at the given memory address.
+     * <p>
+     * Functionally identical to {@code loadPos(addr).hashCode()}.
+     *
+     * @param addr the memory address
+     * @return the position's locality-sensitive hash
+     */
+    public static long localHashPos(long addr) {
         return interleaveBits(_x(addr), _y(addr), _z(addr));
     }
 
-    @Override
-    public boolean intersects(long addr, @NonNull Volume volume) {
+    /**
+     * Checks whether or not the tile at the given position intersects the given volume.
+     *
+     * @param addr   the memory address of the off-heap position
+     * @param volume the volume
+     * @return whether or not the tile at the given position intersects the given volume
+     */
+    public static boolean intersects(long addr, @NonNull Volume volume) {
         double x = _x(addr);
         double y = _y(addr);
         double z = _z(addr);
@@ -211,8 +218,14 @@ public final class DirectTilePosAccess implements IFarDirectPosAccess {
         return volume.intersects(x * f, y * f, z * f, (x + 1.0d) * f + d, (y + 1.0d) * f + d, (z + 1.0d) * f + d);
     }
 
-    @Override
-    public boolean containedBy(long addr, @NonNull Volume volume) {
+    /**
+     * Checks whether or not the tile at the given position is contained by the given volume.
+     *
+     * @param addr   the memory address of the off-heap position
+     * @param volume the volume
+     * @return whether or not the tile at the given position is contained by the given volume
+     */
+    public static boolean containedBy(long addr, @NonNull Volume volume) {
         double x = _x(addr);
         double y = _y(addr);
         double z = _z(addr);
@@ -222,8 +235,14 @@ public final class DirectTilePosAccess implements IFarDirectPosAccess {
         return volume.contains(x * f, y * f, z * f, (x + 1.0d) * f + d, (y + 1.0d) * f + d, (z + 1.0d) * f + d);
     }
 
-    @Override
-    public boolean inFrustum(long addr, @NonNull IFrustum frustum) {
+    /**
+     * Checks whether or not the tile at the given position is in the given frustum.
+     *
+     * @param addr    the memory address of the off-heap position
+     * @param frustum the frustum
+     * @return whether or not the tile at the given position is in the given frustum
+     */
+    public static boolean inFrustum(long addr, @NonNull IFrustum frustum) {
         double x = _x(addr);
         double y = _y(addr);
         double z = _z(addr);
@@ -233,28 +252,45 @@ public final class DirectTilePosAccess implements IFarDirectPosAccess {
         return frustum.intersectsBB(x * f, y * f, z * f, (x + 1.0d) * f + d, (y + 1.0d) * f + d, (z + 1.0d) * f + d);
     }
 
-    @Override
-    public Set<TilePos> newPositionSet() {
+    /**
+     * @return a new {@link Set} which can store positions of type {@link TilePos}
+     */
+    public static Set<TilePos> newPositionSet() {
         return new TilePosHashSet();
     }
 
-    @Override
-    public Set<TilePos> clonePositionsAsSet(@NonNull Collection<TilePos> src) {
+    /**
+     * Creates a new {@link Set} which can store positions of type {@link TilePos} and adds all the positions in the given {@link Collection} to it.
+     *
+     * @param src the {@link Collection} to clone
+     * @return a new {@link Set} which can store positions of type {@link TilePos} and contains all the positions from the given {@link Collection}
+     */
+    public static Set<TilePos> clonePositionsAsSet(@NonNull Collection<TilePos> src) {
         return new TilePosHashSet(src);
     }
 
-    @Override
-    public List<TilePos> newPositionList() {
+    /**
+     * @return a new {@link List} which can store positions of type {@link TilePos}
+     */
+    public static List<TilePos> newPositionList() {
         return new TilePosArrayList();
     }
 
-    @Override
-    public List<TilePos> newPositionList(int initialCapacity) {
+    /**
+     * @param initialCapacity the initial size of the list
+     * @return a new {@link List} which can store positions of type {@link TilePos}
+     */
+    public static List<TilePos> newPositionList(int initialCapacity) {
         return new TilePosArrayList(initialCapacity);
     }
 
-    @Override
-    public List<TilePos> clonePositionsAsList(@NonNull Collection<TilePos> src) {
+    /**
+     * Creates a new {@link List} which can store positions of type {@link TilePos} and adds all the positions in the given {@link Collection} to it.
+     *
+     * @param src the {@link Collection} to clone
+     * @return a new {@link List} which can store positions of type {@link TilePos} and contains all the positions from the given {@link Collection}
+     */
+    public static List<TilePos> clonePositionsAsList(@NonNull Collection<TilePos> src) {
         return new TilePosArrayList(src);
     }
 }

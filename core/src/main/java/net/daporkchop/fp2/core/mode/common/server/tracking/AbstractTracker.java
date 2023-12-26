@@ -21,6 +21,7 @@ package net.daporkchop.fp2.core.mode.common.server.tracking;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
+import net.daporkchop.fp2.core.engine.DirectTilePosAccess;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.mode.api.IFarCoordLimits;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
@@ -92,7 +93,7 @@ public abstract class AbstractTracker<STATE> implements IFarTracker {
         this.context = context;
         this.coordLimits = manager.tileProvider().coordLimits();
 
-        this.loadedPositions = this.mode.directPosAccess().newPositionSet();
+        this.loadedPositions = DirectTilePosAccess.newPositionSet();
     }
 
     @CalledFromServerThread
@@ -139,7 +140,7 @@ public abstract class AbstractTracker<STATE> implements IFarTracker {
                     this.clearWaiting();
 
                     {
-                        Set<TilePos> untrackingPositions = this.mode.directPosAccess().newPositionSet();
+                        Set<TilePos> untrackingPositions = DirectTilePosAccess.newPositionSet();
                         //actually update the tracking state (this is synchronized)
                         this.updateState(lastState, nextState, untrackingPositions);
 
@@ -235,7 +236,7 @@ public abstract class AbstractTracker<STATE> implements IFarTracker {
         }
 
         //remove the rest of the waiting positions, stop tracking them and re-add them to the load queue
-        Set<TilePos> waitingPositions = this.mode.directPosAccess().clonePositionsAsSet(this.waitingPositions);
+        Set<TilePos> waitingPositions = DirectTilePosAccess.clonePositionsAsSet(this.waitingPositions);
         this.waitingPositions.clear();
 
         //stop tracking all positions in the set
@@ -256,7 +257,7 @@ public abstract class AbstractTracker<STATE> implements IFarTracker {
         }
 
         int targetLoadQueueSize = fp2().globalConfig().performance().terrainThreads();
-        List<TilePos> positions = this.mode.directPosAccess().newPositionList();
+        List<TilePos> positions = DirectTilePosAccess.newPositionList();
 
         do {
             if (this.isQueuePaused()) { //the tracker update thread has specifically requested to pause queue polling, so we shouldn't do anything here
@@ -367,7 +368,7 @@ public abstract class AbstractTracker<STATE> implements IFarTracker {
             //untrack all positions
             //  (using temporary set to avoid CME)
             {
-                Set<TilePos> tmp = this.mode.directPosAccess().newPositionSet();
+                Set<TilePos> tmp = DirectTilePosAccess.newPositionSet();
 
                 tmp.addAll(this.waitingPositions);
                 tmp.addAll(this.loadedPositions);

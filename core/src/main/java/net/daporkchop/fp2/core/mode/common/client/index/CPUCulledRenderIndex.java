@@ -22,6 +22,7 @@ package net.daporkchop.fp2.core.mode.common.client.index;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
+import net.daporkchop.fp2.core.engine.DirectTilePosAccess;
 import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
 import net.daporkchop.fp2.gl.draw.DrawMode;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
@@ -76,11 +77,11 @@ public class CPUCulledRenderIndex<BO extends IBakeOutput, DB extends DrawBinding
             if (this.level == 0) { //level-0 is tested for vanilla terrain intersection AND frustum intersection
                 ICullingStrategy cullingStrategy = CPUCulledRenderIndex.this.cullingStrategy;
                 return slot -> {
-                    long posAddr = this.positionsAddr + slot * this.positionSize;
-                    return !cullingStrategy.blocked(posAddr) && this.directPosAccess.inFrustum(posAddr, frustum);
+                    long posAddr = this.positionsAddr + slot * DirectTilePosAccess.size();
+                    return !cullingStrategy.blocked(posAddr) && DirectTilePosAccess.inFrustum(posAddr, frustum);
                 };
             } else { //all other levels are only tested for frustum intersection
-                return slot -> this.directPosAccess.inFrustum(this.positionsAddr + slot * this.positionSize, frustum);
+                return slot -> DirectTilePosAccess.inFrustum(this.positionsAddr + slot * DirectTilePosAccess.size(), frustum);
             }
         }
 

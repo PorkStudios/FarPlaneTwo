@@ -25,6 +25,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.fp2.api.world.level.GenerationNotAllowedException;
+import net.daporkchop.fp2.core.engine.DirectTilePosAccess;
 import net.daporkchop.fp2.core.engine.Tile;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
@@ -174,10 +175,10 @@ public class TileWorker implements SharedFutureScheduler.WorkFunction<PriorityTa
 
         Recycler<Tile> tileRecycler = this.provider.mode().tileRecycler();
         //TODO: T[] tiles = tileRecycler.allocate(state.positions().size(), this.provider.mode()::tileArray);
-        Tile[] tiles = PArrays.filledFrom(state.positions().size(), this.provider.mode()::tileArray, tileRecycler::allocate);
+        Tile[] tiles = PArrays.filledFrom(state.positions().size(), Tile[]::new, tileRecycler::allocate);
         try {
             //generate tile
-            this.provider.generatorRough().generate(state.positions().toArray(this.provider.mode().posArray(state.positions().size())), tiles);
+            this.provider.generatorRough().generate(state.positions().toArray(new TilePos[0]), tiles);
 
             //update tile contents
             this.provider.storage().multiSet(state.positions(),
@@ -211,10 +212,10 @@ public class TileWorker implements SharedFutureScheduler.WorkFunction<PriorityTa
             //actually do exact generation
             Recycler<Tile> tileRecycler = this.provider.mode().tileRecycler();
             //TODO: T[] tiles = tileRecycler.allocate(state.positions().size(), this.provider.mode()::tileArray);
-            Tile[] tiles = PArrays.filledFrom(state.positions().size(), this.provider.mode()::tileArray, tileRecycler::allocate);
+            Tile[] tiles = PArrays.filledFrom(state.positions().size(), Tile[]::new, tileRecycler::allocate);
             try {
                 //generate tile
-                this.provider.generatorExact().generate(exactWorld, state.positions().toArray(this.provider.mode().posArray(state.positions().size())), tiles);
+                this.provider.generatorExact().generate(exactWorld, state.positions().toArray(new TilePos[0]), tiles);
 
                 //update tile contents
                 this.provider.storage().multiSet(state.positions(),
@@ -263,17 +264,15 @@ public class TileWorker implements SharedFutureScheduler.WorkFunction<PriorityTa
             state.forEachPositionHandleTimestamp((pos, handle, minimumTimestamp) -> {
                 List<TilePos> srcPositions = this.provider.scaler().inputs(pos);
 
-                Tile[] srcs = this.provider.mode().tileArray(srcPositions.size());
+                Tile[] srcs = new Tile[srcPositions.size()];
                 Tile dst = tileRecycler.allocate();
                 try {
-                    IVariableSizeRecyclingCodec<Tile> codec = this.provider.mode().tileCodec();
-
                     //inflate tile snapshots where necessary
                     for (int i = 0; i < srcPositions.size(); i++) {
                         //tile is only guaranteed to have been generated if it's at a valid position (we filter out invalid
                         // positions above in the scatterGather call)
                         if (this.provider.coordLimits().contains(srcPositions.get(i))) {
-                            srcs[i] = snapshotsByPosition.get(srcPositions.get(i)).loadTile(tileRecycler, codec);
+                            srcs[i] = snapshotsByPosition.get(srcPositions.get(i)).loadTile(tileRecycler, Tile.CODEC);
                         }
                     }
 
@@ -312,7 +311,7 @@ public class TileWorker implements SharedFutureScheduler.WorkFunction<PriorityTa
         private final int level;
 
         private final Set<TilePos> allPositions = new ObjectOpenHashSet<>();
-        private final List<TilePos> positions = TileWorker.this.provider.mode().directPosAccess().newPositionList();
+        private final List<TilePos> positions = DirectTilePosAccess.newPositionList();
         private final List<ITileHandle> handles = new ArrayList<>();
         private final LongList minimumTimestamps = new LongArrayList();
 

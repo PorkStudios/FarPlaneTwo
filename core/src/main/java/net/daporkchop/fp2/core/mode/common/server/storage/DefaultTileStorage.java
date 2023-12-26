@@ -32,16 +32,14 @@ import net.daporkchop.fp2.api.storage.external.FStorageItemFactory;
 import net.daporkchop.fp2.api.storage.internal.FStorageColumn;
 import net.daporkchop.fp2.api.storage.internal.FStorageColumnHintsInternal;
 import net.daporkchop.fp2.api.storage.internal.FStorageInternal;
-import net.daporkchop.fp2.core.engine.Tile;
 import net.daporkchop.fp2.core.engine.TilePos;
-import net.daporkchop.fp2.core.mode.api.IFarPosCodec;
+import net.daporkchop.fp2.core.engine.TilePosCodec;
 import net.daporkchop.fp2.core.mode.api.server.storage.FTileStorage;
 import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.core.mode.common.server.AbstractFarTileProvider;
 import net.daporkchop.fp2.core.util.GlobalAllocators;
 import net.daporkchop.fp2.core.util.datastructure.java.list.ArraySliceAsList;
 import net.daporkchop.fp2.core.util.datastructure.java.list.ListUtils;
-import net.daporkchop.fp2.core.util.serialization.variable.IVariableSizeRecyclingCodec;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.reference.cache.Cached;
@@ -158,7 +156,7 @@ public class DefaultTileStorage implements FTileStorage {
         return new FStorageItemFactory<FTileStorage>() {
             @Override
             public ConfigurationResult configure(@NonNull ConfigurationCallback callback) {
-                int expectedPositionSize = toIntExact(tileProvider.mode().posCodec().size());
+                int expectedPositionSize = toIntExact(TilePosCodec.size());
 
                 //register the columns
                 callback.registerColumn(COLUMN_NAME_TIMESTAMP, //tile timestamp
@@ -197,8 +195,6 @@ public class DefaultTileStorage implements FTileStorage {
     }
 
     protected final AbstractFarTileProvider tileProvider;
-    protected final IFarPosCodec posCodec;
-    protected final IVariableSizeRecyclingCodec<Tile> tileCodec;
 
     protected final FStorageInternal storageInternal;
 
@@ -221,8 +217,6 @@ public class DefaultTileStorage implements FTileStorage {
 
     protected DefaultTileStorage(@NonNull AbstractFarTileProvider tileProvider, @NonNull FStorageInternal storageInternal) {
         this.tileProvider = tileProvider;
-        this.posCodec = tileProvider.mode().posCodec();
-        this.tileCodec = tileProvider.mode().tileCodec();
 
         this.storageInternal = storageInternal;
 

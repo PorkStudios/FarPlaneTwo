@@ -28,25 +28,19 @@ import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.api.world.level.FLevelServer;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.fp2.core.FP2Core;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
+import net.daporkchop.fp2.core.engine.VoxelRenderMode;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.server.event.GetCoordinateLimitsEvent;
 import net.daporkchop.fp2.core.server.event.GetExactFBlockLevelEvent;
 import net.daporkchop.fp2.core.server.world.AbstractWorldServer;
 import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
 import net.daporkchop.fp2.core.world.level.AbstractLevel;
-import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.Arrays;
-import java.util.IdentityHashMap;
-import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.function.BiConsumer;
-
-import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * Base implementation of {@link FLevelServer}.
@@ -59,7 +53,7 @@ public abstract class AbstractLevelServer<F extends FP2Core,
         IMPL_LEVEL, LEVEL extends AbstractLevelServer<F, IMPL_WORLD, WORLD, IMPL_LEVEL, LEVEL>> extends AbstractLevel<F, IMPL_WORLD, WORLD, IMPL_LEVEL, LEVEL> implements FLevelServer, IFarLevelServer {
     private final FStorageCategory storageCategory;
 
-    private final Map<IFarRenderMode, IFarTileProvider> loadedTileProviders = new IdentityHashMap<>();
+    private final IFarTileProvider loadedTileProvider;
 
     private final IntAxisAlignedBB coordLimits;
 
@@ -87,56 +81,35 @@ public abstract class AbstractLevelServer<F extends FP2Core,
         this.exactBlockLevelHolder = this.getForInit(() -> this.fp2().eventBus().fireAndGetFirst(new GetExactFBlockLevelEvent(this)).get());
 
         //open a tile provider for each registered render mode
-        this.runForInit(() -> IFarRenderMode.REGISTRY.forEachEntry((_name, mode) -> this.loadedTileProviders.put(mode, mode.tileProvider(this))));
+        this.loadedTileProvider = this.getForInit(() -> VoxelRenderMode.INSTANCE.tileProvider(this));
     }
 
     @Override
     protected void doClose() throws Exception {
         //try-with-resources to ensure that everything is closed
-        //noinspection Convert2MethodRef
+        //noinspection Convert2MethodRef,EmptyTryBlock
         try (AutoCloseable closeSuper = () -> super.doClose();
              FStorageCategory storageCategory = this.storageCategory;
-             ExactFBlockLevelHolder exactBlockLevelHolder = this.exactBlockLevelHolder) {
-            class State implements BiConsumer<IFarRenderMode, IFarTileProvider> {
-                Throwable cause = null;
-
-                @Override
-                public void accept(IFarRenderMode mode, IFarTileProvider tileProvider) {
-                    try {
-                        tileProvider.close();
-                    } catch (Throwable t) {
-                        if (this.cause == null) {
-                            this.cause = t; //this is the first exception which occurred, save it for later
-                        } else {
-                            this.cause.addSuppressed(t); //this is not the first exception to occur, append it to the first one
-                        }
-                    }
-                }
-            }
-
-            //close all the tile providers, then clear the map
-            State state = new State();
-            this.loadedTileProviders.forEach(state);
-            this.loadedTileProviders.clear();
-
-            if (state.cause != null) { //an exception occurred while closing one of the tile providers
-                PUnsafe.throwException(state.cause); //rethrow exception
-                throw new AssertionError(); //impossible
-            }
+             ExactFBlockLevelHolder exactBlockLevelHolder = this.exactBlockLevelHolder;
+             IFarTileProvider loadedTileProvider = this.loadedTileProvider) {
         }
     }
 
     @Override
-    public <POS extends IFarPos, T extends IFarTile> IFarTileProvider tileProviderFor(@NonNull IFarRenderMode mode) throws NoSuchElementException {
-        IFarTileProvider tileProvider = uncheckedCast(this.loadedTileProviders.get(mode));
-        if (tileProvider == null) {
+    public IFarTileProvider tileProviderFor(@NonNull IFarRenderMode mode) throws NoSuchElementException {
+        if (mode != VoxelRenderMode.INSTANCE) {
             throw new NoSuchElementException("cannot get tile provider for invalid mode: " + mode);
         }
-        return tileProvider;
+        return this.loadedTileProvider;
+    }
+
+    @Override
+    public IFarTileProvider tileProvider() {
+        return this.loadedTileProvider;
     }
 
     @Override
     public void forEachTileProvider(@NonNull BiConsumer<? super IFarRenderMode, ? super IFarTileProvider> action) {
-        this.loadedTileProviders.forEach(action);
+        action.accept(VoxelRenderMode.INSTANCE, this.loadedTileProvider);
     }
 }

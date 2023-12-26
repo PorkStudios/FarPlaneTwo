@@ -19,15 +19,11 @@
 
 package net.daporkchop.fp2.core.mode.api;
 
-import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import net.daporkchop.fp2.api.util.OrderedRegistry;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.engine.Tile;
-import net.daporkchop.fp2.core.engine.TilePos;
-import net.daporkchop.fp2.core.event.AbstractRegisterEvent;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
@@ -37,18 +33,11 @@ import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.core.server.player.IFarPlayerServer;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.lib.common.pool.recycler.Recycler;
-import net.daporkchop.fp2.core.util.serialization.variable.IVariableSizeRecyclingCodec;
-import net.daporkchop.lib.binary.stream.DataIn;
-import net.daporkchop.lib.binary.stream.DataOut;
-
-import java.io.IOException;
 
 /**
  * @author DaPorkchop_
  */
 public interface IFarRenderMode {
-    OrderedRegistry<IFarRenderMode> REGISTRY = new AbstractRegisterEvent<IFarRenderMode>() {}.fire().immutableRegistry();
-
     /**
      * @return this storage version's name
      */
@@ -129,76 +118,10 @@ public interface IFarRenderMode {
     Recycler<Tile> tileRecycler();
 
     /**
-     * @return the {@link IFarDirectPosAccess} used by this render mode
-     */
-    IFarDirectPosAccess directPosAccess();
-
-    /**
-     * @return the {@link IFarPosCodec} used by this render mode to serialize tile positions for storage
-     */
-    IFarPosCodec posCodec();
-
-    /**
-     * @return the {@link IVariableSizeRecyclingCodec} used by this render mode to serialize tiles for storage
-     */
-    IVariableSizeRecyclingCodec<Tile> tileCodec();
-
-    /**
      * Creates a {@link IFarCoordLimits} for the given block coordinate limits as defined by the given {@link IntAxisAlignedBB}.
      *
      * @param blockCoordLimits the block coordinate limits
      * @return the {@link IFarCoordLimits}
      */
     IFarCoordLimits tileCoordLimits(@NonNull IntAxisAlignedBB blockCoordLimits);
-
-    /**
-     * Reads a tile position from the given {@link ByteBuf}.
-     *
-     * @param buf the {@link ByteBuf} to read from
-     * @return the tile position
-     */
-    @Deprecated
-    TilePos readPos(@NonNull ByteBuf buf);
-
-    /**
-     * Reads a tile position from the given {@link DataIn}.
-     *
-     * @param in the {@link DataIn} to read from
-     * @return the tile position
-     */
-    TilePos readPos(@NonNull DataIn in) throws IOException;
-
-    /**
-     * Reads a tile position from the given {@code byte[]}.
-     *
-     * @param arr the {@code byte[]} containing the tile position
-     * @return the tile position
-     */
-    TilePos readPos(@NonNull byte[] arr);
-
-    /**
-     * Writes a tile position to the given {@link DataOut}.
-     *
-     * @param out the {@link DataOut} to write to
-     * @param pos the tile position
-     */
-    void writePos(@NonNull DataOut out, @NonNull TilePos pos) throws IOException;
-
-    /**
-     * Writes a tile position to a {@code byte[]}.
-     *
-     * @param pos the tile position
-     * @return a {@code byte[]} containing the written data
-     */
-    byte[] writePos(TilePos pos);
-
-    /**
-     * @return an array of {@link TilePos}
-     */
-    TilePos[] posArray(int length);
-
-    /**
-     * @return an array of {@link Tile}
-     */
-    Tile[] tileArray(int length);
 }
