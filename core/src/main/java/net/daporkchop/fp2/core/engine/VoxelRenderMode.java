@@ -20,23 +20,15 @@
 package net.daporkchop.fp2.core.engine;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.engine.ctx.VoxelClientContext;
 import net.daporkchop.fp2.core.engine.ctx.VoxelServerContext;
-import net.daporkchop.fp2.core.engine.server.scale.VoxelScalerIntersection;
-import net.daporkchop.fp2.core.mode.api.IFarCoordLimits;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarServerContext;
-import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
-import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
-import net.daporkchop.fp2.core.mode.common.AbstractFarRenderMode;
 import net.daporkchop.fp2.core.server.player.IFarPlayerServer;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
-
-import static net.daporkchop.fp2.core.engine.EngineConstants.*;
 
 /**
  * Implementation of {@link IFarRenderMode} for the voxel rendering mode.
@@ -44,41 +36,10 @@ import static net.daporkchop.fp2.core.engine.EngineConstants.*;
  * @author DaPorkchop_
  */
 @Deprecated
-public class VoxelRenderMode extends AbstractFarRenderMode {
+public final class VoxelRenderMode implements IFarRenderMode {
     public static final VoxelRenderMode INSTANCE = new VoxelRenderMode();
 
     private VoxelRenderMode() {
-        super(STORAGE_VERSION, MAX_LODS, T_SHIFT);
-    }
-
-    @Override
-    public String name() {
-        return NAME;
-    }
-
-    @Override
-    protected AbstractExactGeneratorCreationEvent exactGeneratorCreationEvent(@NonNull IFarLevelServer world, @NonNull IFarTileProvider provider) {
-        return new AbstractExactGeneratorCreationEvent(world, provider) {};
-    }
-
-    @Override
-    protected AbstractRoughGeneratorCreationEvent roughGeneratorCreationEvent(@NonNull IFarLevelServer world, @NonNull IFarTileProvider provider) {
-        return new AbstractRoughGeneratorCreationEvent(world, provider) {};
-    }
-
-    @Override
-    protected AbstractTileProviderCreationEvent tileProviderCreationEvent(@NonNull IFarLevelServer world) {
-        return new AbstractTileProviderCreationEvent(world) {};
-    }
-
-    @Override
-    protected Tile newTile() {
-        return new Tile();
-    }
-
-    @Override
-    public IFarScaler scaler(@NonNull IFarLevelServer world, @NonNull IFarTileProvider provider) {
-        return new VoxelScalerIntersection(world, provider);
     }
 
     @Override
@@ -89,12 +50,5 @@ public class VoxelRenderMode extends AbstractFarRenderMode {
     @Override
     public IFarClientContext clientContext(@NonNull IFarLevelClient level, @NonNull FP2Config config) {
         return new VoxelClientContext(level, config, this);
-    }
-
-    @Override
-    public IFarCoordLimits tileCoordLimits(@NonNull IntAxisAlignedBB blockCoordLimits) {
-        return new TileCoordLimits(
-                blockCoordLimits.minX(), blockCoordLimits.minY(), blockCoordLimits.minZ(),
-                blockCoordLimits.maxX(), blockCoordLimits.maxY(), blockCoordLimits.maxZ());
     }
 }

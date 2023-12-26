@@ -34,6 +34,7 @@ import net.daporkchop.fp2.core.client.render.TextureUVs;
 import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;
 import net.daporkchop.fp2.core.client.shader.ShaderMacros;
 import net.daporkchop.fp2.core.config.FP2Config;
+import net.daporkchop.fp2.core.engine.EngineConstants;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.common.client.AbstractFarRenderer;
 import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutput;
@@ -108,7 +109,7 @@ public abstract class AbstractRenderStrategy<BO extends IBakeOutput, DB extends 
 
         this.textureUVs = this.levelRenderer.textureUVs();
 
-        this.macros.define("T_SHIFT", this.mode.tileShift());
+        this.macros.define("T_SHIFT", EngineConstants.T_SHIFT);
 
         fp2().eventBus().registerWeak(this);
     }

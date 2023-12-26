@@ -20,15 +20,14 @@
 package net.daporkchop.fp2.core.mode.api.server;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.core.engine.TileCoordLimits;
 import net.daporkchop.fp2.core.engine.TilePos;
-import net.daporkchop.fp2.core.mode.api.IFarCoordLimits;
-import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.core.engine.tile.ITileHandle;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.core.mode.api.server.storage.FTileStorage;
 import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTrackerManager;
-import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 
 import java.io.Closeable;
@@ -44,7 +43,7 @@ public interface IFarTileProvider extends Closeable {
 
     CompletableFuture<ITileHandle> requestUpdate(@NonNull TilePos pos);
 
-    IFarCoordLimits coordLimits();
+    TileCoordLimits coordLimits();
 
     /**
      * @return the (possibly {@code null}) {@link IFarGeneratorRough} used for rough generation of far terrain
@@ -70,11 +69,6 @@ public interface IFarTileProvider extends Closeable {
      * @return the {@link FTileStorage} used by this world
      */
     FTileStorage storage();
-
-    /**
-     * @return the {@link IFarRenderMode} that this world is used by
-     */
-    IFarRenderMode mode();
 
     /**
      * @return the current world timestamp

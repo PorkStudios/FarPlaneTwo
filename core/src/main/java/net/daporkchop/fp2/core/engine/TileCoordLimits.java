@@ -21,7 +21,7 @@ package net.daporkchop.fp2.core.engine;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.core.mode.api.IFarCoordLimits;
+import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 
 import static net.daporkchop.fp2.core.engine.EngineConstants.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
@@ -30,15 +30,24 @@ import static net.daporkchop.fp2.core.util.math.MathUtil.*;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public class TileCoordLimits implements IFarCoordLimits {
-    protected final int minX;
-    protected final int minY;
-    protected final int minZ;
-    protected final int maxX;
-    protected final int maxY;
-    protected final int maxZ;
+public final class TileCoordLimits {
+    private final int minX;
+    private final int minY;
+    private final int minZ;
+    private final int maxX;
+    private final int maxY;
+    private final int maxZ;
 
-    @Override
+    public TileCoordLimits(@NonNull IntAxisAlignedBB blockCoordLimits) {
+        this(blockCoordLimits.minX(), blockCoordLimits.minY(), blockCoordLimits.minZ(), blockCoordLimits.maxX(), blockCoordLimits.maxY(), blockCoordLimits.maxZ());
+    }
+
+    /**
+     * Checks whether or not the given position is within these limits.
+     *
+     * @param pos the position to check
+     * @return whether or not the given position is within these limits
+     */
     public boolean contains(@NonNull TilePos pos) {
         int shift = T_SHIFT + pos.level();
 
@@ -47,7 +56,14 @@ public class TileCoordLimits implements IFarCoordLimits {
                && pos.z() >= asrFloor(this.minZ, shift) && pos.z() < asrCeil(this.maxZ, shift);
     }
 
-    @Override
+    /**
+     * Gets the position at the minimum corner of the limit's AABB at the given level.
+     * <p>
+     * The position's coordinates are inclusive.
+     *
+     * @param level the level
+     * @return the position at the minimum corner of the limit's AABB at the given level
+     */
     public TilePos min(int level) {
         return new TilePos(level,
                 asrFloor(this.minX, T_SHIFT + level),
@@ -55,7 +71,14 @@ public class TileCoordLimits implements IFarCoordLimits {
                 asrFloor(this.minZ, T_SHIFT + level));
     }
 
-    @Override
+    /**
+     * Gets the position at the minimum corner of the limit's AABB at the given level.
+     * <p>
+     * The position's coordinates are exclusive.
+     *
+     * @param level the level
+     * @return the position at the minimum corner of the limit's AABB at the given level
+     */
     public TilePos max(int level) {
         return new TilePos(level,
                 asrCeil(this.maxX, T_SHIFT + level),

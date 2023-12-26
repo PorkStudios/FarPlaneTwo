@@ -22,10 +22,10 @@ package net.daporkchop.fp2.core.mode.common.client;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.engine.Tile;
+import net.daporkchop.fp2.core.engine.TileCoordLimits;
 import net.daporkchop.fp2.core.engine.TilePos;
-import net.daporkchop.fp2.core.mode.api.IFarCoordLimits;
-import net.daporkchop.fp2.core.mode.api.client.IFarTileCache;
-import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
+import net.daporkchop.fp2.core.engine.client.FarTileCache;
+import net.daporkchop.fp2.core.engine.tile.ITileSnapshot;
 import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutput;
 import net.daporkchop.fp2.core.mode.common.client.bake.IRenderBaker;
 import net.daporkchop.fp2.core.mode.common.client.index.IRenderIndex;
@@ -56,31 +56,31 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @Getter
-public class BakeManager extends AbstractReleasable implements IFarTileCache.Listener, Consumer<TilePos>, Runnable {
+public class BakeManager extends AbstractReleasable implements FarTileCache.Listener, Consumer<TilePos>, Runnable {
     protected final AbstractFarRenderer renderer;
     protected final IFarRenderStrategy<?, ?, ?> strategy;
 
-    protected final IFarTileCache tileCache;
+    protected final FarTileCache tileCache;
 
     protected final IRenderIndex<?, ?, ?> index;
     protected final IRenderBaker<?> baker;
 
     protected final Scheduler<TilePos, Void> bakeScheduler;
-    protected final IFarCoordLimits coordLimits;
+    protected final TileCoordLimits coordLimits;
 
     protected final Map<TilePos, Optional<IBakeOutput>> pendingDataUpdates = new ConcurrentHashMap<>();
     protected final Map<TilePos, Boolean> pendingRenderableUpdates = new ConcurrentHashMap<>();
     protected final AtomicBoolean isBulkUpdateQueued = new AtomicBoolean();
     protected final Semaphore dataUpdatesLock = new Semaphore(fp2().globalConfig().performance().maxBakesProcessedPerFrame());
 
-    public BakeManager(@NonNull AbstractFarRenderer renderer, @NonNull IFarTileCache tileCache) {
+    public BakeManager(@NonNull AbstractFarRenderer renderer, @NonNull FarTileCache tileCache) {
         this.renderer = renderer;
         this.strategy = renderer.strategy();
         this.tileCache = tileCache;
 
         this.index = this.strategy.createIndex();
         this.baker = this.strategy.createBaker();
-        this.coordLimits = this.renderer.mode().tileCoordLimits(renderer.context().level().coordLimits());
+        this.coordLimits = new TileCoordLimits(renderer.context().level().coordLimits());
 
         this.bakeScheduler = new NoFutureScheduler<>(this, this.renderer.context().level().workerManager().createChildWorkerGroup()
                 .threads(fp2().globalConfig().performance().bakeThreads())
@@ -159,7 +159,7 @@ public class BakeManager extends AbstractReleasable implements IFarTileCache.Lis
                 return;
             }
 
-            Recycler<Tile> recycler = this.renderer.mode().tileRecycler();
+            Recycler<Tile> recycler = Tile.recycler();
             Tile[] srcs = new Tile[compressedInputTiles.length];
             try {
                 for (int i = 0; i < srcs.length; i++) { //inflate tiles

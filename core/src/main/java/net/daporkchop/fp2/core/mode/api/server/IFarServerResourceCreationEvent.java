@@ -36,9 +36,4 @@ public interface IFarServerResourceCreationEvent<R> extends ReturningEvent<R> {
      * @return the {@link IFarLevelServer} which a {@link R} will be created for
      */
     IFarLevelServer world();
-
-    /**
-     * @return the {@link IFarRenderMode} which the {@link R} will be created for
-     */
-    IFarRenderMode mode();
 }

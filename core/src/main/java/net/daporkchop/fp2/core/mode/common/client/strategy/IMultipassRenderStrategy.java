@@ -20,7 +20,8 @@
 package net.daporkchop.fp2.core.mode.common.client.strategy;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
+import net.daporkchop.fp2.core.engine.EngineConstants;
+import net.daporkchop.fp2.core.mode.common.client.AbstractFarRenderer;
 import net.daporkchop.fp2.gl.command.BlendFactor;
 import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
 import net.daporkchop.fp2.gl.command.Compare;
@@ -61,7 +62,7 @@ public interface IMultipassRenderStrategy<BO extends IBakeOutput, DB extends Dra
         //- render the TRANSPARENT pass at all detail levels at once, using the stencil to not only prevent low-detail from rendering over high-detail, but also fp2 transparent water
         //  from rendering over vanilla water
 
-        for (int level = 0; level < this.mode().maxLevels(); level++) {
+        for (int level = 0; level < EngineConstants.MAX_LODS; level++) {
             this.renderSolid(builder, index, level);
             this.renderCutout(builder, index, level);
         }
@@ -94,7 +95,7 @@ public interface IMultipassRenderStrategy<BO extends IBakeOutput, DB extends Dra
                 .stencilCompare(Compare.LESS_OR_EQUAL)
                 .stencilReference(level)
                 .stencilCompareMask(0x7F);
-        index.draw(builder, level, 0, this.blockShader(level, IFarRenderer.LAYER_SOLID));
+        index.draw(builder, level, 0, this.blockShader(level, AbstractFarRenderer.LAYER_SOLID));
 
         //GlStateManager.enableAlpha();
     }
@@ -106,7 +107,7 @@ public interface IMultipassRenderStrategy<BO extends IBakeOutput, DB extends Dra
                 .stencilCompare(Compare.LESS_OR_EQUAL)
                 .stencilReference(level)
                 .stencilCompareMask(0x7F);
-        index.draw(builder, level, 1, this.blockShader(level, IFarRenderer.LAYER_CUTOUT));
+        index.draw(builder, level, 1, this.blockShader(level, AbstractFarRenderer.LAYER_CUTOUT));
 
         //MC.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
     }
@@ -127,9 +128,9 @@ public interface IMultipassRenderStrategy<BO extends IBakeOutput, DB extends Dra
         builder.stencilOperation(StencilOperation.KEEP, StencilOperation.KEEP, StencilOperation.REPLACE)
                 .stencilCompare(Compare.GREATER_OR_EQUAL)
                 .stencilCompareMask(0xFF);
-        for (int level = 0; level < this.mode().maxLevels(); level++) {
-            builder.stencilReference(0x80 | (this.mode().maxLevels() - level));
-            index.draw(builder, level, 2, this.stencilShader(level, IFarRenderer.LAYER_TRANSPARENT));
+        for (int level = 0; level < EngineConstants.MAX_LODS; level++) {
+            builder.stencilReference(0x80 | (EngineConstants.MAX_LODS - level));
+            index.draw(builder, level, 2, this.stencilShader(level, AbstractFarRenderer.LAYER_TRANSPARENT));
         }
 
         builder.depthWrite(true);
@@ -146,9 +147,9 @@ public interface IMultipassRenderStrategy<BO extends IBakeOutput, DB extends Dra
         builder.stencilOperation(StencilOperation.KEEP, StencilOperation.KEEP, StencilOperation.KEEP)
                 .stencilCompare(Compare.EQUAL)
                 .stencilCompareMask(0xFF);
-        for (int level = 0; level < this.mode().maxLevels(); level++) {
-            builder.stencilReference(0x80 | (this.mode().maxLevels() - level));
-            index.draw(builder, level, 2, this.blockShader(level, IFarRenderer.LAYER_TRANSPARENT));
+        for (int level = 0; level < EngineConstants.MAX_LODS; level++) {
+            builder.stencilReference(0x80 | (EngineConstants.MAX_LODS - level));
+            index.draw(builder, level, 2, this.blockShader(level, AbstractFarRenderer.LAYER_TRANSPARENT));
         }
 
         builder.blendDisable();

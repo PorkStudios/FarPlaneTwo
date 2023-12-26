@@ -28,6 +28,7 @@ import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.DirectTilePosAccess;
+import net.daporkchop.fp2.core.engine.EngineConstants;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.mode.common.client.ICullingStrategy;
 import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutput;
@@ -77,7 +78,7 @@ public abstract class AbstractRenderIndex<BO extends IBakeOutput, DB extends Dra
         this.cullingStrategy = this.strategy.cullingStrategy();
         this.renderablePositions = DirectTilePosAccess.newPositionSet();
 
-        this.levels = uncheckedCast(Array.newInstance(Level.class, this.strategy.mode().maxLevels()));
+        this.levels = uncheckedCast(Array.newInstance(Level.class, EngineConstants.MAX_LODS));
         for (int level = 0; level < this.levels.length; level++) {
             this.levels[level] = this.createLevel(level);
         }

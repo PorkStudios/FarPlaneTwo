@@ -22,12 +22,12 @@ package net.daporkchop.fp2.core.mode.common.server.tracking;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.DirectTilePosAccess;
+import net.daporkchop.fp2.core.engine.TileCoordLimits;
 import net.daporkchop.fp2.core.engine.TilePos;
-import net.daporkchop.fp2.core.mode.api.IFarCoordLimits;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTracker;
-import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
+import net.daporkchop.fp2.core.engine.tile.ITileSnapshot;
 import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
 import net.daporkchop.fp2.core.util.datastructure.RecyclingArrayDeque;
@@ -57,10 +57,9 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 public abstract class AbstractTracker<STATE> implements IFarTracker {
     protected final AbstractTrackerManager manager;
-    protected final IFarRenderMode mode;
 
     protected final IFarServerContext context;
-    protected final IFarCoordLimits coordLimits;
+    protected final TileCoordLimits coordLimits;
 
     /**
      * The actual queue of positions to load.
@@ -88,7 +87,6 @@ public abstract class AbstractTracker<STATE> implements IFarTracker {
 
     public AbstractTracker(@NonNull AbstractTrackerManager manager, @NonNull IFarServerContext context) {
         this.manager = manager;
-        this.mode = manager.tileProvider().mode();
 
         this.context = context;
         this.coordLimits = manager.tileProvider().coordLimits();

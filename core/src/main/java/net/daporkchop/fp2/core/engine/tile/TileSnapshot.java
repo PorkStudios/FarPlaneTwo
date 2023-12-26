@@ -17,7 +17,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.mode.api.tile;
+package net.daporkchop.fp2.core.engine.tile;
 
 import lombok.NonNull;
 import lombok.SneakyThrows;

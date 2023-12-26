@@ -28,10 +28,10 @@ import net.daporkchop.fp2.core.client.render.TextureUVs;
 import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
+import net.daporkchop.fp2.core.engine.client.VoxelRenderer;
 import net.daporkchop.fp2.core.event.AbstractReloadEvent;
-import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
-import net.daporkchop.fp2.core.mode.api.client.IFarTileCache;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
+import net.daporkchop.fp2.core.engine.client.FarTileCache;
 import net.daporkchop.fp2.core.network.packet.debug.client.CPacketDebugDropAllTiles;
 import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
 import net.daporkchop.fp2.core.util.I18n;
@@ -131,7 +131,7 @@ public class FP2Debug {
 
                 IFarClientContext context = player.activeContext();
                 if (context != null) {
-                    IFarTileCache tileCache = context.tileCache();
+                    FarTileCache tileCache = context.tileCache();
                     if (tileCache != null) {
                         DebugStats.TileCache stats = tileCache.stats();
                         list.add("TileCache: " + numberFormat.format(stats.tileCountWithData()) + '/' + numberFormat.format(stats.tileCount())
@@ -142,7 +142,7 @@ public class FP2Debug {
                         list.add("§oNo TileCache active");
                     }
 
-                    IFarRenderer renderer = context.renderer();
+                    VoxelRenderer renderer = context.renderer();
                     if (renderer != null) {
                         DebugStats.Renderer stats = renderer.stats();
                         list.add("Baked Tiles: " + numberFormat.format(stats.bakedTiles()) + "T " + numberFormat.format(stats.bakedTilesWithData()) + "D "

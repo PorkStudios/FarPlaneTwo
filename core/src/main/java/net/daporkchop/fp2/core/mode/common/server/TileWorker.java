@@ -28,12 +28,11 @@ import net.daporkchop.fp2.api.world.level.GenerationNotAllowedException;
 import net.daporkchop.fp2.core.engine.DirectTilePosAccess;
 import net.daporkchop.fp2.core.engine.Tile;
 import net.daporkchop.fp2.core.engine.TilePos;
-import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
-import net.daporkchop.fp2.core.mode.api.tile.ITileMetadata;
-import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
+import net.daporkchop.fp2.core.engine.tile.ITileHandle;
+import net.daporkchop.fp2.core.engine.tile.ITileMetadata;
+import net.daporkchop.fp2.core.engine.tile.ITileSnapshot;
 import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
 import net.daporkchop.lib.common.pool.recycler.Recycler;
-import net.daporkchop.fp2.core.util.serialization.variable.IVariableSizeRecyclingCodec;
 import net.daporkchop.fp2.core.util.threading.scheduler.Scheduler;
 import net.daporkchop.fp2.core.util.threading.scheduler.SharedFutureScheduler;
 import net.daporkchop.lib.common.util.PArrays;
@@ -173,7 +172,7 @@ public class TileWorker implements SharedFutureScheduler.WorkFunction<PriorityTa
             state.tryAcquire(batchPositions, SharedFutureScheduler.AcquisitionStrategy.TRY_STEAL_EXISTING_OR_CREATE);
         });
 
-        Recycler<Tile> tileRecycler = this.provider.mode().tileRecycler();
+        Recycler<Tile> tileRecycler = Tile.recycler();
         //TODO: T[] tiles = tileRecycler.allocate(state.positions().size(), this.provider.mode()::tileArray);
         Tile[] tiles = PArrays.filledFrom(state.positions().size(), Tile[]::new, tileRecycler::allocate);
         try {
@@ -210,7 +209,7 @@ public class TileWorker implements SharedFutureScheduler.WorkFunction<PriorityTa
             });
 
             //actually do exact generation
-            Recycler<Tile> tileRecycler = this.provider.mode().tileRecycler();
+            Recycler<Tile> tileRecycler = Tile.recycler();
             //TODO: T[] tiles = tileRecycler.allocate(state.positions().size(), this.provider.mode()::tileArray);
             Tile[] tiles = PArrays.filledFrom(state.positions().size(), Tile[]::new, tileRecycler::allocate);
             try {
@@ -260,7 +259,7 @@ public class TileWorker implements SharedFutureScheduler.WorkFunction<PriorityTa
             }
 
             //scale each position individually
-            Recycler<Tile> tileRecycler = this.provider.mode().tileRecycler();
+            Recycler<Tile> tileRecycler = Tile.recycler();
             state.forEachPositionHandleTimestamp((pos, handle, minimumTimestamp) -> {
                 List<TilePos> srcPositions = this.provider.scaler().inputs(pos);
 

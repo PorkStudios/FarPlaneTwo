@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -17,27 +17,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.mode.api.client;
-
-import lombok.NonNull;
-import net.daporkchop.fp2.core.client.IFrustum;
-import net.daporkchop.fp2.core.client.render.RenderInfo;
-import net.daporkchop.fp2.core.debug.util.DebugStats;
-import net.daporkchop.lib.common.misc.release.Releasable;
+package net.daporkchop.fp2.core.engine.tile;
 
 /**
+ * Additional information stored alongside tile data.
+ *
  * @author DaPorkchop_
  */
-public interface IFarRenderer extends Releasable {
-    int LAYER_SOLID = 0;
-    int LAYER_CUTOUT = LAYER_SOLID + 1;
-    int LAYER_TRANSPARENT = LAYER_CUTOUT + 1;
+public interface ITileMetadata {
+    static ITileMetadata ofTimestamp(long timestamp) {
+        return () -> timestamp;
+    }
 
-    int LAYERS = LAYER_TRANSPARENT + 1;
+    /**
+     * Timestamp indicating that the tile has not yet been generated.
+     */
+    long TIMESTAMP_BLANK = Long.MIN_VALUE;
 
-    void prepare(@NonNull IFrustum frustum);
+    /**
+     * Timestamp indicating that the tile's rough generation has been completed.
+     */
+    long TIMESTAMP_GENERATED = -1L;
 
-    void render(@NonNull RenderInfo renderInfo);
+    /**
+     * @return the tile's timestamp
+     */
+    long timestamp();
 
-    DebugStats.Renderer stats();
+    /**
+     * @return whether or not the tile's data has been initialized
+     */
+    default boolean isInitialized() {
+        return this.timestamp() != TIMESTAMP_BLANK;
+    }
 }

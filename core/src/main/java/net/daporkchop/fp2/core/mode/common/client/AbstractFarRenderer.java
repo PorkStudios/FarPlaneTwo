@@ -26,7 +26,6 @@ import net.daporkchop.fp2.core.client.render.LevelRenderer;
 import net.daporkchop.fp2.core.client.render.RenderInfo;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.mode.common.client.strategy.IFarRenderStrategy;
 import net.daporkchop.fp2.gl.GL;
@@ -38,7 +37,13 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractFarRenderer extends AbstractReleasable implements IFarRenderer {
+public abstract class AbstractFarRenderer extends AbstractReleasable {
+    public static final int LAYER_SOLID = 0;
+    public static final int LAYER_CUTOUT = LAYER_SOLID + 1;
+    public static final int LAYER_TRANSPARENT = LAYER_CUTOUT + 1;
+
+    public static final int LAYERS = LAYER_TRANSPARENT + 1;
+
     protected final LevelRenderer levelRenderer;
     protected final GL gl;
 
@@ -72,18 +77,15 @@ public abstract class AbstractFarRenderer extends AbstractReleasable implements 
         return new BakeManager(this, this.context.tileCache());
     }
 
-    @Override
     public void prepare(@NonNull IFrustum frustum) {
         this.gl.runCleanup();
         this.bakeManager.index.select(frustum);
     }
 
-    @Override
     public void render(@NonNull RenderInfo renderInfo) {
         this.strategy.render(uncheckedCast(this.bakeManager.index), renderInfo);
     }
 
-    @Override
     public DebugStats.Renderer stats() {
         return this.bakeManager.index.stats();
     }

@@ -29,9 +29,9 @@ import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.storage.FTileStorage;
 import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTracker;
 import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTrackerManager;
-import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
-import net.daporkchop.fp2.core.mode.api.tile.ITileMetadata;
-import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
+import net.daporkchop.fp2.core.engine.tile.ITileHandle;
+import net.daporkchop.fp2.core.engine.tile.ITileMetadata;
+import net.daporkchop.fp2.core.engine.tile.ITileSnapshot;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
 import net.daporkchop.fp2.core.util.datastructure.CompactReferenceArraySet;
 import net.daporkchop.fp2.core.util.threading.scheduler.NoFutureScheduler;
@@ -137,7 +137,7 @@ public abstract class AbstractTrackerManager implements IFarTrackerManager, FTil
                 tileProvider.world().workerManager().createChildWorkerGroup()
                         .threads(fp2().globalConfig().performance().trackingThreads())
                         .threadFactory(PThreadFactories.builder().daemon().minPriority().collapsingId()
-                                .name(PStrings.fastFormat("FP2 %s %s Tracker #%%d", tileProvider.mode().name(), tileProvider.world().id())).build()));
+                                .name(PStrings.fastFormat("FP2 %s Tracker #%%d", tileProvider.world().id())).build()));
 
         tileProvider.storage().addListener(this);
     }

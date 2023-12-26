@@ -32,10 +32,11 @@ import net.daporkchop.fp2.api.storage.external.FStorageItemFactory;
 import net.daporkchop.fp2.api.storage.internal.FStorageColumn;
 import net.daporkchop.fp2.api.storage.internal.FStorageColumnHintsInternal;
 import net.daporkchop.fp2.api.storage.internal.FStorageInternal;
+import net.daporkchop.fp2.core.engine.EngineConstants;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.TilePosCodec;
 import net.daporkchop.fp2.core.mode.api.server.storage.FTileStorage;
-import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
+import net.daporkchop.fp2.core.engine.tile.ITileHandle;
 import net.daporkchop.fp2.core.mode.common.server.AbstractFarTileProvider;
 import net.daporkchop.fp2.core.util.GlobalAllocators;
 import net.daporkchop.fp2.core.util.datastructure.java.list.ArraySliceAsList;
@@ -143,7 +144,7 @@ public class DefaultTileStorage implements FTileStorage {
                 buf.writeByte(0);
 
                 buf.writeIntLE(0); //tile storage version
-                buf.writeIntLE(tileProvider.mode().storageVersion()); //tile format version
+                buf.writeIntLE(EngineConstants.STORAGE_VERSION); //tile format version
 
                 //copy buffer contents to a byte[]
                 currentToken = new byte[buf.readableBytes()];

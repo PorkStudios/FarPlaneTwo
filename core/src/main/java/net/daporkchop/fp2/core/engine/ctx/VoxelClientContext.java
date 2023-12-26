@@ -22,7 +22,6 @@ package net.daporkchop.fp2.core.engine.ctx;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
 import net.daporkchop.fp2.core.mode.common.ctx.AbstractFarClientContext;
 import net.daporkchop.fp2.core.engine.client.VoxelRenderer;
@@ -36,7 +35,7 @@ public class VoxelClientContext extends AbstractFarClientContext {
     }
 
     @Override
-    protected IFarRenderer renderer0(IFarRenderer old, @NonNull FP2Config config) {
+    protected VoxelRenderer renderer0(VoxelRenderer old, @NonNull FP2Config config) {
         /*if (OFHelper.of_Config_isShaders()) {
             return old; //TODO: transform feedback renderer
         } else {*/

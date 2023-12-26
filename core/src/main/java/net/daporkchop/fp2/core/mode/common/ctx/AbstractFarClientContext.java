@@ -23,11 +23,10 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
 import net.daporkchop.fp2.core.config.FP2Config;
+import net.daporkchop.fp2.core.engine.client.VoxelRenderer;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
-import net.daporkchop.fp2.core.mode.api.client.IFarTileCache;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
-import net.daporkchop.fp2.core.mode.common.client.FarTileCache;
+import net.daporkchop.fp2.core.engine.client.FarTileCache;
 import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -41,26 +40,22 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 public abstract class AbstractFarClientContext implements IFarClientContext {
     protected final IFarRenderMode mode;
     protected final IFarLevelClient level;
-    protected final IFarTileCache tileCache;
+    protected final FarTileCache tileCache;
 
     protected FP2Config config;
-    protected IFarRenderer renderer;
+    protected VoxelRenderer renderer;
 
     protected boolean closed = false;
 
     public AbstractFarClientContext(@NonNull IFarLevelClient level, @NonNull FP2Config config, @NonNull IFarRenderMode mode) {
         this.level = level;
         this.mode = mode;
-        this.tileCache = this.tileCache0();
+        this.tileCache = new FarTileCache();
 
         this.notifyConfigChange(config);
     }
 
-    protected IFarTileCache tileCache0() {
-        return new FarTileCache();
-    }
-
-    protected abstract IFarRenderer renderer0(IFarRenderer old, @NonNull FP2Config config);
+    protected abstract VoxelRenderer renderer0(VoxelRenderer old, @NonNull FP2Config config);
 
     @CalledFromAnyThread
     @Override
@@ -74,8 +69,8 @@ public abstract class AbstractFarClientContext implements IFarClientContext {
                 return;
             }
 
-            IFarRenderer oldRenderer = this.renderer;
-            IFarRenderer newRenderer = this.renderer0(oldRenderer, config);
+            VoxelRenderer oldRenderer = this.renderer;
+            VoxelRenderer newRenderer = this.renderer0(oldRenderer, config);
             if (oldRenderer != newRenderer) {
                 this.renderer = newRenderer;
                 if (oldRenderer != null) {
@@ -94,8 +89,8 @@ public abstract class AbstractFarClientContext implements IFarClientContext {
         //do all cleanup on client thread
         this.level.workerManager().rootExecutor().execute(() -> {
             //try-with-resources to make sure everything gets cleaned up
-            try (IFarTileCache tileCache = this.tileCache;
-                 IFarRenderer renderer = this.renderer) {
+            try (FarTileCache tileCache = this.tileCache;
+                 VoxelRenderer renderer = this.renderer) {
                 this.renderer = null;
             }
         });

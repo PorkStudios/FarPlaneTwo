@@ -17,14 +17,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.mode.common.client;
+package net.daporkchop.fp2.core.engine.client;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
-import net.daporkchop.fp2.core.engine.Tile;
 import net.daporkchop.fp2.core.engine.TilePos;
-import net.daporkchop.fp2.core.mode.api.client.IFarTileCache;
-import net.daporkchop.fp2.core.mode.api.tile.ITileSnapshot;
+import net.daporkchop.fp2.core.engine.tile.ITileSnapshot;
 import net.daporkchop.lib.common.misc.release.AbstractReleasable;
 
 import java.util.Collection;
@@ -39,21 +37,27 @@ import java.util.stream.Stream;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
- * Default implementation of {@link IFarTileCache}.
+ * Client-side, in-memory cache for loaded tiles.
  *
  * @author DaPorkchop_
  */
 //TODO: this still has some race conditions - it's possible that addListener/removeListener might cause the listener to be notified twice for tiles that are
 // received/unloaded during the initial notification pass
 //TODO: handling in case an exception is thrown by a listener
-public class FarTileCache extends AbstractReleasable implements IFarTileCache, Function<TilePos, ITileSnapshot> {
+public final class FarTileCache extends AbstractReleasable implements Function<TilePos, ITileSnapshot> {
     protected final Map<TilePos, ITileSnapshot> tiles = new ConcurrentHashMap<>();
     protected final Collection<Listener> listeners = new CopyOnWriteArraySet<>();
 
     protected final AtomicReference<DebugStats.TileSnapshot> debug_tileStats = new AtomicReference<>(DebugStats.TileSnapshot.ZERO);
     protected final LongAdder debug_nonEmptyTileCount = new LongAdder();
 
-    @Override
+    /**
+     * Adds the given tile into the cache.
+     * <p>
+     * Ownership of the tile is transferred to the cache.
+     *
+     * @param tile the tile to add
+     */
     public void receiveTile(@NonNull ITileSnapshot tile) {
         this.assertNotReleased();
         this.tiles.compute(tile.pos(), (pos, old) -> {
@@ -69,7 +73,6 @@ public class FarTileCache extends AbstractReleasable implements IFarTileCache, F
         });
     }
 
-    @Override
     public void unloadTile(@NonNull TilePos _pos) {
         this.assertNotReleased();
         this.tiles.computeIfPresent(_pos, (pos, old) -> {
@@ -81,7 +84,13 @@ public class FarTileCache extends AbstractReleasable implements IFarTileCache, F
         });
     }
 
-    @Override
+    /**
+     * Adds a new {@link Listener} that will be notified when tiles change.
+     *
+     * @param listener          the {@link Listener}
+     * @param notifyForExisting whether or not to call {@link Listener#tileAdded(ITileSnapshot)} for tiles that were already cached before
+     *                          the listener was added
+     */
     public void addListener(@NonNull Listener listener, boolean notifyForExisting) {
         this.assertNotReleased();
         checkState(this.listeners.add(listener), "duplicate listener: %s", listener);
@@ -94,7 +103,12 @@ public class FarTileCache extends AbstractReleasable implements IFarTileCache, F
         }
     }
 
-    @Override
+    /**
+     * Removes a previously added {@link Listener}.
+     *
+     * @param listener      the {@link Listener}
+     * @param notifyRemoval whether or not to call {@link Listener#tileRemoved(TilePos)} for all cached tiles
+     */
     public void removeListener(@NonNull Listener listener, boolean notifyRemoval) {
         this.assertNotReleased();
         checkState(this.listeners.remove(listener), "unknown listener: %s", listener);
@@ -103,7 +117,14 @@ public class FarTileCache extends AbstractReleasable implements IFarTileCache, F
         }
     }
 
-    @Override
+    /**
+     * Gets the given tile at the given position from the cache.
+     * <p>
+     * The tile is retained before being returned, i.e. ownership is transferred to the caller.
+     *
+     * @param position the position
+     * @return the tile at the given position, or {@code null} if the tile wasn't present in the cache
+     */
     public ITileSnapshot getTileCached(@NonNull TilePos position) {
         this.assertNotReleased();
         ITileSnapshot snapshot = this.tiles.get(position);
@@ -113,10 +134,17 @@ public class FarTileCache extends AbstractReleasable implements IFarTileCache, F
         return snapshot;
     }
 
-    @Override
-    public Stream<ITileSnapshot> getTilesCached(@NonNull Stream<TilePos> position) {
+    /**
+     * Gets the given tiles at the given positions from the cache.
+     * <p>
+     * Each of the tiles is retained before being returned, i.e. ownership is transferred to the caller.
+     *
+     * @param positions the positions
+     * @return the tiles at the given positions. Tiles that were not present in the cache will be {@code null}
+     */
+    public Stream<ITileSnapshot> getTilesCached(@NonNull Stream<TilePos> positions) {
         this.assertNotReleased();
-        return position.map(this);
+        return positions.map(this);
     }
 
     protected void debug_updateStats(ITileSnapshot prev, ITileSnapshot next) {
@@ -129,7 +157,6 @@ public class FarTileCache extends AbstractReleasable implements IFarTileCache, F
                 : next != null ? 1L : 0L);
     }
 
-    @Override
     public DebugStats.TileCache stats() {
         DebugStats.TileSnapshot snapshotStats = this.debug_tileStats.get();
 
@@ -163,5 +190,39 @@ public class FarTileCache extends AbstractReleasable implements IFarTileCache, F
         });
         this.tiles.clear();
         this.listeners.clear();
+    }
+
+    /**
+     * Receives notifications when a tile is updated in a {@link FarTileCache}.
+     *
+     * @author DaPorkchop_
+     */
+    public interface Listener {
+        /**
+         * Fired when a new tile is added to the cache.
+         * <p>
+         * Ownership of the tile is <strong>not</strong> transferred to the listener. The listener must explicitly retain the tile if it wishes to preserve its reference
+         * beyond the scope of this method.
+         *
+         * @param tile the tile
+         */
+        void tileAdded(@NonNull ITileSnapshot tile);
+
+        /**
+         * Fired when a tile's contents are changed.
+         * <p>
+         * Ownership of the tile is <strong>not</strong> transferred to the listener. The listener must explicitly retain the tile if it wishes to preserve its reference
+         * beyond the scope of this method.
+         *
+         * @param tile the tile
+         */
+        void tileModified(@NonNull ITileSnapshot tile);
+
+        /**
+         * Fired when a tile is removed from the cache.
+         *
+         * @param pos the position of the tile
+         */
+        void tileRemoved(@NonNull TilePos pos);
     }
 }

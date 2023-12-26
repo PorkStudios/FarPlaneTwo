@@ -24,8 +24,8 @@ import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.fp2.api.world.level.GenerationNotAllowedException;
 import net.daporkchop.fp2.core.engine.DirectTilePosAccess;
 import net.daporkchop.fp2.core.engine.Tile;
+import net.daporkchop.fp2.core.engine.TileCoordLimits;
 import net.daporkchop.fp2.core.engine.TilePos;
-import net.daporkchop.fp2.core.mode.api.IFarCoordLimits;
 import net.daporkchop.fp2.core.mode.api.server.IFarServerResourceCreationEvent;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 
@@ -51,7 +51,7 @@ public interface IFarGeneratorExact extends IFarGenerator {
      * Otherwise, the following restrictions apply to the positions which may be returned:
      * <ul>
      *     <li>the input position must be present in the list</li>
-     *     <li>all of the positions must be valid (i.e. within the provider's {@link IFarCoordLimits coordinate limits})</li>
+     *     <li>all of the positions must be valid (i.e. within the provider's {@link TileCoordLimits coordinate limits})</li>
      *     <li>the positions must be chosen such that generation can only fail with a {@link GenerationNotAllowedException} if the input position would have failed. Conversely,
      *     if the input position would have been able to be generated successfully, generation for the whole batch <strong>must</strong> succeed. As thi is entirely dependent
      *     on the world's internal data representation, it is recommended to use {@link FBlockLevel#guaranteedDataAvailableVolume} to determine which data is guaranteed
@@ -74,7 +74,7 @@ public interface IFarGeneratorExact extends IFarGenerator {
      * Otherwise, the following restrictions apply to the positions which may be returned:
      * <ul>
      *     <li>the input position must be present in the list</li>
-     *     <li>all of the positions must be valid (i.e. within the provider's {@link IFarCoordLimits coordinate limits})</li>
+     *     <li>all of the positions must be valid (i.e. within the provider's {@link TileCoordLimits coordinate limits})</li>
      *     <li>the positions must be chosen such that generation can only fail with a {@link GenerationNotAllowedException} if the input position would have failed. Conversely,
      *     if the input position would have been able to be generated successfully, generation for the whole batch <strong>must</strong> succeed. As thi is entirely dependent
      *     on the world's internal data representation, it is recommended to use {@link FBlockLevel#guaranteedDataAvailableVolume} to determine which data is guaranteed

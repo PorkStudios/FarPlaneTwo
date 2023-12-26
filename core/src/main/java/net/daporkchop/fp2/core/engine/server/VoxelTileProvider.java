@@ -21,7 +21,6 @@ package net.daporkchop.fp2.core.engine.server;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.api.world.level.FBlockLevel;
-import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTrackerManager;
 import net.daporkchop.fp2.core.mode.common.server.AbstractFarTileProvider;
 import net.daporkchop.fp2.core.engine.TilePos;
@@ -35,8 +34,8 @@ import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
  * @author DaPorkchop_
  */
 public abstract class VoxelTileProvider extends AbstractFarTileProvider {
-    public VoxelTileProvider(@NonNull IFarLevelServer world, @NonNull IFarRenderMode mode) {
-        super(world, mode);
+    public VoxelTileProvider(@NonNull IFarLevelServer world) {
+        super(world);
     }
 
     @Override
@@ -59,8 +58,8 @@ public abstract class VoxelTileProvider extends AbstractFarTileProvider {
      * @author DaPorkchop_
      */
     public static class Vanilla extends VoxelTileProvider {
-        public Vanilla(@NonNull IFarLevelServer world, @NonNull IFarRenderMode mode) {
-            super(world, mode);
+        public Vanilla(@NonNull IFarLevelServer world) {
+            super(world);
         }
 
         @Override
@@ -88,8 +87,8 @@ public abstract class VoxelTileProvider extends AbstractFarTileProvider {
      * @author DaPorkchop_
      */
     public static class CubicChunks extends VoxelTileProvider {
-        public CubicChunks(@NonNull IFarLevelServer world, @NonNull IFarRenderMode mode) {
-            super(world, mode);
+        public CubicChunks(@NonNull IFarLevelServer world) {
+            super(world);
         }
 
         @Override

@@ -24,7 +24,6 @@ import lombok.NonNull;
 import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;
 import net.daporkchop.fp2.core.client.shader.ShaderMacros;
-import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
 import net.daporkchop.fp2.core.mode.common.client.AbstractFarRenderer;
 import net.daporkchop.fp2.core.mode.common.client.ICullingStrategy;
 import net.daporkchop.fp2.core.mode.common.client.bake.IRenderBaker;
@@ -94,10 +93,10 @@ public class ShaderBasedVoxelRenderStrategy extends AbstractMultipassIndexedRend
     @Override
     public DrawShaderProgram blockShader(int level, int layer) {
         switch (layer) {
-            case IFarRenderer.LAYER_SOLID:
-            case IFarRenderer.LAYER_TRANSPARENT:
+            case AbstractFarRenderer.LAYER_SOLID:
+            case AbstractFarRenderer.LAYER_TRANSPARENT:
                 return this.blockShader.get();
-            case IFarRenderer.LAYER_CUTOUT:
+            case AbstractFarRenderer.LAYER_CUTOUT:
                 return this.blockShaderCutout.get();
             default:
                 throw new IllegalArgumentException("invalid layer: " + layer);

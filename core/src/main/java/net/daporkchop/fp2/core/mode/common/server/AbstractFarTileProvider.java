@@ -23,20 +23,22 @@ import com.google.common.collect.ImmutableList;
 import it.unimi.dsi.fastutil.objects.ObjectRBTreeSet;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.Synchronized;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.api.storage.FStorageException;
+import net.daporkchop.fp2.core.engine.EngineConstants;
+import net.daporkchop.fp2.core.engine.TileCoordLimits;
 import net.daporkchop.fp2.core.engine.TilePos;
-import net.daporkchop.fp2.core.mode.api.IFarCoordLimits;
-import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.core.engine.server.scale.VoxelScalerIntersection;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.core.mode.api.server.storage.FTileStorage;
 import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTrackerManager;
-import net.daporkchop.fp2.core.mode.api.tile.ITileHandle;
+import net.daporkchop.fp2.core.engine.tile.ITileHandle;
 import net.daporkchop.fp2.core.mode.common.server.storage.DefaultTileStorage;
 import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
 import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
@@ -64,7 +66,6 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @Getter
 public abstract class AbstractFarTileProvider implements IFarTileProvider {
     protected final IFarLevelServer world;
-    protected final IFarRenderMode mode;
 
     protected final IFarGeneratorRough generatorRough;
     protected final IFarGeneratorExact generatorExact;
@@ -72,7 +73,7 @@ public abstract class AbstractFarTileProvider implements IFarTileProvider {
 
     protected final FTileStorage storage;
 
-    protected final IFarCoordLimits coordLimits;
+    protected final TileCoordLimits coordLimits;
 
     protected final IFarTrackerManager trackerManager;
 
@@ -83,26 +84,27 @@ public abstract class AbstractFarTileProvider implements IFarTileProvider {
 
     protected boolean open = false;
 
-    public AbstractFarTileProvider(@NonNull IFarLevelServer world, @NonNull IFarRenderMode mode) {
+    public AbstractFarTileProvider(@NonNull IFarLevelServer world) {
         this.world = world;
-        this.mode = mode;
 
-        this.coordLimits = mode.tileCoordLimits(world.coordLimits());
+        this.coordLimits = new TileCoordLimits(world.coordLimits());
 
-        this.generatorRough = this.mode().roughGenerator(world, this);
-        this.generatorExact = this.mode().exactGenerator(world, this);
+        this.generatorRough = fp2().eventBus().fireAndGetFirst(new RoughGeneratorCreationEvent(world, this)).orElse(null);
+        this.generatorExact = fp2().eventBus().fireAndGetFirst(new ExactGeneratorCreationEvent(world, this))
+                .orElseThrow(() -> new IllegalStateException("no exact generator available for world '" + world.id() + '\''));
 
         if (this.generatorRough == null) {
-            fp2().log().warn("no rough %s generator exists for world '%s' (generator=%s)! Falling back to exact generator, this will have serious performance implications.", mode.name(), world.id(), world.terrainGeneratorInfo().implGenerator());
+            fp2().log().warn("no rough generator exists for world '%s' (generator=%s)! Falling back to exact generator, this will have serious performance implications.", world.id(), world.terrainGeneratorInfo().implGenerator());
             //TODO: make the fallback generator smart! rather than simply getting the chunks from the world, do generation and population in
             // a volatile, in-memory world clone to prevent huge numbers of chunks/cubes from potentially being generated (and therefore saved)
         }
 
-        this.scaler = mode.scaler(world, this);
+        //TODO: maybe i should use an event for this?
+        this.scaler = new VoxelScalerIntersection(world, this);
 
         try {
             //open the tile storage
-            this.storage = world.storageCategory().openOrCreateItem("mode_" + mode.name(), DefaultTileStorage.factory(this));
+            this.storage = world.storageCategory().openOrCreateItem("tiles", DefaultTileStorage.factory(this));
 
             //create the task scheduler
             this.scheduler = new ApproximatelyPrioritizedSharedFutureScheduler<>(
@@ -110,7 +112,7 @@ public abstract class AbstractFarTileProvider implements IFarTileProvider {
                     this.world.workerManager().createChildWorkerGroup()
                             .threads(fp2().globalConfig().performance().terrainThreads())
                             .threadFactory(PThreadFactories.builder().daemon().minPriority().collapsingId()
-                                    .name(PStrings.fastFormat("FP2 %s %s Worker #%%d", mode.name(), world.id())).build()),
+                                    .name(PStrings.fastFormat("FP2 %s Worker #%%d", world.id())).build()),
                     PriorityTask.approxComparator());
 
             //create the tracker manager
@@ -168,19 +170,19 @@ public abstract class AbstractFarTileProvider implements IFarTileProvider {
 
     protected abstract IFarTrackerManager createTracker();
 
-    protected abstract boolean anyVanillaTerrainExistsAt(TilePos pos);
+    protected abstract boolean anyVanillaTerrainExistsAt(@NonNull TilePos pos);
 
     protected boolean anyVanillaTerrainExistsAt(@NonNull List<TilePos> positions) {
         return positions.stream().anyMatch(this::anyVanillaTerrainExistsAt);
     }
 
     @Override
-    public CompletableFuture<ITileHandle> requestLoad(TilePos pos) {
+    public CompletableFuture<ITileHandle> requestLoad(@NonNull TilePos pos) {
         return this.scheduler.schedule(TaskStage.LOAD.taskForPosition(pos));
     }
 
     @Override
-    public CompletableFuture<ITileHandle> requestUpdate(TilePos pos) {
+    public CompletableFuture<ITileHandle> requestUpdate(@NonNull TilePos pos) {
         return this.scheduler.schedule(TaskStage.UPDATE.taskForPosition(pos));
     }
 
@@ -232,7 +234,7 @@ public abstract class AbstractFarTileProvider implements IFarTileProvider {
         if (!this.updatesPending.isEmpty()) {
             //iterate up through all of the scaler outputs and enqueue them all for marking as dirty
             Collection<TilePos> last = this.updatesPending;
-            for (int level = 0; level + 1 < this.mode.maxLevels(); level++) {
+            for (int level = 0; level + 1 < EngineConstants.MAX_LODS; level++) {
                 Collection<TilePos> next = this.scaler.uniqueOutputs(last);
                 this.updatesPending.addAll(next);
                 last = next;
@@ -250,5 +252,29 @@ public abstract class AbstractFarTileProvider implements IFarTileProvider {
     protected void shutdownUpdateQueue() {
         this.flushUpdateQueue();
         this.updatesPending = null;
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @RequiredArgsConstructor
+    @Getter
+    private static final class ExactGeneratorCreationEvent implements IFarGeneratorExact.CreationEvent {
+        @NonNull
+        private final IFarLevelServer world;
+        @NonNull
+        private final IFarTileProvider provider;
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @RequiredArgsConstructor
+    @Getter
+    private static final class RoughGeneratorCreationEvent implements IFarGeneratorRough.CreationEvent {
+        @NonNull
+        private final IFarLevelServer world;
+        @NonNull
+        private final IFarTileProvider provider;
     }
 }

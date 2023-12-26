@@ -27,6 +27,9 @@ import net.daporkchop.fp2.core.util.IReusablePersistent;
 import net.daporkchop.fp2.core.util.serialization.variable.IVariableSizeRecyclingCodec;
 import net.daporkchop.lib.binary.stream.DataIn;
 import net.daporkchop.lib.binary.stream.DataOut;
+import net.daporkchop.lib.common.pool.recycler.Recycler;
+import net.daporkchop.lib.common.reference.ReferenceStrength;
+import net.daporkchop.lib.common.reference.cache.Cached;
 import net.daporkchop.lib.unsafe.PCleaner;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
@@ -42,6 +45,15 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @Getter
 public class Tile implements IReusablePersistent {
+    private static final Cached<Recycler<Tile>> RECYCLER_REF = Cached.threadLocal(() -> Recycler.unbounded(Tile::new, Tile::reset), ReferenceStrength.SOFT);
+
+    /**
+     * @return a recycler for tile objects
+     */
+    public static Recycler<Tile> recycler() {
+        return RECYCLER_REF.get();
+    }
+
     static {
         //we copy values directly between int[] and off-heap memory
         PUnsafe.requireTightlyPackedPrimitiveArrays();

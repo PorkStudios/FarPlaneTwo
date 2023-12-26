@@ -21,6 +21,7 @@ package net.daporkchop.fp2.core.server.world.level;
 
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.api.storage.external.FStorageCategory;
 import net.daporkchop.fp2.api.storage.external.FStorageCategoryFactory;
 import net.daporkchop.fp2.api.util.Identifier;
@@ -41,6 +42,8 @@ import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.function.BiConsumer;
+
+import static net.daporkchop.fp2.core.FP2Core.*;
 
 /**
  * Base implementation of {@link FLevelServer}.
@@ -81,7 +84,8 @@ public abstract class AbstractLevelServer<F extends FP2Core,
         this.exactBlockLevelHolder = this.getForInit(() -> this.fp2().eventBus().fireAndGetFirst(new GetExactFBlockLevelEvent(this)).get());
 
         //open a tile provider for each registered render mode
-        this.loadedTileProvider = this.getForInit(() -> VoxelRenderMode.INSTANCE.tileProvider(this));
+        this.loadedTileProvider = this.getForInit(() -> this.fp2().eventBus().fireAndGetFirst(new TileProviderCreationEvent(this))
+                .orElseThrow(() -> new IllegalStateException("no tile provider available for world '" + this.id() + '\'')));
     }
 
     @Override
@@ -111,5 +115,15 @@ public abstract class AbstractLevelServer<F extends FP2Core,
     @Override
     public void forEachTileProvider(@NonNull BiConsumer<? super IFarRenderMode, ? super IFarTileProvider> action) {
         action.accept(VoxelRenderMode.INSTANCE, this.loadedTileProvider);
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @RequiredArgsConstructor
+    @Getter
+    private static final class TileProviderCreationEvent implements IFarTileProvider.CreationEvent {
+        @NonNull
+        private final IFarLevelServer world;
     }
 }
