@@ -34,7 +34,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static java.lang.Math.*;
-import static net.daporkchop.fp2.core.engine.VoxelConstants.*;
+import static net.daporkchop.fp2.core.engine.EngineConstants.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -44,14 +44,14 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @RequiredArgsConstructor
 @Getter
 @ToString
-public class VoxelPos implements IFarPos {
+public class TilePos implements IFarPos {
     protected final int level;
     protected final int x;
     protected final int y;
     protected final int z;
 
     @Deprecated
-    public VoxelPos(@NonNull ByteBuf buf) {
+    public TilePos(@NonNull ByteBuf buf) {
         this.level = buf.readUnsignedByte();
 
         int interleavedHigh = buf.readInt();
@@ -63,7 +63,7 @@ public class VoxelPos implements IFarPos {
 
     @Override
     public boolean isLevelValid() {
-        return this.level >= 0 && this.level < VMAX_LODS;
+        return this.level >= 0 && this.level < MAX_LODS;
     }
 
     @Override
@@ -81,19 +81,19 @@ public class VoxelPos implements IFarPos {
     }
 
     public int blockX() {
-        return this.x * VT_VOXELS << this.level;
+        return this.x * T_VOXELS << this.level;
     }
 
     public int blockY() {
-        return this.y * VT_VOXELS << this.level;
+        return this.y * T_VOXELS << this.level;
     }
 
     public int blockZ() {
-        return this.z * VT_VOXELS << this.level;
+        return this.z * T_VOXELS << this.level;
     }
 
     public int sideLength() {
-        return VT_VOXELS << this.level;
+        return T_VOXELS << this.level;
     }
 
     public int flooredChunkX() {
@@ -110,45 +110,45 @@ public class VoxelPos implements IFarPos {
 
     public IntAxisAlignedBB bb() {
         return new IntAxisAlignedBB(
-                this.x << (VT_SHIFT + this.level), this.y << (VT_SHIFT + this.level), this.z << (VT_SHIFT + this.level),
-                (this.x + 1) << (VT_SHIFT + this.level), (this.y + 1) << (VT_SHIFT + this.level), (this.z + 1) << (VT_SHIFT + this.level));
+                this.x << (T_SHIFT + this.level), this.y << (T_SHIFT + this.level), this.z << (T_SHIFT + this.level),
+                (this.x + 1) << (T_SHIFT + this.level), (this.y + 1) << (T_SHIFT + this.level), (this.z + 1) << (T_SHIFT + this.level));
     }
 
     @Override
-    public VoxelPos upTo(int targetLevel) {
+    public TilePos upTo(int targetLevel) {
         if (targetLevel == this.level) {
             return this;
         }
         checkArg(targetLevel > this.level, "targetLevel (%d) must be greater than current level (%d)", targetLevel, this.level);
 
         int shift = targetLevel - this.level;
-        return new VoxelPos(targetLevel, this.x >> shift, this.y >> shift, this.z >> shift);
+        return new TilePos(targetLevel, this.x >> shift, this.y >> shift, this.z >> shift);
     }
 
     @Override
-    public VoxelPos up() {
-        return new VoxelPos(this.level + 1, this.x >> 1, this.y >> 1, this.z >> 1);
+    public TilePos up() {
+        return new TilePos(this.level + 1, this.x >> 1, this.y >> 1, this.z >> 1);
     }
 
     @Override
-    public VoxelPos downTo(int targetLevel) {
+    public TilePos downTo(int targetLevel) {
         if (targetLevel == this.level) {
             return this;
         }
         checkArg(targetLevel < this.level, "targetLevel (%d) must be less than current level (%d)", targetLevel, this.level);
 
         int shift = this.level - targetLevel;
-        return new VoxelPos(targetLevel, this.x << shift, this.y << shift, this.z << shift);
+        return new TilePos(targetLevel, this.x << shift, this.y << shift, this.z << shift);
     }
 
     @Override
-    public VoxelPos down() {
-        return new VoxelPos(this.level - 1, this.x << 1, this.y << 1, this.z << 1);
+    public TilePos down() {
+        return new TilePos(this.level - 1, this.x << 1, this.y << 1, this.z << 1);
     }
 
     @Override
     public boolean contains(@NonNull IFarPos posIn) {
-        VoxelPos pos = (VoxelPos) posIn;
+        TilePos pos = (TilePos) posIn;
         int d = this.level - pos.level;
         return d > 0
                && (this.x << d) >= pos.x && ((this.x + 1) << d) <= pos.x
@@ -157,16 +157,16 @@ public class VoxelPos implements IFarPos {
     }
 
     @Override
-    public Stream<VoxelPos> allPositionsInBB(int offsetMin, int offsetMax) {
+    public Stream<TilePos> allPositionsInBB(int offsetMin, int offsetMax) {
         notNegative(offsetMin, "offsetMin");
         notNegative(offsetMax, "offsetMax");
 
         if (cb((long) offsetMin + offsetMax + 1L) < 256L) { //fast-track: fill an array and create a simple stream over that
-            VoxelPos[] arr = new VoxelPos[cb(offsetMin + offsetMax + 1)];
+            TilePos[] arr = new TilePos[cb(offsetMin + offsetMax + 1)];
             for (int i = 0, dx = -offsetMin; dx <= offsetMax; dx++) {
                 for (int dy = -offsetMin; dy <= offsetMax; dy++) {
                     for (int dz = -offsetMin; dz <= offsetMax; dz++) {
-                        arr[i++] = new VoxelPos(this.level, this.x + dx, this.y + dy, this.z + dz);
+                        arr[i++] = new TilePos(this.level, this.x + dx, this.y + dy, this.z + dz);
                     }
                 }
             }
@@ -175,7 +175,7 @@ public class VoxelPos implements IFarPos {
             return IntStream.rangeClosed(this.x - offsetMin, this.x + offsetMax)
                     .mapToObj(x -> IntStream.rangeClosed(this.y - offsetMin, this.y + offsetMax)
                             .mapToObj(y -> IntStream.rangeClosed(this.z - offsetMin, this.z + offsetMax)
-                                    .mapToObj(z -> new VoxelPos(this.level, x, y, z)))
+                                    .mapToObj(z -> new TilePos(this.level, x, y, z)))
                             .flatMap(Function.identity()))
                     .flatMap(Function.identity());
         }
@@ -183,7 +183,7 @@ public class VoxelPos implements IFarPos {
 
     @Override
     public int manhattanDistance(@NonNull IFarPos posIn) {
-        VoxelPos pos = (VoxelPos) posIn;
+        TilePos pos = (TilePos) posIn;
         if (this.level == pos.level) {
             return abs(this.x - pos.x) + abs(this.y - pos.y) + abs(this.z - pos.z);
         } else {
@@ -202,8 +202,8 @@ public class VoxelPos implements IFarPos {
     public boolean equals(Object obj) {
         if (obj == this) {
             return true;
-        } else if (obj instanceof VoxelPos) {
-            VoxelPos pos = (VoxelPos) obj;
+        } else if (obj instanceof TilePos) {
+            TilePos pos = (TilePos) obj;
             return this.x == pos.x && this.y == pos.y && this.z == pos.z && this.level == pos.level;
         } else {
             return false;
@@ -224,13 +224,13 @@ public class VoxelPos implements IFarPos {
     public int compareTo(IFarPos posIn) {
         int d = Integer.compare(this.level, posIn.level());
         if (d == 0) {
-            if (posIn instanceof VoxelPos) {
-                VoxelPos pos = (VoxelPos) posIn;
+            if (posIn instanceof TilePos) {
+                TilePos pos = (TilePos) posIn;
                 if ((d = Integer.compare(this.x, pos.x)) == 0 && (d = Integer.compare(this.z, pos.z)) == 0) {
                     d = Integer.compare(this.y, pos.y);
                 }
             } else {
-                return VoxelPos.class.getName().compareTo(posIn.getClass().getName());
+                return TilePos.class.getName().compareTo(posIn.getClass().getName());
             }
         }
         return d;

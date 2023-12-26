@@ -48,7 +48,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import static net.daporkchop.fp2.common.util.TypeSize.*;
-import static net.daporkchop.fp2.core.engine.VoxelConstants.*;
+import static net.daporkchop.fp2.core.engine.EngineConstants.*;
 
 /**
  * Implementation of {@link IFarRenderMode} for the voxel rendering mode.
@@ -56,20 +56,20 @@ import static net.daporkchop.fp2.core.engine.VoxelConstants.*;
  * @author DaPorkchop_
  */
 @Deprecated
-public class VoxelRenderMode extends AbstractFarRenderMode<VoxelPos, VoxelTile> {
+public class VoxelRenderMode extends AbstractFarRenderMode<TilePos, Tile> {
     public static final VoxelRenderMode INSTANCE = new VoxelRenderMode();
 
     private VoxelRenderMode() {
-        super(STORAGE_VERSION, VMAX_LODS, VT_SHIFT);
+        super(STORAGE_VERSION, MAX_LODS, T_SHIFT);
     }
 
     @Override
-    protected AbstractExactGeneratorCreationEvent exactGeneratorCreationEvent(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<VoxelPos, VoxelTile> provider) {
+    protected AbstractExactGeneratorCreationEvent exactGeneratorCreationEvent(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<TilePos, Tile> provider) {
         return new AbstractExactGeneratorCreationEvent(world, provider) {};
     }
 
     @Override
-    protected AbstractRoughGeneratorCreationEvent roughGeneratorCreationEvent(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<VoxelPos, VoxelTile> provider) {
+    protected AbstractRoughGeneratorCreationEvent roughGeneratorCreationEvent(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<TilePos, Tile> provider) {
         return new AbstractRoughGeneratorCreationEvent(world, provider) {};
     }
 
@@ -79,54 +79,54 @@ public class VoxelRenderMode extends AbstractFarRenderMode<VoxelPos, VoxelTile> 
     }
 
     @Override
-    protected VoxelTile newTile() {
-        return new VoxelTile();
+    protected Tile newTile() {
+        return new Tile();
     }
 
     @Override
-    public IFarScaler<VoxelPos, VoxelTile> scaler(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<VoxelPos, VoxelTile> provider) {
+    public IFarScaler<TilePos, Tile> scaler(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<TilePos, Tile> provider) {
         return new VoxelScalerIntersection(world, provider);
     }
 
     @Override
-    public IFarServerContext<VoxelPos, VoxelTile> serverContext(@NonNull IFarPlayerServer player, @NonNull IFarLevelServer world, @NonNull FP2Config config) {
+    public IFarServerContext<TilePos, Tile> serverContext(@NonNull IFarPlayerServer player, @NonNull IFarLevelServer world, @NonNull FP2Config config) {
         return new VoxelServerContext(player, world, config, this);
     }
 
     @Override
-    public IFarClientContext<VoxelPos, VoxelTile> clientContext(@NonNull IFarLevelClient level, @NonNull FP2Config config) {
+    public IFarClientContext<TilePos, Tile> clientContext(@NonNull IFarLevelClient level, @NonNull FP2Config config) {
         return new VoxelClientContext(level, config, this);
     }
 
     @Override
-    public IFarDirectPosAccess<VoxelPos> directPosAccess() {
-        return VoxelDirectPosAccess.INSTANCE;
+    public IFarDirectPosAccess<TilePos> directPosAccess() {
+        return DirectTilePosAccess.INSTANCE;
     }
 
     @Override
-    public IFarPosCodec<VoxelPos> posCodec() {
-        return VoxelPosCodec.INSTANCE;
+    public IFarPosCodec<TilePos> posCodec() {
+        return TilePosCodec.INSTANCE;
     }
 
     @Override
-    public IVariableSizeRecyclingCodec<VoxelTile> tileCodec() {
-        return VoxelTile.CODEC;
+    public IVariableSizeRecyclingCodec<Tile> tileCodec() {
+        return Tile.CODEC;
     }
 
     @Override
-    public IFarCoordLimits<VoxelPos> tileCoordLimits(@NonNull IntAxisAlignedBB blockCoordLimits) {
-        return new VoxelCoordLimits(
+    public IFarCoordLimits<TilePos> tileCoordLimits(@NonNull IntAxisAlignedBB blockCoordLimits) {
+        return new TileCoordLimits(
                 blockCoordLimits.minX(), blockCoordLimits.minY(), blockCoordLimits.minZ(),
                 blockCoordLimits.maxX(), blockCoordLimits.maxY(), blockCoordLimits.maxZ());
     }
 
     @Override
-    public VoxelPos readPos(@NonNull ByteBuf buf) {
-        return new VoxelPos(buf);
+    public TilePos readPos(@NonNull ByteBuf buf) {
+        return new TilePos(buf);
     }
 
     @Override
-    public VoxelPos readPos(@NonNull DataIn in) throws IOException {
+    public TilePos readPos(@NonNull DataIn in) throws IOException {
         int level = in.readUnsignedByte();
 
         int interleavedHigh = in.readInt();
@@ -134,17 +134,17 @@ public class VoxelRenderMode extends AbstractFarRenderMode<VoxelPos, VoxelTile> 
         int x = MathUtil.uninterleave3_0(interleavedLow, interleavedHigh);
         int y = MathUtil.uninterleave3_1(interleavedLow, interleavedHigh);
         int z = MathUtil.uninterleave3_2(interleavedLow, interleavedHigh);
-        return new VoxelPos(level, x, y, z);
+        return new TilePos(level, x, y, z);
     }
 
     @Override
     @SneakyThrows(IOException.class)
-    public VoxelPos readPos(@NonNull byte[] arr) {
+    public TilePos readPos(@NonNull byte[] arr) {
         return this.readPos(DataIn.wrap(ByteBuffer.wrap(arr)));
     }
 
     @Override
-    public void writePos(@NonNull DataOut out, @NonNull VoxelPos pos) throws IOException {
+    public void writePos(@NonNull DataOut out, @NonNull TilePos pos) throws IOException {
         out.writeByte(pos.level());
         out.writeInt(MathUtil.interleaveBitsHigh(pos.x(), pos.y(), pos.z()));
         out.writeLong(MathUtil.interleaveBits(pos.x(), pos.y(), pos.z()));
@@ -152,19 +152,19 @@ public class VoxelRenderMode extends AbstractFarRenderMode<VoxelPos, VoxelTile> 
 
     @Override
     @SneakyThrows(IOException.class)
-    public byte[] writePos(@NonNull VoxelPos pos) {
+    public byte[] writePos(@NonNull TilePos pos) {
         byte[] arr = new byte[BYTE_SIZE + INT_SIZE + LONG_SIZE];
         this.writePos(DataOut.wrap(ByteBuffer.wrap(arr)), pos);
         return arr;
     }
 
     @Override
-    public VoxelPos[] posArray(int length) {
-        return new VoxelPos[length];
+    public TilePos[] posArray(int length) {
+        return new TilePos[length];
     }
 
     @Override
-    public VoxelTile[] tileArray(int length) {
-        return new VoxelTile[length];
+    public Tile[] tileArray(int length) {
+        return new Tile[length];
     }
 }

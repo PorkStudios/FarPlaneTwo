@@ -25,8 +25,8 @@ import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.core.client.render.TextureUVs;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
-import net.daporkchop.fp2.core.engine.VoxelPos;
-import net.daporkchop.fp2.core.engine.VoxelTile;
+import net.daporkchop.fp2.core.engine.TilePos;
+import net.daporkchop.fp2.core.engine.Tile;
 import net.daporkchop.fp2.core.engine.server.VoxelTileProvider;
 import net.daporkchop.fp2.core.engine.server.gen.exact.VanillaVoxelGenerator;
 import net.daporkchop.fp2.core.server.event.GetCoordinateLimitsEvent;
@@ -93,7 +93,7 @@ public class FP2Vanilla {
     //exact generators
 
     @FEventHandler(name = "vanilla_voxel_generator_exact")
-    public IFarGeneratorExact<VoxelPos, VoxelTile> createVoxelGeneratorExact(IFarGeneratorExact.CreationEvent<VoxelPos, VoxelTile> event) {
+    public IFarGeneratorExact<TilePos, Tile> createVoxelGeneratorExact(IFarGeneratorExact.CreationEvent<TilePos, Tile> event) {
         return new VanillaVoxelGenerator(event.world(), event.provider());
     }
 
@@ -106,7 +106,7 @@ public class FP2Vanilla {
     //tile providers
 
     @FEventHandler(name = "vanilla_voxel_tileprovider")
-    public IFarTileProvider<VoxelPos, VoxelTile> createVoxelTileProvider(IFarTileProvider.CreationEvent<VoxelPos, VoxelTile> event) {
+    public IFarTileProvider<TilePos, Tile> createVoxelTileProvider(IFarTileProvider.CreationEvent<TilePos, Tile> event) {
         return new VoxelTileProvider.Vanilla(event.world(), event.mode());
     }
 

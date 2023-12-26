@@ -23,14 +23,14 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.core.mode.api.IFarCoordLimits;
 
-import static net.daporkchop.fp2.core.engine.VoxelConstants.*;
+import static net.daporkchop.fp2.core.engine.EngineConstants.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 
 /**
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public class VoxelCoordLimits implements IFarCoordLimits<VoxelPos> {
+public class TileCoordLimits implements IFarCoordLimits<TilePos> {
     protected final int minX;
     protected final int minY;
     protected final int minZ;
@@ -39,8 +39,8 @@ public class VoxelCoordLimits implements IFarCoordLimits<VoxelPos> {
     protected final int maxZ;
 
     @Override
-    public boolean contains(@NonNull VoxelPos pos) {
-        int shift = VT_SHIFT + pos.level();
+    public boolean contains(@NonNull TilePos pos) {
+        int shift = T_SHIFT + pos.level();
 
         return pos.x() >= asrFloor(this.minX, shift) && pos.x() < asrCeil(this.maxX, shift)
                && pos.y() >= asrFloor(this.minY, shift) && pos.y() <= asrCeil(this.maxY, shift)
@@ -48,18 +48,18 @@ public class VoxelCoordLimits implements IFarCoordLimits<VoxelPos> {
     }
 
     @Override
-    public VoxelPos min(int level) {
-        return new VoxelPos(level,
-                asrFloor(this.minX, VT_SHIFT + level),
-                asrFloor(this.minY, VT_SHIFT + level),
-                asrFloor(this.minZ, VT_SHIFT + level));
+    public TilePos min(int level) {
+        return new TilePos(level,
+                asrFloor(this.minX, T_SHIFT + level),
+                asrFloor(this.minY, T_SHIFT + level),
+                asrFloor(this.minZ, T_SHIFT + level));
     }
 
     @Override
-    public VoxelPos max(int level) {
-        return new VoxelPos(level,
-                asrCeil(this.maxX, VT_SHIFT + level),
-                asrCeil(this.maxY, VT_SHIFT + level) + 1, //TODO: remove + 1 on Y once voxel mode actually renders voxels
-                asrCeil(this.maxZ, VT_SHIFT + level));
+    public TilePos max(int level) {
+        return new TilePos(level,
+                asrCeil(this.maxX, T_SHIFT + level),
+                asrCeil(this.maxY, T_SHIFT + level) + 1, //TODO: remove + 1 on Y once voxel mode actually renders voxels
+                asrCeil(this.maxZ, T_SHIFT + level));
     }
 }

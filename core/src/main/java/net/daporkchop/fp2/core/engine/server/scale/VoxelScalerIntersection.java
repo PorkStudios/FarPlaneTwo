@@ -25,10 +25,10 @@ import lombok.NonNull;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.core.mode.common.server.gen.AbstractFarGenerator;
-import net.daporkchop.fp2.core.engine.VoxelData;
-import net.daporkchop.fp2.core.engine.VoxelPos;
-import net.daporkchop.fp2.core.engine.VoxelTile;
-import net.daporkchop.fp2.core.engine.util.VoxelPosArrayList;
+import net.daporkchop.fp2.core.engine.TileData;
+import net.daporkchop.fp2.core.engine.TilePos;
+import net.daporkchop.fp2.core.engine.Tile;
+import net.daporkchop.fp2.core.engine.util.TilePosArrayList;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.util.math.Vector3d;
 import net.daporkchop.fp2.core.util.math.qef.QefSolver;
@@ -40,7 +40,7 @@ import java.util.BitSet;
 import java.util.List;
 
 import static net.daporkchop.fp2.api.world.level.BlockLevelConstants.*;
-import static net.daporkchop.fp2.core.engine.VoxelConstants.*;
+import static net.daporkchop.fp2.core.engine.EngineConstants.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
@@ -50,21 +50,21 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 //TODO: this needs a LOT of work
 //TODO: re-implement using something based on https://www.researchgate.net/publication/220792145_Model_Simplification_Using_Vertex-Clustering
-public class VoxelScalerIntersection extends AbstractFarGenerator<VoxelPos, VoxelTile> implements IFarScaler<VoxelPos, VoxelTile> {
+public class VoxelScalerIntersection extends AbstractFarGenerator<TilePos, Tile> implements IFarScaler<TilePos, Tile> {
     public static final int SRC_MIN = -4;
-    public static final int SRC_MAX = (VT_VOXELS << 1) + 4;
+    public static final int SRC_MAX = (T_VOXELS << 1) + 4;
     //public static final int SRC_MIN = 0;
     //public static final int SRC_MAX = (VT_VOXELS << 1);
     public static final int SRC_SIZE = SRC_MAX - SRC_MIN;
 
     public static final int DST_MIN = -1;
-    public static final int DST_MAX = VT_VOXELS + 1;
+    public static final int DST_MAX = T_VOXELS + 1;
     public static final int DST_SIZE = DST_MAX - DST_MIN;
 
     protected static int srcTileIndex(int x, int y, int z) {
-        final int fac = (((SRC_MAX - 1) >> VT_SHIFT) + 1) - (SRC_MIN >> VT_SHIFT);
-        final int add = -(SRC_MIN >> VT_SHIFT) << VT_SHIFT;
-        return (((x + add) >> VT_SHIFT) * fac + ((y + add) >> VT_SHIFT)) * fac + ((z + add) >> VT_SHIFT);
+        final int fac = (((SRC_MAX - 1) >> T_SHIFT) + 1) - (SRC_MIN >> T_SHIFT);
+        final int add = -(SRC_MIN >> T_SHIFT) << T_SHIFT;
+        return (((x + add) >> T_SHIFT) * fac + ((y + add) >> T_SHIFT)) * fac + ((z + add) >> T_SHIFT);
     }
 
     protected static int srcIndex(int x, int y, int z) {
@@ -88,17 +88,17 @@ public class VoxelScalerIntersection extends AbstractFarGenerator<VoxelPos, Voxe
         return Vec3d.of(x + ((c >> 2) & 1) + 0.5d, y + ((c >> 1) & 1) + 0.5d, z + (c & 1) + 0.5d);
     }
 
-    public VoxelScalerIntersection(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<VoxelPos, VoxelTile> provider) {
+    public VoxelScalerIntersection(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<TilePos, Tile> provider) {
         super(world, provider);
     }
 
     @Override
-    public List<VoxelPos> outputs(@NonNull VoxelPos srcPos) {
+    public List<TilePos> outputs(@NonNull TilePos srcPos) {
         return ImmutableList.of(srcPos.up()); //TODO: fix this
     }
 
     @Override
-    public List<VoxelPos> inputs(@NonNull VoxelPos dstPos) {
+    public List<TilePos> inputs(@NonNull TilePos dstPos) {
         checkArg(dstPos.level() > 0, "cannot generate inputs for level 0!");
 
         int x = dstPos.x() << 1;
@@ -106,13 +106,13 @@ public class VoxelScalerIntersection extends AbstractFarGenerator<VoxelPos, Voxe
         int z = dstPos.z() << 1;
         int level = dstPos.level() - 1;
 
-        final int min = SRC_MIN >> VT_SHIFT;
-        final int max = ((SRC_MAX - 1) >> VT_SHIFT) + 1;
-        List<VoxelPos> out = new VoxelPosArrayList((max - min) * (max - min) * (max - min));
+        final int min = SRC_MIN >> T_SHIFT;
+        final int max = ((SRC_MAX - 1) >> T_SHIFT) + 1;
+        List<TilePos> out = new TilePosArrayList((max - min) * (max - min) * (max - min));
         for (int dx = min; dx < max; dx++) {
             for (int dy = min; dy < max; dy++) {
                 for (int dz = min; dz < max; dz++) {
-                    out.add(new VoxelPos(level, x + dx, y + dy, z + dz));
+                    out.add(new TilePos(level, x + dx, y + dy, z + dz));
                 }
             }
         }
@@ -120,8 +120,8 @@ public class VoxelScalerIntersection extends AbstractFarGenerator<VoxelPos, Voxe
     }
 
     @Override
-    public long scale(@NonNull VoxelTile[] srcTiles, @NonNull VoxelTile dst) {
-        VoxelData data = new VoxelData();
+    public long scale(@NonNull Tile[] srcTiles, @NonNull Tile dst) {
+        TileData data = new TileData();
         QefSolver qef = new QefSolver();
 
         BitSet srcVoxels = new BitSet(SRC_SIZE * SRC_SIZE * SRC_SIZE);
@@ -133,8 +133,8 @@ public class VoxelScalerIntersection extends AbstractFarGenerator<VoxelPos, Voxe
         for (int x = SRC_MIN; x < SRC_MAX; x++) {
             for (int y = SRC_MIN; y < SRC_MAX; y++) {
                 for (int z = SRC_MIN; z < SRC_MAX; z++) {
-                    VoxelTile srcTile = srcTiles[srcTileIndex(x, y, z)];
-                    if (srcTile != null && srcTile.get(x & VT_MASK, y & VT_MASK, z & VT_MASK, data)) {
+                    Tile srcTile = srcTiles[srcTileIndex(x, y, z)];
+                    if (srcTile != null && srcTile.get(x & T_MASK, y & T_MASK, z & T_MASK, data)) {
                         srcVoxels.set(srcIndex(x, y, z));
 
                         int edges = 0;
@@ -223,9 +223,9 @@ public class VoxelScalerIntersection extends AbstractFarGenerator<VoxelPos, Voxe
             }
         }
 
-        for (int x = 0; x < VT_VOXELS; x++) {
-            for (int y = 0; y < VT_VOXELS; y++) {
-                for (int z = 0; z < VT_VOXELS; z++) {
+        for (int x = 0; x < T_VOXELS; x++) {
+            for (int y = 0; y < T_VOXELS; y++) {
+                for (int z = 0; z < T_VOXELS; z++) {
                     if (dstVoxels.get(dstIndex(x, y, z))) {
                         qef.reset();
                         for (int edge = 0; edge < QEF_EDGE_COUNT; edge++) {

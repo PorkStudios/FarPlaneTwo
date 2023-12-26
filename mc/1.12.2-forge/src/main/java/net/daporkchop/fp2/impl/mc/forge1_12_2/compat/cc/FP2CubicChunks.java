@@ -31,8 +31,8 @@ import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarLevel;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
-import net.daporkchop.fp2.core.engine.VoxelPos;
-import net.daporkchop.fp2.core.engine.VoxelTile;
+import net.daporkchop.fp2.core.engine.TilePos;
+import net.daporkchop.fp2.core.engine.Tile;
 import net.daporkchop.fp2.core.engine.server.VoxelTileProvider;
 import net.daporkchop.fp2.core.engine.server.gen.exact.CCVoxelGenerator;
 import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
@@ -136,7 +136,7 @@ public class FP2CubicChunks {
 
         @FEventHandler(name = "cubicchunks_voxel_generator_exact",
                 constrain = @Constrain(before = "vanilla_voxel_generator_exact"))
-        public Optional<IFarGeneratorExact<VoxelPos, VoxelTile>> createVoxelGeneratorExact(IFarGeneratorExact.CreationEvent<VoxelPos, VoxelTile> event) {
+        public Optional<IFarGeneratorExact<TilePos, Tile>> createVoxelGeneratorExact(IFarGeneratorExact.CreationEvent<TilePos, Tile> event) {
             return this.isCubicWorld(event.world())
                     ? Optional.of(new CCVoxelGenerator(event.world(), event.provider()))
                     : Optional.empty();
@@ -146,7 +146,7 @@ public class FP2CubicChunks {
 
         @FEventHandler(name = "cubicchunks_voxel_tileprovider",
                 constrain = @Constrain(before = "vanilla_voxel_tileprovider"))
-        public Optional<IFarTileProvider<VoxelPos, VoxelTile>> createVoxelTileProvider(IFarTileProvider.CreationEvent<VoxelPos, VoxelTile> event) {
+        public Optional<IFarTileProvider<TilePos, Tile>> createVoxelTileProvider(IFarTileProvider.CreationEvent<TilePos, Tile> event) {
             return this.isCubicWorld(event.world())
                     ? Optional.of(new VoxelTileProvider.CubicChunks(event.world(), event.mode()))
                     : Optional.empty();

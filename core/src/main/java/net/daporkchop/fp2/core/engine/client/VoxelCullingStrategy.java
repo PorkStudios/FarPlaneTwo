@@ -23,11 +23,11 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
 import net.daporkchop.fp2.core.mode.common.client.ICullingStrategy;
-import net.daporkchop.fp2.core.engine.VoxelDirectPosAccess;
-import net.daporkchop.fp2.core.engine.VoxelPos;
+import net.daporkchop.fp2.core.engine.DirectTilePosAccess;
+import net.daporkchop.fp2.core.engine.TilePos;
 
 /**
- * Implementation of {@link ICullingStrategy} for {@link VoxelPos}.
+ * Implementation of {@link ICullingStrategy} for {@link TilePos}.
  *
  * @author DaPorkchop_
  */
@@ -38,6 +38,6 @@ public final class VoxelCullingStrategy implements ICullingStrategy {
 
     @Override
     public boolean blocked(long pos) {
-        return this.renderingBlockedTracker.renderingBlocked(VoxelDirectPosAccess._x(pos), VoxelDirectPosAccess._y(pos), VoxelDirectPosAccess._z(pos));
+        return this.renderingBlockedTracker.renderingBlocked(DirectTilePosAccess._x(pos), DirectTilePosAccess._y(pos), DirectTilePosAccess._z(pos));
     }
 }

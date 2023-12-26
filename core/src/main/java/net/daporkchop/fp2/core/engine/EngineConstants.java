@@ -27,18 +27,19 @@ import lombok.experimental.UtilityClass;
  * @author DaPorkchop_
  */
 @UtilityClass
-public class VoxelConstants {
+public class EngineConstants {
+    @Deprecated
     public static final String NAME = "voxel";
 
     public static final int STORAGE_VERSION = 9;
 
     //definitions of tile sizes
-    public static final int VT_SHIFT = 4;
-    public static final int VT_MASK = (1 << VT_SHIFT) - 1;
-    public static final int VT_VOXELS = 1 << VT_SHIFT;
-    public static final int VT_VERTS = VT_VOXELS + 1;
+    public static final int T_SHIFT = 4;
+    public static final int T_MASK = (1 << T_SHIFT) - 1;
+    public static final int T_VOXELS = 1 << T_SHIFT;
+    public static final int T_VERTS = T_VOXELS + 1;
 
-    public static final int VMAX_LODS = 32 - Integer.numberOfLeadingZeros(60_000_000 >> VT_SHIFT);
+    public static final int MAX_LODS = 32 - Integer.numberOfLeadingZeros(60_000_000 >> T_SHIFT);
 
     /**
      * The size of the fractional part of a voxel position, in bits.
@@ -114,13 +115,13 @@ public class VoxelConstants {
     };
 
     public static final int[] CONNECTION_INTERSECTION_VOLUMES = {
-            VT_VOXELS, VT_VOXELS, VT_VOXELS,
-            VT_VOXELS, VT_VOXELS, 1,
-            VT_VOXELS, 1, VT_VOXELS,
-            VT_VOXELS, 1, 1,
-            1, VT_VOXELS, VT_VOXELS,
-            1, VT_VOXELS, 1,
-            1, 1, VT_VOXELS,
+            T_VOXELS, T_VOXELS, T_VOXELS,
+            T_VOXELS, T_VOXELS, 1,
+            T_VOXELS, 1, T_VOXELS,
+            T_VOXELS, 1, 1,
+            1, T_VOXELS, T_VOXELS,
+            1, T_VOXELS, 1,
+            1, 1, T_VOXELS,
             1, 1, 1
     };
 }

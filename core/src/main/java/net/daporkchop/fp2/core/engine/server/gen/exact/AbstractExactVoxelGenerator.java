@@ -25,11 +25,11 @@ import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.fp2.api.world.level.GenerationNotAllowedException;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
-import net.daporkchop.fp2.core.engine.VoxelData;
-import net.daporkchop.fp2.core.engine.VoxelPos;
-import net.daporkchop.fp2.core.engine.VoxelTile;
+import net.daporkchop.fp2.core.engine.TileData;
+import net.daporkchop.fp2.core.engine.TilePos;
+import net.daporkchop.fp2.core.engine.Tile;
 import net.daporkchop.fp2.core.engine.server.gen.AbstractVoxelGenerator;
-import net.daporkchop.fp2.core.engine.util.VoxelPosHashSet;
+import net.daporkchop.fp2.core.engine.util.TilePosHashSet;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.util.GlobalAllocators;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
@@ -39,20 +39,20 @@ import java.util.Set;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.api.world.level.BlockLevelConstants.*;
-import static net.daporkchop.fp2.core.engine.VoxelConstants.*;
+import static net.daporkchop.fp2.core.engine.EngineConstants.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator implements IFarGeneratorExact<VoxelPos, VoxelTile> {
-    public AbstractExactVoxelGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<VoxelPos, VoxelTile> provider) {
+public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator implements IFarGeneratorExact<TilePos, Tile> {
+    public AbstractExactVoxelGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<TilePos, Tile> provider) {
         super(world, provider);
     }
 
     @Override
-    public Optional<Set<VoxelPos>> batchGenerationGroup(@NonNull FBlockLevel world, @NonNull VoxelPos pos) {
+    public Optional<Set<TilePos>> batchGenerationGroup(@NonNull FBlockLevel world, @NonNull TilePos pos) {
         checkArg(pos.level() == 0, "can only exact generate at level 0, not %d!", pos.level());
 
         IntAxisAlignedBB initialBB = new IntAxisAlignedBB(
@@ -65,16 +65,16 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
             return Optional.empty();
         }
 
-        VoxelPos min = this.provider().coordLimits().min(0);
-        VoxelPos max = this.provider().coordLimits().max(0);
+        TilePos min = this.provider().coordLimits().min(0);
+        TilePos max = this.provider().coordLimits().max(0);
 
         //TODO: figure out whether or not this is actually correct? i don't think this properly accounts for every possible edge case, rather it just happens to work for the current
         // values of CACHE_MIN/CACHE_MAX...
-        Set<VoxelPos> out = new VoxelPosHashSet();
-        for (int tileX = max(asrCeil(dataAvailableBB.minX() - CACHE_MIN, VT_SHIFT), min.x()); tileX < min(asrCeil(dataAvailableBB.maxX() - CACHE_MAX, VT_SHIFT), max.x()); tileX++) {
-            for (int tileY = max(asrCeil(dataAvailableBB.minY() - CACHE_MIN, VT_SHIFT), min.y()); tileY < min(asrCeil(dataAvailableBB.maxY() - CACHE_MAX, VT_SHIFT), max.y()); tileY++) {
-                for (int tileZ = max(asrCeil(dataAvailableBB.minZ() - CACHE_MIN, VT_SHIFT), min.z()); tileZ < min(asrCeil(dataAvailableBB.maxZ() - CACHE_MAX, VT_SHIFT), max.z()); tileZ++) {
-                    out.add(new VoxelPos(0, tileX, tileY, tileZ));
+        Set<TilePos> out = new TilePosHashSet();
+        for (int tileX = max(asrCeil(dataAvailableBB.minX() - CACHE_MIN, T_SHIFT), min.x()); tileX < min(asrCeil(dataAvailableBB.maxX() - CACHE_MAX, T_SHIFT), max.x()); tileX++) {
+            for (int tileY = max(asrCeil(dataAvailableBB.minY() - CACHE_MIN, T_SHIFT), min.y()); tileY < min(asrCeil(dataAvailableBB.maxY() - CACHE_MAX, T_SHIFT), max.y()); tileY++) {
+                for (int tileZ = max(asrCeil(dataAvailableBB.minZ() - CACHE_MIN, T_SHIFT), min.z()); tileZ < min(asrCeil(dataAvailableBB.maxZ() - CACHE_MAX, T_SHIFT), max.z()); tileZ++) {
+                    out.add(new TilePos(0, tileX, tileY, tileZ));
                 }
             }
         }
@@ -91,7 +91,7 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
     }
 
     @Override
-    public void generate(@NonNull FBlockLevel world, @NonNull VoxelPos posIn, @NonNull VoxelTile tile) throws GenerationNotAllowedException {
+    public void generate(@NonNull FBlockLevel world, @NonNull TilePos posIn, @NonNull Tile tile) throws GenerationNotAllowedException {
         checkArg(posIn.level() == 0, "can only exact generate at level 0, not %d!", posIn.level());
 
         ArrayAllocator<int[]> intAlloc = GlobalAllocators.ALLOC_INT.get();
@@ -115,13 +115,13 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
             //use bit flags to identify voxel types rather than reading from the world each time to keep innermost loop head tight and cache-friendly
             this.populateTypeMapFromStateMap(stateCache, typeCache);
 
-            VoxelData data = new VoxelData();
+            TileData data = new TileData();
 
             data.x = data.y = data.z = 0;
 
-            for (int dx = 0; dx < VT_VOXELS; dx++) {
-                for (int dy = 0; dy < VT_VOXELS; dy++) {
-                    for (int dz = 0; dz < VT_VOXELS; dz++) {
+            for (int dx = 0; dx < T_VOXELS; dx++) {
+                for (int dy = 0; dy < T_VOXELS; dy++) {
+                    for (int dz = 0; dz < T_VOXELS; dz++) {
                         int corners = 0;
                         for (int ciCache = cacheIndex(dx, dy, dz), i = 0; i < 8; i++) {
                             corners |= (typeCache[ciCache + CACHE_INDEX_ADD[i]] & 0xFF) << (i << 1);

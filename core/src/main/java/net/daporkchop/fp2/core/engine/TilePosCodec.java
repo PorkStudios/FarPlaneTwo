@@ -32,8 +32,8 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public final class VoxelPosCodec implements IFarPosCodec<VoxelPos> {
-    public static final VoxelPosCodec INSTANCE = new VoxelPosCodec();
+public final class TilePosCodec implements IFarPosCodec<TilePos> {
+    public static final TilePosCodec INSTANCE = new TilePosCodec();
 
     private static final int LEVEL_OFFSET = 0;
     private static final int HIGH_OFFSET = LEVEL_OFFSET + BYTE_SIZE;
@@ -55,7 +55,7 @@ public final class VoxelPosCodec implements IFarPosCodec<VoxelPos> {
     //
 
     @Override
-    public void store(VoxelPos pos, long addr) {
+    public void store(TilePos pos, long addr) {
         PUnsafe.putByte(addr + LEVEL_OFFSET, toByte(pos.level(), "level"));
 
         int interleavedHigh = MathUtil.interleaveBitsHigh(pos.x(), pos.y(), pos.z());
@@ -69,12 +69,12 @@ public final class VoxelPosCodec implements IFarPosCodec<VoxelPos> {
     }
 
     @Override
-    public void store(VoxelPos pos, byte[] arr, int index) {
+    public void store(TilePos pos, byte[] arr, int index) {
         this.store(pos, arr, PUnsafe.arrayByteElementOffset(index));
     }
 
     @Override
-    public void store(VoxelPos pos, Object base, long offset) {
+    public void store(TilePos pos, Object base, long offset) {
         PUnsafe.putByte(base, offset + LEVEL_OFFSET, toByte(pos.level(), "level"));
 
         int interleavedHigh = MathUtil.interleaveBitsHigh(pos.x(), pos.y(), pos.z());
@@ -88,7 +88,7 @@ public final class VoxelPosCodec implements IFarPosCodec<VoxelPos> {
     }
 
     @Override
-    public void store(VoxelPos pos, @NonNull ByteBuf buf) {
+    public void store(TilePos pos, @NonNull ByteBuf buf) {
         buf.ensureWritable(SIZE).writeByte(pos.level())
                 //write in big-endian
                 .writeInt(MathUtil.interleaveBitsHigh(pos.x(), pos.y(), pos.z()))
@@ -96,7 +96,7 @@ public final class VoxelPosCodec implements IFarPosCodec<VoxelPos> {
     }
 
     @Override
-    public void store(VoxelPos pos, @NonNull ByteBuf buf, int index) {
+    public void store(TilePos pos, @NonNull ByteBuf buf, int index) {
         buf.setByte(index + LEVEL_OFFSET, pos.level())
                 //write in big-endian
                 .setInt(index + HIGH_OFFSET, MathUtil.interleaveBitsHigh(pos.x(), pos.y(), pos.z()))
@@ -108,7 +108,7 @@ public final class VoxelPosCodec implements IFarPosCodec<VoxelPos> {
     //
 
     @Override
-    public VoxelPos load(long addr) {
+    public TilePos load(long addr) {
         int level = PUnsafe.getByte(addr + LEVEL_OFFSET) & 0xFF;
 
         int interleavedHigh = PUnsafe.getInt(addr + HIGH_OFFSET);
@@ -121,16 +121,16 @@ public final class VoxelPosCodec implements IFarPosCodec<VoxelPos> {
         int y = MathUtil.uninterleave3_1(interleavedLow, interleavedHigh);
         int z = MathUtil.uninterleave3_2(interleavedLow, interleavedHigh);
 
-        return new VoxelPos(level, x, y, z);
+        return new TilePos(level, x, y, z);
     }
 
     @Override
-    public VoxelPos load(byte[] arr, int index) {
+    public TilePos load(byte[] arr, int index) {
         return this.load(arr, PUnsafe.arrayByteElementOffset(index));
     }
 
     @Override
-    public VoxelPos load(Object base, long offset) {
+    public TilePos load(Object base, long offset) {
         int level = PUnsafe.getByte(base, offset + LEVEL_OFFSET) & 0xFF;
 
         int interleavedHigh = PUnsafe.getInt(base, offset + HIGH_OFFSET);
@@ -143,11 +143,11 @@ public final class VoxelPosCodec implements IFarPosCodec<VoxelPos> {
         int y = MathUtil.uninterleave3_1(interleavedLow, interleavedHigh);
         int z = MathUtil.uninterleave3_2(interleavedLow, interleavedHigh);
 
-        return new VoxelPos(level, x, y, z);
+        return new TilePos(level, x, y, z);
     }
 
     @Override
-    public VoxelPos load(@NonNull ByteBuf buf) {
+    public TilePos load(@NonNull ByteBuf buf) {
         int level = buf.readUnsignedByte();
 
         //read in big-endian
@@ -157,11 +157,11 @@ public final class VoxelPosCodec implements IFarPosCodec<VoxelPos> {
         int y = MathUtil.uninterleave3_1(interleavedLow, interleavedHigh);
         int z = MathUtil.uninterleave3_2(interleavedLow, interleavedHigh);
 
-        return new VoxelPos(level, x, y, z);
+        return new TilePos(level, x, y, z);
     }
 
     @Override
-    public VoxelPos load(@NonNull ByteBuf buf, int index) {
+    public TilePos load(@NonNull ByteBuf buf, int index) {
         int level = buf.getUnsignedByte(index + LEVEL_OFFSET);
 
         //read in big-endian
@@ -171,6 +171,6 @@ public final class VoxelPosCodec implements IFarPosCodec<VoxelPos> {
         int y = MathUtil.uninterleave3_1(interleavedLow, interleavedHigh);
         int z = MathUtil.uninterleave3_2(interleavedLow, interleavedHigh);
 
-        return new VoxelPos(level, x, y, z);
+        return new TilePos(level, x, y, z);
     }
 }

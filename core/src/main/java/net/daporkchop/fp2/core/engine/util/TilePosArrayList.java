@@ -17,42 +17,43 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.engine;
+package net.daporkchop.fp2.core.engine.util;
 
-import java.util.Arrays;
+import lombok.NonNull;
+import net.daporkchop.fp2.core.mode.common.util.AbstractPosArrayList;
+import net.daporkchop.fp2.core.engine.TilePos;
 
-import static net.daporkchop.fp2.core.engine.VoxelConstants.*;
+import java.util.Collection;
+import java.util.List;
 
 /**
- * Represents a single data sample contained in a voxel tile.
+ * Implementation of {@link List} optimized specifically for {@link TilePos}.
  *
  * @author DaPorkchop_
  */
-public class VoxelData {
-    //vertex position and mesh intersection data
-    public int x;
-    public int y;
-    public int z;
-    public int edges;
+public class TilePosArrayList extends AbstractPosArrayList<TilePos> {
+    public TilePosArrayList() {
+        super(4);
+    }
 
-    //block data (for texturing and shading)
-    public final int[] states = new int[EDGE_COUNT];
-    public int biome;
-    public byte light;
+    public TilePosArrayList(int initialCapacity) {
+        super(4, initialCapacity);
+    }
 
-    /**
-     * Resets this instance.
-     *
-     * @return this instance
-     */
-    public VoxelData reset() {
-        this.x = 0;
-        this.y = 0;
-        this.z = 0;
-        this.edges = 0;
-        Arrays.fill(this.states, 0);
-        this.biome = 0;
-        this.light = 0;
-        return this;
+    public TilePosArrayList(@NonNull Collection<? extends TilePos> src) {
+        super(4, src);
+    }
+
+    @Override
+    protected TilePos readPos(int[] srcArray, int srcBaseArray) {
+        return new TilePos(srcArray[srcBaseArray++], srcArray[srcBaseArray++], srcArray[srcBaseArray++], srcArray[srcBaseArray]);
+    }
+
+    @Override
+    protected void writePos(TilePos pos, int[] dstArray, int dstBaseIndex) {
+        dstArray[dstBaseIndex++] = pos.level();
+        dstArray[dstBaseIndex++] = pos.x();
+        dstArray[dstBaseIndex++] = pos.y();
+        dstArray[dstBaseIndex] = pos.z();
     }
 }

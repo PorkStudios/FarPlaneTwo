@@ -23,14 +23,14 @@ import lombok.NonNull;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.mode.common.client.AbstractFarRenderer;
 import net.daporkchop.fp2.core.mode.common.client.strategy.IFarRenderStrategy;
-import net.daporkchop.fp2.core.engine.VoxelPos;
-import net.daporkchop.fp2.core.engine.VoxelTile;
+import net.daporkchop.fp2.core.engine.TilePos;
+import net.daporkchop.fp2.core.engine.Tile;
 
 /**
  * @author DaPorkchop_
  */
-public abstract class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelTile> {
-    public VoxelRenderer(@NonNull IFarClientContext<VoxelPos, VoxelTile> context) {
+public abstract class VoxelRenderer extends AbstractFarRenderer<TilePos, Tile> {
+    public VoxelRenderer(@NonNull IFarClientContext<TilePos, Tile> context) {
         super(context);
     }
 
@@ -38,12 +38,12 @@ public abstract class VoxelRenderer extends AbstractFarRenderer<VoxelPos, VoxelT
      * @author DaPorkchop_
      */
     public static class ShaderMultidraw extends VoxelRenderer {
-        public ShaderMultidraw(@NonNull IFarClientContext<VoxelPos, VoxelTile> context) {
+        public ShaderMultidraw(@NonNull IFarClientContext<TilePos, Tile> context) {
             super(context);
         }
 
         @Override
-        protected IFarRenderStrategy<VoxelPos, VoxelTile, ?, ?, ?> strategy0() {
+        protected IFarRenderStrategy<TilePos, Tile, ?, ?, ?> strategy0() {
             return new ShaderBasedVoxelRenderStrategy(this);
         }
     }

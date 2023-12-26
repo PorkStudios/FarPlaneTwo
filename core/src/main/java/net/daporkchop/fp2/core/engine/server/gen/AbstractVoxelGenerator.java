@@ -22,21 +22,21 @@ package net.daporkchop.fp2.core.engine.server.gen;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.common.server.gen.AbstractFarGenerator;
-import net.daporkchop.fp2.core.engine.VoxelPos;
-import net.daporkchop.fp2.core.engine.VoxelTile;
+import net.daporkchop.fp2.core.engine.TilePos;
+import net.daporkchop.fp2.core.engine.Tile;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.reference.cache.Cached;
 
-import static net.daporkchop.fp2.core.engine.VoxelConstants.*;
+import static net.daporkchop.fp2.core.engine.EngineConstants.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractVoxelGenerator extends AbstractFarGenerator<VoxelPos, VoxelTile> {
+public abstract class AbstractVoxelGenerator extends AbstractFarGenerator<TilePos, Tile> {
     public static final int CACHE_MIN = -1;
-    public static final int CACHE_MAX = VT_VOXELS + 1;
+    public static final int CACHE_MAX = T_VOXELS + 1;
     public static final int CACHE_SIZE = CACHE_MAX - CACHE_MIN;
 
     protected static final int CACHE_INDEX_ADD_000 = cacheIndex(CACHE_MIN + 0, CACHE_MIN + 0, CACHE_MIN + 0);
@@ -65,7 +65,7 @@ public abstract class AbstractVoxelGenerator extends AbstractFarGenerator<VoxelP
 
     protected final Cached<byte[]> typeMapCache = Cached.threadLocal(() -> new byte[cb(CACHE_SIZE)], ReferenceStrength.WEAK);
 
-    public AbstractVoxelGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<VoxelPos, VoxelTile> provider) {
+    public AbstractVoxelGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<TilePos, Tile> provider) {
         super(world, provider);
     }
 }

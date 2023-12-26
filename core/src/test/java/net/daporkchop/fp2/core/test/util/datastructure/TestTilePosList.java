@@ -20,9 +20,9 @@
 package net.daporkchop.fp2.core.test.util.datastructure;
 
 import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.core.engine.VoxelConstants;
-import net.daporkchop.fp2.core.engine.VoxelPos;
-import net.daporkchop.fp2.core.engine.util.VoxelPosArrayList;
+import net.daporkchop.fp2.core.engine.EngineConstants;
+import net.daporkchop.fp2.core.engine.TilePos;
+import net.daporkchop.fp2.core.engine.util.TilePosArrayList;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -39,7 +39,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public class TestVoxelPosList {
+public class TestTilePosList {
     protected static <POS extends IFarPos> void ensureEqual(List<POS> reference, List<POS> test) {
         checkState(reference.size() == test.size());
 
@@ -49,7 +49,7 @@ public class TestVoxelPosList {
 
     @Test
     public void testVoxelPosArrayList() {
-        this.testPosList(VoxelPosArrayList::new, r -> new VoxelPos(r.nextInt(0, VoxelConstants.VMAX_LODS), r.nextInt(), r.nextInt(), r.nextInt()));
+        this.testPosList(TilePosArrayList::new, r -> new TilePos(r.nextInt(0, EngineConstants.MAX_LODS), r.nextInt(), r.nextInt(), r.nextInt()));
     }
 
     protected <POS extends IFarPos> void testPosList(Supplier<? extends List<POS>> listFactory, Function<ThreadLocalRandom, POS> randomPOSFunction) {

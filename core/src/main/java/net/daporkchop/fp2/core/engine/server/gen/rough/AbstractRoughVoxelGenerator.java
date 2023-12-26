@@ -22,9 +22,9 @@ package net.daporkchop.fp2.core.engine.server.gen.rough;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
-import net.daporkchop.fp2.core.engine.VoxelData;
-import net.daporkchop.fp2.core.engine.VoxelPos;
-import net.daporkchop.fp2.core.engine.VoxelTile;
+import net.daporkchop.fp2.core.engine.TileData;
+import net.daporkchop.fp2.core.engine.TilePos;
+import net.daporkchop.fp2.core.engine.Tile;
 import net.daporkchop.fp2.core.engine.server.gen.AbstractVoxelGenerator;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.util.math.Vector3d;
@@ -34,7 +34,7 @@ import net.daporkchop.lib.common.reference.cache.Cached;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.api.world.level.BlockLevelConstants.*;
-import static net.daporkchop.fp2.core.engine.VoxelConstants.*;
+import static net.daporkchop.fp2.core.engine.EngineConstants.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -42,10 +42,10 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractRoughVoxelGenerator<PARAM> extends AbstractVoxelGenerator implements IFarGeneratorRough<VoxelPos, VoxelTile> {
+public abstract class AbstractRoughVoxelGenerator<PARAM> extends AbstractVoxelGenerator implements IFarGeneratorRough<TilePos, Tile> {
     protected final Cached<double[][]> densityMapCache = Cached.threadLocal(() -> new double[2][cb(CACHE_SIZE)], ReferenceStrength.WEAK);
 
-    public AbstractRoughVoxelGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<VoxelPos, VoxelTile> provider) {
+    public AbstractRoughVoxelGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<TilePos, Tile> provider) {
         super(world, provider);
     }
 
@@ -71,17 +71,17 @@ public abstract class AbstractRoughVoxelGenerator<PARAM> extends AbstractVoxelGe
         return typeMap;
     }
 
-    protected void dualContour(int baseX, int baseY, int baseZ, int level, VoxelTile tile, double[][] densityMap, PARAM param) {
+    protected void dualContour(int baseX, int baseY, int baseZ, int level, Tile tile, double[][] densityMap, PARAM param) {
         QefSolver qef = new QefSolver();
-        VoxelData data = new VoxelData();
+        TileData data = new TileData();
         Vector3d vec = new Vector3d();
 
         //use bit flags to identify voxel types rather than reading from the density map each time to keep innermost loop head tight and cache-friendly
         byte[] tMap = this.populateTypeMapFromDensityMap(densityMap);
 
-        for (int dx = 0; dx < VT_VOXELS; dx++) {
-            for (int dy = 0; dy < VT_VOXELS; dy++) {
-                for (int dz = 0; dz < VT_VOXELS; dz++) {
+        for (int dx = 0; dx < T_VOXELS; dx++) {
+            for (int dy = 0; dy < T_VOXELS; dy++) {
+                for (int dz = 0; dz < T_VOXELS; dz++) {
                     int diBase = cacheIndex(dx, dy, dz);
 
                     //check for intersection data for each corner
@@ -192,5 +192,5 @@ public abstract class AbstractRoughVoxelGenerator<PARAM> extends AbstractVoxelGe
 
     protected abstract int getFaceState(int blockX, int blockY, int blockZ, int level, double nx, double ny, double nz, double density0, double density1, int edge, int layer, PARAM param);
 
-    protected abstract void populateVoxelBlockData(int blockX, int blockY, int blockZ, int level, double nx, double ny, double nz, VoxelData data, PARAM param);
+    protected abstract void populateVoxelBlockData(int blockX, int blockY, int blockZ, int level, double nx, double ny, double nz, TileData data, PARAM param);
 }

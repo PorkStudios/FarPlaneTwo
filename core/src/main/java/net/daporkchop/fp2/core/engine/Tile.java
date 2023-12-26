@@ -32,7 +32,7 @@ import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.io.IOException;
 
-import static net.daporkchop.fp2.core.engine.VoxelConstants.*;
+import static net.daporkchop.fp2.core.engine.EngineConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -41,7 +41,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @Getter
-public class VoxelTile implements IFarTile {
+public class Tile implements IFarTile {
     static {
         //we copy values directly between int[] and off-heap memory
         PUnsafe.requireTightlyPackedPrimitiveArrays();
@@ -59,7 +59,7 @@ public class VoxelTile implements IFarTile {
     //3: state1
     //4: state2
 
-    public static final int ENTRY_COUNT = VT_VOXELS * VT_VOXELS * VT_VOXELS;
+    public static final int ENTRY_COUNT = T_VOXELS * T_VOXELS * T_VOXELS;
     protected static final int INDEX_SIZE = ENTRY_COUNT * 2;
 
     public static final int ENTRY_DATA_SIZE = 2 + EDGE_COUNT;
@@ -68,14 +68,14 @@ public class VoxelTile implements IFarTile {
     public static final int ENTRY_FULL_SIZE_BYTES = ENTRY_DATA_SIZE * 4 + 2;
     public static final int TILE_SIZE = INDEX_SIZE + ENTRY_FULL_SIZE_BYTES * ENTRY_COUNT;
 
-    public static final IVariableSizeRecyclingCodec<VoxelTile> CODEC = new IVariableSizeRecyclingCodec<VoxelTile>() {
+    public static final IVariableSizeRecyclingCodec<Tile> CODEC = new IVariableSizeRecyclingCodec<Tile>() {
         @Override
         public long maxSize() {
             return TILE_SIZE;
         }
 
         @Override
-        public void load(@NonNull VoxelTile tile, @NonNull DataIn in) throws IOException {
+        public void load(@NonNull Tile tile, @NonNull DataIn in) throws IOException {
             tile.reset();
 
             int count = tile.count = in.readIntLE();
@@ -95,7 +95,7 @@ public class VoxelTile implements IFarTile {
         }
 
         @Override
-        public void store(@NonNull VoxelTile tile, @NonNull DataOut out) throws IOException {
+        public void store(@NonNull Tile tile, @NonNull DataOut out) throws IOException {
             //first pass: determine number of set voxels for length prefix
             //TODO: modify tile data format so that we don't need a length prefix
             int count = 0;
@@ -124,20 +124,20 @@ public class VoxelTile implements IFarTile {
     };
 
     static int index(int x, int y, int z) {
-        assert x >= 0 && x < VT_VOXELS : "x=" + x;
-        assert y >= 0 && y < VT_VOXELS : "y=" + y;
-        assert z >= 0 && z < VT_VOXELS : "z=" + z;
+        assert x >= 0 && x < T_VOXELS : "x=" + x;
+        assert y >= 0 && y < T_VOXELS : "y=" + y;
+        assert z >= 0 && z < T_VOXELS : "z=" + z;
 
-        return (x * VT_VOXELS + y) * VT_VOXELS + z;
+        return (x * T_VOXELS + y) * T_VOXELS + z;
     }
 
-    static void writeData(long base, VoxelData data) {
+    static void writeData(long base, TileData data) {
         PUnsafe.putInt(base + 0L, (data.x << 24) | (data.y << 16) | (data.z << 8) | data.edges);
         PUnsafe.putInt(base + 4L, (data.biome << 8) | (data.light & 0xFF));
         PUnsafe.copyMemory(data.states, PUnsafe.ARRAY_INT_BASE_OFFSET, null, base + 8L, 4L * EDGE_COUNT);
     }
 
-    static void readData(long base, VoxelData data) {
+    static void readData(long base, TileData data) {
         int i0 = PUnsafe.getInt(base + 0L);
         int i1 = PUnsafe.getInt(base + 4L);
 
@@ -152,7 +152,7 @@ public class VoxelTile implements IFarTile {
         PUnsafe.copyMemory(null, base + 8L, data.states, PUnsafe.ARRAY_INT_BASE_OFFSET, 4L * EDGE_COUNT);
     }
 
-    static void readOnlyPos(long base, VoxelData data) {
+    static void readOnlyPos(long base, TileData data) {
         int i0 = PUnsafe.getInt(base + 0L);
 
         data.x = i0 >>> 24;
@@ -177,7 +177,7 @@ public class VoxelTile implements IFarTile {
     @Setter
     protected long extra = 0L;
 
-    public VoxelTile() {
+    public Tile() {
         this.reset();
 
         PCleaner.cleaner(this, this.addr);
@@ -187,22 +187,22 @@ public class VoxelTile implements IFarTile {
      * Gets the voxel at the given index.
      *
      * @param index the index of the voxel to get
-     * @param data  the {@link VoxelData} instance to store the data into
+     * @param data  the {@link TileData} instance to store the data into
      * @return the relative offset of the voxel (combined XYZ coords)
      */
-    public int get(int index, VoxelData data) {
+    public int get(int index, TileData data) {
         long base = this.addr + INDEX_SIZE + checkIndex(this.count, index) * ENTRY_FULL_SIZE_BYTES;
         readData(base + 2L, data);
         return PUnsafe.getChar(base);
     }
 
-    public int getOnlyPos(int index, VoxelData data) {
+    public int getOnlyPos(int index, TileData data) {
         long base = this.addr + INDEX_SIZE + checkIndex(this.count, index) * ENTRY_FULL_SIZE_BYTES;
         readOnlyPos(base + 2L, data);
         return PUnsafe.getChar(base);
     }
 
-    public boolean get(int x, int y, int z, VoxelData data) {
+    public boolean get(int x, int y, int z, TileData data) {
         int index = PUnsafe.getShort(this.addr + index(x, y, z) * 2L);
         if (index < 0) { //index is unset, don't read sample
             return false;
@@ -212,7 +212,7 @@ public class VoxelTile implements IFarTile {
         return true;
     }
 
-    public boolean getOnlyPos(int x, int y, int z, VoxelData data) {
+    public boolean getOnlyPos(int x, int y, int z, TileData data) {
         int index = PUnsafe.getShort(this.addr + index(x, y, z) * 2L);
         if (index < 0) { //index is unset, don't read sample
             return false;
@@ -222,14 +222,14 @@ public class VoxelTile implements IFarTile {
         return true;
     }
 
-    public VoxelTile set(int x, int y, int z, VoxelData data) {
-        long indexAddr = this.addr + VoxelTile.index(x, y, z) * 2L;
+    public Tile set(int x, int y, int z, TileData data) {
+        long indexAddr = this.addr + Tile.index(x, y, z) * 2L;
         int index = PUnsafe.getShort(indexAddr);
         if (index < 0) { //index is unset, allocate new one
             PUnsafe.putShort(indexAddr, (short) (index = this.count++));
         }
 
-        VoxelTile.writeData(this.addr + VoxelTile.INDEX_SIZE + index * VoxelTile.ENTRY_DATA_SIZE_BYTES, data);
+        Tile.writeData(this.addr + Tile.INDEX_SIZE + index * Tile.ENTRY_DATA_SIZE_BYTES, data);
         return this;
     }
 
@@ -244,7 +244,7 @@ public class VoxelTile implements IFarTile {
 
         if (this.count != 0) {
             this.count = 0;
-            PUnsafe.setMemory(this.addr, VoxelTile.INDEX_SIZE, (byte) 0xFF); //fill index with -1
+            PUnsafe.setMemory(this.addr, Tile.INDEX_SIZE, (byte) 0xFF); //fill index with -1
             //data doesn't need to be cleared, it's effectively wiped along with the index
         }
     }

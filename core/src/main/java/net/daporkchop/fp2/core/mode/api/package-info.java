@@ -17,32 +17,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.engine.ctx;
-
-import lombok.NonNull;
-import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
-import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
-import net.daporkchop.fp2.core.mode.common.ctx.AbstractFarClientContext;
-import net.daporkchop.fp2.core.engine.TilePos;
-import net.daporkchop.fp2.core.engine.Tile;
-import net.daporkchop.fp2.core.engine.client.VoxelRenderer;
-
 /**
  * @author DaPorkchop_
  */
-public class VoxelClientContext extends AbstractFarClientContext<TilePos, Tile> {
-    public VoxelClientContext(@NonNull IFarLevelClient level, @NonNull FP2Config config, @NonNull IFarRenderMode<TilePos, Tile> mode) {
-        super(level, config, mode);
-    }
-
-    @Override
-    protected IFarRenderer renderer0(IFarRenderer old, @NonNull FP2Config config) {
-        /*if (OFHelper.of_Config_isShaders()) {
-            return old; //TODO: transform feedback renderer
-        } else {*/
-        return old instanceof VoxelRenderer.ShaderMultidraw ? old : new VoxelRenderer.ShaderMultidraw(this);
-        //}
-    }
-}
+@Deprecated
+package net.daporkchop.fp2.core.mode.api;
