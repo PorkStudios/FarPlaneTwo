@@ -37,9 +37,9 @@ import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.core.mode.api.server.storage.FTileStorage;
-import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTrackerManager;
 import net.daporkchop.fp2.core.engine.tile.ITileHandle;
 import net.daporkchop.fp2.core.mode.common.server.storage.DefaultTileStorage;
+import net.daporkchop.fp2.core.mode.common.server.tracking.AbstractTrackerManager;
 import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
 import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
 import net.daporkchop.fp2.core.server.event.TickEndEvent;
@@ -75,7 +75,7 @@ public abstract class AbstractFarTileProvider implements IFarTileProvider {
 
     protected final TileCoordLimits coordLimits;
 
-    protected final IFarTrackerManager trackerManager;
+    protected final AbstractTrackerManager trackerManager;
 
     protected final Scheduler<PriorityTask, ITileHandle> scheduler; //TODO: make this global rather than per-mode and per-dimension
 
@@ -144,7 +144,7 @@ public abstract class AbstractFarTileProvider implements IFarTileProvider {
         //try-with-resources to ensure that everything is closed
         try (FTileStorage storage = this.storage;
              Scheduler<PriorityTask, ITileHandle> scheduler = this.scheduler;
-             IFarTrackerManager trackerManager = this.trackerManager) {
+             AbstractTrackerManager trackerManager = this.trackerManager) {
 
             if (this.open) { //the provider has been fully opened, we should unregister ourself from the event bus and flush all the queues
                 fp2().eventBus().unregister(this);
@@ -168,7 +168,7 @@ public abstract class AbstractFarTileProvider implements IFarTileProvider {
         this.storage.close();*/
     }
 
-    protected abstract IFarTrackerManager createTracker();
+    protected abstract AbstractTrackerManager createTracker();
 
     protected abstract boolean anyVanillaTerrainExistsAt(@NonNull TilePos pos);
 

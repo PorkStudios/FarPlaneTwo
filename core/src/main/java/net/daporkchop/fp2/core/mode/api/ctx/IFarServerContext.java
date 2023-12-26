@@ -24,8 +24,8 @@ import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
-import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTracker;
 import net.daporkchop.fp2.core.engine.tile.TileSnapshot;
+import net.daporkchop.fp2.core.mode.common.server.tracking.AbstractTracker;
 import net.daporkchop.fp2.core.server.player.IFarPlayerServer;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
@@ -58,9 +58,9 @@ public interface IFarServerContext extends AutoCloseable {
     IFarTileProvider tileProvider();
 
     /**
-     * @return the {@link IFarTracker} used by this context
+     * @return the {@link AbstractTracker} used by this context
      */
-    IFarTracker tracker();
+    AbstractTracker tracker();
 
     /**
      * @return the config currently being used

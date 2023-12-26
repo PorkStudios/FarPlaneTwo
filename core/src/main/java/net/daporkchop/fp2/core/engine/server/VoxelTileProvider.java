@@ -21,10 +21,10 @@ package net.daporkchop.fp2.core.engine.server;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.api.world.level.FBlockLevel;
-import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTrackerManager;
 import net.daporkchop.fp2.core.mode.common.server.AbstractFarTileProvider;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.server.tracking.VoxelTrackerManager;
+import net.daporkchop.fp2.core.mode.common.server.tracking.AbstractTrackerManager;
 import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
 import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
 import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
@@ -39,7 +39,7 @@ public abstract class VoxelTileProvider extends AbstractFarTileProvider {
     }
 
     @Override
-    protected IFarTrackerManager createTracker() {
+    protected AbstractTrackerManager createTracker() {
         return new VoxelTrackerManager(this);
     }
 

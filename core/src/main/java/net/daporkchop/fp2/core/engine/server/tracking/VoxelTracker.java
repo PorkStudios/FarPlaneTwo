@@ -37,7 +37,7 @@ import static net.daporkchop.lib.common.math.PMath.*;
 /**
  * @author DaPorkchop_
  */
-public class VoxelTracker extends AbstractTracker<TrackingState> {
+public class VoxelTracker extends AbstractTracker {
     /**
      * The squared distance a player must move from their previous position in order to trigger a tracking update.
      * <p>

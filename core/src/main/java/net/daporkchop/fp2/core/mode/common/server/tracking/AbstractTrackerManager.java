@@ -27,8 +27,6 @@ import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.api.server.storage.FTileStorage;
-import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTracker;
-import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTrackerManager;
 import net.daporkchop.fp2.core.engine.tile.ITileHandle;
 import net.daporkchop.fp2.core.engine.tile.ITileMetadata;
 import net.daporkchop.fp2.core.engine.tile.ITileSnapshot;
@@ -56,16 +54,16 @@ import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
- * Base implementation of {@link IFarTrackerManager}.
+ * Manages {@link AbstractTracker tile trackers}.
  * <p>
- * This provides the generic functionality for loading and unloading tiles, shares tile handles between {@link IFarTracker tracker}s with overlapping ranges, and broadcasts
- * tile updates to listening {@link IFarTracker tracker}s.
+ * This provides the generic functionality for loading and unloading tiles, shares tile handles between {@link AbstractTracker tracker}s with overlapping ranges, and broadcasts
+ * tile updates to listening {@link AbstractTracker tracker}s.
  *
  * @author DaPorkchop_
  * @see AbstractTracker
  */
 @Getter
-public abstract class AbstractTrackerManager implements IFarTrackerManager, FTileStorage.Listener {
+public abstract class AbstractTrackerManager implements FTileStorage.Listener, AutoCloseable {
     /*
      * Implementation notes:
      *
@@ -124,9 +122,9 @@ public abstract class AbstractTrackerManager implements IFarTrackerManager, FTil
     protected final IFarTileProvider tileProvider;
 
     protected final Map<TilePos, Entry> entries = new ConcurrentHashMap<>();
-    protected final Map<IFarServerContext, AbstractTracker<?>> trackers = new IdentityHashMap<>();
+    protected final Map<IFarServerContext, AbstractTracker> trackers = new IdentityHashMap<>();
 
-    protected final Scheduler<AbstractTracker<?>, Void> scheduler; //TODO: make this global rather than per-mode and per-dimension
+    protected final Scheduler<AbstractTracker, Void> scheduler; //TODO: make this global rather than per-mode and per-dimension
 
     protected final int generationThreads = fp2().globalConfig().performance().terrainThreads();
 
@@ -142,6 +140,13 @@ public abstract class AbstractTrackerManager implements IFarTrackerManager, FTil
         tileProvider.storage().addListener(this);
     }
 
+    /**
+     * Closes this tracker manager, releasing all resources.
+     * <p>
+     * Once this method has been called, calling any method on this instance will result in undefined behavior.
+     *
+     * @throws IllegalStateException if any {@link AbstractTracker} instances belonging to this tracker manager are still active
+     */
     @CalledFromServerThread
     @Override
     public void close() {
@@ -150,9 +155,15 @@ public abstract class AbstractTrackerManager implements IFarTrackerManager, FTil
         this.scheduler.close();
     }
 
+    /**
+     * Begins tracking tiles for the given {@link IFarServerContext}.
+     *
+     * @param context the context to track
+     * @return the {@link AbstractTracker} instance for interfacing with the new tracking session
+     * @throws IllegalArgumentException if the given {@link IFarServerContext} is already being tracked
+     */
     @CalledFromServerThread
-    @Override
-    public IFarTracker beginTracking(@NonNull IFarServerContext context) {
+    public AbstractTracker beginTracking(@NonNull IFarServerContext context) {
         return this.trackers.compute(context, (ctx, tracker) -> {
             checkArg(tracker == null, "tracker for %s already exists!", ctx);
 
@@ -166,7 +177,7 @@ public abstract class AbstractTrackerManager implements IFarTrackerManager, FTil
      * @param context the {@link IFarServerContext}
      * @return a new {@link AbstractTracker}
      */
-    protected abstract AbstractTracker<?> createTrackerFor(@NonNull IFarServerContext context);
+    protected abstract AbstractTracker createTrackerFor(@NonNull IFarServerContext context);
 
     protected void tileLoaded(@NonNull ITileHandle handle) {
         new AbstractEntryOperation_VoidIfPresent(handle.pos()) {
@@ -210,7 +221,6 @@ public abstract class AbstractTrackerManager implements IFarTrackerManager, FTil
     }
 
     @CalledFromServerThread
-    @Override
     public void dropAllTiles() {
         Collection<IFarServerContext> trackedContextsSnapshot = new ArrayList<>(this.trackers.keySet());
 
@@ -224,7 +234,7 @@ public abstract class AbstractTrackerManager implements IFarTrackerManager, FTil
         trackedContextsSnapshot.forEach(context -> context.player().fp2_IFarPlayer_serverConfig(context.player().fp2().globalConfig()));
     }
 
-    protected void beginTracking(@NonNull AbstractTracker<?> tracker, @NonNull TilePos posIn) {
+    protected void beginTracking(@NonNull AbstractTracker tracker, @NonNull TilePos posIn) {
         class State implements BiFunction<TilePos, Entry, Entry>, Runnable {
             Entry entry;
 
@@ -256,7 +266,7 @@ public abstract class AbstractTrackerManager implements IFarTrackerManager, FTil
         state.run();
     }
 
-    protected void stopTracking(@NonNull AbstractTracker<?> tracker, @NonNull TilePos posIn) {
+    protected void stopTracking(@NonNull AbstractTracker tracker, @NonNull TilePos posIn) {
         class State implements BiFunction<TilePos, Entry, Entry> {
             boolean spin;
 
@@ -330,7 +340,7 @@ public abstract class AbstractTrackerManager implements IFarTrackerManager, FTil
      * @author DaPorkchop_
      */
     @ToString(callSuper = true)
-    protected class Entry extends CompactReferenceArraySet<AbstractTracker<?>> implements Consumer<ITileHandle>, Function<ITileHandle, Void> {
+    protected class Entry extends CompactReferenceArraySet<AbstractTracker> implements Consumer<ITileHandle>, Function<ITileHandle, Void> {
         //we're using an ArraySet because even though all the operations run in O(n) time, it shouldn't ever be an issue - this should still be plenty fast even if there are
         //  hundreds of players tracking the same tile, and it uses a fair amount less memory than an equivalent HashSet.
         //we extend from CompactReferenceArraySet rather than having it as a field in order to minimize memory wasted by JVM object headers and the likes, as well as reduced
@@ -340,7 +350,7 @@ public abstract class AbstractTrackerManager implements IFarTrackerManager, FTil
 
         protected CompletableFuture<ITileHandle> loadFuture;
         protected CompletableFuture<ITileHandle> updateFuture;
-        protected Set<AbstractTracker<?>> trackersWaitingForLoad; //all tracker instances which are waiting for the load future to be completed, or null if empty
+        protected Set<AbstractTracker> trackersWaitingForLoad; //all tracker instances which are waiting for the load future to be completed, or null if empty
 
         protected long lastSentTimestamp = ITileMetadata.TIMESTAMP_BLANK;
 
@@ -348,13 +358,13 @@ public abstract class AbstractTrackerManager implements IFarTrackerManager, FTil
             this.pos = pos;
         }
 
-        public void addTracker(@NonNull AbstractTracker<?> tracker) {
+        public void addTracker(@NonNull AbstractTracker tracker) {
             checkState(super.add(tracker), "player %s was already added to entry %s!", tracker, this);
 
             this.addWaitingForLoad(tracker);
         }
 
-        public Entry removeTracker(@NonNull AbstractTracker<?> tracker) {
+        public Entry removeTracker(@NonNull AbstractTracker tracker) {
             checkState(super.remove(tracker), "player %s did not belong to entry %s!", tracker, this);
 
             if (!this.removeWaitingForLoad(tracker)) { //the tracker wasn't waiting for the tile to be loaded, which means it's already been loaded for the tracker and we need to
@@ -376,7 +386,7 @@ public abstract class AbstractTrackerManager implements IFarTrackerManager, FTil
             }
         }
 
-        protected void addWaitingForLoad(@NonNull AbstractTracker<?> tracker) {
+        protected void addWaitingForLoad(@NonNull AbstractTracker tracker) {
             if (this.trackersWaitingForLoad == null) {
                 this.trackersWaitingForLoad = new CompactReferenceArraySet<>();
             }
@@ -389,11 +399,11 @@ public abstract class AbstractTrackerManager implements IFarTrackerManager, FTil
             }
         }
 
-        protected boolean isWaitingForLoad(@NonNull AbstractTracker<?> tracker) {
+        protected boolean isWaitingForLoad(@NonNull AbstractTracker tracker) {
             return this.trackersWaitingForLoad != null && this.trackersWaitingForLoad.contains(tracker);
         }
 
-        protected boolean removeWaitingForLoad(@NonNull AbstractTracker<?> tracker) {
+        protected boolean removeWaitingForLoad(@NonNull AbstractTracker tracker) {
             if (this.trackersWaitingForLoad != null && this.trackersWaitingForLoad.remove(tracker)) {
                 if (this.trackersWaitingForLoad.isEmpty()) { //set is now empty, set it to null to save memory
                     this.trackersWaitingForLoad = null;

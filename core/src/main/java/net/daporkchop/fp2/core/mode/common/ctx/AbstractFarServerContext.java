@@ -27,8 +27,8 @@ import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
-import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTracker;
 import net.daporkchop.fp2.core.engine.tile.TileSnapshot;
+import net.daporkchop.fp2.core.mode.common.server.tracking.AbstractTracker;
 import net.daporkchop.fp2.core.network.packet.debug.server.SPacketDebugUpdateStatistics;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketTileData;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUnloadTile;
@@ -60,7 +60,7 @@ public abstract class AbstractFarServerContext implements IFarServerContext {
     protected final IFarRenderMode mode;
     protected final IFarTileProvider tileProvider;
 
-    protected final IFarTracker tracker;
+    protected final AbstractTracker tracker;
 
     protected final Map<TilePos, Optional<TileSnapshot>> sendQueue = new TreeMap<>();
 

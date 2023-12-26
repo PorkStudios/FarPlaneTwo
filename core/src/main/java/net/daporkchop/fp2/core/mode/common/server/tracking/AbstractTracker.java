@@ -24,9 +24,7 @@ import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.DirectTilePosAccess;
 import net.daporkchop.fp2.core.engine.TileCoordLimits;
 import net.daporkchop.fp2.core.engine.TilePos;
-import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarServerContext;
-import net.daporkchop.fp2.core.mode.api.server.tracking.IFarTracker;
 import net.daporkchop.fp2.core.engine.tile.ITileSnapshot;
 import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
@@ -48,14 +46,14 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
- * Base implementation of {@link IFarTracker}.
+ * Per-context tracker instance.
  * <p>
  * This provides the generic functionality for scheduling tracker updates, manages the queue of tiles to be loaded and schedules loads for new tiles as necessary.
  *
  * @author DaPorkchop_
  * @see AbstractTrackerManager
  */
-public abstract class AbstractTracker<STATE> implements IFarTracker {
+public abstract class AbstractTracker {
     protected final AbstractTrackerManager manager;
 
     protected final IFarServerContext context;
@@ -77,8 +75,8 @@ public abstract class AbstractTracker<STATE> implements IFarTracker {
 
     //these are using a single object reference instead of flattened fields to allow the value to be replaced atomically. to ensure coherent access to the values,
     // readers must take care never to dereference the fields more than once.
-    protected volatile STATE lastState;
-    protected volatile STATE nextState;
+    protected volatile TrackingState lastState;
+    protected volatile TrackingState nextState;
 
     protected final ReentrantLock queuePausedLock = new ReentrantLock();
     protected volatile boolean closed = false;
@@ -94,11 +92,15 @@ public abstract class AbstractTracker<STATE> implements IFarTracker {
         this.loadedPositions = DirectTilePosAccess.newPositionSet();
     }
 
+    /**
+     * Updates this tracker.
+     * <p>
+     * Should be called periodically to check for tiles which should be loaded or unloaded.
+     */
     @CalledFromServerThread
-    @Override
     public void update() {
-        STATE lastState = this.lastState;
-        STATE nextState = this.currentState(this.context);
+        TrackingState lastState = this.lastState;
+        TrackingState nextState = this.currentState(this.context);
         if (lastState == null || this.shouldTriggerUpdate(lastState, nextState)) {
             //set nextPos to be used while updating
             this.nextState = nextState;
@@ -117,8 +119,8 @@ public abstract class AbstractTracker<STATE> implements IFarTracker {
         }
 
         { //check if we need to update tracking state
-            STATE lastState = this.lastState;
-            STATE nextState = this.nextState;
+            TrackingState lastState = this.lastState;
+            TrackingState nextState = this.nextState;
             if (nextState != null && (lastState == null || this.shouldTriggerUpdate(lastState, nextState))) {
                 //inform the server thread that this update has started, by updating the current state and clearing the next one
                 this.lastState = nextState;
@@ -157,7 +159,7 @@ public abstract class AbstractTracker<STATE> implements IFarTracker {
         this.updateWaiting();
     }
 
-    protected void updateState(STATE lastState, @NonNull STATE nextState, @NonNull Set<TilePos> untrackingPositions) {
+    protected void updateState(TrackingState lastState, @NonNull TrackingState nextState, @NonNull Set<TilePos> untrackingPositions) {
         long startTime = System.nanoTime();
 
         if (lastState != null) { //if lastState exists, we can diff the positions (which is faster than iterating over all of them)
@@ -350,8 +352,12 @@ public abstract class AbstractTracker<STATE> implements IFarTracker {
         this.context.sendTileUnload(pos);
     }
 
+    /**
+     * Closes this tracker, unloading all tiles and releasing all resources.
+     * <p>
+     * Once this method has been called, calling any method on this instance will result in undefined behavior.
+     */
     @CalledFromServerThread
-    @Override
     public void close() {
         //pause the queue to prevent workers from doing anything else
         this.pauseQueue();
@@ -383,7 +389,6 @@ public abstract class AbstractTracker<STATE> implements IFarTracker {
         }
     }
 
-    @Override
     public DebugStats.Tracking debugStats() {
         //i don't care that i'm calling #count() and #size() in a not thread-safe manner - worst-case scenario, the count is reported incorrectly for a split second
 
@@ -398,54 +403,54 @@ public abstract class AbstractTracker<STATE> implements IFarTracker {
     }
 
     /**
-     * Computes the current {@link STATE} from the given context.
+     * Computes the current {@link TrackingState} from the given context.
      *
      * @param context the {@link IFarServerContext} which we are tracking for
-     * @return a new {@link STATE}
+     * @return a new {@link TrackingState}
      */
-    protected abstract STATE currentState(@NonNull IFarServerContext context);
+    protected abstract TrackingState currentState(@NonNull IFarServerContext context);
 
     /**
-     * Checks whether or not the difference between two given {@link STATE}s is sufficiently drastic to warrant triggering a tracking update.
+     * Checks whether or not the difference between two given {@link TrackingState}s is sufficiently drastic to warrant triggering a tracking update.
      *
-     * @param oldState the old {@link STATE}
-     * @param newState the new {@link STATE}
+     * @param oldState the old {@link TrackingState}
+     * @param newState the new {@link TrackingState}
      * @return whether or not a tracking update should be triggered
      */
-    protected abstract boolean shouldTriggerUpdate(@NonNull STATE oldState, @NonNull STATE newState);
+    protected abstract boolean shouldTriggerUpdate(@NonNull TrackingState oldState, @NonNull TrackingState newState);
 
     /**
-     * Enumerates every tile position visible in the given {@link STATE}.
+     * Enumerates every tile position visible in the given {@link TrackingState}.
      *
-     * @param state    the {@link STATE}
+     * @param state    the {@link TrackingState}
      * @param callback a callback function which should be called once for every visible tile position
      */
-    protected abstract void allPositions(@NonNull STATE state, @NonNull Consumer<TilePos> callback);
+    protected abstract void allPositions(@NonNull TrackingState state, @NonNull Consumer<TilePos> callback);
 
     /**
-     * Computes the tile positions whose visibility changed between two given {@link STATE}s.
+     * Computes the tile positions whose visibility changed between two given {@link TrackingState}s.
      *
-     * @param oldState the old {@link STATE}
-     * @param newState the new {@link STATE}
+     * @param oldState the old {@link TrackingState}
+     * @param newState the new {@link TrackingState}
      * @param added    a callback function which should be called once for every tile position which was not visible in the old state but is now visible
      * @param removed  a callback function which should be called once for every tile position which was visible in the old state but is no longer visible
      */
-    protected abstract void deltaPositions(@NonNull STATE oldState, @NonNull STATE newState, @NonNull Consumer<TilePos> added, @NonNull Consumer<TilePos> removed);
+    protected abstract void deltaPositions(@NonNull TrackingState oldState, @NonNull TrackingState newState, @NonNull Consumer<TilePos> added, @NonNull Consumer<TilePos> removed);
 
     /**
      * Checks whether or not the given tile position is visible in the given state.
      *
-     * @param state the {@link STATE}
+     * @param state the {@link TrackingState}
      * @param pos   the tile position to check
      * @return whether or not the tile position is visible
      */
-    protected abstract boolean isVisible(@NonNull STATE state, @NonNull TilePos pos);
+    protected abstract boolean isVisible(@NonNull TrackingState state, @NonNull TilePos pos);
 
     /**
-     * Gets a {@link Comparator} which can be used for sorting the tile positions visible in the given {@link STATE} by their load priority.
+     * Gets a {@link Comparator} which can be used for sorting the tile positions visible in the given {@link TrackingState} by their load priority.
      *
-     * @param state the {@link STATE}
+     * @param state the {@link TrackingState}
      * @return a {@link Comparator} for sorting visible tile positions
      */
-    protected abstract Comparator<TilePos> comparatorFor(@NonNull STATE state);
+    protected abstract Comparator<TilePos> comparatorFor(@NonNull TrackingState state);
 }

@@ -34,7 +34,7 @@ public class VoxelTrackerManager extends AbstractTrackerManager {
     }
 
     @Override
-    protected AbstractTracker<?> createTrackerFor(@NonNull IFarServerContext context) {
+    protected AbstractTracker createTrackerFor(@NonNull IFarServerContext context) {
         return new VoxelTracker(this, context);
     }
 }
