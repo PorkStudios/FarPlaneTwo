@@ -17,7 +17,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.mode.common.server;
+package net.daporkchop.fp2.core.engine.server;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.engine.TilePos;
@@ -33,34 +33,26 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 public interface PriorityTask {
     /**
-     * @deprecated internal API, do not touch!
-     */
-    @Deprecated
-    @SuppressWarnings("DeprecatedIsStillUsed")
-    Comparator<PriorityTask> _APPROX_COMPARATOR = (a, b) -> {
-        int d;
-        if ((d = a.stage().compareTo(b.stage())) == 0) {
-            d = Integer.compare(a.pos().level(), b.pos().level());
-        }
-        return d;
-    };
-
-    /**
      * @return a {@link Comparator} which is able to do approximate comparisons between {@link PriorityTask}s
      */
-    @SuppressWarnings("Deprecation")
-    static <POS extends TilePos> Comparator<PriorityTask> approxComparator() {
-        return uncheckedCast(_APPROX_COMPARATOR);
+    static Comparator<PriorityTask> approxComparator() {
+        return (a, b) -> {
+            int d;
+            if ((d = a.stage().compareTo(b.stage())) == 0) {
+                d = Integer.compare(a.pos().level(), b.pos().level());
+            }
+            return d;
+        };
     }
 
     /**
-     * Gets a {@link PriorityTask} using the given {@link TaskStage} and {@link POS}.
+     * Gets a {@link PriorityTask} using the given {@link TaskStage} and {@link TilePos}.
      *
      * @param stage the {@link TaskStage}
-     * @param pos   the {@link POS}
+     * @param pos   the {@link TilePos}
      * @return a {@link PriorityTask}
      */
-    static <POS extends TilePos> PriorityTask forStageAndPosition(@NonNull TaskStage stage, @NonNull POS pos) {
+    static PriorityTask forStageAndPosition(@NonNull TaskStage stage, @NonNull TilePos pos) {
         return new PriorityTask() {
             @Override
             public TaskStage stage() {
@@ -68,7 +60,7 @@ public interface PriorityTask {
             }
 
             @Override
-            public POS pos() {
+            public TilePos pos() {
                 return pos;
             }
 

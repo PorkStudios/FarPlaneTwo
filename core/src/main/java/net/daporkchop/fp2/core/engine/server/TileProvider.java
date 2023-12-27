@@ -17,7 +17,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.mode.common.server;
+package net.daporkchop.fp2.core.engine.server;
 
 import com.google.common.collect.ImmutableList;
 import it.unimi.dsi.fastutil.objects.ObjectRBTreeSet;
@@ -28,21 +28,23 @@ import lombok.SneakyThrows;
 import lombok.Synchronized;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.api.storage.FStorageException;
+import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.fp2.core.engine.EngineConstants;
 import net.daporkchop.fp2.core.engine.TileCoordLimits;
 import net.daporkchop.fp2.core.engine.TilePos;
-import net.daporkchop.fp2.core.engine.server.scale.VoxelScalerIntersection;
 import net.daporkchop.fp2.core.engine.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.engine.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.core.engine.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.core.engine.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.core.engine.api.server.storage.FTileStorage;
-import net.daporkchop.fp2.core.engine.tile.ITileHandle;
-import net.daporkchop.fp2.core.mode.common.server.storage.DefaultTileStorage;
+import net.daporkchop.fp2.core.engine.server.scale.VoxelScalerIntersection;
 import net.daporkchop.fp2.core.engine.server.tracking.TrackerManager;
+import net.daporkchop.fp2.core.engine.tile.ITileHandle;
+import net.daporkchop.fp2.core.engine.server.storage.DefaultTileStorage;
 import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
 import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
 import net.daporkchop.fp2.core.server.event.TickEndEvent;
+import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.util.threading.scheduler.ApproximatelyPrioritizedSharedFutureScheduler;
 import net.daporkchop.fp2.core.util.threading.scheduler.Scheduler;
@@ -64,7 +66,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractFarTileProvider implements IFarTileProvider {
+public abstract class TileProvider implements IFarTileProvider {
     protected final IFarLevelServer world;
 
     protected final IFarGeneratorRough generatorRough;
@@ -84,7 +86,7 @@ public abstract class AbstractFarTileProvider implements IFarTileProvider {
 
     protected boolean open = false;
 
-    public AbstractFarTileProvider(@NonNull IFarLevelServer world) {
+    public TileProvider(@NonNull IFarLevelServer world) {
         this.world = world;
 
         this.coordLimits = new TileCoordLimits(world.coordLimits());
@@ -168,9 +170,18 @@ public abstract class AbstractFarTileProvider implements IFarTileProvider {
         this.storage.close();*/
     }
 
-    protected abstract boolean anyVanillaTerrainExistsAt(@NonNull TilePos pos);
+    protected boolean anyVanillaTerrainExistsAt(@NonNull TilePos pos) {
+        int x = pos.blockX();
+        int y = pos.blockY();
+        int z = pos.blockZ();
+        int sideLength = pos.sideLength();
+        try (FBlockLevel world = this.world().exactBlockLevelHolder().worldFor(ExactFBlockLevelHolder.AllowGenerationRequirement.DONT_CARE)) {
+            return world.containsAnyData(x, y, z, x + sideLength, y + sideLength, z + sideLength);
+        }
+    }
 
-    protected boolean anyVanillaTerrainExistsAt(@NonNull List<TilePos> positions) {
+    //TODO: make this package-private once it gets merged with VoxelTileProvider
+    public boolean anyVanillaTerrainExistsAt(@NonNull List<TilePos> positions) {
         return positions.stream().anyMatch(this::anyVanillaTerrainExistsAt);
     }
 
@@ -274,5 +285,55 @@ public abstract class AbstractFarTileProvider implements IFarTileProvider {
         private final IFarLevelServer world;
         @NonNull
         private final IFarTileProvider provider;
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    public static class Vanilla extends TileProvider {
+        public Vanilla(@NonNull IFarLevelServer world) {
+            super(world);
+        }
+
+        @Override
+        protected void onColumnSaved(ColumnSavedEvent event) {
+            if (event.column().isFullyPopulated()) {
+                //schedule entire column to be updated
+                int minY = this.coordLimits.min(0).y();
+                int maxY = this.coordLimits.max(0).y();
+
+                TilePos[] positions = new TilePos[maxY + 1 - minY];
+                for (int i = 0, y = minY; y <= maxY; i++, y++) {
+                    positions[i] = new TilePos(0, event.pos().x(), y, event.pos().y());
+                }
+                this.scheduleForUpdate(positions);
+            }
+        }
+
+        @Override
+        protected void onCubeSaved(CubeSavedEvent event) {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    public static class CubicChunks extends TileProvider {
+        public CubicChunks(@NonNull IFarLevelServer world) {
+            super(world);
+        }
+
+        @Override
+        protected void onColumnSaved(ColumnSavedEvent event) {
+            //no-op
+        }
+
+        @Override
+        protected void onCubeSaved(CubeSavedEvent event) {
+            if (event.cube().isFullyPopulated()) {
+                this.scheduleForUpdate(new TilePos(0, event.pos().x(), event.pos().y(), event.pos().z()));
+            }
+        }
     }
 }

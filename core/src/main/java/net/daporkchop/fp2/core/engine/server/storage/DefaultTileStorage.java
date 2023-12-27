@@ -17,7 +17,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.mode.common.server.storage;
+package net.daporkchop.fp2.core.engine.server.storage;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -36,8 +36,8 @@ import net.daporkchop.fp2.core.engine.EngineConstants;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.TilePosCodec;
 import net.daporkchop.fp2.core.engine.api.server.storage.FTileStorage;
+import net.daporkchop.fp2.core.engine.server.TileProvider;
 import net.daporkchop.fp2.core.engine.tile.ITileHandle;
-import net.daporkchop.fp2.core.mode.common.server.AbstractFarTileProvider;
 import net.daporkchop.fp2.core.util.GlobalAllocators;
 import net.daporkchop.fp2.core.util.datastructure.java.list.ArraySliceAsList;
 import net.daporkchop.fp2.core.util.datastructure.java.list.ListUtils;
@@ -134,7 +134,7 @@ public class DefaultTileStorage implements FTileStorage {
         PUnsafe.putLong(dst, PUnsafe.ARRAY_BYTE_BASE_OFFSET + index, PlatformInfo.IS_BIG_ENDIAN ? Long.reverseBytes(val) : val);
     }
 
-    public static FStorageItemFactory<FTileStorage> factory(@NonNull AbstractFarTileProvider tileProvider) {
+    public static FStorageItemFactory<FTileStorage> factory(@NonNull TileProvider tileProvider) {
         //build the token for the current tile storage
         byte[] currentToken;
         {
@@ -195,7 +195,7 @@ public class DefaultTileStorage implements FTileStorage {
         };
     }
 
-    protected final AbstractFarTileProvider tileProvider;
+    protected final TileProvider tileProvider;
 
     protected final FStorageInternal storageInternal;
 
@@ -216,7 +216,7 @@ public class DefaultTileStorage implements FTileStorage {
             .weakValues()
             .build(CacheLoader.from(pos -> new DefaultTileHandle(pos, this)));
 
-    protected DefaultTileStorage(@NonNull AbstractFarTileProvider tileProvider, @NonNull FStorageInternal storageInternal) {
+    protected DefaultTileStorage(@NonNull TileProvider tileProvider, @NonNull FStorageInternal storageInternal) {
         this.tileProvider = tileProvider;
 
         this.storageInternal = storageInternal;

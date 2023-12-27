@@ -25,7 +25,7 @@ import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.core.client.render.TextureUVs;
 import net.daporkchop.fp2.core.engine.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.engine.api.server.gen.IFarGeneratorExact;
-import net.daporkchop.fp2.core.engine.server.VoxelTileProvider;
+import net.daporkchop.fp2.core.engine.server.TileProvider;
 import net.daporkchop.fp2.core.engine.server.gen.exact.VanillaVoxelGenerator;
 import net.daporkchop.fp2.core.server.event.GetCoordinateLimitsEvent;
 import net.daporkchop.fp2.core.server.event.GetExactFBlockLevelEvent;
@@ -105,7 +105,7 @@ public class FP2Vanilla {
 
     @FEventHandler(name = "vanilla_voxel_tileprovider")
     public IFarTileProvider createVoxelTileProvider(IFarTileProvider.CreationEvent event) {
-        return new VoxelTileProvider.Vanilla(event.world());
+        return new TileProvider.Vanilla(event.world());
     }
 
     //texture UVs

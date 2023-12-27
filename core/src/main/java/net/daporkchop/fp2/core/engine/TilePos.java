@@ -39,29 +39,18 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @RequiredArgsConstructor
 @ToString
+@Getter
 public class TilePos implements Comparable<TilePos> {
+    /**
+     * The level of detail at this position.
+     */
     protected final int level;
     protected final int x;
     protected final int y;
     protected final int z;
 
-    /**
-     * @return the level of detail at this position
-     */
-    public final int level() {
-        return this.level;
-    }
-
-    public final int x() {
-        return this.x;
-    }
-
-    public final int y() {
-        return this.y;
-    }
-
-    public final int z() {
-        return this.z;
+    protected TilePos(TilePos other) {
+        this(other.level, other.x, other.y, other.z);
     }
 
     /**

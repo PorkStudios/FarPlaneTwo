@@ -17,39 +17,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.mode.common.server.gen;
+package net.daporkchop.fp2.core.engine.server;
 
-import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.api.world.registry.FExtendedBiomeRegistryData;
-import net.daporkchop.fp2.api.world.registry.FExtendedStateRegistryData;
-import net.daporkchop.fp2.api.world.registry.FGameRegistry;
-import net.daporkchop.fp2.core.engine.api.server.IFarTileProvider;
-import net.daporkchop.fp2.core.engine.api.server.gen.IFarGenerator;
-import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
+import net.daporkchop.fp2.core.engine.TilePos;
 
 /**
  * @author DaPorkchop_
  */
-@Getter
-public abstract class AbstractFarGenerator implements IFarGenerator {
-    private final IFarLevelServer world;
-    private final IFarTileProvider provider;
+public enum TaskStage {
+    LOAD,
+    UPDATE;
 
-    private final FGameRegistry registry;
-    private final FExtendedBiomeRegistryData extendedBiomeRegistryData;
-    private final FExtendedStateRegistryData extendedStateRegistryData;
-
-    private final int seaLevel;
-
-    public AbstractFarGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider provider) {
-        this.world = world;
-        this.provider = provider;
-
-        this.registry = world.registry();
-        this.extendedBiomeRegistryData = this.registry.extendedBiomeRegistryData();
-        this.extendedStateRegistryData = this.registry.extendedStateRegistryData();
-
-        this.seaLevel = world.seaLevel();
+    public PriorityTask taskForPosition(@NonNull TilePos pos) {
+        return PriorityTask.forStageAndPosition(this, pos);
     }
 }

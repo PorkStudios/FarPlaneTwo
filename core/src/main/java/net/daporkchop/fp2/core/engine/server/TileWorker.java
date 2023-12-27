@@ -17,7 +17,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.mode.common.server;
+package net.daporkchop.fp2.core.engine.server;
 
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import lombok.Getter;
@@ -61,7 +61,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @RequiredArgsConstructor
 public class TileWorker implements SharedFutureScheduler.WorkFunction<PriorityTask, ITileHandle> {
     @NonNull
-    protected final AbstractFarTileProvider provider;
+    protected final TileProvider provider;
     @NonNull
     protected final Scheduler<PriorityTask, ITileHandle> scheduler;
 
@@ -140,7 +140,7 @@ public class TileWorker implements SharedFutureScheduler.WorkFunction<PriorityTa
         if (!this.allowNewGeneration(state.stage())) { //we aren't allowed to generate any new tiles
             //make sure the tile isn't marked as dirty
             //TODO: this should be impossible, but we can't do proper vanilla terrain population tests yet. delete this in The Future:tm:!
-            this.provider.storage.multiClearDirty(state.positions());
+            this.provider.storage().multiClearDirty(state.positions());
 
             //mark all acquired tasks as complete before exiting
             state.completeAll();

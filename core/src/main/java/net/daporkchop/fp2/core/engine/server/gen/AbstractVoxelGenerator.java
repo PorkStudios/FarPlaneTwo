@@ -19,9 +19,14 @@
 
 package net.daporkchop.fp2.core.engine.server.gen;
 
+import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.api.world.registry.FExtendedBiomeRegistryData;
+import net.daporkchop.fp2.api.world.registry.FExtendedStateRegistryData;
+import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.fp2.core.engine.api.server.IFarTileProvider;
-import net.daporkchop.fp2.core.mode.common.server.gen.AbstractFarGenerator;
+import net.daporkchop.fp2.core.engine.api.server.gen.IFarGenerator;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.reference.cache.Cached;
@@ -32,7 +37,8 @@ import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractVoxelGenerator extends AbstractFarGenerator {
+@Getter
+public abstract class AbstractVoxelGenerator implements IFarGenerator {
     public static final int CACHE_MIN = -1;
     public static final int CACHE_MAX = T_VOXELS + 1;
     public static final int CACHE_SIZE = CACHE_MAX - CACHE_MIN;
@@ -61,9 +67,26 @@ public abstract class AbstractVoxelGenerator extends AbstractFarGenerator {
         return ((x - CACHE_MIN) * CACHE_SIZE + y - CACHE_MIN) * CACHE_SIZE + z - CACHE_MIN;
     }
 
+    @Getter(AccessLevel.NONE)
     protected final Cached<byte[]> typeMapCache = Cached.threadLocal(() -> new byte[cb(CACHE_SIZE)], ReferenceStrength.WEAK);
 
+    private final IFarLevelServer world;
+    private final IFarTileProvider provider;
+
+    private final FGameRegistry registry;
+    private final FExtendedBiomeRegistryData extendedBiomeRegistryData;
+    private final FExtendedStateRegistryData extendedStateRegistryData;
+
+    private final int seaLevel;
+
     public AbstractVoxelGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider provider) {
-        super(world, provider);
+        this.world = world;
+        this.provider = provider;
+
+        this.registry = world.registry();
+        this.extendedBiomeRegistryData = this.registry.extendedBiomeRegistryData();
+        this.extendedStateRegistryData = this.registry.extendedStateRegistryData();
+
+        this.seaLevel = world.seaLevel();
     }
 }

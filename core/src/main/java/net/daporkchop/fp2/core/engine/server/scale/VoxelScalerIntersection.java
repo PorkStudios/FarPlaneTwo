@@ -24,7 +24,7 @@ import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.engine.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.engine.api.server.gen.IFarScaler;
-import net.daporkchop.fp2.core.mode.common.server.gen.AbstractFarGenerator;
+import net.daporkchop.fp2.core.engine.server.gen.AbstractVoxelGenerator;
 import net.daporkchop.fp2.core.engine.TileData;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.Tile;
@@ -50,7 +50,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 //TODO: this needs a LOT of work
 //TODO: re-implement using something based on https://www.researchgate.net/publication/220792145_Model_Simplification_Using_Vertex-Clustering
-public class VoxelScalerIntersection extends AbstractFarGenerator implements IFarScaler {
+public class VoxelScalerIntersection extends AbstractVoxelGenerator implements IFarScaler {
     public static final int SRC_MIN = -4;
     public static final int SRC_MAX = (T_VOXELS << 1) + 4;
     //public static final int SRC_MIN = 0;
