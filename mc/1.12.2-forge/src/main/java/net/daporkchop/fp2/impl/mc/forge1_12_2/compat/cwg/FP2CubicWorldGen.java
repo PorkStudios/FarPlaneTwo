@@ -66,8 +66,8 @@ public class FP2CubicWorldGen {
             return cubicWorld.isCubicWorld() && cubicWorld.getCubeGenerator() instanceof CustomTerrainGenerator;
         }
 
-        @FEventHandler(name = "cubicworldgen_voxel_generator_rough_customcubic")
-        public Optional<IFarGeneratorRough> createVoxelGeneratorRoughCustomCubic(IFarGeneratorRough.CreationEvent event) {
+        @FEventHandler(name = "cubicworldgen_generator_rough_customcubic")
+        public Optional<IFarGeneratorRough> createGeneratorRoughCustomCubic(IFarGeneratorRough.CreationEvent event) {
             return this.isCustomCubicWorld(event.world())
                     ? Optional.of(new CWGVoxelGenerator(event.world(), event.provider()))
                     : Optional.empty();

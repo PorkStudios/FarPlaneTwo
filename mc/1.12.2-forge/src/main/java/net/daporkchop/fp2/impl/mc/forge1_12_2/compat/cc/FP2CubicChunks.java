@@ -132,9 +132,9 @@ public class FP2CubicChunks {
 
         //exact generators
 
-        @FEventHandler(name = "cubicchunks_voxel_generator_exact",
-                constrain = @Constrain(before = "vanilla_voxel_generator_exact"))
-        public Optional<IFarGeneratorExact> createVoxelGeneratorExact(IFarGeneratorExact.CreationEvent event) {
+        @FEventHandler(name = "cubicchunks_generator_exact",
+                constrain = @Constrain(before = "vanilla_generator_exact"))
+        public Optional<IFarGeneratorExact> createGeneratorExact(IFarGeneratorExact.CreationEvent event) {
             return this.isCubicWorld(event.world())
                     ? Optional.of(new CCVoxelGenerator(event.world(), event.provider()))
                     : Optional.empty();
@@ -142,9 +142,9 @@ public class FP2CubicChunks {
 
         //tile providers
 
-        @FEventHandler(name = "cubicchunks_voxel_tileprovider",
-                constrain = @Constrain(before = "vanilla_voxel_tileprovider"))
-        public Optional<IFarTileProvider> createVoxelTileProvider(IFarTileProvider.CreationEvent event) {
+        @FEventHandler(name = "cubicchunks_tileprovider",
+                constrain = @Constrain(before = "vanilla_tileprovider"))
+        public Optional<IFarTileProvider> createTileProvider(IFarTileProvider.CreationEvent event) {
             return this.isCubicWorld(event.world())
                     ? Optional.of(new TileProvider.CubicChunks(event.world()))
                     : Optional.empty();

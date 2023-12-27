@@ -90,8 +90,8 @@ public class FP2Vanilla {
 
     //exact generators
 
-    @FEventHandler(name = "vanilla_voxel_generator_exact")
-    public IFarGeneratorExact createVoxelGeneratorExact(IFarGeneratorExact.CreationEvent event) {
+    @FEventHandler(name = "vanilla_generator_exact")
+    public IFarGeneratorExact createGeneratorExact(IFarGeneratorExact.CreationEvent event) {
         return new VanillaVoxelGenerator(event.world(), event.provider());
     }
 
@@ -103,8 +103,8 @@ public class FP2Vanilla {
 
     //tile providers
 
-    @FEventHandler(name = "vanilla_voxel_tileprovider")
-    public IFarTileProvider createVoxelTileProvider(IFarTileProvider.CreationEvent event) {
+    @FEventHandler(name = "vanilla_tileprovider")
+    public IFarTileProvider createTileProvider(IFarTileProvider.CreationEvent event) {
         return new TileProvider.Vanilla(event.world());
     }
 
