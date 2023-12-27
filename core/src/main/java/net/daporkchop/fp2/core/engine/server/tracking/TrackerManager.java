@@ -17,7 +17,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.mode.common.server.tracking;
+package net.daporkchop.fp2.core.engine.server.tracking;
 
 import lombok.Getter;
 import lombok.NonNull;
@@ -54,23 +54,23 @@ import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
- * Manages {@link AbstractTracker tile trackers}.
+ * Manages {@link Tracker tile trackers}.
  * <p>
- * This provides the generic functionality for loading and unloading tiles, shares tile handles between {@link AbstractTracker tracker}s with overlapping ranges, and broadcasts
- * tile updates to listening {@link AbstractTracker tracker}s.
+ * This provides the generic functionality for loading and unloading tiles, shares tile handles between {@link Tracker tracker}s with overlapping ranges, and broadcasts
+ * tile updates to listening {@link Tracker tracker}s.
  *
  * @author DaPorkchop_
- * @see AbstractTracker
+ * @see Tracker
  */
 @Getter
-public abstract class AbstractTrackerManager implements FTileStorage.Listener, AutoCloseable {
+public final class TrackerManager implements FTileStorage.Listener, AutoCloseable {
     /*
      * Implementation notes:
      *
      * Each tile which is being tracked by at least one tracker is assigned an Entry, which is inserted into the 'entries' ConcurrentHashMap. Entries keep a set of players
      * which are tracking them, as well as a separate set of players which are waiting to receive the tile for the first time.
      *
-     * This implementation is very tightly coupled with AbstractTracker, especially with regards to synchronization.
+     * This implementation is very tightly coupled with Tracker, especially with regards to synchronization.
      *
      * Outline of various operations:
      * - AbstractTrackerManager#beginTracking():
@@ -85,7 +85,7 @@ public abstract class AbstractTrackerManager implements FTileStorage.Listener, A
      *       │ ├─get a new CompletableFuture to load the tile from the tile provider
      *       │ └─if CompletableFuture is already completed (-> Entry#tileLoaded())
      *       │   ├─cancel CompletableFuture (noop) and set it to null; take a snapshot of the tile's contents
-     *       │   ├─invoke AbstractTracker#notifyChanged() for "all trackers"/"trackers waiting for load" depending on timestamp value
+     *       │   ├─invoke Tracker#notifyChanged() for "all trackers"/"trackers waiting for load" depending on timestamp value
      *       │   ├─clear "trackers waiting for load" set
      *       │   └─invoke Entry#checkDirty()
      *       └─release entry's lock
@@ -112,26 +112,26 @@ public abstract class AbstractTrackerManager implements FTileStorage.Listener, A
      *       │   └─return from AbstractTrackerManager#tileLoaded()
      *       │ (we now hold only the entry's lock)
      *       ├─if loadFuture is set, cancel it (possibly noop) and set it to null; take a snapshot of the tile's contents
-     *       ├─invoke AbstractTracker#notifyChanged() for "all trackers"/"trackers waiting for load" depending on timestamp value
+     *       ├─invoke Tracker#notifyChanged() for "all trackers"/"trackers waiting for load" depending on timestamp value
      *       ├─clear "trackers waiting for load" set
      *       ├─invoke Entry#checkDirty()
      *       └─release entry's lock
      *
      * ...to be continued...
      */
-    protected final IFarTileProvider tileProvider;
+    private final IFarTileProvider tileProvider;
 
-    protected final Map<TilePos, Entry> entries = new ConcurrentHashMap<>();
-    protected final Map<IFarServerContext, AbstractTracker> trackers = new IdentityHashMap<>();
+    private final Map<TilePos, Entry> entries = new ConcurrentHashMap<>();
+    private final Map<IFarServerContext, Tracker> trackers = new IdentityHashMap<>();
 
-    protected final Scheduler<AbstractTracker, Void> scheduler; //TODO: make this global rather than per-mode and per-dimension
+    private final Scheduler<Tracker, Void> scheduler; //TODO: make this global rather than per-mode and per-dimension
 
-    protected final int generationThreads = fp2().globalConfig().performance().terrainThreads();
+    private final int generationThreads = fp2().globalConfig().performance().terrainThreads();
 
-    public AbstractTrackerManager(@NonNull IFarTileProvider tileProvider) {
+    public TrackerManager(@NonNull IFarTileProvider tileProvider) {
         this.tileProvider = tileProvider;
 
-        this.scheduler = new NoFutureScheduler<>(AbstractTracker::doUpdate,
+        this.scheduler = new NoFutureScheduler<>(Tracker::doUpdate,
                 tileProvider.world().workerManager().createChildWorkerGroup()
                         .threads(fp2().globalConfig().performance().trackingThreads())
                         .threadFactory(PThreadFactories.builder().daemon().minPriority().collapsingId()
@@ -145,7 +145,7 @@ public abstract class AbstractTrackerManager implements FTileStorage.Listener, A
      * <p>
      * Once this method has been called, calling any method on this instance will result in undefined behavior.
      *
-     * @throws IllegalStateException if any {@link AbstractTracker} instances belonging to this tracker manager are still active
+     * @throws IllegalStateException if any {@link Tracker} instances belonging to this tracker manager are still active
      */
     @CalledFromServerThread
     @Override
@@ -159,27 +159,19 @@ public abstract class AbstractTrackerManager implements FTileStorage.Listener, A
      * Begins tracking tiles for the given {@link IFarServerContext}.
      *
      * @param context the context to track
-     * @return the {@link AbstractTracker} instance for interfacing with the new tracking session
+     * @return the {@link Tracker} instance for interfacing with the new tracking session
      * @throws IllegalArgumentException if the given {@link IFarServerContext} is already being tracked
      */
     @CalledFromServerThread
-    public AbstractTracker beginTracking(@NonNull IFarServerContext context) {
+    public Tracker beginTracking(@NonNull IFarServerContext context) {
         return this.trackers.compute(context, (ctx, tracker) -> {
             checkArg(tracker == null, "tracker for %s already exists!", ctx);
 
-            return this.createTrackerFor(ctx);
+            return new Tracker(this, ctx);
         });
     }
 
-    /**
-     * Creates a new {@link AbstractTracker} instance for the given {@link IFarServerContext}.
-     *
-     * @param context the {@link IFarServerContext}
-     * @return a new {@link AbstractTracker}
-     */
-    protected abstract AbstractTracker createTrackerFor(@NonNull IFarServerContext context);
-
-    protected void tileLoaded(@NonNull ITileHandle handle) {
+    void tileLoaded(@NonNull ITileHandle handle) {
         new AbstractEntryOperation_VoidIfPresent(handle.pos()) {
             @Override
             protected void run(@NonNull Entry entry) {
@@ -188,7 +180,7 @@ public abstract class AbstractTrackerManager implements FTileStorage.Listener, A
         }.run();
     }
 
-    protected void tileUpdated(@NonNull ITileHandle handle) {
+    void tileUpdated(@NonNull ITileHandle handle) {
         new AbstractEntryOperation_VoidIfPresent(handle.pos()) {
             @Override
             protected void run(@NonNull Entry entry) {
@@ -211,7 +203,8 @@ public abstract class AbstractTrackerManager implements FTileStorage.Listener, A
         }.run());
     }
 
-    protected void recheckDirty(@NonNull ITileHandle handle) {
+    //TODO: why does this exist?
+    void recheckDirty(@NonNull ITileHandle handle) {
         new AbstractEntryOperation_VoidIfPresent(handle.pos()) {
             @Override
             protected void run(@NonNull Entry entry) {
@@ -234,7 +227,7 @@ public abstract class AbstractTrackerManager implements FTileStorage.Listener, A
         trackedContextsSnapshot.forEach(context -> context.player().fp2_IFarPlayer_serverConfig(context.player().fp2().globalConfig()));
     }
 
-    protected void beginTracking(@NonNull AbstractTracker tracker, @NonNull TilePos posIn) {
+    void beginTracking(@NonNull Tracker tracker, @NonNull TilePos posIn) {
         class State implements BiFunction<TilePos, Entry, Entry>, Runnable {
             Entry entry;
 
@@ -266,7 +259,7 @@ public abstract class AbstractTrackerManager implements FTileStorage.Listener, A
         state.run();
     }
 
-    protected void stopTracking(@NonNull AbstractTracker tracker, @NonNull TilePos posIn) {
+    void stopTracking(@NonNull Tracker tracker, @NonNull TilePos posIn) {
         class State implements BiFunction<TilePos, Entry, Entry> {
             boolean spin;
 
@@ -319,7 +312,7 @@ public abstract class AbstractTrackerManager implements FTileStorage.Listener, A
                 //  never be invoked
                 this.spin = false;
 
-                AbstractTrackerManager.this.entries.computeIfPresent(this.pos, this);
+                TrackerManager.this.entries.computeIfPresent(this.pos, this);
             } while (this.spin);
 
             if (this.entry != null) {
@@ -335,12 +328,12 @@ public abstract class AbstractTrackerManager implements FTileStorage.Listener, A
     }
 
     /**
-     * Associates a tile position to the {@link AbstractTracker}s which are tracking it.
+     * Associates a tile position to the {@link Tracker}s which are tracking it.
      *
      * @author DaPorkchop_
      */
     @ToString(callSuper = true)
-    protected class Entry extends CompactReferenceArraySet<AbstractTracker> implements Consumer<ITileHandle>, Function<ITileHandle, Void> {
+    protected class Entry extends CompactReferenceArraySet<Tracker> implements Consumer<ITileHandle>, Function<ITileHandle, Void> {
         //we're using an ArraySet because even though all the operations run in O(n) time, it shouldn't ever be an issue - this should still be plenty fast even if there are
         //  hundreds of players tracking the same tile, and it uses a fair amount less memory than an equivalent HashSet.
         //we extend from CompactReferenceArraySet rather than having it as a field in order to minimize memory wasted by JVM object headers and the likes, as well as reduced
@@ -350,7 +343,7 @@ public abstract class AbstractTrackerManager implements FTileStorage.Listener, A
 
         protected CompletableFuture<ITileHandle> loadFuture;
         protected CompletableFuture<ITileHandle> updateFuture;
-        protected Set<AbstractTracker> trackersWaitingForLoad; //all tracker instances which are waiting for the load future to be completed, or null if empty
+        protected Set<Tracker> trackersWaitingForLoad; //all tracker instances which are waiting for the load future to be completed, or null if empty
 
         protected long lastSentTimestamp = ITileMetadata.TIMESTAMP_BLANK;
 
@@ -358,13 +351,13 @@ public abstract class AbstractTrackerManager implements FTileStorage.Listener, A
             this.pos = pos;
         }
 
-        public void addTracker(@NonNull AbstractTracker tracker) {
+        public void addTracker(@NonNull Tracker tracker) {
             checkState(super.add(tracker), "player %s was already added to entry %s!", tracker, this);
 
             this.addWaitingForLoad(tracker);
         }
 
-        public Entry removeTracker(@NonNull AbstractTracker tracker) {
+        public Entry removeTracker(@NonNull Tracker tracker) {
             checkState(super.remove(tracker), "player %s did not belong to entry %s!", tracker, this);
 
             if (!this.removeWaitingForLoad(tracker)) { //the tracker wasn't waiting for the tile to be loaded, which means it's already been loaded for the tracker and we need to
@@ -386,7 +379,7 @@ public abstract class AbstractTrackerManager implements FTileStorage.Listener, A
             }
         }
 
-        protected void addWaitingForLoad(@NonNull AbstractTracker tracker) {
+        protected void addWaitingForLoad(@NonNull Tracker tracker) {
             if (this.trackersWaitingForLoad == null) {
                 this.trackersWaitingForLoad = new CompactReferenceArraySet<>();
             }
@@ -394,16 +387,16 @@ public abstract class AbstractTrackerManager implements FTileStorage.Listener, A
             checkState(this.trackersWaitingForLoad.add(tracker), "already waiting for load: %s", tracker);
 
             if (this.loadFuture == null) { //loadFuture isn't set, schedule a new one
-                this.loadFuture = AbstractTrackerManager.this.tileProvider.requestLoad(this.pos);
+                this.loadFuture = TrackerManager.this.tileProvider.requestLoad(this.pos);
                 this.loadFuture.thenAccept(this);
             }
         }
 
-        protected boolean isWaitingForLoad(@NonNull AbstractTracker tracker) {
+        protected boolean isWaitingForLoad(@NonNull Tracker tracker) {
             return this.trackersWaitingForLoad != null && this.trackersWaitingForLoad.contains(tracker);
         }
 
-        protected boolean removeWaitingForLoad(@NonNull AbstractTracker tracker) {
+        protected boolean removeWaitingForLoad(@NonNull Tracker tracker) {
             if (this.trackersWaitingForLoad != null && this.trackersWaitingForLoad.remove(tracker)) {
                 if (this.trackersWaitingForLoad.isEmpty()) { //set is now empty, set it to null to save memory
                     this.trackersWaitingForLoad = null;
@@ -427,7 +420,7 @@ public abstract class AbstractTrackerManager implements FTileStorage.Listener, A
             if (Thread.holdsLock(this)) { //the thenAccept callback was fired immediately
                 this.tileLoaded(handle);
             } else { //future was completed from another thread - go through TrackerManager in order to acquire a lock
-                AbstractTrackerManager.this.tileLoaded(handle);
+                TrackerManager.this.tileLoaded(handle);
             }
         }
 
@@ -480,7 +473,7 @@ public abstract class AbstractTrackerManager implements FTileStorage.Listener, A
         }
 
         public void tileDirty() {
-            this.checkDirty(AbstractTrackerManager.this.tileProvider.storage().handleFor(this.pos));
+            this.checkDirty(TrackerManager.this.tileProvider.storage().handleFor(this.pos));
         }
 
         protected void checkDirty(@NonNull ITileHandle handle) {
@@ -499,7 +492,7 @@ public abstract class AbstractTrackerManager implements FTileStorage.Listener, A
             }
 
             //schedule a new update task for this tile
-            this.updateFuture = AbstractTrackerManager.this.tileProvider.requestUpdate(this.pos);
+            this.updateFuture = TrackerManager.this.tileProvider.requestUpdate(this.pos);
             this.updateFuture.thenApply(this);
         }
 
@@ -512,7 +505,7 @@ public abstract class AbstractTrackerManager implements FTileStorage.Listener, A
             if (Thread.holdsLock(this)) { //the thenApply callback was fired immediately
                 this.tileUpdated(handle);
             } else { //future was completed from another thread - go through TrackerManager in order to acquire a lock
-                AbstractTrackerManager.this.tileUpdated(handle);
+                TrackerManager.this.tileUpdated(handle);
             }
             return null;
         }

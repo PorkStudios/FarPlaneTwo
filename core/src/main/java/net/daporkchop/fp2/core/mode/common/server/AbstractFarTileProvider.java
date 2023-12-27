@@ -39,7 +39,7 @@ import net.daporkchop.fp2.core.engine.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.core.engine.api.server.storage.FTileStorage;
 import net.daporkchop.fp2.core.engine.tile.ITileHandle;
 import net.daporkchop.fp2.core.mode.common.server.storage.DefaultTileStorage;
-import net.daporkchop.fp2.core.mode.common.server.tracking.AbstractTrackerManager;
+import net.daporkchop.fp2.core.engine.server.tracking.TrackerManager;
 import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
 import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
 import net.daporkchop.fp2.core.server.event.TickEndEvent;
@@ -75,7 +75,7 @@ public abstract class AbstractFarTileProvider implements IFarTileProvider {
 
     protected final TileCoordLimits coordLimits;
 
-    protected final AbstractTrackerManager trackerManager;
+    protected final TrackerManager trackerManager;
 
     protected final Scheduler<PriorityTask, ITileHandle> scheduler; //TODO: make this global rather than per-mode and per-dimension
 
@@ -116,7 +116,7 @@ public abstract class AbstractFarTileProvider implements IFarTileProvider {
                     PriorityTask.approxComparator());
 
             //create the tracker manager
-            this.trackerManager = this.createTracker();
+            this.trackerManager = new TrackerManager(this);
 
             //register self to listen for events
             //TODO: figure out why i was registering this to the global event bus?
@@ -144,7 +144,7 @@ public abstract class AbstractFarTileProvider implements IFarTileProvider {
         //try-with-resources to ensure that everything is closed
         try (FTileStorage storage = this.storage;
              Scheduler<PriorityTask, ITileHandle> scheduler = this.scheduler;
-             AbstractTrackerManager trackerManager = this.trackerManager) {
+             TrackerManager trackerManager = this.trackerManager) {
 
             if (this.open) { //the provider has been fully opened, we should unregister ourself from the event bus and flush all the queues
                 fp2().eventBus().unregister(this);
@@ -167,8 +167,6 @@ public abstract class AbstractFarTileProvider implements IFarTileProvider {
         fp2().log().trace("Shutting down storage in world '%s'", this.world.id());
         this.storage.close();*/
     }
-
-    protected abstract AbstractTrackerManager createTracker();
 
     protected abstract boolean anyVanillaTerrainExistsAt(@NonNull TilePos pos);
 

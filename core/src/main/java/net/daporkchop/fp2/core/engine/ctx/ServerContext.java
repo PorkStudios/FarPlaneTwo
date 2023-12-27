@@ -27,7 +27,7 @@ import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.core.engine.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.engine.tile.TileSnapshot;
-import net.daporkchop.fp2.core.mode.common.server.tracking.AbstractTracker;
+import net.daporkchop.fp2.core.engine.server.tracking.Tracker;
 import net.daporkchop.fp2.core.network.packet.debug.server.SPacketDebugUpdateStatistics;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketTileData;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUnloadTile;
@@ -55,7 +55,7 @@ public class ServerContext implements IFarServerContext {
     protected final IFarLevelServer world;
     protected final IFarTileProvider tileProvider;
 
-    protected final AbstractTracker tracker;
+    protected final Tracker tracker;
 
     protected final Map<TilePos, Optional<TileSnapshot>> sendQueue = DirectTilePosAccess.newPositionKeyedTreeMap();
 

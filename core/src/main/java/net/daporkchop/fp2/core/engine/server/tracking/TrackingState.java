@@ -19,22 +19,48 @@
 
 package net.daporkchop.fp2.core.engine.server.tracking;
 
+import lombok.Data;
 import lombok.NonNull;
+import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.engine.api.ctx.IFarServerContext;
-import net.daporkchop.fp2.core.engine.api.server.IFarTileProvider;
-import net.daporkchop.fp2.core.mode.common.server.tracking.AbstractTracker;
-import net.daporkchop.fp2.core.mode.common.server.tracking.AbstractTrackerManager;
+import net.daporkchop.lib.math.vector.Vec3d;
+
+import static net.daporkchop.fp2.core.debug.FP2Debug.*;
+import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 
 /**
+ * Immutable container with the information required for an {@link TrackerManager} implementation to know which tiles to load for a given player.
+ *
  * @author DaPorkchop_
  */
-public class VoxelTrackerManager extends AbstractTrackerManager {
-    public VoxelTrackerManager(@NonNull IFarTileProvider tileProvider) {
-        super(tileProvider);
+@Data
+public class TrackingState {
+    public static TrackingState createDefault(@NonNull IFarServerContext context, int shift) {
+        Vec3d pos = context.player().fp2_IFarPlayer_position();
+        FP2Config config = context.config();
+
+        return new TrackingState(pos.x(), pos.y(), pos.z(),
+                asrRound(config.cutoffDistance(), shift),
+                FP2_DEBUG && !config.debug().levelZeroTracking() ? 1 : 0,
+                config.maxLevels());
     }
 
-    @Override
-    protected AbstractTracker createTrackerFor(@NonNull IFarServerContext context) {
-        return new VoxelTracker(this, context);
+    protected final double x;
+    protected final double y;
+    protected final double z;
+
+    protected final int cutoff;
+
+    protected final int minLevel;
+    protected final int maxLevel;
+
+    /**
+     * Checks whether or not this state tracks the given level.
+     *
+     * @param level the level to check
+     * @return whether or not this state tracks the given level
+     */
+    public final boolean hasLevel(int level) {
+        return level >= this.minLevel && level < this.maxLevel;
     }
 }

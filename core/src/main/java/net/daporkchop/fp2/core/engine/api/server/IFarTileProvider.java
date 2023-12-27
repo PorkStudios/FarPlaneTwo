@@ -27,7 +27,7 @@ import net.daporkchop.fp2.core.engine.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.core.engine.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.core.engine.api.server.gen.IFarScaler;
 import net.daporkchop.fp2.core.engine.api.server.storage.FTileStorage;
-import net.daporkchop.fp2.core.mode.common.server.tracking.AbstractTrackerManager;
+import net.daporkchop.fp2.core.engine.server.tracking.TrackerManager;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 
 import java.io.Closeable;
@@ -61,9 +61,9 @@ public interface IFarTileProvider extends Closeable {
     IFarScaler scaler();
 
     /**
-     * @return the {@link AbstractTrackerManager} used by this world
+     * @return the {@link TrackerManager} used by this world
      */
-    AbstractTrackerManager trackerManager();
+    TrackerManager trackerManager();
 
     /**
      * @return the {@link FTileStorage} used by this world

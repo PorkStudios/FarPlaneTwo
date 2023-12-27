@@ -17,7 +17,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.mode.common.server.tracking;
+package net.daporkchop.fp2.core.engine.server.tracking;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
@@ -41,7 +41,11 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 
+import static java.lang.Math.*;
 import static net.daporkchop.fp2.core.FP2Core.*;
+import static net.daporkchop.fp2.core.engine.EngineConstants.*;
+import static net.daporkchop.fp2.core.util.math.MathUtil.*;
+import static net.daporkchop.lib.common.math.PMath.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
@@ -51,39 +55,53 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * This provides the generic functionality for scheduling tracker updates, manages the queue of tiles to be loaded and schedules loads for new tiles as necessary.
  *
  * @author DaPorkchop_
- * @see AbstractTrackerManager
+ * @see TrackerManager
  */
-public abstract class AbstractTracker {
-    protected final AbstractTrackerManager manager;
+public final class Tracker {
+    /**
+     * The squared distance a player must move from their previous position in order to trigger a tracking update.
+     * <p>
+     * The default value of {@code (VT_VOXELS / 2)²} is based on the equivalent value of {@code 64} (which is {@code (CHUNK_SIZE / 2)²}) used by vanilla.
+     */
+    private static final double UPDATE_TRIGGER_DISTANCE_SQUARED = sq(T_VOXELS >> 1);
 
-    protected final IFarServerContext context;
-    protected final TileCoordLimits coordLimits;
+    private static boolean overlaps(int x0, int y0, int z0, int x1, int y1, int z1, int radius) {
+        int dx = abs(x0 - x1);
+        int dy = abs(y0 - y1);
+        int dz = abs(z0 - z1);
+        return dx <= radius && dy <= radius && dz <= radius;
+    }
+
+    private final TrackerManager manager;
+
+    private final IFarServerContext context;
+    private final TileCoordLimits coordLimits;
 
     /**
      * The actual queue of positions to load.
      * <p>
      * May only be accessed while holding this tracker's lock. All operations other than polling additionally require that the queue be paused.
      */
-    protected final RecyclingArrayDeque<TilePos> queuedPositions = new RecyclingArrayDeque<>();
+    private final RecyclingArrayDeque<TilePos> queuedPositions = new RecyclingArrayDeque<>();
 
     /**
      * The set of positions which are loaded.
      */
-    protected final Set<TilePos> loadedPositions;
-    protected final Set<TilePos> waitingPositions = ConcurrentHashMap.newKeySet();
-    protected final Queue<TilePos> doneWaitingPositions = new ConcurrentLinkedQueue<>();
+    private final Set<TilePos> loadedPositions;
+    private final Set<TilePos> waitingPositions = ConcurrentHashMap.newKeySet();
+    private final Queue<TilePos> doneWaitingPositions = new ConcurrentLinkedQueue<>();
 
     //these are using a single object reference instead of flattened fields to allow the value to be replaced atomically. to ensure coherent access to the values,
     // readers must take care never to dereference the fields more than once.
-    protected volatile TrackingState lastState;
-    protected volatile TrackingState nextState;
+    private volatile TrackingState lastState;
+    private volatile TrackingState nextState;
 
-    protected final ReentrantLock queuePausedLock = new ReentrantLock();
-    protected volatile boolean closed = false;
+    private final ReentrantLock queuePausedLock = new ReentrantLock();
+    private volatile boolean closed = false;
 
-    protected long lastUpdateTime;
+    private long lastUpdateTime;
 
-    public AbstractTracker(@NonNull AbstractTrackerManager manager, @NonNull IFarServerContext context) {
+    public Tracker(@NonNull TrackerManager manager, @NonNull IFarServerContext context) {
         this.manager = manager;
 
         this.context = context;
@@ -113,7 +131,7 @@ public abstract class AbstractTracker {
     /**
      * Actually runs a tracker update. Called from the {@link #manager}'s update scheduler.
      */
-    protected void doUpdate() {
+    void doUpdate() {
         if (this.closed) { //the tracker has been closed, exit
             return;
         }
@@ -159,7 +177,7 @@ public abstract class AbstractTracker {
         this.updateWaiting();
     }
 
-    protected void updateState(TrackingState lastState, @NonNull TrackingState nextState, @NonNull Set<TilePos> untrackingPositions) {
+    private void updateState(TrackingState lastState, @NonNull TrackingState nextState, @NonNull Set<TilePos> untrackingPositions) {
         long startTime = System.nanoTime();
 
         if (lastState != null) { //if lastState exists, we can diff the positions (which is faster than iterating over all of them)
@@ -190,7 +208,7 @@ public abstract class AbstractTracker {
     /**
      * @return whether or not the load queue is currently paused
      */
-    protected boolean isQueuePaused() {
+    private boolean isQueuePaused() {
         return this.queuePausedLock.isLocked();
     }
 
@@ -199,7 +217,7 @@ public abstract class AbstractTracker {
      * <p>
      * {@link #unpauseQueue()} must be called at some point after calling this method, otherwise tile loading will stop.
      */
-    protected void pauseQueue() { //synchronizing is, in fact, critical to making this work (i think)
+    private void pauseQueue() { //synchronizing is, in fact, critical to making this work (i think)
         assert !Thread.holdsLock(this) : "current thread may not hold a lock";
 
         synchronized (this) {
@@ -210,7 +228,7 @@ public abstract class AbstractTracker {
     /**
      * Unpauses the load queue, allowing waiting positions to be added again.
      */
-    protected void unpauseQueue() {
+    private void unpauseQueue() {
         assert !Thread.holdsLock(this) : "current thread must hold this tracker's lock";
         assert this.isQueuePaused() : "queue must be paused";
         assert this.queuePausedLock.isHeldByCurrentThread() : "queue must be paused by the current thread";
@@ -223,7 +241,7 @@ public abstract class AbstractTracker {
      * <p>
      * The queue must be paused (using {@link #pauseQueue()}) when this method is called.
      */
-    protected void clearWaiting() {
+    private void clearWaiting() {
         assert this.isQueuePaused() : "queue must be paused";
 
         //move completed positions from waitingPositions to loadedPositions
@@ -249,7 +267,7 @@ public abstract class AbstractTracker {
     /**
      * Mark completed tiles as loaded, and replaces them by beginning to wait on new positions from the queue (if possible).
      */
-    protected void updateWaiting() {
+    private void updateWaiting() {
         if (Thread.holdsLock(this)) { //this thread already holds this tracker's lock! to avoid recursive invocations to this.manager.beginTracking(), we'll schedule a call
             //  to doUpdate() from the tracker executor, which will eventually call updateWaiting() again.
             this.manager.scheduler().schedule(this);
@@ -322,7 +340,7 @@ public abstract class AbstractTracker {
      * @param snapshot a snapshot of the tile data
      */
     @CalledFromAnyThread
-    protected void notifyChanged(@BorrowOwnership @NonNull ITileSnapshot snapshot) {
+    void notifyChanged(@BorrowOwnership @NonNull ITileSnapshot snapshot) {
         try {
             this.context.sendTile(uncheckedCast(snapshot.retain()));
 
@@ -348,7 +366,7 @@ public abstract class AbstractTracker {
      * @param pos the position of the tile which was unloaded
      */
     @CalledFromAnyThread
-    protected void notifyUnloaded(@NonNull TilePos pos) {
+    void notifyUnloaded(@NonNull TilePos pos) {
         this.context.sendTileUnload(pos);
     }
 
@@ -408,7 +426,9 @@ public abstract class AbstractTracker {
      * @param context the {@link IFarServerContext} which we are tracking for
      * @return a new {@link TrackingState}
      */
-    protected abstract TrackingState currentState(@NonNull IFarServerContext context);
+    private TrackingState currentState(@NonNull IFarServerContext context) {
+        return TrackingState.createDefault(context, T_SHIFT);
+    }
 
     /**
      * Checks whether or not the difference between two given {@link TrackingState}s is sufficiently drastic to warrant triggering a tracking update.
@@ -417,7 +437,12 @@ public abstract class AbstractTracker {
      * @param newState the new {@link TrackingState}
      * @return whether or not a tracking update should be triggered
      */
-    protected abstract boolean shouldTriggerUpdate(@NonNull TrackingState oldState, @NonNull TrackingState newState);
+    private boolean shouldTriggerUpdate(@NonNull TrackingState oldState, @NonNull TrackingState newState) {
+        return oldState.cutoff() != newState.cutoff()
+               || oldState.minLevel() != newState.minLevel()
+               || oldState.maxLevel() != newState.maxLevel()
+               || sq(oldState.x() - newState.x()) + sq(oldState.y() - newState.y()) + sq(oldState.z() - newState.z()) >= UPDATE_TRIGGER_DISTANCE_SQUARED;
+    }
 
     /**
      * Enumerates every tile position visible in the given {@link TrackingState}.
@@ -425,7 +450,34 @@ public abstract class AbstractTracker {
      * @param state    the {@link TrackingState}
      * @param callback a callback function which should be called once for every visible tile position
      */
-    protected abstract void allPositions(@NonNull TrackingState state, @NonNull Consumer<TilePos> callback);
+    private void allPositions(@NonNull TrackingState state, @NonNull Consumer<TilePos> callback) {
+        final int playerX = floorI(state.x());
+        final int playerY = floorI(state.y());
+        final int playerZ = floorI(state.z());
+
+        for (int lvl = state.minLevel(); lvl < state.maxLevel(); lvl++) {
+            final int baseX = asrRound(playerX, T_SHIFT + lvl);
+            final int baseY = asrRound(playerY, T_SHIFT + lvl);
+            final int baseZ = asrRound(playerZ, T_SHIFT + lvl);
+
+            TilePos min = this.coordLimits.min(lvl);
+            TilePos max = this.coordLimits.max(lvl);
+            int minX = max(baseX - state.cutoff(), min.x());
+            int minY = max(baseY - state.cutoff(), min.y());
+            int minZ = max(baseZ - state.cutoff(), min.z());
+            int maxX = min(baseX + state.cutoff(), max.x() - 1);
+            int maxY = min(baseY + state.cutoff(), max.y() - 1);
+            int maxZ = min(baseZ + state.cutoff(), max.z() - 1);
+
+            for (int x = minX; x <= maxX; x++) {
+                for (int y = minY; y <= maxY; y++) {
+                    for (int z = minZ; z <= maxZ; z++) {
+                        callback.accept(new TilePos(lvl, x, y, z));
+                    }
+                }
+            }
+        }
+    }
 
     /**
      * Computes the tile positions whose visibility changed between two given {@link TrackingState}s.
@@ -435,7 +487,71 @@ public abstract class AbstractTracker {
      * @param added    a callback function which should be called once for every tile position which was not visible in the old state but is now visible
      * @param removed  a callback function which should be called once for every tile position which was visible in the old state but is no longer visible
      */
-    protected abstract void deltaPositions(@NonNull TrackingState oldState, @NonNull TrackingState newState, @NonNull Consumer<TilePos> added, @NonNull Consumer<TilePos> removed);
+    private void deltaPositions(@NonNull TrackingState oldState, @NonNull TrackingState newState, @NonNull Consumer<TilePos> added, @NonNull Consumer<TilePos> removed) {
+        final int oldPlayerX = floorI(oldState.x());
+        final int oldPlayerY = floorI(oldState.y());
+        final int oldPlayerZ = floorI(oldState.z());
+        final int newPlayerX = floorI(newState.x());
+        final int newPlayerY = floorI(newState.y());
+        final int newPlayerZ = floorI(newState.z());
+
+        for (int lvl = min(oldState.minLevel(), newState.minLevel()); lvl < max(oldState.maxLevel(), newState.maxLevel()); lvl++) {
+            final int oldBaseX = asrRound(oldPlayerX, T_SHIFT + lvl);
+            final int oldBaseY = asrRound(oldPlayerY, T_SHIFT + lvl);
+            final int oldBaseZ = asrRound(oldPlayerZ, T_SHIFT + lvl);
+            final int newBaseX = asrRound(newPlayerX, T_SHIFT + lvl);
+            final int newBaseY = asrRound(newPlayerY, T_SHIFT + lvl);
+            final int newBaseZ = asrRound(newPlayerZ, T_SHIFT + lvl);
+
+            if (oldState.hasLevel(lvl) && newState.hasLevel(lvl) && oldState.cutoff() == newState.cutoff()
+                && oldBaseX == newBaseX && oldBaseY == newBaseY && oldBaseZ == newBaseZ) { //nothing changed, skip this level
+                continue;
+            }
+
+            TilePos min = this.coordLimits.min(lvl);
+            TilePos max = this.coordLimits.max(lvl);
+
+            //removed positions
+            if (!newState.hasLevel(lvl) || oldState.hasLevel(lvl)) {
+                int minX = max(oldBaseX - oldState.cutoff(), min.x());
+                int minY = max(oldBaseY - oldState.cutoff(), min.y());
+                int minZ = max(oldBaseZ - oldState.cutoff(), min.z());
+                int maxX = min(oldBaseX + oldState.cutoff(), max.x() - 1);
+                int maxY = min(oldBaseY + oldState.cutoff(), max.y() - 1);
+                int maxZ = min(oldBaseZ + oldState.cutoff(), max.z() - 1);
+
+                for (int x = minX; x <= maxX; x++) {
+                    for (int y = minY; y <= maxY; y++) {
+                        for (int z = minZ; z <= maxZ; z++) {
+                            if (!newState.hasLevel(lvl) || !overlaps(x, y, z, newBaseX, newBaseY, newBaseZ, newState.cutoff())) {
+                                removed.accept(new TilePos(lvl, x, y, z));
+                            }
+                        }
+                    }
+                }
+            }
+
+            //added positions
+            if (!oldState.hasLevel(lvl) || newState.hasLevel(lvl)) {
+                int minX = max(newBaseX - newState.cutoff(), min.x());
+                int minY = max(newBaseY - newState.cutoff(), min.y());
+                int minZ = max(newBaseZ - newState.cutoff(), min.z());
+                int maxX = min(newBaseX + newState.cutoff(), max.x() - 1);
+                int maxY = min(newBaseY + newState.cutoff(), max.y() - 1);
+                int maxZ = min(newBaseZ + newState.cutoff(), max.z() - 1);
+
+                for (int x = minX; x <= maxX; x++) {
+                    for (int y = minY; y <= maxY; y++) {
+                        for (int z = minZ; z <= maxZ; z++) {
+                            if (!oldState.hasLevel(lvl) || !overlaps(x, y, z, oldBaseX, oldBaseY, oldBaseZ, oldState.cutoff())) {
+                                added.accept(new TilePos(lvl, x, y, z));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     /**
      * Checks whether or not the given tile position is visible in the given state.
@@ -444,7 +560,13 @@ public abstract class AbstractTracker {
      * @param pos   the tile position to check
      * @return whether or not the tile position is visible
      */
-    protected abstract boolean isVisible(@NonNull TrackingState state, @NonNull TilePos pos);
+    private boolean isVisible(@NonNull TrackingState state, @NonNull TilePos pos) {
+        return state.hasLevel(pos.level())
+               && this.coordLimits.contains(pos)
+               && abs(pos.x() - asrRound(floorI(state.x()), T_SHIFT + pos.level())) <= state.cutoff()
+               && abs(pos.y() - asrRound(floorI(state.y()), T_SHIFT + pos.level())) <= state.cutoff()
+               && abs(pos.z() - asrRound(floorI(state.z()), T_SHIFT + pos.level())) <= state.cutoff();
+    }
 
     /**
      * Gets a {@link Comparator} which can be used for sorting the tile positions visible in the given {@link TrackingState} by their load priority.
@@ -452,5 +574,22 @@ public abstract class AbstractTracker {
      * @param state the {@link TrackingState}
      * @return a {@link Comparator} for sorting visible tile positions
      */
-    protected abstract Comparator<TilePos> comparatorFor(@NonNull TrackingState state);
+    private Comparator<TilePos> comparatorFor(@NonNull TrackingState state) {
+        class TilePosAndComparator extends TilePos implements Comparator<TilePos> {
+            public TilePosAndComparator(int level, int x, int y, int z) {
+                super(level, x, y, z);
+            }
+
+            @Override
+            public int compare(TilePos o1, TilePos o2) {
+                int d;
+                if ((d = o1.level() - o2.level()) != 0) {
+                    return d;
+                }
+                return Integer.compare(this.manhattanDistance(o1), this.manhattanDistance(o2));
+            }
+        }
+
+        return new TilePosAndComparator(0, asrRound(floorI(state.x()), T_SHIFT), asrRound(floorI(state.y()), T_SHIFT), asrRound(floorI(state.z()), T_SHIFT));
+    }
 }
