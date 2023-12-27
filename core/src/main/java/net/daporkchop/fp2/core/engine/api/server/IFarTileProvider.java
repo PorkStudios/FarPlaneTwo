@@ -17,16 +17,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.mode.api.server;
+package net.daporkchop.fp2.core.engine.api.server;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.engine.TileCoordLimits;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.tile.ITileHandle;
-import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
-import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
-import net.daporkchop.fp2.core.mode.api.server.gen.IFarScaler;
-import net.daporkchop.fp2.core.mode.api.server.storage.FTileStorage;
+import net.daporkchop.fp2.core.engine.api.server.gen.IFarGeneratorExact;
+import net.daporkchop.fp2.core.engine.api.server.gen.IFarGeneratorRough;
+import net.daporkchop.fp2.core.engine.api.server.gen.IFarScaler;
+import net.daporkchop.fp2.core.engine.api.server.storage.FTileStorage;
 import net.daporkchop.fp2.core.mode.common.server.tracking.AbstractTrackerManager;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 

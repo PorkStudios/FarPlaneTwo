@@ -35,7 +35,7 @@ import net.daporkchop.fp2.api.storage.internal.FStorageInternal;
 import net.daporkchop.fp2.core.engine.EngineConstants;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.TilePosCodec;
-import net.daporkchop.fp2.core.mode.api.server.storage.FTileStorage;
+import net.daporkchop.fp2.core.engine.api.server.storage.FTileStorage;
 import net.daporkchop.fp2.core.engine.tile.ITileHandle;
 import net.daporkchop.fp2.core.mode.common.server.AbstractFarTileProvider;
 import net.daporkchop.fp2.core.util.GlobalAllocators;

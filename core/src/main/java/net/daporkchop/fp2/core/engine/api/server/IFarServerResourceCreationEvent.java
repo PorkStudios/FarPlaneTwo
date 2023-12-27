@@ -17,26 +17,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.mode.api.server.gen;
+package net.daporkchop.fp2.core.engine.api.server;
 
-import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
+import net.daporkchop.fp2.api.event.ReturningEvent;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 
 /**
- * Extracts height and color information from a world for use by a rendering mode.
+ * Fired when a new {@link R} needs to be created for a given {@link IFarLevelServer}.
  * <p>
- * Once initialized, instances of this class are expected to be safely usable by multiple concurrent threads.
+ * Handlers should return a {@link R}, or nothing if they do not support the world type.
  *
+ * @param <R> the resource type
  * @author DaPorkchop_
  */
-public interface IFarGenerator {
+public interface IFarServerResourceCreationEvent<R> extends ReturningEvent<R> {
     /**
-     * @return the {@link IFarLevelServer world} that this generator generates tiles in
+     * @return the {@link IFarLevelServer} which a {@link R} will be created for
      */
     IFarLevelServer world();
-
-    /**
-     * @return the {@link IFarTileProvider tile provider} that this generator generates tiles for
-     */
-    IFarTileProvider provider();
 }

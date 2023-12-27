@@ -20,7 +20,7 @@
 package net.daporkchop.fp2.core.engine.client;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
+import net.daporkchop.fp2.core.engine.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.mode.common.client.AbstractFarRenderer;
 import net.daporkchop.fp2.core.mode.common.client.strategy.IFarRenderStrategy;
 

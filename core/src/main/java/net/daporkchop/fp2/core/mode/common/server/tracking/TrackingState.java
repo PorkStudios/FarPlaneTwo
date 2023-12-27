@@ -22,7 +22,7 @@ package net.daporkchop.fp2.core.mode.common.server.tracking;
 import lombok.Data;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.core.mode.api.ctx.IFarServerContext;
+import net.daporkchop.fp2.core.engine.api.ctx.IFarServerContext;
 import net.daporkchop.lib.math.vector.Vec3d;
 
 import static net.daporkchop.fp2.core.debug.FP2Debug.*;

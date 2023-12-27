@@ -17,7 +17,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.mode.api.server.storage;
+package net.daporkchop.fp2.core.engine.api.server.storage;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.api.storage.external.FStorageItem;

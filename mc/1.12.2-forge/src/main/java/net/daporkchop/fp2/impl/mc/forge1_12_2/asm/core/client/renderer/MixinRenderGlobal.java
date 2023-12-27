@@ -21,7 +21,7 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.core.client.renderer;
 
 import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.engine.client.VoxelRenderer;
-import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
+import net.daporkchop.fp2.core.engine.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.client.renderer.IMixinRenderGlobal;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.client.TerrainRenderingBlockedTracker1_12_2;
 import net.minecraft.client.Minecraft;

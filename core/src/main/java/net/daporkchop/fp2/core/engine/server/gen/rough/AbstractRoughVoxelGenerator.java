@@ -20,8 +20,8 @@
 package net.daporkchop.fp2.core.engine.server.gen.rough;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
-import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
+import net.daporkchop.fp2.core.engine.api.server.IFarTileProvider;
+import net.daporkchop.fp2.core.engine.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.core.engine.TileData;
 import net.daporkchop.fp2.core.engine.Tile;
 import net.daporkchop.fp2.core.engine.server.gen.AbstractVoxelGenerator;

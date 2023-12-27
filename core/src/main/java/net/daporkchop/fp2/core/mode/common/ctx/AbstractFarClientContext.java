@@ -24,7 +24,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.engine.client.VoxelRenderer;
-import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
+import net.daporkchop.fp2.core.engine.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.engine.client.FarTileCache;
 import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 

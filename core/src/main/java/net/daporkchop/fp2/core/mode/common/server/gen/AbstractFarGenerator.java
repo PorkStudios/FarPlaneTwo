@@ -24,8 +24,8 @@ import lombok.NonNull;
 import net.daporkchop.fp2.api.world.registry.FExtendedBiomeRegistryData;
 import net.daporkchop.fp2.api.world.registry.FExtendedStateRegistryData;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
-import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
-import net.daporkchop.fp2.core.mode.api.server.gen.IFarGenerator;
+import net.daporkchop.fp2.core.engine.api.server.IFarTileProvider;
+import net.daporkchop.fp2.core.engine.api.server.gen.IFarGenerator;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 
 /**

@@ -21,7 +21,7 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cwg.generator.voxel;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.api.world.level.BlockLevelConstants;
-import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
+import net.daporkchop.fp2.core.engine.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.engine.TileData;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.Tile;

@@ -20,7 +20,7 @@
 package net.daporkchop.fp2.core.engine.server.gen.exact;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
+import net.daporkchop.fp2.core.engine.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 
 /**

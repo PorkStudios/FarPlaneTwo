@@ -17,53 +17,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.mode.api.ctx;
+package net.daporkchop.fp2.core.engine.api.ctx;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
-import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.core.engine.client.VoxelRenderer;
-import net.daporkchop.fp2.core.engine.client.FarTileCache;
-import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
+import net.daporkchop.fp2.api.world.level.FLevel;
+import net.daporkchop.fp2.core.util.threading.workergroup.WorkerManager;
 
 /**
- * A client-side context for a rendering session in a {@link IFarLevelClient}.
+ * Provides access to additional fp2 information in a level.
  *
  * @author DaPorkchop_
  */
-public interface IFarClientContext extends AutoCloseable {
+public interface IFarLevel extends FLevel {
     /**
-     * @return the world
+     * @return the {@link WorkerManager} used by this level
      */
-    IFarLevelClient level();
-
-    /**
-     * @return a cache for tiles used by this context
-     */
-    FarTileCache tileCache();
-
-    /**
-     * @return the renderer currently used by this context
-     */
-    VoxelRenderer renderer();
-
-    /**
-     * @return the config currently being used
-     */
-    FP2Config config();
-
-    /**
-     * Called whenever the player's config is changed.
-     *
-     * @param config the new config
-     */
-    @CalledFromAnyThread
-    void notifyConfigChange(@NonNull FP2Config config);
-
-    /**
-     * Closes this context, releasing any allocated resources.
-     */
-    @CalledFromAnyThread
-    @Override
-    void close();
+    WorkerManager workerManager();
 }

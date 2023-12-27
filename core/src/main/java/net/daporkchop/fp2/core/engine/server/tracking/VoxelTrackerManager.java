@@ -20,8 +20,8 @@
 package net.daporkchop.fp2.core.engine.server.tracking;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.core.mode.api.ctx.IFarServerContext;
-import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
+import net.daporkchop.fp2.core.engine.api.ctx.IFarServerContext;
+import net.daporkchop.fp2.core.engine.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.mode.common.server.tracking.AbstractTracker;
 import net.daporkchop.fp2.core.mode.common.server.tracking.AbstractTrackerManager;
 

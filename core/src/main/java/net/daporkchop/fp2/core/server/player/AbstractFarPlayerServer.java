@@ -22,7 +22,7 @@ package net.daporkchop.fp2.core.server.player;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.engine.ctx.VoxelServerContext;
-import net.daporkchop.fp2.core.mode.api.ctx.IFarServerContext;
+import net.daporkchop.fp2.core.engine.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.core.network.packet.debug.client.CPacketDebugDropAllTiles;
 import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionBegin;

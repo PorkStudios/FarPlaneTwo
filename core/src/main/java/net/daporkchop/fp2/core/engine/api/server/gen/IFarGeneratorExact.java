@@ -17,7 +17,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.mode.api.server.gen;
+package net.daporkchop.fp2.core.engine.api.server.gen;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.api.world.level.FBlockLevel;
@@ -26,8 +26,8 @@ import net.daporkchop.fp2.core.engine.DirectTilePosAccess;
 import net.daporkchop.fp2.core.engine.Tile;
 import net.daporkchop.fp2.core.engine.TileCoordLimits;
 import net.daporkchop.fp2.core.engine.TilePos;
-import net.daporkchop.fp2.core.mode.api.server.IFarServerResourceCreationEvent;
-import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
+import net.daporkchop.fp2.core.engine.api.server.IFarServerResourceCreationEvent;
+import net.daporkchop.fp2.core.engine.api.server.IFarTileProvider;
 
 import java.util.Collection;
 import java.util.Optional;

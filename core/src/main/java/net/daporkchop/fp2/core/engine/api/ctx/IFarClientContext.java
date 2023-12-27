@@ -17,22 +17,53 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.mode.api.server;
+package net.daporkchop.fp2.core.engine.api.ctx;
 
-import net.daporkchop.fp2.api.event.ReturningEvent;
-import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
+import lombok.NonNull;
+import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
+import net.daporkchop.fp2.core.config.FP2Config;
+import net.daporkchop.fp2.core.engine.client.VoxelRenderer;
+import net.daporkchop.fp2.core.engine.client.FarTileCache;
+import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 
 /**
- * Fired when a new {@link R} needs to be created for a given {@link IFarLevelServer}.
- * <p>
- * Handlers should return a {@link R}, or nothing if they do not support the world type.
+ * A client-side context for a rendering session in a {@link IFarLevelClient}.
  *
- * @param <R> the resource type
  * @author DaPorkchop_
  */
-public interface IFarServerResourceCreationEvent<R> extends ReturningEvent<R> {
+public interface IFarClientContext extends AutoCloseable {
     /**
-     * @return the {@link IFarLevelServer} which a {@link R} will be created for
+     * @return the world
      */
-    IFarLevelServer world();
+    IFarLevelClient level();
+
+    /**
+     * @return a cache for tiles used by this context
+     */
+    FarTileCache tileCache();
+
+    /**
+     * @return the renderer currently used by this context
+     */
+    VoxelRenderer renderer();
+
+    /**
+     * @return the config currently being used
+     */
+    FP2Config config();
+
+    /**
+     * Called whenever the player's config is changed.
+     *
+     * @param config the new config
+     */
+    @CalledFromAnyThread
+    void notifyConfigChange(@NonNull FP2Config config);
+
+    /**
+     * Closes this context, releasing any allocated resources.
+     */
+    @CalledFromAnyThread
+    @Override
+    void close();
 }
