@@ -27,8 +27,7 @@ import net.daporkchop.fp2.core.client.world.AbstractWorldClient;
 import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
-import net.daporkchop.fp2.core.engine.VoxelRenderMode;
-import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.core.engine.ctx.VoxelClientContext;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.network.packet.debug.server.SPacketDebugUpdateStatistics;
 import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
@@ -112,15 +111,14 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
         checkState(!this.sessionOpen, "a session is already open!");
         this.sessionOpen = true;
 
-        IFarRenderMode mode = this.modeFor(this.config);
-        this.fp2().log().info("beginning session with mode %s", mode);
+        this.fp2().log().info("beginning session");
 
-        if (mode != null) {
+        if (this.config != null) {
             AbstractWorldClient.COORD_LIMITS_HACK.set(packet.coordLimits());
             try {
                 IFarLevelClient activeLevel = this.loadActiveLevel();
                 try {
-                    this.context = mode.clientContext(activeLevel, this.config);
+                    this.context = new VoxelClientContext(activeLevel, this.config);
                 } catch (Throwable t) { //something went wrong, try to unload active level again
                     try {
                         ((AbstractWorldClient<?, ?, ?, ?, ?>) this.world()).unloadLevel(activeLevel.id());
@@ -184,11 +182,8 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
         this.fp2().log().info("server notified merged config update: %s", this.config);
 
         if (this.context != null) {
-            if (this.modeFor(this.config) == this.context.mode()) {
-                this.context.notifyConfigChange(packet.config());
-            } else {
-                this.fp2().log().warn("render mode was switched while a session is active!");
-            }
+            checkState(this.config != null, "server sent null config update while a session is active!");
+            this.context.notifyConfigChange(this.config);
         }
     }
 
@@ -264,11 +259,6 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
     @Override
     public FP2Config config() {
         return this.config;
-    }
-
-    @Deprecated
-    protected IFarRenderMode modeFor(FP2Config config) {
-        return config == null ? null : VoxelRenderMode.INSTANCE;
     }
 
     @CalledFromAnyThread

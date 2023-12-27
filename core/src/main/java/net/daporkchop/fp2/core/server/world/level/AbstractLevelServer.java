@@ -29,8 +29,6 @@ import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.api.world.level.FLevelServer;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.fp2.core.FP2Core;
-import net.daporkchop.fp2.core.engine.VoxelRenderMode;
-import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.server.event.GetCoordinateLimitsEvent;
 import net.daporkchop.fp2.core.server.event.GetExactFBlockLevelEvent;
@@ -39,11 +37,7 @@ import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
 import net.daporkchop.fp2.core.world.level.AbstractLevel;
 
 import java.util.Arrays;
-import java.util.NoSuchElementException;
 import java.util.Optional;
-import java.util.function.BiConsumer;
-
-import static net.daporkchop.fp2.core.FP2Core.*;
 
 /**
  * Base implementation of {@link FLevelServer}.
@@ -100,21 +94,8 @@ public abstract class AbstractLevelServer<F extends FP2Core,
     }
 
     @Override
-    public IFarTileProvider tileProviderFor(@NonNull IFarRenderMode mode) throws NoSuchElementException {
-        if (mode != VoxelRenderMode.INSTANCE) {
-            throw new NoSuchElementException("cannot get tile provider for invalid mode: " + mode);
-        }
-        return this.loadedTileProvider;
-    }
-
-    @Override
     public IFarTileProvider tileProvider() {
         return this.loadedTileProvider;
-    }
-
-    @Override
-    public void forEachTileProvider(@NonNull BiConsumer<? super IFarRenderMode, ? super IFarTileProvider> action) {
-        action.accept(VoxelRenderMode.INSTANCE, this.loadedTileProvider);
     }
 
     /**

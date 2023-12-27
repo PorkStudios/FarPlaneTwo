@@ -24,7 +24,6 @@ import lombok.NonNull;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.engine.DirectTilePosAccess;
 import net.daporkchop.fp2.core.engine.TilePos;
-import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.engine.tile.TileSnapshot;
@@ -57,7 +56,6 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 public abstract class AbstractFarServerContext implements IFarServerContext {
     protected final IFarPlayerServer player;
     protected final IFarLevelServer world;
-    protected final IFarRenderMode mode;
     protected final IFarTileProvider tileProvider;
 
     protected final AbstractTracker tracker;
@@ -70,13 +68,12 @@ public abstract class AbstractFarServerContext implements IFarServerContext {
 
     private int debugLastUpdateSent;
 
-    public AbstractFarServerContext(@NonNull IFarPlayerServer player, @NonNull IFarLevelServer world, @NonNull FP2Config config, @NonNull IFarRenderMode mode) {
+    public AbstractFarServerContext(@NonNull IFarPlayerServer player, @NonNull IFarLevelServer world, @NonNull FP2Config config) {
         this.player = player;
         this.world = world;
-        this.mode = mode;
         this.config = config;
 
-        this.tileProvider = world.tileProviderFor(mode);
+        this.tileProvider = world.tileProvider();
         this.tracker = this.tileProvider.trackerManager().beginTracking(this);
     }
 

@@ -21,8 +21,7 @@ package net.daporkchop.fp2.core.server.player;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.core.engine.VoxelRenderMode;
-import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
+import net.daporkchop.fp2.core.engine.ctx.VoxelServerContext;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.core.network.packet.debug.client.CPacketDebugDropAllTiles;
 import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
@@ -48,7 +47,6 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
 
     protected IFarLevelServer world;
 
-    protected IFarRenderMode mode;
     protected IFarServerContext context;
 
     protected boolean sessionOpen;
@@ -76,7 +74,7 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
     protected void handleDebug(@NonNull CPacketDebugDropAllTiles packet) {
         this.world.workerManager().rootExecutor().execute(() -> {
             this.fp2().log().info("Dropping all tiles");
-            this.world.forEachTileProvider((mode, tileProvider) -> tileProvider.trackerManager().dropAllTiles());
+            this.world.tileProvider().trackerManager().dropAllTiles();
         });
     }
 
@@ -100,20 +98,17 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
             return;
         }
 
-        IFarRenderMode mode = mergedConfig == null ? null : VoxelRenderMode.INSTANCE;
-
-        if (this.mode == mode) { //render mode hasn't changed
+        if ((this.mergedConfig != null) == (mergedConfig != null)) { //the merged config hasn't changed: we're either preserving the already open session, or the session will remain closed
             this.updateMergedConfig(mergedConfig);
 
             if (this.sessionOpen) { //the session is active, we should notify the currently active context that the config has changed
                 this.context.notifyConfigChange(mergedConfig);
             }
-        } else { //render mode changed: end current session (if any), then set the current mode and begin a new session
+        } else { //either the currently open session needs to be closed, or we need to open a new session
             if (this.sessionOpen) {
                 this.endSession();
             }
 
-            this.mode = mode;
             this.updateMergedConfig(mergedConfig);
 
             if (this.canBeginSession()) {
@@ -129,8 +124,7 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
 
     protected boolean canBeginSession() {
         return this.world != null //player is in a world
-               && this.mergedConfig != null //both server and client have set their config
-               && this.mode != null; //a valid render mode has been selected
+               && this.mergedConfig != null; //both server and client have set their config
     }
 
     @CalledFromServerThread
@@ -151,10 +145,10 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
         checkState(!this.sessionOpen, "a session is already open!");
         this.sessionOpen = true;
 
-        if (this.mode != null) {
+        if (this.mergedConfig != null) {
             this.fp2_IFarPlayer_sendPacket(new SPacketSessionBegin().coordLimits(this.world.coordLimits()));
 
-            this.context = this.mode.serverContext(this, this.world, this.mergedConfig);
+            this.context = new VoxelServerContext(this, this.world, this.mergedConfig);
         }
     }
 

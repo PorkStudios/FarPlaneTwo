@@ -21,7 +21,6 @@ package net.daporkchop.fp2.core.mode.common.client.strategy;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.client.render.RenderInfo;
-import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.common.client.ICullingStrategy;
 import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutput;
 import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutputStorage;
@@ -43,8 +42,6 @@ import net.daporkchop.lib.common.util.exception.AlreadyReleasedException;
  * @author DaPorkchop_
  */
 public interface IFarRenderStrategy<BO extends IBakeOutput, DB extends DrawBinding, DC extends DrawCommand> extends RefCounted {
-    IFarRenderMode mode();
-
     ICullingStrategy cullingStrategy();
 
     GL gl();

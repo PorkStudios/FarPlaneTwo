@@ -35,7 +35,6 @@ import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;
 import net.daporkchop.fp2.core.client.shader.ShaderMacros;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.engine.EngineConstants;
-import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.common.client.AbstractFarRenderer;
 import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutput;
 import net.daporkchop.fp2.core.mode.common.client.index.IRenderIndex;
@@ -69,7 +68,6 @@ public abstract class AbstractRenderStrategy<BO extends IBakeOutput, DB extends 
 
     protected final AbstractFarRenderer farRenderer;
     protected final LevelRenderer levelRenderer;
-    protected final IFarRenderMode mode;
     protected final GL gl;
 
     protected final AttributeFormat<GlobalUniformAttributes> uniformFormat;
@@ -90,7 +88,6 @@ public abstract class AbstractRenderStrategy<BO extends IBakeOutput, DB extends 
     public AbstractRenderStrategy(@NonNull AbstractFarRenderer farRenderer) {
         this.farRenderer = farRenderer;
         this.levelRenderer = farRenderer.levelRenderer();
-        this.mode = farRenderer.mode();
         this.gl = farRenderer.gl();
 
         this.uniformFormat = this.gl.createAttributeFormat(GlobalUniformAttributes.class).useFor(AttributeUsage.UNIFORM).build();

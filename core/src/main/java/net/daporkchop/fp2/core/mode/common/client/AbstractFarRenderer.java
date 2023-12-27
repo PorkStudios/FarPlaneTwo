@@ -25,7 +25,6 @@ import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.client.render.LevelRenderer;
 import net.daporkchop.fp2.core.client.render.RenderInfo;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
-import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.mode.common.client.strategy.IFarRenderStrategy;
 import net.daporkchop.fp2.gl.GL;
@@ -48,7 +47,6 @@ public abstract class AbstractFarRenderer extends AbstractReleasable {
     protected final GL gl;
 
     protected final IFarClientContext context;
-    protected final IFarRenderMode mode;
 
     protected final BakeManager bakeManager;
 
@@ -56,7 +54,6 @@ public abstract class AbstractFarRenderer extends AbstractReleasable {
 
     public AbstractFarRenderer(@NonNull IFarClientContext context) {
         this.context = context;
-        this.mode = context.mode();
 
         this.levelRenderer = context.level().renderer();
         this.gl = this.levelRenderer.gl();

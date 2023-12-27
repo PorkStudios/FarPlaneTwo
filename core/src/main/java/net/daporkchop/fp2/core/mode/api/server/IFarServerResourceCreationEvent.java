@@ -20,7 +20,6 @@
 package net.daporkchop.fp2.core.mode.api.server;
 
 import net.daporkchop.fp2.api.event.ReturningEvent;
-import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 
 /**

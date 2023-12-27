@@ -21,7 +21,6 @@ package net.daporkchop.fp2.core.engine.ctx;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
 import net.daporkchop.fp2.core.mode.common.ctx.AbstractFarClientContext;
 import net.daporkchop.fp2.core.engine.client.VoxelRenderer;
@@ -30,8 +29,8 @@ import net.daporkchop.fp2.core.engine.client.VoxelRenderer;
  * @author DaPorkchop_
  */
 public class VoxelClientContext extends AbstractFarClientContext {
-    public VoxelClientContext(@NonNull IFarLevelClient level, @NonNull FP2Config config, @NonNull IFarRenderMode mode) {
-        super(level, config, mode);
+    public VoxelClientContext(@NonNull IFarLevelClient level, @NonNull FP2Config config) {
+        super(level, config);
     }
 
     @Override

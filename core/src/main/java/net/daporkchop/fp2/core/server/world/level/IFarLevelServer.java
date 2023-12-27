@@ -19,47 +19,25 @@
 
 package net.daporkchop.fp2.core.server.world.level;
 
-import lombok.NonNull;
 import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.fp2.api.world.level.FLevelServer;
-import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarLevel;
 import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
 import net.daporkchop.fp2.core.server.world.TerrainGeneratorInfo;
 
 import java.nio.file.Path;
-import java.util.NoSuchElementException;
-import java.util.function.BiConsumer;
 
 /**
  * @author DaPorkchop_
  */
 public interface IFarLevelServer extends IFarLevel, FLevelServer {
     /**
-     * Gets the {@link IFarTileProvider} used by the given {@link IFarRenderMode} in this level.
-     *
-     * @param mode the {@link IFarRenderMode}
-     * @return the {@link IFarTileProvider} used by the given {@link IFarRenderMode} in this level
-     * @throws NoSuchElementException if no {@link IFarTileProvider} is registered for the given render mode (i.e. the given render mode is invalid)
-     */
-    @Deprecated
-    IFarTileProvider tileProviderFor(@NonNull IFarRenderMode mode) throws NoSuchElementException;
-
-    /**
      * Gets the {@link IFarTileProvider} used in this level.
      *
      * @return the {@link IFarTileProvider} used in this level
      */
     IFarTileProvider tileProvider();
-
-    /**
-     * Runs the given action on every {@link IFarTileProvider}.
-     *
-     * @param action the action
-     */
-    @Deprecated
-    void forEachTileProvider(@NonNull BiConsumer<? super IFarRenderMode, ? super IFarTileProvider> action);
 
     /**
      * @return the level's root directory

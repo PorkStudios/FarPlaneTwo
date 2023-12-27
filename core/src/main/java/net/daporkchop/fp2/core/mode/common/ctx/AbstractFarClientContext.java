@@ -24,7 +24,6 @@ import lombok.NonNull;
 import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.engine.client.VoxelRenderer;
-import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.engine.client.FarTileCache;
 import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
@@ -38,7 +37,6 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @Getter
 public abstract class AbstractFarClientContext implements IFarClientContext {
-    protected final IFarRenderMode mode;
     protected final IFarLevelClient level;
     protected final FarTileCache tileCache;
 
@@ -47,9 +45,8 @@ public abstract class AbstractFarClientContext implements IFarClientContext {
 
     protected boolean closed = false;
 
-    public AbstractFarClientContext(@NonNull IFarLevelClient level, @NonNull FP2Config config, @NonNull IFarRenderMode mode) {
+    public AbstractFarClientContext(@NonNull IFarLevelClient level, @NonNull FP2Config config) {
         this.level = level;
-        this.mode = mode;
         this.tileCache = new FarTileCache();
 
         this.notifyConfigChange(config);

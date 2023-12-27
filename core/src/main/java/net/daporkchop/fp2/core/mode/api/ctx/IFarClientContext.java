@@ -23,21 +23,15 @@ import lombok.NonNull;
 import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.engine.client.VoxelRenderer;
-import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.engine.client.FarTileCache;
 import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 
 /**
- * A client-side context for a specific {@link IFarRenderMode} in a {@link IFarLevelClient}.
+ * A client-side context for a rendering session in a {@link IFarLevelClient}.
  *
  * @author DaPorkchop_
  */
 public interface IFarClientContext extends AutoCloseable {
-    /**
-     * @return the render mode
-     */
-    IFarRenderMode mode();
-
     /**
      * @return the world
      */

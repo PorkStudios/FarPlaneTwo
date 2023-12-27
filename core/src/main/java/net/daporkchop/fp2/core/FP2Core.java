@@ -27,7 +27,6 @@ import lombok.SneakyThrows;
 import net.daporkchop.fp2.api.FP2;
 import net.daporkchop.fp2.api.event.FEventBus;
 import net.daporkchop.fp2.api.event.FEventHandler;
-import net.daporkchop.fp2.api.event.generic.FRegisterEvent;
 import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.gui.GuiContext;
@@ -35,9 +34,6 @@ import net.daporkchop.fp2.core.client.gui.GuiScreen;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.event.AbstractChangedEvent;
 import net.daporkchop.fp2.core.event.EventBus;
-import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.core.engine.EngineConstants;
-import net.daporkchop.fp2.core.engine.VoxelRenderMode;
 import net.daporkchop.fp2.core.network.RegisterPacketsEvent;
 import net.daporkchop.fp2.core.network.packet.debug.client.CPacketDebugDropAllTiles;
 import net.daporkchop.fp2.core.network.packet.debug.server.SPacketDebugUpdateStatistics;
@@ -171,12 +167,6 @@ public abstract class FP2Core implements FP2 {
      * @param message the message
      */
     public abstract void unsupported(@NonNull String message);
-
-    @FEventHandler
-    protected void registerDefaultRenderModes(FRegisterEvent<IFarRenderMode> event) {
-        event.registry()
-                .addLast(EngineConstants.NAME, VoxelRenderMode.INSTANCE);
-    }
 
     @FEventHandler
     protected void registerPackets(@NonNull RegisterPacketsEvent event) {
