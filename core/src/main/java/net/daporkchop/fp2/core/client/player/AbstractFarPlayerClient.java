@@ -27,7 +27,7 @@ import net.daporkchop.fp2.core.client.world.AbstractWorldClient;
 import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
-import net.daporkchop.fp2.core.engine.ctx.VoxelClientContext;
+import net.daporkchop.fp2.core.engine.ctx.ClientContext;
 import net.daporkchop.fp2.core.engine.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.network.packet.debug.server.SPacketDebugUpdateStatistics;
 import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
@@ -118,7 +118,7 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
             try {
                 IFarLevelClient activeLevel = this.loadActiveLevel();
                 try {
-                    this.context = new VoxelClientContext(activeLevel, this.config);
+                    this.context = new ClientContext(activeLevel, this.config);
                 } catch (Throwable t) { //something went wrong, try to unload active level again
                     try {
                         ((AbstractWorldClient<?, ?, ?, ?, ?>) this.world()).unloadLevel(activeLevel.id());

@@ -89,7 +89,7 @@ public abstract class AbstractTracker {
         this.context = context;
         this.coordLimits = manager.tileProvider().coordLimits();
 
-        this.loadedPositions = DirectTilePosAccess.newPositionSet();
+        this.loadedPositions = DirectTilePosAccess.newPositionHashSet();
     }
 
     /**
@@ -140,7 +140,7 @@ public abstract class AbstractTracker {
                     this.clearWaiting();
 
                     {
-                        Set<TilePos> untrackingPositions = DirectTilePosAccess.newPositionSet();
+                        Set<TilePos> untrackingPositions = DirectTilePosAccess.newPositionHashSet();
                         //actually update the tracking state (this is synchronized)
                         this.updateState(lastState, nextState, untrackingPositions);
 
@@ -236,7 +236,7 @@ public abstract class AbstractTracker {
         }
 
         //remove the rest of the waiting positions, stop tracking them and re-add them to the load queue
-        Set<TilePos> waitingPositions = DirectTilePosAccess.clonePositionsAsSet(this.waitingPositions);
+        Set<TilePos> waitingPositions = DirectTilePosAccess.clonePositionsAsHashSet(this.waitingPositions);
         this.waitingPositions.clear();
 
         //stop tracking all positions in the set
@@ -257,7 +257,7 @@ public abstract class AbstractTracker {
         }
 
         int targetLoadQueueSize = fp2().globalConfig().performance().terrainThreads();
-        List<TilePos> positions = DirectTilePosAccess.newPositionList();
+        List<TilePos> positions = DirectTilePosAccess.newPositionArrayList();
 
         do {
             if (this.isQueuePaused()) { //the tracker update thread has specifically requested to pause queue polling, so we shouldn't do anything here
@@ -372,7 +372,7 @@ public abstract class AbstractTracker {
             //untrack all positions
             //  (using temporary set to avoid CME)
             {
-                Set<TilePos> tmp = DirectTilePosAccess.newPositionSet();
+                Set<TilePos> tmp = DirectTilePosAccess.newPositionHashSet();
 
                 tmp.addAll(this.waitingPositions);
                 tmp.addAll(this.loadedPositions);

@@ -70,7 +70,7 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
 
         //TODO: figure out whether or not this is actually correct? i don't think this properly accounts for every possible edge case, rather it just happens to work for the current
         // values of CACHE_MIN/CACHE_MAX...
-        Set<TilePos> out = DirectTilePosAccess.newPositionSet();
+        Set<TilePos> out = DirectTilePosAccess.newPositionHashSet();
         for (int tileX = max(asrCeil(dataAvailableBB.minX() - CACHE_MIN, T_SHIFT), min.x()); tileX < min(asrCeil(dataAvailableBB.maxX() - CACHE_MAX, T_SHIFT), max.x()); tileX++) {
             for (int tileY = max(asrCeil(dataAvailableBB.minY() - CACHE_MIN, T_SHIFT), min.y()); tileY < min(asrCeil(dataAvailableBB.maxY() - CACHE_MAX, T_SHIFT), max.y()); tileY++) {
                 for (int tileZ = max(asrCeil(dataAvailableBB.minZ() - CACHE_MIN, T_SHIFT), min.z()); tileZ < min(asrCeil(dataAvailableBB.maxZ() - CACHE_MAX, T_SHIFT), max.z()); tileZ++) {

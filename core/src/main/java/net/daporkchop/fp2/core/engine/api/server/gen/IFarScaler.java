@@ -51,7 +51,7 @@ public interface IFarScaler extends IFarGenerator {
      * @see #outputs(TilePos)
      */
     default Collection<TilePos> uniqueOutputs(@NonNull Iterable<TilePos> srcPositions) {
-        Set<TilePos> set = DirectTilePosAccess.newPositionSet();
+        Set<TilePos> set = DirectTilePosAccess.newPositionHashSet();
 
         //get all positions and add them to the set (this discards duplicates)
         srcPositions.forEach(pos -> set.addAll(this.outputs(pos)));
@@ -75,7 +75,7 @@ public interface IFarScaler extends IFarGenerator {
      * @see #inputs(TilePos)
      */
     default Collection<TilePos> uniqueInputs(@NonNull Iterable<TilePos> dstPositions) {
-        Set<TilePos> set = DirectTilePosAccess.newPositionSet();
+        Set<TilePos> set = DirectTilePosAccess.newPositionHashSet();
 
         //get all positions and add them to the set (this discards duplicates)
         dstPositions.forEach(pos -> set.addAll(this.inputs(pos)));

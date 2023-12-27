@@ -29,10 +29,11 @@ import net.daporkchop.fp2.core.util.math.geometry.Volume;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -260,7 +261,7 @@ public class DirectTilePosAccess {
     /**
      * @return a new {@link Set} which can store positions of type {@link TilePos}
      */
-    public static Set<TilePos> newPositionSet() {
+    public static Set<TilePos> newPositionHashSet() {
         return new TilePosHashSet();
     }
 
@@ -270,14 +271,14 @@ public class DirectTilePosAccess {
      * @param src the {@link Collection} to clone
      * @return a new {@link Set} which can store positions of type {@link TilePos} and contains all the positions from the given {@link Collection}
      */
-    public static Set<TilePos> clonePositionsAsSet(@NonNull Collection<TilePos> src) {
+    public static Set<TilePos> clonePositionsAsHashSet(@NonNull Collection<TilePos> src) {
         return new TilePosHashSet(src);
     }
 
     /**
      * @return a new {@link List} which can store positions of type {@link TilePos}
      */
-    public static List<TilePos> newPositionList() {
+    public static List<TilePos> newPositionArrayList() {
         return new TilePosArrayList();
     }
 
@@ -285,7 +286,7 @@ public class DirectTilePosAccess {
      * @param initialCapacity the initial size of the list
      * @return a new {@link List} which can store positions of type {@link TilePos}
      */
-    public static List<TilePos> newPositionList(int initialCapacity) {
+    public static List<TilePos> newPositionArrayList(int initialCapacity) {
         return new TilePosArrayList(initialCapacity);
     }
 
@@ -295,7 +296,7 @@ public class DirectTilePosAccess {
      * @param src the {@link Collection} to clone
      * @return a new {@link List} which can store positions of type {@link TilePos} and contains all the positions from the given {@link Collection}
      */
-    public static List<TilePos> clonePositionsAsList(@NonNull Collection<TilePos> src) {
+    public static List<TilePos> clonePositionsAsArrayList(@NonNull Collection<TilePos> src) {
         return new TilePosArrayList(src);
     }
 
@@ -303,7 +304,7 @@ public class DirectTilePosAccess {
      * @param <V> the type of value to store in the {@link Map}
      * @return a new {@link Map} which uses {@link TilePos} as a key
      */
-    public static <V> Map<TilePos, V> newPositionKeyedMap() {
+    public static <V> Map<TilePos, V> newPositionKeyedHashMap() {
         return new Object2ObjectOpenHashMap<>();
     }
 
@@ -312,15 +313,23 @@ public class DirectTilePosAccess {
      * @param <V> the type of value to store in the {@link Map}
      * @return a new {@link Map} which uses {@link TilePos} as a key
      */
-    public static <V> Map<TilePos, V> newPositionKeyedMap(int initialCapacity) {
+    public static <V> Map<TilePos, V> newPositionKeyedHashMap(int initialCapacity) {
         return new Object2ObjectOpenHashMap<>(initialCapacity);
+    }
+
+    /**
+     * @param <V> the type of value to store in the {@link SortedMap}
+     * @return a new {@link SortedMap} which uses {@link TilePos} as a key
+     */
+    public static <V> SortedMap<TilePos, V> newPositionKeyedTreeMap() {
+        return new TreeMap<>();
     }
 
     /**
      * @param <V> the type of value to store in the {@link ConcurrentMap}
      * @return a new {@link ConcurrentMap} which uses {@link TilePos} as a key
      */
-    public static <V> ConcurrentMap<TilePos, V> newPositionKeyedConcurrentMap() {
+    public static <V> ConcurrentMap<TilePos, V> newPositionKeyedConcurrentHashMap() {
         return new ConcurrentHashMap<>();
     }
 
@@ -329,7 +338,7 @@ public class DirectTilePosAccess {
      * @param <V> the type of value to store in the {@link ConcurrentMap}
      * @return a new {@link ConcurrentMap} which uses {@link TilePos} as a key
      */
-    public static <V> ConcurrentMap<TilePos, V> newPositionKeyedConcurrentMap(int initialCapacity) {
+    public static <V> ConcurrentMap<TilePos, V> newPositionKeyedConcurrentHashMap(int initialCapacity) {
         return new ConcurrentHashMap<>(initialCapacity);
     }
 }

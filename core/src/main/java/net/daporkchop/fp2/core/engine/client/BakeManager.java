@@ -67,8 +67,8 @@ public final class BakeManager extends AbstractReleasable implements FarTileCach
     private final Scheduler<TilePos, Void> bakeScheduler;
     private final TileCoordLimits coordLimits;
 
-    private final Map<TilePos, Optional<IBakeOutput>> pendingDataUpdates = DirectTilePosAccess.newPositionKeyedConcurrentMap();
-    private final Map<TilePos, Boolean> pendingRenderableUpdates = DirectTilePosAccess.newPositionKeyedConcurrentMap();
+    private final Map<TilePos, Optional<IBakeOutput>> pendingDataUpdates = DirectTilePosAccess.newPositionKeyedConcurrentHashMap();
+    private final Map<TilePos, Boolean> pendingRenderableUpdates = DirectTilePosAccess.newPositionKeyedConcurrentHashMap();
     private final AtomicBoolean isBulkUpdateQueued = new AtomicBoolean();
     private final Semaphore dataUpdatesLock = new Semaphore(fp2().globalConfig().performance().maxBakesProcessedPerFrame());
 

@@ -92,7 +92,7 @@ public interface IFarGeneratorExact extends IFarGenerator {
             if (optionalBatchGroup.isPresent()) {
                 if (set == null) { //create set if it doesn't exist
                     //clone the input collection to ensure that all of the original input positions will be included
-                    set = DirectTilePosAccess.clonePositionsAsSet(positions);
+                    set = DirectTilePosAccess.clonePositionsAsHashSet(positions);
                 }
 
                 //add all positions to set

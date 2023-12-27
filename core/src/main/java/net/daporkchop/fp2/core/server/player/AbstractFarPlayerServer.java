@@ -21,7 +21,7 @@ package net.daporkchop.fp2.core.server.player;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.core.engine.ctx.VoxelServerContext;
+import net.daporkchop.fp2.core.engine.ctx.ServerContext;
 import net.daporkchop.fp2.core.engine.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.core.network.packet.debug.client.CPacketDebugDropAllTiles;
 import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
@@ -148,7 +148,7 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
         if (this.mergedConfig != null) {
             this.fp2_IFarPlayer_sendPacket(new SPacketSessionBegin().coordLimits(this.world.coordLimits()));
 
-            this.context = new VoxelServerContext(this, this.world, this.mergedConfig);
+            this.context = new ServerContext(this, this.world, this.mergedConfig);
         }
     }
 

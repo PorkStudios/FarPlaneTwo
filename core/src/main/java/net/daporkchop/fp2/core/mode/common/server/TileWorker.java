@@ -310,7 +310,7 @@ public class TileWorker implements SharedFutureScheduler.WorkFunction<PriorityTa
         private final int level;
 
         private final Set<TilePos> allPositions = new ObjectOpenHashSet<>();
-        private final List<TilePos> positions = DirectTilePosAccess.newPositionList();
+        private final List<TilePos> positions = DirectTilePosAccess.newPositionArrayList();
         private final List<ITileHandle> handles = new ArrayList<>();
         private final LongList minimumTimestamps = new LongArrayList();
 

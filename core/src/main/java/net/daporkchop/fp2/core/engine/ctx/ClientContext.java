@@ -17,26 +17,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.mode.common.ctx;
+package net.daporkchop.fp2.core.engine.ctx;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
 import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.core.engine.client.AbstractFarRenderer;
+import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
 import net.daporkchop.fp2.core.engine.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.engine.client.FarTileCache;
+import net.daporkchop.fp2.core.engine.client.AbstractFarRenderer;
 import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
- * Base implementation of {@link IFarClientContext}.
- *
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractFarClientContext implements IFarClientContext {
+public class ClientContext implements IFarClientContext {
     protected final IFarLevelClient level;
     protected final FarTileCache tileCache;
 
@@ -45,14 +43,20 @@ public abstract class AbstractFarClientContext implements IFarClientContext {
 
     protected boolean closed = false;
 
-    public AbstractFarClientContext(@NonNull IFarLevelClient level, @NonNull FP2Config config) {
+    public ClientContext(@NonNull IFarLevelClient level, @NonNull FP2Config config) {
         this.level = level;
         this.tileCache = new FarTileCache();
 
         this.notifyConfigChange(config);
     }
 
-    protected abstract AbstractFarRenderer renderer0(AbstractFarRenderer old, @NonNull FP2Config config);
+    private AbstractFarRenderer renderer0(AbstractFarRenderer old, @NonNull FP2Config config) {
+        /*if (OFHelper.of_Config_isShaders()) {
+            return old; //TODO: transform feedback renderer
+        } else {*/
+        return old instanceof AbstractFarRenderer.ShaderMultidraw ? old : new AbstractFarRenderer.ShaderMultidraw(this);
+        //}
+    }
 
     @CalledFromAnyThread
     @Override

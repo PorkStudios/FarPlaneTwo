@@ -76,7 +76,7 @@ public abstract class AbstractRenderIndex<BO extends IBakeOutput, DB extends Dra
     public AbstractRenderIndex(@NonNull IFarRenderStrategy<BO, DB, DC> strategy) {
         this.strategy = strategy;
         this.cullingStrategy = this.strategy.cullingStrategy();
-        this.renderablePositions = DirectTilePosAccess.newPositionSet();
+        this.renderablePositions = DirectTilePosAccess.newPositionHashSet();
 
         this.levels = uncheckedCast(Array.newInstance(Level.class, EngineConstants.MAX_LODS));
         for (int level = 0; level < this.levels.length; level++) {

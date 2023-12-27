@@ -17,7 +17,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.mode.common.ctx;
+package net.daporkchop.fp2.core.engine.ctx;
 
 import lombok.Getter;
 import lombok.NonNull;
@@ -32,8 +32,8 @@ import net.daporkchop.fp2.core.network.packet.debug.server.SPacketDebugUpdateSta
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketTileData;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUnloadTile;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUnloadTiles;
-import net.daporkchop.fp2.core.server.player.IFarPlayerServer;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
+import net.daporkchop.fp2.core.server.player.IFarPlayerServer;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
 import net.daporkchop.lib.common.annotation.TransferOwnership;
 
@@ -41,26 +41,23 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.TreeMap;
 import java.util.function.BiFunction;
 
 import static net.daporkchop.fp2.core.debug.FP2Debug.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
- * Base implementation of {@link IFarServerContext}.
- *
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractFarServerContext implements IFarServerContext {
+public class ServerContext implements IFarServerContext {
     protected final IFarPlayerServer player;
     protected final IFarLevelServer world;
     protected final IFarTileProvider tileProvider;
 
     protected final AbstractTracker tracker;
 
-    protected final Map<TilePos, Optional<TileSnapshot>> sendQueue = new TreeMap<>();
+    protected final Map<TilePos, Optional<TileSnapshot>> sendQueue = DirectTilePosAccess.newPositionKeyedTreeMap();
 
     protected FP2Config config;
 
@@ -68,7 +65,7 @@ public abstract class AbstractFarServerContext implements IFarServerContext {
 
     private int debugLastUpdateSent;
 
-    public AbstractFarServerContext(@NonNull IFarPlayerServer player, @NonNull IFarLevelServer world, @NonNull FP2Config config) {
+    public ServerContext(@NonNull IFarPlayerServer player, @NonNull IFarLevelServer world, @NonNull FP2Config config) {
         this.player = player;
         this.world = world;
         this.config = config;
@@ -114,7 +111,7 @@ public abstract class AbstractFarServerContext implements IFarServerContext {
         }
 
         //group queue items by type
-        List<TilePos> unloadedPositions = DirectTilePosAccess.newPositionList();
+        List<TilePos> unloadedPositions = DirectTilePosAccess.newPositionArrayList();
         List<TileSnapshot> loadedSnapshots = new ArrayList<>();
         sendQueueSnapshot.forEach(entry -> {
             if (entry.getValue().isPresent()) { //non-empty optional, the tile is being loaded
