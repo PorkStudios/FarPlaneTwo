@@ -29,7 +29,7 @@
 
 #define _FP2_VEC_MIN_SIZE 128
 
-namespace fp2::simd {
+namespace FP2_ROOT_NAMESPACE { namespace fp2::simd {
     constexpr size_t LANES_32 = _FP2_VEC_SIZE / 32;
     constexpr size_t LANES_64 = _FP2_VEC_SIZE / 64;
     constexpr size_t LANES_32AND64 = _FP2_VEC_MIN_SIZE < _FP2_VEC_SIZE ? LANES_64 : LANES_32;
@@ -167,4 +167,4 @@ public: \
         }
         return out;
     }
-}
+}}

@@ -27,7 +27,7 @@
 #include <cassert>
 #include <immintrin.h>
 
-namespace fp2::cwg::noise {
+namespace FP2_ROOT_NAMESPACE { namespace fp2::cwg::noise {
     /**
      * An array of random vectors used for noise generation.
      *
@@ -431,6 +431,6 @@ namespace fp2::cwg::noise {
 
         return horizontal_add(value);
     }
-}
+}}
 
 #endif //CWG_NOISE_H

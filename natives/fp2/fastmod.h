@@ -6,7 +6,7 @@
 
 #include <cstdint>
 
-namespace fp2 {
+namespace FP2_ROOT_NAMESPACE { namespace fp2 {
     namespace _fastmod {
         template<typename T> constexpr T abs_constexpr(const T val) {
             return val < 0 ? -val : val;
@@ -107,4 +107,4 @@ namespace fp2 {
             return fm._d < 0 ? -tmp : tmp;
         }*/
     };
-}
+}}
