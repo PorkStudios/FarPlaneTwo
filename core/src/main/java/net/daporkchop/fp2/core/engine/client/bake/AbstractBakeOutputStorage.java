@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -17,28 +17,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.mode.common.client.bake;
+package net.daporkchop.fp2.core.engine.client.bake;
 
-import net.daporkchop.lib.common.misc.refcount.RefCounted;
+import net.daporkchop.fp2.gl.draw.list.DrawCommand;
+import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
+import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
 import net.daporkchop.lib.common.util.exception.AlreadyReleasedException;
 
 /**
- * Stores data produced during tile baking while enqueued for insertion into a compatible {@link IBakeOutputStorage}.
+ * Base implementation of {@link IBakeOutputStorage}.
  *
  * @author DaPorkchop_
  */
-public interface IBakeOutput extends RefCounted {
-    /**
-     * @return whether or not this bake output is empty (contains no data)
-     */
-    boolean isEmpty();
-
+public abstract class AbstractBakeOutputStorage<BO extends IBakeOutput, DB extends DrawBinding, DC extends DrawCommand> extends AbstractRefCounted implements IBakeOutputStorage<BO, DB, DC> {
     @Override
-    int refCnt();
-
-    @Override
-    IBakeOutput retain() throws AlreadyReleasedException;
-
-    @Override
-    boolean release() throws AlreadyReleasedException;
+    public IBakeOutputStorage<BO, DB, DC> retain() throws AlreadyReleasedException {
+        super.retain();
+        return this;
+    }
 }

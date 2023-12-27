@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,22 +15,36 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
-package net.daporkchop.fp2.core.mode.common.client;
+package net.daporkchop.fp2.core.engine.client;
+
+import io.netty.buffer.ByteBuf;
+import lombok.experimental.UtilityClass;
 
 /**
- * General-purpose functions for tile culling and selection.
+ * Constant values used throughout the render code.
  *
  * @author DaPorkchop_
  */
-public interface ICullingStrategy {
+@UtilityClass
+public class RenderConstants {
+    public static final int LAYER_SOLID = 0;
+    public static final int LAYER_CUTOUT = LAYER_SOLID + 1;
+    public static final int LAYER_TRANSPARENT = LAYER_CUTOUT + 1;
+
+    public static final int RENDER_PASS_COUNT = LAYER_TRANSPARENT + 1; //the total number of render passes
+
     /**
-     * Checks whether or not the tile at the given off-heap position shouldn't be rendered because it would intersect vanilla terrain.
+     * Emits the indices for drawing a quad.
      *
-     * @param pos the address of the off-heap tile position
-     * @return whether or not the tile at the given off-heap position shouldn't be rendered because it would intersect vanilla terrain
+     * @param indices        the {@link ByteBuf} to write the indices to
+     * @param oppositeCorner the index of the vertex in the corner opposite the provoking vertex
+     * @param c0             the index of one of the edge vertices
+     * @param c1             the index of the other edge vertex
+     * @param provoking      the index of the provoking vertex
      */
-    boolean blocked(long pos);
+    public static void emitQuad(ByteBuf indices, int oppositeCorner, int c0, int c1, int provoking) {
+        indices.writeShortLE(c1).writeShortLE(oppositeCorner).writeShortLE(c0).writeShortLE(provoking);
+    }
 }

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,50 +15,30 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
-package net.daporkchop.fp2.core.mode.common.client.bake.indexed;
+package net.daporkchop.fp2.core.engine.client.bake;
 
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.gl.attribute.AttributeWriter;
-import net.daporkchop.fp2.gl.draw.index.IndexWriter;
-import net.daporkchop.fp2.core.mode.common.client.bake.AbstractBakeOutput;
-import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutput;
-
-import java.util.stream.Stream;
+import net.daporkchop.lib.common.misc.refcount.RefCounted;
+import net.daporkchop.lib.common.util.exception.AlreadyReleasedException;
 
 /**
- * Implementation of {@link IBakeOutput} which contains indexed geometry in multiple render passes.
+ * Stores data produced during tile baking while enqueued for insertion into a compatible {@link IBakeOutputStorage}.
  *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-@Getter
-public class IndexedBakeOutput<SG, SL> extends AbstractBakeOutput {
-    //TODO: this will only store a single value, there's no reason to use an AttributeWriter...
-    @NonNull
-    protected final AttributeWriter<SG> globals;
-
-    @NonNull
-    protected final AttributeWriter<SL> verts;
-
-    @NonNull
-    protected final IndexWriter[] indices;
+public interface IBakeOutput extends RefCounted {
+    /**
+     * @return whether or not this bake output is empty (contains no data)
+     */
+    boolean isEmpty();
 
     @Override
-    protected void doRelease() {
-        this.globals.close();
-        this.verts.close();
-        for (IndexWriter writer : this.indices) {
-            writer.close();
-        }
-    }
+    int refCnt();
 
     @Override
-    public boolean isEmpty() {
-        return this.verts.size() == 0 || Stream.of(this.indices).allMatch(writer -> writer.size() == 0);
-    }
+    IBakeOutput retain() throws AlreadyReleasedException;
+
+    @Override
+    boolean release() throws AlreadyReleasedException;
 }

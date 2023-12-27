@@ -23,7 +23,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
 import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.core.engine.client.VoxelRenderer;
+import net.daporkchop.fp2.core.engine.client.AbstractFarRenderer;
 import net.daporkchop.fp2.core.engine.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.engine.client.FarTileCache;
 import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
@@ -41,7 +41,7 @@ public abstract class AbstractFarClientContext implements IFarClientContext {
     protected final FarTileCache tileCache;
 
     protected FP2Config config;
-    protected VoxelRenderer renderer;
+    protected AbstractFarRenderer renderer;
 
     protected boolean closed = false;
 
@@ -52,7 +52,7 @@ public abstract class AbstractFarClientContext implements IFarClientContext {
         this.notifyConfigChange(config);
     }
 
-    protected abstract VoxelRenderer renderer0(VoxelRenderer old, @NonNull FP2Config config);
+    protected abstract AbstractFarRenderer renderer0(AbstractFarRenderer old, @NonNull FP2Config config);
 
     @CalledFromAnyThread
     @Override
@@ -66,8 +66,8 @@ public abstract class AbstractFarClientContext implements IFarClientContext {
                 return;
             }
 
-            VoxelRenderer oldRenderer = this.renderer;
-            VoxelRenderer newRenderer = this.renderer0(oldRenderer, config);
+            AbstractFarRenderer oldRenderer = this.renderer;
+            AbstractFarRenderer newRenderer = this.renderer0(oldRenderer, config);
             if (oldRenderer != newRenderer) {
                 this.renderer = newRenderer;
                 if (oldRenderer != null) {
@@ -87,7 +87,7 @@ public abstract class AbstractFarClientContext implements IFarClientContext {
         this.level.workerManager().rootExecutor().execute(() -> {
             //try-with-resources to make sure everything gets cleaned up
             try (FarTileCache tileCache = this.tileCache;
-                 VoxelRenderer renderer = this.renderer) {
+                 AbstractFarRenderer renderer = this.renderer) {
                 this.renderer = null;
             }
         });

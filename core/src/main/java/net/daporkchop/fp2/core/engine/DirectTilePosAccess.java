@@ -19,6 +19,7 @@
 
 package net.daporkchop.fp2.core.engine;
 
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.core.client.IFrustum;
@@ -28,8 +29,12 @@ import net.daporkchop.fp2.core.util.math.geometry.Volume;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.fp2.core.engine.EngineConstants.*;
@@ -172,9 +177,9 @@ public class DirectTilePosAccess {
      */
     public static boolean equalsPos(long addr1, long addr2) {
         return _x(addr1) == _x(addr2)
-                && _y(addr1) == _y(addr2)
-                && _z(addr1) == _z(addr2)
-                && _level(addr1) == _level(addr2);
+               && _y(addr1) == _y(addr2)
+               && _z(addr1) == _z(addr2)
+               && _level(addr1) == _level(addr2);
     }
 
     /**
@@ -292,5 +297,39 @@ public class DirectTilePosAccess {
      */
     public static List<TilePos> clonePositionsAsList(@NonNull Collection<TilePos> src) {
         return new TilePosArrayList(src);
+    }
+
+    /**
+     * @param <V> the type of value to store in the {@link Map}
+     * @return a new {@link Map} which uses {@link TilePos} as a key
+     */
+    public static <V> Map<TilePos, V> newPositionKeyedMap() {
+        return new Object2ObjectOpenHashMap<>();
+    }
+
+    /**
+     * @param initialCapacity the initial capacity of the map
+     * @param <V> the type of value to store in the {@link Map}
+     * @return a new {@link Map} which uses {@link TilePos} as a key
+     */
+    public static <V> Map<TilePos, V> newPositionKeyedMap(int initialCapacity) {
+        return new Object2ObjectOpenHashMap<>(initialCapacity);
+    }
+
+    /**
+     * @param <V> the type of value to store in the {@link ConcurrentMap}
+     * @return a new {@link ConcurrentMap} which uses {@link TilePos} as a key
+     */
+    public static <V> ConcurrentMap<TilePos, V> newPositionKeyedConcurrentMap() {
+        return new ConcurrentHashMap<>();
+    }
+
+    /**
+     * @param initialCapacity the initial capacity of the map
+     * @param <V> the type of value to store in the {@link ConcurrentMap}
+     * @return a new {@link ConcurrentMap} which uses {@link TilePos} as a key
+     */
+    public static <V> ConcurrentMap<TilePos, V> newPositionKeyedConcurrentMap(int initialCapacity) {
+        return new ConcurrentHashMap<>(initialCapacity);
     }
 }

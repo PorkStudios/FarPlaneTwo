@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,33 +15,22 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
-package net.daporkchop.fp2.core.mode.common.client;
+package net.daporkchop.fp2.core.engine.client.bake;
 
-import io.netty.buffer.ByteBuf;
-import lombok.experimental.UtilityClass;
+import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
+import net.daporkchop.lib.common.util.exception.AlreadyReleasedException;
 
 /**
- * Constant values used throughout the render code.
+ * Base implementation of {@link IBakeOutput}.
  *
  * @author DaPorkchop_
  */
-@UtilityClass
-public class RenderConstants {
-    public final int RENDER_PASS_COUNT = 3; //the total number of render passes
-
-    /**
-     * Emits the indices for drawing a quad.
-     *
-     * @param indices        the {@link ByteBuf} to write the indices to
-     * @param oppositeCorner the index of the vertex in the corner opposite the provoking vertex
-     * @param c0             the index of one of the edge vertices
-     * @param c1             the index of the other edge vertex
-     * @param provoking      the index of the provoking vertex
-     */
-    public static void emitQuad(ByteBuf indices, int oppositeCorner, int c0, int c1, int provoking) {
-        indices.writeShortLE(c1).writeShortLE(oppositeCorner).writeShortLE(c0).writeShortLE(provoking);
+public abstract class AbstractBakeOutput extends AbstractRefCounted implements IBakeOutput {
+    @Override
+    public IBakeOutput retain() throws AlreadyReleasedException {
+        super.retain();
+        return this;
     }
 }

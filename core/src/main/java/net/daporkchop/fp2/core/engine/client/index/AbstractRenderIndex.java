@@ -17,7 +17,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.mode.common.client.index;
+package net.daporkchop.fp2.core.engine.client.index;
 
 import com.google.common.collect.ImmutableList;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
@@ -30,10 +30,10 @@ import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.DirectTilePosAccess;
 import net.daporkchop.fp2.core.engine.EngineConstants;
 import net.daporkchop.fp2.core.engine.TilePos;
-import net.daporkchop.fp2.core.mode.common.client.ICullingStrategy;
-import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutput;
-import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutputStorage;
-import net.daporkchop.fp2.core.mode.common.client.strategy.IFarRenderStrategy;
+import net.daporkchop.fp2.core.engine.client.ICullingStrategy;
+import net.daporkchop.fp2.core.engine.client.bake.IBakeOutput;
+import net.daporkchop.fp2.core.engine.client.bake.IBakeOutputStorage;
+import net.daporkchop.fp2.core.engine.client.strategy.IFarRenderStrategy;
 import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
 import net.daporkchop.fp2.gl.draw.DrawMode;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
@@ -57,7 +57,7 @@ import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.fp2.core.debug.FP2Debug.*;
-import static net.daporkchop.fp2.core.mode.common.client.RenderConstants.*;
+import static net.daporkchop.fp2.core.engine.client.RenderConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 

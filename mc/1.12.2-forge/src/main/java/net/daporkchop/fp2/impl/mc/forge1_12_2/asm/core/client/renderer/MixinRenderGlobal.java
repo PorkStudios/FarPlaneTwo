@@ -20,7 +20,7 @@
 package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.core.client.renderer;
 
 import net.daporkchop.fp2.core.client.IFrustum;
-import net.daporkchop.fp2.core.engine.client.VoxelRenderer;
+import net.daporkchop.fp2.core.engine.client.AbstractFarRenderer;
 import net.daporkchop.fp2.core.engine.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.client.renderer.IMixinRenderGlobal;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.client.TerrainRenderingBlockedTracker1_12_2;
@@ -107,7 +107,7 @@ public abstract class MixinRenderGlobal implements IMixinRenderGlobal {
     private void fp2_setupTerrain_prepare(Entity viewEntity, double partialTicks, ICamera camera, int frameCount, boolean playerSpectator, CallbackInfo ci) {
         fp2().client().currentPlayer().ifPresent(player -> {
             IFarClientContext context = player.activeContext();
-            VoxelRenderer renderer;
+            AbstractFarRenderer renderer;
             if (context != null && (renderer = context.renderer()) != null) {
                 this.mc.profiler.startSection("fp2_prepare");
                 renderer.prepare((IFrustum) camera);

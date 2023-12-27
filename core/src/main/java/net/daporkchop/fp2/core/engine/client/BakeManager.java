@@ -17,19 +17,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.mode.common.client;
+package net.daporkchop.fp2.core.engine.client;
 
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.core.engine.DirectTilePosAccess;
 import net.daporkchop.fp2.core.engine.Tile;
 import net.daporkchop.fp2.core.engine.TileCoordLimits;
 import net.daporkchop.fp2.core.engine.TilePos;
-import net.daporkchop.fp2.core.engine.client.FarTileCache;
 import net.daporkchop.fp2.core.engine.tile.ITileSnapshot;
-import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutput;
-import net.daporkchop.fp2.core.mode.common.client.bake.IRenderBaker;
-import net.daporkchop.fp2.core.mode.common.client.index.IRenderIndex;
-import net.daporkchop.fp2.core.mode.common.client.strategy.IFarRenderStrategy;
+import net.daporkchop.fp2.core.engine.client.bake.IBakeOutput;
+import net.daporkchop.fp2.core.engine.client.bake.IRenderBaker;
+import net.daporkchop.fp2.core.engine.client.index.IRenderIndex;
+import net.daporkchop.fp2.core.engine.client.strategy.IFarRenderStrategy;
 import net.daporkchop.fp2.core.util.threading.scheduler.NoFutureScheduler;
 import net.daporkchop.fp2.core.util.threading.scheduler.Scheduler;
 import net.daporkchop.lib.common.misc.release.AbstractReleasable;
@@ -43,7 +43,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -56,22 +55,22 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @Getter
-public class BakeManager extends AbstractReleasable implements FarTileCache.Listener, Consumer<TilePos>, Runnable {
-    protected final AbstractFarRenderer renderer;
-    protected final IFarRenderStrategy<?, ?, ?> strategy;
+public final class BakeManager extends AbstractReleasable implements FarTileCache.Listener, Consumer<TilePos>, Runnable {
+    private final AbstractFarRenderer renderer;
+    private final IFarRenderStrategy<?, ?, ?> strategy;
 
-    protected final FarTileCache tileCache;
+    private final FarTileCache tileCache;
 
-    protected final IRenderIndex<?, ?, ?> index;
-    protected final IRenderBaker<?> baker;
+    private final IRenderIndex<?, ?, ?> index;
+    private final IRenderBaker<?> baker;
 
-    protected final Scheduler<TilePos, Void> bakeScheduler;
-    protected final TileCoordLimits coordLimits;
+    private final Scheduler<TilePos, Void> bakeScheduler;
+    private final TileCoordLimits coordLimits;
 
-    protected final Map<TilePos, Optional<IBakeOutput>> pendingDataUpdates = new ConcurrentHashMap<>();
-    protected final Map<TilePos, Boolean> pendingRenderableUpdates = new ConcurrentHashMap<>();
-    protected final AtomicBoolean isBulkUpdateQueued = new AtomicBoolean();
-    protected final Semaphore dataUpdatesLock = new Semaphore(fp2().globalConfig().performance().maxBakesProcessedPerFrame());
+    private final Map<TilePos, Optional<IBakeOutput>> pendingDataUpdates = DirectTilePosAccess.newPositionKeyedConcurrentMap();
+    private final Map<TilePos, Boolean> pendingRenderableUpdates = DirectTilePosAccess.newPositionKeyedConcurrentMap();
+    private final AtomicBoolean isBulkUpdateQueued = new AtomicBoolean();
+    private final Semaphore dataUpdatesLock = new Semaphore(fp2().globalConfig().performance().maxBakesProcessedPerFrame());
 
     public BakeManager(@NonNull AbstractFarRenderer renderer, @NonNull FarTileCache tileCache) {
         this.renderer = renderer;

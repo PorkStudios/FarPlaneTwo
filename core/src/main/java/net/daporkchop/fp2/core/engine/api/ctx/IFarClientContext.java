@@ -22,7 +22,7 @@ package net.daporkchop.fp2.core.engine.api.ctx;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
 import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.core.engine.client.VoxelRenderer;
+import net.daporkchop.fp2.core.engine.client.AbstractFarRenderer;
 import net.daporkchop.fp2.core.engine.client.FarTileCache;
 import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 
@@ -45,7 +45,7 @@ public interface IFarClientContext extends AutoCloseable {
     /**
      * @return the renderer currently used by this context
      */
-    VoxelRenderer renderer();
+    AbstractFarRenderer renderer();
 
     /**
      * @return the config currently being used

@@ -17,15 +17,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.mode.common.client.strategy;
+package net.daporkchop.fp2.core.engine.client.strategy;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.client.render.RenderInfo;
-import net.daporkchop.fp2.core.mode.common.client.ICullingStrategy;
-import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutput;
-import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutputStorage;
-import net.daporkchop.fp2.core.mode.common.client.bake.IRenderBaker;
-import net.daporkchop.fp2.core.mode.common.client.index.IRenderIndex;
+import net.daporkchop.fp2.core.engine.client.ICullingStrategy;
+import net.daporkchop.fp2.core.engine.client.bake.IBakeOutput;
+import net.daporkchop.fp2.core.engine.client.bake.IBakeOutputStorage;
+import net.daporkchop.fp2.core.engine.client.bake.IRenderBaker;
+import net.daporkchop.fp2.core.engine.client.index.IRenderIndex;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;

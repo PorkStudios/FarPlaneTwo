@@ -17,7 +17,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.mode.common.client.bake;
+package net.daporkchop.fp2.core.engine.client.bake;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.engine.Tile;

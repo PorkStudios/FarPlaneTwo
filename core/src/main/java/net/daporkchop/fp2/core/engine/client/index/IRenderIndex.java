@@ -17,7 +17,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.mode.common.client.index;
+package net.daporkchop.fp2.core.engine.client.index;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.client.IFrustum;
@@ -27,7 +27,7 @@ import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
 import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
 import net.daporkchop.fp2.gl.draw.list.DrawCommand;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
-import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutput;
+import net.daporkchop.fp2.core.engine.client.bake.IBakeOutput;
 import net.daporkchop.lib.common.misc.refcount.RefCounted;
 import net.daporkchop.lib.common.util.exception.AlreadyReleasedException;
 

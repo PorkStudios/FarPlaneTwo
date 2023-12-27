@@ -17,7 +17,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.mode.common.client.index;
+package net.daporkchop.fp2.core.engine.client.index;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.client.IFrustum;
@@ -30,9 +30,9 @@ import net.daporkchop.fp2.gl.draw.list.DrawCommand;
 import net.daporkchop.fp2.gl.draw.list.DrawListBuilder;
 import net.daporkchop.fp2.gl.draw.list.selected.JavaSelectedDrawList;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
-import net.daporkchop.fp2.core.mode.common.client.ICullingStrategy;
-import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutput;
-import net.daporkchop.fp2.core.mode.common.client.strategy.IFarRenderStrategy;
+import net.daporkchop.fp2.core.engine.client.ICullingStrategy;
+import net.daporkchop.fp2.core.engine.client.bake.IBakeOutput;
+import net.daporkchop.fp2.core.engine.client.strategy.IFarRenderStrategy;
 
 import java.util.function.IntPredicate;
 

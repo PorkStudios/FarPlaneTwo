@@ -17,7 +17,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.mode.common.client;
+package net.daporkchop.fp2.core.engine.client;
 
 import lombok.Getter;
 import lombok.NonNull;
@@ -26,7 +26,7 @@ import net.daporkchop.fp2.core.client.render.LevelRenderer;
 import net.daporkchop.fp2.core.client.render.RenderInfo;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.api.ctx.IFarClientContext;
-import net.daporkchop.fp2.core.mode.common.client.strategy.IFarRenderStrategy;
+import net.daporkchop.fp2.core.engine.client.strategy.IFarRenderStrategy;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.lib.common.misc.release.AbstractReleasable;
 
@@ -37,12 +37,6 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 @Getter
 public abstract class AbstractFarRenderer extends AbstractReleasable {
-    public static final int LAYER_SOLID = 0;
-    public static final int LAYER_CUTOUT = LAYER_SOLID + 1;
-    public static final int LAYER_TRANSPARENT = LAYER_CUTOUT + 1;
-
-    public static final int LAYERS = LAYER_TRANSPARENT + 1;
-
     protected final LevelRenderer levelRenderer;
     protected final GL gl;
 
@@ -76,20 +70,34 @@ public abstract class AbstractFarRenderer extends AbstractReleasable {
 
     public void prepare(@NonNull IFrustum frustum) {
         this.gl.runCleanup();
-        this.bakeManager.index.select(frustum);
+        this.bakeManager.index().select(frustum);
     }
 
     public void render(@NonNull RenderInfo renderInfo) {
-        this.strategy.render(uncheckedCast(this.bakeManager.index), renderInfo);
+        this.strategy.render(uncheckedCast(this.bakeManager.index()), renderInfo);
     }
 
     public DebugStats.Renderer stats() {
-        return this.bakeManager.index.stats();
+        return this.bakeManager.index().stats();
     }
 
     @Override
     protected void doRelease() {
         this.strategy.release();
         this.bakeManager.release();
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    public static class ShaderMultidraw extends AbstractFarRenderer {
+        public ShaderMultidraw(@NonNull IFarClientContext context) {
+            super(context);
+        }
+
+        @Override
+        protected IFarRenderStrategy<?, ?, ?> strategy0() {
+            return new ShaderBasedVoxelRenderStrategy(this);
+        }
     }
 }

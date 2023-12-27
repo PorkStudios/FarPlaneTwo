@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -17,22 +17,47 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.mode.common.client.bake;
+package net.daporkchop.fp2.core.engine.client.bake.indexed;
 
-import net.daporkchop.fp2.gl.draw.list.DrawCommand;
-import net.daporkchop.fp2.gl.draw.binding.DrawBinding;
-import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
-import net.daporkchop.lib.common.util.exception.AlreadyReleasedException;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.gl.attribute.AttributeWriter;
+import net.daporkchop.fp2.gl.draw.index.IndexWriter;
+import net.daporkchop.fp2.core.engine.client.bake.AbstractBakeOutput;
+import net.daporkchop.fp2.core.engine.client.bake.IBakeOutput;
+
+import java.util.stream.Stream;
 
 /**
- * Base implementation of {@link IBakeOutputStorage}.
+ * Implementation of {@link IBakeOutput} which contains indexed geometry in multiple render passes.
  *
  * @author DaPorkchop_
  */
-public abstract class AbstractBakeOutputStorage<BO extends IBakeOutput, DB extends DrawBinding, DC extends DrawCommand> extends AbstractRefCounted implements IBakeOutputStorage<BO, DB, DC> {
+@RequiredArgsConstructor
+@Getter
+public class IndexedBakeOutput<SG, SL> extends AbstractBakeOutput {
+    //TODO: this will only store a single value, there's no reason to use an AttributeWriter...
+    @NonNull
+    protected final AttributeWriter<SG> globals;
+
+    @NonNull
+    protected final AttributeWriter<SL> verts;
+
+    @NonNull
+    protected final IndexWriter[] indices;
+
     @Override
-    public IBakeOutputStorage<BO, DB, DC> retain() throws AlreadyReleasedException {
-        super.retain();
-        return this;
+    protected void doRelease() {
+        this.globals.close();
+        this.verts.close();
+        for (IndexWriter writer : this.indices) {
+            writer.close();
+        }
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return this.verts.size() == 0 || Stream.of(this.indices).allMatch(writer -> writer.size() == 0);
     }
 }

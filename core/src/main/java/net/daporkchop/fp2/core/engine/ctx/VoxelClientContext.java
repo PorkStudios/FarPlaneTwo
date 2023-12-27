@@ -23,7 +23,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
 import net.daporkchop.fp2.core.mode.common.ctx.AbstractFarClientContext;
-import net.daporkchop.fp2.core.engine.client.VoxelRenderer;
+import net.daporkchop.fp2.core.engine.client.AbstractFarRenderer;
 
 /**
  * @author DaPorkchop_
@@ -34,11 +34,11 @@ public class VoxelClientContext extends AbstractFarClientContext {
     }
 
     @Override
-    protected VoxelRenderer renderer0(VoxelRenderer old, @NonNull FP2Config config) {
+    protected AbstractFarRenderer renderer0(AbstractFarRenderer old, @NonNull FP2Config config) {
         /*if (OFHelper.of_Config_isShaders()) {
             return old; //TODO: transform feedback renderer
         } else {*/
-        return old instanceof VoxelRenderer.ShaderMultidraw ? old : new VoxelRenderer.ShaderMultidraw(this);
+        return old instanceof AbstractFarRenderer.ShaderMultidraw ? old : new AbstractFarRenderer.ShaderMultidraw(this);
         //}
     }
 }

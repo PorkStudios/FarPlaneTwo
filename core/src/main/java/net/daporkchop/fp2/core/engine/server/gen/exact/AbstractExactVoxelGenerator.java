@@ -23,13 +23,13 @@ import lombok.NonNull;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.fp2.api.world.level.GenerationNotAllowedException;
+import net.daporkchop.fp2.core.engine.DirectTilePosAccess;
 import net.daporkchop.fp2.core.engine.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.engine.api.server.gen.IFarGeneratorExact;
 import net.daporkchop.fp2.core.engine.TileData;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.Tile;
 import net.daporkchop.fp2.core.engine.server.gen.AbstractVoxelGenerator;
-import net.daporkchop.fp2.core.engine.util.TilePosHashSet;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.util.GlobalAllocators;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
@@ -70,7 +70,7 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
 
         //TODO: figure out whether or not this is actually correct? i don't think this properly accounts for every possible edge case, rather it just happens to work for the current
         // values of CACHE_MIN/CACHE_MAX...
-        Set<TilePos> out = new TilePosHashSet();
+        Set<TilePos> out = DirectTilePosAccess.newPositionSet();
         for (int tileX = max(asrCeil(dataAvailableBB.minX() - CACHE_MIN, T_SHIFT), min.x()); tileX < min(asrCeil(dataAvailableBB.maxX() - CACHE_MAX, T_SHIFT), max.x()); tileX++) {
             for (int tileY = max(asrCeil(dataAvailableBB.minY() - CACHE_MIN, T_SHIFT), min.y()); tileY < min(asrCeil(dataAvailableBB.maxY() - CACHE_MAX, T_SHIFT), max.y()); tileY++) {
                 for (int tileZ = max(asrCeil(dataAvailableBB.minZ() - CACHE_MIN, T_SHIFT), min.z()); tileZ < min(asrCeil(dataAvailableBB.maxZ() - CACHE_MAX, T_SHIFT), max.z()); tileZ++) {

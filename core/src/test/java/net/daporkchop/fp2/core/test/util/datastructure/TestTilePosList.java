@@ -47,7 +47,7 @@ public class TestTilePosList {
     }
 
     @Test
-    public void testVoxelPosArrayList() {
+    public void testTilePosArrayList() {
         this.testPosList(TilePosArrayList::new, r -> new TilePos(r.nextInt(0, EngineConstants.MAX_LODS), r.nextInt(), r.nextInt(), r.nextInt()));
     }
 

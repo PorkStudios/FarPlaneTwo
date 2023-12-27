@@ -19,30 +19,17 @@
 
 package net.daporkchop.fp2.core.engine.client;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.core.engine.api.ctx.IFarClientContext;
-import net.daporkchop.fp2.core.mode.common.client.AbstractFarRenderer;
-import net.daporkchop.fp2.core.mode.common.client.strategy.IFarRenderStrategy;
-
 /**
+ * General-purpose functions for tile culling and selection.
+ *
  * @author DaPorkchop_
  */
-public abstract class VoxelRenderer extends AbstractFarRenderer {
-    public VoxelRenderer(@NonNull IFarClientContext context) {
-        super(context);
-    }
-
+public interface ICullingStrategy {
     /**
-     * @author DaPorkchop_
+     * Checks whether or not the tile at the given off-heap position shouldn't be rendered because it would intersect vanilla terrain.
+     *
+     * @param pos the address of the off-heap tile position
+     * @return whether or not the tile at the given off-heap position shouldn't be rendered because it would intersect vanilla terrain
      */
-    public static class ShaderMultidraw extends VoxelRenderer {
-        public ShaderMultidraw(@NonNull IFarClientContext context) {
-            super(context);
-        }
-
-        @Override
-        protected IFarRenderStrategy<?, ?, ?> strategy0() {
-            return new ShaderBasedVoxelRenderStrategy(this);
-        }
-    }
+    boolean blocked(long pos);
 }

@@ -17,16 +17,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.mode.common.client.strategy;
+package net.daporkchop.fp2.core.engine.client.strategy;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.core.mode.common.client.AbstractFarRenderer;
-import net.daporkchop.fp2.core.mode.common.client.bake.IBakeOutputStorage;
-import net.daporkchop.fp2.core.mode.common.client.bake.indexed.IndexedBakeOutput;
-import net.daporkchop.fp2.core.mode.common.client.bake.indexed.IndexedBakeOutputStorage;
-import net.daporkchop.fp2.core.mode.common.client.index.CPUCulledRenderIndex;
-import net.daporkchop.fp2.core.mode.common.client.index.GPUCulledRenderIndex;
-import net.daporkchop.fp2.core.mode.common.client.index.IRenderIndex;
+import net.daporkchop.fp2.core.engine.client.AbstractFarRenderer;
+import net.daporkchop.fp2.core.engine.client.bake.IBakeOutputStorage;
+import net.daporkchop.fp2.core.engine.client.bake.indexed.IndexedBakeOutput;
+import net.daporkchop.fp2.core.engine.client.bake.indexed.IndexedBakeOutputStorage;
+import net.daporkchop.fp2.core.engine.client.index.CPUCulledRenderIndex;
+import net.daporkchop.fp2.core.engine.client.index.GPUCulledRenderIndex;
+import net.daporkchop.fp2.core.engine.client.index.IRenderIndex;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
 import net.daporkchop.fp2.gl.draw.binding.DrawBindingBuilder;
@@ -38,7 +38,7 @@ import net.daporkchop.fp2.gl.draw.list.DrawListBuilder;
 import net.daporkchop.lib.common.util.PArrays;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
-import static net.daporkchop.fp2.core.mode.common.client.RenderConstants.*;
+import static net.daporkchop.fp2.core.engine.client.RenderConstants.*;
 
 /**
  * @author DaPorkchop_

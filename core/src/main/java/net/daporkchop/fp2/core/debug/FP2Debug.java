@@ -28,7 +28,7 @@ import net.daporkchop.fp2.core.client.render.TextureUVs;
 import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
-import net.daporkchop.fp2.core.engine.client.VoxelRenderer;
+import net.daporkchop.fp2.core.engine.client.AbstractFarRenderer;
 import net.daporkchop.fp2.core.event.AbstractReloadEvent;
 import net.daporkchop.fp2.core.engine.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.engine.client.FarTileCache;
@@ -142,7 +142,7 @@ public class FP2Debug {
                         list.add("§oNo TileCache active");
                     }
 
-                    VoxelRenderer renderer = context.renderer();
+                    AbstractFarRenderer renderer = context.renderer();
                     if (renderer != null) {
                         DebugStats.Renderer stats = renderer.stats();
                         list.add("Baked Tiles: " + numberFormat.format(stats.bakedTiles()) + "T " + numberFormat.format(stats.bakedTilesWithData()) + "D "
