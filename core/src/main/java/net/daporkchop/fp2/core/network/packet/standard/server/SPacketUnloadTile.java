@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.network.packet.standard.server;
@@ -23,15 +22,13 @@ package net.daporkchop.fp2.core.network.packet.standard.server;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
+import net.daporkchop.fp2.core.engine.TilePos;
+import net.daporkchop.fp2.core.engine.TilePosCodec;
 import net.daporkchop.fp2.core.network.IPacket;
-import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.lib.binary.stream.DataIn;
 import net.daporkchop.lib.binary.stream.DataOut;
 
 import java.io.IOException;
-
-import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
@@ -40,19 +37,15 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 @Setter
 public class SPacketUnloadTile implements IPacket {
     @NonNull
-    protected IFarRenderMode<?, ?> mode;
-    @NonNull
-    protected IFarPos pos;
+    protected TilePos pos;
 
     @Override
     public void read(@NonNull DataIn in) throws IOException {
-        this.mode = IFarRenderMode.REGISTRY.get(in.readVarUTF());
-        this.pos = this.mode.readPos(in);
+        this.pos = TilePosCodec.readPos(in);
     }
 
     @Override
     public void write(@NonNull DataOut out) throws IOException {
-        out.writeVarUTF(this.mode.name());
-        this.mode.writePos(out, uncheckedCast(this.pos));
+        TilePosCodec.writePos(this.pos, out);
     }
 }

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -22,15 +22,13 @@ package net.daporkchop.fp2.core.network.packet.standard.server;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import net.daporkchop.fp2.core.engine.TilePosCodec;
+import net.daporkchop.fp2.core.engine.tile.TileSnapshot;
 import net.daporkchop.fp2.core.network.IPacket;
-import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.core.mode.api.tile.TileSnapshot;
 import net.daporkchop.lib.binary.stream.DataIn;
 import net.daporkchop.lib.binary.stream.DataOut;
 
 import java.io.IOException;
-
-import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
@@ -39,20 +37,16 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 @Setter
 public class SPacketTileData implements IPacket {
     @NonNull
-    protected IFarRenderMode<?, ?> mode;
-    @NonNull
-    protected TileSnapshot<?, ?> tile;
+    protected TileSnapshot tile;
 
     @Override
     public void read(@NonNull DataIn in) throws IOException {
-        this.mode = IFarRenderMode.REGISTRY.get(in.readVarUTF());
-        this.tile = TileSnapshot.readFromNetwork(uncheckedCast(this.mode.readPos(in)), in);
+        this.tile = TileSnapshot.readFromNetwork(TilePosCodec.readPos(in), in);
     }
 
     @Override
     public void write(@NonNull DataOut out) throws IOException {
-        out.writeVarUTF(this.mode.name());
-        this.mode.writePos(out, uncheckedCast(this.tile.pos()));
+        TilePosCodec.writePos(this.tile.pos(), out);
         this.tile.writeForNetwork(out);
         this.tile.release();
     }

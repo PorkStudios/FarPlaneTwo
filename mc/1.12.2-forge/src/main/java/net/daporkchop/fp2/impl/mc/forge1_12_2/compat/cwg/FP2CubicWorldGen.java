@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cwg;
@@ -27,13 +26,7 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
-import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
-import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
-import net.daporkchop.fp2.core.mode.heightmap.HeightmapTile;
-import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
-import net.daporkchop.fp2.core.mode.voxel.VoxelTile;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cwg.generator.heightmap.CWGFlatHeightmapGenerator;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cwg.generator.heightmap.CWGHeightmapGenerator;
+import net.daporkchop.fp2.core.engine.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cwg.generator.voxel.CWGVoxelGenerator;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.Mod;
@@ -73,15 +66,8 @@ public class FP2CubicWorldGen {
             return cubicWorld.isCubicWorld() && cubicWorld.getCubeGenerator() instanceof CustomTerrainGenerator;
         }
 
-        @FEventHandler(name = "cubicworldgen_heightmap_generator_rough_customcubic")
-        public Optional<IFarGeneratorRough<HeightmapPos, HeightmapTile>> createHeightmapGeneratorRoughCustomCubic(IFarGeneratorRough.CreationEvent<HeightmapPos, HeightmapTile> event) {
-            return this.isCustomCubicWorld(event.world())
-                    ? Optional.of(new CWGHeightmapGenerator(event.world(), event.provider()))
-                    : Optional.empty();
-        }
-
-        @FEventHandler(name = "cubicworldgen_voxel_generator_rough_customcubic")
-        public Optional<IFarGeneratorRough<VoxelPos, VoxelTile>> createVoxelGeneratorRoughCustomCubic(IFarGeneratorRough.CreationEvent<VoxelPos, VoxelTile> event) {
+        @FEventHandler(name = "cubicworldgen_generator_rough_customcubic")
+        public Optional<IFarGeneratorRough> createGeneratorRoughCustomCubic(IFarGeneratorRough.CreationEvent event) {
             return this.isCustomCubicWorld(event.world())
                     ? Optional.of(new CWGVoxelGenerator(event.world(), event.provider()))
                     : Optional.empty();
@@ -89,16 +75,9 @@ public class FP2CubicWorldGen {
 
         //FlatCubic rough generators
 
-        protected boolean isFlatCubicWorld(IFarLevelServer world) {
+        private boolean isFlatCubicWorld(IFarLevelServer world) {
             ICubicWorldServer cubicWorld = (ICubicWorldServer) world.implLevel();
             return cubicWorld.isCubicWorld() && cubicWorld.getCubeGenerator() instanceof FlatTerrainProcessor;
-        }
-
-        @FEventHandler(name = "cubicworldgen_heightmap_generator_rough_flatcubic")
-        public Optional<IFarGeneratorRough<HeightmapPos, HeightmapTile>> createHeightmapGeneratorRoughFlatCubic(IFarGeneratorRough.CreationEvent<HeightmapPos, HeightmapTile> event) {
-            return this.isFlatCubicWorld(event.world())
-                    ? Optional.of(new CWGFlatHeightmapGenerator(event.world(), event.provider()))
-                    : Optional.empty();
         }
     }
 }

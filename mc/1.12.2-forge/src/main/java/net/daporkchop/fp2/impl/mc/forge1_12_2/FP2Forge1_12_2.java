@@ -27,7 +27,6 @@ import net.daporkchop.fp2.common.util.exception.ResourceNotFoundException;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.debug.FP2Debug;
-import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
 import net.daporkchop.fp2.core.util.I18n;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.client.FP2Client1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.FastRegistry;
@@ -223,11 +222,6 @@ public class FP2Forge1_12_2 extends FP2Core implements ResourceProvider {
         } else {
             throw new UnsupportedOperationException();
         }
-    }
-
-    @Override
-    public String[] renderModeNames() {
-        return IFarRenderMode.REGISTRY.nameStream().toArray(String[]::new);
     }
 
     @Override

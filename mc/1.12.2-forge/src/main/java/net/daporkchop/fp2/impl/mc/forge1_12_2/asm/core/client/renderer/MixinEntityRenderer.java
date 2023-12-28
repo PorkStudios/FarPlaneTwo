@@ -24,8 +24,8 @@ import net.daporkchop.fp2.core.client.MatrixHelper;
 import net.daporkchop.fp2.core.client.player.IFarPlayerClient;
 import net.daporkchop.fp2.core.client.render.GlobalUniformAttributes;
 import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
-import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
+import net.daporkchop.fp2.core.engine.client.AbstractFarRenderer;
+import net.daporkchop.fp2.core.engine.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.util.GlobalAllocators;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.ATMinecraft1_12;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
@@ -88,8 +88,8 @@ public abstract class MixinEntityRenderer {
         //directly after vanilla CUTOUT pass
 
         fp2().client().currentPlayer().ifPresent(player -> {
-            IFarClientContext<?, ?> context = player.activeContext();
-            IFarRenderer renderer;
+            IFarClientContext context = player.activeContext();
+            AbstractFarRenderer renderer;
             if (context != null && (renderer = context.renderer()) != null) {
                 this.mc.profiler.startSection("fp2_render");
 
@@ -204,7 +204,7 @@ public abstract class MixinEntityRenderer {
                     target = "Lnet/minecraft/client/renderer/EntityRenderer;farPlaneDistance:F",
                     opcode = Opcodes.PUTFIELD))
     private void fp2_setupCameraTransform_increaseFarPlaneDistance(EntityRenderer renderer, float farPlaneDistance) {
-        IFarClientContext<?, ?> context = fp2().client().currentPlayer().map(IFarPlayerClient::activeContext).orElse(null);
+        IFarClientContext context = fp2().client().currentPlayer().map(IFarPlayerClient::activeContext).orElse(null);
         if (context != null) {
             FP2Config config = context.config();
             farPlaneDistance = config.effectiveRenderDistanceBlocks();
