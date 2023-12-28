@@ -51,7 +51,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.Slice;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
@@ -150,19 +150,20 @@ public abstract class MixinWorldRenderer1_16 implements IMixinWorldRenderer1_16 
         }
     }
 
-    @Redirect(method = "Lnet/minecraft/client/renderer/WorldRenderer;renderLevel(Lcom/mojang/blaze3d/matrix/MatrixStack;FJZLnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/GameRenderer;Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/util/math/vector/Matrix4f;)V",
+    @ModifyArg(method = "Lnet/minecraft/client/renderer/WorldRenderer;renderLevel(Lcom/mojang/blaze3d/matrix/MatrixStack;FJZLnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/GameRenderer;Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/util/math/vector/Matrix4f;)V",
             at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/client/renderer/GameRenderer;getRenderDistance()F"),
+                    target = "Lnet/minecraft/client/renderer/FogRenderer;setupFog(Lnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/FogRenderer$FogType;FZF)V",
+                    ordinal = 1),
+            index = 2,
             require = 1, allow = 1)
-    private float fp2_renderLevel_increaseFogDistance(GameRenderer renderer) {
+    private float fp2_renderLevel_increaseTerrainFogDistance(float farPlaneDistance) {
         IFarClientContext context = fp2().client().currentPlayer().map(IFarPlayerClient::activeContext).orElse(null);
         if (context != null) {
             FP2Config config = context.config();
-            return config.effectiveRenderDistanceBlocks();
+            return Math.max(config.effectiveRenderDistanceBlocks() - 16.0f, 32.0f);
             //TODO: i need a better system for computing this
         }
-
-        return renderer.getRenderDistance();
+        return farPlaneDistance;
     }
 
     @SuppressWarnings("deprecation")
