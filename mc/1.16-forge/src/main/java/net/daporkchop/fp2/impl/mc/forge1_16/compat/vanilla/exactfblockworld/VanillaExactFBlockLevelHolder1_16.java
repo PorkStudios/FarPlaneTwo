@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -49,6 +49,8 @@ import net.minecraft.world.chunk.storage.ChunkSerializer;
 import net.minecraft.world.server.ServerWorld;
 
 import java.util.List;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
@@ -151,9 +153,11 @@ public class VanillaExactFBlockLevelHolder1_16 extends AbstractChunksExactFBlock
                 int z = key.y();
 
                 Chunk chunk = this.world.getChunk(x, z);
-                this.world.getChunk(x + 1, z);
-                this.world.getChunk(x + 1, z + 1);
-                this.world.getChunk(x, z + 1);
+
+                checkState(chunk.getStatus() == ChunkStatus.FULL, "chunk at (%d, %d) couldn't be fully generated!", x, z);
+
+                //make sure that the chunk is fully lit
+                checkState(chunk.isLightCorrect(), "chunk at (%d, %d) couldn't be lit!", x, z);
 
                 ((ATChunkManager1_16) this.world.getChunkSource().chunkMap).invokeSave(chunk);
             }).join();
