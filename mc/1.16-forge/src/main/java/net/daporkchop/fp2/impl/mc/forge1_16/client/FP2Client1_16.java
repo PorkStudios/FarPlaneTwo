@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -51,6 +51,7 @@ import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.client.event.InputEvent;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
+import net.minecraftforge.client.settings.KeyConflictContext;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.client.registry.ClientRegistry;
@@ -64,6 +65,7 @@ import java.util.function.Function;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.fp2.core.debug.FP2Debug.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL45.*;
@@ -116,9 +118,17 @@ public class FP2Client1_16 extends FP2Client {
 
     @Override
     public KeyCategory createKeyCategory(@NonNull String localeKey) {
-        return (name, defaultKey, handler) -> {
+        return (name, defaultKey, defaultModifiers, handler) -> {
+            net.minecraftforge.client.settings.KeyModifier defaultModifier;
+            if (defaultModifiers.isEmpty()) {
+                defaultModifier = net.minecraftforge.client.settings.KeyModifier.NONE;
+            } else {
+                checkArg(defaultModifiers.size() <= 1, "at most one modifier may be given!");
+                defaultModifier = net.minecraftforge.client.settings.KeyModifier.valueOf(defaultModifiers.iterator().next().name());
+            }
+
             int keyCode = InputMappings.getKey("key.keyboard." + defaultKey.toLowerCase(Locale.ROOT)).getValue();
-            KeyBinding binding = new KeyBinding("key." + localeKey + '.' + name, keyCode, "key.categories." + localeKey);
+            KeyBinding binding = new KeyBinding("key." + localeKey + '.' + name, KeyConflictContext.UNIVERSAL, defaultModifier, InputMappings.Type.KEYSYM.getOrCreate(keyCode), "key.categories." + localeKey);
             ClientRegistry.registerKeyBinding(binding);
             this.keyBindings.put(binding, handler);
         };

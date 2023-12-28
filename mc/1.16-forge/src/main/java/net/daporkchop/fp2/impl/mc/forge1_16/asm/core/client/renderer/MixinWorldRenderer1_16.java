@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -25,8 +25,9 @@ import net.daporkchop.fp2.core.client.MatrixHelper;
 import net.daporkchop.fp2.core.client.player.IFarPlayerClient;
 import net.daporkchop.fp2.core.client.render.GlobalUniformAttributes;
 import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
-import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
+import net.daporkchop.fp2.core.engine.api.ctx.IFarClientContext;
+import net.daporkchop.fp2.core.engine.client.AbstractFarRenderer;
+import net.daporkchop.fp2.core.engine.client.RenderConstants;
 import net.daporkchop.fp2.core.util.GlobalAllocators;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.renderer.ATFogRenderer1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.interfaz.client.renderer.IMixinWorldRenderer1_16;
@@ -126,8 +127,8 @@ public abstract class MixinWorldRenderer1_16 implements IMixinWorldRenderer1_16 
             require = 1, allow = 1)
     private void fp2_setupRender_prepare(ActiveRenderInfo info, ClippingHelper clippingHelper, boolean useCapturedFrustum, int frameCount, boolean playerSpectator, CallbackInfo ci) {
         fp2().client().currentPlayer().ifPresent(player -> {
-            IFarClientContext<?, ?> context = player.activeContext();
-            IFarRenderer renderer;
+            IFarClientContext context = player.activeContext();
+            AbstractFarRenderer renderer;
             if (context != null && (renderer = context.renderer()) != null) {
                 this.level.getProfiler().push("fp2_prepare");
                 renderer.prepare((IFrustum) clippingHelper);
@@ -139,11 +140,11 @@ public abstract class MixinWorldRenderer1_16 implements IMixinWorldRenderer1_16 
     @Unique
     private int fp2_toLayerIndex(RenderType type) {
         if (type == RenderType.solid()) {
-            return IFarRenderer.LAYER_SOLID;
+            return RenderConstants.LAYER_SOLID;
         } else if (type == RenderType.cutout()) {
-            return IFarRenderer.LAYER_CUTOUT;
+            return RenderConstants.LAYER_CUTOUT;
         } else if (type == RenderType.translucent()) {
-            return IFarRenderer.LAYER_TRANSPARENT;
+            return RenderConstants.LAYER_TRANSPARENT;
         } else {
             return -1;
         }
@@ -154,7 +155,7 @@ public abstract class MixinWorldRenderer1_16 implements IMixinWorldRenderer1_16 
                     target = "Lnet/minecraft/client/renderer/GameRenderer;getRenderDistance()F"),
             require = 1, allow = 1)
     private float fp2_renderLevel_increaseFogDistance(GameRenderer renderer) {
-        IFarClientContext<?, ?> context = fp2().client().currentPlayer().map(IFarPlayerClient::activeContext).orElse(null);
+        IFarClientContext context = fp2().client().currentPlayer().map(IFarPlayerClient::activeContext).orElse(null);
         if (context != null) {
             FP2Config config = context.config();
             return config.effectiveRenderDistanceBlocks();
@@ -175,8 +176,8 @@ public abstract class MixinWorldRenderer1_16 implements IMixinWorldRenderer1_16 
         //immediately after vanilla cutout() layer
 
         fp2().client().currentPlayer().ifPresent(player -> {
-            IFarClientContext<?, ?> context = player.activeContext();
-            IFarRenderer renderer;
+            IFarClientContext context = player.activeContext();
+            AbstractFarRenderer renderer;
             if (context != null && (renderer = context.renderer()) != null) {
                 this.level.getProfiler().push("fp2_render_post");
 

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -25,16 +25,10 @@ import net.daporkchop.fp2.api.event.FEventBus;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.core.client.render.TextureUVs;
-import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
-import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
-import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
-import net.daporkchop.fp2.core.mode.heightmap.HeightmapTile;
-import net.daporkchop.fp2.core.mode.heightmap.server.HeightmapTileProvider;
-import net.daporkchop.fp2.core.mode.heightmap.server.gen.exact.VanillaHeightmapGenerator;
-import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
-import net.daporkchop.fp2.core.mode.voxel.VoxelTile;
-import net.daporkchop.fp2.core.mode.voxel.server.VoxelTileProvider;
-import net.daporkchop.fp2.core.mode.voxel.server.gen.exact.VanillaVoxelGenerator;
+import net.daporkchop.fp2.core.engine.api.server.IFarTileProvider;
+import net.daporkchop.fp2.core.engine.api.server.gen.IFarGeneratorExact;
+import net.daporkchop.fp2.core.engine.server.TileProvider;
+import net.daporkchop.fp2.core.engine.server.gen.exact.VanillaVoxelGenerator;
 import net.daporkchop.fp2.core.server.event.GetCoordinateLimitsEvent;
 import net.daporkchop.fp2.core.server.event.GetExactFBlockLevelEvent;
 import net.daporkchop.fp2.core.server.event.GetTerrainGeneratorEvent;
@@ -107,26 +101,16 @@ public class FP2Vanilla1_16 {
 
     //exact generators
 
-    @FEventHandler(name = "vanilla_heightmap_generator_exact")
-    public IFarGeneratorExact<HeightmapPos, HeightmapTile> createHeightmapGeneratorExact(IFarGeneratorExact.CreationEvent<HeightmapPos, HeightmapTile> event) {
-        return new VanillaHeightmapGenerator(event.world(), event.provider());
-    }
-
-    @FEventHandler(name = "vanilla_voxel_generator_exact")
-    public IFarGeneratorExact<VoxelPos, VoxelTile> createVoxelGeneratorExact(IFarGeneratorExact.CreationEvent<VoxelPos, VoxelTile> event) {
+    @FEventHandler(name = "vanilla_generator_exact")
+    public IFarGeneratorExact createVoxelGeneratorExact(IFarGeneratorExact.CreationEvent event) {
         return new VanillaVoxelGenerator(event.world(), event.provider());
     }
 
     //tile providers
 
-    @FEventHandler(name = "vanilla_heightmap_tileprovider")
-    public IFarTileProvider<HeightmapPos, HeightmapTile> createHeightmapTileProvider(IFarTileProvider.CreationEvent<HeightmapPos, HeightmapTile> event) {
-        return new HeightmapTileProvider.Vanilla(event.world(), event.mode());
-    }
-
-    @FEventHandler(name = "vanilla_voxel_tileprovider")
-    public IFarTileProvider<VoxelPos, VoxelTile> createVoxelTileProvider(IFarTileProvider.CreationEvent<VoxelPos, VoxelTile> event) {
-        return new VoxelTileProvider.Vanilla(event.world(), event.mode());
+    @FEventHandler(name = "vanilla_tileprovider")
+    public IFarTileProvider createVoxelTileProvider(IFarTileProvider.CreationEvent event) {
+        return new TileProvider.Vanilla(event.world());
     }
 
     //texture UVs
@@ -140,7 +124,7 @@ public class FP2Vanilla1_16 {
         if (state.getBlock() == Blocks.WATER) {
             TextureAtlasSprite sprite;
             double spriteFactor;
-            if (event.direction().vector().y() != 0) { //(POSITIVE|NEGATIVE)_Y
+            if (event.direction().y() != 0) { //(POSITIVE|NEGATIVE)_Y
                 sprite = Minecraft.getInstance().getModelManager().getBlockModelShaper().getBlockModel(Blocks.WATER.defaultBlockState()).getParticleIcon();
                 spriteFactor = 16.0d;
             } else {
@@ -164,7 +148,7 @@ public class FP2Vanilla1_16 {
         if (state.getBlock() == Blocks.LAVA) {
             TextureAtlasSprite sprite;
             double spriteFactor;
-            if (event.direction().vector().y() != 0) { //(POSITIVE|NEGATIVE)_Y
+            if (event.direction().y() != 0) { //(POSITIVE|NEGATIVE)_Y
                 sprite = Minecraft.getInstance().getModelManager().getBlockModelShaper().getBlockModel(Blocks.LAVA.defaultBlockState()).getParticleIcon();
                 spriteFactor = 16.0d;
             } else {

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -24,7 +24,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.core.client.render.LevelRenderer;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
-import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
+import net.daporkchop.fp2.core.engine.client.RenderConstants;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.renderer.ATLightTexture1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.interfaz.client.renderer.IMixinWorldRenderer1_16;
@@ -52,13 +52,13 @@ public class LevelRenderer1_16 implements LevelRenderer, AutoCloseable {
 
     private static int toLayerIndex(RenderType type) {
         if (type == RenderType.solid()) {
-            return IFarRenderer.LAYER_SOLID;
+            return RenderConstants.LAYER_SOLID;
         } else if (type == RenderType.cutout() || type == RenderType.cutoutMipped()) {
-            return IFarRenderer.LAYER_CUTOUT;
+            return RenderConstants.LAYER_CUTOUT;
         } else if (type == RenderType.translucent()) {
-            return IFarRenderer.LAYER_TRANSPARENT;
+            return RenderConstants.LAYER_TRANSPARENT;
         } else {
-            return IFarRenderer.LAYER_SOLID;
+            return RenderConstants.LAYER_SOLID;
         }
     }
 

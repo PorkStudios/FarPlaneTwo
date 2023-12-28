@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -21,7 +21,7 @@ package net.daporkchop.fp2.impl.mc.forge1_16.util;
 
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.core.util.Direction;
+import net.daporkchop.fp2.api.util.Direction;
 import net.daporkchop.lib.common.pool.recycler.Recycler;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.reference.cache.Cached;
