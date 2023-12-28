@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,15 +15,14 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.server.player;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.core.mode.api.ctx.IFarServerContext;
+import net.daporkchop.fp2.core.engine.ctx.ServerContext;
+import net.daporkchop.fp2.core.engine.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.core.network.packet.debug.client.CPacketDebugDropAllTiles;
 import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionBegin;
@@ -34,7 +33,6 @@ import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
 
 import java.util.Objects;
-import java.util.stream.Stream;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
@@ -49,8 +47,7 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
 
     protected IFarLevelServer world;
 
-    protected IFarRenderMode<?, ?> mode;
-    protected IFarServerContext<?, ?> context;
+    protected IFarServerContext context;
 
     protected boolean sessionOpen;
     protected boolean closed;
@@ -77,7 +74,7 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
     protected void handleDebug(@NonNull CPacketDebugDropAllTiles packet) {
         this.world.workerManager().rootExecutor().execute(() -> {
             this.fp2().log().info("Dropping all tiles");
-            this.world.forEachTileProvider((mode, tileProvider) -> tileProvider.trackerManager().dropAllTiles());
+            this.world.tileProvider().trackerManager().dropAllTiles();
         });
     }
 
@@ -101,23 +98,17 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
             return;
         }
 
-        IFarRenderMode<?, ?> mode = mergedConfig == null ? null : Stream.of(mergedConfig.renderModes())
-                .filter(IFarRenderMode.REGISTRY::contains)
-                .map(IFarRenderMode.REGISTRY::get)
-                .findFirst().orElse(null);
-
-        if (this.mode == mode) { //render mode hasn't changed
+        if ((this.mergedConfig != null) == (mergedConfig != null)) { //the merged config hasn't changed: we're either preserving the already open session, or the session will remain closed
             this.updateMergedConfig(mergedConfig);
 
             if (this.sessionOpen) { //the session is active, we should notify the currently active context that the config has changed
                 this.context.notifyConfigChange(mergedConfig);
             }
-        } else { //render mode changed: end current session (if any), then set the current mode and begin a new session
+        } else { //either the currently open session needs to be closed, or we need to open a new session
             if (this.sessionOpen) {
                 this.endSession();
             }
 
-            this.mode = mode;
             this.updateMergedConfig(mergedConfig);
 
             if (this.canBeginSession()) {
@@ -133,8 +124,7 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
 
     protected boolean canBeginSession() {
         return this.world != null //player is in a world
-               && this.mergedConfig != null //both server and client have set their config
-               && this.mode != null; //a valid render mode has been selected
+               && this.mergedConfig != null; //both server and client have set their config
     }
 
     @CalledFromServerThread
@@ -155,10 +145,10 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
         checkState(!this.sessionOpen, "a session is already open!");
         this.sessionOpen = true;
 
-        if (this.mode != null) {
+        if (this.mergedConfig != null) {
             this.fp2_IFarPlayer_sendPacket(new SPacketSessionBegin().coordLimits(this.world.coordLimits()));
 
-            this.context = this.mode.serverContext(this, this.world, this.mergedConfig);
+            this.context = new ServerContext(this, this.world, this.mergedConfig);
         }
     }
 

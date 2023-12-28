@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome;
@@ -30,6 +29,8 @@ import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.world.gen.layer.ATGenLayerR
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.FastRegistry;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.FastLayerProvider;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.IFastLayer;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.compat.CompatLayerHelper;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.compat.CompatPaddedLayerWrapper;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.java.JavaFastLayerAddIsland;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.java.JavaFastLayerAddMushroomIsland;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.java.JavaFastLayerAddSnow;
@@ -205,6 +206,9 @@ public class BiomeHelper {
      */
     public GenLayer[] getParents(@NonNull GenLayer layer) {
         Function<GenLayer, GenLayer[]> getParents = GET_PARENTS.get(layer.getClass());
+        if (getParents == null) {
+            getParents = CompatLayerHelper.getLayerParents(layer.getClass());
+        }
         checkArg(getParents != null, "invalid GenLayer class: %s", layer.getClass().getCanonicalName());
         return getParents.apply(layer);
     }
@@ -220,6 +224,10 @@ public class BiomeHelper {
      */
     public IFastLayer convertLayer(@NonNull GenLayer layer) {
         Function<GenLayer, IFastLayer> converter = LAYER_CONVERTERS.get(layer.getClass());
+        if (converter == null) {
+            //TODO: auto-detect which kind of layer it is and use an appropriate wrapper class
+            return new CompatPaddedLayerWrapper(layer);
+        }
         checkArg(converter != null, "invalid GenLayer class: %s", layer.getClass().getCanonicalName());
         return converter.apply(layer);
     }
@@ -235,6 +243,9 @@ public class BiomeHelper {
      */
     public GenLayer cloneLayer(@NonNull GenLayer layer, @NonNull GenLayer[] parents) {
         BiFunction<GenLayer, GenLayer[], GenLayer> cloner = LAYER_CLONERS.get(layer.getClass());
+        if (cloner == null) {
+            cloner = CompatLayerHelper.cloneLayerFunc(layer.getClass());
+        }
         checkArg(cloner != null, "invalid GenLayer class: %s", layer.getClass().getCanonicalName());
         GenLayer cloned = cloner.apply(layer, parents);
         ((ATGenLayer1_12) cloned).setWorldGenSeed(((ATGenLayer1_12) layer).getWorldGenSeed());

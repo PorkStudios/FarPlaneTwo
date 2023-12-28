@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer;
@@ -27,8 +26,8 @@ import net.minecraft.world.gen.layer.GenLayer;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static net.daporkchop.fp2.core.FP2Core.*;
-import static net.daporkchop.fp2.core.util.math.MathUtil.*;
+import static net.daporkchop.fp2.core.FP2Core.fp2;
+import static net.daporkchop.fp2.core.util.math.MathUtil.mulAddShift;
 
 /**
  * Base interface for a faster alternative to {@link GenLayer}.
@@ -49,6 +48,13 @@ public interface IFastLayer {
     void init(@NonNull IFastLayer[] children);
 
     /**
+     * @return {@code true} if the vanilla {@link net.minecraft.world.gen.layer.IntCache} should be reset after getting value(s) from this layer
+     */
+    default boolean shouldResetIntCacheAfterGet() {
+        return false;
+    }
+
+    /**
      * Gets a single value at the given coordinates.
      *
      * @param alloc an {@link ArrayAllocator} to use for allocating {@code int[]}s
@@ -60,7 +66,8 @@ public interface IFastLayer {
 
     /**
      * Gets a grid of the given size at the given coordinates.
-     *  @param alloc an {@link ArrayAllocator} to use for allocating {@code int[]}s
+     *
+     * @param alloc an {@link ArrayAllocator} to use for allocating {@code int[]}s
      * @param x     the grid's base X coordinate
      * @param z     the grid's base Z coordinate
      * @param sizeX the size of the grid along the X axis
@@ -81,7 +88,8 @@ public interface IFastLayer {
 
     /**
      * Gets a square grid of multiple square grids with the given spacing between each other.
-     *  @param alloc an {@link ArrayAllocator} to use for allocating {@code int[]}s
+     *
+     * @param alloc an {@link ArrayAllocator} to use for allocating {@code int[]}s
      * @param x     the grid's base X coordinate
      * @param z     the grid's base Z coordinate
      * @param size  the size of each small grid

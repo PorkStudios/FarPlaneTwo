@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,12 +15,10 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.config;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import lombok.AccessLevel;
@@ -35,7 +33,6 @@ import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.With;
 import net.daporkchop.fp2.core.config.gui.container.ConfigGuiRenderDistanceContainer;
-import net.daporkchop.fp2.core.config.gui.element.ConfigGuiRenderModeButton;
 import net.daporkchop.lib.common.misc.Cloneable;
 import net.daporkchop.lib.common.util.PorkUtil;
 
@@ -43,12 +40,10 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.stream.Stream;
 
 import static java.lang.Math.*;
 import static java.nio.file.StandardCopyOption.*;
 import static java.nio.file.StandardOpenOption.*;
-import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
@@ -144,27 +139,21 @@ public final class FP2Config implements Cloneable<FP2Config> {
         return clientConfig.toBuilder()
                 .maxLevels(min(serverConfig.maxLevels(), clientConfig.maxLevels()))
                 .cutoffDistance(min(serverConfig.cutoffDistance(), clientConfig.cutoffDistance()))
-                .renderModes(Stream.of(clientConfig.renderModes()).filter(ImmutableSet.copyOf(serverConfig.renderModes())::contains).toArray(String[]::new))
                 .build();
     }
 
     @Builder.Default
-    @Config.Range(min = @Config.Constant(1), max = @Config.Constant(field = "net.daporkchop.fp2.core.mode.voxel.VoxelConstants#VMAX_LODS"))
+    @Config.Range(min = @Config.Constant(1), max = @Config.Constant(field = "net.daporkchop.fp2.core.engine.EngineConstants#MAX_LODS"))
     @Config.GuiCategory(CATEGORY_RENDER_DISTANCE)
     @Config.GuiShowServerValue
     private final int maxLevels = preventInline(3);
 
     @Builder.Default
     @Config.Range(min = @Config.Constant(0), max = @Config.Constant(Integer.MAX_VALUE))
-    @Config.GuiRange(min = @Config.Constant(field = "net.daporkchop.fp2.core.mode.voxel.VoxelConstants#VT_VOXELS"), max = @Config.Constant(1024), snapTo = @Config.Constant(field = "net.daporkchop.fp2.core.mode.voxel.VoxelConstants#VT_VOXELS"))
+    @Config.GuiRange(min = @Config.Constant(field = "net.daporkchop.fp2.core.engine.EngineConstants#T_VOXELS"), max = @Config.Constant(1024), snapTo = @Config.Constant(field = "net.daporkchop.fp2.core.engine.EngineConstants#T_VOXELS"))
     @Config.GuiCategory(CATEGORY_RENDER_DISTANCE)
     @Config.GuiShowServerValue
     private final int cutoffDistance = preventInline(256);
-
-    @Builder.Default
-    @Config.GuiElementClass(ConfigGuiRenderModeButton.class)
-    @NonNull
-    private final String[] renderModes = fp2().renderModeNames();
 
     @Builder.Default
     @NonNull
@@ -176,6 +165,10 @@ public final class FP2Config implements Cloneable<FP2Config> {
 
     @Builder.Default
     @NonNull
+    private final Quality quality = new Quality();
+
+    @Builder.Default
+    @NonNull
     private final Debug debug = new Debug();
 
     /**
@@ -183,10 +176,9 @@ public final class FP2Config implements Cloneable<FP2Config> {
      *
      * @return the cleaned config
      */
+    //TODO: do i want/need to keep this?
     public FP2Config clean() {
-        return this.withRenderModes(Stream.of(this.renderModes)
-                .filter(ImmutableSet.copyOf(fp2().renderModeNames())::contains)
-                .toArray(String[]::new));
+        return this;
     }
 
     /**
@@ -199,11 +191,38 @@ public final class FP2Config implements Cloneable<FP2Config> {
     @Override
     public FP2Config clone() {
         return this.toBuilder()
-                .renderModes(this.renderModes.clone())
                 .performance(this.performance.clone())
                 .compatibility(this.compatibility.clone())
                 .debug(this.debug.clone())
                 .build();
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @Builder(access = AccessLevel.PRIVATE, toBuilder = true)
+    @AllArgsConstructor(access = AccessLevel.PRIVATE)
+    @NoArgsConstructor
+    @Getter
+    @With
+    @ToString
+    @EqualsAndHashCode
+    @Config.GuiCategories({
+            @Config.CategoryMeta(name = "default", title = false),
+            @Config.CategoryMeta(name = Performance.CATEGORY_CLIENT),
+    })
+    public static class Quality implements Cloneable<Quality> {
+        protected static final String CATEGORY_CLIENT = "client";
+
+        @Builder.Default
+        @Config.RestartRequired(Config.Requirement.WORLD)
+        @Config.GuiCategory(CATEGORY_CLIENT)
+        private final boolean forceBlockyMesh = preventInline(false);
+
+        @Override
+        public Quality clone() {
+            return this.toBuilder().build();
+        }
     }
 
     /**

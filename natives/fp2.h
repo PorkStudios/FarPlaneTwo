@@ -38,7 +38,7 @@
 #define FP2_JNI_HEAD {try{
 #define FP2_JNI_TAIL }catch(const fp2::error& err) {fp2::throwException(env, err);}}
 
-namespace fp2 {
+namespace FP2_ROOT_NAMESPACE { namespace fp2 {
     //
     //"throw exception from jni" helper methods
     //
@@ -108,4 +108,4 @@ namespace fp2 {
     template <typename A, typename B> B cast(const A a) {
         return (B) a;
     }
-}
+}}

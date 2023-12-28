@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.api.test.world;
@@ -45,7 +44,7 @@ public class TestFBlockLevel {
             int y = ThreadLocalRandom.current().nextInt(Integer.MIN_VALUE, Integer.MAX_VALUE);
             int z = ThreadLocalRandom.current().nextInt(Integer.MIN_VALUE, Integer.MAX_VALUE);
 
-            this.testQueryShape(new FBlockLevel.SinglePointQueryShape(x, y, z));
+            this.testQueryShape(new FBlockLevel.SinglePointDataQueryShape(x, y, z));
         });
     }
 
@@ -58,7 +57,7 @@ public class TestFBlockLevel {
             int[] y = ThreadLocalRandom.current().ints(count).toArray();
             int[] z = ThreadLocalRandom.current().ints(count).toArray();
 
-            this.testQueryShape(new FBlockLevel.MultiPointsQueryShape(x, 0, 1, y, 0, 1, z, 0, 1, count));
+            this.testQueryShape(new FBlockLevel.MultiPointsDataQueryShape(x, 0, 1, y, 0, 1, z, 0, 1, count));
         });
 
         //interleaved
@@ -66,7 +65,7 @@ public class TestFBlockLevel {
             int count = ThreadLocalRandom.current().nextInt(4096);
             int[] positions = ThreadLocalRandom.current().ints(count * 3).toArray();
 
-            this.testQueryShape(new FBlockLevel.MultiPointsQueryShape(positions, 0, 3, positions, 1, 3, positions, 2, 3, count));
+            this.testQueryShape(new FBlockLevel.MultiPointsDataQueryShape(positions, 0, 3, positions, 1, 3, positions, 2, 3, count));
         });
     }
 
@@ -83,11 +82,11 @@ public class TestFBlockLevel {
             int strideY = ThreadLocalRandom.current().nextInt(65536);
             int strideZ = ThreadLocalRandom.current().nextInt(65536);
 
-            this.testQueryShape(new FBlockLevel.OriginSizeStrideQueryShape(originX, originY, originZ, sizeX, sizeY, sizeZ, strideX, strideY, strideZ));
+            this.testQueryShape(new FBlockLevel.OriginSizeStrideDataQueryShape(originX, originY, originZ, sizeX, sizeY, sizeZ, strideX, strideY, strideZ));
         });
     }
 
-    private void testQueryShape(@NonNull FBlockLevel.QueryShape shape) {
+    private void testQueryShape(@NonNull FBlockLevel.DataQueryShape shape) {
         shape.validate();
 
         //keep track of which voxel position indices have been visited so far

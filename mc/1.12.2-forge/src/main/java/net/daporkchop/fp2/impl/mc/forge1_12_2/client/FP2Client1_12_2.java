@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -27,6 +27,7 @@ import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.gui.GuiContext;
 import net.daporkchop.fp2.core.client.gui.GuiScreen;
 import net.daporkchop.fp2.core.client.key.KeyCategory;
+import net.daporkchop.fp2.core.client.key.KeyModifier;
 import net.daporkchop.fp2.core.client.player.IFarPlayerClient;
 import net.daporkchop.fp2.core.util.threading.futureexecutor.FutureExecutor;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
@@ -45,6 +46,7 @@ import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
+import net.minecraftforge.client.settings.KeyConflictContext;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.client.registry.ClientRegistry;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
@@ -60,6 +62,7 @@ import java.util.function.Function;
 
 import static net.daporkchop.fp2.core.debug.FP2Debug.*;
 import static net.daporkchop.fp2.impl.mc.forge1_12_2.compat.of.OFHelper.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL45.*;
@@ -122,8 +125,16 @@ public class FP2Client1_12_2 extends FP2Client {
 
     @Override
     public KeyCategory createKeyCategory(@NonNull String localeKey) {
-        return (name, defaultKey, handler) -> {
-            KeyBinding binding = new KeyBinding("key." + localeKey + '.' + name, Keyboard.getKeyIndex(defaultKey), "key.categories." + localeKey);
+        return (name, defaultKey, defaultModifiers, handler) -> {
+            net.minecraftforge.client.settings.KeyModifier defaultModifier;
+            if (defaultModifiers.isEmpty()) {
+                defaultModifier = net.minecraftforge.client.settings.KeyModifier.NONE;
+            } else {
+                checkArg(defaultModifiers.size() <= 1, "at most one modifier may be given!");
+                defaultModifier = net.minecraftforge.client.settings.KeyModifier.valueOf(defaultModifiers.iterator().next().name());
+            }
+
+            KeyBinding binding = new KeyBinding("key." + localeKey + '.' + name, KeyConflictContext.UNIVERSAL, defaultModifier, Keyboard.getKeyIndex(defaultKey), "key.categories." + localeKey);
             ClientRegistry.registerKeyBinding(binding);
             this.keyBindings.put(binding, handler);
         };

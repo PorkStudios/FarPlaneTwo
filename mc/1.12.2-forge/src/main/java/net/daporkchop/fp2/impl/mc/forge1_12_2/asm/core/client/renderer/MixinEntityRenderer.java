@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -24,8 +24,8 @@ import net.daporkchop.fp2.core.client.MatrixHelper;
 import net.daporkchop.fp2.core.client.player.IFarPlayerClient;
 import net.daporkchop.fp2.core.client.render.GlobalUniformAttributes;
 import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.core.mode.api.client.IFarRenderer;
-import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
+import net.daporkchop.fp2.core.engine.client.AbstractFarRenderer;
+import net.daporkchop.fp2.core.engine.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.util.GlobalAllocators;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.ATMinecraft1_12;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
@@ -88,8 +88,8 @@ public abstract class MixinEntityRenderer {
         //directly after vanilla CUTOUT pass
 
         fp2().client().currentPlayer().ifPresent(player -> {
-            IFarClientContext<?, ?> context = player.activeContext();
-            IFarRenderer renderer;
+            IFarClientContext context = player.activeContext();
+            AbstractFarRenderer renderer;
             if (context != null && (renderer = context.renderer()) != null) {
                 this.mc.profiler.startSection("fp2_render");
 
@@ -167,6 +167,7 @@ public abstract class MixinEntityRenderer {
             //store the matrix into the GlobalUniformAttributes
             attributes.modelViewProjectionMatrix(modelViewProjectionMatrix);
         } finally {
+            alloc.release(modelViewProjectionMatrix);
             alloc.release(projection);
             alloc.release(modelView);
         }
@@ -203,7 +204,7 @@ public abstract class MixinEntityRenderer {
                     target = "Lnet/minecraft/client/renderer/EntityRenderer;farPlaneDistance:F",
                     opcode = Opcodes.PUTFIELD))
     private void fp2_setupCameraTransform_increaseFarPlaneDistance(EntityRenderer renderer, float farPlaneDistance) {
-        IFarClientContext<?, ?> context = fp2().client().currentPlayer().map(IFarPlayerClient::activeContext).orElse(null);
+        IFarClientContext context = fp2().client().currentPlayer().map(IFarPlayerClient::activeContext).orElse(null);
         if (context != null) {
             FP2Config config = context.config();
             farPlaneDistance = config.effectiveRenderDistanceBlocks();
@@ -211,6 +212,19 @@ public abstract class MixinEntityRenderer {
         }
 
         this.farPlaneDistance = farPlaneDistance;
+    }
+
+    @Redirect(method = "Lnet/minecraft/client/renderer/EntityRenderer;setupFog(IF)V",
+            at = @At(value = "FIELD",
+                    target = "Lnet/minecraft/client/renderer/EntityRenderer;farPlaneDistance:F"))
+    private float fp2_setupFog_lowerFogFarPlaneDistanceForSkyboxRendering(EntityRenderer entityRenderer, int startCoords, float partialTicks) {
+        float farPlaneDistance = this.farPlaneDistance;
+        if (startCoords == -1) {
+            //clamp the fog distance to the vanilla limit when the skybox is being rendered (this avoids sharp borders in the skybox when
+            // farPlaneDistance is higher than vanilla expects)
+            farPlaneDistance = Math.min(farPlaneDistance, 384.0f);
+        }
+        return farPlaneDistance;
     }
 
     //optifine changes this value for us, but we need to manually change it if optifine isn't around

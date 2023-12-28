@@ -31,7 +31,7 @@
 
 #define ALWAYS_INLINE inline __attribute__((always_inline,flatten))
 
-namespace fp2::biome::fastlayer {
+namespace FP2_ROOT_NAMESPACE { namespace fp2::biome::fastlayer {
     /**
      * Faster re-implementation of the PRNG used in GenLayer.
      *
@@ -672,5 +672,7 @@ namespace fp2::biome::fastlayer {
 
 using fp2::biome::fastlayer::biome_ids;
 using fp2::biome::fastlayer::biomes;
+
+}
 
 #endif //NATIVELAYER_NATIVEFASTLAYER_H

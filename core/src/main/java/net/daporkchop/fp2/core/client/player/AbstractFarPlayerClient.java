@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -27,11 +27,8 @@ import net.daporkchop.fp2.core.client.world.AbstractWorldClient;
 import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
-import net.daporkchop.fp2.core.mode.api.IFarPos;
-import net.daporkchop.fp2.core.mode.api.IFarRenderMode;
-import net.daporkchop.fp2.core.mode.api.IFarTile;
-import net.daporkchop.fp2.core.mode.api.client.IFarTileCache;
-import net.daporkchop.fp2.core.mode.api.ctx.IFarClientContext;
+import net.daporkchop.fp2.core.engine.ctx.ClientContext;
+import net.daporkchop.fp2.core.engine.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.network.packet.debug.server.SPacketDebugUpdateStatistics;
 import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketHandshake;
@@ -44,7 +41,6 @@ import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUpdateConfi
 import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromClientThread;
 import net.daporkchop.fp2.core.util.annotation.CalledWithMonitor;
-import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.Objects;
@@ -59,7 +55,7 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
     protected FP2Config serverConfig;
     protected FP2Config config;
 
-    protected IFarClientContext<?, ?> context;
+    protected IFarClientContext context;
 
     protected boolean handshakeReceived;
     protected boolean clientReady;
@@ -115,15 +111,14 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
         checkState(!this.sessionOpen, "a session is already open!");
         this.sessionOpen = true;
 
-        IFarRenderMode<?, ?> mode = this.modeFor(this.config);
-        this.fp2().log().info("beginning session with mode %s", mode);
+        this.fp2().log().info("beginning session");
 
-        if (mode != null) {
+        if (this.config != null) {
             AbstractWorldClient.COORD_LIMITS_HACK.set(packet.coordLimits());
             try {
                 IFarLevelClient activeLevel = this.loadActiveLevel();
                 try {
-                    this.context = mode.clientContext(activeLevel, this.config);
+                    this.context = new ClientContext(activeLevel, this.config);
                 } catch (Throwable t) { //something went wrong, try to unload active level again
                     try {
                         ((AbstractWorldClient<?, ?, ?, ?, ?>) this.world()).unloadLevel(activeLevel.id());
@@ -156,7 +151,7 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
         checkState(this.sessionOpen, "no session is currently open!");
         checkState(this.context != null, "active session has no render mode!");
 
-        this.context.tileCache().receiveTile(uncheckedCast(packet.tile()));
+        this.context.tileCache().receiveTile(packet.tile());
         //TODO: tile compression on the network thread is simply too expensive and causes lots of issues... we need congestion control
         //this.fp2_context.tileCache().receiveTile(uncheckedCast(packet.tile().compressed()));
     }
@@ -166,7 +161,7 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
         checkState(this.sessionOpen, "no session is currently open!");
         checkState(this.context != null, "active session has no render mode!");
 
-        this.context.tileCache().unloadTile(uncheckedCast(packet.pos()));
+        this.context.tileCache().unloadTile(packet.pos());
     }
 
     @CalledWithMonitor
@@ -174,7 +169,7 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
         checkState(this.sessionOpen, "no session is currently open!");
         checkState(this.context != null, "active session has no render mode!");
 
-        packet.positions().forEach(PorkUtil.<IFarTileCache<IFarPos, ?>>uncheckedCast(this.context.tileCache())::unloadTile);
+        packet.positions().forEach(this.context.tileCache()::unloadTile);
     }
 
     @CalledWithMonitor
@@ -187,11 +182,8 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
         this.fp2().log().info("server notified merged config update: %s", this.config);
 
         if (this.context != null) {
-            if (this.modeFor(this.config) == this.context.mode()) {
-                this.context.notifyConfigChange(packet.config());
-            } else {
-                this.fp2().log().warn("render mode was switched while a session is active!");
-            }
+            checkState(this.config != null, "server sent null config update while a session is active!");
+            this.context.notifyConfigChange(this.config);
         }
     }
 
@@ -251,7 +243,7 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
 
             //TODO: better solution than casting to AbstractWorldClient
             try (AutoCloseable unloadLevel = () -> ((AbstractWorldClient<?, ?, ?, ?, ?>) this.world()).unloadLevel(levelId); //unload the level, since we loaded it earlier
-                 IFarClientContext<?, ?> context = this.context) {
+                 IFarClientContext context = this.context) {
                 this.context = null;
             }
         }
@@ -269,13 +261,9 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
         return this.config;
     }
 
-    protected IFarRenderMode<?, ?> modeFor(FP2Config config) {
-        return config != null && config.renderModes().length != 0 ? IFarRenderMode.REGISTRY.get(config.renderModes()[0]) : null;
-    }
-
     @CalledFromAnyThread
     @Override
-    public <POS extends IFarPos, T extends IFarTile> IFarClientContext<POS, T> activeContext() {
-        return uncheckedCast(this.context);
+    public IFarClientContext activeContext() {
+        return this.context;
     }
 }

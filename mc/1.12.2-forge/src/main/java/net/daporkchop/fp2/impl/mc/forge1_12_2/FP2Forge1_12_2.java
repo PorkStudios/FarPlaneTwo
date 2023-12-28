@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -63,16 +63,18 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @Mod(modid = FP2.MODID,
         useMetadata = true,
-        dependencies = "required-after:forgerocks@[6.28.2,);after:cubicchunks@[1.12.2-0.0.1188.0,)",
+        dependencies = "required-after:forgerocks@[6.28.2,);after:cubicchunks@[1.12.2-0.0.1255.0,)",
         acceptedMinecraftVersions = "1.12.2")
 public final class FP2Forge1_12_2 extends FP2Core {
     public static Identifier getIdentifierForWorld(@NonNull World world) {
-        int dimensionId = world.provider.getDimension();
         DimensionType dimensionType = world.provider.getDimensionType();
 
         //sanity check because i'm not entirely sure what kind of crazy shit mods do with dimension types, and i want to be sure not to screw anything up
-        checkState(dimensionId
-                   == dimensionType.getId(), "dimension #%d has invalid ID: '%s' is expected to have ID %d", dimensionId, dimensionType.getName(), dimensionType.getId());
+        for (DimensionType otherType : DimensionType.values()) {
+            if (otherType != dimensionType) {
+                checkState(!dimensionType.getName().equals(otherType.getName()), "multiple dimension types with name '%s' exist, ids=[%d, %d]", dimensionType.getId(), otherType.getId());
+            }
+        }
 
         return Identifier.fromLenient("minecraft", dimensionType.getName());
     }

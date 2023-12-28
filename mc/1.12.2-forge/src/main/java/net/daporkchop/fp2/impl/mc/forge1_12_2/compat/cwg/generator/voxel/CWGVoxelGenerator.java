@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,19 +15,17 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cwg.generator.voxel;
 
-import io.github.opencubicchunks.cubicchunks.cubicgen.common.biome.IBiomeBlockReplacer;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.world.level.BlockLevelConstants;
-import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
-import net.daporkchop.fp2.core.mode.voxel.VoxelData;
-import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
-import net.daporkchop.fp2.core.mode.voxel.VoxelTile;
-import net.daporkchop.fp2.core.mode.voxel.server.gen.rough.AbstractRoughVoxelGenerator;
+import net.daporkchop.fp2.core.engine.api.server.IFarTileProvider;
+import net.daporkchop.fp2.core.engine.TileData;
+import net.daporkchop.fp2.core.engine.TilePos;
+import net.daporkchop.fp2.core.engine.Tile;
+import net.daporkchop.fp2.core.engine.server.gen.rough.AbstractRoughVoxelGenerator;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cwg.CWGContext;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
@@ -39,7 +37,7 @@ import net.minecraft.world.WorldServer;
 import java.util.Arrays;
 
 import static java.lang.Math.*;
-import static net.daporkchop.fp2.core.mode.voxel.VoxelConstants.*;
+import static net.daporkchop.fp2.core.engine.EngineConstants.*;
 
 /**
  * @author DaPorkchop_
@@ -47,19 +45,19 @@ import static net.daporkchop.fp2.core.mode.voxel.VoxelConstants.*;
 public class CWGVoxelGenerator extends AbstractRoughVoxelGenerator<CWGContext> {
     protected final Cached<CWGContext> ctx;
 
-    public CWGVoxelGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider<VoxelPos, VoxelTile> provider) {
+    public CWGVoxelGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider provider) {
         super(world, provider);
 
-        this.ctx = Cached.threadLocal(() -> new CWGContext(this.registry(), (WorldServer) world.implLevel(), CACHE_SIZE, 2, VT_SHIFT), ReferenceStrength.WEAK);
+        this.ctx = Cached.threadLocal(() -> new CWGContext(this.registry(), (WorldServer) world.implLevel(), CACHE_SIZE, 2, T_SHIFT), ReferenceStrength.WEAK);
     }
 
     @Override
-    public boolean canGenerate(@NonNull VoxelPos pos) {
+    public boolean canGenerate(@NonNull TilePos pos) {
         return true;
     }
 
     @Override
-    public void generate(@NonNull VoxelPos pos, @NonNull VoxelTile tile) {
+    public void generate(@NonNull TilePos pos, @NonNull Tile tile) {
         int level = pos.level();
         int baseX = pos.blockX();
         int baseY = pos.blockY();
@@ -95,16 +93,13 @@ public class CWGVoxelGenerator extends AbstractRoughVoxelGenerator<CWGContext> {
 
         double density = max(density0, density1);
 
-        IBlockState state = Blocks.AIR.getDefaultState();
-        for (IBiomeBlockReplacer replacer : ctx.replacersForBiome(ctx.getBiome(blockX, blockZ))) {
-            state = replacer.getReplacedBlock(state, blockX, blockY, blockZ, nx, ny, nz, density);
-        }
+        IBlockState state = ctx.getReplacedBlockInBiome(ctx.getBiome(blockX, blockZ), blockX, blockY, blockZ, nx, ny, nz, density);
 
         return this.registry().state2id(state);
     }
 
     @Override
-    protected void populateVoxelBlockData(int blockX, int blockY, int blockZ, int level, double nx, double ny, double nz, VoxelData data, CWGContext ctx) {
+    protected void populateVoxelBlockData(int blockX, int blockY, int blockZ, int level, double nx, double ny, double nz, TileData data, CWGContext ctx) {
         blockY++;
 
         int seaLevel = this.seaLevel() >> level << level; //truncate lower bits in order to scale the sea level to the current zoom level

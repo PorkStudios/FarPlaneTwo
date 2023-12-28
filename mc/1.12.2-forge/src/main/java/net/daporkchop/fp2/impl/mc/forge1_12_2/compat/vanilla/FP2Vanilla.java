@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla;
@@ -24,24 +23,16 @@ import net.daporkchop.fp2.api.event.Constrain;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.core.client.render.TextureUVs;
-import net.daporkchop.fp2.core.mode.api.server.IFarTileProvider;
-import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorExact;
-import net.daporkchop.fp2.core.mode.api.server.gen.IFarGeneratorRough;
-import net.daporkchop.fp2.core.mode.heightmap.HeightmapPos;
-import net.daporkchop.fp2.core.mode.heightmap.HeightmapTile;
-import net.daporkchop.fp2.core.mode.heightmap.server.HeightmapTileProvider;
-import net.daporkchop.fp2.core.mode.heightmap.server.gen.exact.VanillaHeightmapGenerator;
-import net.daporkchop.fp2.core.mode.voxel.VoxelPos;
-import net.daporkchop.fp2.core.mode.voxel.VoxelTile;
-import net.daporkchop.fp2.core.mode.voxel.server.VoxelTileProvider;
-import net.daporkchop.fp2.core.mode.voxel.server.gen.exact.VanillaVoxelGenerator;
+import net.daporkchop.fp2.core.engine.api.server.IFarTileProvider;
+import net.daporkchop.fp2.core.engine.api.server.gen.IFarGeneratorExact;
+import net.daporkchop.fp2.core.engine.server.TileProvider;
+import net.daporkchop.fp2.core.engine.server.gen.exact.VanillaVoxelGenerator;
 import net.daporkchop.fp2.core.server.event.GetCoordinateLimitsEvent;
 import net.daporkchop.fp2.core.server.event.GetExactFBlockLevelEvent;
 import net.daporkchop.fp2.core.server.event.GetTerrainGeneratorEvent;
 import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.exactfblocklevel.VanillaExactFBlockLevelHolder1_12;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.generator.heightmap.FlatHeightmapGenerator;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.server.world.level.FLevelServer1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.Util1_12_2;
 import net.minecraft.block.state.IBlockState;
@@ -99,13 +90,8 @@ public class FP2Vanilla {
 
     //exact generators
 
-    @FEventHandler(name = "vanilla_heightmap_generator_exact")
-    public IFarGeneratorExact<HeightmapPos, HeightmapTile> createHeightmapGeneratorExact(IFarGeneratorExact.CreationEvent<HeightmapPos, HeightmapTile> event) {
-        return new VanillaHeightmapGenerator(event.world(), event.provider());
-    }
-
-    @FEventHandler(name = "vanilla_voxel_generator_exact")
-    public IFarGeneratorExact<VoxelPos, VoxelTile> createVoxelGeneratorExact(IFarGeneratorExact.CreationEvent<VoxelPos, VoxelTile> event) {
+    @FEventHandler(name = "vanilla_generator_exact")
+    public IFarGeneratorExact createGeneratorExact(IFarGeneratorExact.CreationEvent event) {
         return new VanillaVoxelGenerator(event.world(), event.provider());
     }
 
@@ -115,23 +101,11 @@ public class FP2Vanilla {
         return world.terrainGeneratorInfo().implGenerator() instanceof ChunkGeneratorFlat;
     }
 
-    @FEventHandler(name = "vanilla_heightmap_generator_rough_superflat")
-    public Optional<IFarGeneratorRough<HeightmapPos, HeightmapTile>> createHeightmapGeneratorRoughSuperflat(IFarGeneratorRough.CreationEvent<HeightmapPos, HeightmapTile> event) {
-        return this.isSuperflatWorld(event.world())
-                ? Optional.of(new FlatHeightmapGenerator(event.world(), event.provider()))
-                : Optional.empty();
-    }
-
     //tile providers
 
-    @FEventHandler(name = "vanilla_heightmap_tileprovider")
-    public IFarTileProvider<HeightmapPos, HeightmapTile> createHeightmapTileProvider(IFarTileProvider.CreationEvent<HeightmapPos, HeightmapTile> event) {
-        return new HeightmapTileProvider.Vanilla(event.world(), event.mode());
-    }
-
-    @FEventHandler(name = "vanilla_voxel_tileprovider")
-    public IFarTileProvider<VoxelPos, VoxelTile> createVoxelTileProvider(IFarTileProvider.CreationEvent<VoxelPos, VoxelTile> event) {
-        return new VoxelTileProvider.Vanilla(event.world(), event.mode());
+    @FEventHandler(name = "vanilla_tileprovider")
+    public IFarTileProvider createTileProvider(IFarTileProvider.CreationEvent event) {
+        return new TileProvider.Vanilla(event.world());
     }
 
     //texture UVs
@@ -144,7 +118,7 @@ public class FP2Vanilla {
         if (state.getBlock() == Blocks.WATER || state.getBlock() == Blocks.FLOWING_WATER) {
             String spriteName;
             double spriteFactor;
-            if (event.direction().vector().z() == 0) { //(POSITIVE|NEGATIVE)_Z
+            if (event.direction().z() == 0) { //(POSITIVE|NEGATIVE)_Z
                 spriteName = "minecraft:blocks/water_still";
                 spriteFactor = 16.0d;
             } else {
@@ -168,7 +142,7 @@ public class FP2Vanilla {
         if (state.getBlock() == Blocks.LAVA || state.getBlock() == Blocks.FLOWING_LAVA) {
             String spriteName;
             double spriteFactor;
-            if (event.direction().vector().z() == 0) { //(POSITIVE|NEGATIVE)_Z
+            if (event.direction().z() == 0) { //(POSITIVE|NEGATIVE)_Z
                 spriteName = "minecraft:blocks/lava_still";
                 spriteFactor = 16.0d;
             } else {

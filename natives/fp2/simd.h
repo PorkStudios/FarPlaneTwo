@@ -29,7 +29,8 @@
 
 #define _FP2_VEC_MIN_SIZE 128
 
-namespace fp2::simd {
+namespace FP2_ROOT_NAMESPACE { namespace fp2::simd {
+    constexpr size_t LANES_16 = _FP2_VEC_SIZE / 16;
     constexpr size_t LANES_32 = _FP2_VEC_SIZE / 32;
     constexpr size_t LANES_64 = _FP2_VEC_SIZE / 64;
     constexpr size_t LANES_32AND64 = _FP2_VEC_MIN_SIZE < _FP2_VEC_SIZE ? LANES_64 : LANES_32;
@@ -44,10 +45,39 @@ namespace fp2::simd {
         constexpr static size_t LANES = _LANES;
     };
 
+#define _FP2_VEC_SHORT(SIZE) template<> class type_vec<int16_t, SIZE> { \
+public: \
+    using TYPE = Vec ## SIZE ## s; \
+    using BOOL = Vec ## SIZE ## sb; \
+    using INT = type_vec<int32_t, SIZE>; \
+    using LONG = type_vec<int64_t, SIZE>; \
+    using FLOAT = type_vec<float, SIZE>; \
+    using DOUBLE = type_vec<double, SIZE>; \
+};
+    _FP2_VEC_SHORT(8)
+    _FP2_VEC_SHORT(16)
+    _FP2_VEC_SHORT(32)
+#undef _FP2_VEC_SHORT
+
+#define _FP2_VEC_USHORT(SIZE) template<> class type_vec<uint16_t, SIZE> { \
+public: \
+    using TYPE = Vec ## SIZE ## us; \
+    using BOOL = Vec ## SIZE ## sb; \
+    using INT = type_vec<uint32_t, SIZE>; \
+    using LONG = type_vec<uint64_t, SIZE>; \
+    using FLOAT = type_vec<float, SIZE>; \
+    using DOUBLE = type_vec<double, SIZE>; \
+};
+    _FP2_VEC_USHORT(8)
+    _FP2_VEC_USHORT(16)
+    _FP2_VEC_USHORT(32)
+#undef _FP2_VEC_USHORT
+
 #define _FP2_VEC_INT(SIZE) template<> class type_vec<int32_t, SIZE> { \
 public: \
     using TYPE = Vec ## SIZE ## i; \
     using BOOL = Vec ## SIZE ## ib; \
+    using SHORT = type_vec<int16_t, SIZE>; \
     using LONG = type_vec<int64_t, SIZE>; \
     using FLOAT = type_vec<float, SIZE>; \
     using DOUBLE = type_vec<double, SIZE>; \
@@ -61,6 +91,7 @@ public: \
 public: \
     using TYPE = Vec ## SIZE ## ui; \
     using BOOL = Vec ## SIZE ## ib; \
+    using SHORT = type_vec<uint16_t, SIZE>; \
     using LONG = type_vec<uint64_t, SIZE>; \
     using FLOAT = type_vec<float, SIZE>; \
     using DOUBLE = type_vec<double, SIZE>; \
@@ -74,6 +105,7 @@ public: \
 public: \
     using TYPE = Vec ## SIZE ## q; \
     using BOOL = Vec ## SIZE ## qb; \
+    using SHORT = type_vec<int16_t, SIZE>; \
     using INT = type_vec<int32_t, SIZE>; \
     using FLOAT = type_vec<float, SIZE>; \
     using DOUBLE = type_vec<double, SIZE>; \
@@ -87,6 +119,7 @@ public: \
 public: \
     using TYPE = Vec ## SIZE ## uq; \
     using BOOL = Vec ## SIZE ## qb; \
+    using SHORT = type_vec<uint16_t, SIZE>; \
     using INT = type_vec<uint32_t, SIZE>; \
     using FLOAT = type_vec<float, SIZE>; \
     using DOUBLE = type_vec<double, SIZE>; \
@@ -100,6 +133,8 @@ public: \
 public: \
     using TYPE = Vec ## SIZE ## f; \
     using BOOL = Vec ## SIZE ## fb; \
+    using SHORT = type_vec<int16_t, SIZE>; \
+    using USHORT = type_vec<uint16_t, SIZE>; \
     using INT = type_vec<int32_t, SIZE>; \
     using UINT = type_vec<uint32_t, SIZE>; \
     using LONG = type_vec<int64_t, SIZE>; \
@@ -115,6 +150,8 @@ public: \
 public: \
     using TYPE = Vec ## SIZE ## d; \
     using BOOL = Vec ## SIZE ## db; \
+    using SHORT = type_vec<int16_t, SIZE>; \
+    using USHORT = type_vec<uint16_t, SIZE>; \
     using INT = type_vec<int32_t, SIZE>; \
     using UINT = type_vec<uint32_t, SIZE>; \
     using LONG = type_vec<int64_t, SIZE>; \
@@ -134,6 +171,10 @@ public: \
 
 #define _FP2_VEC(SIZE) template<> class vec<SIZE> { \
 public: \
+    using SHORT = type_vec<int16_t, ((SIZE) / 16)>::TYPE; \
+    using SHORT_BOOL = type_vec<int16_t, ((SIZE) / 16)>::BOOL; \
+    using USHORT = type_vec<uint16_t, ((SIZE) / 16)>::TYPE; \
+    using USHORT_BOOL = type_vec<uint16_t, ((SIZE) / 16)>::BOOL; \
     using INT = type_vec<int32_t, ((SIZE) / 32)>::TYPE; \
     using INT_BOOL = type_vec<int32_t, ((SIZE) / 32)>::BOOL; \
     using UINT = type_vec<uint32_t, ((SIZE) / 32)>::TYPE; \
@@ -167,4 +208,4 @@ public: \
         }
         return out;
     }
-}
+}}

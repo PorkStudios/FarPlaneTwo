@@ -21,6 +21,12 @@
 apply from: "${project.rootDir}/mc/forge.gradle"
 apply from: "${project.rootDir}/natives/natives.gradle"
 
+//prevent ForgeGradle from screwing up the classpath, its "fix" causes the native library output directories to be removed from the classpath and doesn't actually seem to
+//  fix anything.
+legacy {
+    fixClasspath = false
+}
+
 minecraft {
     mappings mappingsChannel, mappingsVersion
 

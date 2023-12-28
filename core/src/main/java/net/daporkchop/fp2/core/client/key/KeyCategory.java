@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,16 +15,26 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.client.key;
 
 import lombok.NonNull;
 
+import java.util.Collections;
+import java.util.Set;
+
 /**
  * @author DaPorkchop_
  */
 public interface KeyCategory {
-    void addBinding(@NonNull String name, @NonNull String defaultKey, @NonNull Runnable handler);
+    default void addBinding(@NonNull String name, @NonNull String defaultKey, @NonNull Runnable handler) {
+        this.addBinding(name, defaultKey, Collections.emptySet(), handler);
+    }
+
+    default void addBinding(@NonNull String name, @NonNull String defaultKey, @NonNull KeyModifier defaultModifier, @NonNull Runnable handler) {
+        this.addBinding(name, defaultKey, Collections.singleton(defaultModifier), handler);
+    }
+
+    void addBinding(@NonNull String name, @NonNull String defaultKey, @NonNull Set<KeyModifier> defaultModifiers, @NonNull Runnable handler);
 }

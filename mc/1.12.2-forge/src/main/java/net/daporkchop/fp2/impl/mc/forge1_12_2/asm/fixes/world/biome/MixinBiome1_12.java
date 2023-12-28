@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -19,17 +19,31 @@
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.fixes.world.biome;
 
+import com.google.common.collect.ImmutableMap;
 import net.daporkchop.lib.common.misc.threadlocal.TL;
 import net.daporkchop.lib.common.pool.recycler.Recycler;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.world.biome.Biome;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.terraingen.BiomeEvent;
+import net.minecraftforge.fml.common.eventhandler.Event;
+import net.minecraftforge.fml.common.eventhandler.EventPriority;
+import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * Some optional optimizations for biome color calculation.
@@ -38,6 +52,12 @@ import org.spongepowered.asm.mixin.Unique;
  */
 @Mixin(Biome.class)
 public abstract class MixinBiome1_12 {
+    @Unique
+    private static final long EVENT_ISCANCELED_OFFSET = PUnsafe.pork_getOffset(Event.class, "isCanceled");
+    @Unique
+    private static final long EVENT_RESULT_OFFSET = PUnsafe.pork_getOffset(Event.class, "result");
+    @Unique
+    private static final long EVENT_PHASE_OFFSET = PUnsafe.pork_getOffset(Event.class, "phase");
     @Unique
     private static final long BIOMEEVENT_BIOME_OFFSET = PUnsafe.pork_getOffset(BiomeEvent.class, "biome");
     @Unique
@@ -54,6 +74,47 @@ public abstract class MixinBiome1_12 {
     @Final
     private int waterColor;
 
+    static {
+        //sanity checks to make sure the event classes don't have any additional fields which we aren't aware of - if they do, our hackery could cause incorrect results.
+
+        for (ImmutableTriple<Class<?>, Class<?>, Map<String, Class<?>>> entry : Arrays.<ImmutableTriple<Class<?>, Class<?>, Map<String, Class<?>>>>asList(
+                ImmutableTriple.of(BiomeEvent.GetWaterColor.class, BiomeEvent.BiomeColor.class, Collections.emptyMap()),
+                ImmutableTriple.of(BiomeEvent.GetGrassColor.class, BiomeEvent.BiomeColor.class, Collections.emptyMap()),
+                ImmutableTriple.of(BiomeEvent.GetFoliageColor.class, BiomeEvent.BiomeColor.class, Collections.emptyMap()),
+                ImmutableTriple.of(BiomeEvent.BiomeColor.class, BiomeEvent.class, ImmutableMap.of(
+                        "originalColor", int.class,
+                        "newColor", int.class)),
+                ImmutableTriple.of(BiomeEvent.class, Event.class, ImmutableMap.of(
+                        "biome", Biome.class)),
+                ImmutableTriple.of(Event.class, Object.class, ImmutableMap.of(
+                        "isCanceled", boolean.class,
+                        "result", Event.Result.class,
+                        "phase", EventPriority.class)))) {
+            checkState(entry.getLeft().getSuperclass() == entry.getMiddle(),
+                    "expected %s's superclass to be %s, but found %s", entry.getLeft(), entry.getMiddle(), entry.getLeft().getSuperclass());
+
+            Map<String, Class<?>> fields = Stream.of(entry.getLeft().getDeclaredFields())
+                            .filter(field -> (field.getModifiers() & Modifier.STATIC) == 0)
+                            .collect(Collectors.toMap(Field::getName, Field::getType));
+            checkState(entry.getRight().equals(fields),
+                    "expected %s to contain fields %s, but found %s", entry.getLeft(), entry.getRight(), fields);
+        }
+    }
+
+    @Unique
+    private static void fp2_resetEventInstance(BiomeEvent.BiomeColor event, Object biome, int original) {
+        //configure event
+        PUnsafe.putBoolean(event, EVENT_ISCANCELED_OFFSET, false); //reset event#isCanceled to its default value
+        PUnsafe.putObject(event, EVENT_RESULT_OFFSET, Event.Result.DEFAULT); //reset event#result to its default value
+        PUnsafe.putObject(event, EVENT_PHASE_OFFSET, null); //reset event#phase to its default value
+        PUnsafe.putObject(event, BIOMEEVENT_BIOME_OFFSET, biome); //set event#biome (final field)
+        PUnsafe.putInt(event, BIOMEEVENT$BIOMECOLOR_ORIGINALCOLOR_OFFSET, original); //set event#originalColor (final field)
+        event.setNewColor(original); //set event#newColor
+
+        //based on jdk8 implementation of MethodHandle#updateForm(LambdaForm), this is needed in order to ensure changes are made visible after writing to a final field with Unsafe
+        PUnsafe.fullFence();
+    }
+
     /**
      * This prevents allocation of a new event instance.
      *
@@ -66,12 +127,7 @@ public abstract class MixinBiome1_12 {
         BiomeEvent.GetWaterColor event = recycler.allocate();
 
         //configure event
-        PUnsafe.putObject(event, BIOMEEVENT_BIOME_OFFSET, this); //set event#biome (final field)
-        PUnsafe.putInt(event, BIOMEEVENT$BIOMECOLOR_ORIGINALCOLOR_OFFSET, this.waterColor); //set event#originalColor (final field)
-        event.setNewColor(this.waterColor); //set event#newColor
-
-        //based on jdk8 implementation of MethodHandle#updateForm(LambdaForm), this is needed in order to ensure changes are made visible after writing to a final field with Unsafe
-        PUnsafe.fullFence();
+        fp2_resetEventInstance(event, this, this.waterColor);
 
         //fire event
         MinecraftForge.EVENT_BUS.post(event);
@@ -94,12 +150,7 @@ public abstract class MixinBiome1_12 {
         BiomeEvent.GetGrassColor event = recycler.allocate();
 
         //configure event
-        PUnsafe.putObject(event, BIOMEEVENT_BIOME_OFFSET, this); //set event#biome (final field)
-        PUnsafe.putInt(event, BIOMEEVENT$BIOMECOLOR_ORIGINALCOLOR_OFFSET, original); //set event#originalColor (final field)
-        event.setNewColor(original); //set event#newColor
-
-        //based on jdk8 implementation of MethodHandle#updateForm(LambdaForm), this is needed in order to ensure changes are made visible after writing to a final field with Unsafe
-        PUnsafe.fullFence();
+        fp2_resetEventInstance(event, this, original);
 
         //fire event
         MinecraftForge.EVENT_BUS.post(event);
@@ -122,12 +173,7 @@ public abstract class MixinBiome1_12 {
         BiomeEvent.GetFoliageColor event = recycler.allocate();
 
         //configure event
-        PUnsafe.putObject(event, BIOMEEVENT_BIOME_OFFSET, this); //set event#biome (final field)
-        PUnsafe.putInt(event, BIOMEEVENT$BIOMECOLOR_ORIGINALCOLOR_OFFSET, original); //set event#originalColor (final field)
-        event.setNewColor(original); //set event#newColor
-
-        //based on jdk8 implementation of MethodHandle#updateForm(LambdaForm), this is needed in order to ensure changes are made visible after writing to a final field with Unsafe
-        PUnsafe.fullFence();
+        fp2_resetEventInstance(event, this, original);
 
         //fire event
         MinecraftForge.EVENT_BUS.post(event);

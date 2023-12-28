@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.java;
@@ -24,11 +23,11 @@ import lombok.NonNull;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.BiomeHelper;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.FastLayerProvider;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.IFastLayer;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.compat.AutoIntCacheResettingFastLayer;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.biome.layer.compat.ICompatLayer;
 import net.minecraft.world.gen.layer.GenLayer;
 
-import java.util.Arrays;
-import java.util.IdentityHashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 
 /**
@@ -37,7 +36,7 @@ import java.util.function.Function;
  * @author DaPorkchop_
  */
 public class JavaLayerProvider implements FastLayerProvider {
-    private static void addAllLayers(Map<GenLayer, GenLayer[]> childrenMap, GenLayer layer) {
+    private static void addAllLayers(Map<GenLayer, GenLayer[]> childrenMap, List<GenLayer> dependencyOrder, GenLayer layer) {
         if (childrenMap.containsKey(layer)) {
             return; //don't re-add the same layer twice
         }
@@ -47,8 +46,10 @@ public class JavaLayerProvider implements FastLayerProvider {
 
         //add parents recursively
         for (GenLayer child : parents) {
-            addAllLayers(childrenMap, child);
+            addAllLayers(childrenMap, dependencyOrder, child);
         }
+
+        dependencyOrder.add(layer);
     }
 
     protected final Map<Class<? extends GenLayer>, Function<GenLayer, IFastLayer>> fastMapperOverrides = new IdentityHashMap<>();
@@ -69,21 +70,25 @@ public class JavaLayerProvider implements FastLayerProvider {
     public IFastLayer[] makeFast(@NonNull GenLayer... inputs) {
         //initial add all layers and find their children
         Map<GenLayer, GenLayer[]> children = new IdentityHashMap<>();
+        List<GenLayer> dependencyOrder = new ArrayList<>();
         for (GenLayer layer : inputs) {
-            addAllLayers(children, layer);
+            addAllLayers(children, dependencyOrder, layer);
         }
 
         //map vanilla layers to fast layers
-        Map<GenLayer, IFastLayer> fastLayers = new IdentityHashMap<>();
-        children.keySet().forEach(layer -> fastLayers.put(layer, this.convertLayer(layer)));
+        Map<GenLayer, IFastLayer> fastLayers = new IdentityHashMap<>(dependencyOrder.size());
+        for (GenLayer layer : dependencyOrder) {
+            IFastLayer fastLayer = this.convertLayer(layer);
+            fastLayers.put(layer, fastLayer);
 
-        //init fast layers with their children
-        fastLayers.forEach((vanilla, fast) -> {
-            IFastLayer[] fastChildren = Arrays.stream(children.get(vanilla)).map(fastLayers::get).toArray(IFastLayer[]::new);
-            fast.init(fastChildren);
-        });
+            IFastLayer[] fastChildren = Arrays.stream(children.get(layer)).map(fastLayers::get).peek(Objects::requireNonNull).toArray(IFastLayer[]::new);
+            fastLayer.init(fastChildren);
+        }
 
-        return Arrays.stream(inputs).map(fastLayers::get).toArray(IFastLayer[]::new);
+        return Arrays.stream(inputs)
+                .map(fastLayers::get)
+                .map(layer -> layer.shouldResetIntCacheAfterGet() ? new AutoIntCacheResettingFastLayer(layer) : layer)
+                .toArray(IFastLayer[]::new);
     }
 
     @Override
