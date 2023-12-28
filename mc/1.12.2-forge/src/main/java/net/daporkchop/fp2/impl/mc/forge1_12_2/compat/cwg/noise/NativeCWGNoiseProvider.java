@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cwg.noise;
@@ -37,17 +36,19 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 class NativeCWGNoiseProvider extends JavaCWGNoiseProvider {
     public NativeCWGNoiseProvider() {
-        float[] randomVectors = new float[Utils.RANDOM_VECTORS.length];
-        for (int i = 0; i < Utils.RANDOM_VECTORS.length; i++) {
-            double d = Utils.RANDOM_VECTORS[i];
-            float f = (float) d;
-            checkState(d == (double) f, "RANDOM_VECTORS[%d]: original value %s cannot be converted to float %s without losing precision!", (Integer) i, (Double) d, (Float) f);
-            randomVectors[i] = f;
+        double[] randomVectors = Utils.RANDOM_VECTORS;
+        long[] packedVectors = new long[randomVectors.length >> 2];
+        for (int i = 0; i < randomVectors.length; i++) {
+            double d = randomVectors[i];
+            long l = Double.doubleToRawLongBits(d);
+            checkState((l & 0x0000FFFFFFFFFFFFL) == 0, "RANDOM_VECTORS[%d]: original value %s cannot be represented in 16 bits!", i, d);
+            checkState((i & 3) != 3 || l == 0L, "RANDOM_VECTORS[%d]: expected zero, but got %s", i, d);
+            packedVectors[i >> 2] |= l >>> ((i & 3) << 4);
         }
-        this.setRandomVectors(randomVectors);
+        this.setRandomVectors(packedVectors);
     }
 
-    protected native void setRandomVectors(@NonNull float[] randomVectors);
+    private native void setRandomVectors(@NonNull long[] randomVectors);
 
     @Override
     public native void generate3d(@NonNull double[] out, int baseX, int baseY, int baseZ, int level, double freqX, double freqY, double freqZ, int sizeX, int sizeY, int sizeZ, int seed, int octaves, double scale);

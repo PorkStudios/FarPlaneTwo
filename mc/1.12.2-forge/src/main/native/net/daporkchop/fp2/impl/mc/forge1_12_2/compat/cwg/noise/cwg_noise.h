@@ -24,25 +24,27 @@
 #include <fp2.h>
 #include <fp2/simd.h>
 
+#include <array>
 #include <cassert>
 #include <immintrin.h>
 
 namespace FP2_ROOT_NAMESPACE { namespace fp2::cwg::noise {
     /**
-     * An array of random vectors used for noise generation.
+     * An array of random vectors used for noise generation. This corresponds directly to the
+     * com.flowpowered.noise.Utils.RANDOM_VECTORS double[] on the Java side.
      *
-     * These are stored as floats rather than doubles in order to minimize their impact on the CPU cache.
+     * In order to minimize CPU cache utilization and improve lookup performance, the original vectors are packed
+     * into 64-bit integers, such that each vector component is stored using only 16 bits. This works because CWG
+     * changes the RANDOM_VECTORS array to only contain 0, 0.5 and -0.5, all of which differ only in the upper 16 bits
+     * (and all the lower bit are 0) when represented as double-precision IEEE 745 floating-point values.
+     *
+     * This means that obtaining three SIMD vectors containing the x,y,z components of the random vectors referenced by
+     * a SIMD vector of random vector indices can be implemented using a single gathering load and some simple
+     * shifting+masking. In fact, clang (LLVM) is able to optimize it into a single gathering load followed by three
+     * vector shuffles (one shuffle for each of the x,y,z components).
      */
-    inline float RANDOM_VECTORS[1024];
-
-    inline void setRandomVectors(JNIEnv* env, jfloatArray in) {
-        int32_t in_length = env->GetArrayLength(in);
-        if (in_length * sizeof(float) != sizeof(RANDOM_VECTORS)) {
-            throw fp2::error("invalid array length", in_length);
-        }
-
-        env->GetFloatArrayRegion(in, 0, in_length, &RANDOM_VECTORS[0]);
-    }
+    __attribute__((aligned(sizeof(jlong) * 256))) //align to ensure the table doesn't go over a page boundary
+    inline jlong RANDOM_VECTORS[256];
 
     constexpr double raw_to_double(uint64_t in) {
         const union {
@@ -138,89 +140,15 @@ namespace FP2_ROOT_NAMESPACE { namespace fp2::cwg::noise {
             typename fp2::simd::type_vec<double, VEC_LANES>::INT::TYPE seed) {
         using DOUBLE = typename fp2::simd::type_vec<double, VEC_LANES>::TYPE;
         using INT = typename fp2::simd::type_vec<double, VEC_LANES>::INT::TYPE;
+        using LONG = typename fp2::simd::type_vec<double, VEC_LANES>::LONG::TYPE;
 
-        INT vi = vectorIndex(ix, iy, iz, seed) << 2;
-        DOUBLE xvGradient, yvGradient, zvGradient;
+        INT vi = vectorIndex(ix, iy, iz, seed);
+        LONG vector = lookup<256>(extend(vi), RANDOM_VECTORS);
 
-        if constexpr (VEC_LANES == 8 && fp2::simd::LANES_32 == 16 && fp2::simd::LANES_64 == 8) { //AVX512
-            using FLOAT4 = typename fp2::simd::type_vec<double, 4>::FLOAT::TYPE;
-            using FLOAT8 = typename fp2::simd::type_vec<double, 8>::FLOAT::TYPE;
-            using FLOAT16 = typename fp2::simd::type_vec<float, 16>::TYPE;
-
-            //load 8 SSE registers in XYZW XYZW XYZW XYZW XYZW XYZW XYZW XYZW format
-            FLOAT4 f0 = FLOAT4().load(&RANDOM_VECTORS[vi[0]]);
-            FLOAT4 f1 = FLOAT4().load(&RANDOM_VECTORS[vi[1]]);
-            FLOAT4 f2 = FLOAT4().load(&RANDOM_VECTORS[vi[2]]);
-            FLOAT4 f3 = FLOAT4().load(&RANDOM_VECTORS[vi[3]]);
-            FLOAT4 f4 = FLOAT4().load(&RANDOM_VECTORS[vi[4]]);
-            FLOAT4 f5 = FLOAT4().load(&RANDOM_VECTORS[vi[5]]);
-            FLOAT4 f6 = FLOAT4().load(&RANDOM_VECTORS[vi[6]]);
-            FLOAT4 f7 = FLOAT4().load(&RANDOM_VECTORS[vi[7]]);
-
-            //concatenate to get 4 AVX registers in XYZWXYZW XYZWXYZW XYZWXYZW XYZWXYZW format
-            FLOAT8 f01 = FLOAT8(f0, f1);
-            FLOAT8 f23 = FLOAT8(f2, f3);
-            FLOAT8 f45 = FLOAT8(f4, f5);
-            FLOAT8 f67 = FLOAT8(f6, f7);
-
-            //concatenate to get 2 AVX512 registers in XYZWXYZWXYZWXYZW XYZWXYZWXYZWXYZW format
-            FLOAT16 f0123 = FLOAT16(f01, f23);
-            FLOAT16 f4567 = FLOAT16(f45, f67);
-
-            //shuffle to get 3 AVX512 registers in XXXXXXXX???????? YYYYYYYY???????? ZZZZZZZZ???????? format
-            FLOAT16 fx01234567________ = blend16<0, 4, 8, 12, 16, 20, 24, 28, V_DC, V_DC, V_DC, V_DC, V_DC, V_DC, V_DC, V_DC>(f0123, f4567);
-            FLOAT16 fy01234567________ = blend16<1, 5, 9, 13, 17, 21, 25, 29, V_DC, V_DC, V_DC, V_DC, V_DC, V_DC, V_DC, V_DC>(f0123, f4567);
-            FLOAT16 fz01234567________ = blend16<2, 6, 10, 14, 18, 22, 26, 30, V_DC, V_DC, V_DC, V_DC, V_DC, V_DC, V_DC, V_DC>(f0123, f4567);
-
-            //truncate to get 3 AVX registers in XXXXXXXX YYYYYYYY ZZZZZZZZ format, then extend to double to get 3 AVX512 registers
-            xvGradient = to_double(fx01234567________.get_low());
-            yvGradient = to_double(fy01234567________.get_low());
-            zvGradient = to_double(fz01234567________.get_low());
-        } else if constexpr (VEC_LANES == 4 && fp2::simd::LANES_32 == 8 && fp2::simd::LANES_64 == 4) { //AVX and AVX2
-            using FLOAT4 = typename fp2::simd::type_vec<double, 4>::FLOAT::TYPE;
-            using FLOAT8 = typename fp2::simd::type_vec<double, 8>::FLOAT::TYPE;
-
-            //load 4 SSE registers in XYZW XYZW XYZW XYZW format
-            FLOAT4 f0 = FLOAT4().load(&RANDOM_VECTORS[vi[0]]);
-            FLOAT4 f1 = FLOAT4().load(&RANDOM_VECTORS[vi[1]]);
-            FLOAT4 f2 = FLOAT4().load(&RANDOM_VECTORS[vi[2]]);
-            FLOAT4 f3 = FLOAT4().load(&RANDOM_VECTORS[vi[3]]);
-
-            //concatenate to get 2 AVX registers in XYZWXYZW XYZWXYZW format
-            FLOAT8 f01 = FLOAT8(f0, f1);
-            FLOAT8 f23 = FLOAT8(f2, f3);
-
-            //shuffle to get 3 AVX registers in XXXX???? YYYY???? ZZZZ???? format
-            FLOAT8 fx0123____ = blend8<0, 4, 8, 12, V_DC, V_DC, V_DC, V_DC>(f01, f23);
-            FLOAT8 fy0123____ = blend8<1, 5, 9, 13, V_DC, V_DC, V_DC, V_DC>(f01, f23);
-            FLOAT8 fz0123____ = blend8<2, 6, 10, 14, V_DC, V_DC, V_DC, V_DC>(f01, f23);
-
-            //truncate to get 3 SSE registers in XXXX YYYY ZZZZ format, then extend to double to get 3 AVX registers
-            xvGradient = to_double(fx0123____.get_low());
-            yvGradient = to_double(fy0123____.get_low());
-            zvGradient = to_double(fz0123____.get_low());
-        } else if constexpr (VEC_LANES == 4 && fp2::simd::LANES_32 == 4 && fp2::simd::LANES_64 == 2) { //SSE (with emulated 256-bit vectors)
-            using FLOAT4 = typename fp2::simd::type_vec<double, 4>::FLOAT::TYPE;
-
-            //load 4 SSE registers in XYZW XYZW XYZW XYZW format
-            FLOAT4 f0 = FLOAT4().load(&RANDOM_VECTORS[vi[0]]);
-            FLOAT4 f1 = FLOAT4().load(&RANDOM_VECTORS[vi[1]]);
-            FLOAT4 f2 = FLOAT4().load(&RANDOM_VECTORS[vi[2]]);
-            FLOAT4 f3 = FLOAT4().load(&RANDOM_VECTORS[vi[3]]);
-
-            //shuffle to get 4 SSE registers in XXYY ZZWW XXYY ZZWW format
-            FLOAT4 f01_XY = blend4<0, 4, 1, 5>(f0, f1);
-            FLOAT4 f01_ZW = blend4<2, 6, V_DC, V_DC>(f0, f1);
-            FLOAT4 f23_XY = blend4<0, 4, 1, 5>(f2, f3);
-            FLOAT4 f23_ZW = blend4<2, 6, V_DC, V_DC>(f2, f3);
-
-            //shuffle to get 3 SSE registers in XXXX YYYY ZZZZ format, then extend to double (emulated 256-bit, 2x SSE registers per variable)
-            xvGradient = to_double(blend4<0, 1, 4, 5>(f01_XY, f23_XY));
-            yvGradient = to_double(blend4<2, 3, 6, 7>(f01_XY, f23_XY));
-            zvGradient = to_double(blend4<0, 1, 4, 5>(f01_ZW, f23_ZW));
-        } else {
-            assert(false);
-        }
+        //clang is able to optimize this into a sequence of shuffles
+        DOUBLE xvGradient = reinterpret_d(((vector >> 48) & 0xFFFF) << 48);
+        DOUBLE yvGradient = reinterpret_d(((vector >> 32) & 0xFFFF) << 48);
+        DOUBLE zvGradient = reinterpret_d(((vector >> 16) & 0xFFFF) << 48);
 
         return xvGradient * fx + yvGradient * fy + zvGradient * fz + 0.5;
     }

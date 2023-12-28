@@ -21,8 +21,13 @@
 #include "cwg_noise.h"
 
 FP2_JNI(void, NativeCWGNoiseProvider, setRandomVectors)(JNIEnv* env, jobject obj,
-        jfloatArray random_vectors) FP2_JNI_HEAD
-    fp2::cwg::noise::setRandomVectors(env, random_vectors);
+        jlongArray random_vectors) FP2_JNI_HEAD
+    int32_t in_length = env->GetArrayLength(random_vectors);
+    if (in_length * sizeof(jlong) != sizeof(fp2::cwg::noise::RANDOM_VECTORS)) {
+        throw fp2::error("invalid array length", in_length);
+    }
+
+    env->GetLongArrayRegion(random_vectors, 0, in_length, fp2::cwg::noise::RANDOM_VECTORS);
 FP2_JNI_TAIL
 
 FP2_JNI(void, NativeCWGNoiseProvider, generate3d)(JNIEnv* env, jobject obj,
