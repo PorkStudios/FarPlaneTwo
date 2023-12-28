@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2023 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -33,15 +33,20 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskProvider;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * @author DaPorkchop_
@@ -99,17 +104,31 @@ public final class Natives {
                     return;
                 }
 
+                List<TaskProvider<? extends Task>> compilationTasks = new ArrayList<>();
+                List<CompletableFuture<Boolean>> specsSupportedTasks = new ArrayList<>();
+
                 extension.getOperatingSystems().forEach(operatingSystem -> {
                     operatingSystem.getSupportedArchitectures().get().forEach(architecture -> {
                         if (module.getSimd().getOrElse(false)) {
                             architecture.getSimdExtensions().forEach(simdExtension -> {
-                                TaskProvider<? extends Task> moduleRootTask = this.registerBuild(new NativeSpec(extension, module, architecture, operatingSystem, simdExtension), module, linkOutputDir);
-                                rootTask.configure(task -> task.dependsOn(moduleRootTask));
+                                NativeSpec spec = new NativeSpec(extension, module, architecture, operatingSystem, simdExtension);
+                                compilationTasks.add(this.registerBuild(spec, module, linkOutputDir));
+                                specsSupportedTasks.add(this.checkSupported(spec));
                             });
                         }
-                        TaskProvider<? extends Task> moduleRootTask = this.registerBuild(new NativeSpec(extension, module, architecture, operatingSystem, null), module, linkOutputDir);
-                        rootTask.configure(task -> task.dependsOn(moduleRootTask));
+
+                        NativeSpec spec = new NativeSpec(extension, module, architecture, operatingSystem, null);
+                        compilationTasks.add(this.registerBuild(spec, module, linkOutputDir));
+                        specsSupportedTasks.add(this.checkSupported(spec));
                     });
+                });
+
+                rootTask.configure(task -> {
+                    for (int i = 0; i < compilationTasks.size(); i++) {
+                        if (specsSupportedTasks.get(i).join()) { //only add the spec's task as a build dependency if it's actually supported
+                            task.dependsOn(compilationTasks.get(i));
+                        }
+                    }
                 });
             });
         });
@@ -146,5 +165,44 @@ public final class Natives {
         });
 
         return linkTask;
+    }
+
+    private CompletableFuture<Boolean> checkSupported(NativeSpec spec) {
+        if (!Files.exists(Paths.get("/dev/null"))) {
+            //TODO: we don't know how to handle this...
+            return CompletableFuture.completedFuture(false);
+        }
+
+        List<String> command = new ArrayList<>();
+        command.add(CLANG_PATH.get().toString());
+        command.add("-target");
+        command.add(spec.platformString());
+        command.addAll(spec.cxxFlags());
+        spec.includeDirectories().forEach(d -> command.add("-I" + d));
+        spec.defines().forEach((k, v) -> command.add("-D" + k + '=' + v));
+        command.add("-c");
+        //TODO: this is gross
+        command.add(this.project.getRootProject().getProjectDir().toPath().toAbsolutePath().resolve("buildSrc/src/main/resources/net/daporkchop/fp2/gradle/natives/compile-test.cpp").toString());
+        command.add("-o");
+        command.add("/dev/null");
+
+        //TODO: should we also try linking?
+
+        Process process;
+        try {
+            process = new ProcessBuilder(command).redirectOutput(new File("/dev/null")).redirectError(new File("/dev/null")).start();
+        } catch (IOException e) {
+            return CompletableFuture.completedFuture(false);
+        }
+
+        return CompletableFuture.supplyAsync(() -> {
+            while (true) {
+                try {
+                    return process.waitFor() == 0;
+                } catch (InterruptedException e) {
+                    //ignore
+                }
+            }
+        });
     }
 }
