@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -19,30 +19,28 @@
 
 package net.daporkchop.fp2.api.world.level;
 
-import lombok.Data;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
-
-import static java.lang.Math.*;
-import static java.util.Objects.*;
-import static net.daporkchop.lib.common.util.PValidation.*;
+import net.daporkchop.lib.common.annotation.ThreadSafe;
+import net.daporkchop.lib.common.annotation.param.NotNegative;
+import net.daporkchop.lib.common.annotation.param.Positive;
 
 /**
  * A read-only world consisting of voxels at integer coordinates.
  * <p>
  * Implementations <strong>must</strong> be thread-safe.
  * <p>
- * <h2>Voxel Data and Bands</h2>
+ * <h2>Voxel Properties</h2>
  * <p>
- * Each voxel contains multiple independent data values, stored in separate channels ("bands"). The following bands are used:<br>
- * <table>
- *     <tr><th>Name</th><th>Type</th><th>Description</th></tr>
- *     <tr><td>{@link BlockLevelConstants#DATA_BAND_ORDINAL_STATES State}</td><td>{@code int}</td><td>A state ID, as returned by the corresponding methods in {@link FGameRegistry}</td></tr>
- *     <tr><td>{@link BlockLevelConstants#DATA_BAND_ORDINAL_BIOMES Biome}</td><td>{@code int}</td><td>A biome ID, as returned by the corresponding methods in {@link FGameRegistry}</td></tr>
- *     <tr><td>{@link BlockLevelConstants#DATA_BAND_ORDINAL_LIGHT Light}</td><td>{@code byte}</td><td>Block+sky light levels, as returned by {@link BlockLevelConstants#packLight(int, int)}</td></tr>
- * </table><br>
- * More bands may be added in the future as necessary.
+ * Each voxel contains values representing the following properties:<br>
+ * <ul>
+ *     <li>A state (represented as an {@code int}, as returned by the corresponding methods in {@link FGameRegistry})</li>
+ *     <li>A biome (represented by an {@code int}, as returned by the corresponding methods in {@link FGameRegistry})</li>
+ *     <li>A block light level and sky light level (represented as a {@code byte}, as returned by {@link BlockLevelConstants#packLight(int, int)}). Light levels are unsigned nibbles (4-bit integers),
+ *     where {@code 0} is the darkest and {@code 15} is the brightest possible value.</li>
+ * </ul>
+ * More per-voxel properties may be added in the future as necessary.
  * <p>
  * <h2>Data Availability</h2>
  * <p>
@@ -58,7 +56,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  *     rather than <i>accessibility</i> of data.</li>
  * </ul>
  * <p>
- * Data availability is per-position and not specific to individual bands.
+ * Data availability is per-position and not specific to individual voxel properties.
  * <p>
  * <h2>Bulk Operations</h2>
  * <p>
@@ -76,6 +74,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  *
  * @author DaPorkchop_
  */
+@ThreadSafe
 public interface FBlockLevel extends AutoCloseable {
     /**
      * Closes this world, immediately releasing any internally allocated resources.
@@ -220,349 +219,53 @@ public interface FBlockLevel extends AutoCloseable {
     //
 
     /**
-     * Issues a bulk data retrieval query.
-     *
-     * @param query the {@link DataQuery query} which describes the position(s) to query the data from, which data bands should be accessed, and where the retrieved data should be stored
-     * @throws GenerationNotAllowedException if the data at any of the queried voxel positions is not generated and this world doesn't allow generation
-     */
-    default void query(@NonNull DataQuery query) throws GenerationNotAllowedException {
-        this.query(new DataQuery[]{ query }); //delegate to bulk implementation
-    }
-
-    /**
-     * Issues multiple bulk data retrieval queries.
-     *
-     * @param queries an array of {@link DataQuery queries} which describe the position(s) to query the data from, which data bands should be accessed, and where the retrieved data should be stored
-     * @throws GenerationNotAllowedException if the data at any of the queried voxel positions is not generated and this world doesn't allow generation
-     */
-    default void query(@NonNull DataQuery... queries) throws GenerationNotAllowedException {
-        //ensure all queries are valid
-        for (DataQuery query : queries) {
-            requireNonNull(query, "query").validate();
-        }
-
-        //dispatch queries
-        for (DataQuery query : queries) {
-            query.validate(); //validate again to potentially help JIT
-
-            DataQueryShape shape = query.shape();
-            DataQueryOutput output = query.output();
-
-            int enabledBands = output.enabledBands();
-            shape.forEach((index, x, y, z) -> {
-                //initialize variables to throwaway values (they won't be used if the data band is disabled)
-                int state = 0;
-                int biome = 0;
-                byte light = 0;
-
-                //read values if corresponding bands are enabled
-                if (BlockLevelConstants.isDataBandEnabled(enabledBands, BlockLevelConstants.DATA_BAND_ORDINAL_STATES)) {
-                    state = this.getState(x, y, z);
-                }
-                if (BlockLevelConstants.isDataBandEnabled(enabledBands, BlockLevelConstants.DATA_BAND_ORDINAL_BIOMES)) {
-                    biome = this.getBiome(x, y, z);
-                }
-                if (BlockLevelConstants.isDataBandEnabled(enabledBands, BlockLevelConstants.DATA_BAND_ORDINAL_LIGHT)) {
-                    light = this.getLight(x, y, z);
-                }
-
-                //store values in query output
-                output.setStateBiomesLight(index, state, biome, light);
-            });
-        }
-    }
-
-    /**
-     * Describes a query's shape.
+     * Gets all data values for all voxels in a cuboid defined by an origin point and a size along each axis.
      * <p>
-     * A query shape consists of a sequence of voxel positions, indexed from {@code 0} (inclusive) to {@link #count()} (exclusive). It describes the positions of the voxels which
-     * the query will access, as well as the order in which the query's results will be written to the {@link DataQueryOutput output}.
-     *
-     * @author DaPorkchop_
-     */
-    interface DataQueryShape {
-        /**
-         * Ensures that this query's state is valid, throwing an exception if not.
-         * <p>
-         * If this method is not called and the shape's state is invalid, the behavior of all other methods is undefined.
-         * <p>
-         * It is recommended to call this once per method body before using a shape instance, as it could allow the JVM to optimize the code more aggressively.
-         *
-         * @throws RuntimeException if the shape's state is invalid
-         */
-        default void validate() throws RuntimeException {
-            //no-op
-        }
-
-        /**
-         * @return the number of voxels which will be read by this query
-         */
-        int count();
-
-        /**
-         * Gets the X coordinate of the {@code index}th voxel position.
-         *
-         * @param index the voxel position's index
-         * @return the voxel position's X coordinate
-         */
-        int x(int index);
-
-        /**
-         * Gets the Y coordinate of the {@code index}th voxel position.
-         *
-         * @param index the voxel position's index
-         * @return the voxel position's Y coordinate
-         */
-        int y(int index);
-
-        /**
-         * Gets the Z coordinate of the {@code index}th voxel position.
-         *
-         * @param index the voxel position's index
-         * @return the voxel position's Z coordinate
-         */
-        int z(int index);
-
-        /**
-         * Gets the coordinates of the {@code index}th voxel position.
-         * <p>
-         * Conceptually implemented by
-         * <blockquote><pre>{@code
-         * PValidation.checkRangeLen(dst.length, 0, 3);
-         * dst[0] = this.x(index);
-         * dst[1] = this.y(index);
-         * dst[2] = this.z(index);
-         * }</pre></blockquote>
-         * except the implementation has the opportunity to optimize this beyond what the user could write.
-         *
-         * @param index the voxel position's index
-         * @param dst   an {@code int[]} to which the voxel position's X,Y,Z coordinates will be written at indices {@code 0}, {@code 1} and {@code 2}, respectively
-         * @throws IndexOutOfBoundsException if the length of {@code dst} is less than 3
-         */
-        default void position(int index, @NonNull int[] dst) {
-            checkRangeLen(dst.length, 0, 3);
-            dst[0] = this.x(index);
-            dst[1] = this.y(index);
-            dst[2] = this.z(index);
-        }
-
-        /**
-         * Performs the given action for each voxel position in this shape until all positions have been processed or the action throws an exception.
-         *
-         * @param action the action to be performed for each voxel position
-         */
-        default <T extends Throwable> void forEach(@NonNull VoxelPositionConsumer<T> action) throws T {
-            int[] position = new int[3];
-            for (int index = 0, count = this.count(); index < count; index++) {
-                this.position(index, position);
-                action.accept(index, position[0], position[1], position[2]);
-            }
-        }
-
-        /**
-         * Represents an operation that accepts a single voxel position (both its index and coordinate values) and returns no result.
-         *
-         * @author DaPorkchop_
-         */
-        @FunctionalInterface
-        interface VoxelPositionConsumer<T extends Throwable> {
-            /**
-             * Accepts a single voxel position.
-             *
-             * @param index the voxel position index
-             * @param x     the voxel position's X coordinate
-             * @param y     the voxel position's Y coordinate
-             * @param z     the voxel position's Z coordinate
-             */
-            void accept(int index, int x, int y, int z) throws T;
-        }
-    }
-
-    /**
-     * A simple {@link DataQueryShape} which consists of a single position.
-     *
-     * @author DaPorkchop_
-     */
-    @Data
-    final class SinglePointDataQueryShape implements DataQueryShape {
-        private final int x;
-        private final int y;
-        private final int z;
-
-        @Override
-        public int count() {
-            return 1;
-        }
-
-        @Override
-        public int x(int index) {
-            checkIndex(1, index);
-            return this.x;
-        }
-
-        @Override
-        public int y(int index) {
-            checkIndex(1, index);
-            return this.y;
-        }
-
-        @Override
-        public int z(int index) {
-            checkIndex(1, index);
-            return this.z;
-        }
-
-        @Override
-        public void position(int index, @NonNull int[] dst) {
-            checkIndex(1, index);
-            checkRangeLen(dst.length, 0, 3);
-            dst[0] = this.x;
-            dst[1] = this.y;
-            dst[2] = this.z;
-        }
-
-        @Override
-        public <T extends Throwable> void forEach(@NonNull VoxelPositionConsumer<T> action) throws T {
-            action.accept(0, this.x, this.y, this.z);
-        }
-    }
-
-    /**
-     * A simple {@link DataQueryShape} which consists of multiple positions. Positions are defined by three user-provided arrays, one for each axis.
+     * This will iterate over all voxels in the given cuboid volume and write the retrieved data for the sampled voxels into the given arrays.
      * <p>
-     * Positions are returned in the order they are present in the arrays.
+     * If any exception is thrown, the contents of the referenced ranges of the given arrays is undefined.
      *
-     * @author DaPorkchop_
+     * @param originX   the origin X coordinate
+     * @param originY   the origin Y coordinate
+     * @param originZ   the origin Z coordinate
+     * @param sizeX     the grid's size along the X axis
+     * @param sizeY     the grid's size along the Y axis
+     * @param sizeZ     the grid's size along the Z axis
+     * @param states    the array for retrieved state data to be stored in, or {@code null} if state data is not requested
+     * @param statesOff the offset into the {@code states} array to begin writing into
+     * @param biomes    the array for retrieved biome data to be stored in, or {@code null} if biome data is not requested
+     * @param biomesOff the offset into the {@code biomes} array to begin writing into
+     * @param lights    the array for retrieved block/sky light data to be stored in, or {@code null} if block/sky light data is not requested
+     * @param lightsOff the offset into the {@code lights} array to begin writing into
+     * @throws GenerationNotAllowedException if the data at any of the given voxel positions is not generated and this world doesn't allow generation
      */
-    @Data
-    final class MultiPointsDataQueryShape implements DataQueryShape {
-        @NonNull
-        private final int[] x;
-        private final int xOffset;
-        private final int xStride;
+    default void multiGetDense(
+            int originX, int originY, int originZ,
+            @Positive int sizeX, @Positive int sizeY, @Positive int sizeZ,
+            int[] states, @NotNegative int statesOff,
+            int[] biomes, @NotNegative int biomesOff,
+            byte[] lights, @NotNegative int lightsOff) throws GenerationNotAllowedException {
+        int totalSamples = BlockLevelConstants.validateDenseGridBounds(originX, originY, originZ, sizeX, sizeY, sizeZ);
 
-        @NonNull
-        private final int[] y;
-        private final int yOffset;
-        private final int yStride;
-
-        @NonNull
-        private final int[] z;
-        private final int zOffset;
-        private final int zStride;
-
-        private final int count;
-
-        @Override
-        public void validate() throws RuntimeException {
-            //make sure count is valid
-            notNegative(this.count, "count");
-
-            //make sure all the indices fit within the given arrays for the provided offset and stride
-            if (this.count != 0) {
-                checkRangeLen(this.x.length, this.xOffset, multiplyExact(positive(this.xStride, "xStride"), this.count) - this.xOffset);
-                checkRangeLen(this.y.length, this.yOffset, multiplyExact(positive(this.yStride, "yStride"), this.count) - this.yOffset);
-                checkRangeLen(this.z.length, this.zOffset, multiplyExact(positive(this.zStride, "zStride"), this.count) - this.zOffset);
-            }
+        if (states == null && biomes == null && lights == null) { //nothing to do
+            return;
         }
 
-        @Override
-        public int x(int index) {
-            checkIndex(this.count, index);
-            //we assume our state is valid, and since we know that the index is valid we can be sure there will be no overflows here
-            return this.x[this.xOffset + index * this.xStride];
-        }
+        for (int i = 0, dx = 0; dx < sizeX; dx++) {
+            for (int dy = 0; dy < sizeY; dy++) {
+                for (int dz = 0; dz < sizeZ; dz++, i++) {
+                    int x = originX + dx;
+                    int y = originY + dy;
+                    int z = originZ + dz;
 
-        @Override
-        public int y(int index) {
-            checkIndex(this.count, index);
-            //we assume our state is valid, and since we know that the index is valid we can be sure there will be no overflows here
-            return this.y[this.yOffset + index * this.yStride];
-        }
-
-        @Override
-        public int z(int index) {
-            checkIndex(this.count, index);
-            //we assume our state is valid, and since we know that the index is valid we can be sure there will be no overflows here
-            return this.z[this.zOffset + index * this.zStride];
-        }
-
-        @Override
-        public <T extends Throwable> void forEach(@NonNull VoxelPositionConsumer<T> action) throws T {
-            this.validate();
-
-            //iterate over every position
-            for (int index = 0, xIndex = this.xOffset, yIndex = this.yOffset, zIndex = this.zOffset; index < this.count; index++, xIndex += this.xStride, yIndex += this.yStride, zIndex += this.zStride) {
-                action.accept(index, this.x[xIndex], this.y[yIndex], this.z[zIndex]);
-            }
-        }
-    }
-
-    /**
-     * A simple {@link DataQueryShape} which consists of an origin position, and per-axis sample counts and strides.
-     * <p>
-     * Positions are returned in XYZ order.
-     *
-     * @author DaPorkchop_
-     */
-    @Data
-    final class OriginSizeStrideDataQueryShape implements DataQueryShape {
-        private final int originX;
-        private final int originY;
-        private final int originZ;
-        private final int sizeX;
-        private final int sizeY;
-        private final int sizeZ;
-        private final int strideX;
-        private final int strideY;
-        private final int strideZ;
-
-        @Override
-        @SuppressWarnings("ResultOfMethodCallIgnored")
-        public void validate() throws RuntimeException {
-            //make sure the sizes can be multiplied together to form an exclusive upper index bound without overflow
-            multiplyExact(multiplyExact(notNegative(this.sizeX, "sizeX"), notNegative(this.sizeY, "sizeY")), notNegative(this.sizeZ, "sizeZ"));
-
-            //make sure there will be no overflow when computing the actual voxel positions
-            addExact(this.originX, multiplyExact(notNegative(this.strideX, "strideX"), this.sizeX));
-            addExact(this.originY, multiplyExact(notNegative(this.strideY, "strideY"), this.sizeY));
-            addExact(this.originZ, multiplyExact(notNegative(this.strideZ, "strideZ"), this.sizeZ));
-        }
-
-        @Override
-        public int count() {
-            //we assume our state is valid, and since we know that the index is valid we can be sure there will be no overflows here
-            return this.sizeX * this.sizeY * this.sizeZ;
-        }
-
-        @Override
-        public int x(int index) {
-            checkIndex(this.count(), index);
-            return this.originX + (index / (this.sizeY * this.sizeZ)) * this.strideX;
-        }
-
-        @Override
-        public int y(int index) {
-            checkIndex(this.count(), index);
-            return this.originY + (index / this.sizeZ % this.sizeY) * this.strideY;
-        }
-
-        @Override
-        public int z(int index) {
-            checkIndex(this.count(), index);
-            return this.originZ + (index % this.sizeZ) * this.strideZ;
-        }
-
-        @Override
-        public <T extends Throwable> void forEach(@NonNull VoxelPositionConsumer<T> action) throws T {
-            this.validate();
-
-            //iterate over every position!
-            // we don't have to worry about overflows: validate() would have thrown an exception if it were possible to overflow
-            for (int index = 0, dx = 0; dx < this.sizeX; dx++) {
-                for (int dy = 0; dy < this.sizeY; dy++) {
-                    for (int dz = 0; dz < this.sizeZ; dz++, index++) {
-                        action.accept(index, this.originX + dx * this.strideX, this.originY + dy * this.strideY, this.originZ + dz * this.strideZ);
+                    if (states != null) {
+                        states[statesOff + i] = this.getState(x, y, z);
+                    }
+                    if (biomes != null) {
+                        biomes[biomesOff + i] = this.getBiome(x, y, z);
+                    }
+                    if (lights != null) {
+                        lights[lightsOff + i] = this.getLight(x, y, z);
                     }
                 }
             }
@@ -570,250 +273,58 @@ public interface FBlockLevel extends AutoCloseable {
     }
 
     /**
-     * Describes target for a query's result to be written to.
+     * Gets all data values for all voxels in a sparse grid defined by an origin point, a spacing between samples and a sample count along each axis.
      * <p>
-     * A query shape consists of a sequence of per-voxel data values, indexed from {@code 0} (inclusive) to {@link #count()} (exclusive). Each value is broken up into multiple
-     * "bands", each of which contain a separate category of information. Bands may be enabled or disabled individually, allowing users to query only the data they're interested
-     * in without wasting processing time reading unneeded values or allocating throwaway buffers.
-     *
-     * @author DaPorkchop_
-     */
-    interface DataQueryOutput {
-        /**
-         * Ensures that this output's state is valid, throwing an exception if not.
-         * <p>
-         * If this method is not called and the output's state is invalid, the behavior of all other methods is undefined.
-         * <p>
-         * It is recommended to call this once per method body before using an output instance, as it could allow the JVM to optimize the code more aggressively.
-         *
-         * @throws RuntimeException if the output's state is invalid
-         */
-        void validate() throws RuntimeException;
-
-        /**
-         * @return a bitfield indicating which bands are enabled for this output
-         * @see BlockLevelConstants#isDataBandEnabled(int, int)
-         */
-        int enabledBands();
-
-        /**
-         * @return the number of output slots which will be read by this query
-         */
-        int count();
-
-        /**
-         * Sets the state value at the given output index.
-         * <p>
-         * If this output does not have the {@link BlockLevelConstants#DATA_BAND_ORDINAL_STATES "states" data band} enabled, the value will be silently discarded.
-         *
-         * @param index the output index
-         * @param state the new state value
-         */
-        void setState(int index, int state);
-
-        /**
-         * Sets the biome value at the given output index.
-         * <p>
-         * If this output does not have the {@link BlockLevelConstants#DATA_BAND_ORDINAL_BIOMES "biome" data band} enabled, the value will be silently discarded.
-         *
-         * @param index the output index
-         * @param biome the new biome value
-         */
-        void setBiome(int index, int biome);
-
-        /**
-         * Sets the light value at the given output index.
-         * <p>
-         * If this output does not have the {@link BlockLevelConstants#DATA_BAND_ORDINAL_LIGHT "light" data band} enabled, the value will be silently discarded.
-         *
-         * @param index the output index
-         * @param light the new light value
-         */
-        void setLight(int index, byte light);
-
-        /**
-         * Sets the values in multiple bands at the given output index.
-         * <p>
-         * Conceptually implemented by
-         * <blockquote><pre>{@code
-         * this.setState(index, state);
-         * this.setBiome(index, biome);
-         * this.setLight(index, light);
-         * }</pre></blockquote>
-         * except the implementation has the opportunity to optimize this beyond what the user could write.
-         *
-         * @param index the output index
-         * @param state the new state value
-         * @param biome the new biome value
-         * @param light the new light value
-         */
-        default void setStateBiomesLight(int index, int state, int biome, byte light) {
-            this.setState(index, state);
-            this.setBiome(index, biome);
-            this.setLight(index, light);
-        }
-    }
-
-    /**
-     * A simple {@link DataQueryOutput} consisting of a separate array for each data band.
+     * This will iterate over all voxels in the given sampling grid and write the retrieved data for the sampled voxels into the given arrays.
      * <p>
-     * Each data band array is described by the following:
-     * <ul>
-     *     <li>the array to which output is to be written, or {@code null} if the data band is to be disabled</li>
-     *     <li>the offset at which to begin writing values to the array. Should be {@code 0} to begin writing at the beginning of the array</li>
-     *     <li>the stride between values written to the array. Should be {@code 1} for tightly-packed output</li>
-     * </ul>
+     * If any exception is thrown, the contents of the referenced ranges of the given arrays is undefined.
      *
-     * @author DaPorkchop_
+     * @param originX   the origin X coordinate. Must be aligned to a multiple of {@code strideX}
+     * @param originY   the origin Y coordinate. Must be aligned to a multiple of {@code strideY}
+     * @param originZ   the origin Z coordinate. Must be aligned to a multiple of {@code strideZ}
+     * @param sizeX     the number of samples to take along the X axis
+     * @param sizeY     the number of samples to take along the Y axis
+     * @param sizeZ     the number of samples to take along the Z axis
+     * @param zoom      {@code log2} of the distance between samples along each axis
+     * @param states    the array for retrieved state data to be stored in, or {@code null} if state data is not requested
+     * @param statesOff the offset into the {@code states} array to begin writing into
+     * @param biomes    the array for retrieved biome data to be stored in, or {@code null} if biome data is not requested
+     * @param biomesOff the offset into the {@code biomes} array to begin writing into
+     * @param lights    the array for retrieved block/sky light data to be stored in, or {@code null} if block/sky light data is not requested
+     * @param lightsOff the offset into the {@code lights} array to begin writing into
+     * @throws GenerationNotAllowedException if the data at any of the given voxel positions is not generated and this world doesn't allow generation
      */
-    @Data
-    final class BandArraysDataQueryOutput implements DataQueryOutput {
-        private final int[] statesArray;
-        private final int statesOffset;
-        private final int statesStride;
+    default void multiGetSparse(
+            int originX, int originY, int originZ,
+            @Positive int sizeX, @Positive int sizeY, @Positive int sizeZ,
+            @NotNegative int zoom,
+            int[] states, @NotNegative int statesOff,
+            int[] biomes, @NotNegative int biomesOff,
+            byte[] lights, @NotNegative int lightsOff) throws GenerationNotAllowedException {
+        int totalSamples = BlockLevelConstants.validateSparseGridBounds(originX, originY, originZ, sizeX, sizeY, sizeZ, zoom);
 
-        private final int[] biomesArray;
-        private final int biomesOffset;
-        private final int biomesStride;
+        if (states == null && biomes == null && lights == null) { //nothing to do
+            return;
+        }
 
-        private final byte[] lightArray;
-        private final int lightOffset;
-        private final int lightStride;
+        for (int i = 0, dx = 0; dx < sizeX; dx++) {
+            for (int dy = 0; dy < sizeY; dy++) {
+                for (int dz = 0; dz < sizeZ; dz++, i++) {
+                    int x = originX + (dx << zoom);
+                    int y = originY + (dy << zoom);
+                    int z = originZ + (dz << zoom);
 
-        private final int count;
-
-        @Override
-        public void validate() throws RuntimeException {
-            //make sure count is valid
-            notNegative(this.count, "count");
-
-            //make sure all the indices fit within the given arrays for the provided offset and stride
-            if (this.count != 0) {
-                if (this.statesArray != null) {
-                    checkRangeLen(this.statesArray.length, this.statesOffset, multiplyExact(positive(this.statesStride, "statesStride"), this.count) - this.statesOffset);
-                }
-                if (this.biomesArray != null) {
-                    checkRangeLen(this.biomesArray.length, this.biomesOffset, multiplyExact(positive(this.biomesStride, "biomesStride"), this.count) - this.biomesOffset);
-                }
-                if (this.lightArray != null) {
-                    checkRangeLen(this.lightArray.length, this.lightOffset, multiplyExact(positive(this.lightStride, "lightStride"), this.count) - this.lightOffset);
+                    if (states != null) {
+                        states[statesOff + i] = this.getState(x, y, z);
+                    }
+                    if (biomes != null) {
+                        biomes[biomesOff + i] = this.getBiome(x, y, z);
+                    }
+                    if (lights != null) {
+                        lights[lightsOff + i] = this.getLight(x, y, z);
+                    }
                 }
             }
         }
-
-        @Override
-        public int enabledBands() {
-            int bands = 0;
-            if (this.statesArray != null) {
-                bands |= BlockLevelConstants.dataBandFlag(BlockLevelConstants.DATA_BAND_ORDINAL_STATES);
-            }
-            if (this.biomesArray != null) {
-                bands |= BlockLevelConstants.dataBandFlag(BlockLevelConstants.DATA_BAND_ORDINAL_BIOMES);
-            }
-            if (this.lightArray != null) {
-                bands |= BlockLevelConstants.dataBandFlag(BlockLevelConstants.DATA_BAND_ORDINAL_LIGHT);
-            }
-            return bands;
-        }
-
-        @Override
-        public void setState(int index, int state) {
-            checkIndex(this.count, index);
-            if (this.statesArray != null) {
-                //we assume our state is valid, and since we know that the index is valid we can be sure there will be no overflows here
-                this.statesArray[this.statesOffset + this.statesStride * index] = state;
-            }
-        }
-
-        @Override
-        public void setBiome(int index, int biome) {
-            notNegative(index, "index");
-            if (this.biomesArray != null) {
-                //we assume our state is valid, and since we know that the index is valid we can be sure there will be no overflows here
-                this.biomesArray[this.biomesOffset + this.biomesStride * index] = biome;
-            }
-        }
-
-        @Override
-        public void setLight(int index, byte light) {
-            notNegative(index, "index");
-            if (this.lightArray != null) {
-                //we assume our state is valid, and since we know that the index is valid we can be sure there will be no overflows here
-                this.lightArray[this.lightOffset + this.lightStride * index] = light;
-            }
-        }
-
-        @Override
-        public void setStateBiomesLight(int index, int state, int biome, byte light) {
-            notNegative(index, "index");
-            if (this.statesArray != null) {
-                //we assume our state is valid, and since we know that the index is valid we can be sure there will be no overflows here
-                this.statesArray[this.statesOffset + this.statesStride * index] = state;
-            }
-            if (this.biomesArray != null) {
-                this.biomesArray[this.biomesOffset + this.biomesStride * index] = biome;
-            }
-            if (this.lightArray != null) {
-                this.lightArray[this.lightOffset + this.lightStride * index] = light;
-            }
-        }
-    }
-
-    /**
-     * Container object representing a bulk data query.
-     * <p>
-     * A query consists of:
-     * <ul>
-     *     <li>a {@link DataQueryShape} containing the positions of the voxels to get the values at</li>
-     *     <li>a {@link DataQueryOutput} defining which values to read, and to which the retrieved values will be written</li>
-     * </ul>
-     *
-     * @author DaPorkchop_
-     */
-    interface DataQuery {
-        static DataQuery of(@NonNull FBlockLevel.DataQueryShape shape, @NonNull FBlockLevel.DataQueryOutput output) {
-            return new DataQuery() {
-                @Override
-                public void validate() throws RuntimeException {
-                    shape.validate();
-                    output.validate();
-
-                    int shapeCount = shape.count();
-                    int outputCount = output.count();
-                    checkState(shapeCount >= outputCount, "shape contains %d points, but output only has space for %d!", shapeCount, outputCount);
-                }
-
-                @Override
-                public DataQueryShape shape() {
-                    return shape;
-                }
-
-                @Override
-                public DataQueryOutput output() {
-                    return output;
-                }
-            };
-        }
-
-        /**
-         * Ensures that this query's state is valid, throwing an exception if not.
-         * <p>
-         * If this method is not called and the query's state is invalid, the behavior of all methods is undefined.
-         * <p>
-         * It is recommended to call this once per method body before using a query instance, as it could allow the JVM to optimize the code more aggressively.
-         *
-         * @throws RuntimeException if the query's state is invalid
-         */
-        void validate() throws RuntimeException;
-
-        /**
-         * @return the query's {@link DataQueryShape shape}
-         */
-        DataQueryShape shape();
-
-        /**
-         * @return the query's {@link DataQueryOutput output}
-         */
-        DataQueryOutput output();
     }
 }

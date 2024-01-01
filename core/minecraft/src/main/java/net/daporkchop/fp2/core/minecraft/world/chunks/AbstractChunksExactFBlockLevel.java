@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -26,12 +26,11 @@ import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.fp2.api.world.level.GenerationNotAllowedException;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
+import net.daporkchop.lib.common.annotation.param.NotNegative;
+import net.daporkchop.lib.common.annotation.param.Positive;
 import net.daporkchop.lib.math.vector.Vec2i;
 
 import java.util.List;
-import java.util.stream.Stream;
-
-import static java.util.Objects.*;
 
 /**
  * Base implementation of an {@link FBlockLevel} which serves a Minecraft-style world made up of chunk columns.
@@ -78,54 +77,59 @@ public class AbstractChunksExactFBlockLevel<CHUNK> implements FBlockLevel {
 
     @Override
     public int getState(int x, int y, int z) throws GenerationNotAllowedException {
-        //delegate to a query because it'll delegate to AbstractPrefetchedChunksExactFBlockLevel, which can access neighboring chunks if Block#getActualState accesses a
+        //delegate to multiGet because it'll delegate to AbstractPrefetchedChunksExactFBlockLevel, which can access neighboring chunks if Block#getActualState accesses a
         //  state which goes over a cube/column border. this is slow, but i don't care because the single getter methods are dumb and bad anyway.
         int[] buf = new int[1];
-        this.query(DataQuery.of(new SinglePointDataQueryShape(x, y, z), new BandArraysDataQueryOutput(buf, 0, 1, null, 0, 0, null, 0, 0, 1)));
+        this.multiGetDense(x, y, z, 1, 1, 1, buf, 0, null, 0, null, 0);
         return buf[0];
     }
 
     @Override
     public int getBiome(int x, int y, int z) throws GenerationNotAllowedException {
-        //delegate to a query because it'll delegate to AbstractPrefetchedChunksExactFBlockLevel, which can access neighboring chunks if Block#getActualState accesses a
+        //delegate to multiGet because it'll delegate to AbstractPrefetchedChunksExactFBlockLevel, which can access neighboring chunks if Block#getActualState accesses a
         //  state which goes over a cube/column border. this is slow, but i don't care because the single getter methods are dumb and bad anyway.
         int[] buf = new int[1];
-        this.query(DataQuery.of(new SinglePointDataQueryShape(x, y, z), new BandArraysDataQueryOutput(null, 0, 0, buf, 0, 1, null, 0, 0, 1)));
+        this.multiGetDense(x, y, z, 1, 1, 1, null, 0, buf, 0, null, 0);
         return buf[0];
     }
 
     @Override
     public byte getLight(int x, int y, int z) throws GenerationNotAllowedException {
-        //delegate to a query because it'll delegate to AbstractPrefetchedChunksExactFBlockLevel, which can access neighboring chunks if Block#getActualState accesses a
+        //delegate to multiGet because it'll delegate to AbstractPrefetchedChunksExactFBlockLevel, which can access neighboring chunks if Block#getActualState accesses a
         //  state which goes over a cube/column border. this is slow, but i don't care because the single getter methods are dumb and bad anyway.
         byte[] buf = new byte[1];
-        this.query(DataQuery.of(new SinglePointDataQueryShape(x, y, z), new BandArraysDataQueryOutput(null, 0, 0, null, 0, 0, buf, 0, 1, 1)));
+        this.multiGetDense(x, y, z, 1, 1, 1, null, 0, null, 0, buf, 0);
         return buf[0];
     }
 
     @Override
-    public void query(@NonNull DataQuery query) throws GenerationNotAllowedException {
-        //ensure query is valid
-        query.validate();
-
+    public void multiGetDense(
+            int originX, int originY, int originZ,
+            @Positive int sizeX, @Positive int sizeY, @Positive int sizeZ,
+            int[] states, @NotNegative int statesOff,
+            int[] biomes, @NotNegative int biomesOff,
+            byte[] lights, @NotNegative int lightsOff) throws GenerationNotAllowedException {
         //figure out which chunks need to be prefetched
-        List<Vec2i> prefetchPositions = this.holder.getChunkPositionsToPrefetch(query.shape());
+        List<Vec2i> prefetchPositions = this.holder.getChunkPositionsToPrefetchForMultiGetDense(originX, originY, originZ, sizeX, sizeY, sizeZ);
 
         //prefetch all the chunks, then delegate the actual query execution to AbstractPrefetchedChunksExactFBlockLevel
-        this.holder.prefetchedWorld(this.generationAllowed, this.holder.multiGetChunks(prefetchPositions, this.generationAllowed)).query(query);
+        this.holder.prefetchedWorld(this.generationAllowed, this.holder.multiGetChunks(prefetchPositions, this.generationAllowed))
+                .multiGetDense(originX, originY, originZ, sizeX, sizeY, sizeZ, states, statesOff, biomes, biomesOff, lights, lightsOff);
     }
 
     @Override
-    public void query(@NonNull DataQuery... queries) throws GenerationNotAllowedException {
-        //ensure all queries are valid
-        for (DataQuery query : queries) {
-            requireNonNull(query, "query").validate();
-        }
-
+    public void multiGetSparse(
+            int originX, int originY, int originZ,
+            @Positive int sizeX, @Positive int sizeY, @Positive int sizeZ,
+            @NotNegative int zoom,
+            int[] states, @NotNegative int statesOff,
+            int[] biomes, @NotNegative int biomesOff,
+            byte[] lights, @NotNegative int lightsOff) throws GenerationNotAllowedException {
         //figure out which chunks need to be prefetched
-        List<Vec2i> prefetchPositions = this.holder.getChunkPositionsToPrefetch(Stream.of(queries).map(DataQuery::shape).toArray(DataQueryShape[]::new));
+        List<Vec2i> prefetchPositions = this.holder.getChunkPositionsToPrefetchForMultiGetSparse(originX, originY, originZ, sizeX, sizeY, sizeZ, zoom);
 
         //prefetch all the chunks, then delegate the actual query execution to AbstractPrefetchedChunksExactFBlockLevel
-        this.holder.prefetchedWorld(this.generationAllowed, this.holder.multiGetChunks(prefetchPositions, this.generationAllowed)).query(queries);
+        this.holder.prefetchedWorld(this.generationAllowed, this.holder.multiGetChunks(prefetchPositions, this.generationAllowed))
+                .multiGetSparse(originX, originY, originZ, sizeX, sizeY, sizeZ, zoom, states, statesOff, biomes, biomesOff, lights, lightsOff);
     }
 }

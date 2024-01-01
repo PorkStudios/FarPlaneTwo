@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -19,13 +19,13 @@
 
 package net.daporkchop.fp2.api.world.level;
 
-import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.api.world.registry.FExtendedStateRegistryData;
-import net.daporkchop.fp2.api.world.registry.FGameRegistry;
+import net.daporkchop.lib.common.annotation.param.NotNegative;
+import net.daporkchop.lib.common.annotation.param.Positive;
 
-import java.util.function.Consumer;
-import java.util.function.Function;
+import static java.lang.Math.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * Constants and helper methods for users and implementors of {@link FBlockLevel}.
@@ -58,59 +58,6 @@ public class BlockLevelConstants {
      * @see FExtendedStateRegistryData#type(int)
      */
     public static final int BLOCK_TYPE_OPAQUE = 2;
-
-    //
-    // DATA BAND ORDINALS
-    //
-
-    /**
-     * Ordinal of the states data band.
-     * <p>
-     * States are represented as an {@code int}, as returned by the corresponding methods in {@link FGameRegistry}.
-     */
-    public static final int DATA_BAND_ORDINAL_STATES = 0;
-
-    /**
-     * Ordinal of the biomes data band.
-     * <p>
-     * Biomes are represented as an {@code int}, as returned by the corresponding methods in {@link FGameRegistry}.
-     */
-    public static final int DATA_BAND_ORDINAL_BIOMES = 1;
-
-    /**
-     * Ordinal of the block+sky light data band.
-     * <p>
-     * Block+sky light levels are represented as a {@code byte}, as returned by {@link BlockLevelConstants#packLight(int, int)}. Light levels are unsigned nibbles (4-bit integers),
-     * where {@code 0} is the darkest and {@code 15} is the brightest possible value.
-     */
-    public static final int DATA_BAND_ORDINAL_LIGHT = 2;
-
-    //
-    // DATA BAND HELPERS
-    //
-
-    /**
-     * Gets a flag indicating that the data band with the given ordinal number is enabled.
-     *
-     * @param dataBandOrdinal the ordinal number of the data band
-     * @return a flag indicating that the data band with the given ordinal number is enabled
-     */
-    static int dataBandFlag(int dataBandOrdinal) {
-        assert (dataBandOrdinal & 0x1F) == dataBandOrdinal : "illegal data band ordinal " + dataBandOrdinal;
-        return 1 << dataBandOrdinal;
-    }
-
-    /**
-     * Checks whether a data band is enabled.
-     *
-     * @param enabledDataBands a bitfield indicating which data bands are enabled
-     * @param dataBandOrdinal  the ordinal number of the data band to check for
-     * @return whether the data band is enabled
-     */
-    static boolean isDataBandEnabled(int enabledDataBands, int dataBandOrdinal) {
-        assert (dataBandOrdinal & 0x1F) == dataBandOrdinal : "illegal data band ordinal " + dataBandOrdinal;
-        return (enabledDataBands & (1 << dataBandOrdinal)) != 0;
-    }
 
     //
     // LIGHT PACKING/UNPACKING HELPERS
@@ -148,89 +95,53 @@ public class BlockLevelConstants {
     }
 
     //
-    // QUERYSHAPE-IMPLEMENTATION-SPECIFIC OPTIMIZATION HELPERS
+    // ARGUMENT VALIDATION HELPERS
     //
 
     /**
-     * Invokes a {@link TypedQueryShapeConsumer} with the given {@link FBlockLevel.DataQueryShape} as a parameter, automatically calling a type-specific method variant if possible.
+     * Ensures that a dense sampling grid defined by an origin point and a size along each axis is valid.
      *
-     * @param shape  the {@link FBlockLevel.DataQueryShape}
-     * @param action the {@link TypedQueryShapeConsumer}
+     * @param originX the origin X coordinate
+     * @param originY the origin Y coordinate
+     * @param originZ the origin Z coordinate
+     * @param sizeX   the grid's size along the X axis
+     * @param sizeY   the grid's size along the Y axis
+     * @param sizeZ   the grid's size along the Z axis
+     * @return the total number of sample points
      */
-    public static void withQueryShape(@NonNull FBlockLevel.DataQueryShape shape, @NonNull TypedQueryShapeConsumer action) {
-        if (shape instanceof FBlockLevel.SinglePointDataQueryShape) {
-            action.acceptPoint((FBlockLevel.SinglePointDataQueryShape) shape);
-        } else if (shape instanceof FBlockLevel.MultiPointsDataQueryShape) {
-            action.acceptPoints((FBlockLevel.MultiPointsDataQueryShape) shape);
-        } else if (shape instanceof FBlockLevel.OriginSizeStrideDataQueryShape) {
-            action.acceptOriginSizeStride((FBlockLevel.OriginSizeStrideDataQueryShape) shape);
-        } else {
-            action.acceptGeneric(shape);
-        }
+    public static int validateDenseGridBounds(
+            int originX, int originY, int originZ,
+            @Positive int sizeX, @Positive int sizeY, @Positive int sizeZ) {
+        checkArg(sizeX > 0 && sizeY > 0 && sizeZ > 0, "all grid dimensions must be positive!");
+        checkArg(originX < originX + sizeX && originY < originY + sizeY && originZ < originZ + sizeZ, "integer overflow in grid coordinates!");
+        return Math.multiplyExact(Math.multiplyExact(sizeX, sizeY), sizeZ);
     }
 
     /**
-     * Invokes a {@link TypedQueryShapeFunction} with the given {@link FBlockLevel.DataQueryShape} as a parameter, automatically calling a type-specific method variant if possible.
+     * Ensures that a sparse sampling grid defined by an origin point, a spacing between samples and a sample count along each axis is valid.
      *
-     * @param shape  the {@link FBlockLevel.DataQueryShape}
-     * @param action the {@link TypedQueryShapeFunction}
-     * @return the {@link TypedQueryShapeFunction}'s return value
+     * @param originX the origin X coordinate. Must be aligned to a multiple of {@code strideX}
+     * @param originY the origin Y coordinate. Must be aligned to a multiple of {@code strideY}
+     * @param originZ the origin Z coordinate. Must be aligned to a multiple of {@code strideZ}
+     * @param sizeX   the number of samples to take along the X axis
+     * @param sizeY   the number of samples to take along the Y axis
+     * @param sizeZ   the number of samples to take along the Z axis
+     * @param zoom    {@code log2} of the distance between samples along each axis
+     * @return the total number of sample points
      */
-    public static <R> R fromQueryShape(@NonNull FBlockLevel.DataQueryShape shape, @NonNull TypedQueryShapeFunction<R> action) {
-        if (shape instanceof FBlockLevel.SinglePointDataQueryShape) {
-            return action.applyPoint((FBlockLevel.SinglePointDataQueryShape) shape);
-        } else if (shape instanceof FBlockLevel.MultiPointsDataQueryShape) {
-            return action.applyPoints((FBlockLevel.MultiPointsDataQueryShape) shape);
-        } else if (shape instanceof FBlockLevel.OriginSizeStrideDataQueryShape) {
-            return action.applyOriginSizeStride((FBlockLevel.OriginSizeStrideDataQueryShape) shape);
-        } else {
-            return action.applyGeneric(shape);
-        }
-    }
+    public static int validateSparseGridBounds(
+            int originX, int originY, int originZ,
+            @Positive int sizeX, @Positive int sizeY, @Positive int sizeZ,
+            @NotNegative int zoom) {
+        checkArg(sizeX > 0 && sizeY > 0 && sizeZ > 0, "all grid dimensions must be positive!");
 
-    /**
-     * A {@link Consumer}-syle callback function which accepts a {@link FBlockLevel.DataQueryShape}. Multiple methods are provided in order to allow optimized implementations for specific
-     * {@link FBlockLevel.DataQueryShape} implementations.
-     *
-     * @author DaPorkchop_
-     */
-    @FunctionalInterface
-    public interface TypedQueryShapeConsumer {
-        default void acceptPoint(@NonNull FBlockLevel.SinglePointDataQueryShape shape) {
-            this.acceptGeneric(shape);
-        }
+        //make sure there will be no overflow when computing the actual voxel positions
+        int stride = 1 << notNegative(zoom, "zoom");
+        addExact(originX, multiplyExact(stride, sizeX));
+        addExact(originY, multiplyExact(stride, sizeY));
+        addExact(originZ, multiplyExact(stride, sizeZ));
 
-        default void acceptPoints(@NonNull FBlockLevel.MultiPointsDataQueryShape shape) {
-            this.acceptGeneric(shape);
-        }
-
-        default void acceptOriginSizeStride(@NonNull FBlockLevel.OriginSizeStrideDataQueryShape shape) {
-            this.acceptGeneric(shape);
-        }
-
-        void acceptGeneric(@NonNull FBlockLevel.DataQueryShape shape);
-    }
-
-    /**
-     * A {@link Function}-syle callback function which accepts a {@link FBlockLevel.DataQueryShape}. Multiple methods are provided in order to allow optimized implementations for specific
-     * {@link FBlockLevel.DataQueryShape} implementations.
-     *
-     * @author DaPorkchop_
-     */
-    @FunctionalInterface
-    public interface TypedQueryShapeFunction<R> {
-        default R applyPoint(@NonNull FBlockLevel.SinglePointDataQueryShape shape) {
-            return this.applyGeneric(shape);
-        }
-
-        default R applyPoints(@NonNull FBlockLevel.MultiPointsDataQueryShape shape) {
-            return this.applyGeneric(shape);
-        }
-
-        default R applyOriginSizeStride(@NonNull FBlockLevel.OriginSizeStrideDataQueryShape shape) {
-            return this.applyGeneric(shape);
-        }
-
-        R applyGeneric(@NonNull FBlockLevel.DataQueryShape shape);
+        checkArg(originX < originX + sizeX && originY < originY + sizeY && originZ < originZ + sizeZ, "integer overflow in grid coordinates!");
+        return Math.multiplyExact(Math.multiplyExact(sizeX, sizeY), sizeZ);
     }
 }
