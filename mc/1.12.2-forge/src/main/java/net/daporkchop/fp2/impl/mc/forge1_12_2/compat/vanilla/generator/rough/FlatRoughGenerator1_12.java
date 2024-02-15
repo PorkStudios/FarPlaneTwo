@@ -17,19 +17,39 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.engine.server.gen.rough;
+package net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.generator.rough;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.engine.api.server.IFarTileProvider;
-import net.daporkchop.fp2.core.engine.api.server.gen.IFarGeneratorRough;
-import net.daporkchop.fp2.core.engine.server.gen.AbstractVoxelGenerator;
+import net.daporkchop.fp2.core.minecraft.generator.AbstractFlatRoughGenerator;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
+import net.minecraft.init.Biomes;
+import net.minecraft.world.WorldServer;
+import net.minecraft.world.biome.Biome;
+import net.minecraft.world.gen.FlatGeneratorInfo;
+import net.minecraft.world.gen.FlatLayerInfo;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractRoughVoxelGenerator extends AbstractVoxelGenerator implements IFarGeneratorRough {
-    public AbstractRoughVoxelGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider provider) {
+public class FlatRoughGenerator1_12 extends AbstractFlatRoughGenerator {
+    public FlatRoughGenerator1_12(@NonNull IFarLevelServer world, @NonNull IFarTileProvider provider) {
         super(world, provider);
+    }
+
+    @Override
+    protected List<Layer> getOriginalLayers(IFarLevelServer world) {
+        FlatGeneratorInfo generatorInfo = FlatGeneratorInfo.createFlatGeneratorFromString(((WorldServer) world.implLevel()).getWorldInfo().getGeneratorOptions());
+
+        int biome = this.registry().biome2id(Biome.getBiome(generatorInfo.getBiome(), Biomes.DEFAULT));
+
+        List<Layer> layers = new ArrayList<>(generatorInfo.getFlatLayers().size());
+        for (FlatLayerInfo vanillaLayer : generatorInfo.getFlatLayers()) {
+            layers.add(new Layer(vanillaLayer.getMinY(), vanillaLayer.getMinY() + vanillaLayer.getLayerCount(), this.registry().state2id(vanillaLayer.getLayerMaterial()), biome));
+        }
+        return layers;
     }
 }

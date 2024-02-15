@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -25,7 +25,7 @@ import net.daporkchop.fp2.core.engine.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.engine.TileData;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.Tile;
-import net.daporkchop.fp2.core.engine.server.gen.rough.AbstractRoughVoxelGenerator;
+import net.daporkchop.fp2.core.engine.server.gen.rough.AbstractDualContouringRoughVoxelGenerator;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cwg.CWGContext;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
@@ -42,7 +42,7 @@ import static net.daporkchop.fp2.core.engine.EngineConstants.*;
 /**
  * @author DaPorkchop_
  */
-public class CWGVoxelGenerator extends AbstractRoughVoxelGenerator<CWGContext> {
+public class CWGVoxelGenerator extends AbstractDualContouringRoughVoxelGenerator<CWGContext> {
     protected final Cached<CWGContext> ctx;
 
     public CWGVoxelGenerator(@NonNull IFarLevelServer world, @NonNull IFarTileProvider provider) {

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -25,6 +25,7 @@ import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.core.client.render.TextureUVs;
 import net.daporkchop.fp2.core.engine.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.engine.api.server.gen.IFarGeneratorExact;
+import net.daporkchop.fp2.core.engine.api.server.gen.IFarGeneratorRough;
 import net.daporkchop.fp2.core.engine.server.TileProvider;
 import net.daporkchop.fp2.core.engine.server.gen.exact.VanillaVoxelGenerator;
 import net.daporkchop.fp2.core.server.event.GetCoordinateLimitsEvent;
@@ -33,6 +34,7 @@ import net.daporkchop.fp2.core.server.event.GetTerrainGeneratorEvent;
 import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.exactfblocklevel.VanillaExactFBlockLevelHolder1_12;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.generator.rough.FlatRoughGenerator1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.server.world.level.FLevelServer1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.Util1_12_2;
 import net.minecraft.block.state.IBlockState;
@@ -97,8 +99,15 @@ public class FP2Vanilla {
 
     //Superflat rough generators
 
-    protected boolean isSuperflatWorld(IFarLevelServer world) {
+    private static boolean isSuperflatWorld(IFarLevelServer world) {
         return world.terrainGeneratorInfo().implGenerator() instanceof ChunkGeneratorFlat;
+    }
+
+    @FEventHandler(name = "vanilla_generator_rough_superflat")
+    public Optional<IFarGeneratorRough> createGeneratorRoughSuperflat(IFarGeneratorRough.CreationEvent event) {
+        return isSuperflatWorld(event.world())
+                ? Optional.of(new FlatRoughGenerator1_12(event.world(), event.provider()))
+                : Optional.empty();
     }
 
     //tile providers

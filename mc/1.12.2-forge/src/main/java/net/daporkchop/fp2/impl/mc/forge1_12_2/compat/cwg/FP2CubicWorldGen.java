@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -27,6 +27,7 @@ import lombok.NoArgsConstructor;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.engine.api.server.gen.IFarGeneratorRough;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cwg.generator.rough.CWGFlatRoughGenerator1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cwg.generator.voxel.CWGVoxelGenerator;
 import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.Mod;
@@ -61,23 +62,30 @@ public class FP2CubicWorldGen {
     public static final class Events {
         //CustomCubic rough generators
 
-        protected boolean isCustomCubicWorld(IFarLevelServer world) {
+        private static boolean isCustomCubicWorld(IFarLevelServer world) {
             ICubicWorldServer cubicWorld = (ICubicWorldServer) world.implLevel();
             return cubicWorld.isCubicWorld() && cubicWorld.getCubeGenerator() instanceof CustomTerrainGenerator;
         }
 
         @FEventHandler(name = "cubicworldgen_generator_rough_customcubic")
         public Optional<IFarGeneratorRough> createGeneratorRoughCustomCubic(IFarGeneratorRough.CreationEvent event) {
-            return this.isCustomCubicWorld(event.world())
+            return isCustomCubicWorld(event.world())
                     ? Optional.of(new CWGVoxelGenerator(event.world(), event.provider()))
                     : Optional.empty();
         }
 
         //FlatCubic rough generators
 
-        private boolean isFlatCubicWorld(IFarLevelServer world) {
+        private static boolean isFlatCubicWorld(IFarLevelServer world) {
             ICubicWorldServer cubicWorld = (ICubicWorldServer) world.implLevel();
             return cubicWorld.isCubicWorld() && cubicWorld.getCubeGenerator() instanceof FlatTerrainProcessor;
+        }
+
+        @FEventHandler(name = "cubicworldgen_generator_rough_flatcubic")
+        public Optional<IFarGeneratorRough> createGeneratorRoughFlatCubic(IFarGeneratorRough.CreationEvent event) {
+            return isFlatCubicWorld(event.world())
+                    ? Optional.of(new CWGFlatRoughGenerator1_12(event.world(), event.provider()))
+                    : Optional.empty();
         }
     }
 }

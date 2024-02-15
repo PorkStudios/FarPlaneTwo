@@ -59,6 +59,11 @@ public class BlockLevelConstants {
      */
     public static final int BLOCK_TYPE_OPAQUE = 2;
 
+    /**
+     * The maximum allowed value for block or sky light.
+     */
+    public static final int MAX_LIGHT = 15;
+
     //
     // LIGHT PACKING/UNPACKING HELPERS
     //

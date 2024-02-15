@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.api.world.registry;
@@ -48,4 +47,26 @@ public interface FExtendedStateRegistryData {
      * @throws IndexOutOfBoundsException if {@code state} is not a valid state ID
      */
     int type(int state) throws IndexOutOfBoundsException;
+
+    /**
+     * Gets the light emission level for the given state ID.
+     * <p>
+     * The resulting value will an integer greater than or equal to {@code 0} and less than or equal to {@link BlockLevelConstants#MAX_LIGHT}.
+     *
+     * @param state the state ID
+     * @return the light emission level
+     * @throws IndexOutOfBoundsException if {@code state} is not a valid state ID
+     */
+    int lightEmission(int state) throws IndexOutOfBoundsException;
+
+    /**
+     * Gets the light opacity level for the given state ID.
+     * <p>
+     * The resulting value will an integer greater than or equal to {@code 0} and less than or equal to {@link BlockLevelConstants#MAX_LIGHT}.
+     *
+     * @param state the state ID
+     * @return the light opacity level
+     * @throws IndexOutOfBoundsException if {@code state} is not a valid state ID
+     */
+    int lightOpacity(int state) throws IndexOutOfBoundsException;
 }
