@@ -60,6 +60,16 @@ public class BlockLevelConstants {
     public static final int BLOCK_TYPE_OPAQUE = 2;
 
     /**
+     * Checks whether the given {@code int} is a valid block type.
+     *
+     * @param type the block type to check
+     * @return {@code true} if the given {@code int} is a valid block type
+     */
+    public static boolean isValidBlockType(int type) {
+        return type >= BLOCK_TYPE_INVISIBLE && type <= BLOCK_TYPE_OPAQUE;
+    }
+
+    /**
      * The maximum allowed value for block or sky light.
      */
     public static final int MAX_LIGHT = 15;
@@ -69,6 +79,16 @@ public class BlockLevelConstants {
     //
 
     /**
+     * Checks whether the given {@code int} is a valid light level.
+     *
+     * @param light the light level to check
+     * @return {@code true} if the given {@code int} is a valid light level
+     */
+    public static boolean isValidLight(int light) {
+        return (light & MAX_LIGHT) == light;
+    }
+
+    /**
      * Packs the given sky light and block light values together into a single {@code byte}.
      *
      * @param skyLight   the sky light value. The 4 lowest bits are kept, all other information is discarded.
@@ -76,6 +96,7 @@ public class BlockLevelConstants {
      * @return the packed light value
      */
     public static byte packLight(int skyLight, int blockLight) {
+        assert isValidLight(skyLight) && isValidLight(blockLight) : "skyLight=" + skyLight + ", blockLight=" + blockLight;
         return (byte) ((skyLight << 4) | (blockLight & 0xF));
     }
 
@@ -97,6 +118,38 @@ public class BlockLevelConstants {
      */
     public static int unpackBlockLight(byte packedLight) {
         return packedLight & 0xF;
+    }
+
+    /**
+     * Packs the given light opacity and light emission values together into a single {@code byte}.
+     *
+     * @param lightOpacity  the light opacity value. The 4 lowest bits are kept, all other information is discarded.
+     * @param lightEmission the light emission value. The 4 lowest bits are kept, all other information is discarded.
+     * @return the packed light value
+     */
+    public static byte packLightAttrs(int lightOpacity, int lightEmission) {
+        assert isValidLight(lightOpacity) && isValidLight(lightEmission) : "lightOpacity=" + lightOpacity + ", lightEmission=" + lightEmission;
+        return (byte) ((lightEmission << 4) | (lightOpacity & 0xF));
+    }
+
+    /**
+     * Unpacks the light opacity value from the given {@code byte}.
+     *
+     * @param packedLightAttrs the packed light data, as returned by {@link #packLightAttrs(int, int)}
+     * @return the light opacity value
+     */
+    public static int unpackLightOpacity(byte packedLightAttrs) {
+        return packedLightAttrs & 0xF;
+    }
+
+    /**
+     * Unpacks the light emission value from the given {@code byte}.
+     *
+     * @param packedLightAttrs the packed light data, as returned by {@link #packLightAttrs(int, int)}
+     * @return the light emission value
+     */
+    public static int unpackLightEmission(byte packedLightAttrs) {
+        return (packedLightAttrs & 0xFF) >>> 4;
     }
 
     //

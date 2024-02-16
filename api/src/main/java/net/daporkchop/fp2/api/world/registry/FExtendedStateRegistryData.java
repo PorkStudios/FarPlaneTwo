@@ -49,24 +49,13 @@ public interface FExtendedStateRegistryData {
     int type(int state) throws IndexOutOfBoundsException;
 
     /**
-     * Gets the light emission level for the given state ID.
+     * Gets the light attributes for the given state ID.
      * <p>
-     * The resulting value will an integer greater than or equal to {@code 0} and less than or equal to {@link BlockLevelConstants#MAX_LIGHT}.
+     * The resulting value represents light attributes packed together by {@link BlockLevelConstants#packLightAttrs(int, int)}.
      *
      * @param state the state ID
-     * @return the light emission level
+     * @return the packed light attributes
      * @throws IndexOutOfBoundsException if {@code state} is not a valid state ID
      */
-    int lightEmission(int state) throws IndexOutOfBoundsException;
-
-    /**
-     * Gets the light opacity level for the given state ID.
-     * <p>
-     * The resulting value will an integer greater than or equal to {@code 0} and less than or equal to {@link BlockLevelConstants#MAX_LIGHT}.
-     *
-     * @param state the state ID
-     * @return the light opacity level
-     * @throws IndexOutOfBoundsException if {@code state} is not a valid state ID
-     */
-    int lightOpacity(int state) throws IndexOutOfBoundsException;
+    byte packedLightAttrs(int state) throws IndexOutOfBoundsException;
 }
