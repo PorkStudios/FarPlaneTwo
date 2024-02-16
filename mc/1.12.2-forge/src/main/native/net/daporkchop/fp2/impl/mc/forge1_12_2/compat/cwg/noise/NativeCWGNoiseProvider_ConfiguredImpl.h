@@ -354,7 +354,7 @@ public:
     }
 };
 
-FP2_JNI(jlong, NativeCWGNoiseProvider_00024ConfiguredImpl, createState0)(JNIEnv* env, jclass cla,
+FP2_JNI(jlong, NativeCWGNoiseProvider1_112_00024ConfiguredImpl, createState0)(JNIEnv* env, jclass cla,
         jdouble heightVariationFactor, jdouble specialHeightVariationFactorBelowAverageY, jdouble heightVariationOffset, jdouble heightFactor, jdouble heightOffset,
         jdouble selectorNoiseFactor, jdouble selectorNoiseOffset, jdouble selectorNoiseFrequencyX, jdouble selectorNoiseFrequencyY, jdouble selectorNoiseFrequencyZ, jint selectorNoiseSeed, jint selectorNoiseOctaves, jdouble selectorNoiseScale,
         jdouble lowNoiseFactor, jdouble lowNoiseOffset, jdouble lowNoiseFrequencyX, jdouble lowNoiseFrequencyY, jdouble lowNoiseFrequencyZ, jint lowNoiseSeed, jint lowNoiseOctaves, jdouble lowNoiseScale,
@@ -404,28 +404,28 @@ FP2_JNI(jlong, NativeCWGNoiseProvider_00024ConfiguredImpl, createState0)(JNIEnv*
     return (jlong) state;
 }
 
-FP2_JNI(void, NativeCWGNoiseProvider_00024ConfiguredImpl, deleteState0)(JNIEnv* env, jclass cla,
+FP2_JNI(void, NativeCWGNoiseProvider1_112_00024ConfiguredImpl, deleteState0)(JNIEnv* env, jclass cla,
         jlong _state) {
     delete (state_t*) _state;
 }
 
-FP2_JNI(void, NativeCWGNoiseProvider_00024ConfiguredImpl, generateDepth2d0)(JNIEnv* env, jobject obj,
+FP2_JNI(void, NativeCWGNoiseProvider1_112_00024ConfiguredImpl, generateDepth2d0)(JNIEnv* env, jobject obj,
         jdoubleArray _out, jint baseX, jint baseZ, jint scaleX, jint scaleZ, jint sizeX, jint sizeZ, jlong _state) {
     fp2::pinned_double_array out(env, _out);
     ((state_t*) _state)->generateDepth2d(out, baseX, baseZ, scaleX, scaleZ, sizeX, sizeZ);
 }
 
-FP2_JNI(jdouble, NativeCWGNoiseProvider_00024ConfiguredImpl, generateDepthSingle0)(JNIEnv* env, jobject obj,
+FP2_JNI(jdouble, NativeCWGNoiseProvider1_112_00024ConfiguredImpl, generateDepthSingle0)(JNIEnv* env, jobject obj,
         jint x, jint z, jlong _state) {
     return ((state_t*) _state)->generateDepthSingle(x, z);
 }
 
-FP2_JNI(jdouble, NativeCWGNoiseProvider_00024ConfiguredImpl, generateSingle0noDepth)(JNIEnv* env, jobject obj,
+FP2_JNI(jdouble, NativeCWGNoiseProvider1_112_00024ConfiguredImpl, generateSingle0noDepth)(JNIEnv* env, jobject obj,
         jdouble height, jdouble variation, jint x, jint y, jint z, jlong _state) {
     return ((state_t*) _state)->generateSingle(height, variation, x, y, z);
 }
 
-FP2_JNI(void, NativeCWGNoiseProvider_00024ConfiguredImpl, generate3d0noDepth)(JNIEnv* env, jobject obj,
+FP2_JNI(void, NativeCWGNoiseProvider1_112_00024ConfiguredImpl, generate3d0noDepth)(JNIEnv* env, jobject obj,
         jdoubleArray _height, jdoubleArray _variation, jdoubleArray _out, jint baseX, jint baseY, jint baseZ, jint scaleX, jint scaleY, jint scaleZ, jint sizeX, jint sizeY, jint sizeZ, jlong _state) {
     fp2::pinned_double_array height(env, _height);
     fp2::pinned_double_array variation(env, _variation);
@@ -433,7 +433,7 @@ FP2_JNI(void, NativeCWGNoiseProvider_00024ConfiguredImpl, generate3d0noDepth)(JN
     ((state_t*) _state)->generate3d<false>(height, variation, variation, out, baseX, baseY, baseZ, scaleX, scaleY, scaleZ, sizeX, sizeY, sizeZ);
 }
 
-FP2_JNI(void, NativeCWGNoiseProvider_00024ConfiguredImpl, generate3d0depth)(JNIEnv* env, jobject obj,
+FP2_JNI(void, NativeCWGNoiseProvider1_112_00024ConfiguredImpl, generate3d0depth)(JNIEnv* env, jobject obj,
         jdoubleArray _height, jdoubleArray _variation, jdoubleArray _depth, jdoubleArray _out, jint baseX, jint baseY, jint baseZ, jint scaleX, jint scaleY, jint scaleZ, jint sizeX, jint sizeY, jint sizeZ, jlong _state) {
     fp2::pinned_double_array height(env, _height);
     fp2::pinned_double_array variation(env, _variation);
@@ -442,7 +442,7 @@ FP2_JNI(void, NativeCWGNoiseProvider_00024ConfiguredImpl, generate3d0depth)(JNIE
     ((state_t*) _state)->generate3d<true>(height, variation, depth, out, baseX, baseY, baseZ, scaleX, scaleY, scaleZ, sizeX, sizeY, sizeZ);
 }
 
-FP2_JNI(jdouble, NativeCWGNoiseProvider_00024ConfiguredImpl, generateSingle0depth)(JNIEnv* env, jobject obj,
+FP2_JNI(jdouble, NativeCWGNoiseProvider1_112_00024ConfiguredImpl, generateSingle0depth)(JNIEnv* env, jobject obj,
         jdouble height, jdouble variation, jdouble depth, jint x, jint y, jint z, jlong _state) {
     return ((state_t*) _state)->generateSingle(height, variation, depth, x, y, z);
 }
