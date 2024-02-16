@@ -195,8 +195,8 @@ public abstract class AbstractFlatRoughGenerator extends AbstractRoughVoxelGener
 
     @Override
     public void generate(@NonNull TilePos pos, @NonNull Tile tile) {
-        for (Int2ObjectMap.Entry<TileData> entry : this.transitionData.subMap(pos.blockY(), pos.blockY() + (T_VOXELS << pos.level())).int2ObjectEntrySet()) {
-            int y = (entry.getIntKey() - pos.blockY()) >> pos.level();
+        for (Int2ObjectMap.Entry<TileData> entry : this.transitionData.subMap(pos.minBlockY(), pos.maxBlockY()).int2ObjectEntrySet()) {
+            int y = (entry.getIntKey() - pos.minBlockY()) >> pos.level();
             TileData data = entry.getValue();
             for (int x = 0; x < T_VOXELS; x++) {
                 for (int z = 0; z < T_VOXELS; z++) {

@@ -56,8 +56,8 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
         checkArg(pos.level() == 0, "can only exact generate at level 0, not %d!", pos.level());
 
         IntAxisAlignedBB initialBB = new IntAxisAlignedBB(
-                pos.blockX() + CACHE_MIN, pos.blockY() + CACHE_MIN, pos.blockZ() + CACHE_MIN,
-                pos.blockX() + CACHE_MAX, pos.blockY() + CACHE_MAX, pos.blockZ() + CACHE_MAX);
+                pos.minBlockX() + CACHE_MIN, pos.minBlockY() + CACHE_MIN, pos.minBlockZ() + CACHE_MIN,
+                pos.minBlockX() + CACHE_MAX, pos.minBlockY() + CACHE_MAX, pos.minBlockZ() + CACHE_MAX);
         IntAxisAlignedBB dataAvailableBB = world.guaranteedDataAvailableVolume(initialBB);
 
         //the bounding boxes are identical, so there's no point in batching
@@ -106,7 +106,7 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
         try {
             //query all world data at once
             world.multiGetDense(
-                    posIn.blockX() + CACHE_MIN - 1, posIn.blockY() + CACHE_MIN - 1, posIn.blockZ() + CACHE_MIN - 1,
+                    posIn.minBlockX() + CACHE_MIN - 1, posIn.minBlockY() + CACHE_MIN - 1, posIn.minBlockZ() + CACHE_MIN - 1,
                     CACHE_SIZE, CACHE_SIZE, CACHE_SIZE,
                     stateCache, 0, biomeCache, 0, lightCache, 0);
 

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -119,7 +119,7 @@ public class VoxelBaker implements IRenderBaker<IndexedBakeOutput<VoxelGlobalAtt
 
         try {
             //step 1: write vertices for all source tiles, and assign indices
-            this.writeVertices(srcs, pos.blockX(), pos.blockY(), pos.blockZ(), pos.level(), map, output.verts());
+            this.writeVertices(srcs, pos.minBlockX(), pos.minBlockY(), pos.minBlockZ(), pos.level(), map, output.verts());
 
             //step 2: write indices to actually connect the vertices and build the mesh
             this.writeIndices(srcs[0], map, output.indices());

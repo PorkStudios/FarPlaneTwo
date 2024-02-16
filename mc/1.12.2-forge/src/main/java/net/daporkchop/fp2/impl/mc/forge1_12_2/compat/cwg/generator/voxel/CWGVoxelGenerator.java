@@ -59,9 +59,9 @@ public class CWGVoxelGenerator extends AbstractDualContouringRoughVoxelGenerator
     @Override
     public void generate(@NonNull TilePos pos, @NonNull Tile tile) {
         int level = pos.level();
-        int baseX = pos.blockX();
-        int baseY = pos.blockY();
-        int baseZ = pos.blockZ();
+        int baseX = pos.minBlockX();
+        int baseY = pos.minBlockY();
+        int baseZ = pos.minBlockZ();
 
         CWGContext ctx = this.ctx.get();
         ctx.init(baseX + (CACHE_MIN << level), baseZ + (CACHE_MIN << level), level);
