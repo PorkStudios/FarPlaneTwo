@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -19,8 +19,8 @@
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.fixes.world.biome;
 
-import net.daporkchop.fp2.impl.mc.forge1_12_2.util.SingleBiomeBlockAccess;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.util.Util1_12_2;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.util.SingleBiomeBlockAccess1_12;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.util.Util1_12;
 import net.daporkchop.lib.common.pool.recycler.Recycler;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockAccess;
@@ -49,7 +49,7 @@ public abstract class MixinBiomeColorHelper1_12 {
         int g = 0;
         int b = 0;
 
-        Recycler<BlockPos.MutableBlockPos> recycler = Util1_12_2.MUTABLEBLOCKPOS_RECYCLER.get();
+        Recycler<BlockPos.MutableBlockPos> recycler = Util1_12.MUTABLEBLOCKPOS_RECYCLER.get();
         BlockPos.MutableBlockPos mutableBlockPos = recycler.allocate();
         for (int dz = -1; dz <= 1; dz++) {
             for (int dx = -1; dx <= 1; dx++) {
@@ -79,7 +79,7 @@ public abstract class MixinBiomeColorHelper1_12 {
         int g = 0;
         int b = 0;
 
-        Recycler<BlockPos.MutableBlockPos> recycler = Util1_12_2.MUTABLEBLOCKPOS_RECYCLER.get();
+        Recycler<BlockPos.MutableBlockPos> recycler = Util1_12.MUTABLEBLOCKPOS_RECYCLER.get();
         BlockPos.MutableBlockPos mutableBlockPos = recycler.allocate();
         for (int dz = -1; dz <= 1; dz++) {
             for (int dx = -1; dx <= 1; dx++) {
@@ -105,16 +105,16 @@ public abstract class MixinBiomeColorHelper1_12 {
      */
     @Overwrite
     public static int getWaterColorAtPos(IBlockAccess blockAccess, BlockPos pos) {
-        if (blockAccess instanceof SingleBiomeBlockAccess) { //fast-track for SingleBiomeBlockAccess
+        if (blockAccess instanceof SingleBiomeBlockAccess1_12) { //fast-track for SingleBiomeBlockAccess
             //the biome is the same at every position, and water color is position-independent, so we don't need to compute an average color
-            return ((SingleBiomeBlockAccess) blockAccess).biome().getWaterColor();
+            return ((SingleBiomeBlockAccess1_12) blockAccess).biome().getWaterColor();
         }
 
         int r = 0;
         int g = 0;
         int b = 0;
 
-        Recycler<BlockPos.MutableBlockPos> recycler = Util1_12_2.MUTABLEBLOCKPOS_RECYCLER.get();
+        Recycler<BlockPos.MutableBlockPos> recycler = Util1_12.MUTABLEBLOCKPOS_RECYCLER.get();
         BlockPos.MutableBlockPos mutableBlockPos = recycler.allocate();
         for (int dz = -1; dz <= 1; dz++) {
             for (int dx = -1; dx <= 1; dx++) {

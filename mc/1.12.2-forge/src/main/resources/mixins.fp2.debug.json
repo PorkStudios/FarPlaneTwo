@@ -4,8 +4,8 @@
   "package": "net.daporkchop.fp2.impl.mc.forge1_12_2.asm.debug",
   "refmap": "mixins.fp2.refmap.json",
   "client": [
-    "client.gui.MixinGuiOverlayDebug",
-    "client.renderer.MixinRenderGlobal"
+    "client.gui.MixinGuiOverlayDebug1_12",
+    "client.renderer.MixinRenderGlobal1_12"
   ],
   "mixins": [
   ]

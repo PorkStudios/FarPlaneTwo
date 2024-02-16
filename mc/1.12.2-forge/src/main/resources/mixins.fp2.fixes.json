@@ -4,7 +4,7 @@
   "package": "net.daporkchop.fp2.impl.mc.forge1_12_2.asm.fixes",
   "refmap": "mixins.fp2.refmap.json",
   "client": [
-    "client.renderer.texture.MixinTextureUtil",
+    "client.renderer.texture.MixinTextureUtil1_12",
     "world.biome.MixinBiome1_12",
     "world.biome.MixinBiomeColorHelper1_12"
   ],

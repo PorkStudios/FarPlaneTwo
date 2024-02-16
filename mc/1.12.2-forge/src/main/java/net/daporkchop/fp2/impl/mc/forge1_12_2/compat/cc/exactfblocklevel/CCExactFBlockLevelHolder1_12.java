@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -45,10 +45,9 @@ import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.util.datastructure.Datastructures;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSegtreeSet;
 import net.daporkchop.fp2.core.util.threading.futurecache.IAsyncCache;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.world.IMixinWorldServer;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cc.biome.Column2dBiomeAccessWrapper;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cc.biome.CubeBiomeAccessWrapper;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cc.cube.CubeWithoutWorld;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cc.biome.Column2dBiomeAccessWrapper1_12;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cc.biome.CubeBiomeAccessWrapper1_12;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cc.cube.CubeWithoutWorld1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.IBiomeAccess;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.math.vector.Vec2i;
@@ -256,10 +255,10 @@ public class CCExactFBlockLevelHolder1_12 extends AbstractCubesExactFBlockLevelH
         protected ICube bakeValue(@NonNull Vec3i key, @NonNull Chunk param, @NonNull ICube value) {
             //override per-cube biomes if necessary
             IBiomeAccess biomeAccess = value instanceof Cube && ((Cube) value).getBiomeArray() != null
-                    ? new CubeBiomeAccessWrapper(((Cube) value).getBiomeArray())
-                    : new Column2dBiomeAccessWrapper(value.getColumn().getBiomeArray());
+                    ? new CubeBiomeAccessWrapper1_12(((Cube) value).getBiomeArray())
+                    : new Column2dBiomeAccessWrapper1_12(value.getColumn().getBiomeArray());
 
-            return new CubeWithoutWorld(PorkUtil.fallbackIfNull(value.getStorage(), CCExactFBlockLevelHolder1_12.this.emptyStorage), biomeAccess, new CubePos(key.x(), key.y(), key.z()));
+            return new CubeWithoutWorld1_12(PorkUtil.fallbackIfNull(value.getStorage(), CCExactFBlockLevelHolder1_12.this.emptyStorage), biomeAccess, new CubePos(key.x(), key.y(), key.z()));
         }
     }
 }

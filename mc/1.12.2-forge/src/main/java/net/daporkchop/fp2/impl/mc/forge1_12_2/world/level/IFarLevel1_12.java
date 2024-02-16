@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -20,7 +20,7 @@
 package net.daporkchop.fp2.impl.mc.forge1_12_2.world.level;
 
 import net.daporkchop.fp2.core.engine.api.ctx.IFarLevel;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.world.registry.GameRegistry1_12_2;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.world.registry.GameRegistry1_12;
 import net.minecraft.world.World;
 
 /**
@@ -36,7 +36,7 @@ public interface IFarLevel1_12 extends IFarLevel {
     }
 
     @Override
-    default GameRegistry1_12_2 registry() {
-        return GameRegistry1_12_2.get();
+    default GameRegistry1_12 registry() {
+        return GameRegistry1_12.get();
     }
 }

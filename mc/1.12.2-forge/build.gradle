@@ -55,7 +55,7 @@ minecraft {
     mappings = "$mcpmappingsVersion"
     makeObfSourceJar = false
 
-    coreMod = "net.daporkchop.fp2.impl.mc.forge1_12_2.asm.FP2MixinLoader"
+    coreMod = "net.daporkchop.fp2.impl.mc.forge1_12_2.asm.FP2MixinLoader1_12"
 
     def args = [
             "-Dmixin.checks.interfaces=true",
@@ -176,7 +176,7 @@ shadowJar {
                 "tweakClass": "org.spongepowered.asm.launch.MixinTweaker",
                 "TweakOrder": 0,
                 "FMLCorePluginContainsFMLMod": "true",
-                "FMLCorePlugin": "net.daporkchop.fp2.impl.mc.forge1_12_2.asm.FP2MixinLoader",
+                "FMLCorePlugin": "net.daporkchop.fp2.impl.mc.forge1_12_2.asm.FP2MixinLoader1_12",
                 "ForceLoadAsMod": "true"
         )
     }

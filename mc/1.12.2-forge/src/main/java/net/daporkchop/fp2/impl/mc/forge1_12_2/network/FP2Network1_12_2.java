@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.network;
@@ -26,8 +25,8 @@ import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.common.asm.ClassloadingUtils;
 import net.daporkchop.fp2.core.network.IPacket;
 import net.daporkchop.fp2.core.network.RegisterPacketsEvent;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.client.network.IMixinNetHandlerPlayClient;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.network.IMixinNetHandlerPlayServer;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.client.network.IMixinNetHandlerPlayClient1_12;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.network.IMixinNetHandlerPlayServer1_12;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
@@ -80,7 +79,7 @@ public class FP2Network1_12_2 {
         class ServerboundHandler implements IMessageHandler<IMessage, IMessage> {
             @Override
             public IMessage onMessage(IMessage message, MessageContext ctx) {
-                ((IMixinNetHandlerPlayServer) ctx.getServerHandler()).fp2_farPlayerServer().fp2_IFarPlayerServer_handle(((Supplier) message).get());
+                ((IMixinNetHandlerPlayServer1_12) ctx.getServerHandler()).fp2_farPlayerServer().fp2_IFarPlayerServer_handle(((Supplier) message).get());
                 return null;
             }
         }
@@ -88,7 +87,7 @@ public class FP2Network1_12_2 {
         class ClientboundHandler implements IMessageHandler<IMessage, IMessage> {
             @Override
             public IMessage onMessage(IMessage message, MessageContext ctx) {
-                ((IMixinNetHandlerPlayClient) ctx.getClientHandler()).fp2_playerClient().get().handle(((Supplier) message).get());
+                ((IMixinNetHandlerPlayClient1_12) ctx.getClientHandler()).fp2_playerClient().get().handle(((Supplier) message).get());
                 return null;
             }
         }

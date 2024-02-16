@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -27,7 +27,7 @@ import net.daporkchop.fp2.api.world.level.BlockLevelConstants;
 import net.daporkchop.fp2.api.world.level.GenerationNotAllowedException;
 import net.daporkchop.fp2.core.minecraft.world.cubes.AbstractCubesExactFBlockLevelHolder;
 import net.daporkchop.fp2.core.minecraft.world.cubes.AbstractPrefetchedCubesExactFBlockLevel;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.util.Util1_12_2;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.util.Util1_12;
 import net.daporkchop.lib.common.pool.recycler.Recycler;
 import net.daporkchop.lib.math.vector.Vec3i;
 import net.minecraft.block.state.IBlockState;
@@ -61,7 +61,7 @@ public class PrefetchedCubesCCFBlockLevel1_12 extends AbstractPrefetchedCubesExa
 
     @Override
     protected int getState(int x, int y, int z, ICube cube) throws GenerationNotAllowedException {
-        Recycler<BlockPos.MutableBlockPos> recycler = Util1_12_2.MUTABLEBLOCKPOS_RECYCLER.get();
+        Recycler<BlockPos.MutableBlockPos> recycler = Util1_12.MUTABLEBLOCKPOS_RECYCLER.get();
         BlockPos.MutableBlockPos pos = recycler.allocate().setPos(x, y, z);
 
         int state = this.registry().state2id(cube.getBlockState(x, y, z).getActualState(this, pos));
@@ -72,7 +72,7 @@ public class PrefetchedCubesCCFBlockLevel1_12 extends AbstractPrefetchedCubesExa
 
     @Override
     protected int getBiome(int x, int y, int z, ICube cube) throws GenerationNotAllowedException {
-        Recycler<BlockPos.MutableBlockPos> recycler = Util1_12_2.MUTABLEBLOCKPOS_RECYCLER.get();
+        Recycler<BlockPos.MutableBlockPos> recycler = Util1_12.MUTABLEBLOCKPOS_RECYCLER.get();
         BlockPos.MutableBlockPos pos = recycler.allocate().setPos(x, y, z);
 
         int biome = this.registry().biome2id(cube.getBiome(pos));
@@ -83,7 +83,7 @@ public class PrefetchedCubesCCFBlockLevel1_12 extends AbstractPrefetchedCubesExa
 
     @Override
     protected byte getLight(int x, int y, int z, ICube cube) throws GenerationNotAllowedException {
-        Recycler<BlockPos.MutableBlockPos> recycler = Util1_12_2.MUTABLEBLOCKPOS_RECYCLER.get();
+        Recycler<BlockPos.MutableBlockPos> recycler = Util1_12.MUTABLEBLOCKPOS_RECYCLER.get();
         BlockPos.MutableBlockPos pos = recycler.allocate().setPos(x, y, z);
 
         byte packedLight = BlockLevelConstants.packLight(cube.getLightFor(EnumSkyBlock.SKY, pos), cube.getLightFor(EnumSkyBlock.BLOCK, pos));

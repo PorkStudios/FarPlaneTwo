@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.test.compat.cwg.noise;
@@ -23,7 +22,7 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.test.compat.cwg.noise;
 import com.flowpowered.noise.Utils;
 import io.github.opencubicchunks.cubicchunks.cubicgen.ConversionUtils;
 import io.github.opencubicchunks.cubicchunks.cubicgen.customcubic.CustomGeneratorSettings;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cwg.noise.CWGNoiseProvider;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cwg.noise.CWGNoiseProvider1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.test.FP2Test;
 import net.daporkchop.lib.common.misc.string.PStrings;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -46,8 +45,8 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 @TestMethodOrder(MethodOrderer.MethodName.class)
 @SuppressWarnings("deprecation")
 public class TestCwgNoiseGen {
-    protected static CWGNoiseProvider.Configured CONFIGURED_JAVA;
-    protected static CWGNoiseProvider.Configured CONFIGURED_NATIVE;
+    protected static CWGNoiseProvider1_12.Configured CONFIGURED_JAVA;
+    protected static CWGNoiseProvider1_12.Configured CONFIGURED_NATIVE;
 
     @BeforeAll
     public static void aaa_init() {
@@ -77,12 +76,12 @@ public class TestCwgNoiseGen {
 
     @BeforeAll
     public static void ccc_ensureNativeNoiseGenIsAvailable() {
-        checkState(CWGNoiseProvider.INSTANCE.isNative(), "native noise generation must be available for testing!");
+        checkState(CWGNoiseProvider1_12.INSTANCE.isNative(), "native noise generation must be available for testing!");
 
         CustomGeneratorSettings settings = new CustomGeneratorSettings();
         long seed = 102978420983752L;
-        CONFIGURED_JAVA = CWGNoiseProvider.JAVA_INSTANCE.forSettings(settings, seed);
-        CONFIGURED_NATIVE = CWGNoiseProvider.INSTANCE.forSettings(settings, seed);
+        CONFIGURED_JAVA = CWGNoiseProvider1_12.JAVA_INSTANCE.forSettings(settings, seed);
+        CONFIGURED_NATIVE = CWGNoiseProvider1_12.INSTANCE.forSettings(settings, seed);
     }
 
     protected static boolean approxEquals(double a, double b) {
@@ -110,10 +109,10 @@ public class TestCwgNoiseGen {
     protected CompletableFuture<Void> testNormal_3d(int baseX, int baseY, int baseZ, int level, double freqX, double freqY, double freqZ, int sizeX, int sizeY, int sizeZ, int seed, int octaves) {
         return CompletableFuture.runAsync(() -> {
             double[] outJava = new double[sizeX * sizeY * sizeZ];
-            CWGNoiseProvider.JAVA_INSTANCE.generate3d(outJava, baseX, baseY, baseZ, level, freqX, freqY, freqZ, sizeX, sizeY, sizeZ, seed, octaves);
+            CWGNoiseProvider1_12.JAVA_INSTANCE.generate3d(outJava, baseX, baseY, baseZ, level, freqX, freqY, freqZ, sizeX, sizeY, sizeZ, seed, octaves);
 
             double[] outNative = new double[sizeX * sizeY * sizeZ];
-            CWGNoiseProvider.INSTANCE.generate3d(outNative, baseX, baseY, baseZ, level, freqX, freqY, freqZ, sizeX, sizeY, sizeZ, seed, octaves);
+            CWGNoiseProvider1_12.INSTANCE.generate3d(outNative, baseX, baseY, baseZ, level, freqX, freqY, freqZ, sizeX, sizeY, sizeZ, seed, octaves);
 
             for (int i = 0, dx = 0; dx < sizeX; dx++) {
                 for (int dy = 0; dy < sizeY; dy++) {
@@ -150,10 +149,10 @@ public class TestCwgNoiseGen {
     protected CompletableFuture<Void> testNormal_2d(int baseX, int baseZ, int level, double freqX, double freqZ, int sizeX, int sizeZ, int seed, int octaves) {
         return CompletableFuture.runAsync(() -> {
             double[] outJava = new double[sizeX * sizeZ];
-            CWGNoiseProvider.JAVA_INSTANCE.generate2d(outJava, baseX, baseZ, level, freqX, freqZ, sizeX, sizeZ, seed, octaves);
+            CWGNoiseProvider1_12.JAVA_INSTANCE.generate2d(outJava, baseX, baseZ, level, freqX, freqZ, sizeX, sizeZ, seed, octaves);
 
             double[] outNative = new double[sizeX * sizeZ];
-            CWGNoiseProvider.INSTANCE.generate2d(outNative, baseX, baseZ, level, freqX, freqZ, sizeX, sizeZ, seed, octaves);
+            CWGNoiseProvider1_12.INSTANCE.generate2d(outNative, baseX, baseZ, level, freqX, freqZ, sizeX, sizeZ, seed, octaves);
 
             for (int i = 0, dx = 0; dx < sizeX; dx++) {
                 for (int dz = 0; dz < sizeZ; dz++, i++) {
@@ -183,8 +182,8 @@ public class TestCwgNoiseGen {
     }
 
     protected void testNormal_Single(int x, int y, int z, double freqX, double freqY, double freqZ, int seed, int octaves) {
-        double javaVal = CWGNoiseProvider.JAVA_INSTANCE.generateSingle(x, y, z, freqX, freqY, freqZ, seed, octaves);
-        double nativeVal = CWGNoiseProvider.INSTANCE.generateSingle(x, y, z, freqX, freqY, freqZ, seed, octaves);
+        double javaVal = CWGNoiseProvider1_12.JAVA_INSTANCE.generateSingle(x, y, z, freqX, freqY, freqZ, seed, octaves);
+        double nativeVal = CWGNoiseProvider1_12.INSTANCE.generateSingle(x, y, z, freqX, freqY, freqZ, seed, octaves);
         if (!approxEquals(javaVal, nativeVal)) {
             throw new IllegalStateException(PStrings.fastFormat("@(%s, %s, %s): %s (java) != %s (native)", x * freqX, y * freqY, z * freqZ, javaVal, nativeVal));
         }
