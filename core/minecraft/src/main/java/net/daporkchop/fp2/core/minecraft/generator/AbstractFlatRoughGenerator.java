@@ -116,7 +116,7 @@ public abstract class AbstractFlatRoughGenerator extends AbstractRoughVoxelGener
 
             layer.incomingSkyLightFromAbove = skyLight;
 
-            int fromLightOpacity = this.extendedStateRegistryData().lightOpacity(layer.state);
+            int fromLightOpacity = BlockLevelConstants.unpackLightOpacity(this.extendedStateRegistryData().packedLightAttrs(layer.state));
             if (skyLight != BlockLevelConstants.MAX_LIGHT || fromLightOpacity != 0) {
                 fromLightOpacity = Math.max(fromLightOpacity, 1);
                 for (int y = layer.maxY; y > layer.minY && skyLight != 0; y--) {

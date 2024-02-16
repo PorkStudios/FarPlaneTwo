@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,23 +15,19 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.world.registry;
 
-import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.api.world.registry.FExtendedBiomeRegistryData;
+import net.daporkchop.fp2.core.world.registry.AbstractDenseExtendedBiomeRegistryData;
+import net.minecraft.world.biome.Biome;
 
 /**
  * @author DaPorkchop_
  */
-@Getter
-public final class ExtendedBiomeRegistryData1_12_2 implements FExtendedBiomeRegistryData {
-    private final GameRegistry1_12_2 registry;
-
+public final class ExtendedBiomeRegistryData1_12_2 extends AbstractDenseExtendedBiomeRegistryData<Biome> {
     public ExtendedBiomeRegistryData1_12_2(@NonNull GameRegistry1_12_2 registry) {
-        this.registry = registry;
+        super(registry);
     }
 }

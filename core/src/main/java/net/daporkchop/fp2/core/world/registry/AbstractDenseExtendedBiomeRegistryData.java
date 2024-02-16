@@ -17,43 +17,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_12_2.world.registry;
+package net.daporkchop.fp2.core.world.registry;
 
+import com.google.common.base.Preconditions;
+import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.core.world.registry.AbstractDenseExtendedStateRegistryData;
-import net.minecraft.block.state.IBlockState;
-import net.minecraft.util.math.MathHelper;
+import net.daporkchop.fp2.api.world.registry.FExtendedBiomeRegistryData;
+import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 
-import static net.daporkchop.fp2.api.world.level.BlockLevelConstants.*;
+import java.util.IntSummaryStatistics;
+
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
+ * Base implementation of {@link FExtendedBiomeRegistryData} for registries whose state IDs are allocated in an integer range without gaps.
+ *
  * @author DaPorkchop_
  */
-public final class ExtendedStateRegistryData1_12_2 extends AbstractDenseExtendedStateRegistryData<IBlockState> {
-    public ExtendedStateRegistryData1_12_2(@NonNull GameRegistry1_12_2 registry) {
-        super(registry);
-    }
+public abstract class AbstractDenseExtendedBiomeRegistryData<BIOME> implements FExtendedBiomeRegistryData {
+    @Getter
+    private final FGameRegistry registry;
 
-    @Override
-    protected int type(int id, IBlockState state) {
-        if (state.isOpaqueCube()) {
-            return BLOCK_TYPE_OPAQUE;
-        } else if (state.getMaterial().isSolid() || state.getMaterial().isLiquid()) {
-            return BLOCK_TYPE_TRANSPARENT;
-        } else {
-            return BLOCK_TYPE_INVISIBLE;
+    public AbstractDenseExtendedBiomeRegistryData(@NonNull FGameRegistry registry) {
+        this.registry = registry;
+
+        IntSummaryStatistics statistics = registry.biomes().summaryStatistics();
+        Preconditions.checkArgument(statistics.getCount() == 0L || statistics.getMin() == 0, "registry contains invalid negative id %s", statistics.getMin());
+        int length = Math.max(statistics.getMax() + 1, 0);
+
+        for (int id = 0; id < length; id++) {
+            BIOME BIOME = uncheckedCast(registry.id2biome(id));
         }
-    }
-
-    @SuppressWarnings("deprecation")
-    @Override
-    protected int lightOpacity(int id, IBlockState state) {
-        return MathHelper.clamp(state.getLightOpacity(), 0, 15);
-    }
-
-    @SuppressWarnings("deprecation")
-    @Override
-    protected int lightEmission(int id, IBlockState state) {
-        return MathHelper.clamp(state.getLightValue(), 0, 15);
     }
 }
