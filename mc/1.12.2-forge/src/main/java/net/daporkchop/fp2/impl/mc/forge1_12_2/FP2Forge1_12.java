@@ -34,9 +34,9 @@ import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.x86.x86FeatureDetector;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.network.FP2Network1_12_2;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.server.FP2Server1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.I18n1_12;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.util.event.IdMappingsChangedEvent;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.log.Log4jAsPorkLibLogger;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.threading.futureexecutor.ServerThreadMarkedFutureExecutor1_12;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.world.registry.GameRegistry1_12;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.DimensionType;
 import net.minecraft.world.World;
@@ -159,8 +159,7 @@ public class FP2Forge1_12 extends FP2Core implements ResourceProvider {
 
     @Mod.EventHandler
     public void onIdsChanged(FMLModIdMappingEvent event) {
-        this.eventBus().fire(new IdMappingsChangedEvent());
-
+        GameRegistry1_12.reload();
         FastRegistry.reload();
     }
 

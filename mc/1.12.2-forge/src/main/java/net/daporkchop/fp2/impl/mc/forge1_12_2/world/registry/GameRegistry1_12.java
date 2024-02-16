@@ -25,9 +25,7 @@ import it.unimi.dsi.fastutil.objects.Reference2IntMap;
 import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.util.event.IdMappingsChangedEvent;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.world.biome.Biome;
@@ -36,25 +34,19 @@ import java.nio.charset.StandardCharsets;
 import java.util.stream.IntStream;
 import java.util.stream.StreamSupport;
 
-import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
 public final class GameRegistry1_12 implements FGameRegistry {
-    private static GameRegistry1_12 INSTANCE = new GameRegistry1_12();
-
-    static {
-        fp2().eventBus().registerStatic(GameRegistry1_12.class);
-    }
+    private static GameRegistry1_12 INSTANCE;
 
     public static GameRegistry1_12 get() {
         return INSTANCE;
     }
 
-    @FEventHandler
-    private static void recreateWhenChanged(IdMappingsChangedEvent event) {
+    public synchronized static void reload() {
         INSTANCE = new GameRegistry1_12();
     }
 
