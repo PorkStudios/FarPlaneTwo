@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -32,6 +32,7 @@ import org.lwjgl.opengl.ARBDrawElementsBaseVertex;
 import org.lwjgl.opengl.ARBInstancedArrays;
 import org.lwjgl.opengl.ARBMultiDrawIndirect;
 import org.lwjgl.opengl.ARBProgramInterfaceQuery;
+import org.lwjgl.opengl.ARBSamplerObjects;
 import org.lwjgl.opengl.ARBShaderImageLoadStore;
 import org.lwjgl.opengl.ARBShaderStorageBufferObject;
 import org.lwjgl.opengl.ARBTextureBufferObject;
@@ -74,6 +75,7 @@ public class GLAPILWJGL2 implements GLAPI {
 
     // OpenGL 3.3
     private final boolean GL_ARB_instanced_arrays;
+    private final boolean GL_ARB_sampler_objects;
 
     // OpenGL 4.2
     private final boolean GL_ARB_shader_image_load_store;
@@ -98,6 +100,7 @@ public class GLAPILWJGL2 implements GLAPI {
 
         // OpenGL 3.3
         this.GL_ARB_instanced_arrays = !capabilities.OpenGL33 && capabilities.GL_ARB_instanced_arrays;
+        this.GL_ARB_sampler_objects = !capabilities.OpenGL33 && capabilities.GL_ARB_sampler_objects;
 
         // OpenGL 4.2
         this.GL_ARB_shader_image_load_store = !capabilities.OpenGL42 && capabilities.GL_ARB_shader_image_load_store;
@@ -233,6 +236,11 @@ public class GLAPILWJGL2 implements GLAPI {
     @Override
     public int glGetTexParameterInteger(int target, int pname) {
         return GL11.glGetTexParameteri(target, pname);
+    }
+
+    @Override
+    public float glGetTexParameterFloat(int target, int pname) {
+        return GL11.glGetTexParameterf(target, pname);
     }
 
     @Override
@@ -785,6 +793,51 @@ public class GLAPILWJGL2 implements GLAPI {
             ARBInstancedArrays.glVertexAttribDivisorARB(index, divisor);
         } else {
             GL33.glVertexAttribDivisor(index, divisor);
+        }
+    }
+
+    @Override
+    public int glGenSampler() {
+        if (this.GL_ARB_sampler_objects) {
+            return ARBSamplerObjects.glGenSamplers();
+        } else {
+            return GL33.glGenSamplers();
+        }
+    }
+
+    @Override
+    public void glDeleteSampler(int sampler) {
+        if (this.GL_ARB_sampler_objects) {
+            ARBSamplerObjects.glDeleteSamplers(sampler);
+        } else {
+            GL33.glDeleteSamplers(sampler);
+        }
+    }
+
+    @Override
+    public void glBindSampler(int unit, int sampler) {
+        if (this.GL_ARB_sampler_objects) {
+            ARBSamplerObjects.glBindSampler(unit, sampler);
+        } else {
+            GL33.glBindSampler(unit, sampler);
+        }
+    }
+
+    @Override
+    public void glSamplerParameter(int sampler, int pname, int param) {
+        if (this.GL_ARB_sampler_objects) {
+            ARBSamplerObjects.glSamplerParameteri(sampler, pname, param);
+        } else {
+            GL33.glSamplerParameteri(sampler, pname, param);
+        }
+    }
+
+    @Override
+    public void glSamplerParameter(int sampler, int pname, float param) {
+        if (this.GL_ARB_sampler_objects) {
+            ARBSamplerObjects.glSamplerParameterf(sampler, pname, param);
+        } else {
+            GL33.glSamplerParameterf(sampler, pname, param);
         }
     }
 

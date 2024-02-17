@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -335,6 +335,8 @@ public class StateProperties {
 
     public final Map<TextureTarget, StateValueProperty<Integer>>[] BOUND_TEXTURE = uncheckedCast(PArrays.filledBy(80, Map[]::new, unit ->
             Stream.of(TextureTarget.values()).collect(ImmutableMap.toImmutableMap(Function.identity(), target -> new TextureBindingProperty(target, unit)))));
+
+    public final StateValueProperty<Integer>[] BOUND_SAMPLER_OBJECT = uncheckedCast(PArrays.filledBy(80, StateValueProperty[]::new, SamplerBindingProperty::new));
 
     //
     //
@@ -755,6 +757,48 @@ public class StateProperties {
         @Override
         protected void loadFromBackup(@NonNull MethodVisitor mv, int bufferLvtIndex, int lvtIndexBase) {
             visitGLConstant(mv, this.target.target());
+            mv.visitVarInsn(ILOAD, lvtIndexBase);
+        }
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    private static class SamplerBindingProperty extends SimpleStateValueProperty<Integer> {
+        private final int unit;
+
+        public SamplerBindingProperty(int unit) {
+            super(0);
+
+            this.unit = unit;
+        }
+
+        @Override
+        protected void set(@NonNull MethodVisitor mv) {
+            mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glBindSampler", getMethodDescriptor(VOID_TYPE, INT_TYPE, INT_TYPE), true);
+        }
+
+        @Override
+        protected void loadFromValue(@NonNull MethodVisitor mv, @NonNull Integer value) {
+            visitGLConstant(mv, this.unit);
+            mv.visitLdcInsn(value);
+        }
+
+        @Override
+        public void backup(@NonNull MethodVisitor mv, int apiLvtIndex, int bufferLvtIndex, @NonNull AtomicInteger lvtIndexAllocator) {
+            mv.visitVarInsn(ALOAD, apiLvtIndex);
+            visitGLConstant(mv, GL_TEXTURE0 + this.unit);
+            mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glActiveTexture", getMethodDescriptor(VOID_TYPE, INT_TYPE), true);
+
+            mv.visitVarInsn(ALOAD, apiLvtIndex);
+            visitGLConstant(mv, GL_SAMPLER_BINDING);
+            mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glGetInteger", getMethodDescriptor(INT_TYPE, INT_TYPE), true);
+            mv.visitVarInsn(ISTORE, lvtIndexAllocator.getAndIncrement());
+        }
+
+        @Override
+        protected void loadFromBackup(@NonNull MethodVisitor mv, int bufferLvtIndex, int lvtIndexBase) {
+            visitGLConstant(mv, this.unit);
             mv.visitVarInsn(ILOAD, lvtIndexBase);
         }
     }
