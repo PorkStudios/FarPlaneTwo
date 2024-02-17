@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -31,6 +31,7 @@ import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
+import org.rocksdb.Status;
 import org.rocksdb.WriteBatchWithIndex;
 
 import java.nio.ByteBuffer;
@@ -175,6 +176,17 @@ public class RocksAccessWriteBatchWithIndexMasqueradingAsTransaction extends Wri
         try {
             this.deleteRange(((RocksStorageColumn) column).handle(), fromKeyInclusive, toKeyExclusive);
         } catch (RocksDBException e) {
+            if (e.getStatus().getCode() == Status.Code.NotSupported) {
+                //we can't actually do a deleteRange in a transaction, which is unfortunate. fall back to iterating over the range and deleting every key, which is probably close enough,
+                //  although technically not perfectly atomic.
+
+                try (FStorageIterator itr = this.iterator(column, fromKeyInclusive, toKeyExclusive)) {
+                    for (itr.seekToFirst(); itr.isValid(); itr.next()) {
+                        this.delete(column, itr.key());
+                    }
+                }
+                return;
+            }
             throw wrapException(e);
         }
     }
