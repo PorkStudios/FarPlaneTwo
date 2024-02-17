@@ -18,14 +18,8 @@
  *
  */
 
-rootProject.name = 'FarPlaneTwo'
+dependencies {
+    implementationShade project(":core")
 
-include 'api'
-include 'common'
-include 'core'
-include 'core:log4j'
-include 'core:minecraft'
-include 'gl'
-include 'gl:opengl'
-include 'gl:opengl-lwjgl2'
-include 'mc:1.12.2-forge'
+    implementationProvided "org.apache.logging.log4j:log4j-api:$log4jVersion"
+}

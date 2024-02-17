@@ -36,7 +36,7 @@ import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.ATMinecraft1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.gui.ATGuiScreen1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.client.network.IMixinNetHandlerPlayClient1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.client.gui.GuiContext1_12;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.util.log.ChatAsPorkLibLogger;
+import net.daporkchop.fp2.core.minecraft.util.log.ChatAsPorkLibLogger;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiIngameMenu;
@@ -45,6 +45,7 @@ import net.minecraft.client.gui.GuiVideoSettings;
 import net.minecraft.client.network.NetHandlerPlayClient;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.settings.KeyBinding;
+import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.client.settings.KeyConflictContext;
@@ -84,7 +85,14 @@ public class FP2Client1_12 extends FP2Client {
     private boolean reverseZ = false;
 
     public void preInit() {
-        this.chat(new ChatAsPorkLibLogger(this.mc));
+        this.chat(new ChatAsPorkLibLogger(message -> {
+            if (this.mc.player != null) {
+                this.mc.player.sendMessage(new TextComponentString(message));
+                return true;
+            } else {
+                return false;
+            }
+        }));
 
         if (!GLContext.getCapabilities().OpenGL45) { //require at least OpenGL 4.5
             this.fp2().unsupported("Your system does not support OpenGL 4.5!\nRequired by FarPlaneTwo.");

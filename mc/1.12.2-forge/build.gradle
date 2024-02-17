@@ -18,6 +18,13 @@
  *
  */
 
+configurations.all {
+    resolutionStrategy {
+        force "org.apache.logging.log4j:log4j-api:$log4jVersion"
+        force "org.apache.logging.log4j:log4j-core:$log4jVersion"
+    }
+}
+
 apply from: "${project.rootDir}/mc/forge.gradle"
 apply from: "${project.rootDir}/natives/natives.gradle"
 
@@ -85,6 +92,7 @@ repositories {
 dependencies {
     runtimeOnlyShade project(":gl:opengl-lwjgl2")
 
+    implementationShade project(":core:log4j")
     implementationShade project(":core:minecraft")
 
     implementationShade("net.daporkchop.lib:compression-zstd:$porklibVersion") {

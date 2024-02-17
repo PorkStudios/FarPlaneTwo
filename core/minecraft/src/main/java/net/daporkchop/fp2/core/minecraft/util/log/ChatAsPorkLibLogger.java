@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,16 +15,16 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_12_2.util.log;
+package net.daporkchop.fp2.core.minecraft.util.log;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.core.util.log.BaseProxyLogger;
 import net.daporkchop.lib.logging.LogLevel;
-import net.minecraft.client.Minecraft;
-import net.minecraft.util.text.TextComponentString;
+
+import java.util.function.Predicate;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
 
@@ -48,15 +48,13 @@ public class ChatAsPorkLibLogger extends BaseProxyLogger {
     };
 
     @NonNull
-    protected final Minecraft mc;
+    protected final Predicate<String> trySendLocalChat;
 
     @Override
     protected void log(@NonNull LogLevel level, String channel, @NonNull String message) {
         message = PRE + "§9FarPlaneTwo" + POST + (channel != null ? PRE + channel + POST : "") + LEVEL_PREFIXES[level.ordinal()] + message;
 
-        if (this.mc.player != null) {
-            this.mc.player.sendMessage(new TextComponentString(message));
-        } else {
+        if (!this.trySendLocalChat.test(message)) {
             fp2().log().log(level, "[CHAT] " + message);
         }
     }
