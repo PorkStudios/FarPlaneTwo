@@ -48,11 +48,12 @@ public final class ExtendedStateRegistryData1_16 extends AbstractDenseExtendedSt
 
     @Override
     protected int lightOpacity(int id, BlockState state) {
-        return 0;
+        return state.getLightBlock(EmptyBlockReader.INSTANCE, BlockPos.ZERO);
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     protected int lightEmission(int id, BlockState state) {
-        return 0;
+        return state.getLightEmission();
     }
 }
