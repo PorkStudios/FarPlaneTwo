@@ -201,11 +201,7 @@ public final class FarTileCache extends AbstractReleasable implements Function<T
     @Override
     @Deprecated
     public ITileSnapshot apply(@NonNull TilePos pos) {
-        ITileSnapshot snapshot = this.tiles.get(pos);
-        if (snapshot != null) {
-            snapshot.retain();
-        }
-        return snapshot;
+        return this.getTileCached(pos);
     }
 
     @Override
