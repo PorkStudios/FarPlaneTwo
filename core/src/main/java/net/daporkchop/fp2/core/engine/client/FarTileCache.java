@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -22,6 +22,7 @@ package net.daporkchop.fp2.core.engine.client;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.TilePos;
+import net.daporkchop.fp2.core.engine.tile.CompressedTileSnapshot;
 import net.daporkchop.fp2.core.engine.tile.ITileSnapshot;
 import net.daporkchop.lib.common.misc.release.AbstractReleasable;
 
@@ -71,6 +72,33 @@ public final class FarTileCache extends AbstractReleasable implements Function<T
             }
             return tile;
         });
+    }
+
+    /**
+     * If a tile at the given position exists, tries to compress it.
+     *
+     * @param pos the tile's position
+     */
+    public void tryCompressExistingTile(@NonNull TilePos pos) {
+        this.assertNotReleased();
+
+        ITileSnapshot tile = this.getTileCached(pos);
+        try {
+            if (tile == null || tile instanceof CompressedTileSnapshot) { //the tile isn't cached, or is cached but is also already compressed
+                return;
+            }
+
+            ITileSnapshot compressedTile = tile.compressed();
+            if (this.tiles.replace(tile.pos(), tile, compressedTile)) { //the tile was successfully replaced with the compressed one
+                this.debug_updateStats(tile, compressedTile);
+            } else { //the tile wasn't replaced with the compressed one (was probably changed while we were compressing it), discard it
+                compressedTile.release();
+            }
+        } finally {
+            if (tile != null) {
+                tile.release();
+            }
+        }
     }
 
     public void unloadTile(@NonNull TilePos _pos) {
@@ -127,11 +155,9 @@ public final class FarTileCache extends AbstractReleasable implements Function<T
      */
     public ITileSnapshot getTileCached(@NonNull TilePos position) {
         this.assertNotReleased();
-        ITileSnapshot snapshot = this.tiles.get(position);
-        if (snapshot != null) {
-            snapshot.retain();
-        }
-        return snapshot;
+
+        //retain the tile inside the computeIfPresent() block to ensure that it can't be released between getting it from the map and trying to retain it
+        return this.tiles.computeIfPresent(position, (pos, tile) -> tile.retain());
     }
 
     /**
