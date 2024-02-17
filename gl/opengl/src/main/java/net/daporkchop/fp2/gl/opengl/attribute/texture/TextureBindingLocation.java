@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -85,6 +85,10 @@ public class TextureBindingLocation<B extends BaseTextureImpl<?>> implements Bin
 
         builder.append(field.declaration()).append("(in vec").append(this.target.coordVectorComponents()).append(" coord) {\n");
         builder.append("    return texture(sampler_").append(field.name()).append(", coord)").append(swizzle).append(";\n");
+        builder.append("}\n");
+
+        builder.append(field.declaration()).append("(in vec").append(this.target.coordVectorComponents()).append(" coord, in float lod) {\n");
+        builder.append("    return textureLod(sampler_").append(field.name()).append(", coord, lod)").append(swizzle).append(";\n");
         builder.append("}\n");
 
         builder.append(field.declaration()).append("(in vec").append(this.target.coordVectorComponents()).append(" coord, ")
