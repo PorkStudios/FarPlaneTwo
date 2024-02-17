@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -25,7 +25,7 @@ import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.debug.FP2Debug;
-import net.daporkchop.fp2.core.log4j.Log4jAsPorkLibLogger;
+import net.daporkchop.fp2.core.log4j.util.log.Log4jAsPorkLibLogger;
 import net.daporkchop.fp2.core.server.FP2Server;
 import net.daporkchop.fp2.core.util.I18n;
 import net.daporkchop.fp2.impl.mc.forge1_16.client.FP2Client1_16;

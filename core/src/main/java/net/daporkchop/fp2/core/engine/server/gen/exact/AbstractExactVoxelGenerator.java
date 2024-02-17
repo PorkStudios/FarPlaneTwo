@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -56,8 +56,8 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
         checkArg(pos.level() == 0, "can only exact generate at level 0, not %d!", pos.level());
 
         IntAxisAlignedBB initialBB = new IntAxisAlignedBB(
-                pos.blockX() + CACHE_MIN, pos.blockY() + CACHE_MIN, pos.blockZ() + CACHE_MIN,
-                pos.blockX() + CACHE_MAX, pos.blockY() + CACHE_MAX, pos.blockZ() + CACHE_MAX);
+                pos.minBlockX() + CACHE_MIN, pos.minBlockY() + CACHE_MIN, pos.minBlockZ() + CACHE_MIN,
+                pos.minBlockX() + CACHE_MAX, pos.minBlockY() + CACHE_MAX, pos.minBlockZ() + CACHE_MAX);
         IntAxisAlignedBB dataAvailableBB = world.guaranteedDataAvailableVolume(initialBB);
 
         //the bounding boxes are identical, so there's no point in batching
@@ -105,12 +105,10 @@ public abstract class AbstractExactVoxelGenerator extends AbstractVoxelGenerator
 
         try {
             //query all world data at once
-            world.query(FBlockLevel.DataQuery.of(
-                    new FBlockLevel.OriginSizeStrideDataQueryShape(
-                            posIn.blockX() + CACHE_MIN - 1, posIn.blockY() + CACHE_MIN - 1, posIn.blockZ() + CACHE_MIN - 1,
-                            CACHE_SIZE, CACHE_SIZE, CACHE_SIZE,
-                            1, 1, 1),
-                    new FBlockLevel.BandArraysDataQueryOutput(stateCache, 0, 1, biomeCache, 0, 1, lightCache, 0, 1, cb(CACHE_SIZE))));
+            world.multiGetDense(
+                    posIn.minBlockX() + CACHE_MIN - 1, posIn.minBlockY() + CACHE_MIN - 1, posIn.minBlockZ() + CACHE_MIN - 1,
+                    CACHE_SIZE, CACHE_SIZE, CACHE_SIZE,
+                    stateCache, 0, biomeCache, 0, lightCache, 0);
 
             //use bit flags to identify voxel types rather than reading from the world each time to keep innermost loop head tight and cache-friendly
             this.populateTypeMapFromStateMap(stateCache, typeCache);

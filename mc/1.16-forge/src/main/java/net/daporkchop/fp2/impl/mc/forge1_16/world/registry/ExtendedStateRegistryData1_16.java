@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -19,9 +19,8 @@
 
 package net.daporkchop.fp2.impl.mc.forge1_16.world.registry;
 
-import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.api.world.registry.FExtendedStateRegistryData;
+import net.daporkchop.fp2.core.world.registry.AbstractDenseExtendedStateRegistryData;
 import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.EmptyBlockReader;
@@ -31,9 +30,13 @@ import static net.daporkchop.fp2.api.world.level.BlockLevelConstants.*;
 /**
  * @author DaPorkchop_
  */
-@Getter
-public final class ExtendedStateRegistryData1_16 implements FExtendedStateRegistryData {
-    private static int type(BlockState state) {
+public final class ExtendedStateRegistryData1_16 extends AbstractDenseExtendedStateRegistryData<BlockState> {
+    public ExtendedStateRegistryData1_16(@NonNull GameRegistry1_16 registry) {
+        super(registry);
+    }
+
+    @Override
+    protected int type(int id, BlockState state) {
         if (state.isSolidRender(EmptyBlockReader.INSTANCE, BlockPos.ZERO)) { //should be the same as 1.12.2's isOpaqueCube()
             return BLOCK_TYPE_OPAQUE;
         } else if (state.getMaterial().isSolid() || state.getMaterial().isLiquid()) {
@@ -43,19 +46,13 @@ public final class ExtendedStateRegistryData1_16 implements FExtendedStateRegist
         }
     }
 
-    private final GameRegistry1_16 registry;
-
-    private final byte[] types;
-
-    public ExtendedStateRegistryData1_16(@NonNull GameRegistry1_16 registry) {
-        this.registry = registry;
-
-        this.types = new byte[registry.statesCount()];
-        registry.states().forEach(state -> this.types[state] = (byte) type(registry.id2state(state)));
+    @Override
+    protected int lightOpacity(int id, BlockState state) {
+        return 0;
     }
 
     @Override
-    public int type(int state) throws IndexOutOfBoundsException {
-        return this.types[state] & 0xFF;
+    protected int lightEmission(int id, BlockState state) {
+        return 0;
     }
 }

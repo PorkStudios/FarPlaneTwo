@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -23,6 +23,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
+import net.daporkchop.fp2.api.world.level.BlockLevelConstants;
 import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.fp2.api.world.level.GenerationNotAllowedException;
 import net.daporkchop.fp2.core.minecraft.util.threading.asynccache.AsyncCacheNBT;
@@ -31,17 +32,15 @@ import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
 import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
 import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
-import net.daporkchop.fp2.core.util.datastructure.Datastructures;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSegtreeSet;
-import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSet;
 import net.daporkchop.fp2.core.util.threading.lazy.LazyFutureTask;
+import net.daporkchop.lib.common.annotation.param.NotNegative;
+import net.daporkchop.lib.common.annotation.param.Positive;
 import net.daporkchop.lib.math.vector.Vec3i;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Consumer;
-import java.util.function.IntConsumer;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
@@ -167,115 +166,27 @@ public abstract class AbstractCubesExactFBlockLevelHolder<CUBE> extends Abstract
     }
 
     /**
-     * Gets a {@link List} of the cube positions which need to be prefetched in order to respond to a query with the given shape.
+     * Gets a {@link List} of the cube positions which need to be prefetched in order to respond to a
+     * {@link FBlockLevel#multiGetDense(int, int, int, int, int, int, int[], int, int[], int, byte[], int) multiGet} query.
      *
-     * @param shape the {@link FBlockLevel.DataQueryShape query's shape}
-     * @return the positions of the cubes to prefetch
-     */
-    public List<Vec3i> getCubePositionsToPrefetch(@NonNull FBlockLevel.DataQueryShape shape) {
-        if (shape.count() == 0) { //the shape contains no points, we don't need to prefetch anything
-            return Collections.emptyList();
-        } else if (shape instanceof FBlockLevel.SinglePointDataQueryShape) {
-            return this.getCubePositionsToPrefetch((FBlockLevel.SinglePointDataQueryShape) shape);
-        } else if (shape instanceof FBlockLevel.OriginSizeStrideDataQueryShape) {
-            return this.getCubePositionsToPrefetch((FBlockLevel.OriginSizeStrideDataQueryShape) shape);
-        } else if (shape instanceof FBlockLevel.MultiPointsDataQueryShape) {
-            return this.getCubePositionsToPrefetch((FBlockLevel.MultiPointsDataQueryShape) shape);
-        } else {
-            return this.getCubePositionsToPrefetchGeneric(shape);
-        }
-    }
-
-    /**
-     * Gets a {@link List} of the chunk positions which need to be prefetched in order to respond to a group of queries with the given shapes.
-     *
-     * @param shapes the {@link FBlockLevel.DataQueryShape queries' shapes}
      * @return the positions of the chunks to prefetch
      */
-    public List<Vec3i> getCubePositionsToPrefetch(@NonNull FBlockLevel.DataQueryShape... shapes) {
-        switch (shapes.length) {
-            case 0: //there are no shapes, we don't need to prefetch anything
-                return Collections.emptyList();
-            case 1: //there is only a single shape, prefetch it individually
-                return this.getCubePositionsToPrefetch(shapes[0]);
-        }
+    public final List<Vec3i> getCubePositionsToPrefetchForMultiGetDense(
+            int originX, int originY, int originZ,
+            @Positive int sizeX, @Positive int sizeY, @Positive int sizeZ) {
+        BlockLevelConstants.validateDenseGridBounds(originX, originY, originZ, sizeX, sizeY, sizeZ);
 
-        //collect all the positions into an NDimensionalIntSet
-        {
-            NDimensionalIntSet set = Datastructures.INSTANCE.nDimensionalIntSet().dimensions(3).threadSafe(false).build();
-
-            //add the positions for each shape to the set
-            for (FBlockLevel.DataQueryShape shape : shapes) {
-                this.getCubePositionsToPrefetch(set, shape);
-            }
-
-            //now that the shapes have been reduced to a set of unique positions, convert it to a list of Vec3i
-            List<Vec3i> positions = new ArrayList<>(set.size());
-            set.forEach3D((x, y, z) -> positions.add(Vec3i.of(x, y, z)));
-            return positions;
-        }
-    }
-
-    protected void getCubePositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull FBlockLevel.DataQueryShape shape) {
-        if (shape.count() == 0) { //the shape contains no points, we don't need to prefetch anything
-            //no-op
-        } else if (shape instanceof FBlockLevel.SinglePointDataQueryShape) {
-            this.getCubePositionsToPrefetch(set, (FBlockLevel.SinglePointDataQueryShape) shape);
-        } else if (shape instanceof FBlockLevel.OriginSizeStrideDataQueryShape) {
-            this.getCubePositionsToPrefetch(set, (FBlockLevel.OriginSizeStrideDataQueryShape) shape);
-        } else if (shape instanceof FBlockLevel.MultiPointsDataQueryShape) {
-            this.getCubePositionsToPrefetch(set, (FBlockLevel.MultiPointsDataQueryShape) shape);
-        } else {
-            this.getCubePositionsToPrefetchGeneric(set, shape);
-        }
-    }
-
-    protected List<Vec3i> getCubePositionsToPrefetch(@NonNull FBlockLevel.SinglePointDataQueryShape shape) {
-        return this.isValidPosition(shape.x(), shape.y(), shape.z())
-                ? Collections.singletonList(Vec3i.of(shape.x() >> this.cubeShift(), shape.y() >> this.cubeShift(), shape.z() >> this.cubeShift()))
-                : Collections.emptyList();
-    }
-
-    protected void getCubePositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull FBlockLevel.SinglePointDataQueryShape shape) {
-        if (this.isValidPosition(shape.x(), shape.y(), shape.z())) {
-            set.add(shape.x() >> this.cubeShift(), shape.y() >> this.cubeShift(), shape.z() >> this.cubeShift());
-        }
-    }
-
-    protected List<Vec3i> getCubePositionsToPrefetch(@NonNull FBlockLevel.OriginSizeStrideDataQueryShape shape) {
-        shape.validate();
-
-        if (!this.isAnyPointValid(shape)) { //no points are valid, there's no reason to check anything
+        if (!this.isAnyPointValidDense(originX, originY, originZ, sizeX, sizeY, sizeZ)) {
             return Collections.emptyList();
-        } else if (shape.strideX() == 1 && shape.strideY() == 1 && shape.strideZ() == 1) { //shape is an ordinary AABB
-            return this.getCubePositionsToPrefetchRegularAABB(shape);
-        } else {
-            return this.getCubePositionsToPrefetchSparseAABB(shape);
         }
-    }
-
-    protected void getCubePositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull FBlockLevel.OriginSizeStrideDataQueryShape shape) {
-        shape.validate();
-
-        if (!this.isAnyPointValid(shape)) { //no points are valid, there's no reason to check anything
-            //no-op
-        } else if (shape.strideX() == 1 && shape.strideY() == 1 && shape.strideZ() == 1) { //shape is an ordinary AABB
-            this.getCubePositionsToPrefetchRegularAABB(set, shape);
-        } else {
-            this.getCubePositionsToPrefetchSparseAABB(set, shape);
-        }
-    }
-
-    protected List<Vec3i> getCubePositionsToPrefetchRegularAABB(@NonNull FBlockLevel.OriginSizeStrideDataQueryShape shape) {
-        shape.validate();
 
         //find min and max cube coordinates (upper bound is inclusive)
-        int minX = max(shape.originX(), this.bounds().minX()) >> this.cubeShift();
-        int minY = max(shape.originY(), this.bounds().minY()) >> this.cubeShift();
-        int minZ = max(shape.originZ(), this.bounds().minZ()) >> this.cubeShift();
-        int maxX = min(shape.originX() + shape.sizeX() - 1, this.bounds().maxX() - 1) >> this.cubeShift();
-        int maxY = min(shape.originY() + shape.sizeY() - 1, this.bounds().maxY() - 1) >> this.cubeShift();
-        int maxZ = min(shape.originZ() + shape.sizeZ() - 1, this.bounds().maxZ() - 1) >> this.cubeShift();
+        int minX = max(originX, this.bounds().minX()) >> this.cubeShift();
+        int minY = max(originY, this.bounds().minY()) >> this.cubeShift();
+        int minZ = max(originZ, this.bounds().minZ()) >> this.cubeShift();
+        int maxX = min(originX + sizeX - 1, this.bounds().maxX() - 1) >> this.cubeShift();
+        int maxY = min(originY + sizeY - 1, this.bounds().maxY() - 1) >> this.cubeShift();
+        int maxZ = min(originZ + sizeZ - 1, this.bounds().maxZ() - 1) >> this.cubeShift();
 
         //collect all positions to a list
         List<Vec3i> positions = new ArrayList<>(multiplyExact(multiplyExact(maxX - minX + 1, maxY - minY + 1), maxZ - minZ + 1));
@@ -289,91 +200,36 @@ public abstract class AbstractCubesExactFBlockLevelHolder<CUBE> extends Abstract
         return positions;
     }
 
-    protected void getCubePositionsToPrefetchRegularAABB(@NonNull NDimensionalIntSet set, @NonNull FBlockLevel.OriginSizeStrideDataQueryShape shape) {
-        shape.validate();
+    /**
+     * Gets a {@link List} of the cube positions which need to be prefetched in order to respond to a
+     * {@link FBlockLevel#multiGetSparse(int, int, int, int, int, int, int, int[], int, int[], int, byte[], int) sparse multiGet} query.
+     *
+     * @return the positions of the cubes to prefetch
+     */
+    public final List<Vec3i> getCubePositionsToPrefetchForMultiGetSparse(
+            int originX, int originY, int originZ,
+            @Positive int sizeX, @Positive int sizeY, @Positive int sizeZ,
+            @NotNegative int zoom) {
+        BlockLevelConstants.validateSparseGridBounds(originX, originY, originZ, sizeX, sizeY, sizeZ, zoom);
 
-        //find min and max cube coordinates (upper bound is inclusive)
-        int minX = max(shape.originX(), this.bounds().minX()) >> this.cubeShift();
-        int minY = max(shape.originY(), this.bounds().minY()) >> this.cubeShift();
-        int minZ = max(shape.originZ(), this.bounds().minZ()) >> this.cubeShift();
-        int maxX = min(shape.originX() + shape.sizeX() - 1, this.bounds().maxX() - 1) >> this.cubeShift();
-        int maxY = min(shape.originY() + shape.sizeY() - 1, this.bounds().maxY() - 1) >> this.cubeShift();
-        int maxZ = min(shape.originZ() + shape.sizeZ() - 1, this.bounds().maxZ() - 1) >> this.cubeShift();
-
-        //add all positions to the set
-        for (int cubeX = minX; cubeX <= maxX; cubeX++) {
-            for (int cubeY = minY; cubeY <= maxY; cubeY++) {
-                for (int cubeZ = minZ; cubeZ <= maxZ; cubeZ++) {
-                    set.add(cubeX, cubeY, cubeZ);
-                }
-            }
+        if (!this.isAnyPointValidSparse(originX, originY, originZ, sizeX, sizeY, sizeZ, zoom)) {
+            return Collections.emptyList();
         }
-    }
-
-    protected List<Vec3i> getCubePositionsToPrefetchSparseAABB(@NonNull FBlockLevel.OriginSizeStrideDataQueryShape shape) {
-        shape.validate();
 
         //find cube X,Y,Z coordinates
-        Consumer<IntConsumer> cubeXSupplier = this.chunkCoordSupplier(shape.originX(), shape.sizeX(), shape.strideX(), this.bounds().minX(), this.bounds().maxX(), this.cubeShift(), this.cubeSize());
-        Consumer<IntConsumer> cubeYSupplier = this.chunkCoordSupplier(shape.originY(), shape.sizeY(), shape.strideY(), this.bounds().minY(), this.bounds().maxY(), this.cubeShift(), this.cubeSize());
-        Consumer<IntConsumer> cubeZSupplier = this.chunkCoordSupplier(shape.originZ(), shape.sizeZ(), shape.strideZ(), this.bounds().minZ(), this.bounds().maxZ(), this.cubeShift(), this.cubeSize());
+        int[] cubeXs = this.getChunkCoords(originX, sizeX, zoom, this.bounds().minX(), this.bounds().maxX(), this.cubeShift(), this.cubeSize());
+        int[] cubeYs = this.getChunkCoords(originY, sizeY, zoom, this.bounds().minY(), this.bounds().maxY(), this.cubeShift(), this.cubeSize());
+        int[] cubeZs = this.getChunkCoords(originZ, sizeZ, zoom, this.bounds().minZ(), this.bounds().maxZ(), this.cubeShift(), this.cubeSize());
 
         //collect all positions to a list
-        List<Vec3i> positions = new ArrayList<>();
-        cubeXSupplier.accept(cubeX -> cubeYSupplier.accept(cubeY -> cubeZSupplier.accept(cubeZ -> positions.add(Vec3i.of(cubeX, cubeY, cubeZ)))));
-        return positions;
-    }
-
-    protected void getCubePositionsToPrefetchSparseAABB(@NonNull NDimensionalIntSet set, @NonNull FBlockLevel.OriginSizeStrideDataQueryShape shape) {
-        shape.validate();
-
-        //find cube X,Y,Z coordinates
-        Consumer<IntConsumer> cubeXSupplier = this.chunkCoordSupplier(shape.originX(), shape.sizeX(), shape.strideX(), this.bounds().minX(), this.bounds().maxX(), this.cubeShift(), this.cubeSize());
-        Consumer<IntConsumer> cubeYSupplier = this.chunkCoordSupplier(shape.originY(), shape.sizeY(), shape.strideY(), this.bounds().minY(), this.bounds().maxY(), this.cubeShift(), this.cubeSize());
-        Consumer<IntConsumer> cubeZSupplier = this.chunkCoordSupplier(shape.originZ(), shape.sizeZ(), shape.strideZ(), this.bounds().minZ(), this.bounds().maxZ(), this.cubeShift(), this.cubeSize());
-
-        //add all positions to the set
-        cubeXSupplier.accept(cubeX -> cubeYSupplier.accept(cubeY -> cubeZSupplier.accept(cubeZ -> set.add(cubeX, cubeY, cubeZ))));
-    }
-
-    protected List<Vec3i> getCubePositionsToPrefetch(@NonNull FBlockLevel.MultiPointsDataQueryShape shape) {
-        //delegate to generic method, it's already the fastest possible approach for this shape implementation
-        return this.getCubePositionsToPrefetchGeneric(shape);
-    }
-
-    protected void getCubePositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull FBlockLevel.MultiPointsDataQueryShape shape) {
-        //delegate to generic method, it's already the fastest possible approach for this shape implementation
-        this.getCubePositionsToPrefetchGeneric(set, shape);
-    }
-
-    protected List<Vec3i> getCubePositionsToPrefetchGeneric(@NonNull FBlockLevel.DataQueryShape shape) {
-        shape.validate();
-
-        {
-            NDimensionalIntSet set = Datastructures.INSTANCE.nDimensionalIntSet().dimensions(3).threadSafe(false).build();
-
-            //iterate over every position, recording all the ones which are valid
-            shape.forEach((index, x, y, z) -> {
-                if (this.isValidPosition(x, y, z)) {
-                    set.add(x >> this.cubeShift(), y >> this.cubeShift(), z >> this.cubeShift());
+        List<Vec3i> positions = new ArrayList<>(multiplyExact(multiplyExact(cubeXs.length, cubeYs.length), cubeZs.length));
+        for (int cubeX : cubeXs) {
+            for (int cubeY : cubeYs) {
+                for (int cubeZ : cubeZs) {
+                    positions.add(Vec3i.of(cubeX, cubeY, cubeZ));
                 }
-            });
-
-            //now that the shape has been reduced to a set of unique positions, convert it to a list of Vec3i
-            List<Vec3i> positions = new ArrayList<>(set.size());
-            set.forEach3D((x, y, z) -> positions.add(Vec3i.of(x, y, z)));
-            return positions;
-        }
-    }
-
-    protected void getCubePositionsToPrefetchGeneric(@NonNull NDimensionalIntSet set, @NonNull FBlockLevel.DataQueryShape shape) {
-        shape.validate();
-
-        //iterate over every position, recording all the ones which are valid
-        shape.forEach((index, x, y, z) -> {
-            if (this.isValidPosition(x, y, z)) {
-                set.add(x >> this.cubeShift(), y >> this.cubeShift(), z >> this.cubeShift());
             }
-        });
+        }
+        return positions;
     }
 }

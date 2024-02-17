@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -26,9 +26,8 @@ import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
-
-import java.util.function.Consumer;
-import java.util.function.IntConsumer;
+import net.daporkchop.lib.common.annotation.param.NotNegative;
+import net.daporkchop.lib.common.annotation.param.Positive;
 
 import static java.lang.Math.*;
 
@@ -102,16 +101,31 @@ public abstract class AbstractExactFBlockLevelHolder implements ExactFBlockLevel
     // Generic coordinate utilities, used when computing prefetching regions
     //
 
-    protected boolean isAnyPointValid(@NonNull FBlockLevel.OriginSizeStrideDataQueryShape shape) {
-        return this.isAnyPointValid(shape.originX(), shape.sizeX(), shape.strideX(), this.bounds.minX(), this.bounds.maxX())
-               && this.isAnyPointValid(shape.originY(), shape.sizeY(), shape.strideY(), this.bounds.minY(), this.bounds.maxY())
-               && this.isAnyPointValid(shape.originZ(), shape.sizeZ(), shape.strideZ(), this.bounds.minZ(), this.bounds.maxZ());
+    protected boolean isAnyPointValidDense(
+            int originX, int originY, int originZ,
+            @Positive int sizeX, @Positive int sizeY, @Positive int sizeZ) {
+        return this.isAnyPointValidDense(originX, sizeX, this.bounds.minX(), this.bounds.maxX())
+               && this.isAnyPointValidDense(originY, sizeY, this.bounds.minY(), this.bounds.maxY())
+               && this.isAnyPointValidDense(originZ, sizeZ, this.bounds.minZ(), this.bounds.maxZ());
     }
 
-    protected boolean isAnyPointValid(int origin, int size, int stride, int min, int max) {
+    private boolean isAnyPointValidDense(int origin, int size, int min, int max) {
+        return origin < max && origin + size >= min;
+    }
+
+    protected boolean isAnyPointValidSparse(
+            int originX, int originY, int originZ,
+            @Positive int sizeX, @Positive int sizeY, @Positive int sizeZ,
+            @NotNegative int zoom) {
+        return this.isAnyPointValidSparse(originX, sizeX, zoom, this.bounds.minX(), this.bounds.maxX())
+               && this.isAnyPointValidSparse(originY, sizeY, zoom, this.bounds.minY(), this.bounds.maxY())
+               && this.isAnyPointValidSparse(originZ, sizeZ, zoom, this.bounds.minZ(), this.bounds.maxZ());
+    }
+
+    private boolean isAnyPointValidSparse(int origin, int size, int zoom, int min, int max) {
         //this could probably be implemented way faster, but i really don't care because this will never be called with a size larger than like 20
 
-        for (int i = 0, pos = origin; i < size; i++, pos += stride) {
+        for (int i = 0, pos = origin; i < size; i++, pos += 1 << zoom) {
             if (pos >= min && pos < max) { //the point is valid
                 return true;
             }
@@ -120,21 +134,33 @@ public abstract class AbstractExactFBlockLevelHolder implements ExactFBlockLevel
         return false; //no points were valid
     }
 
-    protected Consumer<IntConsumer> chunkCoordSupplier(int origin, int size, int stride, int min, int max, int chunkShift, int chunkSize) {
-        if (stride >= chunkSize) {
-            return callback -> {
-                for (int i = 0, block = origin; i < size && block < max; i++, block += stride) {
-                    if (block >= min) {
-                        callback.accept(block >> chunkShift);
-                    }
+    protected int[] getChunkCoords(int origin, int size, int zoom, int min, int max, int chunkShift, int chunkSize) {
+        if (zoom >= chunkShift) { //there's a spacing of more than one chunk between samples
+            //TODO: could this be optimized? is it even important that it be optimized?
+            int stride = 1 << zoom;
+            int count = 0;
+            for (int i = 0, block = origin; i < size && block < max; i++, block += stride) {
+                if (block >= min) {
+                    count++;
                 }
-            };
-        } else {
-            return callback -> {
-                for (int chunk = max(origin, min) >> chunkShift, limit = min(origin + (size - 1) * stride, max) >> chunkShift; chunk <= limit; chunk++) {
-                    callback.accept(chunk);
+            }
+
+            int[] result = new int[count];
+            for (int i = 0, j = 0, block = origin; i < size && block < max; i++, block += stride) {
+                if (block >= min) {
+                    result[j++] = block >> chunkShift;
                 }
-            };
+            }
+            return result;
+        } else { //there's a spacing of at most one chunk between samples
+            int minChunk = max(origin, min) >> chunkShift;
+            int maxChunk = min(origin + ((size - 1) << zoom), max) >> chunkShift;
+            int[] result = new int[maxChunk - minChunk + 1];
+            for (int i = 0; i < result.length; i++) {
+                result[i] = minChunk + i;
+            }
+            assert result[result.length - 1] == maxChunk;
+            return result;
         }
     }
 }

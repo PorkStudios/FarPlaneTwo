@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -31,6 +31,7 @@ import net.daporkchop.fp2.core.client.key.KeyCategory;
 import net.daporkchop.fp2.core.client.player.IFarPlayerClient;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.config.gui.ConfigGuiHelper;
+import net.daporkchop.fp2.core.minecraft.util.log.ChatLogger;
 import net.daporkchop.fp2.core.util.threading.futureexecutor.FutureExecutor;
 import net.daporkchop.fp2.impl.mc.forge1_16.FP2Forge1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.gui.screen.ATScreen1_16;
@@ -47,6 +48,8 @@ import net.minecraft.client.network.play.ClientPlayNetHandler;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.client.util.InputMappings;
 import net.minecraft.resources.IReloadableResourceManager;
+import net.minecraft.util.Util;
+import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.client.event.InputEvent;
@@ -87,7 +90,14 @@ public class FP2Client1_16 extends FP2Client {
 
     @Override
     public void init(@NonNull FutureExecutor clientThreadExecutor) {
-        this.chat(new ChatLogger1_16(this.mc));
+        this.chat(new ChatLogger(message -> {
+            if (this.mc.player != null) {
+                this.mc.player.sendMessage(new StringTextComponent(message), Util.NIL_UUID);
+                return true;
+            } else {
+                return false;
+            }
+        }));
 
         super.init(clientThreadExecutor);
 

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.util.math;
@@ -33,17 +32,39 @@ import static java.lang.Math.*;
  */
 @UtilityClass
 public class MathUtil {
+    /**
+     * Divides the given value by {@code 2^shift}, rounding down towards negative infinity.
+     *
+     * @param val   the value
+     * @param shift {@code log2} of the divisor. Undefined behavior if negative or greater than or equal to {@link Integer#SIZE}
+     * @return the given value divided by {@code 2^shift}
+     */
     public static int asrFloor(int val, int shift) {
         //lol this is totally useless, i'm just adding it here because it keeps the code cleaner when asrRound()/asrCeil() are used alongside it
         return val >> shift;
     }
 
+    /**
+     * Divides the given value by {@code 2^shift}, rounding results with a fractional part less than {@code 0.5} towards negative infinity and results with
+     * a fractional part greater than or equal to {@code 0.5} towards positive infinity.
+     *
+     * @param val   the value
+     * @param shift {@code log2} of the divisor. Undefined behavior if negative or greater than or equal to {@link Integer#SIZE}
+     * @return the given value divided by {@code 2^shift}
+     */
     public static int asrRound(int val, int shift) {
         return shift == 0
                 ? val
                 : (val >> shift) + ((val >> (shift - 1)) & 1);
     }
 
+    /**
+     * Divides the given value by {@code 2^shift}, rounding up towards positive infinity.
+     *
+     * @param val   the value
+     * @param shift {@code log2} of the divisor. Undefined behavior if negative or greater than or equal to {@link Integer#SIZE}
+     * @return the given value divided by {@code 2^shift}
+     */
     public static int asrCeil(int val, int shift) {
         return shift == 0
                 ? val

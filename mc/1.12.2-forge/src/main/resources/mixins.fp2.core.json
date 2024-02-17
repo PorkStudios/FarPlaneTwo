@@ -4,21 +4,21 @@
   "package": "net.daporkchop.fp2.impl.mc.forge1_12_2.asm.core",
   "refmap": "mixins.fp2.refmap.json",
   "client": [
-    "client.network.MixinNetHandlerPlayClient",
-    "client.renderer.culling.MixinFrustum",
-    "client.renderer.culling.MixinICamera",
-    "client.renderer.MixinEntityRenderer",
-    "client.renderer.MixinGlStateManager",
-    "client.renderer.MixinRenderGlobal",
-    "client.shader.MixinFramebuffer",
-    "client.MixinMinecraft"
+    "client.network.MixinNetHandlerPlayClient1_12",
+    "client.renderer.culling.MixinFrustum1_12",
+    "client.renderer.culling.MixinICamera1_12",
+    "client.renderer.MixinEntityRenderer1_12",
+    "client.renderer.MixinGlStateManager1_12",
+    "client.renderer.MixinRenderGlobal1_12",
+    "client.shader.MixinFramebuffer1_12",
+    "client.MixinMinecraft1_12"
   ],
   "mixins": [
-    "network.MixinNetHandlerPlayServer",
+    "network.MixinNetHandlerPlayServer1_12",
     "server.MixinMinecraftServer1_12",
-    "world.MixinWorldServer",
-    "world.chunk.storage.MixinRegionFileCache",
-    "world.gen.layer.MixinGenLayer",
-    "world.gen.layer.MixinIntCache"
+    "world.MixinWorldServer1_12",
+    "world.chunk.storage.MixinRegionFileCache1_12",
+    "world.gen.layer.MixinGenLayer1_12",
+    "world.gen.layer.MixinIntCache1_12"
   ]
 }

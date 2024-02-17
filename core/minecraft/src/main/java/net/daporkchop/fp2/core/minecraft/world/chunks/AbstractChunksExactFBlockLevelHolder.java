@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -23,6 +23,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
+import net.daporkchop.fp2.api.world.level.BlockLevelConstants;
 import net.daporkchop.fp2.api.world.level.FBlockLevel;
 import net.daporkchop.fp2.api.world.level.GenerationNotAllowedException;
 import net.daporkchop.fp2.core.minecraft.util.threading.asynccache.AsyncCacheNBT;
@@ -31,10 +32,10 @@ import net.daporkchop.fp2.core.server.event.ColumnSavedEvent;
 import net.daporkchop.fp2.core.server.event.CubeSavedEvent;
 import net.daporkchop.fp2.core.server.world.ExactFBlockLevelHolder;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
-import net.daporkchop.fp2.core.util.datastructure.Datastructures;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSegtreeSet;
-import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSet;
 import net.daporkchop.fp2.core.util.threading.lazy.LazyFutureTask;
+import net.daporkchop.lib.common.annotation.param.NotNegative;
+import net.daporkchop.lib.common.annotation.param.Positive;
 import net.daporkchop.lib.math.vector.Vec2i;
 
 import java.util.ArrayList;
@@ -171,115 +172,27 @@ public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends Abstra
     }
 
     /**
-     * Gets a {@link List} of the chunk positions which need to be prefetched in order to respond to a query with the given shape.
+     * Gets a {@link List} of the chunk positions which need to be prefetched in order to respond to a
+     * {@link FBlockLevel#multiGetDense(int, int, int, int, int, int, int[], int, int[], int, byte[], int) dense multiGet} query.
      *
-     * @param shape the {@link FBlockLevel.DataQueryShape query's shape}
      * @return the positions of the chunks to prefetch
      */
-    public List<Vec2i> getChunkPositionsToPrefetch(@NonNull FBlockLevel.DataQueryShape shape) {
-        if (shape.count() == 0) { //the shape contains no points, we don't need to prefetch anything
+    public final List<Vec2i> getChunkPositionsToPrefetchForMultiGetDense(
+            int originX, int originY, int originZ,
+            @Positive int sizeX, @Positive int sizeY, @Positive int sizeZ) {
+        BlockLevelConstants.validateDenseGridBounds(originX, originY, originZ, sizeX, sizeY, sizeZ);
+
+        if (!this.isAnyPointValidDense(originX, originY, originZ, sizeX, sizeY, sizeZ)) {
             return Collections.emptyList();
-        } else if (shape instanceof FBlockLevel.SinglePointDataQueryShape) {
-            return this.getChunkPositionsToPrefetch((FBlockLevel.SinglePointDataQueryShape) shape);
-        } else if (shape instanceof FBlockLevel.OriginSizeStrideDataQueryShape) {
-            return this.getChunkPositionsToPrefetch((FBlockLevel.OriginSizeStrideDataQueryShape) shape);
-        } else if (shape instanceof FBlockLevel.MultiPointsDataQueryShape) {
-            return this.getChunkPositionsToPrefetch((FBlockLevel.MultiPointsDataQueryShape) shape);
-        } else {
-            return this.getChunkPositionsToPrefetchGeneric(shape);
         }
-    }
-
-    /**
-     * Gets a {@link List} of the chunk positions which need to be prefetched in order to respond to a group of queries with the given shapes.
-     *
-     * @param shapes the {@link FBlockLevel.DataQueryShape queries' shapes}
-     * @return the positions of the chunks to prefetch
-     */
-    public List<Vec2i> getChunkPositionsToPrefetch(@NonNull FBlockLevel.DataQueryShape... shapes) {
-        switch (shapes.length) {
-            case 0: //there are no shapes, we don't need to prefetch anything
-                return Collections.emptyList();
-            case 1: //there is only a single shape, prefetch it individually
-                return this.getChunkPositionsToPrefetch(shapes[0]);
-        }
-
-        //collect all the positions into an NDimensionalIntSet
-        {
-            NDimensionalIntSet set = Datastructures.INSTANCE.nDimensionalIntSet().dimensions(2).threadSafe(false).build();
-
-            //add the positions for each shape to the set
-            for (FBlockLevel.DataQueryShape shape : shapes) {
-                this.getChunkPositionsToPrefetch(set, shape);
-            }
-
-            //now that the shapes have been reduced to a set of unique positions, convert it to a list of Vec2i
-            List<Vec2i> positions = new ArrayList<>(set.size());
-            set.forEach2D((x, z) -> positions.add(Vec2i.of(x, z)));
-            return positions;
-        }
-    }
-
-    protected void getChunkPositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull FBlockLevel.DataQueryShape shape) {
-        if (shape.count() == 0) { //the shape contains no points, we don't need to prefetch anything
-            //no-op
-        } else if (shape instanceof FBlockLevel.SinglePointDataQueryShape) {
-            this.getChunkPositionsToPrefetch(set, (FBlockLevel.SinglePointDataQueryShape) shape);
-        } else if (shape instanceof FBlockLevel.OriginSizeStrideDataQueryShape) {
-            this.getChunkPositionsToPrefetch(set, (FBlockLevel.OriginSizeStrideDataQueryShape) shape);
-        } else if (shape instanceof FBlockLevel.MultiPointsDataQueryShape) {
-            this.getChunkPositionsToPrefetch(set, (FBlockLevel.MultiPointsDataQueryShape) shape);
-        } else {
-            this.getChunkPositionsToPrefetchGeneric(set, shape);
-        }
-    }
-
-    protected List<Vec2i> getChunkPositionsToPrefetch(@NonNull FBlockLevel.SinglePointDataQueryShape shape) {
-        return this.isValidPosition(shape.x(), shape.y(), shape.z())
-                ? Collections.singletonList(Vec2i.of(shape.x() >> this.chunkShift(), shape.z() >> this.chunkShift()))
-                : Collections.emptyList();
-    }
-
-    protected void getChunkPositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull FBlockLevel.SinglePointDataQueryShape shape) {
-        if (this.isValidPosition(shape.x(), shape.y(), shape.z())) {
-            set.add(shape.x() >> this.chunkShift(), shape.z() >> this.chunkShift());
-        }
-    }
-
-    protected List<Vec2i> getChunkPositionsToPrefetch(@NonNull FBlockLevel.OriginSizeStrideDataQueryShape shape) {
-        shape.validate();
-
-        if (!this.isAnyPointValid(shape)) { //no points are valid, there's no reason to check anything
-            return Collections.emptyList();
-        } else if (shape.strideX() == 1 && shape.strideY() == 1 && shape.strideZ() == 1) { //shape is an ordinary AABB
-            return this.getChunkPositionsToPrefetchRegularAABB(shape);
-        } else {
-            return this.getChunkPositionsToPrefetchSparseAABB(shape);
-        }
-    }
-
-    protected void getChunkPositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull FBlockLevel.OriginSizeStrideDataQueryShape shape) {
-        shape.validate();
-
-        if (!this.isAnyPointValid(shape)) { //no points are valid, there's no reason to check anything
-            //no-op
-        } else if (shape.strideX() == 1 && shape.strideY() == 1 && shape.strideZ() == 1) { //shape is an ordinary AABB
-            this.getChunkPositionsToPrefetchRegularAABB(set, shape);
-        } else {
-            this.getChunkPositionsToPrefetchSparseAABB(set, shape);
-        }
-    }
-
-    protected List<Vec2i> getChunkPositionsToPrefetchRegularAABB(@NonNull FBlockLevel.OriginSizeStrideDataQueryShape shape) {
-        shape.validate();
 
         //we assume that at least one Y coordinate is valid, meaning that the entire chunk needs to be prefetched as long as the horizontal coordinates are valid
 
         //find min and max chunk coordinates (upper bound is inclusive)
-        int minX = max(shape.originX(), this.bounds().minX()) >> this.chunkShift();
-        int minZ = max(shape.originZ(), this.bounds().minZ()) >> this.chunkShift();
-        int maxX = min(shape.originX() + shape.sizeX() - 1, this.bounds().maxX() - 1) >> this.chunkShift();
-        int maxZ = min(shape.originZ() + shape.sizeZ() - 1, this.bounds().maxZ() - 1) >> this.chunkShift();
+        int minX = max(originX, this.bounds().minX()) >> this.chunkShift();
+        int minZ = max(originZ, this.bounds().minZ()) >> this.chunkShift();
+        int maxX = min(originX + sizeX - 1, this.bounds().maxX() - 1) >> this.chunkShift();
+        int maxZ = min(originZ + sizeZ - 1, this.bounds().maxZ() - 1) >> this.chunkShift();
 
         //collect all positions to a list
         List<Vec2i> positions = new ArrayList<>(multiplyExact(maxX - minX + 1, maxZ - minZ + 1));
@@ -291,91 +204,35 @@ public abstract class AbstractChunksExactFBlockLevelHolder<CHUNK> extends Abstra
         return positions;
     }
 
-    protected void getChunkPositionsToPrefetchRegularAABB(@NonNull NDimensionalIntSet set, @NonNull FBlockLevel.OriginSizeStrideDataQueryShape shape) {
-        shape.validate();
+    /**
+     * Gets a {@link List} of the chunk positions which need to be prefetched in order to respond to a
+     * {@link FBlockLevel#multiGetSparse(int, int, int, int, int, int, int, int[], int, int[], int, byte[], int) sparse multiGet} query.
+     *
+     * @return the positions of the chunks to prefetch
+     */
+    public final List<Vec2i> getChunkPositionsToPrefetchForMultiGetSparse(
+            int originX, int originY, int originZ,
+            @Positive int sizeX, @Positive int sizeY, @Positive int sizeZ,
+            @NotNegative int zoom) {
+        BlockLevelConstants.validateSparseGridBounds(originX, originY, originZ, sizeX, sizeY, sizeZ, zoom);
 
-        //we assume that at least one Y coordinate is valid, meaning that the entire chunk needs to be prefetched as long as the horizontal coordinates are valid
-
-        //find min and max chunk coordinates (upper bound is inclusive)
-        int minX = max(shape.originX(), this.bounds().minX()) >> this.chunkShift();
-        int minZ = max(shape.originZ(), this.bounds().minZ()) >> this.chunkShift();
-        int maxX = min(shape.originX() + shape.sizeX() - 1, this.bounds().maxX() - 1) >> this.chunkShift();
-        int maxZ = min(shape.originZ() + shape.sizeZ() - 1, this.bounds().maxZ() - 1) >> this.chunkShift();
-
-        //add all positions to the set
-        for (int chunkX = minX; chunkX <= maxX; chunkX++) {
-            for (int chunkZ = minZ; chunkZ <= maxZ; chunkZ++) {
-                set.add(chunkX, chunkZ);
-            }
+        if (!this.isAnyPointValidSparse(originX, originY, originZ, sizeX, sizeY, sizeZ, zoom)) {
+            return Collections.emptyList();
         }
-    }
-
-    protected List<Vec2i> getChunkPositionsToPrefetchSparseAABB(@NonNull FBlockLevel.OriginSizeStrideDataQueryShape shape) {
-        shape.validate();
 
         //we assume that at least one Y coordinate is valid, meaning that the entire chunk needs to be prefetched as long as the horizontal coordinates are valid
 
         //find chunk X,Z coordinates
-        Consumer<IntConsumer> chunkXSupplier = this.chunkCoordSupplier(shape.originX(), shape.sizeX(), shape.strideX(), this.bounds().minX(), this.bounds().maxX(), this.chunkShift(), this.chunkSize());
-        Consumer<IntConsumer> chunkZSupplier = this.chunkCoordSupplier(shape.originZ(), shape.sizeZ(), shape.strideZ(), this.bounds().minZ(), this.bounds().maxZ(), this.chunkShift(), this.chunkSize());
+        int[] chunkXs = this.getChunkCoords(originX, sizeX, zoom, this.bounds().minX(), this.bounds().maxX(), this.chunkShift(), this.chunkSize());
+        int[] chunkZs = this.getChunkCoords(originZ, sizeZ, zoom, this.bounds().minZ(), this.bounds().maxZ(), this.chunkShift(), this.chunkSize());
 
         //collect all positions to a list
-        List<Vec2i> positions = new ArrayList<>();
-        chunkXSupplier.accept(chunkX -> chunkZSupplier.accept(chunkZ -> positions.add(Vec2i.of(chunkX, chunkZ))));
-        return positions;
-    }
-
-    protected void getChunkPositionsToPrefetchSparseAABB(@NonNull NDimensionalIntSet set, @NonNull FBlockLevel.OriginSizeStrideDataQueryShape shape) {
-        shape.validate();
-
-        //we assume that at least one Y coordinate is valid, meaning that the entire chunk needs to be prefetched as long as the horizontal coordinates are valid
-
-        //find chunk X,Z coordinates
-        Consumer<IntConsumer> chunkXSupplier = this.chunkCoordSupplier(shape.originX(), shape.sizeX(), shape.strideX(), this.bounds().minX(), this.bounds().maxX(), this.chunkShift(), this.chunkSize());
-        Consumer<IntConsumer> chunkZSupplier = this.chunkCoordSupplier(shape.originZ(), shape.sizeZ(), shape.strideZ(), this.bounds().minZ(), this.bounds().maxZ(), this.chunkShift(), this.chunkSize());
-
-        //add all positions to the set
-        chunkXSupplier.accept(chunkX -> chunkZSupplier.accept(chunkZ -> set.add(chunkX, chunkZ)));
-    }
-
-    protected List<Vec2i> getChunkPositionsToPrefetch(@NonNull FBlockLevel.MultiPointsDataQueryShape shape) {
-        //delegate to generic method, it's already the fastest possible approach for this shape implementation
-        return this.getChunkPositionsToPrefetchGeneric(shape);
-    }
-
-    protected void getChunkPositionsToPrefetch(@NonNull NDimensionalIntSet set, @NonNull FBlockLevel.MultiPointsDataQueryShape shape) {
-        //delegate to generic method, it's already the fastest possible approach for this shape implementation
-        this.getChunkPositionsToPrefetchGeneric(set, shape);
-    }
-
-    protected List<Vec2i> getChunkPositionsToPrefetchGeneric(@NonNull FBlockLevel.DataQueryShape shape) {
-        shape.validate();
-
-        {
-            NDimensionalIntSet set = Datastructures.INSTANCE.nDimensionalIntSet().dimensions(2).threadSafe(false).build();
-
-            //iterate over every position, recording all the ones which are valid
-            shape.forEach((index, x, y, z) -> {
-                if (this.isValidPosition(x, y, z)) {
-                    set.add(x >> this.chunkShift(), z >> this.chunkShift());
-                }
-            });
-
-            //now that the shape has been reduced to a set of unique positions, convert it to a list of Vec2i
-            List<Vec2i> positions = new ArrayList<>(set.size());
-            set.forEach2D((x, z) -> positions.add(Vec2i.of(x, z)));
-            return positions;
-        }
-    }
-
-    protected void getChunkPositionsToPrefetchGeneric(@NonNull NDimensionalIntSet set, @NonNull FBlockLevel.DataQueryShape shape) {
-        shape.validate();
-
-        //iterate over every position, recording all the ones which are valid
-        shape.forEach((index, x, y, z) -> {
-            if (this.isValidPosition(x, y, z)) {
-                set.add(x >> this.chunkShift(), z >> this.chunkShift());
+        List<Vec2i> positions = new ArrayList<>(multiplyExact(chunkXs.length, chunkZs.length));
+        for (int chunkX : chunkXs) {
+            for (int chunkZ : chunkZs) {
+                positions.add(Vec2i.of(chunkX, chunkZ));
             }
-        });
+        }
+        return positions;
     }
 }

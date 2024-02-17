@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -32,7 +32,7 @@ import net.daporkchop.fp2.core.util.datastructure.Datastructures;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSegtreeSet;
 import net.daporkchop.fp2.core.util.threading.futurecache.IAsyncCache;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.world.chunk.storage.ATAnvilChunkLoader1_12;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.world.IMixinWorldServer;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.world.IMixinWorldServer1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.region.ThreadSafeRegionFileCache;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.server.world.level.FLevelServer1_12;
 import net.daporkchop.lib.common.function.exception.ERunnable;
@@ -109,7 +109,7 @@ public class VanillaExactFBlockLevelHolder1_12 extends AbstractChunksExactFBlock
 
         @Override
         protected void triggerGeneration(@NonNull Vec2i key, @NonNull Object param) {
-            ((IMixinWorldServer) this.world).fp2_levelServer().workerManager().workExecutor().run((ERunnable) () -> {
+            ((IMixinWorldServer1_12) this.world).fp2_levelServer().workerManager().workExecutor().run((ERunnable) () -> {
                 int x = key.x();
                 int z = key.y();
 

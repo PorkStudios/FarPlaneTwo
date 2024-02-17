@@ -5,8 +5,8 @@
   "refmap": "mixins.fp2.refmap.json",
   "plugin": "net.daporkchop.fp2.core.mixin.debug.DebugMixinConfigPlugin",
   "client": [
-    "client.gui.MixinGuiOverlayDebug",
-    "client.renderer.MixinRenderGlobal",
+    "client.gui.MixinGuiOverlayDebug1_12",
+    "client.renderer.MixinRenderGlobal1_12",
     "client.MixinMinecraft1_12"
   ],
   "mixins": [

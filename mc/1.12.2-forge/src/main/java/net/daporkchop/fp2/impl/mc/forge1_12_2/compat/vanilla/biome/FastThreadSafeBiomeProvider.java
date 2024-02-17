@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -29,7 +29,7 @@ import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.minecraft.world.biome.BiomeProvider;
 
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
-import static net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.VanillaTerrainGenConstants.*;
+import static net.daporkchop.fp2.impl.mc.forge1_12_2.compat.vanilla.VanillaTerrainGenConstants1_12.*;
 
 /**
  * @author DaPorkchop_

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -171,9 +171,9 @@ public abstract class TileProvider implements IFarTileProvider {
     }
 
     protected boolean anyVanillaTerrainExistsAt(@NonNull TilePos pos) {
-        int x = pos.blockX();
-        int y = pos.blockY();
-        int z = pos.blockZ();
+        int x = pos.minBlockX();
+        int y = pos.minBlockY();
+        int z = pos.minBlockZ();
         int sideLength = pos.sideLength();
         try (FBlockLevel world = this.world().exactBlockLevelHolder().worldFor(ExactFBlockLevelHolder.AllowGenerationRequirement.DONT_CARE)) {
             return world.containsAnyData(x, y, z, x + sideLength, y + sideLength, z + sideLength);

@@ -20,4 +20,7 @@
 
 dependencies {
     implementationShade project(":core")
+
+    implementationProvided "com.google.guava:guava:$guavaVersion"
+    implementationProvided "it.unimi.dsi:fastutil:$fastutilVersion"
 }

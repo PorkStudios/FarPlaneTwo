@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -287,7 +287,7 @@ public class BiomeHelper {
      */
     public IBiomeProvider from(@NonNull BiomeProvider provider) {
         if (provider.isFixedBiome()) {
-            return new FixedBiomeProvider(provider.getFixedBiome());
+            return new FixedBiomeProvider1_12(provider.getFixedBiome());
         } else {
             //don't allow custom subclasses
             checkArg(provider.getClass() == BiomeProvider.class, "unsupported BiomeProvider implementation: %s", provider.getClass());

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -19,15 +19,22 @@
 
 package net.daporkchop.fp2.core.engine;
 
+import com.google.common.base.Preconditions;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
+import net.daporkchop.fp2.core.util.math.MathUtil;
 
+import java.util.Arrays;
+import java.util.Spliterator;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.core.engine.EngineConstants.*;
@@ -60,38 +67,84 @@ public class TilePos implements Comparable<TilePos> {
         return this.level >= 0 && this.level < MAX_LODS;
     }
 
-    public final int blockX() {
-        return this.x * T_VOXELS << this.level;
+    /**
+     * @return the X coordinate of this tile position's minimum voxel position
+     */
+    public final int minBlockX() {
+        return this.x << (T_SHIFT + this.level);
     }
 
-    public final int blockY() {
-        return this.y * T_VOXELS << this.level;
+    /**
+     * @return the Y coordinate of this tile position's minimum voxel position
+     */
+    public final int minBlockY() {
+        return this.y << (T_SHIFT + this.level);
     }
 
-    public final int blockZ() {
-        return this.z * T_VOXELS << this.level;
+    /**
+     * @return the Z coordinate of this tile position's minimum voxel position
+     */
+    public final int minBlockZ() {
+        return this.z << (T_SHIFT + this.level);
     }
 
+    /**
+     * @return the X coordinate of this tile position's maximum voxel position (exclusive)
+     */
+    public final int maxBlockX() {
+        return (this.x + 1) << (T_SHIFT + this.level);
+    }
+
+    /**
+     * @return the Y coordinate of this tile position's maximum voxel position (exclusive)
+     */
+    public final int maxBlockY() {
+        return (this.y + 1) << (T_SHIFT + this.level);
+    }
+
+    /**
+     * @return the Z coordinate of this tile position's maximum voxel position (exclusive)
+     */
+    public final int maxBlockZ() {
+        return (this.z + 1) << (T_SHIFT + this.level);
+    }
+
+    /**
+     * @return the side length of this tile position, in voxels
+     */
     public final int sideLength() {
         return T_VOXELS << this.level;
     }
 
-    public final int flooredChunkX() {
-        return this.blockX() >> 4;
+    //TODO: don't hardcode the chunk shift factor
+    public final int minChunkX() {
+        return MathUtil.asrFloor(this.minBlockX(), 4);
     }
 
-    public final int flooredChunkY() {
-        return this.blockY() >> 4;
+    public final int minChunkY() {
+        return MathUtil.asrFloor(this.minBlockY(), 4);
     }
 
-    public final int flooredChunkZ() {
-        return this.blockZ() >> 4;
+    public final int minChunkZ() {
+        return MathUtil.asrFloor(this.minBlockZ(), 4);
+    }
+
+    public final int maxChunkX() {
+        return MathUtil.asrCeil(this.maxBlockX(), 4);
+    }
+
+    public final int maxChunkY() {
+        return MathUtil.asrCeil(this.maxBlockY(), 4);
+    }
+
+    public final int maxChunkZ() {
+        return MathUtil.asrCeil(this.maxBlockZ(), 4);
     }
 
     public final IntAxisAlignedBB bb() {
         return new IntAxisAlignedBB(
-                this.x << (T_SHIFT + this.level), this.y << (T_SHIFT + this.level), this.z << (T_SHIFT + this.level),
-                (this.x + 1) << (T_SHIFT + this.level), (this.y + 1) << (T_SHIFT + this.level), (this.z + 1) << (T_SHIFT + this.level));
+                this.minBlockX(), this.minBlockY(), this.minBlockZ(),
+                this.maxBlockX(), this.maxBlockY(), this.maxBlockZ());
     }
 
     /**
@@ -162,6 +215,24 @@ public class TilePos implements Comparable<TilePos> {
      * Both corners are inclusive.
      */
     public final Stream<TilePos> allPositionsInBB(int offsetMin, int offsetMax) {
+        assert this.checkAllPositionsInBB(offsetMin, offsetMax);
+        return this.allPositionsInBB0(offsetMin, offsetMax);
+    }
+
+    //TODO: remove this test code eventually (i should probably write some more unit tests for the whole thing)
+    private boolean checkAllPositionsInBB(int offsetMin, int offsetMax) {
+        IntFunction<TilePos[]> arrayFactory = TilePos[]::new;
+        TilePos[] expected = this.allPositionsInBB0(offsetMin, offsetMax).toArray(arrayFactory);
+        TilePos[] test = StreamSupport.stream(new AllPositionsInBBSpliterator(this.level,
+                Math.subtractExact(this.x, offsetMin), Math.subtractExact(this.y, offsetMin), Math.subtractExact(this.z, offsetMin),
+                Math.addExact(this.x, offsetMax), Math.addExact(this.y, offsetMax), Math.addExact(this.z, offsetMax)), false).toArray(arrayFactory);
+        if (!Arrays.equals(expected, test)) {
+            throw new IllegalStateException(this + " from " + offsetMin + " to " + offsetMax + ":\nexpect: " + Arrays.toString(expected) + "\nfound: " + Arrays.toString(test));
+        }
+        return true;
+    }
+
+    private Stream<TilePos> allPositionsInBB0(int offsetMin, int offsetMax) {
         notNegative(offsetMin, "offsetMin");
         notNegative(offsetMax, "offsetMax");
 
@@ -182,6 +253,98 @@ public class TilePos implements Comparable<TilePos> {
                                     .mapToObj(z -> new TilePos(this.level, x, y, z)))
                             .flatMap(Function.identity()))
                     .flatMap(Function.identity());
+        }
+    }
+
+    private static final class AllPositionsInBBSpliterator implements Spliterator<TilePos> {
+        private final int level;
+        private final int minX;
+        private final int minY;
+        private final int minZ;
+        private final int maxX; //inclusive
+        private final int maxY; //inclusive
+        private final int maxZ; //inclusive
+
+        private int nextX;
+        private int nextY;
+        private int nextZ;
+
+        public AllPositionsInBBSpliterator(int level, int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+            Preconditions.checkArgument(maxX != Integer.MAX_VALUE && maxY != Integer.MAX_VALUE && maxZ != Integer.MAX_VALUE, "maximum coordinate may not be " + Integer.MAX_VALUE);
+            this.level = level;
+            this.minX = minX;
+            this.minY = minY;
+            this.minZ = minZ;
+            this.maxX = maxX;
+            this.maxY = maxY;
+            this.maxZ = maxZ;
+            this.nextX = minX;
+            this.nextY = minY;
+            this.nextZ = minZ;
+        }
+
+        @Override
+        public boolean tryAdvance(@NonNull Consumer<? super TilePos> action) {
+            final int x = this.nextX;
+            final int y = this.nextY;
+            final int z = this.nextZ;
+            if (x > this.maxX) { //already reached the end
+                return false;
+            }
+
+            int nextX = x;
+            int nextY = y;
+            int nextZ = z + 1;
+            if (nextZ > this.maxZ) {
+                nextZ = this.minZ;
+                if (++nextY > this.maxY) {
+                    nextY = this.minY;
+                    ++nextX; //if this exceeds maxX the next call will return false
+                }
+            }
+            this.nextX = nextX;
+            this.nextY = nextY;
+            this.nextZ = nextZ;
+
+            action.accept(new TilePos(this.level, x, y, z));
+            return true;
+        }
+
+        @Override
+        public void forEachRemaining(@NonNull Consumer<? super TilePos> action) {
+            int x = this.nextX;
+            int y = this.nextY;
+            int z = this.nextZ;
+            this.nextX = this.maxX + 1;
+            this.nextY = this.maxY;
+            this.nextZ = this.maxZ;
+
+            while (x <= this.maxX) {
+                do {
+                    do {
+                        action.accept(new TilePos(this.level, x, y, z));
+                    } while (++z <= this.maxZ);
+                    z = this.minZ;
+                } while (++y <= this.maxY);
+                y = this.minY;
+                ++x;
+            }
+        }
+
+        @Override
+        public long estimateSize() {
+            //TODO: this doesn't take into account elements which have already been consumed
+            return Math.multiplyExact(Math.multiplyExact((long) this.maxX - this.minX + 1L, (long) this.maxY - this.minY + 1L), (long) this.maxZ - this.minZ + 1L);
+        }
+
+        @Override
+        public int characteristics() {
+            return /*SIZED | SUBSIZED |*/ ORDERED | NONNULL | IMMUTABLE;
+        }
+
+        @Override
+        public Spliterator<TilePos> trySplit() {
+            return null; //we can't split
         }
     }
 

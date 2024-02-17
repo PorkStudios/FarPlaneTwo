@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -25,10 +25,10 @@ import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.core.client.player.AbstractFarPlayerClient;
 import net.daporkchop.fp2.core.network.IPacket;
 import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.network.ATNetHandlerPlayClient1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.client.world.FWorldClient1_12;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.client.world.level.FLevelClient1_12_2;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.client.world.level.FLevelClient1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.network.FP2Network1_12_2;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.network.NetHandlerPlayClient;
@@ -40,16 +40,16 @@ import net.minecraft.client.network.NetHandlerPlayClient;
 @Getter
 public class FarPlayerClient1_12 extends AbstractFarPlayerClient {
     @NonNull
-    protected final FP2Forge1_12_2 fp2;
+    protected final FP2Forge1_12 fp2;
     @NonNull
     protected final FWorldClient1_12 world;
     @NonNull
     protected final NetHandlerPlayClient netHandlerPlayClient;
 
     @Override
-    protected FLevelClient1_12_2 loadActiveLevel() {
+    protected FLevelClient1_12 loadActiveLevel() {
         WorldClient worldClient = ((ATNetHandlerPlayClient1_12) this.netHandlerPlayClient).getWorld();
-        return this.world.loadLevel(FP2Forge1_12_2.getIdentifierForWorld(worldClient), worldClient);
+        return this.world.loadLevel(FP2Forge1_12.getIdentifierForWorld(worldClient), worldClient);
     }
 
     @CalledFromAnyThread

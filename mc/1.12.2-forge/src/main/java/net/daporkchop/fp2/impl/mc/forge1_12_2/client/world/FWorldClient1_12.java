@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.client.world;
@@ -23,21 +22,21 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.client.world;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.core.client.world.AbstractWorldClient;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12_2;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.client.world.level.FLevelClient1_12_2;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.client.world.level.FLevelClient1_12;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.network.NetHandlerPlayClient;
 
 /**
  * @author DaPorkchop_
  */
-public class FWorldClient1_12 extends AbstractWorldClient<FP2Forge1_12_2, NetHandlerPlayClient, FWorldClient1_12, WorldClient, FLevelClient1_12_2> {
-    public FWorldClient1_12(@NonNull FP2Forge1_12_2 fp2, @NonNull NetHandlerPlayClient implWorld) {
+public class FWorldClient1_12 extends AbstractWorldClient<FP2Forge1_12, NetHandlerPlayClient, FWorldClient1_12, WorldClient, FLevelClient1_12> {
+    public FWorldClient1_12(@NonNull FP2Forge1_12 fp2, @NonNull NetHandlerPlayClient implWorld) {
         super(fp2, implWorld);
     }
 
     @Override
-    protected FLevelClient1_12_2 createLevel(@NonNull Identifier id, @NonNull WorldClient implLevel) {
-        return new FLevelClient1_12_2(this.fp2(), implLevel, this, id, COORD_LIMITS_HACK.get());
+    protected FLevelClient1_12 createLevel(@NonNull Identifier id, @NonNull WorldClient implLevel) {
+        return new FLevelClient1_12(this.fp2(), implLevel, this, id, COORD_LIMITS_HACK.get());
     }
 }
