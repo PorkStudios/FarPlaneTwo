@@ -36,7 +36,7 @@ public abstract class MixinGlStateManager1_12 {
             at = @At("HEAD"),
             argsOnly = true)
     private static int fp2_depthFunc_invertForReversedZ(int func) {
-        if (fp2().client().isReverseZ()) { //reversed-z projection is enabled, flip function around
+        if (fp2() != null && fp2().client().isReverseZ()) { //reversed-z projection is enabled, flip function around
             switch (func) {
                 case GL_LESS:
                     return GL_GREATER;
@@ -57,7 +57,7 @@ public abstract class MixinGlStateManager1_12 {
             argsOnly = true,
             ordinal = 0)
     private static float fp2_doPolygonOffset_invertFactorForReversedZ(float factor) {
-        if (fp2().client().isReverseZ()) { //reversed-z projection is enabled, invert factor
+        if (fp2() != null && fp2().client().isReverseZ()) { //reversed-z projection is enabled, invert factor
             return -factor;
         }
 
@@ -69,7 +69,7 @@ public abstract class MixinGlStateManager1_12 {
             argsOnly = true,
             ordinal = 1)
     private static float fp2_doPolygonOffset_invertOffsetForReversedZ(float offset) {
-        if (fp2().client().isReverseZ()) { //reversed-z projection is enabled, invert offset
+        if (fp2() != null && fp2().client().isReverseZ()) { //reversed-z projection is enabled, invert offset
             return -offset;
         }
 
