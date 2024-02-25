@@ -32,7 +32,6 @@ import net.daporkchop.fp2.core.minecraft.util.log.ChatLogger;
 import net.daporkchop.fp2.core.util.threading.futureexecutor.FutureExecutor;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.ATMinecraft1_12;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.gui.ATGuiScreen1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.client.network.IMixinNetHandlerPlayClient1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.client.gui.GuiContext1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.ResourceProvider1_12;
@@ -194,12 +193,12 @@ public class FP2Client1_12 extends FP2Client {
     public void initGuiEvent(GuiScreenEvent.InitGuiEvent.Post event) {
         net.minecraft.client.gui.GuiScreen gui = event.getGui();
         if (gui instanceof GuiVideoSettings) { //add fp2 button to video settings menu
-            ((ATGuiScreen1_12) gui).getButtonList().add(new GuiButtonFP2Options1_12(0xBEEF, gui.width / 2 + 165, gui.height / 6 - 12, gui));
+            event.getButtonList().add(new GuiButtonFP2Options1_12(0xBEEF, gui.width / 2 + 165, gui.height / 6 - 12, gui));
         } else if (FP2_DEBUG) { //we're in debug mode, also add it to the main menu and pause menu
             if (gui instanceof GuiMainMenu) {
-                ((ATGuiScreen1_12) gui).getButtonList().add(new GuiButtonFP2Options1_12(0xBEEF, gui.width / 2 + 104, gui.height / 4 + 48, gui));
+                event.getButtonList().add(new GuiButtonFP2Options1_12(0xBEEF, gui.width / 2 + 104, gui.height / 4 + 48, gui));
             } else if (gui instanceof GuiIngameMenu) {
-                ((ATGuiScreen1_12) gui).getButtonList().add(new GuiButtonFP2Options1_12(0xBEEF, gui.width / 2 + 104, gui.height / 4 + 8, gui));
+                event.getButtonList().add(new GuiButtonFP2Options1_12(0xBEEF, gui.width / 2 + 104, gui.height / 4 + 8, gui));
             }
         }
     }
