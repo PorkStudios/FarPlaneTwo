@@ -34,18 +34,31 @@ legacy {
     fixClasspath = false
 }
 
+//force ForgeGradle to pull in a version of mergetool which isn't broken: LexManos fixed it in https://github.com/MinecraftForge/MergeTool/commit/e68e1b06ba87c68bc1a5c922395286b53a17dddf
+//  but refuses to update the rest of the toolchain for no other reason than the fact that he's LexManos
+configurations.all {
+    resolutionStrategy {
+        force("net.minecraftforge:mergetool:0.2.3.3")
+    }
+}
+
 minecraft {
     mappings mappingsChannel, mappingsVersion
 
     runs {
         client {
-            workingDirectory "../../run"
             ideaModule "${project.rootProject.name}${project.path.replace(':', '.')}.main"
 
             property "forge.logging.console.level", "debug"
 
             property "fp2.debug", "true"
             property "fp2.gl.opengl.debug", "true"
+
+            jvmArg "-Dfml.coreMods.load=" + [
+                    "net.daporkchop.fp2.impl.mc.forge1_12_2.asm.FP2MixinLoader1_12",
+                    "io.github.opencubicchunks.cubicchunks.core.asm.coremod.CubicChunksCoreMod",
+                    "io.github.opencubicchunks.cubicchunks.cubicgen.asm.coremod.CubicGenCoreMod",
+            ].join(",")
 
             mods {
                 fp2 {
@@ -172,7 +185,7 @@ build.dependsOn shadowJar
 
 task preIntellijRuns {
     doFirst {
-        java.util.stream.StreamSupport.stream(configurations.annotationProcessor.spliterator(), false).filter({
+        java.util.stream.StreamSupport.stream(configurations.provided_.spliterator(), false).filter({
             java.nio.file.Paths.get(it.absolutePath).getFileName().toString().matches("mixin-\\d+(\\.\\d+)*(-.*)?\\.jar")
         }).findAny().ifPresent({ file ->
             minecraft.runs.all { run ->
