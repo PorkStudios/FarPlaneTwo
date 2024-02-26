@@ -168,7 +168,7 @@ public class CWGContext1_12 {
     public IBlockState getReplacedBlockInBiome(int biomeId, int blockX, int blockY, int blockZ, double nx, double ny, double nz, double density) {
         return CWGHelper1_12.CWG_V6
                 ? getReplacedBlockInBiome_v6(((Object[][]) this.biomeBlockReplacers)[biomeId], Blocks.AIR.getDefaultState(), blockX, blockY, blockZ, nx, ny, nz, density)
-                : getReplacedBlockInBiome_v7(this.biomeBlockReplacerFlags[biomeId], Blocks.AIR.getDefaultState(), Biome.getBiomeForId(biomeId), blockX, blockY, blockZ, nx, ny, nz, density, (IBiomeBlockReplacer[]) this.biomeBlockReplacers);
+                : getReplacedBlockInBiome_v7(this.biomeBlockReplacerFlags[biomeId], Blocks.AIR.getDefaultState(), (Biome) this.registry.id2biome(biomeId), blockX, blockY, blockZ, nx, ny, nz, density, (IBiomeBlockReplacer[]) this.biomeBlockReplacers);
     }
 
     @SneakyThrows
