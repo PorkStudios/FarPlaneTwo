@@ -80,13 +80,7 @@ vec4 sampleTerrain(vec3 normal)  {
     vec4 quadCoords = ua_texQuadCoord(list.x);
 
     vec2 uv = mix(quadCoords.st, quadCoords.pq, factor);
-#ifdef FP2_CUTOUT
-    //we want to completely disable mipmaps for the cutout pass (this isn't very clean, but we don't have a nicer way to
-    //  configure it per-pass using sampler objects or something yet)
-    vec4 color_out = t_terrain(mix(quadCoords.st, quadCoords.pq, fract(factor)), 0.);
-#else
     vec4 color_out = t_terrain(mix(quadCoords.st, quadCoords.pq, fract(factor)), dFdx(uv), dFdy(uv));
-#endif
 
     //apply tint if the quad allows it (branchless implementation)
     color_out.rgb *= max(fs_in.color, vec3(ua_texQuadTint(list.x)));
@@ -98,11 +92,7 @@ vec4 sampleTerrain(vec3 normal)  {
 
         //raw color
         uv = mix(quadCoords.st, quadCoords.pq, factor);
-#ifdef FP2_CUTOUT
-        vec4 frag_color = t_terrain(mix(quadCoords.st, quadCoords.pq, fract(factor)), 0.);
-#else
         vec4 frag_color = t_terrain(mix(quadCoords.st, quadCoords.pq, fract(factor)), dFdx(uv), dFdy(uv));
-#endif
 
         //possibly apply tint (branchless implementation)
         frag_color.rgb *= max(fs_in.color, vec3(ua_texQuadTint(i)));
