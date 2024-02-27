@@ -18,6 +18,10 @@
  *
  */
 
+plugins {
+    id "com.github.johnrengelman.shadow" version "$shadowPluginVersion"
+}
+
 allprojects {
     apply plugin: "java"
 
@@ -37,13 +41,18 @@ allprojects {
 
 apply plugin: "java-gradle-plugin"
 
+configurations {
+    shade
+    compileOnly.extendsFrom shade
+}
+
 dependencies {
     implementation gradleApi()
-    implementation project(":resources")
+    shade project(":resources")
 
-    implementation "net.daporkchop.lib:common:$porklibVersion"
+    shade "net.daporkchop.lib:common:$porklibVersion"
 
-    implementation "com.google.code.gson:gson:$gsonVersion"
+    shade "com.google.code.gson:gson:$gsonVersion"
 }
 
 gradlePlugin {
@@ -54,3 +63,17 @@ gradlePlugin {
         }
     }
 }
+
+//create shaded jar and reobfuscate it
+shadowJar {
+    archiveClassifier = null
+    configurations = [project.configurations.shade]
+
+    exclude 'module-info.class'
+
+    relocate("net.daporkchop.lib", "net.daporkchop.fp2.buildSrc.deps.porklib")
+    relocate("com.google.gson", "net.daporkchop.fp2.buildSrc.deps.gson")
+}
+
+jar.enabled = false
+build.dependsOn shadowJar
