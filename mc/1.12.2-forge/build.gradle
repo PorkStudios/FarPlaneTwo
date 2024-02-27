@@ -18,6 +18,27 @@
  *
  */
 
+buildscript {
+    repositories {
+        maven {
+            name = "Minecraft Forge"
+            url = "https://maven.minecraftforge.net/"
+        }
+        maven {
+            name = "SpongePowered"
+            url = "https://repo.spongepowered.org/maven"
+        }
+    }
+    dependencies {
+        classpath "net.minecraftforge.gradle:ForgeGradle:$forgeGradleVersion"
+        classpath "org.spongepowered:mixingradle:$mixingradleVersion"
+    }
+}
+
+plugins {
+    id "com.github.johnrengelman.shadow" version "$shadowPluginVersion"
+}
+
 configurations.all {
     resolutionStrategy {
         force "org.apache.logging.log4j:log4j-api:$log4jVersion"
