@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -28,7 +28,6 @@ import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatChannel;
 import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatChannelType;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.OpenGLConstants;
 
 import java.util.Collections;
 import java.util.List;
@@ -38,7 +37,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatChannel.*;
-import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
+import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 
 /**
  * @author DaPorkchop_
@@ -118,7 +117,7 @@ public class PixelStorageFormats {
         public String toString() {
             if (this.toString == null) { //compute
                 this.toString = OpenGL.DEBUG
-                        ? OpenGLConstants.getNameIfPossible(this.glFormat).orElseGet(() -> String.valueOf(this.glFormat).intern())
+                        ? OpenGL.getNameIfPossible(this.glFormat).orElseGet(() -> String.valueOf(this.glFormat).intern())
                         : String.valueOf(this.glFormat).intern();
             }
             return this.toString;

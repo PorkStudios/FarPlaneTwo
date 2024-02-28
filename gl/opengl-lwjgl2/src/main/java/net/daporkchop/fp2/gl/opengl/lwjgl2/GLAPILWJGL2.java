@@ -20,12 +20,15 @@
 package net.daporkchop.fp2.gl.opengl.lwjgl2;
 
 import lombok.NonNull;
+import lombok.val;
 import net.daporkchop.fp2.common.util.DirectBufferHackery;
+import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.lwjgl2.extra.ExtraFunctions;
 import net.daporkchop.fp2.gl.opengl.lwjgl2.extra.ExtraFunctionsProvider;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
-import net.daporkchop.fp2.gl.opengl.GLVersion;
+import net.daporkchop.fp2.gl.GLVersion;
 import net.daporkchop.lib.common.function.exception.EPredicate;
+import net.daporkchop.lib.common.function.throwing.TPredicate;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import org.lwjgl.opengl.ARBCopyBuffer;
 import org.lwjgl.opengl.ARBDrawElementsBaseVertex;
@@ -52,17 +55,18 @@ import org.lwjgl.opengl.GL42;
 import org.lwjgl.opengl.GL43;
 import org.lwjgl.opengl.GLContext;
 
+import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.util.Comparator;
 import java.util.stream.Stream;
 
 import static java.lang.Math.*;
-import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
+import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 
 /**
  * @author DaPorkchop_
  */
-public class GLAPILWJGL2 implements GLAPI {
+public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
     private final ExtraFunctions extraFunctions;
 
     // OpenGL 3.1
@@ -112,13 +116,13 @@ public class GLAPILWJGL2 implements GLAPI {
     }
 
     @Override
-    public GLVersion version() {
+    protected GLVersion determineVersion() {
         ContextCapabilities capabilities = GLContext.getCapabilities();
 
         return Stream.of(GLVersion.values())
-                .filter((EPredicate<GLVersion>) version -> {
+                .filter((TPredicate<GLVersion, Throwable>) version -> {
                     try {
-                        return (boolean) ContextCapabilities.class.getDeclaredField("OpenGL" + version.major() + version.minor()).get(capabilities);
+                        return (boolean) MethodHandles.publicLookup().findGetter(ContextCapabilities.class, "OpenGL" + version.major() + version.minor(), boolean.class).invokeExact(capabilities);
                     } catch (NoSuchFieldException e) {
                         return false; //field not found, therefore the version isn't supported by LWJGL2
                     }
@@ -136,111 +140,142 @@ public class GLAPILWJGL2 implements GLAPI {
     @Override
     public void glEnable(int cap) {
         GL11.glEnable(cap);
+        super.debugCheckError();
     }
 
     @Override
     public void glDisable(int cap) {
         GL11.glDisable(cap);
+        super.debugCheckError();
     }
 
     @Override
     public int glGetError() {
-        return GL11.glGetError();
+        val res = GL11.glGetError();
+        super.debugCheckError();
+        return res;
     }
 
     @Override
     public boolean glGetBoolean(int pname) {
-        return GL11.glGetBoolean(pname);
+        val res = GL11.glGetBoolean(pname);
+        super.debugCheckError();
+        return res;
     }
 
     @Override
     public void glGetBoolean(int pname, long data) {
         GL11.glGetBoolean(pname, DirectBufferHackery.wrapByte(data, 16)); //LWJGL2 will throw a fit if the buffer doesn't have at least 16 elements
+        super.debugCheckError();
     }
 
     @Override
     public int glGetInteger(int pname) {
-        return GL11.glGetInteger(pname);
+        val res = GL11.glGetInteger(pname);
+        super.debugCheckError();
+        return res;
     }
 
     @Override
     public void glGetInteger(int pname, long data) {
         GL11.glGetInteger(pname, DirectBufferHackery.wrapInt(data, 16));
+        super.debugCheckError();
     }
 
     @Override
     public float glGetFloat(int pname) {
-        return GL11.glGetFloat(pname);
+        val res = GL11.glGetFloat(pname);
+        super.debugCheckError();
+        return res;
     }
 
     @Override
     public void glGetFloat(int pname, long data) {
         GL11.glGetFloat(pname, DirectBufferHackery.wrapFloat(data, 16));
+        super.debugCheckError();
     }
 
     @Override
     public double glGetDouble(int pname) {
-        return GL11.glGetDouble(pname);
+        val res = GL11.glGetDouble(pname);
+        super.debugCheckError();
+        return res;
     }
 
     @Override
     public void glGetDouble(int pname, long data) {
         GL11.glGetDouble(pname, DirectBufferHackery.wrapDouble(data, 16));
+        super.debugCheckError();
     }
 
     @Override
     public String glGetString(int pname) {
-        return GL11.glGetString(pname);
+        val res = GL11.glGetString(pname);
+        super.debugCheckError();
+        return res;
     }
 
     @Override
     public void glDrawArrays(int mode, int first, int count) {
         GL11.glDrawArrays(mode, first, count);
+        super.debugCheckError();
     }
 
     @Override
     public void glDrawElements(int mode, int count, int type, long indices) {
         GL11.glDrawElements(mode, count, type, indices);
+        super.debugCheckError();
     }
 
     @Override
     public void glDrawElements(int mode, int count, int type, @NonNull ByteBuffer indices) {
         GL11.glDrawElements(mode, count, type, indices);
+        super.debugCheckError();
     }
 
     @Override
     public int glGenTexture() {
-        return GL11.glGenTextures();
+        val res = GL11.glGenTextures();
+        super.debugCheckError();
+        return res;
     }
 
     @Override
     public void glDeleteTexture(int texture) {
         GL11.glDeleteTextures(texture);
+        super.debugCheckError();
     }
 
     @Override
     public void glBindTexture(int target, int texture) {
         GL11.glBindTexture(target, texture);
+        super.debugCheckError();
     }
 
     @Override
     public void glTexParameter(int target, int pname, int param) {
         GL11.glTexParameteri(target, pname, param);
+        super.debugCheckError();
     }
 
     @Override
     public void glTexParameter(int target, int pname, float param) {
         GL11.glTexParameterf(target, pname, param);
+        super.debugCheckError();
     }
 
     @Override
     public int glGetTexParameterInteger(int target, int pname) {
-        return GL11.glGetTexParameteri(target, pname);
+        val res = GL11.glGetTexParameteri(target, pname);
+        super.debugCheckError();
+        return res;
     }
 
     @Override
     public float glGetTexParameterFloat(int target, int pname) {
-        return GL11.glGetTexParameterf(target, pname);
+        val res = GL11.glGetTexParameterf(target, pname);
+        super.debugCheckError();
+        return res;
     }
 
     @Override
@@ -248,11 +283,13 @@ public class GLAPILWJGL2 implements GLAPI {
         GL11.glTexImage1D(target, level, internalformat, width, 0, format, type, data == 0L
                 ? null
                 : DirectBufferHackery.wrapByte(data, UtilsLWJGL2.calculateTexImage1DStorage(format, type, width)));
+        super.debugCheckError();
     }
 
     @Override
     public void glTexImage1D(int target, int level, int internalformat, int width, int format, int type, @NonNull ByteBuffer data) {
         GL11.glTexImage1D(target, level, internalformat, width, 0, format, type, data);
+        super.debugCheckError();
     }
 
     @Override
@@ -260,101 +297,121 @@ public class GLAPILWJGL2 implements GLAPI {
         GL11.glTexImage2D(target, level, internalformat, width, height, 0, format, type, data == 0L
                 ? null
                 : DirectBufferHackery.wrapByte(data, UtilsLWJGL2.calculateTexImage2DStorage(format, type, width, height)));
+        super.debugCheckError();
     }
 
     @Override
     public void glTexImage2D(int target, int level, int internalformat, int width, int height, int format, int type, @NonNull ByteBuffer data) {
         GL11.glTexImage2D(target, level, internalformat, width, height, 0, format, type, data);
+        super.debugCheckError();
     }
 
     @Override
     public void glTexSubImage1D(int target, int level, int xoffset, int width, int format, int type, long data) {
         GL11.glTexSubImage1D(target, level, xoffset, width, format, type, DirectBufferHackery.wrapByte(data, UtilsLWJGL2.calculateTexImage1DStorage(format, type, width)));
+        super.debugCheckError();
     }
 
     @Override
     public void glTexSubImage1D(int target, int level, int xoffset, int width, int format, int type, @NonNull ByteBuffer data) {
         GL11.glTexSubImage1D(target, level, xoffset, width, format, type, data);
+        super.debugCheckError();
     }
 
     @Override
     public void glTexSubImage2D(int target, int level, int xoffset, int yoffset, int width, int height, int format, int type, long data) {
         GL11.glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, DirectBufferHackery.wrapByte(data, UtilsLWJGL2.calculateTexImage2DStorage(format, type, width, height)));
+        super.debugCheckError();
     }
 
     @Override
     public void glTexSubImage2D(int target, int level, int xoffset, int yoffset, int width, int height, int format, int type, @NonNull ByteBuffer data) {
         GL11.glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, data);
+        super.debugCheckError();
     }
 
     @Override
     public void glClear(int mask) {
         GL11.glClear(mask);
+        super.debugCheckError();
     }
 
     @Override
     public void glClearColor(float red, float green, float blue, float alpha) {
         GL11.glClearColor(red, green, blue, alpha);
+        super.debugCheckError();
     }
 
     @Override
     public void glColorMask(boolean red, boolean green, boolean blue, boolean alpha) {
         GL11.glColorMask(red, green, blue, alpha);
+        super.debugCheckError();
     }
 
     @Override
     public void glClearDepth(double depth) {
         GL11.glClearDepth(depth);
+        super.debugCheckError();
     }
 
     @Override
     public void glDepthFunc(int func) {
         GL11.glDepthFunc(func);
+        super.debugCheckError();
     }
 
     @Override
     public void glDepthMask(boolean flag) {
         GL11.glDepthMask(flag);
+        super.debugCheckError();
     }
 
     @Override
     public void glClearStencil(int s) {
         GL11.glClearStencil(s);
+        super.debugCheckError();
     }
 
     @Override
     public void glStencilFunc(int func, int ref, int mask) {
         GL11.glStencilFunc(func, ref, mask);
+        super.debugCheckError();
     }
 
     @Override
     public void glStencilMask(int mask) {
         GL11.glStencilMask(mask);
+        super.debugCheckError();
     }
 
     @Override
     public void glStencilOp(int sfail, int dpfail, int dppass) {
         GL11.glStencilOp(sfail, dpfail, dppass);
+        super.debugCheckError();
     }
 
     @Override
     public void glPushClientAttrib(int mask) {
         GL11.glPushClientAttrib(mask);
+        super.debugCheckError();
     }
 
     @Override
     public void glPopClientAttrib() {
         GL11.glPopClientAttrib();
+        super.debugCheckError();
     }
 
     @Override
     public void glPushAttrib(int mask) {
         GL11.glPushAttrib(mask);
+        super.debugCheckError();
     }
 
     @Override
     public void glPopAttrib() {
         GL11.glPopAttrib();
+        super.debugCheckError();
     }
 
     //
@@ -368,21 +425,25 @@ public class GLAPILWJGL2 implements GLAPI {
         GL12.glTexImage3D(target, level, internalformat, width, height, depth, 0, format, type, data == 0L
                 ? null
                 : DirectBufferHackery.wrapByte(data, UtilsLWJGL2.calculateTexImage3DStorage(format, type, width, height, depth)));
+        super.debugCheckError();
     }
 
     @Override
     public void glTexImage3D(int target, int level, int internalformat, int width, int height, int depth, int format, int type, @NonNull ByteBuffer data) {
         GL12.glTexImage3D(target, level, internalformat, width, height, depth, 0, format, type, data);
+        super.debugCheckError();
     }
 
     @Override
     public void glTexSubImage3D(int target, int level, int xoffset, int yoffset, int zoffset, int width, int height, int depth, int format, int type, long data) {
         GL12.glTexSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, DirectBufferHackery.wrapByte(data, UtilsLWJGL2.calculateTexImage3DStorage(format, type, width, height, depth)));
+        super.debugCheckError();
     }
 
     @Override
     public void glTexSubImage3D(int target, int level, int xoffset, int yoffset, int zoffset, int width, int height, int depth, int format, int type, @NonNull ByteBuffer data) {
         GL12.glTexSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, data);
+        super.debugCheckError();
     }
 
     //
@@ -394,6 +455,7 @@ public class GLAPILWJGL2 implements GLAPI {
     @Override
     public void glActiveTexture(int texture) {
         GL13.glActiveTexture(texture);
+        super.debugCheckError();
     }
 
     //
@@ -405,21 +467,25 @@ public class GLAPILWJGL2 implements GLAPI {
     @Override
     public void glMultiDrawArrays(int mode, long first, long count, int drawcount) {
         GL14.glMultiDrawArrays(mode, DirectBufferHackery.wrapInt(first, drawcount), DirectBufferHackery.wrapInt(count, drawcount));
+        super.debugCheckError();
     }
 
     @Override
     public void glMultiDrawElements(int mode, long count, int type, long indices, int drawcount) {
         this.extraFunctions.glMultiDrawElements(mode, count, type, indices, drawcount);
+        super.debugCheckError();
     }
 
     @Override
     public void glBlendColor(float red, float green, float blue, float alpha) {
         GL14.glBlendColor(red, green, blue, alpha);
+        super.debugCheckError();
     }
 
     @Override
     public void glBlendFuncSeparate(int sfactorRGB, int dfactorRGB, int sfactorAlpha, int dfactorAlpha) {
         GL14.glBlendFuncSeparate(sfactorRGB, dfactorRGB, sfactorAlpha, dfactorAlpha);
+        super.debugCheckError();
     }
 
     //
@@ -430,17 +496,21 @@ public class GLAPILWJGL2 implements GLAPI {
 
     @Override
     public int glGenBuffer() {
-        return GL15.glGenBuffers();
+        val res = GL15.glGenBuffers();
+        super.debugCheckError();
+        return res;
     }
 
     @Override
     public void glDeleteBuffer(int buffer) {
         GL15.glDeleteBuffers(buffer);
+        super.debugCheckError();
     }
 
     @Override
     public void glBindBuffer(int target, int buffer) {
         GL15.glBindBuffer(target, buffer);
+        super.debugCheckError();
     }
 
     @Override
@@ -450,6 +520,7 @@ public class GLAPILWJGL2 implements GLAPI {
         } else { //LWJGL2 doesn't expose glBufferData with 64-bit data_size...
             //allocate storage and then delegate to glBufferSubData
             GL15.glBufferData(target, data_size, usage);
+            super.debugCheckError();
             this.glBufferSubData(target, 0L, data_size, data);
         }
     }
@@ -457,17 +528,20 @@ public class GLAPILWJGL2 implements GLAPI {
     @Override
     public void glBufferData(int target, @NonNull ByteBuffer data, int usage) {
         GL15.glBufferData(target, data, usage);
+        super.debugCheckError();
     }
 
     @Override
     public void glBufferSubData(int target, long offset, long data_size, long data) {
         if (data_size <= Integer.MAX_VALUE) { //data is small enough to fit in a ByteBuffer
             GL15.glBufferSubData(target, offset, DirectBufferHackery.wrapByte(data, (int) data_size));
+            super.debugCheckError();
         } else { //LWJGL2 doesn't expose glBufferSubData with 64-bit data_size...
             //upload data in increments of Integer.MAX_VALUE
             for (long uploaded = 0L; uploaded < data_size; ) {
                 int blockSize = (int) min(uploaded - offset, Integer.MAX_VALUE);
                 GL15.glBufferSubData(target, offset + uploaded, DirectBufferHackery.wrapByte(data + uploaded, blockSize));
+                super.debugCheckError();
                 uploaded += blockSize;
             }
         }
@@ -476,17 +550,20 @@ public class GLAPILWJGL2 implements GLAPI {
     @Override
     public void glBufferSubData(int target, long offset, @NonNull ByteBuffer data) {
         GL15.glBufferSubData(target, offset, data);
+        super.debugCheckError();
     }
 
     @Override
     public void glGetBufferSubData(int target, long offset, long data_size, long data) {
         if (data_size <= Integer.MAX_VALUE) { //data is small enough to fit in a ByteBuffer
             GL15.glGetBufferSubData(target, offset, DirectBufferHackery.wrapByte(data, (int) data_size));
+            super.debugCheckError();
         } else { //LWJGL2 doesn't expose glGetBufferSubData with 64-bit data_size...
             //download data in increments of Integer.MAX_VALUE
             for (long downloaded = 0L; downloaded < data_size; ) {
                 int blockSize = (int) min(downloaded - offset, Integer.MAX_VALUE);
                 GL15.glGetBufferSubData(target, offset + downloaded, DirectBufferHackery.wrapByte(data + downloaded, blockSize));
+                super.debugCheckError();
                 downloaded += blockSize;
             }
         }
@@ -495,6 +572,7 @@ public class GLAPILWJGL2 implements GLAPI {
     @Override
     public void glGetBufferSubData(int target, long offset, @NonNull ByteBuffer data) {
         GL15.glGetBufferSubData(target, offset, data);
+        super.debugCheckError();
     }
 
     @Override
@@ -505,6 +583,7 @@ public class GLAPILWJGL2 implements GLAPI {
     @Override
     public void glUnmapBuffer(int target) {
         GL15.glUnmapBuffer(target);
+        super.debugCheckError();
     }
 
     //
@@ -515,142 +594,177 @@ public class GLAPILWJGL2 implements GLAPI {
 
     @Override
     public int glCreateShader(int type) {
-        return GL20.glCreateShader(type);
+        val res = GL20.glCreateShader(type);
+        super.debugCheckError();
+        return res;
     }
 
     @Override
     public void glDeleteShader(int shader) {
         GL20.glDeleteShader(shader);
+        super.debugCheckError();
     }
 
     @Override
     public void glShaderSource(int shader, @NonNull CharSequence... source) {
         GL20.glShaderSource(shader, source);
+        super.debugCheckError();
     }
 
     @Override
     public void glCompileShader(int shader) {
         GL20.glCompileShader(shader);
+        super.debugCheckError();
     }
 
     @Override
     public int glGetShaderi(int shader, int pname) {
-        return GL20.glGetShaderi(shader, pname);
+        val res = GL20.glGetShaderi(shader, pname);
+        super.debugCheckError();
+        return res;
     }
 
     @Override
     public String glGetShaderInfoLog(int shader) {
-        return GL20.glGetShaderInfoLog(shader, GL20.glGetShaderi(shader, GL_INFO_LOG_LENGTH));
+        val res = GL20.glGetShaderInfoLog(shader, GL20.glGetShaderi(shader, GL_INFO_LOG_LENGTH));
+        super.debugCheckError();
+        return res;
     }
 
     @Override
     public int glCreateProgram() {
-        return GL20.glCreateProgram();
+        val res = GL20.glCreateProgram();
+        super.debugCheckError();
+        return res;
     }
 
     @Override
     public void glDeleteProgram(int program) {
         GL20.glDeleteProgram(program);
+        super.debugCheckError();
     }
 
     @Override
     public void glAttachShader(int program, int shader) {
         GL20.glAttachShader(program, shader);
+        super.debugCheckError();
     }
 
     @Override
     public void glDetachShader(int program, int shader) {
         GL20.glDetachShader(program, shader);
+        super.debugCheckError();
     }
 
     @Override
     public void glLinkProgram(int program) {
         GL20.glLinkProgram(program);
+        super.debugCheckError();
     }
 
     @Override
     public int glGetProgrami(int program, int pname) {
-        return GL20.glGetProgrami(program, pname);
+        val res = GL20.glGetProgrami(program, pname);
+        super.debugCheckError();
+        return res;
     }
 
     @Override
     public String glGetProgramInfoLog(int program) {
-        return GL20.glGetProgramInfoLog(program, GL20.glGetProgrami(program, GL_INFO_LOG_LENGTH));
+        val res = GL20.glGetProgramInfoLog(program, GL20.glGetProgrami(program, GL_INFO_LOG_LENGTH));
+        super.debugCheckError();
+        return res;
     }
 
     @Override
     public void glUseProgram(int program) {
         GL20.glUseProgram(program);
+        super.debugCheckError();
     }
 
     @Override
     public void glEnableVertexAttribArray(int index) {
         GL20.glEnableVertexAttribArray(index);
+        super.debugCheckError();
     }
 
     @Override
     public void glDisableVertexArray(int index) {
         GL20.glDisableVertexAttribArray(index);
+        super.debugCheckError();
     }
 
     @Override
     public void glVertexAttribPointer(int index, int size, int type, boolean normalized, int stride, long pointer) {
         GL20.glVertexAttribPointer(index, size, type, normalized, stride, pointer);
+        super.debugCheckError();
     }
 
     @Override
     public void glBindAttribLocation(int program, int index, @NonNull CharSequence name) {
         GL20.glBindAttribLocation(program, index, name);
+        super.debugCheckError();
     }
 
     @Override
     public int glGetUniformLocation(int program, @NonNull CharSequence name) {
-        return GL20.glGetUniformLocation(program, name);
+        val res = GL20.glGetUniformLocation(program, name);
+        super.debugCheckError();
+        return res;
     }
 
     @Override
     public void glUniform(int location, int v0) {
         GL20.glUniform1i(location, v0);
+        super.debugCheckError();
     }
 
     @Override
     public void glUniform(int location, int v0, int v1) {
         GL20.glUniform2i(location, v0, v1);
+        super.debugCheckError();
     }
 
     @Override
     public void glUniform(int location, int v0, int v1, int v2) {
         GL20.glUniform3i(location, v0, v1, v2);
+        super.debugCheckError();
     }
 
     @Override
     public void glUniform(int location, int v0, int v1, int v2, int v3) {
         GL20.glUniform4i(location, v0, v1, v2, v3);
+        super.debugCheckError();
     }
 
     @Override
     public void glUniform(int location, float v0) {
         GL20.glUniform1f(location, v0);
+        super.debugCheckError();
     }
 
     @Override
     public void glUniform(int location, float v0, float v1) {
         GL20.glUniform2f(location, v0, v1);
+        super.debugCheckError();
     }
 
     @Override
     public void glUniform(int location, float v0, float v1, float v2) {
         GL20.glUniform3f(location, v0, v1, v2);
+        super.debugCheckError();
     }
 
     @Override
     public void glUniform(int location, float v0, float v1, float v2, float v3) {
         GL20.glUniform4f(location, v0, v1, v2, v3);
+        super.debugCheckError();
     }
 
     @Override
     public void glBlendEquationSeparate(int modeRGB, int modeAlpha) {
         GL20.glBlendEquationSeparate(modeRGB, modeAlpha);
+        super.debugCheckError();
     }
 
     //
@@ -661,62 +775,77 @@ public class GLAPILWJGL2 implements GLAPI {
 
     @Override
     public int glGetInteger(int pname, int idx) {
-        return GL30.glGetInteger(pname, idx);
+        val res = GL30.glGetInteger(pname, idx);
+        super.debugCheckError();
+        return res;
     }
 
     @Override
     public String glGetString(int pname, int idx) {
-        return GL30.glGetStringi(pname, idx);
+        val res = GL30.glGetStringi(pname, idx);
+        super.debugCheckError();
+        return res;
     }
 
     @Override
     public int glGenVertexArray() {
-        return GL30.glGenVertexArrays();
+        val res = GL30.glGenVertexArrays();
+        super.debugCheckError();
+        return res;
     }
 
     @Override
     public void glDeleteVertexArray(int array) {
         GL30.glDeleteVertexArrays(array);
+        super.debugCheckError();
     }
 
     @Override
     public void glBindVertexArray(int array) {
         GL30.glBindVertexArray(array);
+        super.debugCheckError();
     }
 
     @Override
     public void glVertexAttribIPointer(int index, int size, int type, int stride, long pointer) {
         GL30.glVertexAttribIPointer(index, size, type, stride, pointer);
+        super.debugCheckError();
     }
 
     @Override
     public void glBindFragDataLocation(int program, int colorNumber, @NonNull CharSequence name) {
         GL30.glBindFragDataLocation(program, colorNumber, name);
+        super.debugCheckError();
     }
 
     @Override
     public void glBindBufferBase(int target, int index, int buffer) {
         GL30.glBindBufferBase(target, index, buffer);
+        super.debugCheckError();
     }
 
     @Override
     public void glBindBufferRange(int target, int index, int buffer, long offset, long size) {
         GL30.glBindBufferRange(target, index, buffer, offset, size);
+        super.debugCheckError();
     }
 
     @Override
     public void glBeginTransformFeedback(int primitiveMode) {
         GL30.glBeginTransformFeedback(primitiveMode);
+        super.debugCheckError();
     }
 
     @Override
     public void glEndTransformFeedback() {
         GL30.glEndTransformFeedback();
+        super.debugCheckError();
     }
 
     @Override
     public void glTransformFeedbackVaryings(int program, @NonNull CharSequence[] varyings, int bufferMode) {
         GL30.glTransformFeedbackVaryings(program, varyings, bufferMode);
+        super.debugCheckError();
     }
 
     //
@@ -729,8 +858,10 @@ public class GLAPILWJGL2 implements GLAPI {
     public void glCopyBufferSubData(int readTarget, int writeTarget, long readOffset, long writeOffset, long size) {
         if (this.GL_ARB_copy_buffer) {
             ARBCopyBuffer.glCopyBufferSubData(readTarget, writeTarget, readOffset, writeOffset, size);
+            super.debugCheckError();
         } else {
             GL31.glCopyBufferSubData(readTarget, writeTarget, readOffset, writeOffset, size);
+            super.debugCheckError();
         }
     }
 
@@ -738,17 +869,23 @@ public class GLAPILWJGL2 implements GLAPI {
     public void glTexBuffer(int target, int internalFormat, int buffer) {
         if (this.GL_ARB_texture_buffer_object) {
             ARBTextureBufferObject.glTexBufferARB(target, internalFormat, buffer);
+            super.debugCheckError();
         } else {
             GL31.glTexBuffer(target, internalFormat, buffer);
+            super.debugCheckError();
         }
     }
 
     @Override
     public int glGetUniformBlockIndex(int program, @NonNull CharSequence uniformBlockName) {
         if (this.GL_ARB_uniform_buffer_object) {
-            return ARBUniformBufferObject.glGetUniformBlockIndex(program, uniformBlockName);
+            val res = ARBUniformBufferObject.glGetUniformBlockIndex(program, uniformBlockName);
+            super.debugCheckError();
+            return res;
         } else {
-            return GL31.glGetUniformBlockIndex(program, uniformBlockName);
+            val res = GL31.glGetUniformBlockIndex(program, uniformBlockName);
+            super.debugCheckError();
+            return res;
         }
     }
 
@@ -756,8 +893,10 @@ public class GLAPILWJGL2 implements GLAPI {
     public void glUniformBlockBinding(int program, int uniformBlockIndex, int uniformBlockBinding) {
         if (this.GL_ARB_uniform_buffer_object) {
             ARBUniformBufferObject.glUniformBlockBinding(program, uniformBlockIndex, uniformBlockBinding);
+            super.debugCheckError();
         } else {
             GL31.glUniformBlockBinding(program, uniformBlockIndex, uniformBlockBinding);
+            super.debugCheckError();
         }
     }
 
@@ -771,14 +910,17 @@ public class GLAPILWJGL2 implements GLAPI {
     public void glDrawElementsBaseVertex(int mode, int count, int type, long indices, int basevertex) {
         if (this.GL_ARB_draw_elements_base_vertex) {
             ARBDrawElementsBaseVertex.glDrawElementsBaseVertex(mode, count, type, indices, basevertex);
+            super.debugCheckError();
         } else {
             GL32.glDrawElementsBaseVertex(mode, count, type, indices, basevertex);
+            super.debugCheckError();
         }
     }
 
     @Override
     public void glMultiDrawElementsBaseVertex(int mode, long count, int type, long indices, int drawcount, long basevertex) {
         this.extraFunctions.glMultiDrawElementsBaseVertex(mode, count, type, indices, drawcount, basevertex);
+        super.debugCheckError();
     }
 
     //
@@ -791,17 +933,23 @@ public class GLAPILWJGL2 implements GLAPI {
     public void glVertexAttribDivisor(int index, int divisor) {
         if (this.GL_ARB_instanced_arrays) {
             ARBInstancedArrays.glVertexAttribDivisorARB(index, divisor);
+            super.debugCheckError();
         } else {
             GL33.glVertexAttribDivisor(index, divisor);
+            super.debugCheckError();
         }
     }
 
     @Override
     public int glGenSampler() {
         if (this.GL_ARB_sampler_objects) {
-            return ARBSamplerObjects.glGenSamplers();
+            val res = ARBSamplerObjects.glGenSamplers();
+            super.debugCheckError();
+            return res;
         } else {
-            return GL33.glGenSamplers();
+            val res = GL33.glGenSamplers();
+            super.debugCheckError();
+            return res;
         }
     }
 
@@ -809,8 +957,10 @@ public class GLAPILWJGL2 implements GLAPI {
     public void glDeleteSampler(int sampler) {
         if (this.GL_ARB_sampler_objects) {
             ARBSamplerObjects.glDeleteSamplers(sampler);
+            super.debugCheckError();
         } else {
             GL33.glDeleteSamplers(sampler);
+            super.debugCheckError();
         }
     }
 
@@ -818,8 +968,10 @@ public class GLAPILWJGL2 implements GLAPI {
     public void glBindSampler(int unit, int sampler) {
         if (this.GL_ARB_sampler_objects) {
             ARBSamplerObjects.glBindSampler(unit, sampler);
+            super.debugCheckError();
         } else {
             GL33.glBindSampler(unit, sampler);
+            super.debugCheckError();
         }
     }
 
@@ -827,8 +979,10 @@ public class GLAPILWJGL2 implements GLAPI {
     public void glSamplerParameter(int sampler, int pname, int param) {
         if (this.GL_ARB_sampler_objects) {
             ARBSamplerObjects.glSamplerParameteri(sampler, pname, param);
+            super.debugCheckError();
         } else {
             GL33.glSamplerParameteri(sampler, pname, param);
+            super.debugCheckError();
         }
     }
 
@@ -836,8 +990,10 @@ public class GLAPILWJGL2 implements GLAPI {
     public void glSamplerParameter(int sampler, int pname, float param) {
         if (this.GL_ARB_sampler_objects) {
             ARBSamplerObjects.glSamplerParameterf(sampler, pname, param);
+            super.debugCheckError();
         } else {
             GL33.glSamplerParameterf(sampler, pname, param);
+            super.debugCheckError();
         }
     }
 
@@ -851,8 +1007,10 @@ public class GLAPILWJGL2 implements GLAPI {
     public void glMemoryBarrier(int barriers) {
         if (this.GL_ARB_shader_image_load_store) {
             ARBShaderImageLoadStore.glMemoryBarrier(barriers);
+            super.debugCheckError();
         } else {
             GL42.glMemoryBarrier(barriers);
+            super.debugCheckError();
         }
     }
 
@@ -866,8 +1024,10 @@ public class GLAPILWJGL2 implements GLAPI {
     public void glMultiDrawArraysIndirect(int mode, long indirect, int primcount, int stride) {
         if (this.GL_ARB_multi_draw_indirect) {
             ARBMultiDrawIndirect.glMultiDrawArraysIndirect(mode, indirect, primcount, stride);
+            super.debugCheckError();
         } else {
             GL43.glMultiDrawArraysIndirect(mode, indirect, primcount, stride);
+            super.debugCheckError();
         }
     }
 
@@ -875,17 +1035,23 @@ public class GLAPILWJGL2 implements GLAPI {
     public void glMultiDrawElementsIndirect(int mode, int type, long indirect, int primcount, int stride) {
         if (this.GL_ARB_multi_draw_indirect) {
             ARBMultiDrawIndirect.glMultiDrawElementsIndirect(mode, type, indirect, primcount, stride);
+            super.debugCheckError();
         } else {
             GL43.glMultiDrawElementsIndirect(mode, type, indirect, primcount, stride);
+            super.debugCheckError();
         }
     }
 
     @Override
     public int glGetProgramResourceIndex(int program, int programInterface, @NonNull CharSequence name) {
         if (this.GL_ARB_program_interface_query) {
-            return ARBProgramInterfaceQuery.glGetProgramResourceIndex(program, programInterface, name);
+            val res = ARBProgramInterfaceQuery.glGetProgramResourceIndex(program, programInterface, name);
+            super.debugCheckError();
+            return res;
         } else {
-            return GL43.glGetProgramResourceIndex(program, programInterface, name);
+            val res = GL43.glGetProgramResourceIndex(program, programInterface, name);
+            super.debugCheckError();
+            return res;
         }
     }
 
@@ -893,8 +1059,10 @@ public class GLAPILWJGL2 implements GLAPI {
     public void glShaderStorageBlockBinding(int program, int storageBlockIndex, int storageBlockBinding) {
         if (this.GL_ARB_shader_storage_buffer_object) {
             ARBShaderStorageBufferObject.glShaderStorageBlockBinding(program, storageBlockIndex, storageBlockBinding);
+            super.debugCheckError();
         } else {
             GL43.glShaderStorageBlockBinding(program, storageBlockIndex, storageBlockBinding);
+            super.debugCheckError();
         }
     }
 }

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -20,22 +20,12 @@
 package net.daporkchop.fp2.gl.opengl.buffer;
 
 import io.netty.buffer.ByteBuf;
-import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.GLResource;
-import net.daporkchop.fp2.gl.attribute.BufferUsage;
-import net.daporkchop.fp2.gl.opengl.GLAPI;
-import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
-import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
-
-import static java.lang.Math.*;
-import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
-import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_

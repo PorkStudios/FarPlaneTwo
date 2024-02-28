@@ -17,27 +17,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.opengl.shader;
+package net.daporkchop.fp2.gl.opengl.lwjgl3;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
-import static net.daporkchop.fp2.gl.OpenGLConstants.*;
+import java.util.function.Supplier;
 
 /**
- * The different types of shaders.
- *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-@Getter
-public enum ShaderType {
-    VERTEX(GL_VERTEX_SHADER),
-    TESSELLATION_CONTROL(GL_TESS_CONTROL_SHADER),
-    TESSELLATION_EVALUATION(GL_TESS_EVALUATION_SHADER),
-    GEOMETRY(GL_GEOMETRY_SHADER),
-    FRAGMENT(GL_FRAGMENT_SHADER),
-    COMPUTE(GL_COMPUTE_SHADER);
-
-    private final int id;
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+class ForCurrentSupplierLWJGL3 implements Supplier<GLAPILWJGL3> {
+    @Override
+    public GLAPILWJGL3 get() {
+        return new GLAPILWJGL3();
+    }
 }

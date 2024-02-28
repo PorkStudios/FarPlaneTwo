@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -25,9 +25,9 @@ import lombok.SneakyThrows;
 import net.daporkchop.fp2.common.asm.ClassloadingUtils;
 import net.daporkchop.fp2.gl.command.CommandBuffer;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
-import net.daporkchop.fp2.gl.opengl.GLExtension;
+import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.OpenGLConstants;
+import net.daporkchop.fp2.gl.OpenGLConstants;
 import net.daporkchop.fp2.gl.opengl.command.methodwriter.MethodWriter;
 import net.daporkchop.fp2.gl.opengl.command.methodwriter.PassthroughMethodWriter;
 import net.daporkchop.fp2.gl.opengl.command.methodwriter.TreeMethodWriter;
@@ -151,7 +151,7 @@ public class CommandBufferBuilderImpl extends AbstractCommandBufferBuilder {
             entryVisitor.visitVarInsn(LSTORE, bufferLvtIndex);
 
             //back up all affected OpenGL properties
-            if (GLExtension.GL_ARB_compatibility.supported(this.gl)) { //back up old attribute to the legacy attribute stack, if possible
+            if (GLExtension.GL_ARB_compatibility.supported(this.gl.env())) { //back up old attribute to the legacy attribute stack, if possible
                 //api.glPushClientAttrib(GL_ALL_CLIENT_ATTRIB_BITS);
                 entryVisitor.visitVarInsn(ALOAD, 1);
                 entryVisitor.visitLdcInsn(OpenGLConstants.GL_ALL_CLIENT_ATTRIB_BITS);
@@ -163,7 +163,7 @@ public class CommandBufferBuilderImpl extends AbstractCommandBufferBuilder {
                 entryVisitor.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glPushAttrib", getMethodDescriptor(VOID_TYPE, INT_TYPE), true);
             }
             state.properties() //back up remaining attributes to the regular java stack
-                    .filter(property -> !GLExtension.GL_ARB_compatibility.supported(this.gl) || !property.canBackupRestoreToLegacyAttributeStack())
+                    .filter(property -> !GLExtension.GL_ARB_compatibility.supported(this.gl.env()) || !property.canBackupRestoreToLegacyAttributeStack())
                     .forEach(property -> {
                         baseLvts.add(lvtIndexAllocator.get());
                         property.backup(entryVisitor, 1, bufferLvtIndex, lvtIndexAllocator);
@@ -176,9 +176,9 @@ public class CommandBufferBuilderImpl extends AbstractCommandBufferBuilder {
 
             //restore all affected OpenGL properties from their saved values
             state.properties()
-                    .filter(property -> !GLExtension.GL_ARB_compatibility.supported(this.gl) || !property.canBackupRestoreToLegacyAttributeStack())
+                    .filter(property -> !GLExtension.GL_ARB_compatibility.supported(this.gl.env()) || !property.canBackupRestoreToLegacyAttributeStack())
                     .forEach(property -> property.restore(entryVisitor, 1, bufferLvtIndex, baseLvts.poll()));
-            if (GLExtension.GL_ARB_compatibility.supported(this.gl)) { //restore old attributes from the legacy attribute stack, if possible
+            if (GLExtension.GL_ARB_compatibility.supported(this.gl.env())) { //restore old attributes from the legacy attribute stack, if possible
                 //api.glPopAttrib();
                 entryVisitor.visitVarInsn(ALOAD, 1);
                 entryVisitor.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glPopAttrib", getMethodDescriptor(VOID_TYPE), true);

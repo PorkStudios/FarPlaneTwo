@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -19,7 +19,6 @@
 
 package net.daporkchop.fp2.gl.opengl.attribute.texture.image;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
@@ -31,7 +30,6 @@ import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatChannel;
 import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatChannelRange;
 import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatChannelType;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.OpenGLConstants;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -47,7 +45,7 @@ import java.util.stream.Collectors;
 import static net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatChannel.*;
 import static net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatChannelRange.*;
 import static net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatChannelType.*;
-import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
+import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 
 /**
  * @author DaPorkchop_
@@ -212,7 +210,7 @@ public class PixelInternalFormats {
         public String toString() {
             if (this.toString == null) { //compute
                 this.toString = OpenGL.DEBUG
-                        ? OpenGLConstants.getNameIfPossible(this.glInternalFormat).orElseGet(() -> String.valueOf(this.glInternalFormat).intern())
+                        ? OpenGL.getNameIfPossible(this.glInternalFormat).orElseGet(() -> String.valueOf(this.glInternalFormat).intern())
                         : String.valueOf(this.glInternalFormat).intern();
             }
             return this.toString;

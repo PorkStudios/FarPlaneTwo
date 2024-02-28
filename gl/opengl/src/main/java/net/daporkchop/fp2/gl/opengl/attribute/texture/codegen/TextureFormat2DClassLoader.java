@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -27,7 +27,6 @@ import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatChannel;
 import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatChannelRange;
 import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatChannelType;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.OpenGLConstants;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.method.parameter.MethodParameter;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.method.parameter.MethodParameterFactory;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.method.parameter.input.ScalarArgumentMethodParameter;
@@ -208,7 +207,7 @@ public class TextureFormat2DClassLoader extends TextureFormatClassLoader<Texture
         { //int gl_internalFormat()
             MethodVisitor mv = writer.visitMethod(ACC_PROTECTED, "gl_internalFormat", getMethodDescriptor(INT_TYPE), null, null);
 
-            OpenGLConstants.visitGLConstant(mv, this.pixelFormat.internalFormat().glInternalFormat());
+            OpenGL.visitGLConstant(mv, this.pixelFormat.internalFormat().glInternalFormat());
             mv.visitInsn(IRETURN);
 
             mv.visitMaxs(0, 0);
@@ -218,7 +217,7 @@ public class TextureFormat2DClassLoader extends TextureFormatClassLoader<Texture
         { //int gl_format()
             MethodVisitor mv = writer.visitMethod(ACC_PROTECTED, "gl_format", getMethodDescriptor(INT_TYPE), null, null);
 
-            OpenGLConstants.visitGLConstant(mv, this.pixelFormat.storageFormat().glFormat());
+            OpenGL.visitGLConstant(mv, this.pixelFormat.storageFormat().glFormat());
             mv.visitInsn(IRETURN);
 
             mv.visitMaxs(0, 0);
@@ -228,7 +227,7 @@ public class TextureFormat2DClassLoader extends TextureFormatClassLoader<Texture
         { //int gl_type()
             MethodVisitor mv = writer.visitMethod(ACC_PROTECTED, "gl_type", getMethodDescriptor(INT_TYPE), null, null);
 
-            OpenGLConstants.visitGLConstant(mv, this.pixelFormat.storageType().glType());
+            OpenGL.visitGLConstant(mv, this.pixelFormat.storageType().glType());
             mv.visitInsn(IRETURN);
 
             mv.visitMaxs(0, 0);

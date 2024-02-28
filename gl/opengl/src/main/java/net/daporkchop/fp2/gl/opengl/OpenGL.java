@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -26,11 +26,12 @@ import com.google.common.collect.ImmutableSet;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.SneakyThrows;
 import net.daporkchop.fp2.common.GlobalProperties;
 import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
-import net.daporkchop.fp2.gl.GL;
+import net.daporkchop.fp2.gl.*;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeFormatBuilder;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
@@ -97,7 +98,11 @@ import net.daporkchop.fp2.gl.transform.shader.TransformShaderBuilder;
 import net.daporkchop.fp2.gl.transform.shader.TransformShaderProgramBuilder;
 import net.daporkchop.lib.common.pool.handle.HandledPool;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
+import org.objectweb.asm.MethodVisitor;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -105,9 +110,12 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.common.util.TypeSize.*;
-import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
+import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
+import static org.objectweb.asm.Opcodes.GETSTATIC;
+import static org.objectweb.asm.Type.INT_TYPE;
+import static org.objectweb.asm.Type.getInternalName;
 
 /**
  * @author DaPorkchop_
@@ -177,7 +185,7 @@ public class OpenGL implements GL {
             }
 
             this.extensions = Stream.of(GLExtension.values())
-                    .filter(extension -> !extension.core(this))
+                    .filter(extension -> !extension.core(this.version))
                     .filter(extension -> extensionNames.contains(extension.name()))
                     .collect(Collectors.collectingAndThen(Collectors.toSet(), ImmutableSet::copyOf));
         }
@@ -219,6 +227,43 @@ public class OpenGL implements GL {
         this.pixelFormatFactory = new PixelFormatFactory(this);
     }
 
+    @SneakyThrows(IllegalAccessException.class)
+    public static Optional<String> getNameIfPossible(int constant) {
+        Field matchingField = null;
+        for (Field field : OpenGLConstants.class.getFields()) {
+            if ((field.getModifiers() & Modifier.STATIC) != 0
+                && field.getType() == int.class
+                && !field.getName().endsWith("_EXT")
+                && ((Integer) field.get(null)) == constant) {
+                if (matchingField != null) { //there are multiple matching fields!
+                    return Optional.empty();
+                }
+                matchingField = field;
+            }
+        }
+
+        return matchingField != null
+                ? Optional.of(matchingField.getName()) //exactly one matching field was found
+                : Optional.empty();
+    }
+
+    public static void visitGLConstant(@NonNull MethodVisitor mv, int constant) {
+        if (DEBUG) { //debug mode - try to load constant by doing a GETSTATIC on the field in OpenGLConstants with a matching value (assuming there's exactly one)
+            Optional<String> name = getNameIfPossible(constant);
+            if (name.isPresent()) {
+                mv.visitFieldInsn(GETSTATIC, getInternalName(OpenGLConstants.class), name.get(), INT_TYPE.getDescriptor());
+                return;
+            }
+        }
+
+        //load the constant value using a standard LDC instruction
+        mv.visitLdcInsn(constant);
+    }
+
+    public GLEnvironment env() {
+        return new GLEnvironment(this.version, this.profile, this.forwardCompatibility, this.extensions);
+    }
+
     private boolean isOfficialAmdDriver() {
         String brand = this.api.glGetString(GL_VENDOR) + ' ' + this.api.glGetString(GL_VERSION) + ' ' + this.api.glGetString(GL_RENDERER);
 
@@ -232,7 +277,7 @@ public class OpenGL implements GL {
     }
 
     public GLBuffer createBuffer(@NonNull BufferUsage usage) {
-        return GLExtension.GL_ARB_copy_buffer.supported(this)
+        return GLExtension.GL_ARB_copy_buffer.supported(this.env())
                 ? new UploadCopyingGLBufferImpl(this, usage)
                 : new SimpleGLBufferImpl(this, usage);
     }

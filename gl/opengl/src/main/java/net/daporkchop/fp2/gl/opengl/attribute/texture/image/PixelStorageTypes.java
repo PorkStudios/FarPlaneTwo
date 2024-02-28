@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -27,7 +27,6 @@ import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatChannel;
 import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatChannelType;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.OpenGLConstants;
 import net.daporkchop.lib.common.util.PArrays;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import org.objectweb.asm.MethodVisitor;
@@ -42,7 +41,7 @@ import java.util.stream.Stream;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.common.util.TypeSize.*;
-import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
+import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.objectweb.asm.Opcodes.*;
 import static org.objectweb.asm.Type.*;
@@ -259,7 +258,7 @@ public class PixelStorageTypes {
         public String toString() {
             if (this.toString == null) { //compute
                 this.toString = OpenGL.DEBUG
-                        ? OpenGLConstants.getNameIfPossible(this.glType).orElseGet(() -> String.valueOf(this.glType).intern())
+                        ? OpenGL.getNameIfPossible(this.glType).orElseGet(() -> String.valueOf(this.glType).intern())
                         : String.valueOf(this.glType).intern();
             }
             return this.toString;

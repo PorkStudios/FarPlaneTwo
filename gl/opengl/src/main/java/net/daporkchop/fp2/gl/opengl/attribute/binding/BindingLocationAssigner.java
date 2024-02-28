@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,17 +15,16 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.opengl.attribute.binding;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
-import net.daporkchop.fp2.gl.opengl.GLExtension;
+import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 
-import static net.daporkchop.fp2.gl.opengl.OpenGLConstants.*;
+import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -46,7 +45,7 @@ public class BindingLocationAssigner {
 
     public BindingLocationAssigner(@NonNull OpenGL gl, @NonNull GLAPI api) {
         this.maxFragmentColors = api.glGetInteger(GL_MAX_DRAW_BUFFERS);
-        this.maxShaderStorageBuffers = GLExtension.GL_ARB_shader_storage_buffer_object.supported(gl) ? api.glGetInteger(GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS) : 0;
+        this.maxShaderStorageBuffers = GLExtension.GL_ARB_shader_storage_buffer_object.supported(gl.env()) ? api.glGetInteger(GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS) : 0;
         this.maxTextureUnits = api.glGetInteger(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS);
         this.maxVertexAttributes = api.glGetInteger(GL_MAX_VERTEX_ATTRIBS);
         this.maxUniformBuffers = api.glGetInteger(GL_MAX_UNIFORM_BUFFER_BINDINGS);

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -22,7 +22,7 @@ package net.daporkchop.fp2.gl.opengl.attribute.struct;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.gl.opengl.GLExtension;
+import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.InterleavedStructLayout;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.LayoutComponentStorage;
@@ -116,7 +116,7 @@ public class StructLayouts {
                             && interpretation.outputType().signed()
                             && interpretation.normalized()) {
                             //input type is a signed integer, which will be converted to a signed normalized float
-                            return !GLExtension.GL_EXT_texture_snorm.supported(gl); //we'll unpack the texture values manually if GL_*_SNORM textures aren't available
+                            return !GLExtension.GL_EXT_texture_snorm.supported(gl.env()); //we'll unpack the texture values manually if GL_*_SNORM textures aren't available
                         }
 
                         return false;

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -17,7 +17,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.opengl;
+package net.daporkchop.fp2.gl;
 
 import lombok.Getter;
 import lombok.NonNull;
@@ -32,19 +32,19 @@ import lombok.RequiredArgsConstructor;
 public enum GLExtension {
     GL_ARB_compatibility(GLVersion.OpenGL30, false) {
         @Override
-        protected boolean core(@NonNull OpenGL gl) {
+        public boolean core(@NonNull GLVersion version) {
             return false;
         }
 
         @Override
-        public boolean supported(@NonNull OpenGL gl) {
-            if (gl.version().compareTo(GLVersion.OpenGL30) <= 0) { //3.0: compatibility features are all available on 3.0
+        public boolean supported(@NonNull GLEnvironment env) {
+            if (env.version().compareTo(GLVersion.OpenGL30) <= 0) { //3.0: compatibility features are all available on 3.0
                 //they may be removed if forward compatibility is enabled, however that would still be overridden by the presence of ARB_compatibility
-                return !gl.forwardCompatibility() || gl.extensions().contains(this);
-            } else if (gl.version().compareTo(GLVersion.OpenGL31) <= 0) { //3.1: compatibility features only available if ARB_compatibility is present
-                return gl.extensions().contains(this);
+                return !env.forwardCompatibility() || env.extensions().contains(this);
+            } else if (env.version().compareTo(GLVersion.OpenGL31) <= 0) { //3.1: compatibility features only available if ARB_compatibility is present
+                return env.extensions().contains(this);
             } else { //3.2+: compatibility features only available in compat profile, or if ARB_compatibility is present
-                return gl.profile() == GLProfile.COMPAT || gl.extensions().contains(this);
+                return env.profile() == GLProfile.COMPAT || env.extensions().contains(this);
             }
         }
     },
@@ -185,20 +185,30 @@ public enum GLExtension {
     private final boolean glsl;
 
     /**
-     * Checks whether or not this extension is a core feature in the given OpenGL context.
+     * Checks whether or not this extension is a core feature in the given OpenGL version.
      *
-     * @param gl the context
+     * @param version the OpenGL version
      */
-    protected boolean core(@NonNull OpenGL gl) {
-        return this.coreVersion != null && gl.version().compareTo(this.coreVersion) >= 0;
+    public boolean core(@NonNull GLVersion version) {
+        return this.coreVersion != null && version.compareTo(this.coreVersion) >= 0;
+    }
+
+    /**
+     * Checks whether or not this extension is supported in the given OpenGL environment.
+     *
+     * @param env the OpenGL environment
+     */
+    @Deprecated
+    public boolean supported(@NonNull GLEnvironment env) {
+        return this.core(env.version()) || env.extensions().contains(this);
     }
 
     /**
      * Checks whether or not this extension is supported in the given OpenGL context.
      *
-     * @param gl the context
+     * @param gl the OpenGL context
      */
     public boolean supported(@NonNull OpenGL gl) {
-        return this.core(gl) || gl.extensions().contains(this);
+        return this.core(gl.version()) || gl.extensions().contains(this);
     }
 }

@@ -17,27 +17,46 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.opengl.shader;
+package net.daporkchop.fp2.gl;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-import static net.daporkchop.fp2.gl.OpenGLConstants.*;
-
 /**
- * The different types of shaders.
+ * All known OpenGL versions.
  *
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
 @Getter
-public enum ShaderType {
-    VERTEX(GL_VERTEX_SHADER),
-    TESSELLATION_CONTROL(GL_TESS_CONTROL_SHADER),
-    TESSELLATION_EVALUATION(GL_TESS_EVALUATION_SHADER),
-    GEOMETRY(GL_GEOMETRY_SHADER),
-    FRAGMENT(GL_FRAGMENT_SHADER),
-    COMPUTE(GL_COMPUTE_SHADER);
+public enum GLVersion {
+    OpenGL10(1, 0, -1),
+    OpenGL11(1, 1, -1),
+    OpenGL12(1, 2, -1),
+    OpenGL13(1, 3, -1),
+    OpenGL14(1, 4, -1),
+    OpenGL15(1, 5, -1),
+    OpenGL20(2, 0, 110),
+    OpenGL21(2, 1, 120),
+    OpenGL30(3, 0, 130),
+    OpenGL31(3, 1, 140),
+    OpenGL32(3, 2, 150),
+    OpenGL33(3, 3, 330),
+    OpenGL40(4, 0, 400),
+    OpenGL41(4, 1, 410),
+    OpenGL42(4, 2, 420),
+    OpenGL43(4, 3, 430),
+    OpenGL44(4, 4, 440),
+    OpenGL45(4, 5, 450),
+    OpenGL46(4, 6, 460);
 
-    private final int id;
+    private final int major;
+    private final int minor;
+
+    private final int glsl;
+
+    @Override
+    public String toString() {
+        return "OpenGL " + this.major + '.' + this.minor;
+    }
 }

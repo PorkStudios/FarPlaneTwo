@@ -20,6 +20,7 @@
 package net.daporkchop.fp2.gl.opengl;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.GLVersion;
 
 import java.nio.ByteBuffer;
 
