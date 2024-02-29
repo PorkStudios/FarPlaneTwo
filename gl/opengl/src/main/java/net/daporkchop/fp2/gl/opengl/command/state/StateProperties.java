@@ -29,11 +29,10 @@ import net.daporkchop.fp2.gl.command.BlendOp;
 import net.daporkchop.fp2.gl.command.Compare;
 import net.daporkchop.fp2.gl.command.StencilOperation;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
-import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureTarget;
-import net.daporkchop.fp2.gl.opengl.buffer.BufferTarget;
-import net.daporkchop.fp2.gl.opengl.buffer.IndexedBufferTarget;
+import net.daporkchop.fp2.gl.buffer.BufferTarget;
+import net.daporkchop.fp2.gl.buffer.IndexedBufferTarget;
 import net.daporkchop.fp2.gl.opengl.command.CodegenArgs;
 import net.daporkchop.fp2.gl.opengl.command.methodwriter.MethodWriter;
 import net.daporkchop.fp2.gl.opengl.command.state.struct.BlendFactors;
@@ -101,10 +100,10 @@ public class StateProperties {
             GL_BLEND_SRC_RGB, GL_BLEND_SRC_ALPHA, GL_BLEND_DST_RGB, GL_BLEND_DST_ALPHA) {
         @Override
         protected void loadFromValue(@NonNull MethodVisitor mv, @NonNull BlendFactors value) {
-            OpenGL.visitGLConstant(mv, GLEnumUtil.from(value.srcRGB()));
-            OpenGL.visitGLConstant(mv, GLEnumUtil.from(value.dstRGB()));
-            OpenGL.visitGLConstant(mv, GLEnumUtil.from(value.srcA()));
-            OpenGL.visitGLConstant(mv, GLEnumUtil.from(value.dstA()));
+            OpenGL.visitGLConstant(mv, value.srcRGB().factor());
+            OpenGL.visitGLConstant(mv, value.dstRGB().factor());
+            OpenGL.visitGLConstant(mv, value.srcA().factor());
+            OpenGL.visitGLConstant(mv, value.dstA().factor());
         }
 
         @Override
@@ -125,8 +124,8 @@ public class StateProperties {
             GL_BLEND_EQUATION_RGB, GL_BLEND_EQUATION_ALPHA) {
         @Override
         protected void loadFromValue(@NonNull MethodVisitor mv, @NonNull BlendOps value) {
-            OpenGL.visitGLConstant(mv, GLEnumUtil.from(value.rgb()));
-            OpenGL.visitGLConstant(mv, GLEnumUtil.from(value.a()));
+            OpenGL.visitGLConstant(mv, value.rgb().op());
+            OpenGL.visitGLConstant(mv, value.a().op());
         }
 
         @Override
@@ -230,7 +229,7 @@ public class StateProperties {
         }
     };
 
-    public final StateValueProperty<Compare> DEPTH_COMPARE = new IntegerSimpleStateValueProperty<Compare>(Compare.LESS, GLEnumUtil::from, "glDepthFunc", GL_DEPTH_FUNC) {
+    public final StateValueProperty<Compare> DEPTH_COMPARE = new IntegerSimpleStateValueProperty<Compare>(Compare.LESS, Compare::compare, "glDepthFunc", GL_DEPTH_FUNC) {
         @Override
         public boolean canBackupRestoreToLegacyAttributeStack() {
             return true;
@@ -279,7 +278,7 @@ public class StateProperties {
             GL_STENCIL_FUNC, GL_STENCIL_REF, GL_STENCIL_VALUE_MASK) {
         @Override
         protected void loadFromValue(@NonNull MethodVisitor mv, @NonNull StencilFunc value) {
-            OpenGL.visitGLConstant(mv, GLEnumUtil.from(value.compare()));
+            OpenGL.visitGLConstant(mv, value.compare().compare());
             mv.visitLdcInsn(value.reference());
             mv.visitLdcInsn(value.mask());
         }
@@ -295,9 +294,9 @@ public class StateProperties {
             GL_STENCIL_FAIL, GL_STENCIL_PASS_DEPTH_PASS, GL_STENCIL_PASS_DEPTH_FAIL) {
         @Override
         protected void loadFromValue(@NonNull MethodVisitor mv, @NonNull StencilOp value) {
-            OpenGL.visitGLConstant(mv, GLEnumUtil.from(value.fail()));
-            OpenGL.visitGLConstant(mv, GLEnumUtil.from(value.pass()));
-            OpenGL.visitGLConstant(mv, GLEnumUtil.from(value.depthFail()));
+            OpenGL.visitGLConstant(mv, value.fail().operation());
+            OpenGL.visitGLConstant(mv, value.pass().operation());
+            OpenGL.visitGLConstant(mv, value.depthFail().operation());
         }
 
         @Override

@@ -35,7 +35,6 @@ import net.daporkchop.fp2.gl.draw.list.selected.JavaSelectedDrawList;
 import net.daporkchop.fp2.gl.draw.list.selected.ShaderSelectedDrawList;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
-import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.common.AttributeBufferImpl;
 import net.daporkchop.fp2.gl.opengl.command.methodwriter.FieldHandle;
@@ -127,7 +126,11 @@ public abstract class AbstractCommandBufferBuilder implements CommandBufferBuild
             public void emitCode(@NonNull State effectiveState, @NonNull AbstractCommandBufferBuilder builder, @NonNull MethodWriter<CodegenArgs> writer) {
                 writer.write((mv, args) -> {
                     mv.visitVarInsn(ALOAD, args.apiLvtIndex());
-                    mv.visitLdcInsn(GLEnumUtil.from(layers));
+                    mv.visitInsn(ICONST_0);
+                    for (FramebufferLayer layer : layers) {
+                        mv.visitLdcInsn(layer.bufferBit());
+                        mv.visitInsn(IOR);
+                    }
                     mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glClear", getMethodDescriptor(VOID_TYPE, INT_TYPE), true);
                 });
             }
@@ -280,7 +283,7 @@ public abstract class AbstractCommandBufferBuilder implements CommandBufferBuild
             public void emitCode(@NonNull State effectiveState, @NonNull AbstractCommandBufferBuilder builder, @NonNull MethodWriter<CodegenArgs> writer) {
                 writer.write((mv, args) -> {
                     mv.visitVarInsn(ALOAD, args.apiLvtIndex());
-                    mv.visitLdcInsn(GLEnumUtil.from(mode));
+                    mv.visitLdcInsn(mode.mode());
                     mv.visitLdcInsn(first);
                     mv.visitLdcInsn(count);
                     mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(GLAPI.class), "glDrawArrays", getMethodDescriptor(VOID_TYPE, INT_TYPE, INT_TYPE, INT_TYPE), true);
@@ -292,21 +295,21 @@ public abstract class AbstractCommandBufferBuilder implements CommandBufferBuild
 
     @Override
     public CommandBufferBuilder drawList(@NonNull DrawShaderProgram shader, @NonNull DrawMode mode, @NonNull DrawList<?> list) {
-        this.uops.addAll(((DrawListImpl<?>) list).draw(this.state, shader, GLEnumUtil.from(mode)));
+        this.uops.addAll(((DrawListImpl<?>) list).draw(this.state, shader, mode.mode()));
         return this;
     }
 
     @Override
     public CommandBufferBuilder drawSelectedList(@NonNull DrawShaderProgram shader, @NonNull DrawMode mode, @NonNull JavaSelectedDrawList<?> list, @NonNull IntPredicate selector) {
         FieldHandle<IntPredicate> field = this.makeFieldHandle(getType(IntPredicate.class), selector);
-        this.uops.addAll(((DrawListImpl.JavaSelected<?>) list).drawSelected(this.state, shader, GLEnumUtil.from(mode), field));
+        this.uops.addAll(((DrawListImpl.JavaSelected<?>) list).drawSelected(this.state, shader, mode.mode(), field));
         return this;
     }
 
     @Override
     public CommandBufferBuilder drawSelectedList(@NonNull DrawShaderProgram shader, @NonNull DrawMode mode, @NonNull JavaSelectedDrawList<?> list, @NonNull Supplier<IntPredicate> selectorProvider) {
         FieldHandle<Supplier<IntPredicate>> field = this.makeFieldHandle(getType(Supplier.class), selectorProvider);
-        this.uops.addAll(((DrawListImpl.JavaSelected<?>) list).drawSelected(this.state, shader, GLEnumUtil.from(mode), mv -> {
+        this.uops.addAll(((DrawListImpl.JavaSelected<?>) list).drawSelected(this.state, shader, mode.mode(), mv -> {
             field.get(mv);
             mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(Supplier.class), "get", getMethodDescriptor(getType(Object.class)), true);
             mv.visitTypeInsn(CHECKCAST, getInternalName(IntPredicate.class));
@@ -316,7 +319,7 @@ public abstract class AbstractCommandBufferBuilder implements CommandBufferBuild
 
     @Override
     public CommandBufferBuilder drawSelectedList(@NonNull DrawShaderProgram shader, @NonNull DrawMode mode, @NonNull ShaderSelectedDrawList<?> list, @NonNull TransformShaderProgram selectionShader, @NonNull TransformBinding selectionBinding) {
-        this.uops.addAll(((DrawListImpl.ShaderSelected<?>) list).drawSelected(this.state, shader, GLEnumUtil.from(mode), selectionShader, selectionBinding));
+        this.uops.addAll(((DrawListImpl.ShaderSelected<?>) list).drawSelected(this.state, shader, mode.mode(), selectionShader, selectionBinding));
         return this;
     }
 

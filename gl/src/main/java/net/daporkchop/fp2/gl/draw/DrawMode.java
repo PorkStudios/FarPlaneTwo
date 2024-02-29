@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.draw;
@@ -23,6 +22,8 @@ package net.daporkchop.fp2.gl.draw;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+
+import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 
 /**
  * The different geometry types supported by OpenGL.
@@ -32,15 +33,16 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Getter
 public enum DrawMode {
-    POINTS(DrawPrimitive.POINTS),
-    LINES(DrawPrimitive.LINES),
-    LINE_STRIP(DrawPrimitive.LINES),
-    LINE_LOOP(DrawPrimitive.LINES),
-    TRIANGLES(DrawPrimitive.TRIANGLES),
-    TRIANGLE_STRIP(DrawPrimitive.TRIANGLES),
-    TRIANGLE_FAN(DrawPrimitive.TRIANGLES),
-    QUADS(DrawPrimitive.QUADS);
+    POINTS(DrawPrimitive.POINTS, GL_POINTS),
+    LINES(DrawPrimitive.LINES, GL_LINES),
+    LINE_STRIP(DrawPrimitive.LINES, GL_LINE_STRIP),
+    LINE_LOOP(DrawPrimitive.LINES, GL_LINE_LOOP),
+    TRIANGLES(DrawPrimitive.TRIANGLES, GL_TRIANGLES),
+    TRIANGLE_STRIP(DrawPrimitive.TRIANGLES, GL_TRIANGLE_STRIP),
+    TRIANGLE_FAN(DrawPrimitive.TRIANGLES, GL_TRIANGLE_FAN),
+    QUADS(DrawPrimitive.QUADS, GL_QUADS);
 
     @NonNull
     private final DrawPrimitive primitive;
+    private final int mode;
 }

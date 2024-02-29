@@ -27,33 +27,9 @@ import net.daporkchop.fp2.gl.opengl.lwjgl2.extra.ExtraFunctions;
 import net.daporkchop.fp2.gl.opengl.lwjgl2.extra.ExtraFunctionsProvider;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.GLVersion;
-import net.daporkchop.lib.common.function.exception.EPredicate;
 import net.daporkchop.lib.common.function.throwing.TPredicate;
 import net.daporkchop.lib.unsafe.PUnsafe;
-import org.lwjgl.opengl.ARBCopyBuffer;
-import org.lwjgl.opengl.ARBDrawElementsBaseVertex;
-import org.lwjgl.opengl.ARBInstancedArrays;
-import org.lwjgl.opengl.ARBMultiDrawIndirect;
-import org.lwjgl.opengl.ARBProgramInterfaceQuery;
-import org.lwjgl.opengl.ARBSamplerObjects;
-import org.lwjgl.opengl.ARBShaderImageLoadStore;
-import org.lwjgl.opengl.ARBShaderStorageBufferObject;
-import org.lwjgl.opengl.ARBTextureBufferObject;
-import org.lwjgl.opengl.ARBUniformBufferObject;
-import org.lwjgl.opengl.ContextCapabilities;
-import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL12;
-import org.lwjgl.opengl.GL13;
-import org.lwjgl.opengl.GL14;
-import org.lwjgl.opengl.GL15;
-import org.lwjgl.opengl.GL20;
-import org.lwjgl.opengl.GL30;
-import org.lwjgl.opengl.GL31;
-import org.lwjgl.opengl.GL32;
-import org.lwjgl.opengl.GL33;
-import org.lwjgl.opengl.GL42;
-import org.lwjgl.opengl.GL43;
-import org.lwjgl.opengl.GLContext;
+import org.lwjgl.opengl.*;
 
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
@@ -70,24 +46,33 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
     private final ExtraFunctions extraFunctions;
 
     // OpenGL 3.1
+    private final boolean OpenGL31;
     private final boolean GL_ARB_copy_buffer;
     private final boolean GL_ARB_texture_buffer_object;
     private final boolean GL_ARB_uniform_buffer_object;
 
     // OpenGL 3.2
+    private final boolean OpenGL32;
     private final boolean GL_ARB_draw_elements_base_vertex;
 
     // OpenGL 3.3
+    private final boolean OpenGL33;
     private final boolean GL_ARB_instanced_arrays;
     private final boolean GL_ARB_sampler_objects;
 
     // OpenGL 4.2
+    private final boolean OpenGL42;
     private final boolean GL_ARB_shader_image_load_store;
 
     // OpenGL 4.3
+    private final boolean OpenGL43;
     private final boolean GL_ARB_multi_draw_indirect;
     private final boolean GL_ARB_program_interface_query;
     private final boolean GL_ARB_shader_storage_buffer_object;
+
+    // OpenGL 4.5
+    private final boolean OpenGL45;
+    private final boolean GL_ARB_direct_state_access;
 
     public GLAPILWJGL2() {
         ContextCapabilities capabilities = GLContext.getCapabilities();
@@ -95,28 +80,37 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
         this.extraFunctions = ExtraFunctionsProvider.INSTANCE.get();
 
         // OpenGL 3.1
+        this.OpenGL31 = capabilities.OpenGL31;
         this.GL_ARB_copy_buffer = !capabilities.OpenGL31 && capabilities.GL_ARB_copy_buffer;
         this.GL_ARB_texture_buffer_object = !capabilities.OpenGL31 && capabilities.GL_ARB_texture_buffer_object;
         this.GL_ARB_uniform_buffer_object = !capabilities.OpenGL31 && capabilities.GL_ARB_uniform_buffer_object;
 
         // OpenGL 3.2
+        this.OpenGL32 = capabilities.OpenGL32;
         this.GL_ARB_draw_elements_base_vertex = !capabilities.OpenGL32 && capabilities.GL_ARB_draw_elements_base_vertex;
 
         // OpenGL 3.3
+        this.OpenGL33 = capabilities.OpenGL33;
         this.GL_ARB_instanced_arrays = !capabilities.OpenGL33 && capabilities.GL_ARB_instanced_arrays;
         this.GL_ARB_sampler_objects = !capabilities.OpenGL33 && capabilities.GL_ARB_sampler_objects;
 
         // OpenGL 4.2
+        this.OpenGL42 = capabilities.OpenGL42;
         this.GL_ARB_shader_image_load_store = !capabilities.OpenGL42 && capabilities.GL_ARB_shader_image_load_store;
 
         // OpenGL 4.3
+        this.OpenGL43 = capabilities.OpenGL43;
         this.GL_ARB_multi_draw_indirect = !capabilities.OpenGL43 && capabilities.GL_ARB_multi_draw_indirect;
         this.GL_ARB_program_interface_query = !capabilities.OpenGL43 && capabilities.GL_ARB_program_interface_query;
         this.GL_ARB_shader_storage_buffer_object = !capabilities.OpenGL43 && capabilities.GL_ARB_shader_storage_buffer_object;
+
+        // OpenGL 4.5
+        this.OpenGL45 = capabilities.OpenGL45;
+        this.GL_ARB_direct_state_access = !capabilities.OpenGL45 && capabilities.GL_ARB_direct_state_access;
     }
 
     @Override
-    protected GLVersion determineVersion() {
+    public GLVersion determineVersion() { //TODO: make protected
         ContextCapabilities capabilities = GLContext.getCapabilities();
 
         return Stream.of(GLVersion.values())
@@ -151,9 +145,7 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
 
     @Override
     public int glGetError() {
-        val res = GL11.glGetError();
-        super.debugCheckError();
-        return res;
+        return GL11.glGetError();
     }
 
     @Override
@@ -517,11 +509,14 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
     public void glBufferData(int target, long data_size, long data, int usage) {
         if (data_size <= Integer.MAX_VALUE) { //data is small enough to fit in a ByteBuffer
             GL15.glBufferData(target, DirectBufferHackery.wrapByte(data, (int) data_size), usage);
+            super.debugCheckError();
         } else { //LWJGL2 doesn't expose glBufferData with 64-bit data_size...
             //allocate storage and then delegate to glBufferSubData
             GL15.glBufferData(target, data_size, usage);
             super.debugCheckError();
-            this.glBufferSubData(target, 0L, data_size, data);
+            if (data != 0L) { //the buffer contents are actually being initialized
+                this.glBufferSubData(target, 0L, data_size, data);
+            }
         }
     }
 
@@ -1062,6 +1057,184 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
             super.debugCheckError();
         } else {
             GL43.glShaderStorageBlockBinding(program, storageBlockIndex, storageBlockBinding);
+            super.debugCheckError();
+        }
+    }
+
+    //
+    //
+    // OpenGL 4.5
+    //
+    //
+
+    @Override
+    public int glCreateBuffer() {
+        if (this.GL_ARB_direct_state_access) {
+            val res = ARBDirectStateAccess.glCreateBuffers();
+            super.debugCheckError();
+            return res;
+        } else {
+            val res = GL45.glCreateBuffers();
+            super.debugCheckError();
+            return res;
+        }
+    }
+
+    @Override
+    public void glNamedBufferData(int buffer, long data_size, long data, int usage) {
+        if (this.GL_ARB_direct_state_access) {
+            if (data_size <= Integer.MAX_VALUE) { //data is small enough to fit in a ByteBuffer
+                ARBDirectStateAccess.glNamedBufferData(buffer, DirectBufferHackery.wrapByte(data, (int) data_size), usage);
+                super.debugCheckError();
+            } else { //LWJGL2 doesn't expose glNamedBufferData with 64-bit data_size...
+                //allocate storage and then delegate to glNamedBufferSubData
+                ARBDirectStateAccess.glNamedBufferData(buffer, data_size, usage);
+                super.debugCheckError();
+                if (data != 0L) { //the buffer contents are actually being initialized
+                    this.glNamedBufferSubData(buffer, 0L, data_size, data);
+                }
+            }
+        } else {
+            if (data_size <= Integer.MAX_VALUE) { //data is small enough to fit in a ByteBuffer
+                GL45.glNamedBufferData(buffer, DirectBufferHackery.wrapByte(data, (int) data_size), usage);
+                super.debugCheckError();
+            } else { //LWJGL2 doesn't expose glNamedBufferData with 64-bit data_size...
+                //allocate storage and then delegate to glNamedBufferSubData
+                GL45.glNamedBufferData(buffer, data_size, usage);
+                super.debugCheckError();
+                if (data != 0L) { //the buffer contents are actually being initialized
+                    this.glNamedBufferSubData(buffer, 0L, data_size, data);
+                }
+            }
+        }
+    }
+
+    @Override
+    public void glNamedBufferData(int buffer, @NonNull ByteBuffer data, int usage) {
+        if (this.GL_ARB_direct_state_access) {
+            ARBDirectStateAccess.glNamedBufferData(buffer, data, usage);
+            super.debugCheckError();
+        } else {
+            GL45.glNamedBufferData(buffer, data, usage);
+            super.debugCheckError();
+        }
+    }
+
+    @Override
+    public void glNamedBufferSubData(int buffer, long offset, long data_size, long data) {
+        if (this.GL_ARB_direct_state_access) {
+            if (data_size <= Integer.MAX_VALUE) { //data is small enough to fit in a ByteBuffer
+                ARBDirectStateAccess.glNamedBufferSubData(buffer, offset, DirectBufferHackery.wrapByte(data, (int) data_size));
+                super.debugCheckError();
+            } else { //LWJGL2 doesn't expose glNamedBufferSubData with 64-bit data_size...
+                //upload data in increments of Integer.MAX_VALUE
+                for (long uploaded = 0L; uploaded < data_size; ) {
+                    int blockSize = (int) min(uploaded - offset, Integer.MAX_VALUE);
+                    ARBDirectStateAccess.glNamedBufferSubData(buffer, offset + uploaded, DirectBufferHackery.wrapByte(data + uploaded, blockSize));
+                    super.debugCheckError();
+                    uploaded += blockSize;
+                }
+            }
+        } else {
+            if (data_size <= Integer.MAX_VALUE) { //data is small enough to fit in a ByteBuffer
+                GL45.glNamedBufferSubData(buffer, offset, DirectBufferHackery.wrapByte(data, (int) data_size));
+                super.debugCheckError();
+            } else { //LWJGL2 doesn't expose glNamedBufferSubData with 64-bit data_size...
+                //upload data in increments of Integer.MAX_VALUE
+                for (long uploaded = 0L; uploaded < data_size; ) {
+                    int blockSize = (int) min(uploaded - offset, Integer.MAX_VALUE);
+                    GL45.glNamedBufferSubData(buffer, offset + uploaded, DirectBufferHackery.wrapByte(data + uploaded, blockSize));
+                    super.debugCheckError();
+                    uploaded += blockSize;
+                }
+            }
+        }
+    }
+
+    @Override
+    public void glNamedBufferSubData(int buffer, long offset, @NonNull ByteBuffer data) {
+        if (this.GL_ARB_direct_state_access) {
+            ARBDirectStateAccess.glNamedBufferSubData(buffer, offset, data);
+            super.debugCheckError();
+        } else {
+            GL45.glNamedBufferSubData(buffer, offset, data);
+            super.debugCheckError();
+        }
+    }
+
+    @Override
+    public void glGetNamedBufferSubData(int buffer, long offset, long data_size, long data) {
+        if (this.GL_ARB_direct_state_access) {
+            if (data_size <= Integer.MAX_VALUE) { //data is small enough to fit in a ByteBuffer
+                ARBDirectStateAccess.glGetNamedBufferSubData(buffer, offset, DirectBufferHackery.wrapByte(data, (int) data_size));
+                super.debugCheckError();
+            } else { //LWJGL2 doesn't expose glGetNamedBufferSubData with 64-bit data_size...
+                //download data in increments of Integer.MAX_VALUE
+                for (long downloaded = 0L; downloaded < data_size; ) {
+                    int blockSize = (int) min(downloaded - offset, Integer.MAX_VALUE);
+                    ARBDirectStateAccess.glGetNamedBufferSubData(buffer, offset + downloaded, DirectBufferHackery.wrapByte(data + downloaded, blockSize));
+                    super.debugCheckError();
+                    downloaded += blockSize;
+                }
+            }
+        } else {
+            if (data_size <= Integer.MAX_VALUE) { //data is small enough to fit in a ByteBuffer
+                GL45.glGetNamedBufferSubData(buffer, offset, DirectBufferHackery.wrapByte(data, (int) data_size));
+                super.debugCheckError();
+            } else { //LWJGL2 doesn't expose glGetNamedBufferSubData with 64-bit data_size...
+                //download data in increments of Integer.MAX_VALUE
+                for (long downloaded = 0L; downloaded < data_size; ) {
+                    int blockSize = (int) min(downloaded - offset, Integer.MAX_VALUE);
+                    GL45.glGetNamedBufferSubData(buffer, offset + downloaded, DirectBufferHackery.wrapByte(data + downloaded, blockSize));
+                    super.debugCheckError();
+                    downloaded += blockSize;
+                }
+            }
+        }
+    }
+
+    @Override
+    public void glGetNamedBufferSubData(int buffer, long offset, @NonNull ByteBuffer data) {
+        if (this.GL_ARB_direct_state_access) {
+            ARBDirectStateAccess.glGetNamedBufferSubData(buffer, offset, data);
+            super.debugCheckError();
+        } else {
+            GL45.glGetNamedBufferSubData(buffer, offset, data);
+            super.debugCheckError();
+        }
+    }
+
+    @Override
+    public long glMapNamedBuffer(int buffer, int usage) {
+        if (this.GL_ARB_direct_state_access) {
+            val res = PUnsafe.pork_directBufferAddress(ARBDirectStateAccess.glMapNamedBuffer(buffer, usage, null));
+            super.debugCheckError();
+            return res;
+        } else {
+            val res = PUnsafe.pork_directBufferAddress(GL45.glMapNamedBuffer(buffer, usage, null));
+            super.debugCheckError();
+            return res;
+        }
+    }
+
+    @Override
+    public void glUnmapNamedBuffer(int buffer) {
+        if (this.GL_ARB_direct_state_access) {
+            ARBDirectStateAccess.glUnmapNamedBuffer(buffer);
+            super.debugCheckError();
+        } else {
+            GL45.glUnmapNamedBuffer(buffer);
+            super.debugCheckError();
+        }
+    }
+
+    @Override
+    public void glCopyNamedBufferSubData(int readBuffer, int writeBuffer, long readOffset, long writeOffset, long size) {
+        if (this.GL_ARB_direct_state_access) {
+            ARBDirectStateAccess.glCopyNamedBufferSubData(readBuffer, writeBuffer, readOffset, writeOffset, size);
+            super.debugCheckError();
+        } else {
+            GL45.glCopyNamedBufferSubData(readBuffer, writeBuffer, readOffset, writeOffset, size);
             super.debugCheckError();
         }
     }

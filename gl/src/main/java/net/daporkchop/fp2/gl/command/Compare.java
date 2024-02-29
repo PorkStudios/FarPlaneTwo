@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,21 +15,29 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.command;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+import static net.daporkchop.fp2.gl.OpenGLConstants.*;
+
 /**
  * @author DaPorkchop_
  */
+@RequiredArgsConstructor
+@Getter
 public enum Compare {
-    NEVER,
-    LESS,
-    EQUAL,
-    LESS_OR_EQUAL,
-    GREATER,
-    NOT_EQUAL,
-    GREATER_OR_EQUAL,
-    ALWAYS;
+    NEVER(GL_NEVER),
+    LESS(GL_LESS),
+    EQUAL(GL_EQUAL),
+    LESS_OR_EQUAL(GL_LEQUAL),
+    GREATER(GL_GREATER),
+    NOT_EQUAL(GL_NOTEQUAL),
+    GREATER_OR_EQUAL(GL_GEQUAL),
+    ALWAYS(GL_ALWAYS);
+
+    private final int compare;
 }

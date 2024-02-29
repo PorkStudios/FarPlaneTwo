@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,21 +15,29 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.command;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+import static net.daporkchop.fp2.gl.OpenGLConstants.*;
+
 /**
  * @author DaPorkchop_
  */
+@RequiredArgsConstructor
+@Getter
 public enum StencilOperation {
-    KEEP,
-    ZERO,
-    REPLACE,
-    INCREMENT_AND_CLAMP,
-    DECREMENT_AND_CLAMP,
-    INVERT,
-    INCREMENT_AND_WRAP,
-    DECREMENT_AND_WRAP;
+    KEEP(GL_KEEP),
+    ZERO(GL_ZERO),
+    REPLACE(GL_REPLACE),
+    INCREMENT_AND_CLAMP(GL_INCR),
+    DECREMENT_AND_CLAMP(GL_DECR),
+    INVERT(GL_INVERT),
+    INCREMENT_AND_WRAP(GL_INCR_WRAP),
+    DECREMENT_AND_WRAP(GL_DECR_WRAP);
+
+    private final int operation;
 }

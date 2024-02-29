@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,10 +15,14 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.attribute;
+
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 
 /**
  * The usage hints which an OpenGL buffer's storage may be created with.
@@ -46,14 +50,18 @@ package net.daporkchop.fp2.gl.attribute;
  *
  * @author DaPorkchop_
  */
+@RequiredArgsConstructor
+@Getter
 public enum BufferUsage {
-    STREAM_DRAW,
-    STREAM_READ,
-    STREAM_COPY,
-    STATIC_DRAW,
-    STATIC_READ,
-    STATIC_COPY,
-    DYNAMIC_READ,
-    DYNAMIC_DRAW,
-    DYNAMIC_COPY;
+    STREAM_DRAW(GL_STREAM_DRAW),
+    STREAM_READ(GL_STREAM_READ),
+    STREAM_COPY(GL_STREAM_COPY),
+    STATIC_DRAW(GL_STATIC_DRAW),
+    STATIC_READ(GL_STATIC_READ),
+    STATIC_COPY(GL_STATIC_COPY),
+    DYNAMIC_READ(GL_DYNAMIC_READ),
+    DYNAMIC_DRAW(GL_DYNAMIC_DRAW),
+    DYNAMIC_COPY(GL_DYNAMIC_COPY);
+
+    private final int usage;
 }

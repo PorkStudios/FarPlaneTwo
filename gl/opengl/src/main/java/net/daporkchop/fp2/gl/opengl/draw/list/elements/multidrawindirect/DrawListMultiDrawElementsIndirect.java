@@ -23,9 +23,8 @@ import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.draw.list.DrawCommandIndexed;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
-import net.daporkchop.fp2.gl.opengl.GLEnumUtil;
-import net.daporkchop.fp2.gl.opengl.buffer.BufferTarget;
-import net.daporkchop.fp2.gl.opengl.buffer.GLBuffer;
+import net.daporkchop.fp2.gl.buffer.BufferTarget;
+import net.daporkchop.fp2.gl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.opengl.command.state.State;
 import net.daporkchop.fp2.gl.opengl.command.state.StateProperties;
 import net.daporkchop.fp2.gl.opengl.command.state.StateValueProperty;
@@ -60,7 +59,7 @@ public class DrawListMultiDrawElementsIndirect extends AbstractDrawListImpl<Draw
         this.buffer = this.gl().createBuffer(BufferUsage.STREAM_DRAW);
 
         IndexFormatImpl format = this.binding.indices().format();
-        this.indexType = GLEnumUtil.from(format.type());
+        this.indexType = format.type().type();
         this.indexSize = format.size();
     }
 

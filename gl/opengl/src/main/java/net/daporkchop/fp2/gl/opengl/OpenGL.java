@@ -62,9 +62,7 @@ import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureFormatBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.image.PixelFormatBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.image.PixelFormatFactory;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.image.PixelFormatImpl;
-import net.daporkchop.fp2.gl.opengl.buffer.GLBuffer;
-import net.daporkchop.fp2.gl.opengl.buffer.SimpleGLBufferImpl;
-import net.daporkchop.fp2.gl.opengl.buffer.UploadCopyingGLBufferImpl;
+import net.daporkchop.fp2.gl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.opengl.command.CommandBufferBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.draw.DrawLayoutBuilderImpl;
 import net.daporkchop.fp2.gl.opengl.draw.DrawLayoutImpl;
@@ -170,7 +168,7 @@ public class OpenGL implements GL {
             this.api = api;
         }
 
-        this.version = this.api.version();
+        this.version = this.api.determineVersion();
         this.preserveInputGlState = true;
 
         { //get supported extensions
@@ -277,9 +275,7 @@ public class OpenGL implements GL {
     }
 
     public GLBuffer createBuffer(@NonNull BufferUsage usage) {
-        return GLExtension.GL_ARB_copy_buffer.supported(this.env())
-                ? new UploadCopyingGLBufferImpl(this, usage)
-                : new SimpleGLBufferImpl(this, usage);
+        return GLBuffer.create((net.daporkchop.fp2.gl.OpenGL) this.api, usage);
     }
 
     @Override

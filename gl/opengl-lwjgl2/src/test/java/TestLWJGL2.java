@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -36,6 +36,7 @@ public class TestLWJGL2 {
     private static void hackNatives() {
         String paths = System.getProperty("java.library.path");
         String nativesDir = "/media/daporkchop/PortableIDE/.gradle/caches/minecraft/net/minecraft/natives/1.12.2";
+        nativesDir = System.getenv("nativesDirectory");
 
         if (Strings.isNullOrEmpty(paths)) {
             paths = nativesDir;

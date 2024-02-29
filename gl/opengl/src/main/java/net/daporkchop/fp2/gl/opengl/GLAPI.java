@@ -36,7 +36,7 @@ public interface GLAPI {
     //
     //
 
-    GLVersion version();
+    GLVersion determineVersion();
 
     //
     //

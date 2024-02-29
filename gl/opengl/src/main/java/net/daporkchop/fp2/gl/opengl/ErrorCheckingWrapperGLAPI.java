@@ -23,6 +23,8 @@ import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.common.asm.ClassloadingUtils;
+import net.daporkchop.fp2.gl.GLProfile;
+import net.daporkchop.fp2.gl.GLVersion;
 import net.daporkchop.fp2.gl.OpenGLConstants;
 import net.daporkchop.fp2.gl.OpenGLException;
 import org.objectweb.asm.ClassWriter;
@@ -33,6 +35,9 @@ import org.objectweb.asm.Type;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
+import java.util.Set;
 
 import static org.objectweb.asm.Opcodes.*;
 import static org.objectweb.asm.Type.*;
@@ -49,7 +54,7 @@ class ErrorCheckingWrapperGLAPI {
         String className = getInternalName(ErrorCheckingWrapperGLAPI.class) + "Impl";
 
         ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
-        writer.visit(V1_8, ACC_PUBLIC | ACC_FINAL, className, null, "java/lang/Object", new String[]{
+        writer.visit(V1_8, ACC_PUBLIC | ACC_FINAL, className, null, getInternalName(net.daporkchop.fp2.gl.OpenGL.class), new String[]{
                 Type.getInternalName(GLAPI.class),
         });
 
@@ -60,7 +65,19 @@ class ErrorCheckingWrapperGLAPI {
             MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "<init>", getMethodDescriptor(VOID_TYPE, getType(OpenGL.class), getType(GLAPI.class)), null, null);
 
             mv.visitVarInsn(ALOAD, 0);
-            mv.visitMethodInsn(INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false);
+            mv.visitVarInsn(ALOAD, 2);
+            mv.visitTypeInsn(CHECKCAST, getInternalName(net.daporkchop.fp2.gl.OpenGL.class));
+            mv.visitMethodInsn(INVOKEVIRTUAL, getInternalName(net.daporkchop.fp2.gl.OpenGL.class), "version", getMethodDescriptor(getType(GLVersion.class)), false);
+            mv.visitVarInsn(ALOAD, 2);
+            mv.visitTypeInsn(CHECKCAST, getInternalName(net.daporkchop.fp2.gl.OpenGL.class));
+            mv.visitMethodInsn(INVOKEVIRTUAL, getInternalName(net.daporkchop.fp2.gl.OpenGL.class), "profile", getMethodDescriptor(getType(GLProfile.class)), false);
+            mv.visitVarInsn(ALOAD, 2);
+            mv.visitTypeInsn(CHECKCAST, getInternalName(net.daporkchop.fp2.gl.OpenGL.class));
+            mv.visitMethodInsn(INVOKEVIRTUAL, getInternalName(net.daporkchop.fp2.gl.OpenGL.class), "extensions", getMethodDescriptor(getType(Set.class)), false);
+            mv.visitVarInsn(ALOAD, 2);
+            mv.visitTypeInsn(CHECKCAST, getInternalName(net.daporkchop.fp2.gl.OpenGL.class));
+            mv.visitMethodInsn(INVOKEVIRTUAL, getInternalName(net.daporkchop.fp2.gl.OpenGL.class), "forwardCompatibility", getMethodDescriptor(BOOLEAN_TYPE), false);
+            mv.visitMethodInsn(INVOKESPECIAL, getInternalName(net.daporkchop.fp2.gl.OpenGL.class), "<init>", getMethodDescriptor(VOID_TYPE, getType(GLVersion.class), getType(GLProfile.class), getType(Set.class), BOOLEAN_TYPE), false);
 
             mv.visitVarInsn(ALOAD, 0);
             mv.visitVarInsn(ALOAD, 1);
@@ -114,6 +131,37 @@ class ErrorCheckingWrapperGLAPI {
                 mv.visitLabel(tail);
                 mv.visitInsn(POP);
             }
+
+            mv.visitInsn(getType(method.getReturnType()).getOpcode(IRETURN));
+
+            mv.visitMaxs(0, 0);
+            mv.visitEnd();
+        }
+
+        //automatically generate all other methods
+        for (Method method : net.daporkchop.fp2.gl.OpenGL.class.getDeclaredMethods()) {
+            if ((method.getModifiers() & Modifier.FINAL) != 0 || Arrays.stream(GLAPI.class.getDeclaredMethods()).anyMatch(api -> method.getName().equals(api.getName()) && Arrays.equals(method.getParameterTypes(), api.getParameterTypes()))) {
+                continue;
+            }
+
+            MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, method.getName(), getMethodDescriptor(method), null, null);
+
+            //this.gl.ensureOpen();
+            mv.visitVarInsn(ALOAD, 0);
+            mv.visitFieldInsn(GETFIELD, className, "gl", getDescriptor(OpenGL.class));
+            mv.visitMethodInsn(INVOKEVIRTUAL, getInternalName(OpenGL.class), "ensureOpen", getMethodDescriptor(VOID_TYPE), false);
+
+            //proxy to delegate
+            mv.visitVarInsn(ALOAD, 0);
+            mv.visitFieldInsn(GETFIELD, className, "delegate", getDescriptor(GLAPI.class));
+            mv.visitTypeInsn(CHECKCAST, getInternalName(net.daporkchop.fp2.gl.OpenGL.class));
+            int idx = 1;
+            for (Class<?> param : method.getParameterTypes()) {
+                Type paramType = getType(param);
+                mv.visitVarInsn(paramType.getOpcode(ILOAD), idx);
+                idx += paramType.getSize();
+            }
+            mv.visitMethodInsn(INVOKEVIRTUAL, getInternalName(net.daporkchop.fp2.gl.OpenGL.class), method.getName(), getMethodDescriptor(method), false);
 
             mv.visitInsn(getType(method.getReturnType()).getOpcode(IRETURN));
 

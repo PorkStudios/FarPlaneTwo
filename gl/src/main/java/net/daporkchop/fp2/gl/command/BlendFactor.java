@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,32 +15,40 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.gl.command;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+import static net.daporkchop.fp2.gl.OpenGLConstants.*;
+
 /**
  * @author DaPorkchop_
  */
+@RequiredArgsConstructor
+@Getter
 public enum BlendFactor {
-    ZERO,
-    ONE,
-    SRC_COLOR,
-    ONE_MINUS_SRC_COLOR,
-    DST_COLOR,
-    ONE_MINUS_DST_COLOR,
-    SRC_ALPHA,
-    ONE_MINUS_SRC_ALPHA,
-    DST_ALPHA,
-    ONE_MINUS_DST_ALPHA,
-    CONSTANT_COLOR,
-    ONE_MINUS_CONSTANT_COLOR,
-    CONSTANT_ALPHA,
-    ONE_MINUS_CONSTANT_ALPHA,
-    SRC_ALPHA_SATURATE,
-    SRC1_COLOR,
-    ONE_MINUS_SRC1_COLOR,
-    SRC1_ALPHA,
-    ONE_MINUS_SRC1_ALPHA;
+    ZERO(GL_ZERO),
+    ONE(GL_ONE),
+    SRC_COLOR(GL_SRC_COLOR),
+    ONE_MINUS_SRC_COLOR(GL_ONE_MINUS_SRC_COLOR),
+    DST_COLOR(GL_DST_COLOR),
+    ONE_MINUS_DST_COLOR(GL_ONE_MINUS_DST_COLOR),
+    SRC_ALPHA(GL_SRC_ALPHA),
+    ONE_MINUS_SRC_ALPHA(GL_ONE_MINUS_SRC_ALPHA),
+    DST_ALPHA(GL_DST_ALPHA),
+    ONE_MINUS_DST_ALPHA(GL_ONE_MINUS_DST_ALPHA),
+    CONSTANT_COLOR(GL_CONSTANT_COLOR),
+    ONE_MINUS_CONSTANT_COLOR(GL_ONE_MINUS_CONSTANT_COLOR),
+    CONSTANT_ALPHA(GL_CONSTANT_ALPHA),
+    ONE_MINUS_CONSTANT_ALPHA(GL_ONE_MINUS_CONSTANT_ALPHA),
+    SRC_ALPHA_SATURATE(GL_SRC_ALPHA_SATURATE),
+    SRC1_COLOR(GL_SRC1_COLOR),
+    ONE_MINUS_SRC1_COLOR(GL_ONE_MINUS_SRC1_COLOR),
+    SRC1_ALPHA(GL_SRC1_ALPHA),
+    ONE_MINUS_SRC1_ALPHA(GL_ONE_MINUS_SRC1_ALPHA);
+
+    private final int factor;
 }

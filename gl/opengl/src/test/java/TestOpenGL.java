@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -81,6 +81,8 @@ public class TestOpenGL {
     public static final int WINDOW_SIZE_H = WINDOW_SIZE_W;
 
     public static void run(@NonNull BooleanSupplier closeRequested, @NonNull Runnable swapAndSync) {
+        System.setProperty("fp2.gl.opengl.debug", "true");
+
         try (GL gl = GL.builder()
                 .withResourceProvider(id -> {
                     InputStream in = TestOpenGL.class.getResourceAsStream(id.path());

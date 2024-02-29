@@ -19,6 +19,8 @@
 
 package net.daporkchop.fp2.gl;
 
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.common.GlobalProperties;
@@ -40,6 +42,7 @@ import static net.daporkchop.fp2.gl.OpenGLConstants.*;
  *
  * @author DaPorkchop_
  */
+@AllArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 public abstract class OpenGL {
     public static final boolean DEBUG = Boolean.getBoolean("fp2.gl.opengl.debug");
@@ -471,4 +474,41 @@ public abstract class OpenGL {
 
     //GL_ARB_shader_storage_buffer_object
     public abstract void glShaderStorageBlockBinding(int program, int storageBlockIndex, int storageBlockBinding);
+
+    //
+    //
+    // OpenGL 4.5
+    //
+    //
+
+    //GL_ARB_direct_state_access
+    public abstract int glCreateBuffer();
+
+    //GL_ARB_direct_state_access
+    public abstract void glNamedBufferData(int buffer, long data_size, long data, int usage);
+
+    //GL_ARB_direct_state_access
+    public abstract void glNamedBufferData(int buffer, @NonNull ByteBuffer data, int usage);
+
+    //GL_ARB_direct_state_access
+    public abstract void glNamedBufferSubData(int buffer, long offset, long data_size, long data);
+
+    //GL_ARB_direct_state_access
+    public abstract void glNamedBufferSubData(int buffer, long offset, @NonNull ByteBuffer data);
+
+    //GL_ARB_direct_state_access
+    public abstract void glGetNamedBufferSubData(int buffer, long offset, long data_size, long data);
+
+    //GL_ARB_direct_state_access
+    public abstract void glGetNamedBufferSubData(int buffer, long offset, @NonNull ByteBuffer data);
+
+    //GL_ARB_direct_state_access
+    public abstract long glMapNamedBuffer(int buffer, int usage);
+
+    //GL_ARB_direct_state_access
+    public abstract void glUnmapNamedBuffer(int buffer);
+
+    //GL_ARB_direct_state_access
+    public abstract void glCopyNamedBufferSubData(int readBuffer, int writeBuffer, long readOffset, long writeOffset, long size);
+
 }
