@@ -17,22 +17,46 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.opengl.draw.shader;
+package net.daporkchop.fp2.gl.shader.source;
 
+import lombok.Data;
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.draw.DrawLayout;
-import net.daporkchop.fp2.gl.opengl.shader.BaseShaderBuilderImpl;
-import net.daporkchop.fp2.gl.opengl.shader.BaseShaderImpl;
-import net.daporkchop.fp2.gl.shader.ShaderType;
-import net.daporkchop.fp2.gl.shader.source.SourceLine;
-import net.daporkchop.fp2.gl.draw.shader.FragmentShader;
-import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
+import lombok.With;
+import net.daporkchop.fp2.api.util.Identifier;
 
 /**
+ * A single line of source code, along with metadata describing its location.
+ *
  * @author DaPorkchop_
  */
-public class FragmentShaderImpl extends BaseShaderImpl<DrawLayout> implements FragmentShader {
-    public FragmentShaderImpl(@NonNull BaseShaderBuilderImpl<?, DrawLayout> builder, @NonNull SourceLine... lines) throws ShaderCompilationException {
-        super(builder, ShaderType.FRAGMENT, lines);
+@Data
+public final class SourceLine {
+    @With
+    @NonNull
+    private final String text;
+
+    @NonNull
+    private final Identifier location;
+    private final int lineNumber;
+
+    @Override
+    public String toString() {
+        return this.toString(null, true);
+    }
+
+    public String toString(String prefix) {
+        return this.toString(prefix, true);
+    }
+
+    public String toString(String prefix, boolean includeText) {
+        StringBuilder builder = new StringBuilder();
+        if (prefix != null) {
+            builder.append(prefix).append(' ');
+        }
+        builder.append("at <").append(this.location).append(' ').append(this.lineNumber).append('>');
+        if (includeText) {
+            builder.append(": ").append(this.text);
+        }
+        return builder.toString();
     }
 }

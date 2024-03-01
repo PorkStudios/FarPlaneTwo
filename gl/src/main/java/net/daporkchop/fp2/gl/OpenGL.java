@@ -56,8 +56,10 @@ public abstract class OpenGL {
 
     private final GLVersion version;
     private final GLProfile profile;
-    private final Set<GLExtension> extensions;
+    private final Set<GLExtension> extensions; //a set of the supported extensions, excluding those whose features are already available because they're core features in the current OpenGL version
     private final boolean forwardCompatibility;
+
+    private final Limits limits;
 
     protected OpenGL() {
         this.version = this.determineVersion();
@@ -108,6 +110,8 @@ public abstract class OpenGL {
                 }
             }
         }
+
+        this.limits = new Limits(this);
     }
 
     //
@@ -120,6 +124,16 @@ public abstract class OpenGL {
      * @return the maximum OpenGL version supported by the current context
      */
     protected abstract GLVersion determineVersion();
+
+    /**
+     * Checks if the features provided by the given OpenGL extension are supported by the current context.
+     *
+     * @param extension the OpenGL extension
+     * @return {@code true} if the features provided by the given OpenGL extension are supported by the current context
+     */
+    public final boolean supports(GLExtension extension) {
+        return extension.supported(this);
+    }
 
     /**
      * If debugging is enabled, checks if an OpenGL error has occurred.
@@ -511,4 +525,25 @@ public abstract class OpenGL {
     //GL_ARB_direct_state_access
     public abstract void glCopyNamedBufferSubData(int readBuffer, int writeBuffer, long readOffset, long writeOffset, long size);
 
+    /**
+     * Stores the upper limits for various features supported by an OpenGL context.
+     *
+     * @author DaPorkchop_
+     */
+    @Getter
+    public static final class Limits {
+        private final int maxFragmentColors;
+        private final int maxShaderStorageBuffers;
+        private final int maxTextureUnits;
+        private final int maxVertexAttributes;
+        private final int maxUniformBuffers;
+
+        Limits(OpenGL gl) {
+            this.maxFragmentColors = gl.glGetInteger(GL_MAX_DRAW_BUFFERS);
+            this.maxShaderStorageBuffers = gl.supports(GLExtension.GL_ARB_shader_storage_buffer_object) ? gl.glGetInteger(GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS) : 0;
+            this.maxTextureUnits = gl.glGetInteger(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS);
+            this.maxVertexAttributes = gl.glGetInteger(GL_MAX_VERTEX_ATTRIBS);
+            this.maxUniformBuffers = gl.glGetInteger(GL_MAX_UNIFORM_BUFFER_BINDINGS);
+        }
+    }
 }

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,49 +15,26 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
-package net.daporkchop.fp2.gl.opengl.shader.source;
-
-import lombok.Data;
-import lombok.NonNull;
-import lombok.With;
-import net.daporkchop.fp2.api.util.Identifier;
+package net.daporkchop.fp2.gl.attribute;
 
 /**
- * A single line of source code, along with metadata describing its location.
+ * All things which an attribute format may be used for.
  *
  * @author DaPorkchop_
  */
-@Data
-public final class SourceLine {
-    @With
-    @NonNull
-    private final String text;
-
-    @NonNull
-    private final Identifier location;
-    private final int lineNumber;
-
-    @Override
-    public String toString() {
-        return this.toString(null, true);
-    }
-
-    public String toString(String prefix) {
-        return this.toString(prefix, true);
-    }
-
-    public String toString(String prefix, boolean includeText) {
-        StringBuilder builder = new StringBuilder();
-        if (prefix != null) {
-            builder.append(prefix).append(' ');
-        }
-        builder.append("at <").append(this.location).append(' ').append(this.lineNumber).append('>');
-        if (includeText) {
-            builder.append(": ").append(this.text);
-        }
-        return builder.toString();
-    }
+public enum AttributeTarget {
+    /**
+     * Buffers using this attribute format contain data which may be used as vertex attributes.
+     */
+    VERTEX_ATTRIBUTE,
+    /**
+     * Buffers using this attribute format contain data which may be accessed from shaders through a uniform buffer.
+     */
+    UBO,
+    /**
+     * Buffers using this attribute format contain data which may be accessed from shaders through a shader storage buffer.
+     */
+    SSBO,
 }

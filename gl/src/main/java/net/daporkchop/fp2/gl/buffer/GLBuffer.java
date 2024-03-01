@@ -46,7 +46,7 @@ public abstract class GLBuffer implements AutoCloseable {
      * @return the created buffer
      */
     public static GLBuffer create(OpenGL gl, BufferUsage usage) {
-        if (GLExtension.GL_ARB_direct_state_access.supported(gl)) {
+        if (gl.supports(GLExtension.GL_ARB_direct_state_access)) {
             return new DSAGLBufferImpl(gl, usage);
         } else {
             return new BasicGLBufferImpl(gl, usage);

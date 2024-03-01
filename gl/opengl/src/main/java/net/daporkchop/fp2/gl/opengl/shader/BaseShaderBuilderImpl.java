@@ -25,11 +25,12 @@ import net.daporkchop.fp2.gl.layout.BaseLayout;
 import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.layout.BaseLayoutImpl;
-import net.daporkchop.fp2.gl.opengl.shader.source.Preprocessor;
-import net.daporkchop.fp2.gl.opengl.shader.source.SourceLine;
+import net.daporkchop.fp2.gl.shader.source.Preprocessor;
+import net.daporkchop.fp2.gl.shader.source.SourceLine;
 import net.daporkchop.fp2.gl.shader.BaseShader;
 import net.daporkchop.fp2.gl.shader.BaseShaderBuilder;
 import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
+import net.daporkchop.fp2.gl.shader.ShaderType;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -41,7 +42,6 @@ import java.util.Map;
  */
 public abstract class BaseShaderBuilderImpl<S extends BaseShader<L>, L extends BaseLayout> implements BaseShaderBuilder<S> {
     protected final OpenGL gl;
-    protected final L layout;
 
     protected final ShaderType type;
     protected final Preprocessor preprocessor;
@@ -49,7 +49,6 @@ public abstract class BaseShaderBuilderImpl<S extends BaseShader<L>, L extends B
     public BaseShaderBuilderImpl(@NonNull OpenGL gl, @NonNull ShaderType type, @NonNull L layout) {
         this.gl = gl;
         this.type = type;
-        this.layout = layout;
 
         this.preprocessor = new Preprocessor(this.gl.resourceProvider());
 
