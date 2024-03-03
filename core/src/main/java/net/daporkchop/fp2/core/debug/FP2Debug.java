@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -65,8 +65,8 @@ public class FP2Debug {
 
             category.addBinding("reloadShaders", "0", ReloadableShaderProgram::reloadAll);
             category.addBinding("dropTiles", "9", () -> fp2.client().currentPlayer().ifPresent(player -> {
-                player.send(new CPacketClientConfig().config(null));
-                player.send(new CPacketClientConfig().config(fp2.globalConfig()));
+                player.send(new CPacketClientConfig(null));
+                player.send(new CPacketClientConfig(fp2.globalConfig()));
                 fp2.client().chat().debug("§aReloading session");
             }));
             category.addBinding("regenerateTiles", "9", KeyModifier.CONTROL, () -> fp2.client().currentPlayer().ifPresent(player -> {

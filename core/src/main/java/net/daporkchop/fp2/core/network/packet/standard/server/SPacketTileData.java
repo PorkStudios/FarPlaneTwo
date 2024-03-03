@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -19,9 +19,10 @@
 
 package net.daporkchop.fp2.core.network.packet.standard.server;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
-import lombok.Setter;
 import net.daporkchop.fp2.core.engine.TilePosCodec;
 import net.daporkchop.fp2.core.engine.tile.TileSnapshot;
 import net.daporkchop.fp2.core.network.IPacket;
@@ -33,10 +34,10 @@ import java.io.IOException;
 /**
  * @author DaPorkchop_
  */
+@AllArgsConstructor
+@NoArgsConstructor
 @Getter
-@Setter
 public class SPacketTileData implements IPacket {
-    @NonNull
     protected TileSnapshot tile;
 
     @Override

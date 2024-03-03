@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -127,15 +127,15 @@ public class ServerContext implements IFarServerContext {
             case 0: //there are no tiles to unload, do nothing
                 break;
             case 1: //we're only unloading a single tile
-                this.player.fp2_IFarPlayer_sendPacket(new SPacketUnloadTile().pos(unloadedPositions.get(0)));
+                this.player.fp2_IFarPlayer_sendPacket(new SPacketUnloadTile(unloadedPositions.get(0)));
                 break;
             default: //we're unloading more than one tile, batch it into a single packet
-                this.player.fp2_IFarPlayer_sendPacket(new SPacketUnloadTiles().positions(unloadedPositions));
+                this.player.fp2_IFarPlayer_sendPacket(new SPacketUnloadTiles(unloadedPositions));
                 break;
         }
 
         //send packets for loaded/updated tiles
-        loadedSnapshots.forEach(snapshot -> this.player.fp2_IFarPlayer_sendPacket(new SPacketTileData().tile(snapshot)));
+        loadedSnapshots.forEach(snapshot -> this.player.fp2_IFarPlayer_sendPacket(new SPacketTileData(snapshot)));
     }
 
     private void debugUpdate() {
