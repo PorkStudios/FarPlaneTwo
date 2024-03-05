@@ -31,11 +31,11 @@ import net.daporkchop.fp2.core.engine.ctx.ClientContext;
 import net.daporkchop.fp2.core.engine.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.network.packet.debug.server.SPacketDebugUpdateStatistics;
 import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
+import net.daporkchop.fp2.core.network.packet.standard.client.CPacketTileAck;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketHandshake;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionBegin;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionEnd;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketTileData;
-import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUnloadTile;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUnloadTiles;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUpdateConfig;
 import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
@@ -81,8 +81,6 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
             this.handle((SPacketSessionEnd) packet);
         } else if (packet instanceof SPacketTileData) {
             this.handle((SPacketTileData) packet);
-        } else if (packet instanceof SPacketUnloadTile) {
-            this.handle((SPacketUnloadTile) packet);
         } else if (packet instanceof SPacketUnloadTiles) {
             this.handle((SPacketUnloadTiles) packet);
         } else if (packet instanceof SPacketUpdateConfig.Merged) {
@@ -151,17 +149,9 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
         checkState(this.sessionOpen, "no session is currently open!");
         checkState(this.context != null, "active session has no render mode!");
 
+        this.send(new CPacketTileAck(packet.pos()));
+
         this.context.tileCache().receiveTile(packet.tile());
-        //TODO: tile compression on the network thread is simply too expensive and causes lots of issues... we need congestion control
-        //this.fp2_context.tileCache().receiveTile(uncheckedCast(packet.tile().compressed()));
-    }
-
-    @CalledWithMonitor
-    protected void handle(@NonNull SPacketUnloadTile packet) {
-        checkState(this.sessionOpen, "no session is currently open!");
-        checkState(this.context != null, "active session has no render mode!");
-
-        this.context.tileCache().unloadTile(packet.pos());
     }
 
     @CalledWithMonitor

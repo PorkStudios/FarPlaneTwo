@@ -30,7 +30,6 @@ import net.daporkchop.fp2.core.engine.tile.TileSnapshot;
 import net.daporkchop.fp2.core.engine.server.tracking.Tracker;
 import net.daporkchop.fp2.core.network.packet.debug.server.SPacketDebugUpdateStatistics;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketTileData;
-import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUnloadTile;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUnloadTiles;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.server.player.IFarPlayerServer;
@@ -40,8 +39,7 @@ import net.daporkchop.lib.common.annotation.TransferOwnership;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.function.BiFunction;
+import java.util.Set;
 
 import static net.daporkchop.fp2.core.debug.FP2Debug.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -57,7 +55,8 @@ public class ServerContext implements IFarServerContext {
 
     protected final Tracker tracker;
 
-    protected final Map<TilePos, Optional<TileSnapshot>> sendQueue = DirectTilePosAccess.newPositionKeyedTreeMap();
+    protected Set<TilePos> unloadTilesQueue = DirectTilePosAccess.newPositionHashSet();
+    protected final Map<TilePos, TileSnapshot> sendTilesQueue = DirectTilePosAccess.newPositionKeyedTreeMap();
 
     protected FP2Config config;
 
@@ -94,48 +93,43 @@ public class ServerContext implements IFarServerContext {
         this.debugUpdate();
     }
 
+    @Override
+    public void notifyAck(@NonNull TilePos pos) {
+        //TODO: implement
+    }
+
     protected void flushSendQueue() {
         //check if the send queue contains any items to see if any additional work is necessary.
         // this is safe to call without synchronization: it only accesses the map size, which involves reading a single int field. the worst that can happen is we miss a
         // queued tile for one tick.
-        if (this.sendQueue.isEmpty()) {
+        if (this.unloadTilesQueue.isEmpty() && this.sendTilesQueue.isEmpty()) {
             //the send queue is empty, nothing to do!
             return;
         }
 
-        //make a snapshot of the queue contents, then clear it.
-        List<Map.Entry<TilePos, Optional<TileSnapshot>>> sendQueueSnapshot;
-        synchronized (this.sendQueue) {
-            sendQueueSnapshot = new ArrayList<>(this.sendQueue.entrySet());
-            this.sendQueue.clear();
+        Set<TilePos> unloadTilesQueue = null;
+        List<TileSnapshot> loadedSnapshots = null;
+        synchronized (this) {
+            if (!this.unloadTilesQueue.isEmpty()) {
+                unloadTilesQueue = this.unloadTilesQueue;
+                this.unloadTilesQueue = DirectTilePosAccess.newPositionHashSet(); //replace with a new set
+            }
+
+            if (!this.sendTilesQueue.isEmpty()) {
+                loadedSnapshots = new ArrayList<>(this.sendTilesQueue.values());
+                this.sendTilesQueue.clear();
+            }
         }
 
-        //group queue items by type
-        List<TilePos> unloadedPositions = DirectTilePosAccess.newPositionArrayList();
-        List<TileSnapshot> loadedSnapshots = new ArrayList<>();
-        sendQueueSnapshot.forEach(entry -> {
-            if (entry.getValue().isPresent()) { //non-empty optional, the tile is being loaded
-                loadedSnapshots.add(entry.getValue().get());
-            } else { //empty optional, the tile is being unloaded
-                unloadedPositions.add(entry.getKey());
-            }
-        });
-        sendQueueSnapshot = null; //allow GC
-
-        //send packets for unloaded tiles
-        switch (unloadedPositions.size()) {
-            case 0: //there are no tiles to unload, do nothing
-                break;
-            case 1: //we're only unloading a single tile
-                this.player.fp2_IFarPlayer_sendPacket(new SPacketUnloadTile(unloadedPositions.get(0)));
-                break;
-            default: //we're unloading more than one tile, batch it into a single packet
-                this.player.fp2_IFarPlayer_sendPacket(new SPacketUnloadTiles(unloadedPositions));
-                break;
+        //send packet for unloaded tiles
+        if (unloadTilesQueue != null) {
+            this.player.fp2_IFarPlayer_sendPacket(new SPacketUnloadTiles(unloadTilesQueue));
         }
 
         //send packets for loaded/updated tiles
-        loadedSnapshots.forEach(snapshot -> this.player.fp2_IFarPlayer_sendPacket(new SPacketTileData(snapshot)));
+        if (loadedSnapshots != null) {
+            loadedSnapshots.forEach(snapshot -> this.player.fp2_IFarPlayer_sendPacket(new SPacketTileData(snapshot)));
+        }
     }
 
     private void debugUpdate() {
@@ -160,21 +154,19 @@ public class ServerContext implements IFarServerContext {
         this.tracker.close();
     }
 
-    protected BiFunction<Optional<TileSnapshot>, Optional<TileSnapshot>, Optional<TileSnapshot>> sendQueueMergeOperator() {
-        return (prev, next) -> {
-            prev.ifPresent(TileSnapshot::release);
-            return next;
-        };
-    }
-
     @Override
     public void sendTile(@TransferOwnership @NonNull TileSnapshot snapshot) {
         if (this.closed) { //this context has been closed - silently discard all tile data
             return;
         }
 
-        synchronized (this.sendQueue) {
-            this.sendQueue.merge(snapshot.pos(), Optional.of(snapshot), this.sendQueueMergeOperator());
+        synchronized (this) {
+            this.unloadTilesQueue.remove(snapshot.pos());
+
+            TileSnapshot old = this.sendTilesQueue.put(snapshot.pos(), snapshot);
+            if (old != null) { //we're replacing another snapshot which was already queued, release it
+                old.release();
+            }
         }
     }
 
@@ -184,19 +176,13 @@ public class ServerContext implements IFarServerContext {
             return;
         }
 
-        synchronized (this.sendQueue) {
-            this.sendQueue.merge(pos, Optional.empty(), this.sendQueueMergeOperator());
-        }
-    }
-
-    @Override
-    public void sendMultiTileUnload(@NonNull Iterable<TilePos> positions) {
-        if (this.closed) { //this context has been closed - silently discard all tile data
-            return;
-        }
-
-        synchronized (this.sendQueue) {
-            positions.forEach(pos -> this.sendQueue.merge(pos, Optional.empty(), this.sendQueueMergeOperator()));
+        synchronized (this) {
+            if (this.unloadTilesQueue.add(pos)) {
+                TileSnapshot old = this.sendTilesQueue.remove(pos);
+                if (old != null) { //the tile was previously queued to be sent, release it
+                    old.release();
+                }
+            }
         }
     }
 }

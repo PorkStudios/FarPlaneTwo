@@ -25,6 +25,7 @@ import net.daporkchop.fp2.core.engine.ctx.ServerContext;
 import net.daporkchop.fp2.core.engine.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.core.network.packet.debug.client.CPacketDebugDropAllTiles;
 import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
+import net.daporkchop.fp2.core.network.packet.standard.client.CPacketTileAck;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionBegin;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionEnd;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUpdateConfig;
@@ -59,6 +60,8 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
         this.world.workerManager().rootExecutor().execute(() -> { //TODO: do this on the invoking thread
             if (packet instanceof CPacketClientConfig) {
                 this.handle((CPacketClientConfig) packet);
+            } else if (packet instanceof CPacketTileAck) {
+                this.handle((CPacketTileAck) packet);
             } else if (packet instanceof CPacketDebugDropAllTiles) {
                 this.handleDebug((CPacketDebugDropAllTiles) packet);
             } else {
@@ -69,6 +72,10 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
 
     protected void handle(@NonNull CPacketClientConfig packet) {
         this.updateConfig(this.serverConfig, packet.config());
+    }
+
+    protected void handle(@NonNull CPacketTileAck packet) {
+        this.context.notifyAck(packet.pos());
     }
 
     protected void handleDebug(@NonNull CPacketDebugDropAllTiles packet) {

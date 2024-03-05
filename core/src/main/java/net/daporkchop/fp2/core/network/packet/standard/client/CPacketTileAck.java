@@ -17,7 +17,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.network.packet.standard.server;
+package net.daporkchop.fp2.core.network.packet.standard.client;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -37,7 +37,7 @@ import java.io.IOException;
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
-public class SPacketUnloadTile implements IPacket {
+public class CPacketTileAck implements IPacket {
     protected TilePos pos;
 
     @Override

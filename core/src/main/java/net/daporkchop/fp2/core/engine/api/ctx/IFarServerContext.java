@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -23,10 +23,11 @@ import lombok.NonNull;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.api.server.IFarTileProvider;
-import net.daporkchop.fp2.core.engine.tile.TileSnapshot;
 import net.daporkchop.fp2.core.engine.server.tracking.Tracker;
+import net.daporkchop.fp2.core.engine.tile.TileSnapshot;
 import net.daporkchop.fp2.core.server.player.IFarPlayerServer;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
+import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
 import net.daporkchop.lib.common.annotation.TransferOwnership;
 
@@ -70,6 +71,14 @@ public interface IFarServerContext extends AutoCloseable {
     void notifyConfigChange(@NonNull FP2Config config);
 
     /**
+     * Called whenever the client acknowledges receiving a tile.
+     *
+     * @param pos the tile position
+     */
+    @CalledFromAnyThread
+    void notifyAck(@NonNull TilePos pos);
+
+    /**
      * Closes this context, deactivating it if needed and releasing any allocated resources.
      */
     @CalledFromServerThread
@@ -99,11 +108,4 @@ public interface IFarServerContext extends AutoCloseable {
      * @param pos the position of the tile to unload
      */
     void sendTileUnload(@NonNull TilePos pos);
-
-    /**
-     * Unloads the tiles at the given positions on the client.
-     *
-     * @param positions the positions of the tiles to unload
-     */
-    void sendMultiTileUnload(@NonNull Iterable<TilePos> positions);
 }

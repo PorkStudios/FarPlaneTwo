@@ -23,6 +23,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
+import net.daporkchop.fp2.core.engine.DirectTilePosAccess;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.TilePosCodec;
 import net.daporkchop.fp2.core.network.IPacket;
@@ -46,7 +47,7 @@ public class SPacketUnloadTiles implements IPacket {
     @Override
     public void read(@NonNull DataIn in) throws IOException {
         int size = in.readVarInt();
-        this.positions = new ArrayList<>(size);
+        this.positions = DirectTilePosAccess.newPositionArrayList(size);
         for (int i = 0; i < size; i++) {
             this.positions.add(TilePosCodec.readPos(in));
         }

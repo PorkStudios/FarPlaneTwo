@@ -23,6 +23,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
+import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.TilePosCodec;
 import net.daporkchop.fp2.core.engine.tile.TileSnapshot;
 import net.daporkchop.fp2.core.network.IPacket;
@@ -50,5 +51,9 @@ public class SPacketTileData implements IPacket {
         TilePosCodec.writePos(this.tile.pos(), out);
         this.tile.writeForNetwork(out);
         this.tile.release();
+    }
+
+    public final TilePos pos() {
+        return this.tile.pos();
     }
 }
