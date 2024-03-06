@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2021 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -18,19 +18,13 @@
  *
  */
 
-rootProject.name = 'FarPlaneTwo'
+dependencies {
+    apiShade project(":gl")
+    apiShade project(":common")
 
-include 'api'
-include 'common'
-include 'core'
-include 'core:log4j'
-include 'core:minecraft'
-include 'core:mixin'
-include 'resources'
-include 'gl'
-include 'gl:codegen'
-include 'gl:opengl'
-include 'gl:opengl-lwjgl2'
-include 'gl:opengl-lwjgl3'
-include 'mc:1.12.2-forge'
-include 'mc:1.16-forge'
+    implementationShade "net.daporkchop.lib:primitive-lambda:$porklibVersion"
+
+    implementationProvided "org.ow2.asm:asm-debug-all:$asmVersion"
+    implementationProvided "com.google.guava:guava:$guavaVersion"
+    implementationProvided "io.netty:netty-all:$nettyVersion"
+}

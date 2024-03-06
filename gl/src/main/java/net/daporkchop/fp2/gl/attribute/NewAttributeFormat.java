@@ -22,32 +22,57 @@ package net.daporkchop.fp2.gl.attribute;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.OpenGL;
 
+import java.util.EnumSet;
 import java.util.function.Function;
 
 /**
+ * @param <STRUCT> the struct type
  * @author DaPorkchop_
  */
-public interface AttributeFormat<S> extends BaseAttributeFormat {
+public interface NewAttributeFormat<STRUCT extends AttributeStruct> {
     /**
-     * @return the number of bytes used by each element in a {@link AttributeBuffer} using this format
+     * The number of bytes occupied by a single element using this format.
      */
-    @Override
     long size();
 
-    AttributeWriter<S> createWriter();
-
-    AttributeBuffer<S> createBuffer(@NonNull BufferUsage usage);
+    /**
+     * The {@link AttributeTarget} which this attribute format is suitable for.
+     */
+    EnumSet<AttributeTarget> validTargets();
 
     /**
+     * Checks if this attribute format is suitable for the given {@link AttributeTarget}.
+     *
+     * @param target the {@link AttributeTarget}
+     * @return {@code true} if this attribute format is suitable for the given {@link AttributeTarget}
+     */
+    default boolean supports(AttributeTarget target) {
+        return this.validTargets().contains(target);
+    }
+
+    /**
+     * Creates a new {@link NewAttributeWriter} for writing attributes using this attribute format.
+     *
+     * @return the created {@link NewAttributeWriter}
+     */
+    NewAttributeWriter<STRUCT> createWriter();
+
+    /**
+     * Creates a new {@link NewAttributeBuffer} for storing attributes using this attribute format.
+     *
+     * @return the created {@link NewAttributeBuffer}
+     */
+    NewAttributeBuffer<STRUCT> createBuffer();
+
+    /**
+     * @param <STRUCT> the struct type
      * @author DaPorkchop_
      */
-    interface Vertex<S> extends AttributeFormat<S> {
+    interface Vertex<STRUCT extends AttributeStruct> extends NewAttributeFormat<STRUCT> {
         /**
          * @return the number of vertex attribute binding locations taken up by this vertex attribute format
          */
-        default int occupiedVertexAttributes() {
-            throw new UnsupportedOperationException();
-        }
+        int occupiedVertexAttributes();
 
         /**
          * Configures the vertex attribute binding locations of all the vertex attributes referenced by this vertex attribute format.
@@ -57,8 +82,19 @@ public interface AttributeFormat<S> extends BaseAttributeFormat {
          * @param nameFormatter    a function for adjusting field names (e.g. adding a prefix or suffix)
          * @param baseBindingIndex the base vertex attribute binding index
          */
-        default void bindVertexAttributeLocations(@NonNull OpenGL gl, int program, @NonNull Function<String, String> nameFormatter, int baseBindingIndex) {
-            throw new UnsupportedOperationException();
-        }
+        void bindVertexAttributeLocations(@NonNull OpenGL gl, int program, @NonNull Function<String, String> nameFormatter, int baseBindingIndex);
+    }
+
+    /**
+     * @param <STRUCT> the struct type
+     * @author DaPorkchop_
+     */
+    interface Uniform<STRUCT extends AttributeStruct> extends NewAttributeFormat<STRUCT> {
+        /**
+         * Creates a new {@link NewUniformBuffer} for storing individual shader uniforms using this attribute format.
+         *
+         * @return the created {@link NewUniformBuffer}
+         */
+        NewUniformBuffer<STRUCT> createUniformBuffer();
     }
 }

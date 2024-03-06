@@ -177,6 +177,7 @@ class ErrorCheckingWrapperGLAPI {
 
     @SneakyThrows
     public GLAPI wrap(@NonNull OpenGL gl, @NonNull GLAPI api) {
-        return (GLAPI) CONSTRUCTOR.invoke(gl, api);
+        //TODO: return (GLAPI) CONSTRUCTOR.invoke(gl, api);
+        return api;
     }
 }

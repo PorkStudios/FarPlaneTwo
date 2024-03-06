@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,22 +15,36 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
-rootProject.name = 'FarPlaneTwo'
+package net.daporkchop.fp2.gl.codegen.struct.attribute;
 
-include 'api'
-include 'common'
-include 'core'
-include 'core:log4j'
-include 'core:minecraft'
-include 'core:mixin'
-include 'resources'
-include 'gl'
-include 'gl:codegen'
-include 'gl:opengl'
-include 'gl:opengl-lwjgl2'
-include 'gl:opengl-lwjgl3'
-include 'mc:1.12.2-forge'
-include 'mc:1.16-forge'
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+import static net.daporkchop.lib.common.util.PValidation.checkArg;
+
+/**
+ * @author DaPorkchop_
+ */
+@RequiredArgsConstructor
+@Getter
+public enum ShaderPrimitiveType {
+    UINT(Integer.BYTES, true, false),
+    INT(Integer.BYTES, true, true),
+    FLOAT(Float.BYTES, false, true),
+    ;
+
+    public static ShaderPrimitiveType from(JavaPrimitiveType type) {
+        if (type.integer()) {
+            return type.signed() ? INT : UINT;
+        } else {
+            checkArg(type.signed(), type);
+            return FLOAT;
+        }
+    }
+
+    private final int size;
+    private final boolean integer;
+    private final boolean signed;
+}
