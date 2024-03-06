@@ -21,51 +21,57 @@ package net.daporkchop.fp2.gl.codegen.struct.layout;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.ToString;
-import net.daporkchop.fp2.gl.codegen.struct.attribute.ComponentType;
-import net.daporkchop.fp2.gl.codegen.struct.attribute.JavaPrimitiveType;
+import net.daporkchop.fp2.gl.codegen.struct.attribute.AttributeType;
+import net.daporkchop.fp2.gl.codegen.struct.attribute.MatrixAttributeType;
 
 import static net.daporkchop.lib.common.util.PValidation.checkArg;
 
 /**
  * @author DaPorkchop_
  */
-@Getter
-@ToString
-@EqualsAndHashCode(callSuper = false)
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
 public final class MatrixLayout extends AttributeLayout {
-    private final JavaPrimitiveType physicalStorageType;
+    @Getter
+    private final VectorLayout colLayout;
+    private final long[] colOffsets;
 
-    private final long[][] componentOffsets;
-    private final int[] bufferIndicesPerCol;
-
-    private final int cols;
-    private final int rows;
-
-    public MatrixLayout(JavaPrimitiveType physicalStorageType, int cols, int rows, long[][] componentOffsets, int[] bufferIndices) {
+    public MatrixLayout(long size, long alignment, VectorLayout colLayout, long[] colOffsets) {
+        super(size, alignment);
+        int cols = colOffsets.length;
+        int rows = colLayout.components();
         checkArg(cols >= 2 && cols <= 4, "illegal matrix column count: %d", cols);
         checkArg(rows >= 2 && rows <= 4, "illegal matrix row count: %d", rows);
 
-        checkArg(componentOffsets.length == cols && bufferIndices.length == cols);
-        for (long[] row : componentOffsets) {
-            checkArg(row.length == rows);
+        this.colLayout = colLayout;
+        this.colOffsets = colOffsets;
+    }
+
+    /**
+     * @return the number of columns in this struct type
+     */
+    public int cols() {
+        return this.colOffsets.length;
+    }
+
+    /**
+     * Gets the offset of the column with the given index.
+     *
+     * @param index the column index
+     * @return the column's offset
+     */
+    public long colOffset(int index) {
+        return this.colOffsets[index];
+    }
+
+    @Override
+    public boolean isCompatible(AttributeType attributeType) {
+        if (!(attributeType instanceof MatrixAttributeType)) {
+            return false;
         }
 
-        this.physicalStorageType = physicalStorageType;
-
-        this.componentOffsets = componentOffsets;
-        this.bufferIndicesPerCol = bufferIndices;
-
-        this.cols = cols;
-        this.rows = rows;
-    }
-
-    public int cols() {
-        return this.cols;
-    }
-
-    public int rows() {
-        return this.rows;
+        MatrixAttributeType matrixAttributeType = (MatrixAttributeType) attributeType;
+        return this.cols() == matrixAttributeType.cols() && this.colLayout.isCompatible(matrixAttributeType.colType());
     }
 }

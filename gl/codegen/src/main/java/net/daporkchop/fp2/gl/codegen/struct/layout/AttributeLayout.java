@@ -19,16 +19,22 @@
 
 package net.daporkchop.fp2.gl.codegen.struct.layout;
 
+import lombok.Data;
+import net.daporkchop.fp2.gl.codegen.struct.attribute.AttributeType;
+
 /**
  * @author DaPorkchop_
  */
+@Data
 public abstract class AttributeLayout {
-    @Override
-    public abstract int hashCode();
+    private final long size;
+    private final long alignment;
 
-    @Override
-    public abstract boolean equals(Object obj);
-
-    @Override
-    public abstract String toString();
+    /**
+     * Checks if this attribute layout is compatible with the given {@link AttributeType}.
+     *
+     * @param attributeType the {@link AttributeType}
+     * @return {@code true} if this attribute layout is compatible with the given {@link AttributeType}
+     */
+    public abstract boolean isCompatible(AttributeType attributeType);
 }

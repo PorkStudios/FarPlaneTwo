@@ -39,13 +39,13 @@ import static org.objectweb.asm.Type.*;
 @RequiredArgsConstructor
 @Getter
 public enum JavaPrimitiveType {
-    UNSIGNED_BYTE(Byte.BYTES, true, false, 1 << Byte.SIZE, byte.class, BYTE_TYPE, I2B),
-    BYTE(Byte.BYTES, true, true, -((int) Byte.MIN_VALUE), byte.class, BYTE_TYPE, I2B),
-    UNSIGNED_SHORT(Character.SIZE, true, false, 1 << Character.SIZE, char.class, CHAR_TYPE, I2C),
-    SHORT(Short.BYTES, true, true, -((int) Short.MIN_VALUE), short.class, SHORT_TYPE, I2S),
-    UNSIGNED_INT(Integer.BYTES, true, false, 1L << Integer.SIZE, int.class, INT_TYPE, NOP),
-    INT(Integer.BYTES, true, true, -((long) Integer.MIN_VALUE), int.class, INT_TYPE, NOP),
-    FLOAT(Float.BYTES, false, true, Float.NaN, float.class, FLOAT_TYPE, -1),
+    UNSIGNED_BYTE(Byte.BYTES, true, false, 1 << Byte.SIZE, byte.class, BYTE_TYPE),
+    BYTE(Byte.BYTES, true, true, -((int) Byte.MIN_VALUE), byte.class, BYTE_TYPE),
+    UNSIGNED_SHORT(Character.SIZE, true, false, 1 << Character.SIZE, char.class, CHAR_TYPE),
+    SHORT(Short.BYTES, true, true, -((int) Short.MIN_VALUE), short.class, SHORT_TYPE),
+    UNSIGNED_INT(Integer.BYTES, true, false, 1L << Integer.SIZE, int.class, INT_TYPE),
+    INT(Integer.BYTES, true, true, -((long) Integer.MIN_VALUE), int.class, INT_TYPE),
+    FLOAT(Float.BYTES, false, true, Float.NaN, float.class, FLOAT_TYPE),
     ;
 
     private static final IdentityHashMap<Class<?>, JavaPrimitiveType> PRIMITIVE_CLASSES_TO_COMPONENT_TYPES = new IdentityHashMap<>();
@@ -69,6 +69,19 @@ public enum JavaPrimitiveType {
         throw new IllegalArgumentException("don't know how to handle " + clazz);
     }
 
+    public static JavaPrimitiveType from(ShaderPrimitiveType type) {
+        switch (type) {
+            case UINT:
+                return UNSIGNED_INT;
+            case INT:
+                return INT;
+            case FLOAT:
+                return FLOAT;
+        }
+
+        throw new IllegalArgumentException("don't know how to handle " + type);
+    }
+
     private final int size;
     private final boolean integer;
     private final boolean signed;
@@ -79,9 +92,6 @@ public enum JavaPrimitiveType {
     private final Type asmType;
 
     @Getter(AccessLevel.NONE)
-    private final int truncateIntegerOpcode;
-
-    @Getter(AccessLevel.NONE)
     private transient final String unsafeGetName;
     @Getter(AccessLevel.NONE)
     private transient final String unsafePutName;
@@ -90,14 +100,13 @@ public enum JavaPrimitiveType {
     @Getter(AccessLevel.NONE)
     private transient final String unsafePutDescriptor;
 
-    JavaPrimitiveType(int size, boolean integer, boolean signed, float inverseNormalizationFactor, Class<?> javaType, Type asmType, int truncateIntegerOpcode) {
+    JavaPrimitiveType(int size, boolean integer, boolean signed, float inverseNormalizationFactor, Class<?> javaType, Type asmType) {
         this.size = size;
         this.integer = integer;
         this.signed = signed;
         this.inverseNormalizationFactor = inverseNormalizationFactor;
         this.javaType = javaType;
         this.asmType = asmType;
-        this.truncateIntegerOpcode = truncateIntegerOpcode;
 
         String className = this.asmType.getClassName();
         className = Character.toUpperCase(className.charAt(0)) + className.substring(1);
@@ -158,9 +167,30 @@ public enum JavaPrimitiveType {
     public final void truncateInteger(MethodVisitor mv) {
         if (!this.integer) {
             throw new UnsupportedOperationException("truncate float");
-        } else if (this.truncateIntegerOpcode != NOP) {
-            mv.visitInsn(this.truncateIntegerOpcode);
         }
+
+        int opcode;
+        switch (this) {
+            case UNSIGNED_BYTE:
+                mv.visitIntInsn(SIPUSH, 0xFF);
+                opcode = IAND;
+                break;
+            case BYTE:
+                opcode = I2B;
+                break;
+            case UNSIGNED_SHORT:
+                opcode = I2C;
+                break;
+            case SHORT:
+                opcode = I2S;
+                break;
+            case UNSIGNED_INT:
+            case INT:
+                return;
+            default:
+                throw new IllegalStateException(this.name());
+        }
+        mv.visitInsn(opcode);
     }
 
     public final void convertToFloat(MethodVisitor mv) {

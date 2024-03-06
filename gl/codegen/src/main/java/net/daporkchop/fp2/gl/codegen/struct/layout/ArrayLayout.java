@@ -20,33 +20,52 @@
 package net.daporkchop.fp2.gl.codegen.struct.layout;
 
 import lombok.EqualsAndHashCode;
-import lombok.RequiredArgsConstructor;
+import lombok.Getter;
 import lombok.ToString;
+import net.daporkchop.fp2.gl.codegen.struct.attribute.ArrayAttributeType;
+import net.daporkchop.fp2.gl.codegen.struct.attribute.AttributeType;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-@ToString
-@EqualsAndHashCode(callSuper = false)
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
 public final class ArrayLayout extends AttributeLayout {
-    private final AttributeLayout[] elements;
-    private final long size;
+    @Getter
+    private final AttributeLayout elementLayout;
+    private final long[] elementOffsets;
+
+    public ArrayLayout(long size, long alignment, AttributeLayout elementLayout, long[] elementOffsets) {
+        super(size, alignment);
+
+        this.elementLayout = elementLayout;
+        this.elementOffsets = elementOffsets;
+    }
 
     /**
      * @return the number of elements in this array type
      */
     public int elementCount() {
-        return this.elements.length;
+        return this.elementOffsets.length;
     }
 
     /**
-     * Gets the layout of the element with the given index.
+     * Gets the offset of the element with the given index.
      *
      * @param index the element index
-     * @return the element's layout
+     * @return the element's offset
      */
-    public AttributeLayout elementLayout(int index) {
-        return this.elements[index];
+    public long elementOffset(int index) {
+        return this.elementOffsets[index];
+    }
+
+    @Override
+    public boolean isCompatible(AttributeType attributeType) {
+        if (!(attributeType instanceof ArrayAttributeType)) {
+            return false;
+        }
+
+        ArrayAttributeType arrayAttributeType = (ArrayAttributeType) attributeType;
+        return this.elementCount() == arrayAttributeType.elementCount() && this.elementLayout.isCompatible(arrayAttributeType.elementType());
     }
 }

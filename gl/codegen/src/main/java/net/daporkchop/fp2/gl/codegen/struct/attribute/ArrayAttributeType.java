@@ -19,13 +19,10 @@
 
 package net.daporkchop.fp2.gl.codegen.struct.attribute;
 
-import lombok.AccessLevel;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.ToString;
-import net.daporkchop.lib.common.annotation.param.Positive;
 import net.daporkchop.lib.primitive.lambda.IntObjConsumer;
 
 import static net.daporkchop.lib.common.util.PValidation.positive;
@@ -33,24 +30,24 @@ import static net.daporkchop.lib.common.util.PValidation.positive;
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @Getter
 @ToString
 @EqualsAndHashCode(callSuper = false)
 public final class ArrayAttributeType extends AttributeType {
-    public static ArrayAttributeType create(@NonNull AttributeType componentType, @Positive int length) {
-        return new ArrayAttributeType(componentType, positive(length, "length"));
-    }
-
     /**
      * This array type's component type.
      */
-    private final AttributeType componentType;
+    private final AttributeType elementType;
 
     /**
      * The number of elements in this array type.
      */
-    private final int length;
+    private final int elementCount;
+
+    public ArrayAttributeType(AttributeType elementType, int elementCount) {
+        this.elementType = elementType;
+        this.elementCount = positive(elementCount, "elementCount");
+    }
 
     /**
      * Runs the given action on each of the elements in this array type.
@@ -58,8 +55,8 @@ public final class ArrayAttributeType extends AttributeType {
      * @param action the action. For each element in this array type, the action will be invoked once with the element index and the element type
      */
     public void forEachElement(@NonNull IntObjConsumer<AttributeType> action) {
-        for (int index = 0; index < this.length; index++) {
-            action.accept(index, this.componentType);
+        for (int index = 0; index < this.elementCount; index++) {
+            action.accept(index, this.elementType);
         }
     }
 }

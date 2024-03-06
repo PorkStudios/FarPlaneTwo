@@ -31,7 +31,6 @@ import static net.daporkchop.lib.common.util.PValidation.checkArg;
 @Getter
 @ToString
 @EqualsAndHashCode(callSuper = false)
-@Deprecated
 public final class VectorAttributeType extends AttributeType {
     private final ComponentType componentType;
 
@@ -39,6 +38,11 @@ public final class VectorAttributeType extends AttributeType {
      * The number of components this vector type has.
      */
     private final int components;
+
+    public VectorAttributeType(ComponentType componentType) {
+        this.componentType = componentType;
+        this.components = 1;
+    }
 
     public VectorAttributeType(ComponentType componentType, int components) {
         checkArg(components >= 2 && components <= 4, "illegal vector component count: %d", components);

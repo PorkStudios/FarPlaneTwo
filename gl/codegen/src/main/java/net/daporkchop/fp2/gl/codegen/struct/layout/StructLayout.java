@@ -20,18 +20,28 @@
 package net.daporkchop.fp2.gl.codegen.struct.layout;
 
 import lombok.EqualsAndHashCode;
-import lombok.RequiredArgsConstructor;
 import lombok.ToString;
+import net.daporkchop.fp2.gl.codegen.struct.attribute.AttributeType;
+import net.daporkchop.fp2.gl.codegen.struct.attribute.StructAttributeType;
+
+import static net.daporkchop.lib.common.util.PValidation.checkArg;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-@ToString
-@EqualsAndHashCode(callSuper = false)
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
 public final class StructLayout extends AttributeLayout {
     private final AttributeLayout[] fields;
-    private final long size;
+    private final long[] fieldOffsets;
+
+    public StructLayout(long size, long alignment, AttributeLayout[] fields, long[] fieldOffsets) {
+        super(size, alignment);
+        checkArg(fields.length == fieldOffsets.length);
+
+        this.fields = fields;
+        this.fieldOffsets = fieldOffsets;
+    }
 
     /**
      * @return the number of fields in this struct type
@@ -48,5 +58,34 @@ public final class StructLayout extends AttributeLayout {
      */
     public AttributeLayout fieldLayout(int index) {
         return this.fields[index];
+    }
+
+    /**
+     * Gets the offset of the field with the given index.
+     *
+     * @param index the field index
+     * @return the field's offset
+     */
+    public long fieldOffset(int index) {
+        return this.fieldOffsets[index];
+    }
+
+    @Override
+    public boolean isCompatible(AttributeType attributeType) {
+        if (!(attributeType instanceof StructAttributeType)) {
+            return false;
+        }
+
+        StructAttributeType structAttributeType = (StructAttributeType) attributeType;
+        if (this.fieldCount() != structAttributeType.fieldCount()) {
+            return false;
+        }
+
+        for (int index = 0; index < this.fieldCount(); index++) {
+            if (!this.fieldLayout(index).isCompatible(structAttributeType.fieldType(index))) {
+                return false;
+            }
+        }
+        return true;
     }
 }

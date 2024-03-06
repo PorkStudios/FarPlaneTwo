@@ -19,34 +19,51 @@
 
 package net.daporkchop.fp2.gl.codegen.struct.layout;
 
-import lombok.AccessLevel;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.ToString;
+import net.daporkchop.fp2.gl.codegen.struct.attribute.AttributeType;
 import net.daporkchop.fp2.gl.codegen.struct.attribute.ComponentType;
 import net.daporkchop.fp2.gl.codegen.struct.attribute.JavaPrimitiveType;
+import net.daporkchop.fp2.gl.codegen.struct.attribute.VectorAttributeType;
+
+import static net.daporkchop.lib.common.util.PValidation.checkIndex;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
 @Getter
-@ToString
-@EqualsAndHashCode(callSuper = false)
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
 public final class VectorLayout extends AttributeLayout {
     private final ComponentType componentType;
     private final JavaPrimitiveType physicalStorageType;
 
-    @Getter(AccessLevel.NONE)
-    private final long[] componentOffsets;
-    private final int buffer;
+    /**
+     * The number of vector components.
+     */
+    private final int components;
 
-    public int components() {
-        return this.componentOffsets.length;
+    public VectorLayout(long size, long alignment, ComponentType componentType, JavaPrimitiveType physicalStorageType, int components) {
+        super(size, alignment);
+
+        this.componentType = componentType;
+        this.physicalStorageType = physicalStorageType;
+        this.components = components;
     }
 
     public long componentOffset(int index) {
-        return this.componentOffsets[index];
+        checkIndex(this.components, index);
+        return this.physicalStorageType.size() * (long) index;
+    }
+
+    @Override
+    public boolean isCompatible(AttributeType attributeType) {
+        if (!(attributeType instanceof VectorAttributeType)) {
+            return false;
+        }
+
+        VectorAttributeType vectorAttributeType = (VectorAttributeType) attributeType;
+        return this.components() == vectorAttributeType.components() && this.componentType.equals(vectorAttributeType.componentType());
     }
 }

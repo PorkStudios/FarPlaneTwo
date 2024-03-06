@@ -135,7 +135,7 @@ public class StructAttributeFactory {
         checkArg(declaredComponentTypes == 1, "exactly one component type must be declared");
 
         //parse the component type
-        MatrixAttributeType bottomComponentType;
+        AttributeType bottomComponentType;
         if (typeVector.length == 1) {
             bottomComponentType = of(typeVector[0]);
         } else if (typeMatrix.length == 1) {
@@ -152,23 +152,23 @@ public class StructAttributeFactory {
         }
 
         //unroll the (potentially multidimensional) array into a (chain of) ArrayAttributeType
-        ArrayAttributeType arrayType = ArrayAttributeType.create(bottomComponentType, lengths[lengths.length - 1]);
+        ArrayAttributeType arrayType = new ArrayAttributeType(bottomComponentType, lengths[lengths.length - 1]);
         for (int i = lengths.length - 2; i >= 0; i--) {
-            arrayType = ArrayAttributeType.create(arrayType, lengths[i]);
+            arrayType = new ArrayAttributeType(arrayType, lengths[i]);
         }
         return arrayType;
     }
 
-    private static MatrixAttributeType of(@NonNull ScalarType type) {
-        return MatrixAttributeType.createScalar(componentType(type));
+    private static VectorAttributeType of(@NonNull ScalarType type) {
+        return new VectorAttributeType(componentType(type));
     }
 
-    private static MatrixAttributeType of(@NonNull VectorType type) {
-        return MatrixAttributeType.createVector(componentType(type.componentType()), type.components());
+    private static VectorAttributeType of(@NonNull VectorType type) {
+        return new VectorAttributeType(componentType(type.componentType()), type.components());
     }
 
     private static MatrixAttributeType of(@NonNull MatrixType type) {
-        return MatrixAttributeType.createMatrix(componentType(type.componentType()), type.cols(), type.rows());
+        return new MatrixAttributeType(new VectorAttributeType(componentType(type.componentType()), type.rows()), type.cols());
     }
 
     private static ComponentType componentType(@NonNull ScalarType type) {
