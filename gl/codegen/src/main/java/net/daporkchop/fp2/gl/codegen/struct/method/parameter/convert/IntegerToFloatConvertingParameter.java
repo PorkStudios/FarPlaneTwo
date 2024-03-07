@@ -17,44 +17,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.codegen.struct.attribute;
+package net.daporkchop.fp2.gl.codegen.struct.method.parameter.convert;
 
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.ToString;
+import net.daporkchop.fp2.gl.codegen.struct.attribute.JavaPrimitiveType;
+import net.daporkchop.fp2.gl.codegen.struct.method.parameter.MethodParameter;
+import org.objectweb.asm.MethodVisitor;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
+import static org.objectweb.asm.Opcodes.*;
 
 /**
  * @author DaPorkchop_
  */
-@Getter
-@ToString
-@EqualsAndHashCode(callSuper = false)
-public final class MatrixAttributeType extends AttributeType {
-    /**
-     * The type of each column in this matrix type.
-     */
-    private final VectorAttributeType colType;
+public final class IntegerToFloatConvertingParameter extends AbstractConvertingParameter {
+    private final boolean normalize;
 
-    /**
-     * The number of columns this matrix type has.
-     */
-    private final int cols;
-
-    public MatrixAttributeType(VectorAttributeType colType, int cols) {
-        int rows = colType.components();
-        checkArg(cols >= 2 && cols <= 4, "illegal matrix column count: %d", cols);
-        checkArg(rows >= 2 && rows <= 4, "illegal matrix row count: %d", rows);
-
-        this.colType = colType;
-        this.cols = cols;
+    public IntegerToFloatConvertingParameter(MethodParameter parent, boolean normalize) {
+        super(JavaPrimitiveType.FLOAT, parent);
+        checkArg(parent.componentType().integer(), "not an integer type: %s", parent.componentType().integer());
+        this.normalize = normalize;
     }
 
-    /**
-     * @return the number of rows this matrix type has
-     */
-    public int rows() {
-        return this.colType.components();
+    @Override
+    protected void visitConvert(MethodVisitor mv) {
+        this.parent().componentType().convertToFloat(mv);
+
+        if (this.normalize) {
+            mv.visitLdcInsn(this.parent().componentType().normalizationFactor());
+            mv.visitInsn(FMUL);
+        }
     }
 }

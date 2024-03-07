@@ -27,7 +27,7 @@ import net.daporkchop.fp2.gl.codegen.struct.attribute.ComponentType;
 import net.daporkchop.fp2.gl.codegen.struct.attribute.JavaPrimitiveType;
 import net.daporkchop.fp2.gl.codegen.struct.attribute.VectorAttributeType;
 
-import static net.daporkchop.lib.common.util.PValidation.checkIndex;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_

@@ -25,34 +25,38 @@ import lombok.ToString;
 import net.daporkchop.fp2.gl.codegen.struct.attribute.AttributeType;
 import net.daporkchop.fp2.gl.codegen.struct.attribute.MatrixAttributeType;
 
-import static net.daporkchop.lib.common.util.PValidation.checkArg;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
+@Getter
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public final class MatrixLayout extends AttributeLayout {
-    @Getter
+    /**
+     * The layout of each column in this matrix type.
+     */
     private final VectorLayout colLayout;
-    private final long[] colOffsets;
+    /**
+     * The stride between matrix columns.
+     */
+    private final long colStride;
+    /**
+     * The number of columns in this matrix type.
+     */
+    private final int cols;
 
-    public MatrixLayout(long size, long alignment, VectorLayout colLayout, long[] colOffsets) {
+    public MatrixLayout(long size, long alignment, VectorLayout colLayout, long colStride, int cols) {
         super(size, alignment);
-        int cols = colOffsets.length;
+
         int rows = colLayout.components();
         checkArg(cols >= 2 && cols <= 4, "illegal matrix column count: %d", cols);
         checkArg(rows >= 2 && rows <= 4, "illegal matrix row count: %d", rows);
 
         this.colLayout = colLayout;
-        this.colOffsets = colOffsets;
-    }
-
-    /**
-     * @return the number of columns in this struct type
-     */
-    public int cols() {
-        return this.colOffsets.length;
+        this.colStride = colStride;
+        this.cols = cols;
     }
 
     /**
@@ -62,7 +66,8 @@ public final class MatrixLayout extends AttributeLayout {
      * @return the column's offset
      */
     public long colOffset(int index) {
-        return this.colOffsets[index];
+        checkIndex(this.cols(), index);
+        return this.colStride * index;
     }
 
     @Override
@@ -72,6 +77,6 @@ public final class MatrixLayout extends AttributeLayout {
         }
 
         MatrixAttributeType matrixAttributeType = (MatrixAttributeType) attributeType;
-        return this.cols() == matrixAttributeType.cols() && this.colLayout.isCompatible(matrixAttributeType.colType());
+        return this.cols == matrixAttributeType.cols() && this.colLayout.isCompatible(matrixAttributeType.colType());
     }
 }

@@ -17,44 +17,38 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.codegen.struct.attribute;
+package net.daporkchop.fp2.gl.codegen.struct.method.parameter.convert;
 
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.ToString;
+import net.daporkchop.fp2.gl.codegen.struct.method.parameter.MethodParameter;
+import org.objectweb.asm.MethodVisitor;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
+import static org.objectweb.asm.Opcodes.*;
 
 /**
  * @author DaPorkchop_
  */
-@Getter
-@ToString
-@EqualsAndHashCode(callSuper = false)
-public final class MatrixAttributeType extends AttributeType {
-    /**
-     * The type of each column in this matrix type.
-     */
-    private final VectorAttributeType colType;
-
-    /**
-     * The number of columns this matrix type has.
-     */
-    private final int cols;
-
-    public MatrixAttributeType(VectorAttributeType colType, int cols) {
-        int rows = colType.components();
-        checkArg(cols >= 2 && cols <= 4, "illegal matrix column count: %d", cols);
-        checkArg(rows >= 2 && rows <= 4, "illegal matrix row count: %d", rows);
-
-        this.colType = colType;
-        this.cols = cols;
+public final class IntegerToUnsignedConvertingParameter extends AbstractConvertingParameter {
+    public IntegerToUnsignedConvertingParameter(MethodParameter parent) {
+        super(parent.componentType().toUnsigned(), parent);
+        checkArg(parent.componentType().integer() && parent.componentType().signed(), "not a signed integer type: %s", parent.componentType());
     }
 
-    /**
-     * @return the number of rows this matrix type has
-     */
-    public int rows() {
-        return this.colType.components();
+    @Override
+    protected void visitConvert(MethodVisitor mv) {
+        switch (this.parent().componentType()) {
+            case BYTE:
+                mv.visitIntInsn(SIPUSH, 0xFF);
+                mv.visitInsn(IAND);
+                break;
+            case SHORT:
+                mv.visitInsn(I2C);
+                break;
+            case INT:
+                //we can't convert to an unsigned integer in java...
+                break;
+            default:
+                throw new IllegalArgumentException(this.parent().componentType().name());
+        }
     }
 }

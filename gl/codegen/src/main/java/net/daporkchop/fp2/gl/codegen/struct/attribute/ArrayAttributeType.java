@@ -25,7 +25,7 @@ import lombok.NonNull;
 import lombok.ToString;
 import net.daporkchop.lib.primitive.lambda.IntObjConsumer;
 
-import static net.daporkchop.lib.common.util.PValidation.positive;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_

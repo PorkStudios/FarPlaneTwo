@@ -22,7 +22,7 @@ package net.daporkchop.fp2.gl.codegen.struct.attribute;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-import static net.daporkchop.lib.common.util.PValidation.checkArg;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_

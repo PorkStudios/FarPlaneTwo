@@ -34,7 +34,7 @@ import net.daporkchop.fp2.gl.attribute.annotation.VectorType;
 import java.util.Arrays;
 import java.util.Comparator;
 
-import static net.daporkchop.lib.common.util.PValidation.checkArg;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_

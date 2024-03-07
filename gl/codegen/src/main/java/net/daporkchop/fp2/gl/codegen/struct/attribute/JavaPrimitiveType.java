@@ -29,7 +29,7 @@ import org.objectweb.asm.Type;
 
 import java.util.IdentityHashMap;
 
-import static net.daporkchop.lib.common.util.PValidation.checkArg;
+import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.objectweb.asm.Opcodes.*;
 import static org.objectweb.asm.Type.*;
 
@@ -134,6 +134,10 @@ public enum JavaPrimitiveType {
         return values()[this.ordinal() & ~1];
     }
 
+    /**
+     * Pops: {@code []}
+     * Pushes: {@code T}
+     */
     public final void load(MethodVisitor mv, int lvtIndex) {
         mv.visitVarInsn(this.asmType.getOpcode(ILOAD), lvtIndex);
         if (this.integer) {
@@ -141,6 +145,10 @@ public enum JavaPrimitiveType {
         }
     }
 
+    /**
+     * Pops: {@code T}
+     * Pushes: {@code []}
+     */
     public final void store(MethodVisitor mv, int lvtIndex) {
         if (this.integer) {
             this.truncateInteger(mv);
@@ -148,22 +156,42 @@ public enum JavaPrimitiveType {
         mv.visitVarInsn(this.asmType.getOpcode(ISTORE), lvtIndex);
     }
 
+    /**
+     * Pops: {@code T[], int}
+     * Pushes: {@code T}
+     */
     public final void arrayLoad(MethodVisitor mv) {
         mv.visitInsn(this.asmType.getOpcode(IALOAD));
     }
 
+    /**
+     * Pops: {@code T[], int, T}
+     * Pushes: {@code void}
+     */
     public final void arrayStore(MethodVisitor mv) {
         mv.visitInsn(this.asmType.getOpcode(IASTORE));
     }
 
+    /**
+     * Pops: {@code Object, long}
+     * Pushes: {@code T}
+     */
     public final void unsafeGet(MethodVisitor mv) {
         mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), this.unsafeGetName, this.unsafeGetDescriptor, PUnsafe.class.isInterface());
     }
 
+    /**
+     * Pops: {@code Object, long, T}
+     * Pushes: {@code void}
+     */
     public final void unsafePut(MethodVisitor mv) {
         mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), this.unsafePutName, this.unsafePutDescriptor, PUnsafe.class.isInterface());
     }
 
+    /**
+     * Pops: {@code T}
+     * Pushes: {@code T}
+     */
     public final void truncateInteger(MethodVisitor mv) {
         if (!this.integer) {
             throw new UnsupportedOperationException("truncate float");
@@ -193,6 +221,10 @@ public enum JavaPrimitiveType {
         mv.visitInsn(opcode);
     }
 
+    /**
+     * Pops: {@code T}
+     * Pushes: {@code float}
+     */
     public final void convertToFloat(MethodVisitor mv) {
         if (!this.integer) {
             throw new UnsupportedOperationException("convert float -> float");
@@ -207,6 +239,10 @@ public enum JavaPrimitiveType {
         }
     }
 
+    /**
+     * Pops: {@code float}
+     * Pushes: {@code T}
+     */
     public final void convertFromFloat(MethodVisitor mv) {
         if (!this.integer) {
             throw new UnsupportedOperationException("convert float -> float");

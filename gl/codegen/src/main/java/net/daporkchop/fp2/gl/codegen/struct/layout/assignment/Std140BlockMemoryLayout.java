@@ -36,6 +36,8 @@ import net.daporkchop.lib.common.math.PMath;
 
 import java.util.stream.IntStream;
 
+import static net.daporkchop.lib.common.util.PValidation.*;
+
 /**
  * Implements the {@code std140} layout for GLSL interface blocks.
  *
@@ -127,7 +129,7 @@ public class Std140BlockMemoryLayout {
             // the existing alignment and size with no additional changes.
 
             stride = elementLayout.size();
-            alignment = elementLayout.size();
+            alignment = elementLayout.alignment();
         } else if (elementType instanceof ArrayAttributeType) {
             //we can't support this without a hard dependency on ARB_arrays_of_arrays
             throw new UnsupportedOperationException("arrays of arrays are not supported!");
@@ -143,7 +145,7 @@ public class Std140BlockMemoryLayout {
 
         long size = stride * type.elementCount();
 
-        long[] elementOffsets = new long[type.elementCount()];
+        /*long[] elementOffsets = new long[type.elementCount()];
         long offset = 0L;
         for (int i = 0; i < elementOffsets.length; i++) {
             //pad to member alignment
@@ -152,9 +154,10 @@ public class Std140BlockMemoryLayout {
 
             //advance by member size
             offset += stride;
-        }
+        }*/
+        checkState((stride % alignment) == 0L, "stride %s is not a multiple of alignment %s (type: %s)", stride, alignment, type);
 
-        return new ArrayLayout(size, alignment, elementLayout, elementOffsets);
+        return new ArrayLayout(size, alignment, elementLayout, stride, type.elementCount());
     }
 
     public static MatrixLayout layout(MatrixAttributeType type) {
@@ -169,7 +172,14 @@ public class Std140BlockMemoryLayout {
 
         //matCxR is equivalent to vecR[C]
         //array element alignment+size is always in multiples of vec4
-        ShaderPrimitiveType primitiveType = type.colType().componentType().interpretedType();
+        VectorAttributeType colType = type.colType();
+        VectorLayout colLayout = layout(colType);
+
+        long stride = PMath.roundUp(colLayout.size(), Float.BYTES * 4);
+        long alignment = PMath.roundUp(colLayout.alignment(), Float.BYTES * 4);
+        long size = stride * type.cols();
+
+        /*ShaderPrimitiveType primitiveType = type.colType().componentType().interpretedType();
         long alignment = PMath.roundUp((long) primitiveType.size() * type.rows(), Float.BYTES * 4);
         long size = alignment * type.cols();
 
@@ -178,9 +188,9 @@ public class Std140BlockMemoryLayout {
         for (int col = 0; col < type.cols(); col++) {
             colOffsets[col] = offset;
             offset = PMath.roundUp(offset + (long) primitiveType.size() * type.rows(), Float.BYTES * 4);
-        }
+        }*/
 
-        return new MatrixLayout(size, alignment, layout(type.colType()), colOffsets);
+        return new MatrixLayout(size, alignment, layout(type.colType()), stride, type.cols());
     }
 
     public static VectorLayout layout(VectorAttributeType type) {

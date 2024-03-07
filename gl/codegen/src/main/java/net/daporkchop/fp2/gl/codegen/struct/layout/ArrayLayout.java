@@ -25,28 +25,34 @@ import lombok.ToString;
 import net.daporkchop.fp2.gl.codegen.struct.attribute.ArrayAttributeType;
 import net.daporkchop.fp2.gl.codegen.struct.attribute.AttributeType;
 
+import static net.daporkchop.lib.common.util.PValidation.*;
+
 /**
  * @author DaPorkchop_
  */
+@Getter
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public final class ArrayLayout extends AttributeLayout {
-    @Getter
+    /**
+     * The layout of each element in this array type.
+     */
     private final AttributeLayout elementLayout;
-    private final long[] elementOffsets;
+    /**
+     * The number of elements in this array type.
+     */
+    private final int elementCount;
+    /**
+     * The stride between array elements.
+     */
+    private final long elementStride;
 
-    public ArrayLayout(long size, long alignment, AttributeLayout elementLayout, long[] elementOffsets) {
+    public ArrayLayout(long size, long alignment, AttributeLayout elementLayout, long elementStride, int elementCount) {
         super(size, alignment);
 
         this.elementLayout = elementLayout;
-        this.elementOffsets = elementOffsets;
-    }
-
-    /**
-     * @return the number of elements in this array type
-     */
-    public int elementCount() {
-        return this.elementOffsets.length;
+        this.elementCount = elementCount;
+        this.elementStride = elementStride;
     }
 
     /**
@@ -56,7 +62,8 @@ public final class ArrayLayout extends AttributeLayout {
      * @return the element's offset
      */
     public long elementOffset(int index) {
-        return this.elementOffsets[index];
+        checkIndex(this.elementCount(), index);
+        return this.elementStride * index;
     }
 
     @Override
@@ -66,6 +73,6 @@ public final class ArrayLayout extends AttributeLayout {
         }
 
         ArrayAttributeType arrayAttributeType = (ArrayAttributeType) attributeType;
-        return this.elementCount() == arrayAttributeType.elementCount() && this.elementLayout.isCompatible(arrayAttributeType.elementType());
+        return this.elementCount == arrayAttributeType.elementCount() && this.elementLayout.isCompatible(arrayAttributeType.elementType());
     }
 }

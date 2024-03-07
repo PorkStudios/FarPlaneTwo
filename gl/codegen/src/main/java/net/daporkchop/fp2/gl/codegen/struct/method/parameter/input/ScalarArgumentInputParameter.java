@@ -17,44 +17,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.codegen.struct.attribute;
+package net.daporkchop.fp2.gl.codegen.struct.method.parameter.input;
 
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.ToString;
+import net.daporkchop.fp2.gl.codegen.struct.attribute.JavaPrimitiveType;
+import net.daporkchop.fp2.gl.codegen.struct.method.parameter.MethodParameter;
+import org.objectweb.asm.MethodVisitor;
+
+import java.util.function.Consumer;
+import java.util.function.IntConsumer;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
-@Getter
-@ToString
-@EqualsAndHashCode(callSuper = false)
-public final class MatrixAttributeType extends AttributeType {
-    /**
-     * The type of each column in this matrix type.
-     */
-    private final VectorAttributeType colType;
+public final class ScalarArgumentInputParameter extends MethodParameter {
+    private final int argumentLvtIndex;
 
-    /**
-     * The number of columns this matrix type has.
-     */
-    private final int cols;
-
-    public MatrixAttributeType(VectorAttributeType colType, int cols) {
-        int rows = colType.components();
-        checkArg(cols >= 2 && cols <= 4, "illegal matrix column count: %d", cols);
-        checkArg(rows >= 2 && rows <= 4, "illegal matrix row count: %d", rows);
-
-        this.colType = colType;
-        this.cols = cols;
+    public ScalarArgumentInputParameter(JavaPrimitiveType componentType, int argumentLvtIndex) {
+        super(componentType, 1);
+        this.argumentLvtIndex = argumentLvtIndex;
     }
 
-    /**
-     * @return the number of rows this matrix type has
-     */
-    public int rows() {
-        return this.colType.components();
+    @Override
+    public void visitLoad(MethodVisitor mv, int[] lvtAlloc, Consumer<IntConsumer> callback) {
+        callback.accept(componentIndex -> {
+            checkIndex(1, componentIndex);
+            this.componentType().load(mv, this.argumentLvtIndex);
+        });
     }
 }

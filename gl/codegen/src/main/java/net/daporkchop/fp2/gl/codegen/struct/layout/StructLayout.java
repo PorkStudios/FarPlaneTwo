@@ -24,7 +24,7 @@ import lombok.ToString;
 import net.daporkchop.fp2.gl.codegen.struct.attribute.AttributeType;
 import net.daporkchop.fp2.gl.codegen.struct.attribute.StructAttributeType;
 
-import static net.daporkchop.lib.common.util.PValidation.checkArg;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
