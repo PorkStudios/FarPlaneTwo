@@ -31,6 +31,7 @@ import net.daporkchop.lib.binary.stream.DataOut;
 import net.daporkchop.lib.common.annotation.BorrowOwnership;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.common.pool.recycler.Recycler;
+import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.unsafe.PCleaner;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
@@ -39,7 +40,7 @@ import java.io.IOException;
 /**
  * @author DaPorkchop_
  */
-public class TileSnapshot extends AbstractTileSnapshot {
+public final class TileSnapshot extends AbstractTileSnapshot {
     public static TileSnapshot readFromNetwork(@NonNull TilePos pos, @NonNull DataIn in) throws IOException {
         return new TileSnapshot(pos, in);
     }
@@ -54,74 +55,59 @@ public class TileSnapshot extends AbstractTileSnapshot {
                 : new TileSnapshot(pos, timestamp, dataAddr, dataLength);
     }
 
-    protected TileSnapshot(@NonNull TilePos pos, @NonNull DataIn in) throws IOException {
+    private TileSnapshot(@NonNull TilePos pos, @NonNull DataIn in) throws IOException {
         super(pos, in.readVarLongZigZag());
 
         int length = in.readVarIntZigZag();
         if (length < 0) { //no data!
-            this.data = 0L;
+            this.data = null;
         } else if (length == 0) { //special case for zero-length buffer which requires zero allocations
-            this.data = ZERO_LENGTH_DATA;
+            this.data = PorkUtil.EMPTY_BYTE_ARRAY;
         } else {
-            //allocate buffer space
-            this.data = PUnsafe.allocateMemory(DATA_SIZE(length));
-            this.cleaner = PCleaner.cleaner(this, this.data);
-
-            //read data
-            _data_length(this.data, length);
-            in.readFully(DirectBufferHackery.wrapByte(_data_payload(this.data), length));
+            //allocate buffer space and read data
+            this.data = PUnsafe.allocateUninitializedByteArray(length);
+            in.readFully(this.data);
         }
     }
 
-    protected TileSnapshot(@NonNull TilePos pos, long timestamp) {
+    private TileSnapshot(@NonNull TilePos pos, long timestamp) {
         super(pos, timestamp);
 
-        this.data = 0L; //there is no data
+        this.data = null; //there is no data
     }
 
-    protected TileSnapshot(@NonNull TilePos pos, long timestamp, @BorrowOwnership long dataAddr, @NotNegative int dataLength) {
+    private TileSnapshot(@NonNull TilePos pos, long timestamp, @BorrowOwnership long dataAddr, @NotNegative int dataLength) {
         super(pos, timestamp);
 
         if (dataLength == 0) { //special case for zero-length buffer which requires zero allocations
-            this.data = ZERO_LENGTH_DATA;
+            this.data = PorkUtil.EMPTY_BYTE_ARRAY;
         } else {
             //allocate buffer space
-            this.data = PUnsafe.allocateMemory(DATA_SIZE(dataLength));
-            this.cleaner = PCleaner.cleaner(this, this.data);
+            this.data = PUnsafe.allocateUninitializedByteArray(dataLength);
 
             //populate data buffer
-            _data_length(this.data, dataLength);
-            PUnsafe.copyMemory(dataAddr, _data_payload(this.data), dataLength);
+            PUnsafe.requireTightlyPackedByteArrays();
+            PUnsafe.copyMemory(null, dataAddr, this.data, PUnsafe.arrayByteBaseOffset(), dataLength);
         }
     }
 
     public void writeForNetwork(@NonNull DataOut out) throws IOException {
-        this.ensureNotReleased();
-
         out.writeVarLongZigZag(this.timestamp);
 
-        if (this.data == 0L) { //no data!
+        if (this.data == null) { //no data!
             out.writeVarIntZigZag(-1);
         } else { //tile data is present, write it
-            int length = _data_length(this.data);
-
-            out.writeVarIntZigZag(length);
-            if (length != 0) {
-                out.write(DirectBufferHackery.wrapByte(_data_payload(this.data), length));
-            }
+            out.writeVarIntZigZag(this.data.length);
+            out.write(this.data);
         }
     }
 
     @Override
     @SneakyThrows(IOException.class)
     public Tile loadTile(@NonNull Recycler<Tile> recycler, @NonNull IVariableSizeRecyclingCodec<Tile> codec) {
-        this.ensureNotReleased();
-
-        if (this.data != 0L) {
+        if (this.data != null) {
             Tile tile = recycler.allocate();
-
-            int length = _data_length(this.data);
-            try (DataIn in = DataIn.wrap(DirectBufferHackery.wrapByte(_data_payload(this.data), length))) {
+            try (DataIn in = DataIn.wrap(this.data)) {
                 codec.load(tile, in);
             }
             return tile;
@@ -131,35 +117,21 @@ public class TileSnapshot extends AbstractTileSnapshot {
     }
 
     @Override
-    public boolean isEmpty() {
-        this.ensureNotReleased();
-
-        return this.data == 0L;
-    }
-
-    @Override
     public ITileSnapshot compressed() {
-        this.ensureNotReleased();
-
         return new CompressedTileSnapshot(this);
     }
 
     @Override
     public ITileSnapshot uncompressed() {
-        this.ensureNotReleased();
-
-        return this.retain(); //we're already uncompressed!
+        return this; //we're already uncompressed!
     }
 
     @Override
     public DebugStats.TileSnapshot stats() {
-        this.ensureNotReleased();
-
-        if (this.data == 0L) { //this tile is empty!
+        if (this.data == null) { //this tile is empty!
             return DebugStats.TileSnapshot.ZERO;
         } else {
-            int length = _data_length(this.data);
-
+            int length = this.data.length;
             return DebugStats.TileSnapshot.builder()
                     .allocatedSpace(length)
                     .totalSpace(length)

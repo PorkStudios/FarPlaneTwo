@@ -48,31 +48,29 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  *
  * @author DaPorkchop_
  */
-public class CompressedTileSnapshot extends AbstractTileSnapshot {
-    protected static final Cached<ZstdDeflater> ZSTD_DEF = Cached.threadLocal(() -> Zstd.PROVIDER.deflater(Zstd.PROVIDER.deflateOptions()), ReferenceStrength.WEAK);
-    protected static final Cached<ZstdInflater> ZSTD_INF = Cached.threadLocal(() -> Zstd.PROVIDER.inflater(Zstd.PROVIDER.inflateOptions()), ReferenceStrength.WEAK);
+public final class CompressedTileSnapshot extends AbstractTileSnapshot {
+    private static final Cached<ZstdDeflater> ZSTD_DEF = Cached.threadLocal(() -> Zstd.PROVIDER.deflater(Zstd.PROVIDER.deflateOptions()), ReferenceStrength.WEAK);
+    private static final Cached<ZstdInflater> ZSTD_INF = Cached.threadLocal(() -> Zstd.PROVIDER.inflater(Zstd.PROVIDER.inflateOptions()), ReferenceStrength.WEAK);
 
-    protected CompressedTileSnapshot(@BorrowOwnership @NonNull TileSnapshot src) {
+    CompressedTileSnapshot(@BorrowOwnership @NonNull TileSnapshot src) {
         super(src.pos(), src.timestamp());
 
-        if (src.data == 0L) { //no data
-            this.data = 0L;
+        if (src.data == null) { //no data
+            this.data = null;
         } else { //source snapshot has some data, let's compress it
-            int length = _data_length(src.data); //assume this field is aligned
+            int length = src.data.length; //assume this field is aligned
 
             ByteBuf compressed = ByteBufAllocator.DEFAULT.buffer(Zstd.PROVIDER.compressBound(length));
             try {
                 //compress data
-                checkState(ZSTD_DEF.get().compress(Unpooled.wrappedBuffer(_data_payload(src.data), length, false), compressed));
+                checkState(ZSTD_DEF.get().compress(Unpooled.wrappedBuffer(src.data), compressed));
                 int compressedLength = compressed.readableBytes();
 
                 //allocate buffer space
-                this.data = PUnsafe.allocateMemory(DATA_SIZE(compressedLength));
-                this.cleaner = PCleaner.cleaner(this, this.data);
+                this.data = PUnsafe.allocateUninitializedByteArray(compressedLength);
 
                 //populate data buffer
-                _data_length(this.data, compressedLength);
-                compressed.readBytes(DirectBufferHackery.wrapByte(_data_payload(this.data), compressedLength));
+                compressed.readBytes(this.data);
             } finally {
                 compressed.release();
             }
@@ -82,11 +80,9 @@ public class CompressedTileSnapshot extends AbstractTileSnapshot {
     @Override
     @SneakyThrows(IOException.class)
     public Tile loadTile(@NonNull Recycler<Tile> recycler, @NonNull IVariableSizeRecyclingCodec<Tile> codec) {
-        this.ensureNotReleased();
-
-        if (this.data != 0L) {
+        if (this.data != null) {
             //allocate buffers
-            ByteBuf compressed = Unpooled.wrappedBuffer(_data_payload(this.data), _data_length(this.data), false);
+            ByteBuf compressed = Unpooled.wrappedBuffer(this.data);
             ByteBuf uncompressed = ByteBufAllocator.DEFAULT.buffer(Zstd.PROVIDER.frameContentSize(compressed));
             try {
                 //decompress data
@@ -108,28 +104,17 @@ public class CompressedTileSnapshot extends AbstractTileSnapshot {
     }
 
     @Override
-    public boolean isEmpty() {
-        this.ensureNotReleased();
-
-        return this.data == 0L;
-    }
-
-    @Override
     public ITileSnapshot compressed() {
-        this.ensureNotReleased();
-
-        return this.retain(); //we're already compressed!
+        return this; //we're already compressed!
     }
 
     @Override
     public ITileSnapshot uncompressed() {
-        this.ensureNotReleased();
-
-        if (this.data == 0L) { //this tile is empty!
+        if (this.data == null) { //this tile is empty!
             return TileSnapshot.of(this.pos(), this.timestamp());
         } else {
             //allocate buffers
-            ByteBuf compressed = Unpooled.wrappedBuffer(_data_payload(this.data), _data_length(this.data), false);
+            ByteBuf compressed = Unpooled.wrappedBuffer(this.data);
             ByteBuf uncompressed = ByteBufAllocator.DEFAULT.directBuffer(Zstd.PROVIDER.frameContentSize(compressed));
             try {
                 //decompress data
@@ -146,13 +131,11 @@ public class CompressedTileSnapshot extends AbstractTileSnapshot {
 
     @Override
     public DebugStats.TileSnapshot stats() {
-        this.ensureNotReleased();
-
-        if (this.data == 0L) { //this tile is empty!
+        if (this.data == null) { //this tile is empty!
             return DebugStats.TileSnapshot.ZERO;
         } else {
-            int compressedLength = _data_length(this.data);
-            int uncompressedLength = Zstd.PROVIDER.frameContentSize(Unpooled.wrappedBuffer(_data_payload(this.data), compressedLength, false));
+            int compressedLength = this.data.length;
+            int uncompressedLength = Zstd.PROVIDER.frameContentSize(Unpooled.wrappedBuffer(this.data));
 
             return DebugStats.TileSnapshot.builder()
                     .allocatedSpace(compressedLength)

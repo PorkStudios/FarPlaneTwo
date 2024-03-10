@@ -54,8 +54,6 @@ public final class FarTileCache extends AbstractReleasable implements Function<T
 
     /**
      * Adds the given tile into the cache.
-     * <p>
-     * Ownership of the tile is transferred to the cache.
      *
      * @param tile the tile to add
      */
@@ -68,7 +66,6 @@ public final class FarTileCache extends AbstractReleasable implements Function<T
                 this.listeners.forEach(listener -> listener.tileAdded(tile));
             } else {
                 this.listeners.forEach(listener -> listener.tileModified(tile));
-                old.release();
             }
             return tile;
         });
@@ -83,21 +80,14 @@ public final class FarTileCache extends AbstractReleasable implements Function<T
         this.assertNotReleased();
 
         ITileSnapshot tile = this.getTileCached(pos);
-        try {
-            if (tile == null || tile instanceof CompressedTileSnapshot) { //the tile isn't cached, or is cached but is also already compressed
-                return;
-            }
+        if (tile == null || tile instanceof CompressedTileSnapshot) { //the tile isn't cached, or is cached but is also already compressed
+            return;
+        }
 
-            ITileSnapshot compressedTile = tile.compressed();
-            if (this.tiles.replace(tile.pos(), tile, compressedTile)) { //the tile was successfully replaced with the compressed one
-                this.debug_updateStats(tile, compressedTile);
-            } else { //the tile wasn't replaced with the compressed one (was probably changed while we were compressing it), discard it
-                compressedTile.release();
-            }
-        } finally {
-            if (tile != null) {
-                tile.release();
-            }
+        ITileSnapshot compressedTile = tile.compressed();
+        if (this.tiles.replace(tile.pos(), tile, compressedTile)) { //the tile was successfully replaced with the compressed one
+            // (if this fails, the tile was probably changed while we were compressing it)
+            this.debug_updateStats(tile, compressedTile);
         }
     }
 
@@ -107,7 +97,6 @@ public final class FarTileCache extends AbstractReleasable implements Function<T
             this.debug_updateStats(old, null);
 
             this.listeners.forEach(listener -> listener.tileRemoved(pos));
-            old.release();
             return null;
         });
     }
@@ -147,8 +136,6 @@ public final class FarTileCache extends AbstractReleasable implements Function<T
 
     /**
      * Gets the given tile at the given position from the cache.
-     * <p>
-     * The tile is retained before being returned, i.e. ownership is transferred to the caller.
      *
      * @param position the position
      * @return the tile at the given position, or {@code null} if the tile wasn't present in the cache
@@ -157,13 +144,11 @@ public final class FarTileCache extends AbstractReleasable implements Function<T
         this.assertNotReleased();
 
         //retain the tile inside the computeIfPresent() block to ensure that it can't be released between getting it from the map and trying to retain it
-        return this.tiles.computeIfPresent(position, (pos, tile) -> tile.retain());
+        return this.tiles.get(position);
     }
 
     /**
      * Gets the given tiles at the given positions from the cache.
-     * <p>
-     * Each of the tiles is retained before being returned, i.e. ownership is transferred to the caller.
      *
      * @param positions the positions
      * @return the tiles at the given positions. Tiles that were not present in the cache will be {@code null}
@@ -206,10 +191,7 @@ public final class FarTileCache extends AbstractReleasable implements Function<T
 
     @Override
     protected void doRelease() {
-        this.tiles.forEach((pos, tile) -> {
-            this.listeners.forEach(listener -> listener.tileRemoved(pos));
-            tile.release();
-        });
+        this.tiles.forEach((pos, tile) -> this.listeners.forEach(listener -> listener.tileRemoved(pos)));
         this.tiles.clear();
         this.listeners.clear();
     }
@@ -222,9 +204,6 @@ public final class FarTileCache extends AbstractReleasable implements Function<T
     public interface Listener {
         /**
          * Fired when a new tile is added to the cache.
-         * <p>
-         * Ownership of the tile is <strong>not</strong> transferred to the listener. The listener must explicitly retain the tile if it wishes to preserve its reference
-         * beyond the scope of this method.
          *
          * @param tile the tile
          */
@@ -232,9 +211,6 @@ public final class FarTileCache extends AbstractReleasable implements Function<T
 
         /**
          * Fired when a tile's contents are changed.
-         * <p>
-         * Ownership of the tile is <strong>not</strong> transferred to the listener. The listener must explicitly retain the tile if it wishes to preserve its reference
-         * beyond the scope of this method.
          *
          * @param tile the tile
          */

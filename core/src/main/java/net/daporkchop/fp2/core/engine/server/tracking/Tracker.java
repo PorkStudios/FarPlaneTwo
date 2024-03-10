@@ -26,6 +26,7 @@ import net.daporkchop.fp2.core.engine.TileCoordLimits;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.ctx.ServerContext;
 import net.daporkchop.fp2.core.engine.tile.ITileSnapshot;
+import net.daporkchop.fp2.core.engine.tile.TileSnapshot;
 import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
 import net.daporkchop.fp2.core.util.datastructure.RecyclingArrayDeque;
@@ -342,7 +343,7 @@ public final class Tracker {
     @CalledFromAnyThread
     void notifyChanged(@BorrowOwnership @NonNull ITileSnapshot snapshot) {
         try {
-            this.context.sendTile(uncheckedCast(snapshot.retain()));
+            this.context.sendTile((TileSnapshot) snapshot);
 
             TilePos pos = snapshot.pos();
             if (this.waitingPositions.contains(pos)) { //this tile has been initially loaded

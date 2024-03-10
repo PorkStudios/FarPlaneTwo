@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -66,13 +66,7 @@ public interface FTileStorage extends FStorageItem {
      */
     default List<ITileSnapshot> multiSnapshot(@NonNull List<TilePos> positions) {
         List<ITileSnapshot> out = new ArrayList<>(positions.size());
-        try {
-            positions.forEach(pos -> out.add(this.handleFor(pos).snapshot()));
-        } catch (Throwable t) {
-            //TODO: release() could throw an exception
-            out.forEach(ITileSnapshot::release); //release all tiles allocated so far
-            PUnsafe.throwException(t); //rethrow original exception
-        }
+        positions.forEach(pos -> out.add(this.handleFor(pos).snapshot()));
         return out;
     }
 

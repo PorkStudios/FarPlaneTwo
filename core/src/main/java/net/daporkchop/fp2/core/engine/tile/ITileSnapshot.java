@@ -33,16 +33,7 @@ import net.daporkchop.lib.common.util.exception.AlreadyReleasedException;
  *
  * @author DaPorkchop_
  */
-public interface ITileSnapshot extends ITileMetadata, RefCounted {
-    @Override
-    int refCnt();
-
-    @Override
-    ITileSnapshot retain() throws AlreadyReleasedException;
-
-    @Override
-    boolean release() throws AlreadyReleasedException;
-
+public interface ITileSnapshot extends ITileMetadata {
     /**
      * @return the tile's position
      */

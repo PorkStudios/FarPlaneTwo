@@ -204,11 +204,7 @@ public class ServerContext implements IFarServerContext {
 
         synchronized (this) {
             this.unloadTilesQueue.remove(snapshot.pos());
-
-            TileSnapshot old = this.sendTilesQueue.put(snapshot.pos(), snapshot);
-            if (old != null) { //we're replacing another snapshot which was already queued, release it
-                old.release();
-            }
+            this.sendTilesQueue.put(snapshot.pos(), snapshot);
         }
     }
 
@@ -220,10 +216,7 @@ public class ServerContext implements IFarServerContext {
 
         synchronized (this) {
             if (this.unloadTilesQueue.add(pos)) {
-                TileSnapshot old = this.sendTilesQueue.remove(pos);
-                if (old != null) { //the tile was previously queued to be sent, release it
-                    old.release();
-                }
+                this.sendTilesQueue.remove(pos);
             }
         }
     }

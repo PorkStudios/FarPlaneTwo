@@ -151,41 +151,33 @@ public final class BakeManager extends AbstractReleasable implements FarTileCach
         this.checkParentsRenderable(pos);
 
         ITileSnapshot[] compressedInputTiles = uncheckedCast(this.tileCache.getTilesCached(this.baker.bakeInputs(pos)).toArray(ITileSnapshot[]::new));
+        if (compressedInputTiles[0] == null //tile isn't cached any more
+            || compressedInputTiles[0].isEmpty()) { //tile data is empty
+            this.updateData(pos, Optional.empty());
+            return;
+        }
+
+        Recycler<Tile> recycler = Tile.recycler();
+        Tile[] srcs = new Tile[compressedInputTiles.length];
         try {
-            if (compressedInputTiles[0] == null //tile isn't cached any more
-                || compressedInputTiles[0].isEmpty()) { //tile data is empty
-                this.updateData(pos, Optional.empty());
-                return;
+            for (int i = 0; i < srcs.length; i++) { //inflate tiles
+                if (compressedInputTiles[i] != null) {
+                    srcs[i] = compressedInputTiles[i].loadTile(recycler, Tile.CODEC);
+                }
             }
 
-            Recycler<Tile> recycler = Tile.recycler();
-            Tile[] srcs = new Tile[compressedInputTiles.length];
+            IBakeOutput output = this.strategy.createBakeOutput();
             try {
-                for (int i = 0; i < srcs.length; i++) { //inflate tiles
-                    if (compressedInputTiles[i] != null) {
-                        srcs[i] = compressedInputTiles[i].loadTile(recycler, Tile.CODEC);
-                    }
-                }
+                this.baker.bake(pos, srcs, uncheckedCast(output));
 
-                IBakeOutput output = this.strategy.createBakeOutput();
-                try {
-                    this.baker.bake(pos, srcs, uncheckedCast(output));
-
-                    this.updateData(pos, !output.isEmpty() ? Optional.of(output.retain()) : Optional.empty());
-                } finally {
-                    output.release();
-                }
-            } finally { //release tiles again
-                for (Tile src : srcs) {
-                    if (src != null) {
-                        recycler.release(src);
-                    }
-                }
+                this.updateData(pos, !output.isEmpty() ? Optional.of(output.retain()) : Optional.empty());
+            } finally {
+                output.release();
             }
-        } finally {
-            for (ITileSnapshot tile : compressedInputTiles) {
-                if (tile != null) {
-                    tile.release(); //TODO: release() could throw an exception
+        } finally { //release tiles again
+            for (Tile src : srcs) {
+                if (src != null) {
+                    recycler.release(src);
                 }
             }
         }

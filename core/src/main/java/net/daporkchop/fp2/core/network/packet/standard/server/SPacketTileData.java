@@ -60,15 +60,10 @@ public final class SPacketTileData implements IPacket {
         out.writeLongLE(this.timestamp);
 
         List<TileSnapshot> tiles = this.tiles;
-        this.tiles = null; //set to null so that if this packet is accidentally re-used it'll fail to serialize
-        try {
-            out.writeVarInt(tiles.size());
-            for (TileSnapshot tile : tiles) {
-                TilePosCodec.writePos(tile.pos(), out);
-                tile.writeForNetwork(out);
-            }
-        } finally {
-            PorkUtil.closeAll(tiles);
+        out.writeVarInt(tiles.size());
+        for (TileSnapshot tile : tiles) {
+            TilePosCodec.writePos(tile.pos(), out);
+            tile.writeForNetwork(out);
         }
     }
 
