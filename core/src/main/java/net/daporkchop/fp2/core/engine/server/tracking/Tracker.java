@@ -24,7 +24,7 @@ import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.DirectTilePosAccess;
 import net.daporkchop.fp2.core.engine.TileCoordLimits;
 import net.daporkchop.fp2.core.engine.TilePos;
-import net.daporkchop.fp2.core.engine.api.ctx.IFarServerContext;
+import net.daporkchop.fp2.core.engine.ctx.ServerContext;
 import net.daporkchop.fp2.core.engine.tile.ITileSnapshot;
 import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
@@ -74,7 +74,7 @@ public final class Tracker {
 
     private final TrackerManager manager;
 
-    private final IFarServerContext context;
+    private final ServerContext context;
     private final TileCoordLimits coordLimits;
 
     /**
@@ -101,7 +101,7 @@ public final class Tracker {
 
     private long lastUpdateTime;
 
-    public Tracker(@NonNull TrackerManager manager, @NonNull IFarServerContext context) {
+    public Tracker(@NonNull TrackerManager manager, @NonNull ServerContext context) {
         this.manager = manager;
 
         this.context = context;
@@ -310,7 +310,7 @@ public final class Tracker {
                 }
 
                 //keep adding positions from the queue until waitingPositions has targetLoadQueueSize elements or the queue is drained
-                for (int count = targetLoadQueueSize - this.waitingPositions.size(); count > 0; count--) {
+                for (int count = targetLoadQueueSize - this.waitingPositions.size() - this.context.queuedTilesToSend(); count > 0; count--) {
                     TilePos pos = this.queuedPositions.poll();
                     if (pos == null) { //nothing left in the queue, therefore nothing left to do!
                         break;
@@ -371,6 +371,15 @@ public final class Tracker {
     }
 
     /**
+     * Notifies the tracker that some tile data which was queued for unload has been sent.
+     */
+    @CalledFromServerThread
+    public void notifyTilesSent() {
+        //this will eventually call doUpdate(), which will call updateWaiting()
+        this.manager.scheduler().schedule(this);
+    }
+
+    /**
      * Closes this tracker, unloading all tiles and releasing all resources.
      * <p>
      * Once this method has been called, calling any method on this instance will result in undefined behavior.
@@ -420,10 +429,10 @@ public final class Tracker {
     /**
      * Computes the current {@link TrackingState} from the given context.
      *
-     * @param context the {@link IFarServerContext} which we are tracking for
+     * @param context the {@link ServerContext} which we are tracking for
      * @return a new {@link TrackingState}
      */
-    private TrackingState currentState(@NonNull IFarServerContext context) {
+    private TrackingState currentState(@NonNull ServerContext context) {
         return TrackingState.createDefault(context, T_SHIFT);
     }
 

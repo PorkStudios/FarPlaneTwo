@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -24,9 +24,9 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import net.daporkchop.fp2.core.engine.TilePos;
-import net.daporkchop.fp2.core.engine.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.core.engine.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.engine.api.server.storage.FTileStorage;
+import net.daporkchop.fp2.core.engine.ctx.ServerContext;
 import net.daporkchop.fp2.core.engine.tile.ITileHandle;
 import net.daporkchop.fp2.core.engine.tile.ITileMetadata;
 import net.daporkchop.fp2.core.engine.tile.ITileSnapshot;
@@ -122,7 +122,7 @@ public final class TrackerManager implements FTileStorage.Listener, AutoCloseabl
     private final IFarTileProvider tileProvider;
 
     private final Map<TilePos, Entry> entries = new ConcurrentHashMap<>();
-    private final Map<IFarServerContext, Tracker> trackers = new IdentityHashMap<>();
+    private final Map<ServerContext, Tracker> trackers = new IdentityHashMap<>();
 
     private final Scheduler<Tracker, Void> scheduler; //TODO: make this global rather than per-mode and per-dimension
 
@@ -156,14 +156,14 @@ public final class TrackerManager implements FTileStorage.Listener, AutoCloseabl
     }
 
     /**
-     * Begins tracking tiles for the given {@link IFarServerContext}.
+     * Begins tracking tiles for the given {@link ServerContext}.
      *
      * @param context the context to track
      * @return the {@link Tracker} instance for interfacing with the new tracking session
-     * @throws IllegalArgumentException if the given {@link IFarServerContext} is already being tracked
+     * @throws IllegalArgumentException if the given {@link ServerContext} is already being tracked
      */
     @CalledFromServerThread
-    public Tracker beginTracking(@NonNull IFarServerContext context) {
+    public Tracker beginTracking(@NonNull ServerContext context) {
         return this.trackers.compute(context, (ctx, tracker) -> {
             checkArg(tracker == null, "tracker for %s already exists!", ctx);
 
@@ -215,7 +215,7 @@ public final class TrackerManager implements FTileStorage.Listener, AutoCloseabl
 
     @CalledFromServerThread
     public void dropAllTiles() {
-        Collection<IFarServerContext> trackedContextsSnapshot = new ArrayList<>(this.trackers.keySet());
+        Collection<ServerContext> trackedContextsSnapshot = new ArrayList<>(this.trackers.keySet());
 
         //send a null config to all players so that they end their session on this render mode
         trackedContextsSnapshot.forEach(context -> context.player().fp2_IFarPlayer_serverConfig(null));

@@ -49,6 +49,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.fp2.core.debug.FP2Debug.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -64,7 +65,7 @@ public class ServerContext implements IFarServerContext {
     protected final Tracker tracker;
 
     protected Set<TilePos> unloadTilesQueue = DirectTilePosAccess.newPositionHashSet();
-    protected final Map<TilePos, TileSnapshot> sendTilesQueue = DirectTilePosAccess.newPositionKeyedTreeMap();
+    protected final Map<TilePos, TileSnapshot> sendTilesQueue = DirectTilePosAccess.newPositionKeyedLinkedHashMap();
     protected final FlowControl flowControl = new FlowControl();
 
     protected FP2Config config;
@@ -157,6 +158,8 @@ public class ServerContext implements IFarServerContext {
                 this.player.fp2_IFarPlayer_sendPacket(SPacketTileData.create(timestamp, Collections.emptyList()));
             }
             this.player.fp2_IFarPlayer_sendPacket(SPacketTileData.create(timestamp, loadedTiles));
+
+            this.tracker.notifyTilesSent();
         }
 
         /*if (unloadedTiles != null || loadedTiles != null) {
@@ -187,6 +190,10 @@ public class ServerContext implements IFarServerContext {
         this.closed = true;
 
         this.tracker.close();
+    }
+
+    public int queuedTilesToSend() {
+        return this.sendTilesQueue.size() >> 4; //divide by 16 so that we're still prefetching quite a few tiles even if things seem to be full
     }
 
     @Override
@@ -264,7 +271,9 @@ public class ServerContext implements IFarServerContext {
 
             this.inFlightDataSize -= size;
 
-            if (ack.timeSinceLastTileDataPacket >= TimeUnit.MILLISECONDS.toNanos(50L)) {
+            //TODO: some kind of fast startup thing would be good to add here (it'd need to be fairly pessimistic though, in order to account for
+            // the fact that TCP would also be increasing the window size underneath which could introduce additional latency)
+            if (ack.timeSinceLastTileDataPacket >= TimeUnit.MILLISECONDS.toNanos(50L)) { //TODO: make this interval configurable
                 //multiply by 0.75
                 this.windowSize = Math.max((this.windowSize >> 1L) + (this.windowSize >> 2L), WINDOW_STEP_SIZE);
             } else {
