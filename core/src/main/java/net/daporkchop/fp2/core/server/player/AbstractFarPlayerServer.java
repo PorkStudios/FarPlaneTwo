@@ -75,14 +75,14 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
     }
 
     protected void handle(@NonNull CPacketTileAck packet) {
-        this.context.notifyAck(packet.pos());
+        if (this.sessionOpen) {
+            this.context.notifyAck(packet);
+        }
     }
 
     protected void handleDebug(@NonNull CPacketDebugDropAllTiles packet) {
-        this.world.workerManager().rootExecutor().execute(() -> {
-            this.fp2().log().info("Dropping all tiles");
-            this.world.tileProvider().trackerManager().dropAllTiles();
-        });
+        this.fp2().log().info("Dropping all tiles");
+        this.world.tileProvider().trackerManager().dropAllTiles();
     }
 
     @CalledFromServerThread

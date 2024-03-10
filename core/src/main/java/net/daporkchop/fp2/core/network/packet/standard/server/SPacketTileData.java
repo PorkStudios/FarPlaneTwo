@@ -23,14 +23,16 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
-import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.TilePosCodec;
 import net.daporkchop.fp2.core.engine.tile.TileSnapshot;
 import net.daporkchop.fp2.core.network.IPacket;
+import net.daporkchop.fp2.core.network.packet.standard.client.CPacketTileAck;
 import net.daporkchop.lib.binary.stream.DataIn;
 import net.daporkchop.lib.binary.stream.DataOut;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author DaPorkchop_
@@ -39,21 +41,31 @@ import java.io.IOException;
 @NoArgsConstructor
 @Getter
 public class SPacketTileData implements IPacket {
-    protected TileSnapshot tile;
+    protected long timestamp;
+    protected List<TileSnapshot> tiles;
 
     @Override
     public void read(@NonNull DataIn in) throws IOException {
-        this.tile = TileSnapshot.readFromNetwork(TilePosCodec.readPos(in), in);
+        this.timestamp = in.readLongLE();
+        int size = in.readVarInt();
+        this.tiles = new ArrayList<>(size);
+        for (int i = 0; i < size; i++) {
+            this.tiles.add(TileSnapshot.readFromNetwork(TilePosCodec.readPos(in), in));
+        }
     }
 
     @Override
     public void write(@NonNull DataOut out) throws IOException {
-        TilePosCodec.writePos(this.tile.pos(), out);
-        this.tile.writeForNetwork(out);
-        this.tile.release();
+        out.writeLongLE(this.timestamp);
+        out.writeVarInt(this.tiles.size());
+        for (TileSnapshot tile : this.tiles) {
+            TilePosCodec.writePos(tile.pos(), out);
+            tile.writeForNetwork(out);
+            tile.release();
+        }
     }
 
-    public final TilePos pos() {
-        return this.tile.pos();
+    public final CPacketTileAck ackPacket() {
+        return new CPacketTileAck(this.timestamp, this.tiles.stream().mapToLong(TileSnapshot::dataSize).sum());
     }
 }

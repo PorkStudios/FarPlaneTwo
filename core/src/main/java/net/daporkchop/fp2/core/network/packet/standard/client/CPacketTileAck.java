@@ -23,8 +23,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
-import net.daporkchop.fp2.core.engine.TilePos;
-import net.daporkchop.fp2.core.engine.TilePosCodec;
 import net.daporkchop.fp2.core.network.IPacket;
 import net.daporkchop.lib.binary.stream.DataIn;
 import net.daporkchop.lib.binary.stream.DataOut;
@@ -38,15 +36,18 @@ import java.io.IOException;
 @NoArgsConstructor
 @Getter
 public class CPacketTileAck implements IPacket {
-    protected TilePos pos;
+    protected long timestamp;
+    protected long size;
 
     @Override
     public void read(@NonNull DataIn in) throws IOException {
-        this.pos = TilePosCodec.readPos(in);
+        this.timestamp = in.readLongLE();
+        this.size = in.readVarLong();
     }
 
     @Override
     public void write(@NonNull DataOut out) throws IOException {
-        TilePosCodec.writePos(this.pos, out);
+        out.writeLongLE(this.timestamp);
+        out.writeVarLong(this.size);
     }
 }

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -19,6 +19,8 @@
 
 package net.daporkchop.fp2.core.engine;
 
+import it.unimi.dsi.fastutil.objects.Object2LongMap;
+import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
@@ -315,6 +317,21 @@ public class DirectTilePosAccess {
      */
     public static <V> Map<TilePos, V> newPositionKeyedHashMap(int initialCapacity) {
         return new Object2ObjectOpenHashMap<>(initialCapacity);
+    }
+
+    /**
+     * @return a new {@link Object2LongMap} which uses {@link TilePos} as a key
+     */
+    public static Object2LongMap<TilePos> newPositionKeyed2LongHashMap() {
+        return new Object2LongOpenHashMap<>();
+    }
+
+    /**
+     * @param initialCapacity the initial capacity of the map
+     * @return a new {@link Object2LongMap} which uses {@link TilePos} as a key
+     */
+    public static Object2LongMap<TilePos> newPositionKeyed2LongHashMap(int initialCapacity) {
+        return new Object2LongOpenHashMap<>(initialCapacity);
     }
 
     /**

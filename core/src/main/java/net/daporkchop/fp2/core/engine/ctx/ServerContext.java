@@ -19,27 +19,35 @@
 
 package net.daporkchop.fp2.core.engine.ctx;
 
+import it.unimi.dsi.fastutil.longs.Long2LongRBTreeMap;
+import it.unimi.dsi.fastutil.longs.Long2LongSortedMap;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.engine.DirectTilePosAccess;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.core.engine.api.server.IFarTileProvider;
-import net.daporkchop.fp2.core.engine.tile.TileSnapshot;
 import net.daporkchop.fp2.core.engine.server.tracking.Tracker;
+import net.daporkchop.fp2.core.engine.tile.TileSnapshot;
 import net.daporkchop.fp2.core.network.packet.debug.server.SPacketDebugUpdateStatistics;
+import net.daporkchop.fp2.core.network.packet.standard.client.CPacketTileAck;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketTileData;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUnloadTiles;
-import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.server.player.IFarPlayerServer;
+import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
 import net.daporkchop.lib.common.annotation.TransferOwnership;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import static net.daporkchop.fp2.core.debug.FP2Debug.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -57,6 +65,7 @@ public class ServerContext implements IFarServerContext {
 
     protected Set<TilePos> unloadTilesQueue = DirectTilePosAccess.newPositionHashSet();
     protected final Map<TilePos, TileSnapshot> sendTilesQueue = DirectTilePosAccess.newPositionKeyedTreeMap();
+    protected final FlowControl flowControl = new FlowControl();
 
     protected FP2Config config;
 
@@ -94,8 +103,8 @@ public class ServerContext implements IFarServerContext {
     }
 
     @Override
-    public void notifyAck(@NonNull TilePos pos) {
-        //TODO: implement
+    public void notifyAck(@NonNull CPacketTileAck ack) {
+        this.flowControl.ack(ack.timestamp(), ack.size());
     }
 
     protected void flushSendQueue() {
@@ -107,28 +116,46 @@ public class ServerContext implements IFarServerContext {
             return;
         }
 
-        Set<TilePos> unloadTilesQueue = null;
-        List<TileSnapshot> loadedSnapshots = null;
+        Set<TilePos> unloadedTiles = null;
+        List<TileSnapshot> loadedTiles = null;
+        long loadedTilesSize = 0L;
+
         synchronized (this) {
             if (!this.unloadTilesQueue.isEmpty()) {
-                unloadTilesQueue = this.unloadTilesQueue;
+                unloadedTiles = this.unloadTilesQueue;
                 this.unloadTilesQueue = DirectTilePosAccess.newPositionHashSet(); //replace with a new set
             }
 
             if (!this.sendTilesQueue.isEmpty()) {
-                loadedSnapshots = new ArrayList<>(this.sendTilesQueue.values());
-                this.sendTilesQueue.clear();
+                Iterator<TileSnapshot> itr = this.sendTilesQueue.values().iterator();
+                loadedTiles = new ArrayList<>();
+                long maxSendSize = this.flowControl.maxSendSizeThisTick();
+                do {
+                    TileSnapshot next = itr.next();
+                    itr.remove();
+
+                    loadedTiles.add(next);
+                    loadedTilesSize += next.dataSize();
+                } while (loadedTilesSize < maxSendSize && itr.hasNext());
             }
         }
 
         //send packet for unloaded tiles
-        if (unloadTilesQueue != null) {
-            this.player.fp2_IFarPlayer_sendPacket(new SPacketUnloadTiles(unloadTilesQueue));
+        if (unloadedTiles != null) {
+            this.player.fp2_IFarPlayer_sendPacket(new SPacketUnloadTiles(unloadedTiles));
         }
 
         //send packets for loaded/updated tiles
-        if (loadedSnapshots != null) {
-            loadedSnapshots.forEach(snapshot -> this.player.fp2_IFarPlayer_sendPacket(new SPacketTileData(snapshot)));
+        if (loadedTiles != null) {
+            long timestamp = this.flowControl.submit(loadedTilesSize);
+            this.player.fp2_IFarPlayer_sendPacket(new SPacketTileData(timestamp, loadedTiles));
+        }
+
+        if (unloadedTiles != null || loadedTiles != null) {
+            System.out.printf("sent %d loads and %d unloads this tick (%d remaining)\n",
+                    loadedTiles != null ? loadedTiles.size() : 0,
+                    unloadedTiles != null ? unloadedTiles.size() : 0,
+                    this.sendTilesQueue.size());
         }
     }
 
@@ -141,7 +168,7 @@ public class ServerContext implements IFarServerContext {
         if (++this.debugLastUpdateSent == 20) { //send a debug statistics update packet once every 20s
             this.debugLastUpdateSent = 0;
 
-            this.player.fp2_IFarPlayer_sendPacket(new SPacketDebugUpdateStatistics().tracking(this.tracker.debugStats()));
+            this.player.fp2_IFarPlayer_sendPacket(new SPacketDebugUpdateStatistics(this.tracker.debugStats()));
         }
     }
 
@@ -183,6 +210,48 @@ public class ServerContext implements IFarServerContext {
                     old.release();
                 }
             }
+        }
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    static final class FlowControl {
+        private long latestTime = System.nanoTime();
+
+        private final Deque<UUID> inFlightTileBatches = new ArrayDeque<>(); //UUID is simply a convenient class with two longs
+        private long inFlightDataSize;
+
+        private long windowSize = 1024L;
+
+        public long maxSendSizeThisTick() {
+            return this.windowSize - this.inFlightDataSize;
+        }
+
+        public long submit(long size) {
+            notNegative(size, "size");
+            long timestamp = System.nanoTime();
+
+            //impossible unless a game tick takes less than one nanosecond (???) or nanoTime() overflows (in which case missing terrain packets in a block game is the least of our worries)
+            checkState(timestamp > this.latestTime);
+            this.latestTime = timestamp;
+
+            this.inFlightDataSize += size;
+            this.inFlightTileBatches.add(new UUID(timestamp, size));
+            return timestamp;
+        }
+
+        public void ack(long timestamp, long size) {
+            UUID firstBatch = this.inFlightTileBatches.remove();
+            long firstTimestamp = firstBatch.getMostSignificantBits();
+            long firstSize = firstBatch.getLeastSignificantBits();
+
+            checkArg(timestamp == firstTimestamp, "received ACK with timestamp %s (expected %s)", timestamp, firstTimestamp);
+            checkArg(size == firstSize, "received ACK with size %s (expected %s)", size, firstSize);
+
+            this.inFlightDataSize -= size;
+
+            //TODO: adjust window size
         }
     }
 }
