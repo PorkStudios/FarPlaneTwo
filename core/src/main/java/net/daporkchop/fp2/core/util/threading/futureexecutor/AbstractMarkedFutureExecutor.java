@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.util.threading.futureexecutor;
@@ -65,27 +64,23 @@ public abstract class AbstractMarkedFutureExecutor implements MarkedFutureExecut
     }
 
     @Override
-    public synchronized CompletableFuture<Void> run(@NonNull Object marker, @NonNull Runnable runnable) {
-        checkState(this.running, "not running");
-
-        Task<Void> task = new Task<>(marker, runnable);
-        if (this.thread == Thread.currentThread()) {
-            task.run();
-        } else {
-            this.queue.add(task);
-        }
-        return task;
+    public CompletableFuture<Void> run(@NonNull Object marker, @NonNull Runnable runnable) {
+        return this.submit(new Task<>(marker, runnable));
     }
 
     @Override
-    public synchronized <V> CompletableFuture<V> supply(@NonNull Object marker, @NonNull Supplier<V> supplier) {
-        checkState(this.running, "not running");
+    public <V> CompletableFuture<V> supply(@NonNull Object marker, @NonNull Supplier<V> supplier) {
+        return this.submit(new Task<>(marker, supplier));
+    }
 
-        Task<V> task = new Task<>(marker, supplier);
+    protected <V> CompletableFuture<V> submit(@NonNull Task<V> task) {
+        checkState(this.running, "not running");
         if (this.thread == Thread.currentThread()) {
             task.run();
         } else {
-            this.queue.add(task);
+            synchronized (this) {
+                this.queue.add(task);
+            }
         }
         return task;
     }
