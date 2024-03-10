@@ -275,7 +275,7 @@ public final class Tracker {
             return;
         }
 
-        int targetLoadQueueSize = fp2().globalConfig().performance().terrainThreads();
+        int targetLoadQueueSize = fp2().globalConfig().performance().terrainThreads() - this.context.queuedTilesToSend();
         List<TilePos> positions = DirectTilePosAccess.newPositionArrayList();
 
         do {
@@ -311,7 +311,7 @@ public final class Tracker {
                 }
 
                 //keep adding positions from the queue until waitingPositions has targetLoadQueueSize elements or the queue is drained
-                for (int count = targetLoadQueueSize - this.waitingPositions.size() - this.context.queuedTilesToSend(); count > 0; count--) {
+                for (int count = targetLoadQueueSize - this.waitingPositions.size(); count > 0; count--) {
                     TilePos pos = this.queuedPositions.poll();
                     if (pos == null) { //nothing left in the queue, therefore nothing left to do!
                         break;
