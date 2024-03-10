@@ -20,7 +20,6 @@
 package net.daporkchop.fp2.core.network.packet.standard.client;
 
 import lombok.AllArgsConstructor;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.network.IPacket;
@@ -32,22 +31,27 @@ import java.io.IOException;
 /**
  * @author DaPorkchop_
  */
-@AllArgsConstructor
-@NoArgsConstructor
-@Getter
-public class CPacketTileAck implements IPacket {
-    protected long timestamp;
-    protected long size;
+@AllArgsConstructor(staticName = "create")
+@NoArgsConstructor(onConstructor_ = { @Deprecated })
+public final class CPacketTileAck implements IPacket {
+    public long sessionId;
+    public long timestamp;
+    public long size;
+    public long timeSinceLastTileDataPacket;
 
     @Override
     public void read(@NonNull DataIn in) throws IOException {
+        this.sessionId = in.readLongLE();
         this.timestamp = in.readLongLE();
         this.size = in.readVarLong();
+        this.timeSinceLastTileDataPacket = in.readVarLong();
     }
 
     @Override
     public void write(@NonNull DataOut out) throws IOException {
+        out.writeLongLE(this.sessionId);
         out.writeLongLE(this.timestamp);
         out.writeVarLong(this.size);
+        out.writeVarLong(this.timeSinceLastTileDataPacket);
     }
 }

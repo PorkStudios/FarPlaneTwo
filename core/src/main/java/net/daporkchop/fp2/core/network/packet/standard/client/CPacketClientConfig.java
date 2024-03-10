@@ -33,11 +33,10 @@ import java.io.IOException;
 /**
  * @author DaPorkchop_
  */
-@AllArgsConstructor
-@NoArgsConstructor
-@Getter
-public class CPacketClientConfig implements IPacket {
-    protected FP2Config config;
+@AllArgsConstructor(staticName = "create")
+@NoArgsConstructor(onConstructor_ = { @Deprecated })
+public final class CPacketClientConfig implements IPacket {
+    public FP2Config config;
 
     @Override
     public void read(@NonNull DataIn in) throws IOException {

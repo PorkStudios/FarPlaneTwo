@@ -33,8 +33,13 @@ import java.io.IOException;
  *
  * @author DaPorkchop_
  */
-@NoArgsConstructor
-public class SPacketHandshake implements IPacket {
+//@AllArgsConstructor(staticName = "create")
+@NoArgsConstructor(onConstructor_ = { @Deprecated })
+public final class SPacketHandshake implements IPacket {
+    public static SPacketHandshake create() {
+        return new SPacketHandshake();
+    }
+
     @Override
     public void read(@NonNull DataIn in) throws IOException {
     }

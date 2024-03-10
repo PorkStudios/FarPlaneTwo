@@ -143,7 +143,7 @@ public class FP2Server1_12 extends FP2Server {
 
             IFarPlayerServer player = ((IMixinNetHandlerPlayServer1_12) ((EntityPlayerMP) event.player).connection).fp2_farPlayerServer();
             player.fp2_IFarPlayer_serverConfig(this.fp2().globalConfig());
-            player.fp2_IFarPlayer_sendPacket(new SPacketHandshake());
+            player.fp2_IFarPlayer_sendPacket(SPacketHandshake.create());
         }
     }
 

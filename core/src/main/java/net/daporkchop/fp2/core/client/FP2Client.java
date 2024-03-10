@@ -157,6 +157,6 @@ public abstract class FP2Client {
         }
 
         //send updated config to server
-        this.currentPlayer().ifPresent(player -> player.send(new CPacketClientConfig(event.next())));
+        this.currentPlayer().ifPresent(player -> player.send(CPacketClientConfig.create(event.next())));
     }
 }

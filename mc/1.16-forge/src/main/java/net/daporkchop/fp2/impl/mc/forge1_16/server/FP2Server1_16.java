@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -127,7 +127,7 @@ public class FP2Server1_16 extends FP2Server {
 
             IFarPlayerServer player = ((IMixinServerPlayNetHandler1_16) ((ServerPlayerEntity) event.getPlayer()).connection).fp2_farPlayerServer();
             player.fp2_IFarPlayer_serverConfig(this.fp2().globalConfig());
-            player.fp2_IFarPlayer_sendPacket(new SPacketHandshake());
+            player.fp2_IFarPlayer_sendPacket(SPacketHandshake.create());
         }
     }
 

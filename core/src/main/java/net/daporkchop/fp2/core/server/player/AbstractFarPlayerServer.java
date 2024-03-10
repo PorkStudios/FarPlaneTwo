@@ -49,6 +49,7 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
     protected IFarLevelServer world;
 
     protected IFarServerContext context;
+    protected long sessionId;
 
     protected boolean sessionOpen;
     protected boolean closed;
@@ -56,33 +57,41 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
     @CalledFromAnyThread
     @Override
     public void fp2_IFarPlayerServer_handle(@NonNull Object packet) {
-        //delegate packet handling to server thread
-        this.world.workerManager().rootExecutor().execute(() -> { //TODO: do this on the invoking thread
-            if (packet instanceof CPacketClientConfig) {
-                this.handle((CPacketClientConfig) packet);
-            } else if (packet instanceof CPacketTileAck) {
-                this.handle((CPacketTileAck) packet);
-            } else if (packet instanceof CPacketDebugDropAllTiles) {
-                this.handleDebug((CPacketDebugDropAllTiles) packet);
-            } else {
-                throw new IllegalArgumentException("don't know how to handle " + className(packet));
+        if (packet instanceof CPacketClientConfig) {
+            this.handle((CPacketClientConfig) packet);
+        } else if (packet instanceof CPacketTileAck) {
+            this.handle((CPacketTileAck) packet);
+        } else if (packet instanceof CPacketDebugDropAllTiles) {
+            this.handleDebug((CPacketDebugDropAllTiles) packet);
+        } else {
+            throw new IllegalArgumentException("don't know how to handle " + className(packet));
+        }
+    }
+
+    protected void handle(@NonNull CPacketClientConfig packet) {
+        this.world.workerManager().rootExecutor().execute(() -> this.updateConfig(this.serverConfig, packet.config));
+    }
+
+    protected void handle(@NonNull CPacketTileAck packet) {
+        this.world.workerManager().rootExecutor().execute(() -> {
+            if (this.sessionOpen && this.isAcceptableSessionId(packet.sessionId)) {
+                this.context.notifyAck(packet);
             }
         });
     }
 
-    protected void handle(@NonNull CPacketClientConfig packet) {
-        this.updateConfig(this.serverConfig, packet.config());
-    }
-
-    protected void handle(@NonNull CPacketTileAck packet) {
-        if (this.sessionOpen) {
-            this.context.notifyAck(packet);
-        }
-    }
-
     protected void handleDebug(@NonNull CPacketDebugDropAllTiles packet) {
-        this.fp2().log().info("Dropping all tiles");
-        this.world.tileProvider().trackerManager().dropAllTiles();
+        this.world.workerManager().rootExecutor().execute(() -> {
+            if (this.sessionOpen && this.isAcceptableSessionId(packet.sessionId)) {
+                this.fp2().log().info("Dropping all tiles");
+                this.world.tileProvider().trackerManager().dropAllTiles();
+            }
+        });
+    }
+
+    protected boolean isAcceptableSessionId(long sessionId) {
+        checkArg(sessionId <= this.sessionId, "sessionId (%s) is greater than current sessionId (%s)", sessionId, this.sessionId);
+        return sessionId == this.sessionId;
     }
 
     @CalledFromServerThread
@@ -95,7 +104,7 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
         checkState(!this.closed, "already closed!");
 
         if (!Objects.equals(this.serverConfig, serverConfig)) { //re-send server config if it changed
-            this.fp2_IFarPlayer_sendPacket(new SPacketUpdateConfig.Server(serverConfig));
+            this.fp2_IFarPlayer_sendPacket(SPacketUpdateConfig.Server.create(serverConfig));
         }
 
         this.serverConfig = serverConfig;
@@ -126,7 +135,7 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
 
     protected void updateMergedConfig(FP2Config mergedConfig) {
         this.mergedConfig = mergedConfig;
-        this.fp2_IFarPlayer_sendPacket(new SPacketUpdateConfig.Merged(mergedConfig));
+        this.fp2_IFarPlayer_sendPacket(SPacketUpdateConfig.Merged.create(mergedConfig));
     }
 
     protected boolean canBeginSession() {
@@ -153,7 +162,8 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
         this.sessionOpen = true;
 
         if (this.mergedConfig != null) {
-            this.fp2_IFarPlayer_sendPacket(new SPacketSessionBegin(this.world.coordLimits()));
+            this.sessionId = Math.incrementExact(this.sessionId);
+            this.fp2_IFarPlayer_sendPacket(SPacketSessionBegin.create(this.sessionId, this.world.coordLimits()));
 
             this.context = new ServerContext(this, this.world, this.mergedConfig);
         }
@@ -167,7 +177,7 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
             this.context.close();
             this.context = null;
 
-            this.fp2_IFarPlayer_sendPacket(new SPacketSessionEnd());
+            this.fp2_IFarPlayer_sendPacket(SPacketSessionEnd.create());
         }
     }
 

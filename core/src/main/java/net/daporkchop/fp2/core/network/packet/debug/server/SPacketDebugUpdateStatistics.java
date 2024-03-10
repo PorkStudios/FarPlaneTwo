@@ -34,11 +34,10 @@ import java.io.IOException;
 /**
  * @author DaPorkchop_
  */
-@AllArgsConstructor
-@NoArgsConstructor
-@Getter
-public class SPacketDebugUpdateStatistics implements IPacket {
-    protected DebugStats.Tracking tracking;
+@AllArgsConstructor(staticName = "create")
+@NoArgsConstructor(onConstructor_ = { @Deprecated })
+public final class SPacketDebugUpdateStatistics implements IPacket {
+    public DebugStats.Tracking tracking;
 
     @Override
     public void read(@NonNull DataIn in) throws IOException {

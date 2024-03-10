@@ -55,6 +55,7 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
     protected FP2Config config;
 
     protected IFarClientContext context;
+    protected long lastTileDataPacketTime;
 
     protected boolean handshakeReceived;
     protected boolean clientReady;
@@ -111,11 +112,11 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
         this.fp2().log().info("beginning session");
 
         if (this.config != null) {
-            AbstractWorldClient.COORD_LIMITS_HACK.set(packet.coordLimits());
+            AbstractWorldClient.COORD_LIMITS_HACK.set(packet.coordLimits);
             try {
                 IFarLevelClient activeLevel = this.loadActiveLevel();
                 try {
-                    this.context = new ClientContext(activeLevel, this.config);
+                    this.context = new ClientContext(activeLevel, this.config, packet.sessionId);
                 } catch (Throwable t) { //something went wrong, try to unload active level again
                     try {
                         ((AbstractWorldClient<?, ?, ?, ?, ?>) this.world()).unloadLevel(activeLevel.id());
@@ -135,7 +136,7 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
     protected abstract IFarLevelClient loadActiveLevel(); //TODO: i want to get rid of this and figure out how to *not* have to include the coordinate bounds in the session begin packet
 
     @CalledWithMonitor
-    protected void handle(@NonNull SPacketSessionEnd packet) {
+    protected void handle(SPacketSessionEnd packet) {
         checkState(this.sessionOpen, "no session is currently open!");
         this.sessionOpen = false;
 
@@ -148,9 +149,12 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
         checkState(this.sessionOpen, "no session is currently open!");
         checkState(this.context != null, "active session has no render mode!");
 
-        this.send(packet.ackPacket());
+        long now = System.nanoTime();
+        long lastTileDataPacketTime = this.lastTileDataPacketTime;
+        this.lastTileDataPacketTime = now;
+        this.send(packet.ackPacket(this.context.sessionId(), now - lastTileDataPacketTime));
 
-        packet.tiles().forEach(this.context.tileCache()::receiveTile);
+        packet.tiles.forEach(this.context.tileCache()::receiveTile);
     }
 
     @CalledWithMonitor
@@ -158,16 +162,16 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
         checkState(this.sessionOpen, "no session is currently open!");
         checkState(this.context != null, "active session has no render mode!");
 
-        packet.positions().forEach(this.context.tileCache()::unloadTile);
+        packet.positions.forEach(this.context.tileCache()::unloadTile);
     }
 
     @CalledWithMonitor
     protected void handle(@NonNull SPacketUpdateConfig.Merged packet) {
-        if (Objects.equals(this.config, packet.config())) { //nothing changed, so nothing to do!
+        if (Objects.equals(this.config, packet.config)) { //nothing changed, so nothing to do!
             return;
         }
 
-        this.config = packet.config();
+        this.config = packet.config;
         this.fp2().log().info("server notified merged config update: %s", this.config);
 
         if (this.context != null) {
@@ -178,13 +182,13 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
 
     @CalledWithMonitor
     protected void handle(@NonNull SPacketUpdateConfig.Server packet) {
-        this.serverConfig = packet.config();
+        this.serverConfig = packet.config;
         this.fp2().log().info("server notified remote config update: %s", this.serverConfig);
     }
 
     @CalledWithMonitor
     protected void handleDebug(@NonNull SPacketDebugUpdateStatistics packet) {
-        this.debugServerStats = packet.tracking();
+        this.debugServerStats = packet.tracking;
     }
 
     @CalledFromAnyThread
@@ -210,7 +214,7 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
             if (this.handshakeReceived && this.clientReady) {
                 this.initialConfigSent = true;
 
-                this.send(new CPacketClientConfig(this.fp2().globalConfig()));
+                this.send(CPacketClientConfig.create(this.fp2().globalConfig()));
             }
         }
     }

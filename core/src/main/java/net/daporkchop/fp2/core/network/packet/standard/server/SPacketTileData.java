@@ -20,15 +20,16 @@
 package net.daporkchop.fp2.core.network.packet.standard.server;
 
 import lombok.AllArgsConstructor;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
+import lombok.SneakyThrows;
 import net.daporkchop.fp2.core.engine.TilePosCodec;
 import net.daporkchop.fp2.core.engine.tile.TileSnapshot;
 import net.daporkchop.fp2.core.network.IPacket;
 import net.daporkchop.fp2.core.network.packet.standard.client.CPacketTileAck;
 import net.daporkchop.lib.binary.stream.DataIn;
 import net.daporkchop.lib.binary.stream.DataOut;
+import net.daporkchop.lib.common.util.PorkUtil;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -37,12 +38,11 @@ import java.util.List;
 /**
  * @author DaPorkchop_
  */
-@AllArgsConstructor
-@NoArgsConstructor
-@Getter
-public class SPacketTileData implements IPacket {
-    protected long timestamp;
-    protected List<TileSnapshot> tiles;
+@AllArgsConstructor(staticName = "create")
+@NoArgsConstructor(onConstructor_ = { @Deprecated })
+public final class SPacketTileData implements IPacket {
+    public long timestamp;
+    public List<TileSnapshot> tiles;
 
     @Override
     public void read(@NonNull DataIn in) throws IOException {
@@ -55,17 +55,24 @@ public class SPacketTileData implements IPacket {
     }
 
     @Override
+    @SneakyThrows(Exception.class)
     public void write(@NonNull DataOut out) throws IOException {
         out.writeLongLE(this.timestamp);
-        out.writeVarInt(this.tiles.size());
-        for (TileSnapshot tile : this.tiles) {
-            TilePosCodec.writePos(tile.pos(), out);
-            tile.writeForNetwork(out);
-            tile.release();
+
+        List<TileSnapshot> tiles = this.tiles;
+        this.tiles = null; //set to null so that if this packet is accidentally re-used it'll fail to serialize
+        try {
+            out.writeVarInt(tiles.size());
+            for (TileSnapshot tile : tiles) {
+                TilePosCodec.writePos(tile.pos(), out);
+                tile.writeForNetwork(out);
+            }
+        } finally {
+            PorkUtil.closeAll(tiles);
         }
     }
 
-    public final CPacketTileAck ackPacket() {
-        return new CPacketTileAck(this.timestamp, this.tiles.stream().mapToLong(TileSnapshot::dataSize).sum());
+    public CPacketTileAck ackPacket(long sessionId, long timeSinceLastTileDataPacket) {
+        return CPacketTileAck.create(sessionId, this.timestamp, this.tiles.stream().mapToLong(TileSnapshot::dataSize).sum(), timeSinceLastTileDataPacket);
     }
 }

@@ -19,6 +19,7 @@
 
 package net.daporkchop.fp2.core.network.packet.standard.server;
 
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -33,11 +34,10 @@ import java.io.IOException;
 /**
  * @author DaPorkchop_
  */
-@AllArgsConstructor
-@NoArgsConstructor
-@Getter
+@AllArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public abstract class SPacketUpdateConfig implements IPacket {
-    protected FP2Config config;
+    public FP2Config config;
 
     @Override
     public void read(@NonNull DataIn in) throws IOException {
@@ -55,8 +55,12 @@ public abstract class SPacketUpdateConfig implements IPacket {
     /**
      * @author DaPorkchop_
      */
-    public static class Merged extends SPacketUpdateConfig {
-        public Merged(FP2Config config) {
+    public static final class Merged extends SPacketUpdateConfig {
+        public static Merged create(FP2Config config) {
+            return new Merged(config);
+        }
+
+        private Merged(FP2Config config) {
             super(config);
         }
 
@@ -68,8 +72,12 @@ public abstract class SPacketUpdateConfig implements IPacket {
     /**
      * @author DaPorkchop_
      */
-    public static class Server extends SPacketUpdateConfig {
-        public Server(FP2Config config) {
+    public static final class Server extends SPacketUpdateConfig {
+        public static Server create(FP2Config config) {
+            return new Server(config);
+        }
+
+        private Server(FP2Config config) {
             super(config);
         }
 

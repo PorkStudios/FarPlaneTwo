@@ -38,11 +38,10 @@ import java.util.Collection;
 /**
  * @author DaPorkchop_
  */
-@AllArgsConstructor
-@NoArgsConstructor
-@Getter
-public class SPacketUnloadTiles implements IPacket {
-    protected Collection<TilePos> positions;
+@AllArgsConstructor(staticName = "create")
+@NoArgsConstructor(onConstructor_ = { @Deprecated })
+public final class SPacketUnloadTiles implements IPacket {
+    public Collection<TilePos> positions;
 
     @Override
     public void read(@NonNull DataIn in) throws IOException {

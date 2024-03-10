@@ -35,19 +35,21 @@ import java.io.IOException;
  *
  * @author DaPorkchop_
  */
-@AllArgsConstructor
-@NoArgsConstructor
-@Getter
-public class SPacketSessionBegin implements IPacket {
-    protected IntAxisAlignedBB coordLimits;
+@AllArgsConstructor(staticName = "create")
+@NoArgsConstructor(onConstructor_ = { @Deprecated })
+public final class SPacketSessionBegin implements IPacket {
+    public long sessionId;
+    public IntAxisAlignedBB coordLimits;
 
     @Override
     public void read(@NonNull DataIn in) throws IOException {
+        this.sessionId = in.readLongLE();
         this.coordLimits = new IntAxisAlignedBB(in.readIntLE(), in.readIntLE(), in.readIntLE(), in.readIntLE(), in.readIntLE(), in.readIntLE());
     }
 
     @Override
     public void write(@NonNull DataOut out) throws IOException {
+        out.writeLongLE(this.sessionId);
         out.writeIntLE(this.coordLimits.minX());
         out.writeIntLE(this.coordLimits.minY());
         out.writeIntLE(this.coordLimits.minZ());

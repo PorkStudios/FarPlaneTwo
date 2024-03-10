@@ -65,13 +65,16 @@ public class FP2Debug {
 
             category.addBinding("reloadShaders", "0", ReloadableShaderProgram::reloadAll);
             category.addBinding("dropTiles", "9", () -> fp2.client().currentPlayer().ifPresent(player -> {
-                player.send(new CPacketClientConfig(null));
-                player.send(new CPacketClientConfig(fp2.globalConfig()));
+                player.send(CPacketClientConfig.create(null));
+                player.send(CPacketClientConfig.create(fp2.globalConfig()));
                 fp2.client().chat().debug("§aReloading session");
             }));
             category.addBinding("regenerateTiles", "9", KeyModifier.CONTROL, () -> fp2.client().currentPlayer().ifPresent(player -> {
-                player.send(new CPacketDebugDropAllTiles());
-                fp2.client().chat().debug("§aRegenerating all tiles");
+                IFarClientContext context = player.activeContext();
+                if (context != null) {
+                    player.send(CPacketDebugDropAllTiles.create(context.sessionId()));
+                    fp2.client().chat().debug("§aRegenerating all tiles");
+                }
             }));
             category.addBinding("reversedZ", "8", () -> {
                 FP2Config config = fp2.globalConfig();

@@ -19,7 +19,6 @@
 
 package net.daporkchop.fp2.core.network.packet.standard.server;
 
-import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.network.IPacket;
@@ -33,9 +32,13 @@ import java.io.IOException;
  *
  * @author DaPorkchop_
  */
-@NoArgsConstructor
-@Getter
-public class SPacketSessionEnd implements IPacket {
+//@AllArgsConstructor(staticName = "create")
+@NoArgsConstructor(onConstructor_ = { @Deprecated })
+public final class SPacketSessionEnd implements IPacket {
+    public static SPacketSessionEnd create() {
+        return new SPacketSessionEnd();
+    }
+
     @Override
     public void read(@NonNull DataIn in) throws IOException {
     }
