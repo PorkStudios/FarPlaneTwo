@@ -17,20 +17,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.attribute;
+package net.daporkchop.fp2.gl.codegen.struct.layout;
 
-import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
-import net.daporkchop.fp2.gl.attribute.annotation.AttributeIgnore;
+import lombok.Data;
+import net.daporkchop.fp2.gl.codegen.struct.attribute.StructAttributeType;
 
 /**
- * Base interface for all struct types which will declare {@link Attribute attributes}.
- *
  * @author DaPorkchop_
  */
-public interface AttributeStruct extends AutoCloseable {
-    @Override
-    @AttributeIgnore
-    default void close() {
-        //no-op
-    }
+@Data
+public final class LayoutInfo {
+    private final StructAttributeType rootType;
+    private final StructLayout rootLayout;
+    private final String name;
+    private final boolean interleaved;
 }

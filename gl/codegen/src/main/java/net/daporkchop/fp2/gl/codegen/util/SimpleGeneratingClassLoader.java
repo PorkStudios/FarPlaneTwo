@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -17,10 +17,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.opengl.util.codegen;
+package net.daporkchop.fp2.gl.codegen.util;
 
 import lombok.Getter;
-import lombok.NonNull;
 import net.daporkchop.lib.common.util.PorkUtil;
 
 import java.util.Map;
@@ -48,12 +47,12 @@ public abstract class SimpleGeneratingClassLoader extends GeneratingClassLoader 
                         }
                     }
 
-                    map.put(clazz.getName().intern(), clazz);
+                    map.put(clazz.getName(), clazz);
                 });
         return map;
     }
 
-    protected abstract void registerClassGenerators(@NonNull BiConsumer<String, Supplier<byte[]>> registerGenerator, @NonNull Consumer<Class<?>> registerClass);
+    protected abstract void registerClassGenerators(BiConsumer<String, Supplier<byte[]>> registerGenerator, Consumer<Class<?>> registerClass);
 
     @Override
     protected Class<?> findClass(String name) throws ClassNotFoundException {

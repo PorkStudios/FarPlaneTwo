@@ -172,7 +172,7 @@ public class TextureFormat2DClassLoader extends TextureFormatClassLoader<Texture
             mv.visitEnd();
         }
 
-        return this.finish(writer, className);
+        return finish(writer, className);
     }
 
     @Override
@@ -234,7 +234,7 @@ public class TextureFormat2DClassLoader extends TextureFormatClassLoader<Texture
             mv.visitEnd();
         }
 
-        return this.finish(writer, className);
+        return finish(writer, className);
     }
 
     @Override
@@ -702,6 +702,6 @@ public class TextureFormat2DClassLoader extends TextureFormatClassLoader<Texture
             mv.visitEnd();
         }
 
-        return this.finish(writer, className);
+        return finish(writer, className);
     }
 }

@@ -24,11 +24,11 @@ import net.daporkchop.fp2.gl.codegen.struct.attribute.ArrayAttributeType;
 import net.daporkchop.fp2.gl.codegen.struct.attribute.AttributeType;
 import net.daporkchop.fp2.gl.codegen.struct.attribute.JavaPrimitiveType;
 import net.daporkchop.fp2.gl.codegen.struct.attribute.MatrixAttributeType;
-import net.daporkchop.fp2.gl.codegen.struct.attribute.ShaderPrimitiveType;
 import net.daporkchop.fp2.gl.codegen.struct.attribute.StructAttributeType;
 import net.daporkchop.fp2.gl.codegen.struct.attribute.VectorAttributeType;
 import net.daporkchop.fp2.gl.codegen.struct.layout.ArrayLayout;
 import net.daporkchop.fp2.gl.codegen.struct.layout.AttributeLayout;
+import net.daporkchop.fp2.gl.codegen.struct.layout.LayoutInfo;
 import net.daporkchop.fp2.gl.codegen.struct.layout.MatrixLayout;
 import net.daporkchop.fp2.gl.codegen.struct.layout.StructLayout;
 import net.daporkchop.fp2.gl.codegen.struct.layout.VectorLayout;
@@ -46,7 +46,11 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @UtilityClass
 public class Std140BlockMemoryLayout {
-    public static AttributeLayout layout(AttributeType type) {
+    public static LayoutInfo computeLayout(StructAttributeType type) {
+        return new LayoutInfo(type, layout(type), "std140", true);
+    }
+
+    private static AttributeLayout layout(AttributeType type) {
         if (type instanceof StructAttributeType) {
             return layout((StructAttributeType) type);
         } else if (type instanceof ArrayAttributeType) {
@@ -60,7 +64,7 @@ public class Std140BlockMemoryLayout {
         }
     }
 
-    public static StructLayout layout(StructAttributeType type) {
+    private static StructLayout layout(StructAttributeType type) {
         //9. If the member is a structure, the base alignment of the structure is N , where
         //   N is the largest base alignment value of any of its members, and rounded
         //   up to the base alignment of a vec4. The individual members of this sub-
@@ -99,7 +103,7 @@ public class Std140BlockMemoryLayout {
         return new StructLayout(size, structAlignment, fieldLayouts, fieldOffsets);
     }
 
-    public static ArrayLayout layout(ArrayAttributeType type) {
+    private static ArrayLayout layout(ArrayAttributeType type) {
         long stride;
         long alignment;
 
@@ -160,7 +164,7 @@ public class Std140BlockMemoryLayout {
         return new ArrayLayout(size, alignment, elementLayout, stride, type.elementCount());
     }
 
-    public static MatrixLayout layout(MatrixAttributeType type) {
+    private static MatrixLayout layout(MatrixAttributeType type) {
         //5. If the member is a column-major matrix with C columns and R rows, the
         //   matrix is stored identically to an array of C column vectors with R compo-
         //   nents each, according to rule (4).
@@ -193,7 +197,7 @@ public class Std140BlockMemoryLayout {
         return new MatrixLayout(size, alignment, layout(type.colType()), stride, type.cols());
     }
 
-    public static VectorLayout layout(VectorAttributeType type) {
+    private static VectorLayout layout(VectorAttributeType type) {
         long size;
         long alignment;
 

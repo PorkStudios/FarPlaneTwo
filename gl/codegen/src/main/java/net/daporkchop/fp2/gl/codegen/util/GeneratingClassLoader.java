@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -17,23 +17,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.opengl.util.codegen;
+package net.daporkchop.fp2.gl.codegen.util;
 
-import lombok.NonNull;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.common.asm.DelegatingClassLoader;
-import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.lib.common.annotation.param.Positive;
-import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.unsafe.PUnsafe;
+import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Type;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.IntConsumer;
+import java.util.function.ToIntFunction;
+import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -47,10 +51,12 @@ import static org.objectweb.asm.Type.*;
 public abstract class GeneratingClassLoader extends DelegatingClassLoader {
     protected static final boolean WRITE_CLASSES = GeneratingClassLoader.class.desiredAssertionStatus();
 
+    protected static final Type OBJECT_TYPE = getType(Object.class);
+
     protected static final long MEMCPY_USE_UNSAFE_THRESHOLD = Long.getLong(preventInline("fp2.gl.opengl.") + "memCpyUseUnsafeThreshold", 64L);
 
     protected GeneratingClassLoader() {
-        super(OpenGL.class.getClassLoader());
+        super(GeneratingClassLoader.class.getClassLoader());
     }
 
     @Override
@@ -61,7 +67,7 @@ public abstract class GeneratingClassLoader extends DelegatingClassLoader {
     //
 
     @SuppressWarnings("SameParameterValue")
-    protected void generateMemcpy(@NonNull MethodVisitor mv, int srcOffsetLvtIndex, int dstOffsetLvtIndex, @Positive long size) {
+    protected static void generateMemcpy(MethodVisitor mv, int srcOffsetLvtIndex, int dstOffsetLvtIndex, @Positive long size) {
         if (positive(size, "size") >= MEMCPY_USE_UNSAFE_THRESHOLD) { //copy is larger than the configured threshold, delegate to PUnsafe.copyMemory()
             mv.visitVarInsn(LLOAD, dstOffsetLvtIndex);
             mv.visitVarInsn(LLOAD, srcOffsetLvtIndex);
@@ -106,7 +112,7 @@ public abstract class GeneratingClassLoader extends DelegatingClassLoader {
     }
 
     @SuppressWarnings("SameParameterValue")
-    protected void generateMemcpy(@NonNull MethodVisitor mv, int srcBaseLvtIndex, int srcOffsetLvtIndex, int dstBaseLvtIndex, int dstOffsetLvtIndex, @Positive long size) {
+    protected static void generateMemcpy(MethodVisitor mv, int srcBaseLvtIndex, int srcOffsetLvtIndex, int dstBaseLvtIndex, int dstOffsetLvtIndex, @Positive long size) {
         if (positive(size, "size") >= MEMCPY_USE_UNSAFE_THRESHOLD) { //copy is larger than the configured threshold, delegate to PUnsafe.copyMemory()
             mv.visitVarInsn(ALOAD, dstBaseLvtIndex);
             mv.visitVarInsn(LLOAD, dstOffsetLvtIndex);
@@ -154,7 +160,8 @@ public abstract class GeneratingClassLoader extends DelegatingClassLoader {
         }
     }
 
-    protected void generateTryFinally(@NonNull MethodVisitor mv, int lvtIndexAllocator, @NonNull IntConsumer tryGenerator, @NonNull IntConsumer finallyGenerator) {
+    @SuppressWarnings("SameParameterValue")
+    protected static void generateTryFinally(MethodVisitor mv, int lvtIndexAllocator, IntConsumer tryGenerator, IntConsumer finallyGenerator) {
         Label start = new Label();
         Label end = new Label();
         Label handler = new Label();
@@ -181,7 +188,8 @@ public abstract class GeneratingClassLoader extends DelegatingClassLoader {
         mv.visitLabel(tail);
     }
 
-    protected void generateTryWithCleanupOnException(@NonNull MethodVisitor mv, int lvtIndexAllocator, @NonNull IntConsumer tryGenerator, @NonNull IntConsumer exceptionalCleanupGenerator) {
+    @SuppressWarnings("SameParameterValue")
+    protected static void generateTryWithCleanupOnException(MethodVisitor mv, int lvtIndexAllocator, IntConsumer tryGenerator, IntConsumer exceptionalCleanupGenerator) {
         Label start = new Label();
         Label end = new Label();
         Label handler = new Label();
@@ -205,15 +213,79 @@ public abstract class GeneratingClassLoader extends DelegatingClassLoader {
         mv.visitLabel(tail);
     }
 
+    protected static byte[] generateClass(int access, String internalName, String superclass, String[] interfaces, Consumer<ClassVisitor> generator) {
+        ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
+        cw.visit(V1_8, access, internalName, null, superclass, interfaces);
+        generator.accept(cw);
+        return finish(cw, internalName);
+    }
+
     @SneakyThrows(IOException.class)
-    protected byte[] finish(@NonNull ClassWriter writer, @NonNull String fileName) {
-        writer.visitEnd();
-        byte[] bytecode = writer.toByteArray();
+    protected static byte[] finish(ClassWriter cw, String internalName) {
+        cw.visitEnd();
+        byte[] bytecode = cw.toByteArray();
 
         if (WRITE_CLASSES) {
-            Files.write(Paths.get(fileName.replace('/', '-') + ".class"), bytecode);
+            Files.write(Paths.get(internalName.replace('/', '-') + ".class"), bytecode);
         }
 
         return bytecode;
+    }
+
+    protected static MethodVisitor beginMethod(ClassVisitor cv, int access, String name, String desc) {
+        MethodVisitor mv = cv.visitMethod(access, name, desc, null, null);
+        mv.visitCode();
+        return mv;
+    }
+
+    protected static void finish(MethodVisitor mv) {
+        mv.visitMaxs(0, 0);
+        mv.visitEnd();
+    }
+
+    protected static void generateMethod(ClassVisitor cv, int access, String name, String desc, ToIntFunction<MethodVisitor> codeGenerator) {
+        MethodVisitor mv = beginMethod(cv, access, name, desc);
+        mv.visitInsn(codeGenerator.applyAsInt(mv));
+        finish(mv);
+    }
+
+    protected static void generatePassthroughCtor(ClassVisitor cv, String superclass, Type... argumentTypes) {
+        String desc = getMethodDescriptor(VOID_TYPE, argumentTypes);
+        MethodVisitor mv = beginMethod(cv, ACC_PUBLIC, "<init>", desc);
+
+        mv.visitVarInsn(ALOAD, 0);
+        loadConsecutiveValuesFromLvt(mv, 1, argumentTypes);
+        mv.visitMethodInsn(INVOKESPECIAL, superclass, "<init>", desc, false);
+        mv.visitInsn(RETURN);
+
+        finish(mv);
+    }
+
+    protected static void generatePassthroughCtorWithLocals(ClassVisitor cv, String internalName, String superclass, Map<String, Type> localTypes, Type... passthroughArgumentTypes) {
+        String desc = getMethodDescriptor(VOID_TYPE, Stream.concat(Arrays.stream(passthroughArgumentTypes), localTypes.values().stream()).toArray(Type[]::new));
+        MethodVisitor mv = beginMethod(cv, ACC_PUBLIC, "<init>", desc);
+
+        mv.visitVarInsn(ALOAD, 0);
+        int lvt = loadConsecutiveValuesFromLvt(mv, 1, passthroughArgumentTypes);
+        mv.visitMethodInsn(INVOKESPECIAL, superclass, "<init>", desc, false);
+
+        for (Map.Entry<String, Type> entry : localTypes.entrySet()) {
+            mv.visitVarInsn(ALOAD, 0);
+            mv.visitVarInsn(entry.getValue().getOpcode(ILOAD), lvt);
+            mv.visitFieldInsn(PUTFIELD, internalName, entry.getKey(), entry.getValue().getDescriptor());
+            lvt += entry.getValue().getSize();
+        }
+
+        mv.visitInsn(RETURN);
+
+        finish(mv);
+    }
+
+    protected static int loadConsecutiveValuesFromLvt(MethodVisitor mv, int lvt, Type... types) {
+        for (Type type : types) {
+            mv.visitVarInsn(type.getOpcode(ILOAD), lvt);
+            lvt += type.getSize();
+        }
+        return lvt;
     }
 }

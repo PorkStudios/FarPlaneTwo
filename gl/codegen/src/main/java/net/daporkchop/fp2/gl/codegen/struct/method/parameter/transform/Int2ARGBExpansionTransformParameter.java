@@ -22,6 +22,7 @@ package net.daporkchop.fp2.gl.codegen.struct.method.parameter.transform;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.codegen.struct.attribute.JavaPrimitiveType;
 import net.daporkchop.fp2.gl.codegen.struct.method.parameter.MethodParameter;
+import net.daporkchop.fp2.gl.codegen.util.LvtAlloc;
 import org.objectweb.asm.MethodVisitor;
 
 import java.util.function.Consumer;
@@ -50,8 +51,8 @@ public final class Int2ARGBExpansionTransformParameter extends MethodParameter {
     }
 
     @Override
-    public void visitLoad(MethodVisitor mv, int[] lvtAlloc, Consumer<IntConsumer> callback) {
-        int packedLvtIndex = lvtAlloc[0]++;
+    public void visitLoad(MethodVisitor mv, LvtAlloc lvtAlloc, Consumer<IntConsumer> callback) {
+        int packedLvtIndex = lvtAlloc.assign();
 
         this.parent.visitLoad(mv, lvtAlloc, loader -> {
             //load the 0th component (which is an int) and store it in the LVT

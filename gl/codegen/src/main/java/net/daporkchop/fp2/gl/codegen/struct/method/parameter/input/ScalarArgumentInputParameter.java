@@ -21,6 +21,7 @@ package net.daporkchop.fp2.gl.codegen.struct.method.parameter.input;
 
 import net.daporkchop.fp2.gl.codegen.struct.attribute.JavaPrimitiveType;
 import net.daporkchop.fp2.gl.codegen.struct.method.parameter.MethodParameter;
+import net.daporkchop.fp2.gl.codegen.util.LvtAlloc;
 import org.objectweb.asm.MethodVisitor;
 
 import java.util.function.Consumer;
@@ -40,7 +41,7 @@ public final class ScalarArgumentInputParameter extends MethodParameter {
     }
 
     @Override
-    public void visitLoad(MethodVisitor mv, int[] lvtAlloc, Consumer<IntConsumer> callback) {
+    public void visitLoad(MethodVisitor mv, LvtAlloc lvtAlloc, Consumer<IntConsumer> callback) {
         callback.accept(componentIndex -> {
             checkIndex(1, componentIndex);
             this.componentType().load(mv, this.argumentLvtIndex);

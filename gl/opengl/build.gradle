@@ -20,6 +20,7 @@
 
 dependencies {
     apiShade project(":gl")
+    implementationShade project(":gl:codegen")
     apiShade project(":common")
 
     implementationShade "net.daporkchop.lib:primitive-lambda:$porklibVersion"

@@ -17,20 +17,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.attribute;
+package net.daporkchop.fp2.gl.codegen.util;
 
-import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
-import net.daporkchop.fp2.gl.attribute.annotation.AttributeIgnore;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+import org.objectweb.asm.Type;
 
 /**
- * Base interface for all struct types which will declare {@link Attribute attributes}.
+ * Basically just a mutable {@code int}, thanks java
  *
  * @author DaPorkchop_
  */
-public interface AttributeStruct extends AutoCloseable {
-    @Override
-    @AttributeIgnore
-    default void close() {
-        //no-op
+@AllArgsConstructor
+@NoArgsConstructor
+public final class LvtAlloc {
+    private int lvt = 0;
+
+    public int assign() {
+        return this.lvt++;
+    }
+
+    public int assign(Type type) {
+        int lvt = this.lvt;
+        this.lvt = lvt + type.getSize();
+        return lvt;
     }
 }

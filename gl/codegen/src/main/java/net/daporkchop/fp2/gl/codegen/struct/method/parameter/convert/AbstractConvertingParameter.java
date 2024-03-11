@@ -22,6 +22,7 @@ package net.daporkchop.fp2.gl.codegen.struct.method.parameter.convert;
 import lombok.Getter;
 import net.daporkchop.fp2.gl.codegen.struct.attribute.JavaPrimitiveType;
 import net.daporkchop.fp2.gl.codegen.struct.method.parameter.MethodParameter;
+import net.daporkchop.fp2.gl.codegen.util.LvtAlloc;
 import org.objectweb.asm.MethodVisitor;
 
 import java.util.function.Consumer;
@@ -40,7 +41,7 @@ public abstract class AbstractConvertingParameter extends MethodParameter {
     }
 
     @Override
-    public void visitLoad(MethodVisitor mv, int[] lvtAlloc, Consumer<IntConsumer> callback) {
+    public void visitLoad(MethodVisitor mv, LvtAlloc lvtAlloc, Consumer<IntConsumer> callback) {
         this.parent.visitLoad(mv, lvtAlloc, parentLoader ->
                 callback.accept(componentIndex -> {
                     parentLoader.accept(componentIndex);

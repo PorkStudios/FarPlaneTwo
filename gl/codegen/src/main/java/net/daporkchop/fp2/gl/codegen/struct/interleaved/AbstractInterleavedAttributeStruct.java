@@ -17,20 +17,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.attribute;
+package net.daporkchop.fp2.gl.codegen.struct.interleaved;
 
-import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
-import net.daporkchop.fp2.gl.attribute.annotation.AttributeIgnore;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 
 /**
- * Base interface for all struct types which will declare {@link Attribute attributes}.
- *
  * @author DaPorkchop_
  */
-public interface AttributeStruct extends AutoCloseable {
-    @Override
-    @AttributeIgnore
-    default void close() {
-        //no-op
-    }
+@RequiredArgsConstructor
+public abstract class AbstractInterleavedAttributeStruct implements AttributeStruct {
+    public final long address;
 }

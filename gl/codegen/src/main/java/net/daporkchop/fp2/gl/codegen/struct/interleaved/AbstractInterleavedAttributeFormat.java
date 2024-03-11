@@ -17,20 +17,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.attribute;
+package net.daporkchop.fp2.gl.codegen.struct.interleaved;
 
-import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
-import net.daporkchop.fp2.gl.attribute.annotation.AttributeIgnore;
+import lombok.Getter;
+import net.daporkchop.fp2.gl.attribute.AttributeStruct;
+import net.daporkchop.fp2.gl.attribute.AttributeTarget;
+import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
+import net.daporkchop.fp2.gl.codegen.struct.layout.LayoutInfo;
+
+import java.util.EnumSet;
 
 /**
- * Base interface for all struct types which will declare {@link Attribute attributes}.
- *
  * @author DaPorkchop_
  */
-public interface AttributeStruct extends AutoCloseable {
-    @Override
-    @AttributeIgnore
-    default void close() {
-        //no-op
+public abstract class AbstractInterleavedAttributeFormat<STRUCT extends AttributeStruct> implements NewAttributeFormat<STRUCT> {
+    @Getter
+    public final EnumSet<AttributeTarget> validTargets;
+    public final LayoutInfo layoutInfo;
+    @Getter
+    public final long size;
+
+    public AbstractInterleavedAttributeFormat(EnumSet<AttributeTarget> validTargets, LayoutInfo layoutInfo) {
+        this.validTargets = validTargets;
+        this.layoutInfo = layoutInfo;
+        this.size = layoutInfo.rootLayout().size();
     }
 }

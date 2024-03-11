@@ -21,9 +21,12 @@ package net.daporkchop.fp2.gl.attribute;
 
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.common.annotation.param.Positive;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * An append-only buffer for attribute data of a specific attribute type.
@@ -39,13 +42,21 @@ public abstract class NewAttributeWriter<STRUCT extends AttributeStruct> impleme
      */
     private final NewAttributeFormat<STRUCT> format;
 
-    protected int size = 0;
+    protected @NotNegative int size;
+    protected @Positive int capacity;
 
     /**
      * @return the number of vertices written so far
      */
     public final int size() {
         return this.size;
+    }
+
+    /**
+     * @return the number of vertices which can be stored in this writer before it needs to be resized
+     */
+    public final int capacity() {
+        return this.capacity;
     }
 
     /**
@@ -73,7 +84,7 @@ public abstract class NewAttributeWriter<STRUCT extends AttributeStruct> impleme
      * @return a {@link STRUCT handle} for accessing the element at the back of this writer
      */
     public final STRUCT back() {
-        return this.at(this.size() - 1);
+        return this.at(this.size - 1);
     }
 
     /**
@@ -104,11 +115,34 @@ public abstract class NewAttributeWriter<STRUCT extends AttributeStruct> impleme
     }
 
     /**
+     * Appends a new element to the writer by incrementing its position by one, and then gets an instance of {@link STRUCT the attribute struct type} which serves as a handle
+     * to access the attribute data at the new position. The element's contents are initially set to values copied from the element with the given
+     * index.
+     * <p>
+     * The handle must be {@link AttributeStruct#close() closed} once the user has finished accessing the data, at which point the handle will become invalid and must not
+     * be used again. The handle will also be invalidated when {@link #append() a new element is appended}, so all live handles must be closed before then.
+     * <p>
+     * Any existing handles to other elements in this writer will be invalidated by this operation.
+     *
+     * @param src the index of the element to copy attribute values from
+     * @return a {@link STRUCT} instance for struct data to be written to
+     */
+    public STRUCT appendCopy(@NotNegative int src) {
+        int index = this.size();
+        checkIndex(index, src);
+        this.appendUninitialized();
+        this.copy(src, index);
+        return this.at(index);
+    }
+
+    /**
      * Appends a new element to the writer by incrementing its position by one. The element's contents are initially undefined.
      * <p>
      * Any existing handles to other elements in this writer will be invalidated by this operation.
      */
-    public abstract void appendUninitialized();
+    public void appendUninitialized() {
+        this.appendUninitialized(1);
+    }
 
     /**
      * Appends new elements to the writer by incrementing its position by the given {@code count}. The element's contents are initially undefined.

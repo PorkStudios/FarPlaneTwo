@@ -22,6 +22,7 @@ package net.daporkchop.fp2.gl.codegen.struct.method.parameter;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.codegen.struct.attribute.JavaPrimitiveType;
+import net.daporkchop.fp2.gl.codegen.util.LvtAlloc;
 import org.objectweb.asm.MethodVisitor;
 
 import java.util.function.Consumer;
@@ -36,5 +37,5 @@ public abstract class MethodParameter {
     private final JavaPrimitiveType componentType;
     private final int components;
 
-    public abstract void visitLoad(MethodVisitor mv, int[] lvtAlloc, Consumer<IntConsumer> callback);
+    public abstract void visitLoad(MethodVisitor mv, LvtAlloc lvtAlloc, Consumer<IntConsumer> callback);
 }

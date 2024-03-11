@@ -109,7 +109,7 @@ public class InterleavedStructFormatClassLoader<S> extends StructFormatClassLoad
         {
             MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "copy", getMethodDescriptor(VOID_TYPE, getType(Object.class), LONG_TYPE, getType(Object.class), LONG_TYPE), null, null);
 
-            this.generateMemcpy(mv, 1, 2, 4, 5, this.layout.stride());
+            generateMemcpy(mv, 1, 2, 4, 5, this.layout.stride());
             mv.visitInsn(RETURN);
 
             mv.visitMaxs(0, 0);
@@ -167,7 +167,7 @@ public class InterleavedStructFormatClassLoader<S> extends StructFormatClassLoad
             mv.visitEnd();
         }
 
-        return this.finish(writer, className);
+        return finish(writer, className);
     }
 
     private void configureVao(@NonNull MethodVisitor mv, @NonNull InterleavedStructLayout layout, @NonNull AttributeType property, @NonNull InterleavedStructLayout.Member member, int apiLvtIndex, int locationsLvtIndex, int iLvtIndex) {
@@ -296,7 +296,7 @@ public class InterleavedStructFormatClassLoader<S> extends StructFormatClassLoad
             mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "allocateMemory", getMethodDescriptor(LONG_TYPE, LONG_TYPE), PUnsafe.class.isInterface());
             mv.visitVarInsn(LSTORE, addrLvtIndex);
 
-            this.generateTryWithCleanupOnException(mv, baseLvtIndexAllocator,
+            generateTryWithCleanupOnException(mv, baseLvtIndexAllocator,
                     innerLvtIndexAllocator -> {
                         mv.visitTypeInsn(NEW, this.handleSetToSingleInternalName());
                         mv.visitInsn(DUP);
@@ -333,7 +333,7 @@ public class InterleavedStructFormatClassLoader<S> extends StructFormatClassLoad
             mv.visitMethodInsn(INVOKESTATIC, getInternalName(PUnsafe.class), "allocateMemory", getMethodDescriptor(LONG_TYPE, LONG_TYPE), PUnsafe.class.isInterface());
             mv.visitVarInsn(LSTORE, addrLvtIndex);
 
-            this.generateTryWithCleanupOnException(mv, baseLvtIndexAllocator,
+            generateTryWithCleanupOnException(mv, baseLvtIndexAllocator,
                     innerLvtIndexAllocator -> {
                         mv.visitTypeInsn(NEW, this.arraySetToManyInternalName());
                         mv.visitInsn(DUP);
@@ -359,7 +359,7 @@ public class InterleavedStructFormatClassLoader<S> extends StructFormatClassLoad
             mv.visitEnd();
         }
 
-        return this.finish(writer, className);
+        return finish(writer, className);
     }
 
     @Override
@@ -391,7 +391,7 @@ public class InterleavedStructFormatClassLoader<S> extends StructFormatClassLoad
         { //copyBetweenAddresses(long src, long dst)
             MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "copyBetweenAddresses", getMethodDescriptor(VOID_TYPE, LONG_TYPE, LONG_TYPE), null, null);
 
-            this.generateMemcpy(mv, 1, 3, this.layout.stride());
+            generateMemcpy(mv, 1, 3, this.layout.stride());
             mv.visitInsn(RETURN);
 
             mv.visitMaxs(0, 0);
@@ -401,7 +401,7 @@ public class InterleavedStructFormatClassLoader<S> extends StructFormatClassLoad
         //implement all _withStride methods
         this.generateOverridesFor_withStride(writer, this.baseWriterClass());
 
-        return this.finish(writer, className);
+        return finish(writer, className);
     }
 
     @Override
@@ -473,7 +473,7 @@ public class InterleavedStructFormatClassLoader<S> extends StructFormatClassLoad
             mv.visitEnd();
         }
 
-        return this.finish(writer, className);
+        return finish(writer, className);
     }
 
     protected StructMethod.Setter.Callback<InterleavedStructLayout.Member, InterleavedStructLayout.Component> visitStructMethod(@NonNull MethodVisitor mv, int addrLvtIndex, long offsetOffset) {
@@ -578,7 +578,7 @@ public class InterleavedStructFormatClassLoader<S> extends StructFormatClassLoad
         { //close()
             MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "close", getMethodDescriptor(VOID_TYPE), null, null);
 
-            this.generateTryFinally(mv, 1,
+            generateTryFinally(mv, 1,
                     lvtIndexAllocator -> {
                         //super.close();
                         mv.visitVarInsn(ALOAD, 0);
@@ -604,7 +604,7 @@ public class InterleavedStructFormatClassLoader<S> extends StructFormatClassLoad
             mv.visitEnd();
         }
 
-        return this.finish(writer, className);
+        return finish(writer, className);
     }
 
     @Override
@@ -638,7 +638,7 @@ public class InterleavedStructFormatClassLoader<S> extends StructFormatClassLoad
         { //copyBetweenAddresses(long src, long dst)
             MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "copyBetweenAddresses", getMethodDescriptor(VOID_TYPE, LONG_TYPE, LONG_TYPE), null, null);
 
-            this.generateMemcpy(mv, 1, 3, this.layout.stride());
+            generateMemcpy(mv, 1, 3, this.layout.stride());
             mv.visitInsn(RETURN);
 
             mv.visitMaxs(0, 0);
@@ -648,7 +648,7 @@ public class InterleavedStructFormatClassLoader<S> extends StructFormatClassLoad
         //implement all _withStride methods
         this.generateOverridesFor_withStride(writer, this.baseArrayClass());
 
-        return this.finish(writer, className);
+        return finish(writer, className);
     }
 
     @Override
@@ -686,7 +686,7 @@ public class InterleavedStructFormatClassLoader<S> extends StructFormatClassLoad
         { //close()
             MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "close", getMethodDescriptor(VOID_TYPE), null, null);
 
-            this.generateTryFinally(mv, 1,
+            generateTryFinally(mv, 1,
                     lvtIndexAllocator -> {
                         //super.close();
                         mv.visitVarInsn(ALOAD, 0);
@@ -717,7 +717,7 @@ public class InterleavedStructFormatClassLoader<S> extends StructFormatClassLoad
         //implement all _withStride methods
         this.generateOverridesFor_withStride(writer, this.baseArrayClass());
 
-        return this.finish(writer, className);
+        return finish(writer, className);
     }
 
     protected void generateOverridesFor_withStride(@NonNull ClassVisitor writer, @NonNull Class<?> superclass) {

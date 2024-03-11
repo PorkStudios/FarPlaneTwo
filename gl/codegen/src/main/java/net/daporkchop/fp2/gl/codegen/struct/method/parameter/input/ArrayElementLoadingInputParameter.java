@@ -21,6 +21,7 @@ package net.daporkchop.fp2.gl.codegen.struct.method.parameter.input;
 
 import net.daporkchop.fp2.gl.codegen.struct.attribute.JavaPrimitiveType;
 import net.daporkchop.fp2.gl.codegen.struct.method.parameter.MethodParameter;
+import net.daporkchop.fp2.gl.codegen.util.LvtAlloc;
 import net.daporkchop.lib.common.util.PValidation;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
@@ -57,11 +58,11 @@ public final class ArrayElementLoadingInputParameter extends MethodParameter {
     }
 
     @Override
-    public void visitLoad(MethodVisitor mv, int[] lvtAlloc, Consumer<IntConsumer> callback) {
+    public void visitLoad(MethodVisitor mv, LvtAlloc lvtAlloc, Consumer<IntConsumer> callback) {
         this.load0(mv, lvtAlloc, callback, this.arrayLengths.length - 1);
     }
 
-    private void load0(MethodVisitor mv, int[] lvtAlloc, Consumer<IntConsumer> callback, int dimension) {
+    private void load0(MethodVisitor mv, LvtAlloc lvtAlloc, Consumer<IntConsumer> callback, int dimension) {
         if (dimension < 0) { //we've loaded all the array dimensions, we just need to load a reference for the root array
             mv.visitVarInsn(ALOAD, this.arrayLvtIndex);
             this.checkArrayLength(mv, 0);
@@ -73,7 +74,7 @@ public final class ArrayElementLoadingInputParameter extends MethodParameter {
         } else { //we're at a higher array level
             int lastParentArrayLvtIndex = dimension == 0
                     ? -1 //special case for dimension 0: we don't need to allocate an LVT entry, as the dimension 0 array won't be cached
-                    : lvtAlloc[0]++;
+                    : lvtAlloc.assign();
 
             this.load0(mv, lvtAlloc, loader -> {
                 int[] lastParentComponentIndex = {-1};

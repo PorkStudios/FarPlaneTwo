@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -29,7 +29,7 @@ import net.daporkchop.fp2.gl.attribute.AttributeWriter;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.format.StructFormat;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.layout.StructLayout;
-import net.daporkchop.fp2.gl.opengl.util.codegen.SimpleGeneratingClassLoader;
+import net.daporkchop.fp2.gl.codegen.util.SimpleGeneratingClassLoader;
 
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -106,7 +106,7 @@ public abstract class StructFormatClassLoader<S, L extends StructLayout<?, ?>, F
     protected abstract byte[] generateArraySetToManyClass();
 
     @Override
-    protected void registerClassGenerators(@NonNull BiConsumer<String, Supplier<byte[]>> registerGenerator, @NonNull Consumer<Class<?>> registerClass) {
+    protected void registerClassGenerators(BiConsumer<String, Supplier<byte[]>> registerGenerator, Consumer<Class<?>> registerClass) {
         registerGenerator.accept(this.formatClassName(), this::generateFormatClass);
         registerGenerator.accept(this.bufferClassName(), this::generateBufferClass);
         registerGenerator.accept(this.writerClassName(), this::generateWriterClass);
