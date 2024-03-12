@@ -21,8 +21,10 @@ package net.daporkchop.fp2.gl.codegen.struct;
 
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
+import net.daporkchop.fp2.gl.attribute.AttributeTarget;
 import net.daporkchop.fp2.gl.attribute.AttributeWriter;
 import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
+import net.daporkchop.fp2.gl.attribute.NewAttributeWriter;
 import net.daporkchop.fp2.gl.attribute.NewUniformBuffer;
 import net.daporkchop.fp2.gl.attribute.annotation.AttributeIgnore;
 import net.daporkchop.fp2.gl.attribute.annotation.AttributeSetter;
@@ -30,6 +32,7 @@ import net.daporkchop.fp2.gl.codegen.struct.attribute.ComponentType;
 import net.daporkchop.fp2.gl.codegen.struct.attribute.JavaPrimitiveType;
 import net.daporkchop.fp2.gl.codegen.struct.layout.LayoutInfo;
 import net.daporkchop.fp2.gl.codegen.util.SimpleGeneratingClassLoader;
+import net.daporkchop.lib.unsafe.PUnsafe;
 import org.objectweb.asm.MethodVisitor;
 
 import java.lang.reflect.Method;
@@ -40,6 +43,7 @@ import java.util.function.Supplier;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.objectweb.asm.Opcodes.*;
+import static org.objectweb.asm.Type.*;
 
 /**
  * @author DaPorkchop_
@@ -55,16 +59,19 @@ public abstract class AbstractStructFormatClassLoader<STRUCT extends AttributeSt
     protected final String uniformBufferClassInternalName;
 
     public AbstractStructFormatClassLoader(String prefix, Class<STRUCT> structClass, LayoutInfo layoutInfo) {
+        super(null); //inherit from the bootstrap class loader, this will force us to explicitly register a dependency on every class which could be referenced
+
         this.structClass = structClass;
         this.layoutInfo = layoutInfo;
 
-        String suffix = "layout='" + layoutInfo.name() + "',struct=" + structClass.getName().replace('.', '_');
+        //String suffix = "layout$" + layoutInfo.name() + '/' + structClass.getName().replace('.', '_');
+        prefix = structClass.getName().replace('.', '/') + '/' + prefix + '$' + layoutInfo.name() + '/';
 
-        this.attributeFormatClassInternalName = (prefix + NewAttributeFormat.class.getSimpleName() + "Impl_" + suffix).replace('.', '/');
-        this.attributeWriterClassInternalName = (prefix + AttributeWriter.class.getSimpleName() + "Impl_" + suffix).replace('.', '/');
-        this.handleClassInternalName = (prefix + AttributeStruct.class.getSimpleName() + "Impl_" + suffix).replace('.', '/');
-        this.handleUniformClassInternalName = (prefix + AttributeStruct.class.getSimpleName() + "UniformUpdateImpl_" + suffix).replace('.', '/');
-        this.uniformBufferClassInternalName = (prefix + NewUniformBuffer.class.getSimpleName() + "Impl_" + suffix).replace('.', '/');
+        this.attributeFormatClassInternalName = (prefix + NewAttributeFormat.class.getSimpleName() + "Impl").replace('.', '/');
+        this.attributeWriterClassInternalName = (prefix + AttributeWriter.class.getSimpleName() + "Impl").replace('.', '/');
+        this.handleClassInternalName = (prefix + AttributeStruct.class.getSimpleName() + "Impl").replace('.', '/');
+        this.handleUniformClassInternalName = (prefix + AttributeStruct.class.getSimpleName() + "UniformUpdateImpl").replace('.', '/');
+        this.uniformBufferClassInternalName = (prefix + NewUniformBuffer.class.getSimpleName() + "Impl").replace('.', '/');
     }
 
     public abstract NewAttributeFormat<STRUCT> createAttributeFormat(OpenGL gl);
@@ -86,6 +93,19 @@ public abstract class AbstractStructFormatClassLoader<STRUCT extends AttributeSt
         registerGenerator.accept(this.handleClassInternalName.replace('/', '.'), this::handleClass);
         registerGenerator.accept(this.handleUniformClassInternalName.replace('/', '.'), this::handleUniformClass);
         registerGenerator.accept(this.uniformBufferClassInternalName.replace('/', '.'), this::uniformBufferClass);
+
+        registerClass.accept(this.structClass);
+
+        registerClass.accept(PUnsafe.class);
+
+        registerClass.accept(OpenGL.class);
+        registerClass.accept(NewAttributeFormat.class);
+        registerClass.accept(AttributeStruct.class);
+        registerClass.accept(AttributeTarget.class);
+        registerClass.accept(NewAttributeWriter.class);
+        registerClass.accept(NewUniformBuffer.class);
+
+        registerClass.accept(LayoutInfo.class);
     }
 
     protected final void forEachSetterMethod(BiConsumer<Method, String> action) {
@@ -141,5 +161,12 @@ public abstract class AbstractStructFormatClassLoader<STRUCT extends AttributeSt
             mv.visitLdcInsn(logicalStorageType.storageType().normalizationFactor());
             mv.visitInsn(FMUL);
         }
+    }
+
+    protected static void generateSupportedCheck(MethodVisitor mv, String className, AttributeTarget target) {
+        mv.visitVarInsn(ALOAD, 0);
+        mv.visitFieldInsn(GETSTATIC, getInternalName(AttributeTarget.class), target.name(), getDescriptor(AttributeTarget.class));
+        mv.visitMethodInsn(INVOKEVIRTUAL, className, "supports", getMethodDescriptor(BOOLEAN_TYPE, getType(AttributeTarget.class)), false);
+        generateThrowNew(mv, IFNE, getInternalName(UnsupportedOperationException.class), "Attribute format doesn't support " + target.name());
     }
 }

@@ -20,6 +20,7 @@
 package net.daporkchop.fp2.gl.codegen.util;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import net.daporkchop.lib.common.util.PorkUtil;
 
 import java.util.Map;
@@ -31,9 +32,14 @@ import java.util.function.Supplier;
 /**
  * @author DaPorkchop_
  */
+@NoArgsConstructor
 public abstract class SimpleGeneratingClassLoader extends GeneratingClassLoader {
     @Getter(lazy = true)
     private final Map<String, Object> entries = this.buildEntries();
+
+    public SimpleGeneratingClassLoader(ClassLoader parent) {
+        super(parent);
+    }
 
     private Map<String, Object> buildEntries() {
         Map<String, Object> map = new TreeMap<>();

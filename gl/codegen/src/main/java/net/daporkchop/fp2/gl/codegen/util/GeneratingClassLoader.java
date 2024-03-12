@@ -19,6 +19,7 @@
 
 package net.daporkchop.fp2.gl.codegen.util;
 
+import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.common.asm.DelegatingClassLoader;
 import net.daporkchop.lib.common.annotation.param.Positive;
@@ -29,8 +30,10 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Map;
@@ -48,6 +51,7 @@ import static org.objectweb.asm.Type.*;
 /**
  * @author DaPorkchop_
  */
+@NoArgsConstructor
 public abstract class GeneratingClassLoader extends DelegatingClassLoader {
     protected static final boolean WRITE_CLASSES = GeneratingClassLoader.class.desiredAssertionStatus();
 
@@ -55,8 +59,8 @@ public abstract class GeneratingClassLoader extends DelegatingClassLoader {
 
     protected static final long MEMCPY_USE_UNSAFE_THRESHOLD = Long.getLong(preventInline("fp2.gl.opengl.") + "memCpyUseUnsafeThreshold", 64L);
 
-    protected GeneratingClassLoader() {
-        super(GeneratingClassLoader.class.getClassLoader());
+    public GeneratingClassLoader(ClassLoader parent) {
+        super(parent);
     }
 
     @Override
@@ -226,7 +230,9 @@ public abstract class GeneratingClassLoader extends DelegatingClassLoader {
         byte[] bytecode = cw.toByteArray();
 
         if (WRITE_CLASSES) {
-            Files.write(Paths.get(internalName.replace('/', '-') + ".class"), bytecode);
+            Path path = Paths.get(".fp2" + File.separatorChar + "gl" + File.separatorChar + internalName + ".class");
+            Files.createDirectories(path.toAbsolutePath().getParent());
+            Files.write(path, bytecode);
         }
 
         return bytecode;
@@ -262,12 +268,11 @@ public abstract class GeneratingClassLoader extends DelegatingClassLoader {
     }
 
     protected static void generatePassthroughCtorWithLocals(ClassVisitor cv, String internalName, String superclass, Map<String, Type> localTypes, Type... passthroughArgumentTypes) {
-        String desc = getMethodDescriptor(VOID_TYPE, Stream.concat(Arrays.stream(passthroughArgumentTypes), localTypes.values().stream()).toArray(Type[]::new));
-        MethodVisitor mv = beginMethod(cv, ACC_PUBLIC, "<init>", desc);
+        MethodVisitor mv = beginMethod(cv, ACC_PUBLIC, "<init>", getMethodDescriptor(VOID_TYPE, Stream.concat(Arrays.stream(passthroughArgumentTypes), localTypes.values().stream()).toArray(Type[]::new)));
 
         mv.visitVarInsn(ALOAD, 0);
         int lvt = loadConsecutiveValuesFromLvt(mv, 1, passthroughArgumentTypes);
-        mv.visitMethodInsn(INVOKESPECIAL, superclass, "<init>", desc, false);
+        mv.visitMethodInsn(INVOKESPECIAL, superclass, "<init>", getMethodDescriptor(VOID_TYPE, passthroughArgumentTypes), false);
 
         for (Map.Entry<String, Type> entry : localTypes.entrySet()) {
             mv.visitVarInsn(ALOAD, 0);
@@ -287,5 +292,34 @@ public abstract class GeneratingClassLoader extends DelegatingClassLoader {
             lvt += type.getSize();
         }
         return lvt;
+    }
+
+    protected static void generateThrowNew(MethodVisitor mv, String exceptionType) {
+        mv.visitTypeInsn(NEW, exceptionType);
+        mv.visitInsn(DUP);
+        mv.visitMethodInsn(INVOKESPECIAL, exceptionType, "<init>", getMethodDescriptor(VOID_TYPE), false);
+        mv.visitInsn(ATHROW);
+    }
+
+    protected static void generateThrowNew(MethodVisitor mv, String exceptionType, String message) {
+        mv.visitTypeInsn(NEW, exceptionType);
+        mv.visitInsn(DUP);
+        mv.visitLdcInsn(message);
+        mv.visitMethodInsn(INVOKESPECIAL, exceptionType, "<init>", getMethodDescriptor(VOID_TYPE, getType(String.class)), false);
+        mv.visitInsn(ATHROW);
+    }
+
+    protected static void generateThrowNew(MethodVisitor mv, int skipOpcode, String exceptionType) {
+        Label tailLbl = new Label();
+        mv.visitJumpInsn(skipOpcode, tailLbl);
+        generateThrowNew(mv, exceptionType);
+        mv.visitLabel(tailLbl);
+    }
+
+    protected static void generateThrowNew(MethodVisitor mv, int skipOpcode, String exceptionType, String message) {
+        Label tailLbl = new Label();
+        mv.visitJumpInsn(skipOpcode, tailLbl);
+        generateThrowNew(mv, exceptionType, message);
+        mv.visitLabel(tailLbl);
     }
 }

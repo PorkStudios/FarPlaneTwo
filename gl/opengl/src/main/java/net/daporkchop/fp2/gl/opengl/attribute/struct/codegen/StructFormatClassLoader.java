@@ -20,7 +20,6 @@
 package net.daporkchop.fp2.gl.opengl.attribute.struct.codegen;
 
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.attribute.AttributeArray;
 import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
@@ -40,12 +39,15 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
 public abstract class StructFormatClassLoader<S, L extends StructLayout<?, ?>, F extends StructFormat<S, L>> extends SimpleGeneratingClassLoader {
-    @NonNull
     protected final OpenGL gl;
-    @NonNull
     protected final L layout;
+
+    public StructFormatClassLoader(@NonNull OpenGL gl, @NonNull L layout) {
+        super(StructFormatClassLoader.class.getClassLoader());
+        this.gl = gl;
+        this.layout = layout;
+    }
 
     protected abstract String generatedClassNamePrefix();
 

@@ -85,13 +85,40 @@ public class StructSetterFactory {
         //group all the method parameters into a single virtual parameter containing all the components
         MethodParameter methodParameter = MethodParameterFactory.union(methodParameters.toArray(new MethodParameter[0]));
 
-        if (attributeType instanceof MatrixAttributeType) {
+        return assignParametersToSetter(attributeType, methodParameter);
+    }
+
+    private static StructSetter<?> assignParametersToSetter(AttributeType attributeType, MethodParameter methodParameter) {
+        if (attributeType instanceof ArrayAttributeType) {
+            ArrayAttributeType arrayType = (ArrayAttributeType) attributeType;
+            int elementComponents = consumedComponentValues(arrayType.elementType());
+            return arrayElementsAll(arrayType, elementIndex -> assignParametersToSetter(arrayType.elementType(), MethodParameterFactory.slice(methodParameter, elementIndex * elementComponents, elementComponents)));
+        } else if (attributeType instanceof MatrixAttributeType) {
             MatrixAttributeType matrixType = (MatrixAttributeType) attributeType;
             return matrixColumnsAll(matrixType, colIndex -> vector(matrixType.colType(), MethodParameterFactory.slice(methodParameter, colIndex * matrixType.rows(), matrixType.rows())));
         } else if (attributeType instanceof VectorAttributeType) {
             return vector((VectorAttributeType) attributeType, methodParameter);
         } else {
             throw new IllegalArgumentException(String.valueOf(attributeType));
+        }
+    }
+
+    private static int consumedComponentValues(AttributeType attributeType) {
+        int result = 1;
+        while (true) {
+            if (attributeType instanceof ArrayAttributeType) {
+                ArrayAttributeType arrayType = (ArrayAttributeType) attributeType;
+                result *= arrayType.elementCount();
+                attributeType = arrayType.elementType();
+            } else if (attributeType instanceof MatrixAttributeType) {
+                MatrixAttributeType matrixType = (MatrixAttributeType) attributeType;
+                result *= matrixType.cols();
+                attributeType = matrixType.colType();
+            } else if (attributeType instanceof VectorAttributeType) {
+                return result * ((VectorAttributeType) attributeType).components();
+            } else {
+                throw new IllegalArgumentException(String.valueOf(attributeType));
+            }
         }
     }
 

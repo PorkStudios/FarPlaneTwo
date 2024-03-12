@@ -22,7 +22,6 @@ package net.daporkchop.fp2.gl.opengl.attribute.texture.codegen;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.texture.BaseTextureFormatImpl;
@@ -40,11 +39,8 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
 public abstract class TextureFormatClassLoader<F extends BaseTextureFormatImpl<F>> extends SimpleGeneratingClassLoader {
-    @NonNull
     protected final OpenGL gl;
-    @NonNull
     protected final PixelFormatImpl pixelFormat;
 
     protected final @Positive int dimensions;
@@ -52,6 +48,13 @@ public abstract class TextureFormatClassLoader<F extends BaseTextureFormatImpl<F
     protected final Cache<String, F> cachedFormatsByName = CacheBuilder.newBuilder()
             .weakValues()
             .build();
+
+    public TextureFormatClassLoader(@NonNull OpenGL gl, @NonNull PixelFormatImpl pixelFormat, int dimensions) {
+        super(TextureFormatClassLoader.class.getClassLoader());
+        this.gl = gl;
+        this.pixelFormat = pixelFormat;
+        this.dimensions = dimensions;
+    }
 
     protected abstract String dimensionName(int dimension);
 

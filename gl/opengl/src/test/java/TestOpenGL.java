@@ -23,9 +23,11 @@ import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.common.util.exception.ResourceNotFoundException;
 import net.daporkchop.fp2.gl.GL;
+import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
+import net.daporkchop.fp2.gl.attribute.AttributeTarget;
 import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.attribute.AttributeWriter;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
@@ -44,6 +46,8 @@ import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureWriter2D;
 import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatChannelRange;
 import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatChannelType;
+import net.daporkchop.fp2.gl.codegen.struct.AttributeFormatFactory;
+import net.daporkchop.fp2.gl.codegen.struct.attribute.StructAttributeFactory;
 import net.daporkchop.fp2.gl.command.CommandBuffer;
 import net.daporkchop.fp2.gl.command.FramebufferLayer;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
@@ -68,6 +72,7 @@ import net.daporkchop.fp2.gl.transform.binding.TransformBinding;
 import net.daporkchop.fp2.gl.transform.shader.TransformShaderProgram;
 
 import java.io.InputStream;
+import java.util.EnumSet;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
@@ -98,6 +103,13 @@ public class TestOpenGL {
 
     @SneakyThrows({ ShaderCompilationException.class, ShaderLinkageException.class })
     private static void run(@NonNull GL gl, @NonNull BooleanSupplier closeRequested, @NonNull Runnable swapAndSync) {
+        if (true) {
+            AttributeFormatFactory.getAttributeFormat(OpenGL.forCurrent(), UniformAttribs.class, EnumSet.of(AttributeTarget.UBO))
+                    .createUniformBuffer()
+                    .update().close();
+            return;
+        }
+
         AttributeFormat<UniformAttribs> uniformFormat = gl.createAttributeFormat(UniformAttribs.class).useFor(AttributeUsage.UNIFORM).build();
         AttributeFormat<UniformArrayAttribs> uniformArrayFormat = gl.createAttributeFormat(UniformArrayAttribs.class).useFor(AttributeUsage.UNIFORM_ARRAY).build();
         AttributeFormat<GlobalAttribs> globalFormat = gl.createAttributeFormat(GlobalAttribs.class).useFor(AttributeUsage.DRAW_GLOBAL).build();
