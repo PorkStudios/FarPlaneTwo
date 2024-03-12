@@ -19,7 +19,6 @@
 
 package net.daporkchop.fp2.gl.codegen.struct.interleaved;
 
-import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
 import net.daporkchop.fp2.gl.attribute.NewUniformBuffer;
@@ -29,8 +28,8 @@ import net.daporkchop.lib.unsafe.PUnsafe;
  * @author DaPorkchop_
  */
 public abstract class AbstractInterleavedUniformBuffer<STRUCT extends AttributeStruct> extends NewUniformBuffer<STRUCT> {
-    protected AbstractInterleavedUniformBuffer(OpenGL gl, NewAttributeFormat.Uniform<STRUCT> format) {
-        super(gl, format);
+    protected AbstractInterleavedUniformBuffer(NewAttributeFormat<STRUCT> format) {
+        super(format);
     }
 
     @Override

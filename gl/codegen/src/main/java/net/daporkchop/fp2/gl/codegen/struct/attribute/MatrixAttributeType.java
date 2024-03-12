@@ -57,4 +57,9 @@ public final class MatrixAttributeType extends AttributeType {
     public int rows() {
         return this.colType.components();
     }
+
+    @Override
+    public int occupiedVertexAttributes() {
+        return this.cols * this.colType.occupiedVertexAttributes();
+    }
 }

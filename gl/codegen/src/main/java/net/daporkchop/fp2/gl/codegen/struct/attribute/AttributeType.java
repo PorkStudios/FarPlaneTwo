@@ -31,4 +31,9 @@ public abstract class AttributeType {
 
     @Override
     public abstract String toString();
+
+    /**
+     * @return the number of vertex attribute indices occupied by this attribute type
+     */
+    public abstract int occupiedVertexAttributes();
 }

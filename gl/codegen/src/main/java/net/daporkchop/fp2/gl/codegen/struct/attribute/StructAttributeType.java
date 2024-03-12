@@ -113,4 +113,13 @@ public final class StructAttributeType extends AttributeType {
         this.forEachField((index, name, type) -> joiner.add(name + " = " + type));
         return joiner.toString();
     }
+
+    @Override
+    public int occupiedVertexAttributes() {
+        int slots = 0;
+        for (AttributeType type : this.types) {
+            slots += type.occupiedVertexAttributes();
+        }
+        return slots;
+    }
 }

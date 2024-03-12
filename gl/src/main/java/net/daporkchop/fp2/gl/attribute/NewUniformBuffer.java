@@ -29,16 +29,16 @@ import net.daporkchop.fp2.gl.buffer.GLBuffer;
  */
 @Getter
 public abstract class NewUniformBuffer<STRUCT extends AttributeStruct> implements AutoCloseable {
+    protected final NewAttributeFormat<STRUCT> format;
     protected final OpenGL gl;
-    protected final NewAttributeFormat.Uniform<STRUCT> format;
 
     protected final GLBuffer buffer;
 
-    protected NewUniformBuffer(OpenGL gl, NewAttributeFormat.Uniform<STRUCT> format) {
-        this.gl = gl;
+    protected NewUniformBuffer(NewAttributeFormat<STRUCT> format) {
         this.format = format;
+        this.gl = format.gl();
 
-        this.buffer = GLBuffer.create(gl, BufferUsage.STATIC_DRAW);
+        this.buffer = GLBuffer.create(this.gl, BufferUsage.STATIC_DRAW);
     }
 
     /**

@@ -17,26 +17,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.codegen.struct.layout;
+package net.daporkchop.fp2.gl.codegen.struct.method.parameter.transform;
 
-import lombok.Data;
-import net.daporkchop.fp2.gl.OpenGL;
-import net.daporkchop.fp2.gl.attribute.AttributeTarget;
-import net.daporkchop.fp2.gl.codegen.struct.attribute.AttributeType;
-import net.daporkchop.fp2.gl.codegen.struct.attribute.StructAttributeType;
+import net.daporkchop.fp2.gl.codegen.struct.method.parameter.MethodParameter;
+import net.daporkchop.fp2.gl.codegen.util.LvtAlloc;
+import org.objectweb.asm.MethodVisitor;
 
-import java.util.EnumSet;
-import java.util.function.Function;
+import java.util.function.Consumer;
+import java.util.function.IntConsumer;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
-@Data
-public final class LayoutInfo {
-    private final StructAttributeType rootType;
-    private final StructLayout rootLayout;
-    private final String name;
-    private final boolean interleaved;
+public final class ComponentSliceTransformParameter extends MethodParameter {
+    private final MethodParameter parent;
+    private final int start;
 
-    private final Function<OpenGL, EnumSet<AttributeTarget>> compatibleTargets;
+    public ComponentSliceTransformParameter(MethodParameter parent, int start, int length) {
+        super(parent.componentType(), length);
+        checkRangeLen(parent.components(), start, length);
+
+        this.parent = parent;
+        this.start = start;
+    }
+
+    @Override
+    public void visitLoad(MethodVisitor mv, LvtAlloc lvtAlloc, Consumer<IntConsumer> callback) {
+        this.parent.visitLoad(mv,lvtAlloc, loader -> callback.accept(componentIndex -> {
+            checkIndex(this.components(), componentIndex);
+            loader.accept(componentIndex + this.start);
+        }));
+    }
 }

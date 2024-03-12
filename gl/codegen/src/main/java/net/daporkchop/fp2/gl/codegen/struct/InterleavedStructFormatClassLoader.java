@@ -19,20 +19,38 @@
 
 package net.daporkchop.fp2.gl.codegen.struct;
 
+import lombok.SneakyThrows;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
-import net.daporkchop.fp2.gl.attribute.AttributeTarget;
 import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
+import net.daporkchop.fp2.gl.attribute.NewAttributeWriter;
+import net.daporkchop.fp2.gl.attribute.NewUniformBuffer;
+import net.daporkchop.fp2.gl.codegen.struct.attribute.ArrayAttributeType;
+import net.daporkchop.fp2.gl.codegen.struct.attribute.MatrixAttributeType;
+import net.daporkchop.fp2.gl.codegen.struct.attribute.StructAttributeType;
+import net.daporkchop.fp2.gl.codegen.struct.attribute.VectorAttributeType;
+import net.daporkchop.fp2.gl.codegen.struct.interleaved.AbstractInterleavedAttributeFormat;
 import net.daporkchop.fp2.gl.codegen.struct.interleaved.AbstractInterleavedAttributeStruct;
 import net.daporkchop.fp2.gl.codegen.struct.interleaved.AbstractInterleavedAttributeWriter;
 import net.daporkchop.fp2.gl.codegen.struct.interleaved.AbstractInterleavedUniformBuffer;
+import net.daporkchop.fp2.gl.codegen.struct.layout.ArrayLayout;
 import net.daporkchop.fp2.gl.codegen.struct.layout.LayoutInfo;
+import net.daporkchop.fp2.gl.codegen.struct.layout.MatrixLayout;
+import net.daporkchop.fp2.gl.codegen.struct.layout.StructLayout;
+import net.daporkchop.fp2.gl.codegen.struct.layout.VectorLayout;
+import net.daporkchop.fp2.gl.codegen.struct.method.StructSetter;
+import net.daporkchop.fp2.gl.codegen.struct.method.StructSetterFactory;
+import net.daporkchop.fp2.gl.codegen.struct.method.parameter.MethodParameter;
 import net.daporkchop.fp2.gl.codegen.util.LvtAlloc;
 import org.objectweb.asm.MethodVisitor;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.function.Function;
+import java.util.function.IntConsumer;
 
 import static org.objectweb.asm.Opcodes.*;
 import static org.objectweb.asm.Type.*;
@@ -41,8 +59,81 @@ import static org.objectweb.asm.Type.*;
  * @author DaPorkchop_
  */
 public class InterleavedStructFormatClassLoader<STRUCT extends AttributeStruct> extends AbstractStructFormatClassLoader<STRUCT> {
-    public InterleavedStructFormatClassLoader(EnumSet<AttributeTarget> validTargets, Class<STRUCT> structClass, LayoutInfo layoutInfo) {
-        super("Interleaved", validTargets, structClass, layoutInfo);
+    public InterleavedStructFormatClassLoader(Class<STRUCT> structClass, LayoutInfo layoutInfo) {
+        super("Interleaved", structClass, layoutInfo);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    @SneakyThrows
+    public NewAttributeFormat<STRUCT> createAttributeFormat(OpenGL gl) {
+        return (NewAttributeFormat<STRUCT>) MethodHandles.publicLookup().findConstructor(this.loadClass(this.attributeFormatClassInternalName.replace('/', '.')), MethodType.methodType(void.class, OpenGL.class, LayoutInfo.class))
+                .invoke(gl, this.layoutInfo);
+    }
+
+    @Override
+    protected byte[] attributeFormatClass() {
+        return generateClass(ACC_PUBLIC | ACC_FINAL, this.attributeFormatClassInternalName, getInternalName(AbstractInterleavedAttributeFormat.class), null, cv -> {
+            generatePassthroughCtor(cv, getInternalName(AbstractInterleavedAttributeFormat.class), getType(OpenGL.class), getType(LayoutInfo.class));
+
+            //AttributeBuffer createBuffer()
+            /*generateMethod(cv, ACC_PUBLIC | ACC_FINAL, "createBuffer", getMethodDescriptor(getType(NewAttributeBuffer.class), getType(OpenGL.class)), mv -> {
+                mv.visitTypeInsn(NEW, this.attributeWriterClassInternalName);
+                mv.visitInsn(DUP);
+                mv.visitVarInsn(ALOAD, 0);
+                mv.visitVarInsn(ALOAD, 1);
+                mv.visitMethodInsn(INVOKESPECIAL, this.attributeFormatClassInternalName, "<init>", getMethodDescriptor(VOID_TYPE, getType(NewAttributeFormat.class), getType(DirectMemoryAllocator.class)), false);
+                return ARETURN;
+            });*/
+
+            //AttributeWriter createWriter(DirectMemoryAllocator alloc)
+            generateMethod(cv, ACC_PUBLIC | ACC_FINAL, "createWriter", getMethodDescriptor(getType(NewAttributeWriter.class), getType(DirectMemoryAllocator.class)), mv -> {
+                mv.visitTypeInsn(NEW, this.attributeWriterClassInternalName);
+                mv.visitInsn(DUP);
+                mv.visitVarInsn(ALOAD, 0);
+                mv.visitVarInsn(ALOAD, 1);
+                mv.visitMethodInsn(INVOKESPECIAL, this.attributeFormatClassInternalName, "<init>", getMethodDescriptor(VOID_TYPE, getType(NewAttributeFormat.class), getType(DirectMemoryAllocator.class)), false);
+                return ARETURN;
+            });
+
+            //int occupiedVertexAttributes()
+            generateMethod(cv, ACC_PUBLIC | ACC_FINAL, "occupiedVertexAttributes", getMethodDescriptor(INT_TYPE), mv -> {
+                mv.visitLdcInsn(this.layoutInfo.rootType().occupiedVertexAttributes());
+                return IRETURN;
+            });
+
+            //void bindVertexAttributeLocations(int program, @NonNull Function<String, String> nameFormatter, int baseBindingIndex);
+            generateMethod(cv, ACC_PUBLIC | ACC_FINAL, "bindVertexAttributeLocations", getMethodDescriptor(VOID_TYPE, INT_TYPE, getType(Function.class), INT_TYPE), mv -> {
+                //TODO: is there really any point in doing codegen for this?
+                for (int bindingIndexOffset = 0, index = 0; index < this.layoutInfo.rootType().fieldCount(); index++) {
+                    mv.visitVarInsn(ALOAD, 0);
+                    mv.visitMethodInsn(INVOKEVIRTUAL, this.attributeFormatClassInternalName, "gl", getMethodDescriptor(getType(OpenGL.class)), false);
+                    mv.visitVarInsn(ILOAD, 1);
+                    mv.visitVarInsn(ILOAD, 3);
+                    if (bindingIndexOffset != 0) {
+                        mv.visitLdcInsn(bindingIndexOffset);
+                        mv.visitInsn(IADD);
+                    }
+                    mv.visitVarInsn(ALOAD, 2);
+                    mv.visitLdcInsn(this.layoutInfo.rootType().fieldName(index));
+                    mv.visitMethodInsn(INVOKEINTERFACE, getInternalName(Function.class), "apply", getMethodDescriptor(OBJECT_TYPE, OBJECT_TYPE), true);
+                    mv.visitTypeInsn(CHECKCAST, getInternalName(String.class));
+                    mv.visitMethodInsn(INVOKEVIRTUAL, getInternalName(OpenGL.class), "glBindAttribLocation", getMethodDescriptor(VOID_TYPE, INT_TYPE, INT_TYPE, getType(CharSequence.class)), false);
+
+                    bindingIndexOffset += this.layoutInfo.rootType().fieldType(index).occupiedVertexAttributes();
+                }
+                return RETURN;
+            });
+
+            //UniformBuffer createUniformBuffer()
+            generateMethod(cv, ACC_PUBLIC | ACC_FINAL, "createUniformBuffer", getMethodDescriptor(getType(NewUniformBuffer.class)), mv -> {
+                mv.visitTypeInsn(NEW, this.uniformBufferClassInternalName);
+                mv.visitInsn(DUP);
+                mv.visitVarInsn(ALOAD, 0);
+                mv.visitMethodInsn(INVOKESPECIAL, this.uniformBufferClassInternalName, "<init>", getMethodDescriptor(VOID_TYPE, getType(NewAttributeFormat.class)), false);
+                return ARETURN;
+            });
+        });
     }
 
     @Override
@@ -119,7 +210,8 @@ public class InterleavedStructFormatClassLoader<STRUCT extends AttributeStruct> 
                 mv.visitFieldInsn(GETFIELD, this.handleClassInternalName, "address", LONG_TYPE.getDescriptor());
                 mv.visitVarInsn(LSTORE, addrLvtIndex);
 
-                //TODO: ((StructMethod.Setter) structMethod).visit(mv, lvtIndex, this.layout.member(), this.visitStructMethod(mv, addrLvtIndex, 0L));
+                StructSetterFactory.createFromMethod(this.layoutInfo.rootType(), method, attributeName)
+                        .visit(mv, lvtAlloc, this.layoutInfo.rootLayout(), visitSetter(mv, lvtAlloc, addrLvtIndex, 0L));
 
                 mv.visitVarInsn(ALOAD, 0);
                 mv.visitInsn(ARETURN);
@@ -127,6 +219,69 @@ public class InterleavedStructFormatClassLoader<STRUCT extends AttributeStruct> 
                 finish(mv);
             });
         });
+    }
+
+    static StructSetter.Callback visitSetter(MethodVisitor mv, LvtAlloc lvtAlloc, int addressLvt, long constantOffset) {
+        return new StructSetter.Callback() {
+            @Override
+            public StructSetter.Callback visitStructField(StructAttributeType structType, StructLayout structLayout, int fieldIndex) {
+                return visitSetter(mv, lvtAlloc, addressLvt, constantOffset + structLayout.fieldOffset(fieldIndex));
+            }
+
+            @Override
+            public StructSetter.Callback visitArrayElementConstant(ArrayAttributeType arrayType, ArrayLayout arrayLayout, int elementIndex) {
+                return visitSetter(mv, lvtAlloc, addressLvt, constantOffset + arrayLayout.elementOffset(elementIndex));
+            }
+
+            @Override
+            public StructSetter.Callback visitMatrixColumnConstant(MatrixAttributeType matrixType, MatrixLayout matrixLayout, int colIndex) {
+                return visitSetter(mv, lvtAlloc, addressLvt, constantOffset + matrixLayout.colOffset(colIndex));
+            }
+
+            private int visitIndexed(int elementIndexLvt, long elementStride) {
+                int nextAddressLvt = lvtAlloc.assign(LONG_TYPE);
+                mv.visitVarInsn(LLOAD, addressLvt);
+                mv.visitVarInsn(ILOAD, elementIndexLvt);
+                mv.visitInsn(I2L);
+                mv.visitLdcInsn(elementStride);
+                mv.visitInsn(LMUL);
+                if (constantOffset != 0L) {
+                    mv.visitLdcInsn(constantOffset);
+                    mv.visitInsn(LADD);
+                }
+                mv.visitInsn(LADD);
+                mv.visitVarInsn(LSTORE, nextAddressLvt);
+                return nextAddressLvt;
+            }
+
+            @Override
+            public StructSetter.Callback visitArrayElementIndexed(ArrayAttributeType arrayType, ArrayLayout arrayLayout, int elementIndexLvt) {
+                return visitSetter(mv, lvtAlloc, this.visitIndexed(elementIndexLvt, arrayLayout.elementStride()), 0L);
+            }
+
+            @Override
+            public StructSetter.Callback visitMatrixColumnIndexed(MatrixAttributeType matrixType, MatrixLayout matrixLayout, int colIndexLvt) {
+                return visitSetter(mv, lvtAlloc, this.visitIndexed(colIndexLvt, matrixLayout.colStride()), 0L);
+            }
+
+            @Override
+            public void visitVector(VectorAttributeType vectorType, VectorLayout vectorLayout, MethodParameter parameter, IntConsumer componentLoader) {
+                for (int componentIndex = 0; componentIndex < vectorType.components(); componentIndex++) {
+                    long componentOffset = constantOffset + vectorLayout.componentOffset(componentIndex);
+
+                    mv.visitInsn(ACONST_NULL);
+                    mv.visitVarInsn(LLOAD, addressLvt);
+                    if (componentOffset != 0L) {
+                        mv.visitLdcInsn(componentOffset);
+                        mv.visitInsn(LADD);
+                    }
+
+                    componentLoader.accept(componentIndex);
+                    convertComponent(mv, parameter.componentType(), vectorLayout.componentType(), vectorLayout.physicalStorageType());
+                    vectorLayout.physicalStorageType().unsafePut(mv);
+                }
+            }
+        };
     }
 
     @Override
@@ -152,7 +307,7 @@ public class InterleavedStructFormatClassLoader<STRUCT extends AttributeStruct> 
     @Override
     protected byte[] uniformBufferClass() {
         return generateClass(ACC_PUBLIC | ACC_FINAL, this.uniformBufferClassInternalName, getInternalName(AbstractInterleavedUniformBuffer.class), null, cv -> {
-            generatePassthroughCtor(cv, getInternalName(AbstractInterleavedUniformBuffer.class), getType(OpenGL.class), getType(NewAttributeFormat.Uniform.class));
+            generatePassthroughCtor(cv, getInternalName(AbstractInterleavedUniformBuffer.class), getType(NewAttributeFormat.class));
 
             generateMethod(cv, ACC_PUBLIC | ACC_FINAL, "update", getMethodDescriptor(getType(AttributeStruct.class), LONG_TYPE), mv -> {
                 mv.visitTypeInsn(NEW, this.handleClassInternalName);

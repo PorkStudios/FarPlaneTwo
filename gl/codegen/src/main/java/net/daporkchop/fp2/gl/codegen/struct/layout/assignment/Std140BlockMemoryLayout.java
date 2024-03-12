@@ -20,6 +20,9 @@
 package net.daporkchop.fp2.gl.codegen.struct.layout.assignment;
 
 import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.gl.GLExtension;
+import net.daporkchop.fp2.gl.OpenGL;
+import net.daporkchop.fp2.gl.attribute.AttributeTarget;
 import net.daporkchop.fp2.gl.codegen.struct.attribute.ArrayAttributeType;
 import net.daporkchop.fp2.gl.codegen.struct.attribute.AttributeType;
 import net.daporkchop.fp2.gl.codegen.struct.attribute.JavaPrimitiveType;
@@ -34,6 +37,7 @@ import net.daporkchop.fp2.gl.codegen.struct.layout.StructLayout;
 import net.daporkchop.fp2.gl.codegen.struct.layout.VectorLayout;
 import net.daporkchop.lib.common.math.PMath;
 
+import java.util.EnumSet;
 import java.util.stream.IntStream;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -46,8 +50,16 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @UtilityClass
 public class Std140BlockMemoryLayout {
+    public static EnumSet<AttributeTarget> compatibleTargets(OpenGL gl) {
+        EnumSet<AttributeTarget> result = EnumSet.of(AttributeTarget.VERTEX_ATTRIBUTE, AttributeTarget.UBO);
+        if (gl.supports(GLExtension.GL_ARB_shader_storage_buffer_object)) {
+            result.add(AttributeTarget.SSBO);
+        }
+        return result;
+    }
+
     public static LayoutInfo computeLayout(StructAttributeType type) {
-        return new LayoutInfo(type, layout(type), "std140", true);
+        return new LayoutInfo(type, layout(type), "std140", true, Std140BlockMemoryLayout::compatibleTargets);
     }
 
     private static AttributeLayout layout(AttributeType type) {

@@ -50,4 +50,9 @@ public final class VectorAttributeType extends AttributeType {
         this.componentType = componentType;
         this.components = components;
     }
+
+    @Override
+    public int occupiedVertexAttributes() {
+        return 1;
+    }
 }

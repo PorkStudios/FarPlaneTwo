@@ -19,27 +19,19 @@
 
 package net.daporkchop.fp2.gl.codegen.struct.interleaved;
 
-import lombok.Getter;
+import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
-import net.daporkchop.fp2.gl.attribute.AttributeTarget;
 import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
 import net.daporkchop.fp2.gl.codegen.struct.layout.LayoutInfo;
-
-import java.util.EnumSet;
 
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractInterleavedAttributeFormat<STRUCT extends AttributeStruct> implements NewAttributeFormat<STRUCT> {
-    @Getter
-    public final EnumSet<AttributeTarget> validTargets;
+public abstract class AbstractInterleavedAttributeFormat<STRUCT extends AttributeStruct> extends NewAttributeFormat<STRUCT> {
     public final LayoutInfo layoutInfo;
-    @Getter
-    public final long size;
 
-    public AbstractInterleavedAttributeFormat(EnumSet<AttributeTarget> validTargets, LayoutInfo layoutInfo) {
-        this.validTargets = validTargets;
+    public AbstractInterleavedAttributeFormat(OpenGL gl, LayoutInfo layoutInfo) {
+        super(gl, layoutInfo.compatibleTargets().apply(gl), layoutInfo.rootLayout().size());
         this.layoutInfo = layoutInfo;
-        this.size = layoutInfo.rootLayout().size();
     }
 }

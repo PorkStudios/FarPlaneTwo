@@ -19,30 +19,34 @@
 
 package net.daporkchop.fp2.gl.codegen.struct.method;
 
-import com.google.common.collect.Iterators;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.gl.attribute.annotation.ArrayIndex;
 import net.daporkchop.fp2.gl.attribute.annotation.AttributeIgnore;
 import net.daporkchop.fp2.gl.attribute.annotation.AttributeSetter;
 import net.daporkchop.fp2.gl.codegen.struct.attribute.ArrayAttributeType;
 import net.daporkchop.fp2.gl.codegen.struct.attribute.AttributeType;
+import net.daporkchop.fp2.gl.codegen.struct.attribute.MatrixAttributeType;
 import net.daporkchop.fp2.gl.codegen.struct.attribute.StructAttributeType;
+import net.daporkchop.fp2.gl.codegen.struct.attribute.VectorAttributeType;
+import net.daporkchop.fp2.gl.codegen.struct.layout.ArrayLayout;
+import net.daporkchop.fp2.gl.codegen.struct.layout.MatrixLayout;
+import net.daporkchop.fp2.gl.codegen.struct.layout.StructLayout;
+import net.daporkchop.fp2.gl.codegen.struct.layout.VectorLayout;
 import net.daporkchop.fp2.gl.codegen.struct.method.parameter.MethodParameter;
 import net.daporkchop.fp2.gl.codegen.struct.method.parameter.MethodParameterFactory;
 import net.daporkchop.lib.common.util.PorkUtil;
-import org.objectweb.asm.Type;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
+import java.util.function.IntFunction;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 import static org.objectweb.asm.Type.*;
 
 /**
@@ -52,28 +56,15 @@ import static org.objectweb.asm.Type.*;
  */
 @UtilityClass
 public class StructSetterFactory {
-    /*public static Optional<StructSetter> createFromMethod(StructAttributeType property, Method method) {
+    public static StructSetter<StructLayout> createFromMethod(StructAttributeType structType, Method method, String fieldName) {
         checkArg(method.getReturnType() == method.getDeclaringClass(), "method %s must have the same return type as the class in which it is declared!", method);
         checkArg((method.getModifiers() & Modifier.STATIC) == 0, "method %s may not be static!", method);
 
-        if (method.isAnnotationPresent(AttributeSetter.class)) {
-            AttributeSetter annotation = method.getAnnotation(AttributeSetter.class);
-            String attributeName = annotation.value();
-            if (attributeName.isEmpty()) { //fall back to method name if attribute name is unset
-                attributeName = method.getName();
-            }
-
-            int fieldIndex = property.fieldIndexByName(attributeName);
-
-            return Optional.of(new ChildSpecificSetter(digestParametersForSetter(property.fieldType(fieldIndex), 1, Arrays.asList(method.getParameters()).iterator()), fieldIndex));
-        } else if (method.isAnnotationPresent(AttributeIgnore.class)) {
-            return Optional.empty();
-        }
-
-        throw new UnsupportedOperationException(method.toString());
+        int fieldIndex = structType.fieldIndexByName(fieldName);
+        return structField(structType, fieldIndex, digestParametersForSetter(structType.fieldType(fieldIndex), 1, Arrays.asList(method.getParameters()).iterator()));
     }
 
-    private static StructSetter digestParametersForSetter(AttributeType attributeType, int lvtIndex, Iterator<Parameter> iterator) {
+    private static StructSetter<?> digestParametersForSetter(AttributeType attributeType, int lvtIndex, Iterator<Parameter> iterator) {
         Parameter parameter = iterator.next();
         if (parameter.isAnnotationPresent(ArrayIndex.class)) { //the parameter is an array index
             checkArg(parameter.getType() == int.class, "parameter annotated as @%s must be int", ArrayIndex.class);
@@ -81,7 +72,7 @@ public class StructSetterFactory {
             checkArg(attributeType instanceof ArrayAttributeType, "%s attribute doesn't have elements, cannot be used with @%s", PorkUtil.className(attributeType), ArrayIndex.class);
             ArrayAttributeType realAttributeType = (ArrayAttributeType) attributeType;
 
-            return new IndexedSetterImpl(digestParametersForSetter(realAttributeType.elementType(), lvtIndex + 1, iterator), lvtIndex);
+            return arrayElementIndexed(realAttributeType, lvtIndex, digestParametersForSetter(realAttributeType.elementType(), lvtIndex + 1, iterator));
         }
 
         //consume all the remaining parameters and gather them into an array
@@ -94,6 +85,64 @@ public class StructSetterFactory {
         //group all the method parameters into a single virtual parameter containing all the components
         MethodParameter methodParameter = MethodParameterFactory.union(methodParameters.toArray(new MethodParameter[0]));
 
-        return new BasicSetterImpl(methodParameter, lvtIndex);
+        if (attributeType instanceof MatrixAttributeType) {
+            MatrixAttributeType matrixType = (MatrixAttributeType) attributeType;
+            return matrixColumnsAll(matrixType, colIndex -> vector(matrixType.colType(), MethodParameterFactory.slice(methodParameter, colIndex * matrixType.rows(), matrixType.rows())));
+        } else if (attributeType instanceof VectorAttributeType) {
+            return vector((VectorAttributeType) attributeType, methodParameter);
+        } else {
+            throw new IllegalArgumentException(String.valueOf(attributeType));
+        }
+    }
+
+    private static StructSetter<StructLayout> structField(StructAttributeType structType, int fieldIndex, StructSetter<?> next) {
+        return (mv, lvtAlloc, layout, callback) -> next.visit(mv, lvtAlloc, uncheckedCast(layout.fieldLayout(fieldIndex)), callback.visitStructField(structType, layout, fieldIndex));
+    }
+
+    private static StructSetter<ArrayLayout> arrayElementsAll(ArrayAttributeType arrayType, IntFunction<StructSetter<?>> next) {
+        return (mv, lvtAlloc, layout, callback) -> {
+            for (int elementIndex = 0; elementIndex < arrayType.elementCount(); elementIndex++) {
+                next.apply(elementIndex).visit(mv, lvtAlloc, uncheckedCast(layout.elementLayout()), callback.visitArrayElementConstant(arrayType, layout, elementIndex));
+            }
+        };
+    }
+
+    private static StructSetter<ArrayLayout> arrayElementConstant(ArrayAttributeType arrayType, int elementIndex, StructSetter<?> next) {
+        return (mv, lvtAlloc, layout, callback) -> next.visit(mv, lvtAlloc, uncheckedCast(layout.elementLayout()), callback.visitArrayElementConstant(arrayType, layout, elementIndex));
+    }
+
+    private static StructSetter<ArrayLayout> arrayElementIndexed(ArrayAttributeType arrayType, int elementIndexLvt, StructSetter<?> next) {
+        return (mv, lvtAlloc, layout, callback) -> next.visit(mv, lvtAlloc, uncheckedCast(layout.elementLayout()), callback.visitArrayElementIndexed(arrayType, layout, elementIndexLvt));
+    }
+
+    private static StructSetter<MatrixLayout> matrixColumnsAll(MatrixAttributeType matrixType, IntFunction<StructSetter<?>> next) {
+        return (mv, lvtAlloc, layout, callback) -> {
+            for (int colIndex = 0; colIndex < matrixType.cols(); colIndex++) {
+                next.apply(colIndex).visit(mv, lvtAlloc, uncheckedCast(layout.colLayout()), callback.visitMatrixColumnConstant(matrixType, layout, colIndex));
+            }
+        };
+    }
+
+    /*private static StructSetter<MatrixLayout> matrixColumnsAll(MatrixAttributeType matrixType, MethodParameter parameter) {
+        checkArg(matrixType.rows() * matrixType.cols() == parameter.components());
+        return (mv, lvtAlloc, layout, callback) -> parameter.visitLoad(mv, lvtAlloc, componentLoader -> {
+            for (int colIndex = 0; colIndex < matrixType.cols(); colIndex++) {
+                callback.visitMatrixColumnConstant(matrixType, layout, colIndex)
+                                .visitVector(matrixType.colType(), layout.colLayout(), );
+                next.apply(colIndex).visit(mv, lvtAlloc, uncheckedCast(layout.colLayout()), callback.visitMatrixColumnConstant(matrixType, layout, colIndex));
+            }
+        });
     }*/
+
+    private static StructSetter<MatrixLayout> matrixColumnConstant(MatrixAttributeType matrixType, int colIndex, StructSetter<?> next) {
+        return (mv, lvtAlloc, layout, callback) -> next.visit(mv, lvtAlloc, uncheckedCast(layout.colLayout()), callback.visitMatrixColumnConstant(matrixType, layout, colIndex));
+    }
+
+    private static StructSetter<MatrixLayout> matrixColumnIndexed(MatrixAttributeType matrixType, int colIndexLvt, StructSetter<?> next) {
+        return (mv, lvtAlloc, layout, callback) -> next.visit(mv, lvtAlloc, uncheckedCast(layout.colLayout()), callback.visitMatrixColumnIndexed(matrixType, layout, colIndexLvt));
+    }
+
+    private static StructSetter<VectorLayout> vector(VectorAttributeType vectorType, MethodParameter parameter) {
+        return (mv, lvtAlloc, layout, callback) -> parameter.visitLoad(mv, lvtAlloc, loader -> callback.visitVector(vectorType, layout, parameter, loader));
+    }
 }

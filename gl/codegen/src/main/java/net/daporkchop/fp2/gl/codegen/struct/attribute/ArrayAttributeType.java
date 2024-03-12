@@ -59,4 +59,9 @@ public final class ArrayAttributeType extends AttributeType {
             action.accept(index, this.elementType);
         }
     }
+
+    @Override
+    public int occupiedVertexAttributes() {
+        return this.elementCount * this.elementType.occupiedVertexAttributes();
+    }
 }

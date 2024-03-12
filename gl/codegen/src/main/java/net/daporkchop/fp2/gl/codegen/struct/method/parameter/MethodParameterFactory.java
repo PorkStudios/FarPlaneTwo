@@ -29,6 +29,7 @@ import net.daporkchop.fp2.gl.codegen.struct.method.parameter.convert.IntegerToFl
 import net.daporkchop.fp2.gl.codegen.struct.method.parameter.convert.IntegerToUnsignedConvertingParameter;
 import net.daporkchop.fp2.gl.codegen.struct.method.parameter.input.ArrayElementLoadingInputParameter;
 import net.daporkchop.fp2.gl.codegen.struct.method.parameter.input.ScalarArgumentInputParameter;
+import net.daporkchop.fp2.gl.codegen.struct.method.parameter.transform.ComponentSliceTransformParameter;
 import net.daporkchop.fp2.gl.codegen.struct.method.parameter.transform.Int2ARGBExpansionTransformParameter;
 import net.daporkchop.fp2.gl.codegen.struct.method.parameter.transform.UnionTransformParameter;
 import net.daporkchop.lib.common.util.PorkUtil;
@@ -59,6 +60,14 @@ public class MethodParameterFactory {
         }
 
         return new UnionTransformParameter(parameters);
+    }
+
+    public static MethodParameter slice(MethodParameter parent, int start, int length) {
+        if (start == 0 && length == parent.components()) {
+            return parent;
+        } else {
+            return new ComponentSliceTransformParameter(parent, start, length);
+        }
     }
 
     public static MethodParameter createFromType(AnnotatedType annotatedType, int argumentLvtIndex) {

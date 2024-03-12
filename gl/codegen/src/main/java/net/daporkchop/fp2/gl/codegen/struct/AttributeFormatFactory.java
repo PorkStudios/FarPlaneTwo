@@ -17,26 +17,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.codegen.struct.layout;
+package net.daporkchop.fp2.gl.codegen.struct;
 
-import lombok.Data;
+import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.gl.OpenGL;
-import net.daporkchop.fp2.gl.attribute.AttributeTarget;
-import net.daporkchop.fp2.gl.codegen.struct.attribute.AttributeType;
-import net.daporkchop.fp2.gl.codegen.struct.attribute.StructAttributeType;
+import net.daporkchop.fp2.gl.attribute.AttributeStruct;
+import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
+import net.daporkchop.fp2.gl.codegen.struct.layout.LayoutInfo;
 
-import java.util.EnumSet;
-import java.util.function.Function;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
-@Data
-public final class LayoutInfo {
-    private final StructAttributeType rootType;
-    private final StructLayout rootLayout;
-    private final String name;
-    private final boolean interleaved;
-
-    private final Function<OpenGL, EnumSet<AttributeTarget>> compatibleTargets;
+@UtilityClass
+public class AttributeFormatFactory {
+    public static <STRUCT extends AttributeStruct> NewAttributeFormat<STRUCT> getAttributeFormat(OpenGL gl, Class<STRUCT> structClass, LayoutInfo layoutInfo) {
+        checkArg(layoutInfo.interleaved(), "separate attribute layout isn't supported!");
+        return new InterleavedStructFormatClassLoader<>(structClass, layoutInfo).createAttributeFormat(gl);
+    }
 }
