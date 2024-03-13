@@ -21,16 +21,19 @@ package net.daporkchop.fp2.gl.opengl.lwjgl3;
 
 import lombok.NonNull;
 import lombok.val;
+import net.daporkchop.fp2.common.util.DirectBufferHackery;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.GLVersion;
 import net.daporkchop.lib.common.function.exception.EPredicate;
 import net.daporkchop.lib.common.function.throwing.TPredicate;
+import net.daporkchop.lib.unsafe.PUnsafe;
 import org.lwjgl.opengl.*;
 import org.lwjgl.system.MemoryUtil;
 
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 import java.util.Comparator;
 import java.util.stream.Stream;
 
@@ -865,6 +868,40 @@ public final class GLAPILWJGL3 extends OpenGL implements GLAPI {
         } else {
             GL31.glUniformBlockBinding(program, uniformBlockIndex, uniformBlockBinding);
             super.debugCheckError();
+        }
+    }
+
+    @Override
+    public int[] glGetUniformIndices(int program, CharSequence[] uniformNames) {
+        long address = PUnsafe.allocateMemory(uniformNames.length * (long) Integer.BYTES);
+        try {
+            IntBuffer wrapped = DirectBufferHackery.wrapInt(address, uniformNames.length);
+            if (this.GL_ARB_uniform_buffer_object) {
+                ARBUniformBufferObject.glGetUniformIndices(program, uniformNames, wrapped);
+                super.debugCheckError();
+            } else {
+                GL31.glGetUniformIndices(program, uniformNames, wrapped);
+                super.debugCheckError();
+            }
+
+            int[] result = new int[uniformNames.length];
+            wrapped.get(result);
+            return result;
+        } finally {
+            PUnsafe.freeMemory(address);
+        }
+    }
+
+    @Override
+    public int glGetActiveUniformsi(int program, int uniformIndex, int pname) {
+        if (this.GL_ARB_uniform_buffer_object) {
+            val res = ARBUniformBufferObject.glGetActiveUniformsi(program, uniformIndex, pname);
+            super.debugCheckError();
+            return res;
+        } else {
+            val res = GL31.glGetActiveUniformsi(program, uniformIndex, pname);
+            super.debugCheckError();
+            return res;
         }
     }
 

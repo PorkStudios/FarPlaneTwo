@@ -33,6 +33,7 @@ import org.lwjgl.opengl.*;
 
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 import java.util.Comparator;
 import java.util.stream.Stream;
 
@@ -905,6 +906,40 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
         } else {
             GL31.glUniformBlockBinding(program, uniformBlockIndex, uniformBlockBinding);
             super.debugCheckError();
+        }
+    }
+
+    @Override
+    public int[] glGetUniformIndices(int program, CharSequence[] uniformNames) {
+        long address = PUnsafe.allocateMemory(uniformNames.length * (long) Integer.BYTES);
+        try {
+            IntBuffer wrapped = DirectBufferHackery.wrapInt(address, uniformNames.length);
+            if (this.GL_ARB_uniform_buffer_object) {
+                ARBUniformBufferObject.glGetUniformIndices(program, uniformNames, wrapped);
+                super.debugCheckError();
+            } else {
+                GL31.glGetUniformIndices(program, uniformNames, wrapped);
+                super.debugCheckError();
+            }
+
+            int[] result = new int[uniformNames.length];
+            wrapped.get(result);
+            return result;
+        } finally {
+            PUnsafe.freeMemory(address);
+        }
+    }
+
+    @Override
+    public int glGetActiveUniformsi(int program, int uniformIndex, int pname) {
+        if (this.GL_ARB_uniform_buffer_object) {
+            val res = ARBUniformBufferObject.glGetActiveUniformsi(program, uniformIndex, pname);
+            super.debugCheckError();
+            return res;
+        } else {
+            val res = GL31.glGetActiveUniformsi(program, uniformIndex, pname);
+            super.debugCheckError();
+            return res;
         }
     }
 

@@ -36,7 +36,7 @@ public abstract class AbstractInterleavedAttributeFormat<STRUCT extends Attribut
     public final LayoutInfo layoutInfo;
 
     public AbstractInterleavedAttributeFormat(OpenGL gl, LayoutInfo layoutInfo) {
-        super(gl, layoutInfo.compatibleTargets().apply(gl), layoutInfo.rootLayout().size());
+        super(gl, layoutInfo.compatibleTargets().apply(gl, layoutInfo.rootType()), layoutInfo.rootLayout().size());
         this.layoutInfo = layoutInfo;
     }
 

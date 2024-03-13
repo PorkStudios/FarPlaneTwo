@@ -30,9 +30,9 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @RequiredArgsConstructor
 @Getter
 public enum ShaderPrimitiveType {
-    UINT(Integer.BYTES, true, false),
-    INT(Integer.BYTES, true, true),
-    FLOAT(Float.BYTES, false, true),
+    UINT(Integer.BYTES, true, false, "u"),
+    INT(Integer.BYTES, true, true, "i"),
+    FLOAT(Float.BYTES, false, true, ""),
     ;
 
     public static ShaderPrimitiveType from(JavaPrimitiveType type) {
@@ -47,4 +47,5 @@ public enum ShaderPrimitiveType {
     private final int size;
     private final boolean integer;
     private final boolean signed;
+    private final String glslPrefix;
 }

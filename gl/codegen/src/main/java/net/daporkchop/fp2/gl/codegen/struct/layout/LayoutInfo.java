@@ -26,6 +26,7 @@ import net.daporkchop.fp2.gl.codegen.struct.attribute.AttributeType;
 import net.daporkchop.fp2.gl.codegen.struct.attribute.StructAttributeType;
 
 import java.util.EnumSet;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -38,5 +39,5 @@ public final class LayoutInfo {
     private final String name;
     private final boolean interleaved;
 
-    private final Function<OpenGL, EnumSet<AttributeTarget>> compatibleTargets;
+    private final BiFunction<OpenGL, StructAttributeType, EnumSet<AttributeTarget>> compatibleTargets;
 }

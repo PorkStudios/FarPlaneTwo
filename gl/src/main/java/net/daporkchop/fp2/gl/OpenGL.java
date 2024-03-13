@@ -429,6 +429,17 @@ public abstract class OpenGL {
     //GL_ARB_uniform_buffer_object
     public abstract void glUniformBlockBinding(int program, int uniformBlockIndex, int uniformBlockBinding);
 
+    //GL_ARB_uniform_buffer_object
+    public abstract int[] glGetUniformIndices(int program, CharSequence[] uniformNames);
+
+    //GL_ARB_uniform_buffer_object
+    public final int glGetUniformIndices(int program, CharSequence uniformName) {
+        return this.glGetUniformIndices(program, new CharSequence[]{ uniformName })[0];
+    }
+
+    //GL_ARB_uniform_buffer_object
+    public abstract int glGetActiveUniformsi(int program, int uniformIndex, int pname);
+
     //
     //
     // OpenGL 3.2

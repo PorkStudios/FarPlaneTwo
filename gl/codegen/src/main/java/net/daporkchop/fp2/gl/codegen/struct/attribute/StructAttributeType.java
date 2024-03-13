@@ -22,6 +22,7 @@ package net.daporkchop.fp2.gl.codegen.struct.attribute;
 import com.google.common.collect.ImmutableMap;
 import lombok.AccessLevel;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.lib.primitive.lambda.IntObjObjConsumer;
@@ -37,18 +38,21 @@ import java.util.StringJoiner;
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @EqualsAndHashCode(callSuper = false)
 public final class StructAttributeType extends AttributeType {
-    public static StructAttributeType create(ImmutableMap<String, ? extends AttributeType> attributes) {
-        return new StructAttributeType(attributes);
+    public static StructAttributeType create(String structName, ImmutableMap<String, ? extends AttributeType> attributes) {
+        return new StructAttributeType(structName, attributes);
     }
 
-    public static StructAttributeType create(LinkedHashMap<String, ? extends AttributeType> attributes) {
-        return new StructAttributeType(attributes);
+    public static StructAttributeType create(String structName, LinkedHashMap<String, ? extends AttributeType> attributes) {
+        return new StructAttributeType(structName, attributes);
     }
 
+    @Getter
+    private final String structName;
     private final String[] names;
     private final AttributeType[] types;
 
-    private StructAttributeType(Map<String, ? extends AttributeType> attributes) {
+    private StructAttributeType(String structName, Map<String, ? extends AttributeType> attributes) {
+        this.structName = structName;
         this.names = attributes.keySet().toArray(new String[0]);
         this.types = attributes.values().toArray(new AttributeType[0]);
     }

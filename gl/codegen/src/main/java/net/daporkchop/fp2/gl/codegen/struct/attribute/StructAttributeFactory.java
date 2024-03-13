@@ -70,7 +70,7 @@ public class StructAttributeFactory {
         for (Attribute attribute : attributes) {
             propertiesBuilder.put(attribute.name(), of(attribute));
         }
-        return StructAttributeType.create(propertiesBuilder.build());
+        return StructAttributeType.create(struct.getName().replace('.', '_'), propertiesBuilder.build());
     }
 
     private static AttributeType of(@NonNull Attribute attribute) {

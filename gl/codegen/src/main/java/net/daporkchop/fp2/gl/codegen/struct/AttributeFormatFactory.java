@@ -27,6 +27,8 @@ import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
 import net.daporkchop.fp2.gl.codegen.struct.attribute.StructAttributeFactory;
 import net.daporkchop.fp2.gl.codegen.struct.attribute.StructAttributeType;
 import net.daporkchop.fp2.gl.codegen.struct.layout.LayoutInfo;
+import net.daporkchop.fp2.gl.codegen.struct.layout.assignment.PackedInterleavedMemoryLayout;
+import net.daporkchop.fp2.gl.codegen.struct.layout.assignment.SharedBlockMemoryLayout;
 import net.daporkchop.fp2.gl.codegen.struct.layout.assignment.Std140BlockMemoryLayout;
 
 import java.util.Set;
@@ -48,8 +50,12 @@ public class AttributeFormatFactory {
         StructAttributeType structType = StructAttributeFactory.struct(structClass);
 
         checkArg(!requestedSupportedTargets.isEmpty(), "at least one target must be requested");
-        if (Std140BlockMemoryLayout.compatibleTargets(gl).containsAll(requestedSupportedTargets)) {
-            return Std140BlockMemoryLayout.computeLayout(structType);
+        if (PackedInterleavedMemoryLayout.compatibleTargets(gl, structType).containsAll(requestedSupportedTargets)) {
+            return PackedInterleavedMemoryLayout.computeLayout(gl, structType);
+        } else if (false && SharedBlockMemoryLayout.compatibleTargets(gl, structType).containsAll(requestedSupportedTargets)) {
+            return SharedBlockMemoryLayout.computeLayout(gl, structType);
+        } else if (Std140BlockMemoryLayout.compatibleTargets(gl, structType).containsAll(requestedSupportedTargets)) {
+            return Std140BlockMemoryLayout.computeLayout(gl, structType);
         }
 
         throw new IllegalArgumentException("unable to determine layout for " + structClass + " supporting " + requestedSupportedTargets);

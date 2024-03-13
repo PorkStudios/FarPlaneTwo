@@ -50,7 +50,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @UtilityClass
 public class Std140BlockMemoryLayout {
-    public static EnumSet<AttributeTarget> compatibleTargets(OpenGL gl) {
+    public static EnumSet<AttributeTarget> compatibleTargets(OpenGL gl, StructAttributeType type) {
         EnumSet<AttributeTarget> result = EnumSet.of(AttributeTarget.VERTEX_ATTRIBUTE, AttributeTarget.UBO);
         if (gl.supports(GLExtension.GL_ARB_shader_storage_buffer_object)) {
             result.add(AttributeTarget.SSBO);
@@ -58,7 +58,7 @@ public class Std140BlockMemoryLayout {
         return result;
     }
 
-    public static LayoutInfo computeLayout(StructAttributeType type) {
+    public static LayoutInfo computeLayout(OpenGL gl, StructAttributeType type) {
         return new LayoutInfo(type, layout(type), "std140", true, Std140BlockMemoryLayout::compatibleTargets);
     }
 
