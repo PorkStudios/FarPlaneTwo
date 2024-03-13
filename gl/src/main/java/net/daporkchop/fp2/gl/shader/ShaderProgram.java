@@ -19,7 +19,6 @@
 
 package net.daporkchop.fp2.gl.shader;
 
-import com.sun.crypto.provider.Preconditions;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
@@ -36,9 +35,8 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import static net.daporkchop.fp2.gl.OpenGLConstants.*;
-import static net.daporkchop.lib.common.util.PValidation.checkArg;
-import static net.daporkchop.lib.common.util.PValidation.checkIndex;
-import static net.daporkchop.lib.common.util.PorkUtil.uncheckedCast;
+import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * Base implementation of a linked OpenGL shader program.
@@ -95,17 +93,17 @@ public abstract class ShaderProgram implements AutoCloseable {
         protected final BlockBindings SSBOs = BlockBindings.createSSBO();
         protected final BlockBindings UBOs = BlockBindings.createUBO();
 
-        public S addSampler(@NotNegative int unit, @NonNull String name) {
+        public B addSampler(@NotNegative int unit, @NonNull String name) {
             this.samplers.add(this.gl.limits().maxTextureUnits(), unit, name);
             return uncheckedCast(this);
         }
 
-        public S addSSBO(@NotNegative int bindingIndex, @NonNull String name) {
+        public B addSSBO(@NotNegative int bindingIndex, @NonNull String name) {
             this.SSBOs.add(this.gl.limits().maxShaderStorageBuffers(), bindingIndex, name);
             return uncheckedCast(this);
         }
 
-        public S addUBO(@NotNegative int bindingIndex, @NonNull String name) {
+        public B addUBO(@NotNegative int bindingIndex, @NonNull String name) {
             this.UBOs.add(this.gl.limits().maxUniformBuffers(), bindingIndex, name);
             return uncheckedCast(this);
         }

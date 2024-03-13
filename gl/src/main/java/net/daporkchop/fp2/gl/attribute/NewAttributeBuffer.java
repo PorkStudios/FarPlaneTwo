@@ -23,11 +23,11 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.gl.attribute.vao.VertexArrayObject;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.common.annotation.param.Positive;
 
-import static net.daporkchop.lib.common.util.PValidation.checkRange;
-import static net.daporkchop.lib.common.util.PValidation.checkRangeLen;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * Base implementation of an {@link AttributeFormat}.
@@ -43,7 +43,7 @@ public abstract class NewAttributeBuffer<STRUCT extends AttributeStruct> impleme
      */
     private final NewAttributeFormat<STRUCT> format;
 
-    protected int capacity;
+    protected @NotNegative int capacity;
 
     /**
      * @return the number of attribute data elements that this buffer can store
@@ -148,6 +148,29 @@ public abstract class NewAttributeBuffer<STRUCT extends AttributeStruct> impleme
      * @return an {@link AttributeArray} for writing attribute values to and setting this buffer's contents
      */
     public abstract AttributeArray<STRUCT> setToMany(@Positive int length);
+
+    /**
+     * Configures the given {@link VertexArrayObject} to reference the vertex data in this attribute buffer.
+     *
+     * @param baseBindingIndex the base index of the vertex array
+     * @param vao              the {@link VertexArrayObject} to configure
+     * @return the last vertex attribute binding index which was assigned, plus one
+     * @throws UnsupportedOperationException if this attribute buffer uses an {@link NewAttributeFormat attribute format} which doesn't support vertex attributes
+     */
+    public int configure(@NotNegative int baseBindingIndex, @NonNull VertexArrayObject vao) throws UnsupportedOperationException {
+        return this.configure(baseBindingIndex, vao, 0);
+    }
+
+    /**
+     * Configures the given {@link VertexArrayObject} to reference the vertex data in this attribute buffer.
+     *
+     * @param baseBindingIndex the base index of the vertex array
+     * @param vao              the {@link VertexArrayObject} to configure
+     * @param divisor          the configured vertex attribute divisor
+     * @return the last vertex attribute binding index which was assigned, plus one
+     * @throws UnsupportedOperationException if this attribute buffer uses an {@link NewAttributeFormat attribute format} which doesn't support vertex attributes, or if the {@code divisor} is greater than {@code 0} and {@link net.daporkchop.fp2.gl.GLExtension#GL_ARB_instanced_arrays} isn't supported
+     */
+    public abstract int configure(@NotNegative int baseBindingIndex, @NonNull VertexArrayObject vao, @NotNegative int divisor) throws UnsupportedOperationException;
 
     @Override
     public abstract void close();

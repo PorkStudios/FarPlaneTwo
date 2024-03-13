@@ -38,7 +38,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @UtilityClass
 public class AttributeFormatFactory {
-    public static <STRUCT extends AttributeStruct> NewAttributeFormat getAttributeFormat(OpenGL gl, Class<STRUCT> structClass, Set<AttributeTarget> requestedSupportedTargets) {
+    public static <STRUCT extends AttributeStruct> NewAttributeFormat<STRUCT> get(OpenGL gl, Class<STRUCT> structClass, Set<AttributeTarget> requestedSupportedTargets) {
         LayoutInfo layout = getAttributeLayout(gl, structClass, requestedSupportedTargets);
         checkArg(layout.interleaved(), "separate attribute layout isn't supported!");
         return new InterleavedStructFormatClassLoader<>(structClass, layout).createAttributeFormat(gl);

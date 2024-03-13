@@ -23,12 +23,15 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.gl.OpenGL;
+import net.daporkchop.fp2.gl.OpenGLConstants;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 
 import java.util.IdentityHashMap;
 
+import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static org.objectweb.asm.Opcodes.*;
 import static org.objectweb.asm.Type.*;
@@ -39,13 +42,13 @@ import static org.objectweb.asm.Type.*;
 @RequiredArgsConstructor
 @Getter
 public enum JavaPrimitiveType {
-    UNSIGNED_BYTE(Byte.BYTES, true, false, 1 << Byte.SIZE, byte.class, BYTE_TYPE),
-    BYTE(Byte.BYTES, true, true, -((int) Byte.MIN_VALUE), byte.class, BYTE_TYPE),
-    UNSIGNED_SHORT(Character.SIZE, true, false, 1 << Character.SIZE, char.class, CHAR_TYPE),
-    SHORT(Short.BYTES, true, true, -((int) Short.MIN_VALUE), short.class, SHORT_TYPE),
-    UNSIGNED_INT(Integer.BYTES, true, false, 1L << Integer.SIZE, int.class, INT_TYPE),
-    INT(Integer.BYTES, true, true, -((long) Integer.MIN_VALUE), int.class, INT_TYPE),
-    FLOAT(Float.BYTES, false, true, Float.NaN, float.class, FLOAT_TYPE),
+    UNSIGNED_BYTE(Byte.BYTES, true, false, 1 << Byte.SIZE, byte.class, BYTE_TYPE, GL_UNSIGNED_BYTE),
+    BYTE(Byte.BYTES, true, true, -((int) Byte.MIN_VALUE), byte.class, BYTE_TYPE, GL_BYTE),
+    UNSIGNED_SHORT(Character.SIZE, true, false, 1 << Character.SIZE, char.class, CHAR_TYPE, GL_UNSIGNED_SHORT),
+    SHORT(Short.BYTES, true, true, -((int) Short.MIN_VALUE), short.class, SHORT_TYPE, GL_SHORT),
+    UNSIGNED_INT(Integer.BYTES, true, false, 1L << Integer.SIZE, int.class, INT_TYPE, GL_UNSIGNED_INT),
+    INT(Integer.BYTES, true, true, -((long) Integer.MIN_VALUE), int.class, INT_TYPE, GL_INT),
+    FLOAT(Float.BYTES, false, true, Float.NaN, float.class, FLOAT_TYPE, GL_FLOAT),
     ;
 
     private static final IdentityHashMap<Class<?>, JavaPrimitiveType> PRIMITIVE_CLASSES_TO_COMPONENT_TYPES = new IdentityHashMap<>();
@@ -90,6 +93,8 @@ public enum JavaPrimitiveType {
 
     private final Class<?> javaType;
     private final Type asmType;
+    @Getter(AccessLevel.NONE)
+    private final char glType;
 
     @Getter(AccessLevel.NONE)
     private transient final String unsafeGetName;
@@ -100,13 +105,14 @@ public enum JavaPrimitiveType {
     @Getter(AccessLevel.NONE)
     private transient final String unsafePutDescriptor;
 
-    JavaPrimitiveType(int size, boolean integer, boolean signed, float inverseNormalizationFactor, Class<?> javaType, Type asmType) {
+    JavaPrimitiveType(int size, boolean integer, boolean signed, float inverseNormalizationFactor, Class<?> javaType, Type asmType, int glType) {
         this.size = size;
         this.integer = integer;
         this.signed = signed;
         this.inverseNormalizationFactor = inverseNormalizationFactor;
         this.javaType = javaType;
         this.asmType = asmType;
+        this.glType = tochar(glType);
 
         String className = this.asmType.getClassName();
         className = Character.toUpperCase(className.charAt(0)) + className.substring(1);
@@ -254,6 +260,18 @@ public enum JavaPrimitiveType {
         } else {
             mv.visitInsn(F2I);
             this.truncateInteger(mv);
+        }
+    }
+
+    /**
+     * Pops: {@code []}
+     * Pushes: {@code int}
+     */
+    public final void loadGlTypeId(MethodVisitor mv, boolean debug) {
+        if (debug) {
+            mv.visitFieldInsn(GETSTATIC, getInternalName(OpenGLConstants.class), "GL_" + this.name(), INT_TYPE.getDescriptor());
+        } else {
+            mv.visitLdcInsn(this.glType);
         }
     }
 }

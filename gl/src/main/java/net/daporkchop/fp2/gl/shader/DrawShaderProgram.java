@@ -23,6 +23,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeTarget;
+import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
 
 import java.util.BitSet;
 import java.util.Map;
@@ -36,25 +37,25 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  *
  * @author DaPorkchop_
  */
-public class DrawShaderProgram extends ShaderProgram {
+public final class DrawShaderProgram extends ShaderProgram {
     public static Builder builder(OpenGL gl) {
         return new Builder(gl);
     }
 
-    protected DrawShaderProgram(Builder builder) throws ShaderLinkageException {
+    DrawShaderProgram(Builder builder) throws ShaderLinkageException {
         super(builder);
     }
 
     /**
      * @author DaPorkchop_
      */
-    public static class Builder extends ShaderProgram.Builder<DrawShaderProgram, Builder> {
-        protected boolean vertexShader;
-        protected boolean fragmentShader;
+    public static final class Builder extends ShaderProgram.Builder<DrawShaderProgram, Builder> {
+        private boolean vertexShader;
+        private boolean fragmentShader;
 
-        protected final VertexAttributeBindings vertexAttributes = new VertexAttributeBindings();
+        private final VertexAttributeBindings vertexAttributes = new VertexAttributeBindings();
 
-        protected Builder(OpenGL gl) {
+        Builder(OpenGL gl) {
             super(gl);
         }
 
@@ -74,10 +75,13 @@ public class DrawShaderProgram extends ShaderProgram {
             return this;
         }
 
-        public Builder vertexAttributes(int bindingIndex, AttributeFormat<?> attributeFormat) {
-            checkArg(attributeFormat.validTargets().contains(AttributeTarget.VERTEX_ATTRIBUTE), attributeFormat);
-            checkArg(attributeFormat instanceof AttributeFormat.Vertex, attributeFormat);
-            this.vertexAttributes.add(this.gl.limits().maxVertexAttributes(), bindingIndex, (AttributeFormat.Vertex<?>) attributeFormat);
+        public Builder vertexAttributes(int bindingIndex, NewAttributeFormat<?> attributeFormat) {
+            return this.vertexAttributes(bindingIndex, attributeFormat, null);
+        }
+
+        public Builder vertexAttributes(int bindingIndex, NewAttributeFormat<?> attributeFormat, Function<String, String> nameFormatter) {
+            checkArg(attributeFormat.supports(AttributeTarget.VERTEX_ATTRIBUTE), attributeFormat);
+            this.vertexAttributes.add(this.gl.limits().maxVertexAttributes(), bindingIndex, attributeFormat, nameFormatter);
             return this;
         }
 
@@ -100,9 +104,10 @@ public class DrawShaderProgram extends ShaderProgram {
      */
     protected static class VertexAttributeBindings {
         protected final BitSet occupiedBindingLocations = new BitSet();
-        protected final Map<Integer, AttributeFormat.Vertex<?>> bindings = new TreeMap<>();
+        protected final Map<Integer, NewAttributeFormat<?>> bindings = new TreeMap<>();
+        protected final Map<Integer, Function<String, String>> nameFormatters = new TreeMap<>();
 
-        public void add(int maxAttribBindings, int bindingIndex, @NonNull AttributeFormat.Vertex<?> format) {
+        public void add(int maxAttribBindings, int bindingIndex, NewAttributeFormat<?> format, Function<String, String> nameFormatter) {
             int occupiedVertexAttributes = format.occupiedVertexAttributes();
             checkRange(maxAttribBindings, bindingIndex, bindingIndex + occupiedVertexAttributes);
             BitSet alreadyUsedBindingLocations = this.occupiedBindingLocations.get(bindingIndex, bindingIndex + occupiedVertexAttributes);
@@ -111,6 +116,9 @@ public class DrawShaderProgram extends ShaderProgram {
 
             this.occupiedBindingLocations.set(bindingIndex, bindingIndex + occupiedVertexAttributes);
             this.bindings.put(bindingIndex, format);
+            if (nameFormatter != null) {
+                this.nameFormatters.put(bindingIndex, nameFormatter);
+            }
         }
 
         public void configurePreLink(OpenGL gl, int program) {
@@ -118,7 +126,7 @@ public class DrawShaderProgram extends ShaderProgram {
                 return;
             }
 
-            this.bindings.forEach((bindingIndex, format) -> format.bindVertexAttributeLocations(gl, program, Function.identity(), bindingIndex));
+            this.bindings.forEach((bindingIndex, format) -> format.bindVertexAttributeLocations(program, this.nameFormatters.getOrDefault(bindingIndex, Function.identity()), bindingIndex));
         }
     }
 }

@@ -21,7 +21,10 @@ package net.daporkchop.fp2.gl.shader;
 
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.api.util.Identifier;
+import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.fp2.gl.OpenGL;
+import net.daporkchop.fp2.gl.shader.source.Preprocessor;
 import net.daporkchop.fp2.gl.shader.source.SourceLine;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
@@ -43,6 +46,10 @@ public final class Shader implements AutoCloseable {
     private final OpenGL gl;
     private final ShaderType type;
     private final int id;
+
+    public Shader(OpenGL gl, ShaderType type, ResourceProvider provider, Identifier sourceFile) throws ShaderCompilationException {
+        this(gl, type, new Preprocessor(provider).appendLines(sourceFile).preprocess().lines());
+    }
 
     public Shader(@NonNull OpenGL gl, @NonNull ShaderType type, @NonNull SourceLine... lines) throws ShaderCompilationException {
         //allocate new shader

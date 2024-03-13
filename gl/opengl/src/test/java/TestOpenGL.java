@@ -21,6 +21,7 @@ import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.api.util.Identifier;
+import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.fp2.common.util.exception.ResourceNotFoundException;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.OpenGL;
@@ -31,6 +32,7 @@ import net.daporkchop.fp2.gl.attribute.AttributeTarget;
 import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.attribute.AttributeWriter;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
+import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
 import net.daporkchop.fp2.gl.attribute.annotation.ArrayIndex;
 import net.daporkchop.fp2.gl.attribute.annotation.ArrayLength;
 import net.daporkchop.fp2.gl.attribute.annotation.ArrayType;
@@ -47,7 +49,6 @@ import net.daporkchop.fp2.gl.attribute.texture.TextureWriter2D;
 import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatChannelRange;
 import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatChannelType;
 import net.daporkchop.fp2.gl.codegen.struct.AttributeFormatFactory;
-import net.daporkchop.fp2.gl.codegen.struct.attribute.StructAttributeFactory;
 import net.daporkchop.fp2.gl.command.CommandBuffer;
 import net.daporkchop.fp2.gl.command.FramebufferLayer;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
@@ -65,8 +66,10 @@ import net.daporkchop.fp2.gl.draw.list.selected.ShaderSelectedDrawList;
 import net.daporkchop.fp2.gl.draw.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.draw.shader.FragmentShader;
 import net.daporkchop.fp2.gl.draw.shader.VertexShader;
+import net.daporkchop.fp2.gl.shader.Shader;
 import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
 import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
+import net.daporkchop.fp2.gl.shader.ShaderType;
 import net.daporkchop.fp2.gl.transform.TransformLayout;
 import net.daporkchop.fp2.gl.transform.binding.TransformBinding;
 import net.daporkchop.fp2.gl.transform.shader.TransformShaderProgram;
@@ -88,28 +91,23 @@ public class TestOpenGL {
     public static void run(@NonNull BooleanSupplier closeRequested, @NonNull Runnable swapAndSync) {
         System.setProperty("fp2.gl.opengl.debug", "true");
 
+        ResourceProvider resourceProvider = id -> {
+            InputStream in = TestOpenGL.class.getResourceAsStream(id.path());
+            if (in != null) {
+                return in;
+            }
+            throw new ResourceNotFoundException(id);
+        };
+
         try (GL gl = GL.builder()
-                .withResourceProvider(id -> {
-                    InputStream in = TestOpenGL.class.getResourceAsStream(id.path());
-                    if (in != null) {
-                        return in;
-                    }
-                    throw new ResourceNotFoundException(id);
-                })
+                .withResourceProvider(resourceProvider)
                 .wrapCurrent()) {
-            run(gl, closeRequested, swapAndSync);
+            run(gl, closeRequested, swapAndSync, resourceProvider);
         }
     }
 
     @SneakyThrows({ ShaderCompilationException.class, ShaderLinkageException.class })
-    private static void run(@NonNull GL gl, @NonNull BooleanSupplier closeRequested, @NonNull Runnable swapAndSync) {
-        if (true) {
-            AttributeFormatFactory.getAttributeFormat(OpenGL.forCurrent(), UniformAttribs.class, EnumSet.of(AttributeTarget.UBO))
-                    .createUniformBuffer()
-                    .update().close();
-            return;
-        }
-
+    private static void run(@NonNull GL gl, @NonNull BooleanSupplier closeRequested, @NonNull Runnable swapAndSync, ResourceProvider resourceProvider) {
         AttributeFormat<UniformAttribs> uniformFormat = gl.createAttributeFormat(UniformAttribs.class).useFor(AttributeUsage.UNIFORM).build();
         AttributeFormat<UniformArrayAttribs> uniformArrayFormat = gl.createAttributeFormat(UniformArrayAttribs.class).useFor(AttributeUsage.UNIFORM_ARRAY).build();
         AttributeFormat<GlobalAttribs> globalFormat = gl.createAttributeFormat(GlobalAttribs.class).useFor(AttributeUsage.DRAW_GLOBAL).build();

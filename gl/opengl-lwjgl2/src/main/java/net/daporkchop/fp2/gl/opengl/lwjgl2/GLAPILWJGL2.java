@@ -48,6 +48,7 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
     // OpenGL 3.1
     private final boolean OpenGL31;
     private final boolean GL_ARB_copy_buffer;
+    private final boolean GL_ARB_draw_instanced;
     private final boolean GL_ARB_texture_buffer_object;
     private final boolean GL_ARB_uniform_buffer_object;
 
@@ -82,6 +83,7 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
         // OpenGL 3.1
         this.OpenGL31 = capabilities.OpenGL31;
         this.GL_ARB_copy_buffer = !capabilities.OpenGL31 && capabilities.GL_ARB_copy_buffer;
+        this.GL_ARB_draw_instanced = !capabilities.OpenGL31 && capabilities.GL_ARB_draw_instanced;
         this.GL_ARB_texture_buffer_object = !capabilities.OpenGL31 && capabilities.GL_ARB_texture_buffer_object;
         this.GL_ARB_uniform_buffer_object = !capabilities.OpenGL31 && capabilities.GL_ARB_uniform_buffer_object;
 
@@ -856,6 +858,17 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
             super.debugCheckError();
         } else {
             GL31.glCopyBufferSubData(readTarget, writeTarget, readOffset, writeOffset, size);
+            super.debugCheckError();
+        }
+    }
+
+    @Override
+    public void glDrawArraysInstanced(int mode, int first, int count, int instancecount) {
+        if (this.GL_ARB_draw_instanced) {
+            ARBDrawInstanced.glDrawArraysInstancedARB(mode, first, count, instancecount);
+            super.debugCheckError();
+        } else {
+            GL31.glDrawArraysInstanced(mode, first, count, instancecount);
             super.debugCheckError();
         }
     }

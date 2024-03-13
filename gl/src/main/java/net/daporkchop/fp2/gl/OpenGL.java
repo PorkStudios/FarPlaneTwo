@@ -417,6 +417,9 @@ public abstract class OpenGL {
     //GL_ARB_copy_buffer
     public abstract void glCopyBufferSubData(int readTarget, int writeTarget, long readOffset, long writeOffset, long size);
 
+    //GL_ARB_draw_instanced
+    public abstract void glDrawArraysInstanced(int mode, int first, int count, int instancecount);
+
     //GL_ARB_texture_buffer_object
     public abstract void glTexBuffer(int target, int internalFormat, int buffer);
 

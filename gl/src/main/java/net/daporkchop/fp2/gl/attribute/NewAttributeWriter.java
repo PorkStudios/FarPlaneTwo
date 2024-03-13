@@ -60,6 +60,13 @@ public abstract class NewAttributeWriter<STRUCT extends AttributeStruct> impleme
     }
 
     /**
+     * Clears this writer instance, discarding all previously written attribute values.
+     */
+    public final void clear() {
+        this.size = 0;
+    }
+
+    /**
      * Gets an instance of {@link STRUCT the attribute struct type} which serves as a handle to access the element at the front of this writer.
      * <p>
      * The handle must be {@link AttributeStruct#close() closed} once the user has finished accessing the data, at which point the handle will become invalid and must not

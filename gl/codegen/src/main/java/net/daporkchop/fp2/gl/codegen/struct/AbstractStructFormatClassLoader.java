@@ -20,14 +20,18 @@
 package net.daporkchop.fp2.gl.codegen.struct;
 
 import net.daporkchop.fp2.gl.OpenGL;
+import net.daporkchop.fp2.gl.OpenGLConstants;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.AttributeTarget;
 import net.daporkchop.fp2.gl.attribute.AttributeWriter;
+import net.daporkchop.fp2.gl.attribute.BufferUsage;
+import net.daporkchop.fp2.gl.attribute.NewAttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
 import net.daporkchop.fp2.gl.attribute.NewAttributeWriter;
 import net.daporkchop.fp2.gl.attribute.NewUniformBuffer;
 import net.daporkchop.fp2.gl.attribute.annotation.AttributeIgnore;
 import net.daporkchop.fp2.gl.attribute.annotation.AttributeSetter;
+import net.daporkchop.fp2.gl.attribute.vao.VertexArrayObject;
 import net.daporkchop.fp2.gl.codegen.struct.attribute.ComponentType;
 import net.daporkchop.fp2.gl.codegen.struct.attribute.JavaPrimitiveType;
 import net.daporkchop.fp2.gl.codegen.struct.layout.LayoutInfo;
@@ -54,6 +58,7 @@ public abstract class AbstractStructFormatClassLoader<STRUCT extends AttributeSt
 
     protected final String attributeFormatClassInternalName;
     protected final String attributeWriterClassInternalName;
+    protected final String bufferClassInternalName;
     protected final String handleClassInternalName;
     protected final String handleUniformClassInternalName;
     protected final String uniformBufferClassInternalName;
@@ -69,6 +74,7 @@ public abstract class AbstractStructFormatClassLoader<STRUCT extends AttributeSt
 
         this.attributeFormatClassInternalName = (prefix + NewAttributeFormat.class.getSimpleName() + "Impl").replace('.', '/');
         this.attributeWriterClassInternalName = (prefix + AttributeWriter.class.getSimpleName() + "Impl").replace('.', '/');
+        this.bufferClassInternalName = (prefix + NewAttributeBuffer.class.getSimpleName() + "Impl").replace('.', '/');
         this.handleClassInternalName = (prefix + AttributeStruct.class.getSimpleName() + "Impl").replace('.', '/');
         this.handleUniformClassInternalName = (prefix + AttributeStruct.class.getSimpleName() + "UniformUpdateImpl").replace('.', '/');
         this.uniformBufferClassInternalName = (prefix + NewUniformBuffer.class.getSimpleName() + "Impl").replace('.', '/');
@@ -80,6 +86,8 @@ public abstract class AbstractStructFormatClassLoader<STRUCT extends AttributeSt
 
     protected abstract byte[] attributeWriterClass();
 
+    protected abstract byte[] bufferClass();
+
     protected abstract byte[] handleClass();
 
     protected abstract byte[] handleUniformClass();
@@ -90,6 +98,7 @@ public abstract class AbstractStructFormatClassLoader<STRUCT extends AttributeSt
     protected void registerClassGenerators(BiConsumer<String, Supplier<byte[]>> registerGenerator, Consumer<Class<?>> registerClass) {
         registerGenerator.accept(this.attributeFormatClassInternalName.replace('/', '.'), this::attributeFormatClass);
         registerGenerator.accept(this.attributeWriterClassInternalName.replace('/', '.'), this::attributeWriterClass);
+        registerGenerator.accept(this.bufferClassInternalName.replace('/', '.'), this::bufferClass);
         registerGenerator.accept(this.handleClassInternalName.replace('/', '.'), this::handleClass);
         registerGenerator.accept(this.handleUniformClassInternalName.replace('/', '.'), this::handleUniformClass);
         registerGenerator.accept(this.uniformBufferClassInternalName.replace('/', '.'), this::uniformBufferClass);
@@ -99,13 +108,20 @@ public abstract class AbstractStructFormatClassLoader<STRUCT extends AttributeSt
         registerClass.accept(PUnsafe.class);
 
         registerClass.accept(OpenGL.class);
+        registerClass.accept(NewAttributeBuffer.class);
         registerClass.accept(NewAttributeFormat.class);
         registerClass.accept(AttributeStruct.class);
         registerClass.accept(AttributeTarget.class);
         registerClass.accept(NewAttributeWriter.class);
+        registerClass.accept(BufferUsage.class);
         registerClass.accept(NewUniformBuffer.class);
 
         registerClass.accept(LayoutInfo.class);
+        registerClass.accept(VertexArrayObject.class);
+
+        if (WRITE_CLASSES) {
+            registerClass.accept(OpenGLConstants.class);
+        }
     }
 
     protected final void forEachSetterMethod(BiConsumer<Method, String> action) {

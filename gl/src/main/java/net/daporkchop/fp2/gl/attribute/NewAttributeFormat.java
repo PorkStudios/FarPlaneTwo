@@ -20,10 +20,15 @@
 package net.daporkchop.fp2.gl.attribute;
 
 import lombok.NonNull;
+import lombok.SneakyThrows;
+import net.daporkchop.fp2.common.GlobalProperties;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.gl.OpenGL;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.util.EnumSet;
+import java.util.Set;
 import java.util.function.Function;
 
 /**
@@ -31,6 +36,40 @@ import java.util.function.Function;
  * @author DaPorkchop_
  */
 public abstract class NewAttributeFormat<STRUCT extends AttributeStruct> {
+    /**
+     * Gets an {@link NewAttributeFormat} for the given struct class which is suitable for use as the requested {@link AttributeTarget target} in the given OpenGL context.
+     *
+     * @param gl          the OpenGL context
+     * @param structClass the struct class
+     * @param validTarget the requested {@link AttributeTarget target} which the returned attribute format must be suitable for
+     * @param <STRUCT>    the struct type
+     * @return an {@link NewAttributeFormat}
+     */
+    @SneakyThrows
+    public static <STRUCT extends AttributeStruct> NewAttributeFormat<STRUCT> get(OpenGL gl, Class<STRUCT> structClass, AttributeTarget validTarget) {
+        return get(gl, structClass, EnumSet.of(validTarget));
+    }
+
+    /**
+     * Gets an {@link NewAttributeFormat} for the given struct class which is suitable for use as all of the requested {@link AttributeTarget targets} in the given OpenGL context.
+     *
+     * @param gl           the OpenGL context
+     * @param structClass  the struct class
+     * @param validTargets a non-empty {@link Set} containing the requested {@link AttributeTarget targets} which the returned attribute format must be suitable for
+     * @param <STRUCT>     the struct type
+     * @return an {@link NewAttributeFormat}
+     */
+    @SneakyThrows
+    @SuppressWarnings("unchecked")
+    public static <STRUCT extends AttributeStruct> NewAttributeFormat<STRUCT> get(OpenGL gl, Class<STRUCT> structClass, Set<AttributeTarget> validTargets) {
+        return (NewAttributeFormat<STRUCT>) MethodHandles.publicLookup()
+                .findStatic(
+                        GlobalProperties.find(NewAttributeFormat.class, "format").getClass("factory"),
+                        "get",
+                        MethodType.methodType(NewAttributeFormat.class, OpenGL.class, Class.class, Set.class))
+                .invokeExact(gl, structClass, validTargets);
+    }
+
     private final OpenGL gl;
     private final EnumSet<AttributeTarget> validTargets;
     private final long size;
@@ -80,9 +119,10 @@ public abstract class NewAttributeFormat<STRUCT extends AttributeStruct> {
     /**
      * Creates a new {@link NewAttributeBuffer} for storing attributes using this attribute format.
      *
+     * @param usage a {@link BufferUsage buffer usage hint} for the created buffer
      * @return the created {@link NewAttributeBuffer}
      */
-    public abstract NewAttributeBuffer<STRUCT> createBuffer();
+    public abstract NewAttributeBuffer<STRUCT> createBuffer(@NonNull BufferUsage usage);
 
     /**
      * Creates a new {@link NewAttributeWriter} for writing attributes using this attribute format.

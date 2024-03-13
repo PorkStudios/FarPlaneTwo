@@ -22,6 +22,7 @@ package net.daporkchop.fp2.gl.codegen.util;
 import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
 import net.daporkchop.fp2.common.asm.DelegatingClassLoader;
+import net.daporkchop.fp2.common.asm.LdcSimplifyingClassVisitor;
 import net.daporkchop.lib.common.annotation.param.Positive;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import org.objectweb.asm.ClassVisitor;
@@ -220,7 +221,7 @@ public abstract class GeneratingClassLoader extends DelegatingClassLoader {
     protected static byte[] generateClass(int access, String internalName, String superclass, String[] interfaces, Consumer<ClassVisitor> generator) {
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
         cw.visit(V1_8, access, internalName, null, superclass, interfaces);
-        generator.accept(cw);
+        generator.accept(new LdcSimplifyingClassVisitor(cw));
         return finish(cw, internalName);
     }
 
@@ -321,5 +322,33 @@ public abstract class GeneratingClassLoader extends DelegatingClassLoader {
         mv.visitJumpInsn(skipOpcode, tailLbl);
         generateThrowNew(mv, exceptionType, message);
         mv.visitLabel(tailLbl);
+    }
+
+    protected static void generateMultiplyConstant(MethodVisitor mv, int cst) {
+        if (cst != 1) {
+            mv.visitLdcInsn(cst);
+            mv.visitInsn(LMUL);
+        }
+    }
+
+    protected static void generateMultiplyConstant(MethodVisitor mv, long cst) {
+        if (cst != 1L) {
+            mv.visitLdcInsn(cst);
+            mv.visitInsn(LMUL);
+        }
+    }
+
+    protected static void generateAddConstant(MethodVisitor mv, int cst) {
+        if (cst != 0) {
+            mv.visitLdcInsn(cst);
+            mv.visitInsn(IADD);
+        }
+    }
+
+    protected static void generateAddConstant(MethodVisitor mv, long cst) {
+        if (cst != 0L) {
+            mv.visitLdcInsn(cst);
+            mv.visitInsn(LADD);
+        }
     }
 }
