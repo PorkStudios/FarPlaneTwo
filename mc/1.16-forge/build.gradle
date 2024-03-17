@@ -46,8 +46,6 @@ if (ideaSyncActive.toBoolean()) {
 apply from: "${project.rootDir}/mc/forge.gradle"
 apply from: "${project.rootDir}/natives/natives.gradle"
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(8)
-
 minecraft {
     mappings mappingsChannel, mappingsVersion
 
