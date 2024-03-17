@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -25,6 +25,7 @@ import net.daporkchop.fp2.core.engine.ctx.ServerContext;
 import net.daporkchop.fp2.core.engine.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.core.network.packet.debug.client.CPacketDebugDropAllTiles;
 import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
+import net.daporkchop.fp2.core.network.packet.standard.client.CPacketTileAck;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionBegin;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionEnd;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUpdateConfig;
@@ -48,6 +49,7 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
     protected IFarLevelServer world;
 
     protected IFarServerContext context;
+    protected long sessionId;
 
     protected boolean sessionOpen;
     protected boolean closed;
@@ -55,27 +57,41 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
     @CalledFromAnyThread
     @Override
     public void fp2_IFarPlayerServer_handle(@NonNull Object packet) {
-        //delegate packet handling to server thread
-        this.world.workerManager().rootExecutor().execute(() -> { //TODO: do this on the invoking thread
-            if (packet instanceof CPacketClientConfig) {
-                this.handle((CPacketClientConfig) packet);
-            } else if (packet instanceof CPacketDebugDropAllTiles) {
-                this.handleDebug((CPacketDebugDropAllTiles) packet);
-            } else {
-                throw new IllegalArgumentException("don't know how to handle " + className(packet));
+        if (packet instanceof CPacketClientConfig) {
+            this.handle((CPacketClientConfig) packet);
+        } else if (packet instanceof CPacketTileAck) {
+            this.handle((CPacketTileAck) packet);
+        } else if (packet instanceof CPacketDebugDropAllTiles) {
+            this.handleDebug((CPacketDebugDropAllTiles) packet);
+        } else {
+            throw new IllegalArgumentException("don't know how to handle " + className(packet));
+        }
+    }
+
+    protected void handle(@NonNull CPacketClientConfig packet) {
+        this.world.workerManager().rootExecutor().execute(() -> this.updateConfig(this.serverConfig, packet.config));
+    }
+
+    protected void handle(@NonNull CPacketTileAck packet) {
+        this.world.workerManager().rootExecutor().execute(() -> {
+            if (this.sessionOpen && this.isAcceptableSessionId(packet.sessionId)) {
+                this.context.notifyAck(packet);
             }
         });
     }
 
-    protected void handle(@NonNull CPacketClientConfig packet) {
-        this.updateConfig(this.serverConfig, packet.config());
-    }
-
     protected void handleDebug(@NonNull CPacketDebugDropAllTiles packet) {
         this.world.workerManager().rootExecutor().execute(() -> {
-            this.fp2().log().info("Dropping all tiles");
-            this.world.tileProvider().trackerManager().dropAllTiles();
+            if (this.sessionOpen && this.isAcceptableSessionId(packet.sessionId)) {
+                this.fp2().log().info("Dropping all tiles");
+                this.world.tileProvider().trackerManager().dropAllTiles();
+            }
         });
+    }
+
+    protected boolean isAcceptableSessionId(long sessionId) {
+        checkArg(sessionId <= this.sessionId, "sessionId (%s) is greater than current sessionId (%s)", sessionId, this.sessionId);
+        return sessionId == this.sessionId;
     }
 
     @CalledFromServerThread
@@ -88,7 +104,7 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
         checkState(!this.closed, "already closed!");
 
         if (!Objects.equals(this.serverConfig, serverConfig)) { //re-send server config if it changed
-            this.fp2_IFarPlayer_sendPacket(new SPacketUpdateConfig.Server().config(serverConfig));
+            this.fp2_IFarPlayer_sendPacket(SPacketUpdateConfig.Server.create(serverConfig));
         }
 
         this.serverConfig = serverConfig;
@@ -119,7 +135,7 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
 
     protected void updateMergedConfig(FP2Config mergedConfig) {
         this.mergedConfig = mergedConfig;
-        this.fp2_IFarPlayer_sendPacket(new SPacketUpdateConfig.Merged().config(mergedConfig));
+        this.fp2_IFarPlayer_sendPacket(SPacketUpdateConfig.Merged.create(mergedConfig));
     }
 
     protected boolean canBeginSession() {
@@ -146,7 +162,8 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
         this.sessionOpen = true;
 
         if (this.mergedConfig != null) {
-            this.fp2_IFarPlayer_sendPacket(new SPacketSessionBegin().coordLimits(this.world.coordLimits()));
+            this.sessionId = Math.incrementExact(this.sessionId);
+            this.fp2_IFarPlayer_sendPacket(SPacketSessionBegin.create(this.sessionId, this.world.coordLimits()));
 
             this.context = new ServerContext(this, this.world, this.mergedConfig);
         }
@@ -160,7 +177,7 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
             this.context.close();
             this.context = null;
 
-            this.fp2_IFarPlayer_sendPacket(new SPacketSessionEnd());
+            this.fp2_IFarPlayer_sendPacket(SPacketSessionEnd.create());
         }
     }
 

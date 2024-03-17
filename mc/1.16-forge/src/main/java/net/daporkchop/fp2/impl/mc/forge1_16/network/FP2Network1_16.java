@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -41,6 +41,7 @@ import net.minecraftforge.fml.network.simple.SimpleChannel;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -72,7 +73,7 @@ public class FP2Network1_16 {
             @Override
             @SneakyThrows
             public RegisterPacketsEvent registerClientbound(@NonNull Class<? extends IPacket> clazz) {
-                MethodHandle constructor = MethodHandles.publicLookup().unreflectConstructor(clazz.getConstructor());
+                MethodHandle constructor = MethodHandles.publicLookup().findConstructor(clazz, MethodType.methodType(void.class));
                 CHANNEL.registerMessage(this.id++, uncheckedCast(clazz),
                         (packet, buffer) -> {
                             try {
@@ -102,7 +103,7 @@ public class FP2Network1_16 {
             @Override
             @SneakyThrows
             public RegisterPacketsEvent registerServerbound(@NonNull Class<? extends IPacket> clazz) {
-                MethodHandle constructor = MethodHandles.publicLookup().unreflectConstructor(clazz.getConstructor());
+                MethodHandle constructor = MethodHandles.publicLookup().findConstructor(clazz, MethodType.methodType(void.class));
                 CHANNEL.registerMessage(this.id++, uncheckedCast(clazz),
                         (packet, buffer) -> {
                             try {

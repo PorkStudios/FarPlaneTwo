@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -35,7 +35,6 @@ import net.daporkchop.fp2.core.network.packet.standard.server.SPacketHandshake;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionBegin;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionEnd;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketTileData;
-import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUnloadTile;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUnloadTiles;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUpdateConfig;
 import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
@@ -56,6 +55,7 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
     protected FP2Config config;
 
     protected IFarClientContext context;
+    protected long lastTileDataPacketTime;
 
     protected boolean handshakeReceived;
     protected boolean clientReady;
@@ -81,8 +81,6 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
             this.handle((SPacketSessionEnd) packet);
         } else if (packet instanceof SPacketTileData) {
             this.handle((SPacketTileData) packet);
-        } else if (packet instanceof SPacketUnloadTile) {
-            this.handle((SPacketUnloadTile) packet);
         } else if (packet instanceof SPacketUnloadTiles) {
             this.handle((SPacketUnloadTiles) packet);
         } else if (packet instanceof SPacketUpdateConfig.Merged) {
@@ -114,11 +112,11 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
         this.fp2().log().info("beginning session");
 
         if (this.config != null) {
-            AbstractWorldClient.COORD_LIMITS_HACK.set(packet.coordLimits());
+            AbstractWorldClient.COORD_LIMITS_HACK.set(packet.coordLimits);
             try {
                 IFarLevelClient activeLevel = this.loadActiveLevel();
                 try {
-                    this.context = new ClientContext(activeLevel, this.config);
+                    this.context = new ClientContext(activeLevel, this.config, packet.sessionId);
                 } catch (Throwable t) { //something went wrong, try to unload active level again
                     try {
                         ((AbstractWorldClient<?, ?, ?, ?, ?>) this.world()).unloadLevel(activeLevel.id());
@@ -138,7 +136,7 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
     protected abstract IFarLevelClient loadActiveLevel(); //TODO: i want to get rid of this and figure out how to *not* have to include the coordinate bounds in the session begin packet
 
     @CalledWithMonitor
-    protected void handle(@NonNull SPacketSessionEnd packet) {
+    protected void handle(SPacketSessionEnd packet) {
         checkState(this.sessionOpen, "no session is currently open!");
         this.sessionOpen = false;
 
@@ -151,17 +149,12 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
         checkState(this.sessionOpen, "no session is currently open!");
         checkState(this.context != null, "active session has no render mode!");
 
-        this.context.tileCache().receiveTile(packet.tile());
-        //TODO: tile compression on the network thread is simply too expensive and causes lots of issues... we need congestion control
-        //this.fp2_context.tileCache().receiveTile(uncheckedCast(packet.tile().compressed()));
-    }
+        long now = System.nanoTime();
+        long lastTileDataPacketTime = this.lastTileDataPacketTime;
+        this.lastTileDataPacketTime = now;
+        this.send(packet.ackPacket(this.context.sessionId(), now - lastTileDataPacketTime));
 
-    @CalledWithMonitor
-    protected void handle(@NonNull SPacketUnloadTile packet) {
-        checkState(this.sessionOpen, "no session is currently open!");
-        checkState(this.context != null, "active session has no render mode!");
-
-        this.context.tileCache().unloadTile(packet.pos());
+        packet.tiles.forEach(this.context.tileCache()::receiveTile);
     }
 
     @CalledWithMonitor
@@ -169,16 +162,16 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
         checkState(this.sessionOpen, "no session is currently open!");
         checkState(this.context != null, "active session has no render mode!");
 
-        packet.positions().forEach(this.context.tileCache()::unloadTile);
+        packet.positions.forEach(this.context.tileCache()::unloadTile);
     }
 
     @CalledWithMonitor
     protected void handle(@NonNull SPacketUpdateConfig.Merged packet) {
-        if (Objects.equals(this.config, packet.config())) { //nothing changed, so nothing to do!
+        if (Objects.equals(this.config, packet.config)) { //nothing changed, so nothing to do!
             return;
         }
 
-        this.config = packet.config();
+        this.config = packet.config;
         this.fp2().log().info("server notified merged config update: %s", this.config);
 
         if (this.context != null) {
@@ -189,13 +182,13 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
 
     @CalledWithMonitor
     protected void handle(@NonNull SPacketUpdateConfig.Server packet) {
-        this.serverConfig = packet.config();
+        this.serverConfig = packet.config;
         this.fp2().log().info("server notified remote config update: %s", this.serverConfig);
     }
 
     @CalledWithMonitor
     protected void handleDebug(@NonNull SPacketDebugUpdateStatistics packet) {
-        this.debugServerStats = packet.tracking();
+        this.debugServerStats = packet.tracking;
     }
 
     @CalledFromAnyThread
@@ -221,7 +214,7 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
             if (this.handshakeReceived && this.clientReady) {
                 this.initialConfigSent = true;
 
-                this.send(new CPacketClientConfig().config(this.fp2().globalConfig()));
+                this.send(CPacketClientConfig.create(this.fp2().globalConfig()));
             }
         }
     }

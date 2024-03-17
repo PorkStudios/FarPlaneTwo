@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,12 +15,14 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.network.packet.standard.server;
 
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.network.IPacket;
@@ -29,19 +31,13 @@ import net.daporkchop.lib.binary.stream.DataOut;
 
 import java.io.IOException;
 
-import static net.daporkchop.lib.common.util.PorkUtil.*;
-
 /**
  * @author DaPorkchop_
  */
-@Getter
-public abstract class SPacketUpdateConfig<I extends SPacketUpdateConfig<I>> implements IPacket {
-    protected FP2Config config;
-
-    public I config(FP2Config config) {
-        this.config = config;
-        return uncheckedCast(this);
-    }
+@AllArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public abstract class SPacketUpdateConfig implements IPacket {
+    public FP2Config config;
 
     @Override
     public void read(@NonNull DataIn in) throws IOException {
@@ -59,12 +55,34 @@ public abstract class SPacketUpdateConfig<I extends SPacketUpdateConfig<I>> impl
     /**
      * @author DaPorkchop_
      */
-    public static class Merged extends SPacketUpdateConfig<Merged> {
+    public static final class Merged extends SPacketUpdateConfig {
+        public static Merged create(FP2Config config) {
+            return new Merged(config);
+        }
+
+        private Merged(FP2Config config) {
+            super(config);
+        }
+
+        public Merged() {
+            super();
+        }
     }
 
     /**
      * @author DaPorkchop_
      */
-    public static class Server extends SPacketUpdateConfig<Server> {
+    public static final class Server extends SPacketUpdateConfig {
+        public static Server create(FP2Config config) {
+            return new Server(config);
+        }
+
+        private Server(FP2Config config) {
+            super(config);
+        }
+
+        public Server() {
+            super();
+        }
     }
 }

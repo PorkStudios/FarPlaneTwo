@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -19,35 +19,55 @@
 
 package net.daporkchop.fp2.core.network.packet.standard.server;
 
-import lombok.Getter;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
-import lombok.Setter;
+import lombok.SneakyThrows;
 import net.daporkchop.fp2.core.engine.TilePosCodec;
 import net.daporkchop.fp2.core.engine.tile.TileSnapshot;
 import net.daporkchop.fp2.core.network.IPacket;
+import net.daporkchop.fp2.core.network.packet.standard.client.CPacketTileAck;
 import net.daporkchop.lib.binary.stream.DataIn;
 import net.daporkchop.lib.binary.stream.DataOut;
+import net.daporkchop.lib.common.util.PorkUtil;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author DaPorkchop_
  */
-@Getter
-@Setter
-public class SPacketTileData implements IPacket {
-    @NonNull
-    protected TileSnapshot tile;
+@AllArgsConstructor(staticName = "create")
+@NoArgsConstructor(onConstructor_ = { @Deprecated })
+public final class SPacketTileData implements IPacket {
+    public long timestamp;
+    public List<TileSnapshot> tiles;
 
     @Override
     public void read(@NonNull DataIn in) throws IOException {
-        this.tile = TileSnapshot.readFromNetwork(TilePosCodec.readPos(in), in);
+        this.timestamp = in.readLongLE();
+        int size = in.readVarInt();
+        this.tiles = new ArrayList<>(size);
+        for (int i = 0; i < size; i++) {
+            this.tiles.add(TileSnapshot.readFromNetwork(TilePosCodec.readPos(in), in));
+        }
     }
 
     @Override
+    @SneakyThrows(Exception.class)
     public void write(@NonNull DataOut out) throws IOException {
-        TilePosCodec.writePos(this.tile.pos(), out);
-        this.tile.writeForNetwork(out);
-        this.tile.release();
+        out.writeLongLE(this.timestamp);
+
+        List<TileSnapshot> tiles = this.tiles;
+        out.writeVarInt(tiles.size());
+        for (TileSnapshot tile : tiles) {
+            TilePosCodec.writePos(tile.pos(), out);
+            tile.writeForNetwork(out);
+        }
+    }
+
+    public CPacketTileAck ackPacket(long sessionId, long timeSinceLastTileDataPacket) {
+        return CPacketTileAck.create(sessionId, this.timestamp, this.tiles.stream().mapToLong(TileSnapshot::dataSize).sum(), timeSinceLastTileDataPacket);
     }
 }

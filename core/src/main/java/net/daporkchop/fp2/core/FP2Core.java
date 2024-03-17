@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -27,7 +27,6 @@ import lombok.SneakyThrows;
 import net.daporkchop.fp2.api.FP2;
 import net.daporkchop.fp2.api.event.FEventBus;
 import net.daporkchop.fp2.api.event.FEventHandler;
-import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.gui.GuiContext;
 import net.daporkchop.fp2.core.client.gui.GuiScreen;
@@ -38,11 +37,11 @@ import net.daporkchop.fp2.core.network.RegisterPacketsEvent;
 import net.daporkchop.fp2.core.network.packet.debug.client.CPacketDebugDropAllTiles;
 import net.daporkchop.fp2.core.network.packet.debug.server.SPacketDebugUpdateStatistics;
 import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
+import net.daporkchop.fp2.core.network.packet.standard.client.CPacketTileAck;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketHandshake;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionBegin;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionEnd;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketTileData;
-import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUnloadTile;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUnloadTiles;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUpdateConfig;
 import net.daporkchop.fp2.core.server.FP2Server;
@@ -182,13 +181,13 @@ public abstract class FP2Core implements FP2 {
     @FEventHandler
     protected void registerPackets(@NonNull RegisterPacketsEvent event) {
         event.registerServerbound(CPacketClientConfig.class)
+                .registerServerbound(CPacketTileAck.class)
                 .registerServerbound(CPacketDebugDropAllTiles.class);
 
         event.registerClientbound(SPacketHandshake.class)
                 .registerClientbound(SPacketSessionBegin.class)
                 .registerClientbound(SPacketSessionEnd.class)
                 .registerClientbound(SPacketTileData.class)
-                .registerClientbound(SPacketUnloadTile.class)
                 .registerClientbound(SPacketUnloadTiles.class)
                 .registerClientbound(SPacketUpdateConfig.Merged.class)
                 .registerClientbound(SPacketUpdateConfig.Server.class)

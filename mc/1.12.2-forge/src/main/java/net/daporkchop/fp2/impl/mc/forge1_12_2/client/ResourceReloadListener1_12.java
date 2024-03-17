@@ -37,7 +37,7 @@ import java.util.function.Predicate;
 public class ResourceReloadListener1_12 implements ISelectiveResourceReloadListener {
     @Override
     public void onResourceManagerReload(IResourceManager resourceManager, Predicate<IResourceType> resourcePredicate) {
-        if (resourcePredicate.test(VanillaResourceType.TEXTURES)) {
+        if (resourcePredicate.test(VanillaResourceType.TEXTURES) || resourcePredicate.test(VanillaResourceType.MODELS)) {
             TextureUVs.reloadAll();
         }
         if (resourcePredicate.test(VanillaResourceType.SHADERS)) {

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -24,8 +24,9 @@ import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.DirectTilePosAccess;
 import net.daporkchop.fp2.core.engine.TileCoordLimits;
 import net.daporkchop.fp2.core.engine.TilePos;
-import net.daporkchop.fp2.core.engine.api.ctx.IFarServerContext;
+import net.daporkchop.fp2.core.engine.ctx.ServerContext;
 import net.daporkchop.fp2.core.engine.tile.ITileSnapshot;
+import net.daporkchop.fp2.core.engine.tile.TileSnapshot;
 import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
 import net.daporkchop.fp2.core.util.datastructure.RecyclingArrayDeque;
@@ -74,7 +75,7 @@ public final class Tracker {
 
     private final TrackerManager manager;
 
-    private final IFarServerContext context;
+    private final ServerContext context;
     private final TileCoordLimits coordLimits;
 
     /**
@@ -101,7 +102,7 @@ public final class Tracker {
 
     private long lastUpdateTime;
 
-    public Tracker(@NonNull TrackerManager manager, @NonNull IFarServerContext context) {
+    public Tracker(@NonNull TrackerManager manager, @NonNull ServerContext context) {
         this.manager = manager;
 
         this.context = context;
@@ -274,7 +275,7 @@ public final class Tracker {
             return;
         }
 
-        int targetLoadQueueSize = fp2().globalConfig().performance().terrainThreads();
+        int targetLoadQueueSize = fp2().globalConfig().performance().terrainThreads() - this.context.queuedTilesToSend();
         List<TilePos> positions = DirectTilePosAccess.newPositionArrayList();
 
         do {
@@ -342,7 +343,7 @@ public final class Tracker {
     @CalledFromAnyThread
     void notifyChanged(@BorrowOwnership @NonNull ITileSnapshot snapshot) {
         try {
-            this.context.sendTile(uncheckedCast(snapshot.retain()));
+            this.context.sendTile((TileSnapshot) snapshot);
 
             TilePos pos = snapshot.pos();
             if (this.waitingPositions.contains(pos)) { //this tile has been initially loaded
@@ -371,6 +372,15 @@ public final class Tracker {
     }
 
     /**
+     * Notifies the tracker that some tile data which was queued for unload has been sent.
+     */
+    @CalledFromServerThread
+    public void notifyTilesSent() {
+        //this will eventually call doUpdate(), which will call updateWaiting()
+        this.manager.scheduler().schedule(this);
+    }
+
+    /**
      * Closes this tracker, unloading all tiles and releasing all resources.
      * <p>
      * Once this method has been called, calling any method on this instance will result in undefined behavior.
@@ -383,9 +393,6 @@ public final class Tracker {
         try {
             checkState(!this.closed, "already closed!");
             this.closed = true;
-
-            //tell the client to unload all tiles
-            this.context.sendMultiTileUnload(this.loadedPositions);
 
             //untrack all positions
             //  (using temporary set to avoid CME)
@@ -423,10 +430,10 @@ public final class Tracker {
     /**
      * Computes the current {@link TrackingState} from the given context.
      *
-     * @param context the {@link IFarServerContext} which we are tracking for
+     * @param context the {@link ServerContext} which we are tracking for
      * @return a new {@link TrackingState}
      */
-    private TrackingState currentState(@NonNull IFarServerContext context) {
+    private TrackingState currentState(@NonNull ServerContext context) {
         return TrackingState.createDefault(context, T_SHIFT);
     }
 
