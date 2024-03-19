@@ -22,14 +22,41 @@ package net.daporkchop.fp2.gl.opengl.lwjgl2;
 import lombok.NonNull;
 import lombok.val;
 import net.daporkchop.fp2.common.util.DirectBufferHackery;
+import net.daporkchop.fp2.gl.GLVersion;
 import net.daporkchop.fp2.gl.OpenGL;
+import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.lwjgl2.extra.ExtraFunctions;
 import net.daporkchop.fp2.gl.opengl.lwjgl2.extra.ExtraFunctionsProvider;
-import net.daporkchop.fp2.gl.opengl.GLAPI;
-import net.daporkchop.fp2.gl.GLVersion;
 import net.daporkchop.lib.common.function.throwing.TPredicate;
 import net.daporkchop.lib.unsafe.PUnsafe;
-import org.lwjgl.opengl.*;
+import org.lwjgl.PointerBuffer;
+import org.lwjgl.opengl.ARBCopyBuffer;
+import org.lwjgl.opengl.ARBDirectStateAccess;
+import org.lwjgl.opengl.ARBDrawElementsBaseVertex;
+import org.lwjgl.opengl.ARBDrawInstanced;
+import org.lwjgl.opengl.ARBInstancedArrays;
+import org.lwjgl.opengl.ARBMultiDrawIndirect;
+import org.lwjgl.opengl.ARBProgramInterfaceQuery;
+import org.lwjgl.opengl.ARBSamplerObjects;
+import org.lwjgl.opengl.ARBShaderImageLoadStore;
+import org.lwjgl.opengl.ARBShaderStorageBufferObject;
+import org.lwjgl.opengl.ARBTextureBufferObject;
+import org.lwjgl.opengl.ARBUniformBufferObject;
+import org.lwjgl.opengl.ContextCapabilities;
+import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL12;
+import org.lwjgl.opengl.GL13;
+import org.lwjgl.opengl.GL14;
+import org.lwjgl.opengl.GL15;
+import org.lwjgl.opengl.GL20;
+import org.lwjgl.opengl.GL30;
+import org.lwjgl.opengl.GL31;
+import org.lwjgl.opengl.GL32;
+import org.lwjgl.opengl.GL33;
+import org.lwjgl.opengl.GL42;
+import org.lwjgl.opengl.GL43;
+import org.lwjgl.opengl.GL45;
+import org.lwjgl.opengl.GLContext;
 
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
@@ -687,7 +714,7 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
     }
 
     @Override
-    public void glDisableVertexArray(int index) {
+    public void glDisableVertexAttribArray(int index) {
         GL20.glDisableVertexAttribArray(index);
         super.debugCheckError();
     }
@@ -1283,6 +1310,156 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
             super.debugCheckError();
         } else {
             GL45.glCopyNamedBufferSubData(readBuffer, writeBuffer, readOffset, writeOffset, size);
+            super.debugCheckError();
+        }
+    }
+
+    @Override
+    public int glCreateVertexArray() {
+        if (this.GL_ARB_direct_state_access) {
+            val res = ARBDirectStateAccess.glCreateVertexArrays();
+            super.debugCheckError();
+            return res;
+        } else {
+            val res = GL45.glCreateVertexArrays();
+            super.debugCheckError();
+            return res;
+        }
+    }
+
+    @Override
+    public void glVertexArrayElementBuffer(int vaobj, int buffer) {
+        if (this.GL_ARB_direct_state_access) {
+            ARBDirectStateAccess.glVertexArrayElementBuffer(vaobj, buffer);
+            super.debugCheckError();
+        } else {
+            GL45.glVertexArrayElementBuffer(vaobj, buffer);
+            super.debugCheckError();
+        }
+    }
+
+    @Override
+    public void glEnableVertexArrayAttrib(int vaobj, int index) {
+        if (this.GL_ARB_direct_state_access) {
+            ARBDirectStateAccess.glEnableVertexArrayAttrib(vaobj, index);
+            super.debugCheckError();
+        } else {
+            GL45.glEnableVertexArrayAttrib(vaobj, index);
+            super.debugCheckError();
+        }
+    }
+
+    @Override
+    public void glDisableVertexArrayAttrib(int vaobj, int index) {
+        if (this.GL_ARB_direct_state_access) {
+            ARBDirectStateAccess.glDisableVertexArrayAttrib(vaobj, index);
+            super.debugCheckError();
+        } else {
+            GL45.glDisableVertexArrayAttrib(vaobj, index);
+            super.debugCheckError();
+        }
+    }
+
+    @Override
+    public void glVertexArrayAttribFormat(int vaobj, int attribindex, int size, int type, boolean normalized, int relativeoffset) {
+        if (this.GL_ARB_direct_state_access) {
+            ARBDirectStateAccess.glVertexArrayAttribFormat(vaobj, attribindex, size, type, normalized, relativeoffset);
+            super.debugCheckError();
+        } else {
+            GL45.glVertexArrayAttribFormat(vaobj, attribindex, size, type, normalized, relativeoffset);
+            super.debugCheckError();
+        }
+    }
+
+    @Override
+    public void glVertexArrayAttribIFormat(int vaobj, int attribindex, int size, int type, int relativeoffset) {
+        if (this.GL_ARB_direct_state_access) {
+            ARBDirectStateAccess.glVertexArrayAttribIFormat(vaobj, attribindex, size, type, relativeoffset);
+            super.debugCheckError();
+        } else {
+            GL45.glVertexArrayAttribIFormat(vaobj, attribindex, size, type, relativeoffset);
+            super.debugCheckError();
+        }
+    }
+
+    @Override
+    public void glVertexArrayBindingDivisor(int vaobj, int bindingindex, int divisor) {
+        if (this.GL_ARB_direct_state_access) {
+            ARBDirectStateAccess.glVertexArrayBindingDivisor(vaobj, bindingindex, divisor);
+            super.debugCheckError();
+        } else {
+            GL45.glVertexArrayBindingDivisor(vaobj, bindingindex, divisor);
+            super.debugCheckError();
+        }
+    }
+
+    @Override
+    public void glVertexArrayAttribBinding(int vaobj, int attribindex, int bindingindex) {
+        if (this.GL_ARB_direct_state_access) {
+            ARBDirectStateAccess.glVertexArrayAttribBinding(vaobj, attribindex, bindingindex);
+            super.debugCheckError();
+        } else {
+            GL45.glVertexArrayAttribBinding(vaobj, attribindex, bindingindex);
+            super.debugCheckError();
+        }
+    }
+
+    @Override
+    public void glVertexArrayVertexBuffer(int vaobj, int bindingindex, int buffer, long offset, int stride) {
+        if (this.GL_ARB_direct_state_access) {
+            ARBDirectStateAccess.glVertexArrayVertexBuffer(vaobj, bindingindex, buffer, offset, stride);
+            super.debugCheckError();
+        } else {
+            GL45.glVertexArrayVertexBuffer(vaobj, bindingindex, buffer, offset, stride);
+            super.debugCheckError();
+        }
+    }
+
+    @Override
+    public void glVertexArrayVertexBuffers(int vaobj, int first, int count, int[] buffers, long[] offsets, int[] strides) {
+        if (buffers == null) {
+            this.glVertexArrayVertexBuffers(vaobj, first, count, 0L, 0L, 0L);
+        } else {
+            long size = count * (long) (Integer.BYTES + Integer.BYTES + PUnsafe.addressSize());
+            long address = DirectBufferHackery.allocateTemporary(size);
+            try {
+                long buffersAddress = address;
+                long stridesAddress = buffersAddress + (long) count * Integer.BYTES;
+                long offsetsAddress = stridesAddress + (long) count * Integer.BYTES;
+
+                for (int i = 0; i < count; i++) {
+                    PUnsafe.putInt(buffersAddress + (long) i * Integer.BYTES, buffers[i]);
+                    PUnsafe.putInt(stridesAddress + (long) i * Integer.BYTES, strides[i]);
+                    PUnsafe.putAddress(offsetsAddress + (long) i * PUnsafe.addressSize(), offsets[i]);
+                }
+
+                this.glVertexArrayVertexBuffers(vaobj, first, count, buffersAddress, offsetsAddress, stridesAddress);
+            } finally {
+                DirectBufferHackery.freeTemporary(address, size);
+            }
+        }
+    }
+
+    @Override
+    public void glVertexArrayVertexBuffers(int vaobj, int first, int count, long buffers, long offsets, long strides) {
+        IntBuffer wrappedBuffers;
+        PointerBuffer wrappedOffsets;
+        IntBuffer wrappedStrides;
+        if (buffers != 0L) {
+            wrappedBuffers = DirectBufferHackery.wrapInt(buffers, count);
+            wrappedOffsets = new PointerBuffer(DirectBufferHackery.wrapByte(offsets, count * PUnsafe.addressSize()));
+            wrappedStrides = DirectBufferHackery.wrapInt(strides, count);
+        } else {
+            wrappedBuffers = null;
+            wrappedOffsets = null;
+            wrappedStrides = null;
+        }
+
+        if (this.GL_ARB_direct_state_access) {
+            ARBDirectStateAccess.glVertexArrayVertexBuffers(vaobj, first, count, wrappedBuffers, wrappedOffsets, wrappedStrides);
+            super.debugCheckError();
+        } else {
+            GL45.glVertexArrayVertexBuffers(vaobj, first, count, wrappedBuffers, wrappedOffsets, wrappedStrides);
             super.debugCheckError();
         }
     }

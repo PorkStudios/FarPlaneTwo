@@ -27,11 +27,14 @@ import net.daporkchop.fp2.gl.attribute.NewAttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
 import net.daporkchop.fp2.gl.attribute.NewAttributeWriter;
 import net.daporkchop.fp2.gl.attribute.vao.VertexArrayObject;
-import net.daporkchop.fp2.gl.buffer.BufferTarget;
+import net.daporkchop.fp2.gl.attribute.vao.VertexArrayVertexBuffer;
 import net.daporkchop.fp2.gl.buffer.GLBuffer;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.common.annotation.param.Positive;
 
+import java.util.Arrays;
+
+import static java.lang.Math.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -101,14 +104,19 @@ public abstract class AbstractInterleavedAttributeBuffer<STRUCT extends Attribut
     @Override
     public final int configure(@NotNegative int bindingIndex, @NonNull VertexArrayObject vao, @NotNegative int divisor) throws UnsupportedOperationException {
         int expected = bindingIndex + this.format().occupiedVertexAttributes();
-        this.buffer.bind(BufferTarget.ARRAY_BUFFER, target -> {
-            int result = this.configure0(bindingIndex, vao, divisor);
-            checkState(result == expected, "expected %s, but got %s", expected, result);
-        });
+        int result = this.configure(bindingIndex, vao, divisor, this.buffer);
+        checkState(result == expected, "expected %s, but got %s", expected, result);
         return expected;
     }
 
-    protected abstract int configure0(int bindingIndex, VertexArrayObject vao, int divisor);
+    protected abstract int configure(int bindingIndex, VertexArrayObject vao, int divisor, GLBuffer buffer);
+
+    @Override
+    public final VertexArrayVertexBuffer[] buffers(int divisor) throws UnsupportedOperationException {
+        VertexArrayVertexBuffer[] result = new VertexArrayVertexBuffer[this.format().occupiedVertexAttributes()];
+        Arrays.fill(result, VertexArrayVertexBuffer.create(this.buffer.id(), 0L, toIntExact(this.format().size()), divisor));
+        return result;
+    }
 
     @Override
     public void close() {

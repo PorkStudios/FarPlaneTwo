@@ -19,9 +19,7 @@
 
 package net.daporkchop.fp2.gl.shader;
 
-import lombok.NonNull;
 import net.daporkchop.fp2.gl.OpenGL;
-import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeTarget;
 import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
 
@@ -49,7 +47,7 @@ public final class DrawShaderProgram extends ShaderProgram {
     /**
      * @author DaPorkchop_
      */
-    public static final class Builder extends ShaderProgram.Builder<DrawShaderProgram, Builder> {
+    public static final class Builder extends ShaderProgram.Builder<DrawShaderProgram> {
         private boolean vertexShader;
         private boolean fragmentShader;
 
@@ -75,13 +73,31 @@ public final class DrawShaderProgram extends ShaderProgram {
             return this;
         }
 
+        public Builder vertexAttributes(NewAttributeFormat<?> attributeFormat) {
+            return this.vertexAttributes(attributeFormat, null);
+        }
+
+        public Builder vertexAttributesWithPrefix(String prefix, NewAttributeFormat<?> attributeFormat) {
+            return this.vertexAttributes(attributeFormat, prefix::concat);
+        }
+
+        public Builder vertexAttributes(NewAttributeFormat<?> attributeFormat, Function<String, String> nameFormatter) {
+            checkArg(attributeFormat.supports(AttributeTarget.VERTEX_ATTRIBUTE), attributeFormat);
+            this.vertexAttributes.add(this.gl.limits().maxVertexAttributes(), this.vertexAttributes.nextBindingIndex(), attributeFormat, nameFormatter, false);
+            return this;
+        }
+
         public Builder vertexAttributes(int bindingIndex, NewAttributeFormat<?> attributeFormat) {
             return this.vertexAttributes(bindingIndex, attributeFormat, null);
         }
 
+        public Builder vertexAttributesWithPrefix(int bindingIndex, String prefix, NewAttributeFormat<?> attributeFormat) {
+            return this.vertexAttributes(bindingIndex, attributeFormat, prefix::concat);
+        }
+
         public Builder vertexAttributes(int bindingIndex, NewAttributeFormat<?> attributeFormat, Function<String, String> nameFormatter) {
             checkArg(attributeFormat.supports(AttributeTarget.VERTEX_ATTRIBUTE), attributeFormat);
-            this.vertexAttributes.add(this.gl.limits().maxVertexAttributes(), bindingIndex, attributeFormat, nameFormatter);
+            this.vertexAttributes.add(this.gl.limits().maxVertexAttributes(), bindingIndex, attributeFormat, nameFormatter, true);
             return this;
         }
 
@@ -106,8 +122,20 @@ public final class DrawShaderProgram extends ShaderProgram {
         protected final BitSet occupiedBindingLocations = new BitSet();
         protected final Map<Integer, NewAttributeFormat<?>> bindings = new TreeMap<>();
         protected final Map<Integer, Function<String, String>> nameFormatters = new TreeMap<>();
+        protected Boolean usedExplicit;
 
-        public void add(int maxAttribBindings, int bindingIndex, NewAttributeFormat<?> format, Function<String, String> nameFormatter) {
+        public int nextBindingIndex() {
+            checkState(this.usedExplicit == null || !this.usedExplicit, "a vertex attribute was already registered with an explicit binding index");
+            return this.occupiedBindingLocations.length();
+        }
+
+        public void add(int maxAttribBindings, int bindingIndex, NewAttributeFormat<?> format, Function<String, String> nameFormatter, Boolean explicit) {
+            if (this.usedExplicit != null) {
+                checkState(this.usedExplicit == explicit, "a vertex attribute was already registered with an %s binding index", explicit ? "explicit" : "implicit");
+            } else {
+                this.usedExplicit = explicit;
+            }
+
             int occupiedVertexAttributes = format.occupiedVertexAttributes();
             checkRange(maxAttribBindings, bindingIndex, bindingIndex + occupiedVertexAttributes);
             BitSet alreadyUsedBindingLocations = this.occupiedBindingLocations.get(bindingIndex, bindingIndex + occupiedVertexAttributes);

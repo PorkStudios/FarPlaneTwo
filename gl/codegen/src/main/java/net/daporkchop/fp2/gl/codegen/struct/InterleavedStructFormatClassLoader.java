@@ -30,6 +30,8 @@ import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
 import net.daporkchop.fp2.gl.attribute.NewAttributeWriter;
 import net.daporkchop.fp2.gl.attribute.NewUniformBuffer;
 import net.daporkchop.fp2.gl.attribute.vao.VertexArrayObject;
+import net.daporkchop.fp2.gl.attribute.vao.VertexAttributeFormat;
+import net.daporkchop.fp2.gl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.codegen.struct.attribute.ArrayAttributeType;
 import net.daporkchop.fp2.gl.codegen.struct.attribute.AttributeType;
 import net.daporkchop.fp2.gl.codegen.struct.attribute.JavaPrimitiveType;
@@ -105,6 +107,7 @@ public final class InterleavedStructFormatClassLoader<STRUCT extends AttributeSt
                 mv.visitVarInsn(ALOAD, 0);
                 mv.visitVarInsn(ALOAD, 1);
                 mv.visitMethodInsn(INVOKESPECIAL, this.bufferClassInternalName, "<init>", getMethodDescriptor(VOID_TYPE, getType(NewAttributeFormat.class), getType(BufferUsage.class)), false);
+                mv.visitTypeInsn(CHECKCAST, getInternalName(NewAttributeBuffer.class)); //cast to avoid loading the implementation class during bytecode verification
                 return ARETURN;
             });
 
@@ -115,6 +118,7 @@ public final class InterleavedStructFormatClassLoader<STRUCT extends AttributeSt
                 mv.visitVarInsn(ALOAD, 0);
                 mv.visitVarInsn(ALOAD, 1);
                 mv.visitMethodInsn(INVOKESPECIAL, this.attributeWriterClassInternalName, "<init>", getMethodDescriptor(VOID_TYPE, getType(NewAttributeFormat.class), getType(DirectMemoryAllocator.class)), false);
+                mv.visitTypeInsn(CHECKCAST, getInternalName(NewAttributeWriter.class)); //cast to avoid loading the implementation class during bytecode verification
                 return ARETURN;
             });
 
@@ -125,6 +129,15 @@ public final class InterleavedStructFormatClassLoader<STRUCT extends AttributeSt
                 return IRETURN;
             });
 
+            //VertexAttributeFormat[] vertexAttributeFormats()
+            generateMethod(cv, ACC_PUBLIC | ACC_FINAL, "vertexAttributeFormats", getMethodDescriptor(getType(VertexAttributeFormat[].class)), mv -> {
+                generateSupportedCheck(mv, this.attributeFormatClassInternalName, AttributeTarget.VERTEX_ATTRIBUTE);
+                mv.visitLdcInsn(this.layoutInfo.rootType().occupiedVertexAttributes());
+                mv.visitTypeInsn(ANEWARRAY, getInternalName(VertexAttributeFormat.class));
+                visitVertexAttributeFormatArray(mv, 0, this.layoutInfo.rootType(), this.layoutInfo.rootLayout(), 0L);
+                return ARETURN;
+            });
+
             //UniformBuffer createUniformBuffer()
             generateMethod(cv, ACC_PUBLIC | ACC_FINAL, "createUniformBuffer", getMethodDescriptor(getType(NewUniformBuffer.class)), mv -> {
                 generateSupportedCheck(mv, this.attributeFormatClassInternalName, AttributeTarget.UBO);
@@ -132,9 +145,68 @@ public final class InterleavedStructFormatClassLoader<STRUCT extends AttributeSt
                 mv.visitInsn(DUP);
                 mv.visitVarInsn(ALOAD, 0);
                 mv.visitMethodInsn(INVOKESPECIAL, this.uniformBufferClassInternalName, "<init>", getMethodDescriptor(VOID_TYPE, getType(NewAttributeFormat.class)), false);
+                mv.visitTypeInsn(CHECKCAST, getInternalName(NewUniformBuffer.class)); //cast to avoid loading the implementation class during bytecode verification
                 return ARETURN;
             });
         });
+    }
+
+    private static int visitVertexAttributeFormatArray(MethodVisitor mv, int index, AttributeType type, AttributeLayout layout, long constantOffset) {
+        if (type instanceof VectorAttributeType) {
+            VectorAttributeType vectorType = (VectorAttributeType) type;
+            VectorLayout vectorLayout = (VectorLayout) layout;
+
+            ShaderPrimitiveType interpretedType = vectorType.componentType().interpretedType();
+            boolean normalized = vectorType.componentType().normalized();
+            JavaPrimitiveType physicalStorageType = vectorLayout.physicalStorageType();
+
+            mv.visitInsn(DUP); //array instance
+            mv.visitLdcInsn(index++);
+
+            mv.visitLdcInsn(vectorType.components()); //GLint size,
+            physicalStorageType.loadGlTypeId(mv, WRITE_CLASSES); // GLenum type,
+            if (!interpretedType.integer()) { //GLboolean normalized,
+                mv.visitLdcInsn(normalized);
+            }
+            mv.visitLdcInsn(toIntExact(constantOffset)); //const void* pointer,
+
+            String methodName;
+            String methodDesc;
+            if (interpretedType.integer()) {
+                methodName = "createInteger";
+                methodDesc = getMethodDescriptor(getType(VertexAttributeFormat.class), INT_TYPE, INT_TYPE, INT_TYPE);
+            } else {
+                methodName = "createFloating";
+                methodDesc = getMethodDescriptor(getType(VertexAttributeFormat.class), INT_TYPE, INT_TYPE, BOOLEAN_TYPE, INT_TYPE);
+            }
+            mv.visitMethodInsn(INVOKESTATIC, getInternalName(VertexAttributeFormat.class), methodName, methodDesc, VertexAttributeFormat.class.isInterface());
+            mv.visitInsn(AASTORE);
+        } else if (type instanceof MatrixAttributeType) {
+            MatrixAttributeType matrixType = (MatrixAttributeType) type;
+            MatrixLayout matrixLayout = (MatrixLayout) layout;
+
+            for (int col = 0; col < matrixType.cols(); col++) {
+                index = visitVertexAttributeFormatArray(mv, index, matrixType.colType(), matrixLayout.colLayout(), constantOffset + matrixLayout.colOffset(col));
+            }
+        } else if (type instanceof ArrayAttributeType) {
+            ArrayAttributeType arrayType = (ArrayAttributeType) type;
+            ArrayLayout arrayLayout = (ArrayLayout) layout;
+
+            for (int element = 0; element < arrayType.elementCount(); element++) {
+                index = visitVertexAttributeFormatArray(mv, index, arrayType.elementType(), arrayLayout.elementLayout(), constantOffset + arrayLayout.elementOffset(element));
+            }
+        } else if (type instanceof StructAttributeType) {
+            StructAttributeType structType = (StructAttributeType) type;
+            StructLayout structLayout = (StructLayout) layout;
+
+            for (int field = 0; field < structType.fieldCount(); field++) {
+                index = visitVertexAttributeFormatArray(mv, index, structType.fieldType(field), structLayout.fieldLayout(field), constantOffset + structLayout.fieldOffset(field));
+            }
+        } else {
+            throw new IllegalArgumentException(String.valueOf(type));
+        }
+
+        return index;
     }
 
     @Override
@@ -198,15 +270,15 @@ public final class InterleavedStructFormatClassLoader<STRUCT extends AttributeSt
         return generateClass(ACC_PUBLIC | ACC_FINAL, this.bufferClassInternalName, getInternalName(AbstractInterleavedAttributeBuffer.class), null, cv -> {
             generatePassthroughCtor(cv, getInternalName(AbstractInterleavedAttributeBuffer.class), getType(NewAttributeFormat.class), getType(BufferUsage.class));
 
-            generateMethod(cv, ACC_PROTECTED | ACC_FINAL, "configure0", getMethodDescriptor(INT_TYPE, INT_TYPE, getType(VertexArrayObject.class), INT_TYPE), mv -> {
-                visitBufferConfigure(mv, 1, 2, 3, this.layoutInfo.rootType(), this.layoutInfo.rootLayout(), this.layoutInfo.rootLayout().size(), 0L);
+            generateMethod(cv, ACC_PROTECTED | ACC_FINAL, "configure", getMethodDescriptor(INT_TYPE, INT_TYPE, getType(VertexArrayObject.class), INT_TYPE, getType(GLBuffer.class)), mv -> {
+                visitBufferConfigure(mv, 1, 2, 3, 4, this.layoutInfo.rootType(), this.layoutInfo.rootLayout(), this.layoutInfo.rootLayout().size(), 0L);
                 mv.visitVarInsn(ILOAD, 1);
                 return IRETURN;
             });
         });
     }
 
-    private static void visitBufferConfigure(MethodVisitor mv, int baseIndexLvt, int vaoLvt, int divisorLvt, AttributeType type, AttributeLayout layout, long stride, long constantOffset) {
+    private static void visitBufferConfigure(MethodVisitor mv, int baseIndexLvt, int vaoLvt, int divisorLvt, int bufferLvt, AttributeType type, AttributeLayout layout, long stride, long constantOffset) {
         if (type instanceof VectorAttributeType) {
             VectorAttributeType vectorType = (VectorAttributeType) type;
             VectorLayout vectorLayout = (VectorLayout) layout;
@@ -216,6 +288,7 @@ public final class InterleavedStructFormatClassLoader<STRUCT extends AttributeSt
             JavaPrimitiveType physicalStorageType = vectorLayout.physicalStorageType();
 
             mv.visitVarInsn(ALOAD, vaoLvt); //vao.
+            mv.visitVarInsn(ALOAD, bufferLvt);
             mv.visitVarInsn(ILOAD, baseIndexLvt); //GLuint index,
             mv.visitIincInsn(baseIndexLvt, 1);
             mv.visitLdcInsn(vectorType.components()); //GLint size,
@@ -231,10 +304,10 @@ public final class InterleavedStructFormatClassLoader<STRUCT extends AttributeSt
             String methodDesc;
             if (interpretedType.integer()) {
                 methodName = "setIAttrib";
-                methodDesc = getMethodDescriptor(VOID_TYPE, INT_TYPE, INT_TYPE, INT_TYPE, INT_TYPE, LONG_TYPE, INT_TYPE);
+                methodDesc = getMethodDescriptor(VOID_TYPE, getType(GLBuffer.class), INT_TYPE, INT_TYPE, INT_TYPE, INT_TYPE, LONG_TYPE, INT_TYPE);
             } else {
                 methodName = "setFAttrib";
-                methodDesc = getMethodDescriptor(VOID_TYPE, INT_TYPE, INT_TYPE, INT_TYPE, BOOLEAN_TYPE, INT_TYPE, LONG_TYPE, INT_TYPE);
+                methodDesc = getMethodDescriptor(VOID_TYPE, getType(GLBuffer.class), INT_TYPE, INT_TYPE, INT_TYPE, BOOLEAN_TYPE, INT_TYPE, LONG_TYPE, INT_TYPE);
             }
             mv.visitMethodInsn(INVOKEVIRTUAL, getInternalName(VertexArrayObject.class), methodName, methodDesc, false);
         } else if (type instanceof MatrixAttributeType) {
@@ -242,21 +315,21 @@ public final class InterleavedStructFormatClassLoader<STRUCT extends AttributeSt
             MatrixLayout matrixLayout = (MatrixLayout) layout;
 
             for (int col = 0; col < matrixType.cols(); col++) {
-                visitBufferConfigure(mv, baseIndexLvt, vaoLvt, divisorLvt, matrixType.colType(), matrixLayout.colLayout(), stride, constantOffset + matrixLayout.colOffset(col));
+                visitBufferConfigure(mv, baseIndexLvt, vaoLvt, divisorLvt, bufferLvt, matrixType.colType(), matrixLayout.colLayout(), stride, constantOffset + matrixLayout.colOffset(col));
             }
         } else if (type instanceof ArrayAttributeType) {
             ArrayAttributeType arrayType = (ArrayAttributeType) type;
             ArrayLayout arrayLayout = (ArrayLayout) layout;
 
             for (int element = 0; element < arrayType.elementCount(); element++) {
-                visitBufferConfigure(mv, baseIndexLvt, vaoLvt, divisorLvt, arrayType.elementType(), arrayLayout.elementLayout(), stride, constantOffset + arrayLayout.elementOffset(element));
+                visitBufferConfigure(mv, baseIndexLvt, vaoLvt, divisorLvt, bufferLvt, arrayType.elementType(), arrayLayout.elementLayout(), stride, constantOffset + arrayLayout.elementOffset(element));
             }
         } else if (type instanceof StructAttributeType) {
             StructAttributeType structType = (StructAttributeType) type;
             StructLayout structLayout = (StructLayout) layout;
 
             for (int field = 0; field < structType.fieldCount(); field++) {
-                visitBufferConfigure(mv, baseIndexLvt, vaoLvt, divisorLvt, structType.fieldType(field), structLayout.fieldLayout(field), stride, constantOffset + structLayout.fieldOffset(field));
+                visitBufferConfigure(mv, baseIndexLvt, vaoLvt, divisorLvt, bufferLvt, structType.fieldType(field), structLayout.fieldLayout(field), stride, constantOffset + structLayout.fieldOffset(field));
             }
         } else {
             throw new IllegalArgumentException(String.valueOf(type));

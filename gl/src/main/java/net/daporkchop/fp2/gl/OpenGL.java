@@ -352,7 +352,7 @@ public abstract class OpenGL {
 
     public abstract void glEnableVertexAttribArray(int index);
 
-    public abstract void glDisableVertexArray(int index);
+    public abstract void glDisableVertexAttribArray(int index);
 
     public abstract void glVertexAttribPointer(int index, int size, int type, boolean normalized, int stride, long pointer);
 
@@ -538,6 +538,39 @@ public abstract class OpenGL {
 
     //GL_ARB_direct_state_access
     public abstract void glCopyNamedBufferSubData(int readBuffer, int writeBuffer, long readOffset, long writeOffset, long size);
+
+    //GL_ARB_direct_state_access
+    public abstract int glCreateVertexArray();
+
+    //GL_ARB_direct_state_access
+    public abstract void glVertexArrayElementBuffer(int vaobj, int buffer);
+
+    //GL_ARB_direct_state_access
+    public abstract void glEnableVertexArrayAttrib(int vaobj, int index);
+
+    //GL_ARB_direct_state_access
+    public abstract void glDisableVertexArrayAttrib(int vaobj, int index);
+
+    //GL_ARB_direct_state_access
+    public abstract void glVertexArrayAttribFormat(int vaobj, int attribindex, int size, int type, boolean normalized, int relativeoffset);
+
+    //GL_ARB_direct_state_access
+    public abstract void glVertexArrayAttribIFormat(int vaobj, int attribindex, int size, int type, int relativeoffset);
+
+    //GL_ARB_direct_state_access
+    public abstract void glVertexArrayBindingDivisor(int vaobj, int bindingindex, int divisor);
+
+    //GL_ARB_direct_state_access
+    public abstract void glVertexArrayAttribBinding(int vaobj, int attribindex, int bindingindex);
+
+    //GL_ARB_direct_state_access
+    public abstract void glVertexArrayVertexBuffer(int vaobj, int bindingindex, int buffer, long offset, int stride);
+
+    //GL_ARB_direct_state_access
+    public abstract void glVertexArrayVertexBuffers(int vaobj, int first, int count, int[] buffers, long[] offsets, int[] strides);
+
+    //GL_ARB_direct_state_access
+    public abstract void glVertexArrayVertexBuffers(int vaobj, int first, int count, long buffers, long offsets, long strides);
 
     /**
      * Stores the upper limits for various features supported by an OpenGL context.

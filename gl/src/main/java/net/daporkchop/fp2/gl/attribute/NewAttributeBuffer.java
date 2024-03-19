@@ -24,6 +24,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.attribute.vao.VertexArrayObject;
+import net.daporkchop.fp2.gl.attribute.vao.VertexArrayVertexBuffer;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.common.annotation.param.Positive;
 
@@ -148,6 +149,13 @@ public abstract class NewAttributeBuffer<STRUCT extends AttributeStruct> impleme
      * @return an {@link AttributeArray} for writing attribute values to and setting this buffer's contents
      */
     public abstract AttributeArray<STRUCT> setToMany(@Positive int length);
+
+    /**
+     * @param divisor the vertex attribute divisor
+     * @return the vertex buffers corresponding to each vertex attribute in this buffer's vertex attribute format
+     * @throws UnsupportedOperationException if this attribute buffer uses an {@link NewAttributeFormat attribute format} which doesn't support vertex attributes, or if the {@code divisor} is greater than {@code 0} and {@link net.daporkchop.fp2.gl.GLExtension#GL_ARB_instanced_arrays} isn't supported
+     */
+    public abstract VertexArrayVertexBuffer[] buffers(@NotNegative int divisor) throws UnsupportedOperationException;
 
     /**
      * Configures the given {@link VertexArrayObject} to reference the vertex data in this attribute buffer.

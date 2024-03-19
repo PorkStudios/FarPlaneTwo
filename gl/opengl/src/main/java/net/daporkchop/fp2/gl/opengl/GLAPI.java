@@ -232,7 +232,7 @@ public interface GLAPI {
 
     void glEnableVertexAttribArray(int index);
 
-    void glDisableVertexArray(int index);
+    void glDisableVertexAttribArray(int index);
 
     void glVertexAttribPointer(int index, int size, int type, boolean normalized, int stride, long pointer);
 

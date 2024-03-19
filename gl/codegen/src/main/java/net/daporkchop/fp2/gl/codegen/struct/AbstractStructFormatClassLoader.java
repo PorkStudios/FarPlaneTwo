@@ -32,6 +32,7 @@ import net.daporkchop.fp2.gl.attribute.NewUniformBuffer;
 import net.daporkchop.fp2.gl.attribute.annotation.AttributeIgnore;
 import net.daporkchop.fp2.gl.attribute.annotation.AttributeSetter;
 import net.daporkchop.fp2.gl.attribute.vao.VertexArrayObject;
+import net.daporkchop.fp2.gl.attribute.vao.VertexAttributeFormat;
 import net.daporkchop.fp2.gl.codegen.struct.attribute.ComponentType;
 import net.daporkchop.fp2.gl.codegen.struct.attribute.JavaPrimitiveType;
 import net.daporkchop.fp2.gl.codegen.struct.layout.LayoutInfo;
@@ -118,6 +119,7 @@ public abstract class AbstractStructFormatClassLoader<STRUCT extends AttributeSt
 
         registerClass.accept(LayoutInfo.class);
         registerClass.accept(VertexArrayObject.class);
+        registerClass.accept(VertexAttributeFormat.class);
 
         if (WRITE_CLASSES) {
             registerClass.accept(OpenGLConstants.class);

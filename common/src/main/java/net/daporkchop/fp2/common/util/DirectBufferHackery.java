@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -21,6 +21,8 @@ package net.daporkchop.fp2.common.util;
 
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
+import net.daporkchop.lib.common.annotation.TransferOwnership;
+import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.common.pool.recycler.Recycler;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.reference.cache.Cached;
@@ -55,7 +57,7 @@ public class DirectBufferHackery {
     private final Class<IntBuffer> INT = PorkUtil.classForName("java.nio.DirectIntBufferU");
     private final Class<FloatBuffer> FLOAT = PorkUtil.classForName("java.nio.DirectFloatBufferU");
     private final Class<DoubleBuffer> DOUBLE = PorkUtil.classForName("java.nio.DirectDoubleBufferU");
-    
+
     private static final Cached<Recycler<ByteBuffer>> FAKE_BYTEBUFFER_RECYCLER = Cached.threadLocal(() -> Recycler.unbounded(DirectBufferHackery::emptyByte), ReferenceStrength.SOFT);
     private static final Cached<Recycler<IntBuffer>> FAKE_INTBUFFER_RECYCLER = Cached.threadLocal(() -> Recycler.unbounded(DirectBufferHackery::emptyInt), ReferenceStrength.SOFT);
     private static final Cached<Recycler<FloatBuffer>> FAKE_FLOATBUFFER_RECYCLER = Cached.threadLocal(() -> Recycler.unbounded(DirectBufferHackery::emptyFloat), ReferenceStrength.SOFT);
@@ -81,7 +83,7 @@ public class DirectBufferHackery {
         reset(buffer, address, capacity);
         return buffer;
     }
-    
+
     /**
      * Gets a {@link Recycler} for fake direct {@link ByteBuffer}s whose contents are undefined, but may be redirected to a requested memory address using
      * {@link #reset(Buffer, long, int)}.
@@ -89,7 +91,7 @@ public class DirectBufferHackery {
      * The returned {@link Recycler} is only valid in the current thread!
      *
      * @return a {@link Recycler} for fake direct buffers
-     * @see #reset(Buffer, long, int) 
+     * @see #reset(Buffer, long, int)
      */
     public static Recycler<ByteBuffer> byteRecycler() {
         return FAKE_BYTEBUFFER_RECYCLER.get();
@@ -162,5 +164,34 @@ public class DirectBufferHackery {
      */
     public static Recycler<DoubleBuffer> doubleRecycler() {
         return FAKE_DOUBLEBUFFER_RECYCLER.get();
+    }
+
+    /**
+     * Allocates off-heap memory.
+     * <p>
+     * Allocations <strong>must</strong> be {@link #freeTemporary(long, long) freed} (use try-with-resources) in allocation order!
+     *
+     * @param size the size of the allocation
+     * @return a pointer to the allocation base address
+     */
+    public static long allocateTemporary(@NotNegative long size) {
+        if (size <= 0L) {
+            return 0L;
+        }
+
+        //TODO: i want to add some kind of thread-local bump allocator for small allocations
+        return PUnsafe.allocateMemory(size);
+    }
+
+    /**
+     * Frees off-heap memory allocated by {@link #allocateTemporary(long)}.
+     *
+     * @param address the allocation base address, as returned by {@link #allocateTemporary(long)}
+     * @param size    the size of the allocation, as given to {@link #allocateTemporary(long)}
+     */
+    public static void freeTemporary(@TransferOwnership long address, @NotNegative long size) {
+        if (size > 0L) {
+            PUnsafe.freeMemory(address);
+        }
     }
 }

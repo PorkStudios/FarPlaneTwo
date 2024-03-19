@@ -92,17 +92,20 @@ public class NewTestOpenGL {
             instanceVertexBuffer.set(writer);
         }
 
-        val vao = VertexArrayObject.create(gl);
-        vertexBuffer.configure(0, vao);
-        instanceVertexBuffer.configure(2, vao, 1);
+        val vao = VertexArrayObject.builder(gl)
+                .buffer(vertexBuffer)
+                .buffer(instanceVertexBuffer, 1)
+                .build();
+        //vertexBuffer.configure(0, vao);
+        //instanceVertexBuffer.configure(2, vao, 1);
 
         val vsh = new Shader(gl, ShaderType.VERTEX, resourceProvider, Identifier.from("new_test.vert"));
         val fsh = new Shader(gl, ShaderType.FRAGMENT, resourceProvider, Identifier.from("new_test.frag"));
         val shader = DrawShaderProgram.builder(gl)
                 .vertexShader(vsh).fragmentShader(fsh)
                 .addUBO(7, "Uniforms")
-                .vertexAttributes(0, vertexFormat, "a_"::concat)
-                .vertexAttributes(2, instanceVertexFormat, "a_"::concat)
+                .vertexAttributesWithPrefix("a_", vertexFormat)
+                .vertexAttributesWithPrefix("a_", instanceVertexFormat)
                 .build();
 
         gl.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);

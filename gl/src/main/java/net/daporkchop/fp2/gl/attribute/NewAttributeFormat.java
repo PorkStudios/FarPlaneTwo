@@ -24,6 +24,7 @@ import lombok.SneakyThrows;
 import net.daporkchop.fp2.common.GlobalProperties;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.gl.OpenGL;
+import net.daporkchop.fp2.gl.attribute.vao.VertexAttributeFormat;
 
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
@@ -104,18 +105,6 @@ public abstract class NewAttributeFormat<STRUCT extends AttributeStruct> {
         return this.validTargets.contains(target);
     }
 
-    public final boolean supportsVertexAttribute() {
-        return this.supports(AttributeTarget.VERTEX_ATTRIBUTE);
-    }
-
-    public final boolean supportsShaderStorageBuffer() {
-        return this.supports(AttributeTarget.SSBO);
-    }
-
-    public final boolean supportsUniformBuffer() {
-        return this.supports(AttributeTarget.UBO);
-    }
-
     /**
      * Creates a new {@link NewAttributeBuffer} for storing attributes using this attribute format.
      *
@@ -134,9 +123,15 @@ public abstract class NewAttributeFormat<STRUCT extends AttributeStruct> {
 
     /**
      * @return the number of vertex attribute binding locations taken up by this vertex attribute format
-     * @throws UnsupportedOperationException if this attribute format doesn't {@link #supportsVertexAttribute() support vertex attributes}
+     * @throws UnsupportedOperationException if this attribute format doesn't {@link #supports(AttributeTarget) support} {@link AttributeTarget#VERTEX_ATTRIBUTE vertex attributes}
      */
     public abstract int occupiedVertexAttributes() throws UnsupportedOperationException;
+
+    /**
+     * @return the formats of the individual vertex attributes in this vertex attribute format
+     * @throws UnsupportedOperationException if this attribute format doesn't {@link #supports(AttributeTarget) support} {@link AttributeTarget#VERTEX_ATTRIBUTE vertex attributes}
+     */
+    public abstract VertexAttributeFormat[] vertexAttributeFormats() throws UnsupportedOperationException;
 
     /**
      * Configures the vertex attribute binding locations of all the vertex attributes referenced by this vertex attribute format.
@@ -144,7 +139,7 @@ public abstract class NewAttributeFormat<STRUCT extends AttributeStruct> {
      * @param program          the name of the OpenGL shader program to be configured
      * @param nameFormatter    a function for adjusting field names (e.g. adding a prefix or suffix)
      * @param baseBindingIndex the base vertex attribute binding index
-     * @throws UnsupportedOperationException if this attribute format doesn't {@link #supportsVertexAttribute() support vertex attributes}
+     * @throws UnsupportedOperationException if this attribute format doesn't {@link #supports(AttributeTarget) support} {@link AttributeTarget#VERTEX_ATTRIBUTE vertex attributes}
      */
     public abstract void bindVertexAttributeLocations(int program, @NonNull Function<String, String> nameFormatter, int baseBindingIndex) throws UnsupportedOperationException;
 
@@ -152,7 +147,7 @@ public abstract class NewAttributeFormat<STRUCT extends AttributeStruct> {
      * Creates a new {@link NewUniformBuffer} for storing individual shader uniforms using this attribute format.
      *
      * @return the created {@link NewUniformBuffer}
-     * @throws UnsupportedOperationException if this attribute format doesn't {@link #supportsUniformBuffer() support uniform buffers}
+     * @throws UnsupportedOperationException if this attribute format doesn't {@link #supports(AttributeTarget) support} {@link AttributeTarget#UBO uniform buffers}
      */
     public abstract NewUniformBuffer<STRUCT> createUniformBuffer() throws UnsupportedOperationException;
 }
