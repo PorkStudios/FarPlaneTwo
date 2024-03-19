@@ -53,6 +53,11 @@ public interface IFarClientContext extends AutoCloseable {
     AbstractFarRenderer renderer();
 
     /**
+     * Reloads the current renderer without invalidating the tile cache.
+     */
+    void reloadRenderer();
+
+    /**
      * @return the config currently being used
      */
     FP2Config config();

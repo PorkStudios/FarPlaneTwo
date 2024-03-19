@@ -46,12 +46,15 @@ subprojects {
         idea.module.inheritOutputDirs = true
     }
 
-    java.toolchain.languageVersion = JavaLanguageVersion.of(8)
-    compileJava.sourceCompatibility = compileJava.targetCompatibility = "$javaVersion"
+    /*java.toolchain {
+        languageVersion = JavaLanguageVersion.of(8)
+        vendor = JvmVendorSpec.ADOPTOPENJDK
+    }*/
 
     tasks.withType(JavaCompile) {
         options.encoding = "UTF-8"
         options.headerOutputDirectory.convention(null) // https://github.com/gradle/gradle/issues/12904
+        sourceCompatibility = targetCompatibility = "$javaVersionFull"
     }
 
     repositories {
@@ -154,6 +157,15 @@ subprojects {
     }
 
     dependencies {
+        for (artifact in [ "manifold-rt", "manifold-ext-rt" ]) { //TODO: manifold-ext-rt may need to be shaded, but for now nothing seems to require it
+            compileOnly "systems.manifold:$artifact:$manifoldVersion"
+            testCompileOnly "systems.manifold:$artifact:$manifoldVersion"
+        }
+        for (artifact in [ "manifold-exceptions", "manifold-ext" ]) {
+            annotationProcessor "systems.manifold:$artifact:$manifoldVersion"
+            testAnnotationProcessor "systems.manifold:$artifact:$manifoldVersion"
+        }
+
         compileOnly "org.projectlombok:lombok:$lombokVersion"
         annotationProcessor "org.projectlombok:lombok:$lombokVersion"
 
@@ -162,6 +174,10 @@ subprojects {
         testImplementation "org.junit.jupiter:junit-jupiter:$junitVersion"
         testCompileOnly "org.projectlombok:lombok:$lombokVersion"
         testAnnotationProcessor "org.projectlombok:lombok:$lombokVersion"
+    }
+
+    tasks.withType(JavaCompile) {
+        options.compilerArgs += [ "-Xplugin:Manifold no-bootstrap" ]
     }
 
     test {

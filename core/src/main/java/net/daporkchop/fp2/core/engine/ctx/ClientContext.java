@@ -61,6 +61,19 @@ public class ClientContext implements IFarClientContext {
         //}
     }
 
+    @Override
+    public synchronized void reloadRenderer() {
+        checkState(!this.closed, "already closed!");
+
+        this.level.workerManager().rootExecutor().execute(() -> {
+            AbstractFarRenderer oldRenderer = this.renderer;
+            this.renderer = null;
+            oldRenderer.close();
+
+            this.renderer = this.renderer0(null, this.config);
+        });
+    }
+
     @CalledFromAnyThread
     @Override
     public synchronized void notifyConfigChange(@NonNull FP2Config config) {
