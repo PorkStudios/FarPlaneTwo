@@ -312,7 +312,9 @@ public abstract class OpenGL {
 
     public abstract void glGetBufferSubData(int target, long offset, @NonNull ByteBuffer data);
 
-    public abstract long glMapBuffer(int target, int usage);
+    public abstract long glMapBuffer(int target, int access);
+
+    public abstract ByteBuffer glMapBuffer(int target, int access, long length, ByteBuffer oldBuffer);
 
     public abstract void glUnmapBuffer(int target);
 
@@ -408,6 +410,12 @@ public abstract class OpenGL {
 
     public abstract void glTransformFeedbackVaryings(int program, @NonNull CharSequence[] varyings, int bufferMode);
 
+    public abstract long glMapBufferRange(int target, long offset, long length, int access);
+
+    public abstract ByteBuffer glMapBufferRange(int target, long offset, long length, int access, ByteBuffer oldBuffer);
+
+    public abstract void glFlushMappedBufferRange(int target, long offset, long length);
+
     //
     //
     // OpenGL 3.1
@@ -451,6 +459,18 @@ public abstract class OpenGL {
 
     //GL_ARB_draw_elements_base_vertex
     public abstract void glMultiDrawElementsBaseVertex(int mode, long count, int type, long indices, int drawcount, long basevertex);
+
+    //GL_ARB_sync
+    public abstract long glFenceSync(int condition, int flags);
+
+    //GL_ARB_sync
+    public abstract int glClientWaitSync(long sync, int flags, long timeout);
+
+    //GL_ARB_sync
+    public abstract int glGetSync(long sync, int pname);
+
+    //GL_ARB_sync
+    public abstract void glDeleteSync(long sync);
 
     //
     //
@@ -531,7 +551,19 @@ public abstract class OpenGL {
     public abstract void glGetNamedBufferSubData(int buffer, long offset, @NonNull ByteBuffer data);
 
     //GL_ARB_direct_state_access
-    public abstract long glMapNamedBuffer(int buffer, int usage);
+    public abstract long glMapNamedBuffer(int buffer, int access);
+
+    //GL_ARB_direct_state_access
+    public abstract ByteBuffer glMapNamedBuffer(int buffer, int access, long length, ByteBuffer oldBuffer);
+
+    //GL_ARB_direct_state_access
+    public abstract long glMapNamedBufferRange(int buffer, long offset, long size, int access);
+
+    //GL_ARB_direct_state_access
+    public abstract ByteBuffer glMapNamedBufferRange(int buffer, long offset, long size, int access, ByteBuffer oldBuffer);
+
+    //GL_ARB_direct_state_access
+    public abstract void glFlushMappedNamedBufferRange(int buffer, long offset, long length);
 
     //GL_ARB_direct_state_access
     public abstract void glUnmapNamedBuffer(int buffer);

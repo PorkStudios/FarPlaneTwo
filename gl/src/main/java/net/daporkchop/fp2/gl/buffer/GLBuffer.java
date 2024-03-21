@@ -20,7 +20,9 @@
 package net.daporkchop.fp2.gl.buffer;
 
 import io.netty.buffer.ByteBuf;
+import lombok.AccessLevel;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
@@ -28,11 +30,11 @@ import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.nio.ByteBuffer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.LongConsumer;
 
-import static java.lang.Math.min;
-import static net.daporkchop.fp2.gl.OpenGLConstants.*;
-import static net.daporkchop.lib.common.util.PValidation.notNegative;
+import static java.lang.Math.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
@@ -59,6 +61,8 @@ public abstract class GLBuffer implements AutoCloseable {
 
     protected final int id;
     protected final int usage;
+
+    private boolean mapped;
 
     protected GLBuffer(OpenGL gl, BufferUsage usage, int id) {
         this.gl = gl;
@@ -252,26 +256,122 @@ public abstract class GLBuffer implements AutoCloseable {
     }
 
     /**
-     * Maps this buffer's contents into client address space and passes the mapping address to the given callback function before unmapping the buffer again.
+     * Executes the given action with this buffer bound to the given {@link BufferTarget buffer binding target}.
      *
-     * @param read     whether the mapping may be read from
-     * @param write    whether the mapping may be written to
-     * @param callback the callback function
+     * @param target   the {@link BufferTarget buffer binding target} to bind the buffer to
+     * @param callback the action to run
      */
-    public void map(boolean read, boolean write, @NonNull LongConsumer callback) {
-        int access;
-        if (read && write) {
-            access = GL_READ_WRITE;
-        } else if (read) {
-            access = GL_READ_ONLY;
-        } else if (write) {
-            access = GL_WRITE_ONLY;
-        } else {
-            throw new IllegalArgumentException("at least one of read or write access must be enabled!");
-        }
+    public <T> T bind(@NonNull BufferTarget target, @NonNull Function<BufferTarget, T> callback) {
+        int old = this.gl.glGetInteger(target.binding());
+        try {
+            this.gl.glBindBuffer(target.id(), this.id);
 
-        this.map(access, callback);
+            return callback.apply(target);
+        } finally {
+            this.gl.glBindBuffer(target.id(), old);
+        }
     }
 
-    protected abstract void map(int access, @NonNull LongConsumer callback);
+    /**
+     * Maps this buffer's contents into client address space and passes the mapping address to the given callback function before unmapping the buffer again.
+     *
+     * @param access   the ways in which the buffer data may be accessed
+     * @param callback the callback function
+     */
+    public void map(BufferAccess access, @NonNull LongConsumer callback) {
+        this.checkNotMapped();
+        this.mapped = true;
+        try {
+            this.map(access.id(), callback);
+        } finally {
+            this.mapped = false;
+        }
+    }
+
+    protected abstract void map(int access, LongConsumer callback);
+
+    /**
+     * Maps this buffer's contents into client address space and passes the mapping address to the given callback function before unmapping the buffer again.
+     *
+     * @param access   the ways in which the buffer data may be accessed
+     * @param callback the callback function
+     */
+    public void mapRange(BufferAccess access, int flags, long offset, long length, @NonNull LongConsumer callback) {
+        checkRangeLen(this.capacity, offset, length);
+        this.checkNotMapped();
+        this.mapped = true;
+        try {
+            this.mapRange(access.flags() | flags, offset, length, callback);
+        } finally {
+            this.mapped = false;
+        }
+    }
+
+    protected abstract void mapRange(int access, long offset, long length, LongConsumer callback);
+
+    /**
+     * Maps this buffer's contents into client address space and returns a reference to the mapping.
+     *
+     * @param access the ways in which the buffer data may be accessed
+     * @return a {@link Mapping}
+     */
+    public Mapping map(BufferAccess access) {
+        this.checkNotMapped();
+        this.mapped = true;
+        try {
+            return this.map(access);
+        } catch (Throwable t) {
+            this.mapped = false;
+            throw t;
+        }
+    }
+
+    protected abstract Mapping map(int access);
+
+    /**
+     * Maps this buffer's contents into client address space and returns a reference to the mapping.
+     *
+     * @param access the ways in which the buffer data may be accessed
+     * @return a {@link Mapping}
+     */
+    public Mapping mapRange(BufferAccess access, int flags, long offset, long length) {
+        this.checkNotMapped();
+        this.mapped = true;
+        try {
+            return this.mapRange(access.flags() | flags, offset, length);
+        } catch (Throwable t) {
+            this.mapped = false;
+            throw t;
+        }
+    }
+
+    protected abstract Mapping mapRange(int access, long offset, long length);
+
+    protected abstract void unmap();
+
+    protected final void checkNotMapped() {
+        if (this.mapped) {
+            throw new IllegalStateException("this buffer is mapped");
+        }
+    }
+
+    protected final void checkMapped() {
+        if (!this.mapped) {
+            throw new IllegalStateException("this buffer isn't mapped");
+        }
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
+    public final class Mapping implements AutoCloseable {
+        public final ByteBuffer buffer;
+
+        @Override
+        public void close() {
+            GLBuffer.this.checkMapped();
+            GLBuffer.this.unmap();
+        }
+    }
 }

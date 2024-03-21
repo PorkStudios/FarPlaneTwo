@@ -128,12 +128,37 @@ public class DSAGLBufferImpl extends GLBuffer {
     }
 
     @Override
-    protected void map(int access, @NonNull LongConsumer callback) {
+    protected void map(int access, LongConsumer callback) {
         long addr = this.gl.glMapNamedBuffer(this.id, access);
         try {
             callback.accept(addr);
         } finally {
             this.gl.glUnmapNamedBuffer(this.id);
         }
+    }
+
+    @Override
+    protected void mapRange(int access, long offset, long length, LongConsumer callback) {
+        long addr = this.gl.glMapNamedBufferRange(this.id, offset, length, access);
+        try {
+            callback.accept(addr);
+        } finally {
+            this.gl.glUnmapNamedBuffer(this.id);
+        }
+    }
+
+    @Override
+    protected Mapping map(int access) {
+        return new Mapping(this.gl.glMapNamedBuffer(this.id, access, this.capacity, null));
+    }
+
+    @Override
+    protected Mapping mapRange(int access, long offset, long length) {
+        return new Mapping(this.gl.glMapNamedBufferRange(this.id, offset, length, access, null));
+    }
+
+    @Override
+    protected void unmap() {
+        this.gl.glUnmapNamedBuffer(this.id);
     }
 }

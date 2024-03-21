@@ -40,6 +40,7 @@ import org.lwjgl.opengl.ARBProgramInterfaceQuery;
 import org.lwjgl.opengl.ARBSamplerObjects;
 import org.lwjgl.opengl.ARBShaderImageLoadStore;
 import org.lwjgl.opengl.ARBShaderStorageBufferObject;
+import org.lwjgl.opengl.ARBSync;
 import org.lwjgl.opengl.ARBTextureBufferObject;
 import org.lwjgl.opengl.ARBUniformBufferObject;
 import org.lwjgl.opengl.ContextCapabilities;
@@ -57,8 +58,11 @@ import org.lwjgl.opengl.GL42;
 import org.lwjgl.opengl.GL43;
 import org.lwjgl.opengl.GL45;
 import org.lwjgl.opengl.GLContext;
+import org.lwjgl.opengl.GLSync;
 
+import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Constructor;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.util.Comparator;
@@ -83,6 +87,7 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
     // OpenGL 3.2
     private final boolean OpenGL32;
     private final boolean GL_ARB_draw_elements_base_vertex;
+    private final boolean GL_ARB_sync;
 
     // OpenGL 3.3
     private final boolean OpenGL33;
@@ -118,6 +123,7 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
         // OpenGL 3.2
         this.OpenGL32 = capabilities.OpenGL32;
         this.GL_ARB_draw_elements_base_vertex = !capabilities.OpenGL32 && capabilities.GL_ARB_draw_elements_base_vertex;
+        this.GL_ARB_sync = !capabilities.OpenGL32 && capabilities.GL_ARB_sync;
 
         // OpenGL 3.3
         this.OpenGL33 = capabilities.OpenGL33;
@@ -601,8 +607,17 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
     }
 
     @Override
-    public long glMapBuffer(int target, int usage) {
-        return PUnsafe.pork_directBufferAddress(GL15.glMapBuffer(target, usage, null));
+    public long glMapBuffer(int target, int access) {
+        val res = PUnsafe.pork_directBufferAddress(GL15.glMapBuffer(target, access, null));
+        super.debugCheckError();
+        return res;
+    }
+
+    @Override
+    public ByteBuffer glMapBuffer(int target, int access, long length, ByteBuffer oldBuffer) {
+        val res = GL15.glMapBuffer(target, access, length, oldBuffer);
+        super.debugCheckError();
+        return res;
     }
 
     @Override
@@ -873,6 +888,26 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
         super.debugCheckError();
     }
 
+    @Override
+    public long glMapBufferRange(int target, long offset, long length, int access) {
+        val res = PUnsafe.pork_directBufferAddress(GL30.glMapBufferRange(target, offset, length, access, null));
+        super.debugCheckError();
+        return res;
+    }
+
+    @Override
+    public ByteBuffer glMapBufferRange(int target, long offset, long length, int access, ByteBuffer oldBuffer) {
+        val res = GL30.glMapBufferRange(target, offset, length, access, oldBuffer);
+        super.debugCheckError();
+        return res;
+    }
+
+    @Override
+    public void glFlushMappedBufferRange(int target, long offset, long length) {
+        GL30.glFlushMappedBufferRange(target, offset, length);
+        super.debugCheckError();
+    }
+
     //
     //
     // OpenGL 3.1
@@ -991,6 +1026,64 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
     public void glMultiDrawElementsBaseVertex(int mode, long count, int type, long indices, int drawcount, long basevertex) {
         this.extraFunctions.glMultiDrawElementsBaseVertex(mode, count, type, indices, drawcount, basevertex);
         super.debugCheckError();
+    }
+
+    @Override
+    public long glFenceSync(int condition, int flags) {
+        if (this.GL_ARB_sync) {
+            val res = ARBSync.glFenceSync(condition, flags).getPointer();
+            super.debugCheckError();
+            return res;
+        } else {
+            val res = GL32.glFenceSync(condition, flags).getPointer();
+            super.debugCheckError();
+            return res;
+        }
+    }
+
+    private static final MethodHandle GLSync_CTOR;
+
+    static {
+        Constructor<GLSync> ctor = GLSync.class.getDeclaredConstructor(long.class);
+        ctor.setAccessible(true);
+        GLSync_CTOR = MethodHandles.publicLookup().unreflectConstructor(ctor);
+    }
+
+    @Override
+    public int glClientWaitSync(long sync, int flags, long timeout) {
+        if (this.GL_ARB_sync) {
+            val res = ARBSync.glClientWaitSync((GLSync) GLSync_CTOR.invokeExact(sync), flags, timeout);
+            super.debugCheckError();
+            return res;
+        } else {
+            val res = GL32.glClientWaitSync((GLSync) GLSync_CTOR.invokeExact(sync), flags, timeout);
+            super.debugCheckError();
+            return res;
+        }
+    }
+
+    @Override
+    public int glGetSync(long sync, int pname) {
+        if (this.GL_ARB_sync) {
+            val res = ARBSync.glGetSynci((GLSync) GLSync_CTOR.invokeExact(sync), pname);
+            super.debugCheckError();
+            return res;
+        } else {
+            val res = GL32.glGetSynci((GLSync) GLSync_CTOR.invokeExact(sync), pname);
+            super.debugCheckError();
+            return res;
+        }
+    }
+
+    @Override
+    public void glDeleteSync(long sync) {
+        if (this.GL_ARB_sync) {
+            ARBSync.glDeleteSync((GLSync) GLSync_CTOR.invokeExact(sync));
+            super.debugCheckError();
+        } else {
+            GL32.glDeleteSync((GLSync) GLSync_CTOR.invokeExact(sync));
+            super.debugCheckError();
+        }
     }
 
     //
@@ -1280,15 +1373,65 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
     }
 
     @Override
-    public long glMapNamedBuffer(int buffer, int usage) {
+    public long glMapNamedBuffer(int buffer, int access) {
         if (this.GL_ARB_direct_state_access) {
-            val res = PUnsafe.pork_directBufferAddress(ARBDirectStateAccess.glMapNamedBuffer(buffer, usage, null));
+            val res = PUnsafe.pork_directBufferAddress(ARBDirectStateAccess.glMapNamedBuffer(buffer, access, null));
             super.debugCheckError();
             return res;
         } else {
-            val res = PUnsafe.pork_directBufferAddress(GL45.glMapNamedBuffer(buffer, usage, null));
+            val res = PUnsafe.pork_directBufferAddress(GL45.glMapNamedBuffer(buffer, access, null));
             super.debugCheckError();
             return res;
+        }
+    }
+
+    @Override
+    public ByteBuffer glMapNamedBuffer(int buffer, int access, long length, ByteBuffer oldBuffer) {
+        if (this.GL_ARB_direct_state_access) {
+            val res = ARBDirectStateAccess.glMapNamedBuffer(buffer, access, length, oldBuffer);
+            super.debugCheckError();
+            return res;
+        } else {
+            val res = GL45.glMapNamedBuffer(buffer, access, length, oldBuffer);
+            super.debugCheckError();
+            return res;
+        }
+    }
+
+    @Override
+    public long glMapNamedBufferRange(int buffer, long offset, long size, int access) {
+        if (this.GL_ARB_direct_state_access) {
+            val res = PUnsafe.pork_directBufferAddress(ARBDirectStateAccess.glMapNamedBufferRange(buffer, offset, size, access, null));
+            super.debugCheckError();
+            return res;
+        } else {
+            val res = PUnsafe.pork_directBufferAddress(GL45.glMapNamedBufferRange(buffer, offset, size, access, null));
+            super.debugCheckError();
+            return res;
+        }
+    }
+
+    @Override
+    public ByteBuffer glMapNamedBufferRange(int buffer, long offset, long size, int access, ByteBuffer oldBuffer) {
+        if (this.GL_ARB_direct_state_access) {
+            val res = ARBDirectStateAccess.glMapNamedBufferRange(buffer, offset, size, access, oldBuffer);
+            super.debugCheckError();
+            return res;
+        } else {
+            val res = GL45.glMapNamedBufferRange(buffer, offset, size, access, oldBuffer);
+            super.debugCheckError();
+            return res;
+        }
+    }
+
+    @Override
+    public void glFlushMappedNamedBufferRange(int buffer, long offset, long length) {
+        if (this.GL_ARB_direct_state_access) {
+            ARBDirectStateAccess.glFlushMappedNamedBufferRange(buffer, offset, length);
+            super.debugCheckError();
+        } else {
+            GL45.glFlushMappedNamedBufferRange(buffer, offset, length);
+            super.debugCheckError();
         }
     }
 

@@ -27,8 +27,7 @@ import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import java.nio.ByteBuffer;
 import java.util.function.LongConsumer;
 
-import static net.daporkchop.lib.common.util.PValidation.checkRangeLen;
-import static net.daporkchop.lib.common.util.PValidation.notNegative;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * Implementation of {@link GLBuffer} which uses the standard OpenGL functions to operate on buffers.
@@ -143,13 +142,15 @@ public class BasicGLBufferImpl extends GLBuffer {
         checkRangeLen(src.capacity(), srcOffset, size);
         checkRangeLen(this.capacity, dstOffset, size);
 
-        src.bind(BufferTarget.COPY_READ_BUFFER, srcTarget -> this.bind(BufferTarget.COPY_WRITE_BUFFER, dstTarget -> {
-            this.gl.glCopyBufferSubData(srcTarget.id(), dstTarget.id(), srcOffset, dstOffset, size);
-        }));
+        src.bind(BufferTarget.COPY_READ_BUFFER, srcTarget -> {
+            this.bind(BufferTarget.COPY_WRITE_BUFFER, dstTarget -> {
+                this.gl.glCopyBufferSubData(srcTarget.id(), dstTarget.id(), srcOffset, dstOffset, size);
+            });
+        });
     }
 
     @Override
-    protected void map(int access, @NonNull LongConsumer callback) {
+    protected void map(int access, LongConsumer callback) {
         this.bind(BufferTarget.ARRAY_BUFFER, target -> {
             long addr = this.gl.glMapBuffer(target.id(), access);
             try {
@@ -157,6 +158,39 @@ public class BasicGLBufferImpl extends GLBuffer {
             } finally {
                 this.gl.glUnmapBuffer(target.id());
             }
+        });
+    }
+
+    @Override
+    protected void mapRange(int access, long offset, long length, LongConsumer callback) {
+        this.bind(BufferTarget.ARRAY_BUFFER, target -> {
+            long addr = this.gl.glMapBufferRange(target.id(), offset, length, access);
+            try {
+                callback.accept(addr);
+            } finally {
+                this.gl.glUnmapBuffer(target.id());
+            }
+        });
+    }
+
+    @Override
+    protected Mapping map(int access) {
+        return this.bind(BufferTarget.ARRAY_BUFFER, target -> {
+            return new Mapping(this.gl.glMapBuffer(target.id(), access, this.capacity, null));
+        });
+    }
+
+    @Override
+    protected Mapping mapRange(int access, long offset, long length) {
+        return this.bind(BufferTarget.ARRAY_BUFFER, target -> {
+            return new Mapping(this.gl.glMapBufferRange(target.id(), offset, length, access, null));
+        });
+    }
+
+    @Override
+    protected void unmap() {
+        this.bind(BufferTarget.ARRAY_BUFFER, target -> {
+            this.gl.glUnmapBuffer(target.id());
         });
     }
 }
