@@ -21,7 +21,6 @@ package net.daporkchop.fp2.gl.attribute.vao;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
-import manifold.ext.rt.api.auto;
 import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.NewAttributeBuffer;
@@ -31,6 +30,7 @@ import net.daporkchop.lib.common.annotation.param.NotNegative;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -93,20 +93,24 @@ public abstract class VertexArrayObject implements AutoCloseable {
 
         @Override
         public void setFAttrib(GLBuffer buffer, int index, int size, int type, boolean normalized, int stride, long pointer, int divisor) {
-            buffer.bind(BufferTarget.ARRAY_BUFFER, target -> this.bind(() -> {
-                this.gl.glEnableVertexAttribArray(index);
-                this.gl.glVertexAttribPointer(index, size, type, normalized, stride, pointer);
-                this.gl.glVertexAttribDivisor(index, divisor); //TODO: throw exception if divisors aren't supported
-            }));
+            buffer.bind(BufferTarget.ARRAY_BUFFER, target -> {
+                this.bind(() -> {
+                    this.gl.glEnableVertexAttribArray(index);
+                    this.gl.glVertexAttribPointer(index, size, type, normalized, stride, pointer);
+                    this.gl.glVertexAttribDivisor(index, divisor); //TODO: throw exception if divisors aren't supported
+                });
+            });
         }
 
         @Override
         public void setIAttrib(GLBuffer buffer, int index, int size, int type, int stride, long pointer, int divisor) {
-            buffer.bind(BufferTarget.ARRAY_BUFFER, target -> this.bind(() -> {
-                this.gl.glEnableVertexAttribArray(index);
-                this.gl.glVertexAttribIPointer(index, size, type, stride, pointer);
-                this.gl.glVertexAttribDivisor(index, divisor);
-            }));
+            buffer.bind(BufferTarget.ARRAY_BUFFER, target -> {
+                this.bind(() -> {
+                    this.gl.glEnableVertexAttribArray(index);
+                    this.gl.glVertexAttribIPointer(index, size, type, stride, pointer);
+                    this.gl.glVertexAttribDivisor(index, divisor);
+                });
+            });
         }
 
         @Override
@@ -304,8 +308,8 @@ public abstract class VertexArrayObject implements AutoCloseable {
     public static final class Builder {
         final OpenGL gl;
 
-        final auto formats = new ArrayList<VertexAttributeFormat>();
-        final auto buffers = new ArrayList<VertexArrayVertexBuffer>();
+        final List<VertexAttributeFormat> formats = new ArrayList<>();
+        final List<VertexArrayVertexBuffer> buffers = new ArrayList<>();
 
         GLBuffer elementsBuffer = null;
 

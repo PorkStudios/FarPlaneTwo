@@ -47,7 +47,7 @@ public final class DrawShaderProgram extends ShaderProgram {
     /**
      * @author DaPorkchop_
      */
-    public static final class Builder extends ShaderProgram.Builder<DrawShaderProgram> {
+    public static final class Builder extends ShaderProgram.Builder<DrawShaderProgram, Builder> {
         private boolean vertexShader;
         private boolean fragmentShader;
 

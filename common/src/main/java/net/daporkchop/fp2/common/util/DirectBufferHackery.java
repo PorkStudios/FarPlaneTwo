@@ -26,7 +26,6 @@ import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.common.pool.recycler.Recycler;
 import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.reference.cache.Cached;
-import net.daporkchop.lib.common.system.PlatformInfo;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
@@ -47,7 +46,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @UtilityClass
 public class DirectBufferHackery {
     static {
-        checkState(PlatformInfo.UNALIGNED, "Unaligned memory access not supported?!? (what kind of computer are you running this on lol)");
+        PUnsafe.requireUnalignedAccess();
     }
 
     private final long BUFFER_CAPACITY_OFFSET = PUnsafe.pork_getOffset(Buffer.class, "capacity");

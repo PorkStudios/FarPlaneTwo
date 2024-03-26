@@ -46,6 +46,7 @@ import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 @Getter
 public abstract class OpenGL {
     public static final boolean DEBUG = Boolean.getBoolean("fp2.gl.opengl.debug");
+    public static final boolean PRESERVE_BINDINGS = System.getProperty("fp2.gl.opengl.preserveBindings") == null || Boolean.getBoolean("fp2.gl.opengl.preserveBindings");
 
     /**
      * @return an instance of {@link OpenGL} for accessing the current OpenGL context
@@ -525,6 +526,18 @@ public abstract class OpenGL {
 
     //
     //
+    // OpenGL 4.4
+    //
+    //
+
+    //GL_ARB_buffer_storage
+    public abstract void glBufferStorage(int target, long data_size, long data, int flags);
+
+    //GL_ARB_buffer_storage
+    public abstract void glBufferStorage(int target, @NonNull ByteBuffer data, int flags);
+
+    //
+    //
     // OpenGL 4.5
     //
     //
@@ -537,6 +550,12 @@ public abstract class OpenGL {
 
     //GL_ARB_direct_state_access
     public abstract void glNamedBufferData(int buffer, @NonNull ByteBuffer data, int usage);
+
+    //GL_ARB_buffer_storage
+    public abstract void glNamedBufferStorage(int buffer, long data_size, long data, int flags);
+
+    //GL_ARB_buffer_storage
+    public abstract void glNamedBufferStorage(int buffer, @NonNull ByteBuffer data, int flags);
 
     //GL_ARB_direct_state_access
     public abstract void glNamedBufferSubData(int buffer, long offset, long data_size, long data);

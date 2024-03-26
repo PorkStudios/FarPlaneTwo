@@ -19,58 +19,39 @@
 
 package net.daporkchop.fp2.gl.buffer;
 
-import io.netty.buffer.ByteBuf;
 import lombok.AccessLevel;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.OpenGL;
-import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.nio.ByteBuffer;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
 
-import static java.lang.Math.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
+ * An OpenGL buffer.
+ *
  * @author DaPorkchop_
  */
 public abstract class GLBuffer implements AutoCloseable {
-    /**
-     * Creates a new buffer.
-     *
-     * @param gl    the OpenGL context
-     * @param usage the buffer's usage
-     * @return the created buffer
-     */
-    public static GLBuffer create(OpenGL gl, BufferUsage usage) {
-        if (gl.supports(GLExtension.GL_ARB_direct_state_access)) {
-            return (GLBuffer) (Object) new DSAGLBufferImpl(gl, usage);
-        } else {
-            return (GLBuffer) (Object) new BasicGLBufferImpl(gl, usage);
-        }
-    }
-
     protected final OpenGL gl;
+    protected final int id;
+    protected final boolean dsa;
 
     protected long capacity = -1L;
+    protected boolean mapped = false;
 
-    protected final int id;
-    protected final int usage;
-
-    private boolean mapped;
-
-    protected GLBuffer(OpenGL gl, BufferUsage usage, int id) {
+    protected GLBuffer(OpenGL gl) {
         this.gl = gl;
-        this.id = id;
-        this.usage = usage.usage();
-
-        //TODO: figure out if i can safely get rid of this
-        this.capacity(0L);
+        this.dsa = gl.supports(GLExtension.GL_ARB_direct_state_access);
+        this.id = this.dsa ? gl.glCreateBuffer() : gl.glGenBuffer();
     }
 
     /**
@@ -93,87 +74,22 @@ public abstract class GLBuffer implements AutoCloseable {
     }
 
     /**
-     * Sets the capacity of this buffer.
-     * <p>
-     * This will discard the buffer's previous contents, orphaning its previous storage and allocating a new one.
-     *
-     * @param capacity the new capacity
-     */
-    public abstract void capacity(long capacity);
-
-    /**
-     * Sets the capacity of this buffer.
-     * <p>
-     * Unlike {@link #capacity(long)}, this method will retain as much of the original data as possible.
-     * <p>
-     * If the new capacity is less than the current capacity, the buffer's contents will be truncated. If greater than the current capacity, the
-     * data will be extended with undefined contents.
-     *
-     * @param capacity the new capacity
-     */
-    public void resize(long capacity) {
-        long retainedCapacity = min(this.capacity, notNegative(capacity, "capacity"));
-
-        if (retainedCapacity <= 0L) { //previous capacity was unset, so no data needs to be retained
-            this.capacity(capacity);
-            return;
-        } else if (this.capacity == capacity) { //capacity remains unchanged, nothing to do!
-            return;
-        }
-
-        long buffer = PUnsafe.allocateMemory(retainedCapacity);
-        try {
-            //download data to main memory
-            this.downloadRange(0L, buffer, retainedCapacity);
-
-            //update capacity
-            this.capacity(capacity);
-
-            //re-upload retained data
-            this.uploadRange(0L, buffer, retainedCapacity);
-        } finally {
-            PUnsafe.freeMemory(buffer);
-        }
-    }
-
-    /**
-     * Sets the buffer contents.
-     *
-     * @param addr the base address of the data to upload
-     * @param size the size of the data (in bytes)
-     */
-    public abstract void upload(long addr, long size);
-
-    /**
-     * Sets the buffer contents.
-     *
-     * @param data the {@link ByteBuffer} containing the data to upload
-     */
-    public abstract void upload(@NonNull ByteBuffer data);
-
-    /**
-     * Sets the buffer contents.
-     *
-     * @param data the {@link ByteBuf} containing the data to upload
-     */
-    public void upload(@NonNull ByteBuf data) {
-        if (data.nioBufferCount() == 1) { //fast path: upload whole buffer contents at once
-            this.upload(data.nioBuffer());
-        } else { //slower fallback path for composite buffers
-            this.uploadComposite(data);
-        }
-    }
-
-    protected abstract void uploadComposite(@NonNull ByteBuf data);
-
-    /**
      * Updates the buffer contents in a certain range.
      *
      * @param start the offset of the range inside the buffer (in bytes)
      * @param addr  the base address of the data to upload
      * @param size  the size of the data (in bytes)
      */
-    public abstract void uploadRange(long start, long addr, long size);
+    public final void bufferSubData(long start, long addr, long size) {
+        checkRangeLen(this.capacity, start, size);
+        if (this.dsa) {
+            this.gl.glNamedBufferSubData(this.id, start, size, addr);
+        } else {
+            this.bind(BufferTarget.ARRAY_BUFFER, target -> {
+                this.gl.glBufferSubData(target.id(), start, size, addr);
+            });
+        }
+    }
 
     /**
      * Updates the buffer contents in a certain range.
@@ -181,23 +97,16 @@ public abstract class GLBuffer implements AutoCloseable {
      * @param start the offset of the range inside the buffer (in bytes)
      * @param data  the {@link ByteBuffer} containing the data to upload
      */
-    public abstract void uploadRange(long start, @NonNull ByteBuffer data);
-
-    /**
-     * Updates the buffer contents in a certain range.
-     *
-     * @param start the offset of the range inside the buffer (in bytes)
-     * @param data  the {@link ByteBuf} containing the data to upload
-     */
-    public void uploadRange(long start, @NonNull ByteBuf data) {
-        if (data.nioBufferCount() == 1) { //fast path: upload whole buffer contents at once
-            this.uploadRange(start, data.nioBuffer());
-        } else { //slower fallback path for composite buffers
-            this.uploadRangeComposite(start, data);
+    public final void bufferSubData(long start, @NonNull ByteBuffer data) {
+        checkRangeLen(this.capacity, start, data.remaining());
+        if (this.dsa) {
+            this.gl.glNamedBufferSubData(this.id, start, data);
+        } else {
+            this.bind(BufferTarget.ARRAY_BUFFER, target -> {
+                this.gl.glBufferSubData(target.id(), start, data);
+            });
         }
     }
-
-    protected abstract void uploadRangeComposite(long start, @NonNull ByteBuf data);
 
     /**
      * Downloads the buffer contents in a certain range.
@@ -206,7 +115,16 @@ public abstract class GLBuffer implements AutoCloseable {
      * @param addr  the base address where the data should be stored
      * @param size  the size of the data (in bytes)
      */
-    public abstract void downloadRange(long start, long addr, long size);
+    public final void getBufferSubData(long start, long addr, long size) {
+        checkRangeLen(this.capacity, start, size);
+        if (this.dsa) {
+            this.gl.glGetNamedBufferSubData(this.id, start, size, addr);
+        } else {
+            this.bind(BufferTarget.ARRAY_BUFFER, target -> {
+                this.gl.glGetBufferSubData(target.id(), start, size, addr);
+            });
+        }
+    }
 
     /**
      * Downloads the buffer contents in a certain range.
@@ -214,7 +132,16 @@ public abstract class GLBuffer implements AutoCloseable {
      * @param start the offset of the range inside the buffer (in bytes)
      * @param data  the {@link ByteBuffer} where the data should be stored
      */
-    public abstract void downloadRange(long start, @NonNull ByteBuffer data);
+    public final void getBufferSubData(long start, @NonNull ByteBuffer data) {
+        checkRangeLen(this.capacity, start, data.remaining());
+        if (this.dsa) {
+            this.gl.glGetNamedBufferSubData(this.id, start, data);
+        } else {
+            this.bind(BufferTarget.ARRAY_BUFFER, target -> {
+                this.gl.glGetBufferSubData(target.id(), start, data);
+            });
+        }
+    }
 
     /**
      * Copies a range of data from the given source buffer into this buffer.
@@ -224,7 +151,19 @@ public abstract class GLBuffer implements AutoCloseable {
      * @param dstOffset the offset in this buffer to begin copying to
      * @param size      the number of bytes to copy
      */
-    public abstract void copyRange(@NonNull GLBuffer src, long srcOffset, long dstOffset, long size);
+    public final void copyRange(@NonNull GLBuffer src, long srcOffset, long dstOffset, long size) {
+        checkRangeLen(src.capacity(), srcOffset, size);
+        checkRangeLen(this.capacity(), dstOffset, size);
+        if (this.dsa) {
+            this.gl.glCopyNamedBufferSubData(src.id, this.id, srcOffset, dstOffset, size);
+        } else {
+            src.bind(BufferTarget.COPY_READ_BUFFER, srcTarget -> {
+                this.bind(BufferTarget.COPY_WRITE_BUFFER, dstTarget -> {
+                    this.gl.glCopyBufferSubData(srcTarget.id(), dstTarget.id(), srcOffset, dstOffset, size);
+                });
+            });
+        }
+    }
 
     /**
      * Copies a range of data from this buffer into the given destination buffer.
@@ -234,7 +173,7 @@ public abstract class GLBuffer implements AutoCloseable {
      * @param dstOffset the offset in the destination buffer to begin copying to
      * @param size      the number of bytes to copy
      */
-    public void copyRange(long srcOffset, @NonNull GLBuffer dst, long dstOffset, long size) {
+    public final void copyRange(long srcOffset, @NonNull GLBuffer dst, long dstOffset, long size) {
         dst.copyRange(this, srcOffset, dstOffset, size);
     }
 
@@ -244,7 +183,7 @@ public abstract class GLBuffer implements AutoCloseable {
      * @param target   the {@link BufferTarget buffer binding target} to bind the buffer to
      * @param callback the action to run
      */
-    public void bind(@NonNull BufferTarget target, @NonNull Consumer<BufferTarget> callback) {
+    public final void bind(BufferTarget target, Consumer<BufferTarget> callback) {
         int old = this.gl.glGetInteger(target.binding());
         try {
             this.gl.glBindBuffer(target.id(), this.id);
@@ -261,7 +200,7 @@ public abstract class GLBuffer implements AutoCloseable {
      * @param target   the {@link BufferTarget buffer binding target} to bind the buffer to
      * @param callback the action to run
      */
-    public <T> T bind(@NonNull BufferTarget target, @NonNull Function<BufferTarget, T> callback) {
+    public final <T> T bind(BufferTarget target, Function<BufferTarget, T> callback) {
         int old = this.gl.glGetInteger(target.binding());
         try {
             this.gl.glBindBuffer(target.id(), this.id);
@@ -278,17 +217,17 @@ public abstract class GLBuffer implements AutoCloseable {
      * @param access   the ways in which the buffer data may be accessed
      * @param callback the callback function
      */
-    public void map(BufferAccess access, @NonNull LongConsumer callback) {
+    public final void map(BufferAccess access, LongConsumer callback) {
         this.checkNotMapped();
-        this.mapped = true;
+        ByteBuffer buffer = this.mapRange(0L, this.capacity, access.flags());
         try {
-            this.map(access.id(), callback);
+            this.mapped = true;
+            callback.accept(PUnsafe.pork_directBufferAddress(buffer) + buffer.position());
         } finally {
             this.mapped = false;
+            this.unmap();
         }
     }
-
-    protected abstract void map(int access, LongConsumer callback);
 
     /**
      * Maps this buffer's contents into client address space and passes the mapping address to the given callback function before unmapping the buffer again.
@@ -296,58 +235,63 @@ public abstract class GLBuffer implements AutoCloseable {
      * @param access   the ways in which the buffer data may be accessed
      * @param callback the callback function
      */
-    public void mapRange(BufferAccess access, int flags, long offset, long length, @NonNull LongConsumer callback) {
+    public final void mapRange(BufferAccess access, int flags, long offset, long length, LongConsumer callback) {
+        checkRangeLen(this.capacity, offset, length);
+        this.checkNotMapped();
+        ByteBuffer buffer = this.mapRange(offset, length, access.flags() | flags);
+        try {
+            this.mapped = true;
+            callback.accept(PUnsafe.pork_directBufferAddress(buffer) + buffer.position());
+        } finally {
+            this.mapped = false;
+            this.unmap();
+        }
+    }
+
+    /**
+     * Maps this buffer's contents into client address space and returns a reference to the mapping.
+     *
+     * @param access the ways in which the buffer data may be accessed
+     * @return a {@link Mapping}
+     */
+    public final Mapping map(BufferAccess access) {
+        this.checkNotMapped();
+        this.mapped = true;
+        return new Mapping(this.mapRange(0L, this.capacity, access.flags()));
+    }
+
+    /**
+     * Maps this buffer's contents into client address space and returns a reference to the mapping.
+     *
+     * @param access the ways in which the buffer data may be accessed
+     * @return a {@link Mapping}
+     */
+    public final Mapping mapRange(BufferAccess access, int flags, long offset, long length) {
         checkRangeLen(this.capacity, offset, length);
         this.checkNotMapped();
         this.mapped = true;
-        try {
-            this.mapRange(access.flags() | flags, offset, length, callback);
-        } finally {
-            this.mapped = false;
+        return new Mapping(this.mapRange(0L, this.capacity, access.flags() | flags));
+    }
+
+    protected final ByteBuffer mapRange(long offset, long length, int access) {
+        if (this.dsa) {
+            return this.gl.glMapNamedBufferRange(this.id, offset, length, access, null);
+        } else {
+            return this.bind(BufferTarget.ARRAY_BUFFER, target -> {
+                return this.gl.glMapBufferRange(target.id(), offset, length, access, null);
+            });
         }
     }
 
-    protected abstract void mapRange(int access, long offset, long length, LongConsumer callback);
-
-    /**
-     * Maps this buffer's contents into client address space and returns a reference to the mapping.
-     *
-     * @param access the ways in which the buffer data may be accessed
-     * @return a {@link Mapping}
-     */
-    public Mapping map(BufferAccess access) {
-        this.checkNotMapped();
-        this.mapped = true;
-        try {
-            return this.map(access);
-        } catch (Throwable t) {
-            this.mapped = false;
-            throw t;
+    protected final void unmap() {
+        if (this.dsa) {
+            this.gl.glUnmapNamedBuffer(this.id);
+        } else {
+            this.bind(BufferTarget.ARRAY_BUFFER, target -> {
+                this.gl.glUnmapBuffer(target.id());
+            });
         }
     }
-
-    protected abstract Mapping map(int access);
-
-    /**
-     * Maps this buffer's contents into client address space and returns a reference to the mapping.
-     *
-     * @param access the ways in which the buffer data may be accessed
-     * @return a {@link Mapping}
-     */
-    public Mapping mapRange(BufferAccess access, int flags, long offset, long length) {
-        this.checkNotMapped();
-        this.mapped = true;
-        try {
-            return this.mapRange(access.flags() | flags, offset, length);
-        } catch (Throwable t) {
-            this.mapped = false;
-            throw t;
-        }
-    }
-
-    protected abstract Mapping mapRange(int access, long offset, long length);
-
-    protected abstract void unmap();
 
     protected final void checkNotMapped() {
         if (this.mapped) {
@@ -367,6 +311,10 @@ public abstract class GLBuffer implements AutoCloseable {
     @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
     public final class Mapping implements AutoCloseable {
         public final ByteBuffer buffer;
+
+        public long address() {
+            return PUnsafe.pork_directBufferAddress(this.buffer);
+        }
 
         @Override
         public void close() {

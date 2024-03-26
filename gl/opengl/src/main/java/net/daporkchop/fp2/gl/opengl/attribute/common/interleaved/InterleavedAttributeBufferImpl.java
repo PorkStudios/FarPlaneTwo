@@ -25,6 +25,7 @@ import net.daporkchop.fp2.gl.attribute.AttributeArray;
 import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.AttributeWriter;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
+import net.daporkchop.fp2.gl.buffer.GLMutableBuffer;
 import net.daporkchop.fp2.gl.opengl.attribute.common.AttributeBufferImpl;
 import net.daporkchop.fp2.gl.buffer.GLBuffer;
 import net.daporkchop.lib.common.annotation.param.Positive;
@@ -36,14 +37,14 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @Getter
 public abstract class InterleavedAttributeBufferImpl<F extends InterleavedAttributeFormatImpl<F, S>, S> extends AttributeBufferImpl<F, S> {
-    protected final GLBuffer buffer;
+    protected final GLMutableBuffer buffer;
 
     protected int capacity;
 
     public InterleavedAttributeBufferImpl(@NonNull F format, @NonNull BufferUsage usage) {
         super(format);
 
-        this.buffer = this.gl.createBuffer(usage);
+        this.buffer = this.gl.createBuffer();
     }
 
     @Override
@@ -64,7 +65,7 @@ public abstract class InterleavedAttributeBufferImpl<F extends InterleavedAttrib
 
     protected void capacity_withStride(int capacity, @Positive long stride) {
         this.capacity = notNegative(capacity, "capacity");
-        this.buffer.capacity(capacity * stride);
+        this.buffer.capacity(capacity * stride, BufferUsage.STATIC_DRAW);
     }
 
     /**
@@ -75,7 +76,7 @@ public abstract class InterleavedAttributeBufferImpl<F extends InterleavedAttrib
 
     protected void resize_withStride(int capacity, @Positive long stride) {
         this.capacity = notNegative(capacity, "capacity");
-        this.buffer.resize(capacity * stride);
+        this.buffer.resize(capacity * stride, BufferUsage.STATIC_DRAW);
     }
 
     @Override
@@ -90,7 +91,7 @@ public abstract class InterleavedAttributeBufferImpl<F extends InterleavedAttrib
         checkArg(buffer.getClass() == this.getClass(), "mismatched formats!");
 
         long size = buffer.buffer().capacity();
-        this.buffer.capacity(size);
+        this.buffer.capacity(size, BufferUsage.STATIC_DRAW);
         this.buffer.copyRange(buffer.buffer, 0L, 0L, size);
     }
 
@@ -106,7 +107,7 @@ public abstract class InterleavedAttributeBufferImpl<F extends InterleavedAttrib
 
         int size = writer.size();
         this.capacity = size;
-        this.buffer.upload(writer.baseAddr, size * stride);
+        this.buffer.upload(writer.baseAddr, size * stride, BufferUsage.STATIC_DRAW);
     }
 
     /**
@@ -120,7 +121,7 @@ public abstract class InterleavedAttributeBufferImpl<F extends InterleavedAttrib
         checkArg(writer.format() == this.format(), "mismatched formats!");
         checkRangeLen(this.capacity, startIndex, writer.size());
 
-        this.buffer.uploadRange(startIndex * stride, writer.baseAddr, writer.size() * stride);
+        this.buffer.bufferSubData(startIndex * stride, writer.baseAddr, writer.size() * stride);
     }
 
     /**
@@ -136,7 +137,7 @@ public abstract class InterleavedAttributeBufferImpl<F extends InterleavedAttrib
 
     protected void setToSingle_withStride(long addr, @Positive long stride) {
         this.capacity = 1;
-        this.buffer.upload(addr, stride);
+        this.buffer.upload(addr, stride, BufferUsage.STATIC_DRAW);
     }
 
     /**
@@ -152,6 +153,6 @@ public abstract class InterleavedAttributeBufferImpl<F extends InterleavedAttrib
 
     protected void setToMany_withStride(long addr, @Positive int length, @Positive long stride) {
         this.capacity = length;
-        this.buffer.upload(addr, length * stride);
+        this.buffer.upload(addr, length * stride, BufferUsage.STATIC_DRAW);
     }
 }

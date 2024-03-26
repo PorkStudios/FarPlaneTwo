@@ -21,6 +21,7 @@ package net.daporkchop.fp2.gl.opengl.draw.list.arrays.multidrawindirect;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
+import net.daporkchop.fp2.gl.buffer.GLMutableBuffer;
 import net.daporkchop.fp2.gl.draw.list.DrawCommandArrays;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.buffer.BufferTarget;
@@ -45,14 +46,14 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 public class DrawListMultiDrawArraysIndirect extends AbstractDrawListImpl<DrawCommandArrays, DrawBindingImpl> implements SimpleDrawListImpl<DrawCommandArrays> {
-    protected final GLBuffer buffer;
+    protected final GLMutableBuffer buffer;
 
     protected long commandsAddr;
 
     public DrawListMultiDrawArraysIndirect(@NonNull DrawListBuilderImpl builder) {
         super(builder);
 
-        this.buffer = this.gl().createBuffer(BufferUsage.STREAM_DRAW);
+        this.buffer = this.gl().createBuffer();
     }
 
     @Override

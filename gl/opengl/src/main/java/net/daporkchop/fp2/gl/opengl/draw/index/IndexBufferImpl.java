@@ -22,6 +22,7 @@ package net.daporkchop.fp2.gl.opengl.draw.index;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
+import net.daporkchop.fp2.gl.buffer.GLMutableBuffer;
 import net.daporkchop.fp2.gl.draw.index.IndexBuffer;
 import net.daporkchop.fp2.gl.draw.index.IndexWriter;
 import net.daporkchop.fp2.gl.buffer.GLBuffer;
@@ -34,19 +35,19 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @Getter
 public class IndexBufferImpl implements IndexBuffer {
     protected final IndexFormatImpl format;
-    protected final GLBuffer buffer;
+    protected final GLMutableBuffer buffer;
 
     protected int capacity;
 
     public IndexBufferImpl(@NonNull IndexFormatImpl format, @NonNull BufferUsage usage) {
         this.format = format;
-        this.buffer = format.gl.createBuffer(usage);
+        this.buffer = format.gl.createBuffer();
     }
 
     @Override
     public void resize(int capacity) {
         this.capacity = notNegative(capacity, "capacity");
-        this.buffer.resize(this.capacity * (long) this.format.size());
+        this.buffer.resize(this.capacity * (long) this.format.size(), BufferUsage.STATIC_DRAW);
     }
 
     @Override
@@ -61,6 +62,6 @@ public class IndexBufferImpl implements IndexBuffer {
         checkRangeLen(this.capacity, startIndex, writer.size());
 
         long size = this.format.size();
-        this.buffer.uploadRange(startIndex * size, writer.addr, writer.size() * size);
+        this.buffer.bufferSubData(startIndex * size, writer.addr, writer.size() * size);
     }
 }

@@ -88,7 +88,9 @@ public class InterleavedDrawLocalAttributeBindingLocation<S> implements BindingL
         }
 
         //configure attributes
-        buffer.buffer().bind(BufferTarget.ARRAY_BUFFER, target -> this.layout.format().structFormat().configureVAO(api, this.attributeIndices));
+        buffer.buffer().bind(BufferTarget.ARRAY_BUFFER, target -> {
+            this.layout.format().structFormat().configureVAO(api, this.attributeIndices);
+        });
     }
 
     @Override

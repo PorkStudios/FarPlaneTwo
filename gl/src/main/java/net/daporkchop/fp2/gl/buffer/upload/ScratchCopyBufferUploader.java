@@ -22,22 +22,31 @@ package net.daporkchop.fp2.gl.buffer.upload;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.buffer.GLBuffer;
+import net.daporkchop.fp2.gl.buffer.GLMutableBuffer;
+
+import java.nio.ByteBuffer;
 
 /**
  * @author DaPorkchop_
  */
 public final class ScratchCopyBufferUploader extends AbstractImmediateBufferUploader {
-    private final GLBuffer scratchBuffer;
+    private final GLMutableBuffer scratchBuffer;
 
     public ScratchCopyBufferUploader(OpenGL gl) {
         super(gl);
-        this.scratchBuffer = GLBuffer.create(gl, BufferUsage.STREAM_COPY);
+        this.scratchBuffer = GLMutableBuffer.create(gl);
     }
 
     @Override
     public void uploadRange(GLBuffer buffer, long offset, long addr, long size) {
-        this.scratchBuffer.upload(addr, size);
-        this.scratchBuffer.copyRange(0L, buffer, offset, size);
+        this.scratchBuffer.upload(addr, size, BufferUsage.STREAM_COPY);
+        this.scratchBuffer.copyRange(0L, buffer, offset, this.scratchBuffer.capacity());
+    }
+
+    @Override
+    public void uploadRange(GLBuffer buffer, long offset, ByteBuffer data) {
+        this.scratchBuffer.upload(data, BufferUsage.STREAM_COPY);
+        this.scratchBuffer.copyRange(0L, buffer, offset, this.scratchBuffer.capacity());
     }
 
     @Override

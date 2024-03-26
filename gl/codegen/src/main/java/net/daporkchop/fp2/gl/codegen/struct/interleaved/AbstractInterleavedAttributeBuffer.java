@@ -29,6 +29,7 @@ import net.daporkchop.fp2.gl.attribute.NewAttributeWriter;
 import net.daporkchop.fp2.gl.attribute.vao.VertexArrayObject;
 import net.daporkchop.fp2.gl.attribute.vao.VertexArrayVertexBuffer;
 import net.daporkchop.fp2.gl.buffer.GLBuffer;
+import net.daporkchop.fp2.gl.buffer.GLMutableBuffer;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.common.annotation.param.Positive;
 
@@ -41,22 +42,24 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 public abstract class AbstractInterleavedAttributeBuffer<STRUCT extends AttributeStruct> extends NewAttributeBuffer<STRUCT> {
-    public final GLBuffer buffer;
+    public final GLMutableBuffer buffer;
+    public final BufferUsage usage;
 
     public AbstractInterleavedAttributeBuffer(NewAttributeFormat<STRUCT> format, BufferUsage usage) {
         super(format);
-        this.buffer = GLBuffer.create(format.gl(), usage);
+        this.usage = usage;
+        this.buffer = GLMutableBuffer.create(format.gl());
     }
 
     @Override
     public void capacity(@NotNegative int capacity) {
-        this.buffer.capacity(notNegative(capacity, "capacity") * this.format().size());
+        this.buffer.capacity(notNegative(capacity, "capacity") * this.format().size(), this.usage);
         this.capacity = capacity;
     }
 
     @Override
     public void resize(@NotNegative int capacity) {
-        this.buffer.resize(notNegative(capacity, "capacity") * this.format().size());
+        this.buffer.resize(notNegative(capacity, "capacity") * this.format().size(), this.usage);
         this.capacity = capacity;
     }
 
@@ -72,7 +75,7 @@ public abstract class AbstractInterleavedAttributeBuffer<STRUCT extends Attribut
         checkArg(this.format().getClass() == writer.format().getClass(), "incompatible vertex formats: %s\n%s", this.format(), writer.format());
 
         int count = writer.size();
-        this.buffer.upload(((AbstractInterleavedAttributeWriter<STRUCT>) writer).address, count * this.format().size());
+        this.buffer.upload(((AbstractInterleavedAttributeWriter<STRUCT>) writer).address, count * this.format().size(), this.usage);
         this.capacity = count;
     }
 
@@ -85,9 +88,9 @@ public abstract class AbstractInterleavedAttributeBuffer<STRUCT extends Attribut
         long address = ((AbstractInterleavedAttributeWriter<STRUCT>) writer).address;
         long size = this.format().size();
         if (startIndex == 0 && count == this.capacity) { //we're overwriting the entire buffer contents, orphan the old storage for maximum performance
-            this.buffer.upload(address, count * size);
+            this.buffer.upload(address, count * size, this.usage);
         } else {
-            this.buffer.uploadRange(startIndex * size, address, count * size);
+            this.buffer.bufferSubData(startIndex * size, address, count * size);
         }
     }
 

@@ -109,8 +109,8 @@ public class ShaderSelectedDrawListMultiDrawArraysIndirect extends DrawListMulti
 
     @Override
     public void prepare0(GLAPI api, int mode) {
-        this.srcBuffer.buffer().upload(this.commandsAddr, this.capacity * _SIZE);
-        this.dstBuffer.buffer().capacity(this.capacity * _SIZE);
+        this.srcBuffer.buffer().upload(this.commandsAddr, this.capacity * _SIZE, BufferUsage.STREAM_DRAW);
+        this.dstBuffer.buffer().capacity(this.capacity * _SIZE, BufferUsage.STREAM_DRAW);
     }
 
     @Override

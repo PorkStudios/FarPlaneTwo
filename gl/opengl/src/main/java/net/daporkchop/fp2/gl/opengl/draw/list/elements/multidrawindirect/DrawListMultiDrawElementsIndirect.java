@@ -56,7 +56,7 @@ public class DrawListMultiDrawElementsIndirect extends AbstractDrawListImpl<Draw
     public DrawListMultiDrawElementsIndirect(@NonNull DrawListBuilderImpl builder) {
         super(builder);
 
-        this.buffer = this.gl().createBuffer(BufferUsage.STREAM_DRAW);
+        this.buffer = this.gl().createBuffer();
 
         IndexFormatImpl format = this.binding.indices().format();
         this.indexType = format.type().type();

@@ -22,6 +22,8 @@ package net.daporkchop.fp2.gl.buffer.upload;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.buffer.GLBuffer;
 
+import java.nio.ByteBuffer;
+
 /**
  * @author DaPorkchop_
  */
@@ -32,6 +34,11 @@ public final class ImmediateBufferUploader extends AbstractImmediateBufferUpload
 
     @Override
     public void uploadRange(GLBuffer buffer, long offset, long addr, long size) {
-        buffer.uploadRange(offset, addr, size);
+        buffer.bufferSubData(offset, addr, size);
+    }
+
+    @Override
+    public void uploadRange(GLBuffer buffer, long offset, ByteBuffer data) {
+        buffer.bufferSubData(offset, data);
     }
 }

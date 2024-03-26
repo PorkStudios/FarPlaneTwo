@@ -71,6 +71,10 @@ public final class GLAPILWJGL3 extends OpenGL implements GLAPI {
     private final boolean GL_ARB_program_interface_query;
     private final boolean GL_ARB_shader_storage_buffer_object;
 
+    // OpenGL 4.4
+    private final boolean OpenGL44;
+    private final boolean GL_ARB_buffer_storage;
+
     // OpenGL 4.5
     private final boolean OpenGL45;
     private final boolean GL_ARB_direct_state_access;
@@ -104,6 +108,10 @@ public final class GLAPILWJGL3 extends OpenGL implements GLAPI {
         this.GL_ARB_multi_draw_indirect = !capabilities.OpenGL43 && capabilities.GL_ARB_multi_draw_indirect;
         this.GL_ARB_program_interface_query = !capabilities.OpenGL43 && capabilities.GL_ARB_program_interface_query;
         this.GL_ARB_shader_storage_buffer_object = !capabilities.OpenGL43 && capabilities.GL_ARB_shader_storage_buffer_object;
+
+        // OpenGL 4.4
+        this.OpenGL44 = capabilities.OpenGL44;
+        this.GL_ARB_buffer_storage = !capabilities.OpenGL44 && capabilities.GL_ARB_buffer_storage;
 
         // OpenGL 4.5
         this.OpenGL45 = capabilities.OpenGL45;
@@ -1158,6 +1166,34 @@ public final class GLAPILWJGL3 extends OpenGL implements GLAPI {
 
     //
     //
+    // OpenGL 4.4
+    //
+    //
+
+    @Override
+    public void glBufferStorage(int target, long data_size, long data, int flags) {
+        if (this.GL_ARB_buffer_storage) {
+            ARBBufferStorage.nglBufferStorage(target, data_size, data, flags);
+            super.debugCheckError();
+        } else {
+            GL44.nglBufferStorage(target, data_size, data, flags);
+            super.debugCheckError();
+        }
+    }
+
+    @Override
+    public void glBufferStorage(int target, @NonNull ByteBuffer data, int flags) {
+        if (this.GL_ARB_buffer_storage) {
+            ARBBufferStorage.glBufferStorage(target, data, flags);
+            super.debugCheckError();
+        } else {
+            GL44.glBufferStorage(target, data, flags);
+            super.debugCheckError();
+        }
+    }
+
+    //
+    //
     // OpenGL 4.5
     //
     //
@@ -1193,6 +1229,28 @@ public final class GLAPILWJGL3 extends OpenGL implements GLAPI {
             super.debugCheckError();
         } else {
             GL45.glNamedBufferData(buffer, data, usage);
+            super.debugCheckError();
+        }
+    }
+
+    @Override
+    public void glNamedBufferStorage(int buffer, long data_size, long data, int flags) {
+        if (this.GL_ARB_direct_state_access) {
+            ARBDirectStateAccess.nglNamedBufferStorage(buffer, data_size, data, flags);
+            super.debugCheckError();
+        } else {
+            GL45.nglNamedBufferStorage(buffer, data_size, data, flags);
+            super.debugCheckError();
+        }
+    }
+
+    @Override
+    public void glNamedBufferStorage(int buffer, @NonNull ByteBuffer data, int flags) {
+        if (this.GL_ARB_direct_state_access) {
+            ARBDirectStateAccess.glNamedBufferStorage(buffer, data, flags);
+            super.debugCheckError();
+        } else {
+            GL45.glNamedBufferStorage(buffer, data, flags);
             super.debugCheckError();
         }
     }

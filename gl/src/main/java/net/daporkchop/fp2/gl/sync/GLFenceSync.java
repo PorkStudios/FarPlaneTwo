@@ -17,63 +17,46 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.buffer.upload;
+package net.daporkchop.fp2.gl.sync;
 
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.OpenGL;
 
-import java.util.ArrayDeque;
-
 import static net.daporkchop.fp2.gl.OpenGLConstants.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
+ * An OpenGL fence sync object.
+ *
  * @author DaPorkchop_
  */
-abstract class AbstractAsynchronousBufferUploader extends BufferUploader {
-    private final ArrayDeque<Long> pendingSyncs = new ArrayDeque<>();
-    private boolean anyQueued;
-
-    public AbstractAsynchronousBufferUploader(OpenGL gl) {
-        super(gl);
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+public final class GLFenceSync implements AutoCloseable {
+    public static boolean supported(OpenGL gl) {
+        return gl.supports(GLExtension.GL_ARB_sync);
     }
 
-    protected final long currentToken() {
-        this.anyQueued = true;
-        return this.currentToken;
+    public static GLFenceSync create(OpenGL gl) {
+        checkState(supported(gl), "ARB_sync isn't supported!");
+        return new GLFenceSync(gl, gl.glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0));
     }
 
-    @Override
-    public void tick() {
-        if (this.anyQueued) { //some uploads are queued, add a new sync
-            this.anyQueued = false;
-            this.pendingSyncs.addLast(this.gl.glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0));
-        }
+    private final OpenGL gl;
+    private final long sync;
 
-        while (!this.pendingSyncs.isEmpty()) {
-            long sync = this.pendingSyncs.peekFirst();
-            if (this.gl.glGetSync(sync, GL_SYNC_STATUS) == GL_SIGNALED) { //the
-                this.gl.glDeleteSync(sync);
-                this.pendingSyncs.removeFirst();
-            } else {
-                break;
-            }
-        }
+    /**
+     * Checks if this fence sync object has been signalled.
+     *
+     * @return {@code true} if this fence sync object has been signalled, {@code false} otherwise
+     */
+    public boolean isSignalled() {
+        return this.gl.glGetSync(this.sync, GL_SYNC_STATUS) == GL_SIGNALED;
     }
 
     @Override
     public void close() {
-        super.close();
-
-        for (Long sync; (sync = this.pendingSyncs.poll()) != null; ) {
-            this.gl.glDeleteSync(sync);
-        }
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    @RequiredArgsConstructor
-    protected static class SyncPoint {
-        protected final long sync;
+        this.gl.glDeleteSync(this.sync);
     }
 }

@@ -29,7 +29,9 @@ import net.daporkchop.fp2.gl.opengl.lwjgl2.extra.ExtraFunctions;
 import net.daporkchop.fp2.gl.opengl.lwjgl2.extra.ExtraFunctionsProvider;
 import net.daporkchop.lib.common.function.throwing.TPredicate;
 import net.daporkchop.lib.unsafe.PUnsafe;
+import org.lwjgl.BufferChecks;
 import org.lwjgl.PointerBuffer;
+import org.lwjgl.opengl.ARBBufferStorage;
 import org.lwjgl.opengl.ARBCopyBuffer;
 import org.lwjgl.opengl.ARBDirectStateAccess;
 import org.lwjgl.opengl.ARBDrawElementsBaseVertex;
@@ -56,6 +58,7 @@ import org.lwjgl.opengl.GL32;
 import org.lwjgl.opengl.GL33;
 import org.lwjgl.opengl.GL42;
 import org.lwjgl.opengl.GL43;
+import org.lwjgl.opengl.GL44;
 import org.lwjgl.opengl.GL45;
 import org.lwjgl.opengl.GLContext;
 import org.lwjgl.opengl.GLSync;
@@ -63,6 +66,8 @@ import org.lwjgl.opengl.GLSync;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.util.Comparator;
@@ -104,6 +109,10 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
     private final boolean GL_ARB_program_interface_query;
     private final boolean GL_ARB_shader_storage_buffer_object;
 
+    // OpenGL 4.4
+    private final boolean OpenGL44;
+    private final boolean GL_ARB_buffer_storage;
+
     // OpenGL 4.5
     private final boolean OpenGL45;
     private final boolean GL_ARB_direct_state_access;
@@ -139,6 +148,10 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
         this.GL_ARB_multi_draw_indirect = !capabilities.OpenGL43 && capabilities.GL_ARB_multi_draw_indirect;
         this.GL_ARB_program_interface_query = !capabilities.OpenGL43 && capabilities.GL_ARB_program_interface_query;
         this.GL_ARB_shader_storage_buffer_object = !capabilities.OpenGL43 && capabilities.GL_ARB_shader_storage_buffer_object;
+
+        // OpenGL 4.4
+        this.OpenGL44 = capabilities.OpenGL44;
+        this.GL_ARB_buffer_storage = !capabilities.OpenGL44 && capabilities.GL_ARB_buffer_storage;
 
         // OpenGL 4.5
         this.OpenGL45 = capabilities.OpenGL45;
@@ -540,20 +553,28 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
         GL15.glBindBuffer(target, buffer);
         super.debugCheckError();
     }
+    
+    //LWJGL2 doesn't expose glBufferData with 64-bit data_size...
+    private static final MethodHandle glBufferData;
+    private static final MethodHandle nglBufferData;
+    
+    static {
+        Field _glBufferData = ContextCapabilities.class.getDeclaredField("glBufferData");
+        _glBufferData.setAccessible(true);
+        glBufferData = MethodHandles.publicLookup().unreflectGetter(_glBufferData);
+        
+        Method _nglBufferData = GL15.class.getDeclaredMethod("nglBufferData", int.class, long.class, long.class, int.class, long.class);
+        _nglBufferData.setAccessible(true);
+        nglBufferData = MethodHandles.publicLookup().unreflect(_nglBufferData);
+    }
 
     @Override
     public void glBufferData(int target, long data_size, long data, int usage) {
-        if (data_size <= Integer.MAX_VALUE) { //data is small enough to fit in a ByteBuffer
-            GL15.glBufferData(target, DirectBufferHackery.wrapByte(data, (int) data_size), usage);
-            super.debugCheckError();
-        } else { //LWJGL2 doesn't expose glBufferData with 64-bit data_size...
-            //allocate storage and then delegate to glBufferSubData
-            GL15.glBufferData(target, data_size, usage);
-            super.debugCheckError();
-            if (data != 0L) { //the buffer contents are actually being initialized
-                this.glBufferSubData(target, 0L, data_size, data);
-            }
-        }
+        ContextCapabilities caps = GLContext.getCapabilities();
+        long function_pointer = (long) glBufferData.invokeExact(caps);
+        BufferChecks.checkFunctionAddress(function_pointer);
+        nglBufferData.invokeExact(target, data_size, data, usage, function_pointer);
+        super.debugCheckError();
     }
 
     @Override
@@ -561,21 +582,28 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
         GL15.glBufferData(target, data, usage);
         super.debugCheckError();
     }
+    
+    //LWJGL2 doesn't expose glBufferSubData with 64-bit data_size...
+    private static final MethodHandle glBufferSubData;
+    private static final MethodHandle nglBufferSubData;
+    
+    static {
+        Field _glBufferSubData = ContextCapabilities.class.getDeclaredField("glBufferSubData");
+        _glBufferSubData.setAccessible(true);
+        glBufferSubData = MethodHandles.publicLookup().unreflectGetter(_glBufferSubData);
+        
+        Method _nglBufferSubData = GL15.class.getDeclaredMethod("nglBufferSubData", int.class, long.class, long.class, long.class, long.class);
+        _nglBufferSubData.setAccessible(true);
+        nglBufferSubData = MethodHandles.publicLookup().unreflect(_nglBufferSubData);
+    }
 
     @Override
     public void glBufferSubData(int target, long offset, long data_size, long data) {
-        if (data_size <= Integer.MAX_VALUE) { //data is small enough to fit in a ByteBuffer
-            GL15.glBufferSubData(target, offset, DirectBufferHackery.wrapByte(data, (int) data_size));
-            super.debugCheckError();
-        } else { //LWJGL2 doesn't expose glBufferSubData with 64-bit data_size...
-            //upload data in increments of Integer.MAX_VALUE
-            for (long uploaded = 0L; uploaded < data_size; ) {
-                int blockSize = (int) min(uploaded - offset, Integer.MAX_VALUE);
-                GL15.glBufferSubData(target, offset + uploaded, DirectBufferHackery.wrapByte(data + uploaded, blockSize));
-                super.debugCheckError();
-                uploaded += blockSize;
-            }
-        }
+		ContextCapabilities caps = GLContext.getCapabilities();
+		long function_pointer = (long) glBufferSubData.invokeExact(caps);
+		BufferChecks.checkFunctionAddress(function_pointer);
+        nglBufferSubData.invokeExact(target, offset, data_size, data, function_pointer);
+        super.debugCheckError();
     }
 
     @Override
@@ -583,21 +611,28 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
         GL15.glBufferSubData(target, offset, data);
         super.debugCheckError();
     }
+    
+    //LWJGL2 doesn't expose glGetBufferSubData with 64-bit data_size...
+    private static final MethodHandle glGetBufferSubData;
+    private static final MethodHandle nglGetBufferSubData;
+    
+    static {
+        Field _glGetBufferSubData = ContextCapabilities.class.getDeclaredField("glGetBufferSubData");
+        _glGetBufferSubData.setAccessible(true);
+        glGetBufferSubData = MethodHandles.publicLookup().unreflectGetter(_glGetBufferSubData);
+        
+        Method _nglGetBufferSubData = GL15.class.getDeclaredMethod("nglGetBufferSubData", int.class, long.class, long.class, long.class, long.class);
+        _nglGetBufferSubData.setAccessible(true);
+        nglGetBufferSubData = MethodHandles.publicLookup().unreflect(_nglGetBufferSubData);
+    }
 
     @Override
     public void glGetBufferSubData(int target, long offset, long data_size, long data) {
-        if (data_size <= Integer.MAX_VALUE) { //data is small enough to fit in a ByteBuffer
-            GL15.glGetBufferSubData(target, offset, DirectBufferHackery.wrapByte(data, (int) data_size));
-            super.debugCheckError();
-        } else { //LWJGL2 doesn't expose glGetBufferSubData with 64-bit data_size...
-            //download data in increments of Integer.MAX_VALUE
-            for (long downloaded = 0L; downloaded < data_size; ) {
-                int blockSize = (int) min(downloaded - offset, Integer.MAX_VALUE);
-                GL15.glGetBufferSubData(target, offset + downloaded, DirectBufferHackery.wrapByte(data + downloaded, blockSize));
-                super.debugCheckError();
-                downloaded += blockSize;
-            }
-        }
+        ContextCapabilities caps = GLContext.getCapabilities();
+        long function_pointer = (long) glGetBufferSubData.invokeExact(caps);
+        BufferChecks.checkFunctionAddress(function_pointer);
+        nglGetBufferSubData.invokeExact(target, offset, data_size, data, function_pointer);
+        super.debugCheckError();
     }
 
     @Override
@@ -1231,6 +1266,45 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
 
     //
     //
+    // OpenGL 4.4
+    //
+    //
+    
+    private static final MethodHandle glBufferStorage;
+    private static final MethodHandle nglBufferStorage;
+
+    static {
+        Field _glBufferStorage = ContextCapabilities.class.getDeclaredField("glBufferStorage");
+        _glBufferStorage.setAccessible(true);
+        glBufferStorage = MethodHandles.publicLookup().unreflectGetter(_glBufferStorage);
+        
+        Method _nglBufferStorage = GL44.class.getDeclaredMethod("nglBufferStorage", int.class, long.class, long.class, int.class, long.class);
+        _nglBufferStorage.setAccessible(true);
+        nglBufferStorage = MethodHandles.publicLookup().unreflect(_nglBufferStorage);
+    }
+
+    @Override
+    public void glBufferStorage(int target, long data_size, long data, int flags) {
+        ContextCapabilities caps = GLContext.getCapabilities();
+        long function_pointer = (long) glBufferStorage.invokeExact(caps);
+        BufferChecks.checkFunctionAddress(function_pointer);
+        nglBufferStorage.invokeExact(target, data_size, data, flags, function_pointer);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glBufferStorage(int target, @NonNull ByteBuffer data, int flags) {
+        if (this.GL_ARB_buffer_storage) {
+            ARBBufferStorage.glBufferStorage(target, data, flags);
+            super.debugCheckError();
+        } else {
+            GL44.glBufferStorage(target, data, flags);
+            super.debugCheckError();
+        }
+    }
+
+    //
+    //
     // OpenGL 4.5
     //
     //
@@ -1248,33 +1322,27 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
         }
     }
 
+    //LWJGL2 doesn't expose glNamedBufferData with 64-bit data_size...
+    private static final MethodHandle glNamedBufferData;
+    private static final MethodHandle nglNamedBufferData;
+
+    static {
+        Field _glNamedBufferData = ContextCapabilities.class.getDeclaredField("glNamedBufferData");
+        _glNamedBufferData.setAccessible(true);
+        glNamedBufferData = MethodHandles.publicLookup().unreflectGetter(_glNamedBufferData);
+
+        Method _nglNamedBufferData = GL45.class.getDeclaredMethod("nglNamedBufferData", int.class, long.class, long.class, int.class, long.class);
+        _nglNamedBufferData.setAccessible(true);
+        nglNamedBufferData = MethodHandles.publicLookup().unreflect(_nglNamedBufferData);
+    }
+
     @Override
     public void glNamedBufferData(int buffer, long data_size, long data, int usage) {
-        if (this.GL_ARB_direct_state_access) {
-            if (data_size <= Integer.MAX_VALUE) { //data is small enough to fit in a ByteBuffer
-                ARBDirectStateAccess.glNamedBufferData(buffer, DirectBufferHackery.wrapByte(data, (int) data_size), usage);
-                super.debugCheckError();
-            } else { //LWJGL2 doesn't expose glNamedBufferData with 64-bit data_size...
-                //allocate storage and then delegate to glNamedBufferSubData
-                ARBDirectStateAccess.glNamedBufferData(buffer, data_size, usage);
-                super.debugCheckError();
-                if (data != 0L) { //the buffer contents are actually being initialized
-                    this.glNamedBufferSubData(buffer, 0L, data_size, data);
-                }
-            }
-        } else {
-            if (data_size <= Integer.MAX_VALUE) { //data is small enough to fit in a ByteBuffer
-                GL45.glNamedBufferData(buffer, DirectBufferHackery.wrapByte(data, (int) data_size), usage);
-                super.debugCheckError();
-            } else { //LWJGL2 doesn't expose glNamedBufferData with 64-bit data_size...
-                //allocate storage and then delegate to glNamedBufferSubData
-                GL45.glNamedBufferData(buffer, data_size, usage);
-                super.debugCheckError();
-                if (data != 0L) { //the buffer contents are actually being initialized
-                    this.glNamedBufferSubData(buffer, 0L, data_size, data);
-                }
-            }
-        }
+		ContextCapabilities caps = GLContext.getCapabilities();
+		long function_pointer = (long) glNamedBufferData.invokeExact(caps);
+        BufferChecks.checkFunctionAddress(function_pointer);
+        nglNamedBufferData.invokeExact(buffer, data_size, data, usage, function_pointer);
+        super.debugCheckError();
     }
 
     @Override
@@ -1288,35 +1356,61 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
         }
     }
 
+    //LWJGL2 doesn't expose glNamedBufferStorage with 64-bit data_size...
+    private static final MethodHandle glNamedBufferStorage;
+    private static final MethodHandle nglNamedBufferStorage;
+
+    static {
+        Field _glNamedBufferStorage = ContextCapabilities.class.getDeclaredField("glNamedBufferStorage");
+        _glNamedBufferStorage.setAccessible(true);
+        glNamedBufferStorage = MethodHandles.publicLookup().unreflectGetter(_glNamedBufferStorage);
+
+        Method _nglNamedBufferStorage = GL45.class.getDeclaredMethod("nglNamedBufferStorage", int.class, long.class, long.class, int.class, long.class);
+        _nglNamedBufferStorage.setAccessible(true);
+        nglNamedBufferStorage = MethodHandles.publicLookup().unreflect(_nglNamedBufferStorage);
+    }
+
+    @Override
+    public void glNamedBufferStorage(int buffer, long data_size, long data, int flags) {
+		ContextCapabilities caps = GLContext.getCapabilities();
+		long function_pointer = (long) glNamedBufferStorage.invokeExact(caps);
+        BufferChecks.checkFunctionAddress(function_pointer);
+        nglNamedBufferStorage.invokeExact(buffer, data_size, data, flags, function_pointer);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glNamedBufferStorage(int buffer, @NonNull ByteBuffer data, int flags) {
+        if (this.GL_ARB_direct_state_access) {
+            ARBDirectStateAccess.glNamedBufferStorage(buffer, data, flags);
+            super.debugCheckError();
+        } else {
+            GL45.glNamedBufferStorage(buffer, data, flags);
+            super.debugCheckError();
+        }
+    }
+
+    //LWJGL2 doesn't expose glNamedBufferSubData with 64-bit data_size...
+    private static final MethodHandle glNamedBufferSubData;
+    private static final MethodHandle nglNamedBufferSubData;
+    
+    static {
+        Field _glNamedBufferSubData = ContextCapabilities.class.getDeclaredField("glNamedBufferSubData");
+        _glNamedBufferSubData.setAccessible(true);
+        glNamedBufferSubData = MethodHandles.publicLookup().unreflectGetter(_glNamedBufferSubData);
+        
+        Method _nglNamedBufferSubData = GL45.class.getDeclaredMethod("nglNamedBufferSubData", int.class, long.class, long.class, long.class, long.class);
+        _nglNamedBufferSubData.setAccessible(true);
+        nglNamedBufferSubData = MethodHandles.publicLookup().unreflect(_nglNamedBufferSubData);
+    }
+
     @Override
     public void glNamedBufferSubData(int buffer, long offset, long data_size, long data) {
-        if (this.GL_ARB_direct_state_access) {
-            if (data_size <= Integer.MAX_VALUE) { //data is small enough to fit in a ByteBuffer
-                ARBDirectStateAccess.glNamedBufferSubData(buffer, offset, DirectBufferHackery.wrapByte(data, (int) data_size));
-                super.debugCheckError();
-            } else { //LWJGL2 doesn't expose glNamedBufferSubData with 64-bit data_size...
-                //upload data in increments of Integer.MAX_VALUE
-                for (long uploaded = 0L; uploaded < data_size; ) {
-                    int blockSize = (int) min(uploaded - offset, Integer.MAX_VALUE);
-                    ARBDirectStateAccess.glNamedBufferSubData(buffer, offset + uploaded, DirectBufferHackery.wrapByte(data + uploaded, blockSize));
-                    super.debugCheckError();
-                    uploaded += blockSize;
-                }
-            }
-        } else {
-            if (data_size <= Integer.MAX_VALUE) { //data is small enough to fit in a ByteBuffer
-                GL45.glNamedBufferSubData(buffer, offset, DirectBufferHackery.wrapByte(data, (int) data_size));
-                super.debugCheckError();
-            } else { //LWJGL2 doesn't expose glNamedBufferSubData with 64-bit data_size...
-                //upload data in increments of Integer.MAX_VALUE
-                for (long uploaded = 0L; uploaded < data_size; ) {
-                    int blockSize = (int) min(uploaded - offset, Integer.MAX_VALUE);
-                    GL45.glNamedBufferSubData(buffer, offset + uploaded, DirectBufferHackery.wrapByte(data + uploaded, blockSize));
-                    super.debugCheckError();
-                    uploaded += blockSize;
-                }
-            }
-        }
+		ContextCapabilities caps = GLContext.getCapabilities();
+		long function_pointer = (long) glNamedBufferSubData.invokeExact(caps);
+        BufferChecks.checkFunctionAddress(function_pointer);
+        nglNamedBufferSubData.invokeExact(buffer, offset, data_size, data, function_pointer);
+        super.debugCheckError();
     }
 
     @Override
@@ -1329,36 +1423,28 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
             super.debugCheckError();
         }
     }
+    
+    //LWJGL2 doesn't expose glGetNamedBufferSubData with 64-bit data_size...
+    private static final MethodHandle glGetNamedBufferSubData;
+    private static final MethodHandle nglGetNamedBufferSubData;
+    
+    static {
+        Field _glGetNamedBufferSubData = ContextCapabilities.class.getDeclaredField("glGetNamedBufferSubData");
+        _glGetNamedBufferSubData.setAccessible(true);
+        glGetNamedBufferSubData = MethodHandles.publicLookup().unreflectGetter(_glGetNamedBufferSubData);
+        
+        Method _nglGetNamedBufferSubData = GL45.class.getDeclaredMethod("nglGetNamedBufferSubData", int.class, long.class, long.class, long.class, long.class);
+        _nglGetNamedBufferSubData.setAccessible(true);
+        nglGetNamedBufferSubData = MethodHandles.publicLookup().unreflect(_nglGetNamedBufferSubData);
+    }
 
     @Override
     public void glGetNamedBufferSubData(int buffer, long offset, long data_size, long data) {
-        if (this.GL_ARB_direct_state_access) {
-            if (data_size <= Integer.MAX_VALUE) { //data is small enough to fit in a ByteBuffer
-                ARBDirectStateAccess.glGetNamedBufferSubData(buffer, offset, DirectBufferHackery.wrapByte(data, (int) data_size));
-                super.debugCheckError();
-            } else { //LWJGL2 doesn't expose glGetNamedBufferSubData with 64-bit data_size...
-                //download data in increments of Integer.MAX_VALUE
-                for (long downloaded = 0L; downloaded < data_size; ) {
-                    int blockSize = (int) min(downloaded - offset, Integer.MAX_VALUE);
-                    ARBDirectStateAccess.glGetNamedBufferSubData(buffer, offset + downloaded, DirectBufferHackery.wrapByte(data + downloaded, blockSize));
-                    super.debugCheckError();
-                    downloaded += blockSize;
-                }
-            }
-        } else {
-            if (data_size <= Integer.MAX_VALUE) { //data is small enough to fit in a ByteBuffer
-                GL45.glGetNamedBufferSubData(buffer, offset, DirectBufferHackery.wrapByte(data, (int) data_size));
-                super.debugCheckError();
-            } else { //LWJGL2 doesn't expose glGetNamedBufferSubData with 64-bit data_size...
-                //download data in increments of Integer.MAX_VALUE
-                for (long downloaded = 0L; downloaded < data_size; ) {
-                    int blockSize = (int) min(downloaded - offset, Integer.MAX_VALUE);
-                    GL45.glGetNamedBufferSubData(buffer, offset + downloaded, DirectBufferHackery.wrapByte(data + downloaded, blockSize));
-                    super.debugCheckError();
-                    downloaded += blockSize;
-                }
-            }
-        }
+		ContextCapabilities caps = GLContext.getCapabilities();
+		long function_pointer = (long) glGetNamedBufferSubData.invokeExact(caps);
+        BufferChecks.checkFunctionAddress(function_pointer);
+        nglGetNamedBufferSubData.invokeExact(buffer, offset, data_size, data, function_pointer);
+        super.debugCheckError();
     }
 
     @Override

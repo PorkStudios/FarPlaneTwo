@@ -39,6 +39,7 @@ import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormatBuilder;
 import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormat;
 import net.daporkchop.fp2.gl.attribute.texture.image.PixelFormatBuilder;
+import net.daporkchop.fp2.gl.buffer.GLMutableBuffer;
 import net.daporkchop.fp2.gl.command.CommandBufferBuilder;
 import net.daporkchop.fp2.gl.draw.DrawLayout;
 import net.daporkchop.fp2.gl.draw.DrawLayoutBuilder;
@@ -150,7 +151,7 @@ public class OpenGL implements GL {
 
     protected final boolean preserveInputGlState;
 
-    protected final HandledPool<GLBuffer> tmpBufferPool = HandledPool.global(() -> this.createBuffer(BufferUsage.STREAM_DRAW), ReferenceStrength.WEAK, 16);
+    protected final HandledPool<GLBuffer> tmpBufferPool = HandledPool.global(() -> this.createBuffer(), ReferenceStrength.WEAK, 16);
 
     @Getter(AccessLevel.NONE)
     protected boolean closed = false;
@@ -274,8 +275,8 @@ public class OpenGL implements GL {
         return (brand.contains("Intel")) && !brand.contains("Mesa");
     }
 
-    public GLBuffer createBuffer(@NonNull BufferUsage usage) {
-        return GLBuffer.create((net.daporkchop.fp2.gl.OpenGL) this.api, usage);
+    public GLMutableBuffer createBuffer() {
+        return GLMutableBuffer.create((net.daporkchop.fp2.gl.OpenGL) this.api);
     }
 
     @Override

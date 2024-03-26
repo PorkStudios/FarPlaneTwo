@@ -20,6 +20,7 @@
 package net.daporkchop.fp2.gl.codegen.struct.interleaved;
 
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
+import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
 import net.daporkchop.fp2.gl.attribute.NewUniformBuffer;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -41,7 +42,7 @@ public abstract class AbstractInterleavedUniformBuffer<STRUCT extends AttributeS
 
     public final void uploadAndRelease(long address) {
         try {
-            this.buffer.upload(address, this.format.size());
+            this.buffer.upload(address, this.format.size(), BufferUsage.STATIC_DRAW);
         } finally {
             PUnsafe.freeMemory(address);
         }
