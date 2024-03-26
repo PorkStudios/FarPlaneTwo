@@ -19,17 +19,25 @@
 
 package net.daporkchop.fp2.gl.buffer.upload;
 
-import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.buffer.GLBuffer;
 
 import java.nio.ByteBuffer;
 
 /**
+ * A simple {@link BufferUploader} which simply calls {@link net.daporkchop.fp2.gl.OpenGL#glBufferSubData} to set ranges of buffer data.
+ * <p>
+ * Uploaded data will be visible immediately, there is no need to {@link #flush() flush} or {@link #tick() tick} this {@link BufferUploader}.
+ *
  * @author DaPorkchop_
  */
 public final class ImmediateBufferUploader extends AbstractImmediateBufferUploader {
-    public ImmediateBufferUploader(OpenGL gl) {
-        super(gl);
+    private static final BufferUploader instance = new ImmediateBufferUploader();
+
+    /**
+     * @return an instance of {@link ImmediateBufferUploader}
+     */
+    public static BufferUploader instance() {
+        return instance;
     }
 
     @Override

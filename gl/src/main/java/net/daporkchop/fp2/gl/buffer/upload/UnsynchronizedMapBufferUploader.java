@@ -42,6 +42,8 @@ public final class UnsynchronizedMapBufferUploader extends BufferUploader {
         return GLImmutableBuffer.supported(gl) && GLFenceSync.supported(gl) && gl.supports(GLExtension.GL_ARB_buffer_storage);
     }
 
+    private final OpenGL gl;
+
     private final int arenaSize;
     private int freeStart;
     private int freeSize;
@@ -57,10 +59,10 @@ public final class UnsynchronizedMapBufferUploader extends BufferUploader {
     private final BufferUploader fallback;
 
     public UnsynchronizedMapBufferUploader(OpenGL gl, int arenaSize) {
-        super(gl);
         checkState(supported(gl), "not supported!");
         positive(arenaSize, "arenaSize");
 
+        this.gl = gl;
         this.stagingBuffer = GLImmutableBuffer.create(gl, arenaSize, GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_CLIENT_STORAGE_BIT);
         this.stagingBufferMapping = this.stagingBuffer.mapRange(BufferAccess.WRITE_ONLY, GL_MAP_PERSISTENT_BIT | GL_MAP_INVALIDATE_BUFFER_BIT | GL_MAP_FLUSH_EXPLICIT_BIT, 0L, arenaSize);
 

@@ -28,11 +28,13 @@ import net.daporkchop.fp2.gl.attribute.AttributeTarget;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
 import net.daporkchop.fp2.gl.attribute.vao.VertexArrayObject;
+import net.daporkchop.fp2.gl.buffer.upload.UnsynchronizedMapBufferUploader;
 import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.shader.Shader;
 import net.daporkchop.fp2.gl.shader.ShaderType;
 
 import java.io.InputStream;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 
 import static net.daporkchop.fp2.gl.OpenGLConstants.*;
@@ -92,12 +94,10 @@ public class NewTestOpenGL {
             instanceVertexBuffer.set(writer);
         }
 
-        val vao = VertexArrayObject.builder(gl)
+        val instancedSquaresVAO = VertexArrayObject.builder(gl)
                 .buffer(vertexBuffer)
                 .buffer(instanceVertexBuffer, 1)
                 .build();
-        //vertexBuffer.configure(0, vao);
-        //instanceVertexBuffer.configure(2, vao, 1);
 
         val vsh = new Shader(gl, ShaderType.VERTEX, resourceProvider, Identifier.from("new_test.vert"));
         val fsh = new Shader(gl, ShaderType.FRAGMENT, resourceProvider, Identifier.from("new_test.frag"));
@@ -108,13 +108,17 @@ public class NewTestOpenGL {
                 .vertexAttributesWithPrefix("a_", instanceVertexFormat)
                 .build();
 
+        val uploader = new UnsynchronizedMapBufferUploader(gl, 64 << 20);
+        val fps = new FPS();
+
         gl.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
+        int frame = 0;
         do {
             gl.glClear(GL_COLOR_BUFFER_BIT);
 
             gl.glUseProgram(shader.id());
-            gl.glBindVertexArray(vao.id());
+            gl.glBindVertexArray(instancedSquaresVAO.id());
             gl.glBindBufferBase(GL_UNIFORM_BUFFER, 7, uniformBuffer.buffer().id());
             //gl.glDrawArrays(GL_TRIANGLES, 0, 6);
             gl.glDrawArraysInstanced(GL_TRIANGLES, 0, 6, 4);
@@ -123,6 +127,30 @@ public class NewTestOpenGL {
             gl.glUseProgram(0);
 
             swapAndSync.run();
+
+            uploader.tick();
+            fps.update();
+            frame++;
         } while (!closeRequested.getAsBoolean());
+        uploader.close();
+    }
+
+    private static class FPS {
+        private long lastTime = System.nanoTime();
+        private int framesSinceLastTime;
+
+        public void update() {
+            long now = System.nanoTime();
+            if (this.lastTime + TimeUnit.SECONDS.toNanos(1L) <= now) {
+                long prev = this.lastTime;
+                int frames = this.framesSinceLastTime + 1;
+                this.lastTime = now;
+                this.framesSinceLastTime = 0;
+
+                System.out.printf("FPS: %.2f\n", frames * ((double) TimeUnit.SECONDS.toNanos(1L) / (now - prev)));
+            } else {
+                this.framesSinceLastTime++;
+            }
+        }
     }
 }

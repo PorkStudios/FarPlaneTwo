@@ -19,8 +19,6 @@
 
 package net.daporkchop.fp2.gl.buffer.upload;
 
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.buffer.GLBuffer;
 
 import java.nio.ByteBuffer;
@@ -30,10 +28,7 @@ import java.nio.ByteBuffer;
  *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
 public abstract class BufferUploader implements AutoCloseable {
-    protected final OpenGL gl;
-
     /**
      * Uploads the given data into the given buffer at the given offset.
      * <p>

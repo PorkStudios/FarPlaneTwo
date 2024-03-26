@@ -19,19 +19,15 @@
 
 package net.daporkchop.fp2.gl.codegen.struct.interleaved;
 
-import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.AttributeArray;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.attribute.NewAttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
 import net.daporkchop.fp2.gl.attribute.NewAttributeWriter;
-import net.daporkchop.fp2.gl.attribute.vao.VertexArrayObject;
 import net.daporkchop.fp2.gl.attribute.vao.VertexArrayVertexBuffer;
-import net.daporkchop.fp2.gl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.buffer.GLMutableBuffer;
+import net.daporkchop.fp2.gl.buffer.upload.BufferUploader;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
-import net.daporkchop.lib.common.annotation.param.Positive;
 
 import java.util.Arrays;
 
@@ -64,10 +60,13 @@ public abstract class AbstractInterleavedAttributeBuffer<STRUCT extends Attribut
     }
 
     @Override
-    public void setContentsFrom(NewAttributeBuffer<STRUCT> buffer) {
-        checkArg(this.getClass() == buffer.getClass(), "incompatible vertex formats: %s\n%s", this.format(), buffer.format());
-        this.capacity(buffer.capacity());
-        this.buffer.copyRange(((AbstractInterleavedAttributeBuffer<STRUCT>) buffer).buffer, 0L, 0L, this.capacity * this.format().size());
+    public void copyTo(int srcIndex, NewAttributeBuffer<STRUCT> dstBuffer, int dstIndex, int length) {
+        checkArg(this.getClass() == dstBuffer.getClass(), "incompatible vertex formats: %s\n%s", this.format(), dstBuffer.format());
+        checkRangeLen(this.capacity(), dstIndex, length);
+        checkRangeLen(dstBuffer.capacity(), dstIndex, length);
+
+        long size = this.format().size();
+        this.buffer.copyRange(srcIndex * size, ((AbstractInterleavedAttributeBuffer<STRUCT>) dstBuffer).buffer, dstIndex * size, length * size);
     }
 
     @Override
@@ -80,39 +79,15 @@ public abstract class AbstractInterleavedAttributeBuffer<STRUCT extends Attribut
     }
 
     @Override
-    public void set(@NotNegative int startIndex, NewAttributeWriter<STRUCT> writer) {
+    public void setRange(@NotNegative int startIndex, NewAttributeWriter<STRUCT> writer, BufferUploader uploader) {
         checkArg(this.format().getClass() == writer.format().getClass(), "incompatible vertex formats: %s\n%s", this.format(), writer.format());
         int count = writer.size();
         checkRangeLen(this.capacity, startIndex, count);
 
         long address = ((AbstractInterleavedAttributeWriter<STRUCT>) writer).address;
         long size = this.format().size();
-        if (startIndex == 0 && count == this.capacity) { //we're overwriting the entire buffer contents, orphan the old storage for maximum performance
-            this.buffer.upload(address, count * size, this.usage);
-        } else {
-            this.buffer.bufferSubData(startIndex * size, address, count * size);
-        }
+        uploader.uploadRange(this.buffer, startIndex * size, address, count * size);
     }
-
-    @Override
-    public STRUCT setToSingle() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public AttributeArray<STRUCT> setToMany(@Positive int length) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public final int configure(@NotNegative int bindingIndex, @NonNull VertexArrayObject vao, @NotNegative int divisor) throws UnsupportedOperationException {
-        int expected = bindingIndex + this.format().occupiedVertexAttributes();
-        int result = this.configure(bindingIndex, vao, divisor, this.buffer);
-        checkState(result == expected, "expected %s, but got %s", expected, result);
-        return expected;
-    }
-
-    protected abstract int configure(int bindingIndex, VertexArrayObject vao, int divisor, GLBuffer buffer);
 
     @Override
     public final VertexArrayVertexBuffer[] buffers(int divisor) throws UnsupportedOperationException {

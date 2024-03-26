@@ -656,9 +656,10 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
     }
 
     @Override
-    public void glUnmapBuffer(int target) {
-        GL15.glUnmapBuffer(target);
+    public boolean glUnmapBuffer(int target) {
+        val res = GL15.glUnmapBuffer(target);
         super.debugCheckError();
+        return res;
     }
 
     //
@@ -1522,13 +1523,15 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
     }
 
     @Override
-    public void glUnmapNamedBuffer(int buffer) {
+    public boolean glUnmapNamedBuffer(int buffer) {
         if (this.GL_ARB_direct_state_access) {
-            ARBDirectStateAccess.glUnmapNamedBuffer(buffer);
+            val res = ARBDirectStateAccess.glUnmapNamedBuffer(buffer);
             super.debugCheckError();
+            return res;
         } else {
-            GL45.glUnmapNamedBuffer(buffer);
+            val res = GL45.glUnmapNamedBuffer(buffer);
             super.debugCheckError();
+            return res;
         }
     }
 

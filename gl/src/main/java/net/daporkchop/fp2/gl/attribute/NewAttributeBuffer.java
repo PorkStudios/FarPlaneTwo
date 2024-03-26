@@ -23,10 +23,10 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.gl.attribute.vao.VertexArrayObject;
 import net.daporkchop.fp2.gl.attribute.vao.VertexArrayVertexBuffer;
+import net.daporkchop.fp2.gl.buffer.upload.BufferUploader;
+import net.daporkchop.fp2.gl.buffer.upload.ImmediateBufferUploader;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
-import net.daporkchop.lib.common.annotation.param.Positive;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -95,11 +95,14 @@ public abstract class NewAttributeBuffer<STRUCT extends AttributeStruct> impleme
     }
 
     /**
-     * Sets this buffer's contents to a copy of the data from the given buffer, discarding any existing data and modifying its capacity.
+     * Copies attribute data from the given attribute buffer to this attribute buffer.
      *
-     * @param buffer the buffer containing the element data. Must use the same {@link AttributeFormat}
+     * @param srcIndex  the destination index in this buffer for the data to be copied to
+     * @param dstBuffer the source buffer. Must use the same {@link #format() format}
+     * @param dstIndex  the offset into the source buffer to begin copying from
+     * @param length    the number of attributes to copy
      */
-    public abstract void setContentsFrom(@NonNull NewAttributeBuffer<STRUCT> buffer);
+    public abstract void copyTo(int srcIndex, @NonNull NewAttributeBuffer<STRUCT> dstBuffer, int dstIndex, int length);
 
     /**
      * Copies the attribute data from the given {@link AttributeWriter} into this buffer, discarding any existing data and modifying its capacity.
@@ -111,44 +114,29 @@ public abstract class NewAttributeBuffer<STRUCT extends AttributeStruct> impleme
         if (this.capacity() != size) {
             this.capacity(size);
         }
-        this.set(0, writer);
+        this.setRange(0, writer);
     }
 
     /**
-     * Copies the attribute data from the given {@link AttributeWriter} into this buffer.
+     * Copies the attribute data from the given {@link AttributeWriter} into a subregion of this buffer.
      *
      * @param startIndex the destination index for the first attribute data element
      * @param writer     a {@link AttributeWriter} containing the sequence of attribute data elements to copy
      */
-    public abstract void set(@NotNegative int startIndex, @NonNull NewAttributeWriter<STRUCT> writer);
+    public void setRange(@NotNegative int startIndex, @NonNull NewAttributeWriter<STRUCT> writer) {
+        this.setRange(startIndex, writer, ImmediateBufferUploader.instance());
+    }
 
     /**
-     * Gets an instance of {@link STRUCT the attribute struct type} which serves as a handle to write a single element of attribute data. When the instance is
-     * {@link AttributeStruct#close() closed}, this buffer's {@link #capacity() capacity} will be set to {@code 1} and its contents set to the data values written to
-     * the handle.
+     * Copies the attribute data from the given {@link AttributeWriter} into a subregion of this buffer.
      * <p>
-     * The handle must be {@link AttributeStruct#close() closed} once the user has finished writing the data. Any changes made to this buffer's contents or capacity after
-     * this method is invoked will be silently overwritten when the handle is {@link AttributeStruct#close() closed}.
-     * <p>
-     * The handle's contents are initially undefined.
+     * Unless the {@link BufferUploader} implementation specifies otherwise, the uploaded data may not be visible until {@link BufferUploader#flush() flushed}.
      *
-     * @return a {@link STRUCT handle} for writing attribute values to and setting this buffer's contents
+     * @param startIndex the destination index for the first attribute data element
+     * @param writer     a {@link AttributeWriter} containing the sequence of attribute data elements to copy
+     * @param uploader   a {@link BufferUploader} to be used for uploading the actual attribute data
      */
-    public abstract STRUCT setToSingle();
-
-    /**
-     * Gets an instance of {@link AttributeArray} for {@link STRUCT the attribute struct type} which serves as a handle to write multiple elements of attribute data. When the
-     * instance is {@link AttributeArray#close() closed}, this buffer's {@link #capacity() capacity} will be set to {@code length} and its contents set to the data
-     * values written to the array.
-     * <p>
-     * The array must be {@link AttributeArray#close() closed} once the user has finished writing the data. Any changes made to this buffer's contents or capacity after
-     * this method is invoked will be silently overwritten when the array is {@link AttributeArray#close() closed}.
-     * <p>
-     * The array's contents are initially undefined.
-     *
-     * @return an {@link AttributeArray} for writing attribute values to and setting this buffer's contents
-     */
-    public abstract AttributeArray<STRUCT> setToMany(@Positive int length);
+    public abstract void setRange(@NotNegative int startIndex, @NonNull NewAttributeWriter<STRUCT> writer, @NonNull BufferUploader uploader);
 
     /**
      * @param divisor the vertex attribute divisor
@@ -156,29 +144,6 @@ public abstract class NewAttributeBuffer<STRUCT extends AttributeStruct> impleme
      * @throws UnsupportedOperationException if this attribute buffer uses an {@link NewAttributeFormat attribute format} which doesn't support vertex attributes, or if the {@code divisor} is greater than {@code 0} and {@link net.daporkchop.fp2.gl.GLExtension#GL_ARB_instanced_arrays} isn't supported
      */
     public abstract VertexArrayVertexBuffer[] buffers(@NotNegative int divisor) throws UnsupportedOperationException;
-
-    /**
-     * Configures the given {@link VertexArrayObject} to reference the vertex data in this attribute buffer.
-     *
-     * @param baseBindingIndex the base index of the vertex array
-     * @param vao              the {@link VertexArrayObject} to configure
-     * @return the last vertex attribute binding index which was assigned, plus one
-     * @throws UnsupportedOperationException if this attribute buffer uses an {@link NewAttributeFormat attribute format} which doesn't support vertex attributes
-     */
-    public int configure(@NotNegative int baseBindingIndex, @NonNull VertexArrayObject vao) throws UnsupportedOperationException {
-        return this.configure(baseBindingIndex, vao, 0);
-    }
-
-    /**
-     * Configures the given {@link VertexArrayObject} to reference the vertex data in this attribute buffer.
-     *
-     * @param baseBindingIndex the base index of the vertex array
-     * @param vao              the {@link VertexArrayObject} to configure
-     * @param divisor          the configured vertex attribute divisor
-     * @return the last vertex attribute binding index which was assigned, plus one
-     * @throws UnsupportedOperationException if this attribute buffer uses an {@link NewAttributeFormat attribute format} which doesn't support vertex attributes, or if the {@code divisor} is greater than {@code 0} and {@link net.daporkchop.fp2.gl.GLExtension#GL_ARB_instanced_arrays} isn't supported
-     */
-    public abstract int configure(@NotNegative int baseBindingIndex, @NonNull VertexArrayObject vao, @NotNegative int divisor) throws UnsupportedOperationException;
 
     @Override
     public abstract void close();

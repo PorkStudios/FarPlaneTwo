@@ -317,7 +317,7 @@ public abstract class OpenGL {
 
     public abstract ByteBuffer glMapBuffer(int target, int access, long length, ByteBuffer oldBuffer);
 
-    public abstract void glUnmapBuffer(int target);
+    public abstract boolean glUnmapBuffer(int target);
 
     //
     //
@@ -585,7 +585,7 @@ public abstract class OpenGL {
     public abstract void glFlushMappedNamedBufferRange(int buffer, long offset, long length);
 
     //GL_ARB_direct_state_access
-    public abstract void glUnmapNamedBuffer(int buffer);
+    public abstract boolean glUnmapNamedBuffer(int buffer);
 
     //GL_ARB_direct_state_access
     public abstract void glCopyNamedBufferSubData(int readBuffer, int writeBuffer, long readOffset, long writeOffset, long size);

@@ -29,9 +29,7 @@ import net.daporkchop.fp2.gl.attribute.NewAttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
 import net.daporkchop.fp2.gl.attribute.NewAttributeWriter;
 import net.daporkchop.fp2.gl.attribute.NewUniformBuffer;
-import net.daporkchop.fp2.gl.attribute.vao.VertexArrayObject;
 import net.daporkchop.fp2.gl.attribute.vao.VertexAttributeFormat;
-import net.daporkchop.fp2.gl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.codegen.struct.attribute.ArrayAttributeType;
 import net.daporkchop.fp2.gl.codegen.struct.attribute.AttributeType;
 import net.daporkchop.fp2.gl.codegen.struct.attribute.JavaPrimitiveType;
@@ -267,73 +265,10 @@ public final class InterleavedStructFormatClassLoader<STRUCT extends AttributeSt
 
     @Override
     protected byte[] bufferClass() {
+        //TODO: this is redundant and could be eliminated
         return generateClass(ACC_PUBLIC | ACC_FINAL, this.bufferClassInternalName, getInternalName(AbstractInterleavedAttributeBuffer.class), null, cv -> {
             generatePassthroughCtor(cv, getInternalName(AbstractInterleavedAttributeBuffer.class), getType(NewAttributeFormat.class), getType(BufferUsage.class));
-
-            generateMethod(cv, ACC_PROTECTED | ACC_FINAL, "configure", getMethodDescriptor(INT_TYPE, INT_TYPE, getType(VertexArrayObject.class), INT_TYPE, getType(GLBuffer.class)), mv -> {
-                visitBufferConfigure(mv, 1, 2, 3, 4, this.layoutInfo.rootType(), this.layoutInfo.rootLayout(), this.layoutInfo.rootLayout().size(), 0L);
-                mv.visitVarInsn(ILOAD, 1);
-                return IRETURN;
-            });
         });
-    }
-
-    private static void visitBufferConfigure(MethodVisitor mv, int baseIndexLvt, int vaoLvt, int divisorLvt, int bufferLvt, AttributeType type, AttributeLayout layout, long stride, long constantOffset) {
-        if (type instanceof VectorAttributeType) {
-            VectorAttributeType vectorType = (VectorAttributeType) type;
-            VectorLayout vectorLayout = (VectorLayout) layout;
-
-            ShaderPrimitiveType interpretedType = vectorType.componentType().interpretedType();
-            boolean normalized = vectorType.componentType().normalized();
-            JavaPrimitiveType physicalStorageType = vectorLayout.physicalStorageType();
-
-            mv.visitVarInsn(ALOAD, vaoLvt); //vao.
-            mv.visitVarInsn(ALOAD, bufferLvt);
-            mv.visitVarInsn(ILOAD, baseIndexLvt); //GLuint index,
-            mv.visitIincInsn(baseIndexLvt, 1);
-            mv.visitLdcInsn(vectorType.components()); //GLint size,
-            physicalStorageType.loadGlTypeId(mv, WRITE_CLASSES); // GLenum type,
-            if (!interpretedType.integer()) { //GLboolean normalized,
-                mv.visitLdcInsn(normalized);
-            }
-            mv.visitLdcInsn(toIntExact(stride)); //GLsizei stride,
-            mv.visitLdcInsn(constantOffset); //const void* pointer,
-            mv.visitVarInsn(ILOAD, divisorLvt);
-
-            String methodName;
-            String methodDesc;
-            if (interpretedType.integer()) {
-                methodName = "setIAttrib";
-                methodDesc = getMethodDescriptor(VOID_TYPE, getType(GLBuffer.class), INT_TYPE, INT_TYPE, INT_TYPE, INT_TYPE, LONG_TYPE, INT_TYPE);
-            } else {
-                methodName = "setFAttrib";
-                methodDesc = getMethodDescriptor(VOID_TYPE, getType(GLBuffer.class), INT_TYPE, INT_TYPE, INT_TYPE, BOOLEAN_TYPE, INT_TYPE, LONG_TYPE, INT_TYPE);
-            }
-            mv.visitMethodInsn(INVOKEVIRTUAL, getInternalName(VertexArrayObject.class), methodName, methodDesc, false);
-        } else if (type instanceof MatrixAttributeType) {
-            MatrixAttributeType matrixType = (MatrixAttributeType) type;
-            MatrixLayout matrixLayout = (MatrixLayout) layout;
-
-            for (int col = 0; col < matrixType.cols(); col++) {
-                visitBufferConfigure(mv, baseIndexLvt, vaoLvt, divisorLvt, bufferLvt, matrixType.colType(), matrixLayout.colLayout(), stride, constantOffset + matrixLayout.colOffset(col));
-            }
-        } else if (type instanceof ArrayAttributeType) {
-            ArrayAttributeType arrayType = (ArrayAttributeType) type;
-            ArrayLayout arrayLayout = (ArrayLayout) layout;
-
-            for (int element = 0; element < arrayType.elementCount(); element++) {
-                visitBufferConfigure(mv, baseIndexLvt, vaoLvt, divisorLvt, bufferLvt, arrayType.elementType(), arrayLayout.elementLayout(), stride, constantOffset + arrayLayout.elementOffset(element));
-            }
-        } else if (type instanceof StructAttributeType) {
-            StructAttributeType structType = (StructAttributeType) type;
-            StructLayout structLayout = (StructLayout) layout;
-
-            for (int field = 0; field < structType.fieldCount(); field++) {
-                visitBufferConfigure(mv, baseIndexLvt, vaoLvt, divisorLvt, bufferLvt, structType.fieldType(field), structLayout.fieldLayout(field), stride, constantOffset + structLayout.fieldOffset(field));
-            }
-        } else {
-            throw new IllegalArgumentException(String.valueOf(type));
-        }
     }
 
     @Override

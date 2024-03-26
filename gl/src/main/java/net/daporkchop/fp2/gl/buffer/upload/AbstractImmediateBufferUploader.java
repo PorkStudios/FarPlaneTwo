@@ -19,16 +19,10 @@
 
 package net.daporkchop.fp2.gl.buffer.upload;
 
-import net.daporkchop.fp2.gl.OpenGL;
-
 /**
  * @author DaPorkchop_
  */
 abstract class AbstractImmediateBufferUploader extends BufferUploader {
-    public AbstractImmediateBufferUploader(OpenGL gl) {
-        super(gl);
-    }
-
     @Override
     public void flush() {
         //no-op

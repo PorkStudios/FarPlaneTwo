@@ -27,13 +27,18 @@ import net.daporkchop.fp2.gl.buffer.GLMutableBuffer;
 import java.nio.ByteBuffer;
 
 /**
+ * Uploads data into a temporary buffer, then {@link OpenGL#glCopyBufferSubData copies} the data from the temporary buffer to the destination buffer.
+ * This is less likely to stall the graphics pipeline than {@link OpenGL#glBufferSubData}, although will most likely be outperformed by {@link UnsynchronizedMapBufferUploader}
+ * on systems with a discrete GPU.
+ * <p>
+ * Uploaded data will be visible immediately, there is no need to {@link #flush() flush} or {@link #tick() tick} this {@link BufferUploader}.
+ *
  * @author DaPorkchop_
  */
 public final class ScratchCopyBufferUploader extends AbstractImmediateBufferUploader {
     private final GLMutableBuffer scratchBuffer;
 
     public ScratchCopyBufferUploader(OpenGL gl) {
-        super(gl);
         this.scratchBuffer = GLMutableBuffer.create(gl);
     }
 

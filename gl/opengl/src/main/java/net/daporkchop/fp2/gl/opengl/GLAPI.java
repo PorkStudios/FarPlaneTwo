@@ -194,7 +194,7 @@ public interface GLAPI {
 
     long glMapBuffer(int target, int usage);
 
-    void glUnmapBuffer(int target);
+    boolean glUnmapBuffer(int target);
 
     //
     //

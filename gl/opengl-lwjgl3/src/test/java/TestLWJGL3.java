@@ -46,7 +46,7 @@ public class TestLWJGL3 {
         createCapabilities();
 
         glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
-        glfwSwapInterval(1);
+        glfwSwapInterval(0);
 
         try {
             NewTestOpenGL.run(

@@ -53,7 +53,10 @@ public class OpenGLException extends RuntimeException {
         }
     }
 
+    public final int errorCode;
+
     public OpenGLException(int errorCode) {
         super(translateGLErrorString(errorCode));
+        this.errorCode = errorCode;
     }
 }
