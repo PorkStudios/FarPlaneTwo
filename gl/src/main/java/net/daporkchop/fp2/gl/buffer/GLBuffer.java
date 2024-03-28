@@ -187,7 +187,6 @@ public abstract class GLBuffer implements AutoCloseable {
         int old = this.gl.glGetInteger(target.binding());
         try {
             this.gl.glBindBuffer(target.id(), this.id);
-
             callback.accept(target);
         } finally {
             this.gl.glBindBuffer(target.id(), old);
@@ -204,7 +203,6 @@ public abstract class GLBuffer implements AutoCloseable {
         int old = this.gl.glGetInteger(target.binding());
         try {
             this.gl.glBindBuffer(target.id(), this.id);
-
             return callback.apply(target);
         } finally {
             this.gl.glBindBuffer(target.id(), old);

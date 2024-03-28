@@ -22,6 +22,7 @@ package net.daporkchop.fp2.gl.opengl.lwjgl2;
 import lombok.NonNull;
 import lombok.val;
 import net.daporkchop.fp2.common.util.DirectBufferHackery;
+import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.GLVersion;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
@@ -73,7 +74,6 @@ import java.nio.IntBuffer;
 import java.util.Comparator;
 import java.util.stream.Stream;
 
-import static java.lang.Math.*;
 import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 
 /**
@@ -433,6 +433,7 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
 
     @Override
     public void glPushClientAttrib(int mask) {
+        //TODO: check if supported
         GL11.glPushClientAttrib(mask);
         super.debugCheckError();
     }
@@ -553,16 +554,16 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
         GL15.glBindBuffer(target, buffer);
         super.debugCheckError();
     }
-    
+
     //LWJGL2 doesn't expose glBufferData with 64-bit data_size...
     private static final MethodHandle glBufferData;
     private static final MethodHandle nglBufferData;
-    
+
     static {
         Field _glBufferData = ContextCapabilities.class.getDeclaredField("glBufferData");
         _glBufferData.setAccessible(true);
         glBufferData = MethodHandles.publicLookup().unreflectGetter(_glBufferData);
-        
+
         Method _nglBufferData = GL15.class.getDeclaredMethod("nglBufferData", int.class, long.class, long.class, int.class, long.class);
         _nglBufferData.setAccessible(true);
         nglBufferData = MethodHandles.publicLookup().unreflect(_nglBufferData);
@@ -582,16 +583,16 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
         GL15.glBufferData(target, data, usage);
         super.debugCheckError();
     }
-    
+
     //LWJGL2 doesn't expose glBufferSubData with 64-bit data_size...
     private static final MethodHandle glBufferSubData;
     private static final MethodHandle nglBufferSubData;
-    
+
     static {
         Field _glBufferSubData = ContextCapabilities.class.getDeclaredField("glBufferSubData");
         _glBufferSubData.setAccessible(true);
         glBufferSubData = MethodHandles.publicLookup().unreflectGetter(_glBufferSubData);
-        
+
         Method _nglBufferSubData = GL15.class.getDeclaredMethod("nglBufferSubData", int.class, long.class, long.class, long.class, long.class);
         _nglBufferSubData.setAccessible(true);
         nglBufferSubData = MethodHandles.publicLookup().unreflect(_nglBufferSubData);
@@ -599,9 +600,9 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
 
     @Override
     public void glBufferSubData(int target, long offset, long data_size, long data) {
-		ContextCapabilities caps = GLContext.getCapabilities();
-		long function_pointer = (long) glBufferSubData.invokeExact(caps);
-		BufferChecks.checkFunctionAddress(function_pointer);
+        ContextCapabilities caps = GLContext.getCapabilities();
+        long function_pointer = (long) glBufferSubData.invokeExact(caps);
+        BufferChecks.checkFunctionAddress(function_pointer);
         nglBufferSubData.invokeExact(target, offset, data_size, data, function_pointer);
         super.debugCheckError();
     }
@@ -611,16 +612,16 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
         GL15.glBufferSubData(target, offset, data);
         super.debugCheckError();
     }
-    
+
     //LWJGL2 doesn't expose glGetBufferSubData with 64-bit data_size...
     private static final MethodHandle glGetBufferSubData;
     private static final MethodHandle nglGetBufferSubData;
-    
+
     static {
         Field _glGetBufferSubData = ContextCapabilities.class.getDeclaredField("glGetBufferSubData");
         _glGetBufferSubData.setAccessible(true);
         glGetBufferSubData = MethodHandles.publicLookup().unreflectGetter(_glGetBufferSubData);
-        
+
         Method _nglGetBufferSubData = GL15.class.getDeclaredMethod("nglGetBufferSubData", int.class, long.class, long.class, long.class, long.class);
         _nglGetBufferSubData.setAccessible(true);
         nglGetBufferSubData = MethodHandles.publicLookup().unreflect(_nglGetBufferSubData);
@@ -952,58 +953,68 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
 
     @Override
     public void glCopyBufferSubData(int readTarget, int writeTarget, long readOffset, long writeOffset, long size) {
-        if (this.GL_ARB_copy_buffer) {
+        if (this.OpenGL31) {
+            GL31.glCopyBufferSubData(readTarget, writeTarget, readOffset, writeOffset, size);
+            super.debugCheckError();
+        } else if (this.GL_ARB_copy_buffer) {
             ARBCopyBuffer.glCopyBufferSubData(readTarget, writeTarget, readOffset, writeOffset, size);
             super.debugCheckError();
         } else {
-            GL31.glCopyBufferSubData(readTarget, writeTarget, readOffset, writeOffset, size);
-            super.debugCheckError();
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_copy_buffer));
         }
     }
 
     @Override
     public void glDrawArraysInstanced(int mode, int first, int count, int instancecount) {
-        if (this.GL_ARB_draw_instanced) {
+        if (this.OpenGL31) {
+            GL31.glDrawArraysInstanced(mode, first, count, instancecount);
+            super.debugCheckError();
+        } else if (this.GL_ARB_draw_instanced) {
             ARBDrawInstanced.glDrawArraysInstancedARB(mode, first, count, instancecount);
             super.debugCheckError();
         } else {
-            GL31.glDrawArraysInstanced(mode, first, count, instancecount);
-            super.debugCheckError();
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_draw_instanced));
         }
     }
 
     @Override
     public void glTexBuffer(int target, int internalFormat, int buffer) {
-        if (this.GL_ARB_texture_buffer_object) {
+        if (this.OpenGL31) {
+            GL31.glTexBuffer(target, internalFormat, buffer);
+            super.debugCheckError();
+        } else if (this.GL_ARB_texture_buffer_object) {
             ARBTextureBufferObject.glTexBufferARB(target, internalFormat, buffer);
             super.debugCheckError();
         } else {
-            GL31.glTexBuffer(target, internalFormat, buffer);
-            super.debugCheckError();
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_texture_buffer_object));
         }
     }
 
     @Override
     public int glGetUniformBlockIndex(int program, @NonNull CharSequence uniformBlockName) {
-        if (this.GL_ARB_uniform_buffer_object) {
+        if (this.OpenGL31) {
+            val res = GL31.glGetUniformBlockIndex(program, uniformBlockName);
+            super.debugCheckError();
+            return res;
+        } else if (this.GL_ARB_uniform_buffer_object) {
             val res = ARBUniformBufferObject.glGetUniformBlockIndex(program, uniformBlockName);
             super.debugCheckError();
             return res;
         } else {
-            val res = GL31.glGetUniformBlockIndex(program, uniformBlockName);
-            super.debugCheckError();
-            return res;
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_uniform_buffer_object));
         }
     }
 
     @Override
     public void glUniformBlockBinding(int program, int uniformBlockIndex, int uniformBlockBinding) {
-        if (this.GL_ARB_uniform_buffer_object) {
+        if (this.OpenGL31) {
+            GL31.glUniformBlockBinding(program, uniformBlockIndex, uniformBlockBinding);
+            super.debugCheckError();
+        } else if (this.GL_ARB_uniform_buffer_object) {
             ARBUniformBufferObject.glUniformBlockBinding(program, uniformBlockIndex, uniformBlockBinding);
             super.debugCheckError();
         } else {
-            GL31.glUniformBlockBinding(program, uniformBlockIndex, uniformBlockBinding);
-            super.debugCheckError();
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_uniform_buffer_object));
         }
     }
 
@@ -1012,12 +1023,14 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
         long address = PUnsafe.allocateMemory(uniformNames.length * (long) Integer.BYTES);
         try {
             IntBuffer wrapped = DirectBufferHackery.wrapInt(address, uniformNames.length);
-            if (this.GL_ARB_uniform_buffer_object) {
+            if (this.OpenGL31) {
+                GL31.glGetUniformIndices(program, uniformNames, wrapped);
+                super.debugCheckError();
+            } else if (this.GL_ARB_uniform_buffer_object) {
                 ARBUniformBufferObject.glGetUniformIndices(program, uniformNames, wrapped);
                 super.debugCheckError();
             } else {
-                GL31.glGetUniformIndices(program, uniformNames, wrapped);
-                super.debugCheckError();
+                throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_uniform_buffer_object));
             }
 
             int[] result = new int[uniformNames.length];
@@ -1030,14 +1043,16 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
 
     @Override
     public int glGetActiveUniformsi(int program, int uniformIndex, int pname) {
-        if (this.GL_ARB_uniform_buffer_object) {
+        if (this.OpenGL31) {
+            val res = GL31.glGetActiveUniformsi(program, uniformIndex, pname);
+            super.debugCheckError();
+            return res;
+        } else if (this.GL_ARB_uniform_buffer_object) {
             val res = ARBUniformBufferObject.glGetActiveUniformsi(program, uniformIndex, pname);
             super.debugCheckError();
             return res;
         } else {
-            val res = GL31.glGetActiveUniformsi(program, uniformIndex, pname);
-            super.debugCheckError();
-            return res;
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_uniform_buffer_object));
         }
     }
 
@@ -1049,31 +1064,39 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
 
     @Override
     public void glDrawElementsBaseVertex(int mode, int count, int type, long indices, int basevertex) {
-        if (this.GL_ARB_draw_elements_base_vertex) {
+        if (this.OpenGL32) {
+            GL32.glDrawElementsBaseVertex(mode, count, type, indices, basevertex);
+            super.debugCheckError();
+        } else if (this.GL_ARB_draw_elements_base_vertex) {
             ARBDrawElementsBaseVertex.glDrawElementsBaseVertex(mode, count, type, indices, basevertex);
             super.debugCheckError();
         } else {
-            GL32.glDrawElementsBaseVertex(mode, count, type, indices, basevertex);
-            super.debugCheckError();
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_draw_elements_base_vertex));
         }
     }
 
     @Override
     public void glMultiDrawElementsBaseVertex(int mode, long count, int type, long indices, int drawcount, long basevertex) {
-        this.extraFunctions.glMultiDrawElementsBaseVertex(mode, count, type, indices, drawcount, basevertex);
-        super.debugCheckError();
+        if (this.OpenGL32 | this.GL_ARB_draw_elements_base_vertex) {
+            this.extraFunctions.glMultiDrawElementsBaseVertex(mode, count, type, indices, drawcount, basevertex);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_draw_elements_base_vertex));
+        }
     }
 
     @Override
     public long glFenceSync(int condition, int flags) {
-        if (this.GL_ARB_sync) {
+        if (this.OpenGL32) {
+            val res = GL32.glFenceSync(condition, flags).getPointer();
+            super.debugCheckError();
+            return res;
+        } else if (this.GL_ARB_sync) {
             val res = ARBSync.glFenceSync(condition, flags).getPointer();
             super.debugCheckError();
             return res;
         } else {
-            val res = GL32.glFenceSync(condition, flags).getPointer();
-            super.debugCheckError();
-            return res;
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_sync));
         }
     }
 
@@ -1087,38 +1110,44 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
 
     @Override
     public int glClientWaitSync(long sync, int flags, long timeout) {
-        if (this.GL_ARB_sync) {
+        if (this.OpenGL32) {
+            val res = GL32.glClientWaitSync((GLSync) GLSync_CTOR.invokeExact(sync), flags, timeout);
+            super.debugCheckError();
+            return res;
+        } else if (this.GL_ARB_sync) {
             val res = ARBSync.glClientWaitSync((GLSync) GLSync_CTOR.invokeExact(sync), flags, timeout);
             super.debugCheckError();
             return res;
         } else {
-            val res = GL32.glClientWaitSync((GLSync) GLSync_CTOR.invokeExact(sync), flags, timeout);
-            super.debugCheckError();
-            return res;
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_sync));
         }
     }
 
     @Override
     public int glGetSync(long sync, int pname) {
-        if (this.GL_ARB_sync) {
+        if (this.OpenGL32) {
+            val res = GL32.glGetSynci((GLSync) GLSync_CTOR.invokeExact(sync), pname);
+            super.debugCheckError();
+            return res;
+        } else if (this.GL_ARB_sync) {
             val res = ARBSync.glGetSynci((GLSync) GLSync_CTOR.invokeExact(sync), pname);
             super.debugCheckError();
             return res;
         } else {
-            val res = GL32.glGetSynci((GLSync) GLSync_CTOR.invokeExact(sync), pname);
-            super.debugCheckError();
-            return res;
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_sync));
         }
     }
 
     @Override
     public void glDeleteSync(long sync) {
-        if (this.GL_ARB_sync) {
+        if (this.OpenGL32) {
+            GL32.glDeleteSync((GLSync) GLSync_CTOR.invokeExact(sync));
+            super.debugCheckError();
+        } else if (this.GL_ARB_sync) {
             ARBSync.glDeleteSync((GLSync) GLSync_CTOR.invokeExact(sync));
             super.debugCheckError();
         } else {
-            GL32.glDeleteSync((GLSync) GLSync_CTOR.invokeExact(sync));
-            super.debugCheckError();
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_sync));
         }
     }
 
@@ -1130,69 +1159,81 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
 
     @Override
     public void glVertexAttribDivisor(int index, int divisor) {
-        if (this.GL_ARB_instanced_arrays) {
+        if (this.OpenGL33) {
+            GL33.glVertexAttribDivisor(index, divisor);
+            super.debugCheckError();
+        } else if (this.GL_ARB_instanced_arrays) {
             ARBInstancedArrays.glVertexAttribDivisorARB(index, divisor);
             super.debugCheckError();
         } else {
-            GL33.glVertexAttribDivisor(index, divisor);
-            super.debugCheckError();
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_instanced_arrays));
         }
     }
 
     @Override
     public int glGenSampler() {
-        if (this.GL_ARB_sampler_objects) {
+        if (this.OpenGL33) {
+            val res = GL33.glGenSamplers();
+            super.debugCheckError();
+            return res;
+        } else if (this.GL_ARB_sampler_objects) {
             val res = ARBSamplerObjects.glGenSamplers();
             super.debugCheckError();
             return res;
         } else {
-            val res = GL33.glGenSamplers();
-            super.debugCheckError();
-            return res;
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_sampler_objects));
         }
     }
 
     @Override
     public void glDeleteSampler(int sampler) {
-        if (this.GL_ARB_sampler_objects) {
+        if (this.OpenGL33) {
+            GL33.glDeleteSamplers(sampler);
+            super.debugCheckError();
+        } else if (this.GL_ARB_sampler_objects) {
             ARBSamplerObjects.glDeleteSamplers(sampler);
             super.debugCheckError();
         } else {
-            GL33.glDeleteSamplers(sampler);
-            super.debugCheckError();
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_sampler_objects));
         }
     }
 
     @Override
     public void glBindSampler(int unit, int sampler) {
-        if (this.GL_ARB_sampler_objects) {
+        if (this.OpenGL33) {
+            GL33.glBindSampler(unit, sampler);
+            super.debugCheckError();
+        } else if (this.GL_ARB_sampler_objects) {
             ARBSamplerObjects.glBindSampler(unit, sampler);
             super.debugCheckError();
         } else {
-            GL33.glBindSampler(unit, sampler);
-            super.debugCheckError();
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_sampler_objects));
         }
     }
 
     @Override
     public void glSamplerParameter(int sampler, int pname, int param) {
-        if (this.GL_ARB_sampler_objects) {
+        if (this.OpenGL33) {
+            GL33.glSamplerParameteri(sampler, pname, param);
+            super.debugCheckError();
+        } else if (this.GL_ARB_sampler_objects) {
             ARBSamplerObjects.glSamplerParameteri(sampler, pname, param);
             super.debugCheckError();
         } else {
-            GL33.glSamplerParameteri(sampler, pname, param);
-            super.debugCheckError();
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_sampler_objects));
         }
     }
 
     @Override
     public void glSamplerParameter(int sampler, int pname, float param) {
-        if (this.GL_ARB_sampler_objects) {
+        if (this.OpenGL33) {
+            GL33.glSamplerParameterf(sampler, pname, param);
+            super.debugCheckError();
+        } else if (this.GL_ARB_sampler_objects) {
             ARBSamplerObjects.glSamplerParameterf(sampler, pname, param);
             super.debugCheckError();
         } else {
-            GL33.glSamplerParameterf(sampler, pname, param);
-            super.debugCheckError();
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_sampler_objects));
         }
     }
 
@@ -1204,12 +1245,14 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
 
     @Override
     public void glMemoryBarrier(int barriers) {
-        if (this.GL_ARB_shader_image_load_store) {
+        if (this.OpenGL42) {
+            GL42.glMemoryBarrier(barriers);
+            super.debugCheckError();
+        } else if (this.GL_ARB_shader_image_load_store) {
             ARBShaderImageLoadStore.glMemoryBarrier(barriers);
             super.debugCheckError();
         } else {
-            GL42.glMemoryBarrier(barriers);
-            super.debugCheckError();
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_shader_image_load_store));
         }
     }
 
@@ -1221,47 +1264,55 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
 
     @Override
     public void glMultiDrawArraysIndirect(int mode, long indirect, int primcount, int stride) {
-        if (this.GL_ARB_multi_draw_indirect) {
+        if (this.OpenGL43) {
+            GL43.glMultiDrawArraysIndirect(mode, indirect, primcount, stride);
+            super.debugCheckError();
+        } else if (this.GL_ARB_multi_draw_indirect) {
             ARBMultiDrawIndirect.glMultiDrawArraysIndirect(mode, indirect, primcount, stride);
             super.debugCheckError();
         } else {
-            GL43.glMultiDrawArraysIndirect(mode, indirect, primcount, stride);
-            super.debugCheckError();
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_multi_draw_indirect));
         }
     }
 
     @Override
     public void glMultiDrawElementsIndirect(int mode, int type, long indirect, int primcount, int stride) {
-        if (this.GL_ARB_multi_draw_indirect) {
+        if (this.OpenGL43) {
+            GL43.glMultiDrawElementsIndirect(mode, type, indirect, primcount, stride);
+            super.debugCheckError();
+        } else if (this.GL_ARB_multi_draw_indirect) {
             ARBMultiDrawIndirect.glMultiDrawElementsIndirect(mode, type, indirect, primcount, stride);
             super.debugCheckError();
         } else {
-            GL43.glMultiDrawElementsIndirect(mode, type, indirect, primcount, stride);
-            super.debugCheckError();
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_multi_draw_indirect));
         }
     }
 
     @Override
     public int glGetProgramResourceIndex(int program, int programInterface, @NonNull CharSequence name) {
-        if (this.GL_ARB_program_interface_query) {
+        if (this.OpenGL43) {
+            val res = GL43.glGetProgramResourceIndex(program, programInterface, name);
+            super.debugCheckError();
+            return res;
+        } else if (this.GL_ARB_program_interface_query) {
             val res = ARBProgramInterfaceQuery.glGetProgramResourceIndex(program, programInterface, name);
             super.debugCheckError();
             return res;
         } else {
-            val res = GL43.glGetProgramResourceIndex(program, programInterface, name);
-            super.debugCheckError();
-            return res;
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_program_interface_query));
         }
     }
 
     @Override
     public void glShaderStorageBlockBinding(int program, int storageBlockIndex, int storageBlockBinding) {
-        if (this.GL_ARB_shader_storage_buffer_object) {
+        if (this.OpenGL43) {
+            GL43.glShaderStorageBlockBinding(program, storageBlockIndex, storageBlockBinding);
+            super.debugCheckError();
+        } else if (this.GL_ARB_shader_storage_buffer_object) {
             ARBShaderStorageBufferObject.glShaderStorageBlockBinding(program, storageBlockIndex, storageBlockBinding);
             super.debugCheckError();
         } else {
-            GL43.glShaderStorageBlockBinding(program, storageBlockIndex, storageBlockBinding);
-            super.debugCheckError();
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_shader_storage_buffer_object));
         }
     }
 
@@ -1270,7 +1321,7 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
     // OpenGL 4.4
     //
     //
-    
+
     private static final MethodHandle glBufferStorage;
     private static final MethodHandle nglBufferStorage;
 
@@ -1278,7 +1329,7 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
         Field _glBufferStorage = ContextCapabilities.class.getDeclaredField("glBufferStorage");
         _glBufferStorage.setAccessible(true);
         glBufferStorage = MethodHandles.publicLookup().unreflectGetter(_glBufferStorage);
-        
+
         Method _nglBufferStorage = GL44.class.getDeclaredMethod("nglBufferStorage", int.class, long.class, long.class, int.class, long.class);
         _nglBufferStorage.setAccessible(true);
         nglBufferStorage = MethodHandles.publicLookup().unreflect(_nglBufferStorage);
@@ -1286,21 +1337,27 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
 
     @Override
     public void glBufferStorage(int target, long data_size, long data, int flags) {
-        ContextCapabilities caps = GLContext.getCapabilities();
-        long function_pointer = (long) glBufferStorage.invokeExact(caps);
-        BufferChecks.checkFunctionAddress(function_pointer);
-        nglBufferStorage.invokeExact(target, data_size, data, flags, function_pointer);
-        super.debugCheckError();
+        if (this.OpenGL44 | this.GL_ARB_buffer_storage) {
+            ContextCapabilities caps = GLContext.getCapabilities();
+            long function_pointer = (long) glBufferStorage.invokeExact(caps);
+            BufferChecks.checkFunctionAddress(function_pointer);
+            nglBufferStorage.invokeExact(target, data_size, data, flags, function_pointer);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_buffer_storage));
+        }
     }
 
     @Override
     public void glBufferStorage(int target, @NonNull ByteBuffer data, int flags) {
-        if (this.GL_ARB_buffer_storage) {
+        if (this.OpenGL44) {
+            GL44.glBufferStorage(target, data, flags);
+            super.debugCheckError();
+        } else if (this.GL_ARB_buffer_storage) {
             ARBBufferStorage.glBufferStorage(target, data, flags);
             super.debugCheckError();
         } else {
-            GL44.glBufferStorage(target, data, flags);
-            super.debugCheckError();
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_buffer_storage));
         }
     }
 
@@ -1312,14 +1369,16 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
 
     @Override
     public int glCreateBuffer() {
-        if (this.GL_ARB_direct_state_access) {
+        if (this.OpenGL45) {
+            val res = GL45.glCreateBuffers();
+            super.debugCheckError();
+            return res;
+        } else if (this.GL_ARB_direct_state_access) {
             val res = ARBDirectStateAccess.glCreateBuffers();
             super.debugCheckError();
             return res;
         } else {
-            val res = GL45.glCreateBuffers();
-            super.debugCheckError();
-            return res;
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
         }
     }
 
@@ -1339,21 +1398,27 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
 
     @Override
     public void glNamedBufferData(int buffer, long data_size, long data, int usage) {
-		ContextCapabilities caps = GLContext.getCapabilities();
-		long function_pointer = (long) glNamedBufferData.invokeExact(caps);
-        BufferChecks.checkFunctionAddress(function_pointer);
-        nglNamedBufferData.invokeExact(buffer, data_size, data, usage, function_pointer);
-        super.debugCheckError();
+        if (this.OpenGL45 | this.GL_ARB_direct_state_access) {
+            ContextCapabilities caps = GLContext.getCapabilities();
+            long function_pointer = (long) glNamedBufferData.invokeExact(caps);
+            BufferChecks.checkFunctionAddress(function_pointer);
+            nglNamedBufferData.invokeExact(buffer, data_size, data, usage, function_pointer);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
+        }
     }
 
     @Override
     public void glNamedBufferData(int buffer, @NonNull ByteBuffer data, int usage) {
-        if (this.GL_ARB_direct_state_access) {
+        if (this.OpenGL45) {
+            GL45.glNamedBufferData(buffer, data, usage);
+            super.debugCheckError();
+        } else if (this.GL_ARB_direct_state_access) {
             ARBDirectStateAccess.glNamedBufferData(buffer, data, usage);
             super.debugCheckError();
         } else {
-            GL45.glNamedBufferData(buffer, data, usage);
-            super.debugCheckError();
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
         }
     }
 
@@ -1373,33 +1438,39 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
 
     @Override
     public void glNamedBufferStorage(int buffer, long data_size, long data, int flags) {
-		ContextCapabilities caps = GLContext.getCapabilities();
-		long function_pointer = (long) glNamedBufferStorage.invokeExact(caps);
-        BufferChecks.checkFunctionAddress(function_pointer);
-        nglNamedBufferStorage.invokeExact(buffer, data_size, data, flags, function_pointer);
-        super.debugCheckError();
+        if (this.OpenGL45 | this.GL_ARB_direct_state_access) {
+            ContextCapabilities caps = GLContext.getCapabilities();
+            long function_pointer = (long) glNamedBufferStorage.invokeExact(caps);
+            BufferChecks.checkFunctionAddress(function_pointer);
+            nglNamedBufferStorage.invokeExact(buffer, data_size, data, flags, function_pointer);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
+        }
     }
 
     @Override
     public void glNamedBufferStorage(int buffer, @NonNull ByteBuffer data, int flags) {
-        if (this.GL_ARB_direct_state_access) {
+        if (this.OpenGL45) {
+            GL45.glNamedBufferStorage(buffer, data, flags);
+            super.debugCheckError();
+        } else if (this.GL_ARB_direct_state_access) {
             ARBDirectStateAccess.glNamedBufferStorage(buffer, data, flags);
             super.debugCheckError();
         } else {
-            GL45.glNamedBufferStorage(buffer, data, flags);
-            super.debugCheckError();
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
         }
     }
 
     //LWJGL2 doesn't expose glNamedBufferSubData with 64-bit data_size...
     private static final MethodHandle glNamedBufferSubData;
     private static final MethodHandle nglNamedBufferSubData;
-    
+
     static {
         Field _glNamedBufferSubData = ContextCapabilities.class.getDeclaredField("glNamedBufferSubData");
         _glNamedBufferSubData.setAccessible(true);
         glNamedBufferSubData = MethodHandles.publicLookup().unreflectGetter(_glNamedBufferSubData);
-        
+
         Method _nglNamedBufferSubData = GL45.class.getDeclaredMethod("nglNamedBufferSubData", int.class, long.class, long.class, long.class, long.class);
         _nglNamedBufferSubData.setAccessible(true);
         nglNamedBufferSubData = MethodHandles.publicLookup().unreflect(_nglNamedBufferSubData);
@@ -1407,33 +1478,39 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
 
     @Override
     public void glNamedBufferSubData(int buffer, long offset, long data_size, long data) {
-		ContextCapabilities caps = GLContext.getCapabilities();
-		long function_pointer = (long) glNamedBufferSubData.invokeExact(caps);
-        BufferChecks.checkFunctionAddress(function_pointer);
-        nglNamedBufferSubData.invokeExact(buffer, offset, data_size, data, function_pointer);
-        super.debugCheckError();
+        if (this.OpenGL45 | this.GL_ARB_direct_state_access) {
+            ContextCapabilities caps = GLContext.getCapabilities();
+            long function_pointer = (long) glNamedBufferSubData.invokeExact(caps);
+            BufferChecks.checkFunctionAddress(function_pointer);
+            nglNamedBufferSubData.invokeExact(buffer, offset, data_size, data, function_pointer);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
+        }
     }
 
     @Override
     public void glNamedBufferSubData(int buffer, long offset, @NonNull ByteBuffer data) {
-        if (this.GL_ARB_direct_state_access) {
+        if (this.OpenGL45) {
+            GL45.glNamedBufferSubData(buffer, offset, data);
+            super.debugCheckError();
+        } else if (this.GL_ARB_direct_state_access) {
             ARBDirectStateAccess.glNamedBufferSubData(buffer, offset, data);
             super.debugCheckError();
         } else {
-            GL45.glNamedBufferSubData(buffer, offset, data);
-            super.debugCheckError();
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
         }
     }
-    
+
     //LWJGL2 doesn't expose glGetNamedBufferSubData with 64-bit data_size...
     private static final MethodHandle glGetNamedBufferSubData;
     private static final MethodHandle nglGetNamedBufferSubData;
-    
+
     static {
         Field _glGetNamedBufferSubData = ContextCapabilities.class.getDeclaredField("glGetNamedBufferSubData");
         _glGetNamedBufferSubData.setAccessible(true);
         glGetNamedBufferSubData = MethodHandles.publicLookup().unreflectGetter(_glGetNamedBufferSubData);
-        
+
         Method _nglGetNamedBufferSubData = GL45.class.getDeclaredMethod("nglGetNamedBufferSubData", int.class, long.class, long.class, long.class, long.class);
         _nglGetNamedBufferSubData.setAccessible(true);
         nglGetNamedBufferSubData = MethodHandles.publicLookup().unreflect(_nglGetNamedBufferSubData);
@@ -1441,209 +1518,247 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
 
     @Override
     public void glGetNamedBufferSubData(int buffer, long offset, long data_size, long data) {
-		ContextCapabilities caps = GLContext.getCapabilities();
-		long function_pointer = (long) glGetNamedBufferSubData.invokeExact(caps);
-        BufferChecks.checkFunctionAddress(function_pointer);
-        nglGetNamedBufferSubData.invokeExact(buffer, offset, data_size, data, function_pointer);
-        super.debugCheckError();
+        if (this.OpenGL45 | this.GL_ARB_direct_state_access) {
+            ContextCapabilities caps = GLContext.getCapabilities();
+            long function_pointer = (long) glGetNamedBufferSubData.invokeExact(caps);
+            BufferChecks.checkFunctionAddress(function_pointer);
+            nglGetNamedBufferSubData.invokeExact(buffer, offset, data_size, data, function_pointer);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
+        }
     }
 
     @Override
     public void glGetNamedBufferSubData(int buffer, long offset, @NonNull ByteBuffer data) {
-        if (this.GL_ARB_direct_state_access) {
+        if (this.OpenGL45) {
+            GL45.glGetNamedBufferSubData(buffer, offset, data);
+            super.debugCheckError();
+        } else if (this.GL_ARB_direct_state_access) {
             ARBDirectStateAccess.glGetNamedBufferSubData(buffer, offset, data);
             super.debugCheckError();
         } else {
-            GL45.glGetNamedBufferSubData(buffer, offset, data);
-            super.debugCheckError();
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
         }
     }
 
     @Override
     public long glMapNamedBuffer(int buffer, int access) {
-        if (this.GL_ARB_direct_state_access) {
+        if (this.OpenGL45) {
+            val res = PUnsafe.pork_directBufferAddress(GL45.glMapNamedBuffer(buffer, access, null));
+            super.debugCheckError();
+            return res;
+        } else if (this.GL_ARB_direct_state_access) {
             val res = PUnsafe.pork_directBufferAddress(ARBDirectStateAccess.glMapNamedBuffer(buffer, access, null));
             super.debugCheckError();
             return res;
         } else {
-            val res = PUnsafe.pork_directBufferAddress(GL45.glMapNamedBuffer(buffer, access, null));
-            super.debugCheckError();
-            return res;
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
         }
     }
 
     @Override
     public ByteBuffer glMapNamedBuffer(int buffer, int access, long length, ByteBuffer oldBuffer) {
-        if (this.GL_ARB_direct_state_access) {
+        if (this.OpenGL45) {
+            val res = GL45.glMapNamedBuffer(buffer, access, length, oldBuffer);
+            super.debugCheckError();
+            return res;
+        } else if (this.GL_ARB_direct_state_access) {
             val res = ARBDirectStateAccess.glMapNamedBuffer(buffer, access, length, oldBuffer);
             super.debugCheckError();
             return res;
         } else {
-            val res = GL45.glMapNamedBuffer(buffer, access, length, oldBuffer);
-            super.debugCheckError();
-            return res;
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
         }
     }
 
     @Override
     public long glMapNamedBufferRange(int buffer, long offset, long size, int access) {
-        if (this.GL_ARB_direct_state_access) {
+        if (this.OpenGL45) {
+            val res = PUnsafe.pork_directBufferAddress(GL45.glMapNamedBufferRange(buffer, offset, size, access, null));
+            super.debugCheckError();
+            return res;
+        } else if (this.GL_ARB_direct_state_access) {
             val res = PUnsafe.pork_directBufferAddress(ARBDirectStateAccess.glMapNamedBufferRange(buffer, offset, size, access, null));
             super.debugCheckError();
             return res;
         } else {
-            val res = PUnsafe.pork_directBufferAddress(GL45.glMapNamedBufferRange(buffer, offset, size, access, null));
-            super.debugCheckError();
-            return res;
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
         }
     }
 
     @Override
     public ByteBuffer glMapNamedBufferRange(int buffer, long offset, long size, int access, ByteBuffer oldBuffer) {
-        if (this.GL_ARB_direct_state_access) {
+        if (this.OpenGL45) {
+            val res = GL45.glMapNamedBufferRange(buffer, offset, size, access, oldBuffer);
+            super.debugCheckError();
+            return res;
+        } else if (this.GL_ARB_direct_state_access) {
             val res = ARBDirectStateAccess.glMapNamedBufferRange(buffer, offset, size, access, oldBuffer);
             super.debugCheckError();
             return res;
         } else {
-            val res = GL45.glMapNamedBufferRange(buffer, offset, size, access, oldBuffer);
-            super.debugCheckError();
-            return res;
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
         }
     }
 
     @Override
     public void glFlushMappedNamedBufferRange(int buffer, long offset, long length) {
-        if (this.GL_ARB_direct_state_access) {
+        if (this.OpenGL45) {
+            GL45.glFlushMappedNamedBufferRange(buffer, offset, length);
+            super.debugCheckError();
+        } else if (this.GL_ARB_direct_state_access) {
             ARBDirectStateAccess.glFlushMappedNamedBufferRange(buffer, offset, length);
             super.debugCheckError();
         } else {
-            GL45.glFlushMappedNamedBufferRange(buffer, offset, length);
-            super.debugCheckError();
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
         }
     }
 
     @Override
     public boolean glUnmapNamedBuffer(int buffer) {
-        if (this.GL_ARB_direct_state_access) {
+        if (this.OpenGL45) {
+            val res = GL45.glUnmapNamedBuffer(buffer);
+            super.debugCheckError();
+            return res;
+        } else if (this.GL_ARB_direct_state_access) {
             val res = ARBDirectStateAccess.glUnmapNamedBuffer(buffer);
             super.debugCheckError();
             return res;
         } else {
-            val res = GL45.glUnmapNamedBuffer(buffer);
-            super.debugCheckError();
-            return res;
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
         }
     }
 
     @Override
     public void glCopyNamedBufferSubData(int readBuffer, int writeBuffer, long readOffset, long writeOffset, long size) {
-        if (this.GL_ARB_direct_state_access) {
+        if (this.OpenGL45) {
+            GL45.glCopyNamedBufferSubData(readBuffer, writeBuffer, readOffset, writeOffset, size);
+            super.debugCheckError();
+        } else if (this.GL_ARB_direct_state_access) {
             ARBDirectStateAccess.glCopyNamedBufferSubData(readBuffer, writeBuffer, readOffset, writeOffset, size);
             super.debugCheckError();
         } else {
-            GL45.glCopyNamedBufferSubData(readBuffer, writeBuffer, readOffset, writeOffset, size);
-            super.debugCheckError();
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
         }
     }
 
     @Override
     public int glCreateVertexArray() {
-        if (this.GL_ARB_direct_state_access) {
+        if (this.OpenGL45) {
+            val res = GL45.glCreateVertexArrays();
+            super.debugCheckError();
+            return res;
+        } else if (this.GL_ARB_direct_state_access) {
             val res = ARBDirectStateAccess.glCreateVertexArrays();
             super.debugCheckError();
             return res;
         } else {
-            val res = GL45.glCreateVertexArrays();
-            super.debugCheckError();
-            return res;
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
         }
     }
 
     @Override
     public void glVertexArrayElementBuffer(int vaobj, int buffer) {
-        if (this.GL_ARB_direct_state_access) {
+        if (this.OpenGL45) {
+            GL45.glVertexArrayElementBuffer(vaobj, buffer);
+            super.debugCheckError();
+        } else if (this.GL_ARB_direct_state_access) {
             ARBDirectStateAccess.glVertexArrayElementBuffer(vaobj, buffer);
             super.debugCheckError();
         } else {
-            GL45.glVertexArrayElementBuffer(vaobj, buffer);
-            super.debugCheckError();
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
         }
     }
 
     @Override
     public void glEnableVertexArrayAttrib(int vaobj, int index) {
-        if (this.GL_ARB_direct_state_access) {
+        if (this.OpenGL45) {
+            GL45.glEnableVertexArrayAttrib(vaobj, index);
+            super.debugCheckError();
+        } else if (this.GL_ARB_direct_state_access) {
             ARBDirectStateAccess.glEnableVertexArrayAttrib(vaobj, index);
             super.debugCheckError();
         } else {
-            GL45.glEnableVertexArrayAttrib(vaobj, index);
-            super.debugCheckError();
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
         }
     }
 
     @Override
     public void glDisableVertexArrayAttrib(int vaobj, int index) {
-        if (this.GL_ARB_direct_state_access) {
+        if (this.OpenGL45) {
+            GL45.glDisableVertexArrayAttrib(vaobj, index);
+            super.debugCheckError();
+        } else if (this.GL_ARB_direct_state_access) {
             ARBDirectStateAccess.glDisableVertexArrayAttrib(vaobj, index);
             super.debugCheckError();
         } else {
-            GL45.glDisableVertexArrayAttrib(vaobj, index);
-            super.debugCheckError();
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
         }
     }
 
     @Override
     public void glVertexArrayAttribFormat(int vaobj, int attribindex, int size, int type, boolean normalized, int relativeoffset) {
-        if (this.GL_ARB_direct_state_access) {
+        if (this.OpenGL45) {
+            GL45.glVertexArrayAttribFormat(vaobj, attribindex, size, type, normalized, relativeoffset);
+            super.debugCheckError();
+        } else if (this.GL_ARB_direct_state_access) {
             ARBDirectStateAccess.glVertexArrayAttribFormat(vaobj, attribindex, size, type, normalized, relativeoffset);
             super.debugCheckError();
         } else {
-            GL45.glVertexArrayAttribFormat(vaobj, attribindex, size, type, normalized, relativeoffset);
-            super.debugCheckError();
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
         }
     }
 
     @Override
     public void glVertexArrayAttribIFormat(int vaobj, int attribindex, int size, int type, int relativeoffset) {
-        if (this.GL_ARB_direct_state_access) {
+        if (this.OpenGL45) {
+            GL45.glVertexArrayAttribIFormat(vaobj, attribindex, size, type, relativeoffset);
+            super.debugCheckError();
+        } else if (this.GL_ARB_direct_state_access) {
             ARBDirectStateAccess.glVertexArrayAttribIFormat(vaobj, attribindex, size, type, relativeoffset);
             super.debugCheckError();
         } else {
-            GL45.glVertexArrayAttribIFormat(vaobj, attribindex, size, type, relativeoffset);
-            super.debugCheckError();
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
         }
     }
 
     @Override
     public void glVertexArrayBindingDivisor(int vaobj, int bindingindex, int divisor) {
-        if (this.GL_ARB_direct_state_access) {
+        if (this.OpenGL45) {
+            GL45.glVertexArrayBindingDivisor(vaobj, bindingindex, divisor);
+            super.debugCheckError();
+        } else if (this.GL_ARB_direct_state_access) {
             ARBDirectStateAccess.glVertexArrayBindingDivisor(vaobj, bindingindex, divisor);
             super.debugCheckError();
         } else {
-            GL45.glVertexArrayBindingDivisor(vaobj, bindingindex, divisor);
-            super.debugCheckError();
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
         }
     }
 
     @Override
     public void glVertexArrayAttribBinding(int vaobj, int attribindex, int bindingindex) {
-        if (this.GL_ARB_direct_state_access) {
+        if (this.OpenGL45) {
+            GL45.glVertexArrayAttribBinding(vaobj, attribindex, bindingindex);
+            super.debugCheckError();
+        } else if (this.GL_ARB_direct_state_access) {
             ARBDirectStateAccess.glVertexArrayAttribBinding(vaobj, attribindex, bindingindex);
             super.debugCheckError();
         } else {
-            GL45.glVertexArrayAttribBinding(vaobj, attribindex, bindingindex);
-            super.debugCheckError();
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
         }
     }
 
     @Override
     public void glVertexArrayVertexBuffer(int vaobj, int bindingindex, int buffer, long offset, int stride) {
-        if (this.GL_ARB_direct_state_access) {
+        if (this.OpenGL45) {
+            GL45.glVertexArrayVertexBuffer(vaobj, bindingindex, buffer, offset, stride);
+            super.debugCheckError();
+        } else if (this.GL_ARB_direct_state_access) {
             ARBDirectStateAccess.glVertexArrayVertexBuffer(vaobj, bindingindex, buffer, offset, stride);
             super.debugCheckError();
         } else {
-            GL45.glVertexArrayVertexBuffer(vaobj, bindingindex, buffer, offset, stride);
-            super.debugCheckError();
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
         }
     }
 
@@ -1687,12 +1802,14 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
             wrappedStrides = null;
         }
 
-        if (this.GL_ARB_direct_state_access) {
+        if (this.OpenGL45) {
+            GL45.glVertexArrayVertexBuffers(vaobj, first, count, wrappedBuffers, wrappedOffsets, wrappedStrides);
+            super.debugCheckError();
+        } else if (this.GL_ARB_direct_state_access) {
             ARBDirectStateAccess.glVertexArrayVertexBuffers(vaobj, first, count, wrappedBuffers, wrappedOffsets, wrappedStrides);
             super.debugCheckError();
         } else {
-            GL45.glVertexArrayVertexBuffers(vaobj, first, count, wrappedBuffers, wrappedOffsets, wrappedStrides);
-            super.debugCheckError();
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
         }
     }
 }

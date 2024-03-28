@@ -21,7 +21,6 @@ package net.daporkchop.fp2.gl.attribute;
 
 import lombok.AccessLevel;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.common.annotation.param.Positive;
@@ -65,6 +64,13 @@ public abstract class NewAttributeWriter<STRUCT extends AttributeStruct> impleme
     public final void clear() {
         this.size = 0;
     }
+
+    /**
+     * Ensures that this writer has sufficient remaining capacity to append at least the given number of elements.
+     *
+     * @param count the number of additional elements to reserve capacity for
+     */
+    public abstract void reserve(@NotNegative int count);
 
     /**
      * Gets an instance of {@link STRUCT the attribute struct type} which serves as a handle to access the element at the front of this writer.

@@ -29,8 +29,9 @@ import lombok.RequiredArgsConstructor;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
+@Getter
 public enum GLExtension {
-    GL_ARB_compatibility(GLVersion.OpenGL30, false) {
+    GL_ARB_compatibility(null, false) {
         @Override
         public boolean core(@NonNull GLVersion version) {
             return false;
@@ -180,8 +181,6 @@ public enum GLExtension {
     ;
 
     private final GLVersion coreVersion;
-
-    @Getter
     private final boolean glsl;
 
     /**

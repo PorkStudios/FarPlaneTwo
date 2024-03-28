@@ -78,6 +78,21 @@ public abstract class VertexArrayObject implements AutoCloseable {
 
     public abstract void setElementsBuffer(GLBuffer buffer);
 
+    /**
+     * Executes the given action with this vertex array bound.
+     *
+     * @param action the action to run
+     */
+    public final void bind(Runnable action) {
+        int old = this.gl.glGetInteger(GL_VERTEX_ARRAY_BINDING);
+        try {
+            this.gl.glBindVertexArray(this.id);
+            action.run();
+        } finally {
+            this.gl.glBindVertexArray(old);
+        }
+    }
+
     @Override
     public void close() {
         this.gl.glDeleteVertexArray(this.id);
@@ -146,16 +161,6 @@ public abstract class VertexArrayObject implements AutoCloseable {
         @Override
         public void setElementsBuffer(GLBuffer buffer) {
             this.bind(() -> this.gl.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer.id()));
-        }
-
-        private void bind(Runnable action) {
-            int old = this.gl.glGetInteger(GL_VERTEX_ARRAY_BINDING);
-            try {
-                this.gl.glBindVertexArray(this.id);
-                action.run();
-            } finally {
-                this.gl.glBindVertexArray(old);
-            }
         }
     }
 

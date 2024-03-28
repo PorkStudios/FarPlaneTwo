@@ -81,6 +81,21 @@ public abstract class ShaderProgram implements AutoCloseable {
     }
 
     /**
+     * Executes the given action with this program bound as the active program.
+     *
+     * @param action the action to run
+     */
+    public final void bind(Runnable action) {
+        int old = this.gl.glGetInteger(GL_CURRENT_PROGRAM);
+        try {
+            this.gl.glUseProgram(this.id);
+            action.run();
+        } finally {
+            this.gl.glUseProgram(old);
+        }
+    }
+
+    /**
      * @author DaPorkchop_
      */
     @RequiredArgsConstructor(access = AccessLevel.PROTECTED)

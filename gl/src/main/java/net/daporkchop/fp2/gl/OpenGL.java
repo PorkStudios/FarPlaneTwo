@@ -136,6 +136,12 @@ public abstract class OpenGL {
         return extension.supported(this);
     }
 
+    protected final String unsupportedMsg(GLExtension extension) {
+        return extension.coreVersion() != null
+                ? "requires " + extension.coreVersion() + " or " + extension.name()
+                : "requires " + extension.name();
+    }
+
     /**
      * If debugging is enabled, checks if an OpenGL error has occurred.
      *
@@ -245,12 +251,16 @@ public abstract class OpenGL {
 
     public abstract void glStencilOp(int sfail, int dpfail, int dppass);
 
+    //GL_ARB_compatibility
     public abstract void glPushClientAttrib(int mask);
 
+    //GL_ARB_compatibility
     public abstract void glPopClientAttrib();
 
+    //GL_ARB_compatibility
     public abstract void glPushAttrib(int mask);
 
+    //GL_ARB_compatibility
     public abstract void glPopAttrib();
 
     //

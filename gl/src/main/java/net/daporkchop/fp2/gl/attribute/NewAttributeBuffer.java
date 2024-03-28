@@ -31,8 +31,6 @@ import net.daporkchop.lib.common.annotation.param.NotNegative;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
- * Base implementation of an {@link AttributeFormat}.
- *
  * @param <STRUCT> the struct type
  * @author DaPorkchop_
  */
@@ -40,7 +38,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @Getter
 public abstract class NewAttributeBuffer<STRUCT extends AttributeStruct> implements AutoCloseable {
     /**
-     * The {@link NewAttributeFormat} which this writer can write vertex attributes for.
+     * The {@link NewAttributeFormat} which this buffer can store vertex attributes for.
      */
     private final NewAttributeFormat<STRUCT> format;
 

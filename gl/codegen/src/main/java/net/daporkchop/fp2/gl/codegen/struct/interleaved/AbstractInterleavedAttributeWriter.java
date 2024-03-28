@@ -87,6 +87,11 @@ public abstract class AbstractInterleavedAttributeWriter<STRUCT extends Attribut
         }
     }
 
+    @Override
+    public final void reserve(@NotNegative int count) {
+        this.grow(addExact(this.capacity, notNegative(count, "count")));
+    }
+
     /**
      * Resizes the internal buffer to fit at least the given number of elements.
      *
