@@ -24,8 +24,11 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.common.GlobalProperties;
+import net.daporkchop.fp2.gl.compute.ComputeWorkGroupCount;
+import net.daporkchop.fp2.gl.compute.ComputeWorkGroupSize;
 
 import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -136,6 +139,12 @@ public abstract class OpenGL {
         return extension.supported(this);
     }
 
+    /**
+     * Gets a message to be used as an exception message if a function from an extension which is not supported by the current context is called.
+     *
+     * @param extension the unsupported extension
+     * @return a {@link String} to be used as an exception message
+     */
     protected final String unsupportedMsg(GLExtension extension) {
         return extension.coreVersion() != null
                 ? "requires " + extension.coreVersion() + " or " + extension.name()
@@ -163,6 +172,11 @@ public abstract class OpenGL {
         if (errorCode != GL_NO_ERROR) {
             throw new OpenGLException(errorCode);
         }
+    }
+
+    @Override
+    public final String toString() {
+        return this.version + " " + this.profile + (this.forwardCompatibility ? " (forward compatibility)" : " ") + this.extensions;
     }
 
     //
@@ -359,6 +373,10 @@ public abstract class OpenGL {
 
     public abstract int glGetProgrami(int program, int pname);
 
+    public abstract void glGetProgramiv(int program, int pname, IntBuffer params);
+
+    public abstract int[] glGetProgramiv(int program, int pname, int count);
+
     public abstract String glGetProgramInfoLog(int program);
 
     public abstract void glUseProgram(int program);
@@ -522,6 +540,9 @@ public abstract class OpenGL {
     //
     //
 
+    //GL_ARB_compute_shader
+    public abstract void glDispatchCompute(int num_groups_x, int num_groups_y, int num_groups_z);
+
     //GL_ARB_multi_draw_indirect
     public abstract void glMultiDrawArraysIndirect(int mode, long indirect, int primcount, int stride);
 
@@ -646,12 +667,26 @@ public abstract class OpenGL {
         private final int maxVertexAttributes;
         private final int maxUniformBuffers;
 
+        private final int maxComputeWorkGroupInvocations;
+        private final ComputeWorkGroupSize maxComputeWorkGroupSize;
+        private final ComputeWorkGroupCount maxComputeWorkGroupCount;
+
         Limits(OpenGL gl) {
             this.maxFragmentColors = gl.glGetInteger(GL_MAX_DRAW_BUFFERS);
             this.maxShaderStorageBuffers = gl.supports(GLExtension.GL_ARB_shader_storage_buffer_object) ? gl.glGetInteger(GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS) : 0;
             this.maxTextureUnits = gl.glGetInteger(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS);
             this.maxVertexAttributes = gl.glGetInteger(GL_MAX_VERTEX_ATTRIBS);
             this.maxUniformBuffers = gl.glGetInteger(GL_MAX_UNIFORM_BUFFER_BINDINGS);
+
+            if (gl.supports(GLExtension.GL_ARB_compute_shader)) {
+                this.maxComputeWorkGroupInvocations = gl.glGetInteger(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS);
+                this.maxComputeWorkGroupSize = new ComputeWorkGroupSize(gl.glGetInteger(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 0), gl.glGetInteger(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 1), gl.glGetInteger(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 2));
+                this.maxComputeWorkGroupCount = new ComputeWorkGroupCount(gl.glGetInteger(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 0), gl.glGetInteger(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 1), gl.glGetInteger(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 2));
+            } else {
+                this.maxComputeWorkGroupInvocations = 0;
+                this.maxComputeWorkGroupSize = null;
+                this.maxComputeWorkGroupCount = null;
+            }
         }
     }
 }

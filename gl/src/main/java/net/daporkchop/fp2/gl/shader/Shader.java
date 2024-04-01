@@ -33,8 +33,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static net.daporkchop.fp2.gl.OpenGLConstants.GL_COMPILE_STATUS;
-import static net.daporkchop.fp2.gl.OpenGLConstants.GL_FALSE;
+import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 
 /**
  * Base class representing an unlinked OpenGL shader object.
@@ -80,21 +79,25 @@ public final class Shader implements AutoCloseable {
 
     //TODO: make this private
     public static String formatInfoLog(@NonNull String text, @NonNull SourceLine... lines) {
-        for (Pattern pattern : new Pattern[]{ //different patterns for various error formats i've encountered so far
-                Pattern.compile("^(?<file>\\d+)\\((?<line>\\d+)\\) (?<text>: .+)", Pattern.MULTILINE),
-                Pattern.compile("^(?<file>\\d+):(?<line>\\d+)\\((?<row>\\d+)\\)(?<text>: .+)", Pattern.MULTILINE),
-        }) {
-            Matcher matcher = pattern.matcher(text);
-            if (matcher.find()) {
-                StringBuffer buffer = new StringBuffer();
-                do {
-                    SourceLine line = lines[Integer.parseInt(matcher.group("line")) - 1];
-                    matcher.appendReplacement(buffer, Matcher.quoteReplacement("(" + line.location() + ':' + line.lineNumber() + ')' + matcher.group("text")));
-                } while (matcher.find());
-                matcher.appendTail(buffer);
+        try {
+            for (Pattern pattern : new Pattern[]{ //different patterns for various error formats i've encountered so far
+                    Pattern.compile("^(?<file>\\d+)\\((?<line>\\d+)\\) (?<text>: .+)", Pattern.MULTILINE),
+                    Pattern.compile("^(?<file>\\d+):(?<line>\\d+)\\((?<row>\\d+)\\)(?<text>: .+)", Pattern.MULTILINE),
+            }) {
+                Matcher matcher = pattern.matcher(text);
+                if (matcher.find()) {
+                    StringBuffer buffer = new StringBuffer();
+                    do {
+                        SourceLine line = lines[Integer.parseInt(matcher.group("line")) - 1];
+                        matcher.appendReplacement(buffer, Matcher.quoteReplacement("(" + line.location() + ':' + line.lineNumber() + ')' + matcher.group("text")));
+                    } while (matcher.find());
+                    matcher.appendTail(buffer);
 
-                text = buffer.toString();
+                    text = buffer.toString();
+                }
             }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
         return text;

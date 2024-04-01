@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,15 +15,26 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
+package net.daporkchop.fp2.gl.compute;
+
+import lombok.Data;
+import net.daporkchop.lib.common.annotation.param.Positive;
+
 /**
- * The two classes in this package, {@link net.daporkchop.fp2.gl.compute.ComputeLocalSize} and {@link net.daporkchop.fp2.gl.compute.ComputeGlobalSize},
- * are no longer used by {@code :gl}. I can't delete them, though, since they're still used by the old rendering code, and I don't want to move them
- * elsewhere to avoid merge conflicts, so instead they will stay here and I'll just deprecate the package instead.
- *
  * @author DaPorkchop_
  */
-@Deprecated
-package net.daporkchop.fp2.gl.compute;
+@Data
+public final class ComputeWorkGroupSize {
+    private final @Positive int x;
+    private final @Positive int y;
+    private final @Positive int z;
+
+    /**
+     * @return the total number of invocations in a single compute work group
+     */
+    public int invocations() {
+        return this.x * this.y * this.z;
+    }
+}

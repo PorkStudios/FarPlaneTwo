@@ -33,6 +33,7 @@ import net.daporkchop.lib.unsafe.PUnsafe;
 import org.lwjgl.BufferChecks;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.opengl.ARBBufferStorage;
+import org.lwjgl.opengl.ARBComputeShader;
 import org.lwjgl.opengl.ARBCopyBuffer;
 import org.lwjgl.opengl.ARBDirectStateAccess;
 import org.lwjgl.opengl.ARBDrawElementsBaseVertex;
@@ -105,6 +106,7 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
 
     // OpenGL 4.3
     private final boolean OpenGL43;
+    private final boolean GL_ARB_compute_shader;
     private final boolean GL_ARB_multi_draw_indirect;
     private final boolean GL_ARB_program_interface_query;
     private final boolean GL_ARB_shader_storage_buffer_object;
@@ -145,6 +147,7 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
 
         // OpenGL 4.3
         this.OpenGL43 = capabilities.OpenGL43;
+        this.GL_ARB_compute_shader = !capabilities.OpenGL43 && capabilities.GL_ARB_compute_shader;
         this.GL_ARB_multi_draw_indirect = !capabilities.OpenGL43 && capabilities.GL_ARB_multi_draw_indirect;
         this.GL_ARB_program_interface_query = !capabilities.OpenGL43 && capabilities.GL_ARB_program_interface_query;
         this.GL_ARB_shader_storage_buffer_object = !capabilities.OpenGL43 && capabilities.GL_ARB_shader_storage_buffer_object;
@@ -172,6 +175,15 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
                 })
                 .max(Comparator.naturalOrder())
                 .get();
+    }
+
+    private static final MethodHandle APIUtil_getBufferInt;
+
+    static {
+        Class<?> _APIUtil = Class.forName("org.lwjgl.opengl.APIUtil");
+        Method _APIUtil_getBufferInt = _APIUtil.getDeclaredMethod("getBufferInt", ContextCapabilities.class);
+        _APIUtil_getBufferInt.setAccessible(true);
+        APIUtil_getBufferInt = MethodHandles.publicLookup().unreflect(_APIUtil_getBufferInt);
     }
 
     //
@@ -747,6 +759,22 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
     }
 
     @Override
+    public void glGetProgramiv(int program, int pname, IntBuffer params) {
+        GL20.glGetProgram(program, pname, params);
+        super.debugCheckError();
+    }
+
+    @Override
+    public int[] glGetProgramiv(int program, int pname, int count) {
+        IntBuffer buffer = (IntBuffer) APIUtil_getBufferInt.invokeExact(GLContext.getCapabilities());
+        GL20.glGetProgram(program, pname, buffer);
+        super.debugCheckError();
+        int[] res = new int[count];
+        buffer.slice().get(res);
+        return res;
+    }
+
+    @Override
     public String glGetProgramInfoLog(int program) {
         val res = GL20.glGetProgramInfoLog(program, GL20.glGetProgrami(program, GL_INFO_LOG_LENGTH));
         super.debugCheckError();
@@ -1261,6 +1289,19 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
     // OpenGL 4.3
     //
     //
+
+    @Override
+    public void glDispatchCompute(int num_groups_x, int num_groups_y, int num_groups_z) {
+        if (this.OpenGL43) {
+            GL43.glDispatchCompute(num_groups_x, num_groups_y, num_groups_z);
+            super.debugCheckError();
+        } else if (this.GL_ARB_compute_shader) {
+            ARBComputeShader.glDispatchCompute(num_groups_x, num_groups_y, num_groups_z);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_compute_shader));
+        }
+    }
 
     @Override
     public void glMultiDrawArraysIndirect(int mode, long indirect, int primcount, int stride) {

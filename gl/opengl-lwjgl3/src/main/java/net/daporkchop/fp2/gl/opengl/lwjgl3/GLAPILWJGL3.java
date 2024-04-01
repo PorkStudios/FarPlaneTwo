@@ -68,6 +68,7 @@ public final class GLAPILWJGL3 extends OpenGL implements GLAPI {
 
     // OpenGL 4.3
     private final boolean OpenGL43;
+    private final boolean GL_ARB_compute_shader;
     private final boolean GL_ARB_multi_draw_indirect;
     private final boolean GL_ARB_program_interface_query;
     private final boolean GL_ARB_shader_storage_buffer_object;
@@ -106,6 +107,7 @@ public final class GLAPILWJGL3 extends OpenGL implements GLAPI {
 
         // OpenGL 4.3
         this.OpenGL43 = capabilities.OpenGL43;
+        this.GL_ARB_compute_shader = !capabilities.OpenGL43 && capabilities.GL_ARB_compute_shader;
         this.GL_ARB_multi_draw_indirect = !capabilities.OpenGL43 && capabilities.GL_ARB_multi_draw_indirect;
         this.GL_ARB_program_interface_query = !capabilities.OpenGL43 && capabilities.GL_ARB_program_interface_query;
         this.GL_ARB_shader_storage_buffer_object = !capabilities.OpenGL43 && capabilities.GL_ARB_shader_storage_buffer_object;
@@ -651,6 +653,20 @@ public final class GLAPILWJGL3 extends OpenGL implements GLAPI {
     }
 
     @Override
+    public void glGetProgramiv(int program, int pname, IntBuffer params) {
+        GL20C.glGetProgramiv(program, pname, params);
+        super.debugCheckError();
+    }
+
+    @Override
+    public int[] glGetProgramiv(int program, int pname, int count) {
+        int[] res = new int[count];
+        GL20C.glGetProgramiv(program, pname, res);
+        super.debugCheckError();
+        return res;
+    }
+
+    @Override
     public String glGetProgramInfoLog(int program) {
         val res = GL20C.glGetProgramInfoLog(program, GL20C.glGetProgrami(program, GL_INFO_LOG_LENGTH));
         super.debugCheckError();
@@ -1160,6 +1176,19 @@ public final class GLAPILWJGL3 extends OpenGL implements GLAPI {
     // OpenGL 4.3
     //
     //
+
+    @Override
+    public void glDispatchCompute(int num_groups_x, int num_groups_y, int num_groups_z) {
+        if (this.OpenGL43) {
+            GL43.glDispatchCompute(num_groups_x, num_groups_y, num_groups_z);
+            super.debugCheckError();
+        } else if (this.GL_ARB_compute_shader) {
+            ARBComputeShader.glDispatchCompute(num_groups_x, num_groups_y, num_groups_z);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_compute_shader));
+        }
+    }
 
     @Override
     public void glMultiDrawArraysIndirect(int mode, long indirect, int primcount, int stride) {

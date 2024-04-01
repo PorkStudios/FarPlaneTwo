@@ -29,6 +29,7 @@ import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
 import net.daporkchop.fp2.gl.attribute.vao.VertexArrayObject;
 import net.daporkchop.fp2.gl.buffer.upload.UnsynchronizedMapBufferUploader;
+import net.daporkchop.fp2.gl.shader.ComputeShaderProgram;
 import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.shader.Shader;
 import net.daporkchop.fp2.gl.shader.ShaderType;
@@ -62,6 +63,13 @@ public class NewTestOpenGL {
 
     @SneakyThrows
     private static void run(OpenGL gl, BooleanSupplier closeRequested, Runnable swapAndSync, ResourceProvider resourceProvider, DirectMemoryAllocator alloc) {
+        System.out.println(gl);
+
+        try (val shader = new Shader(gl, ShaderType.COMPUTE, resourceProvider, Identifier.from("new_test.comp"));
+             val compute = ComputeShaderProgram.builder(gl).computeShader(shader).build()) {
+            System.out.println(compute.workGroupSize());
+        }
+
         val uniformFormat = NewAttributeFormat.get(gl, TestOpenGL.UniformAttribs.class, AttributeTarget.UBO);
         val uniformBuffer = uniformFormat.createUniformBuffer();
         uniformBuffer.update().scale((byte) 32, (byte) 32).close();

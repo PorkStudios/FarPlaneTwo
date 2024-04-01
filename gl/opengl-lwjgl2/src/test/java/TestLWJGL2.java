@@ -63,7 +63,7 @@ public class TestLWJGL2 {
         //Display.create();
 
         try {
-            TestOpenGL.run(Display::isCloseRequested, () -> {
+            NewTestOpenGL.run(Display::isCloseRequested, () -> {
                 Display.update();
                 Display.sync(60);
             });
