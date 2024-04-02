@@ -53,7 +53,6 @@ import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.InputEvent;
 import org.lwjgl.input.Keyboard;
-import org.lwjgl.opengl.GLContext;
 
 import java.util.IdentityHashMap;
 import java.util.Map;
@@ -103,9 +102,9 @@ public class FP2Client1_12 extends FP2Client {
         if (!this.mc.getFramebuffer().isStencilEnabled() && !this.mc.getFramebuffer().enableStencil()) {
             if (OF && (PUnsafe.getBoolean(this.mc.gameSettings, OF_FASTRENDER_OFFSET) || PUnsafe.getInt(this.mc.gameSettings, OF_AALEVEL_OFFSET) > 0)) {
                 this.fp2().unsupported("FarPlaneTwo was unable to enable the OpenGL stencil buffer!\n"
-                                       + "Please launch the game without FarPlaneTwo and disable\n"
-                                       + "  OptiFine's \"Fast Render\" and \"Antialiasing\", then\n"
-                                       + "  try again.");
+                        + "Please launch the game without FarPlaneTwo and disable\n"
+                        + "  OptiFine's \"Fast Render\" and \"Antialiasing\", then\n"
+                        + "  try again.");
             } else {
                 this.fp2().unsupported("Unable to enable the OpenGL stencil buffer!\nRequired by FarPlaneTwo.");
             }
@@ -113,11 +112,6 @@ public class FP2Client1_12 extends FP2Client {
 
         //register resource reload listener
         ((ATMinecraft1_12) this.mc).getResourceManager().registerReloadListener(new ResourceReloadListener1_12());
-    }
-
-    @Override
-    protected boolean checkGL45() {
-        return GLContext.getCapabilities().OpenGL45;
     }
 
     @Override

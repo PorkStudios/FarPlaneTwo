@@ -58,7 +58,6 @@ import net.minecraftforge.client.settings.KeyConflictContext;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.client.registry.ClientRegistry;
-import org.lwjgl.opengl.GL;
 
 import java.util.IdentityHashMap;
 import java.util.Locale;
@@ -109,11 +108,6 @@ public class FP2Client1_16 extends FP2Client {
 
         //register resource reload listener
         ((IReloadableResourceManager) this.mc.getResourceManager()).registerReloadListener(new ResourceReloadListener1_16());
-    }
-
-    @Override
-    protected boolean checkGL45() {
-        return GL.getCapabilities().OpenGL45;
     }
 
     @Override

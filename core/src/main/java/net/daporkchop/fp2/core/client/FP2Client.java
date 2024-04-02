@@ -30,11 +30,14 @@ import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.gui.GuiContext;
 import net.daporkchop.fp2.core.client.gui.GuiScreen;
 import net.daporkchop.fp2.core.client.key.KeyCategory;
+import net.daporkchop.fp2.core.client.player.IFarPlayerClient;
+import net.daporkchop.fp2.core.client.shader.ReloadableShaderRegistry;
 import net.daporkchop.fp2.core.client.shader.ShaderMacros;
 import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.core.client.player.IFarPlayerClient;
 import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
 import net.daporkchop.fp2.core.util.threading.futureexecutor.FutureExecutor;
+import net.daporkchop.fp2.gl.GLVersion;
+import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.lib.logging.Logger;
 
 import java.util.Optional;
@@ -47,11 +50,14 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @Getter
-@Setter(AccessLevel.PROTECTED)
 public abstract class FP2Client {
     private final ShaderMacros.Mutable globalShaderMacros = new ShaderMacros.Mutable();
 
+    private ReloadableShaderRegistry reloadableShaderRegistry;
+
+    @Setter(AccessLevel.PROTECTED)
     private Logger chat;
+    private OpenGL gl;
 
     /**
      * Initializes this instance.
@@ -68,11 +74,18 @@ public abstract class FP2Client {
         checkState(this.fp2() != null, "fp2() must be set!");
         checkState(this.chat() != null, "chat() must be set!");
 
+        this.reloadableShaderRegistry = new ReloadableShaderRegistry(this.fp2());
+
         //require at least OpenGL 4.5
         clientThreadExecutor.run(() -> {
-            if (!this.checkGL45()) {
+            OpenGL gl = OpenGL.forCurrent();
+            if (gl.version().compareTo(GLVersion.OpenGL45) < 0) {
                 this.fp2().unsupported("Your system does not support OpenGL 4.5!\nRequired by FarPlaneTwo.");
+                throw new UnsupportedOperationException("Your system does not support OpenGL 4.5!\nRequired by FarPlaneTwo.");
             }
+
+            this.gl = gl;
+            //TODO: do something here (probably pre-load shaders and vertex formats and stuff)
         });
 
         //update debug color macros
@@ -83,13 +96,6 @@ public abstract class FP2Client {
         //register self to listen for events
         this.fp2().eventBus().register(this);
     }
-
-    /**
-     * @return whether or not OpenGL 4.5 is supported
-     * @deprecated to be removed once {@code :gl} actually supports older OpenGL versions
-     */
-    @Deprecated
-    protected abstract boolean checkGL45();
 
     /**
      * @return the {@link FP2Core} instance which this {@link FP2Client} is used for
