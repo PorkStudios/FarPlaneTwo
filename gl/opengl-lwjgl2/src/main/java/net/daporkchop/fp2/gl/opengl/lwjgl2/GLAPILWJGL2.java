@@ -42,6 +42,7 @@ import org.lwjgl.opengl.ARBInstancedArrays;
 import org.lwjgl.opengl.ARBMultiDrawIndirect;
 import org.lwjgl.opengl.ARBProgramInterfaceQuery;
 import org.lwjgl.opengl.ARBSamplerObjects;
+import org.lwjgl.opengl.ARBSeparateShaderObjects;
 import org.lwjgl.opengl.ARBShaderImageLoadStore;
 import org.lwjgl.opengl.ARBShaderStorageBufferObject;
 import org.lwjgl.opengl.ARBSync;
@@ -58,12 +59,14 @@ import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL31;
 import org.lwjgl.opengl.GL32;
 import org.lwjgl.opengl.GL33;
+import org.lwjgl.opengl.GL41;
 import org.lwjgl.opengl.GL42;
 import org.lwjgl.opengl.GL43;
 import org.lwjgl.opengl.GL44;
 import org.lwjgl.opengl.GL45;
 import org.lwjgl.opengl.GLContext;
 import org.lwjgl.opengl.GLSync;
+import org.lwjgl.opengl.KHRDebug;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -100,6 +103,10 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
     private final boolean GL_ARB_instanced_arrays;
     private final boolean GL_ARB_sampler_objects;
 
+    // OpenGL 4.1
+    private final boolean OpenGL41;
+    private final boolean GL_ARB_separate_shader_objects;
+
     // OpenGL 4.2
     private final boolean OpenGL42;
     private final boolean GL_ARB_shader_image_load_store;
@@ -110,6 +117,7 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
     private final boolean GL_ARB_multi_draw_indirect;
     private final boolean GL_ARB_program_interface_query;
     private final boolean GL_ARB_shader_storage_buffer_object;
+    private final boolean GL_KHR_debug;
 
     // OpenGL 4.4
     private final boolean OpenGL44;
@@ -141,6 +149,10 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
         this.GL_ARB_instanced_arrays = !capabilities.OpenGL33 && capabilities.GL_ARB_instanced_arrays;
         this.GL_ARB_sampler_objects = !capabilities.OpenGL33 && capabilities.GL_ARB_sampler_objects;
 
+        // OpenGL 4.1
+        this.OpenGL41 = capabilities.OpenGL41;
+        this.GL_ARB_separate_shader_objects = !capabilities.OpenGL41 && capabilities.GL_ARB_separate_shader_objects;
+
         // OpenGL 4.2
         this.OpenGL42 = capabilities.OpenGL42;
         this.GL_ARB_shader_image_load_store = !capabilities.OpenGL42 && capabilities.GL_ARB_shader_image_load_store;
@@ -151,6 +163,7 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
         this.GL_ARB_multi_draw_indirect = !capabilities.OpenGL43 && capabilities.GL_ARB_multi_draw_indirect;
         this.GL_ARB_program_interface_query = !capabilities.OpenGL43 && capabilities.GL_ARB_program_interface_query;
         this.GL_ARB_shader_storage_buffer_object = !capabilities.OpenGL43 && capabilities.GL_ARB_shader_storage_buffer_object;
+        this.GL_KHR_debug = !capabilities.OpenGL43 && capabilities.GL_KHR_debug;
 
         // OpenGL 4.4
         this.OpenGL44 = capabilities.OpenGL44;
@@ -1267,6 +1280,116 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
 
     //
     //
+    // OpenGL 4.1
+    //
+    //
+
+    @Override
+    public void glProgramUniform(int program, int location, int v0) {
+        if (this.OpenGL41) {
+            GL41.glProgramUniform1i(program, location, v0);
+            super.debugCheckError();
+        } else if (this.GL_ARB_separate_shader_objects) {
+            ARBSeparateShaderObjects.glProgramUniform1i(program, location, v0);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_separate_shader_objects));
+        }
+    }
+
+    @Override
+    public void glProgramUniform(int program, int location, int v0, int v1) {
+        if (this.OpenGL41) {
+            GL41.glProgramUniform2i(program, location, v0, v1);
+            super.debugCheckError();
+        } else if (this.GL_ARB_separate_shader_objects) {
+            ARBSeparateShaderObjects.glProgramUniform2i(program, location, v0, v1);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_separate_shader_objects));
+        }
+    }
+
+    @Override
+    public void glProgramUniform(int program, int location, int v0, int v1, int v2) {
+        if (this.OpenGL41) {
+            GL41.glProgramUniform3i(program, location, v0, v1, v2);
+            super.debugCheckError();
+        } else if (this.GL_ARB_separate_shader_objects) {
+            ARBSeparateShaderObjects.glProgramUniform3i(program, location, v0, v1, v2);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_separate_shader_objects));
+        }
+    }
+
+    @Override
+    public void glProgramUniform(int program, int location, int v0, int v1, int v2, int v3) {
+        if (this.OpenGL41) {
+            GL41.glProgramUniform4i(program, location, v0, v1, v2, v3);
+            super.debugCheckError();
+        } else if (this.GL_ARB_separate_shader_objects) {
+            ARBSeparateShaderObjects.glProgramUniform4i(program, location, v0, v1, v2, v3);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_separate_shader_objects));
+        }
+    }
+
+    @Override
+    public void glProgramUniform(int program, int location, float v0) {
+        if (this.OpenGL41) {
+            GL41.glProgramUniform1f(program, location, v0);
+            super.debugCheckError();
+        } else if (this.GL_ARB_separate_shader_objects) {
+            ARBSeparateShaderObjects.glProgramUniform1f(program, location, v0);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_separate_shader_objects));
+        }
+    }
+
+    @Override
+    public void glProgramUniform(int program, int location, float v0, float v1) {
+        if (this.OpenGL41) {
+            GL41.glProgramUniform2f(program, location, v0, v1);
+            super.debugCheckError();
+        } else if (this.GL_ARB_separate_shader_objects) {
+            ARBSeparateShaderObjects.glProgramUniform2f(program, location, v0, v1);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_separate_shader_objects));
+        }
+    }
+
+    @Override
+    public void glProgramUniform(int program, int location, float v0, float v1, float v2) {
+        if (this.OpenGL41) {
+            GL41.glProgramUniform3f(program, location, v0, v1, v2);
+            super.debugCheckError();
+        } else if (this.GL_ARB_separate_shader_objects) {
+            ARBSeparateShaderObjects.glProgramUniform3f(program, location, v0, v1, v2);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_separate_shader_objects));
+        }
+    }
+
+    @Override
+    public void glProgramUniform(int program, int location, float v0, float v1, float v2, float v3) {
+        if (this.OpenGL41) {
+            GL41.glProgramUniform4f(program, location, v0, v1, v2, v3);
+            super.debugCheckError();
+        } else if (this.GL_ARB_separate_shader_objects) {
+            ARBSeparateShaderObjects.glProgramUniform4f(program, location, v0, v1, v2, v3);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_separate_shader_objects));
+        }
+    }
+
+    //
+    //
     // OpenGL 4.2
     //
     //
@@ -1354,6 +1477,64 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
             super.debugCheckError();
         } else {
             throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_shader_storage_buffer_object));
+        }
+    }
+
+    @Override
+    public void glObjectLabel(int identifier, int name, @NonNull CharSequence label) {
+        if (this.OpenGL43) {
+            GL43.glObjectLabel(identifier, name, label);
+            super.debugCheckError();
+        } else if (this.GL_KHR_debug) {
+            KHRDebug.glObjectLabel(identifier, name, label);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_KHR_debug));
+        }
+    }
+
+    @Override
+    public void glObjectPtrLabel(long ptr, @NonNull CharSequence label) {
+        if (this.OpenGL43) {
+            GL43.glObjectPtrLabel((GLSync) GLSync_CTOR.invokeExact(ptr), label);
+            super.debugCheckError();
+        } else if (this.GL_KHR_debug) {
+            KHRDebug.glObjectPtrLabel((GLSync) GLSync_CTOR.invokeExact(ptr), label);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_KHR_debug));
+        }
+    }
+
+    @Override
+    public String glGetObjectLabel(int identifier, int name) {
+        int maxLabelLength = this.limits().maxLabelLength();
+        if (this.OpenGL43) {
+            val res = GL43.glGetObjectLabel(identifier, name, maxLabelLength);
+            super.debugCheckError();
+            return res;
+        } else if (this.GL_KHR_debug) {
+            val res = KHRDebug.glGetObjectLabel(identifier, name, maxLabelLength);
+            super.debugCheckError();
+            return res;
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_KHR_debug));
+        }
+    }
+
+    @Override
+    public String glGetObjectPtrLabel(long ptr) {
+        int maxLabelLength = this.limits().maxLabelLength();
+        if (this.OpenGL43) {
+            val res = GL43.glGetObjectPtrLabel((GLSync) GLSync_CTOR.invokeExact(ptr), maxLabelLength);
+            super.debugCheckError();
+            return res;
+        } else if (this.GL_KHR_debug) {
+            val res = KHRDebug.glGetObjectPtrLabel((GLSync) GLSync_CTOR.invokeExact(ptr), maxLabelLength);
+            super.debugCheckError();
+            return res;
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_KHR_debug));
         }
     }
 

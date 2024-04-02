@@ -28,6 +28,8 @@ import net.daporkchop.fp2.gl.shader.source.Preprocessor;
 import net.daporkchop.fp2.gl.shader.source.SourceLine;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -47,10 +49,10 @@ public final class Shader implements AutoCloseable {
     private final int id;
 
     public Shader(OpenGL gl, ShaderType type, ResourceProvider provider, Identifier sourceFile) throws ShaderCompilationException {
-        this(gl, type, new Preprocessor(provider).appendLines(sourceFile).preprocess().lines());
+        this(gl, type, Arrays.asList(new Preprocessor(provider).appendLines(sourceFile).preprocess().lines()));
     }
 
-    public Shader(@NonNull OpenGL gl, @NonNull ShaderType type, @NonNull SourceLine... lines) throws ShaderCompilationException {
+    public Shader(OpenGL gl, ShaderType type, List<SourceLine> lines) throws ShaderCompilationException {
         //allocate new shader
         this.gl = gl;
         this.type = type;
@@ -59,7 +61,7 @@ public final class Shader implements AutoCloseable {
 
         try {
             //set source and compile shader
-            gl.glShaderSource(this.id, Stream.of(lines).map(SourceLine::text).collect(Collectors.joining("\n")));
+            gl.glShaderSource(this.id, lines.stream().map(SourceLine::text).collect(Collectors.joining("\n")));
             gl.glCompileShader(this.id);
 
             //check for errors
@@ -78,7 +80,7 @@ public final class Shader implements AutoCloseable {
     }
 
     //TODO: make this private
-    public static String formatInfoLog(@NonNull String text, @NonNull SourceLine... lines) {
+    public static String formatInfoLog(String text, List<SourceLine> lines) {
         try {
             for (Pattern pattern : new Pattern[]{ //different patterns for various error formats i've encountered so far
                     Pattern.compile("^(?<file>\\d+)\\((?<line>\\d+)\\) (?<text>: .+)", Pattern.MULTILINE),
@@ -88,7 +90,7 @@ public final class Shader implements AutoCloseable {
                 if (matcher.find()) {
                     StringBuffer buffer = new StringBuffer();
                     do {
-                        SourceLine line = lines[Integer.parseInt(matcher.group("line")) - 1];
+                        SourceLine line = lines.get(Integer.parseInt(matcher.group("line")) - 1);
                         matcher.appendReplacement(buffer, Matcher.quoteReplacement("(" + line.location() + ':' + line.lineNumber() + ')' + matcher.group("text")));
                     } while (matcher.find());
                     matcher.appendTail(buffer);

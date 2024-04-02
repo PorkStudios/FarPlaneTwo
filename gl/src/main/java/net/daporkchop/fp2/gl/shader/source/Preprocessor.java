@@ -215,7 +215,7 @@ public class Preprocessor {
         //read each line and wrap it in a SourceLine
         try (BufferedReader reader = new BufferedReader(this.resourceProvider.provideResourceAsReader(id))) {
             for (String line; (line = reader.readLine()) != null; ) {
-                lines.add(new SourceLine(line, id, lines.size() + 1));
+                lines.add(new SourceLine(line, id, lines.size() + 1, null));
             }
         }
 

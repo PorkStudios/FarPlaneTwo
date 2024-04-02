@@ -527,6 +527,36 @@ public abstract class OpenGL {
 
     //
     //
+    // OpenGL 4.1
+    //
+    //
+
+    //GL_ARB_separate_shader_objects
+    public abstract void glProgramUniform(int program, int location, int v0);
+
+    //GL_ARB_separate_shader_objects
+    public abstract void glProgramUniform(int program, int location, int v0, int v1);
+
+    //GL_ARB_separate_shader_objects
+    public abstract void glProgramUniform(int program, int location, int v0, int v1, int v2);
+
+    //GL_ARB_separate_shader_objects
+    public abstract void glProgramUniform(int program, int location, int v0, int v1, int v2, int v3);
+
+    //GL_ARB_separate_shader_objects
+    public abstract void glProgramUniform(int program, int location, float v0);
+
+    //GL_ARB_separate_shader_objects
+    public abstract void glProgramUniform(int program, int location, float v0, float v1);
+
+    //GL_ARB_separate_shader_objects
+    public abstract void glProgramUniform(int program, int location, float v0, float v1, float v2);
+
+    //GL_ARB_separate_shader_objects
+    public abstract void glProgramUniform(int program, int location, float v0, float v1, float v2, float v3);
+
+    //
+    //
     // OpenGL 4.2
     //
     //
@@ -554,6 +584,18 @@ public abstract class OpenGL {
 
     //GL_ARB_shader_storage_buffer_object
     public abstract void glShaderStorageBlockBinding(int program, int storageBlockIndex, int storageBlockBinding);
+
+    //GL_KHR_debug
+    public abstract void glObjectLabel(int identifier, int name, @NonNull CharSequence label);
+
+    //GL_KHR_debug
+    public abstract void glObjectPtrLabel(long ptr, @NonNull CharSequence label);
+
+    //GL_KHR_debug
+    public abstract String glGetObjectLabel(int identifier, int name);
+
+    //GL_KHR_debug
+    public abstract String glGetObjectPtrLabel(long ptr);
 
     //
     //
@@ -671,6 +713,8 @@ public abstract class OpenGL {
         private final ComputeWorkGroupSize maxComputeWorkGroupSize;
         private final ComputeWorkGroupCount maxComputeWorkGroupCount;
 
+        private final int maxLabelLength;
+
         Limits(OpenGL gl) {
             this.maxFragmentColors = gl.glGetInteger(GL_MAX_DRAW_BUFFERS);
             this.maxShaderStorageBuffers = gl.supports(GLExtension.GL_ARB_shader_storage_buffer_object) ? gl.glGetInteger(GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS) : 0;
@@ -687,6 +731,8 @@ public abstract class OpenGL {
                 this.maxComputeWorkGroupSize = null;
                 this.maxComputeWorkGroupCount = null;
             }
+
+            this.maxLabelLength = gl.supports(GLExtension.GL_KHR_debug) ? gl.glGetInteger(GL_MAX_LABEL_LENGTH) : 0;
         }
     }
 }

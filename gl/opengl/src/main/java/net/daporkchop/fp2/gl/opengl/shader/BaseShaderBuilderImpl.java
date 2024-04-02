@@ -66,7 +66,7 @@ public abstract class BaseShaderBuilderImpl<S extends BaseShader<L>, L extends B
 
         List<SourceLine> lines = new ArrayList<>();
         for (String line : builder.toString().split("\n")) {
-            lines.add(new SourceLine(line, id, lineNumber++));
+            lines.add(new SourceLine(line, id, lineNumber++, null));
         }
         this.preprocessor.appendLines(lines.toArray(new SourceLine[0]));
     }

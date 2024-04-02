@@ -39,6 +39,8 @@ public final class SourceLine {
     private final Identifier location;
     private final int lineNumber;
 
+    private final SourceLine includedFrom;
+
     @Override
     public String toString() {
         return this.toString(null, true);
@@ -56,6 +58,9 @@ public final class SourceLine {
         builder.append("at <").append(this.location).append(' ').append(this.lineNumber).append('>');
         if (includeText) {
             builder.append(": ").append(this.text);
+        }
+        if (this.includedFrom != null) {
+            builder.append("\nincluded from: ").append(this.includedFrom.toString(prefix, includeText));
         }
         return builder.toString();
     }

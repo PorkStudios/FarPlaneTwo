@@ -30,6 +30,7 @@ import net.daporkchop.fp2.gl.shader.BaseShader;
 import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
 import net.daporkchop.fp2.gl.shader.ShaderType;
 
+import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -64,7 +65,7 @@ public abstract class BaseShaderImpl<L extends BaseLayout> implements BaseShader
         if (api.glGetShaderi(this.id, GL_COMPILE_STATUS) == GL_FALSE) {
             //get and format shader log
             String log = api.glGetShaderInfoLog(this.id);
-            String formattedLog = Shader.formatInfoLog(log, lines);
+            String formattedLog = Shader.formatInfoLog(log, Arrays.asList(lines));
 
             //delete shader
             api.glDeleteShader(this.id);
