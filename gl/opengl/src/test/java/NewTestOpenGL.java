@@ -28,11 +28,13 @@ import net.daporkchop.fp2.gl.attribute.AttributeTarget;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
 import net.daporkchop.fp2.gl.attribute.vao.VertexArrayObject;
+import net.daporkchop.fp2.gl.buffer.IndexedBufferTarget;
 import net.daporkchop.fp2.gl.buffer.upload.UnsynchronizedMapBufferUploader;
 import net.daporkchop.fp2.gl.shader.ComputeShaderProgram;
 import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.shader.Shader;
 import net.daporkchop.fp2.gl.shader.ShaderType;
+import net.daporkchop.fp2.gl.state.StatePreserver;
 
 import java.io.InputStream;
 import java.util.concurrent.TimeUnit;
@@ -64,6 +66,10 @@ public class NewTestOpenGL {
     @SneakyThrows
     private static void run(OpenGL gl, BooleanSupplier closeRequested, Runnable swapAndSync, ResourceProvider resourceProvider, DirectMemoryAllocator alloc) {
         System.out.println(gl);
+
+        StatePreserver preserver = StatePreserver.builder(gl)
+                .indexedBuffer(IndexedBufferTarget.UNIFORM_BUFFER, 7)
+                .build();
 
         try (val shader = new Shader(gl, ShaderType.COMPUTE, resourceProvider, Identifier.from("new_test.comp"));
              val compute = ComputeShaderProgram.builder(gl).computeShader(shader).build()) {
@@ -123,6 +129,8 @@ public class NewTestOpenGL {
 
         int frame = 0;
         do {
+            val backup = preserver.backup();
+
             gl.glClear(GL_COLOR_BUFFER_BIT);
 
             gl.glUseProgram(shader.id());
@@ -133,6 +141,8 @@ public class NewTestOpenGL {
             gl.glBindBufferBase(GL_UNIFORM_BUFFER, 7, 0);
             gl.glBindVertexArray(0);
             gl.glUseProgram(0);
+
+            backup.close();
 
             swapAndSync.run();
 

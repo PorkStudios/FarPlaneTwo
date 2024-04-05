@@ -22,6 +22,7 @@ package net.daporkchop.fp2.gl.opengl.attribute.texture;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
+import net.daporkchop.fp2.gl.attribute.texture.TextureTarget;
 import net.daporkchop.fp2.gl.attribute.texture.TextureWriter2D;
 
 import static net.daporkchop.fp2.gl.OpenGLConstants.*;

@@ -189,6 +189,8 @@ public abstract class OpenGL {
 
     public abstract void glDisable(int cap);
 
+    public abstract boolean glIsEnabled(int cap);
+
     public abstract int glGetError();
 
     public abstract boolean glGetBoolean(int pname);

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -24,11 +24,11 @@ import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.attribute.texture.Texture2D;
 import net.daporkchop.fp2.gl.attribute.texture.TextureFormat2D;
+import net.daporkchop.fp2.gl.attribute.texture.TextureTarget;
 import net.daporkchop.fp2.gl.attribute.texture.TextureWriter2D;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
-import net.daporkchop.fp2.gl.opengl.attribute.struct.StructLayouts;
 import net.daporkchop.fp2.gl.opengl.attribute.struct.type.GLSLSamplerType;
 import net.daporkchop.fp2.gl.opengl.layout.LayoutEntry;
 

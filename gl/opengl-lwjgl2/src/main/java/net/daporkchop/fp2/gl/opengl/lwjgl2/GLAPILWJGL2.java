@@ -218,6 +218,13 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
     }
 
     @Override
+    public boolean glIsEnabled(int cap) {
+        val res = GL11.glIsEnabled(cap);
+        super.debugCheckError();
+        return res;
+    }
+
+    @Override
     public int glGetError() {
         return GL11.glGetError();
     }

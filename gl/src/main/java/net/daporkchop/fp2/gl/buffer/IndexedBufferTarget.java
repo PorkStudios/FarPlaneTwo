@@ -21,6 +21,7 @@ package net.daporkchop.fp2.gl.buffer;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.gl.GLExtension;
 
 import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 
@@ -31,14 +32,23 @@ import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 @Getter
 public enum IndexedBufferTarget {
     TRANSFORM_FEEDBACK_BUFFER(GL_TRANSFORM_FEEDBACK_BUFFER, GL_TRANSFORM_FEEDBACK_BUFFER_BINDING,
-            GL_TRANSFORM_FEEDBACK_BUFFER_START, GL_TRANSFORM_FEEDBACK_BUFFER_SIZE),
+            GL_TRANSFORM_FEEDBACK_BUFFER_START, GL_TRANSFORM_FEEDBACK_BUFFER_SIZE,
+            GL_MAX_TRANSFORM_FEEDBACK_BUFFERS,
+            GLExtension.GL_ARB_transform_feedback2),
     SHADER_STORAGE_BUFFER(GL_SHADER_STORAGE_BUFFER, GL_SHADER_STORAGE_BUFFER_BINDING,
-            GL_SHADER_STORAGE_BUFFER_START, GL_SHADER_STORAGE_BUFFER_SIZE),
+            GL_SHADER_STORAGE_BUFFER_START, GL_SHADER_STORAGE_BUFFER_SIZE,
+            GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS,
+            GLExtension.GL_ARB_shader_storage_buffer_object),
     UNIFORM_BUFFER(GL_UNIFORM_BUFFER, GL_UNIFORM_BUFFER_BINDING,
-            GL_UNIFORM_BUFFER_START, GL_UNIFORM_BUFFER_SIZE);
+            GL_UNIFORM_BUFFER_START, GL_UNIFORM_BUFFER_SIZE,
+            GL_MAX_UNIFORM_BUFFER_BINDINGS,
+            GLExtension.GL_ARB_uniform_buffer_object);
 
     private final int id;
     private final int binding;
     private final int bindingStart;
     private final int bindingSize;
+    private final int maxBindings;
+
+    private final GLExtension requiredExtension;
 }

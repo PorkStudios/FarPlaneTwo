@@ -30,7 +30,7 @@ import net.daporkchop.fp2.gl.command.Compare;
 import net.daporkchop.fp2.gl.command.StencilOperation;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.attribute.texture.TextureTarget;
+import net.daporkchop.fp2.gl.attribute.texture.TextureTarget;
 import net.daporkchop.fp2.gl.buffer.BufferTarget;
 import net.daporkchop.fp2.gl.buffer.IndexedBufferTarget;
 import net.daporkchop.fp2.gl.opengl.command.CodegenArgs;

@@ -19,7 +19,6 @@
 
 package net.daporkchop.fp2.common.util;
 
-import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.lib.common.annotation.TransferOwnership;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
@@ -62,8 +61,13 @@ public class DirectBufferHackery {
     private static final Cached<Recycler<FloatBuffer>> FAKE_FLOATBUFFER_RECYCLER = Cached.threadLocal(() -> Recycler.unbounded(DirectBufferHackery::emptyFloat), ReferenceStrength.SOFT);
     private static final Cached<Recycler<DoubleBuffer>> FAKE_DOUBLEBUFFER_RECYCLER = Cached.threadLocal(() -> Recycler.unbounded(DirectBufferHackery::emptyDouble), ReferenceStrength.SOFT);
 
-    public <B extends Buffer> B reset(@NonNull B buffer, long address, int capacity) {
-        checkState(buffer.isDirect(), "buffer isn't direct! %s", buffer);
+    private static long address(Buffer buffer) {
+        checkArg(buffer.isDirect(), "buffer isn't direct! %s", buffer);
+        return PUnsafe.getLong(buffer, BUFFER_ADDRESS_OFFSET);
+    }
+
+    public static <B extends Buffer> B reset(B buffer, long address, int capacity) {
+        checkArg(buffer.isDirect(), "buffer isn't direct! %s", buffer);
 
         PUnsafe.putInt(buffer, BUFFER_CAPACITY_OFFSET, capacity);
         PUnsafe.putLong(buffer, BUFFER_ADDRESS_OFFSET, address);
@@ -71,7 +75,7 @@ public class DirectBufferHackery {
         return buffer;
     }
 
-    public ByteBuffer emptyByte() {
+    public static ByteBuffer emptyByte() {
         ByteBuffer buffer = PUnsafe.allocateInstance(BYTE);
         buffer.order(ByteOrder.nativeOrder());
         return buffer;
@@ -94,6 +98,14 @@ public class DirectBufferHackery {
      */
     public static Recycler<ByteBuffer> byteRecycler() {
         return FAKE_BYTEBUFFER_RECYCLER.get();
+    }
+
+    public static long address(ByteBuffer buffer) {
+        return address((Buffer) buffer) + buffer.position();
+    }
+
+    public static long remainingBytes(ByteBuffer buffer) {
+        return buffer.remaining();
     }
 
     public IntBuffer emptyInt() {
@@ -119,6 +131,14 @@ public class DirectBufferHackery {
         return FAKE_INTBUFFER_RECYCLER.get();
     }
 
+    public static long address(IntBuffer buffer) {
+        return address((Buffer) buffer) + ((long) buffer.position() << 2);
+    }
+
+    public static long remainingBytes(IntBuffer buffer) {
+        return (long) buffer.remaining() << 2;
+    }
+
     public FloatBuffer emptyFloat() {
         return PUnsafe.allocateInstance(FLOAT);
     }
@@ -142,6 +162,14 @@ public class DirectBufferHackery {
         return FAKE_FLOATBUFFER_RECYCLER.get();
     }
 
+    public static long address(FloatBuffer buffer) {
+        return address((Buffer) buffer) + ((long) buffer.position() << 2);
+    }
+
+    public static long remainingBytes(FloatBuffer buffer) {
+        return (long) buffer.remaining() << 2;
+    }
+
     public DoubleBuffer emptyDouble() {
         return PUnsafe.allocateInstance(DOUBLE);
     }
@@ -163,6 +191,14 @@ public class DirectBufferHackery {
      */
     public static Recycler<DoubleBuffer> doubleRecycler() {
         return FAKE_DOUBLEBUFFER_RECYCLER.get();
+    }
+
+    public static long address(DoubleBuffer buffer) {
+        return address((Buffer) buffer) + ((long) buffer.position() << 3);
+    }
+
+    public static long remainingBytes(DoubleBuffer buffer) {
+        return (long) buffer.remaining() << 3;
     }
 
     /**

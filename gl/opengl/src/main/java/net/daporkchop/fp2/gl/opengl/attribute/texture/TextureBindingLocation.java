@@ -21,6 +21,7 @@ package net.daporkchop.fp2.gl.opengl.attribute.texture;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.attribute.AttributeUsage;
+import net.daporkchop.fp2.gl.attribute.texture.TextureTarget;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocation;
 import net.daporkchop.fp2.gl.opengl.attribute.binding.BindingLocationAssigner;
