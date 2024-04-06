@@ -20,12 +20,10 @@
 package net.daporkchop.fp2.gl.opengl.draw.list.arrays.multidrawindirect;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.buffer.GLMutableBuffer;
 import net.daporkchop.fp2.gl.draw.list.DrawCommandArrays;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.buffer.BufferTarget;
-import net.daporkchop.fp2.gl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.opengl.command.state.State;
 import net.daporkchop.fp2.gl.opengl.command.state.StateProperties;
 import net.daporkchop.fp2.gl.opengl.command.state.StateValueProperty;
@@ -39,7 +37,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import static net.daporkchop.fp2.gl.OpenGLConstants.*;
-import static net.daporkchop.fp2.gl.opengl.draw.list.arrays.multidrawindirect.MultiDrawArraysIndirect.*;
+import static net.daporkchop.fp2.gl.draw.indirect.DrawArraysIndirectCommand.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**

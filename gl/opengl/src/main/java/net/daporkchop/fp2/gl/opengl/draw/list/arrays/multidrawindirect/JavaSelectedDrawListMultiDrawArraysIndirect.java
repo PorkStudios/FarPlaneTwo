@@ -32,7 +32,7 @@ import java.util.Map;
 import java.util.function.IntPredicate;
 
 import static net.daporkchop.fp2.gl.OpenGLConstants.*;
-import static net.daporkchop.fp2.gl.opengl.draw.list.arrays.multidrawindirect.MultiDrawArraysIndirect.*;
+import static net.daporkchop.fp2.gl.draw.indirect.DrawArraysIndirectCommand.*;
 
 /**
  * @author DaPorkchop_

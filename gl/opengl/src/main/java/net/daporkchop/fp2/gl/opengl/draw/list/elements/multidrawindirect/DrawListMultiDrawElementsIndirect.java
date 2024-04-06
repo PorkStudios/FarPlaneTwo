@@ -20,7 +20,6 @@
 package net.daporkchop.fp2.gl.opengl.draw.list.elements.multidrawindirect;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.draw.list.DrawCommandIndexed;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.buffer.BufferTarget;
@@ -39,7 +38,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import static net.daporkchop.fp2.gl.OpenGLConstants.*;
-import static net.daporkchop.fp2.gl.opengl.draw.list.elements.multidrawindirect.MultiDrawElementsIndirect.*;
+import static net.daporkchop.fp2.gl.draw.indirect.DrawElementsIndirectCommand.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**

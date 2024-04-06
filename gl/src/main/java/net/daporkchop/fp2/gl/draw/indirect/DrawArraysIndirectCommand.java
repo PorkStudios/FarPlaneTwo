@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,28 +15,33 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
-package net.daporkchop.fp2.gl.opengl.draw.list.elements.multidrawindirect;
+package net.daporkchop.fp2.gl.draw.indirect;
 
-import lombok.experimental.UtilityClass;
+import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import static net.daporkchop.fp2.common.util.TypeSize.*;
 
 /**
- * Helpers for reading/writing MultiDrawElementsIndirect commands.
+ * An indirect DrawArrays call.
  *
  * @author DaPorkchop_
+ * @see net.daporkchop.fp2.gl.OpenGL#glMultiDrawArraysIndirect
  */
-@UtilityClass
-class MultiDrawElementsIndirect {
+@AllArgsConstructor
+@NoArgsConstructor
+@EqualsAndHashCode
+@ToString
+public final class DrawArraysIndirectCommand {
     public static final long _COUNT_OFFSET = 0L;
     public static final long _INSTANCECOUNT_OFFSET = _COUNT_OFFSET + INT_SIZE;
-    public static final long _FIRSTINDEX_OFFSET = _INSTANCECOUNT_OFFSET + INT_SIZE;
-    public static final long _BASEVERTEX_OFFSET = _FIRSTINDEX_OFFSET + INT_SIZE;
-    public static final long _BASEINSTANCE_OFFSET = _BASEVERTEX_OFFSET + INT_SIZE;
+    public static final long _FIRST_OFFSET = _INSTANCECOUNT_OFFSET + INT_SIZE;
+    public static final long _BASEINSTANCE_OFFSET = _FIRST_OFFSET + INT_SIZE;
 
     public static final long _SIZE = _BASEINSTANCE_OFFSET + INT_SIZE;
 
@@ -56,20 +61,12 @@ class MultiDrawElementsIndirect {
         PUnsafe.putInt(cmd + _INSTANCECOUNT_OFFSET, instanceCount);
     }
 
-    public static int _firstIndex(long cmd) {
-        return PUnsafe.getInt(cmd + _FIRSTINDEX_OFFSET);
+    public static int _first(long cmd) {
+        return PUnsafe.getInt(cmd + _FIRST_OFFSET);
     }
 
-    public static void _firstIndex(long cmd, int firstIndex) {
-        PUnsafe.putInt(cmd + _FIRSTINDEX_OFFSET, firstIndex);
-    }
-
-    public static int _baseVertex(long cmd) {
-        return PUnsafe.getInt(cmd + _BASEVERTEX_OFFSET);
-    }
-
-    public static void _baseVertex(long cmd, int baseVertex) {
-        PUnsafe.putInt(cmd + _BASEVERTEX_OFFSET, baseVertex);
+    public static void _first(long cmd, int first) {
+        PUnsafe.putInt(cmd + _FIRST_OFFSET, first);
     }
 
     public static int _baseInstance(long cmd) {
@@ -79,4 +76,28 @@ class MultiDrawElementsIndirect {
     public static void _baseInstance(long cmd, int baseInstance) {
         PUnsafe.putInt(cmd + _BASEINSTANCE_OFFSET, baseInstance);
     }
+
+    public static DrawArraysIndirectCommand _get(long cmd) {
+        return _get(cmd, new DrawArraysIndirectCommand());
+    }
+
+    public static DrawArraysIndirectCommand _get(long cmd, DrawArraysIndirectCommand command) {
+        command.count = _count(cmd);
+        command.instanceCount = _instanceCount(cmd);
+        command.first = _first(cmd);
+        command.baseInstance = _baseInstance(cmd);
+        return command;
+    }
+
+    public static void _set(long cmd, DrawArraysIndirectCommand command) {
+        _count(cmd, command.count);
+        _instanceCount(cmd, command.instanceCount);
+        _first(cmd, command.first);
+        _baseInstance(cmd, command.baseInstance);
+    }
+
+    public int count;
+    public int instanceCount;
+    public int first;
+    public int baseInstance;
 }

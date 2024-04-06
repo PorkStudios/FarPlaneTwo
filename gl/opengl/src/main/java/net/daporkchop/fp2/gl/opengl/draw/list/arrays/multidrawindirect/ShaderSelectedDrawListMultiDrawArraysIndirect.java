@@ -45,7 +45,7 @@ import net.daporkchop.fp2.gl.transform.shader.TransformShaderProgramBuilder;
 import java.util.Collections;
 import java.util.Map;
 
-import static net.daporkchop.fp2.gl.opengl.draw.list.arrays.multidrawindirect.MultiDrawArraysIndirect.*;
+import static net.daporkchop.fp2.gl.draw.indirect.DrawArraysIndirectCommand.*;
 
 /**
  * @author DaPorkchop_
