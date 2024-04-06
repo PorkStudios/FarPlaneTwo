@@ -45,6 +45,7 @@ import org.lwjgl.opengl.ARBSamplerObjects;
 import org.lwjgl.opengl.ARBSeparateShaderObjects;
 import org.lwjgl.opengl.ARBShaderImageLoadStore;
 import org.lwjgl.opengl.ARBShaderStorageBufferObject;
+import org.lwjgl.opengl.ARBSparseBuffer;
 import org.lwjgl.opengl.ARBSync;
 import org.lwjgl.opengl.ARBTextureBufferObject;
 import org.lwjgl.opengl.ARBUniformBufferObject;
@@ -127,6 +128,9 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
     private final boolean OpenGL45;
     private final boolean GL_ARB_direct_state_access;
 
+    // No OpenGL version
+    private final boolean GL_ARB_sparse_buffer;
+
     public GLAPILWJGL2() {
         ContextCapabilities capabilities = GLContext.getCapabilities();
 
@@ -172,6 +176,9 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
         // OpenGL 4.5
         this.OpenGL45 = capabilities.OpenGL45;
         this.GL_ARB_direct_state_access = !capabilities.OpenGL45 && capabilities.GL_ARB_direct_state_access;
+
+        // No OpenGL version
+        this.GL_ARB_sparse_buffer = capabilities.GL_ARB_sparse_buffer;
     }
 
     @Override
@@ -2039,6 +2046,42 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
             super.debugCheckError();
         } else {
             throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
+        }
+    }
+
+    //
+    //
+    // No OpenGL version
+    //
+    //
+
+    @Override
+    public void glBufferPageCommitmentARB(int target, long offset, long size, boolean commit) {
+        if (this.GL_ARB_sparse_buffer) {
+            ARBSparseBuffer.glBufferPageCommitmentARB(target, offset, size, commit);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_sparse_buffer));
+        }
+    }
+
+    @Override
+    public void glNamedBufferPageCommitmentARB(int buffer, long offset, long size, boolean commit) {
+        if ((this.OpenGL45 | this.GL_ARB_direct_state_access) & this.GL_ARB_sparse_buffer) {
+            //LWJGL2 doesn't expose glNamedBufferPageCommitmentARB, so we're forced to emulate it by binding the buffer to an arbitrary binding point, calling
+            // the non-DSA function and then restoring the original binding.
+            //we could do a hacky thing to get the function pointer manually and then pass it to ARBSparseBuffer.nglBufferPageCommitmentARB (which conveniently
+            // has the same signature as glNamedBufferPageCommitmentARB), but it's not clear to me if it's safe to acquire the function pointer without synchronizing
+            // on GLContext.class and doing some internal context setting stuff which just really isn't worth the added effort.
+            int old = this.glGetInteger(GL_ARRAY_BUFFER_BINDING);
+            try {
+                this.glBindBuffer(GL_ARRAY_BUFFER, buffer);
+                this.glBufferPageCommitmentARB(GL_ARRAY_BUFFER, offset, size, commit);
+            } finally {
+                this.glBindBuffer(GL_ARRAY_BUFFER, old);
+            }
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_sparse_buffer));
         }
     }
 }

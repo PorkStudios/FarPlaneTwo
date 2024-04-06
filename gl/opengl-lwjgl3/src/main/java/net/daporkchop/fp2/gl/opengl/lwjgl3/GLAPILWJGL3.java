@@ -23,14 +23,49 @@ import lombok.NonNull;
 import lombok.val;
 import net.daporkchop.fp2.common.util.DirectBufferHackery;
 import net.daporkchop.fp2.gl.GLExtension;
+import net.daporkchop.fp2.gl.GLVersion;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.GLAPI;
-import net.daporkchop.fp2.gl.GLVersion;
-import net.daporkchop.lib.common.function.exception.EPredicate;
 import net.daporkchop.lib.common.function.throwing.TPredicate;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import org.lwjgl.PointerBuffer;
-import org.lwjgl.opengl.*;
+import org.lwjgl.opengl.ARBBufferStorage;
+import org.lwjgl.opengl.ARBComputeShader;
+import org.lwjgl.opengl.ARBCopyBuffer;
+import org.lwjgl.opengl.ARBDirectStateAccess;
+import org.lwjgl.opengl.ARBDrawElementsBaseVertex;
+import org.lwjgl.opengl.ARBDrawInstanced;
+import org.lwjgl.opengl.ARBInstancedArrays;
+import org.lwjgl.opengl.ARBMultiDrawIndirect;
+import org.lwjgl.opengl.ARBProgramInterfaceQuery;
+import org.lwjgl.opengl.ARBSamplerObjects;
+import org.lwjgl.opengl.ARBSeparateShaderObjects;
+import org.lwjgl.opengl.ARBShaderImageLoadStore;
+import org.lwjgl.opengl.ARBShaderStorageBufferObject;
+import org.lwjgl.opengl.ARBSparseBuffer;
+import org.lwjgl.opengl.ARBSync;
+import org.lwjgl.opengl.ARBTextureBufferObject;
+import org.lwjgl.opengl.ARBUniformBufferObject;
+import org.lwjgl.opengl.GL;
+import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL11C;
+import org.lwjgl.opengl.GL12C;
+import org.lwjgl.opengl.GL13C;
+import org.lwjgl.opengl.GL14C;
+import org.lwjgl.opengl.GL15C;
+import org.lwjgl.opengl.GL20C;
+import org.lwjgl.opengl.GL30C;
+import org.lwjgl.opengl.GL31C;
+import org.lwjgl.opengl.GL32C;
+import org.lwjgl.opengl.GL33C;
+import org.lwjgl.opengl.GL41;
+import org.lwjgl.opengl.GL42C;
+import org.lwjgl.opengl.GL43;
+import org.lwjgl.opengl.GL43C;
+import org.lwjgl.opengl.GL44C;
+import org.lwjgl.opengl.GL45C;
+import org.lwjgl.opengl.GLCapabilities;
+import org.lwjgl.opengl.KHRDebug;
 import org.lwjgl.system.MemoryUtil;
 
 import java.lang.invoke.MethodHandles;
@@ -86,6 +121,9 @@ public final class GLAPILWJGL3 extends OpenGL implements GLAPI {
     private final boolean OpenGL45;
     private final boolean GL_ARB_direct_state_access;
 
+    // No OpenGL version
+    private final boolean GL_ARB_sparse_buffer;
+
     public GLAPILWJGL3() {
         GLCapabilities capabilities = GL.createCapabilities();
 
@@ -129,6 +167,9 @@ public final class GLAPILWJGL3 extends OpenGL implements GLAPI {
         // OpenGL 4.5
         this.OpenGL45 = capabilities.OpenGL45;
         this.GL_ARB_direct_state_access = !capabilities.OpenGL45 && capabilities.GL_ARB_direct_state_access;
+
+        // No OpenGL version
+        this.GL_ARB_sparse_buffer = capabilities.GL_ARB_sparse_buffer;
     }
 
     @Override
@@ -1839,6 +1880,32 @@ public final class GLAPILWJGL3 extends OpenGL implements GLAPI {
             super.debugCheckError();
         } else {
             throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
+        }
+    }
+
+    //
+    //
+    // No OpenGL version
+    //
+    //
+
+    @Override
+    public void glBufferPageCommitmentARB(int target, long offset, long size, boolean commit) {
+        if (this.GL_ARB_sparse_buffer) {
+            ARBSparseBuffer.glBufferPageCommitmentARB(target, offset, size, commit);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_sparse_buffer));
+        }
+    }
+
+    @Override
+    public void glNamedBufferPageCommitmentARB(int buffer, long offset, long size, boolean commit) {
+        if ((this.OpenGL45 | this.GL_ARB_direct_state_access) & this.GL_ARB_sparse_buffer) {
+            ARBSparseBuffer.glNamedBufferPageCommitmentARB(buffer, offset, size, commit);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_sparse_buffer));
         }
     }
 }

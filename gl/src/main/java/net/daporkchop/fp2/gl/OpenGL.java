@@ -31,7 +31,10 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -146,9 +149,52 @@ public abstract class OpenGL {
      * @return a {@link String} to be used as an exception message
      */
     protected final String unsupportedMsg(GLExtension extension) {
-        return extension.coreVersion() != null
-                ? "requires " + extension.coreVersion() + " or " + extension.name()
-                : "requires " + extension.name();
+        return this.unsupportedMsg(Collections.singletonList(extension));
+    }
+
+    /**
+     * Gets a message to be used as an exception message if a function from a pair of extensions which are not both supported by the current context is called.
+     *
+     * @param extension0 the unsupported extension
+     * @param extension1 the unsupported extension
+     * @return a {@link String} to be used as an exception message
+     */
+    protected final String unsupportedMsg(GLExtension extension0, GLExtension extension1) {
+        return this.unsupportedMsg(Arrays.asList(extension0, extension1));
+    }
+
+    /**
+     * Gets a message to be used as an exception message if a function from a pair of extensions which are not both supported by the current context is called.
+     *
+     * @param extensions a list of extensions, at least one of which is unsupported
+     * @return a {@link String} to be used as an exception message
+     */
+    private String unsupportedMsg(List<GLExtension> extensions) {
+        StringBuilder builder = new StringBuilder().append("requires ");
+
+        boolean includeCoreVersion;
+        if (extensions.stream().map(GLExtension::coreVersion).noneMatch(Objects::isNull)) {
+            builder.append(extensions.stream().map(GLExtension::coreVersion).max(Comparator.naturalOrder()).get()).append(" or ");
+            includeCoreVersion = false;
+        } else {
+            includeCoreVersion = true;
+        }
+
+        boolean first = true;
+        for (GLExtension extension : extensions) {
+            if (!first) {
+                builder.append(" and ");
+            }
+            first = false;
+
+            if (includeCoreVersion && extension.coreVersion() != null) {
+                builder.append('(').append(extension.coreVersion()).append(" or ").append(extension.name()).append(')');
+            } else {
+                builder.append(extension.name());
+            }
+        }
+        builder.append(" (current context: ").append(this).append(')');
+        return builder.toString();
     }
 
     /**
@@ -698,6 +744,18 @@ public abstract class OpenGL {
     //GL_ARB_direct_state_access
     public abstract void glVertexArrayVertexBuffers(int vaobj, int first, int count, long buffers, long offsets, long strides);
 
+    //
+    //
+    // No OpenGL version
+    //
+    //
+
+    //GL_ARB_sparse_buffer
+    public abstract void glBufferPageCommitmentARB(int target, long offset, long size, boolean commit);
+
+    //GL_ARB_direct_state_access & GL_ARB_sparse_buffer
+    public abstract void glNamedBufferPageCommitmentARB(int buffer, long offset, long size, boolean commit);
+
     /**
      * Stores the upper limits for various features supported by an OpenGL context.
      *
@@ -717,6 +775,8 @@ public abstract class OpenGL {
 
         private final int maxLabelLength;
 
+        private final int sparseBufferPageSizeARB;
+
         Limits(OpenGL gl) {
             this.maxFragmentColors = gl.glGetInteger(GL_MAX_DRAW_BUFFERS);
             this.maxShaderStorageBuffers = gl.supports(GLExtension.GL_ARB_shader_storage_buffer_object) ? gl.glGetInteger(GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS) : 0;
@@ -735,6 +795,8 @@ public abstract class OpenGL {
             }
 
             this.maxLabelLength = gl.supports(GLExtension.GL_KHR_debug) ? gl.glGetInteger(GL_MAX_LABEL_LENGTH) : 0;
+
+            this.sparseBufferPageSizeARB = gl.supports(GLExtension.GL_ARB_sparse_buffer) ? gl.glGetInteger(GL_SPARSE_BUFFER_PAGE_SIZE_ARB) : 0;
         }
     }
 }

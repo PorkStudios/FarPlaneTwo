@@ -190,6 +190,9 @@ public enum GLExtension {
     GL_ARB_shader_draw_parameters(GLVersion.OpenGL46, true),
     GL_ARB_gl_spirv(GLVersion.OpenGL46, false),
     GL_ARB_spirv_extensions(GLVersion.OpenGL46, false),
+
+    //No OpenGL version
+    GL_ARB_sparse_buffer(null, false),
     ;
 
     private final GLVersion coreVersion;
