@@ -74,41 +74,8 @@ public abstract class AbstractInterleavedAttributeWriter<STRUCT extends Attribut
     }
 
     @Override
-    public final void appendUninitialized() {
-        if ((this.size = incrementExact(this.size)) > this.capacity) {
-            this.grow(this.size);
-        }
-    }
-
-    @Override
-    public final void appendUninitialized(@Positive int count) {
-        if ((this.size = addExact(this.size, positive(count, "count"))) > this.capacity) {
-            this.grow(this.size);
-        }
-    }
-
-    @Override
-    public final void reserve(@NotNegative int count) {
-        this.grow(addExact(this.capacity, notNegative(count, "count")));
-    }
-
-    /**
-     * Resizes the internal buffer to fit at least the given number of elements.
-     *
-     * @param requiredCapacity the minimum required capacity
-     */
-    protected abstract void grow(@NotNegative int requiredCapacity);
-
-    //called by generated code
-    @SuppressWarnings("unused")
-    protected final void grow(@Positive int requiredCapacity, @Positive long stride) {
-        assert positive(requiredCapacity) > this.capacity;
-
-        do {
-            this.capacity = multiplyExact(this.capacity, 2);
-        } while (requiredCapacity > this.capacity);
-
-        this.address = this.alloc.realloc(this.address, this.capacity * stride);
+    protected final void grow(@NotNegative int oldCapacity, @NotNegative int newCapacity) {
+        this.address = this.alloc.realloc(this.address, newCapacity * this.format().size());
     }
 
     @Override

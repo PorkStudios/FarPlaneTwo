@@ -19,12 +19,10 @@
 
 package net.daporkchop.fp2.gl.codegen.struct;
 
-import lombok.SneakyThrows;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.AttributeTarget;
-import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.attribute.NewAttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
 import net.daporkchop.fp2.gl.attribute.NewAttributeWriter;
@@ -78,7 +76,7 @@ public final class InterleavedStructFormatClassLoader<STRUCT extends AttributeSt
     protected void registerClassGenerators(BiConsumer<String, Supplier<byte[]>> registerGenerator, Consumer<Class<?>> registerClass) {
         super.registerClassGenerators(registerGenerator, registerClass);
 
-        registerClass.accept(AbstractInterleavedAttributeBuffer.class);
+        //registerClass.accept(AbstractInterleavedAttributeBuffer.class);
         registerClass.accept(AbstractInterleavedAttributeFormat.class);
         registerClass.accept(AbstractInterleavedAttributeStruct.class);
         registerClass.accept(AbstractInterleavedAttributeWriter.class);
@@ -87,9 +85,10 @@ public final class InterleavedStructFormatClassLoader<STRUCT extends AttributeSt
 
     @SuppressWarnings("unchecked")
     @Override
-    @SneakyThrows
     public NewAttributeFormat<STRUCT> createAttributeFormat(OpenGL gl) {
-        return (NewAttributeFormat<STRUCT>) MethodHandles.publicLookup().findConstructor(this.loadClass(this.attributeFormatClassInternalName.replace('/', '.')), MethodType.methodType(void.class, OpenGL.class, LayoutInfo.class))
+        return (NewAttributeFormat<STRUCT>) MethodHandles.publicLookup().findConstructor(
+                        this.loadClass(this.attributeFormatClassInternalName.replace('/', '.')),
+                        MethodType.methodType(void.class, OpenGL.class, LayoutInfo.class))
                 .invoke(gl, this.layoutInfo);
     }
 
@@ -98,16 +97,15 @@ public final class InterleavedStructFormatClassLoader<STRUCT extends AttributeSt
         return generateClass(ACC_PUBLIC | ACC_FINAL, this.attributeFormatClassInternalName, getInternalName(AbstractInterleavedAttributeFormat.class), null, cv -> {
             generatePassthroughCtor(cv, getInternalName(AbstractInterleavedAttributeFormat.class), getType(OpenGL.class), getType(LayoutInfo.class));
 
-            //AttributeBuffer createBuffer(BufferUsage usage)
-            generateMethod(cv, ACC_PUBLIC | ACC_FINAL, "createBuffer", getMethodDescriptor(getType(NewAttributeBuffer.class), getType(BufferUsage.class)), mv -> {
+            //AttributeBuffer createBuffer()
+            /*generateMethod(cv, ACC_PUBLIC | ACC_FINAL, "createBuffer", getMethodDescriptor(getType(NewAttributeBuffer.class)), mv -> {
                 mv.visitTypeInsn(NEW, this.bufferClassInternalName);
                 mv.visitInsn(DUP);
                 mv.visitVarInsn(ALOAD, 0);
-                mv.visitVarInsn(ALOAD, 1);
-                mv.visitMethodInsn(INVOKESPECIAL, this.bufferClassInternalName, "<init>", getMethodDescriptor(VOID_TYPE, getType(NewAttributeFormat.class), getType(BufferUsage.class)), false);
+                mv.visitMethodInsn(INVOKESPECIAL, this.bufferClassInternalName, "<init>", getMethodDescriptor(VOID_TYPE, getType(NewAttributeFormat.class)), false);
                 mv.visitTypeInsn(CHECKCAST, getInternalName(NewAttributeBuffer.class)); //cast to avoid loading the implementation class during bytecode verification
                 return ARETURN;
-            });
+            });*/
 
             //AttributeWriter createWriter(DirectMemoryAllocator alloc)
             generateMethod(cv, ACC_PUBLIC | ACC_FINAL, "createWriter", getMethodDescriptor(getType(NewAttributeWriter.class), getType(DirectMemoryAllocator.class)), mv -> {
@@ -225,15 +223,6 @@ public final class InterleavedStructFormatClassLoader<STRUCT extends AttributeSt
                 return ARETURN;
             });
 
-            //void grow(int requiredCapacity)
-            generateMethod(cv, ACC_PROTECTED | ACC_FINAL, "grow", getMethodDescriptor(VOID_TYPE, INT_TYPE), mv -> {
-                mv.visitVarInsn(ALOAD, 0);
-                mv.visitVarInsn(ILOAD, 1);
-                mv.visitLdcInsn(this.layoutInfo.rootLayout().size());
-                mv.visitMethodInsn(INVOKEVIRTUAL, this.attributeWriterClassInternalName, "grow", getMethodDescriptor(VOID_TYPE, INT_TYPE, LONG_TYPE), false);
-                return RETURN;
-            });
-
             //void copy(int src, int dst)
             generateMethod(cv, ACC_PUBLIC | ACC_FINAL, "copy", getMethodDescriptor(VOID_TYPE, INT_TYPE, INT_TYPE), mv -> {
                 mv.visitVarInsn(ALOAD, 0);
@@ -265,10 +254,10 @@ public final class InterleavedStructFormatClassLoader<STRUCT extends AttributeSt
 
     @Override
     protected byte[] bufferClass() {
-        //TODO: this is redundant and could be eliminated
-        return generateClass(ACC_PUBLIC | ACC_FINAL, this.bufferClassInternalName, getInternalName(AbstractInterleavedAttributeBuffer.class), null, cv -> {
-            generatePassthroughCtor(cv, getInternalName(AbstractInterleavedAttributeBuffer.class), getType(NewAttributeFormat.class), getType(BufferUsage.class));
-        });
+        /*return generateClass(ACC_PUBLIC | ACC_FINAL, this.bufferClassInternalName, getInternalName(AbstractInterleavedAttributeBuffer.class), null, cv -> {
+            generatePassthroughCtor(cv, getInternalName(AbstractInterleavedAttributeBuffer.class), getType(NewAttributeFormat.class));
+        });*/
+        throw new UnsupportedOperationException();
     }
 
     @Override

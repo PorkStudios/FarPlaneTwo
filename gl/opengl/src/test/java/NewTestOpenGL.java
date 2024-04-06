@@ -81,7 +81,7 @@ public class NewTestOpenGL {
         uniformBuffer.update().scale((byte) 32, (byte) 32).close();
 
         val vertexFormat = NewAttributeFormat.get(gl, TestOpenGL.LocalAttribs.class, AttributeTarget.VERTEX_ATTRIBUTE);
-        val vertexBuffer = vertexFormat.createBuffer(BufferUsage.STATIC_DRAW);
+        val vertexBuffer = vertexFormat.createBuffer();
         try (val writer = vertexFormat.createWriter(alloc)) {
             writer.append().pos(16, 16).close();
             writer.append().pos(16, 32).close();
@@ -91,11 +91,11 @@ public class NewTestOpenGL {
             writer.append().pos(32, 16).close();
             writer.append().pos(16, 16).close();
 
-            vertexBuffer.set(writer);
+            vertexBuffer.set(writer, BufferUsage.STATIC_DRAW);
         }
 
         val instanceVertexFormat = NewAttributeFormat.get(gl, TestOpenGL.GlobalAttribs.class, AttributeTarget.VERTEX_ATTRIBUTE);
-        val instanceVertexBuffer = instanceVertexFormat.createBuffer(BufferUsage.STATIC_DRAW);
+        val instanceVertexBuffer = instanceVertexFormat.createBuffer();
         try (val writer = instanceVertexFormat.createWriter(alloc)) {
             for (int i = 0, color = -1, x = 0; x < 2; x++) {
                 for (int y = 0; y < 2; y++, color = 0xFF << (i << 3), i++) {
@@ -105,7 +105,7 @@ public class NewTestOpenGL {
                 }
             }
 
-            instanceVertexBuffer.set(writer);
+            instanceVertexBuffer.set(writer, BufferUsage.STATIC_DRAW);
         }
 
         val instancedSquaresVAO = VertexArrayObject.builder(gl)

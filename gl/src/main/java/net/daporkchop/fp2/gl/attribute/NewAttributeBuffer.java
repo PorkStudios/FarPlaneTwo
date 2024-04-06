@@ -20,76 +20,27 @@
 package net.daporkchop.fp2.gl.attribute;
 
 import lombok.AccessLevel;
-import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.attribute.vao.VertexArrayVertexBuffer;
 import net.daporkchop.fp2.gl.buffer.upload.BufferUploader;
 import net.daporkchop.fp2.gl.buffer.upload.ImmediateBufferUploader;
+import net.daporkchop.fp2.gl.util.AbstractTypedBuffer;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
-
-import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @param <STRUCT> the struct type
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
-@Getter
-public abstract class NewAttributeBuffer<STRUCT extends AttributeStruct> implements AutoCloseable {
-    /**
-     * The {@link NewAttributeFormat} which this buffer can store vertex attributes for.
-     */
+public abstract class NewAttributeBuffer<STRUCT extends AttributeStruct> extends AbstractTypedBuffer {
     private final NewAttributeFormat<STRUCT> format;
 
-    protected @NotNegative int capacity;
-
     /**
-     * @return the number of attribute data elements that this buffer can store
+     * @return the {@link NewAttributeFormat} which this buffer can store vertex attributes for
      */
-    public final int capacity() {
-        return this.capacity;
-    }
-
-    /**
-     * Sets the capacity of this buffer.
-     * <p>
-     * After this method returns, the buffer's contents are undefined.
-     *
-     * @param capacity the new capacity
-     */
-    public abstract void capacity(@NotNegative int capacity);
-
-    /**
-     * Sets the capacity of this buffer.
-     * <p>
-     * If the new capacity is less than the current capacity, the buffer's contents will be truncated. If greater than the current capacity, the
-     * data will be extended with undefined contents.
-     *
-     * @param capacity the new capacity
-     */
-    public abstract void resize(@NotNegative int capacity);
-
-    /**
-     * Invalidates the element at the given index. After calling this method, the element's contents are undefined.
-     * <p>
-     * When invalidating multiple sequential elements, {@link #invalidate(int, int)} will likely be more performant.
-     *
-     * @param index the index of the element to invalidate
-     */
-    public void invalidate(@NotNegative int index) {
-        this.invalidate(index, 1);
-    }
-
-    /**
-     * Invalidates all elements in the given range. After calling this method, the contents of all elements in the range are undefined.
-     *
-     * @param startIndex the index of the first element to invalidate (inclusive)
-     * @param count      the number of elements to invalidate
-     */
-    public void invalidate(int startIndex, int count) {
-        checkRangeLen(this.capacity(), startIndex, count);
-        //default implementation does nothing
+    public final NewAttributeFormat<STRUCT> format() {
+        return this.format;
     }
 
     /**
@@ -100,17 +51,17 @@ public abstract class NewAttributeBuffer<STRUCT extends AttributeStruct> impleme
      * @param dstIndex  the offset into the source buffer to begin copying from
      * @param length    the number of attributes to copy
      */
-    public abstract void copyTo(int srcIndex, @NonNull NewAttributeBuffer<STRUCT> dstBuffer, int dstIndex, int length);
+    public abstract void copyTo(int srcIndex, NewAttributeBuffer<STRUCT> dstBuffer, int dstIndex, int length);
 
     /**
      * Copies the attribute data from the given {@link AttributeWriter} into this buffer, discarding any existing data and modifying its capacity.
      *
      * @param writer a {@link AttributeWriter} containing the sequence of attribute data elements to copy
      */
-    public void set(@NonNull NewAttributeWriter<STRUCT> writer) {
+    public void set(NewAttributeWriter<STRUCT> writer, BufferUsage usage) {
         int size = writer.size();
         if (this.capacity() != size) {
-            this.capacity(size);
+            this.capacity(size, usage);
         }
         this.setRange(0, writer);
     }
@@ -142,7 +93,4 @@ public abstract class NewAttributeBuffer<STRUCT extends AttributeStruct> impleme
      * @throws UnsupportedOperationException if this attribute buffer uses an {@link NewAttributeFormat attribute format} which doesn't support vertex attributes, or if the {@code divisor} is greater than {@code 0} and {@link net.daporkchop.fp2.gl.GLExtension#GL_ARB_instanced_arrays} isn't supported
      */
     public abstract VertexArrayVertexBuffer[] buffers(@NotNegative int divisor) throws UnsupportedOperationException;
-
-    @Override
-    public abstract void close();
 }

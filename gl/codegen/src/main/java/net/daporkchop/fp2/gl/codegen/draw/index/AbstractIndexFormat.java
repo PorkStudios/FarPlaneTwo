@@ -17,23 +17,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.draw.index;
+package net.daporkchop.fp2.gl.codegen.draw.index;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-
-import static net.daporkchop.fp2.gl.OpenGLConstants.*;
+import net.daporkchop.fp2.gl.OpenGL;
+import net.daporkchop.fp2.gl.draw.index.IndexType;
+import net.daporkchop.fp2.gl.draw.index.NewIndexBuffer;
+import net.daporkchop.fp2.gl.draw.index.NewIndexFormat;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-@Getter
-public enum IndexType {
-    UNSIGNED_BYTE(Byte.BYTES, GL_UNSIGNED_BYTE),
-    UNSIGNED_SHORT(Character.BYTES, GL_UNSIGNED_SHORT),
-    UNSIGNED_INT(Integer.BYTES, GL_UNSIGNED_INT);
+public abstract class AbstractIndexFormat extends NewIndexFormat {
+    protected AbstractIndexFormat(IndexType type) {
+        super(type);
+    }
 
-    private final int size;
-    private final int type;
+    @Override
+    public final NewIndexBuffer createBuffer(OpenGL gl) {
+        return new IndexBufferImpl(this, gl);
+    }
 }

@@ -17,34 +17,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.codegen.struct.interleaved;
+package net.daporkchop.fp2.gl.codegen.draw.index;
 
-import net.daporkchop.fp2.gl.attribute.AttributeStruct;
+import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
-import net.daporkchop.fp2.gl.attribute.NewAttributeBuffer;
-import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
-import net.daporkchop.fp2.gl.attribute.NewAttributeWriter;
-import net.daporkchop.fp2.gl.attribute.vao.VertexArrayVertexBuffer;
+import net.daporkchop.fp2.gl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.buffer.GLMutableBuffer;
 import net.daporkchop.fp2.gl.buffer.upload.BufferUploader;
+import net.daporkchop.fp2.gl.draw.index.NewIndexBuffer;
+import net.daporkchop.fp2.gl.draw.index.NewIndexFormat;
+import net.daporkchop.fp2.gl.draw.index.NewIndexWriter;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 
-import java.util.Arrays;
-
-import static java.lang.Math.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
  */
-public final class AbstractInterleavedAttributeBuffer<STRUCT extends AttributeStruct> extends NewAttributeBuffer<STRUCT> {
+public final class IndexBufferImpl extends NewIndexBuffer {
     //none of these methods have codegen because this class isn't really performance-critical
 
-    public final GLMutableBuffer buffer;
+    private final GLMutableBuffer buffer;
 
-    public AbstractInterleavedAttributeBuffer(NewAttributeFormat<STRUCT> format) {
+    IndexBufferImpl(NewIndexFormat format, OpenGL gl) {
         super(format);
-        this.buffer = GLMutableBuffer.create(format.gl());
+        this.buffer = GLMutableBuffer.create(gl);
     }
 
     @Override
@@ -60,40 +57,38 @@ public final class AbstractInterleavedAttributeBuffer<STRUCT extends AttributeSt
     }
 
     @Override
-    public void copyTo(int srcIndex, NewAttributeBuffer<STRUCT> dstBuffer, int dstIndex, int length) {
-        checkArg(this.getClass() == dstBuffer.getClass(), "incompatible vertex formats: %s\n%s", this.format(), dstBuffer.format());
+    public void copyTo(int srcIndex, NewIndexBuffer dstBuffer, int dstIndex, int length) {
+        checkArg(this.format() == dstBuffer.format(), "incompatible index formats: %s\n%s", this.format(), dstBuffer.format());
         checkRangeLen(this.capacity(), dstIndex, length);
         checkRangeLen(dstBuffer.capacity(), dstIndex, length);
 
         long size = this.format().size();
-        this.buffer.copyRange(srcIndex * size, ((AbstractInterleavedAttributeBuffer<STRUCT>) dstBuffer).buffer, dstIndex * size, length * size);
+        this.buffer.copyRange(srcIndex * size, ((IndexBufferImpl) dstBuffer).buffer, dstIndex * size, length * size);
     }
 
     @Override
-    public void set(NewAttributeWriter<STRUCT> writer, BufferUsage usage) {
-        checkArg(this.format().getClass() == writer.format().getClass(), "incompatible vertex formats: %s\n%s", this.format(), writer.format());
+    public void set(NewIndexWriter writer, BufferUsage usage) {
+        checkArg(this.format() == writer.format(), "incompatible index formats: %s\n%s", this.format(), writer.format());
 
         int count = writer.size();
-        this.buffer.upload(((AbstractInterleavedAttributeWriter<STRUCT>) writer).address, count * this.format().size(), usage);
+        this.buffer.upload(((AbstractIndexWriter) writer).address, count * this.format().size(), usage);
         this.capacity = count;
     }
 
     @Override
-    public void setRange(@NotNegative int startIndex, NewAttributeWriter<STRUCT> writer, BufferUploader uploader) {
-        checkArg(this.format().getClass() == writer.format().getClass(), "incompatible vertex formats: %s\n%s", this.format(), writer.format());
+    public void setRange(@NotNegative int startIndex, NewIndexWriter writer, BufferUploader uploader) {
+        checkArg(this.format() == writer.format(), "incompatible index formats: %s\n%s", this.format(), writer.format());
         int count = writer.size();
         checkRangeLen(this.capacity(), startIndex, count);
 
-        long address = ((AbstractInterleavedAttributeWriter<STRUCT>) writer).address;
+        long address = ((AbstractIndexWriter) writer).address;
         long size = this.format().size();
         uploader.uploadRange(this.buffer, startIndex * size, address, count * size);
     }
 
     @Override
-    public final VertexArrayVertexBuffer[] buffers(int divisor) throws UnsupportedOperationException {
-        VertexArrayVertexBuffer[] result = new VertexArrayVertexBuffer[this.format().occupiedVertexAttributes()];
-        Arrays.fill(result, VertexArrayVertexBuffer.create(this.buffer.id(), 0L, toIntExact(this.format().size()), divisor));
-        return result;
+    public GLBuffer elementsBuffer() {
+        return this.buffer;
     }
 
     @Override

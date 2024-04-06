@@ -17,23 +17,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.draw.index;
+package net.daporkchop.fp2.gl.codegen.draw.index;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-
-import static net.daporkchop.fp2.gl.OpenGLConstants.*;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.gl.draw.index.IndexType;
+import net.daporkchop.fp2.gl.draw.index.NewIndexFormat;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-@Getter
-public enum IndexType {
-    UNSIGNED_BYTE(Byte.BYTES, GL_UNSIGNED_BYTE),
-    UNSIGNED_SHORT(Character.BYTES, GL_UNSIGNED_SHORT),
-    UNSIGNED_INT(Integer.BYTES, GL_UNSIGNED_INT);
+@UtilityClass
+public class IndexFormatFactory {
+    private static final LoadingCache<IndexType, NewIndexFormat> FORMAT_CACHE = CacheBuilder.newBuilder()
+            .weakValues().concurrencyLevel(1)
+            .build(CacheLoader.from(indexType -> new IndexFormatClassLoader(indexType).createIndexFormat()));
 
-    private final int size;
-    private final int type;
+    public static NewIndexFormat get(IndexType type) {
+        return FORMAT_CACHE.get(type);
+    }
 }

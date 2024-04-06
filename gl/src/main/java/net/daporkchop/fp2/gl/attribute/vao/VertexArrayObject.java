@@ -26,6 +26,7 @@ import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.NewAttributeBuffer;
 import net.daporkchop.fp2.gl.buffer.BufferTarget;
 import net.daporkchop.fp2.gl.buffer.GLBuffer;
+import net.daporkchop.fp2.gl.draw.index.NewIndexBuffer;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 
 import java.util.ArrayList;
@@ -331,6 +332,10 @@ public abstract class VertexArrayObject implements AutoCloseable {
         public Builder elementBuffer(GLBuffer elementBuffer) {
             this.elementsBuffer = elementBuffer;
             return this;
+        }
+
+        public Builder elementBuffer(NewIndexBuffer indexBuffer) {
+            return this.elementBuffer(indexBuffer.elementsBuffer());
         }
 
         public VertexArrayObject build() {

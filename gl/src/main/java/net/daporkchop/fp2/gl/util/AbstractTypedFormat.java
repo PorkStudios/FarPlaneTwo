@@ -17,23 +17,24 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.draw.index;
+package net.daporkchop.fp2.gl.util;
 
-import lombok.Getter;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 
-import static net.daporkchop.fp2.gl.OpenGLConstants.*;
-
 /**
+ * Base implementation of a data format for storing (sequences of) typed data on the GL.
+ *
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-@Getter
-public enum IndexType {
-    UNSIGNED_BYTE(Byte.BYTES, GL_UNSIGNED_BYTE),
-    UNSIGNED_SHORT(Character.BYTES, GL_UNSIGNED_SHORT),
-    UNSIGNED_INT(Integer.BYTES, GL_UNSIGNED_INT);
+@RequiredArgsConstructor(access = AccessLevel.PROTECTED)
+public abstract class AbstractTypedFormat {
+    private final long size;
 
-    private final int size;
-    private final int type;
+    /**
+     * @return the number of bytes occupied by a single element using this format
+     */
+    public final long size() {
+        return this.size;
+    }
 }

@@ -22,6 +22,7 @@ package net.daporkchop.fp2.gl.attribute;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.gl.util.AbstractTypedWriter;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.common.annotation.param.Positive;
 
@@ -35,42 +36,15 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
-public abstract class NewAttributeWriter<STRUCT extends AttributeStruct> implements AutoCloseable {
-    /**
-     * The {@link NewAttributeFormat} which this writer can write vertex attributes for.
-     */
+public abstract class NewAttributeWriter<STRUCT extends AttributeStruct> extends AbstractTypedWriter {
     private final NewAttributeFormat<STRUCT> format;
 
-    protected @NotNegative int size;
-    protected @Positive int capacity;
-
     /**
-     * @return the number of vertices written so far
+     * @return the {@link NewAttributeFormat} which this writer can write vertex attributes for
      */
-    public final int size() {
-        return this.size;
+    public final NewAttributeFormat<STRUCT> format() {
+        return this.format;
     }
-
-    /**
-     * @return the number of vertices which can be stored in this writer before it needs to be resized
-     */
-    public final int capacity() {
-        return this.capacity;
-    }
-
-    /**
-     * Clears this writer instance, discarding all previously written attribute values.
-     */
-    public final void clear() {
-        this.size = 0;
-    }
-
-    /**
-     * Ensures that this writer has sufficient remaining capacity to append at least the given number of elements.
-     *
-     * @param count the number of additional elements to reserve capacity for
-     */
-    public abstract void reserve(@NotNegative int count);
 
     /**
      * Gets an instance of {@link STRUCT the attribute struct type} which serves as a handle to access the element at the front of this writer.
@@ -149,24 +123,6 @@ public abstract class NewAttributeWriter<STRUCT extends AttributeStruct> impleme
     }
 
     /**
-     * Appends a new element to the writer by incrementing its position by one. The element's contents are initially undefined.
-     * <p>
-     * Any existing handles to other elements in this writer will be invalidated by this operation.
-     */
-    public void appendUninitialized() {
-        this.appendUninitialized(1);
-    }
-
-    /**
-     * Appends new elements to the writer by incrementing its position by the given {@code count}. The element's contents are initially undefined.
-     * <p>
-     * Any existing handles to other elements in this writer will be invalidated by this operation.
-     *
-     * @param count the number of elements to append
-     */
-    public abstract void appendUninitialized(@Positive int count);
-
-    /**
      * Copies the element at the given source index to the given destination index.
      *
      * @param src the source index
@@ -186,7 +142,4 @@ public abstract class NewAttributeWriter<STRUCT extends AttributeStruct> impleme
      * @param length the number of elements to copy
      */
     public abstract void copy(@NotNegative int src, @NotNegative int dst, @NotNegative int length);
-
-    @Override
-    public abstract void close();
 }
