@@ -31,6 +31,7 @@ import net.daporkchop.fp2.core.client.gui.GuiContext;
 import net.daporkchop.fp2.core.client.gui.GuiScreen;
 import net.daporkchop.fp2.core.client.key.KeyCategory;
 import net.daporkchop.fp2.core.client.player.IFarPlayerClient;
+import net.daporkchop.fp2.core.client.render.GlobalRenderer;
 import net.daporkchop.fp2.core.client.shader.ReloadableShaderRegistry;
 import net.daporkchop.fp2.core.client.shader.ShaderMacros;
 import net.daporkchop.fp2.core.config.FP2Config;
@@ -58,6 +59,7 @@ public abstract class FP2Client {
     @Setter(AccessLevel.PROTECTED)
     private Logger chat;
     private OpenGL gl;
+    private GlobalRenderer globalRenderer;
 
     /**
      * Initializes this instance.
@@ -85,7 +87,7 @@ public abstract class FP2Client {
             }
 
             this.gl = gl;
-            //TODO: do something here (probably pre-load shaders and vertex formats and stuff)
+            this.globalRenderer = new GlobalRenderer(this.fp2(), gl);
         });
 
         //update debug color macros

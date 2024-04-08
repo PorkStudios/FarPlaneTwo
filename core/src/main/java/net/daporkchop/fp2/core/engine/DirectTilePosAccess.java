@@ -19,6 +19,8 @@
 
 package net.daporkchop.fp2.core.engine;
 
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2LongMap;
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
@@ -335,6 +337,21 @@ public class DirectTilePosAccess {
      */
     public static <V> Map<TilePos, V> newPositionKeyedLinkedHashMap(int initialCapacity) {
         return new Object2ObjectLinkedOpenHashMap<>(initialCapacity);
+    }
+
+    /**
+     * @return a new {@link Object2IntMap} which uses {@link TilePos} as a key
+     */
+    public static Object2IntMap<TilePos> newPositionKeyed2IntHashMap() {
+        return new Object2IntOpenHashMap<>();
+    }
+
+    /**
+     * @param initialCapacity the initial capacity of the map
+     * @return a new {@link Object2IntMap} which uses {@link TilePos} as a key
+     */
+    public static Object2IntMap<TilePos> newPositionKeyed2IntHashMap(int initialCapacity) {
+        return new Object2IntOpenHashMap<>(initialCapacity);
     }
 
     /**

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.common.util.alloc;
@@ -24,7 +23,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NonNull;
 import net.daporkchop.fp2.common.util.stats.AbstractLongStatistics;
+import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.common.math.PMath;
+import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.function.LongConsumer;
 
@@ -46,7 +47,7 @@ public interface Allocator {
      * @param size the size of the region to allocate
      * @return the starting address of the allocated region
      */
-    long alloc(long size);
+    long alloc(@NotNegative long size);
 
     /**
      * Modifies the size of an existing region.
@@ -56,7 +57,7 @@ public interface Allocator {
      *                contents will be extended with undefined data.
      * @return the new starting address of the re-allocated region
      */
-    default long realloc(long address, long size) {
+    default long realloc(long address, @NotNegative long size) {
         throw new UnsupportedOperationException(className(this));
     }
 
@@ -66,6 +67,40 @@ public interface Allocator {
      * @param address the starting address of the region to free
      */
     void free(long address);
+
+    /**
+     * Equivalent to {@link #free(long) freeing} an old region followed by {@link #alloc(long) allocating} a new region with the given size,
+     *
+     * @param address the starting address of the region to free
+     * @param size    the size of the new region to allocate
+     * @return the starting address of the newly allocated region
+     */
+    default long freealloc(long address, @NotNegative long size) { //TODO: add optimized overrides of this in implementations
+        this.free(address);
+        return this.alloc(size);
+    }
+
+    /**
+     * Allocates multiple regions of the given sizes at once.
+     *
+     * @param sizes an array containing the sizes of the regions to allocate
+     * @return an array containing the starting addresses of the newly allocated regions
+     */
+    default long[] multiAlloc(long @NotNegative [] sizes) {
+        long[] result = PUnsafe.allocateUninitializedLongArray(sizes.length);
+        int i = 0;
+        try {
+            for (; i < sizes.length; i++) {
+                result[i] = this.alloc(sizes[i]);
+            }
+            return result;
+        } catch (Throwable t) {
+            for (int j = 0; j < i; j++) { //free everything we allocated prior to the failure
+                this.free(result[j]);
+            }
+            throw t;
+        }
+    }
 
     /**
      * @return a {@link Stats} instance describing this allocator's current state
