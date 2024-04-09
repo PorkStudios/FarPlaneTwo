@@ -22,6 +22,7 @@ package net.daporkchop.fp2.common.util.alloc;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.common.util.stats.AbstractLongStatistics;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.common.math.PMath;
@@ -40,42 +41,54 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  *
  * @author DaPorkchop_
  */
-public interface Allocator {
+@RequiredArgsConstructor
+public abstract class Allocator {
+    /**
+     * An address which indicates an empty allocation.
+     */
+    public final long nullAddress;
+
     /**
      * Allocates a region of the given size.
      *
      * @param size the size of the region to allocate
-     * @return the starting address of the allocated region
+     * @return the starting address of the allocated region. May be {@link #nullAddress} if the given size was {@code 0}
      */
-    long alloc(@NotNegative long size);
+    public abstract long alloc(@NotNegative long size);
 
     /**
      * Modifies the size of an existing region.
+     * <p>
+     * Equivalent to {@link #alloc(long) alloc(size)} if the given address is equal to {@link #nullAddress}.
      *
      * @param address the starting address of the region to free. Once re-allocated, this address is no longer valid and must be replaced with the new one.
      * @param size    the region's new size. If less than the current size, the region's contents will be truncated. If greater than the current size, the region's
      *                contents will be extended with undefined data.
-     * @return the new starting address of the re-allocated region
+     * @return the new starting address of the re-allocated region. May be {@link #nullAddress} if the given size was {@code 0}
      */
-    default long realloc(long address, @NotNegative long size) {
+    public long realloc(long address, @NotNegative long size) {
         throw new UnsupportedOperationException(className(this));
     }
 
     /**
      * Frees an allocated region.
+     * <p>
+     * Does nothing if the given address is equal to {@link #nullAddress}.
      *
      * @param address the starting address of the region to free
      */
-    void free(long address);
+    public abstract void free(long address);
 
     /**
-     * Equivalent to {@link #free(long) freeing} an old region followed by {@link #alloc(long) allocating} a new region with the given size,
+     * Equivalent to {@link #free(long) freeing} an old region followed by {@link #alloc(long) allocating} a new region with the given size.
+     * <p>
+     * Similar to {@link #realloc(long, long)}, except that old contents will not be preserved.
      *
      * @param address the starting address of the region to free
      * @param size    the size of the new region to allocate
-     * @return the starting address of the newly allocated region
+     * @return the starting address of the newly allocated region. May be {@link #nullAddress} if the given size was {@code 0}
      */
-    default long freealloc(long address, @NotNegative long size) { //TODO: add optimized overrides of this in implementations
+    public long freealloc(long address, @NotNegative long size) { //TODO: add optimized overrides of this in implementations
         this.free(address);
         return this.alloc(size);
     }
@@ -84,9 +97,9 @@ public interface Allocator {
      * Allocates multiple regions of the given sizes at once.
      *
      * @param sizes an array containing the sizes of the regions to allocate
-     * @return an array containing the starting addresses of the newly allocated regions
+     * @return an array containing the starting addresses of the newly allocated regions. Elements may be {@link #nullAddress} if the corresponding size was {@code 0}
      */
-    default long[] multiAlloc(long @NotNegative [] sizes) {
+    public long[] multiAlloc(long @NotNegative [] sizes) {
         long[] result = PUnsafe.allocateUninitializedLongArray(sizes.length);
         int i = 0;
         try {
@@ -105,7 +118,7 @@ public interface Allocator {
     /**
      * @return a {@link Stats} instance describing this allocator's current state
      */
-    Stats stats();
+    public abstract Stats stats();
 
     /**
      * A callback function which computes the next size to grow the data to.
@@ -113,7 +126,7 @@ public interface Allocator {
      * @author DaPorkchop_
      */
     @FunctionalInterface
-    interface GrowFunction {
+    public interface GrowFunction {
         /**
          * @return the default {@link GrowFunction}
          */
@@ -163,7 +176,7 @@ public interface Allocator {
      * @author DaPorkchop_
      * @see <a href="https://linux.die.net/man/2/sbrk">Linux Programmer's Manual</a>
      */
-    interface SequentialHeapManager {
+    public interface SequentialHeapManager {
         /**
          * Gets a simple {@link SequentialHeapManager} whose {@link #brk(long)} and {@link #sbrk(long)} methods delegate to the same function.
          *
@@ -203,7 +216,7 @@ public interface Allocator {
      */
     @Builder
     @Data
-    final class Stats extends AbstractLongStatistics<Stats> {
+    public static final class Stats extends AbstractLongStatistics<Stats> {
         public static final Stats ZERO = builder().build();
 
         private final long heapRegions;

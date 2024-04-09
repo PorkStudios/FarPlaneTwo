@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.common.util.alloc;
@@ -25,6 +24,8 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectRBTreeMap;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import net.daporkchop.lib.common.annotation.NotThreadSafe;
+import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.common.math.PMath;
 
 import java.util.Comparator;
@@ -43,7 +44,8 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  *
  * @author DaPorkchop_
  */
-public final class SequentialVariableSizedAllocator implements Allocator {
+@NotThreadSafe
+public final class SequentialVariableSizedAllocator extends Allocator {
     /*
      * Performance characteristics (C=capacity, N=extents):
      *
@@ -52,16 +54,18 @@ public final class SequentialVariableSizedAllocator implements Allocator {
      *   - O(log2(N) + C) (worst-case)
      * free():
      *   - O(log2(N))
+     *
+     * The null address is -1.
      */
 
-    protected static final long MIN_ALLOC_SZ = 64L; //the maximum number of bytes we are willing to waste as padding at the end of a block
+    private static final long MIN_ALLOC_SZ = 64L; //the maximum number of bytes we are willing to waste as padding at the end of a block
 
-    protected final long blockSize;
-    protected final GrowFunction growFunction;
-    protected final SequentialHeapManager manager;
-    protected long capacity;
+    private final long blockSize;
+    private final GrowFunction growFunction;
+    private final SequentialHeapManager manager;
+    private long capacity;
 
-    protected final NavigableSet<Node> emptyNodes = new TreeSet<>((Comparator<Object>) (_a, _b) -> {
+    private final NavigableSet<Node> emptyNodes = new TreeSet<>((Comparator<Object>) (_a, _b) -> {
         Node b = (Node) _b;
         if (_a instanceof Long) {
             return Long.compare((Long) _a, b.size);
@@ -71,14 +75,15 @@ public final class SequentialVariableSizedAllocator implements Allocator {
             return d != 0 ? d : Long.compare(a.base, b.base);
         }
     });
-    protected final Long2ObjectMap<Node> usedNodes = new Long2ObjectRBTreeMap<>();
-    protected Node tail;
+    private final Long2ObjectMap<Node> usedNodes = new Long2ObjectRBTreeMap<>();
+    private Node tail;
 
     public SequentialVariableSizedAllocator(long blockSize, @NonNull SequentialHeapManager manager) {
         this(blockSize, manager, GrowFunction.def());
     }
 
     public SequentialVariableSizedAllocator(long blockSize, @NonNull SequentialHeapManager manager, @NonNull GrowFunction growFunction) {
+        super(-1L);
         this.blockSize = positive(blockSize, "blockSize");
         this.manager = manager;
         this.growFunction = growFunction;
@@ -91,7 +96,11 @@ public final class SequentialVariableSizedAllocator implements Allocator {
     }
 
     @Override
-    public long alloc(long rawSize) {
+    public long alloc(@NotNegative long rawSize) {
+        if (rawSize == 0L) {
+            return this.nullAddress;
+        }
+
         //round up to block size
         rawSize = PMath.roundUp(positive(rawSize, "rawSize"), this.blockSize);
 
@@ -123,6 +132,10 @@ public final class SequentialVariableSizedAllocator implements Allocator {
 
     @Override
     public void free(long address) {
+        if (address == this.nullAddress) {
+            return;
+        }
+
         Node node = this.usedNodes.remove(address);
         checkArg(node != null, "invalid address for free(): %d (allocator state: %s)", address, this);
 

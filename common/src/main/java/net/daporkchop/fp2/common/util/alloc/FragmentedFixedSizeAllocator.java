@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,13 +15,14 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.common.util.alloc;
 
 import it.unimi.dsi.fastutil.objects.ReferenceLinkedOpenHashSet;
 import lombok.NonNull;
+import net.daporkchop.lib.common.annotation.NotThreadSafe;
+import net.daporkchop.lib.common.annotation.param.NotNegative;
 
 import java.util.BitSet;
 import java.util.NavigableMap;
@@ -34,7 +35,8 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  *
  * @author DaPorkchop_
  */
-public final class FragmentedFixedSizeAllocator implements Allocator {
+@NotThreadSafe
+public final class FragmentedFixedSizeAllocator extends Allocator {
     /*
      * Performance characteristics (A=arenas, C=arena capacity):
      *
@@ -44,27 +46,30 @@ public final class FragmentedFixedSizeAllocator implements Allocator {
      *   - O(log2(A) + C) (worst-case)
      * free():
      *   - O(log2(A))
+     *
+     * The null address is -1.
      */
 
-    protected final long blockSize;
-    protected final int arenaCapacity;
-    protected final Allocator allocator;
+    private final long blockSize;
+    private final int arenaCapacity;
+    private final Allocator allocator;
 
-    protected final ReferenceLinkedOpenHashSet<Arena> nonFullArenas = new ReferenceLinkedOpenHashSet<>();
-    protected final NavigableMap<Long, Arena> allArenas = new TreeMap<>(); //there's no fastutil equivalent to NavigableMap :(
+    private final ReferenceLinkedOpenHashSet<Arena> nonFullArenas = new ReferenceLinkedOpenHashSet<>();
+    private final NavigableMap<Long, Arena> allArenas = new TreeMap<>(); //there's no fastutil equivalent to NavigableMap :(
 
     public FragmentedFixedSizeAllocator(long blockSize, @NonNull Allocator allocator) {
         this(blockSize, 4096, allocator);
     }
 
     public FragmentedFixedSizeAllocator(long blockSize, int arenaCapacity, @NonNull Allocator allocator) {
+        super(-1L);
         this.blockSize = positive(blockSize, "blockSize");
         this.arenaCapacity = positive(arenaCapacity, "arenaCapacity");
         this.allocator = allocator;
     }
 
     @Override
-    public long alloc(long size) {
+    public long alloc(@NotNegative long size) {
         checkArg(size == this.blockSize, "size must be exactly block size (%d)", this.blockSize);
 
         Arena arena;
@@ -93,6 +98,10 @@ public final class FragmentedFixedSizeAllocator implements Allocator {
 
     @Override
     public void free(long address) {
+        if (address == this.nullAddress) {
+            return;
+        }
+
         Arena arena = this.allArenas.floorEntry(address).getValue();
         checkArg(address < arena.endAddr, "address 0x%016x doesn't correspond to any arenas", address);
 

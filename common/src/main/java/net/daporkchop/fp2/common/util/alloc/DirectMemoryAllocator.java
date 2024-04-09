@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,12 +15,13 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.common.util.alloc;
 
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.lib.common.annotation.ThreadSafe;
+import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.primitive.map.LongLongMap;
 import net.daporkchop.lib.primitive.map.concurrent.LongLongConcurrentHashMap;
 import net.daporkchop.lib.unsafe.PCleaner;
@@ -38,26 +39,26 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  *
  * @author DaPorkchop_
  */
-public final class DirectMemoryAllocator implements Allocator {
-    protected final LongLongMap allocations = new LongLongConcurrentHashMap(-1L); //TODO: replace this with a LongLongConcurrentSkipListMap once PorkLib supports it
-
-    protected final boolean zero;
+@ThreadSafe
+public final class DirectMemoryAllocator extends Allocator {
+    private final LongLongMap allocations = new LongLongConcurrentHashMap(-1L); //TODO: replace this with a LongLongConcurrentSkipListMap once PorkLib supports it
+    private final boolean zero;
 
     public DirectMemoryAllocator() {
         this(false);
     }
 
     /**
-     * @param zero whether or not uninitialized memory should be zeroed out
+     * @param zero if {@code true}, allocations will be initialized to zero
      */
     public DirectMemoryAllocator(boolean zero) {
+        super(0L);
         PCleaner.cleaner(this, new Releaser(this.allocations));
-
         this.zero = zero;
     }
 
     @Override
-    public long alloc(long size) {
+    public long alloc(@NotNegative long size) {
         long addr = PUnsafe.allocateMemory(notNegative(size, "size"));
         this.allocations.put(addr, size);
 
@@ -68,7 +69,7 @@ public final class DirectMemoryAllocator implements Allocator {
     }
 
     @Override
-    public long realloc(long address, long size) {
+    public long realloc(long address, @NotNegative long size) {
         notNegative(size, "size");
         long oldSize;
         if (address == 0L) { //no allocation existed previously, so there's nothing to remove
@@ -88,8 +89,10 @@ public final class DirectMemoryAllocator implements Allocator {
 
     @Override
     public void free(long address) {
-        checkArg(this.allocations.remove(address) >= 0L, "can't free address 0x%016x (which isn't owned by this allocator)", address);
-        PUnsafe.freeMemory(address);
+        if (address != 0L) {
+            checkArg(this.allocations.remove(address) >= 0L, "can't free address 0x%016x (which isn't owned by this allocator)", address);
+            PUnsafe.freeMemory(address);
+        }
     }
 
     @Override
@@ -110,7 +113,7 @@ public final class DirectMemoryAllocator implements Allocator {
      */
     @RequiredArgsConstructor
     private static final class Releaser implements Runnable {
-        protected final LongLongMap allocations;
+        private final LongLongMap allocations;
 
         @Override
         public void run() {
