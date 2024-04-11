@@ -19,6 +19,7 @@
 
 package net.daporkchop.fp2.gl.draw.index;
 
+import lombok.SneakyThrows;
 import net.daporkchop.fp2.common.GlobalProperties;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.gl.OpenGL;
@@ -37,6 +38,7 @@ public abstract class NewIndexFormat extends AbstractTypedFormat {
      * @param type the index type
      * @return an {@link NewIndexFormat}
      */
+    @SneakyThrows
     public static NewIndexFormat get(IndexType type) {
         return (NewIndexFormat) MethodHandles.publicLookup()
                 .findStatic(

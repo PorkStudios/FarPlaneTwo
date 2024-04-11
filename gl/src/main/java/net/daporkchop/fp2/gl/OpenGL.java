@@ -28,6 +28,7 @@ import net.daporkchop.fp2.gl.compute.ComputeWorkGroupCount;
 import net.daporkchop.fp2.gl.compute.ComputeWorkGroupSize;
 
 import java.nio.ByteBuffer;
+import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.Arrays;
 import java.util.Collections;
@@ -36,6 +37,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -63,7 +66,7 @@ public abstract class OpenGL {
 
     private final GLVersion version;
     private final GLProfile profile;
-    private final Set<GLExtension> extensions; //a set of the supported extensions, excluding those whose features are already available because they're core features in the current OpenGL version
+    private final GLExtensionSet extensions; //a set of the supported extensions, excluding those whose features are already available because they're core features in the current OpenGL version
     private final boolean forwardCompatibility;
 
     private final Limits limits;
@@ -82,9 +85,12 @@ public abstract class OpenGL {
                         .collect(Collectors.toSet());
             }
 
+            BiFunction<GLExtensionSet, GLExtension, GLExtensionSet> extensionSetReducer = GLExtensionSet::add;
+            BinaryOperator<GLExtensionSet> extensionSetMerger = GLExtensionSet::addAll;
+
             this.extensions = Stream.of(GLExtension.values())
                     .filter(extension -> !extension.core(this.version) && extensionNames.contains(extension.name()))
-                    .collect(Collectors.collectingAndThen(Collectors.toSet(), Collections::unmodifiableSet));
+                    .reduce(GLExtensionSet.empty(), extensionSetReducer, extensionSetMerger);
         }
 
         { //get profile
@@ -455,6 +461,22 @@ public abstract class OpenGL {
 
     public abstract void glUniform(int location, float v0, float v1, float v2, float v3);
 
+    public abstract void glUniform1(int location, IntBuffer value);
+
+    public abstract void glUniform2(int location, IntBuffer value);
+
+    public abstract void glUniform3(int location, IntBuffer value);
+
+    public abstract void glUniform4(int location, IntBuffer value);
+
+    public abstract void glUniform1(int location, FloatBuffer value);
+
+    public abstract void glUniform2(int location, FloatBuffer value);
+
+    public abstract void glUniform3(int location, FloatBuffer value);
+
+    public abstract void glUniform4(int location, FloatBuffer value);
+
     public abstract void glBlendEquationSeparate(int modeRGB, int modeAlpha);
 
     //
@@ -602,6 +624,30 @@ public abstract class OpenGL {
 
     //GL_ARB_separate_shader_objects
     public abstract void glProgramUniform(int program, int location, float v0, float v1, float v2, float v3);
+
+    //GL_ARB_separate_shader_objects
+    public abstract void glProgramUniform1(int program, int location, IntBuffer value);
+
+    //GL_ARB_separate_shader_objects
+    public abstract void glProgramUniform2(int program, int location, IntBuffer value);
+
+    //GL_ARB_separate_shader_objects
+    public abstract void glProgramUniform3(int program, int location, IntBuffer value);
+
+    //GL_ARB_separate_shader_objects
+    public abstract void glProgramUniform4(int program, int location, IntBuffer value);
+
+    //GL_ARB_separate_shader_objects
+    public abstract void glProgramUniform1(int program, int location, FloatBuffer value);
+
+    //GL_ARB_separate_shader_objects
+    public abstract void glProgramUniform2(int program, int location, FloatBuffer value);
+
+    //GL_ARB_separate_shader_objects
+    public abstract void glProgramUniform3(int program, int location, FloatBuffer value);
+
+    //GL_ARB_separate_shader_objects
+    public abstract void glProgramUniform4(int program, int location, FloatBuffer value);
 
     //
     //
@@ -767,7 +813,9 @@ public abstract class OpenGL {
         private final int maxShaderStorageBuffers;
         private final int maxTextureUnits;
         private final int maxVertexAttributes;
+
         private final int maxUniformBuffers;
+        private final int maxUniformBlockSize;
 
         private final int maxComputeWorkGroupInvocations;
         private final ComputeWorkGroupSize maxComputeWorkGroupSize;
@@ -782,7 +830,13 @@ public abstract class OpenGL {
             this.maxShaderStorageBuffers = gl.supports(GLExtension.GL_ARB_shader_storage_buffer_object) ? gl.glGetInteger(GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS) : 0;
             this.maxTextureUnits = gl.glGetInteger(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS);
             this.maxVertexAttributes = gl.glGetInteger(GL_MAX_VERTEX_ATTRIBS);
-            this.maxUniformBuffers = gl.glGetInteger(GL_MAX_UNIFORM_BUFFER_BINDINGS);
+
+            if (gl.supports(GLExtension.GL_ARB_uniform_buffer_object)) {
+                this.maxUniformBuffers = gl.glGetInteger(GL_MAX_UNIFORM_BUFFER_BINDINGS);
+                this.maxUniformBlockSize = gl.glGetInteger(GL_MAX_UNIFORM_BLOCK_SIZE);
+            } else {
+                this.maxUniformBuffers = this.maxUniformBlockSize = 0;
+            }
 
             if (gl.supports(GLExtension.GL_ARB_compute_shader)) {
                 this.maxComputeWorkGroupInvocations = gl.glGetInteger(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS);
