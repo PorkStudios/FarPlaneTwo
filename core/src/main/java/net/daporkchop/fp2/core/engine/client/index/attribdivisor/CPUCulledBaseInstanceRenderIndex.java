@@ -31,6 +31,8 @@ import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
 import net.daporkchop.fp2.gl.draw.DrawMode;
 import net.daporkchop.fp2.gl.draw.indirect.DrawElementsIndirectCommand;
+import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
+import net.daporkchop.fp2.gl.shader.ShaderProgram;
 
 import java.util.Map;
 import java.util.Set;
@@ -40,6 +42,8 @@ import static net.daporkchop.fp2.core.engine.EngineConstants.*;
 import static net.daporkchop.fp2.core.engine.client.RenderConstants.*;
 
 /**
+ * Render index implementation using MultiDrawIndirect with an attribute divisor for the tile position which does frustum culling on tiles on the CPU.
+ *
  * @author DaPorkchop_
  */
 public class CPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct> extends AbstractMultiDrawIndirectRenderIndex<VertexType> {
@@ -132,13 +136,18 @@ public class CPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
     }
 
     @Override
-    public void draw(DrawMode mode, int level, int pass) {
+    public void draw(DrawMode mode, int level, int pass, DrawShaderProgram shader, ShaderProgram.UniformSetter uniformSetter) {
         this.renderPosTable.flush();
 
         val list = this.commandLists[level][pass];
         if (list.size != 0) {
-            this.gl.glBindVertexArray(this.vaos[level][pass].id());
+            this.gl.glBindVertexArray(this.vaos.vao(level, pass).id());
             this.gl.glMultiDrawElementsIndirect(mode.mode(), this.bakeStorage.indexFormat.type().type(), list.address, list.size, 0);
         }
+    }
+
+    @Override
+    public PosTechnique posTechnique() {
+        return PosTechnique.VERTEX_ATTRIBUTE;
     }
 }

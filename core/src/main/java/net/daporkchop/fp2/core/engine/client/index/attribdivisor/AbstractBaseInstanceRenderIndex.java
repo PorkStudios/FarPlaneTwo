@@ -49,32 +49,18 @@ public abstract class AbstractBaseInstanceRenderIndex<VertexType extends Attribu
     protected final Set<TilePos> hiddenPositions = DirectTilePosAccess.newPositionHashSet();
 
     protected final RenderPosTable renderPosTable;
-    protected final VertexArrayObject[][] vaos = new VertexArrayObject[MAX_LODS][RENDER_PASS_COUNT];
+    protected final VaoGroup<VertexType> vaos;
 
     public AbstractBaseInstanceRenderIndex(OpenGL gl, BakeStorage<VertexType> bakeStorage, DirectMemoryAllocator alloc, NewAttributeFormat<VoxelGlobalAttributes> sharedVertexFormat) {
         super(gl, bakeStorage, alloc);
 
         this.renderPosTable = new SimpleRenderPosTable(gl, sharedVertexFormat, alloc);
-
-        //create a VAO configured for each level and pass
-        for (int level = 0; level < MAX_LODS; level++) {
-            for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
-                this.vaos[level][pass] = VertexArrayObject.builder(gl)
-                        .buffer(this.renderPosTable.vertexBuffer(level), 1)
-                        .buffer(bakeStorage.vertexBuffer(level, pass))
-                        .elementBuffer(bakeStorage.indexBuffer(level, pass))
-                        .build();
-            }
-        }
+        this.vaos = new VaoGroup<>(gl, this.renderPosTable, bakeStorage);
     }
 
     @Override
     public void close() {
-        for (val vaos : this.vaos) {
-            for (val vao : vaos) {
-                vao.close();
-            }
-        }
+        this.vaos.close();
         this.renderPosTable.close();
     }
 
@@ -82,5 +68,38 @@ public abstract class AbstractBaseInstanceRenderIndex<VertexType extends Attribu
     public void updateHidden(Set<TilePos> hidden, Set<TilePos> shown) {
         this.hiddenPositions.removeAll(shown);
         this.hiddenPositions.addAll(hidden);
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    protected static final class VaoGroup<VertexType extends AttributeStruct> implements AutoCloseable {
+        private final VertexArrayObject[][] vaos = new VertexArrayObject[MAX_LODS][RENDER_PASS_COUNT];
+
+        public VaoGroup(OpenGL gl, RenderPosTable renderPosTable, BakeStorage<VertexType> bakeStorage) {
+            //create a VAO configured for each level and pass
+            for (int level = 0; level < MAX_LODS; level++) {
+                for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
+                    this.vaos[level][pass] = VertexArrayObject.builder(gl)
+                            .buffer(renderPosTable.vertexBuffer(level), 1)
+                            .buffer(bakeStorage.vertexBuffer(level, pass))
+                            .elementBuffer(bakeStorage.indexBuffer(level, pass))
+                            .build();
+                }
+            }
+        }
+
+        public VertexArrayObject vao(int level, int pass) {
+            return this.vaos[level][pass];
+        }
+
+        @Override
+        public void close() {
+            for (val vaos : this.vaos) {
+                for (val vao : vaos) {
+                    vao.close();
+                }
+            }
+        }
     }
 }

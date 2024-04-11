@@ -23,10 +23,13 @@ import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.engine.TilePos;
+import net.daporkchop.fp2.core.engine.client.RenderConstants;
 import net.daporkchop.fp2.core.engine.client.bake.storage.BakeStorage;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.draw.DrawMode;
+import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
+import net.daporkchop.fp2.gl.shader.ShaderProgram;
 
 import java.util.Set;
 
@@ -82,8 +85,41 @@ public abstract class RenderIndex<VertexType extends AttributeStruct> implements
     /**
      * Draws the selected tiles at the given detail level using the currently bound shader.
      *
-     * @param level the detail level
-     * @param pass  the render pass
+     * @param level         the detail level
+     * @param pass          the render pass
+     * @param shader        the shader which is currently bound and is going to be rendered with
+     * @param uniformSetter a handle for setting uniform values in the draw shader
      */
-    public abstract void draw(DrawMode mode, int level, int pass);
+    public abstract void draw(DrawMode mode, int level, int pass, DrawShaderProgram shader, ShaderProgram.UniformSetter uniformSetter);
+
+    /**
+     * @return the technique used by this render index to push tile positions to the shader
+     */
+    public abstract PosTechnique posTechnique();
+
+    /**
+     * A technique describing how shaders should access the tile position for a tile.
+     *
+     * @author DaPorkchop_
+     */
+    public enum PosTechnique {
+        /**
+         * The shader declares ordinary vertex attributes for {@link net.daporkchop.fp2.core.engine.client.struct.VoxelGlobalAttributes}.
+         * <p>
+         * The render index is responsible for ensuring that the corresponding attribute arrays are bound to data representing the tile position, which
+         * is likely done using a vertex attribute divisor and issuing instanced draws using a corresponding BaseInstance value.
+         */
+        VERTEX_ATTRIBUTE,
+        /**
+         * The shader declares a uniform buffer at binding location {@link RenderConstants#TILE_POS_ARRAY_UBO_BINDING}. The buffer must use the {@code std140}
+         * layout, and contain an array of {@code ivec4} of length {@link RenderConstants#tilePosArrayElements(OpenGL)}.
+         * <p>
+         * The shader can access the tile position of the current tile by reading the uniform element at index {@code gl_DrawID}.
+         */
+        UNIFORM_ARRAY_DRAWID,
+        /**
+         * The shader declares a uniform {@code ivec4} named {@link RenderConstants#TILE_POS_UNIFORM_NAME}.
+         */
+        UNIFORM,
+    }
 }

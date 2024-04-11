@@ -23,16 +23,20 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.common.function.plain.QuadConsumer;
 import net.daporkchop.lib.common.function.plain.TriFunction;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
+import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.function.Consumer;
 
 import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -83,7 +87,7 @@ public abstract class ShaderProgram implements AutoCloseable {
     /**
      * Executes the given action with this program bound as the active program.
      *
-     * @param action the action to run
+     * @param action the action to run while the shader is bound
      */
     public final void bind(Runnable action) {
         int old = this.gl.glGetInteger(GL_CURRENT_PROGRAM);
@@ -92,6 +96,271 @@ public abstract class ShaderProgram implements AutoCloseable {
             action.run();
         } finally {
             this.gl.glUseProgram(old);
+        }
+    }
+
+    /**
+     * Executes the given action with this program bound as the active program.
+     *
+     * @param action the action to run while the shader is bound, will be called with a {@link UniformSetter} which may be used to set shader uniforms
+     */
+    public final void bind(Consumer<UniformSetter> action) {
+        int old = this.gl.glGetInteger(GL_CURRENT_PROGRAM);
+        try {
+            this.gl.glUseProgram(this.id);
+            action.accept(new BoundUniformSetter(this.gl));
+        } finally {
+            this.gl.glUseProgram(old);
+        }
+    }
+
+    /**
+     * Gets the location of the uniform with the given name.
+     *
+     * @param name the uniform name
+     * @return the uniform's location
+     */
+    public final int uniformLocation(String name) {
+        return this.gl.glGetUniformLocation(this.id, name);
+    }
+
+    /**
+     * Set uniform values in this shader.
+     *
+     * @param action a function which will be called with a {@link UniformSetter} which may be used to set shader uniforms
+     */
+    public final void setUniforms(Consumer<UniformSetter> action) {
+        if (this.gl.supports(GLExtension.GL_ARB_separate_shader_objects)) {
+            action.accept(new DSAUniformSetter(this.gl, this.id));
+        } else {
+            this.bind(action);
+        }
+    }
+
+    /**
+     * A handle for setting uniform values for this shader.
+     *
+     * @author DaPorkchop_
+     */
+    @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
+    public static abstract class UniformSetter {
+        protected final OpenGL gl;
+
+        public abstract void set(int location, int v0);
+
+        public abstract void set(int location, int v0, int v1);
+
+        public abstract void set(int location, int v0, int v1, int v2);
+
+        public abstract void set(int location, int v0, int v1, int v2, int v3);
+
+        public abstract void set(int location, float v0);
+
+        public abstract void set(int location, float v0, float v1);
+
+        public abstract void set(int location, float v0, float v1, float v2);
+
+        public abstract void set(int location, float v0, float v1, float v2, float v3);
+
+        public abstract void set1(int location, IntBuffer value);
+
+        public abstract void set2(int location, IntBuffer value);
+
+        public abstract void set3(int location, IntBuffer value);
+
+        public abstract void set4(int location, IntBuffer value);
+
+        public abstract void set1(int location, FloatBuffer value);
+
+        public abstract void set2(int location, FloatBuffer value);
+
+        public abstract void set3(int location, FloatBuffer value);
+
+        public abstract void set4(int location, FloatBuffer value);
+    }
+
+    /**
+     * Sets shader uniforms using the legacy {@code glUniform*} functions which operate on the active shader program.
+     *
+     * @author DaPorkchop_
+     */
+    static final class BoundUniformSetter extends UniformSetter {
+        BoundUniformSetter(OpenGL gl) {
+            super(gl);
+        }
+
+        @Override
+        public void set(int location, int v0) {
+            this.gl.glUniform(location, v0);
+        }
+
+        @Override
+        public void set(int location, int v0, int v1) {
+            this.gl.glUniform(location, v0, v1);
+        }
+
+        @Override
+        public void set(int location, int v0, int v1, int v2) {
+            this.gl.glUniform(location, v0, v1, v2);
+        }
+
+        @Override
+        public void set(int location, int v0, int v1, int v2, int v3) {
+            this.gl.glUniform(location, v0, v1, v2, v3);
+        }
+
+        @Override
+        public void set(int location, float v0) {
+            this.gl.glUniform(location, v0);
+        }
+
+        @Override
+        public void set(int location, float v0, float v1) {
+            this.gl.glUniform(location, v0, v1);
+        }
+
+        @Override
+        public void set(int location, float v0, float v1, float v2) {
+            this.gl.glUniform(location, v0, v1, v2);
+        }
+
+        @Override
+        public void set(int location, float v0, float v1, float v2, float v3) {
+            this.gl.glUniform(location, v0, v1, v2, v3);
+        }
+
+        @Override
+        public void set1(int location, IntBuffer value) {
+            this.gl.glUniform1(location, value);
+        }
+
+        @Override
+        public void set2(int location, IntBuffer value) {
+            this.gl.glUniform2(location, value);
+        }
+
+        @Override
+        public void set3(int location, IntBuffer value) {
+            this.gl.glUniform3(location, value);
+        }
+
+        @Override
+        public void set4(int location, IntBuffer value) {
+            this.gl.glUniform4(location, value);
+        }
+
+        @Override
+        public void set1(int location, FloatBuffer value) {
+            this.gl.glUniform1(location, value);
+        }
+
+        @Override
+        public void set2(int location, FloatBuffer value) {
+            this.gl.glUniform2(location, value);
+        }
+
+        @Override
+        public void set3(int location, FloatBuffer value) {
+            this.gl.glUniform3(location, value);
+        }
+
+        @Override
+        public void set4(int location, FloatBuffer value) {
+            this.gl.glUniform4(location, value);
+        }
+    }
+
+    /**
+     * Sets shader uniforms using the modern bindless {@code glProgramUniform*} functions.
+     *
+     * @author DaPorkchop_
+     */
+    static final class DSAUniformSetter extends UniformSetter {
+        private final int id;
+
+        DSAUniformSetter(OpenGL gl, int id) {
+            super(gl);
+            this.id = id;
+        }
+
+        @Override
+        public void set(int location, int v0) {
+            this.gl.glProgramUniform(this.id, location, v0);
+        }
+
+        @Override
+        public void set(int location, int v0, int v1) {
+            this.gl.glProgramUniform(this.id, location, v0, v1);
+        }
+
+        @Override
+        public void set(int location, int v0, int v1, int v2) {
+            this.gl.glProgramUniform(this.id, location, v0, v1, v2);
+        }
+
+        @Override
+        public void set(int location, int v0, int v1, int v2, int v3) {
+            this.gl.glProgramUniform(this.id, location, v0, v1, v2, v3);
+        }
+
+        @Override
+        public void set(int location, float v0) {
+            this.gl.glProgramUniform(this.id, location, v0);
+        }
+
+        @Override
+        public void set(int location, float v0, float v1) {
+            this.gl.glProgramUniform(this.id, location, v0, v1);
+        }
+
+        @Override
+        public void set(int location, float v0, float v1, float v2) {
+            this.gl.glProgramUniform(this.id, location, v0, v1, v2);
+        }
+
+        @Override
+        public void set(int location, float v0, float v1, float v2, float v3) {
+            this.gl.glProgramUniform(this.id, location, v0, v1, v2, v3);
+        }
+
+        @Override
+        public void set1(int location, IntBuffer value) {
+            this.gl.glProgramUniform1(this.id, location, value);
+        }
+
+        @Override
+        public void set2(int location, IntBuffer value) {
+            this.gl.glProgramUniform2(this.id, location, value);
+        }
+
+        @Override
+        public void set3(int location, IntBuffer value) {
+            this.gl.glProgramUniform3(this.id, location, value);
+        }
+
+        @Override
+        public void set4(int location, IntBuffer value) {
+            this.gl.glProgramUniform4(this.id, location, value);
+        }
+
+        @Override
+        public void set1(int location, FloatBuffer value) {
+            this.gl.glProgramUniform1(this.id, location, value);
+        }
+
+        @Override
+        public void set2(int location, FloatBuffer value) {
+            this.gl.glProgramUniform2(this.id, location, value);
+        }
+
+        @Override
+        public void set3(int location, FloatBuffer value) {
+            this.gl.glProgramUniform3(this.id, location, value);
+        }
+
+        @Override
+        public void set4(int location, FloatBuffer value) {
+            this.gl.glProgramUniform4(this.id, location, value);
         }
     }
 

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -21,11 +21,15 @@ package net.daporkchop.fp2.impl.mc.forge1_16.asm.core.client.renderer.culling;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.core.client.IFrustum;
+import net.daporkchop.fp2.gl.shader.ShaderProgram;
 import net.minecraft.client.renderer.culling.ClippingHelper;
 import net.minecraft.util.math.vector.Vector4f;
+import org.lwjgl.system.MemoryStack;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+
+import java.nio.FloatBuffer;
 
 /**
  * @author DaPorkchop_
@@ -57,6 +61,26 @@ public abstract class MixinClippingHelper1_16 implements IFrustum {
         for (int i = 0; i < frustum.length; i++) {
             Vector4f plane = frustum[i];
             clippingPlanes.clippingPlane(i, plane.x(), plane.y(), plane.z(), plane.w());
+        }
+    }
+
+    @Override
+    public void configureClippingPlanes(ShaderProgram.UniformSetter uniformSetter, UniformLocations locations) {
+        Vector4f[] frustum = this.frustumData;
+
+        uniformSetter.set(locations.u_ClippingPlaneCount, frustum.length);
+
+        MemoryStack stack = MemoryStack.stackGet();
+        int stackPointer = stack.getPointer();
+        try {
+            FloatBuffer buffer = stack.mallocFloat(frustum.length * 4);
+            for (Vector4f plane : frustum) {
+                buffer.put(plane.x()).put(plane.y()).put(plane.z()).put(plane.w());
+            }
+            buffer.clear();
+            uniformSetter.set4(locations.u_ClippingPlanes, buffer);
+        } finally {
+            stack.setPointer(stackPointer);
         }
     }
 }

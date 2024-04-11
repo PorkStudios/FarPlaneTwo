@@ -20,12 +20,17 @@
 package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.core.client.renderer.culling;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.common.util.DirectBufferHackery;
 import net.daporkchop.fp2.core.client.IFrustum;
+import net.daporkchop.fp2.gl.shader.ShaderProgram;
+import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.renderer.culling.ClippingHelper;
 import net.minecraft.client.renderer.culling.Frustum;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+
+import java.nio.FloatBuffer;
 
 /**
  * Makes {@link Frustum} implement {@link IFrustum}.
@@ -58,6 +63,24 @@ public abstract class MixinFrustum1_12 implements IFrustum {
         clippingPlanes.clippingPlaneCount(frustum.length);
         for (int i = 0; i < frustum.length; i++) {
             clippingPlanes.clippingPlane(i, frustum[i]);
+        }
+    }
+
+    @Override
+    public void configureClippingPlanes(ShaderProgram.UniformSetter uniformSetter, UniformLocations locations) {
+        float[][] frustum = this.clippingHelper.frustum;
+
+        uniformSetter.set(locations.u_ClippingPlaneCount, frustum.length);
+        long address = PUnsafe.allocateMemory(frustum.length * (4 * Float.BYTES));
+        try {
+            FloatBuffer buffer = DirectBufferHackery.wrapFloat(address, frustum.length * 4);
+            for (float[] plane : frustum) {
+                buffer.put(plane);
+            }
+            buffer.clear();
+            uniformSetter.set4(locations.u_ClippingPlanes, buffer);
+        } finally {
+            PUnsafe.freeMemory(address);
         }
     }
 }

@@ -75,6 +75,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
+import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.Comparator;
 import java.util.stream.Stream;
@@ -894,6 +895,54 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
     }
 
     @Override
+    public void glUniform1(int location, IntBuffer value) {
+        GL20.glUniform1(location, value);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glUniform2(int location, IntBuffer value) {
+        GL20.glUniform2(location, value);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glUniform3(int location, IntBuffer value) {
+        GL20.glUniform3(location, value);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glUniform4(int location, IntBuffer value) {
+        GL20.glUniform4(location, value);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glUniform1(int location, FloatBuffer value) {
+        GL20.glUniform1(location, value);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glUniform2(int location, FloatBuffer value) {
+        GL20.glUniform2(location, value);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glUniform3(int location, FloatBuffer value) {
+        GL20.glUniform3(location, value);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glUniform4(int location, FloatBuffer value) {
+        GL20.glUniform4(location, value);
+        super.debugCheckError();
+    }
+
+    @Override
     public void glBlendEquationSeparate(int modeRGB, int modeAlpha) {
         GL20.glBlendEquationSeparate(modeRGB, modeAlpha);
         super.debugCheckError();
@@ -1396,6 +1445,110 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
             super.debugCheckError();
         } else if (this.GL_ARB_separate_shader_objects) {
             ARBSeparateShaderObjects.glProgramUniform4f(program, location, v0, v1, v2, v3);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_separate_shader_objects));
+        }
+    }
+
+    @Override
+    public void glProgramUniform1(int program, int location, IntBuffer value) {
+        if (this.OpenGL41) {
+            GL41.glProgramUniform1(program, location, value);
+            super.debugCheckError();
+        } else if (this.GL_ARB_separate_shader_objects) {
+            ARBSeparateShaderObjects.glProgramUniform1(program, location, value);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_separate_shader_objects));
+        }
+    }
+
+    @Override
+    public void glProgramUniform2(int program, int location, IntBuffer value) {
+        if (this.OpenGL41) {
+            GL41.glProgramUniform2(program, location, value);
+            super.debugCheckError();
+        } else if (this.GL_ARB_separate_shader_objects) {
+            ARBSeparateShaderObjects.glProgramUniform2(program, location, value);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_separate_shader_objects));
+        }
+    }
+
+    @Override
+    public void glProgramUniform3(int program, int location, IntBuffer value) {
+        if (this.OpenGL41) {
+            GL41.glProgramUniform3(program, location, value);
+            super.debugCheckError();
+        } else if (this.GL_ARB_separate_shader_objects) {
+            ARBSeparateShaderObjects.glProgramUniform3(program, location, value);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_separate_shader_objects));
+        }
+    }
+
+    @Override
+    public void glProgramUniform4(int program, int location, IntBuffer value) {
+        if (this.OpenGL41) {
+            GL41.glProgramUniform4(program, location, value);
+            super.debugCheckError();
+        } else if (this.GL_ARB_separate_shader_objects) {
+            ARBSeparateShaderObjects.glProgramUniform4(program, location, value);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_separate_shader_objects));
+        }
+    }
+
+    @Override
+    public void glProgramUniform1(int program, int location, FloatBuffer value) {
+        if (this.OpenGL41) {
+            GL41.glProgramUniform1(program, location, value);
+            super.debugCheckError();
+        } else if (this.GL_ARB_separate_shader_objects) {
+            ARBSeparateShaderObjects.glProgramUniform1(program, location, value);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_separate_shader_objects));
+        }
+    }
+
+    @Override
+    public void glProgramUniform2(int program, int location, FloatBuffer value) {
+        if (this.OpenGL41) {
+            GL41.glProgramUniform2(program, location, value);
+            super.debugCheckError();
+        } else if (this.GL_ARB_separate_shader_objects) {
+            ARBSeparateShaderObjects.glProgramUniform2(program, location, value);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_separate_shader_objects));
+        }
+    }
+
+    @Override
+    public void glProgramUniform3(int program, int location, FloatBuffer value) {
+        if (this.OpenGL41) {
+            GL41.glProgramUniform3(program, location, value);
+            super.debugCheckError();
+        } else if (this.GL_ARB_separate_shader_objects) {
+            ARBSeparateShaderObjects.glProgramUniform3(program, location, value);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_separate_shader_objects));
+        }
+    }
+
+    @Override
+    public void glProgramUniform4(int program, int location, FloatBuffer value) {
+        if (this.OpenGL41) {
+            GL41.glProgramUniform4(program, location, value);
+            super.debugCheckError();
+        } else if (this.GL_ARB_separate_shader_objects) {
+            ARBSeparateShaderObjects.glProgramUniform4(program, location, value);
             super.debugCheckError();
         } else {
             throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_separate_shader_objects));

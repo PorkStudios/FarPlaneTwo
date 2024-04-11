@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -21,6 +21,7 @@ package net.daporkchop.fp2.core.engine.client;
 
 import io.netty.buffer.ByteBuf;
 import lombok.experimental.UtilityClass;
+import net.daporkchop.fp2.gl.OpenGL;
 
 /**
  * Constant values used throughout the render code.
@@ -34,6 +35,21 @@ public class RenderConstants {
     public static final int LAYER_TRANSPARENT = LAYER_CUTOUT + 1;
 
     public static final int RENDER_PASS_COUNT = LAYER_TRANSPARENT + 1; //the total number of render passes
+
+    public static final String TILE_POS_ARRAY_UBO_NAME = "U_TilePosArray";
+    public static final int TILE_POS_ARRAY_UBO_BINDING = 2;
+
+    /**
+     * The length of the TilePos uniform array, in tile positions.
+     *
+     * @param gl the OpenGL context
+     * @return the length of the TilePos uniform array, in tile positions
+     */
+    public static int tilePosArrayElements(OpenGL gl) {
+        return gl.limits().maxUniformBlockSize() >> 4;
+    }
+
+    public static final String TILE_POS_UNIFORM_NAME = "u_TilePos";
 
     /**
      * Emits the indices for drawing a quad.

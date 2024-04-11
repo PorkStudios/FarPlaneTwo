@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -20,15 +20,17 @@
 package net.daporkchop.fp2.core.client;
 
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
-import net.daporkchop.fp2.gl.attribute.annotation.ArrayType;
-import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
-import net.daporkchop.fp2.gl.attribute.annotation.ScalarType;
-import net.daporkchop.fp2.gl.attribute.annotation.VectorType;
 import net.daporkchop.fp2.gl.attribute.annotation.ArrayIndex;
 import net.daporkchop.fp2.gl.attribute.annotation.ArrayLength;
+import net.daporkchop.fp2.gl.attribute.annotation.ArrayType;
+import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
 import net.daporkchop.fp2.gl.attribute.annotation.AttributeSetter;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarConvert;
+import net.daporkchop.fp2.gl.attribute.annotation.ScalarType;
+import net.daporkchop.fp2.gl.attribute.annotation.VectorType;
+import net.daporkchop.fp2.gl.shader.ShaderProgram;
 
 /**
  * A view frustum which can check for intersection with objects.
@@ -36,6 +38,8 @@ import net.daporkchop.fp2.gl.attribute.annotation.ScalarConvert;
  * @author DaPorkchop_
  */
 public interface IFrustum {
+    int MAX_CLIPPING_PLANES = 10;
+
     /**
      * Checks whether or not the given point is contained in this frustum.
      *
@@ -67,6 +71,35 @@ public interface IFrustum {
     void configureClippingPlanes(@NonNull ClippingPlanes clippingPlanes);
 
     /**
+     * Stores the clipping planes which define this view frustum into the given shader program.
+     */
+    void configureClippingPlanes(ShaderProgram.UniformSetter uniformSetter, UniformLocations locations);
+
+    /**
+     * @author DaPorkchop_
+     */
+    @RequiredArgsConstructor
+    final class UniformLocations {
+        /**
+         * {@code uint u_ClippingPlaneCount}
+         * <p>
+         * The number of active clipping planes.
+         */
+        public final int u_ClippingPlaneCount;
+
+        /**
+         * {@code vec4 u_ClippingPlanes[MAX_CLIPPING_PLANES]}
+         * <p>
+         * The array of clipping planes. Only the first {@code u_ClippingPlaneCount} elements should be checked.
+         */
+        public final int u_ClippingPlanes;
+
+        public UniformLocations(ShaderProgram program) {
+            this(program.uniformLocation("u_ClippingPlaneCount"), program.uniformLocation("u_ClippingPlanes"));
+        }
+    }
+
+    /**
      * @author DaPorkchop_
      */
     @Attribute(name = "clippingPlaneCount", typeScalar = @ScalarType(value = int.class, interpret = @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED)))
@@ -74,7 +107,7 @@ public interface IFrustum {
             componentTypeVector = @VectorType(components = 4,
                     componentType = @ScalarType(float.class))))
     interface ClippingPlanes extends AttributeStruct {
-        int PLANES_MAX = 10;
+        int PLANES_MAX = MAX_CLIPPING_PLANES;
 
         @AttributeSetter
         ClippingPlanes clippingPlaneCount(int clippingPlaneCount);
