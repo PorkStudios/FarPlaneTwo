@@ -20,20 +20,18 @@
 package net.daporkchop.fp2.gl.shader;
 
 import lombok.Getter;
-import lombok.NonNull;
 import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.shader.source.Preprocessor;
 import net.daporkchop.fp2.gl.shader.source.SourceLine;
-import net.daporkchop.lib.unsafe.PUnsafe;
+import net.daporkchop.fp2.gl.util.GLObject;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 
@@ -43,21 +41,16 @@ import static net.daporkchop.fp2.gl.OpenGLConstants.*;
  * @author DaPorkchop_
  */
 @Getter
-public final class Shader implements AutoCloseable {
-    private final OpenGL gl;
+public final class Shader extends GLObject.Normal {
     private final ShaderType type;
-    private final int id;
 
     public Shader(OpenGL gl, ShaderType type, ResourceProvider provider, Identifier sourceFile) throws ShaderCompilationException {
         this(gl, type, Arrays.asList(new Preprocessor(provider).appendLines(sourceFile).preprocess().lines()));
     }
 
     public Shader(OpenGL gl, ShaderType type, List<SourceLine> lines) throws ShaderCompilationException {
-        //allocate new shader
-        this.gl = gl;
+        super(gl, gl.glCreateShader(type.id()));
         this.type = type;
-
-        this.id = gl.glCreateShader(type.id());
 
         try {
             //set source and compile shader
@@ -70,12 +63,12 @@ public final class Shader implements AutoCloseable {
             }
         } catch (Throwable t) { //clean up if something goes wrong
             gl.glDeleteShader(this.id);
-            throw PUnsafe.throwException(t);
+            throw t;
         }
     }
 
     @Override
-    public void close() {
+    protected void delete() {
         this.gl.glDeleteShader(this.id);
     }
 

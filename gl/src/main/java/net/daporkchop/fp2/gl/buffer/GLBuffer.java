@@ -24,6 +24,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.OpenGL;
+import net.daporkchop.fp2.gl.util.GLObject;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.nio.ByteBuffer;
@@ -40,25 +41,15 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  *
  * @author DaPorkchop_
  */
-public abstract class GLBuffer implements AutoCloseable {
-    protected final OpenGL gl;
-    protected final int id;
+public abstract class GLBuffer extends GLObject.Normal {
     protected final boolean dsa;
 
     protected long capacity = -1L;
     protected boolean mapped = false;
 
     protected GLBuffer(OpenGL gl) {
-        this.gl = gl;
+        super(gl, gl.supports(GLExtension.GL_ARB_direct_state_access) ? gl.glCreateBuffer() : gl.glGenBuffer());
         this.dsa = gl.supports(GLExtension.GL_ARB_direct_state_access);
-        this.id = this.dsa ? gl.glCreateBuffer() : gl.glGenBuffer();
-    }
-
-    /**
-     * @return the ID of the corresponding OpenGL Buffer Object
-     */
-    public final int id() {
-        return this.id;
     }
 
     /**
@@ -69,8 +60,8 @@ public abstract class GLBuffer implements AutoCloseable {
     }
 
     @Override
-    public void close() {
-        this.gl.glDeleteBuffer(this.id); //TODO: warn if garbage-collected
+    protected final void delete() {
+        this.gl.glDeleteBuffer(this.id);
     }
 
     /**
@@ -81,6 +72,7 @@ public abstract class GLBuffer implements AutoCloseable {
      * @param size  the size of the data (in bytes)
      */
     public final void bufferSubData(long start, long addr, long size) {
+        this.checkOpen();
         checkRangeLen(this.capacity, start, size);
         if (this.dsa) {
             this.gl.glNamedBufferSubData(this.id, start, size, addr);
@@ -98,6 +90,7 @@ public abstract class GLBuffer implements AutoCloseable {
      * @param data  the {@link ByteBuffer} containing the data to upload
      */
     public final void bufferSubData(long start, @NonNull ByteBuffer data) {
+        this.checkOpen();
         checkRangeLen(this.capacity, start, data.remaining());
         if (this.dsa) {
             this.gl.glNamedBufferSubData(this.id, start, data);
@@ -116,6 +109,7 @@ public abstract class GLBuffer implements AutoCloseable {
      * @param size  the size of the data (in bytes)
      */
     public final void getBufferSubData(long start, long addr, long size) {
+        this.checkOpen();
         checkRangeLen(this.capacity, start, size);
         if (this.dsa) {
             this.gl.glGetNamedBufferSubData(this.id, start, size, addr);
@@ -133,6 +127,7 @@ public abstract class GLBuffer implements AutoCloseable {
      * @param data  the {@link ByteBuffer} where the data should be stored
      */
     public final void getBufferSubData(long start, @NonNull ByteBuffer data) {
+        this.checkOpen();
         checkRangeLen(this.capacity, start, data.remaining());
         if (this.dsa) {
             this.gl.glGetNamedBufferSubData(this.id, start, data);
@@ -152,6 +147,7 @@ public abstract class GLBuffer implements AutoCloseable {
      * @param size      the number of bytes to copy
      */
     public final void copyRange(@NonNull GLBuffer src, long srcOffset, long dstOffset, long size) {
+        this.checkOpen();
         checkRangeLen(src.capacity(), srcOffset, size);
         checkRangeLen(this.capacity(), dstOffset, size);
         if (this.dsa) {
@@ -184,6 +180,7 @@ public abstract class GLBuffer implements AutoCloseable {
      * @param callback the action to run
      */
     public final void bind(BufferTarget target, Consumer<BufferTarget> callback) {
+        this.checkOpen();
         int old = this.gl.glGetInteger(target.binding());
         try {
             this.gl.glBindBuffer(target.id(), this.id);
@@ -200,6 +197,7 @@ public abstract class GLBuffer implements AutoCloseable {
      * @param callback the action to run
      */
     public final <T> T bind(BufferTarget target, Function<BufferTarget, T> callback) {
+        this.checkOpen();
         int old = this.gl.glGetInteger(target.binding());
         try {
             this.gl.glBindBuffer(target.id(), this.id);
@@ -292,12 +290,14 @@ public abstract class GLBuffer implements AutoCloseable {
     }
 
     protected final void checkNotMapped() {
+        this.checkOpen();
         if (this.mapped) {
             throw new IllegalStateException("this buffer is mapped");
         }
     }
 
     protected final void checkMapped() {
+        this.checkOpen();
         if (!this.mapped) {
             throw new IllegalStateException("this buffer isn't mapped");
         }

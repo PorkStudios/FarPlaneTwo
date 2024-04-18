@@ -61,6 +61,7 @@ public final class GLMutableBuffer extends GLBuffer {
      * @param usage    the buffer's usage
      */
     public void capacity(long capacity, BufferUsage usage) {
+        this.checkOpen();
         notNegative(capacity, "capacity");
 
         if (this.dsa) {
@@ -85,6 +86,7 @@ public final class GLMutableBuffer extends GLBuffer {
      * @param usage    the buffer's usage
      */
     public void resize(long capacity, @NonNull BufferUsage usage) {
+        this.checkOpen();
         long retainedCapacity = min(this.capacity, notNegative(capacity, "capacity"));
 
         if (retainedCapacity <= 0L) { //previous capacity was unset, so no data needs to be retained
@@ -117,6 +119,7 @@ public final class GLMutableBuffer extends GLBuffer {
      * @param usage the buffer's usage
      */
     public void upload(long addr, long size, @NonNull BufferUsage usage) {
+        this.checkOpen();
         notNegative(size, "size");
 
         if (this.dsa) {
@@ -136,6 +139,7 @@ public final class GLMutableBuffer extends GLBuffer {
      * @param usage the buffer's usage
      */
     public void upload(@NonNull ByteBuffer data, @NonNull BufferUsage usage) {
+        this.checkOpen();
         if (this.dsa) {
             this.gl.glNamedBufferData(this.id, data, usage.usage());
         } else {

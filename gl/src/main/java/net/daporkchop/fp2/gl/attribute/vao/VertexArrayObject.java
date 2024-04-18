@@ -27,6 +27,7 @@ import net.daporkchop.fp2.gl.attribute.NewAttributeBuffer;
 import net.daporkchop.fp2.gl.buffer.BufferTarget;
 import net.daporkchop.fp2.gl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.draw.index.NewIndexBuffer;
+import net.daporkchop.fp2.gl.util.GLObject;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 
 import java.util.ArrayList;
@@ -39,8 +40,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
-public abstract class VertexArrayObject implements AutoCloseable {
+public abstract class VertexArrayObject extends GLObject.Normal {
     public static VertexArrayObject create(OpenGL gl) {
         if (gl.supports(GLExtension.GL_ARB_direct_state_access)) {
             return (VertexArrayObject) (Object) new DSA(gl);
@@ -53,14 +53,8 @@ public abstract class VertexArrayObject implements AutoCloseable {
         return new Builder(gl);
     }
 
-    protected final OpenGL gl;
-    protected final int id;
-
-    /**
-     * @return the ID of the corresponding OpenGL Vertex Array Object
-     */
-    public final int id() {
-        return this.id;
+    VertexArrayObject(OpenGL gl, int id) {
+        super(gl, id);
     }
 
     public abstract void setFAttrib(GLBuffer buffer, int index, int size, int type, boolean normalized, int stride, long pointer, int divisor);
@@ -85,6 +79,7 @@ public abstract class VertexArrayObject implements AutoCloseable {
      * @param action the action to run
      */
     public final void bind(Runnable action) {
+        this.checkOpen();
         int old = this.gl.glGetInteger(GL_VERTEX_ARRAY_BINDING);
         try {
             this.gl.glBindVertexArray(this.id);
@@ -95,7 +90,7 @@ public abstract class VertexArrayObject implements AutoCloseable {
     }
 
     @Override
-    public void close() {
+    protected final void delete() {
         this.gl.glDeleteVertexArray(this.id);
     }
 
@@ -175,6 +170,7 @@ public abstract class VertexArrayObject implements AutoCloseable {
 
         @Override
         public void setFAttrib(GLBuffer buffer, int index, int size, int type, boolean normalized, int stride, long pointer, int divisor) {
+            this.checkOpen();
             this.gl.glEnableVertexArrayAttrib(this.id, index);
             this.gl.glVertexArrayAttribFormat(this.id, index, size, type, normalized, 0);
             this.gl.glVertexArrayAttribBinding(this.id, index, index);
@@ -184,6 +180,7 @@ public abstract class VertexArrayObject implements AutoCloseable {
 
         @Override
         public void setIAttrib(GLBuffer buffer, int index, int size, int type, int stride, long pointer, int divisor) {
+            this.checkOpen();
             this.gl.glEnableVertexArrayAttrib(this.id, index);
             this.gl.glVertexArrayAttribIFormat(this.id, index, size, type, 0);
             this.gl.glVertexArrayAttribBinding(this.id, index, index);
@@ -201,6 +198,7 @@ public abstract class VertexArrayObject implements AutoCloseable {
 
         @Override
         public void configure(VertexAttributeFormat[] attributes, VertexArrayVertexBuffer[] buffers) {
+            this.checkOpen();
             checkArg(attributes.length == buffers.length);
 
             int bindingIndex = -1;
@@ -303,6 +301,7 @@ public abstract class VertexArrayObject implements AutoCloseable {
 
         @Override
         public void setElementsBuffer(GLBuffer buffer) {
+            this.checkOpen();
             this.gl.glVertexArrayElementBuffer(this.id, buffer.id());
         }
     }

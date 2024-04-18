@@ -75,6 +75,7 @@ public final class GLImmutableBuffer extends GLBuffer {
      */
     public void flushMappedRange(long start, long size) {
         checkRangeLen(this.capacity, start, size);
+        this.checkOpen();
         this.checkMapped();
 
         if (this.dsa) {

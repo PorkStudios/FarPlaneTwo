@@ -17,49 +17,65 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.gl.sync;
+package net.daporkchop.fp2.gl.util;
 
-import net.daporkchop.fp2.gl.GLExtension;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.OpenGL;
-import net.daporkchop.fp2.gl.util.GLObject;
-
-import static net.daporkchop.fp2.gl.OpenGLConstants.*;
-import static net.daporkchop.lib.common.util.PValidation.*;
+import net.daporkchop.lib.common.annotation.NotThreadSafe;
 
 /**
- * An OpenGL fence sync object.
+ * Base class for an OpenGL object.
  *
  * @author DaPorkchop_
  */
-public final class GLFenceSync extends GLObject {
-    public static boolean supported(OpenGL gl) {
-        return gl.supports(GLExtension.GL_ARB_sync);
+@RequiredArgsConstructor
+@NotThreadSafe
+public abstract class GLObject implements AutoCloseable {
+    /**
+     * The OpenGL context which this object belongs to.
+     */
+    public final OpenGL gl;
+    private boolean closed;
+
+    @Override
+    public void close() {
+        this.checkOpen();
+        this.closed = true;
+        this.delete(); //TODO: warn if garbage-collected
     }
 
-    public static GLFenceSync create(OpenGL gl) {
-        checkState(supported(gl), "ARB_sync isn't supported!");
-        return new GLFenceSync(gl, gl.glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0));
-    }
+    protected abstract void delete();
 
-    private final long sync;
-
-    private GLFenceSync(OpenGL gl, long sync) {
-        super(gl);
-        this.sync = sync;
+    /**
+     * Asserts that this OpenGL object is open, i.e. hasn't been {@link #close() closed} yet.
+     *
+     * @throws IllegalStateException if this object has already been closed
+     */
+    public final void checkOpen() {
+        if (this.closed) {
+            throw new IllegalStateException();
+        }
     }
 
     /**
-     * Checks if this fence sync object has been signalled.
+     * An ordinary OpenGL object with an integer id.
      *
-     * @return {@code true} if this fence sync object has been signalled, {@code false} otherwise
+     * @author DaPorkchop_
      */
-    public boolean isSignalled() {
-        this.checkOpen();
-        return this.gl.glGetSync(this.sync, GL_SYNC_STATUS) == GL_SIGNALED;
-    }
+    public static abstract class Normal extends GLObject {
+        protected final int id;
 
-    @Override
-    protected void delete() {
-        this.gl.glDeleteSync(this.sync);
+        public Normal(OpenGL gl, int id) {
+            super(gl);
+            this.id = id;
+        }
+
+        /**
+         * @return this OpenGL object's id
+         */
+        public int id() {
+            super.checkOpen();
+            return this.id;
+        }
     }
 }

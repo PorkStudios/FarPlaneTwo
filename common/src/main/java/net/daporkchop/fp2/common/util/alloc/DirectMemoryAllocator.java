@@ -40,9 +40,11 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 @ThreadSafe
-public final class DirectMemoryAllocator extends Allocator {
+public final class DirectMemoryAllocator extends Allocator implements AutoCloseable {
     private final LongLongMap allocations = new LongLongConcurrentHashMap(-1L); //TODO: replace this with a LongLongConcurrentSkipListMap once PorkLib supports it
     private final boolean zero;
+
+    private PCleaner cleaner;
 
     public DirectMemoryAllocator() {
         this(false);
@@ -53,12 +55,14 @@ public final class DirectMemoryAllocator extends Allocator {
      */
     public DirectMemoryAllocator(boolean zero) {
         super(0L);
-        PCleaner.cleaner(this, new Releaser(this.allocations));
+        this.cleaner = PCleaner.cleaner(this, new Releaser(this.allocations));
         this.zero = zero;
     }
 
     @Override
     public long alloc(@NotNegative long size) {
+        this.checkOpen();
+
         long addr = PUnsafe.allocateMemory(notNegative(size, "size"));
         this.allocations.put(addr, size);
 
@@ -70,6 +74,8 @@ public final class DirectMemoryAllocator extends Allocator {
 
     @Override
     public long realloc(long address, @NotNegative long size) {
+        this.checkOpen();
+
         notNegative(size, "size");
         long oldSize;
         if (address == 0L) { //no allocation existed previously, so there's nothing to remove
@@ -89,6 +95,8 @@ public final class DirectMemoryAllocator extends Allocator {
 
     @Override
     public void free(long address) {
+        this.checkOpen();
+
         if (address != 0L) {
             checkArg(this.allocations.remove(address) >= 0L, "can't free address 0x%016x (which isn't owned by this allocator)", address);
             PUnsafe.freeMemory(address);
@@ -97,6 +105,8 @@ public final class DirectMemoryAllocator extends Allocator {
 
     @Override
     public Stats stats() {
+        this.checkOpen();
+
         long allocations = this.allocations.size();
         long totalSpace = StreamSupport.stream(this.allocations.values().spliterator(), false).mapToLong(Long::longValue).sum();
 
@@ -104,6 +114,18 @@ public final class DirectMemoryAllocator extends Allocator {
                 .heapRegions(allocations).allocations(allocations)
                 .allocatedSpace(totalSpace).totalSpace(totalSpace)
                 .build();
+    }
+
+    private void checkOpen() {
+        if (this.cleaner == null) {
+            throw new IllegalStateException("already closed!");
+        }
+    }
+
+    @Override
+    public synchronized void close() {
+        this.cleaner.clean();
+        this.cleaner = null;
     }
 
     /**

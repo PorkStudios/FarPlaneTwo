@@ -25,6 +25,7 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.OpenGL;
+import net.daporkchop.fp2.gl.util.GLObject;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.common.function.plain.QuadConsumer;
 import net.daporkchop.lib.common.function.plain.TriFunction;
@@ -47,14 +48,9 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  *
  * @author DaPorkchop_
  */
-@Getter
-public abstract class ShaderProgram implements AutoCloseable {
-    protected final OpenGL gl;
-    protected final int id;
-
+public abstract class ShaderProgram extends GLObject.Normal {
     protected ShaderProgram(Builder<?, ?> builder) throws ShaderLinkageException {
-        this.gl = builder.gl;
-        this.id = this.gl.glCreateProgram();
+        super(builder.gl, builder.gl.glCreateProgram());
 
         try {
             //attach shaders and link, then detach shaders again
@@ -80,7 +76,7 @@ public abstract class ShaderProgram implements AutoCloseable {
     }
 
     @Override
-    public void close() {
+    protected final void delete() {
         this.gl.glDeleteProgram(this.id);
     }
 
@@ -90,6 +86,7 @@ public abstract class ShaderProgram implements AutoCloseable {
      * @param action the action to run while the shader is bound
      */
     public final void bind(Runnable action) {
+        this.checkOpen();
         int old = this.gl.glGetInteger(GL_CURRENT_PROGRAM);
         try {
             this.gl.glUseProgram(this.id);
@@ -105,6 +102,7 @@ public abstract class ShaderProgram implements AutoCloseable {
      * @param action the action to run while the shader is bound, will be called with a {@link UniformSetter} which may be used to set shader uniforms
      */
     public final void bind(Consumer<UniformSetter> action) {
+        this.checkOpen();
         int old = this.gl.glGetInteger(GL_CURRENT_PROGRAM);
         try {
             this.gl.glUseProgram(this.id);
@@ -121,6 +119,7 @@ public abstract class ShaderProgram implements AutoCloseable {
      * @return the uniform's location
      */
     public final int uniformLocation(String name) {
+        this.checkOpen();
         return this.gl.glGetUniformLocation(this.id, name);
     }
 
@@ -130,6 +129,7 @@ public abstract class ShaderProgram implements AutoCloseable {
      * @param action a function which will be called with a {@link UniformSetter} which may be used to set shader uniforms
      */
     public final void setUniforms(Consumer<UniformSetter> action) {
+        this.checkOpen();
         if (this.gl.supports(GLExtension.GL_ARB_separate_shader_objects)) {
             action.accept(new DSAUniformSetter(this.gl, this.id));
         } else {
