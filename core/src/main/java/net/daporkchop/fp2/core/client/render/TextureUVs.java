@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -25,18 +25,17 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import net.daporkchop.fp2.api.event.ReturningEvent;
+import net.daporkchop.fp2.api.util.Direction;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.fp2.core.event.AbstractReloadEvent;
-import net.daporkchop.fp2.api.util.Direction;
-import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
-import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
+import net.daporkchop.fp2.gl.attribute.NewAttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
 import net.daporkchop.fp2.gl.attribute.annotation.AttributeIgnore;
-import net.daporkchop.fp2.gl.attribute.annotation.ScalarType;
-import net.daporkchop.fp2.gl.attribute.annotation.VectorType;
 import net.daporkchop.fp2.gl.attribute.annotation.AttributeSetter;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarConvert;
+import net.daporkchop.fp2.gl.attribute.annotation.ScalarType;
+import net.daporkchop.fp2.gl.attribute.annotation.VectorType;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 
 import java.util.List;
@@ -62,13 +61,9 @@ public interface TextureUVs {
         }.fire();
     }
 
-    AttributeFormat<QuadListAttribute> listsFormat();
+    NewAttributeBuffer<QuadListAttribute> listsBuffer();
 
-    AttributeBuffer<QuadListAttribute> listsBuffer();
-
-    AttributeFormat<PackedBakedQuadAttribute> quadsFormat();
-
-    AttributeBuffer<PackedBakedQuadAttribute> quadsBuffer();
+    NewAttributeBuffer<PackedBakedQuadAttribute> quadsBuffer();
 
     int state2index(int state);
 

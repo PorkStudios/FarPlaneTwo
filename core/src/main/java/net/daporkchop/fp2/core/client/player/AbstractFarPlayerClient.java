@@ -116,7 +116,7 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
             try {
                 IFarLevelClient activeLevel = this.loadActiveLevel();
                 try {
-                    this.context = new ClientContext(activeLevel, this.config, packet.sessionId);
+                    this.context = new ClientContext(this.fp2(), activeLevel, this.config, packet.sessionId);
                 } catch (Throwable t) { //something went wrong, try to unload active level again
                     try {
                         ((AbstractWorldClient<?, ?, ?, ?, ?>) this.world()).unloadLevel(activeLevel.id());

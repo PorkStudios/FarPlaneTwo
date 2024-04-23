@@ -21,13 +21,13 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.client.render;
 
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
+import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.render.LevelRenderer;
-import net.daporkchop.fp2.gl.GL;
+import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
+import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.renderer.ATEntityRenderer1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.client.renderer.IMixinRenderGlobal1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.client.world.level.FLevelClient1_12;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.util.ResourceProvider1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.SingleBiomeBlockAccess1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.Util1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.world.registry.GameRegistry1_12;
@@ -43,8 +43,8 @@ import net.minecraft.util.math.BlockPos;
 public class LevelRenderer1_12 implements LevelRenderer, AutoCloseable {
     protected static final TL<SingleBiomeBlockAccess1_12> SINGLE_BIOME_BLOCK_ACCESS_CACHE = TL.initializedWith(SingleBiomeBlockAccess1_12::new);
 
+    protected final FP2Core fp2;
     protected final Minecraft mc;
-    protected final GL gl;
 
     protected final FLevelClient1_12 level;
 
@@ -54,6 +54,7 @@ public class LevelRenderer1_12 implements LevelRenderer, AutoCloseable {
     protected final byte[] renderTypeLookup;
 
     public LevelRenderer1_12(@NonNull Minecraft mc, @NonNull FLevelClient1_12 level) {
+        this.fp2 = level.fp2();
         this.mc = mc;
         this.level = level;
 
@@ -82,11 +83,7 @@ public class LevelRenderer1_12 implements LevelRenderer, AutoCloseable {
             this.renderTypeLookup[state] = (byte) typeIndex;
         });
 
-        this.gl = GL.builder()
-                .withResourceProvider(new ResourceProvider1_12(this.mc))
-                .wrapCurrent();
-
-        this.textureUVs = new TextureUVs1_12(level.registry(), this.gl, mc);
+        this.textureUVs = new TextureUVs1_12(this.fp2, level.registry(), mc);
     }
 
     @Override
@@ -114,6 +111,11 @@ public class LevelRenderer1_12 implements LevelRenderer, AutoCloseable {
     }
 
     @Override
+    public OpenGL gl() {
+        return this.fp2.client().gl();
+    }
+
+    @Override
     public Object terrainTextureId() {
         return this.mc.getTextureMapBlocks().getGlTextureId();
     }
@@ -126,6 +128,5 @@ public class LevelRenderer1_12 implements LevelRenderer, AutoCloseable {
     @Override
     public void close() {
         this.textureUVs.close();
-        this.gl.close();
     }
 }

@@ -33,6 +33,9 @@
 //#define FP2_DEBUG_COLORS_ENABLED (bool)
 //#define FP2_DEBUG_COLORS_MODE (FP2_DEBUG_COLORS_MODE_*)
 
+//debug colors are disabled
+#define FP2_DEBUG_COLORS_MODE_DISABLED (0)
+
 //colors terrain based on its detail level
 #define FP2_DEBUG_COLORS_MODE_LEVEL (1)
 
@@ -92,6 +95,30 @@
 //default value is false
 #define LEVEL_0 (0)
 #endif
+
+//
+//
+// UNIFORMS
+//
+//
+
+layout(std140) uniform GLOBAL_UNIFORMS_UBO_NAME {
+    //camera
+    mat4 u_modelViewProjectionMatrix;
+    ivec3 u_positionFloor;
+    vec3 u_positionFrac;
+    //fog
+    vec4 u_fogColor;
+    int u_fogMode;
+    float u_fogDensity;
+    float u_fogStart;
+    float u_fogEnd;
+    float u_fogScale;
+    //misc. GL state
+    float u_alphaRefCutout;
+    //debug state
+    int u_debug_colorMode;
+};
 
 //
 //

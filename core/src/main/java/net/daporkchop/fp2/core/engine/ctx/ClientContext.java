@@ -21,6 +21,7 @@ package net.daporkchop.fp2.core.engine.ctx;
 
 import lombok.Getter;
 import lombok.NonNull;
+import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
 import net.daporkchop.fp2.core.engine.api.ctx.IFarClientContext;
@@ -35,6 +36,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @Getter
 public class ClientContext implements IFarClientContext {
+    protected final FP2Core fp2;
     protected final IFarLevelClient level;
     protected final long sessionId;
 
@@ -45,7 +47,8 @@ public class ClientContext implements IFarClientContext {
 
     protected boolean closed = false;
 
-    public ClientContext(@NonNull IFarLevelClient level, @NonNull FP2Config config, long sessionId) {
+    public ClientContext(@NonNull FP2Core fp2, @NonNull IFarLevelClient level, @NonNull FP2Config config, long sessionId) {
+        this.fp2 = fp2;
         this.level = level;
         this.sessionId = sessionId;
         this.tileCache = new FarTileCache();

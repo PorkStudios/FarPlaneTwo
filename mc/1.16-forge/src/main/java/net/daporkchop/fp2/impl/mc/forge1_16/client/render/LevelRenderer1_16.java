@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -22,10 +22,12 @@ package net.daporkchop.fp2.impl.mc.forge1_16.client.render;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.render.LevelRenderer;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
 import net.daporkchop.fp2.core.engine.client.RenderConstants;
 import net.daporkchop.fp2.gl.GL;
+import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.renderer.ATLightTexture1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.interfaz.client.renderer.IMixinWorldRenderer1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.client.world.level.FLevelClient1_16;
@@ -62,8 +64,8 @@ public class LevelRenderer1_16 implements LevelRenderer, AutoCloseable {
         }
     }
 
+    protected final FP2Core fp2;
     protected final Minecraft mc;
-    protected final GL gl;
 
     protected final FLevelClient1_16 level;
 
@@ -74,6 +76,7 @@ public class LevelRenderer1_16 implements LevelRenderer, AutoCloseable {
 
     @SuppressWarnings("deprecation")
     public LevelRenderer1_16(@NonNull Minecraft mc, @NonNull FLevelClient1_16 level) {
+        this.fp2 = level.fp2();
         this.mc = mc;
         this.level = level;
 
@@ -91,17 +94,12 @@ public class LevelRenderer1_16 implements LevelRenderer, AutoCloseable {
             this.renderTypeLookup[state] = (byte) toLayerIndex(renderType);
         });
 
-        this.gl = GL.builder()
-                .withResourceProvider(new ResourceProvider1_16(this.mc))
-                .wrapCurrent();
-
-        this.textureUVs = new TextureUVs1_16(level.registry(), this.gl, mc);
+        this.textureUVs = new TextureUVs1_16(this.fp2, level.registry(), mc);
     }
 
     @Override
     public void close() {
         this.textureUVs.close();
-        this.gl.close();
     }
 
     @Override
@@ -125,6 +123,11 @@ public class LevelRenderer1_16 implements LevelRenderer, AutoCloseable {
     @Override
     public TerrainRenderingBlockedTracker blockedTracker() {
         return ((IMixinWorldRenderer1_16) this.mc.levelRenderer).fp2_vanillaRenderabilityTracker();
+    }
+
+    @Override
+    public OpenGL gl() {
+        return this.fp2.client().gl();
     }
 
     @Override

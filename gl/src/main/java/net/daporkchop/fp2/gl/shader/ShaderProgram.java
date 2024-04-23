@@ -20,9 +20,9 @@
 package net.daporkchop.fp2.gl.shader;
 
 import lombok.AccessLevel;
-import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.val;
 import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.util.GLObject;
@@ -34,6 +34,7 @@ import net.daporkchop.lib.unsafe.PUnsafe;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -110,6 +111,20 @@ public abstract class ShaderProgram extends GLObject.Normal {
         } finally {
             this.gl.glUseProgram(old);
         }
+    }
+
+    /**
+     * Immediately binds this shader program to the OpenGL context.
+     * <p>
+     * This method is unsafe in that it does not provide a mechanism to restore the previously bound program when rendering is done. The user is responsible for ensuring
+     * that OpenGL state is preserved, or that leaving this shader bound will not cause future issues.
+     *
+     * @return a {@link UniformSetter} which may be used to set shader uniforms, and will remain valid until another shader is bound
+     */
+    public final UniformSetter bindUnsafe() {
+        this.checkOpen();
+        this.gl.glUseProgram(this.id);
+        return new BoundUniformSetter(this.gl);
     }
 
     /**
@@ -371,28 +386,49 @@ public abstract class ShaderProgram extends GLObject.Normal {
     public static abstract class Builder<S extends ShaderProgram, B extends Builder<S, B>> {
         protected final OpenGL gl;
 
+        protected final EnumSet<ShaderType> allowedShaderTypes;
+        protected final EnumSet<ShaderType> requiredShaderTypes;
+        protected final EnumSet<ShaderType> addedShaderTypes = EnumSet.noneOf(ShaderType.class);
         protected final List<Shader> shaders = new ArrayList<>();
 
         protected final SamplerBindings samplers = new SamplerBindings();
         protected final BlockBindings SSBOs = BlockBindings.createSSBO();
         protected final BlockBindings UBOs = BlockBindings.createUBO();
 
-        public B addSampler(@NotNegative int unit, @NonNull String name) {
+        public final B addShader(@NonNull Shader shader) {
+            checkState(this.allowedShaderTypes.contains(shader.type()), "shader type %s isn't allowed (must be one of: %s)", shader.type(), this.allowedShaderTypes);
+            checkState(!this.addedShaderTypes.contains(shader.type()), "a %s shader was already added", shader.type());
+            this.shaders.add(shader);
+            this.addedShaderTypes.add(shader.type());
+            return uncheckedCast(this);
+        }
+
+        public final B addSampler(@NotNegative int unit, @NonNull String name) {
             this.samplers.add(this.gl.limits().maxTextureUnits(), unit, name);
             return uncheckedCast(this);
         }
 
-        public B addSSBO(@NotNegative int bindingIndex, @NonNull String name) {
+        public final B addSSBO(@NotNegative int bindingIndex, @NonNull String name) {
             this.SSBOs.add(this.gl.limits().maxShaderStorageBuffers(), bindingIndex, name);
             return uncheckedCast(this);
         }
 
-        public B addUBO(@NotNegative int bindingIndex, @NonNull String name) {
+        public final B addUBO(@NotNegative int bindingIndex, @NonNull String name) {
             this.UBOs.add(this.gl.limits().maxUniformBuffers(), bindingIndex, name);
             return uncheckedCast(this);
         }
 
-        public abstract S build() throws ShaderLinkageException;
+        public final S build() throws ShaderLinkageException {
+            if (!this.addedShaderTypes.containsAll(this.requiredShaderTypes)) {
+                val missing = this.requiredShaderTypes.clone();
+                missing.removeAll(this.addedShaderTypes);
+                throw new IllegalStateException("missing shaders: " + missing);
+            }
+
+            return this.build0();
+        }
+
+        protected abstract S build0() throws ShaderLinkageException;
 
         protected void configurePreLink(int program) {
             //no-op

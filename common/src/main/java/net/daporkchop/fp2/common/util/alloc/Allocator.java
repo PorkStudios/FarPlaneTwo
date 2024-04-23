@@ -21,6 +21,7 @@ package net.daporkchop.fp2.common.util.alloc;
 
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.common.util.stats.AbstractLongStatistics;
@@ -216,6 +217,7 @@ public abstract class Allocator {
      */
     @Builder
     @Data
+    @EqualsAndHashCode(callSuper = false)
     public static final class Stats extends AbstractLongStatistics<Stats> {
         public static final Stats ZERO = builder().build();
 

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -21,6 +21,7 @@ package net.daporkchop.fp2.core.client.render;
 
 import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
 import net.daporkchop.fp2.gl.GL;
+import net.daporkchop.fp2.gl.OpenGL;
 
 /**
  * Version-independent interface for rendering the level.
@@ -66,9 +67,9 @@ public interface LevelRenderer {
     TextureUVs textureUVs();
 
     /**
-     * @return the {@link GL} used in this level
+     * @return the OpenGL context used in this level
      */
-    GL gl();
+    OpenGL gl();
 
     /**
      * @return the {@link GL}-implementation-specific ID for the terrain texture

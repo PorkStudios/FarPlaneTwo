@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -22,15 +22,16 @@ package net.daporkchop.fp2.core.engine.client.bake;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.engine.Tile;
 import net.daporkchop.fp2.core.engine.TilePos;
+import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 
 import java.util.stream.Stream;
 
 /**
- * Converts uncompressed tile contents to renderable data which can be stored in an {@link IBakeOutputStorage}.
+ * Converts uncompressed tile contents to renderable data which can be stored in a {@link net.daporkchop.fp2.core.engine.client.bake.storage.BakeStorage}.
  *
  * @author DaPorkchop_
  */
-public interface IRenderBaker<B extends IBakeOutput> {
+public interface IRenderBaker<VertexType extends AttributeStruct> {
     /**
      * Gets the positions of the tiles which use the tile at the given position as a bake input.
      *
@@ -53,7 +54,7 @@ public interface IRenderBaker<B extends IBakeOutput> {
      * @param pos    the position of the tile to bake
      * @param srcs   the uncompressed source tiles. Tiles are provided in the same order as they were contained in the stream returned by {@link #bakeInputs(TilePos)}, and will
      *               be {@code null} if not loaded
-     * @param output the {@link IBakeOutput} to write to
+     * @param output the {@link BakeOutput} to write to
      */
-    void bake(@NonNull TilePos pos, @NonNull Tile[] srcs, @NonNull B output);
+    void bake(@NonNull TilePos pos, @NonNull Tile[] srcs, @NonNull BakeOutput<VertexType> output);
 }

@@ -70,6 +70,9 @@ public abstract class BakeStorage<VertexType extends AttributeStruct> implements
 
     /**
      * Updates the data in this storage.
+     * <p>
+     * Note that the updated data may be buffered in the {@link BufferUploader buffer uploader} instance, the user must explicitly {@link BufferUploader#flush() flush} the
+     * uploader to ensure that all changes are made visible.
      *
      * @param changes a {@link Map} indicating the tiles whose data has been updated. A value of {@code null} indicates that the corresponding tile
      *                has been removed

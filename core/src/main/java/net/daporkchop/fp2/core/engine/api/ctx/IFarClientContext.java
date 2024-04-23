@@ -20,6 +20,7 @@
 package net.daporkchop.fp2.core.engine.api.ctx;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.engine.client.AbstractFarRenderer;
@@ -32,6 +33,11 @@ import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
  * @author DaPorkchop_
  */
 public interface IFarClientContext extends AutoCloseable {
+    /**
+     * @return the FP2 instance
+     */
+    FP2Core fp2();
+
     /**
      * @return the world
      */

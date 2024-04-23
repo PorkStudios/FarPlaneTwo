@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -20,12 +20,12 @@
 package net.daporkchop.fp2.core.client.render;
 
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
+import net.daporkchop.fp2.gl.attribute.annotation.ArrayLength;
 import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
+import net.daporkchop.fp2.gl.attribute.annotation.AttributeSetter;
 import net.daporkchop.fp2.gl.attribute.annotation.MatrixType;
 import net.daporkchop.fp2.gl.attribute.annotation.ScalarType;
 import net.daporkchop.fp2.gl.attribute.annotation.VectorType;
-import net.daporkchop.fp2.gl.attribute.annotation.ArrayLength;
-import net.daporkchop.fp2.gl.attribute.annotation.AttributeSetter;
 
 /**
  * @author DaPorkchop_
@@ -43,6 +43,8 @@ import net.daporkchop.fp2.gl.attribute.annotation.AttributeSetter;
 @Attribute(name = "fogScale", typeScalar = @ScalarType(float.class))
 //misc. GL state
 @Attribute(name = "alphaRefCutout", typeScalar = @ScalarType(float.class))
+//debug state
+@Attribute(name = "debug_colorMode", typeScalar = @ScalarType(int.class))
 public interface GlobalUniformAttributes extends AttributeStruct {
     //
     // camera
@@ -85,4 +87,11 @@ public interface GlobalUniformAttributes extends AttributeStruct {
 
     @AttributeSetter
     GlobalUniformAttributes alphaRefCutout(float alphaRefCutout);
+
+    //
+    // debug state
+    //
+
+    @AttributeSetter
+    GlobalUniformAttributes debug_colorMode(int debug_colorMode);
 }

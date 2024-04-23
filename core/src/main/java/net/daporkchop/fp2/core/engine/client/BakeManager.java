@@ -19,30 +19,30 @@
 
 package net.daporkchop.fp2.core.engine.client;
 
-import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.engine.DirectTilePosAccess;
 import net.daporkchop.fp2.core.engine.Tile;
 import net.daporkchop.fp2.core.engine.TileCoordLimits;
 import net.daporkchop.fp2.core.engine.TilePos;
-import net.daporkchop.fp2.core.engine.tile.ITileSnapshot;
-import net.daporkchop.fp2.core.engine.client.bake.IBakeOutput;
+import net.daporkchop.fp2.core.engine.client.bake.BakeOutput;
 import net.daporkchop.fp2.core.engine.client.bake.IRenderBaker;
-import net.daporkchop.fp2.core.engine.client.index.IRenderIndex;
-import net.daporkchop.fp2.core.engine.client.strategy.IFarRenderStrategy;
+import net.daporkchop.fp2.core.engine.client.bake.storage.BakeStorage;
+import net.daporkchop.fp2.core.engine.client.index.RenderIndex;
+import net.daporkchop.fp2.core.engine.tile.ITileSnapshot;
 import net.daporkchop.fp2.core.util.threading.scheduler.NoFutureScheduler;
 import net.daporkchop.fp2.core.util.threading.scheduler.Scheduler;
+import net.daporkchop.fp2.gl.attribute.AttributeStruct;
+import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
+import net.daporkchop.fp2.gl.buffer.upload.BufferUploader;
 import net.daporkchop.lib.common.misc.release.AbstractReleasable;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
 import net.daporkchop.lib.common.pool.recycler.Recycler;
 import net.daporkchop.lib.common.util.PorkUtil;
 
-import java.util.AbstractMap;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -54,31 +54,32 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 /**
  * @author DaPorkchop_
  */
-@Getter
-public final class BakeManager extends AbstractReleasable implements FarTileCache.Listener, Consumer<TilePos>, Runnable {
-    private final AbstractFarRenderer renderer;
-    private final IFarRenderStrategy<?, ?, ?> strategy;
+public final class BakeManager<VertexType extends AttributeStruct> extends AbstractReleasable implements FarTileCache.Listener, Consumer<TilePos>, Runnable {
+    private final AbstractFarRenderer<VertexType> renderer;
 
     private final FarTileCache tileCache;
-
-    private final IRenderIndex<?, ?, ?> index;
-    private final IRenderBaker<?> baker;
+    private final BufferUploader bufferUploader;
+    private final IRenderBaker<VertexType> baker;
+    private final BakeStorage<VertexType> bakeStorage;
+    private final RenderIndex<VertexType> renderIndex;
 
     private final Scheduler<TilePos, Void> bakeScheduler;
     private final TileCoordLimits coordLimits;
 
-    private final Map<TilePos, Optional<IBakeOutput>> pendingDataUpdates = DirectTilePosAccess.newPositionKeyedConcurrentHashMap();
+    private final Map<TilePos, Optional<BakeOutput<VertexType>>> pendingDataUpdates = DirectTilePosAccess.newPositionKeyedConcurrentHashMap();
     private final Map<TilePos, Boolean> pendingRenderableUpdates = DirectTilePosAccess.newPositionKeyedConcurrentHashMap();
     private final AtomicBoolean isBulkUpdateQueued = new AtomicBoolean();
     private final Semaphore dataUpdatesLock = new Semaphore(fp2().globalConfig().performance().maxBakesProcessedPerFrame());
 
-    public BakeManager(@NonNull AbstractFarRenderer renderer, @NonNull FarTileCache tileCache) {
+    public BakeManager(@NonNull AbstractFarRenderer<VertexType> renderer, @NonNull FarTileCache tileCache, @NonNull BufferUploader bufferUploader, @NonNull IRenderBaker<VertexType> baker, @NonNull BakeStorage<VertexType> bakeStorage, @NonNull RenderIndex<VertexType> renderIndex) {
         this.renderer = renderer;
-        this.strategy = renderer.strategy();
-        this.tileCache = tileCache;
 
-        this.index = this.strategy.createIndex();
-        this.baker = this.strategy.createBaker();
+        this.tileCache = tileCache;
+        this.bufferUploader = bufferUploader;
+        this.baker = baker;
+        this.bakeStorage = bakeStorage;
+        this.renderIndex = renderIndex;
+
         this.coordLimits = new TileCoordLimits(renderer.context().level().coordLimits());
 
         this.bakeScheduler = new NoFutureScheduler<>(this, this.renderer.context().level().workerManager().createChildWorkerGroup()
@@ -105,7 +106,7 @@ public final class BakeManager extends AbstractReleasable implements FarTileCach
         //release all of the bake outputs and remove them from the map
         for (Iterator<TilePos> itr = this.pendingDataUpdates.keySet().iterator(); itr.hasNext(); ) {
             this.pendingDataUpdates.computeIfPresent(itr.next(), (pos, output) -> {
-                output.ifPresent(IBakeOutput::release);
+                output.ifPresent(BakeOutput::close);
                 return null;
             });
         }
@@ -152,7 +153,7 @@ public final class BakeManager extends AbstractReleasable implements FarTileCach
 
         ITileSnapshot[] compressedInputTiles = uncheckedCast(this.tileCache.getTilesCached(this.baker.bakeInputs(pos)).toArray(ITileSnapshot[]::new));
         if (compressedInputTiles[0] == null //tile isn't cached any more
-            || compressedInputTiles[0].isEmpty()) { //tile data is empty
+                || compressedInputTiles[0].isEmpty()) { //tile data is empty
             this.updateData(pos, Optional.empty());
             return;
         }
@@ -166,13 +167,25 @@ public final class BakeManager extends AbstractReleasable implements FarTileCach
                 }
             }
 
-            IBakeOutput output = this.strategy.createBakeOutput();
+            BakeOutput<VertexType> output = new BakeOutput<>(this.renderer.vertexFormat, this.renderer.indexFormat, this.renderer.alloc);
             try {
-                this.baker.bake(pos, srcs, uncheckedCast(output));
+                this.baker.bake(pos, srcs, output);
 
-                this.updateData(pos, !output.isEmpty() ? Optional.of(output.retain()) : Optional.empty());
-            } finally {
-                output.release();
+                Optional<BakeOutput<VertexType>> optionalOutput;
+                if (output.isEmpty()) {
+                    output.close();
+                    output = null;
+                    optionalOutput = Optional.empty();
+                } else {
+                    optionalOutput = Optional.of(output);
+                }
+
+                this.updateData(pos, optionalOutput);
+            } catch (Throwable t) {
+                if (output != null) {
+                    output.close();
+                }
+                throw t;
             }
         } finally { //release tiles again
             for (Tile src : srcs) {
@@ -193,18 +206,17 @@ public final class BakeManager extends AbstractReleasable implements FarTileCach
         if (this.coordLimits.contains(pos)) {
             this.updateRenderable(pos,
                     this.tileCache.getTileCached(pos) != null
-                    && (pos.level() == 0 || PorkUtil.<Stream<TilePos>>uncheckedCast(pos.down().allPositionsInBB(1, 3))
+                            && (pos.level() == 0 || PorkUtil.<Stream<TilePos>>uncheckedCast(pos.down().allPositionsInBB(1, 3))
                             .anyMatch(p -> this.coordLimits.contains(p) && this.tileCache.getTileCached(p) == null)));
         }
     }
 
-    protected void updateData(@NonNull TilePos pos, @NonNull Optional<IBakeOutput> optionalBakeOutput) {
+    protected void updateData(@NonNull TilePos pos, @NonNull Optional<BakeOutput<VertexType>> optionalBakeOutput) {
         this.dataUpdatesLock.acquireUninterruptibly();
 
         this.pendingDataUpdates.merge(pos, optionalBakeOutput, (oldOutput, newOutput) -> {
-            if (oldOutput.isPresent()) { //release old bake output to avoid potential memory leak when silently replacing entries
-                oldOutput.get().release();
-            }
+            //release old bake output to avoid potential memory leak when silently replacing entries
+            oldOutput.ifPresent(BakeOutput::close);
             return newOutput;
         });
 
@@ -232,11 +244,21 @@ public final class BakeManager extends AbstractReleasable implements FarTileCach
         int dataUpdatesSize = this.pendingDataUpdates.size();
 
         //pre-allocate a bit of extra space in case it grows while we're iterating
-        List<Map.Entry<TilePos, Optional<IBakeOutput>>> dataUpdates = new ArrayList<>(dataUpdatesSize + (dataUpdatesSize >> 3));
-        for (Iterator<TilePos> itr = this.pendingDataUpdates.keySet().iterator(); itr.hasNext(); ) {
-            this.pendingDataUpdates.compute(itr.next(), (pos, output) -> {
-                dataUpdates.add(new AbstractMap.SimpleEntry<>(pos, output));
-                return null;
+        Map<TilePos, BakeOutput<VertexType>> dataUpdates = DirectTilePosAccess.newPositionKeyedHashMap(dataUpdatesSize + (dataUpdatesSize >> 3));
+        try {
+            for (TilePos pos : this.pendingDataUpdates.keySet()) {
+                dataUpdates.put(pos, this.pendingDataUpdates.remove(pos).orElse(null));
+            }
+
+            //execute the bulk tile data update
+            this.bakeStorage.update(dataUpdates);
+            this.renderIndex.notifyTilesChanged(dataUpdates.keySet());
+            this.bufferUploader.flush();
+        } finally {
+            dataUpdates.forEach((pos, output) -> { //release all bake outputs (which are still sitting around in memory)
+                if (output != null) {
+                    output.close();
+                }
             });
         }
 
@@ -244,23 +266,12 @@ public final class BakeManager extends AbstractReleasable implements FarTileCach
         this.dataUpdatesLock.drainPermits();
         this.dataUpdatesLock.release(fp2().globalConfig().performance().maxBakesProcessedPerFrame());
 
-        int renderableUpdatesSize = this.pendingRenderableUpdates.size();
-
-        //pre-allocate a bit of extra space in case it grows while we're iterating
-        List<Map.Entry<TilePos, Boolean>> renderableUpdates = new ArrayList<>(renderableUpdatesSize + (renderableUpdatesSize >> 3));
-        renderableUpdates.addAll(this.pendingRenderableUpdates.entrySet());
-
-        //atomically remove the corresponding entries from the pending update queue
-        renderableUpdates.forEach(update -> this.pendingRenderableUpdates.remove(update.getKey(), update.getValue()));
-
-        //execute the bulk update
-        this.index.update(uncheckedCast(dataUpdates), renderableUpdates);
-
-        //release all bake outputs which are still sitting around in memory
-        dataUpdates.forEach(update -> {
-            if (update.getValue().isPresent()) {
-                update.getValue().get().release();
-            }
-        });
+        //iterate over the renderable updates, sort them into separate sets and notify the render index
+        Set<TilePos> hidden = DirectTilePosAccess.newPositionHashSet();
+        Set<TilePos> shown = DirectTilePosAccess.newPositionHashSet();
+        for (TilePos pos : this.pendingRenderableUpdates.keySet()) {
+            (this.pendingRenderableUpdates.remove(pos) ? shown : hidden).add(pos);
+        }
+        this.renderIndex.updateHidden(hidden, shown);
     }
 }

@@ -19,41 +19,94 @@
 
 package net.daporkchop.fp2.core.client.render;
 
-import lombok.Getter;
+import lombok.val;
+import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.core.FP2Core;
+import net.daporkchop.fp2.core.client.shader.NewReloadableShaderProgram;
+import net.daporkchop.fp2.core.client.shader.ShaderMacros;
+import net.daporkchop.fp2.core.engine.EngineConstants;
+import net.daporkchop.fp2.core.engine.client.RenderConstants;
 import net.daporkchop.fp2.core.engine.client.struct.VoxelGlobalAttributes;
 import net.daporkchop.fp2.core.engine.client.struct.VoxelLocalAttributes;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeTarget;
 import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
+import net.daporkchop.fp2.gl.draw.index.IndexType;
+import net.daporkchop.fp2.gl.draw.index.NewIndexFormat;
+import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
+import net.daporkchop.fp2.gl.shader.ShaderType;
+
+import static net.daporkchop.fp2.api.FP2.*;
+import static net.daporkchop.fp2.core.debug.FP2Debug.*;
 
 /**
  * Client-side container which stores global render objects.
  *
  * @author DaPorkchop_
  */
-@Getter
-public final class GlobalRenderer implements AutoCloseable {
-    private final FP2Core fp2;
-    private final OpenGL gl;
+public final class GlobalRenderer {
+    public final NewAttributeFormat<GlobalUniformAttributes> globalUniformAttributeFormat;
 
-    private final NewAttributeFormat<GlobalUniformAttributes> globalUniformAttributeFormat;
+    public final NewAttributeFormat<VoxelGlobalAttributes> voxelInstancedAttributesFormat;
+    public final NewAttributeFormat<VoxelLocalAttributes> voxelVertexAttributesFormat;
 
-    private final NewAttributeFormat<VoxelGlobalAttributes> voxelInstancedAttributesFormat;
-    private final NewAttributeFormat<VoxelLocalAttributes> voxelVertexAttributesFormat;
+    public final NewIndexFormat unsignedShortIndexFormat;
+
+    public final NewAttributeFormat<TextureUVs.QuadListAttribute> uvQuadListSSBOFormat;
+    public final NewAttributeFormat<TextureUVs.PackedBakedQuadAttribute> uvPackedQuadSSBOFormat;
+
+    public final ShaderMacros.Mutable shaderMacros;
+
+    public final NewReloadableShaderProgram<DrawShaderProgram> blockShaderProgram;
+    public final NewReloadableShaderProgram<DrawShaderProgram> blockCutoutShaderProgram;
+    public final NewReloadableShaderProgram<DrawShaderProgram> blockStencilShaderProgram;
 
     public GlobalRenderer(FP2Core fp2, OpenGL gl) {
-        this.fp2 = fp2;
-        this.gl = gl;
-
         this.globalUniformAttributeFormat = NewAttributeFormat.get(gl, GlobalUniformAttributes.class, AttributeTarget.UBO);
 
         this.voxelInstancedAttributesFormat = NewAttributeFormat.get(gl, VoxelGlobalAttributes.class, AttributeTarget.VERTEX_ATTRIBUTE);
         this.voxelVertexAttributesFormat = NewAttributeFormat.get(gl, VoxelLocalAttributes.class, AttributeTarget.VERTEX_ATTRIBUTE);
+
+        this.unsignedShortIndexFormat = NewIndexFormat.get(IndexType.UNSIGNED_SHORT);
+
+        this.uvQuadListSSBOFormat = NewAttributeFormat.get(gl, TextureUVs.QuadListAttribute.class, AttributeTarget.SSBO);
+        this.uvPackedQuadSSBOFormat = NewAttributeFormat.get(gl, TextureUVs.PackedBakedQuadAttribute.class, AttributeTarget.SSBO);
+
+        this.shaderMacros = new ShaderMacros.Mutable()
+                .define("T_SHIFT", EngineConstants.T_SHIFT)
+                .define("GLOBAL_UNIFORMS_UBO_NAME", RenderConstants.GLOBAL_UNIFORMS_UBO_NAME)
+                .define("TEXTURE_ATLAS_SAMPLER_NAME", RenderConstants.TEXTURE_ATLAS_SAMPLER_NAME)
+                .define("LIGHTMAP_SAMPLER_NAME", RenderConstants.LIGHTMAP_SAMPLER_NAME)
+                .define("FP2_DEBUG", FP2_DEBUG);
+
+        NewReloadableShaderProgram.SetupFunction<DrawShaderProgram.Builder> shaderSetup = builder -> builder
+                .vertexAttributesWithPrefix("a_", this.voxelInstancedAttributesFormat)
+                .vertexAttributesWithPrefix("a_", this.voxelVertexAttributesFormat)
+                .addUBO(RenderConstants.GLOBAL_UNIFORMS_UBO_BINDING, RenderConstants.GLOBAL_UNIFORMS_UBO_NAME)
+                .addSampler(RenderConstants.TEXTURE_ATLAS_SAMPLER_BINDING, RenderConstants.TEXTURE_ATLAS_SAMPLER_NAME)
+                .addSampler(RenderConstants.LIGHTMAP_SAMPLER_BINDING, RenderConstants.LIGHTMAP_SAMPLER_NAME);
+
+        val shaderRegistry = fp2.client().reloadableShaderRegistry();
+
+        this.blockShaderProgram = shaderRegistry.createDraw(this.shaderMacros, shaderSetup)
+                .addShader(ShaderType.VERTEX, Identifier.from(MODID, "shaders/vert/voxel/voxel.vert"))
+                .addShader(ShaderType.FRAGMENT, Identifier.from(MODID, "shaders/frag/block.frag"))
+                .build();
+
+        this.blockCutoutShaderProgram = shaderRegistry.createDraw(new ShaderMacros.Mutable(this.shaderMacros).define("FP2_CUTOUT"), shaderSetup)
+                .addShader(ShaderType.VERTEX, Identifier.from(MODID, "shaders/vert/voxel/voxel.vert"))
+                .addShader(ShaderType.FRAGMENT, Identifier.from(MODID, "shaders/frag/block.frag"))
+                .build();
+
+        this.blockStencilShaderProgram = shaderRegistry.createDraw(this.shaderMacros, shaderSetup)
+                .addShader(ShaderType.VERTEX, Identifier.from(MODID, "shaders/vert/voxel/voxel.vert"))
+                .addShader(ShaderType.FRAGMENT, Identifier.from(MODID, "shaders/frag/stencil.frag"))
+                .build();
     }
 
-    @Override
     public void close() {
-        //TODO: delete shaders and stuff
+        this.blockStencilShaderProgram.close();
+        this.blockCutoutShaderProgram.close();
+        this.blockShaderProgram.close();
     }
 }

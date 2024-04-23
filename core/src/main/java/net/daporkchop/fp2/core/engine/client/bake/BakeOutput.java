@@ -21,11 +21,16 @@ package net.daporkchop.fp2.core.engine.client.bake;
 
 import lombok.RequiredArgsConstructor;
 import lombok.val;
+import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
+import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
 import net.daporkchop.fp2.gl.attribute.NewAttributeWriter;
+import net.daporkchop.fp2.gl.draw.index.NewIndexFormat;
 import net.daporkchop.fp2.gl.draw.index.NewIndexWriter;
 
 import java.util.Arrays;
+
+import static net.daporkchop.fp2.core.engine.client.RenderConstants.*;
 
 /**
  * @author DaPorkchop_
@@ -33,7 +38,14 @@ import java.util.Arrays;
 @RequiredArgsConstructor
 public final class BakeOutput<VertexType extends AttributeStruct> implements AutoCloseable {
     public final NewAttributeWriter<VertexType> verts;
-    public final NewIndexWriter[] indicesPerPass;
+    public final NewIndexWriter[] indicesPerPass = new NewIndexWriter[RENDER_PASS_COUNT];
+
+    public BakeOutput(NewAttributeFormat<VertexType> vertexFormat, NewIndexFormat indexFormat, DirectMemoryAllocator alloc) {
+        this.verts = vertexFormat.createWriter(alloc);
+        for (int i = 0; i < RENDER_PASS_COUNT; i++) {
+            this.indicesPerPass[i] = indexFormat.createWriter(alloc);
+        }
+    }
 
     public boolean isEmpty() {
         return this.verts.size() == 0 || Arrays.stream(this.indicesPerPass).allMatch(writer -> writer.size() == 0);

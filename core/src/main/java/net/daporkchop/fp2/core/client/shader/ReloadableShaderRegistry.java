@@ -25,6 +25,8 @@ import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.util.annotation.CalledFromClientThread;
 import net.daporkchop.fp2.gl.OpenGL;
+import net.daporkchop.fp2.gl.shader.ComputeShaderProgram;
+import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.shader.ShaderProgram;
 import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.primitive.lambda.IntIntObjConsumer;
@@ -51,12 +53,33 @@ public final class ReloadableShaderRegistry {
     private boolean resourcesChanged = false;
 
     /**
+     * Gets a builder for a reloadable compute shader program which will be managed by this registry.
+     *
+     * @param macros        the macros defined in the shader
+     * @param setupFunction a function for configuring additional settings necessary when linking the shader
+     * @return a builder for the shader
+     */
+    public NewReloadableShaderProgram.Builder<ComputeShaderProgram> createCompute(@NonNull ShaderMacros macros, @NonNull NewReloadableShaderProgram.SetupFunction<? super ComputeShaderProgram.Builder> setupFunction) {
+        return new NewReloadableShaderProgram.Builder<>(this, this.fp2, macros, ComputeShaderProgram::builder, setupFunction);
+    }
+
+    /**
+     * Gets a builder for a reloadable draw shader program which will be managed by this registry.
+     *
+     * @param macros        the macros defined in the shader
+     * @param setupFunction a function for configuring additional settings necessary when linking the shader
+     * @return a builder for the shader
+     */
+    public NewReloadableShaderProgram.Builder<DrawShaderProgram> createDraw(@NonNull ShaderMacros macros, @NonNull NewReloadableShaderProgram.SetupFunction<? super DrawShaderProgram.Builder> setupFunction) {
+        return new NewReloadableShaderProgram.Builder<>(this, this.fp2, macros, DrawShaderProgram::builder, setupFunction);
+    }
+
+    /**
      * Adds a new shader program to this registry.
      *
      * @param program the shader program
      */
-    @CalledFromClientThread
-    public void register(@NonNull NewReloadableShaderProgram<?> program) {
+    void register(@NonNull NewReloadableShaderProgram<?> program) {
         checkState(this.programs.add(program), "already registered: %s", program);
     }
 
@@ -65,8 +88,7 @@ public final class ReloadableShaderRegistry {
      *
      * @param program the shader program
      */
-    @CalledFromClientThread
-    public void unregister(@NonNull NewReloadableShaderProgram<?> program) {
+    void unregister(@NonNull NewReloadableShaderProgram<?> program) {
         checkState(this.programs.remove(program), "not registered: %s", program);
     }
 
@@ -107,7 +129,7 @@ public final class ReloadableShaderRegistry {
 
                 ShaderProgram newProgram;
                 try {
-                    newProgram = program.compileFunction.apply(gl, resourceProvider, macrosSnapshot);
+                    newProgram = program.compile(gl, resourceProvider, macrosSnapshot);
                 } catch (Exception e) {
                     if (cause == null) {
                         cause = new RuntimeException("shader reload failed");

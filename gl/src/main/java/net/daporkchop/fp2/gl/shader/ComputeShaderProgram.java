@@ -25,6 +25,8 @@ import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.compute.ComputeWorkGroupCount;
 import net.daporkchop.fp2.gl.compute.ComputeWorkGroupSize;
 
+import java.util.EnumSet;
+
 import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -64,24 +66,18 @@ public final class ComputeShaderProgram extends ShaderProgram {
      * @author DaPorkchop_
      */
     public static final class Builder extends ShaderProgram.Builder<ComputeShaderProgram, Builder> {
-        private boolean computeShader;
-
         Builder(OpenGL gl) {
-            super(gl);
+            super(gl, EnumSet.of(ShaderType.COMPUTE), EnumSet.of(ShaderType.COMPUTE));
             checkState(supported(gl), gl);
         }
 
         public Builder computeShader(Shader computeShader) {
             checkArg(computeShader.type() == ShaderType.COMPUTE, "not a compute shader: %s", computeShader);
-            checkState(!this.computeShader, "a compute shader was already added!");
-            this.computeShader = true;
-            this.shaders.add(computeShader);
-            return this;
+            return this.addShader(computeShader);
         }
 
         @Override
-        public ComputeShaderProgram build() throws ShaderLinkageException {
-            checkState(this.computeShader, "missing compute shader");
+        protected ComputeShaderProgram build0() throws ShaderLinkageException {
             return new ComputeShaderProgram(this);
         }
     }

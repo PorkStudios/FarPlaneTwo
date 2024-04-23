@@ -36,6 +36,18 @@ public class RenderConstants {
 
     public static final int RENDER_PASS_COUNT = LAYER_TRANSPARENT + 1; //the total number of render passes
 
+    public static final String TEXTURE_ATLAS_SAMPLER_NAME = "t_terrainAtlas";
+    public static final int TEXTURE_ATLAS_SAMPLER_BINDING = 0;
+
+    public static final String LIGHTMAP_SAMPLER_NAME = "t_lightmap";
+    public static final int LIGHTMAP_SAMPLER_BINDING = 1;
+
+    public static final String GLOBAL_UNIFORMS_UBO_NAME = "U_GlobalUniforms";
+    public static final int GLOBAL_UNIFORMS_UBO_BINDING = 0;
+
+    public static final int TEXTURE_UVS_LISTS_SSBO_BINDING = 0;
+    public static final int TEXTURE_UVS_QUADS_SSBO_BINDING = 1;
+
     public static final String TILE_POS_ARRAY_UBO_NAME = "U_TilePosArray";
     public static final int TILE_POS_ARRAY_UBO_BINDING = 2;
 

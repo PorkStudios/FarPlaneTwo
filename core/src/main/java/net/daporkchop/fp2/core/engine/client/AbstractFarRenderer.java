@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -21,83 +21,267 @@ package net.daporkchop.fp2.core.engine.client;
 
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.val;
+import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
+import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.IFrustum;
+import net.daporkchop.fp2.core.client.render.GlobalUniformAttributes;
 import net.daporkchop.fp2.core.client.render.LevelRenderer;
 import net.daporkchop.fp2.core.client.render.RenderInfo;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
+import net.daporkchop.fp2.core.engine.EngineConstants;
 import net.daporkchop.fp2.core.engine.api.ctx.IFarClientContext;
-import net.daporkchop.fp2.core.engine.client.strategy.IFarRenderStrategy;
-import net.daporkchop.fp2.gl.GL;
+import net.daporkchop.fp2.core.engine.client.bake.IRenderBaker;
+import net.daporkchop.fp2.core.engine.client.bake.storage.BakeStorage;
+import net.daporkchop.fp2.core.engine.client.bake.storage.PerLevelBakeStorage;
+import net.daporkchop.fp2.core.engine.client.bake.storage.SimpleBakeStorage;
+import net.daporkchop.fp2.core.engine.client.index.RenderIndex;
+import net.daporkchop.fp2.core.engine.client.index.attribdivisor.CPUCulledBaseInstanceRenderIndex;
+import net.daporkchop.fp2.core.engine.client.struct.VoxelLocalAttributes;
+import net.daporkchop.fp2.gl.OpenGL;
+import net.daporkchop.fp2.gl.attribute.AttributeStruct;
+import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
+import net.daporkchop.fp2.gl.attribute.NewUniformBuffer;
+import net.daporkchop.fp2.gl.attribute.texture.TextureTarget;
+import net.daporkchop.fp2.gl.buffer.upload.BufferUploader;
+import net.daporkchop.fp2.gl.buffer.upload.ScratchCopyBufferUploader;
+import net.daporkchop.fp2.gl.buffer.upload.UnsynchronizedMapBufferUploader;
+import net.daporkchop.fp2.gl.draw.DrawMode;
+import net.daporkchop.fp2.gl.draw.index.NewIndexFormat;
+import net.daporkchop.fp2.gl.state.StatePreserver;
 import net.daporkchop.lib.common.misc.release.AbstractReleasable;
 
-import static net.daporkchop.lib.common.util.PorkUtil.*;
+import static net.daporkchop.fp2.core.debug.FP2Debug.*;
+import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 
 /**
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractFarRenderer extends AbstractReleasable {
+public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> extends AbstractReleasable {
+    protected final FP2Core fp2;
     protected final LevelRenderer levelRenderer;
-    protected final GL gl;
+    protected final OpenGL gl;
 
     protected final IFarClientContext context;
 
-    protected final BakeManager bakeManager;
+    protected final NewAttributeFormat<VertexType> vertexFormat;
+    protected final NewIndexFormat indexFormat;
 
-    protected final IFarRenderStrategy<?, ?, ?> strategy;
+    protected final DirectMemoryAllocator alloc = new DirectMemoryAllocator(false);
+    protected final BufferUploader bufferUploader;
 
+    protected final NewUniformBuffer<GlobalUniformAttributes> globalUniformBuffer;
+
+    protected final IRenderBaker<VertexType> baker;
+    protected final BakeStorage<VertexType> bakeStorage;
+    protected final RenderIndex<VertexType> renderIndex;
+    protected final BakeManager<VertexType> bakeManager;
+
+    protected final DrawMode drawMode = DrawMode.QUADS; //TODO: this shouldn't be hardcoded
+
+    protected final StatePreserver statePreserver;
+
+    @SuppressWarnings("unchecked")
     public AbstractFarRenderer(@NonNull IFarClientContext context) {
+        this.fp2 = context.fp2();
         this.context = context;
 
         this.levelRenderer = context.level().renderer();
         this.gl = this.levelRenderer.gl();
 
-        this.strategy = this.strategy0();
-        this.bakeManager = this.bakeManager0();
+        this.vertexFormat = (NewAttributeFormat<VertexType>) this.fp2.client().globalRenderer().voxelVertexAttributesFormat;
+        this.indexFormat = this.fp2.client().globalRenderer().unsignedShortIndexFormat;
+
+        this.bufferUploader = UnsynchronizedMapBufferUploader.supported(this.gl)
+                ? new UnsynchronizedMapBufferUploader(this.gl, 8 << 20) //8 MiB
+                : new ScratchCopyBufferUploader(this.gl);
+
+        this.globalUniformBuffer = this.fp2.client().globalRenderer().globalUniformAttributeFormat.createUniformBuffer();
+
+        this.baker = this.createBaker();
+        this.bakeStorage = this.createBakeStorage();
+        this.renderIndex = this.createRenderIndex();
+        this.bakeManager = new BakeManager<>(this, context.tileCache(), this.bufferUploader, this.baker, this.bakeStorage, this.renderIndex);
+
+        this.statePreserver = StatePreserver.builder(this.gl)
+                .texture(TextureTarget.TEXTURE_2D, RenderConstants.TEXTURE_ATLAS_SAMPLER_BINDING)
+                .texture(TextureTarget.TEXTURE_2D, RenderConstants.LIGHTMAP_SAMPLER_BINDING)
+                .build();
     }
 
-    /**
-     * @return the {@link IFarRenderStrategy} used by this renderer
-     */
-    protected abstract IFarRenderStrategy<?, ?, ?> strategy0();
+    protected abstract IRenderBaker<VertexType> createBaker();
 
-    /**
-     * @return a new {@link BakeManager}
-     */
-    protected BakeManager bakeManager0() {
-        return new BakeManager(this, this.context.tileCache());
+    protected BakeStorage<VertexType> createBakeStorage() {
+        return new PerLevelBakeStorage<>(this.gl, this.bufferUploader, this.vertexFormat, this.indexFormat,
+                level -> new SimpleBakeStorage<>(this.gl, this.bufferUploader, this.vertexFormat, this.indexFormat));
     }
 
+    protected abstract RenderIndex<VertexType> createRenderIndex();
+
+    /**
+     * Called before rendering a frame to prepare the render system for drawing the frame.
+     *
+     * @param frustum the current view frustum
+     */
     public void prepare(@NonNull IFrustum frustum) {
-        this.gl.runCleanup();
-        this.bakeManager.index().select(frustum);
+        this.bufferUploader.tick();
+        this.renderIndex.select(frustum);
     }
 
+    /**
+     * Renders a frame.
+     *
+     * @param renderInfo the current {@link RenderInfo} for setting per-frame uniform values
+     */
     public void render(@NonNull RenderInfo renderInfo) {
-        this.strategy.render(uncheckedCast(this.bakeManager.index()), renderInfo);
+        //set global uniforms
+        try (val attributes = this.globalUniformBuffer.update()) {
+            renderInfo.configureGlobalUniformAttributes(attributes);
+
+            if (FP2_DEBUG) {
+                attributes.debug_colorMode(this.fp2.globalConfig().debug().debugColors().ordinal());
+            }
+        }
+
+        try (val backup = this.statePreserver.backup()) { //back up opengl state prior to rendering
+            this.preRender();
+
+            //in order to properly render overlapping layers while ensuring that low-detail levels always get placed on top of high-detail ones, we'll need to do the following:
+            //- for each detail level:
+            //  - render both the SOLID and CUTOUT passes at once, using the stencil to ensure that previously rendered SOLID and CUTOUT terrain at higher detail levels is left untouched
+            //- render the TRANSPARENT pass at all detail levels at once, using the stencil to not only prevent low-detail from rendering over high-detail, but also fp2 transparent water
+            //  from rendering over vanilla water
+
+            for (int level = 0; level < EngineConstants.MAX_LODS; level++) {
+                this.renderSolid(level);
+                this.renderCutout(level);
+            }
+
+            this.renderTransparent();
+
+            this.postRender();
+        }
+    }
+
+    private void preRender() {
+        if (!FP2_DEBUG || this.fp2.globalConfig().debug().backfaceCulling()) {
+            this.gl.glEnable(GL_CULL_FACE);
+        }
+
+        this.gl.glEnable(GL_DEPTH_TEST);
+        this.gl.glDepthFunc(this.fp2.globalConfig().compatibility().reversedZ() ? GL_GREATER : GL_LESS);
+
+        this.gl.glEnable(GL_STENCIL_TEST);
+        this.gl.glStencilMask(0xFF);
+
+        //clear stencil buffer to 0x7F
+        this.gl.glClearStencil(0x7F);
+        this.gl.glClear(GL_STENCIL_BUFFER_BIT);
+    }
+
+    private void postRender() {
+    }
+
+    private void renderSolid(int level) {
+        //GlStateManager.disableAlpha();
+
+        this.gl.glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE); //TODO: last two args should be swapped, i think
+        this.gl.glStencilFunc(GL_LEQUAL, level, 0x7F);
+
+        val shader = this.fp2.client().globalRenderer().blockShaderProgram.get();
+        val uniformSetter = shader.bindUnsafe();
+        this.renderIndex.draw(this.drawMode, level, RenderConstants.LAYER_SOLID, shader, uniformSetter);
+
+        //GlStateManager.enableAlpha();
+    }
+
+    private void renderCutout(int level) {
+        //MC.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).setBlurMipmap(false, MC.gameSettings.mipmapLevels > 0);
+
+        this.gl.glStencilOp(GL_KEEP, GL_REPLACE, GL_REPLACE);
+        this.gl.glStencilFunc(GL_LEQUAL, level, 0x7F);
+
+        val shader = this.fp2.client().globalRenderer().blockCutoutShaderProgram.get();
+        val uniformSetter = shader.bindUnsafe();
+        this.renderIndex.draw(this.drawMode, level, RenderConstants.LAYER_CUTOUT, shader, uniformSetter);
+
+        //MC.getTextureManager().getTexture(TextureMap.LOCATION_BLOCKS_TEXTURE).restoreLastBlurMipmap();
+    }
+
+    private void renderTransparent() {
+        this.renderTransparentStencilPass();
+        this.renderTransparentFragmentPass();
+    }
+
+    private void renderTransparentStencilPass() {
+        this.gl.glColorMask(false, false, false, false);
+        this.gl.glDepthMask(false);
+
+        val shader = this.fp2.client().globalRenderer().blockStencilShaderProgram.get();
+        val uniformSetter = shader.bindUnsafe();
+
+        this.gl.glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE); //TODO: last two args should be swapped, i think
+        for (int level = 0; level < EngineConstants.MAX_LODS; level++) {
+            this.gl.glStencilOp(GL_GEQUAL, 0x80 | (EngineConstants.MAX_LODS - level), 0xFF);
+            this.renderIndex.draw(this.drawMode, level, RenderConstants.LAYER_TRANSPARENT, shader, uniformSetter);
+        }
+
+        this.gl.glDepthMask(true);
+        this.gl.glColorMask(true, true, true, true);
+    }
+
+    private void renderTransparentFragmentPass() {
+        this.gl.glEnable(GL_BLEND);
+        this.gl.glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
+
+        //GlStateManager.alphaFunc(GL_GREATER, 0.1f);
+
+        val shader = this.fp2.client().globalRenderer().blockShaderProgram.get();
+        val uniformSetter = shader.bindUnsafe();
+
+        this.gl.glStencilMask(0);
+        this.gl.glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+        for (int level = 0; level < EngineConstants.MAX_LODS; level++) {
+            this.gl.glStencilFunc(GL_EQUAL, 0x80 | (EngineConstants.MAX_LODS - level), 0xFF);
+            this.renderIndex.draw(this.drawMode, level, RenderConstants.LAYER_TRANSPARENT, shader, uniformSetter);
+        }
+
+        this.gl.glDisable(GL_BLEND);
     }
 
     public DebugStats.Renderer stats() {
-        return this.bakeManager.index().stats();
+        return this.bakeStorage.stats();
     }
 
     @Override
     protected void doRelease() {
-        this.strategy.release();
-        this.bakeManager.release();
+        this.bakeManager.close();
+        this.renderIndex.close();
+        this.bakeStorage.close();
+
+        this.globalUniformBuffer.close();
+
+        this.bufferUploader.close();
+        this.alloc.close();
     }
 
     /**
      * @author DaPorkchop_
      */
-    public static class ShaderMultidraw extends AbstractFarRenderer {
+    public static class ShaderMultidraw extends AbstractFarRenderer<VoxelLocalAttributes> {
         public ShaderMultidraw(@NonNull IFarClientContext context) {
             super(context);
         }
 
         @Override
-        protected IFarRenderStrategy<?, ?, ?> strategy0() {
-            return new ShaderBasedVoxelRenderStrategy(this);
+        protected IRenderBaker<VoxelLocalAttributes> createBaker() {
+            return new VoxelBaker(this.context);
+        }
+
+        @Override
+        protected RenderIndex<VoxelLocalAttributes> createRenderIndex() {
+            return new CPUCulledBaseInstanceRenderIndex<>(this.gl, this.bakeStorage, this.alloc, this.fp2.client().globalRenderer().voxelInstancedAttributesFormat);
         }
     }
 }

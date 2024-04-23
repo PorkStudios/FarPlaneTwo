@@ -24,6 +24,7 @@ import net.daporkchop.fp2.gl.attribute.AttributeTarget;
 import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
 
 import java.util.BitSet;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Function;
@@ -48,29 +49,22 @@ public final class DrawShaderProgram extends ShaderProgram {
      * @author DaPorkchop_
      */
     public static final class Builder extends ShaderProgram.Builder<DrawShaderProgram, Builder> {
-        private boolean vertexShader;
-        private boolean fragmentShader;
-
         private final VertexAttributeBindings vertexAttributes = new VertexAttributeBindings();
 
         Builder(OpenGL gl) {
-            super(gl);
+            super(gl,
+                    EnumSet.of(ShaderType.VERTEX, ShaderType.TESSELLATION_CONTROL, ShaderType.TESSELLATION_EVALUATION, ShaderType.GEOMETRY, ShaderType.FRAGMENT),
+                    EnumSet.of(ShaderType.VERTEX));
         }
 
         public Builder vertexShader(Shader vertexShader) {
             checkArg(vertexShader.type() == ShaderType.VERTEX, "not a vertex shader: %s", vertexShader.type());
-            checkState(!this.vertexShader, "a vertex shader was already added");
-            this.vertexShader = true;
-            this.shaders.add(vertexShader);
-            return this;
+            return this.addShader(vertexShader);
         }
 
         public Builder fragmentShader(Shader fragmentShader) {
             checkArg(fragmentShader.type() == ShaderType.FRAGMENT, "not a fragment shader: %s", fragmentShader.type());
-            checkState(!this.fragmentShader, "a fragment shader was already added");
-            this.fragmentShader = true;
-            this.shaders.add(fragmentShader);
-            return this;
+            return this.addShader(fragmentShader);
         }
 
         public Builder vertexAttributes(NewAttributeFormat<?> attributeFormat) {
@@ -102,9 +96,7 @@ public final class DrawShaderProgram extends ShaderProgram {
         }
 
         @Override
-        public DrawShaderProgram build() throws ShaderLinkageException {
-            checkState(this.vertexShader, "missing vertex shader");
-            checkState(this.fragmentShader, "missing fragment shader");
+        protected DrawShaderProgram build0() throws ShaderLinkageException {
             return new DrawShaderProgram(this);
         }
 

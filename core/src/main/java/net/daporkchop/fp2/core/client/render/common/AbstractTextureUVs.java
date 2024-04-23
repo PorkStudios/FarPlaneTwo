@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -25,26 +25,23 @@ import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.val;
 import net.daporkchop.fp2.api.event.FEventHandler;
 import net.daporkchop.fp2.api.event.generic.FReloadEvent;
-import net.daporkchop.fp2.api.world.registry.FGameRegistry;
-import net.daporkchop.fp2.core.client.render.TextureUVs;
 import net.daporkchop.fp2.api.util.Direction;
-import net.daporkchop.fp2.gl.GL;
-import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
-import net.daporkchop.fp2.gl.attribute.AttributeFormat;
-import net.daporkchop.fp2.gl.attribute.AttributeUsage;
-import net.daporkchop.fp2.gl.attribute.AttributeWriter;
+import net.daporkchop.fp2.api.world.registry.FGameRegistry;
+import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
+import net.daporkchop.fp2.core.FP2Core;
+import net.daporkchop.fp2.core.client.render.TextureUVs;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
+import net.daporkchop.fp2.gl.attribute.NewAttributeBuffer;
+import net.daporkchop.lib.common.misc.release.AbstractReleasable;
 import net.daporkchop.lib.primitive.map.ObjIntMap;
 import net.daporkchop.lib.primitive.map.open.ObjIntOpenHashMap;
-import net.daporkchop.lib.common.misc.release.AbstractReleasable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import static net.daporkchop.fp2.core.FP2Core.*;
 
 /**
  * Base implementation of {@link TextureUVs}.
@@ -53,31 +50,27 @@ import static net.daporkchop.fp2.core.FP2Core.*;
  */
 @Getter
 public abstract class AbstractTextureUVs extends AbstractReleasable implements TextureUVs {
+    protected final FP2Core fp2;
     protected final FGameRegistry registry;
 
-    protected final AttributeFormat<QuadListAttribute> listsFormat;
-    protected final AttributeBuffer<QuadListAttribute> listsBuffer;
-
-    protected final AttributeFormat<PackedBakedQuadAttribute> quadsFormat;
-    protected final AttributeBuffer<PackedBakedQuadAttribute> quadsBuffer;
+    protected final NewAttributeBuffer<QuadListAttribute> listsBuffer;
+    protected final NewAttributeBuffer<PackedBakedQuadAttribute> quadsBuffer;
 
     protected int[] stateIdToIndexId;
 
-    public AbstractTextureUVs(@NonNull FGameRegistry registry, @NonNull GL gl) {
+    public AbstractTextureUVs(@NonNull FP2Core fp2, @NonNull FGameRegistry registry) {
+        this.fp2 = fp2;
         this.registry = registry;
 
-        this.listsFormat = gl.createAttributeFormat(QuadListAttribute.class).useFor(AttributeUsage.UNIFORM_ARRAY).build();
-        this.listsBuffer = this.listsFormat.createBuffer(BufferUsage.STATIC_DRAW);
+        this.listsBuffer = fp2.client().globalRenderer().uvQuadListSSBOFormat.createBuffer();
+        this.quadsBuffer = fp2.client().globalRenderer().uvPackedQuadSSBOFormat.createBuffer();
 
-        this.quadsFormat = gl.createAttributeFormat(PackedBakedQuadAttribute.class).useFor(AttributeUsage.UNIFORM_ARRAY).build();
-        this.quadsBuffer = this.quadsFormat.createBuffer(BufferUsage.STATIC_DRAW);
-
-        fp2().eventBus().registerWeak(this);
+        fp2.eventBus().registerWeak(this);
     }
 
     @Override
     protected void doRelease() {
-        fp2().eventBus().unregister(this);
+        this.fp2.eventBus().unregister(this);
 
         this.quadsBuffer.close();
         this.listsBuffer.close();
@@ -106,7 +99,7 @@ public abstract class AbstractTextureUVs extends AbstractReleasable implements T
 
             try {
                 for (Direction direction : Direction.VALUES) {
-                    List<PackedBakedQuad> quads = fp2().eventBus().fireAndGetFirst(new StateFaceQuadRenderEvent(this.registry, state, direction)).orElse(missingTextureQuads);
+                    List<PackedBakedQuad> quads = this.fp2.eventBus().fireAndGetFirst(new StateFaceQuadRenderEvent(this.registry, state, direction)).orElse(missingTextureQuads);
 
                     int id = distinctQuadsToId.getOrDefault(quads, -1);
                     if (id < 0) { //allocate new ID
@@ -117,7 +110,7 @@ public abstract class AbstractTextureUVs extends AbstractReleasable implements T
                     faceIds[direction.ordinal()] = id;
                 }
             } catch (Exception e) { //we couldn't process the state (likely a buggy mod block), so let's just ignore it for now
-                fp2().log().error("exception while generating texture UVs for %s", e, this.registry.id2state(state));
+                this.fp2.log().error("exception while generating texture UVs for %s", e, this.registry.id2state(state));
                 erroredStates.add(state);
                 return;
             }
@@ -132,8 +125,8 @@ public abstract class AbstractTextureUVs extends AbstractReleasable implements T
         });
 
         if (!erroredStates.isEmpty()) { //some block states failed!
-            fp2().log().error("failed to generate texture UVs for %d block states, they will be replaced with missing textures:", erroredStates.size());
-            erroredStates.forEach(state -> fp2().log().error(state.toString()));
+            this.fp2.log().error("failed to generate texture UVs for %d block states, they will be replaced with missing textures:", erroredStates.size());
+            erroredStates.forEach(state -> this.fp2.log().error(state.toString()));
 
             int id = stateIdToIndexId.get(0); //air
             erroredStates.forEach(state -> stateIdToIndexId.put((int) state, id));
@@ -143,25 +136,27 @@ public abstract class AbstractTextureUVs extends AbstractReleasable implements T
         stateIdToIndexId.forEach((state, indexId) -> realStateIdToIndexId[state] = indexId);
         this.stateIdToIndexId = realStateIdToIndexId;
 
+        DirectMemoryAllocator alloc = new DirectMemoryAllocator(false);
+
         QuadList[] quadIdToList = new QuadList[distinctQuadsById.size()];
-        try (AttributeWriter<PackedBakedQuadAttribute> quadsOut = this.quadsFormat().createWriter()) {
+        try (val quadsOut = this.quadsBuffer.format().createWriter(alloc)) {
             for (int i = 0, len = distinctQuadsById.size(); i < len; i++) {
                 List<PackedBakedQuad> quads = distinctQuadsById.get(i);
                 quadIdToList[i] = new QuadList(quadsOut.size(), quadsOut.size() + quads.size());
                 quads.forEach(quad -> quadsOut.append().copyFrom(quad).close());
             }
 
-            this.quadsBuffer().set(quadsOut);
+            this.quadsBuffer().set(quadsOut, BufferUsage.STATIC_DRAW);
         }
 
-        try (AttributeWriter<QuadListAttribute> listsOut = this.listsFormat().createWriter()) {
+        try (val listsOut = this.listsBuffer.format().createWriter(alloc)) {
             for (int[] faceIds : distinctIndicesById) {
                 for (int i : faceIds) {
                     listsOut.append().copyFrom(quadIdToList[i]).close();
                 }
             }
 
-            this.listsBuffer().set(listsOut);
+            this.listsBuffer().set(listsOut, BufferUsage.STATIC_DRAW);
         }
     }
 

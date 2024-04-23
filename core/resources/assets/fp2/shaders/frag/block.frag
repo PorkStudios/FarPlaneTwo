@@ -23,19 +23,9 @@
 #include <"fp2:shaders/frag/common.frag">
 #include <"fp2:shaders/frag/fog.frag">
 
-void main() {
-    vec3 normal = normalVector();
-
-    vec4 frag_color;
-#if FP2_DEBUG_COLORS_ENABLED
-#if FP2_DEBUG_COLORS_MODE == FP2_DEBUG_COLORS_MODE_LEVEL || FP2_DEBUG_COLORS_MODE == FP2_DEBUG_COLORS_MODE_POSITION
-    frag_color = vec4(fs_in.color * diffuseLight(normal), 1.);
-#elif FP2_DEBUG_COLORS_MODE == FP2_DEBUG_COLORS_MODE_NORMAL
-    frag_color = vec4(normal * normal, 1.);
-#endif
-#else
+vec4 computeBlockColor(vec3 normal) {
     //initial block texture sample
-    frag_color = sampleTerrain(normal);
+    vec4 frag_color = sampleTerrain(normal);
 
 #ifdef FP2_CUTOUT
     //this is the cutout pass, emulate legacy opengl alpha testing
@@ -49,6 +39,31 @@ void main() {
 
     //shading
     frag_color.rgb *= diffuseLight(normal);
+
+    return frag_color;
+}
+
+void main() {
+    vec3 normal = normalVector();
+
+    vec4 frag_color;
+
+#if FP2_DEBUG
+    //if debug colors are enabled, determine the color to use based on the active color mode
+    switch (u_debug_colorMode) {
+        default:
+            frag_color = computeBlockColor(normal);
+            break;
+        case FP2_DEBUG_COLORS_MODE_LEVEL:
+        case FP2_DEBUG_COLORS_MODE_POSITION:
+            frag_color = vec4(fs_in.color * diffuseLight(normal), 1.);
+            break;
+        case FP2_DEBUG_COLORS_MODE_NORMAL:
+            frag_color = vec4(normal * normal, 1.);
+            break;
+    }
+#else
+    frag_color = computeBlockColor(normal);
 #endif
 
     //fog
