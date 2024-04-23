@@ -24,9 +24,20 @@ import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.common.util.exception.ResourceNotFoundException;
 import net.daporkchop.fp2.gl.OpenGL;
+import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.AttributeTarget;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
+import net.daporkchop.fp2.gl.attribute.annotation.ArrayIndex;
+import net.daporkchop.fp2.gl.attribute.annotation.ArrayLength;
+import net.daporkchop.fp2.gl.attribute.annotation.ArrayType;
+import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
+import net.daporkchop.fp2.gl.attribute.annotation.AttributeSetter;
+import net.daporkchop.fp2.gl.attribute.annotation.ScalarConvert;
+import net.daporkchop.fp2.gl.attribute.annotation.ScalarExpand;
+import net.daporkchop.fp2.gl.attribute.annotation.ScalarTransform;
+import net.daporkchop.fp2.gl.attribute.annotation.ScalarType;
+import net.daporkchop.fp2.gl.attribute.annotation.VectorType;
 import net.daporkchop.fp2.gl.attribute.vao.VertexArrayObject;
 import net.daporkchop.fp2.gl.buffer.IndexedBufferTarget;
 import net.daporkchop.fp2.gl.buffer.upload.UnsynchronizedMapBufferUploader;
@@ -45,7 +56,7 @@ import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 /**
  * @author DaPorkchop_
  */
-public class NewTestOpenGL {
+public class TestOpenGL {
     public static final int WINDOW_SIZE_W = 512;
     public static final int WINDOW_SIZE_H = WINDOW_SIZE_W;
 
@@ -170,5 +181,78 @@ public class NewTestOpenGL {
                 this.framesSinceLastTime++;
             }
         }
+    }
+
+    @Attribute(name = "scale",
+            typeVector = @VectorType(components = 2,
+                    componentType = @ScalarType(value = byte.class,
+                            interpret = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true))))
+    @Attribute(name = "floatsAsVector",
+            typeVector = @VectorType(components = 3, componentType = @ScalarType(float.class)))
+    @Attribute(name = "vec2Array",
+            typeArray = @ArrayType(length = 4,
+                    componentTypeVector = @VectorType(components = 2,
+                            componentType = @ScalarType(value = byte.class,
+                                    interpret = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = false)))))
+    public interface UniformAttribs extends AttributeStruct {
+        @AttributeSetter("scale")
+        UniformAttribs scale(byte scaleX, byte scaleY);
+
+        @AttributeSetter
+        UniformAttribs floatsAsVector(float f0, float f1, float f2);
+
+        @AttributeSetter
+        UniformAttribs floatsAsVector(float @ArrayLength(3) [] f);
+
+        @AttributeSetter
+        UniformAttribs vec2Array(byte @ArrayLength(8) [] bytes);
+
+        @AttributeSetter
+        UniformAttribs vec2Array(byte @ArrayLength(4) [] @ArrayLength(2) [] bytes);
+
+        @AttributeSetter
+        UniformAttribs vec2Array(@ArrayIndex int index, byte @ArrayLength(2) [] bytes);
+    }
+
+    @Attribute(name = "colorFactor",
+            typeVector = @VectorType(components = 3, componentType = @ScalarType(float.class)))
+    public interface UniformArrayAttribs extends AttributeStruct {
+        @AttributeSetter
+        UniformArrayAttribs colorFactor(float colorFactorR, float colorFactorG, float colorFactorB);
+    }
+
+    @Attribute(name = "offset",
+            typeVector = @VectorType(components = 2,
+                    componentType = @ScalarType(value = byte.class,
+                            interpret = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = false))))
+    @Attribute(name = "color",
+            typeVector = @VectorType(components = 4,
+                    componentType = @ScalarType(value = byte.class,
+                            interpret = {
+                                    @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED),
+                                    @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true)
+                            })))
+    public interface GlobalAttribs extends AttributeStruct {
+        @AttributeSetter
+        GlobalAttribs offset(int offsetX, int offsetY);
+
+        @AttributeSetter
+        GlobalAttribs color(@ScalarTransform(expand = @ScalarExpand(ScalarExpand.Type.INT_ARGB8_TO_BYTE_VECTOR_RGBA)) int color);
+    }
+
+    @Attribute(name = "pos",
+            typeVector = @VectorType(components = 2,
+                    componentType = @ScalarType(value = byte.class,
+                            interpret = @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = false))))
+    public interface LocalAttribs extends AttributeStruct {
+        @AttributeSetter
+        LocalAttribs pos(int posX, int posY);
+    }
+
+    @Attribute(name = "selectable",
+            typeScalar = @ScalarType(int.class))
+    public interface UniformSelectionAttribs extends AttributeStruct {
+        @AttributeSetter
+        UniformSelectionAttribs selectable(int selectable);
     }
 }

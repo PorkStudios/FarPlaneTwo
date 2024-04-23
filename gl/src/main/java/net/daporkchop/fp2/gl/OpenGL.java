@@ -27,6 +27,8 @@ import net.daporkchop.fp2.common.GlobalProperties;
 import net.daporkchop.fp2.gl.compute.ComputeWorkGroupCount;
 import net.daporkchop.fp2.gl.compute.ComputeWorkGroupSize;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
@@ -61,7 +63,11 @@ public abstract class OpenGL {
      * @return an instance of {@link OpenGL} for accessing the current OpenGL context
      */
     public static OpenGL forCurrent() {
-        return GlobalProperties.find(OpenGL.class, "opengl").<Supplier<? extends OpenGL>>getInstance("forCurrent.supplier").get();
+        return (OpenGL) MethodHandles.publicLookup().findStatic(
+                        GlobalProperties.find(OpenGL.class, "opengl").getClass("factory"),
+                        "forCurrent",
+                        MethodType.methodType(OpenGL.class))
+                .invokeExact();
     }
 
     private final GLVersion version;

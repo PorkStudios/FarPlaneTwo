@@ -21,12 +21,14 @@
 apply from: "${project.rootDir}/natives/natives.gradle"
 
 dependencies {
-    implementationShade project(":gl:opengl")
+    implementationShade project(":common")
+    implementationShade project(":gl")
+    implementationShade project(":gl:codegen")
 
     implementationProvided "org.lwjgl:lwjgl-glfw:$lwjgl3Version"
     implementationProvided "org.lwjgl:lwjgl-opengl:$lwjgl3Version"
 
-    testImplementation project(":gl:opengl").sourceSets.test.output
+    testImplementation project(":gl").sourceSets.test.output
 
     testImplementation "org.lwjgl:lwjgl:$lwjgl3Version:natives-linux"
     testImplementation "org.lwjgl:lwjgl-glfw:$lwjgl3Version:natives-linux"

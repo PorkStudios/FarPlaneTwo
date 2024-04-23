@@ -21,14 +21,16 @@
 apply from: "${project.rootDir}/natives/natives.gradle"
 
 dependencies {
-    implementationShade project(":gl:opengl")
+    implementationShade project(":common")
+    implementationShade project(":gl")
+    implementationShade project(":gl:codegen")
 
     implementationProvided "net.daporkchop.lib:natives:$porklibVersion"
 
     implementationProvided "org.lwjgl.lwjgl:lwjgl:$lwjgl2Version"
     implementationProvided "org.lwjgl.lwjgl:lwjgl_util:$lwjgl2Version"
 
-    testImplementation project(":gl:opengl").sourceSets.test.output
+    testImplementation project(":gl").sourceSets.test.output
 
     testImplementation "org.lwjgl.lwjgl:lwjgl-platform:$lwjgl2Version:natives-linux"
 }

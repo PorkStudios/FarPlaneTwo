@@ -25,7 +25,6 @@ import net.daporkchop.fp2.common.util.DirectBufferHackery;
 import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.GLVersion;
 import net.daporkchop.fp2.gl.OpenGL;
-import net.daporkchop.fp2.gl.opengl.GLAPI;
 import net.daporkchop.fp2.gl.opengl.lwjgl2.extra.ExtraFunctions;
 import net.daporkchop.fp2.gl.opengl.lwjgl2.extra.ExtraFunctionsProvider;
 import net.daporkchop.lib.common.function.throwing.TPredicate;
@@ -85,7 +84,11 @@ import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 /**
  * @author DaPorkchop_
  */
-public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
+public final class GLAPILWJGL2 extends OpenGL {
+    public static OpenGL forCurrent() {
+        return new GLAPILWJGL2();
+    }
+
     private final ExtraFunctions extraFunctions;
 
     // OpenGL 3.1
@@ -183,7 +186,7 @@ public final class GLAPILWJGL2 extends OpenGL implements GLAPI {
     }
 
     @Override
-    public GLVersion determineVersion() { //TODO: make protected
+    protected GLVersion determineVersion() {
         ContextCapabilities capabilities = GLContext.getCapabilities();
 
         return Stream.of(GLVersion.values())

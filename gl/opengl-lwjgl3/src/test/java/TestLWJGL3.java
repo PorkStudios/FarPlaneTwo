@@ -25,7 +25,7 @@ import static org.lwjgl.system.MemoryUtil.*;
 /**
  * @author DaPorkchop_
  */
-public class TestLWJGL3 {
+public class TestLWJGL3 extends TestOpenGL {
     public static void main(String... args) {
         if (!glfwInit()) {
             throw new IllegalStateException("couldn't initialize GLFW!");
@@ -37,7 +37,7 @@ public class TestLWJGL3 {
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
         glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-        long window = glfwCreateWindow(TestOpenGL.WINDOW_SIZE_W, TestOpenGL.WINDOW_SIZE_H, "OpenGL tests", NULL, NULL);
+        long window = glfwCreateWindow(WINDOW_SIZE_W, WINDOW_SIZE_H, "OpenGL tests", NULL, NULL);
         if (window == 0L) {
             throw new IllegalStateException("couldn't create window!");
         }
@@ -49,7 +49,7 @@ public class TestLWJGL3 {
         glfwSwapInterval(0);
 
         try {
-            NewTestOpenGL.run(
+            run(
                     () -> glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS || glfwWindowShouldClose(window),
                     () -> {
                         glfwSwapBuffers(window);
