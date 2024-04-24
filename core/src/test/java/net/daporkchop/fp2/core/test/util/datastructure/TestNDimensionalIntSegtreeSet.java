@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,13 +15,13 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.test.util.datastructure;
 
 import net.daporkchop.fp2.core.util.datastructure.Datastructures;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSegtreeSet;
+import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSet;
 import net.daporkchop.lib.math.vector.Vec3i;
 import org.junit.jupiter.api.Test;
 
@@ -34,12 +34,18 @@ import java.util.stream.IntStream;
 
 import static java.lang.Math.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
-import static net.daporkchop.fp2.core.test.util.datastructure.TestNDimensionalIntSet.*;
 
 /**
  * @author DaPorkchop_
  */
 public class TestNDimensionalIntSegtreeSet {
+    protected static void ensureEqual(Set<Vec3i> reference, NDimensionalIntSet test) {
+        checkState(reference.size() == test.size());
+
+        reference.forEach(v -> checkState(test.contains(v.x(), v.y(), v.z())));
+        test.forEach3D((x, y, z) -> checkState(reference.contains(Vec3i.of(x, y, z))));
+    }
+
     protected static void doAABBIntersections(Set<Vec3i> reference, NDimensionalIntSegtreeSet test, int _min, int _max) {
         int d = abs(_max - _min);
         int min = min(_min, _min - (d >> 1));

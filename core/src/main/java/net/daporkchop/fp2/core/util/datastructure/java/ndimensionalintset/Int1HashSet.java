@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.util.datastructure.java.ndimensionalintset;
@@ -446,6 +445,39 @@ public class Int1HashSet implements NDimensionalIntSet {
     }
 
     @Override
+    public int countInRange(int beginX, int endX) {
+        checkArg(beginX <= endX, "beginX (%s) may not be greater than endX (%d)", beginX, endX);
+        if (beginX == endX) { //range is empty
+            return 0;
+        }
+
+        int firstBucketIndex = beginX >> BUCKET_AXIS_BITS;
+        int lastBucketIndex = (endX - 1) >> BUCKET_AXIS_BITS;
+
+        long firstWordMask = -1L << beginX;
+        long lastWordMask = -1L >>> -endX;
+
+        if (firstBucketIndex == lastBucketIndex) { //the whole range is contained within a single bucket
+            return this.findBucketAndCountMasked(firstBucketIndex, firstWordMask & lastWordMask);
+        } else {
+            int result = this.findBucketAndCountMasked(firstBucketIndex, firstWordMask) + this.findBucketAndCountMasked(lastBucketIndex, lastWordMask);
+            for (int bucketX = firstBucketIndex + 1; bucketX < lastBucketIndex; bucketX++) {
+                result += this.findBucketAndCountMasked(bucketX, -1L);
+            }
+            return result;
+        }
+    }
+
+    private int findBucketAndCountMasked(int x, long mask) {
+        int bucket = this.findBucket(x, false);
+        if (bucket < 0) {
+            return 0;
+        } else {
+            return Long.bitCount(this.values[bucket] & mask);
+        }
+    }
+
+    @Override
     public void clear() {
         if (this.isEmpty()) { //if the set is empty, there's nothing to clear
             return;
@@ -490,5 +522,11 @@ public class Int1HashSet implements NDimensionalIntSet {
     public boolean contains(@NonNull int... point) {
         checkArg(point.length == 1);
         return this.contains(point[0]);
+    }
+
+    @Override
+    public int countInRange(@NonNull int[] begin, @NonNull int[] end) {
+        checkArg(begin.length == 1 && end.length == 1);
+        return this.countInRange(begin[0], end[0]);
     }
 }

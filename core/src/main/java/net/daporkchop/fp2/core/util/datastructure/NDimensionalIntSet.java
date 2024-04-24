@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.util.datastructure;
@@ -26,6 +25,7 @@ import net.daporkchop.fp2.core.util.BreakOutOfLambdaException;
 import net.daporkchop.lib.primitive.lambda.IntIntConsumer;
 import net.daporkchop.lib.primitive.lambda.IntIntIntConsumer;
 
+import java.util.Arrays;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 
@@ -102,6 +102,55 @@ public interface NDimensionalIntSet extends IDatastructure<NDimensionalIntSet> {
      * @param callback the callback function
      */
     void forEach(@NonNull Consumer<int[]> callback);
+
+    /**
+     * Counts the number of elements in the given coordinate range.
+     *
+     * @param begin the minimum coordinates to search (inclusive)
+     * @param end   the maximum coordinates to search (exclusive)
+     * @return the number of elements in the given coordinate range
+     */
+    default int countInRange(@NonNull int[] begin, @NonNull int[] end) {
+        int dimensions = this.dimensions();
+        {
+            checkArg(dimensions == begin.length, "mismatched dimension count (this: %dD, begin: %dD)", dimensions, begin.length);
+            checkArg(dimensions == end.length, "mismatched dimension count (this: %dD, end: %dD)", dimensions, end.length);
+        }
+
+        for (int i = 0; i < dimensions; i++) {
+            checkArg(begin[i] <= end[i], "begin#%s (%s) may not be greater than end#%s (%s)", i, begin[i], i, end[i]);
+        }
+
+        for (int i = 0; i < dimensions; i++) { //break out early if the range is empty
+            if (begin[i] == end[i]) {
+                return 0;
+            }
+        }
+
+        int result = 0;
+        int[] point = begin.clone();
+        while (true) { //keep iterating until we reach the end point
+            if (this.contains(point)) {
+                result++;
+            }
+
+            //advance to the next point
+            INCREMENT:
+            {
+                for (int i = 0; i < dimensions - 1; i++) {
+                    if (++point[i] < end[i]) {
+                        break INCREMENT;
+                    } else {
+                        point[i] = begin[i];
+                    }
+                }
+
+                if (++point[dimensions - 1] >= end[dimensions - 1]) { //special handling for last coordinate, since rather than wrapping around it should terminate the loop when reached
+                    return result;
+                }
+            }
+        }
+    }
 
     //
     // special cases
@@ -252,6 +301,48 @@ public interface NDimensionalIntSet extends IDatastructure<NDimensionalIntSet> {
             checkArg(coords.length == 3, "3D callback for %dD set!", coords.length);
             callback.accept(coords[0], coords[1], coords[2]);
         });
+    }
+
+    /**
+     * Counts the number of elements in the given coordinate range.
+     *
+     * @param beginX the minimum X coordinate to search (inclusive)
+     * @param endX   the maximum X coordinate to search (exclusive)
+     * @return the number of elements in the given coordinate range
+     * @throws IllegalArgumentException if this set's dimensionality is not equal to 1
+     */
+    default int countInRange(int beginX, int endX) {
+        return this.countInRange(new int[]{ beginX }, new int[]{ endX });
+    }
+
+    /**
+     * Counts the number of elements in the given coordinate range.
+     *
+     * @param beginX the minimum X coordinate to search (inclusive)
+     * @param beginY the minimum Y coordinate to search (inclusive)
+     * @param endX   the maximum X coordinate to search (exclusive)
+     * @param endY   the maximum Y coordinate to search (exclusive)
+     * @return the number of elements in the given coordinate range
+     * @throws IllegalArgumentException if this set's dimensionality is not equal to 2
+     */
+    default int countInRange(int beginX, int beginY, int endX, int endY) {
+        return this.countInRange(new int[]{ beginX, beginY }, new int[]{ endX, endY });
+    }
+
+    /**
+     * Counts the number of elements in the given coordinate range.
+     *
+     * @param beginX the minimum X coordinate to search (inclusive)
+     * @param beginY the minimum Y coordinate to search (inclusive)
+     * @param beginZ the minimum Z coordinate to search (inclusive)
+     * @param endX   the maximum X coordinate to search (exclusive)
+     * @param endY   the maximum Y coordinate to search (exclusive)
+     * @param endZ   the maximum Z coordinate to search (exclusive)
+     * @return the number of elements in the given coordinate range
+     * @throws IllegalArgumentException if this set's dimensionality is not equal to 3
+     */
+    default int countInRange(int beginX, int beginY, int beginZ, int endX, int endY, int endZ) {
+        return this.countInRange(new int[]{ beginX, beginY, beginZ }, new int[]{ endX, endY, endZ });
     }
 
     //

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.util.datastructure.java.ndimensionalintset;
@@ -49,6 +48,9 @@ public class Int3HashSet implements NDimensionalIntSet {
 
     protected static final int BUCKET_AXIS_BITS = 2; //the number of bits per axis which are used inside of the bucket rather than identifying the bucket
     protected static final int BUCKET_AXIS_MASK = (1 << BUCKET_AXIS_BITS) - 1;
+
+    protected static final int BUCKET_AXIS_SIZE = 1 << BUCKET_AXIS_BITS; //the number of positions per bucket per axis
+    protected static final int BUCKET_AXIS_SIZE_MASK = (1 << BUCKET_AXIS_SIZE) - 1;
 
     protected static final int DEFAULT_TABLE_SIZE = 16;
 
@@ -482,6 +484,103 @@ public class Int3HashSet implements NDimensionalIntSet {
     }
 
     @Override
+    public int countInRange(int beginX, int beginY, int beginZ, int endX, int endY, int endZ) {
+        checkArg(beginX <= endX, "beginX (%s) may not be greater than endX (%d)", beginX, endX);
+        checkArg(beginY <= endY, "beginY (%s) may not be greater than endY (%d)", beginY, endY);
+        checkArg(beginZ <= endZ, "beginZ (%s) may not be greater than endZ (%d)", beginZ, endZ);
+        if (beginX == endX || beginY == endY || beginZ == endZ) { //range is empty
+            return 0;
+        }
+
+        int firstBucketIndexX = beginX >> BUCKET_AXIS_BITS;
+        int firstBucketIndexY = beginY >> BUCKET_AXIS_BITS;
+        int firstBucketIndexZ = beginZ >> BUCKET_AXIS_BITS;
+        int lastBucketIndexX = (endX - 1) >> BUCKET_AXIS_BITS;
+        int lastBucketIndexY = (endY - 1) >> BUCKET_AXIS_BITS;
+        int lastBucketIndexZ = (endZ - 1) >> BUCKET_AXIS_BITS;
+
+        long firstWordMaskX = broadcastMaskX(beginX, 0);
+        long firstWordMaskY = broadcastMaskY(beginY, 0);
+        long firstWordMaskZ = broadcastMaskZ(beginZ, 0);
+        long lastWordMaskX = broadcastMaskX(0, endX);
+        long lastWordMaskY = broadcastMaskY(0, endY);
+        long lastWordMaskZ = broadcastMaskZ(0, endZ);
+
+        int result = 0;
+        for (int bucketX = firstBucketIndexX; bucketX <= lastBucketIndexX; bucketX++) {
+            long maskX = -1L;
+            if (bucketX == firstBucketIndexX) {
+                maskX &= firstWordMaskX;
+            }
+            if (bucketX == lastBucketIndexX) {
+                maskX &= lastWordMaskX;
+            }
+
+            for (int bucketY = firstBucketIndexY; bucketY <= lastBucketIndexY; bucketY++) {
+                long maskY = -1L;
+                if (bucketY == firstBucketIndexY) {
+                    maskY &= firstWordMaskY;
+                }
+                if (bucketY == lastBucketIndexY) {
+                    maskY &= lastWordMaskY;
+                }
+
+                for (int bucketZ = firstBucketIndexZ; bucketZ <= lastBucketIndexZ; bucketZ++) {
+                    long maskZ = -1L;
+                    if (bucketZ == firstBucketIndexZ) {
+                        maskZ &= firstWordMaskZ;
+                    }
+                    if (bucketZ == lastBucketIndexZ) {
+                        maskZ &= lastWordMaskZ;
+                    }
+
+                    result += this.findBucketAndCountMasked(bucketX, bucketY, bucketZ, maskX & maskY & maskZ);
+                }
+            }
+        }
+        return result;
+    }
+
+    private static long broadcastMaskX(int begin, int end) {
+        long firstMask = -1L << ((BUCKET_AXIS_SIZE * BUCKET_AXIS_SIZE) * (begin & BUCKET_AXIS_MASK));
+        long lastMask = -1L >>> ((BUCKET_AXIS_SIZE * BUCKET_AXIS_SIZE) * ((-end) & BUCKET_AXIS_MASK));
+        return firstMask & lastMask;
+    }
+
+    private static long broadcastMaskY(int begin, int end) {
+        long firstMask = ((1L << (BUCKET_AXIS_SIZE * BUCKET_AXIS_SIZE)) - 1L) << (BUCKET_AXIS_SIZE * (begin & BUCKET_AXIS_MASK));
+        long lastMask = ((1L << (BUCKET_AXIS_SIZE * BUCKET_AXIS_SIZE)) - 1L) >>> (BUCKET_AXIS_SIZE * ((-end) & BUCKET_AXIS_MASK));
+        long mask = firstMask & lastMask;
+
+        assert (mask & ((1L << (BUCKET_AXIS_SIZE * BUCKET_AXIS_SIZE)) - 1L)) == mask : Long.toHexString(mask);
+        for (int i = 0, itrs = Integer.numberOfTrailingZeros(Long.SIZE / (BUCKET_AXIS_SIZE * BUCKET_AXIS_SIZE)); i < itrs; i++) { //TODO: this is equivalent to a multiply
+            mask |= mask << ((BUCKET_AXIS_SIZE * BUCKET_AXIS_SIZE) << i);
+        }
+        return mask;
+    }
+
+    private static long broadcastMaskZ(int begin, int end) {
+        long firstMask = ((long) BUCKET_AXIS_SIZE_MASK) << (begin & BUCKET_AXIS_MASK);
+        long lastMask = ((long) BUCKET_AXIS_SIZE_MASK) >>> ((-end) & BUCKET_AXIS_MASK);
+        long mask = firstMask & lastMask;
+
+        assert (mask & BUCKET_AXIS_SIZE_MASK) == mask : Long.toHexString(mask);
+        for (int i = 0, itrs = Integer.numberOfTrailingZeros(Long.SIZE / BUCKET_AXIS_SIZE); i < itrs; i++) { //TODO: this is equivalent to a multiply
+            mask |= mask << (BUCKET_AXIS_SIZE << i);
+        }
+        return mask;
+    }
+
+    private int findBucketAndCountMasked(int x, int y, int z, long mask) {
+        int bucket = this.findBucket(x, y, z, false);
+        if (bucket < 0) {
+            return 0;
+        } else {
+            return Long.bitCount(this.values[bucket] & mask);
+        }
+    }
+
+    @Override
     public void clear() {
         if (this.isEmpty()) { //if the set is empty, there's nothing to clear
             return;
@@ -526,5 +625,11 @@ public class Int3HashSet implements NDimensionalIntSet {
     public boolean contains(@NonNull int... point) {
         checkArg(point.length == 3);
         return this.contains(point[0], point[1], point[2]);
+    }
+
+    @Override
+    public int countInRange(@NonNull int[] begin, @NonNull int[] end) {
+        checkArg(begin.length == 3 && end.length == 3);
+        return this.countInRange(begin[0], begin[1], begin[2], end[0], end[1], end[2]);
     }
 }
