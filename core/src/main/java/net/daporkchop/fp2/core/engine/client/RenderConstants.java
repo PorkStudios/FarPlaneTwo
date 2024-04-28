@@ -45,7 +45,9 @@ public class RenderConstants {
     public static final String GLOBAL_UNIFORMS_UBO_NAME = "U_GlobalUniforms";
     public static final int GLOBAL_UNIFORMS_UBO_BINDING = 0;
 
+    public static final String TEXTURE_UVS_LISTS_SSBO_NAME = "B_TexQuadLists";
     public static final int TEXTURE_UVS_LISTS_SSBO_BINDING = 0;
+    public static final String TEXTURE_UVS_QUADS_SSBO_NAME = "B_TexQuads";
     public static final int TEXTURE_UVS_QUADS_SSBO_BINDING = 1;
 
     public static final String TILE_POS_ARRAY_UBO_NAME = "U_TilePosArray";

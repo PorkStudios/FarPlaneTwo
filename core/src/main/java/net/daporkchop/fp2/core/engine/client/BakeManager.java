@@ -32,12 +32,10 @@ import net.daporkchop.fp2.core.engine.tile.ITileSnapshot;
 import net.daporkchop.fp2.core.util.threading.scheduler.NoFutureScheduler;
 import net.daporkchop.fp2.core.util.threading.scheduler.Scheduler;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
-import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
 import net.daporkchop.fp2.gl.buffer.upload.BufferUploader;
 import net.daporkchop.lib.common.misc.release.AbstractReleasable;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
 import net.daporkchop.lib.common.pool.recycler.Recycler;
-import net.daporkchop.lib.common.util.PorkUtil;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -46,15 +44,13 @@ import java.util.Set;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
-import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
-import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
  */
-public final class BakeManager<VertexType extends AttributeStruct> extends AbstractReleasable implements FarTileCache.Listener, Consumer<TilePos>, Runnable {
+public final class BakeManager<VertexType extends AttributeStruct> extends AbstractReleasable implements FarTileCache.Listener, Consumer<TilePos> {
     private final AbstractFarRenderer<VertexType> renderer;
 
     private final FarTileCache tileCache;
@@ -128,7 +124,7 @@ public final class BakeManager<VertexType extends AttributeStruct> extends Abstr
         this.notifyOutputs(pos);
     }
 
-    protected void notifyOutputs(@NonNull TilePos pos) {
+    private void notifyOutputs(@NonNull TilePos pos) {
         //schedule all of the positions affected by the tile for re-bake
         this.baker.bakeOutputs(pos).forEach(outputPos -> {
             if (!outputPos.isLevelValid()) { //output tile is at an invalid zoom level, skip it
@@ -151,7 +147,7 @@ public final class BakeManager<VertexType extends AttributeStruct> extends Abstr
         this.checkSelfRenderable(pos);
         this.checkParentsRenderable(pos);
 
-        ITileSnapshot[] compressedInputTiles = uncheckedCast(this.tileCache.getTilesCached(this.baker.bakeInputs(pos)).toArray(ITileSnapshot[]::new));
+        ITileSnapshot[] compressedInputTiles = this.tileCache.getTilesCached(this.baker.bakeInputs(pos)).toArray(ITileSnapshot[]::new);
         if (compressedInputTiles[0] == null //tile isn't cached any more
                 || compressedInputTiles[0].isEmpty()) { //tile data is empty
             this.updateData(pos, Optional.empty());
@@ -198,20 +194,26 @@ public final class BakeManager<VertexType extends AttributeStruct> extends Abstr
         this.tileCache.tryCompressExistingTile(pos);
     }
 
-    protected void checkParentsRenderable(@NonNull TilePos posIn) {
-        PorkUtil.<Stream<TilePos>>uncheckedCast(posIn.up().allPositionsInBB(1, 1)).forEach(this::checkSelfRenderable);
+    private void checkParentsRenderable(@NonNull TilePos posIn) {
+        posIn.up().allPositionsInBB(1, 1).forEach(this::checkSelfRenderable);
     }
 
-    protected void checkSelfRenderable(@NonNull TilePos pos) {
+    private void checkSelfRenderable(@NonNull TilePos pos) {
         if (this.coordLimits.contains(pos)) {
+            //TODO: determining if a tile is renderable is currently pretty inefficient, maybe we can do it better (e.g. using Int3HashSet#countInRange() or a reference-counting index)
+            //this.updateRenderable(pos,
+            //        this.tileCache.getTileCached(pos) == null
+            //                && (pos.level() == 0 || pos.down().allPositionsInBB(1, 3).anyMatch(p -> this.coordLimits.contains(p) && this.tileCache.getTileCached(p) == null)));
+
+            //condition changed now that tiles default to being shown rather than hidden
             this.updateRenderable(pos,
-                    this.tileCache.getTileCached(pos) != null
-                            && (pos.level() == 0 || PorkUtil.<Stream<TilePos>>uncheckedCast(pos.down().allPositionsInBB(1, 3))
-                            .anyMatch(p -> this.coordLimits.contains(p) && this.tileCache.getTileCached(p) == null)));
+                    pos.level() == 0 //level-0 tiles are always shown
+                            || this.tileCache.getTileCached(pos) == null //if the tile isn't loaded, mark it as shown to prune unused entries from the render index's hidden set
+                            || pos.down().allPositionsInBB(1, 3).anyMatch(p -> this.coordLimits.contains(p) && this.tileCache.getTileCached(p) == null));
         }
     }
 
-    protected void updateData(@NonNull TilePos pos, @NonNull Optional<BakeOutput<VertexType>> optionalBakeOutput) {
+    private void updateData(@NonNull TilePos pos, @NonNull Optional<BakeOutput<VertexType>> optionalBakeOutput) {
         this.dataUpdatesLock.acquireUninterruptibly();
 
         this.pendingDataUpdates.merge(pos, optionalBakeOutput, (oldOutput, newOutput) -> {
@@ -220,25 +222,22 @@ public final class BakeManager<VertexType extends AttributeStruct> extends Abstr
             return newOutput;
         });
 
-        if (this.isBulkUpdateQueued.compareAndSet(false, true)) { //we won the race to enqueue a bulk update!
-            this.renderer.context().level().workerManager().workExecutor().run(this);
-        }
+        this.enqueueBulkUpdate();
     }
 
-    protected void updateRenderable(@NonNull TilePos pos, boolean renderable) {
+    private void updateRenderable(@NonNull TilePos pos, boolean renderable) {
         this.pendingRenderableUpdates.put(pos, renderable);
 
+        this.enqueueBulkUpdate();
+    }
+
+    private void enqueueBulkUpdate() {
         if (this.isBulkUpdateQueued.compareAndSet(false, true)) { //we won the race to enqueue a bulk update!
-            this.renderer.context().level().workerManager().workExecutor().run(this);
+            this.renderer.context().level().workerManager().workExecutor().run(this::doBulkUpdate);
         }
     }
 
-    /**
-     * @deprecated internal API, do not touch!
-     */
-    @Override
-    @Deprecated
-    public void run() { //executes a bulk update on the client thread
+    private void doBulkUpdate() { //executes a bulk update on the client thread
         this.isBulkUpdateQueued.set(false);
 
         int dataUpdatesSize = this.pendingDataUpdates.size();

@@ -68,7 +68,7 @@ public abstract class RenderIndex<VertexType extends AttributeStruct> implements
     /**
      * Updates the internal set of hidden tile positions.
      * <p>
-     * Hidden tiles are excluded from tile selection, and will never be rendered until shown again.
+     * Hidden tiles are excluded from tile selection, and will never be rendered until shown again. By default, all tiles are visible.
      *
      * @param hidden the tile positions to hide
      * @param shown  the tile positions to un-hide

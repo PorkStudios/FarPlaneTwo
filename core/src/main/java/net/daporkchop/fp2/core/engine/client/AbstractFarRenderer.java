@@ -223,7 +223,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
 
         this.gl.glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE); //TODO: last two args should be swapped, i think
         for (int level = 0; level < EngineConstants.MAX_LODS; level++) {
-            this.gl.glStencilOp(GL_GEQUAL, 0x80 | (EngineConstants.MAX_LODS - level), 0xFF);
+            this.gl.glStencilFunc(GL_GEQUAL, 0x80 | (EngineConstants.MAX_LODS - level), 0xFF);
             this.renderIndex.draw(this.drawMode, level, RenderConstants.LAYER_TRANSPARENT, shader, uniformSetter);
         }
 

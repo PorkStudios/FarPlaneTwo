@@ -35,7 +35,7 @@ vec4 computeBlockColor(vec3 normal) {
 #endif
 
     //block/sky light
-    frag_color *= t_lightmap(fs_in.light);
+    frag_color *= texture(LIGHTMAP_SAMPLER_NAME, fs_in.light);
 
     //shading
     frag_color.rgb *= diffuseLight(normal);

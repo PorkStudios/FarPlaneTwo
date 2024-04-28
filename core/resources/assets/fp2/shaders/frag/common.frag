@@ -48,6 +48,39 @@ out vec4 color;
 
 //
 //
+// SSBOs
+//
+//
+
+struct TexQuadList {
+    uint first;
+    uint last;
+};
+
+layout(std140) buffer TEXTURE_UVS_LISTS_SSBO_NAME {
+    TexQuadList b_texQuadList[];
+};
+
+struct TexQuad {
+    vec4 coords;
+    float tint;
+};
+
+layout(std140) buffer TEXTURE_UVS_QUADS_SSBO_NAME {
+    TexQuad b_texQuad[];
+};
+
+//
+//
+// TEXTURES
+//
+//
+
+uniform sampler2D TEXTURE_ATLAS_SAMPLER_NAME;
+uniform sampler2D LIGHTMAP_SAMPLER_NAME;
+
+//
+//
 // UTILITIES
 //
 //
@@ -75,27 +108,31 @@ vec2 texUvFactor(vec3 normal, vec3 pos)  {
 
 vec4 sampleTerrain(vec3 normal)  {
     vec2 factor = texUvFactor(normal, fs_in.pos);
-    uvec2 list = ua_texQuadList(fs_in.state * 6 + normalToFaceIndex(normal));
+    TexQuadList list = b_texQuadList[fs_in.state * 6 + normalToFaceIndex(normal)];
 
-    vec4 quadCoords = ua_texQuadCoord(list.x);
+    TexQuad quad = b_texQuad[list.first];
+    vec4 quadCoords = quad.coords;
+    float tint = quad.tint;
 
     vec2 uv = mix(quadCoords.st, quadCoords.pq, factor);
-    vec4 color_out = t_terrain(mix(quadCoords.st, quadCoords.pq, fract(factor)), dFdx(uv), dFdy(uv));
+    vec4 color_out = textureGrad(TEXTURE_ATLAS_SAMPLER_NAME, mix(quadCoords.st, quadCoords.pq, fract(factor)), dFdx(uv), dFdy(uv));
 
     //apply tint if the quad allows it (branchless implementation)
-    color_out.rgb *= max(fs_in.color, vec3(ua_texQuadTint(list.x)));
+    color_out.rgb *= max(fs_in.color, vec3(tint));
 
     //this shouldn't be too bad performance-wise, because in all likelihood it'll have the same number of loops for all neighboring fragments
     // almost all the time
-    for (uint i = list.x + 1; i < list.y; i++) {
-        quadCoords = ua_texQuadCoord(i);
+    for (uint i = list.first + 1; i < list.last; i++) {
+        quad = b_texQuad[i];
+        quadCoords = quad.coords;
+        tint = quad.tint;
 
         //raw color
         uv = mix(quadCoords.st, quadCoords.pq, factor);
-        vec4 frag_color = t_terrain(mix(quadCoords.st, quadCoords.pq, fract(factor)), dFdx(uv), dFdy(uv));
+        vec4 frag_color = textureGrad(TEXTURE_ATLAS_SAMPLER_NAME, mix(quadCoords.st, quadCoords.pq, fract(factor)), dFdx(uv), dFdy(uv));
 
         //possibly apply tint (branchless implementation)
-        frag_color.rgb *= max(fs_in.color, vec3(ua_texQuadTint(i)));
+        frag_color.rgb *= max(fs_in.color, vec3(tint));
 
         //apply texture over previous layers if possible (branchless implementation)
         color_out = color_out * (1. - frag_color.a) + frag_color * frag_color.a;

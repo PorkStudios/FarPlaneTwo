@@ -88,7 +88,7 @@ public abstract class FP2Client {
 
             this.gl = gl;
             this.globalRenderer = new GlobalRenderer(this.fp2(), gl);
-        });
+        }).join(); //TODO: don't block the thread???
 
         //update debug color macros
         if (FP2_DEBUG) {
