@@ -41,6 +41,8 @@ import net.daporkchop.fp2.gl.attribute.annotation.VectorType;
 import net.daporkchop.fp2.gl.attribute.vao.VertexArrayObject;
 import net.daporkchop.fp2.gl.buffer.IndexedBufferTarget;
 import net.daporkchop.fp2.gl.buffer.upload.UnsynchronizedMapBufferUploader;
+import net.daporkchop.fp2.gl.draw.index.IndexType;
+import net.daporkchop.fp2.gl.draw.index.NewIndexFormat;
 import net.daporkchop.fp2.gl.shader.ComputeShaderProgram;
 import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.shader.Shader;
@@ -119,9 +121,18 @@ public class TestOpenGL {
             instanceVertexBuffer.set(writer, BufferUsage.STATIC_DRAW);
         }
 
+        val ubyteIndexFormat = NewIndexFormat.get(IndexType.UNSIGNED_BYTE);
+        val quadsIndexBuffer = ubyteIndexFormat.createBuffer(gl);
+        try (val writer = ubyteIndexFormat.createWriter(alloc)) {
+            writer.appendQuadAsTriangles(0, 1, 4, 2);
+
+            quadsIndexBuffer.set(writer, BufferUsage.STATIC_DRAW);
+        }
+
         val instancedSquaresVAO = VertexArrayObject.builder(gl)
                 .buffer(vertexBuffer)
                 .buffer(instanceVertexBuffer, 1)
+                .elementBuffer(quadsIndexBuffer)
                 .build();
 
         val vsh = new Shader(gl, ShaderType.VERTEX, resourceProvider, Identifier.from("new_test.vert"));
@@ -148,7 +159,8 @@ public class TestOpenGL {
             gl.glBindVertexArray(instancedSquaresVAO.id());
             gl.glBindBufferBase(GL_UNIFORM_BUFFER, 7, uniformBuffer.buffer().id());
             //gl.glDrawArrays(GL_TRIANGLES, 0, 6);
-            gl.glDrawArraysInstanced(GL_TRIANGLES, 0, 6, 4);
+            //gl.glDrawArraysInstanced(GL_TRIANGLES, 0, 6, 4);
+            gl.glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, 0L, 4);
             gl.glBindBufferBase(GL_UNIFORM_BUFFER, 7, 0);
             gl.glBindVertexArray(0);
             gl.glUseProgram(0);

@@ -88,6 +88,7 @@ public final class IndexFormatClassLoader extends SimpleGeneratingClassLoader {
         registerClass.accept(DirectMemoryAllocator.class);
         //registerClass.accept(OpenGL.class);
 
+        registerClass.accept(IndexType.class);
         registerClass.accept(NewIndexFormat.class);
         registerClass.accept(NewIndexWriter.class);
         registerClass.accept(AbstractIndexFormat.class);
@@ -95,8 +96,8 @@ public final class IndexFormatClassLoader extends SimpleGeneratingClassLoader {
     }
 
     private byte[] formatClass() {
-        return generateClass(ACC_PUBLIC | ACC_FINAL, this.formatClassInternalName, getInternalName(NewIndexFormat.class), null, cv -> {
-            generatePassthroughCtor(cv, getInternalName(NewIndexFormat.class), getType(IndexType.class));
+        return generateClass(ACC_PUBLIC | ACC_FINAL, this.formatClassInternalName, getInternalName(AbstractIndexFormat.class), null, cv -> {
+            generatePassthroughCtor(cv, getInternalName(AbstractIndexFormat.class), getType(IndexType.class));
 
             //NewIndexBuffer createBuffer(OpenGL gl)
 
@@ -106,7 +107,7 @@ public final class IndexFormatClassLoader extends SimpleGeneratingClassLoader {
                 mv.visitInsn(DUP);
                 mv.visitVarInsn(ALOAD, 0);
                 mv.visitVarInsn(ALOAD, 1);
-                mv.visitMethodInsn(INVOKESPECIAL, this.writerClassInternalName, "<init>", getMethodDescriptor(getType(NewIndexFormat.class), getType(DirectMemoryAllocator.class)), false);
+                mv.visitMethodInsn(INVOKESPECIAL, this.writerClassInternalName, "<init>", getMethodDescriptor(VOID_TYPE, getType(NewIndexFormat.class), getType(DirectMemoryAllocator.class)), false);
                 return ARETURN;
             });
         });
@@ -121,7 +122,7 @@ public final class IndexFormatClassLoader extends SimpleGeneratingClassLoader {
             generatePassthroughCtor(cv, getInternalName(AbstractIndexWriter.class), getType(NewIndexFormat.class), getType(DirectMemoryAllocator.class));
 
             //void set(long address, long index, int value)
-            generateMethod(cv, ACC_PUBLIC | ACC_FINAL, "set", getMethodDescriptor(VOID_TYPE, LONG_TYPE, LONG_TYPE, LONG_TYPE), mv -> {
+            generateMethod(cv, ACC_PUBLIC | ACC_FINAL, "set", getMethodDescriptor(VOID_TYPE, LONG_TYPE, LONG_TYPE, INT_TYPE), mv -> {
                 mv.visitInsn(ACONST_NULL);
                 this.generateComputeAddress(mv, 1, 3);
                 mv.visitVarInsn(ILOAD, 5);
@@ -130,7 +131,7 @@ public final class IndexFormatClassLoader extends SimpleGeneratingClassLoader {
             });
 
             //void copySingle(long address, long src, long dst)
-            generateMethod(cv, ACC_PUBLIC | ACC_FINAL, "set", getMethodDescriptor(VOID_TYPE, LONG_TYPE, LONG_TYPE, LONG_TYPE), mv -> {
+            generateMethod(cv, ACC_PUBLIC | ACC_FINAL, "copySingle", getMethodDescriptor(VOID_TYPE, LONG_TYPE, LONG_TYPE, LONG_TYPE), mv -> {
                 mv.visitInsn(ACONST_NULL);
                 this.generateComputeAddress(mv, 1, 3);
                 mv.visitInsn(ACONST_NULL);

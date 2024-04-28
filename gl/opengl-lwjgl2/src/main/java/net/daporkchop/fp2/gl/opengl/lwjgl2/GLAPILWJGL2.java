@@ -1085,6 +1085,19 @@ public final class GLAPILWJGL2 extends OpenGL {
     }
 
     @Override
+    public void glDrawElementsInstanced(int mode, int count, int type, long indices, int instancecount) {
+        if (this.OpenGL31) {
+            GL31.glDrawElementsInstanced(mode, count, type, indices, instancecount);
+            super.debugCheckError();
+        } else if (this.GL_ARB_draw_instanced) {
+            ARBDrawInstanced.glDrawElementsInstancedARB(mode, count, type, indices, instancecount);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_draw_instanced));
+        }
+    }
+
+    @Override
     public void glTexBuffer(int target, int internalFormat, int buffer) {
         if (this.OpenGL31) {
             GL31.glTexBuffer(target, internalFormat, buffer);
