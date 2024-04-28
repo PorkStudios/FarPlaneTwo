@@ -70,6 +70,7 @@ import org.lwjgl.opengl.KHRDebug;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -202,12 +203,29 @@ public final class GLAPILWJGL2 extends OpenGL {
     }
 
     private static final MethodHandle APIUtil_getBufferInt;
+    
+    private static final MethodHandle StateTracker_getIndirectBuffer;
 
     static {
         Class<?> _APIUtil = Class.forName("org.lwjgl.opengl.APIUtil");
         Method _APIUtil_getBufferInt = _APIUtil.getDeclaredMethod("getBufferInt", ContextCapabilities.class);
         _APIUtil_getBufferInt.setAccessible(true);
         APIUtil_getBufferInt = MethodHandles.publicLookup().unreflect(_APIUtil_getBufferInt);
+        
+        Class<?> _StateTracker = Class.forName("org.lwjgl.opengl.StateTracker");
+        Method _StateTracker_getReferences = _StateTracker.getDeclaredMethod("getReferences", ContextCapabilities.class);
+        _StateTracker_getReferences.setAccessible(true);
+        Class<?> _References = _StateTracker_getReferences.getReturnType();
+        MethodHandle StateTracker_getReferences = MethodHandles.publicLookup().unreflect(_StateTracker_getReferences);
+
+        Class<?> _BaseReferences = _References.getSuperclass();
+        Field _BaseReferences_indirectBuffer = _BaseReferences.getDeclaredField("indirectBuffer");
+        _BaseReferences_indirectBuffer.setAccessible(true);
+        MethodHandle _BaseReferences_getIndirectBuffer = MethodHandles.publicLookup().unreflectGetter(_BaseReferences_indirectBuffer);
+        MethodHandle _References_getIndirectBuffer = _BaseReferences_getIndirectBuffer.asType(MethodType.methodType(int.class, _References));
+        StateTracker_getIndirectBuffer = MethodHandles.filterReturnValue(
+                StateTracker_getReferences,
+                _References_getIndirectBuffer);
     }
 
     //
@@ -1609,27 +1627,79 @@ public final class GLAPILWJGL2 extends OpenGL {
         }
     }
 
+    private static final MethodHandle glMultiDrawArraysIndirect;
+    private static final MethodHandle nglMultiDrawArraysIndirect;
+    private static final MethodHandle nglMultiDrawArraysIndirectBO;
+
+    static {
+        Field _glMultiDrawArraysIndirect = ContextCapabilities.class.getDeclaredField("glMultiDrawArraysIndirect");
+        _glMultiDrawArraysIndirect.setAccessible(true);
+        glMultiDrawArraysIndirect = MethodHandles.publicLookup().unreflectGetter(_glMultiDrawArraysIndirect);
+
+        Method _nglMultiDrawArraysIndirect = GL43.class.getDeclaredMethod("nglMultiDrawArraysIndirect", int.class, long.class, int.class, int.class, long.class);
+        _nglMultiDrawArraysIndirect.setAccessible(true);
+        nglMultiDrawArraysIndirect = MethodHandles.publicLookup().unreflect(_nglMultiDrawArraysIndirect);
+
+        Method _nglMultiDrawArraysIndirectBO = GL43.class.getDeclaredMethod("nglMultiDrawArraysIndirectBO", int.class, long.class, int.class, int.class, long.class);
+        _nglMultiDrawArraysIndirectBO.setAccessible(true);
+        nglMultiDrawArraysIndirectBO = MethodHandles.publicLookup().unreflect(_nglMultiDrawArraysIndirectBO);
+    }
+
     @Override
     public void glMultiDrawArraysIndirect(int mode, long indirect, int primcount, int stride) {
-        if (this.OpenGL43) {
-            GL43.glMultiDrawArraysIndirect(mode, indirect, primcount, stride);
-            super.debugCheckError();
-        } else if (this.GL_ARB_multi_draw_indirect) {
-            ARBMultiDrawIndirect.glMultiDrawArraysIndirect(mode, indirect, primcount, stride);
-            super.debugCheckError();
+        if (this.OpenGL43 | this.GL_ARB_multi_draw_indirect) {
+            ContextCapabilities caps = GLContext.getCapabilities();
+            long function_pointer = (long) glMultiDrawArraysIndirect.invokeExact(caps);
+            BufferChecks.checkFunctionAddress(function_pointer);
+            
+            //switch between the two internal methods depending on whether or not a buffer is bound to GL_DRAW_INDIRECT_BUFFER
+            // (this is necessary to avoid internal LWJGL2 throwing an exception if we try to call this with an actual raw memory address)
+            if ((int) StateTracker_getIndirectBuffer.invokeExact(caps) == 0) {
+                nglMultiDrawArraysIndirect.invokeExact(mode, indirect, primcount, stride, function_pointer);
+                super.debugCheckError();
+            } else {
+                nglMultiDrawArraysIndirectBO.invokeExact(mode, indirect, primcount, stride, function_pointer);
+                super.debugCheckError();
+            }
         } else {
             throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_multi_draw_indirect));
         }
     }
 
+    private static final MethodHandle glMultiDrawElementsIndirect;
+    private static final MethodHandle nglMultiDrawElementsIndirect;
+    private static final MethodHandle nglMultiDrawElementsIndirectBO;
+
+    static {
+        Field _glMultiDrawElementsIndirect = ContextCapabilities.class.getDeclaredField("glMultiDrawElementsIndirect");
+        _glMultiDrawElementsIndirect.setAccessible(true);
+        glMultiDrawElementsIndirect = MethodHandles.publicLookup().unreflectGetter(_glMultiDrawElementsIndirect);
+
+        Method _nglMultiDrawElementsIndirect = GL43.class.getDeclaredMethod("nglMultiDrawElementsIndirect", int.class, int.class, long.class, int.class, int.class, long.class);
+        _nglMultiDrawElementsIndirect.setAccessible(true);
+        nglMultiDrawElementsIndirect = MethodHandles.publicLookup().unreflect(_nglMultiDrawElementsIndirect);
+
+        Method _nglMultiDrawElementsIndirectBO = GL43.class.getDeclaredMethod("nglMultiDrawElementsIndirectBO", int.class, int.class, long.class, int.class, int.class, long.class);
+        _nglMultiDrawElementsIndirectBO.setAccessible(true);
+        nglMultiDrawElementsIndirectBO = MethodHandles.publicLookup().unreflect(_nglMultiDrawElementsIndirectBO);
+    }
+
     @Override
     public void glMultiDrawElementsIndirect(int mode, int type, long indirect, int primcount, int stride) {
-        if (this.OpenGL43) {
-            GL43.glMultiDrawElementsIndirect(mode, type, indirect, primcount, stride);
-            super.debugCheckError();
-        } else if (this.GL_ARB_multi_draw_indirect) {
-            ARBMultiDrawIndirect.glMultiDrawElementsIndirect(mode, type, indirect, primcount, stride);
-            super.debugCheckError();
+        if (this.OpenGL43 | this.GL_ARB_multi_draw_indirect) {
+            ContextCapabilities caps = GLContext.getCapabilities();
+            long function_pointer = (long) glMultiDrawElementsIndirect.invokeExact(caps);
+            BufferChecks.checkFunctionAddress(function_pointer);
+
+            //switch between the two internal methods depending on whether or not a buffer is bound to GL_DRAW_INDIRECT_BUFFER
+            // (this is necessary to avoid internal LWJGL2 throwing an exception if we try to call this with an actual raw memory address)
+            if ((int) StateTracker_getIndirectBuffer.invokeExact(caps) == 0) {
+                nglMultiDrawElementsIndirect.invokeExact(mode, type, indirect, primcount, stride, function_pointer);
+                super.debugCheckError();
+            } else {
+                nglMultiDrawElementsIndirectBO.invokeExact(mode, type, indirect, primcount, stride, function_pointer);
+                super.debugCheckError();
+            }
         } else {
             throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_multi_draw_indirect));
         }
