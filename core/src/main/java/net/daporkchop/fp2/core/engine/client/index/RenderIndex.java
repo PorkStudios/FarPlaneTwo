@@ -22,6 +22,7 @@ package net.daporkchop.fp2.core.engine.client.index;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.core.client.IFrustum;
+import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.client.RenderConstants;
 import net.daporkchop.fp2.core.engine.client.bake.storage.BakeStorage;
@@ -78,9 +79,10 @@ public abstract class RenderIndex<VertexType extends AttributeStruct> implements
     /**
      * Determine which tiles need to be rendered for the current frame.
      *
-     * @param frustum the current view frustum
+     * @param frustum        the current view frustum
+     * @param blockedTracker a {@link TerrainRenderingBlockedTracker} for tracking which level-0 tiles are blocked from rendering
      */
-    public abstract void select(IFrustum frustum);
+    public abstract void select(IFrustum frustum, TerrainRenderingBlockedTracker blockedTracker);
 
     /**
      * Draws the selected tiles at the given detail level using the currently bound shader.

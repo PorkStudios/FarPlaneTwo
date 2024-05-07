@@ -22,6 +22,7 @@ package net.daporkchop.fp2.core.engine.client.index.attribdivisor;
 import lombok.val;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.core.client.IFrustum;
+import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
 import net.daporkchop.fp2.core.engine.DirectTilePosAccess;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.client.bake.storage.BakeStorage;
@@ -113,7 +114,7 @@ public class CPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
     }
 
     @Override
-    public void select(IFrustum frustum) {
+    public void select(IFrustum frustum, TerrainRenderingBlockedTracker blockedTracker) {
         //clear all the lists
         for (val lists : this.commandLists) {
             for (val list : lists) {
@@ -124,7 +125,8 @@ public class CPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
         //iterate over all the tile positions and draw commands
         this.drawCommands.forEach((pos, commands) -> {
             DirectCommandList[] commandLists = this.commandLists[pos.level()];
-            if (frustum.intersectsBB(pos.minBlockX(), pos.minBlockY(), pos.minBlockZ(), pos.maxBlockX(), pos.maxBlockY(), pos.maxBlockZ())) {
+            if ((pos.level() > 0 || !blockedTracker.renderingBlocked(pos.x(), pos.y(), pos.z()))
+                    && frustum.intersectsBB(pos.minBlockX(), pos.minBlockY(), pos.minBlockZ(), pos.maxBlockX(), pos.maxBlockY(), pos.maxBlockZ())) {
                 //the tile is in the frustum, add all the draw commands to the corresponding draw lists
                 for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
                     if (commands[pass] != null) {

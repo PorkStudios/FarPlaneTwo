@@ -130,7 +130,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
      */
     public void prepare(@NonNull IFrustum frustum) {
         this.bufferUploader.tick();
-        this.renderIndex.select(frustum);
+        this.renderIndex.select(frustum, this.levelRenderer.blockedTracker());
     }
 
     /**
@@ -171,9 +171,9 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
     private void preRender() {
         this.gl.glBindBufferBase(GL_UNIFORM_BUFFER, RenderConstants.GLOBAL_UNIFORMS_UBO_BINDING, this.globalUniformBuffer.buffer().id());
 
-        val texUvs = this.context.level().renderer().textureUVs();
-        this.gl.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, RenderConstants.TEXTURE_UVS_LISTS_SSBO_BINDING, texUvs.listsBuffer().buffers(0)[0].buffer());
-        this.gl.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, RenderConstants.TEXTURE_UVS_QUADS_SSBO_BINDING, texUvs.quadsBuffer().buffers(0)[0].buffer());
+        val textureUVs = this.levelRenderer.textureUVs();
+        this.gl.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, RenderConstants.TEXTURE_UVS_LISTS_SSBO_BINDING, textureUVs.listsBuffer().buffers(0)[0].buffer());
+        this.gl.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, RenderConstants.TEXTURE_UVS_QUADS_SSBO_BINDING, textureUVs.quadsBuffer().buffers(0)[0].buffer());
 
         if (!FP2_DEBUG || this.fp2.globalConfig().debug().backfaceCulling()) {
             this.gl.glEnable(GL_CULL_FACE);
