@@ -51,6 +51,7 @@ void main() {
 #if FP2_DEBUG
     //if debug colors are enabled, determine the color to use based on the active color mode
     switch (u_debug_colorMode) {
+        //case FP2_DEBUG_COLORS_MODE_DISABLED:
         default:
             frag_color = computeBlockColor(normal);
             break;
@@ -62,9 +63,9 @@ void main() {
             frag_color = vec4(normal * normal, 1.);
             break;
     }
-#else
+#else //FP2_DEBUG
     frag_color = computeBlockColor(normal);
-#endif
+#endif //FP2_DEBUG
 
     //fog
     frag_color = addFog(frag_color);
