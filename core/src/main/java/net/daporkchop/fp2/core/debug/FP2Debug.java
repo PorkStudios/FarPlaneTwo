@@ -61,7 +61,14 @@ public class FP2Debug {
             //register debug key bindings
             KeyCategory category = fp2.client().createKeyCategory(MODID + ".debug");
 
-            category.addBinding("reloadShaders", "0", ReloadableShaderProgram::reloadAll);
+            category.addBinding("reloadShaders", "0", () -> fp2.client().reloadableShaderRegistry().reload(true, (total, failed, cause) -> {
+                if (cause == null) {
+                    fp2.client().chat().success("§areloaded %d shader(s)", total);
+                } else {
+                    fp2.log().error("shader reload failed", cause);
+                    fp2.client().chat().error("§c%d/%d shaders failed to reload (check log for info)", failed, total);
+                }
+            }));
             category.addBinding("dropTiles", "9", () -> fp2.client().currentPlayer().ifPresent(player -> {
                 player.send(CPacketClientConfig.create(null));
                 player.send(CPacketClientConfig.create(fp2.globalConfig()));
