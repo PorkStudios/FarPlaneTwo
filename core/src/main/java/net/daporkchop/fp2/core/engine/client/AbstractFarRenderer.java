@@ -43,6 +43,7 @@ import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
 import net.daporkchop.fp2.gl.attribute.NewUniformBuffer;
 import net.daporkchop.fp2.gl.attribute.texture.TextureTarget;
+import net.daporkchop.fp2.gl.buffer.IndexedBufferTarget;
 import net.daporkchop.fp2.gl.buffer.upload.BufferUploader;
 import net.daporkchop.fp2.gl.buffer.upload.ScratchCopyBufferUploader;
 import net.daporkchop.fp2.gl.buffer.upload.UnsynchronizedMapBufferUploader;
@@ -93,7 +94,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
         this.vertexFormat = (NewAttributeFormat<VertexType>) this.fp2.client().globalRenderer().voxelVertexAttributesFormat;
         this.indexFormat = this.fp2.client().globalRenderer().unsignedShortIndexFormat;
 
-        this.bufferUploader = UnsynchronizedMapBufferUploader.supported(this.gl)
+        this.bufferUploader = UnsynchronizedMapBufferUploader.supported(this.gl) //TODO
                 ? new UnsynchronizedMapBufferUploader(this.gl, 8 << 20) //8 MiB
                 : new ScratchCopyBufferUploader(this.gl);
 
@@ -107,6 +108,9 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
         this.statePreserver = StatePreserver.builder(this.gl)
                 .texture(TextureTarget.TEXTURE_2D, RenderConstants.TEXTURE_ATLAS_SAMPLER_BINDING)
                 .texture(TextureTarget.TEXTURE_2D, RenderConstants.LIGHTMAP_SAMPLER_BINDING)
+                .indexedBuffer(IndexedBufferTarget.UNIFORM_BUFFER, RenderConstants.GLOBAL_UNIFORMS_UBO_BINDING)
+                .indexedBuffer(IndexedBufferTarget.SHADER_STORAGE_BUFFER, RenderConstants.TEXTURE_UVS_LISTS_SSBO_BINDING)
+                .indexedBuffer(IndexedBufferTarget.SHADER_STORAGE_BUFFER, RenderConstants.TEXTURE_UVS_QUADS_SSBO_BINDING)
                 .build();
     }
 
@@ -165,6 +169,12 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
     }
 
     private void preRender() {
+        this.gl.glBindBufferBase(GL_UNIFORM_BUFFER, RenderConstants.GLOBAL_UNIFORMS_UBO_BINDING, this.globalUniformBuffer.buffer().id());
+
+        val texUvs = this.context.level().renderer().textureUVs();
+        this.gl.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, RenderConstants.TEXTURE_UVS_LISTS_SSBO_BINDING, texUvs.listsBuffer().buffers(0)[0].buffer());
+        this.gl.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, RenderConstants.TEXTURE_UVS_QUADS_SSBO_BINDING, texUvs.quadsBuffer().buffers(0)[0].buffer());
+
         if (!FP2_DEBUG || this.fp2.globalConfig().debug().backfaceCulling()) {
             this.gl.glEnable(GL_CULL_FACE);
         }
