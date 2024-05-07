@@ -88,7 +88,7 @@ public class CubeWithoutWorld1_12 implements ICube {
             case SKY: //Chunk#getLightFor: 'return !this.world.provider.hasSkyLight() ? 0 : extendedblockstorage.getSkyLight(i, j & 15, k);'
                 return this.storage.getSkyLight() == null ? 0 : this.storage.getSkyLight(x, y & 0xF, z);
             case BLOCK: //Chunk#getLightFor: 'return type == EnumSkyBlock.BLOCK ? extendedblockstorage.getBlockLight(i, j & 15, k) : type.defaultLightValue;'
-                return this.storage.getSkyLight(x, y & 0xF, z);
+                return this.storage.getBlockLight(x, y & 0xF, z);
             default:
                 return lightType.defaultLightValue;
         }
