@@ -105,6 +105,7 @@ public final class GlobalRenderer {
                     .define("TEXTURE_UVS_LISTS_SSBO_LAYOUT", this.uvQuadListSSBOFormat.interfaceBlockLayoutName())
                     .define("TEXTURE_UVS_QUADS_SSBO_NAME", RenderConstants.TEXTURE_UVS_QUADS_SSBO_NAME)
                     .define("TEXTURE_UVS_QUADS_SSBO_LAYOUT", this.uvPackedQuadSSBOFormat.interfaceBlockLayoutName())
+                    .define("VANILLA_RENDERABILITY_SSBO_NAME", RenderConstants.VANILLA_RENDERABILITY_SSBO_NAME)
                     .build();
 
             ReloadableShaderProgram.SetupFunction<DrawShaderProgram.Builder> shaderSetup = builder -> commonShaderSetup(builder)

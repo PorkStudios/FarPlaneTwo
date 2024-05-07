@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -20,20 +20,16 @@
 package net.daporkchop.fp2.impl.mc.forge1_16.client;
 
 import lombok.NonNull;
-import net.daporkchop.fp2.common.util.alloc.Allocator;
-import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
+import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
+import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.renderer.ATViewFrustum1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.renderer.ATWorldRenderer1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.renderer.ATWorldRenderer__LocalRenderInformationContainer1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.renderer.chunk.ATChunkRenderDispatcher__ChunkRender1_16;
-import net.daporkchop.fp2.impl.mc.forge1_16.compat.of.OFHelper1_16;
 import net.daporkchop.lib.common.math.BinMath;
 import net.daporkchop.lib.common.math.PMath;
-import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
-import net.daporkchop.lib.common.util.PorkUtil;
 import net.daporkchop.lib.unsafe.PUnsafe;
-import net.daporkchop.lib.common.util.exception.AlreadyReleasedException;
 import net.minecraft.client.renderer.ViewFrustum;
 import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
@@ -47,16 +43,11 @@ import java.util.stream.Stream;
 import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.math.PMath.*;
-import static org.lwjgl.opengl.GL15.*;
-import static org.lwjgl.opengl.GL43.*;
 
 /**
  * @author DaPorkchop_
  */
-public class TerrainRenderingBlockedTracker1_16 extends AbstractRefCounted implements TerrainRenderingBlockedTracker {
-    protected static final long HEADERS_OFFSET = 0L;
-    protected static final long FLAGS_OFFSET = HEADERS_OFFSET + 2L * (4 * INT_SIZE);
-
+public class TerrainRenderingBlockedTracker1_16 extends TerrainRenderingBlockedTracker {
     protected static final Direction[] DIRECTIONS = Direction.values();
     protected static final int FACE_COUNT = DIRECTIONS.length;
 
@@ -106,13 +97,13 @@ public class TerrainRenderingBlockedTracker1_16 extends AbstractRefCounted imple
     protected static boolean isVisible(long flags, int inFace, int outFace, int chunkX, int chunkY, int chunkZ, int minChunkX, int maxChunkX, int minChunkY, int maxChunkY, int minChunkZ, int maxChunkZ) {
         //if the neighbor would be outside the renderable area, it isn't visible even if the flags indicate that it would be
         if (chunkX + FACE_OFFSETS[outFace * 3 + 0] < minChunkX || chunkX + FACE_OFFSETS[outFace * 3 + 0] >= maxChunkX
-            || chunkY + FACE_OFFSETS[outFace * 3 + 1] < minChunkY || chunkY + FACE_OFFSETS[outFace * 3 + 1] >= maxChunkY
-            || chunkZ + FACE_OFFSETS[outFace * 3 + 2] < minChunkZ || chunkZ + FACE_OFFSETS[outFace * 3 + 2] >= maxChunkZ) {
+                || chunkY + FACE_OFFSETS[outFace * 3 + 1] < minChunkY || chunkY + FACE_OFFSETS[outFace * 3 + 1] >= maxChunkY
+                || chunkZ + FACE_OFFSETS[outFace * 3 + 2] < minChunkZ || chunkZ + FACE_OFFSETS[outFace * 3 + 2] >= maxChunkZ) {
             return false;
         }
 
         return inFace < -100 //if inFace is invalid (i.e. sourceDirection was null), all directions are visible
-               || (flags & ((1L << SHIFT_VISIBILITY) << (outFace * FACE_COUNT + inFace))) != 0L;
+                || (flags & ((1L << SHIFT_VISIBILITY) << (outFace * FACE_COUNT + inFace))) != 0L;
     }
 
     protected static long renderDirectionFlags(ATWorldRenderer__LocalRenderInformationContainer1_16 containerLocalRenderInformation) {
@@ -148,31 +139,8 @@ public class TerrainRenderingBlockedTracker1_16 extends AbstractRefCounted imple
         return face ^ 1;
     }
 
-    protected final Allocator alloc = new DirectMemoryAllocator();
-    protected final int glBuffer = glGenBuffers();
-
-    protected int offsetX;
-    protected int offsetY;
-    protected int offsetZ;
-    protected int sizeX;
-    protected int sizeY;
-    protected int sizeZ;
-
-    protected long sizeBytes;
-    protected long addr;
-
-    @Override
-    public TerrainRenderingBlockedTracker1_16 retain() throws AlreadyReleasedException {
-        super.retain();
-        return this;
-    }
-
-    @Override
-    protected void doRelease() {
-        if (this.addr != 0L) {
-            this.alloc.free(this.addr);
-        }
-        glDeleteBuffers(this.glBuffer);
+    public TerrainRenderingBlockedTracker1_16(FP2Client client) {
+        super(client);
     }
 
     /**
@@ -371,23 +339,6 @@ public class TerrainRenderingBlockedTracker1_16 extends AbstractRefCounted imple
         this.sizeBytes = sizeBytes;
         this.addr = addr;
 
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, this.glBuffer);
-        nglBufferData(GL_SHADER_STORAGE_BUFFER, sizeBytes, addr, GL_STREAM_DRAW);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, this.glBuffer);
-    }
-
-    @Override
-    public boolean renderingBlocked(int chunkX, int chunkY, int chunkZ) {
-        int x = chunkX + this.offsetX;
-        int y = chunkY + this.offsetY;
-        int z = chunkZ + this.offsetZ;
-
-        if (x < 0 || x >= this.sizeX || y < 0 || y >= this.sizeY || z < 0 || z >= this.sizeZ) {
-            return false;
-        }
-
-        int idx = (x * this.sizeY + y) * this.sizeZ + z;
-        return (PUnsafe.getInt(this.addr + FLAGS_OFFSET + (idx >> 5 << 2)) & (1 << idx)) != 0;
+        this.glBuffer.upload(addr, sizeBytes, BufferUsage.STATIC_DRAW);
     }
 }

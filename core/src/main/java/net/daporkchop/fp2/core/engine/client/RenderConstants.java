@@ -59,6 +59,9 @@ public class RenderConstants {
     public static final String INDIRECT_DRAWS_SSBO_NAME = "B_IndirectDraws";
     public static final int INDIRECT_DRAWS_SSBO_FIRST_BINDING = 3; // count=RENDER_PASS_COUNT
 
+    public static final String VANILLA_RENDERABILITY_SSBO_NAME = "B_VanillaRenderability";
+    public static final int VANILLA_RENDERABILITY_SSBO_BINDING = 7;
+
     /**
      * The length of the TilePos uniform array, in tile positions.
      *

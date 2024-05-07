@@ -20,20 +20,16 @@
 package net.daporkchop.fp2.impl.mc.forge1_12_2.client;
 
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import net.daporkchop.fp2.common.util.alloc.Allocator;
-import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
+import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
+import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.renderer.ATRenderChunk1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.renderer.ATRenderGlobal1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.renderer.ATRenderGlobal__ContainerLocalRenderInformation1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.renderer.ATViewFrustum1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cc.FP2CubicChunks1_12;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.old.client.gl.object.GLBuffer;
 import net.daporkchop.lib.common.math.BinMath;
 import net.daporkchop.lib.common.math.PMath;
-import net.daporkchop.lib.common.misc.refcount.AbstractRefCounted;
-import net.daporkchop.lib.common.util.exception.AlreadyReleasedException;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.renderer.RenderGlobal;
 import net.minecraft.client.renderer.ViewFrustum;
@@ -48,17 +44,11 @@ import java.util.stream.Stream;
 import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.math.PMath.*;
-import static org.lwjgl.opengl.GL15.*;
-import static org.lwjgl.opengl.GL43.*;
 
 /**
  * @author DaPorkchop_
  */
-@RequiredArgsConstructor
-public class TerrainRenderingBlockedTracker1_12 extends AbstractRefCounted implements TerrainRenderingBlockedTracker {
-    protected static final long HEADERS_OFFSET = 0L;
-    protected static final long FLAGS_OFFSET = HEADERS_OFFSET + 2L * (4 * INT_SIZE);
-
+public class TerrainRenderingBlockedTracker1_12 extends TerrainRenderingBlockedTracker {
     protected static final int FACE_COUNT = EnumFacing.VALUES.length;
 
     protected static final int[] FACE_OFFSETS = Stream.of(EnumFacing.VALUES)
@@ -149,31 +139,8 @@ public class TerrainRenderingBlockedTracker1_12 extends AbstractRefCounted imple
         return face ^ 1;
     }
 
-    protected final Allocator alloc = new DirectMemoryAllocator();
-    protected final GLBuffer glBuffer = new GLBuffer(GL_STREAM_DRAW);
-
-    protected int offsetX;
-    protected int offsetY;
-    protected int offsetZ;
-    protected int sizeX;
-    protected int sizeY;
-    protected int sizeZ;
-
-    protected long sizeBytes;
-    protected long addr;
-
-    @Override
-    public TerrainRenderingBlockedTracker1_12 retain() throws AlreadyReleasedException {
-        super.retain();
-        return this;
-    }
-
-    @Override
-    protected void doRelease() {
-        if (this.addr != 0L) {
-            this.alloc.free(this.addr);
-        }
-        this.glBuffer.delete();
+    public TerrainRenderingBlockedTracker1_12(FP2Client client) {
+        super(client);
     }
 
     /**
@@ -376,23 +343,6 @@ public class TerrainRenderingBlockedTracker1_12 extends AbstractRefCounted imple
         this.sizeBytes = sizeBytes;
         this.addr = addr;
 
-        try (GLBuffer buffer = this.glBuffer.bind(GL_SHADER_STORAGE_BUFFER)) {
-            buffer.upload(addr, sizeBytes);
-        }
-        this.glBuffer.bindBase(GL_SHADER_STORAGE_BUFFER, 7);
-    }
-
-    @Override
-    public boolean renderingBlocked(int chunkX, int chunkY, int chunkZ) {
-        int x = chunkX + this.offsetX;
-        int y = chunkY + this.offsetY;
-        int z = chunkZ + this.offsetZ;
-
-        if (x < 0 || x >= this.sizeX || y < 0 || y >= this.sizeY || z < 0 || z >= this.sizeZ) {
-            return false;
-        }
-
-        int idx = (x * this.sizeY + y) * this.sizeZ + z;
-        return (PUnsafe.getInt(this.addr + FLAGS_OFFSET + (idx >> 5 << 2)) & (1 << idx)) != 0;
+        this.glBuffer.upload(addr, sizeBytes, BufferUsage.STATIC_DRAW);
     }
 }

@@ -64,7 +64,7 @@ public abstract class MixinRenderGlobal1_12 implements IMixinRenderGlobal1_12 {
                     shift = At.Shift.AFTER),
             require = 1)
     private void fp2_loadRenderers_onDestroyViewFrustum(CallbackInfo ci) {
-        this.fp2_vanillaRenderabilityTracker.release();
+        this.fp2_vanillaRenderabilityTracker.close();
         this.fp2_vanillaRenderabilityTracker = null;
     }
 
@@ -78,7 +78,7 @@ public abstract class MixinRenderGlobal1_12 implements IMixinRenderGlobal1_12 {
         //only create a new renderability tracker if none existed before.
         //  we don't want multiple instances lying around!
         if (this.fp2_vanillaRenderabilityTracker == null) {
-            this.fp2_vanillaRenderabilityTracker = new TerrainRenderingBlockedTracker1_12();
+            this.fp2_vanillaRenderabilityTracker = new TerrainRenderingBlockedTracker1_12(fp2().client());
         }
     }
 
