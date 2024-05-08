@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.common.util.alloc;
@@ -51,7 +50,7 @@ public final class DirectMemoryAllocator implements Allocator {
      * @param zero whether or not uninitialized memory should be zeroed out
      */
     public DirectMemoryAllocator(boolean zero) {
-        PCleaner.cleaner(this, new Releaser(this.allocations));
+        PCleaner.cleaner(this, new Releaser(this.allocations, new Throwable()));
 
         this.zero = zero;
     }
@@ -111,15 +110,19 @@ public final class DirectMemoryAllocator implements Allocator {
     @RequiredArgsConstructor
     private static final class Releaser implements Runnable {
         protected final LongLongMap allocations;
+        protected final Throwable constructorStackTrace;
 
         @Override
         public void run() {
-            if (this.allocations.isEmpty()) { //nothing to do
+            long leakedCount = this.allocations.size();
+            if (leakedCount == 0L) { //nothing to do
                 return;
             }
 
-            System.err.printf("%d memory blocks allocated by %s (totalling %d bytes) were not freed!\n",
-                    this.allocations.size(), DirectMemoryAllocator.class.getCanonicalName(), StreamSupport.stream(this.allocations.values().spliterator(), false).mapToLong(Long::longValue).sum());
+            String msg = leakedCount + " memory blocks allocated by " + DirectMemoryAllocator.class.getName()
+                         + " (totalling " + StreamSupport.stream(this.allocations.values().spliterator(), false).mapToLong(Long::longValue).sum() + " bytes) were not freed!";
+            new RuntimeException(msg, this.constructorStackTrace).printStackTrace();
+
             this.allocations.keySet().forEach((LongConsumer) PUnsafe::freeMemory);
         }
     }
