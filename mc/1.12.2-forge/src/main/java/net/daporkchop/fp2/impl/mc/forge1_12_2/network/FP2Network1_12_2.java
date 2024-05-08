@@ -19,6 +19,7 @@
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.network;
 
+import io.netty.channel.ChannelFutureListener;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
@@ -46,6 +47,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
@@ -228,5 +230,24 @@ public class FP2Network1_12_2 {
     @SneakyThrows
     public void sendToPlayer(@NonNull IPacket packet, @NonNull EntityPlayerMP player) {
         PROTOCOL_FP2.sendTo((IMessage) WRAPPER_CONSTRUCTOR_HANDLES_CLIENTBOUND.get(packet.getClass()).invoke(packet), player);
+    }
+
+    @SneakyThrows
+    public void sendToPlayer(@NonNull IPacket packet, @NonNull EntityPlayerMP player, Consumer<Throwable> action) {
+        if (action == null) {
+            sendToPlayer(packet, player);
+            return;
+        }
+
+        player.connection.getNetworkManager().sendPacket(
+                PROTOCOL_FP2.getPacketFrom((IMessage) WRAPPER_CONSTRUCTOR_HANDLES_CLIENTBOUND.get(packet.getClass()).invoke(packet)),
+                (ChannelFutureListener) future -> {
+                    if (future.isSuccess()) {
+                        action.accept(null);
+                    } else {
+                        future.channel().pipeline().fireExceptionCaught(future.cause());
+                        action.accept(future.cause());
+                    }
+                });
     }
 }

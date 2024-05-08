@@ -39,17 +39,16 @@ import net.daporkchop.lib.common.annotation.TransferOwnership;
 import net.daporkchop.lib.common.math.PMath;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.Iterator;
-import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
-import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.fp2.core.debug.FP2Debug.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -66,7 +65,6 @@ public class ServerContext implements IFarServerContext {
 
     protected Set<TilePos> unloadTilesQueue = DirectTilePosAccess.newPositionHashSet();
     protected final Map<TilePos, TileSnapshot> sendTilesQueue = DirectTilePosAccess.newPositionKeyedLinkedHashMap();
-    protected final FlowControl flowControl = new FlowControl();
 
     protected FP2Config config;
 
@@ -105,9 +103,6 @@ public class ServerContext implements IFarServerContext {
 
     @Override
     public void notifyAck(@NonNull CPacketTileAck ack) {
-        if (ack.size != 0L) {
-            this.flowControl.ack(ack);
-        }
     }
 
     protected void flushSendQueue() {
@@ -120,8 +115,7 @@ public class ServerContext implements IFarServerContext {
         }
 
         Set<TilePos> unloadedTiles = null;
-        List<TileSnapshot> loadedTiles = null;
-        long loadedTilesSize = 0L;
+        int loadedTilesCount;
 
         synchronized (this) {
             if (!this.unloadTilesQueue.isEmpty()) {
@@ -129,18 +123,11 @@ public class ServerContext implements IFarServerContext {
                 this.unloadTilesQueue = DirectTilePosAccess.newPositionHashSet(); //replace with a new set
             }
 
-            if (!this.sendTilesQueue.isEmpty()) {
-                Iterator<TileSnapshot> itr = this.sendTilesQueue.values().iterator();
-                loadedTiles = new ArrayList<>();
-                long maxSendSize = this.flowControl.maxSendSizeThisTick();
-                do { //using a do-while loop to ensure that we always send at least one tile per tick
-                    TileSnapshot next = itr.next();
-                    itr.remove();
+            loadedTilesCount = this.trySendTiles();
+        }
 
-                    loadedTiles.add(next);
-                    loadedTilesSize += next.dataSize();
-                } while (loadedTilesSize < maxSendSize && itr.hasNext());
-            }
+        if (loadedTilesCount != 0) {
+            this.tracker.notifyTilesSent();
         }
 
         //send packet for unloaded tiles
@@ -148,26 +135,12 @@ public class ServerContext implements IFarServerContext {
             this.player.fp2_IFarPlayer_sendPacket(SPacketUnloadTiles.create(unloadedTiles));
         }
 
-        //send packets for loaded/updated tiles
-        if (loadedTiles != null) {
-            long timestamp = 0L;
-            if (loadedTilesSize > 0L) {
-                //if we're sending a tile data packet which isn't empty, we want it to be tracked for flow control! also, we'll send an empty tile data packet beforehand so
-                // that the timeSinceLastTileDataPacket field in the Ack packet will indicate the time it took to send just a single batch of tiles.
-                timestamp = this.flowControl.submit(loadedTilesSize);
-                this.player.fp2_IFarPlayer_sendPacket(SPacketTileData.create(timestamp, Collections.emptyList()));
-            }
-            this.player.fp2_IFarPlayer_sendPacket(SPacketTileData.create(timestamp, loadedTiles));
-
-            this.tracker.notifyTilesSent();
-        }
-
-        /*if (unloadedTiles != null || loadedTiles != null) {
-            System.out.printf("sent %d loads and %d unloads this tick (%d remaining, window size=%d)\n",
-                    loadedTiles != null ? loadedTiles.size() : 0,
+        if (unloadedTiles != null || loadedTilesCount != 0) {
+            System.out.printf("sent %d loads and %d unloads this tick (%d remaining)\n",
+                    loadedTilesCount,
                     unloadedTiles != null ? unloadedTiles.size() : 0,
-                    this.sendTilesQueue.size(), this.flowControl.windowSize);
-        }*/
+                    this.sendTilesQueue.size());
+        }
     }
 
     private void debugUpdate() {
@@ -204,7 +177,60 @@ public class ServerContext implements IFarServerContext {
 
         synchronized (this) {
             this.unloadTilesQueue.remove(snapshot.pos());
-            this.sendTilesQueue.put(snapshot.pos(), snapshot);
+            if (this.sendTilesQueue.isEmpty() && this.player.fp2_IFarPlayer_flowControl().mayWrite(snapshot.dataSize())) {
+                this.player.fp2_IFarPlayer_sendPacket(SPacketTileData.create(0L, Collections.singletonList(snapshot)), this.sentHandler());
+            } else {
+                this.sendTilesQueue.put(snapshot.pos(), snapshot);
+            }
+        }
+    }
+
+    /**
+     * Workaround: when sending packets, the packet sent handler may be invoked synchronously. As the packet send handler calls {@link #trySendTiles()}, which can send more packets using
+     * the same send handler, {@link #trySendTiles()} can end up calling itself recursively. To avoid this, we simply set this to {@code true} when {@link #trySendTiles()} and reset it
+     * on exit, ensuring that we aren't iterating over the send tiles queue twice at the same time.
+     */
+    private boolean sendingTiles = false;
+
+    private Consumer<Throwable> sentHandler() {
+        return cause -> {
+            if (cause == null) {
+                this.tracker.notifyTilesSent();
+
+                try {
+                    this.trySendTiles();
+                } catch (Throwable t) {
+                    t.printStackTrace();
+                }
+            }
+        };
+    }
+
+    private synchronized int trySendTiles() {
+        if (this.sendingTiles || this.sendTilesQueue.isEmpty()) {
+            return 0;
+        }
+
+        try {
+            int sentTiles = 0;
+            this.sendingTiles = true;
+
+            Iterator<TileSnapshot> itr = this.sendTilesQueue.values().iterator();
+            do {
+                TileSnapshot next = itr.next();
+                if (!this.player.fp2_IFarPlayer_flowControl().mayWrite(next.dataSize())) {
+                    break;
+                }
+                itr.remove();
+
+                this.player.fp2_IFarPlayer_sendPacket(SPacketTileData.create(0L, Collections.singletonList(next)), this.sentHandler());
+
+                sentTiles++;
+            } while (itr.hasNext());
+
+            return sentTiles;
+        } finally {
+            this.sendingTiles = false;
         }
     }
 
@@ -275,4 +301,47 @@ public class ServerContext implements IFarServerContext {
             }
         }
     }
+
+    /*
+     * struct tcp_info
+     * {
+     *      __u8    tcpi_state;
+     *      __u8    tcpi_ca_state;
+     *      __u8    tcpi_retransmits;
+     *      __u8    tcpi_probes;
+     *      __u8    tcpi_backoff; //exponential backoff counter
+     *      __u8    tcpi_options;
+     *      __u8    tcpi_snd_wscale : 4, tcpi_rcv_wscale : 4; //window size scale (window size is shifted left by this amount)
+     *
+     *      __u32   tcpi_rto; //retransmission timeout (ms)
+     *      __u32   tcpi_ato; //delayed ack timeout (ms)
+     *      __u32   tcpi_snd_mss;
+     *      __u32   tcpi_rcv_mss;
+     *
+     *      __u32   tcpi_unacked; //Number of segments between snd.nxt and snd.una
+     *      __u32   tcpi_sacked;
+     *      __u32   tcpi_lost;
+     *      __u32   tcpi_retrans;
+     *      __u32   tcpi_fackets;
+     *
+     *      __u32   tcpi_last_data_sent;
+     *      __u32   tcpi_last_ack_sent;
+     *      __u32   tcpi_last_data_recv;
+     *      __u32   tcpi_last_ack_recv;
+     *
+     *      __u32   tcpi_pmtu; //path MTU (bytes)
+     *      __u32   tcpi_rcv_ssthresh;
+     *      __u32   tcpi_rtt; //average round-trip time (ms)
+     *      __u32   tcpi_rttvar; //median round-trip time deviation (ms)
+     *      __u32   tcpi_snd_ssthresh;
+     *      __u32   tcpi_snd_cwnd; //congestion window size (multiply by snd_mss to get size in bytes): https://upload.wikimedia.org/wikipedia/commons/2/24/TCP_Slow-Start_and_Congestion_Avoidance.svg
+     *      __u32   tcpi_advmss; //congestion window slow-start threshold size (multiply by snd_mss to get size in bytes)
+     *      __u32   tcpi_reordering;
+     *
+     *      __u32   tcpi_rcv_rtt;
+     *      __u32   tcpi_rcv_space;
+     *
+     *      __u32   tcpi_total_retrans;
+     * };
+     */
 }

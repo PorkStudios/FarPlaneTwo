@@ -29,7 +29,6 @@ import net.daporkchop.fp2.core.network.IPacket;
 import net.daporkchop.fp2.core.network.packet.standard.client.CPacketTileAck;
 import net.daporkchop.lib.binary.stream.DataIn;
 import net.daporkchop.lib.binary.stream.DataOut;
-import net.daporkchop.lib.common.util.PorkUtil;
 
 import java.io.IOException;
 import java.util.ArrayList;

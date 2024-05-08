@@ -18,19 +18,8 @@
  *
  */
 
-rootProject.name = 'FarPlaneTwo'
+dependencies {
+    implementationShade project(":core")
 
-include 'api'
-include 'common'
-include 'core'
-include 'core:log4j'
-include 'core:minecraft'
-include 'core:mixin'
-include 'core:netty'
-include 'resources'
-include 'gl'
-include 'gl:opengl'
-include 'gl:opengl-lwjgl2'
-include 'gl:opengl-lwjgl3'
-include 'mc:1.12.2-forge'
-include 'mc:1.16-forge'
+    compileOnly "io.netty:netty-all:$nettyVersion"
+}

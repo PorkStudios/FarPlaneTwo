@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,17 +15,19 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_16.asm.core.network.play;
 
 import lombok.Getter;
+import net.daporkchop.fp2.core.netty.network.flow.NettyFlowControl;
 import net.daporkchop.fp2.impl.mc.forge1_16.FP2Forge1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.interfaz.network.play.IMixinServerPlayNetHandler1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.server.player.FarPlayerServer1_16;
+import net.minecraft.network.NetworkManager;
 import net.minecraft.network.play.ServerPlayNetHandler;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
@@ -36,7 +38,10 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 @Mixin(ServerPlayNetHandler.class)
 public abstract class MixinServerPlayNetHandler1_16 implements IMixinServerPlayNetHandler1_16 {
+    @Shadow
+    public abstract NetworkManager getConnection();
+
     @Getter
     @Unique
-    protected final FarPlayerServer1_16 fp2_farPlayerServer = new FarPlayerServer1_16((FP2Forge1_16) fp2(), uncheckedCast(this));
+    protected final FarPlayerServer1_16 fp2_farPlayerServer = new FarPlayerServer1_16((FP2Forge1_16) fp2(), uncheckedCast(this), NettyFlowControl.createFlowControlFor(this.getConnection().channel()));
 }
