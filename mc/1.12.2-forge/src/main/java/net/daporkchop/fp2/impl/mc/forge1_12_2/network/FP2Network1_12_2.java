@@ -19,63 +19,35 @@
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.network;
 
-import io.netty.channel.ChannelFutureListener;
 import lombok.NonNull;
-import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.common.asm.ClassloadingUtils;
 import net.daporkchop.fp2.core.network.IPacket;
 import net.daporkchop.fp2.core.network.RegisterPacketsEvent;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.client.network.IMixinNetHandlerPlayClient1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.network.IMixinNetHandlerPlayServer1_12;
+import net.minecraft.client.network.NetHandlerPlayClient;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.network.Packet;
+import net.minecraft.network.INetHandler;
+import net.minecraft.network.NetHandlerPlayServer;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
-import net.minecraftforge.fml.common.network.NetworkRegistry;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
-import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
-import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
-import net.minecraftforge.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 import net.minecraftforge.fml.relauncher.Side;
-import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.MethodVisitor;
-import org.objectweb.asm.Type;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
-import static org.objectweb.asm.Opcodes.*;
 
 /**
  * @author DaPorkchop_
  */
 @UtilityClass
 public class FP2Network1_12_2 {
-    private static final SimpleNetworkWrapper PROTOCOL_FP2 = NetworkRegistry.INSTANCE.newSimpleChannel(MODID);
-
-    //work around the fact that SimpleNetworkWrapper (and basically the whole rest of the forge packet system) isn't thread-safe: there's a single FMLEmbeddedChannel
-    // instance per side per mod channel. sending packets requires that the corresponding channel attributes from FMLOutboundHandler are configured correctly, and
-    // getPacketFrom() additionally temporarily adds and removes the result from the FMLEmbeddedChannel's ChannelOutboundBuffer. both operations will cause a race if
-    // multiple threads attempt to do the same thing at once, and getPacketFrom() can even result in cryptic NPEs or infinite loops depending on how fucked up the
-    // linked list in ChannelOutboundBuffer gets.
-    //eventually, i'll re-implement SimpleNetworkWrapper myself in a way which doesn't need any global state, but for now a global packet sending lock per direction
-    // is enough.
-    //TODO: re-implement this better!
-    private static final Object SERVERBOUND_PACKET_LOCK = new Object();
-    private static final Object CLIENTBOUND_PACKET_LOCK = new Object();
-
-    private static final Map<Class<? extends IPacket>, MethodHandle> WRAPPER_CONSTRUCTOR_HANDLES_CLIENTBOUND = new IdentityHashMap<>();
-    private static final Map<Class<? extends IPacket>, MethodHandle> WRAPPER_CONSTRUCTOR_HANDLES_SERVERBOUND = new IdentityHashMap<>();
+    private static final BetterNetworkWrapper1_12<IPacket> PROTOCOL_FP2 = new BetterNetworkWrapper1_12<>(MODID);
 
     private boolean INITIALIZED = false;
 
@@ -90,188 +62,52 @@ public class FP2Network1_12_2 {
     }
 
     private void registerStandard() {
-        class ServerboundHandler implements IMessageHandler<IMessage, IMessage> {
-            @Override
-            public IMessage onMessage(IMessage message, MessageContext ctx) {
-                ((IMixinNetHandlerPlayServer1_12) ctx.getServerHandler()).fp2_farPlayerServer().fp2_IFarPlayerServer_handle(((Supplier) message).get());
-                return null;
-            }
-        }
-
-        class ClientboundHandler implements IMessageHandler<IMessage, IMessage> {
-            @Override
-            public IMessage onMessage(IMessage message, MessageContext ctx) {
-                ((IMixinNetHandlerPlayClient1_12) ctx.getClientHandler()).fp2_playerClient().get().handle(((Supplier) message).get());
-                return null;
-            }
-        }
-
-        class ClientboundHandlerOnDedicatedServer implements IMessageHandler<IMessage, IMessage> {
-            @Override
-            public IMessage onMessage(IMessage message, MessageContext ctx) {
-                throw new IllegalStateException("attempted to handle clientbound packet on dedicated server: " + className(message));
-            }
-        }
-
-        IMessageHandler<IMessage, IMessage> serverboundHandler = new ServerboundHandler();
-        IMessageHandler<IMessage, IMessage> clientboundHandler = fp2().hasClient() ? new ClientboundHandler() : new ClientboundHandlerOnDedicatedServer();
+        BiConsumer<IPacket, INetHandler> serverboundHandler =
+                (message, netHandler) -> ((IMixinNetHandlerPlayServer1_12) (NetHandlerPlayServer) netHandler).fp2_farPlayerServer().fp2_IFarPlayerServer_handle(message);
+        BiConsumer<IPacket, INetHandler> clientboundHandler = fp2().hasClient() ?
+                (message, netHandler) -> ((IMixinNetHandlerPlayClient1_12) (NetHandlerPlayClient) netHandler).fp2_playerClient().get().handle(message) :
+                (message, netHandler) -> {
+                    throw new IllegalStateException("attempted to handle clientbound packet on dedicated server: " + className(message));
+                };
 
         fp2().eventBus().fire(new RegisterPacketsEvent() {
             int id = 0;
 
             @Override
-            @SneakyThrows
             public RegisterPacketsEvent registerClientbound(@NonNull Class<? extends IPacket> clazz) {
-                Class<? extends IMessage> wrapperClass = this.generateWrapperClass(clazz);
-                PROTOCOL_FP2.registerMessage(clientboundHandler, wrapperClass, this.id++, Side.CLIENT);
-                WRAPPER_CONSTRUCTOR_HANDLES_CLIENTBOUND.put(clazz, MethodHandles.publicLookup().unreflectConstructor(wrapperClass.getConstructor(clazz)));
+                PROTOCOL_FP2.registerMessage(clientboundHandler, clazz, this.id++, Side.CLIENT);
                 return this;
             }
 
             @Override
-            @SneakyThrows
             public RegisterPacketsEvent registerServerbound(@NonNull Class<? extends IPacket> clazz) {
-                Class<? extends IMessage> wrapperClass = this.generateWrapperClass(clazz);
-                PROTOCOL_FP2.registerMessage(serverboundHandler, wrapperClass, this.id++, Side.SERVER);
-                WRAPPER_CONSTRUCTOR_HANDLES_SERVERBOUND.put(clazz, MethodHandles.publicLookup().unreflectConstructor(wrapperClass.getConstructor(clazz)));
+                PROTOCOL_FP2.registerMessage(serverboundHandler, clazz, this.id++, Side.SERVER);
                 return this;
-            }
-
-            private Class<? extends IMessage> generateWrapperClass(@NonNull Class<? extends IPacket> clazz) {
-                ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
-                writer.visit(V1_8, ACC_PUBLIC | ACC_FINAL, clazz.getSimpleName() + "_IMessageWrapper", null, "java/lang/Object", new String[]{
-                        Type.getInternalName(Supplier.class),
-                        Type.getInternalName(IMessage.class),
-                });
-
-                writer.visitField(ACC_PRIVATE, "child", Type.getDescriptor(clazz), null, null).visitEnd();
-
-                { //constructor
-                    MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "<init>", "()V", null, null);
-
-                    mv.visitVarInsn(ALOAD, 0);
-                    mv.visitMethodInsn(INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false);
-
-                    mv.visitVarInsn(ALOAD, 0);
-                    mv.visitTypeInsn(NEW, Type.getInternalName(clazz));
-                    mv.visitInsn(DUP);
-                    mv.visitMethodInsn(INVOKESPECIAL, Type.getInternalName(clazz), "<init>", "()V", false);
-                    mv.visitFieldInsn(PUTFIELD, clazz.getSimpleName() + "_IMessageWrapper", "child", Type.getDescriptor(clazz));
-                    mv.visitInsn(RETURN);
-
-                    mv.visitMaxs(0, 0);
-                    mv.visitEnd();
-                }
-
-                { //constructor
-                    MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "<init>", Type.getMethodDescriptor(Type.VOID_TYPE, Type.getObjectType(Type.getInternalName(clazz))), null, null);
-
-                    mv.visitVarInsn(ALOAD, 0);
-                    mv.visitMethodInsn(INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false);
-
-                    mv.visitVarInsn(ALOAD, 0);
-                    mv.visitVarInsn(ALOAD, 1);
-                    mv.visitFieldInsn(PUTFIELD, clazz.getSimpleName() + "_IMessageWrapper", "child", Type.getDescriptor(clazz));
-                    mv.visitInsn(RETURN);
-
-                    mv.visitMaxs(0, 0);
-                    mv.visitEnd();
-                }
-
-                { //void fromBytes(ByteBuf buf)
-                    MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "fromBytes", "(Lio/netty/buffer/ByteBuf;)V", null, null);
-
-                    mv.visitVarInsn(ALOAD, 0);
-                    mv.visitFieldInsn(GETFIELD, clazz.getSimpleName() + "_IMessageWrapper", "child", Type.getDescriptor(clazz));
-                    mv.visitVarInsn(ALOAD, 1);
-                    mv.visitLdcInsn(false);
-                    mv.visitMethodInsn(INVOKESTATIC, "net/daporkchop/lib/binary/stream/DataIn", "wrap", "(Lio/netty/buffer/ByteBuf;Z)Lnet/daporkchop/lib/binary/stream/DataIn;", true);
-                    mv.visitMethodInsn(INVOKEINTERFACE, "net/daporkchop/fp2/core/network/IPacket", "read", "(Lnet/daporkchop/lib/binary/stream/DataIn;)V", true);
-                    mv.visitInsn(RETURN);
-
-                    mv.visitMaxs(0, 0);
-                    mv.visitEnd();
-                }
-
-                { //void toBytes(ByteBuf buf)
-                    MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "toBytes", "(Lio/netty/buffer/ByteBuf;)V", null, null);
-
-                    mv.visitVarInsn(ALOAD, 0);
-                    mv.visitFieldInsn(GETFIELD, clazz.getSimpleName() + "_IMessageWrapper", "child", Type.getDescriptor(clazz));
-                    mv.visitVarInsn(ALOAD, 1);
-                    mv.visitLdcInsn(false);
-                    mv.visitMethodInsn(INVOKESTATIC, "net/daporkchop/lib/binary/stream/DataOut", "wrap", "(Lio/netty/buffer/ByteBuf;Z)Lnet/daporkchop/lib/binary/stream/DataOut;", true);
-                    mv.visitMethodInsn(INVOKEINTERFACE, "net/daporkchop/fp2/core/network/IPacket", "write", "(Lnet/daporkchop/lib/binary/stream/DataOut;)V", true);
-                    mv.visitInsn(RETURN);
-
-                    mv.visitMaxs(0, 0);
-                    mv.visitEnd();
-                }
-
-                { //Object get()
-                    MethodVisitor mv = writer.visitMethod(ACC_PUBLIC, "get", "()Ljava/lang/Object;", null, null);
-
-                    mv.visitVarInsn(ALOAD, 0);
-                    mv.visitFieldInsn(GETFIELD, clazz.getSimpleName() + "_IMessageWrapper", "child", Type.getDescriptor(clazz));
-                    mv.visitInsn(ARETURN);
-
-                    mv.visitMaxs(0, 0);
-                    mv.visitEnd();
-                }
-
-                writer.visitEnd();
-
-                if (false) {
-                    try {
-                        Files.write(Paths.get(clazz.getSimpleName() + "_IMessageWrapper.class"), writer.toByteArray());
-                    } catch (IOException e) {
-                        throw new AssertionError(e);
-                    }
-                }
-
-                return uncheckedCast(ClassloadingUtils.defineHiddenClass(clazz.getClassLoader(), writer.toByteArray()));
             }
         });
     }
 
-    @SneakyThrows
     public void sendToServer(@NonNull IPacket packet) {
-        IMessage wrapped = (IMessage) WRAPPER_CONSTRUCTOR_HANDLES_SERVERBOUND.get(packet.getClass()).invoke(packet);
-        synchronized (SERVERBOUND_PACKET_LOCK) {
-            PROTOCOL_FP2.sendToServer(wrapped);
-        }
+        PROTOCOL_FP2.sendToServer(packet);
     }
 
-    @SneakyThrows
     public void sendToPlayer(@NonNull IPacket packet, @NonNull EntityPlayerMP player) {
-        IMessage wrapped = (IMessage) WRAPPER_CONSTRUCTOR_HANDLES_CLIENTBOUND.get(packet.getClass()).invoke(packet);
-        synchronized (CLIENTBOUND_PACKET_LOCK) {
-            PROTOCOL_FP2.sendTo(wrapped, player);
-        }
+        PROTOCOL_FP2.sendTo(packet, player);
     }
 
-    @SneakyThrows
     public void sendToPlayer(@NonNull IPacket packet, @NonNull EntityPlayerMP player, Consumer<Throwable> action) {
         if (action == null) {
             sendToPlayer(packet, player);
             return;
         }
 
-        IMessage wrapped = (IMessage) WRAPPER_CONSTRUCTOR_HANDLES_CLIENTBOUND.get(packet.getClass()).invoke(packet);
-        Packet<?> vanillaPacket;
-        synchronized (CLIENTBOUND_PACKET_LOCK) {
-            vanillaPacket = PROTOCOL_FP2.getPacketFrom(wrapped);
-        }
-
-        player.connection.getNetworkManager().sendPacket(
-                vanillaPacket,
-                (ChannelFutureListener) future -> {
-                    if (future.isSuccess()) {
-                        action.accept(null);
-                    } else {
-                        future.channel().pipeline().fireExceptionCaught(future.cause());
-                        action.accept(future.cause());
-                    }
-                });
+        PROTOCOL_FP2.sendTo(packet, player, future -> {
+            if (future.isSuccess()) {
+                action.accept(null);
+            } else {
+                future.channel().pipeline().fireExceptionCaught(future.cause());
+                action.accept(future.cause());
+            }
+        });
     }
 }
