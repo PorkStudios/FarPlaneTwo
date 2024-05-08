@@ -29,6 +29,7 @@ import net.daporkchop.fp2.core.network.RegisterPacketsEvent;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.client.network.IMixinNetHandlerPlayClient1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.network.IMixinNetHandlerPlayServer1_12;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.network.Packet;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.network.NetworkRegistry;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
@@ -61,6 +62,17 @@ import static org.objectweb.asm.Opcodes.*;
 @UtilityClass
 public class FP2Network1_12_2 {
     private static final SimpleNetworkWrapper PROTOCOL_FP2 = NetworkRegistry.INSTANCE.newSimpleChannel(MODID);
+
+    //work around the fact that SimpleNetworkWrapper (and basically the whole rest of the forge packet system) isn't thread-safe: there's a single FMLEmbeddedChannel
+    // instance per side per mod channel. sending packets requires that the corresponding channel attributes from FMLOutboundHandler are configured correctly, and
+    // getPacketFrom() additionally temporarily adds and removes the result from the FMLEmbeddedChannel's ChannelOutboundBuffer. both operations will cause a race if
+    // multiple threads attempt to do the same thing at once, and getPacketFrom() can even result in cryptic NPEs or infinite loops depending on how fucked up the
+    // linked list in ChannelOutboundBuffer gets.
+    //eventually, i'll re-implement SimpleNetworkWrapper myself in a way which doesn't need any global state, but for now a global packet sending lock per direction
+    // is enough.
+    //TODO: re-implement this better!
+    private static final Object SERVERBOUND_PACKET_LOCK = new Object();
+    private static final Object CLIENTBOUND_PACKET_LOCK = new Object();
 
     private static final Map<Class<? extends IPacket>, MethodHandle> WRAPPER_CONSTRUCTOR_HANDLES_CLIENTBOUND = new IdentityHashMap<>();
     private static final Map<Class<? extends IPacket>, MethodHandle> WRAPPER_CONSTRUCTOR_HANDLES_SERVERBOUND = new IdentityHashMap<>();
@@ -125,7 +137,7 @@ public class FP2Network1_12_2 {
                 return this;
             }
 
-            protected Class<? extends IMessage> generateWrapperClass(@NonNull Class<? extends IPacket> clazz) {
+            private Class<? extends IMessage> generateWrapperClass(@NonNull Class<? extends IPacket> clazz) {
                 ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
                 writer.visit(V1_8, ACC_PUBLIC | ACC_FINAL, clazz.getSimpleName() + "_IMessageWrapper", null, "java/lang/Object", new String[]{
                         Type.getInternalName(Supplier.class),
@@ -224,12 +236,18 @@ public class FP2Network1_12_2 {
 
     @SneakyThrows
     public void sendToServer(@NonNull IPacket packet) {
-        PROTOCOL_FP2.sendToServer((IMessage) WRAPPER_CONSTRUCTOR_HANDLES_SERVERBOUND.get(packet.getClass()).invoke(packet));
+        IMessage wrapped = (IMessage) WRAPPER_CONSTRUCTOR_HANDLES_SERVERBOUND.get(packet.getClass()).invoke(packet);
+        synchronized (SERVERBOUND_PACKET_LOCK) {
+            PROTOCOL_FP2.sendToServer(wrapped);
+        }
     }
 
     @SneakyThrows
     public void sendToPlayer(@NonNull IPacket packet, @NonNull EntityPlayerMP player) {
-        PROTOCOL_FP2.sendTo((IMessage) WRAPPER_CONSTRUCTOR_HANDLES_CLIENTBOUND.get(packet.getClass()).invoke(packet), player);
+        IMessage wrapped = (IMessage) WRAPPER_CONSTRUCTOR_HANDLES_CLIENTBOUND.get(packet.getClass()).invoke(packet);
+        synchronized (CLIENTBOUND_PACKET_LOCK) {
+            PROTOCOL_FP2.sendTo(wrapped, player);
+        }
     }
 
     @SneakyThrows
@@ -239,8 +257,14 @@ public class FP2Network1_12_2 {
             return;
         }
 
+        IMessage wrapped = (IMessage) WRAPPER_CONSTRUCTOR_HANDLES_CLIENTBOUND.get(packet.getClass()).invoke(packet);
+        Packet<?> vanillaPacket;
+        synchronized (CLIENTBOUND_PACKET_LOCK) {
+            vanillaPacket = PROTOCOL_FP2.getPacketFrom(wrapped);
+        }
+
         player.connection.getNetworkManager().sendPacket(
-                PROTOCOL_FP2.getPacketFrom((IMessage) WRAPPER_CONSTRUCTOR_HANDLES_CLIENTBOUND.get(packet.getClass()).invoke(packet)),
+                vanillaPacket,
                 (ChannelFutureListener) future -> {
                     if (future.isSuccess()) {
                         action.accept(null);
