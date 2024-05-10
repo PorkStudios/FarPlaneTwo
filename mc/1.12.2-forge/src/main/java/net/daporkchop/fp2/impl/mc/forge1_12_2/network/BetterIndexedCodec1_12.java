@@ -20,6 +20,8 @@
 package net.daporkchop.fp2.impl.mc.forge1_12_2.network;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -86,20 +88,24 @@ public final class BetterIndexedCodec1_12<P extends IPacket> extends MessageToMe
 
     @Override
     protected void decode(ChannelHandlerContext ctx, FMLProxyPacket msg, List<Object> out) throws Exception {
-        ByteBuf payload = msg.payload().slice();
-        if (payload.readableBytes() < 1) {
-            fp2().log().error("The FMLIndexedCodec has received an empty buffer on channel %s, likely a result of a LAN server issue. Pipeline parts : %s", ctx.channel().attr(NetworkRegistry.FML_CHANNEL), ctx.pipeline().toString());
-        }
-        byte id = payload.readByte();
-        MethodHandle ctor = this.id2ctor.get(id);
-        if (ctor == null) {
-            throw new NullPointerException("Undefined message for discriminator " + id + " in channel " + msg.channel());
-        }
+        ByteBuf payload = msg.payload().duplicate();
+        try {
+            if (payload.readableBytes() < 1) {
+                fp2().log().error("The FMLIndexedCodec has received an empty buffer on channel %s, likely a result of a LAN server issue. Pipeline parts : %s", ctx.channel().attr(NetworkRegistry.FML_CHANNEL), ctx.pipeline().toString());
+            }
+            byte id = payload.readByte();
+            MethodHandle ctor = this.id2ctor.get(id);
+            if (ctor == null) {
+                throw new NullPointerException("Undefined message for discriminator " + id + " in channel " + msg.channel());
+            }
 
-        @SuppressWarnings("unchecked")
-        P newMsg = (P) (IPacket) ctor.invokeExact();
-        newMsg.read(DataIn.wrapView(payload));
-        out.add(new WrappedPacket1_12<>(newMsg, Objects.requireNonNull(msg.getOrigin()), null));
+            @SuppressWarnings("unchecked")
+            P newMsg = (P) (IPacket) ctor.invokeExact();
+            newMsg.read(DataIn.wrapView(payload));
+            out.add(new WrappedPacket1_12<>(newMsg, Objects.requireNonNull(msg.getOrigin()), null));
+        } finally {
+            payload.release();
+        }
     }
 
     @Override

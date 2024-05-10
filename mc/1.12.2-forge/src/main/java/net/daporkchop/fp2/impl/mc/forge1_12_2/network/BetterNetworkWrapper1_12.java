@@ -55,9 +55,10 @@ public final class BetterNetworkWrapper1_12<P extends IPacket> {
         this.packetCodec = new BetterIndexedCodec1_12<>();
         this.channels = NetworkRegistry.INSTANCE.newChannel(channelName, this.packetCodec);
 
+        BetterOutboundHandler1_12 outboundHandler = new BetterOutboundHandler1_12();
         for (FMLEmbeddedChannel channel : this.channels.values()) {
             //replace the fml outbound handler with the stateless one
-            channel.pipeline().replace(FMLOutboundHandler.class, FP2.MODID + ":outbound", BetterOutboundHandler1_12.INSTANCE);
+            channel.pipeline().replace(FMLOutboundHandler.class, FP2.MODID + ":outbound", outboundHandler);
 
             //add something to actually handle packets
             channel.pipeline().addLast("fp2:handle", new BetterInboundHandler1_12());

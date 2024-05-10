@@ -32,30 +32,25 @@ import net.minecraftforge.fml.common.network.internal.FMLProxyPacket;
  */
 @ChannelHandler.Sharable
 public final class BetterOutboundHandler1_12 extends ChannelOutboundHandlerAdapter {
-    public static final ChannelHandler INSTANCE = new BetterOutboundHandler1_12();
-
     @Override
     @SuppressWarnings("unchecked")
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         WrappedPacket1_12<FMLProxyPacket> wrapped = (WrappedPacket1_12<FMLProxyPacket>) msg;
-        FMLProxyPacket payload = wrapped.payload;
+        FMLProxyPacket pkt = wrapped.payload;
         try {
-            FMLProxyPacket toSend;
-            if (wrapped.manager.isChannelOpen()) {
-                toSend = payload;
-                toSend.payload().retain();
-            } else {
+            pkt.payload().retain();
+            if (!wrapped.manager.isChannelOpen()) {
                 //emulate behavior of NetworkDispatcher#sendProxy() (i don't know why we need to copy the packet, but that's how FML does it)
-                toSend = payload.copy();
+                pkt = pkt.copy();
             }
 
             if (wrapped.listener != null) {
-                wrapped.manager.sendPacket(toSend, wrapped.listener);
+                wrapped.manager.sendPacket(pkt, wrapped.listener);
             } else {
-                wrapped.manager.sendPacket(toSend);
+                wrapped.manager.sendPacket(pkt);
             }
         } finally {
-            payload.payload().release();
+            pkt.payload().release();
         }
     }
 }
