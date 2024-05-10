@@ -21,6 +21,7 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.network;
 
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
+import lombok.val;
 import net.daporkchop.fp2.core.network.IPacket;
 import net.daporkchop.fp2.core.network.RegisterPacketsEvent;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.client.network.IMixinNetHandlerPlayClient1_12;
@@ -63,9 +64,14 @@ public class FP2Network1_12_2 {
 
     private void registerStandard() {
         BiConsumer<IPacket, INetHandler> serverboundHandler =
-                (message, netHandler) -> ((IMixinNetHandlerPlayServer1_12) (NetHandlerPlayServer) netHandler).fp2_farPlayerServer().fp2_IFarPlayerServer_handle(message);
+                (message, netHandler) ->
+                        ((IMixinNetHandlerPlayServer1_12) (NetHandlerPlayServer) netHandler).fp2_farPlayerServer().fp2_IFarPlayerServer_handle(message);
+
         BiConsumer<IPacket, INetHandler> clientboundHandler = fp2().hasClient() ?
-                (message, netHandler) -> ((IMixinNetHandlerPlayClient1_12) (NetHandlerPlayClient) netHandler).fp2_playerClient().get().handle(message) :
+                (message, netHandler) ->
+                        ((IMixinNetHandlerPlayClient1_12) (NetHandlerPlayClient) netHandler).fp2_playerClient()
+                                //may be absent if the player has been disconnected
+                                .ifPresent(player -> player.handle(message)) :
                 (message, netHandler) -> {
                     throw new IllegalStateException("attempted to handle clientbound packet on dedicated server: " + className(message));
                 };
