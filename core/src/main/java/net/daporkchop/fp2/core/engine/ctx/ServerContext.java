@@ -145,7 +145,6 @@ public class ServerContext implements IFarServerContext {
 
     private void debugUpdate() {
         if (!FP2_DEBUG) { //debug mode not enabled, do nothing
-            //TODO: remove this once @DebugOnly actually works
             return;
         }
 
@@ -246,102 +245,4 @@ public class ServerContext implements IFarServerContext {
             }
         }
     }
-
-    /**
-     * @author DaPorkchop_
-     */
-    static final class FlowControl {
-        private static final long WINDOW_STEP_SIZE = 4096L;
-
-        private long latestTime = System.nanoTime();
-
-        private final Deque<UUID> inFlightTileBatches = new ArrayDeque<>(); //UUID is simply a convenient class with two longs
-        private long inFlightDataSize;
-
-        private long windowSize = WINDOW_STEP_SIZE;
-
-        public long maxSendSizeThisTick() {
-            return Math.max(this.windowSize - this.inFlightDataSize, 0L);
-        }
-
-        public long submit(long size) {
-            positive(size, "size");
-            long timestamp = System.nanoTime();
-
-            //impossible unless a game tick takes less than one nanosecond (???) or nanoTime() overflows (in which case missing terrain packets in a block game is the least of our worries)
-            checkState(timestamp > this.latestTime);
-            this.latestTime = timestamp;
-
-            this.inFlightDataSize += size;
-            this.inFlightTileBatches.add(new UUID(timestamp, size));
-            return timestamp;
-        }
-
-        public void ack(CPacketTileAck ack) {
-            long timestamp = ack.timestamp;
-            long size = ack.size;
-
-            UUID firstBatch = this.inFlightTileBatches.remove();
-            long firstTimestamp = firstBatch.getMostSignificantBits();
-            long firstSize = firstBatch.getLeastSignificantBits();
-
-            checkArg(timestamp == firstTimestamp, "received ACK with timestamp %s (expected %s)", timestamp, firstTimestamp);
-            checkArg(size == firstSize, "received ACK with size %s (expected %s)", size, firstSize);
-
-            this.inFlightDataSize -= size;
-
-            //TODO: some kind of fast startup thing would be good to add here (it'd need to be fairly pessimistic though, in order to account for
-            // the fact that TCP would also be increasing the window size underneath which could introduce additional latency)
-            if (ack.timeSinceLastTileDataPacket >= TimeUnit.MILLISECONDS.toNanos(50L)) { //TODO: make this interval configurable
-                //multiply by 0.75
-                this.windowSize = Math.max((this.windowSize >> 1L) + (this.windowSize >> 2L), WINDOW_STEP_SIZE);
-            } else {
-                //increase by step size
-                this.windowSize = Math.min(this.windowSize + WINDOW_STEP_SIZE, PMath.roundUp(Integer.MAX_VALUE, WINDOW_STEP_SIZE));
-            }
-        }
-    }
-
-    /*
-     * struct tcp_info
-     * {
-     *      __u8    tcpi_state;
-     *      __u8    tcpi_ca_state;
-     *      __u8    tcpi_retransmits;
-     *      __u8    tcpi_probes;
-     *      __u8    tcpi_backoff; //exponential backoff counter
-     *      __u8    tcpi_options;
-     *      __u8    tcpi_snd_wscale : 4, tcpi_rcv_wscale : 4; //window size scale (window size is shifted left by this amount)
-     *
-     *      __u32   tcpi_rto; //retransmission timeout (ms)
-     *      __u32   tcpi_ato; //delayed ack timeout (ms)
-     *      __u32   tcpi_snd_mss;
-     *      __u32   tcpi_rcv_mss;
-     *
-     *      __u32   tcpi_unacked; //Number of segments between snd.nxt and snd.una
-     *      __u32   tcpi_sacked;
-     *      __u32   tcpi_lost;
-     *      __u32   tcpi_retrans;
-     *      __u32   tcpi_fackets;
-     *
-     *      __u32   tcpi_last_data_sent;
-     *      __u32   tcpi_last_ack_sent;
-     *      __u32   tcpi_last_data_recv;
-     *      __u32   tcpi_last_ack_recv;
-     *
-     *      __u32   tcpi_pmtu; //path MTU (bytes)
-     *      __u32   tcpi_rcv_ssthresh;
-     *      __u32   tcpi_rtt; //average round-trip time (ms)
-     *      __u32   tcpi_rttvar; //median round-trip time deviation (ms)
-     *      __u32   tcpi_snd_ssthresh;
-     *      __u32   tcpi_snd_cwnd; //congestion window size (multiply by snd_mss to get size in bytes): https://upload.wikimedia.org/wikipedia/commons/2/24/TCP_Slow-Start_and_Congestion_Avoidance.svg
-     *      __u32   tcpi_advmss; //congestion window slow-start threshold size (multiply by snd_mss to get size in bytes)
-     *      __u32   tcpi_reordering;
-     *
-     *      __u32   tcpi_rcv_rtt;
-     *      __u32   tcpi_rcv_space;
-     *
-     *      __u32   tcpi_total_retrans;
-     * };
-     */
 }
