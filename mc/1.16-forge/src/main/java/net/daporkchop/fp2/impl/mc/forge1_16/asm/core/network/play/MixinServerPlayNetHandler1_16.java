@@ -24,11 +24,15 @@ import net.daporkchop.fp2.core.netty.network.flow.NettyFlowControl;
 import net.daporkchop.fp2.impl.mc.forge1_16.FP2Forge1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.interfaz.network.play.IMixinServerPlayNetHandler1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.server.player.FarPlayerServer1_16;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.NetworkManager;
 import net.minecraft.network.play.ServerPlayNetHandler;
+import net.minecraft.server.MinecraftServer;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
@@ -38,10 +42,14 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 @Mixin(ServerPlayNetHandler.class)
 public abstract class MixinServerPlayNetHandler1_16 implements IMixinServerPlayNetHandler1_16 {
-    @Shadow
-    public abstract NetworkManager getConnection();
-
     @Getter
     @Unique
-    protected final FarPlayerServer1_16 fp2_farPlayerServer = new FarPlayerServer1_16((FP2Forge1_16) fp2(), uncheckedCast(this), NettyFlowControl.createFlowControlFor(this.getConnection().channel()));
+    protected FarPlayerServer1_16 fp2_farPlayerServer;
+
+    @Inject(method = "<init>*",
+            at = @At("RETURN"),
+            allow = 1, require = 1)
+    private void fp2_$init$_createFarPlayerServer(MinecraftServer server, NetworkManager connection, ServerPlayerEntity player, CallbackInfo ci) {
+        this.fp2_farPlayerServer = new FarPlayerServer1_16((FP2Forge1_16) fp2(), uncheckedCast(this), NettyFlowControl.createFlowControlFor(connection.channel()));
+    }
 }
