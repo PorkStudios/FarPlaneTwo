@@ -69,7 +69,14 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
     }
 
     protected void handle(@NonNull CPacketClientConfig packet) {
-        this.world.workerManager().rootExecutor().execute(() -> this.updateConfig(this.serverConfig, packet.config));
+        this.world.workerManager().rootExecutor().execute(() -> {
+            if (this.closed) {
+                //the player may be closed between the time when this task is submitted and actually begins execution
+                return;
+            }
+
+            this.updateConfig(this.serverConfig, packet.config);
+        });
     }
 
     protected void handle(@NonNull CPacketTileAck packet) {
@@ -97,12 +104,11 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
     @CalledFromServerThread
     @Override
     public void fp2_IFarPlayer_serverConfig(FP2Config serverConfig) {
+        checkState(!this.closed, "already closed!");
         this.updateConfig(serverConfig, this.clientConfig);
     }
 
     protected void updateConfig(FP2Config serverConfig, FP2Config clientConfig) {
-        checkState(!this.closed, "already closed!");
-
         if (!Objects.equals(this.serverConfig, serverConfig)) { //re-send server config if it changed
             this.fp2_IFarPlayer_sendPacket(SPacketUpdateConfig.Server.create(serverConfig));
         }
@@ -195,8 +201,8 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
     @Override
     public void fp2_IFarPlayer_close() {
         checkState(!this.closed, "already closed!");
+        this.closed = true;
 
         this.updateConfig(null, null);
-        this.closed = true;
     }
 }
