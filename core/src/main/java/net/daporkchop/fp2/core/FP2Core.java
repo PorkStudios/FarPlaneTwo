@@ -37,7 +37,6 @@ import net.daporkchop.fp2.core.network.RegisterPacketsEvent;
 import net.daporkchop.fp2.core.network.packet.debug.client.CPacketDebugDropAllTiles;
 import net.daporkchop.fp2.core.network.packet.debug.server.SPacketDebugUpdateStatistics;
 import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
-import net.daporkchop.fp2.core.network.packet.standard.client.CPacketTileAck;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketHandshake;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionBegin;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionEnd;
@@ -181,7 +180,6 @@ public abstract class FP2Core implements FP2 {
     @FEventHandler
     protected void registerPackets(@NonNull RegisterPacketsEvent event) {
         event.registerServerbound(CPacketClientConfig.class)
-                .registerServerbound(CPacketTileAck.class)
                 .registerServerbound(CPacketDebugDropAllTiles.class);
 
         event.registerClientbound(SPacketHandshake.class)

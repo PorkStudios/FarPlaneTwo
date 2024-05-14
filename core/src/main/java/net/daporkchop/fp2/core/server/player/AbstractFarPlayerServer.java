@@ -25,7 +25,6 @@ import net.daporkchop.fp2.core.engine.ctx.ServerContext;
 import net.daporkchop.fp2.core.engine.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.core.network.packet.debug.client.CPacketDebugDropAllTiles;
 import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
-import net.daporkchop.fp2.core.network.packet.standard.client.CPacketTileAck;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionBegin;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionEnd;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUpdateConfig;
@@ -59,8 +58,6 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
     public void fp2_IFarPlayerServer_handle(@NonNull Object packet) {
         if (packet instanceof CPacketClientConfig) {
             this.handle((CPacketClientConfig) packet);
-        } else if (packet instanceof CPacketTileAck) {
-            this.handle((CPacketTileAck) packet);
         } else if (packet instanceof CPacketDebugDropAllTiles) {
             this.handleDebug((CPacketDebugDropAllTiles) packet);
         } else {
@@ -76,14 +73,6 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
             }
 
             this.updateConfig(this.serverConfig, packet.config);
-        });
-    }
-
-    protected void handle(@NonNull CPacketTileAck packet) {
-        this.world.workerManager().rootExecutor().execute(() -> {
-            if (this.sessionOpen && this.isAcceptableSessionId(packet.sessionId)) {
-                this.context.notifyAck(packet);
-            }
         });
     }
 

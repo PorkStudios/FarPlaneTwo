@@ -29,24 +29,17 @@ import net.daporkchop.fp2.core.engine.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.engine.server.tracking.Tracker;
 import net.daporkchop.fp2.core.engine.tile.TileSnapshot;
 import net.daporkchop.fp2.core.network.packet.debug.server.SPacketDebugUpdateStatistics;
-import net.daporkchop.fp2.core.network.packet.standard.client.CPacketTileAck;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketTileData;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUnloadTiles;
 import net.daporkchop.fp2.core.server.player.IFarPlayerServer;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
 import net.daporkchop.lib.common.annotation.TransferOwnership;
-import net.daporkchop.lib.common.math.PMath;
 
-import java.util.ArrayDeque;
 import java.util.Collections;
-import java.util.Deque;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import static net.daporkchop.fp2.core.debug.FP2Debug.*;
@@ -101,10 +94,6 @@ public class ServerContext implements IFarServerContext {
         this.debugUpdate();
     }
 
-    @Override
-    public void notifyAck(@NonNull CPacketTileAck ack) {
-    }
-
     protected void flushSendQueue() {
         //check if the send queue contains any items to see if any additional work is necessary.
         // this is safe to call without synchronization: it only accesses the map size, which involves reading a single int field. the worst that can happen is we miss a
@@ -133,13 +122,6 @@ public class ServerContext implements IFarServerContext {
         //send packet for unloaded tiles
         if (unloadedTiles != null) {
             this.player.fp2_IFarPlayer_sendPacket(SPacketUnloadTiles.create(unloadedTiles));
-        }
-
-        if (unloadedTiles != null || loadedTilesCount != 0) {
-            System.out.printf("sent %d loads and %d unloads this tick (%d remaining)\n",
-                    loadedTilesCount,
-                    unloadedTiles != null ? unloadedTiles.size() : 0,
-                    this.sendTilesQueue.size());
         }
     }
 
@@ -177,7 +159,7 @@ public class ServerContext implements IFarServerContext {
         synchronized (this) {
             this.unloadTilesQueue.remove(snapshot.pos());
             if (this.sendTilesQueue.isEmpty() && this.player.fp2_IFarPlayer_flowControl().mayWrite(snapshot.dataSize())) {
-                this.player.fp2_IFarPlayer_sendPacket(SPacketTileData.create(0L, Collections.singletonList(snapshot)), this.sentHandler());
+                this.player.fp2_IFarPlayer_sendPacket(SPacketTileData.create(Collections.singletonList(snapshot)), this.sentHandler());
             } else {
                 this.sendTilesQueue.put(snapshot.pos(), snapshot);
             }
@@ -222,7 +204,7 @@ public class ServerContext implements IFarServerContext {
                 }
                 itr.remove();
 
-                this.player.fp2_IFarPlayer_sendPacket(SPacketTileData.create(0L, Collections.singletonList(next)), this.sentHandler());
+                this.player.fp2_IFarPlayer_sendPacket(SPacketTileData.create(Collections.singletonList(next)), this.sentHandler());
 
                 sentTiles++;
             } while (itr.hasNext());

@@ -55,7 +55,6 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
     protected FP2Config config;
 
     protected IFarClientContext context;
-    protected long lastTileDataPacketTime;
 
     protected boolean handshakeReceived;
     protected boolean clientReady;
@@ -148,11 +147,6 @@ public abstract class AbstractFarPlayerClient<F extends FP2Core> implements IFar
     protected void handle(@NonNull SPacketTileData packet) {
         checkState(this.sessionOpen, "no session is currently open!");
         checkState(this.context != null, "active session has no render mode!");
-
-        long now = System.nanoTime();
-        long lastTileDataPacketTime = this.lastTileDataPacketTime;
-        this.lastTileDataPacketTime = now;
-        this.send(packet.ackPacket(this.context.sessionId(), now - lastTileDataPacketTime));
 
         packet.tiles.forEach(this.context.tileCache()::receiveTile);
     }
