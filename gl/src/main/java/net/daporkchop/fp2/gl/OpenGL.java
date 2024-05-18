@@ -252,6 +252,8 @@ public abstract class OpenGL {
 
     public abstract int glGetError();
 
+    public abstract void glFlush();
+
     public abstract boolean glGetBoolean(int pname);
 
     public abstract void glGetBoolean(int pname, long data);
@@ -397,6 +399,8 @@ public abstract class OpenGL {
     public abstract void glGetBufferSubData(int target, long offset, long data_size, long data);
 
     public abstract void glGetBufferSubData(int target, long offset, @NonNull ByteBuffer data);
+
+    public abstract int glGetBufferParameteri(int target, int pname);
 
     public abstract long glMapBuffer(int target, int access);
 
@@ -665,6 +669,12 @@ public abstract class OpenGL {
     //
     //
 
+    //GL_ARB_base_instance
+    public abstract void glDrawArraysInstancedBaseInstance(int mode, int first, int count, int instancecount, int baseinstance);
+
+    //GL_ARB_base_instance
+    public abstract void glDrawElementsInstancedBaseVertexBaseInstance(int mode, int count, int type, long indices, int instancecount, int basevertex, int baseinstance);
+
     //GL_ARB_shader_image_load_store
     public abstract void glMemoryBarrier(int barriers);
 
@@ -757,6 +767,9 @@ public abstract class OpenGL {
 
     //GL_ARB_direct_state_access
     public abstract void glGetNamedBufferSubData(int buffer, long offset, @NonNull ByteBuffer data);
+
+    //GL_ARB_direct_state_access
+    public abstract int glGetNamedBufferParameteri(int buffer, int pname);
 
     //GL_ARB_direct_state_access
     public abstract long glMapNamedBuffer(int buffer, int access);

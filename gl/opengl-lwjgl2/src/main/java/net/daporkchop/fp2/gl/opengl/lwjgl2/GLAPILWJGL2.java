@@ -32,6 +32,7 @@ import net.daporkchop.lib.common.function.throwing.TPredicate;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import org.lwjgl.BufferChecks;
 import org.lwjgl.PointerBuffer;
+import org.lwjgl.opengl.ARBBaseInstance;
 import org.lwjgl.opengl.ARBBufferStorage;
 import org.lwjgl.opengl.ARBComputeShader;
 import org.lwjgl.opengl.ARBCopyBuffer;
@@ -117,6 +118,7 @@ public final class GLAPILWJGL2 extends OpenGL {
 
     // OpenGL 4.2
     private final boolean OpenGL42;
+    private final boolean GL_ARB_base_instance;
     private final boolean GL_ARB_shader_image_load_store;
 
     // OpenGL 4.3
@@ -167,6 +169,7 @@ public final class GLAPILWJGL2 extends OpenGL {
 
         // OpenGL 4.2
         this.OpenGL42 = capabilities.OpenGL42;
+        this.GL_ARB_base_instance = !capabilities.OpenGL42 && capabilities.GL_ARB_base_instance;
         this.GL_ARB_shader_image_load_store = !capabilities.OpenGL42 && capabilities.GL_ARB_shader_image_load_store;
 
         // OpenGL 4.3
@@ -260,6 +263,12 @@ public final class GLAPILWJGL2 extends OpenGL {
     @Override
     public int glGetError() {
         return GL11.glGetError();
+    }
+
+    @Override
+    public void glFlush() {
+        GL11.glFlush();
+        super.debugCheckError();
     }
 
     @Override
@@ -705,6 +714,13 @@ public final class GLAPILWJGL2 extends OpenGL {
     public void glGetBufferSubData(int target, long offset, @NonNull ByteBuffer data) {
         GL15.glGetBufferSubData(target, offset, data);
         super.debugCheckError();
+    }
+
+    @Override
+    public int glGetBufferParameteri(int target, int pname) {
+        val res = GL15.glGetBufferParameteri(target, pname);
+        super.debugCheckError();
+        return res;
     }
 
     @Override
@@ -1600,6 +1616,32 @@ public final class GLAPILWJGL2 extends OpenGL {
     //
 
     @Override
+    public void glDrawArraysInstancedBaseInstance(int mode, int first, int count, int instancecount, int baseinstance) {
+        if (this.OpenGL42) {
+            GL42.glDrawArraysInstancedBaseInstance(mode, first, count, instancecount, baseinstance);
+            super.debugCheckError();
+        } else if (this.GL_ARB_base_instance) {
+            ARBBaseInstance.glDrawArraysInstancedBaseInstance(mode, first, count, instancecount, baseinstance);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_base_instance));
+        }
+    }
+
+    @Override
+    public void glDrawElementsInstancedBaseVertexBaseInstance(int mode, int count, int type, long indices, int instancecount, int basevertex, int baseinstance) {
+        if (this.OpenGL42) {
+            GL42.glDrawElementsInstancedBaseVertexBaseInstance(mode, count, type, indices, instancecount, basevertex, baseinstance);
+            super.debugCheckError();
+        } else if (this.GL_ARB_base_instance) {
+            ARBBaseInstance.glDrawElementsInstancedBaseVertexBaseInstance(mode, count, type, indices, instancecount, basevertex, baseinstance);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_base_instance));
+        }
+    }
+
+    @Override
     public void glMemoryBarrier(int barriers) {
         if (this.OpenGL42) {
             GL42.glMemoryBarrier(barriers);
@@ -2075,6 +2117,21 @@ public final class GLAPILWJGL2 extends OpenGL {
         } else if (this.GL_ARB_direct_state_access) {
             ARBDirectStateAccess.glGetNamedBufferSubData(buffer, offset, data);
             super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
+        }
+    }
+
+    @Override
+    public int glGetNamedBufferParameteri(int buffer, int pname) {
+        if (this.OpenGL45) {
+            val res = GL45.glGetNamedBufferParameteri(buffer, pname);
+            super.debugCheckError();
+            return res;
+        } else if (this.GL_ARB_direct_state_access) {
+            val res = ARBDirectStateAccess.glGetNamedBufferParameteri(buffer, pname);
+            super.debugCheckError();
+            return res;
         } else {
             throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
         }
