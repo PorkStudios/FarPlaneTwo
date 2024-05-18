@@ -32,6 +32,7 @@ import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.EngineConstants;
 import net.daporkchop.fp2.core.engine.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.engine.client.bake.IRenderBaker;
+import net.daporkchop.fp2.core.engine.client.bake.VoxelBaker;
 import net.daporkchop.fp2.core.engine.client.bake.storage.BakeStorage;
 import net.daporkchop.fp2.core.engine.client.bake.storage.PerLevelBakeStorage;
 import net.daporkchop.fp2.core.engine.client.bake.storage.SimpleBakeStorage;
