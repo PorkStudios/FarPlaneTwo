@@ -19,6 +19,8 @@
 
 package net.daporkchop.fp2.gl.buffer.upload;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import net.daporkchop.fp2.gl.buffer.GLBuffer;
 
 import java.nio.ByteBuffer;
@@ -30,6 +32,7 @@ import java.nio.ByteBuffer;
  *
  * @author DaPorkchop_
  */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class ImmediateBufferUploader extends AbstractImmediateBufferUploader {
     private static final BufferUploader instance = new ImmediateBufferUploader();
 

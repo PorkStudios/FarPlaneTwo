@@ -20,6 +20,7 @@
 package net.daporkchop.fp2.gl.util;
 
 import lombok.AccessLevel;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.common.annotation.param.Positive;
@@ -148,6 +149,29 @@ public abstract class AbstractTypedWriter implements AutoCloseable {
      * @param length the number of elements to copy
      */
     public abstract void copy(@NotNegative int src, @NotNegative int dst, @NotNegative int length);
+
+    /**
+     * Copies the element at the given source index to the given destination index in the given destination writer.
+     *
+     * @param srcIndex  the source index
+     * @param dstWriter the destination writer
+     * @param dstIndex  the destination index
+     */
+    public void copyTo(@NotNegative int srcIndex, @NonNull AbstractTypedWriter dstWriter, @NotNegative int dstIndex) {
+        this.copyTo(srcIndex, dstWriter, dstIndex, 1);
+    }
+
+    /**
+     * Copies the elements starting at the given source index to the given destination index. in the given destination writer
+     * <p>
+     * The behavior of this method is undefined if the two ranges overlap.
+     *
+     * @param srcIndex  the source index
+     * @param dstWriter the destination writer
+     * @param dstIndex  the destination index
+     * @param length    the number of elements to copy
+     */
+    public abstract void copyTo(@NotNegative int srcIndex, @NonNull AbstractTypedWriter dstWriter, @NotNegative int dstIndex, @NotNegative int length);
 
     @Override
     public abstract void close();

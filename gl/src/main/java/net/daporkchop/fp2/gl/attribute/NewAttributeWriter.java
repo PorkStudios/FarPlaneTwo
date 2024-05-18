@@ -21,6 +21,7 @@ package net.daporkchop.fp2.gl.attribute;
 
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.util.AbstractTypedWriter;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
@@ -142,4 +143,41 @@ public abstract class NewAttributeWriter<STRUCT extends AttributeStruct> extends
      * @param length the number of elements to copy
      */
     public abstract void copy(@NotNegative int src, @NotNegative int dst, @NotNegative int length);
+
+    @Override
+    @Deprecated
+    @SuppressWarnings("unchecked")
+    public final void copyTo(@NotNegative int srcIndex, @NonNull AbstractTypedWriter dstWriter, @NotNegative int dstIndex) {
+        this.copyTo(srcIndex, (NewAttributeWriter<STRUCT>) dstWriter, dstIndex);
+    }
+
+    @Override
+    @Deprecated
+    @SuppressWarnings("unchecked")
+    public final void copyTo(@NotNegative int srcIndex, @NonNull AbstractTypedWriter dstWriter, @NotNegative int dstIndex, @NotNegative int length) {
+        this.copyTo(srcIndex, (NewAttributeWriter<STRUCT>) dstWriter, dstIndex, length);
+    }
+
+    /**
+     * Copies the element at the given source index to the given destination index in the given destination writer.
+     *
+     * @param srcIndex  the source index
+     * @param dstWriter the destination writer
+     * @param dstIndex  the destination index
+     */
+    public void copyTo(@NotNegative int srcIndex, @NonNull NewAttributeWriter<STRUCT> dstWriter, @NotNegative int dstIndex) {
+        this.copyTo(srcIndex, dstWriter, dstIndex, 1);
+    }
+
+    /**
+     * Copies the elements starting at the given source index to the given destination index. in the given destination writer
+     * <p>
+     * The behavior of this method is undefined if the two ranges overlap.
+     *
+     * @param srcIndex  the source index
+     * @param dstWriter the destination writer
+     * @param dstIndex  the destination index
+     * @param length    the number of elements to copy
+     */
+    public abstract void copyTo(@NotNegative int srcIndex, @NonNull NewAttributeWriter<STRUCT> dstWriter, @NotNegative int dstIndex, @NotNegative int length);
 }

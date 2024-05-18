@@ -59,6 +59,21 @@ public abstract class AbstractIndexWriter extends NewIndexWriter {
     protected abstract void set(long address, long index, int value);
 
     @Override
+    public final int get(int index) {
+        checkIndex(this.size, index);
+        return this.get(this.address, index);
+    }
+
+    /**
+     * Gets a single element's value.
+     *
+     * @param address the base address
+     * @param index   the destination index
+     * @return the element value
+     */
+    protected abstract int get(long address, long index);
+
+    @Override
     protected final void grow(@NotNegative int oldCapacity, @NotNegative int newCapacity) {
         this.address = this.alloc.realloc(this.address, newCapacity * this.format().size());
     }
@@ -86,6 +101,19 @@ public abstract class AbstractIndexWriter extends NewIndexWriter {
         long size = this.format().size();
         if (src != dst && length > 0) {
             PUnsafe.copyMemory(this.address + src * size, this.address + dst * size, length * size);
+        }
+    }
+
+    @Override
+    public final void copyTo(@NotNegative int srcIndex, NewIndexWriter dstWriterIn, @NotNegative int dstIndex, @NotNegative int length) {
+        checkArg(this.getClass() == dstWriterIn.getClass(), "incompatible index formats: %s\n%s", this.format(), dstWriterIn.format());
+        AbstractIndexWriter dstWriter = (AbstractIndexWriter) dstWriterIn;
+
+        checkRangeLen(this.size, srcIndex, length);
+        checkRangeLen(dstWriter.size, dstIndex, length);
+        long size = this.format().size();
+        if (length > 0) {
+            PUnsafe.copyMemory(this.address + srcIndex * size, dstWriter.address + dstIndex * size, length * size);
         }
     }
 

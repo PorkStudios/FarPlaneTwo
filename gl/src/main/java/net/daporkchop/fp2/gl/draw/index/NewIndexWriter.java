@@ -20,8 +20,10 @@
 package net.daporkchop.fp2.gl.draw.index;
 
 import lombok.AccessLevel;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.util.AbstractTypedWriter;
+import net.daporkchop.lib.common.annotation.param.NotNegative;
 
 /**
  * @author DaPorkchop_
@@ -86,4 +88,47 @@ public abstract class NewIndexWriter extends AbstractTypedWriter {
 
         return this;
     }
+
+    /**
+     * Gets the index value at the given position in this writer.
+     *
+     * @param index the index of the index value to get
+     * @return the index value
+     */
+    public abstract int get(int index);
+
+    @Override
+    @Deprecated
+    public final void copyTo(@NotNegative int srcIndex, @NonNull AbstractTypedWriter dstWriter, @NotNegative int dstIndex) {
+        this.copyTo(srcIndex, (NewIndexWriter) dstWriter, dstIndex);
+    }
+
+    @Override
+    @Deprecated
+    public final void copyTo(@NotNegative int srcIndex, @NonNull AbstractTypedWriter dstWriter, @NotNegative int dstIndex, @NotNegative int length) {
+        this.copyTo(srcIndex, (NewIndexWriter) dstWriter, dstIndex, length);
+    }
+
+    /**
+     * Copies the element at the given source index to the given destination index in the given destination writer.
+     *
+     * @param srcIndex  the source index
+     * @param dstWriter the destination writer
+     * @param dstIndex  the destination index
+     */
+    public void copyTo(@NotNegative int srcIndex, @NonNull NewIndexWriter dstWriter, @NotNegative int dstIndex) {
+        this.copyTo(srcIndex, dstWriter, dstIndex, 1);
+    }
+
+    /**
+     * Copies the elements starting at the given source index to the given destination index. in the given destination writer
+     * <p>
+     * The behavior of this method is undefined if the two ranges overlap.
+     *
+     * @param srcIndex  the source index
+     * @param dstWriter the destination writer
+     * @param dstIndex  the destination index
+     * @param length    the number of elements to copy
+     */
+    public abstract void copyTo(@NotNegative int srcIndex, @NonNull NewIndexWriter dstWriter, @NotNegative int dstIndex, @NotNegative int length);
 }

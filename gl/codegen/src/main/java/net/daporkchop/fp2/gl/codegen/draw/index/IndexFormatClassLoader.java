@@ -45,7 +45,6 @@ public final class IndexFormatClassLoader extends SimpleGeneratingClassLoader {
     private final JavaPrimitiveType primitiveType;
 
     private final String formatClassInternalName;
-    //private final String bufferClassInternalName;
     private final String writerClassInternalName;
 
     private static JavaPrimitiveType primitiveType(IndexType type) {
@@ -67,7 +66,6 @@ public final class IndexFormatClassLoader extends SimpleGeneratingClassLoader {
         this.primitiveType = primitiveType(type);
 
         this.formatClassInternalName = (NewIndexFormat.class.getSimpleName() + "Impl$" + type).replace('.', '/');
-        //this.bufferClassInternalName = (NewIndexBuffer.class.getSimpleName() + "Impl$" + type).replace('.', '/');
         this.writerClassInternalName = (NewIndexWriter.class.getSimpleName() + "Impl$" + type).replace('.', '/');
     }
 
@@ -81,12 +79,10 @@ public final class IndexFormatClassLoader extends SimpleGeneratingClassLoader {
     @Override
     protected void registerClassGenerators(BiConsumer<String, Supplier<byte[]>> registerGenerator, Consumer<Class<?>> registerClass) {
         registerGenerator.accept(this.formatClassInternalName.replace('/', '.'), this::formatClass);
-        //registerGenerator.accept(this.bufferClassInternalName.replace('/', '.'), this::bufferClass);
         registerGenerator.accept(this.writerClassInternalName.replace('/', '.'), this::writerClass);
 
         registerClass.accept(PUnsafe.class);
         registerClass.accept(DirectMemoryAllocator.class);
-        //registerClass.accept(OpenGL.class);
 
         registerClass.accept(IndexType.class);
         registerClass.accept(NewIndexFormat.class);
@@ -98,8 +94,6 @@ public final class IndexFormatClassLoader extends SimpleGeneratingClassLoader {
     private byte[] formatClass() {
         return generateClass(ACC_PUBLIC | ACC_FINAL, this.formatClassInternalName, getInternalName(AbstractIndexFormat.class), null, cv -> {
             generatePassthroughCtor(cv, getInternalName(AbstractIndexFormat.class), getType(IndexType.class));
-
-            //NewIndexBuffer createBuffer(OpenGL gl)
 
             //NewIndexWriter createWriter(DirectMemoryAllocator alloc)
             generateMethod(cv, ACC_PUBLIC | ACC_FINAL, "createWriter", getMethodDescriptor(getType(NewIndexWriter.class), getType(DirectMemoryAllocator.class)), mv -> {
@@ -113,10 +107,6 @@ public final class IndexFormatClassLoader extends SimpleGeneratingClassLoader {
         });
     }
 
-    /*private byte[] bufferClass() {
-        return null;
-    }*/
-
     private byte[] writerClass() {
         return generateClass(ACC_PUBLIC | ACC_FINAL, this.writerClassInternalName, getInternalName(AbstractIndexWriter.class), null, cv -> {
             generatePassthroughCtor(cv, getInternalName(AbstractIndexWriter.class), getType(NewIndexFormat.class), getType(DirectMemoryAllocator.class));
@@ -128,6 +118,14 @@ public final class IndexFormatClassLoader extends SimpleGeneratingClassLoader {
                 mv.visitVarInsn(ILOAD, 5);
                 this.primitiveType.unsafePut(mv);
                 return RETURN;
+            });
+
+            //int get(long address, long index)
+            generateMethod(cv, ACC_PUBLIC | ACC_FINAL, "get", getMethodDescriptor(INT_TYPE, LONG_TYPE, LONG_TYPE), mv -> {
+                mv.visitInsn(ACONST_NULL);
+                this.generateComputeAddress(mv, 1, 3);
+                this.primitiveType.unsafeGet(mv);
+                return IRETURN;
             });
 
             //void copySingle(long address, long src, long dst)

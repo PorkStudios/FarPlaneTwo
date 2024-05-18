@@ -28,7 +28,6 @@ import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.common.annotation.param.Positive;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
-import static java.lang.Math.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -109,6 +108,19 @@ public abstract class AbstractInterleavedAttributeWriter<STRUCT extends Attribut
         checkRangeLen(this.size, dst, length);
         if (src != dst && length > 0) {
             PUnsafe.copyMemory(this.address + src * stride, this.address + dst * stride, length * stride);
+        }
+    }
+
+    @Override
+    public final void copyTo(@NotNegative int srcIndex, NewAttributeWriter<STRUCT> dstWriterIn, @NotNegative int dstIndex, @NotNegative int length) {
+        checkArg(this.getClass() == dstWriterIn.getClass(), "incompatible index formats: %s\n%s", this.format(), dstWriterIn.format());
+        AbstractInterleavedAttributeWriter<STRUCT> dstWriter = (AbstractInterleavedAttributeWriter<STRUCT>) dstWriterIn;
+
+        checkRangeLen(this.size, srcIndex, length);
+        checkRangeLen(dstWriter.size, dstIndex, length);
+        long size = this.format().size();
+        if (length > 0) {
+            PUnsafe.copyMemory(this.address + srcIndex * size, dstWriter.address + dstIndex * size, length * size);
         }
     }
 
