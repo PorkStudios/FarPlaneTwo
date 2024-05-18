@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.common.util.stats;
@@ -24,8 +23,6 @@ import lombok.NonNull;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.lang.reflect.Modifier;
-import java.util.IdentityHashMap;
-import java.util.Map;
 import java.util.stream.Stream;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -37,41 +34,33 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 public abstract class AbstractLongStatistics<S extends AbstractLongStatistics<S>> implements Statistics<S> {
-    private static final Map<Class<? extends AbstractLongStatistics>, long[]> OFFSETS_CACHE = new IdentityHashMap<>();
+    private static final ClassValue<long[]> OFFSETS_CACHE = new ClassValue<long[]>() {
+        @Override
+        protected long[] computeValue(Class<?> type) {
+            checkArg(type.getSuperclass() == AbstractLongStatistics.class, "%s doesn't extend from %s", type, AbstractLongStatistics.class);
 
-    private static long[] offsets(@NonNull Class<? extends AbstractLongStatistics> clazz) {
-        long[] offsets = OFFSETS_CACHE.get(clazz);
-        return offsets != null ? offsets : computeOffsets(clazz);
-    }
-
-    private static long[] computeOffsets(@NonNull Class<? extends AbstractLongStatistics> clazz) {
-        long[] offsets = Stream.of(clazz.getDeclaredFields())
-                .filter(field -> (field.getModifiers() & Modifier.STATIC) == 0)
-                .peek(field -> checkState(field.getType() == long.class, "field type must be long: %s", field))
-                .mapToLong(PUnsafe::objectFieldOffset)
-                .sorted()
-                .toArray();
-
-        synchronized (OFFSETS_CACHE) { //this is NOT a race condition with regards to concurrent reads from the cache
-            OFFSETS_CACHE.putIfAbsent(clazz, offsets);
+            return Stream.of(type.getDeclaredFields())
+                    .filter(field -> (field.getModifiers() & Modifier.STATIC) == 0)
+                    .peek(field -> checkState(field.getType() == long.class, "field type must be long: %s", field))
+                    .mapToLong(PUnsafe::objectFieldOffset)
+                    .sorted()
+                    .toArray();
         }
-
-        return offsets;
-    }
+    };
 
     @Override
-    public S add(@NonNull S other) {
+    public final S add(@NonNull S other) {
         S out = uncheckedCast(PUnsafe.allocateInstance(this.getClass()));
-        for (long offset : offsets(this.getClass())) {
+        for (long offset : OFFSETS_CACHE.get(this.getClass())) {
             PUnsafe.putLong(out, offset, Math.addExact(PUnsafe.getLong(this, offset), PUnsafe.getLong(other, offset)));
         }
         return out;
     }
 
     @Override
-    public S sub(@NonNull S other) {
+    public final S sub(@NonNull S other) {
         S out = uncheckedCast(PUnsafe.allocateInstance(this.getClass()));
-        for (long offset : offsets(this.getClass())) {
+        for (long offset : OFFSETS_CACHE.get(this.getClass())) {
             PUnsafe.putLong(out, offset, Math.subtractExact(PUnsafe.getLong(this, offset), PUnsafe.getLong(other, offset)));
         }
         return out;
