@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,23 +15,24 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
-rootProject.name = 'FarPlaneTwo'
+package net.daporkchop.fp2.core.network.flow;
 
-include 'api'
-include 'common'
-include 'core'
-include 'core:log4j'
-include 'core:minecraft'
-include 'core:mixin'
-include 'core:netty'
-include 'resources'
-include 'gl'
-include 'gl:codegen'
-include 'gl:opengl'
-include 'gl:opengl-lwjgl2'
-include 'gl:opengl-lwjgl3'
-include 'mc:1.12.2-forge'
-include 'mc:1.16-forge'
+import net.daporkchop.lib.common.annotation.param.NotNegative;
+
+/**
+ * A flow control system, which tries to limit the rate at which data is sent in order to avoid overwhelming the receiver.
+ *
+ * @author DaPorkchop_
+ */
+public interface FlowControl {
+    /**
+     * @return a {@link FlowControl} instance which always allows more packets to be sent
+     */
+    static FlowControl none() {
+        return bytes -> true;
+    }
+
+    boolean mayWrite(@NotNegative long bytes);
+}

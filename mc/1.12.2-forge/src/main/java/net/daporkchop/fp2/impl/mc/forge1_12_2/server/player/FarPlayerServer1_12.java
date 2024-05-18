@@ -23,12 +23,14 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.core.network.IPacket;
+import net.daporkchop.fp2.core.network.flow.FlowControl;
 import net.daporkchop.fp2.core.server.player.AbstractFarPlayerServer;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.network.FP2Network1_12_2;
 import net.daporkchop.lib.math.vector.Vec3d;
 import net.minecraft.entity.player.EntityPlayerMP;
 
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
@@ -41,6 +43,8 @@ public class FarPlayerServer1_12 extends AbstractFarPlayerServer {
     protected final FP2Forge1_12 fp2;
     @NonNull
     protected final Supplier<EntityPlayerMP> player;
+    @NonNull
+    protected final FlowControl flowControl;
 
     @Override
     public Vec3d fp2_IFarPlayer_position() {
@@ -53,5 +57,17 @@ public class FarPlayerServer1_12 extends AbstractFarPlayerServer {
         if (!this.closed) {
             FP2Network1_12_2.sendToPlayer(packet, this.player.get());
         }
+    }
+
+    @Override
+    public void fp2_IFarPlayer_sendPacket(@NonNull IPacket packet, Consumer<Throwable> handler) {
+        if (!this.closed) {
+            FP2Network1_12_2.sendToPlayer(packet, this.player.get(), handler);
+        }
+    }
+
+    @Override
+    public FlowControl fp2_IFarPlayer_flowControl() {
+        return this.flowControl;
     }
 }

@@ -55,7 +55,7 @@ public final class DirectMemoryAllocator extends Allocator implements AutoClosea
      */
     public DirectMemoryAllocator(boolean zero) {
         super(0L);
-        this.cleaner = PCleaner.cleaner(this, new Releaser(this.allocations));
+        this.cleaner = PCleaner.cleaner(this, new Releaser(this.allocations, new Throwable()));
         this.zero = zero;
     }
 
@@ -136,15 +136,19 @@ public final class DirectMemoryAllocator extends Allocator implements AutoClosea
     @RequiredArgsConstructor
     private static final class Releaser implements Runnable {
         private final LongLongMap allocations;
+        protected final Throwable constructorStackTrace;
 
         @Override
         public void run() {
-            if (this.allocations.isEmpty()) { //nothing to do
+            long leakedCount = this.allocations.size();
+            if (leakedCount == 0L) { //nothing to do
                 return;
             }
 
-            System.err.printf("%d memory blocks allocated by %s (totalling %d bytes) were not freed!\n",
-                    this.allocations.size(), DirectMemoryAllocator.class.getCanonicalName(), StreamSupport.stream(this.allocations.values().spliterator(), false).mapToLong(Long::longValue).sum());
+            String msg = leakedCount + " memory blocks allocated by " + DirectMemoryAllocator.class.getName()
+                         + " (totalling " + StreamSupport.stream(this.allocations.values().spliterator(), false).mapToLong(Long::longValue).sum() + " bytes) were not freed!";
+            new RuntimeException(msg, this.constructorStackTrace).printStackTrace();
+
             this.allocations.keySet().forEach((LongConsumer) PUnsafe::freeMemory);
         }
     }

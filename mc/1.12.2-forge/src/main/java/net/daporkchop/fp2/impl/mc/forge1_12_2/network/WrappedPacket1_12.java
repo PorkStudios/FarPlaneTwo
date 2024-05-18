@@ -17,41 +17,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.network.packet.standard.client;
+package net.daporkchop.fp2.impl.mc.forge1_12_2.network;
 
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
-import net.daporkchop.fp2.core.network.IPacket;
-import net.daporkchop.lib.binary.stream.DataIn;
-import net.daporkchop.lib.binary.stream.DataOut;
-
-import java.io.IOException;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
+import lombok.RequiredArgsConstructor;
+import lombok.ToString;
+import net.minecraft.network.NetworkManager;
 
 /**
  * @author DaPorkchop_
  */
-@AllArgsConstructor(staticName = "create")
-@NoArgsConstructor(onConstructor_ = { @Deprecated })
-public final class CPacketTileAck implements IPacket {
-    public long sessionId;
-    public long timestamp;
-    public long size;
-    public long timeSinceLastTileDataPacket;
+@RequiredArgsConstructor
+@ToString
+public final class WrappedPacket1_12<P> {
+    public final P payload;
 
-    @Override
-    public void read(@NonNull DataIn in) throws IOException {
-        this.sessionId = in.readLongLE();
-        this.timestamp = in.readLongLE();
-        this.size = in.readVarLong();
-        this.timeSinceLastTileDataPacket = in.readVarLong();
-    }
+    public final NetworkManager manager;
+    public final GenericFutureListener<? extends Future<? super Void>> listener;
 
-    @Override
-    public void write(@NonNull DataOut out) throws IOException {
-        out.writeLongLE(this.sessionId);
-        out.writeLongLE(this.timestamp);
-        out.writeVarLong(this.size);
-        out.writeVarLong(this.timeSinceLastTileDataPacket);
+    public <T> WrappedPacket1_12<T> withPayload(T payload) {
+        return new WrappedPacket1_12<>(payload, this.manager, this.listener);
     }
 }

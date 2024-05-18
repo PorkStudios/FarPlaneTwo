@@ -25,7 +25,6 @@ import net.daporkchop.fp2.core.engine.ctx.ServerContext;
 import net.daporkchop.fp2.core.engine.api.ctx.IFarServerContext;
 import net.daporkchop.fp2.core.network.packet.debug.client.CPacketDebugDropAllTiles;
 import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
-import net.daporkchop.fp2.core.network.packet.standard.client.CPacketTileAck;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionBegin;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketSessionEnd;
 import net.daporkchop.fp2.core.network.packet.standard.server.SPacketUpdateConfig;
@@ -59,8 +58,6 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
     public void fp2_IFarPlayerServer_handle(@NonNull Object packet) {
         if (packet instanceof CPacketClientConfig) {
             this.handle((CPacketClientConfig) packet);
-        } else if (packet instanceof CPacketTileAck) {
-            this.handle((CPacketTileAck) packet);
         } else if (packet instanceof CPacketDebugDropAllTiles) {
             this.handleDebug((CPacketDebugDropAllTiles) packet);
         } else {
@@ -69,14 +66,13 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
     }
 
     protected void handle(@NonNull CPacketClientConfig packet) {
-        this.world.workerManager().rootExecutor().execute(() -> this.updateConfig(this.serverConfig, packet.config));
-    }
-
-    protected void handle(@NonNull CPacketTileAck packet) {
         this.world.workerManager().rootExecutor().execute(() -> {
-            if (this.sessionOpen && this.isAcceptableSessionId(packet.sessionId)) {
-                this.context.notifyAck(packet);
+            if (this.closed) {
+                //the player may be closed between the time when this task is submitted and actually begins execution
+                return;
             }
+
+            this.updateConfig(this.serverConfig, packet.config);
         });
     }
 
@@ -97,12 +93,11 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
     @CalledFromServerThread
     @Override
     public void fp2_IFarPlayer_serverConfig(FP2Config serverConfig) {
+        checkState(!this.closed, "already closed!");
         this.updateConfig(serverConfig, this.clientConfig);
     }
 
     protected void updateConfig(FP2Config serverConfig, FP2Config clientConfig) {
-        checkState(!this.closed, "already closed!");
-
         if (!Objects.equals(this.serverConfig, serverConfig)) { //re-send server config if it changed
             this.fp2_IFarPlayer_sendPacket(SPacketUpdateConfig.Server.create(serverConfig));
         }
@@ -195,8 +190,8 @@ public abstract class AbstractFarPlayerServer implements IFarPlayerServer {
     @Override
     public void fp2_IFarPlayer_close() {
         checkState(!this.closed, "already closed!");
+        this.closed = true;
 
         this.updateConfig(null, null);
-        this.closed = true;
     }
 }

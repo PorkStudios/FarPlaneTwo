@@ -133,6 +133,7 @@ dependencies {
     implementationShade project(":core:log4j")
     implementationShade project(":core:minecraft")
     implementationShade project(":core:mixin")
+    implementationShade project(":core:netty")
 
     implementationShade project(":resources")
 

@@ -19,11 +19,13 @@
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.core.network;
 
+import net.daporkchop.fp2.core.netty.network.flow.NettyFlowControl;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.network.IMixinNetHandlerPlayServer1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.server.player.FarPlayerServer1_12;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.network.NetHandlerPlayServer;
+import net.minecraft.network.NetworkManager;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -38,6 +40,9 @@ public abstract class MixinNetHandlerPlayServer1_12 implements IMixinNetHandlerP
     @Shadow
     public EntityPlayerMP player;
 
+    @Shadow
+    public abstract NetworkManager getNetworkManager();
+
     @Unique
     protected FarPlayerServer1_12 fp2_farPlayerServer;
 
@@ -46,7 +51,7 @@ public abstract class MixinNetHandlerPlayServer1_12 implements IMixinNetHandlerP
         if (this.fp2_farPlayerServer == null) {
             synchronized (this) {
                 if (this.fp2_farPlayerServer == null) {
-                    this.fp2_farPlayerServer = new FarPlayerServer1_12((FP2Forge1_12) fp2(), () -> this.player);
+                    this.fp2_farPlayerServer = new FarPlayerServer1_12((FP2Forge1_12) fp2(), () -> this.player, NettyFlowControl.createFlowControlFor(this.getNetworkManager().channel()));
                 }
             }
         }

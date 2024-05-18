@@ -25,10 +25,8 @@ import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.api.server.IFarTileProvider;
 import net.daporkchop.fp2.core.engine.server.tracking.Tracker;
 import net.daporkchop.fp2.core.engine.tile.TileSnapshot;
-import net.daporkchop.fp2.core.network.packet.standard.client.CPacketTileAck;
 import net.daporkchop.fp2.core.server.player.IFarPlayerServer;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
-import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
 import net.daporkchop.lib.common.annotation.TransferOwnership;
 
@@ -70,14 +68,6 @@ public interface IFarServerContext extends AutoCloseable {
      */
     @CalledFromServerThread
     void notifyConfigChange(@NonNull FP2Config config);
-
-    /**
-     * Called whenever the client acknowledges receiving tiles.
-     *
-     * @param ack the {@link CPacketTileAck} packet
-     */
-    @CalledFromAnyThread
-    void notifyAck(@NonNull CPacketTileAck ack);
 
     /**
      * Closes this context, deactivating it if needed and releasing any allocated resources.

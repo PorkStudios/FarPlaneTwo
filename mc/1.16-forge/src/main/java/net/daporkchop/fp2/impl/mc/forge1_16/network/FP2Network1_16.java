@@ -45,6 +45,7 @@ import java.lang.invoke.MethodType;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -140,5 +141,11 @@ public class FP2Network1_16 {
     @SneakyThrows
     public void sendToPlayer(@NonNull IPacket packet, @NonNull NetworkManager networkManager) {
         CHANNEL.sendTo(packet, networkManager, NetworkDirection.PLAY_TO_CLIENT);
+    }
+
+    @SneakyThrows
+    public void sendToPlayer(@NonNull IPacket packet, @NonNull NetworkManager networkManager, Consumer<Throwable> handler) {
+        networkManager.send(CHANNEL.toVanillaPacket(packet, NetworkDirection.PLAY_TO_CLIENT),
+                future -> handler.accept(future.isSuccess() ? null : future.cause()));
     }
 }

@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.server.player;
@@ -24,10 +23,13 @@ import lombok.NonNull;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.network.IPacket;
+import net.daporkchop.fp2.core.network.flow.FlowControl;
 import net.daporkchop.fp2.core.server.world.level.IFarLevelServer;
 import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
 import net.daporkchop.fp2.core.util.annotation.CalledFromServerThread;
 import net.daporkchop.lib.math.vector.Vec3d;
+
+import java.util.function.Consumer;
 
 /**
  * @author DaPorkchop_
@@ -47,6 +49,10 @@ public interface IFarPlayerServer {
     void fp2_IFarPlayer_joinedWorld(@NonNull IFarLevelServer world);
 
     void fp2_IFarPlayer_sendPacket(@NonNull IPacket packet);
+
+    void fp2_IFarPlayer_sendPacket(@NonNull IPacket packet, Consumer<Throwable> handler);
+
+    FlowControl fp2_IFarPlayer_flowControl();
 
     @CalledFromServerThread
     void fp2_IFarPlayer_update();
