@@ -26,6 +26,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.common.GlobalProperties;
 import net.daporkchop.fp2.gl.compute.ComputeWorkGroupCount;
 import net.daporkchop.fp2.gl.compute.ComputeWorkGroupSize;
+import net.daporkchop.fp2.gl.util.debug.GLDebugOutputCallback;
 
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
@@ -41,7 +42,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -57,6 +57,7 @@ import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 @Getter
 public abstract class OpenGL {
     public static final boolean DEBUG = Boolean.getBoolean("fp2.gl.opengl.debug");
+    public static final boolean DEBUG_OUTPUT = Boolean.getBoolean("fp2.gl.opengl.debug.output");
     public static final boolean PRESERVE_BINDINGS = System.getProperty("fp2.gl.opengl.preserveBindings") == null || Boolean.getBoolean("fp2.gl.opengl.preserveBindings");
 
     /**
@@ -700,6 +701,18 @@ public abstract class OpenGL {
     //GL_KHR_debug
     public abstract String glGetObjectPtrLabel(long ptr);
 
+    //GL_KHR_debug
+    public abstract void glDebugMessageControl(int source, int type, int severity, IntBuffer ids, boolean enabled);
+
+    //GL_KHR_debug
+    public abstract void glDebugMessageControl(int source, int type, int severity, int[] ids, boolean enabled);
+
+    //GL_KHR_debug
+    public abstract void glDebugMessageInsert(int source, int type, int id, int severity, @NonNull CharSequence msg);
+
+    //GL_KHR_debug
+    public abstract void glDebugMessageCallback(GLDebugOutputCallback callback);
+
     //
     //
     // OpenGL 4.4
@@ -804,6 +817,18 @@ public abstract class OpenGL {
     // No OpenGL version
     //
     //
+
+    //GL_ARB_debug_output
+    public abstract void glDebugMessageControlARB(int source, int type, int severity, IntBuffer ids, boolean enabled);
+
+    //GL_ARB_debug_output
+    public abstract void glDebugMessageControlARB(int source, int type, int severity, int[] ids, boolean enabled);
+
+    //GL_ARB_debug_output
+    public abstract void glDebugMessageInsertARB(int source, int type, int id, int severity, @NonNull CharSequence msg);
+
+    //GL_ARB_debug_output
+    public abstract void glDebugMessageCallbackARB(GLDebugOutputCallback callback);
 
     //GL_ARB_sparse_buffer
     public abstract void glBufferPageCommitmentARB(int target, long offset, long size, boolean commit);

@@ -27,6 +27,7 @@ import net.daporkchop.fp2.gl.GLVersion;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.opengl.lwjgl2.extra.ExtraFunctions;
 import net.daporkchop.fp2.gl.opengl.lwjgl2.extra.ExtraFunctionsProvider;
+import net.daporkchop.fp2.gl.util.debug.GLDebugOutputCallback;
 import net.daporkchop.lib.common.function.throwing.TPredicate;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import org.lwjgl.BufferChecks;
@@ -34,11 +35,12 @@ import org.lwjgl.PointerBuffer;
 import org.lwjgl.opengl.ARBBufferStorage;
 import org.lwjgl.opengl.ARBComputeShader;
 import org.lwjgl.opengl.ARBCopyBuffer;
+import org.lwjgl.opengl.ARBDebugOutput;
+import org.lwjgl.opengl.ARBDebugOutputCallback;
 import org.lwjgl.opengl.ARBDirectStateAccess;
 import org.lwjgl.opengl.ARBDrawElementsBaseVertex;
 import org.lwjgl.opengl.ARBDrawInstanced;
 import org.lwjgl.opengl.ARBInstancedArrays;
-import org.lwjgl.opengl.ARBMultiDrawIndirect;
 import org.lwjgl.opengl.ARBProgramInterfaceQuery;
 import org.lwjgl.opengl.ARBSamplerObjects;
 import org.lwjgl.opengl.ARBSeparateShaderObjects;
@@ -134,6 +136,7 @@ public final class GLAPILWJGL2 extends OpenGL {
     private final boolean GL_ARB_direct_state_access;
 
     // No OpenGL version
+    private final boolean GL_ARB_debug_output;
     private final boolean GL_ARB_sparse_buffer;
 
     public GLAPILWJGL2() {
@@ -183,6 +186,7 @@ public final class GLAPILWJGL2 extends OpenGL {
         this.GL_ARB_direct_state_access = !capabilities.OpenGL45 && capabilities.GL_ARB_direct_state_access;
 
         // No OpenGL version
+        this.GL_ARB_debug_output = capabilities.GL_ARB_debug_output;
         this.GL_ARB_sparse_buffer = capabilities.GL_ARB_sparse_buffer;
     }
 
@@ -1791,6 +1795,65 @@ public final class GLAPILWJGL2 extends OpenGL {
         }
     }
 
+    @Override
+    public void glDebugMessageControl(int source, int type, int severity, IntBuffer ids, boolean enabled) {
+        if (this.OpenGL43) {
+            GL43.glDebugMessageControl(source, type, severity, ids, enabled);
+            super.debugCheckError();
+        } else if (this.GL_KHR_debug) {
+            KHRDebug.glDebugMessageControl(source, type, severity, ids, enabled);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_KHR_debug));
+        }
+    }
+
+    @Override
+    public void glDebugMessageControl(int source, int type, int severity, int[] ids, boolean enabled) {
+        if (ids == null) {
+            this.glDebugMessageControl(source, type, severity, (IntBuffer) null, enabled);
+        } else {
+            long address = PUnsafe.allocateMemory(ids.length * (long) Long.BYTES);
+            try {
+                IntBuffer wrapped = DirectBufferHackery.wrapInt(address, ids.length);
+                wrapped.put(ids).clear();
+                this.glDebugMessageControl(source, type, severity, wrapped, enabled);
+            } finally {
+                PUnsafe.freeMemory(address);
+            }
+        }
+    }
+
+    @Override
+    public void glDebugMessageInsert(int source, int type, int id, int severity, @NonNull CharSequence msg) {
+        if (this.OpenGL43) {
+            GL43.glDebugMessageInsert(source, type, id, severity, msg);
+            super.debugCheckError();
+        } else if (this.GL_KHR_debug) {
+            KHRDebug.glDebugMessageInsert(source, type, id, severity, msg);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_KHR_debug));
+        }
+    }
+
+    @Override
+    public void glDebugMessageCallback(GLDebugOutputCallback callback) {
+        val implCallback = callback != null
+                ? new org.lwjgl.opengl.KHRDebugCallback(callback::handleMessage)
+                : null;
+
+        if (this.OpenGL43) {
+            GL43.glDebugMessageCallback(implCallback);
+            super.debugCheckError();
+        } else if (this.GL_KHR_debug) {
+            KHRDebug.glDebugMessageCallback(implCallback);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_KHR_debug));
+        }
+    }
+
     //
     //
     // OpenGL 4.4
@@ -2293,6 +2356,54 @@ public final class GLAPILWJGL2 extends OpenGL {
     // No OpenGL version
     //
     //
+
+    @Override
+    public void glDebugMessageControlARB(int source, int type, int severity, IntBuffer ids, boolean enabled) {
+        if (this.GL_ARB_debug_output) {
+            ARBDebugOutput.glDebugMessageControlARB(source, type, severity, ids, enabled);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_debug_output));
+        }
+    }
+
+    @Override
+    public void glDebugMessageControlARB(int source, int type, int severity, int[] ids, boolean enabled) {
+        if (ids == null) {
+            this.glDebugMessageControlARB(source, type, severity, (IntBuffer) null, enabled);
+        } else {
+            long address = PUnsafe.allocateMemory(ids.length * (long) Long.BYTES);
+            try {
+                IntBuffer wrapped = DirectBufferHackery.wrapInt(address, ids.length);
+                wrapped.put(ids).clear();
+                this.glDebugMessageControlARB(source, type, severity, wrapped, enabled);
+            } finally {
+                PUnsafe.freeMemory(address);
+            }
+        }
+    }
+
+    @Override
+    public void glDebugMessageInsertARB(int source, int type, int id, int severity, @NonNull CharSequence msg) {
+        if (this.GL_ARB_debug_output) {
+            ARBDebugOutput.glDebugMessageInsertARB(source, type, id, severity, msg);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_debug_output));
+        }
+    }
+
+    @Override
+    public void glDebugMessageCallbackARB(GLDebugOutputCallback callback) {
+        if (this.GL_ARB_debug_output) {
+            ARBDebugOutput.glDebugMessageCallbackARB(callback != null
+                    ? new ARBDebugOutputCallback(callback::handleMessage)
+                    : null);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_debug_output));
+        }
+    }
 
     @Override
     public void glBufferPageCommitmentARB(int target, long offset, long size, boolean commit) {

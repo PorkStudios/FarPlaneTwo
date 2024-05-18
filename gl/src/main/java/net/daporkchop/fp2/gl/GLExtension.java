@@ -192,6 +192,7 @@ public enum GLExtension {
     GL_ARB_spirv_extensions(GLVersion.OpenGL46, false),
 
     //No OpenGL version
+    GL_ARB_debug_output(null, false),
     GL_ARB_sparse_buffer(null, false),
     ;
 

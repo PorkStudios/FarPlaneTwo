@@ -6,7 +6,9 @@
   "plugin": "net.daporkchop.fp2.core.mixin.debug.DebugMixinConfigPlugin",
   "client": [
     "client.gui.overlay.MixinDebugOverlayGui1_16",
-    "client.renderer.MixinWorldRenderer1_16"
+    "client.renderer.MixinGlDebugTextUtils1_16",
+    "client.renderer.MixinWorldRenderer1_16",
+    "client.MixinMainWindow1_16"
   ],
   "mixins": [
     "resources.MixinResourcePackList1_16"
