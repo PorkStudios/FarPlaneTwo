@@ -278,6 +278,9 @@ public final class StatePreserver {
         OpenGL gl = this.gl;
 
         if (this.compatibility) {
+            //glPopClientAttrib() could modify the currently bound vertex array's state, so we'll switch to VAO #0 first
+            gl.glBindVertexArray(0);
+
             gl.glPopClientAttrib();
             gl.glPopAttrib();
         } else {
