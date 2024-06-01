@@ -38,6 +38,7 @@ import org.lwjgl.opengl.ARBDirectStateAccess;
 import org.lwjgl.opengl.ARBDrawElementsBaseVertex;
 import org.lwjgl.opengl.ARBDrawInstanced;
 import org.lwjgl.opengl.ARBInstancedArrays;
+import org.lwjgl.opengl.ARBInvalidateSubdata;
 import org.lwjgl.opengl.ARBMultiDrawIndirect;
 import org.lwjgl.opengl.ARBProgramInterfaceQuery;
 import org.lwjgl.opengl.ARBSamplerObjects;
@@ -117,6 +118,7 @@ public final class GLAPILWJGL3 extends OpenGL {
     // OpenGL 4.3
     private final boolean OpenGL43;
     private final boolean GL_ARB_compute_shader;
+    private final boolean GL_ARB_invalidate_subdata;
     private final boolean GL_ARB_multi_draw_indirect;
     private final boolean GL_ARB_program_interface_query;
     private final boolean GL_ARB_shader_storage_buffer_object;
@@ -166,6 +168,7 @@ public final class GLAPILWJGL3 extends OpenGL {
         // OpenGL 4.3
         this.OpenGL43 = capabilities.OpenGL43;
         this.GL_ARB_compute_shader = !capabilities.OpenGL43 && capabilities.GL_ARB_compute_shader;
+        this.GL_ARB_invalidate_subdata = !capabilities.OpenGL43 && capabilities.GL_ARB_invalidate_subdata;
         this.GL_ARB_multi_draw_indirect = !capabilities.OpenGL43 && capabilities.GL_ARB_multi_draw_indirect;
         this.GL_ARB_program_interface_query = !capabilities.OpenGL43 && capabilities.GL_ARB_program_interface_query;
         this.GL_ARB_shader_storage_buffer_object = !capabilities.OpenGL43 && capabilities.GL_ARB_shader_storage_buffer_object;
@@ -1571,6 +1574,32 @@ public final class GLAPILWJGL3 extends OpenGL {
             super.debugCheckError();
         } else {
             throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_compute_shader));
+        }
+    }
+
+    @Override
+    public void glInvalidateBufferData(int buffer) {
+        if (this.OpenGL43) {
+            GL43C.glInvalidateBufferData(buffer);
+            super.debugCheckError();
+        } else if (this.GL_ARB_invalidate_subdata) {
+            ARBInvalidateSubdata.glInvalidateBufferData(buffer);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_invalidate_subdata));
+        }
+    }
+
+    @Override
+    public void glInvalidateBufferSubData(int buffer, long offset, long length) {
+        if (this.OpenGL43) {
+            GL43C.glInvalidateBufferSubData(buffer, offset, length);
+            super.debugCheckError();
+        } else if (this.GL_ARB_invalidate_subdata) {
+            ARBInvalidateSubdata.glInvalidateBufferSubData(buffer, offset, length);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_invalidate_subdata));
         }
     }
 

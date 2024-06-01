@@ -1258,6 +1258,20 @@ public abstract class OpenGL {
     public abstract void glDispatchCompute(int num_groups_x, int num_groups_y, int num_groups_z);
 
     /**
+     * @apiNote requires {@link GLExtension#GL_ARB_invalidate_subdata GL_ARB_invalidate_subdata}
+     * @since OpenGL 4.3
+     */
+    @GLRequires(GLExtension.GL_ARB_invalidate_subdata)
+    public abstract void glInvalidateBufferData(int buffer);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_invalidate_subdata GL_ARB_invalidate_subdata}
+     * @since OpenGL 4.3
+     */
+    @GLRequires(GLExtension.GL_ARB_invalidate_subdata)
+    public abstract void glInvalidateBufferSubData(int buffer, long offset, long length);
+
+    /**
      * @apiNote requires {@link GLExtension#GL_ARB_multi_draw_indirect GL_ARB_multi_draw_indirect}
      * @since OpenGL 4.3
      */
