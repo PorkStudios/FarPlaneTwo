@@ -26,6 +26,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.common.GlobalProperties;
 import net.daporkchop.fp2.gl.compute.ComputeWorkGroupCount;
 import net.daporkchop.fp2.gl.compute.ComputeWorkGroupSize;
+import net.daporkchop.fp2.gl.util.GLRequires;
 import net.daporkchop.fp2.gl.util.debug.GLDebugOutputCallback;
 
 import java.lang.invoke.MethodHandles;
@@ -244,100 +245,242 @@ public abstract class OpenGL {
     //
     //
 
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract void glEnable(int cap);
 
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract void glDisable(int cap);
 
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract boolean glIsEnabled(int cap);
 
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract int glGetError();
 
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract void glFlush();
 
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract boolean glGetBoolean(int pname);
 
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract void glGetBoolean(int pname, long data);
 
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract int glGetInteger(int pname);
 
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract void glGetInteger(int pname, long data);
 
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract float glGetFloat(int pname);
 
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract void glGetFloat(int pname, long data);
 
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract double glGetDouble(int pname);
 
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract void glGetDouble(int pname, long data);
 
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract String glGetString(int pname);
 
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract void glDrawArrays(int mode, int first, int count);
 
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract void glDrawElements(int mode, int count, int type, long indices);
 
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract void glDrawElements(int mode, int count, int type, @NonNull ByteBuffer indices);
 
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract int glGenTexture();
 
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract void glDeleteTexture(int texture);
 
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract void glBindTexture(int target, int texture);
 
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract void glTexParameter(int target, int pname, int param);
 
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract void glTexParameter(int target, int pname, float param);
 
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract int glGetTexParameterInteger(int target, int pname);
 
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract float glGetTexParameterFloat(int target, int pname);
 
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract void glTexImage1D(int target, int level, int internalformat, int width, int format, int type, long data);
 
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract void glTexImage1D(int target, int level, int internalformat, int width, int format, int type, @NonNull ByteBuffer data);
 
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract void glTexImage2D(int target, int level, int internalformat, int width, int height, int format, int type, long data);
 
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract void glTexImage2D(int target, int level, int internalformat, int width, int height, int format, int type, @NonNull ByteBuffer data);
 
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract void glTexSubImage1D(int target, int level, int xoffset, int width, int format, int type, long data);
 
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract void glTexSubImage1D(int target, int level, int xoffset, int width, int format, int type, @NonNull ByteBuffer data);
 
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract void glTexSubImage2D(int target, int level, int xoffset, int yoffset, int width, int height, int format, int type, long data);
 
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract void glTexSubImage2D(int target, int level, int xoffset, int yoffset, int width, int height, int format, int type, @NonNull ByteBuffer data);
 
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract void glClear(int mask);
 
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract void glClearColor(float red, float green, float blue, float alpha);
 
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract void glColorMask(boolean red, boolean green, boolean blue, boolean alpha);
 
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract void glClearDepth(double depth);
 
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract void glDepthFunc(int func);
 
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract void glDepthMask(boolean flag);
 
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract void glClearStencil(int s);
 
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract void glStencilFunc(int func, int ref, int mask);
 
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract void glStencilMask(int mask);
 
+    /**
+     * @since OpenGL 1.1
+     */
     public abstract void glStencilOp(int sfail, int dpfail, int dppass);
 
-    //GL_ARB_compatibility
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_compatibility GL_ARB_compatibility}
+     * @since OpenGL 1.1
+     */
+    @GLRequires(GLExtension.GL_ARB_compatibility)
     public abstract void glPushClientAttrib(int mask);
 
-    //GL_ARB_compatibility
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_compatibility GL_ARB_compatibility}
+     * @since OpenGL 1.1
+     */
+    @GLRequires(GLExtension.GL_ARB_compatibility)
     public abstract void glPopClientAttrib();
 
-    //GL_ARB_compatibility
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_compatibility GL_ARB_compatibility}
+     * @since OpenGL 1.1
+     */
+    @GLRequires(GLExtension.GL_ARB_compatibility)
     public abstract void glPushAttrib(int mask);
 
-    //GL_ARB_compatibility
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_compatibility GL_ARB_compatibility}
+     * @since OpenGL 1.1
+     */
+    @GLRequires(GLExtension.GL_ARB_compatibility)
     public abstract void glPopAttrib();
 
     //
@@ -346,12 +489,24 @@ public abstract class OpenGL {
     //
     //
 
+    /**
+     * @since OpenGL 1.2
+     */
     public abstract void glTexImage3D(int target, int level, int internalformat, int width, int height, int depth, int format, int type, long data);
 
+    /**
+     * @since OpenGL 1.2
+     */
     public abstract void glTexImage3D(int target, int level, int internalformat, int width, int height, int depth, int format, int type, @NonNull ByteBuffer data);
 
+    /**
+     * @since OpenGL 1.2
+     */
     public abstract void glTexSubImage3D(int target, int level, int xoffset, int yoffset, int zoffset, int width, int height, int depth, int format, int type, long data);
 
+    /**
+     * @since OpenGL 1.2
+     */
     public abstract void glTexSubImage3D(int target, int level, int xoffset, int yoffset, int zoffset, int width, int height, int depth, int format, int type, @NonNull ByteBuffer data);
 
     //
@@ -360,6 +515,9 @@ public abstract class OpenGL {
     //
     //
 
+    /**
+     * @since OpenGL 1.3
+     */
     public abstract void glActiveTexture(int texture);
 
     //
@@ -368,12 +526,24 @@ public abstract class OpenGL {
     //
     //
 
+    /**
+     * @since OpenGL 1.4
+     */
     public abstract void glMultiDrawArrays(int mode, long first, long count, int drawcount);
 
+    /**
+     * @since OpenGL 1.4
+     */
     public abstract void glMultiDrawElements(int mode, long count, int type, long indices, int drawcount);
 
+    /**
+     * @since OpenGL 1.4
+     */
     public abstract void glBlendColor(float red, float green, float blue, float alpha);
 
+    /**
+     * @since OpenGL 1.4
+     */
     public abstract void glBlendFuncSeparate(int sfactorRGB, int dfactorRGB, int sfactorAlpha, int dfactorAlpha);
 
     //
@@ -382,30 +552,69 @@ public abstract class OpenGL {
     //
     //
 
+    /**
+     * @since OpenGL 1.5
+     */
     public abstract int glGenBuffer();
 
+    /**
+     * @since OpenGL 1.5
+     */
     public abstract void glDeleteBuffer(int buffer);
 
+    /**
+     * @since OpenGL 1.5
+     */
     public abstract void glBindBuffer(int target, int buffer);
 
+    /**
+     * @since OpenGL 1.5
+     */
     public abstract void glBufferData(int target, long data_size, long data, int usage);
 
+    /**
+     * @since OpenGL 1.5
+     */
     public abstract void glBufferData(int target, @NonNull ByteBuffer data, int usage);
 
+    /**
+     * @since OpenGL 1.5
+     */
     public abstract void glBufferSubData(int target, long offset, long data_size, long data);
 
+    /**
+     * @since OpenGL 1.5
+     */
     public abstract void glBufferSubData(int target, long offset, @NonNull ByteBuffer data);
 
+    /**
+     * @since OpenGL 1.5
+     */
     public abstract void glGetBufferSubData(int target, long offset, long data_size, long data);
 
+    /**
+     * @since OpenGL 1.5
+     */
     public abstract void glGetBufferSubData(int target, long offset, @NonNull ByteBuffer data);
 
+    /**
+     * @since OpenGL 1.5
+     */
     public abstract int glGetBufferParameteri(int target, int pname);
 
+    /**
+     * @since OpenGL 1.5
+     */
     public abstract long glMapBuffer(int target, int access);
 
+    /**
+     * @since OpenGL 1.5
+     */
     public abstract ByteBuffer glMapBuffer(int target, int access, long length, ByteBuffer oldBuffer);
 
+    /**
+     * @since OpenGL 1.5
+     */
     public abstract boolean glUnmapBuffer(int target);
 
     //
@@ -414,80 +623,194 @@ public abstract class OpenGL {
     //
     //
 
+    /**
+     * @since OpenGL 2.0
+     */
     public abstract int glCreateShader(int type);
 
+    /**
+     * @since OpenGL 2.0
+     */
     public abstract void glDeleteShader(int shader);
 
+    /**
+     * @since OpenGL 2.0
+     */
     public abstract void glShaderSource(int shader, @NonNull CharSequence... source);
 
+    /**
+     * @since OpenGL 2.0
+     */
     public abstract void glCompileShader(int shader);
 
+    /**
+     * @since OpenGL 2.0
+     */
     public abstract int glGetShaderi(int shader, int pname);
 
+    /**
+     * @since OpenGL 2.0
+     */
     public abstract String glGetShaderInfoLog(int shader);
 
+    /**
+     * @since OpenGL 2.0
+     */
     public abstract int glCreateProgram();
 
+    /**
+     * @since OpenGL 2.0
+     */
     public abstract void glDeleteProgram(int program);
 
+    /**
+     * @since OpenGL 2.0
+     */
     public abstract void glAttachShader(int program, int shader);
 
+    /**
+     * @since OpenGL 2.0
+     */
     public abstract void glDetachShader(int program, int shader);
 
+    /**
+     * @since OpenGL 2.0
+     */
     public abstract void glLinkProgram(int program);
 
+    /**
+     * @since OpenGL 2.0
+     */
     public abstract int glGetProgrami(int program, int pname);
 
+    /**
+     * @since OpenGL 2.0
+     */
     public abstract void glGetProgramiv(int program, int pname, IntBuffer params);
 
+    /**
+     * @since OpenGL 2.0
+     */
     public abstract int[] glGetProgramiv(int program, int pname, int count);
 
+    /**
+     * @since OpenGL 2.0
+     */
     public abstract String glGetProgramInfoLog(int program);
 
+    /**
+     * @since OpenGL 2.0
+     */
     public abstract void glUseProgram(int program);
 
+    /**
+     * @since OpenGL 2.0
+     */
     public abstract void glEnableVertexAttribArray(int index);
 
+    /**
+     * @since OpenGL 2.0
+     */
     public abstract void glDisableVertexAttribArray(int index);
 
+    /**
+     * @since OpenGL 2.0
+     */
     public abstract void glVertexAttribPointer(int index, int size, int type, boolean normalized, int stride, long pointer);
 
+    /**
+     * @since OpenGL 2.0
+     */
     public abstract void glBindAttribLocation(int program, int index, @NonNull CharSequence name);
 
+    /**
+     * @since OpenGL 2.0
+     */
     public abstract int glGetUniformLocation(int program, @NonNull CharSequence name);
 
+    /**
+     * @since OpenGL 2.0
+     */
     public abstract void glUniform(int location, int v0);
 
+    /**
+     * @since OpenGL 2.0
+     */
     public abstract void glUniform(int location, int v0, int v1);
 
+    /**
+     * @since OpenGL 2.0
+     */
     public abstract void glUniform(int location, int v0, int v1, int v2);
 
+    /**
+     * @since OpenGL 2.0
+     */
     public abstract void glUniform(int location, int v0, int v1, int v2, int v3);
 
+    /**
+     * @since OpenGL 2.0
+     */
     public abstract void glUniform(int location, float v0);
 
+    /**
+     * @since OpenGL 2.0
+     */
     public abstract void glUniform(int location, float v0, float v1);
 
+    /**
+     * @since OpenGL 2.0
+     */
     public abstract void glUniform(int location, float v0, float v1, float v2);
 
+    /**
+     * @since OpenGL 2.0
+     */
     public abstract void glUniform(int location, float v0, float v1, float v2, float v3);
 
+    /**
+     * @since OpenGL 2.0
+     */
     public abstract void glUniform1(int location, IntBuffer value);
 
+    /**
+     * @since OpenGL 2.0
+     */
     public abstract void glUniform2(int location, IntBuffer value);
 
+    /**
+     * @since OpenGL 2.0
+     */
     public abstract void glUniform3(int location, IntBuffer value);
 
+    /**
+     * @since OpenGL 2.0
+     */
     public abstract void glUniform4(int location, IntBuffer value);
 
+    /**
+     * @since OpenGL 2.0
+     */
     public abstract void glUniform1(int location, FloatBuffer value);
 
+    /**
+     * @since OpenGL 2.0
+     */
     public abstract void glUniform2(int location, FloatBuffer value);
 
+    /**
+     * @since OpenGL 2.0
+     */
     public abstract void glUniform3(int location, FloatBuffer value);
 
+    /**
+     * @since OpenGL 2.0
+     */
     public abstract void glUniform4(int location, FloatBuffer value);
 
+    /**
+     * @since OpenGL 2.0
+     */
     public abstract void glBlendEquationSeparate(int modeRGB, int modeAlpha);
 
     //
@@ -496,34 +819,79 @@ public abstract class OpenGL {
     //
     //
 
+    /**
+     * @since OpenGL 3.0
+     */
     public abstract int glGetInteger(int pname, int idx);
 
+    /**
+     * @since OpenGL 3.0
+     */
     public abstract String glGetString(int pname, int idx);
 
+    /**
+     * @since OpenGL 3.0
+     */
     public abstract int glGenVertexArray();
 
+    /**
+     * @since OpenGL 3.0
+     */
     public abstract void glDeleteVertexArray(int array);
 
+    /**
+     * @since OpenGL 3.0
+     */
     public abstract void glBindVertexArray(int array);
 
+    /**
+     * @since OpenGL 3.0
+     */
     public abstract void glVertexAttribIPointer(int index, int size, int type, int stride, long pointer);
 
+    /**
+     * @since OpenGL 3.0
+     */
     public abstract void glBindFragDataLocation(int program, int colorNumber, @NonNull CharSequence name);
 
+    /**
+     * @since OpenGL 3.0
+     */
     public abstract void glBindBufferBase(int target, int index, int buffer);
 
+    /**
+     * @since OpenGL 3.0
+     */
     public abstract void glBindBufferRange(int target, int index, int buffer, long offset, long size);
 
+    /**
+     * @since OpenGL 3.0
+     */
     public abstract void glBeginTransformFeedback(int primitiveMode);
 
+    /**
+     * @since OpenGL 3.0
+     */
     public abstract void glEndTransformFeedback();
 
+    /**
+     * @since OpenGL 3.0
+     */
     public abstract void glTransformFeedbackVaryings(int program, @NonNull CharSequence[] varyings, int bufferMode);
 
+    /**
+     * @since OpenGL 3.0
+     */
     public abstract long glMapBufferRange(int target, long offset, long length, int access);
 
+    /**
+     * @since OpenGL 3.0
+     */
     public abstract ByteBuffer glMapBufferRange(int target, long offset, long length, int access, ByteBuffer oldBuffer);
 
+    /**
+     * @since OpenGL 3.0
+     */
     public abstract void glFlushMappedBufferRange(int target, long offset, long length);
 
     //
@@ -532,33 +900,69 @@ public abstract class OpenGL {
     //
     //
 
-    //GL_ARB_copy_buffer
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_copy_buffer GL_ARB_copy_buffer}
+     * @since OpenGL 3.1
+     */
+    @GLRequires(GLExtension.GL_ARB_copy_buffer)
     public abstract void glCopyBufferSubData(int readTarget, int writeTarget, long readOffset, long writeOffset, long size);
 
-    //GL_ARB_draw_instanced
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_draw_instanced GL_ARB_draw_instanced}
+     * @since OpenGL 3.1
+     */
+    @GLRequires(GLExtension.GL_ARB_draw_instanced)
     public abstract void glDrawArraysInstanced(int mode, int first, int count, int instancecount);
 
-    //GL_ARB_draw_instanced
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_draw_instanced GL_ARB_draw_instanced}
+     * @since OpenGL 3.1
+     */
+    @GLRequires(GLExtension.GL_ARB_draw_instanced)
     public abstract void glDrawElementsInstanced(int mode, int count, int type, long indices, int instancecount);
 
-    //GL_ARB_texture_buffer_object
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_texture_buffer_object GL_ARB_texture_buffer_object}
+     * @since OpenGL 3.1
+     */
+    @GLRequires(GLExtension.GL_ARB_texture_buffer_object)
     public abstract void glTexBuffer(int target, int internalFormat, int buffer);
 
-    //GL_ARB_uniform_buffer_object
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_uniform_buffer_object GL_ARB_uniform_buffer_object}
+     * @since OpenGL 3.1
+     */
+    @GLRequires(GLExtension.GL_ARB_uniform_buffer_object)
     public abstract int glGetUniformBlockIndex(int program, @NonNull CharSequence uniformBlockName);
 
-    //GL_ARB_uniform_buffer_object
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_uniform_buffer_object GL_ARB_uniform_buffer_object}
+     * @since OpenGL 3.1
+     */
+    @GLRequires(GLExtension.GL_ARB_uniform_buffer_object)
     public abstract void glUniformBlockBinding(int program, int uniformBlockIndex, int uniformBlockBinding);
 
-    //GL_ARB_uniform_buffer_object
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_uniform_buffer_object GL_ARB_uniform_buffer_object}
+     * @since OpenGL 3.1
+     */
+    @GLRequires(GLExtension.GL_ARB_uniform_buffer_object)
     public abstract int[] glGetUniformIndices(int program, CharSequence[] uniformNames);
 
-    //GL_ARB_uniform_buffer_object
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_uniform_buffer_object GL_ARB_uniform_buffer_object}
+     * @since OpenGL 3.1
+     */
+    @GLRequires(GLExtension.GL_ARB_uniform_buffer_object)
     public final int glGetUniformIndices(int program, CharSequence uniformName) {
         return this.glGetUniformIndices(program, new CharSequence[]{ uniformName })[0];
     }
 
-    //GL_ARB_uniform_buffer_object
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_uniform_buffer_object GL_ARB_uniform_buffer_object}
+     * @since OpenGL 3.1
+     */
+    @GLRequires(GLExtension.GL_ARB_uniform_buffer_object)
     public abstract int glGetActiveUniformsi(int program, int uniformIndex, int pname);
 
     //
@@ -567,22 +971,46 @@ public abstract class OpenGL {
     //
     //
 
-    //GL_ARB_draw_elements_base_vertex
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_draw_elements_base_vertex GL_ARB_draw_elements_base_vertex}
+     * @since OpenGL 3.2
+     */
+    @GLRequires(GLExtension.GL_ARB_draw_elements_base_vertex)
     public abstract void glDrawElementsBaseVertex(int mode, int count, int type, long indices, int basevertex);
 
-    //GL_ARB_draw_elements_base_vertex
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_draw_elements_base_vertex GL_ARB_draw_elements_base_vertex}
+     * @since OpenGL 3.2
+     */
+    @GLRequires(GLExtension.GL_ARB_draw_elements_base_vertex)
     public abstract void glMultiDrawElementsBaseVertex(int mode, long count, int type, long indices, int drawcount, long basevertex);
 
-    //GL_ARB_sync
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_sync GL_ARB_sync}
+     * @since OpenGL 3.2
+     */
+    @GLRequires(GLExtension.GL_ARB_sync)
     public abstract long glFenceSync(int condition, int flags);
 
-    //GL_ARB_sync
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_sync GL_ARB_sync}
+     * @since OpenGL 3.2
+     */
+    @GLRequires(GLExtension.GL_ARB_sync)
     public abstract int glClientWaitSync(long sync, int flags, long timeout);
 
-    //GL_ARB_sync
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_sync GL_ARB_sync}
+     * @since OpenGL 3.2
+     */
+    @GLRequires(GLExtension.GL_ARB_sync)
     public abstract int glGetSync(long sync, int pname);
 
-    //GL_ARB_sync
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_sync GL_ARB_sync}
+     * @since OpenGL 3.2
+     */
+    @GLRequires(GLExtension.GL_ARB_sync)
     public abstract void glDeleteSync(long sync);
 
     //
@@ -591,22 +1019,46 @@ public abstract class OpenGL {
     //
     //
 
-    //GL_ARB_instanced_arrays
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_instanced_arrays GL_ARB_instanced_arrays}
+     * @since OpenGL 3.3
+     */
+    @GLRequires(GLExtension.GL_ARB_instanced_arrays)
     public abstract void glVertexAttribDivisor(int index, int divisor);
 
-    //GL_ARB_sampler_objects
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_sampler_objects GL_ARB_sampler_objects}
+     * @since OpenGL 3.3
+     */
+    @GLRequires(GLExtension.GL_ARB_sampler_objects)
     public abstract int glGenSampler();
 
-    //GL_ARB_sampler_objects
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_sampler_objects GL_ARB_sampler_objects}
+     * @since OpenGL 3.3
+     */
+    @GLRequires(GLExtension.GL_ARB_sampler_objects)
     public abstract void glDeleteSampler(int sampler);
 
-    //GL_ARB_sampler_objects
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_sampler_objects GL_ARB_sampler_objects}
+     * @since OpenGL 3.3
+     */
+    @GLRequires(GLExtension.GL_ARB_sampler_objects)
     public abstract void glBindSampler(int unit, int sampler);
 
-    //GL_ARB_sampler_objects
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_sampler_objects GL_ARB_sampler_objects}
+     * @since OpenGL 3.3
+     */
+    @GLRequires(GLExtension.GL_ARB_sampler_objects)
     public abstract void glSamplerParameter(int sampler, int pname, int param);
 
-    //GL_ARB_sampler_objects
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_sampler_objects GL_ARB_sampler_objects}
+     * @since OpenGL 3.3
+     */
+    @GLRequires(GLExtension.GL_ARB_sampler_objects)
     public abstract void glSamplerParameter(int sampler, int pname, float param);
 
     //
@@ -615,52 +1067,116 @@ public abstract class OpenGL {
     //
     //
 
-    //GL_ARB_separate_shader_objects
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_separate_shader_objects GL_ARB_separate_shader_objects}
+     * @since OpenGL 4.1
+     */
+    @GLRequires(GLExtension.GL_ARB_separate_shader_objects)
     public abstract void glProgramUniform(int program, int location, int v0);
 
-    //GL_ARB_separate_shader_objects
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_separate_shader_objects GL_ARB_separate_shader_objects}
+     * @since OpenGL 4.1
+     */
+    @GLRequires(GLExtension.GL_ARB_separate_shader_objects)
     public abstract void glProgramUniform(int program, int location, int v0, int v1);
 
-    //GL_ARB_separate_shader_objects
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_separate_shader_objects GL_ARB_separate_shader_objects}
+     * @since OpenGL 4.1
+     */
+    @GLRequires(GLExtension.GL_ARB_separate_shader_objects)
     public abstract void glProgramUniform(int program, int location, int v0, int v1, int v2);
 
-    //GL_ARB_separate_shader_objects
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_separate_shader_objects GL_ARB_separate_shader_objects}
+     * @since OpenGL 4.1
+     */
+    @GLRequires(GLExtension.GL_ARB_separate_shader_objects)
     public abstract void glProgramUniform(int program, int location, int v0, int v1, int v2, int v3);
 
-    //GL_ARB_separate_shader_objects
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_separate_shader_objects GL_ARB_separate_shader_objects}
+     * @since OpenGL 4.1
+     */
+    @GLRequires(GLExtension.GL_ARB_separate_shader_objects)
     public abstract void glProgramUniform(int program, int location, float v0);
 
-    //GL_ARB_separate_shader_objects
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_separate_shader_objects GL_ARB_separate_shader_objects}
+     * @since OpenGL 4.1
+     */
+    @GLRequires(GLExtension.GL_ARB_separate_shader_objects)
     public abstract void glProgramUniform(int program, int location, float v0, float v1);
 
-    //GL_ARB_separate_shader_objects
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_separate_shader_objects GL_ARB_separate_shader_objects}
+     * @since OpenGL 4.1
+     */
+    @GLRequires(GLExtension.GL_ARB_separate_shader_objects)
     public abstract void glProgramUniform(int program, int location, float v0, float v1, float v2);
 
-    //GL_ARB_separate_shader_objects
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_separate_shader_objects GL_ARB_separate_shader_objects}
+     * @since OpenGL 4.1
+     */
+    @GLRequires(GLExtension.GL_ARB_separate_shader_objects)
     public abstract void glProgramUniform(int program, int location, float v0, float v1, float v2, float v3);
 
-    //GL_ARB_separate_shader_objects
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_separate_shader_objects GL_ARB_separate_shader_objects}
+     * @since OpenGL 4.1
+     */
+    @GLRequires(GLExtension.GL_ARB_separate_shader_objects)
     public abstract void glProgramUniform1(int program, int location, IntBuffer value);
 
-    //GL_ARB_separate_shader_objects
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_separate_shader_objects GL_ARB_separate_shader_objects}
+     * @since OpenGL 4.1
+     */
+    @GLRequires(GLExtension.GL_ARB_separate_shader_objects)
     public abstract void glProgramUniform2(int program, int location, IntBuffer value);
 
-    //GL_ARB_separate_shader_objects
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_separate_shader_objects GL_ARB_separate_shader_objects}
+     * @since OpenGL 4.1
+     */
+    @GLRequires(GLExtension.GL_ARB_separate_shader_objects)
     public abstract void glProgramUniform3(int program, int location, IntBuffer value);
 
-    //GL_ARB_separate_shader_objects
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_separate_shader_objects GL_ARB_separate_shader_objects}
+     * @since OpenGL 4.1
+     */
+    @GLRequires(GLExtension.GL_ARB_separate_shader_objects)
     public abstract void glProgramUniform4(int program, int location, IntBuffer value);
 
-    //GL_ARB_separate_shader_objects
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_separate_shader_objects GL_ARB_separate_shader_objects}
+     * @since OpenGL 4.1
+     */
+    @GLRequires(GLExtension.GL_ARB_separate_shader_objects)
     public abstract void glProgramUniform1(int program, int location, FloatBuffer value);
 
-    //GL_ARB_separate_shader_objects
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_separate_shader_objects GL_ARB_separate_shader_objects}
+     * @since OpenGL 4.1
+     */
+    @GLRequires(GLExtension.GL_ARB_separate_shader_objects)
     public abstract void glProgramUniform2(int program, int location, FloatBuffer value);
 
-    //GL_ARB_separate_shader_objects
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_separate_shader_objects GL_ARB_separate_shader_objects}
+     * @since OpenGL 4.1
+     */
+    @GLRequires(GLExtension.GL_ARB_separate_shader_objects)
     public abstract void glProgramUniform3(int program, int location, FloatBuffer value);
 
-    //GL_ARB_separate_shader_objects
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_separate_shader_objects GL_ARB_separate_shader_objects}
+     * @since OpenGL 4.1
+     */
+    @GLRequires(GLExtension.GL_ARB_separate_shader_objects)
     public abstract void glProgramUniform4(int program, int location, FloatBuffer value);
 
     //
@@ -669,13 +1185,25 @@ public abstract class OpenGL {
     //
     //
 
-    //GL_ARB_base_instance
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_base_instance GL_ARB_base_instance}
+     * @since OpenGL 4.2
+     */
+    @GLRequires(GLExtension.GL_ARB_base_instance)
     public abstract void glDrawArraysInstancedBaseInstance(int mode, int first, int count, int instancecount, int baseinstance);
 
-    //GL_ARB_base_instance
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_base_instance GL_ARB_base_instance}
+     * @since OpenGL 4.2
+     */
+    @GLRequires(GLExtension.GL_ARB_base_instance)
     public abstract void glDrawElementsInstancedBaseVertexBaseInstance(int mode, int count, int type, long indices, int instancecount, int basevertex, int baseinstance);
 
-    //GL_ARB_shader_image_load_store
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_shader_image_load_store GL_ARB_shader_image_load_store}
+     * @since OpenGL 4.2
+     */
+    @GLRequires(GLExtension.GL_ARB_shader_image_load_store)
     public abstract void glMemoryBarrier(int barriers);
 
     //
@@ -684,43 +1212,95 @@ public abstract class OpenGL {
     //
     //
 
-    //GL_ARB_compute_shader
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_compute_shader GL_ARB_compute_shader}
+     * @since OpenGL 4.3
+     */
+    @GLRequires(GLExtension.GL_ARB_compute_shader)
     public abstract void glDispatchCompute(int num_groups_x, int num_groups_y, int num_groups_z);
 
-    //GL_ARB_multi_draw_indirect
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_multi_draw_indirect GL_ARB_multi_draw_indirect}
+     * @since OpenGL 4.3
+     */
+    @GLRequires(GLExtension.GL_ARB_multi_draw_indirect)
     public abstract void glMultiDrawArraysIndirect(int mode, long indirect, int primcount, int stride);
 
-    //GL_ARB_multi_draw_indirect
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_multi_draw_indirect GL_ARB_multi_draw_indirect}
+     * @since OpenGL 4.3
+     */
+    @GLRequires(GLExtension.GL_ARB_multi_draw_indirect)
     public abstract void glMultiDrawElementsIndirect(int mode, int type, long indirect, int primcount, int stride);
 
-    //GL_ARB_program_interface_query
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_program_interface_query GL_ARB_program_interface_query}
+     * @since OpenGL 4.3
+     */
+    @GLRequires(GLExtension.GL_ARB_program_interface_query)
     public abstract int glGetProgramResourceIndex(int program, int programInterface, @NonNull CharSequence name);
 
-    //GL_ARB_shader_storage_buffer_object
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_shader_storage_buffer_object GL_ARB_shader_storage_buffer_object}
+     * @since OpenGL 4.3
+     */
+    @GLRequires(GLExtension.GL_ARB_shader_storage_buffer_object)
     public abstract void glShaderStorageBlockBinding(int program, int storageBlockIndex, int storageBlockBinding);
 
-    //GL_KHR_debug
+    /**
+     * @apiNote requires {@link GLExtension#GL_KHR_debug GL_KHR_debug}
+     * @since OpenGL 4.3
+     */
+    @GLRequires(GLExtension.GL_KHR_debug)
     public abstract void glObjectLabel(int identifier, int name, @NonNull CharSequence label);
 
-    //GL_KHR_debug
+    /**
+     * @apiNote requires {@link GLExtension#GL_KHR_debug GL_KHR_debug}
+     * @since OpenGL 4.3
+     */
+    @GLRequires(GLExtension.GL_KHR_debug)
     public abstract void glObjectPtrLabel(long ptr, @NonNull CharSequence label);
 
-    //GL_KHR_debug
+    /**
+     * @apiNote requires {@link GLExtension#GL_KHR_debug GL_KHR_debug}
+     * @since OpenGL 4.3
+     */
+    @GLRequires(GLExtension.GL_KHR_debug)
     public abstract String glGetObjectLabel(int identifier, int name);
 
-    //GL_KHR_debug
+    /**
+     * @apiNote requires {@link GLExtension#GL_KHR_debug GL_KHR_debug}
+     * @since OpenGL 4.3
+     */
+    @GLRequires(GLExtension.GL_KHR_debug)
     public abstract String glGetObjectPtrLabel(long ptr);
 
-    //GL_KHR_debug
+    /**
+     * @apiNote requires {@link GLExtension#GL_KHR_debug GL_KHR_debug}
+     * @since OpenGL 4.3
+     */
+    @GLRequires(GLExtension.GL_KHR_debug)
     public abstract void glDebugMessageControl(int source, int type, int severity, IntBuffer ids, boolean enabled);
 
-    //GL_KHR_debug
+    /**
+     * @apiNote requires {@link GLExtension#GL_KHR_debug GL_KHR_debug}
+     * @since OpenGL 4.3
+     */
+    @GLRequires(GLExtension.GL_KHR_debug)
     public abstract void glDebugMessageControl(int source, int type, int severity, int[] ids, boolean enabled);
 
-    //GL_KHR_debug
+    /**
+     * @apiNote requires {@link GLExtension#GL_KHR_debug GL_KHR_debug}
+     * @since OpenGL 4.3
+     */
+    @GLRequires(GLExtension.GL_KHR_debug)
     public abstract void glDebugMessageInsert(int source, int type, int id, int severity, @NonNull CharSequence msg);
 
-    //GL_KHR_debug
+    /**
+     * @apiNote requires {@link GLExtension#GL_KHR_debug GL_KHR_debug}
+     * @since OpenGL 4.3
+     */
+    @GLRequires(GLExtension.GL_KHR_debug)
     public abstract void glDebugMessageCallback(GLDebugOutputCallback callback);
 
     //
@@ -729,10 +1309,18 @@ public abstract class OpenGL {
     //
     //
 
-    //GL_ARB_buffer_storage
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_buffer_storage GL_ARB_buffer_storage}
+     * @since OpenGL 4.4
+     */
+    @GLRequires(GLExtension.GL_ARB_buffer_storage)
     public abstract void glBufferStorage(int target, long data_size, long data, int flags);
 
-    //GL_ARB_buffer_storage
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_buffer_storage GL_ARB_buffer_storage}
+     * @since OpenGL 4.4
+     */
+    @GLRequires(GLExtension.GL_ARB_buffer_storage)
     public abstract void glBufferStorage(int target, @NonNull ByteBuffer data, int flags);
 
     //
@@ -741,88 +1329,200 @@ public abstract class OpenGL {
     //
     //
 
-    //GL_ARB_direct_state_access
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
     public abstract int glCreateBuffer();
 
-    //GL_ARB_direct_state_access
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
     public abstract void glNamedBufferData(int buffer, long data_size, long data, int usage);
 
-    //GL_ARB_direct_state_access
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
     public abstract void glNamedBufferData(int buffer, @NonNull ByteBuffer data, int usage);
 
-    //GL_ARB_buffer_storage
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_buffer_storage GL_ARB_buffer_storage}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_buffer_storage)
     public abstract void glNamedBufferStorage(int buffer, long data_size, long data, int flags);
 
-    //GL_ARB_buffer_storage
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_buffer_storage GL_ARB_buffer_storage}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_buffer_storage)
     public abstract void glNamedBufferStorage(int buffer, @NonNull ByteBuffer data, int flags);
 
-    //GL_ARB_direct_state_access
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
     public abstract void glNamedBufferSubData(int buffer, long offset, long data_size, long data);
 
-    //GL_ARB_direct_state_access
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
     public abstract void glNamedBufferSubData(int buffer, long offset, @NonNull ByteBuffer data);
 
-    //GL_ARB_direct_state_access
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
     public abstract void glGetNamedBufferSubData(int buffer, long offset, long data_size, long data);
 
-    //GL_ARB_direct_state_access
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
     public abstract void glGetNamedBufferSubData(int buffer, long offset, @NonNull ByteBuffer data);
 
-    //GL_ARB_direct_state_access
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
     public abstract int glGetNamedBufferParameteri(int buffer, int pname);
 
-    //GL_ARB_direct_state_access
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
     public abstract long glMapNamedBuffer(int buffer, int access);
 
-    //GL_ARB_direct_state_access
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
     public abstract ByteBuffer glMapNamedBuffer(int buffer, int access, long length, ByteBuffer oldBuffer);
 
-    //GL_ARB_direct_state_access
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
     public abstract long glMapNamedBufferRange(int buffer, long offset, long size, int access);
 
-    //GL_ARB_direct_state_access
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
     public abstract ByteBuffer glMapNamedBufferRange(int buffer, long offset, long size, int access, ByteBuffer oldBuffer);
 
-    //GL_ARB_direct_state_access
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
     public abstract void glFlushMappedNamedBufferRange(int buffer, long offset, long length);
 
-    //GL_ARB_direct_state_access
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
     public abstract boolean glUnmapNamedBuffer(int buffer);
 
-    //GL_ARB_direct_state_access
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
     public abstract void glCopyNamedBufferSubData(int readBuffer, int writeBuffer, long readOffset, long writeOffset, long size);
 
-    //GL_ARB_direct_state_access
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
     public abstract int glCreateVertexArray();
 
-    //GL_ARB_direct_state_access
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
     public abstract void glVertexArrayElementBuffer(int vaobj, int buffer);
 
-    //GL_ARB_direct_state_access
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
     public abstract void glEnableVertexArrayAttrib(int vaobj, int index);
 
-    //GL_ARB_direct_state_access
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
     public abstract void glDisableVertexArrayAttrib(int vaobj, int index);
 
-    //GL_ARB_direct_state_access
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
     public abstract void glVertexArrayAttribFormat(int vaobj, int attribindex, int size, int type, boolean normalized, int relativeoffset);
 
-    //GL_ARB_direct_state_access
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
     public abstract void glVertexArrayAttribIFormat(int vaobj, int attribindex, int size, int type, int relativeoffset);
 
-    //GL_ARB_direct_state_access
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
     public abstract void glVertexArrayBindingDivisor(int vaobj, int bindingindex, int divisor);
 
-    //GL_ARB_direct_state_access
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
     public abstract void glVertexArrayAttribBinding(int vaobj, int attribindex, int bindingindex);
 
-    //GL_ARB_direct_state_access
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
     public abstract void glVertexArrayVertexBuffer(int vaobj, int bindingindex, int buffer, long offset, int stride);
 
-    //GL_ARB_direct_state_access
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
     public abstract void glVertexArrayVertexBuffers(int vaobj, int first, int count, int[] buffers, long[] offsets, int[] strides);
 
-    //GL_ARB_direct_state_access
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_direct_state_access)
     public abstract void glVertexArrayVertexBuffers(int vaobj, int first, int count, long buffers, long offsets, long strides);
 
     //
@@ -831,22 +1531,40 @@ public abstract class OpenGL {
     //
     //
 
-    //GL_ARB_debug_output
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_debug_output GL_ARB_debug_output}
+     */
+    @GLRequires(GLExtension.GL_ARB_debug_output)
     public abstract void glDebugMessageControlARB(int source, int type, int severity, IntBuffer ids, boolean enabled);
 
-    //GL_ARB_debug_output
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_debug_output GL_ARB_debug_output}
+     */
+    @GLRequires(GLExtension.GL_ARB_debug_output)
     public abstract void glDebugMessageControlARB(int source, int type, int severity, int[] ids, boolean enabled);
 
-    //GL_ARB_debug_output
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_debug_output GL_ARB_debug_output}
+     */
+    @GLRequires(GLExtension.GL_ARB_debug_output)
     public abstract void glDebugMessageInsertARB(int source, int type, int id, int severity, @NonNull CharSequence msg);
 
-    //GL_ARB_debug_output
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_debug_output GL_ARB_debug_output}
+     */
+    @GLRequires(GLExtension.GL_ARB_debug_output)
     public abstract void glDebugMessageCallbackARB(GLDebugOutputCallback callback);
 
-    //GL_ARB_sparse_buffer
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_sparse_buffer GL_ARB_sparse_buffer}
+     */
+    @GLRequires(GLExtension.GL_ARB_sparse_buffer)
     public abstract void glBufferPageCommitmentARB(int target, long offset, long size, boolean commit);
 
-    //GL_ARB_direct_state_access & GL_ARB_sparse_buffer
+    /**
+     * @apiNote requires both {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access} and {@link GLExtension#GL_ARB_sparse_buffer GL_ARB_sparse_buffer}
+     */
+    @GLRequires({ GLExtension.GL_ARB_direct_state_access, GLExtension.GL_ARB_sparse_buffer })
     public abstract void glNamedBufferPageCommitmentARB(int buffer, long offset, long size, boolean commit);
 
     /**
@@ -857,26 +1575,36 @@ public abstract class OpenGL {
     @Getter
     public static final class Limits {
         private final int maxFragmentColors;
-        private final int maxShaderStorageBuffers;
         private final int maxTextureUnits;
         private final int maxVertexAttributes;
 
+        @GLRequires(GLExtension.GL_ARB_shader_storage_buffer_object)
+        private final int maxShaderStorageBuffers;
+
+        @GLRequires(GLExtension.GL_ARB_uniform_buffer_object)
         private final int maxUniformBuffers;
+        @GLRequires(GLExtension.GL_ARB_uniform_buffer_object)
         private final int maxUniformBlockSize;
 
+        @GLRequires(GLExtension.GL_ARB_compute_shader)
         private final int maxComputeWorkGroupInvocations;
+        @GLRequires(GLExtension.GL_ARB_compute_shader)
         private final ComputeWorkGroupSize maxComputeWorkGroupSize;
+        @GLRequires(GLExtension.GL_ARB_compute_shader)
         private final ComputeWorkGroupCount maxComputeWorkGroupCount;
 
+        @GLRequires(GLExtension.GL_KHR_debug)
         private final int maxLabelLength;
 
+        @GLRequires(GLExtension.GL_ARB_sparse_buffer)
         private final int sparseBufferPageSizeARB;
 
         Limits(OpenGL gl) {
             this.maxFragmentColors = gl.glGetInteger(GL_MAX_DRAW_BUFFERS);
-            this.maxShaderStorageBuffers = gl.supports(GLExtension.GL_ARB_shader_storage_buffer_object) ? gl.glGetInteger(GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS) : 0;
             this.maxTextureUnits = gl.glGetInteger(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS);
             this.maxVertexAttributes = gl.glGetInteger(GL_MAX_VERTEX_ATTRIBS);
+
+            this.maxShaderStorageBuffers = gl.supports(GLExtension.GL_ARB_shader_storage_buffer_object) ? gl.glGetInteger(GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS) : 0;
 
             if (gl.supports(GLExtension.GL_ARB_uniform_buffer_object)) {
                 this.maxUniformBuffers = gl.glGetInteger(GL_MAX_UNIFORM_BUFFER_BINDINGS);
