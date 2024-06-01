@@ -22,6 +22,7 @@ package net.daporkchop.fp2.gl.buffer.upload;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.common.util.DirectBufferHackery;
 import net.daporkchop.fp2.gl.GLExtension;
+import net.daporkchop.fp2.gl.GLExtensionSet;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.buffer.BufferAccess;
 import net.daporkchop.fp2.gl.buffer.GLBuffer;
@@ -38,9 +39,10 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 public final class UnsynchronizedMapBufferUploader extends BufferUploader {
-    public static boolean supported(OpenGL gl) {
-        return GLImmutableBuffer.supported(gl) && GLFenceSync.supported(gl) && gl.supports(GLExtension.GL_ARB_buffer_storage);
-    }
+    public static final GLExtensionSet REQUIRED_EXTENSIONS = GLExtensionSet.empty()
+            .addAll(GLImmutableBuffer.REQUIRED_EXTENSIONS)
+            .addAll(GLFenceSync.REQUIRED_EXTENSIONS)
+            .add(GLExtension.GL_ARB_buffer_storage);
 
     private final OpenGL gl;
 
@@ -59,7 +61,7 @@ public final class UnsynchronizedMapBufferUploader extends BufferUploader {
     private final BufferUploader fallback;
 
     public UnsynchronizedMapBufferUploader(OpenGL gl, int arenaSize) {
-        checkState(supported(gl), "not supported!");
+        gl.checkSupported(REQUIRED_EXTENSIONS);
         positive(arenaSize, "arenaSize");
 
         this.gl = gl;

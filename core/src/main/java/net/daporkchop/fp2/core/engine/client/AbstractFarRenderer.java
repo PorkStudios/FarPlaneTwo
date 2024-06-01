@@ -95,7 +95,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
         this.vertexFormat = (NewAttributeFormat<VertexType>) this.fp2.client().globalRenderer().voxelVertexAttributesFormat;
         this.indexFormat = this.fp2.client().globalRenderer().unsignedShortIndexFormat;
 
-        this.bufferUploader = UnsynchronizedMapBufferUploader.supported(this.gl) //TODO
+        this.bufferUploader = this.gl.supports(UnsynchronizedMapBufferUploader.REQUIRED_EXTENSIONS) //TODO
                 ? new UnsynchronizedMapBufferUploader(this.gl, 8 << 20) //8 MiB
                 : new ScratchCopyBufferUploader(this.gl);
 

@@ -292,4 +292,21 @@ public final class GLExtensionSet implements Iterable<GLExtension> {
             }
         }
     }
+
+    /**
+     * @return an array containing all the {@link GLExtension}s in this set
+     */
+    public GLExtension[] toArray() {
+        GLExtension[] result = new GLExtension[this.size()];
+        for (int resultIndex = 0, word = 0; word < WORDS; word++) {
+            long bits = this.getBitsWord(word);
+            while (bits != 0L) {
+                int index = Long.numberOfTrailingZeros(bits);
+                bits &= ~(1L << index);
+
+                result[resultIndex] = VALUES[word * Long.SIZE + index];
+            }
+        }
+        return result;
+    }
 }

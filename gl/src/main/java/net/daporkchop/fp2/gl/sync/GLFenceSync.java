@@ -20,11 +20,11 @@
 package net.daporkchop.fp2.gl.sync;
 
 import net.daporkchop.fp2.gl.GLExtension;
+import net.daporkchop.fp2.gl.GLExtensionSet;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.util.GLObject;
 
 import static net.daporkchop.fp2.gl.OpenGLConstants.*;
-import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * An OpenGL fence sync object.
@@ -32,12 +32,11 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 public final class GLFenceSync extends GLObject {
-    public static boolean supported(OpenGL gl) {
-        return gl.supports(GLExtension.GL_ARB_sync);
-    }
+    public static final GLExtensionSet REQUIRED_EXTENSIONS = GLExtensionSet.empty()
+            .add(GLExtension.GL_ARB_sync);
 
     public static GLFenceSync create(OpenGL gl) {
-        checkState(supported(gl), "ARB_sync isn't supported!");
+        gl.checkSupported(REQUIRED_EXTENSIONS);
         return new GLFenceSync(gl, gl.glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0));
     }
 

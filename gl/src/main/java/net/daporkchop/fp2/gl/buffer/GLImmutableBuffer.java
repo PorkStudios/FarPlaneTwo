@@ -21,6 +21,7 @@ package net.daporkchop.fp2.gl.buffer;
 
 import lombok.NonNull;
 import net.daporkchop.fp2.gl.GLExtension;
+import net.daporkchop.fp2.gl.GLExtensionSet;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
@@ -34,9 +35,8 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 public final class GLImmutableBuffer extends GLBuffer {
-    public static boolean supported(OpenGL gl) {
-        return gl.supports(GLExtension.GL_ARB_buffer_storage);
-    }
+    public static final GLExtensionSet REQUIRED_EXTENSIONS = GLExtensionSet.empty()
+            .add(GLExtension.GL_ARB_buffer_storage);
 
     public static GLImmutableBuffer create(OpenGL gl, @NonNull ByteBuffer buffer, int flags) {
         return create(gl, buffer.remaining(), PUnsafe.pork_directBufferAddress(buffer) + buffer.position(), flags);
@@ -47,7 +47,7 @@ public final class GLImmutableBuffer extends GLBuffer {
     }
 
     public static GLImmutableBuffer create(OpenGL gl, long size, long data, int flags) {
-        checkState(supported(gl), "ARB_buffer_storage isn't supported!");
+        gl.checkSupported(REQUIRED_EXTENSIONS);
         return new GLImmutableBuffer(gl, size, data, flags);
     }
 

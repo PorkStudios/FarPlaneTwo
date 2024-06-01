@@ -21,6 +21,7 @@ package net.daporkchop.fp2.gl.shader;
 
 import lombok.Getter;
 import net.daporkchop.fp2.gl.GLExtension;
+import net.daporkchop.fp2.gl.GLExtensionSet;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.compute.ComputeWorkGroupCount;
 import net.daporkchop.fp2.gl.compute.ComputeWorkGroupSize;
@@ -35,9 +36,8 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @Getter
 public final class ComputeShaderProgram extends ShaderProgram {
-    public static boolean supported(OpenGL gl) {
-        return gl.supports(GLExtension.GL_ARB_compute_shader);
-    }
+    public static final GLExtensionSet REQUIRED_EXTENSIONS = GLExtensionSet.empty()
+            .add(GLExtension.GL_ARB_compute_shader);
 
     public static Builder builder(OpenGL gl) {
         return new Builder(gl);
@@ -68,7 +68,7 @@ public final class ComputeShaderProgram extends ShaderProgram {
     public static final class Builder extends ShaderProgram.Builder<ComputeShaderProgram, Builder> {
         Builder(OpenGL gl) {
             super(gl, EnumSet.of(ShaderType.COMPUTE), EnumSet.of(ShaderType.COMPUTE));
-            checkState(supported(gl), gl);
+            gl.checkSupported(REQUIRED_EXTENSIONS);
         }
 
         public Builder computeShader(Shader computeShader) {

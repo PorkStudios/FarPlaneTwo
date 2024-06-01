@@ -77,6 +77,8 @@ public abstract class OpenGL {
     private final GLExtensionSet extensions; //a set of the supported extensions, excluding those whose features are already available because they're core features in the current OpenGL version
     private final boolean forwardCompatibility;
 
+    private final GLExtensionSet allExtensions; //a set of all the supported extensions
+
     private final Limits limits;
 
     protected OpenGL() {
@@ -98,6 +100,10 @@ public abstract class OpenGL {
 
             this.extensions = Stream.of(GLExtension.values())
                     .filter(extension -> !extension.core(this.version) && extensionNames.contains(extension.name()))
+                    .reduce(GLExtensionSet.empty(), extensionSetReducer, extensionSetMerger);
+
+            this.allExtensions = Stream.of(GLExtension.values())
+                    .filter(extension -> extension.core(this.version) || extensionNames.contains(extension.name()))
                     .reduce(GLExtensionSet.empty(), extensionSetReducer, extensionSetMerger);
         }
 
@@ -157,6 +163,28 @@ public abstract class OpenGL {
     }
 
     /**
+     * Checks if the features provided by the given OpenGL extensions are supported by the current context.
+     *
+     * @param extensions the OpenGL extensions
+     * @return {@code true} if the features provided by the given OpenGL extensions are supported by the current context
+     */
+    public final boolean supports(GLExtensionSet extensions) {
+        return this.allExtensions.containsAll(extensions);
+    }
+
+    /**
+     * Checks that the features provided by the given OpenGL extensions are supported by the current context.
+     *
+     * @param extensions the OpenGL extensions
+     * @throws UnsupportedOperationException if any of the given extensions is not supported
+     */
+    public final void checkSupported(GLExtensionSet extensions) {
+        if (!this.allExtensions.containsAll(extensions)) {
+            throw new UnsupportedOperationException(this.unsupportedMsg(extensions));
+        }
+    }
+
+    /**
      * Gets a message to be used as an exception message if a function from an extension which is not supported by the current context is called.
      *
      * @param extension the unsupported extension
@@ -175,6 +203,16 @@ public abstract class OpenGL {
      */
     protected final String unsupportedMsg(GLExtension extension0, GLExtension extension1) {
         return this.unsupportedMsg(Arrays.asList(extension0, extension1));
+    }
+
+    /**
+     * Gets a message to be used as an exception message if a function from a set of extensions which are not all supported by the current context is called.
+     *
+     * @param extensions the unsupported extensions
+     * @return a {@link String} to be used as an exception message
+     */
+    private String unsupportedMsg(GLExtensionSet extensions) {
+        return this.unsupportedMsg(Arrays.asList(extensions.toArray()));
     }
 
     /**
