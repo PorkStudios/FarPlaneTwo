@@ -33,7 +33,6 @@ import net.daporkchop.fp2.core.client.key.KeyCategory;
 import net.daporkchop.fp2.core.client.player.IFarPlayerClient;
 import net.daporkchop.fp2.core.client.render.GlobalRenderer;
 import net.daporkchop.fp2.core.client.shader.ReloadableShaderRegistry;
-import net.daporkchop.fp2.core.client.shader.ShaderMacros;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
 import net.daporkchop.fp2.core.util.threading.futureexecutor.FutureExecutor;
@@ -44,7 +43,6 @@ import net.daporkchop.lib.logging.Logger;
 import java.util.Optional;
 import java.util.function.Function;
 
-import static net.daporkchop.fp2.core.debug.FP2Debug.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -52,8 +50,6 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @Getter
 public abstract class FP2Client {
-    private final ShaderMacros.Mutable globalShaderMacros = new ShaderMacros.Mutable();
-
     private ReloadableShaderRegistry reloadableShaderRegistry;
 
     @Setter(AccessLevel.PROTECTED)
@@ -88,12 +84,7 @@ public abstract class FP2Client {
 
             this.gl = gl;
             this.globalRenderer = new GlobalRenderer(this.fp2(), gl);
-        }).join(); //TODO: don't block the thread???
-
-        //update debug color macros
-        if (FP2_DEBUG) {
-            this.updateDebugColorMacros(this.fp2().globalConfig());
-        }
+        }); //TODO: without joining this, the initial render state *could* end up being uninitialized by the time we try to access it
 
         //register self to listen for events
         this.fp2().eventBus().register(this);
@@ -145,25 +136,10 @@ public abstract class FP2Client {
     @Deprecated
     public abstract int vanillaRenderDistanceChunks();
 
-    /**
-     * Updates the debug color macros to reflect the state from the given {@link FP2Config} instance.
-     *
-     * @param config the current {@link FP2Config} instance
-     */
-    protected void updateDebugColorMacros(@NonNull FP2Config config) {
-        this.globalShaderMacros()
-                .define("FP2_DEBUG_COLORS_ENABLED", config.debug().debugColors().enable())
-                .define("FP2_DEBUG_COLORS_MODE", config.debug().debugColors().ordinal());
-    }
-
     //fp2 events
 
     @FEventHandler
     protected void onConfigChanged(FChangedEvent<FP2Config> event) {
-        if (FP2_DEBUG) {
-            this.updateDebugColorMacros(event.next());
-        }
-
         //send updated config to server
         this.currentPlayer().ifPresent(player -> player.send(CPacketClientConfig.create(event.next())));
     }

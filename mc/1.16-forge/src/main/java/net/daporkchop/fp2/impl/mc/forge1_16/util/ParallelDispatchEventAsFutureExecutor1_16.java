@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.impl.mc.forge1_16.util;
@@ -26,6 +25,7 @@ import net.daporkchop.fp2.core.util.threading.futureexecutor.FutureExecutor;
 import net.minecraftforge.fml.event.lifecycle.ParallelDispatchEvent;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
@@ -35,15 +35,26 @@ import java.util.function.Supplier;
 public class ParallelDispatchEventAsFutureExecutor1_16 implements FutureExecutor {
     @NonNull
     protected final ParallelDispatchEvent event;
+    @NonNull
+    protected final Consumer<Throwable> exceptionHandler;
 
     @Override
     public CompletableFuture<Void> run(@NonNull Runnable runnable) {
-        return this.event.enqueueWork(runnable);
+        return this.wrap(this.event.enqueueWork(runnable));
     }
 
     @Override
     public <V> CompletableFuture<V> supply(@NonNull Supplier<V> supplier) {
-        return this.event.enqueueWork(supplier);
+        return this.wrap(this.event.enqueueWork(supplier));
+    }
+
+    private <V> CompletableFuture<V> wrap(CompletableFuture<V> future) {
+        future.whenComplete((result, t) -> {
+            if (t != null) {
+                this.exceptionHandler.accept(t);
+            }
+        });
+        return future;
     }
 
     @Override

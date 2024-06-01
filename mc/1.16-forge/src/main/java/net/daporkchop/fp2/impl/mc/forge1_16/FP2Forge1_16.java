@@ -28,11 +28,13 @@ import net.daporkchop.fp2.core.debug.FP2Debug;
 import net.daporkchop.fp2.core.log4j.util.log.Log4jAsPorkLibLogger;
 import net.daporkchop.fp2.core.server.FP2Server;
 import net.daporkchop.fp2.core.util.I18n;
+import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.ATMinecraft1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.client.FP2Client1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.network.FP2Network1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.server.FP2Server1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.util.I18n1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.util.ParallelDispatchEventAsFutureExecutor1_16;
+import net.minecraft.client.Minecraft;
 import net.minecraft.world.World;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -90,8 +92,19 @@ public final class FP2Forge1_16 extends FP2Core {
 
     @SubscribeEvent
     public void clientSetup(FMLClientSetupEvent event) {
-        this.client = new FP2Client1_16(this, event.getMinecraftSupplier().get());
-        this.client.init(new ParallelDispatchEventAsFutureExecutor1_16(event));
+        Minecraft minecraft = event.getMinecraftSupplier().get();
+
+        this.client = new FP2Client1_16(this, minecraft);
+        this.client.init(new ParallelDispatchEventAsFutureExecutor1_16(event, cause -> {
+            //This ensures that if an exception is thrown by code running on the client thread, we actually crash the game.
+            // Unfortunately the internal DeferredWorkQueue doesn't provide a nice way to achieve this, and will not
+            // until 1.20: https://github.com/MinecraftForge/MinecraftForge/pull/9449.
+            // By adding a task to the Minecraft#progressTasks queue which rethrows the exception, we can force the game to crash
+            // even though every other mechanism to schedule tasks on the client thread will just silently swallow exceptions.
+            ((ATMinecraft1_16) minecraft).getProgressTasks().add(() -> {
+                throw new Error("Failed to initialize FP2 client state", cause);
+            });
+        }));
 
         this.commonSetup2(event);
     }
@@ -102,7 +115,10 @@ public final class FP2Forge1_16 extends FP2Core {
     private void commonSetup2 /* electric boogaloo */(ParallelDispatchEvent event) {
         //server is present on both sides
         this.server = new FP2Server1_16(this);
-        this.server.init(new ParallelDispatchEventAsFutureExecutor1_16(event));
+        this.server.init(new ParallelDispatchEventAsFutureExecutor1_16(event, cause -> {
+            this.log().fatal(new Error("Failed to initialize FP2 server state", cause));
+            System.exit(1);
+        }));
 
         FP2Network1_16.init(this);
 
