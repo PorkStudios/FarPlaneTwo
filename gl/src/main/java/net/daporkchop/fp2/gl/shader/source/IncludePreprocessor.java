@@ -47,7 +47,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @RequiredArgsConstructor
 public final class IncludePreprocessor {
-    private static final Pattern INCLUDE_PATTERN = Pattern.compile("^#include <\"([^\"]+)\">$");
+    private static final Pattern INCLUDE_PATTERN = Pattern.compile("^#include <\"([^\"]+)\">");
 
     private final ResourceProvider resourceProvider;
 
@@ -115,7 +115,7 @@ public final class IncludePreprocessor {
                 SourceLine sourceLine = new SourceLine(line, file, lineNo, includedFrom);
                 if (line.startsWith("#include ")) {
                     Matcher matcher = INCLUDE_PATTERN.matcher(line);
-                    checkArg(matcher.matches(), sourceLine);
+                    checkArg(matcher.find(), sourceLine);
                     this.include(Identifier.from(matcher.group(1)), sourceLine);
                 } else {
                     this.lines.add(sourceLine);
