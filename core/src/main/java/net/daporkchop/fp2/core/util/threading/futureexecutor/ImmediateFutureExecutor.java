@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.util.threading.futureexecutor;
@@ -33,16 +32,23 @@ import java.util.function.Supplier;
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class ImmediateFutureExecutor implements FutureExecutor {
-    public static final ImmediateFutureExecutor INSTANCE = new ImmediateFutureExecutor();
+    public static final FutureExecutor INSTANCE = new ImmediateFutureExecutor();
 
     @Override
     public CompletableFuture<Void> run(@NonNull Runnable runnable) {
-        return CompletableFuture.runAsync(runnable, ImmediateExecutor.INSTANCE);
+        return this.wrap(CompletableFuture.runAsync(runnable, ImmediateExecutor.INSTANCE));
     }
 
     @Override
     public <V> CompletableFuture<V> supply(@NonNull Supplier<V> supplier) {
-        return CompletableFuture.supplyAsync(supplier, ImmediateExecutor.INSTANCE);
+        return this.wrap(CompletableFuture.supplyAsync(supplier, ImmediateExecutor.INSTANCE));
+    }
+
+    private <V> CompletableFuture<V> wrap(CompletableFuture<V> future) {
+        //join the future to rethrow any exceptions that may have been thrown.
+        // this won't block, since the task was executed on this thread and is already complete.
+        future.join();
+        return future;
     }
 
     @Override
