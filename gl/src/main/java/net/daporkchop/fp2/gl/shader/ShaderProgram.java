@@ -509,9 +509,10 @@ public abstract class ShaderProgram extends GLObject.Normal {
 
             this.bindings.forEach((name, bindingIndex) -> {
                 int blockIndex = this.getBlockIndex.apply(gl, program, name);
-                checkArg(blockIndex != GL_INVALID_INDEX, "unable to find shader storage block: %s", name);
-
-                this.configureBlockBinding.accept(gl, program, blockIndex, bindingIndex);
+                if (blockIndex != GL_INVALID_INDEX) { //TODO: this check isn't useful, i'd prefer to do it the other way around (check if there are any unconfigured bindings)
+                    //checkArg(blockIndex != GL_INVALID_INDEX, "unable to find shader storage block: %s", name);
+                    this.configureBlockBinding.accept(gl, program, blockIndex, bindingIndex);
+                }
             });
         }
     }

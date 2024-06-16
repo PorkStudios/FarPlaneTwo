@@ -18,49 +18,23 @@
  *
  */
 
-#define COMP_HEIGHTMAP_HEIGHTMAP_FRUSTUM_CULLING
-
-#include <"fp2:shaders/comp/command_buffer_selection.comp">
-#include <"fp2:shaders/comp/frustum.comp">
-
 //
 //
-// BUFFERS
+// STRUCTS
 //
 //
 
-//Positions
-
-//dummy workaround thing to allow access to tightly-packed ivec3s
-struct Vec3I {
-    int x;
-    int z;
-    int level;
+struct DrawArraysIndirectCommand {
+    uint count;
+    uint instanceCount;
+    uint first;
+    uint baseInstance;
 };
 
-layout(std430, binding = 3) readonly buffer POSITIONS {
-    Vec3I positions[];
+struct DrawElementsIndirectCommand {
+    uint count;
+    uint instanceCount;
+    uint firstIndex;
+    uint baseVertex;
+    uint baseInstance;
 };
-
-//
-//
-// CODE
-//
-//
-
-bool select(uint index) { //implements method in comp/command_buffer_selection.comp
-    Vec3I pos = positions[index];
-
-    ivec2 position_absolute = ivec2(pos.x, pos.z) << (T_SHIFT + pos.level);
-    ivec2 position_relative = position_absolute - glState.camera.position_floor.xz;
-
-    vec2 origin = vec2(position_relative) - glState.camera.position_fract.xz;
-    vec3 min = origin.xxy;
-    vec3 max = origin.xxy + vec2((T_VOXELS + 1) << pos.level, 0.0).xyx;
-
-    min.y = -2147483648.0;
-    max.y = 2147483647.0;
-
-    //TODO: this always returns true???
-    return isBoxInFrustum(min, max);
-}

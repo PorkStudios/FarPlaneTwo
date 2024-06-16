@@ -189,6 +189,8 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
         //clear stencil buffer to 0x7F
         this.gl.glClearStencil(0x7F);
         this.gl.glClear(GL_STENCIL_BUFFER_BIT);
+
+        this.renderIndex.preDraw();
     }
 
     private void postRender() {

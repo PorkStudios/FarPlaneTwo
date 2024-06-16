@@ -33,6 +33,7 @@ import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
 import net.daporkchop.fp2.gl.buffer.upload.BufferUploader;
 import net.daporkchop.fp2.gl.draw.index.NewIndexBuffer;
 import net.daporkchop.fp2.gl.draw.index.NewIndexFormat;
+import net.daporkchop.lib.common.closeable.PResourceUtil;
 
 import java.util.Map;
 
@@ -56,23 +57,26 @@ public final class SimpleBakeStorage<VertexType extends AttributeStruct> extends
     public SimpleBakeStorage(OpenGL gl, BufferUploader uploader, NewAttributeFormat<VertexType> vertexFormat, NewIndexFormat indexFormat) {
         super(gl, uploader, vertexFormat, indexFormat);
 
-        this.vertexBuffer = vertexFormat.createBuffer();
-        this.vertexAlloc = new SequentialVariableSizedAllocator(1L, Allocator.SequentialHeapManager.unified(capacity -> {
-            this.bufferUploader.flush(); //flush the buffer uploader to ensure that any pending uploads are copied along when we resize
-            this.vertexBuffer.resize(toInt(capacity), BufferUsage.STATIC_DRAW);
-        }));
+        try {
+            this.vertexBuffer = vertexFormat.createBuffer();
+            this.vertexAlloc = new SequentialVariableSizedAllocator(1L, Allocator.SequentialHeapManager.unified(capacity -> {
+                this.bufferUploader.flush(); //flush the buffer uploader to ensure that any pending uploads are copied along when we resize
+                this.vertexBuffer.resize(toInt(capacity), BufferUsage.STATIC_DRAW);
+            }));
 
-        this.indexBuffer = indexFormat.createBuffer(gl);
-        this.indexAlloc = new SequentialVariableSizedAllocator(1L, Allocator.SequentialHeapManager.unified(capacity -> {
-            this.bufferUploader.flush(); //flush the buffer uploader to ensure that any pending uploads are copied along when we resize
-            this.indexBuffer.resize(toInt(capacity), BufferUsage.STATIC_DRAW);
-        }));
+            this.indexBuffer = indexFormat.createBuffer(gl);
+            this.indexAlloc = new SequentialVariableSizedAllocator(1L, Allocator.SequentialHeapManager.unified(capacity -> {
+                this.bufferUploader.flush(); //flush the buffer uploader to ensure that any pending uploads are copied along when we resize
+                this.indexBuffer.resize(toInt(capacity), BufferUsage.STATIC_DRAW);
+            }));
+        } catch (Throwable t) {
+            throw PResourceUtil.closeSuppressed(t, this);
+        }
     }
 
     @Override
     public void close() {
-        this.vertexBuffer.close();
-        this.indexBuffer.close();
+        PResourceUtil.closeAll(this.vertexBuffer, this.indexBuffer);
     }
 
     @Override

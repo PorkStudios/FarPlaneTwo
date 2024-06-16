@@ -18,10 +18,14 @@
  *
  */
 
-#ifndef SELECT_FRUSTUM
-#define SELECT_FRUSTUM
+//
+//
+// UNIFORMS
+//
+//
 
-#include <"fp2:shaders/select/common.glsl">
+uniform uint u_ClippingPlaneCount;
+uniform vec4 u_ClippingPlanes[MAX_CLIPPING_PLANES];
 
 //
 //
@@ -71,12 +75,10 @@ bool testOutsideClippingPlaneAND(in vec3 mn, in vec3 mx, in vec4 plane) {
  * @return false if the entire AABB is outside of the frustum, true otherwise
  */
 bool isBoxInFrustum(in vec3 min, in vec3 max) {
-    for (uint i = 0; i < u_clippingPlaneCount; i++) {
-        if (testOutsideClippingPlaneAND(min, max, u_clippingPlanes[i])) {
+    for (uint i = 0; i < u_ClippingPlaneCount && i < MAX_CLIPPING_PLANES; i++) {
+        if (testOutsideClippingPlaneAND(min, max, u_ClippingPlanes[i])) {
             return false;
         }
     }
     return true;
 }
-
-#endif //SELECT_FRUSTUM

@@ -19,6 +19,7 @@
 
 package net.daporkchop.fp2.core.engine.client.index.attribdivisor;
 
+import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.core.engine.client.bake.storage.BakeStorage;
 import net.daporkchop.fp2.core.engine.client.struct.VoxelGlobalAttributes;
@@ -28,6 +29,8 @@ import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
 import net.daporkchop.fp2.gl.draw.indirect.DrawElementsIndirectCommand;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
@@ -45,13 +48,19 @@ public abstract class AbstractMultiDrawIndirectRenderIndex<VertexType extends At
      */
     protected static final class DirectCommandList implements AutoCloseable {
         private final DirectMemoryAllocator alloc;
+        private final Allocator.GrowFunction growFunction = Allocator.GrowFunction.def();
 
         public long address;
         public int size;
-        public int capacity = 16;
+        public int capacity;
 
         public DirectCommandList(DirectMemoryAllocator alloc) {
+            this(alloc, 16);
+        }
+
+        public DirectCommandList(DirectMemoryAllocator alloc, int initialCapacity) {
             this.alloc = alloc;
+            this.capacity = initialCapacity;
             this.address = this.alloc.alloc(this.capacity * DrawElementsIndirectCommand._SIZE);
         }
 
@@ -62,11 +71,31 @@ public abstract class AbstractMultiDrawIndirectRenderIndex<VertexType extends At
             this.size = this.capacity = 0;
         }
 
+        public void set(int index, DrawElementsIndirectCommand command) {
+            checkIndex(this.size, index);
+            DrawElementsIndirectCommand._set(this.address + (index * DrawElementsIndirectCommand._SIZE), command);
+        }
+
         public void add(DrawElementsIndirectCommand command) {
             if (this.size == this.capacity) {
-                this.address = this.alloc.realloc(this.address, (this.capacity <<= 1) * DrawElementsIndirectCommand._SIZE);
+                this.grow(1);
             }
             DrawElementsIndirectCommand._set(this.address + (this.size++ * DrawElementsIndirectCommand._SIZE), command);
+        }
+
+        public void reserve(int addCount) {
+            int increment = Math.addExact(this.size, notNegative(addCount, "addCount")) - this.capacity;
+            if (increment > 0) {
+                this.grow(increment);
+            }
+        }
+
+        private void grow(int increment) {
+            int newCapacity = Math.toIntExact(this.growFunction.grow(this.capacity, this.size + increment - this.capacity));
+            long newAddress = this.alloc.realloc(this.address, newCapacity * DrawElementsIndirectCommand._SIZE);
+
+            this.capacity = newCapacity;
+            this.address = newAddress;
         }
     }
 }

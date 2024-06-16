@@ -77,7 +77,7 @@ public abstract class ShaderMacros {
             return this.parents.stream().flatMap(parent -> Stream.concat(parent.parentsFlattened(), Stream.of(parent)));
         }
 
-        protected void markDirty() {
+        private void markDirty() {
             if (this.cachedSnapshot != null) { //this instance has been cached
                 this.cachedSnapshot = null;
 
@@ -105,6 +105,16 @@ public abstract class ShaderMacros {
             if (!value.equals(this.macros.put(key, value))) { //the existing value for the key didn't match
                 this.markDirty();
             }
+            return this;
+        }
+
+        /**
+         * Defines a macro value, replacing any existing macro values for the given key.
+         *
+         * @param defines the macro values to define
+         */
+        public Mutable defineAll(@NonNull Map<String, Object> defines) {
+            defines.forEach(this::define);
             return this;
         }
 

@@ -23,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
+import net.daporkchop.fp2.core.engine.EngineConstants;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.client.RenderConstants;
 import net.daporkchop.fp2.core.engine.client.bake.storage.BakeStorage;
@@ -31,8 +32,18 @@ import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.draw.DrawMode;
 import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.shader.ShaderProgram;
+import net.daporkchop.lib.common.closeable.PResourceUtil;
+import net.daporkchop.lib.primitive.lambda.IntIntObjFunction;
 
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.IntFunction;
+
+import static net.daporkchop.lib.common.util.PValidation.*;
+import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
  * @author DaPorkchop_
@@ -85,6 +96,13 @@ public abstract class RenderIndex<VertexType extends AttributeStruct> implements
     public abstract void select(IFrustum frustum, TerrainRenderingBlockedTracker blockedTracker);
 
     /**
+     * Called after {@link #select}, but before any calls to {@link #draw}.
+     */
+    public void preDraw() {
+        //no-op
+    }
+
+    /**
      * Draws the selected tiles at the given detail level using the currently bound shader.
      *
      * @param level         the detail level
@@ -123,5 +141,96 @@ public abstract class RenderIndex<VertexType extends AttributeStruct> implements
          * The shader declares a uniform {@code ivec4} named {@link RenderConstants#TILE_POS_UNIFORM_NAME}.
          */
         UNIFORM,
+    }
+
+    /**
+     * A 2-dimensional array indexed by detail level and render pass.
+     *
+     * @author DaPorkchop_
+     */
+    private static abstract class AbstractCloseableArray<E extends AutoCloseable> implements Iterable<E>, AutoCloseable {
+        protected final E[] delegate;
+
+        public AbstractCloseableArray(int size) {
+            this.delegate = uncheckedCast(new AutoCloseable[size]);
+        }
+
+        @Override
+        public Iterator<E> iterator() {
+            return Arrays.asList(this.delegate).iterator();
+        }
+
+        @Override
+        public void forEach(Consumer<? super E> action) {
+            for (E value : this.delegate) {
+                action.accept(value);
+            }
+        }
+
+        @Override
+        public void close() {
+            PResourceUtil.closeAll(this);
+        }
+    }
+
+    /**
+     * A 1-dimensional array indexed by detail level.
+     *
+     * @author DaPorkchop_
+     */
+    protected static final class LevelArray<E extends AutoCloseable> extends AbstractCloseableArray<E> {
+        public LevelArray(IntFunction<E> creator) {
+            super(EngineConstants.MAX_LODS);
+            try {
+                for (int level = 0; level < EngineConstants.MAX_LODS; level++) {
+                    this.delegate[level] = Objects.requireNonNull(creator.apply(level));
+                }
+            } catch (Throwable t) {
+                throw PResourceUtil.closeAllSuppressed(t, this);
+            }
+        }
+
+        /**
+         * Gets the element at the given detail level.
+         *
+         * @param level the detail level
+         * @return the element at the given detail level
+         */
+        public E get(int level) {
+            return this.delegate[level];
+        }
+    }
+
+    /**
+     * A 2-dimensional array indexed by detail level and render pass.
+     *
+     * @author DaPorkchop_
+     */
+    protected static final class LevelPassArray<E extends AutoCloseable> extends AbstractCloseableArray<E> {
+        public LevelPassArray(IntIntObjFunction<E> creator) {
+            super(EngineConstants.MAX_LODS * RenderConstants.RENDER_PASS_COUNT);
+            try {
+                for (int level = 0; level < EngineConstants.MAX_LODS; level++) {
+                    for (int pass = 0; pass < RenderConstants.RENDER_PASS_COUNT; pass++) {
+                        this.delegate[level * RenderConstants.RENDER_PASS_COUNT + pass] = Objects.requireNonNull(creator.apply(level, pass));
+                    }
+                }
+            } catch (Throwable t) {
+                throw PResourceUtil.closeAllSuppressed(t, this);
+            }
+        }
+
+        /**
+         * Gets the element at the given detail level and render pass index.
+         *
+         * @param level the detail level
+         * @param pass  the render pass index
+         * @return the element at the given detail level and render pass index
+         */
+        public E get(int level, int pass) {
+            checkIndex(EngineConstants.MAX_LODS, level);
+            checkIndex(RenderConstants.RENDER_PASS_COUNT, pass);
+            return this.delegate[level * RenderConstants.RENDER_PASS_COUNT + pass];
+        }
     }
 }

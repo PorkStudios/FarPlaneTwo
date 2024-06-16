@@ -19,7 +19,6 @@
 
 package net.daporkchop.fp2.core.engine.client.bake.storage;
 
-import lombok.val;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.DirectTilePosAccess;
 import net.daporkchop.fp2.core.engine.TilePos;
@@ -31,6 +30,7 @@ import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
 import net.daporkchop.fp2.gl.buffer.upload.BufferUploader;
 import net.daporkchop.fp2.gl.draw.index.NewIndexBuffer;
 import net.daporkchop.fp2.gl.draw.index.NewIndexFormat;
+import net.daporkchop.lib.common.closeable.PResourceUtil;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -57,20 +57,13 @@ public final class PerLevelBakeStorage<VertexType extends AttributeStruct> exten
                 this.storages[level] = Objects.requireNonNull(storageFactory.apply(level));
             }
         } catch (Throwable t) {
-            for (val storage : this.storages) {
-                if (storage != null) {
-                    storage.close();
-                }
-            }
-            throw t;
+            throw PResourceUtil.closeSuppressed(t, this);
         }
     }
 
     @Override
     public void close() {
-        for (val storage : this.storages) {
-            storage.close();
-        }
+        PResourceUtil.closeAll(this.storages);
     }
 
     @Override

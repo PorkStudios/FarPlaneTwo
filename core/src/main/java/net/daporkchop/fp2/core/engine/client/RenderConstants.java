@@ -53,6 +53,12 @@ public class RenderConstants {
     public static final String TILE_POS_ARRAY_UBO_NAME = "U_TilePosArray";
     public static final int TILE_POS_ARRAY_UBO_BINDING = 2;
 
+    public static final String TILE_POSITIONS_SSBO_NAME = "B_TilePositions";
+    public static final int TILE_POSITIONS_SSBO_BINDING = 2;
+
+    public static final String INDIRECT_DRAWS_SSBO_NAME = "B_IndirectDraws";
+    public static final int INDIRECT_DRAWS_SSBO_BINDING = 3;
+
     /**
      * The length of the TilePos uniform array, in tile positions.
      *

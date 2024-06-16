@@ -19,59 +19,59 @@
 
 package net.daporkchop.fp2.core.engine.client.index.postable;
 
+import lombok.val;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.client.struct.VoxelGlobalAttributes;
 import net.daporkchop.fp2.gl.attribute.NewAttributeBuffer;
+import net.daporkchop.lib.common.closeable.PResourceUtil;
+
+import java.util.Objects;
+import java.util.function.IntFunction;
+
+import static net.daporkchop.fp2.core.engine.EngineConstants.*;
 
 /**
- * An indexed table of tile positions stored on the GPU.
+ * Implementation of {@link RenderPosTable} which delegates to a different render position table instance at each detail level.
  *
  * @author DaPorkchop_
  */
-public abstract class RenderPosTable implements AutoCloseable {
+public final class PerLevelRenderPosTable extends RenderPosTable {
+    private final RenderPosTable[] tables = new RenderPosTable[MAX_LODS];
+
+    public PerLevelRenderPosTable(IntFunction<? extends RenderPosTable> tableFactory) {
+        try {
+            for (int level = 0; level < MAX_LODS; level++) {
+                this.tables[level] = Objects.requireNonNull(tableFactory.apply(level));
+            }
+        } catch (Throwable t) {
+            throw PResourceUtil.closeSuppressed(t, this);
+        }
+    }
+
     @Override
-    public abstract void close();
+    public void close() {
+        PResourceUtil.closeAll(this.tables);
+    }
 
-    /**
-     * Adds the given tile position to this table.
-     * <p>
-     * If the given tile position is already in this table, this method does nothing.
-     *
-     * @param pos the tile position
-     * @return the index of the tile position in the vertex buffer at the corresponding detail level
-     */
-    public abstract int add(TilePos pos);
+    @Override
+    public int add(TilePos pos) {
+        return this.tables[pos.level()].add(pos);
+    }
 
-    /**
-     * Removes the given tile position from this table.
-     *
-     * @param pos the tile position
-     */
-    public abstract void remove(TilePos pos);
+    @Override
+    public void remove(TilePos pos) {
+        this.tables[pos.level()].remove(pos);
+    }
 
-    /**
-     * Makes all changes visible to the GL.
-     */
-    public abstract void flush();
+    @Override
+    public void flush() {
+        for (val table : this.tables) {
+            table.flush();
+        }
+    }
 
-    /**
-     * @param level the detail level
-     * @return a reference to the vertex buffer containing the list of tile positions for the given detail level
-     */
-    public abstract NewAttributeBuffer<VoxelGlobalAttributes> vertexBuffer(int level);
-
-    /**
-     * @author DaPorkchop_
-     */
-    @FunctionalInterface
-    public interface _DefragCallback {
-        /**
-         * Process a notification that a single tile position has been relocated during defragmentation.
-         *
-         * @param pos      the tile position which was relocated
-         * @param oldIndex the tile position's old index
-         * @param newIndex the tile position's new index
-         */
-        void relocated(TilePos pos, int oldIndex, int newIndex);
+    @Override
+    public NewAttributeBuffer<VoxelGlobalAttributes> vertexBuffer(int level) {
+        return this.tables[level].vertexBuffer(level);
     }
 }

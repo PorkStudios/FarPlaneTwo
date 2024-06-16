@@ -19,7 +19,7 @@
 
 package net.daporkchop.fp2.core.engine.client.index.attribdivisor;
 
-import lombok.val;
+import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.core.engine.DirectTilePosAccess;
 import net.daporkchop.fp2.core.engine.TilePos;
@@ -32,11 +32,9 @@ import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
 import net.daporkchop.fp2.gl.attribute.vao.VertexArrayObject;
+import net.daporkchop.lib.common.closeable.PResourceUtil;
 
 import java.util.Set;
-
-import static net.daporkchop.fp2.core.engine.EngineConstants.*;
-import static net.daporkchop.fp2.core.engine.client.RenderConstants.*;
 
 /**
  * Shared code for implementations of {@link RenderIndex} which feed attributes shared for all vertices in a tile to the vertex shader using a vertex attribute with a vertex divisor.
@@ -49,57 +47,37 @@ public abstract class AbstractBaseInstanceRenderIndex<VertexType extends Attribu
     protected final Set<TilePos> hiddenPositions = DirectTilePosAccess.newPositionHashSet();
 
     protected final RenderPosTable renderPosTable;
-    protected final VaoGroup<VertexType> vaos;
+    protected final LevelPassArray<VertexArrayObject> vaos;
 
     public AbstractBaseInstanceRenderIndex(OpenGL gl, BakeStorage<VertexType> bakeStorage, DirectMemoryAllocator alloc, NewAttributeFormat<VoxelGlobalAttributes> sharedVertexFormat) {
         super(gl, bakeStorage, alloc);
 
-        this.renderPosTable = new SimpleRenderPosTable(gl, sharedVertexFormat, alloc);
-        this.vaos = new VaoGroup<>(gl, this.renderPosTable, bakeStorage);
+        try {
+            this.renderPosTable = this.constructRenderPosTable(sharedVertexFormat);
+
+            this.vaos = new LevelPassArray<>(
+                    (level, pass) -> VertexArrayObject.builder(gl)
+                            .buffer(this.renderPosTable.vertexBuffer(level), 1)
+                            .buffer(bakeStorage.vertexBuffer(level, pass))
+                            .elementBuffer(bakeStorage.indexBuffer(level, pass))
+                            .build());
+        } catch (Throwable t) {
+            throw PResourceUtil.closeSuppressed(t, this);
+        }
     }
 
     @Override
     public void close() {
-        this.vaos.close();
-        this.renderPosTable.close();
+        PResourceUtil.closeAll(this.vaos, this.renderPosTable);
+    }
+
+    protected RenderPosTable constructRenderPosTable(NewAttributeFormat<VoxelGlobalAttributes> sharedVertexFormat) {
+        return new SimpleRenderPosTable(this.gl, sharedVertexFormat, this.alloc, Allocator.GrowFunction.def());
     }
 
     @Override
     public void updateHidden(Set<TilePos> hidden, Set<TilePos> shown) {
         this.hiddenPositions.removeAll(shown);
         this.hiddenPositions.addAll(hidden);
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    protected static final class VaoGroup<VertexType extends AttributeStruct> implements AutoCloseable {
-        private final VertexArrayObject[][] vaos = new VertexArrayObject[MAX_LODS][RENDER_PASS_COUNT];
-
-        public VaoGroup(OpenGL gl, RenderPosTable renderPosTable, BakeStorage<VertexType> bakeStorage) {
-            //create a VAO configured for each level and pass
-            for (int level = 0; level < MAX_LODS; level++) {
-                for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
-                    this.vaos[level][pass] = VertexArrayObject.builder(gl)
-                            .buffer(renderPosTable.vertexBuffer(level), 1)
-                            .buffer(bakeStorage.vertexBuffer(level, pass))
-                            .elementBuffer(bakeStorage.indexBuffer(level, pass))
-                            .build();
-                }
-            }
-        }
-
-        public VertexArrayObject vao(int level, int pass) {
-            return this.vaos[level][pass];
-        }
-
-        @Override
-        public void close() {
-            for (val vaos : this.vaos) {
-                for (val vao : vaos) {
-                    vao.close();
-                }
-            }
-        }
     }
 }

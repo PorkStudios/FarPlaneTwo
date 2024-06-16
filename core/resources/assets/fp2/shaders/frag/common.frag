@@ -57,7 +57,7 @@ struct TexQuadList {
     uint last;
 };
 
-layout(std140) buffer TEXTURE_UVS_LISTS_SSBO_NAME {
+layout(TEXTURE_UVS_LISTS_SSBO_LAYOUT) buffer TEXTURE_UVS_LISTS_SSBO_NAME {
     TexQuadList b_texQuadList[];
 };
 
@@ -66,7 +66,7 @@ struct TexQuad {
     float tint;
 };
 
-layout(std140) buffer TEXTURE_UVS_QUADS_SSBO_NAME {
+layout(TEXTURE_UVS_QUADS_SSBO_LAYOUT) buffer TEXTURE_UVS_QUADS_SSBO_NAME {
     TexQuad b_texQuad[];
 };
 

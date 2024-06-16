@@ -1,0 +1,62 @@
+/*
+ * Adapted from The MIT License (MIT)
+ *
+ * Copyright (c) 2020-$today.year DaPorkchop_
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
+ * modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software
+ * is furnished to do so, subject to the following conditions:
+ *
+ * Any persons and/or organizations using this software must include the above copyright notice and this permission notice,
+ * provide sufficient credit to the original authors of the project (IE: DaPorkchop_), as well as provide a link to the original project.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ */
+
+layout(local_size_x = 16, local_size_y = 16) in;
+
+//#include <"fp2:shaders/comp/common.comp">
+
+#define LEVEL_0 (1)
+#include <"fp2:shaders/common.glsl"> // global uniforms
+
+#include <"fp2:shaders/util/frustum.glsl">
+#include <"fp2:shaders/util/indirect_draw.glsl">
+
+layout(TILE_POSITIONS_SSBO_LAYOUT) readonly restrict buffer TILE_POSITIONS_SSBO_NAME {
+    ivec4 b_tilePositions[];
+};
+
+layout(INDIRECT_DRAWS_SSBO_LAYOUT) restrict buffer INDIRECT_DRAWS_SSBO_NAME {
+    DrawElementsIndirectCommand commands[];
+} b_drawCommandsByPass[RENDER_PASS_COUNT];
+
+bool select(uint index) {
+    ivec4 pos = b_tilePositions[index];
+
+    // Level-0 tiles must not overlap vanilla renderable terrain
+    if (pos.w == 0 && !isVanillaRenderableLevel0(pos.xyz)) {
+        return false;
+    }
+
+    ivec3 position_absolute = pos.xyz << (T_SHIFT + pos.w);
+    ivec3 position_relative = position_absolute - u_positionFloor;
+
+    return isBoxInFrustum(
+            vec3(position_relative) - u_positionFrac,
+            vec3(position_relative + ivec3((T_VOXELS + 1) << pos.w)) - u_positionFrac);
+}
+
+void main() {
+    uint index = gl_WorkGroupID.x * (gl_WorkGroupSize.x * gl_WorkGroupSize.y * gl_WorkGroupSize.z) + gl_LocalInvocationIndex;
+    uint mask = uint(-int(select(index)));
+
+    for (uint pass = 0; pass < RENDER_PASS_COUNT; pass++) {
+        b_drawCommandsByPass[pass].commands[index].instanceCount &= mask;
+    }
+}

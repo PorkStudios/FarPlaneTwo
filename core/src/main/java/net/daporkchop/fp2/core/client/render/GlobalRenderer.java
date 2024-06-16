@@ -22,10 +22,12 @@ package net.daporkchop.fp2.core.client.render;
 import lombok.val;
 import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.core.FP2Core;
+import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.client.shader.NewReloadableShaderProgram;
 import net.daporkchop.fp2.core.client.shader.ShaderMacros;
 import net.daporkchop.fp2.core.engine.EngineConstants;
 import net.daporkchop.fp2.core.engine.client.RenderConstants;
+import net.daporkchop.fp2.core.engine.client.index.attribdivisor.GPUCulledBaseInstanceRenderIndex;
 import net.daporkchop.fp2.core.engine.client.struct.VoxelGlobalAttributes;
 import net.daporkchop.fp2.core.engine.client.struct.VoxelLocalAttributes;
 import net.daporkchop.fp2.gl.OpenGL;
@@ -33,8 +35,12 @@ import net.daporkchop.fp2.gl.attribute.AttributeTarget;
 import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
 import net.daporkchop.fp2.gl.draw.index.IndexType;
 import net.daporkchop.fp2.gl.draw.index.NewIndexFormat;
+import net.daporkchop.fp2.gl.shader.ComputeShaderProgram;
 import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
+import net.daporkchop.fp2.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.gl.shader.ShaderType;
+
+import java.util.EnumSet;
 
 import static net.daporkchop.fp2.api.FP2.*;
 import static net.daporkchop.fp2.core.debug.FP2Debug.*;
@@ -61,10 +67,18 @@ public final class GlobalRenderer {
     public final NewReloadableShaderProgram<DrawShaderProgram> blockCutoutShaderProgram;
     public final NewReloadableShaderProgram<DrawShaderProgram> blockStencilShaderProgram;
 
+    public final NewReloadableShaderProgram<ComputeShaderProgram> indirectTileFrustumCullingShaderProgram;
+
     public GlobalRenderer(FP2Core fp2, OpenGL gl) {
         this.globalUniformAttributeFormat = NewAttributeFormat.get(gl, GlobalUniformAttributes.class, AttributeTarget.UBO);
 
-        this.voxelInstancedAttributesFormat = NewAttributeFormat.get(gl, VoxelGlobalAttributes.class, AttributeTarget.VERTEX_ATTRIBUTE);
+        //determine whether we want the tile position attribute format to support the SSBO target
+        boolean tilePositionArrayAsSsbo = false;
+        tilePositionArrayAsSsbo |= gl.supports(GPUCulledBaseInstanceRenderIndex.REQUIRED_EXTENSIONS);
+        this.voxelInstancedAttributesFormat = NewAttributeFormat.get(gl, VoxelGlobalAttributes.class, tilePositionArrayAsSsbo
+                ? EnumSet.of(AttributeTarget.VERTEX_ATTRIBUTE, AttributeTarget.SSBO)
+                : EnumSet.of(AttributeTarget.VERTEX_ATTRIBUTE));
+
         this.voxelVertexAttributesFormat = NewAttributeFormat.get(gl, VoxelLocalAttributes.class, AttributeTarget.VERTEX_ATTRIBUTE);
 
         this.unsignedShortIndexFormat = NewIndexFormat.get(IndexType.UNSIGNED_SHORT);
@@ -74,21 +88,22 @@ public final class GlobalRenderer {
 
         this.shaderMacros = new ShaderMacros.Mutable()
                 .define("T_SHIFT", EngineConstants.T_SHIFT)
+                .define("RENDER_PASS_COUNT", RenderConstants.RENDER_PASS_COUNT)
+                .define("MAX_CLIPPING_PLANES", IFrustum.MAX_CLIPPING_PLANES)
+                .define("FP2_DEBUG", FP2_DEBUG)
+
                 .define("GLOBAL_UNIFORMS_UBO_NAME", RenderConstants.GLOBAL_UNIFORMS_UBO_NAME)
+                .define("GLOBAL_UNIFORMS_UBO_LAYOUT", this.globalUniformAttributeFormat.interfaceBlockLayoutName())
                 .define("TEXTURE_ATLAS_SAMPLER_NAME", RenderConstants.TEXTURE_ATLAS_SAMPLER_NAME)
                 .define("LIGHTMAP_SAMPLER_NAME", RenderConstants.LIGHTMAP_SAMPLER_NAME)
                 .define("TEXTURE_UVS_LISTS_SSBO_NAME", RenderConstants.TEXTURE_UVS_LISTS_SSBO_NAME)
+                .define("TEXTURE_UVS_LISTS_SSBO_LAYOUT", this.uvQuadListSSBOFormat.interfaceBlockLayoutName())
                 .define("TEXTURE_UVS_QUADS_SSBO_NAME", RenderConstants.TEXTURE_UVS_QUADS_SSBO_NAME)
-                .define("FP2_DEBUG", FP2_DEBUG);
+                .define("TEXTURE_UVS_QUADS_SSBO_LAYOUT", this.uvPackedQuadSSBOFormat.interfaceBlockLayoutName());
 
-        NewReloadableShaderProgram.SetupFunction<DrawShaderProgram.Builder> shaderSetup = builder -> builder
+        NewReloadableShaderProgram.SetupFunction<DrawShaderProgram.Builder> shaderSetup = builder -> commonShaderSetup(builder)
                 .vertexAttributesWithPrefix("a_", this.voxelInstancedAttributesFormat)
-                .vertexAttributesWithPrefix("a_", this.voxelVertexAttributesFormat)
-                .addUBO(RenderConstants.GLOBAL_UNIFORMS_UBO_BINDING, RenderConstants.GLOBAL_UNIFORMS_UBO_NAME)
-                .addSSBO(RenderConstants.TEXTURE_UVS_LISTS_SSBO_BINDING, RenderConstants.TEXTURE_UVS_LISTS_SSBO_NAME)
-                .addSSBO(RenderConstants.TEXTURE_UVS_QUADS_SSBO_BINDING, RenderConstants.TEXTURE_UVS_QUADS_SSBO_NAME)
-                .addSampler(RenderConstants.TEXTURE_ATLAS_SAMPLER_BINDING, RenderConstants.TEXTURE_ATLAS_SAMPLER_NAME)
-                .addSampler(RenderConstants.LIGHTMAP_SAMPLER_BINDING, RenderConstants.LIGHTMAP_SAMPLER_NAME);
+                .vertexAttributesWithPrefix("a_", this.voxelVertexAttributesFormat);
 
         val shaderRegistry = fp2.client().reloadableShaderRegistry();
 
@@ -106,6 +121,37 @@ public final class GlobalRenderer {
                 .addShader(ShaderType.VERTEX, Identifier.from(MODID, "shaders/vert/voxel/voxel.vert"))
                 .addShader(ShaderType.FRAGMENT, Identifier.from(MODID, "shaders/frag/stencil.frag"))
                 .build();
+
+        if (gl.supports(GPUCulledBaseInstanceRenderIndex.REQUIRED_EXTENSIONS)) {
+            val computeShaderMacros = new ShaderMacros.Mutable(this.shaderMacros)
+                    .define("TILE_POSITIONS_SSBO_NAME", RenderConstants.TILE_POSITIONS_SSBO_NAME)
+                    .define("TILE_POSITIONS_SSBO_LAYOUT", this.voxelInstancedAttributesFormat.interfaceBlockLayoutName())
+                    .define("INDIRECT_DRAWS_SSBO_NAME", RenderConstants.INDIRECT_DRAWS_SSBO_NAME)
+                    .define("INDIRECT_DRAWS_SSBO_LAYOUT", "std430"); //TODO: decide on the optimal layout automagically
+
+            NewReloadableShaderProgram.SetupFunction<ComputeShaderProgram.Builder> computeShaderSetup = builder -> {
+                commonShaderSetup(builder)
+                        .addSSBO(RenderConstants.TILE_POSITIONS_SSBO_BINDING, RenderConstants.TILE_POSITIONS_SSBO_NAME);
+                for (int pass = 0; pass < RenderConstants.RENDER_PASS_COUNT; pass++) {
+                    builder.addSSBO(RenderConstants.INDIRECT_DRAWS_SSBO_BINDING + pass, RenderConstants.INDIRECT_DRAWS_SSBO_NAME + '[' + pass + ']');
+                }
+            };
+
+            this.indirectTileFrustumCullingShaderProgram = shaderRegistry.createCompute(computeShaderMacros, computeShaderSetup)
+                    .addShader(ShaderType.COMPUTE, Identifier.from(MODID, "shaders/comp/indirect_tile_frustum_culling.comp"))
+                    .build();
+        } else {
+            this.indirectTileFrustumCullingShaderProgram = null;
+        }
+    }
+
+    private static <B extends ShaderProgram.Builder<?, B>> B commonShaderSetup(B builder) {
+        return builder
+                .addUBO(RenderConstants.GLOBAL_UNIFORMS_UBO_BINDING, RenderConstants.GLOBAL_UNIFORMS_UBO_NAME)
+                .addSSBO(RenderConstants.TEXTURE_UVS_LISTS_SSBO_BINDING, RenderConstants.TEXTURE_UVS_LISTS_SSBO_NAME)
+                .addSSBO(RenderConstants.TEXTURE_UVS_QUADS_SSBO_BINDING, RenderConstants.TEXTURE_UVS_QUADS_SSBO_NAME)
+                .addSampler(RenderConstants.TEXTURE_ATLAS_SAMPLER_BINDING, RenderConstants.TEXTURE_ATLAS_SAMPLER_NAME)
+                .addSampler(RenderConstants.LIGHTMAP_SAMPLER_BINDING, RenderConstants.LIGHTMAP_SAMPLER_NAME);
     }
 
     public void close() {

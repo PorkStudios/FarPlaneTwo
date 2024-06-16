@@ -21,6 +21,8 @@ package net.daporkchop.fp2.core.engine.client.index.postable;
 
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import lombok.NonNull;
+import lombok.val;
+import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.core.engine.DirectTilePosAccess;
 import net.daporkchop.fp2.core.engine.TilePos;
@@ -30,10 +32,13 @@ import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.attribute.NewAttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
 import net.daporkchop.fp2.gl.attribute.NewAttributeWriter;
+import net.daporkchop.lib.common.closeable.PResourceUtil;
 
 import java.util.BitSet;
 
 /**
+ * Implementation of {@link RenderPosTable} which stores all the tile positions in a single buffer, in no particular order.
+ *
  * @author DaPorkchop_
  */
 public final class SimpleRenderPosTable extends RenderPosTable {
@@ -43,21 +48,46 @@ public final class SimpleRenderPosTable extends RenderPosTable {
     private final NewAttributeWriter<VoxelGlobalAttributes> writer;
     private final NewAttributeBuffer<VoxelGlobalAttributes> buffer;
 
+    private final Allocator.GrowFunction growFunction;
+
     private boolean dirty;
 
-    public SimpleRenderPosTable(OpenGL gl, NewAttributeFormat<VoxelGlobalAttributes> format, DirectMemoryAllocator alloc) {
+    /**
+     * @param growFunction the {@link Allocator.GrowFunction} used to determine the table capacity. Units are in tile positions, not bytes!
+     */
+    public SimpleRenderPosTable(OpenGL gl, NewAttributeFormat<VoxelGlobalAttributes> format, DirectMemoryAllocator alloc,
+                                Allocator.GrowFunction growFunction) {
         this.positionToIndex.defaultReturnValue(-1);
+        this.growFunction = growFunction;
 
-        this.writer = format.createWriter(alloc);
-        this.buffer = format.createBuffer();
+        try {
+            this.writer = format.createWriter(alloc);
+            this.buffer = format.createBuffer();
 
-        this.writer.appendUninitialized(256); //initial capacity
+            this.grow(1);
+        } catch (Throwable t) {
+            throw PResourceUtil.closeSuppressed(t, this);
+        }
     }
 
     @Override
     public void close() {
-        this.writer.close();
-        this.buffer.close();
+        PResourceUtil.closeAll(this.writer, this.buffer);
+    }
+
+    private void grow(int increment) {
+        int oldCapacity = this.writer.capacity();
+        int newCapacity = Math.toIntExact(this.growFunction.grow(oldCapacity, increment));
+        assert oldCapacity < newCapacity : oldCapacity + " -> " + newCapacity;
+
+        this.writer.appendUninitialized(newCapacity - oldCapacity);
+        assert this.writer.capacity() == newCapacity : this.writer.capacity() + " != " + newCapacity;
+
+        //initialize the memory
+        //TODO: this isn't necessary yet, but if we do decide to do this we'll need to reset to -1 in remove() as well
+        /*for (int i = oldCapacity; i < newCapacity; i++) {
+            this.writer.at(i).tilePos(-1, -1, -1, -1).close();
+        }*/
     }
 
     @Override
@@ -68,8 +98,8 @@ public final class SimpleRenderPosTable extends RenderPosTable {
             this.indexAlloc.set(index);
             this.positionToIndex.put(pos, index);
 
-            if (index == this.writer.size()) { //the table needs to be grown, double the size of the writer
-                this.writer.appendUninitialized(this.writer.size());
+            if (index == this.writer.size()) { //the table needs to be grown
+                this.grow(1);
             }
 
             this.writer.at(index).tilePos(pos.x(), pos.y(), pos.z(), pos.level()).close();

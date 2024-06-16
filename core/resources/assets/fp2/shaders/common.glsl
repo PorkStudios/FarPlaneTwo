@@ -102,7 +102,7 @@
 //
 //
 
-layout(std140) uniform GLOBAL_UNIFORMS_UBO_NAME {
+layout(GLOBAL_UNIFORMS_UBO_LAYOUT) uniform GLOBAL_UNIFORMS_UBO_NAME {
     //camera
     mat4 u_modelViewProjectionMatrix;
     ivec3 u_positionFloor;
@@ -130,7 +130,7 @@ layout(std140) uniform GLOBAL_UNIFORMS_UBO_NAME {
 // Vanilla renderability index
 
 //TODO: find a non-hacky way of implementing this
-layout(std430, binding = 7) readonly buffer VANILLA_RENDERABILITY {
+layout(std430, binding = 7) readonly restrict buffer VANILLA_RENDERABILITY {
     ivec3 offset;
     ivec3 size;
 
