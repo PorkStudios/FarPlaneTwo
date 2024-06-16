@@ -59,4 +59,15 @@ public abstract class AbstractInterleavedAttributeFormat<STRUCT extends Attribut
             baseBindingIndex += structType.fieldType(index).occupiedVertexAttributes();
         }
     }
+
+    @Override
+    public final String interfaceBlockLayoutName() throws UnsupportedOperationException {
+        for (AttributeTarget target : AttributeTarget.values()) {
+            if (target.interfaceBlock() && this.supports(target)) {
+                return this.layoutInfo.name();
+            }
+        }
+
+        throw new UnsupportedOperationException(this.layoutInfo.name());
+    }
 }

@@ -19,22 +19,33 @@
 
 package net.daporkchop.fp2.gl.attribute;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
 /**
  * All things which an attribute format may be used for.
  *
  * @author DaPorkchop_
  */
+@RequiredArgsConstructor
+@Getter
 public enum AttributeTarget {
     /**
      * Buffers using this attribute format contain data which may be used as vertex attributes.
      */
-    VERTEX_ATTRIBUTE,
+    VERTEX_ATTRIBUTE(false),
     /**
      * Buffers using this attribute format contain data which may be accessed from shaders through a uniform buffer.
      */
-    UBO,
+    UBO(true),
     /**
      * Buffers using this attribute format contain data which may be accessed from shaders through a shader storage buffer.
      */
-    SSBO,
+    SSBO(true),
+    ;
+
+    /**
+     * {@code true} if this attribute target requires the use of a format compatible with a GLSL interface block.
+     */
+    private final boolean interfaceBlock;
 }

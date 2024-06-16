@@ -136,6 +136,12 @@ public abstract class NewAttributeFormat<STRUCT extends AttributeStruct> extends
     public abstract void bindVertexAttributeLocations(int program, @NonNull Function<String, String> nameFormatter, int baseBindingIndex) throws UnsupportedOperationException;
 
     /**
+     * @return the name of the layout used when defining this attribute format in a GLSL interface block
+     * @throws UnsupportedOperationException if this attribute format doesn't {@link #supports(AttributeTarget) support} any {@link AttributeTarget} which uses an interface block
+     */
+    public abstract String interfaceBlockLayoutName() throws UnsupportedOperationException;
+
+    /**
      * Creates a new {@link NewUniformBuffer} for storing individual shader uniforms using this attribute format.
      *
      * @return the created {@link NewUniformBuffer}
