@@ -19,6 +19,7 @@
 
 package net.daporkchop.fp2.core.engine.client.index.attribdivisor;
 
+import net.daporkchop.fp2.common.util.DirectBufferHackery;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.core.engine.client.bake.storage.BakeStorage;
@@ -29,6 +30,8 @@ import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
 import net.daporkchop.fp2.gl.draw.indirect.DrawElementsIndirectCommand;
+
+import java.nio.ByteBuffer;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -96,6 +99,10 @@ public abstract class AbstractMultiDrawIndirectRenderIndex<VertexType extends At
 
             this.capacity = newCapacity;
             this.address = newAddress;
+        }
+
+        public ByteBuffer byteBufferView() {
+            return DirectBufferHackery.wrapByte(this.address, Math.toIntExact(this.size * DrawElementsIndirectCommand._SIZE));
         }
     }
 }

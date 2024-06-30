@@ -52,6 +52,7 @@ import static net.daporkchop.fp2.core.debug.FP2Debug.*;
  */
 public final class GlobalRenderer {
     public final NewAttributeFormat<GlobalUniformAttributes> globalUniformAttributeFormat;
+    public final NewAttributeFormat<IFrustum.ClippingPlanes> frustumClippingPlanesUBOFormat;
 
     public final NewAttributeFormat<VoxelGlobalAttributes> voxelInstancedAttributesFormat;
     public final NewAttributeFormat<VoxelLocalAttributes> voxelVertexAttributesFormat;
@@ -71,6 +72,7 @@ public final class GlobalRenderer {
 
     public GlobalRenderer(FP2Core fp2, OpenGL gl) {
         this.globalUniformAttributeFormat = NewAttributeFormat.get(gl, GlobalUniformAttributes.class, AttributeTarget.UBO);
+        this.frustumClippingPlanesUBOFormat = NewAttributeFormat.get(gl, IFrustum.ClippingPlanes.class, AttributeTarget.UBO);
 
         //determine whether we want the tile position attribute format to support the SSBO target
         boolean tilePositionArrayAsSsbo = false;
@@ -133,7 +135,7 @@ public final class GlobalRenderer {
                 commonShaderSetup(builder)
                         .addSSBO(RenderConstants.TILE_POSITIONS_SSBO_BINDING, RenderConstants.TILE_POSITIONS_SSBO_NAME);
                 for (int pass = 0; pass < RenderConstants.RENDER_PASS_COUNT; pass++) {
-                    builder.addSSBO(RenderConstants.INDIRECT_DRAWS_SSBO_BINDING + pass, RenderConstants.INDIRECT_DRAWS_SSBO_NAME + '[' + pass + ']');
+                    builder.addSSBO(RenderConstants.INDIRECT_DRAWS_SSBO_FIRST_BINDING + pass, RenderConstants.INDIRECT_DRAWS_SSBO_NAME + '[' + pass + ']');
                 }
             };
 

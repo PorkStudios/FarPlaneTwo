@@ -18,7 +18,7 @@
  *
  */
 
-layout(local_size_x = 16, local_size_y = 16) in;
+layout(local_size_x = 256) in;
 
 //#include <"fp2:shaders/comp/common.comp">
 
@@ -50,6 +50,8 @@ bool select(uint index) {
     return isBoxInFrustum(
             vec3(position_relative) - u_positionFrac,
             vec3(position_relative + ivec3((T_VOXELS + 1) << pos.w)) - u_positionFrac);
+
+    // TODO: For level-0 tiles we should also check vanilla renderability
 }
 
 void main() {

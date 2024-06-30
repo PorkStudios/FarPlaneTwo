@@ -51,6 +51,7 @@ import net.daporkchop.fp2.gl.buffer.upload.UnsynchronizedMapBufferUploader;
 import net.daporkchop.fp2.gl.draw.DrawMode;
 import net.daporkchop.fp2.gl.draw.index.NewIndexFormat;
 import net.daporkchop.fp2.gl.state.StatePreserver;
+import net.daporkchop.lib.common.closeable.PResourceUtil;
 import net.daporkchop.lib.common.misc.release.AbstractReleasable;
 
 import static net.daporkchop.fp2.core.debug.FP2Debug.*;
@@ -82,37 +83,65 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
 
     protected final DrawMode drawMode = DrawMode.QUADS; //TODO: this shouldn't be hardcoded
 
-    protected final StatePreserver statePreserver;
+    protected final StatePreserver statePreserverSelect;
+    protected final StatePreserver statePreserverDraw;
 
     @SuppressWarnings("unchecked")
     public AbstractFarRenderer(@NonNull IFarClientContext context) {
-        this.fp2 = context.fp2();
-        this.context = context;
+        try {
+            this.fp2 = context.fp2();
+            this.context = context;
 
-        this.levelRenderer = context.level().renderer();
-        this.gl = this.levelRenderer.gl();
+            this.levelRenderer = context.level().renderer();
+            this.gl = this.levelRenderer.gl();
 
-        this.vertexFormat = (NewAttributeFormat<VertexType>) this.fp2.client().globalRenderer().voxelVertexAttributesFormat;
-        this.indexFormat = this.fp2.client().globalRenderer().unsignedShortIndexFormat;
+            this.vertexFormat = (NewAttributeFormat<VertexType>) this.fp2.client().globalRenderer().voxelVertexAttributesFormat;
+            this.indexFormat = this.fp2.client().globalRenderer().unsignedShortIndexFormat;
 
-        this.bufferUploader = this.gl.supports(UnsynchronizedMapBufferUploader.REQUIRED_EXTENSIONS) //TODO
-                ? new UnsynchronizedMapBufferUploader(this.gl, 8 << 20) //8 MiB
-                : new ScratchCopyBufferUploader(this.gl);
+            this.bufferUploader = this.gl.supports(UnsynchronizedMapBufferUploader.REQUIRED_EXTENSIONS) //TODO
+                    ? new UnsynchronizedMapBufferUploader(this.gl, 8 << 20) //8 MiB
+                    : new ScratchCopyBufferUploader(this.gl);
 
-        this.globalUniformBuffer = this.fp2.client().globalRenderer().globalUniformAttributeFormat.createUniformBuffer();
+            this.globalUniformBuffer = this.fp2.client().globalRenderer().globalUniformAttributeFormat.createUniformBuffer();
 
-        this.baker = this.createBaker();
-        this.bakeStorage = this.createBakeStorage();
-        this.renderIndex = this.createRenderIndex();
-        this.bakeManager = new BakeManager<>(this, context.tileCache(), this.bufferUploader, this.baker, this.bakeStorage, this.renderIndex);
+            this.baker = this.createBaker();
+            this.bakeStorage = this.createBakeStorage();
+            this.renderIndex = this.createRenderIndex();
+            this.bakeManager = new BakeManager<>(this, context.tileCache(), this.bufferUploader, this.baker, this.bakeStorage, this.renderIndex);
 
-        this.statePreserver = StatePreserver.builder(this.gl)
-                .texture(TextureTarget.TEXTURE_2D, RenderConstants.TEXTURE_ATLAS_SAMPLER_BINDING)
-                .texture(TextureTarget.TEXTURE_2D, RenderConstants.LIGHTMAP_SAMPLER_BINDING)
-                .indexedBuffer(IndexedBufferTarget.UNIFORM_BUFFER, RenderConstants.GLOBAL_UNIFORMS_UBO_BINDING)
-                .indexedBuffer(IndexedBufferTarget.SHADER_STORAGE_BUFFER, RenderConstants.TEXTURE_UVS_LISTS_SSBO_BINDING)
-                .indexedBuffer(IndexedBufferTarget.SHADER_STORAGE_BUFFER, RenderConstants.TEXTURE_UVS_QUADS_SSBO_BINDING)
-                .build();
+            {
+                StatePreserver.Builder statePreserverBuilder = StatePreserver.builder(this.gl);
+                this.renderIndex.preservedSelectState(statePreserverBuilder);
+                this.statePreserverSelect = statePreserverBuilder.build();
+            }
+
+            {
+                StatePreserver.Builder statePreserverBuilder = StatePreserver.builder(this.gl)
+                        .activeProgram()
+                        .vao()
+                        .fixedFunctionDrawState()
+                        .texture(TextureTarget.TEXTURE_2D, RenderConstants.TEXTURE_ATLAS_SAMPLER_BINDING)
+                        .texture(TextureTarget.TEXTURE_2D, RenderConstants.LIGHTMAP_SAMPLER_BINDING)
+                        .indexedBuffer(IndexedBufferTarget.UNIFORM_BUFFER, RenderConstants.GLOBAL_UNIFORMS_UBO_BINDING)
+                        .indexedBuffer(IndexedBufferTarget.SHADER_STORAGE_BUFFER, RenderConstants.TEXTURE_UVS_LISTS_SSBO_BINDING)
+                        .indexedBuffer(IndexedBufferTarget.SHADER_STORAGE_BUFFER, RenderConstants.TEXTURE_UVS_QUADS_SSBO_BINDING);
+                this.renderIndex.preservedDrawState(statePreserverBuilder);
+                this.statePreserverDraw = statePreserverBuilder.build();
+            }
+        } catch (Throwable t) {
+            throw PResourceUtil.closeSuppressed(t, this);
+        }
+    }
+
+    @Override
+    protected void doRelease() {
+        PResourceUtil.closeAll(
+                this.bakeManager,
+                this.renderIndex,
+                this.bakeStorage,
+                this.globalUniformBuffer,
+                this.bufferUploader,
+                this.alloc);
     }
 
     protected abstract IRenderBaker<VertexType> createBaker();
@@ -131,7 +160,10 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
      */
     public void prepare(@NonNull IFrustum frustum) {
         this.bufferUploader.tick();
-        this.renderIndex.select(frustum, this.levelRenderer.blockedTracker());
+
+        try (val ignored = this.statePreserverSelect.backup()) { //back up opengl state prior to selecting
+            this.renderIndex.select(frustum, this.levelRenderer.blockedTracker());
+        }
     }
 
     /**
@@ -149,7 +181,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
             }
         }
 
-        try (val backup = this.statePreserver.backup()) { //back up opengl state prior to rendering
+        try (val ignored = this.statePreserverDraw.backup()) { //back up opengl state prior to rendering
             this.preRender();
 
             //in order to properly render overlapping layers while ensuring that low-detail levels always get placed on top of high-detail ones, we'll need to do the following:
@@ -173,8 +205,8 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
         this.gl.glBindBufferBase(GL_UNIFORM_BUFFER, RenderConstants.GLOBAL_UNIFORMS_UBO_BINDING, this.globalUniformBuffer.buffer().id());
 
         val textureUVs = this.levelRenderer.textureUVs();
-        this.gl.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, RenderConstants.TEXTURE_UVS_LISTS_SSBO_BINDING, textureUVs.listsBuffer().buffers(0)[0].buffer());
-        this.gl.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, RenderConstants.TEXTURE_UVS_QUADS_SSBO_BINDING, textureUVs.quadsBuffer().buffers(0)[0].buffer());
+        this.gl.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, RenderConstants.TEXTURE_UVS_LISTS_SSBO_BINDING, textureUVs.listsBuffer().bufferSSBO().id());
+        this.gl.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, RenderConstants.TEXTURE_UVS_QUADS_SSBO_BINDING, textureUVs.quadsBuffer().bufferSSBO().id());
 
         if (!FP2_DEBUG || this.fp2.globalConfig().debug().backfaceCulling()) {
             this.gl.glEnable(GL_CULL_FACE);
@@ -194,6 +226,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
     }
 
     private void postRender() {
+        this.renderIndex.postDraw();
     }
 
     private void renderSolid(int level) {
@@ -265,18 +298,6 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
 
     public DebugStats.Renderer stats() {
         return this.bakeStorage.stats();
-    }
-
-    @Override
-    protected void doRelease() {
-        this.bakeManager.close();
-        this.renderIndex.close();
-        this.bakeStorage.close();
-
-        this.globalUniformBuffer.close();
-
-        this.bufferUploader.close();
-        this.alloc.close();
     }
 
     /**

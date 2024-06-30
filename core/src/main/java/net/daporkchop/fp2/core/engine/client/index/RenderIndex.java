@@ -32,6 +32,8 @@ import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.draw.DrawMode;
 import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.shader.ShaderProgram;
+import net.daporkchop.fp2.gl.state.StatePreserver;
+import net.daporkchop.lib.common.annotation.TransferOwnership;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
 import net.daporkchop.lib.primitive.lambda.IntIntObjFunction;
 
@@ -88,12 +90,30 @@ public abstract class RenderIndex<VertexType extends AttributeStruct> implements
     public abstract void updateHidden(Set<TilePos> hidden, Set<TilePos> shown);
 
     /**
+     * Configures the given {@link StatePreserver} builder to preserve any OpenGL state which may be modified by this render index while selecting rendered tiles.
+     *
+     * @param builder the {@link StatePreserver} builder to configure
+     */
+    public void preservedSelectState(StatePreserver.Builder builder) {
+        //no-op
+    }
+
+    /**
      * Determine which tiles need to be rendered for the current frame.
      *
      * @param frustum        the current view frustum
      * @param blockedTracker a {@link TerrainRenderingBlockedTracker} for tracking which level-0 tiles are blocked from rendering
      */
     public abstract void select(IFrustum frustum, TerrainRenderingBlockedTracker blockedTracker);
+
+    /**
+     * Configures the given {@link StatePreserver} builder to preserve any OpenGL state which may be modified by this render index while drawing.
+     *
+     * @param builder the {@link StatePreserver} builder to configure
+     */
+    public void preservedDrawState(StatePreserver.Builder builder) {
+        //no-op
+    }
 
     /**
      * Called after {@link #select}, but before any calls to {@link #draw}.
@@ -111,6 +131,13 @@ public abstract class RenderIndex<VertexType extends AttributeStruct> implements
      * @param uniformSetter a handle for setting uniform values in the draw shader
      */
     public abstract void draw(DrawMode mode, int level, int pass, DrawShaderProgram shader, ShaderProgram.UniformSetter uniformSetter);
+
+    /**
+     * Called after {@link #preDraw()} and after all calls to {@link #draw}.
+     */
+    public void postDraw() {
+        //no-op
+    }
 
     /**
      * @return the technique used by this render index to push tile positions to the shader
@@ -171,6 +198,20 @@ public abstract class RenderIndex<VertexType extends AttributeStruct> implements
         public void close() {
             PResourceUtil.closeAll(this);
         }
+
+        protected void set(int index, @TransferOwnership E value) {
+            //get the old value, then delete it and replace it with the new value
+            try (E ignored = this.delegate[index]) {
+                this.delegate[index] = value;
+            } catch (Throwable t) {
+                if (index >= 0 && index < this.delegate.length) {
+                    //the index is in-bounds, meaning that the exception was thrown while calling close() on the old value. to avoid
+                    // closing a value twice, we'll set it to null!
+                    this.delegate[index] = null;
+                }
+                throw PResourceUtil.closeSuppressed(t, value);
+            }
+        }
     }
 
     /**
@@ -198,6 +239,58 @@ public abstract class RenderIndex<VertexType extends AttributeStruct> implements
          */
         public E get(int level) {
             return this.delegate[level];
+        }
+
+        /**
+         * Sets the element at the given detail level to the given value, closing the previous value in the process.
+         * <p>
+         * If an exception is thrown, the new value will be closed and the array's contents are undefined.
+         *
+         * @param level the detail level
+         * @param value the new value
+         */
+        public void set(int level, @TransferOwnership E value) {
+            super.set(level, value);
+        }
+    }
+
+    /**
+     * A 1-dimensional array indexed by render pass.
+     *
+     * @author DaPorkchop_
+     */
+    protected static final class PassArray<E extends AutoCloseable> extends AbstractCloseableArray<E> {
+        public PassArray(IntFunction<E> creator) {
+            super(RenderConstants.RENDER_PASS_COUNT);
+            try {
+                for (int level = 0; level < RenderConstants.RENDER_PASS_COUNT; level++) {
+                    this.delegate[level] = Objects.requireNonNull(creator.apply(level));
+                }
+            } catch (Throwable t) {
+                throw PResourceUtil.closeAllSuppressed(t, this);
+            }
+        }
+
+        /**
+         * Gets the element at the given render pass index.
+         *
+         * @param pass the render pass index
+         * @return the element at the given render pass index
+         */
+        public E get(int pass) {
+            return this.delegate[pass];
+        }
+
+        /**
+         * Sets the element at the given render pass index to the given value, closing the previous value in the process.
+         * <p>
+         * If an exception is thrown, the new value will be closed and the array's contents are undefined.
+         *
+         * @param pass  the render pass index
+         * @param value the new value
+         */
+        public void set(int pass, @TransferOwnership E value) {
+            super.set(pass, value);
         }
     }
 
@@ -231,6 +324,21 @@ public abstract class RenderIndex<VertexType extends AttributeStruct> implements
             checkIndex(EngineConstants.MAX_LODS, level);
             checkIndex(RenderConstants.RENDER_PASS_COUNT, pass);
             return this.delegate[level * RenderConstants.RENDER_PASS_COUNT + pass];
+        }
+
+        /**
+         * Sets the element at the given detail level and render pass index to the given value, closing the previous value in the process.
+         * <p>
+         * If an exception is thrown, the new value will be closed and the array's contents are undefined.
+         *
+         * @param level the detail level
+         * @param pass  the render pass index
+         * @param value the new value
+         */
+        public void set(int level, int pass, @TransferOwnership E value) {
+            checkIndex(EngineConstants.MAX_LODS, level);
+            checkIndex(RenderConstants.RENDER_PASS_COUNT, pass);
+            super.set(level * RenderConstants.RENDER_PASS_COUNT + pass, value);
         }
     }
 }

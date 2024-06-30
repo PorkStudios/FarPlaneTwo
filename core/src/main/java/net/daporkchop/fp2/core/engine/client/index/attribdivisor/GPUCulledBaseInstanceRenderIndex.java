@@ -27,6 +27,7 @@ import net.daporkchop.fp2.core.client.render.GlobalRenderer;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
 import net.daporkchop.fp2.core.client.shader.NewReloadableShaderProgram;
 import net.daporkchop.fp2.core.engine.DirectTilePosAccess;
+import net.daporkchop.fp2.core.engine.EngineConstants;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.client.bake.storage.BakeStorage;
 import net.daporkchop.fp2.core.engine.client.index.postable.PerLevelRenderPosTable;
@@ -37,14 +38,20 @@ import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.GLExtensionSet;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
+import net.daporkchop.fp2.gl.attribute.BufferUsage;
+import net.daporkchop.fp2.gl.attribute.NewAttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
+import net.daporkchop.fp2.gl.buffer.BufferTarget;
 import net.daporkchop.fp2.gl.buffer.GLMutableBuffer;
+import net.daporkchop.fp2.gl.buffer.IndexedBufferTarget;
 import net.daporkchop.fp2.gl.draw.DrawMode;
 import net.daporkchop.fp2.gl.draw.indirect.DrawElementsIndirectCommand;
 import net.daporkchop.fp2.gl.shader.ComputeShaderProgram;
 import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.shader.ShaderProgram;
+import net.daporkchop.fp2.gl.state.StatePreserver;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
+import net.daporkchop.lib.primitive.lambda.IntIntObjFunction;
 
 import java.util.Map;
 import java.util.Objects;
@@ -52,6 +59,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 import static net.daporkchop.fp2.core.engine.client.RenderConstants.*;
+import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 
 /**
  * Render index implementation using MultiDrawIndirect with an attribute divisor for the tile position which does frustum culling on tiles on the GPU.
@@ -82,8 +90,9 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
      */
 
     private final Map<TilePos, DrawElementsIndirectCommand[]> drawCommands = DirectTilePosAccess.newPositionKeyedHashMap();
-    private final LevelPassArray<DirectCommandList> commandLists;
-    private final LevelPassArray<GLMutableBuffer> glBuffers;
+    private final LevelPassArray<DirectCommandList> rawDrawListsCPU;
+    private final LevelPassArray<GLMutableBuffer> rawDrawListsGPU;
+    private final LevelPassArray<GLMutableBuffer> culledDrawListsGPU;
 
     private final NewReloadableShaderProgram<ComputeShaderProgram> indirectTileFrustumCullingShaderProgram;
     private final int tilesCulledPerWorkGroup = 16 * 16; //TODO: a nicer way to acquire this without hardcoding it
@@ -95,8 +104,11 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
             this.indirectTileFrustumCullingShaderProgram = Objects.requireNonNull(globalRenderer.indirectTileFrustumCullingShaderProgram);
             //this.tilesCulledPerWorkGroup = this.indirectTileFrustumCullingShaderProgram.get().workGroupSize().invocations();
 
-            this.commandLists = new LevelPassArray<>((level, pass) -> new DirectCommandList(alloc));
-            this.glBuffers = new LevelPassArray<>((level, pass) -> null); //TODO
+            this.rawDrawListsCPU = new LevelPassArray<>((level, pass) -> new DirectCommandList(alloc));
+
+            IntIntObjFunction<GLMutableBuffer> drawListCreatorGPU = (level, pass) -> GLMutableBuffer.create(gl);
+            this.rawDrawListsGPU = new LevelPassArray<>(drawListCreatorGPU);
+            this.culledDrawListsGPU = new LevelPassArray<>(drawListCreatorGPU);
         } catch (Throwable t) {
             throw PResourceUtil.closeSuppressed(t, this);
         }
@@ -104,7 +116,9 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
 
     @Override
     public void close() {
-        try (val ignored0 = this.commandLists) {
+        try (val ignored0 = this.rawDrawListsCPU;
+             val ignored1 = this.rawDrawListsGPU;
+             val ignored2 = this.culledDrawListsGPU) {
             super.close();
         }
     }
@@ -159,30 +173,93 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
     }
 
     @Override
+    public void preservedSelectState(StatePreserver.Builder builder) {
+        super.preservedSelectState(builder
+                .activeProgram()
+                .indexedBuffer(IndexedBufferTarget.SHADER_STORAGE_BUFFER, TILE_POSITIONS_SSBO_BINDING)
+                .indexedBuffers(IndexedBufferTarget.SHADER_STORAGE_BUFFER, INDIRECT_DRAWS_SSBO_FIRST_BINDING, RENDER_PASS_COUNT));
+    }
+
+    @Override
     public void select(IFrustum frustum, TerrainRenderingBlockedTracker blockedTracker) {
         this.renderPosTable.flush();
 
-        //iterate over all the tile positions and draw commands
-        /*this.drawCommands.forEach((pos, commands) -> {
-            DirectCommandList[] commandLists = this.commandLists[pos.level()];
-            if ((pos.level() > 0 || !blockedTracker.renderingBlocked(pos.x(), pos.y(), pos.z()))
-                && frustum.intersectsBB(pos.minBlockX(), pos.minBlockY(), pos.minBlockZ(), pos.maxBlockX(), pos.maxBlockY(), pos.maxBlockZ())) {
-                //the tile is in the frustum, add all the draw commands to the corresponding draw lists
-                for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
-                    if (commands[pass] != null) {
-                        commandLists[pass].add(commands[pass]);
-                    }
-                }
+        //upload the rawDrawList at each detail level
+        for (int level = 0; level < EngineConstants.MAX_LODS; level++) {
+            int capacity = this.renderPosTable.vertexBuffer(level).capacity(); // TODO: maybe use some other mechanism to decide on this rather than capacity (as capacity can't shrink back down)
+            assert (capacity % this.tilesCulledPerWorkGroup) == 0 : "capacity not divisible by work group size! level=" + level + ", capacity=" + capacity + ", work group size=" + this.tilesCulledPerWorkGroup;
+
+            for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
+                val rawDrawListCPU = this.rawDrawListsCPU.get(level, pass);
+                val rawDrawListGPU = this.rawDrawListsGPU.get(level, pass);
+                rawDrawListGPU.capacity(capacity * DrawElementsIndirectCommand._SIZE, BufferUsage.STREAM_DRAW);
+                rawDrawListGPU.bufferSubData(0L, rawDrawListCPU.byteBufferView());
             }
-        });*/
+        }
+
+        //orphan the culledDrawList at each detail level
+        for (int level = 0; level < EngineConstants.MAX_LODS; level++) {
+            int capacity = this.renderPosTable.vertexBuffer(level).capacity();
+
+            for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
+                this.culledDrawListsGPU.get(level, pass).capacity(capacity * DrawElementsIndirectCommand._SIZE, BufferUsage.STREAM_COPY);
+            }
+        }
+
+        //copy the rawDrawList into the culledDrawList
+        //TODO: i'd like to avoid this copy and instead simply bind both lists to the shader
+        for (int level = 0; level < EngineConstants.MAX_LODS; level++) {
+            int capacity = this.renderPosTable.vertexBuffer(level).capacity();
+
+            for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
+                this.culledDrawListsGPU.get(level, pass).copyRange(this.rawDrawListsGPU.get(level, pass), 0L, 0L, capacity * DrawElementsIndirectCommand._SIZE);
+            }
+        }
+
+        //TODO: i also need to bind global uniforms (do i?) and the terrain rendering blocked tracker
+        val cullingShaderProgram = this.indirectTileFrustumCullingShaderProgram.get();
+        val uniformSetter = cullingShaderProgram.bindUnsafe(); // active program binding will be restored by StatePreserver
+
+        //configure frustum uniforms
+        frustum.configureClippingPlanes(uniformSetter, new IFrustum.UniformLocations(cullingShaderProgram));
+
+        //dispatch the compute shaders
+        for (int level = 0; level < EngineConstants.MAX_LODS; level++) {
+            NewAttributeBuffer<VoxelGlobalAttributes> tilePosArray = this.renderPosTable.vertexBuffer(level);
+            int capacity = tilePosArray.capacity();
+
+            //bind the tile positions array and the culledDrawList for each render pass
+            this.gl.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, TILE_POSITIONS_SSBO_BINDING, tilePosArray.bufferSSBO().id());
+            for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
+                this.gl.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, INDIRECT_DRAWS_SSBO_FIRST_BINDING + pass, this.culledDrawListsGPU.get(level, pass).id());
+            }
+
+            //cull the tiles!
+            this.gl.glDispatchCompute(capacity / this.tilesCulledPerWorkGroup, 1, 1);
+        }
+
+        /*//reset all affected SSBO bindings to 0
+        this.gl.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, TILE_POSITIONS_SSBO_BINDING, 0);
+        for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
+            this.gl.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, INDIRECT_DRAWS_SSBO_FIRST_BINDING + pass, 0);
+        }*/
+    }
+
+    @Override
+    public void preservedDrawState(StatePreserver.Builder builder) {
+        super.preservedDrawState(builder
+                .vao()
+                .buffer(BufferTarget.DRAW_INDIRECT_BUFFER));
     }
 
     @Override
     public void draw(DrawMode mode, int level, int pass, DrawShaderProgram shader, ShaderProgram.UniformSetter uniformSetter) {
-        val list = this.commandLists.get(level, pass);
+        val list = this.rawDrawListsCPU.get(level, pass);
         if (list.size != 0) {
-            //this.gl.glBindVertexArray(this.vaos.vao(level, pass).id());
-            this.gl.glMultiDrawElementsIndirect(mode.mode(), this.bakeStorage.indexFormat.type().type(), list.address, list.size, 0);
+            this.gl.glBindVertexArray(this.vaos.get(level, pass).id());
+            this.gl.glBindBuffer(GL_DRAW_INDIRECT_BUFFER, this.culledDrawListsGPU.get(level, pass).id());
+            this.gl.glMemoryBarrier(GL_COMMAND_BARRIER_BIT);
+            this.gl.glMultiDrawElementsIndirect(mode.mode(), this.bakeStorage.indexFormat.type().type(), 0L, list.size, 0);
         }
     }
 

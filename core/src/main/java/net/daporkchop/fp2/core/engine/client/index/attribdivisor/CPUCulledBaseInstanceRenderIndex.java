@@ -34,6 +34,7 @@ import net.daporkchop.fp2.gl.draw.DrawMode;
 import net.daporkchop.fp2.gl.draw.indirect.DrawElementsIndirectCommand;
 import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.shader.ShaderProgram;
+import net.daporkchop.fp2.gl.state.StatePreserver;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
 
 import java.util.Map;
@@ -128,6 +129,12 @@ public class CPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
                 }
             }
         });
+    }
+
+    @Override
+    public void preservedDrawState(StatePreserver.Builder builder) {
+        super.preservedDrawState(builder
+                .vao());
     }
 
     @Override

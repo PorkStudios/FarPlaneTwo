@@ -387,6 +387,21 @@ public final class StatePreserver {
         final Set<IndexedBufferBinding> indexedBuffers = new HashSet<>();
         final Set<TextureBinding> textures = new HashSet<>();
 
+        public Builder fixedFunctionDrawState() {
+            //backed up by default
+            return this;
+        }
+
+        public Builder activeProgram() {
+            //backed up by default
+            return this;
+        }
+
+        public Builder vao() {
+            //backed up by default
+            return this;
+        }
+
         public Builder buffer(BufferTarget target) {
             checkArg(target.requiredExtension() == null || this.gl.supports(target.requiredExtension()), "context (%s) doesn't support %s (%s)", this.gl, target, target.requiredExtension());
             this.bufferTargets.add(target);
@@ -395,7 +410,16 @@ public final class StatePreserver {
 
         public Builder indexedBuffer(IndexedBufferTarget target, @NotNegative int index) {
             checkArg(target.requiredExtension() == null || this.gl.supports(target.requiredExtension()), "context (%s) doesn't support %s (%s)", this.gl, target, target.requiredExtension());
-            this.indexedBuffers.add(new IndexedBufferBinding(target, checkIndex(this.gl.glGetInteger(target.maxBindings()), index)));
+            this.indexedBuffers.add(new IndexedBufferBinding(target, checkIndex(this.gl.limits().maxBindings(target), index)));
+            return this;
+        }
+
+        public Builder indexedBuffers(IndexedBufferTarget target, @NotNegative int first, @NotNegative int count) {
+            checkArg(target.requiredExtension() == null || this.gl.supports(target.requiredExtension()), "context (%s) doesn't support %s (%s)", this.gl, target, target.requiredExtension());
+            checkRangeLen(this.gl.limits().maxBindings(target), first, count);
+            for (int i = 0; i < count; i++) {
+                this.indexedBuffers.add(new IndexedBufferBinding(target, first + i));
+            }
             return this;
         }
 
