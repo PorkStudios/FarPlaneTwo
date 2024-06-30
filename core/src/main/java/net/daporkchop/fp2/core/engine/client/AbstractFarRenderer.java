@@ -318,7 +318,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
         protected RenderIndex<VoxelLocalAttributes> createRenderIndex() {
             val globalRenderer = this.fp2.client().globalRenderer();
             return this.gl.supports(GPUCulledBaseInstanceRenderIndex.REQUIRED_EXTENSIONS)
-                    ? new GPUCulledBaseInstanceRenderIndex<>(this.gl, this.bakeStorage, this.alloc, globalRenderer.voxelInstancedAttributesFormat, globalRenderer)
+                    ? new GPUCulledBaseInstanceRenderIndex<>(this.gl, this.bakeStorage, this.alloc, globalRenderer.voxelInstancedAttributesFormat, globalRenderer, this.globalUniformBuffer)
                     : new CPUCulledBaseInstanceRenderIndex<>(this.gl, this.bakeStorage, this.alloc, globalRenderer.voxelInstancedAttributesFormat);
         }
     }

@@ -46,8 +46,9 @@ public abstract class RenderPosTable implements AutoCloseable {
      * Removes the given tile position from this table.
      *
      * @param pos the tile position
+     * @return the index of the tile position in the vertex buffer at the corresponding detail level, or a negative value if the tile position was not previously present
      */
-    public abstract void remove(TilePos pos);
+    public abstract int remove(TilePos pos);
 
     /**
      * Makes all changes visible to the GL.

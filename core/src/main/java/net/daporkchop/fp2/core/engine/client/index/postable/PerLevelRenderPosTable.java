@@ -59,8 +59,8 @@ public final class PerLevelRenderPosTable extends RenderPosTable {
     }
 
     @Override
-    public void remove(TilePos pos) {
-        this.tables[pos.level()].remove(pos);
+    public int remove(TilePos pos) {
+        return this.tables[pos.level()].remove(pos);
     }
 
     @Override

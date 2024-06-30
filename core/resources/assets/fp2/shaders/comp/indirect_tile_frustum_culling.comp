@@ -40,7 +40,8 @@ bool select(uint index) {
     ivec4 pos = b_tilePositions[index];
 
     // Level-0 tiles must not overlap vanilla renderable terrain
-    if (pos.w == 0 && !isVanillaRenderableLevel0(pos.xyz)) {
+    // TODO: Enable this once it actually works
+    if (false && pos.w == 0 && !isVanillaRenderableLevel0(pos.xyz)) {
         return false;
     }
 
@@ -50,8 +51,6 @@ bool select(uint index) {
     return isBoxInFrustum(
             vec3(position_relative) - u_positionFrac,
             vec3(position_relative + ivec3((T_VOXELS + 1) << pos.w)) - u_positionFrac);
-
-    // TODO: For level-0 tiles we should also check vanilla renderability
 }
 
 void main() {

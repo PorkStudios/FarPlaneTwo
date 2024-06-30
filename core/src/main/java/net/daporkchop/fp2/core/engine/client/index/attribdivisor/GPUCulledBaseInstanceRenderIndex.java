@@ -24,6 +24,7 @@ import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.client.render.GlobalRenderer;
+import net.daporkchop.fp2.core.client.render.GlobalUniformAttributes;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
 import net.daporkchop.fp2.core.client.shader.NewReloadableShaderProgram;
 import net.daporkchop.fp2.core.engine.DirectTilePosAccess;
@@ -41,6 +42,7 @@ import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.attribute.NewAttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
+import net.daporkchop.fp2.gl.attribute.NewUniformBuffer;
 import net.daporkchop.fp2.gl.buffer.BufferTarget;
 import net.daporkchop.fp2.gl.buffer.GLMutableBuffer;
 import net.daporkchop.fp2.gl.buffer.IndexedBufferTarget;
@@ -51,6 +53,7 @@ import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.gl.state.StatePreserver;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
+import net.daporkchop.lib.common.math.PMath;
 import net.daporkchop.lib.primitive.lambda.IntIntObjFunction;
 
 import java.util.Map;
@@ -89,7 +92,8 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
      * 3. Fill the culledDrawList buffer using a compute shader
      */
 
-    private final Map<TilePos, DrawElementsIndirectCommand[]> drawCommands = DirectTilePosAccess.newPositionKeyedHashMap();
+    private final NewUniformBuffer<GlobalUniformAttributes> globalUniformBuffer;
+
     private final LevelPassArray<DirectCommandList> rawDrawListsCPU;
     private final LevelPassArray<GLMutableBuffer> rawDrawListsGPU;
     private final LevelPassArray<GLMutableBuffer> culledDrawListsGPU;
@@ -97,10 +101,13 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
     private final NewReloadableShaderProgram<ComputeShaderProgram> indirectTileFrustumCullingShaderProgram;
     private final int tilesCulledPerWorkGroup = 16 * 16; //TODO: a nicer way to acquire this without hardcoding it
 
-    public GPUCulledBaseInstanceRenderIndex(OpenGL gl, BakeStorage<VertexType> bakeStorage, DirectMemoryAllocator alloc, NewAttributeFormat<VoxelGlobalAttributes> sharedVertexFormat, GlobalRenderer globalRenderer) {
+    public GPUCulledBaseInstanceRenderIndex(OpenGL gl, BakeStorage<VertexType> bakeStorage, DirectMemoryAllocator alloc, NewAttributeFormat<VoxelGlobalAttributes> sharedVertexFormat, GlobalRenderer globalRenderer,
+                                            NewUniformBuffer<GlobalUniformAttributes> globalUniformBuffer) {
         super(gl, bakeStorage, alloc, sharedVertexFormat);
 
         try {
+            this.globalUniformBuffer = globalUniformBuffer;
+
             this.indirectTileFrustumCullingShaderProgram = Objects.requireNonNull(globalRenderer.indirectTileFrustumCullingShaderProgram);
             //this.tilesCulledPerWorkGroup = this.indirectTileFrustumCullingShaderProgram.get().workGroupSize().invocations();
 
@@ -135,8 +142,16 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
             BakeStorage.Location[] locations = this.bakeStorage.find(pos);
             if (locations == null || this.hiddenPositions.contains(pos)) {
                 //the position doesn't have any render data data associated with it or is hidden, and therefore can be entirely omitted from the index
-                this.renderPosTable.remove(pos);
-                this.drawCommands.remove(pos);
+                int baseInstance = this.renderPosTable.remove(pos);
+
+                if (baseInstance >= 0) {
+                    for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
+                        val rawDrawListCPU = this.rawDrawListsCPU.get(pos.level(), pass);
+                        if (rawDrawListCPU.size > baseInstance) {
+                            rawDrawListCPU.set(baseInstance, new DrawElementsIndirectCommand());
+                        }
+                    }
+                }
             } else {
                 //configure the render commands which will be used when selecting this
                 int baseInstance = this.renderPosTable.add(pos);
@@ -153,7 +168,16 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
                         command.instanceCount = 1;
                     }
                 }
-                this.drawCommands.put(pos, commands);
+
+                for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
+                    val rawDrawListCPU = this.rawDrawListsCPU.get(pos.level(), pass);
+                    // grow the cpu list
+                    // TODO: this should be done automatically when the RenderPosTable is resized
+                    while (rawDrawListCPU.size < PMath.roundUp(baseInstance + 1, this.tilesCulledPerWorkGroup)) {
+                        rawDrawListCPU.add(new DrawElementsIndirectCommand());
+                    }
+                    rawDrawListCPU.set(baseInstance, commands[pass] == null ? new DrawElementsIndirectCommand() : commands[pass]);
+                }
             }
         };
     }
@@ -176,6 +200,7 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
     public void preservedSelectState(StatePreserver.Builder builder) {
         super.preservedSelectState(builder
                 .activeProgram()
+                .indexedBuffer(IndexedBufferTarget.UNIFORM_BUFFER, GLOBAL_UNIFORMS_UBO_BINDING)
                 .indexedBuffer(IndexedBufferTarget.SHADER_STORAGE_BUFFER, TILE_POSITIONS_SSBO_BINDING)
                 .indexedBuffers(IndexedBufferTarget.SHADER_STORAGE_BUFFER, INDIRECT_DRAWS_SSBO_FIRST_BINDING, RENDER_PASS_COUNT));
     }
@@ -216,7 +241,13 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
             }
         }
 
-        //TODO: i also need to bind global uniforms (do i?) and the terrain rendering blocked tracker
+        //bind global uniforms
+        // TODO: This will still contain the uniforms from the previous frame. Since we only use it to get the camera position into the shader, maybe we could
+        //       add a different mechanism to get the live camera position before we know the full render uniform state?
+        this.gl.glBindBufferBase(GL_UNIFORM_BUFFER, GLOBAL_UNIFORMS_UBO_BINDING, this.globalUniformBuffer.buffer().id());
+
+        //TODO: i also need to bind the terrain rendering blocked tracker
+
         val cullingShaderProgram = this.indirectTileFrustumCullingShaderProgram.get();
         val uniformSetter = cullingShaderProgram.bindUnsafe(); // active program binding will be restored by StatePreserver
 
