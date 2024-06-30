@@ -1748,6 +1748,9 @@ public abstract class OpenGL {
         private final int maxTextureUnits;
         private final int maxVertexAttributes;
 
+        @GLRequires(GLExtension.GL_ARB_shader_atomic_counters)
+        private final int maxAtomicCounterBufferBindings;
+
         @GLRequires(GLExtension.GL_ARB_transform_feedback2)
         private final int maxTransformFeedbackBuffers;
 
@@ -1783,6 +1786,8 @@ public abstract class OpenGL {
                 this.maxTransformFeedbackBuffers = 0;
             }
 
+            this.maxAtomicCounterBufferBindings = gl.supports(GLExtension.GL_ARB_shader_atomic_counters) ? gl.glGetInteger(GL_MAX_ATOMIC_COUNTER_BUFFER_BINDINGS) : 0;
+
             this.maxShaderStorageBufferBindings = gl.supports(GLExtension.GL_ARB_shader_storage_buffer_object) ? gl.glGetInteger(GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS) : 0;
 
             if (gl.supports(GLExtension.GL_ARB_uniform_buffer_object)) {
@@ -1815,6 +1820,8 @@ public abstract class OpenGL {
          */
         public int maxBindings(@NonNull IndexedBufferTarget target) {
             switch (target) {
+                case ATOMIC_COUNTER_BUFFER:
+                    return this.maxAtomicCounterBufferBindings;
                 case TRANSFORM_FEEDBACK_BUFFER:
                     return this.maxTransformFeedbackBuffers;
                 case SHADER_STORAGE_BUFFER:
