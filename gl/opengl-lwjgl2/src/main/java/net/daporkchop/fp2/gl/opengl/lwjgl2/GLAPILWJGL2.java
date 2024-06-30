@@ -43,6 +43,7 @@ import org.lwjgl.opengl.ARBDrawElementsBaseVertex;
 import org.lwjgl.opengl.ARBDrawInstanced;
 import org.lwjgl.opengl.ARBInstancedArrays;
 import org.lwjgl.opengl.ARBInvalidateSubdata;
+import org.lwjgl.opengl.ARBMultiBind;
 import org.lwjgl.opengl.ARBProgramInterfaceQuery;
 import org.lwjgl.opengl.ARBSamplerObjects;
 import org.lwjgl.opengl.ARBSeparateShaderObjects;
@@ -134,6 +135,7 @@ public final class GLAPILWJGL2 extends OpenGL {
     // OpenGL 4.4
     private final boolean OpenGL44;
     private final boolean GL_ARB_buffer_storage;
+    private final boolean GL_ARB_multi_bind;
 
     // OpenGL 4.5
     private final boolean OpenGL45;
@@ -186,6 +188,7 @@ public final class GLAPILWJGL2 extends OpenGL {
         // OpenGL 4.4
         this.OpenGL44 = capabilities.OpenGL44;
         this.GL_ARB_buffer_storage = !capabilities.OpenGL44 && capabilities.GL_ARB_buffer_storage;
+        this.GL_ARB_multi_bind = !capabilities.OpenGL44 && capabilities.GL_ARB_multi_bind;
 
         // OpenGL 4.5
         this.OpenGL45 = capabilities.OpenGL45;
@@ -1967,6 +1970,44 @@ public final class GLAPILWJGL2 extends OpenGL {
             super.debugCheckError();
         } else {
             throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_buffer_storage));
+        }
+    }
+
+    @Override
+    public void glBindBuffersBase(int target, int first, int count) {
+        if (this.OpenGL44) {
+            GL44.glBindBuffersBase(target, first, count, null);
+            super.debugCheckError();
+        } else if (this.GL_ARB_multi_bind) {
+            ARBMultiBind.glBindBuffersBase(target, first, count, null);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_multi_bind));
+        }
+    }
+
+    @Override
+    public void glBindBuffersBase(int target, int first, @NonNull IntBuffer buffers) {
+        if (this.OpenGL44) {
+            GL44.glBindBuffersBase(target, first, buffers.remaining(), buffers);
+            super.debugCheckError();
+        } else if (this.GL_ARB_multi_bind) {
+            ARBMultiBind.glBindBuffersBase(target, first, buffers.remaining(), buffers);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_multi_bind));
+        }
+    }
+
+    @Override
+    public void glBindBuffersBase(int target, int first, @NonNull int[] buffers) {
+        long size = buffers.length * (long) Integer.BYTES;
+        long address = DirectBufferHackery.allocateTemporary(size);
+        try {
+            DirectBufferHackery.wrapInt(address, buffers.length).put(buffers);
+            this.glBindBuffersBase(target, first, DirectBufferHackery.wrapInt(address, buffers.length));
+        } finally {
+            DirectBufferHackery.freeTemporary(address, size);
         }
     }
 

@@ -24,6 +24,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.common.GlobalProperties;
+import net.daporkchop.fp2.gl.buffer.IndexedBufferTarget;
 import net.daporkchop.fp2.gl.compute.ComputeWorkGroupCount;
 import net.daporkchop.fp2.gl.compute.ComputeWorkGroupSize;
 import net.daporkchop.fp2.gl.util.GLRequires;
@@ -1375,6 +1376,27 @@ public abstract class OpenGL {
     @GLRequires(GLExtension.GL_ARB_buffer_storage)
     public abstract void glBufferStorage(int target, @NonNull ByteBuffer data, int flags);
 
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_multi_bind GL_ARB_multi_bind}
+     * @since OpenGL 4.4
+     */
+    @GLRequires(GLExtension.GL_ARB_multi_bind)
+    public abstract void glBindBuffersBase(int target, int first, int count);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_multi_bind GL_ARB_multi_bind}
+     * @since OpenGL 4.4
+     */
+    @GLRequires(GLExtension.GL_ARB_multi_bind)
+    public abstract void glBindBuffersBase(int target, int first, @NonNull IntBuffer buffers);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_multi_bind GL_ARB_multi_bind}
+     * @since OpenGL 4.4
+     */
+    @GLRequires(GLExtension.GL_ARB_multi_bind)
+    public abstract void glBindBuffersBase(int target, int first, @NonNull int[] buffers);
+
     //
     //
     // OpenGL 4.5
@@ -1630,11 +1652,14 @@ public abstract class OpenGL {
         private final int maxTextureUnits;
         private final int maxVertexAttributes;
 
+        @GLRequires(GLExtension.GL_ARB_transform_feedback2)
+        private final int maxTransformFeedbackBuffers;
+
         @GLRequires(GLExtension.GL_ARB_shader_storage_buffer_object)
-        private final int maxShaderStorageBuffers;
+        private final int maxShaderStorageBufferBindings;
 
         @GLRequires(GLExtension.GL_ARB_uniform_buffer_object)
-        private final int maxUniformBuffers;
+        private final int maxUniformBufferBindings;
         @GLRequires(GLExtension.GL_ARB_uniform_buffer_object)
         private final int maxUniformBlockSize;
 
@@ -1656,13 +1681,19 @@ public abstract class OpenGL {
             this.maxTextureUnits = gl.glGetInteger(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS);
             this.maxVertexAttributes = gl.glGetInteger(GL_MAX_VERTEX_ATTRIBS);
 
-            this.maxShaderStorageBuffers = gl.supports(GLExtension.GL_ARB_shader_storage_buffer_object) ? gl.glGetInteger(GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS) : 0;
+            if (gl.supports(GLExtension.GL_ARB_transform_feedback2)) {
+                this.maxTransformFeedbackBuffers = gl.glGetInteger(GL_MAX_TRANSFORM_FEEDBACK_BUFFERS);
+            } else {
+                this.maxTransformFeedbackBuffers = 0;
+            }
+
+            this.maxShaderStorageBufferBindings = gl.supports(GLExtension.GL_ARB_shader_storage_buffer_object) ? gl.glGetInteger(GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS) : 0;
 
             if (gl.supports(GLExtension.GL_ARB_uniform_buffer_object)) {
-                this.maxUniformBuffers = gl.glGetInteger(GL_MAX_UNIFORM_BUFFER_BINDINGS);
+                this.maxUniformBufferBindings = gl.glGetInteger(GL_MAX_UNIFORM_BUFFER_BINDINGS);
                 this.maxUniformBlockSize = gl.glGetInteger(GL_MAX_UNIFORM_BLOCK_SIZE);
             } else {
-                this.maxUniformBuffers = this.maxUniformBlockSize = 0;
+                this.maxUniformBufferBindings = this.maxUniformBlockSize = 0;
             }
 
             if (gl.supports(GLExtension.GL_ARB_compute_shader)) {
@@ -1678,6 +1709,25 @@ public abstract class OpenGL {
             this.maxLabelLength = gl.supports(GLExtension.GL_KHR_debug) ? gl.glGetInteger(GL_MAX_LABEL_LENGTH) : 0;
 
             this.sparseBufferPageSizeARB = gl.supports(GLExtension.GL_ARB_sparse_buffer) ? gl.glGetInteger(GL_SPARSE_BUFFER_PAGE_SIZE_ARB) : 0;
+        }
+
+        /**
+         * Gets the upper bound on the number of available binding indices for the given indexed buffer binding target.
+         *
+         * @param target the indexed buffer binding target
+         * @return the maximum number of binding indices, or {@code 0} if the given buffer binding target is unsupported
+         */
+        public int maxBindings(@NonNull IndexedBufferTarget target) {
+            switch (target) {
+                case TRANSFORM_FEEDBACK_BUFFER:
+                    return this.maxTransformFeedbackBuffers;
+                case SHADER_STORAGE_BUFFER:
+                    return this.maxShaderStorageBufferBindings;
+                case UNIFORM_BUFFER:
+                    return this.maxUniformBufferBindings;
+                default:
+                    throw new IllegalArgumentException(target.name());
+            }
         }
     }
 }

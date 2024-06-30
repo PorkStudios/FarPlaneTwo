@@ -409,12 +409,12 @@ public abstract class ShaderProgram extends GLObject.Normal {
         }
 
         public final B addSSBO(@NotNegative int bindingIndex, @NonNull String name) {
-            this.SSBOs.add(this.gl.limits().maxShaderStorageBuffers(), bindingIndex, name);
+            this.SSBOs.add(this.gl.limits().maxShaderStorageBufferBindings(), bindingIndex, name);
             return uncheckedCast(this);
         }
 
         public final B addUBO(@NotNegative int bindingIndex, @NonNull String name) {
-            this.UBOs.add(this.gl.limits().maxUniformBuffers(), bindingIndex, name);
+            this.UBOs.add(this.gl.limits().maxUniformBufferBindings(), bindingIndex, name);
             return uncheckedCast(this);
         }
 
