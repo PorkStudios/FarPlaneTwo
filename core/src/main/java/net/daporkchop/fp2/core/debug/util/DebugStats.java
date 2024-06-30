@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.debug.util;
@@ -97,6 +96,9 @@ public class DebugStats {
     public static final class Renderer implements Statistics<Renderer> {
         public static final Renderer ZERO = builder().build();
 
+        protected final long selectedTiles; // negative if the render index can't provide this information
+        protected final long indexedTiles;
+
         protected final long bakedTiles;
         protected final long bakedTilesWithData;
 
@@ -121,7 +123,10 @@ public class DebugStats {
             long thisVertexMask = this.vertexSize != 0L ? -1L : 0L;
             long otherVertexMask = other.vertexSize != 0L ? -1L : 0L;
 
-            return new Renderer(this.bakedTiles + other.bakedTiles,
+            return new Renderer(
+                    this.selectedTiles + other.selectedTiles,
+                    this.indexedTiles + other.indexedTiles,
+                    this.bakedTiles + other.bakedTiles,
                     this.bakedTilesWithData + other.bakedTilesWithData,
                     this.allocatedVRAM + other.allocatedVRAM,
                     this.totalVRAM + other.totalVRAM,
@@ -143,7 +148,10 @@ public class DebugStats {
             long thisVertexMask = this.vertexSize != 0L ? -1L : 0L;
             long otherVertexMask = other.vertexSize != 0L ? -1L : 0L;
 
-            return new Renderer(this.bakedTiles - other.bakedTiles,
+            return new Renderer(
+                    this.selectedTiles - other.selectedTiles,
+                    this.indexedTiles - other.indexedTiles,
+                    this.bakedTiles - other.bakedTiles,
                     this.bakedTilesWithData - other.bakedTilesWithData,
                     this.allocatedVRAM - other.allocatedVRAM,
                     this.totalVRAM - other.totalVRAM,

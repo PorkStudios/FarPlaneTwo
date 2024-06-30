@@ -298,7 +298,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
     }
 
     public DebugStats.Renderer stats() {
-        return this.bakeStorage.stats();
+        return this.bakeStorage.stats().add(this.renderIndex.stats());
     }
 
     /**

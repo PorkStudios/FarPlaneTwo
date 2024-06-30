@@ -23,6 +23,7 @@ import lombok.val;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
+import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.DirectTilePosAccess;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.client.bake.storage.BakeStorage;
@@ -50,6 +51,8 @@ import static net.daporkchop.fp2.core.engine.client.RenderConstants.*;
  */
 public class CPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct> extends AbstractMultiDrawIndirectRenderIndex<VertexType> {
     private final Map<TilePos, DrawElementsIndirectCommand[]> drawCommands = DirectTilePosAccess.newPositionKeyedHashMap();
+    private int selectedTilesCount = 0;
+
     private final LevelPassArray<DirectCommandList> commandLists;
 
     public CPUCulledBaseInstanceRenderIndex(OpenGL gl, BakeStorage<VertexType> bakeStorage, DirectMemoryAllocator alloc, NewAttributeFormat<VoxelGlobalAttributes> sharedVertexFormat) {
@@ -117,11 +120,14 @@ public class CPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
         this.commandLists.forEach(list -> list.size = 0);
 
         //iterate over all the tile positions and draw commands
+        this.selectedTilesCount = 0;
         this.drawCommands.forEach((pos, commands) -> {
             int level = pos.level();
             if ((level > 0 || !blockedTracker.renderingBlocked(pos.x(), pos.y(), pos.z()))
                 && frustum.intersectsBB(pos.minBlockX(), pos.minBlockY(), pos.minBlockZ(), pos.maxBlockX(), pos.maxBlockY(), pos.maxBlockZ())) {
                 //the tile is in the frustum, add all the draw commands to the corresponding draw lists
+                this.selectedTilesCount++;
+
                 for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
                     if (commands[pass] != null) {
                         this.commandLists.get(level, pass).add(commands[pass]);
@@ -155,5 +161,13 @@ public class CPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
     @Override
     public PosTechnique posTechnique() {
         return PosTechnique.VERTEX_ATTRIBUTE;
+    }
+
+    @Override
+    public DebugStats.Renderer stats() {
+        return DebugStats.Renderer.builder()
+                .selectedTiles(this.selectedTilesCount)
+                .indexedTiles(this.drawCommands.size())
+                .build();
     }
 }

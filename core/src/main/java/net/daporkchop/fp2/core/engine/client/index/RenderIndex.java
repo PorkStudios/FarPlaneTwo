@@ -23,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
+import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.EngineConstants;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.client.RenderConstants;
@@ -143,6 +144,8 @@ public abstract class RenderIndex<VertexType extends AttributeStruct> implements
      * @return the technique used by this render index to push tile positions to the shader
      */
     public abstract PosTechnique posTechnique();
+
+    public abstract DebugStats.Renderer stats();
 
     /**
      * A technique describing how shaders should access the tile position for a tile.

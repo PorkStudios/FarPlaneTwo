@@ -25,7 +25,6 @@ import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.key.KeyCategory;
 import net.daporkchop.fp2.core.client.key.KeyModifier;
 import net.daporkchop.fp2.core.client.render.TextureUVs;
-import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.client.AbstractFarRenderer;
@@ -143,6 +142,10 @@ public class FP2Debug {
                         DebugStats.Renderer stats = renderer.stats();
                         list.add("Baked Tiles: " + numberFormat.format(stats.bakedTiles()) + "T " + numberFormat.format(stats.bakedTilesWithData()) + "D "
                                  + numberFormat.format(stats.bakedTiles() - stats.bakedTilesWithData()) + 'E');
+                        if (stats.selectedTiles() >= 0L) {
+                            list.add("Culled: " + numberFormat.format(stats.indexedTiles() - stats.selectedTiles()) + '/' + numberFormat.format(stats.indexedTiles())
+                                     + " (" + percentFormat.format((stats.indexedTiles() - stats.selectedTiles()) / (double) stats.indexedTiles()) + ')');
+                        }
                         list.add("All VRAM: " + percentFormat.format(stats.allocatedVRAM() / (double) stats.totalVRAM())
                                  + ' ' + i18n.formatByteCount(stats.allocatedVRAM()) + '/' + i18n.formatByteCount(stats.totalVRAM()));
                         list.add("Indices: " + percentFormat.format(stats.allocatedIndices() / (double) stats.totalIndices())

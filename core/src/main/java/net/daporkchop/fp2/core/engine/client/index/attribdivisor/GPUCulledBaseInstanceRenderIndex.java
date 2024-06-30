@@ -27,7 +27,7 @@ import net.daporkchop.fp2.core.client.render.GlobalRenderer;
 import net.daporkchop.fp2.core.client.render.GlobalUniformAttributes;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
 import net.daporkchop.fp2.core.client.shader.NewReloadableShaderProgram;
-import net.daporkchop.fp2.core.engine.DirectTilePosAccess;
+import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.EngineConstants;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.client.bake.storage.BakeStorage;
@@ -56,7 +56,6 @@ import net.daporkchop.lib.common.closeable.PResourceUtil;
 import net.daporkchop.lib.common.math.PMath;
 import net.daporkchop.lib.primitive.lambda.IntIntObjFunction;
 
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -268,12 +267,6 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
             //cull the tiles!
             this.gl.glDispatchCompute(capacity / this.tilesCulledPerWorkGroup, 1, 1);
         }
-
-        /*//reset all affected SSBO bindings to 0
-        this.gl.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, TILE_POSITIONS_SSBO_BINDING, 0);
-        for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
-            this.gl.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, INDIRECT_DRAWS_SSBO_FIRST_BINDING + pass, 0);
-        }*/
     }
 
     @Override
@@ -297,5 +290,14 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
     @Override
     public PosTechnique posTechnique() {
         return PosTechnique.VERTEX_ATTRIBUTE;
+    }
+
+    @Override
+    public DebugStats.Renderer stats() {
+        return DebugStats.Renderer.builder()
+                // TODO: some way of feeding this data back from the GPU
+                .selectedTiles(-1L)
+                .indexedTiles(-1L)
+                .build();
     }
 }
