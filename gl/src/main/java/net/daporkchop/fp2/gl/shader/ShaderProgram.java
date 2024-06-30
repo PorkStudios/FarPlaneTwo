@@ -161,37 +161,30 @@ public abstract class ShaderProgram extends GLObject.Normal {
     public static abstract class UniformSetter {
         protected final OpenGL gl;
 
-        public abstract void set(int location, int v0);
-
-        public abstract void set(int location, int v0, int v1);
-
-        public abstract void set(int location, int v0, int v1, int v2);
-
-        public abstract void set(int location, int v0, int v1, int v2, int v3);
-
-        public abstract void set(int location, float v0);
-
-        public abstract void set(int location, float v0, float v1);
-
-        public abstract void set(int location, float v0, float v1, float v2);
-
-        public abstract void set(int location, float v0, float v1, float v2, float v3);
-
-        public abstract void set1(int location, IntBuffer value);
-
-        public abstract void set2(int location, IntBuffer value);
-
-        public abstract void set3(int location, IntBuffer value);
-
-        public abstract void set4(int location, IntBuffer value);
-
-        public abstract void set1(int location, FloatBuffer value);
-
-        public abstract void set2(int location, FloatBuffer value);
-
-        public abstract void set3(int location, FloatBuffer value);
-
-        public abstract void set4(int location, FloatBuffer value);
+        public abstract void set1i(int location, int v0);
+        public abstract void set2i(int location, int v0, int v1);
+        public abstract void set3i(int location, int v0, int v1, int v2);
+        public abstract void set4i(int location, int v0, int v1, int v2, int v3);
+        public abstract void set1ui(int location, int v0);
+        public abstract void set2ui(int location, int v0, int v1);
+        public abstract void set3ui(int location, int v0, int v1, int v2);
+        public abstract void set4ui(int location, int v0, int v1, int v2, int v3);
+        public abstract void set1f(int location, float v0);
+        public abstract void set2f(int location, float v0, float v1);
+        public abstract void set3f(int location, float v0, float v1, float v2);
+        public abstract void set4f(int location, float v0, float v1, float v2, float v3);
+        public abstract void set1i(int location, IntBuffer value);
+        public abstract void set2i(int location, IntBuffer value);
+        public abstract void set3i(int location, IntBuffer value);
+        public abstract void set4i(int location, IntBuffer value);
+        public abstract void set1ui(int location, IntBuffer value);
+        public abstract void set2ui(int location, IntBuffer value);
+        public abstract void set3ui(int location, IntBuffer value);
+        public abstract void set4ui(int location, IntBuffer value);
+        public abstract void set1f(int location, FloatBuffer value);
+        public abstract void set2f(int location, FloatBuffer value);
+        public abstract void set3f(int location, FloatBuffer value);
+        public abstract void set4f(int location, FloatBuffer value);
     }
 
     /**
@@ -205,83 +198,123 @@ public abstract class ShaderProgram extends GLObject.Normal {
         }
 
         @Override
-        public void set(int location, int v0) {
-            this.gl.glUniform(location, v0);
+        public void set1i(int location, int v0) {
+            this.gl.glUniform1i(location, v0);
         }
 
         @Override
-        public void set(int location, int v0, int v1) {
-            this.gl.glUniform(location, v0, v1);
+        public void set2i(int location, int v0, int v1) {
+            this.gl.glUniform2i(location, v0, v1);
         }
 
         @Override
-        public void set(int location, int v0, int v1, int v2) {
-            this.gl.glUniform(location, v0, v1, v2);
+        public void set3i(int location, int v0, int v1, int v2) {
+            this.gl.glUniform3i(location, v0, v1, v2);
         }
 
         @Override
-        public void set(int location, int v0, int v1, int v2, int v3) {
-            this.gl.glUniform(location, v0, v1, v2, v3);
+        public void set4i(int location, int v0, int v1, int v2, int v3) {
+            this.gl.glUniform4i(location, v0, v1, v2, v3);
         }
 
         @Override
-        public void set(int location, float v0) {
-            this.gl.glUniform(location, v0);
+        public void set1ui(int location, int v0) {
+            this.gl.glUniform1ui(location, v0);
         }
 
         @Override
-        public void set(int location, float v0, float v1) {
-            this.gl.glUniform(location, v0, v1);
+        public void set2ui(int location, int v0, int v1) {
+            this.gl.glUniform2ui(location, v0, v1);
         }
 
         @Override
-        public void set(int location, float v0, float v1, float v2) {
-            this.gl.glUniform(location, v0, v1, v2);
+        public void set3ui(int location, int v0, int v1, int v2) {
+            this.gl.glUniform3ui(location, v0, v1, v2);
         }
 
         @Override
-        public void set(int location, float v0, float v1, float v2, float v3) {
-            this.gl.glUniform(location, v0, v1, v2, v3);
+        public void set4ui(int location, int v0, int v1, int v2, int v3) {
+            this.gl.glUniform4ui(location, v0, v1, v2, v3);
         }
 
         @Override
-        public void set1(int location, IntBuffer value) {
-            this.gl.glUniform1(location, value);
+        public void set1f(int location, float v0) {
+            this.gl.glUniform1f(location, v0);
         }
 
         @Override
-        public void set2(int location, IntBuffer value) {
-            this.gl.glUniform2(location, value);
+        public void set2f(int location, float v0, float v1) {
+            this.gl.glUniform2f(location, v0, v1);
         }
 
         @Override
-        public void set3(int location, IntBuffer value) {
-            this.gl.glUniform3(location, value);
+        public void set3f(int location, float v0, float v1, float v2) {
+            this.gl.glUniform3f(location, v0, v1, v2);
         }
 
         @Override
-        public void set4(int location, IntBuffer value) {
-            this.gl.glUniform4(location, value);
+        public void set4f(int location, float v0, float v1, float v2, float v3) {
+            this.gl.glUniform4f(location, v0, v1, v2, v3);
         }
 
         @Override
-        public void set1(int location, FloatBuffer value) {
-            this.gl.glUniform1(location, value);
+        public void set1i(int location, IntBuffer value) {
+            this.gl.glUniform1i(location, value);
         }
 
         @Override
-        public void set2(int location, FloatBuffer value) {
-            this.gl.glUniform2(location, value);
+        public void set2i(int location, IntBuffer value) {
+            this.gl.glUniform2i(location, value);
         }
 
         @Override
-        public void set3(int location, FloatBuffer value) {
-            this.gl.glUniform3(location, value);
+        public void set3i(int location, IntBuffer value) {
+            this.gl.glUniform3i(location, value);
         }
 
         @Override
-        public void set4(int location, FloatBuffer value) {
-            this.gl.glUniform4(location, value);
+        public void set4i(int location, IntBuffer value) {
+            this.gl.glUniform4i(location, value);
+        }
+
+        @Override
+        public void set1ui(int location, IntBuffer value) {
+            this.gl.glUniform1ui(location, value);
+        }
+
+        @Override
+        public void set2ui(int location, IntBuffer value) {
+            this.gl.glUniform2ui(location, value);
+        }
+
+        @Override
+        public void set3ui(int location, IntBuffer value) {
+            this.gl.glUniform3ui(location, value);
+        }
+
+        @Override
+        public void set4ui(int location, IntBuffer value) {
+            this.gl.glUniform4ui(location, value);
+        }
+
+        @Override
+        public void set1f(int location, FloatBuffer value) {
+            this.gl.glUniform1f(location, value);
+        }
+
+        @Override
+        public void set2f(int location, FloatBuffer value) {
+            this.gl.glUniform2f(location, value);
+        }
+
+        @Override
+        public void set3f(int location, FloatBuffer value) {
+            this.gl.glUniform3f(location, value);
+        }
+
+        @Override
+        public void set4f(int location, FloatBuffer value) {
+            this.gl.glUniform4f(location, value);
         }
     }
 
@@ -299,83 +332,123 @@ public abstract class ShaderProgram extends GLObject.Normal {
         }
 
         @Override
-        public void set(int location, int v0) {
-            this.gl.glProgramUniform(this.id, location, v0);
+        public void set1i(int location, int v0) {
+            this.gl.glProgramUniform1i(this.id, location, v0);
         }
 
         @Override
-        public void set(int location, int v0, int v1) {
-            this.gl.glProgramUniform(this.id, location, v0, v1);
+        public void set2i(int location, int v0, int v1) {
+            this.gl.glProgramUniform2i(this.id, location, v0, v1);
         }
 
         @Override
-        public void set(int location, int v0, int v1, int v2) {
-            this.gl.glProgramUniform(this.id, location, v0, v1, v2);
+        public void set3i(int location, int v0, int v1, int v2) {
+            this.gl.glProgramUniform3i(this.id, location, v0, v1, v2);
         }
 
         @Override
-        public void set(int location, int v0, int v1, int v2, int v3) {
-            this.gl.glProgramUniform(this.id, location, v0, v1, v2, v3);
+        public void set4i(int location, int v0, int v1, int v2, int v3) {
+            this.gl.glProgramUniform4i(this.id, location, v0, v1, v2, v3);
         }
 
         @Override
-        public void set(int location, float v0) {
-            this.gl.glProgramUniform(this.id, location, v0);
+        public void set1ui(int location, int v0) {
+            this.gl.glProgramUniform1ui(this.id, location, v0);
         }
 
         @Override
-        public void set(int location, float v0, float v1) {
-            this.gl.glProgramUniform(this.id, location, v0, v1);
+        public void set2ui(int location, int v0, int v1) {
+            this.gl.glProgramUniform2ui(this.id, location, v0, v1);
         }
 
         @Override
-        public void set(int location, float v0, float v1, float v2) {
-            this.gl.glProgramUniform(this.id, location, v0, v1, v2);
+        public void set3ui(int location, int v0, int v1, int v2) {
+            this.gl.glProgramUniform3ui(this.id, location, v0, v1, v2);
         }
 
         @Override
-        public void set(int location, float v0, float v1, float v2, float v3) {
-            this.gl.glProgramUniform(this.id, location, v0, v1, v2, v3);
+        public void set4ui(int location, int v0, int v1, int v2, int v3) {
+            this.gl.glProgramUniform4ui(this.id, location, v0, v1, v2, v3);
         }
 
         @Override
-        public void set1(int location, IntBuffer value) {
-            this.gl.glProgramUniform1(this.id, location, value);
+        public void set1f(int location, float v0) {
+            this.gl.glProgramUniform1f(this.id, location, v0);
         }
 
         @Override
-        public void set2(int location, IntBuffer value) {
-            this.gl.glProgramUniform2(this.id, location, value);
+        public void set2f(int location, float v0, float v1) {
+            this.gl.glProgramUniform2f(this.id, location, v0, v1);
         }
 
         @Override
-        public void set3(int location, IntBuffer value) {
-            this.gl.glProgramUniform3(this.id, location, value);
+        public void set3f(int location, float v0, float v1, float v2) {
+            this.gl.glProgramUniform3f(this.id, location, v0, v1, v2);
         }
 
         @Override
-        public void set4(int location, IntBuffer value) {
-            this.gl.glProgramUniform4(this.id, location, value);
+        public void set4f(int location, float v0, float v1, float v2, float v3) {
+            this.gl.glProgramUniform4f(this.id, location, v0, v1, v2, v3);
         }
 
         @Override
-        public void set1(int location, FloatBuffer value) {
-            this.gl.glProgramUniform1(this.id, location, value);
+        public void set1i(int location, IntBuffer value) {
+            this.gl.glProgramUniform1i(this.id, location, value);
         }
 
         @Override
-        public void set2(int location, FloatBuffer value) {
-            this.gl.glProgramUniform2(this.id, location, value);
+        public void set2i(int location, IntBuffer value) {
+            this.gl.glProgramUniform2i(this.id, location, value);
         }
 
         @Override
-        public void set3(int location, FloatBuffer value) {
-            this.gl.glProgramUniform3(this.id, location, value);
+        public void set3i(int location, IntBuffer value) {
+            this.gl.glProgramUniform3i(this.id, location, value);
         }
 
         @Override
-        public void set4(int location, FloatBuffer value) {
-            this.gl.glProgramUniform4(this.id, location, value);
+        public void set4i(int location, IntBuffer value) {
+            this.gl.glProgramUniform4i(this.id, location, value);
+        }
+
+        @Override
+        public void set1ui(int location, IntBuffer value) {
+            this.gl.glProgramUniform1ui(this.id, location, value);
+        }
+
+        @Override
+        public void set2ui(int location, IntBuffer value) {
+            this.gl.glProgramUniform2ui(this.id, location, value);
+        }
+
+        @Override
+        public void set3ui(int location, IntBuffer value) {
+            this.gl.glProgramUniform3ui(this.id, location, value);
+        }
+
+        @Override
+        public void set4ui(int location, IntBuffer value) {
+            this.gl.glProgramUniform4ui(this.id, location, value);
+        }
+
+        @Override
+        public void set1f(int location, FloatBuffer value) {
+            this.gl.glProgramUniform1f(this.id, location, value);
+        }
+
+        @Override
+        public void set2f(int location, FloatBuffer value) {
+            this.gl.glProgramUniform2f(this.id, location, value);
+        }
+
+        @Override
+        public void set3f(int location, FloatBuffer value) {
+            this.gl.glProgramUniform3f(this.id, location, value);
+        }
+
+        @Override
+        public void set4f(int location, FloatBuffer value) {
+            this.gl.glProgramUniform4f(this.id, location, value);
         }
     }
 
@@ -466,7 +539,7 @@ public abstract class ShaderProgram extends GLObject.Normal {
                 this.bindings.forEach((name, unit) -> {
                     int location = gl.glGetUniformLocation(program, name);
                     if (location >= 0) { //sampler may have been optimized out, so only set it if it's present
-                        gl.glUniform(location, unit);
+                        gl.glUniform1i(location, unit);
                     }
                 });
             } finally {

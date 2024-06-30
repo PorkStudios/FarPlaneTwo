@@ -62,7 +62,7 @@ import org.lwjgl.opengl.GL30C;
 import org.lwjgl.opengl.GL31C;
 import org.lwjgl.opengl.GL32C;
 import org.lwjgl.opengl.GL33C;
-import org.lwjgl.opengl.GL41;
+import org.lwjgl.opengl.GL41C;
 import org.lwjgl.opengl.GL42C;
 import org.lwjgl.opengl.GL43C;
 import org.lwjgl.opengl.GL44C;
@@ -800,97 +800,97 @@ public final class GLAPILWJGL3 extends OpenGL {
     }
 
     @Override
-    public void glUniform(int location, int v0) {
+    public void glUniform1i(int location, int v0) {
         GL20C.glUniform1i(location, v0);
         super.debugCheckError();
     }
 
     @Override
-    public void glUniform(int location, int v0, int v1) {
+    public void glUniform2i(int location, int v0, int v1) {
         GL20C.glUniform2i(location, v0, v1);
         super.debugCheckError();
     }
 
     @Override
-    public void glUniform(int location, int v0, int v1, int v2) {
+    public void glUniform3i(int location, int v0, int v1, int v2) {
         GL20C.glUniform3i(location, v0, v1, v2);
         super.debugCheckError();
     }
 
     @Override
-    public void glUniform(int location, int v0, int v1, int v2, int v3) {
+    public void glUniform4i(int location, int v0, int v1, int v2, int v3) {
         GL20C.glUniform4i(location, v0, v1, v2, v3);
         super.debugCheckError();
     }
 
     @Override
-    public void glUniform(int location, float v0) {
+    public void glUniform1f(int location, float v0) {
         GL20C.glUniform1f(location, v0);
         super.debugCheckError();
     }
 
     @Override
-    public void glUniform(int location, float v0, float v1) {
+    public void glUniform2f(int location, float v0, float v1) {
         GL20C.glUniform2f(location, v0, v1);
         super.debugCheckError();
     }
 
     @Override
-    public void glUniform(int location, float v0, float v1, float v2) {
+    public void glUniform3f(int location, float v0, float v1, float v2) {
         GL20C.glUniform3f(location, v0, v1, v2);
         super.debugCheckError();
     }
 
     @Override
-    public void glUniform(int location, float v0, float v1, float v2, float v3) {
+    public void glUniform4f(int location, float v0, float v1, float v2, float v3) {
         GL20C.glUniform4f(location, v0, v1, v2, v3);
         super.debugCheckError();
     }
 
     @Override
-    public void glUniform1(int location, IntBuffer value) {
+    public void glUniform1i(int location, IntBuffer value) {
         GL20C.glUniform1iv(location, value);
         super.debugCheckError();
     }
 
     @Override
-    public void glUniform2(int location, IntBuffer value) {
+    public void glUniform2i(int location, IntBuffer value) {
         GL20C.glUniform2iv(location, value);
         super.debugCheckError();
     }
 
     @Override
-    public void glUniform3(int location, IntBuffer value) {
+    public void glUniform3i(int location, IntBuffer value) {
         GL20C.glUniform3iv(location, value);
         super.debugCheckError();
     }
 
     @Override
-    public void glUniform4(int location, IntBuffer value) {
+    public void glUniform4i(int location, IntBuffer value) {
         GL20C.glUniform4iv(location, value);
         super.debugCheckError();
     }
 
     @Override
-    public void glUniform1(int location, FloatBuffer value) {
+    public void glUniform1f(int location, FloatBuffer value) {
         GL20C.glUniform1fv(location, value);
         super.debugCheckError();
     }
 
     @Override
-    public void glUniform2(int location, FloatBuffer value) {
+    public void glUniform2f(int location, FloatBuffer value) {
         GL20C.glUniform2fv(location, value);
         super.debugCheckError();
     }
 
     @Override
-    public void glUniform3(int location, FloatBuffer value) {
+    public void glUniform3f(int location, FloatBuffer value) {
         GL20C.glUniform3fv(location, value);
         super.debugCheckError();
     }
 
     @Override
-    public void glUniform4(int location, FloatBuffer value) {
+    public void glUniform4f(int location, FloatBuffer value) {
         GL20C.glUniform4fv(location, value);
         super.debugCheckError();
     }
@@ -999,6 +999,54 @@ public final class GLAPILWJGL3 extends OpenGL {
     @Override
     public void glFlushMappedBufferRange(int target, long offset, long length) {
         GL30C.glFlushMappedBufferRange(target, offset, length);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glUniform1ui(int location, int v0) {
+        GL30C.glUniform1ui(location, v0);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glUniform2ui(int location, int v0, int v1) {
+        GL30C.glUniform2ui(location, v0, v1);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glUniform3ui(int location, int v0, int v1, int v2) {
+        GL30C.glUniform3ui(location, v0, v1, v2);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glUniform4ui(int location, int v0, int v1, int v2, int v3) {
+        GL30C.glUniform4ui(location, v0, v1, v2, v3);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glUniform1ui(int location, IntBuffer value) {
+        GL30C.glUniform1uiv(location, value);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glUniform2ui(int location, IntBuffer value) {
+        GL30C.glUniform2uiv(location, value);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glUniform3ui(int location, IntBuffer value) {
+        GL30C.glUniform3uiv(location, value);
+        super.debugCheckError();
+    }
+
+    @Override
+    public void glUniform4ui(int location, IntBuffer value) {
+        GL30C.glUniform4uiv(location, value);
         super.debugCheckError();
     }
 
@@ -1309,9 +1357,9 @@ public final class GLAPILWJGL3 extends OpenGL {
     //
 
     @Override
-    public void glProgramUniform(int program, int location, int v0) {
+    public void glProgramUniform1i(int program, int location, int v0) {
         if (this.OpenGL41) {
-            GL41.glProgramUniform1i(program, location, v0);
+            GL41C.glProgramUniform1i(program, location, v0);
             super.debugCheckError();
         } else if (this.GL_ARB_separate_shader_objects) {
             ARBSeparateShaderObjects.glProgramUniform1i(program, location, v0);
@@ -1322,9 +1370,9 @@ public final class GLAPILWJGL3 extends OpenGL {
     }
 
     @Override
-    public void glProgramUniform(int program, int location, int v0, int v1) {
+    public void glProgramUniform2i(int program, int location, int v0, int v1) {
         if (this.OpenGL41) {
-            GL41.glProgramUniform2i(program, location, v0, v1);
+            GL41C.glProgramUniform2i(program, location, v0, v1);
             super.debugCheckError();
         } else if (this.GL_ARB_separate_shader_objects) {
             ARBSeparateShaderObjects.glProgramUniform2i(program, location, v0, v1);
@@ -1335,9 +1383,9 @@ public final class GLAPILWJGL3 extends OpenGL {
     }
 
     @Override
-    public void glProgramUniform(int program, int location, int v0, int v1, int v2) {
+    public void glProgramUniform3i(int program, int location, int v0, int v1, int v2) {
         if (this.OpenGL41) {
-            GL41.glProgramUniform3i(program, location, v0, v1, v2);
+            GL41C.glProgramUniform3i(program, location, v0, v1, v2);
             super.debugCheckError();
         } else if (this.GL_ARB_separate_shader_objects) {
             ARBSeparateShaderObjects.glProgramUniform3i(program, location, v0, v1, v2);
@@ -1348,9 +1396,9 @@ public final class GLAPILWJGL3 extends OpenGL {
     }
 
     @Override
-    public void glProgramUniform(int program, int location, int v0, int v1, int v2, int v3) {
+    public void glProgramUniform4i(int program, int location, int v0, int v1, int v2, int v3) {
         if (this.OpenGL41) {
-            GL41.glProgramUniform4i(program, location, v0, v1, v2, v3);
+            GL41C.glProgramUniform4i(program, location, v0, v1, v2, v3);
             super.debugCheckError();
         } else if (this.GL_ARB_separate_shader_objects) {
             ARBSeparateShaderObjects.glProgramUniform4i(program, location, v0, v1, v2, v3);
@@ -1361,9 +1409,61 @@ public final class GLAPILWJGL3 extends OpenGL {
     }
 
     @Override
-    public void glProgramUniform(int program, int location, float v0) {
+    public void glProgramUniform1ui(int program, int location, int v0) {
         if (this.OpenGL41) {
-            GL41.glProgramUniform1f(program, location, v0);
+            GL41C.glProgramUniform1ui(program, location, v0);
+            super.debugCheckError();
+        } else if (this.GL_ARB_separate_shader_objects) {
+            ARBSeparateShaderObjects.glProgramUniform1ui(program, location, v0);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_separate_shader_objects));
+        }
+    }
+
+    @Override
+    public void glProgramUniform2ui(int program, int location, int v0, int v1) {
+        if (this.OpenGL41) {
+            GL41C.glProgramUniform2ui(program, location, v0, v1);
+            super.debugCheckError();
+        } else if (this.GL_ARB_separate_shader_objects) {
+            ARBSeparateShaderObjects.glProgramUniform2ui(program, location, v0, v1);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_separate_shader_objects));
+        }
+    }
+
+    @Override
+    public void glProgramUniform3ui(int program, int location, int v0, int v1, int v2) {
+        if (this.OpenGL41) {
+            GL41C.glProgramUniform3ui(program, location, v0, v1, v2);
+            super.debugCheckError();
+        } else if (this.GL_ARB_separate_shader_objects) {
+            ARBSeparateShaderObjects.glProgramUniform3ui(program, location, v0, v1, v2);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_separate_shader_objects));
+        }
+    }
+
+    @Override
+    public void glProgramUniform4ui(int program, int location, int v0, int v1, int v2, int v3) {
+        if (this.OpenGL41) {
+            GL41C.glProgramUniform4ui(program, location, v0, v1, v2, v3);
+            super.debugCheckError();
+        } else if (this.GL_ARB_separate_shader_objects) {
+            ARBSeparateShaderObjects.glProgramUniform4ui(program, location, v0, v1, v2, v3);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_separate_shader_objects));
+        }
+    }
+
+    @Override
+    public void glProgramUniform1f(int program, int location, float v0) {
+        if (this.OpenGL41) {
+            GL41C.glProgramUniform1f(program, location, v0);
             super.debugCheckError();
         } else if (this.GL_ARB_separate_shader_objects) {
             ARBSeparateShaderObjects.glProgramUniform1f(program, location, v0);
@@ -1374,9 +1474,9 @@ public final class GLAPILWJGL3 extends OpenGL {
     }
 
     @Override
-    public void glProgramUniform(int program, int location, float v0, float v1) {
+    public void glProgramUniform2f(int program, int location, float v0, float v1) {
         if (this.OpenGL41) {
-            GL41.glProgramUniform2f(program, location, v0, v1);
+            GL41C.glProgramUniform2f(program, location, v0, v1);
             super.debugCheckError();
         } else if (this.GL_ARB_separate_shader_objects) {
             ARBSeparateShaderObjects.glProgramUniform2f(program, location, v0, v1);
@@ -1387,9 +1487,9 @@ public final class GLAPILWJGL3 extends OpenGL {
     }
 
     @Override
-    public void glProgramUniform(int program, int location, float v0, float v1, float v2) {
+    public void glProgramUniform3f(int program, int location, float v0, float v1, float v2) {
         if (this.OpenGL41) {
-            GL41.glProgramUniform3f(program, location, v0, v1, v2);
+            GL41C.glProgramUniform3f(program, location, v0, v1, v2);
             super.debugCheckError();
         } else if (this.GL_ARB_separate_shader_objects) {
             ARBSeparateShaderObjects.glProgramUniform3f(program, location, v0, v1, v2);
@@ -1400,9 +1500,9 @@ public final class GLAPILWJGL3 extends OpenGL {
     }
 
     @Override
-    public void glProgramUniform(int program, int location, float v0, float v1, float v2, float v3) {
+    public void glProgramUniform4f(int program, int location, float v0, float v1, float v2, float v3) {
         if (this.OpenGL41) {
-            GL41.glProgramUniform4f(program, location, v0, v1, v2, v3);
+            GL41C.glProgramUniform4f(program, location, v0, v1, v2, v3);
             super.debugCheckError();
         } else if (this.GL_ARB_separate_shader_objects) {
             ARBSeparateShaderObjects.glProgramUniform4f(program, location, v0, v1, v2, v3);
@@ -1413,9 +1513,9 @@ public final class GLAPILWJGL3 extends OpenGL {
     }
 
     @Override
-    public void glProgramUniform1(int program, int location, IntBuffer value) {
+    public void glProgramUniform1i(int program, int location, IntBuffer value) {
         if (this.OpenGL41) {
-            GL41.glProgramUniform1iv(program, location, value);
+            GL41C.glProgramUniform1iv(program, location, value);
             super.debugCheckError();
         } else if (this.GL_ARB_separate_shader_objects) {
             ARBSeparateShaderObjects.glProgramUniform1iv(program, location, value);
@@ -1426,9 +1526,9 @@ public final class GLAPILWJGL3 extends OpenGL {
     }
 
     @Override
-    public void glProgramUniform2(int program, int location, IntBuffer value) {
+    public void glProgramUniform2i(int program, int location, IntBuffer value) {
         if (this.OpenGL41) {
-            GL41.glProgramUniform2iv(program, location, value);
+            GL41C.glProgramUniform2iv(program, location, value);
             super.debugCheckError();
         } else if (this.GL_ARB_separate_shader_objects) {
             ARBSeparateShaderObjects.glProgramUniform2iv(program, location, value);
@@ -1439,9 +1539,9 @@ public final class GLAPILWJGL3 extends OpenGL {
     }
 
     @Override
-    public void glProgramUniform3(int program, int location, IntBuffer value) {
+    public void glProgramUniform3i(int program, int location, IntBuffer value) {
         if (this.OpenGL41) {
-            GL41.glProgramUniform3iv(program, location, value);
+            GL41C.glProgramUniform3iv(program, location, value);
             super.debugCheckError();
         } else if (this.GL_ARB_separate_shader_objects) {
             ARBSeparateShaderObjects.glProgramUniform3iv(program, location, value);
@@ -1452,9 +1552,9 @@ public final class GLAPILWJGL3 extends OpenGL {
     }
 
     @Override
-    public void glProgramUniform4(int program, int location, IntBuffer value) {
+    public void glProgramUniform4i(int program, int location, IntBuffer value) {
         if (this.OpenGL41) {
-            GL41.glProgramUniform4iv(program, location, value);
+            GL41C.glProgramUniform4iv(program, location, value);
             super.debugCheckError();
         } else if (this.GL_ARB_separate_shader_objects) {
             ARBSeparateShaderObjects.glProgramUniform4iv(program, location, value);
@@ -1465,9 +1565,61 @@ public final class GLAPILWJGL3 extends OpenGL {
     }
 
     @Override
-    public void glProgramUniform1(int program, int location, FloatBuffer value) {
+    public void glProgramUniform1ui(int program, int location, IntBuffer value) {
         if (this.OpenGL41) {
-            GL41.glProgramUniform1fv(program, location, value);
+            GL41C.glProgramUniform1uiv(program, location, value);
+            super.debugCheckError();
+        } else if (this.GL_ARB_separate_shader_objects) {
+            ARBSeparateShaderObjects.glProgramUniform1uiv(program, location, value);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_separate_shader_objects));
+        }
+    }
+
+    @Override
+    public void glProgramUniform2ui(int program, int location, IntBuffer value) {
+        if (this.OpenGL41) {
+            GL41C.glProgramUniform2uiv(program, location, value);
+            super.debugCheckError();
+        } else if (this.GL_ARB_separate_shader_objects) {
+            ARBSeparateShaderObjects.glProgramUniform2uiv(program, location, value);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_separate_shader_objects));
+        }
+    }
+
+    @Override
+    public void glProgramUniform3ui(int program, int location, IntBuffer value) {
+        if (this.OpenGL41) {
+            GL41C.glProgramUniform3uiv(program, location, value);
+            super.debugCheckError();
+        } else if (this.GL_ARB_separate_shader_objects) {
+            ARBSeparateShaderObjects.glProgramUniform3uiv(program, location, value);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_separate_shader_objects));
+        }
+    }
+
+    @Override
+    public void glProgramUniform4ui(int program, int location, IntBuffer value) {
+        if (this.OpenGL41) {
+            GL41C.glProgramUniform4uiv(program, location, value);
+            super.debugCheckError();
+        } else if (this.GL_ARB_separate_shader_objects) {
+            ARBSeparateShaderObjects.glProgramUniform4uiv(program, location, value);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_separate_shader_objects));
+        }
+    }
+
+    @Override
+    public void glProgramUniform1f(int program, int location, FloatBuffer value) {
+        if (this.OpenGL41) {
+            GL41C.glProgramUniform1fv(program, location, value);
             super.debugCheckError();
         } else if (this.GL_ARB_separate_shader_objects) {
             ARBSeparateShaderObjects.glProgramUniform1fv(program, location, value);
@@ -1478,9 +1630,9 @@ public final class GLAPILWJGL3 extends OpenGL {
     }
 
     @Override
-    public void glProgramUniform2(int program, int location, FloatBuffer value) {
+    public void glProgramUniform2f(int program, int location, FloatBuffer value) {
         if (this.OpenGL41) {
-            GL41.glProgramUniform2fv(program, location, value);
+            GL41C.glProgramUniform2fv(program, location, value);
             super.debugCheckError();
         } else if (this.GL_ARB_separate_shader_objects) {
             ARBSeparateShaderObjects.glProgramUniform2fv(program, location, value);
@@ -1491,9 +1643,9 @@ public final class GLAPILWJGL3 extends OpenGL {
     }
 
     @Override
-    public void glProgramUniform3(int program, int location, FloatBuffer value) {
+    public void glProgramUniform3f(int program, int location, FloatBuffer value) {
         if (this.OpenGL41) {
-            GL41.glProgramUniform3fv(program, location, value);
+            GL41C.glProgramUniform3fv(program, location, value);
             super.debugCheckError();
         } else if (this.GL_ARB_separate_shader_objects) {
             ARBSeparateShaderObjects.glProgramUniform3fv(program, location, value);
@@ -1504,9 +1656,9 @@ public final class GLAPILWJGL3 extends OpenGL {
     }
 
     @Override
-    public void glProgramUniform4(int program, int location, FloatBuffer value) {
+    public void glProgramUniform4f(int program, int location, FloatBuffer value) {
         if (this.OpenGL41) {
-            GL41.glProgramUniform4fv(program, location, value);
+            GL41C.glProgramUniform4fv(program, location, value);
             super.debugCheckError();
         } else if (this.GL_ARB_separate_shader_objects) {
             ARBSeparateShaderObjects.glProgramUniform4fv(program, location, value);

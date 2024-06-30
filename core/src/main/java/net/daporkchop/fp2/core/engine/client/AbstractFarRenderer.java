@@ -38,6 +38,7 @@ import net.daporkchop.fp2.core.engine.client.bake.storage.PerLevelBakeStorage;
 import net.daporkchop.fp2.core.engine.client.bake.storage.SimpleBakeStorage;
 import net.daporkchop.fp2.core.engine.client.index.RenderIndex;
 import net.daporkchop.fp2.core.engine.client.index.attribdivisor.CPUCulledBaseInstanceRenderIndex;
+import net.daporkchop.fp2.core.engine.client.index.attribdivisor.GPUCulledBaseInstanceRenderIndex;
 import net.daporkchop.fp2.core.engine.client.struct.VoxelLocalAttributes;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
@@ -315,7 +316,10 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
 
         @Override
         protected RenderIndex<VoxelLocalAttributes> createRenderIndex() {
-            return new CPUCulledBaseInstanceRenderIndex<>(this.gl, this.bakeStorage, this.alloc, this.fp2.client().globalRenderer().voxelInstancedAttributesFormat);
+            val globalRenderer = this.fp2.client().globalRenderer();
+            return this.gl.supports(GPUCulledBaseInstanceRenderIndex.REQUIRED_EXTENSIONS)
+                    ? new GPUCulledBaseInstanceRenderIndex<>(this.gl, this.bakeStorage, this.alloc, globalRenderer.voxelInstancedAttributesFormat, globalRenderer)
+                    : new CPUCulledBaseInstanceRenderIndex<>(this.gl, this.bakeStorage, this.alloc, globalRenderer.voxelInstancedAttributesFormat);
         }
     }
 }

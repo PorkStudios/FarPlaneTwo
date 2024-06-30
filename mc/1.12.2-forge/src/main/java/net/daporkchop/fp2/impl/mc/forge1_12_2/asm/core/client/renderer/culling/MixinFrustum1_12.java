@@ -70,7 +70,7 @@ public abstract class MixinFrustum1_12 implements IFrustum {
     public void configureClippingPlanes(ShaderProgram.UniformSetter uniformSetter, UniformLocations locations) {
         float[][] frustum = this.clippingHelper.frustum;
 
-        uniformSetter.set(locations.u_ClippingPlaneCount, frustum.length);
+        uniformSetter.set1ui(locations.u_ClippingPlaneCount, frustum.length);
         long address = PUnsafe.allocateMemory(frustum.length * (4 * Float.BYTES));
         try {
             FloatBuffer buffer = DirectBufferHackery.wrapFloat(address, frustum.length * 4);
@@ -78,7 +78,7 @@ public abstract class MixinFrustum1_12 implements IFrustum {
                 buffer.put(plane);
             }
             buffer.clear();
-            uniformSetter.set4(locations.u_ClippingPlanes, buffer);
+            uniformSetter.set4f(locations.u_ClippingPlanes, buffer);
         } finally {
             PUnsafe.freeMemory(address);
         }

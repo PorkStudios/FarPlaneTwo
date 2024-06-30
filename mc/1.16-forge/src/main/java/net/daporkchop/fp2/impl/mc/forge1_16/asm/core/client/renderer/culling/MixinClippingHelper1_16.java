@@ -68,7 +68,7 @@ public abstract class MixinClippingHelper1_16 implements IFrustum {
     public void configureClippingPlanes(ShaderProgram.UniformSetter uniformSetter, UniformLocations locations) {
         Vector4f[] frustum = this.frustumData;
 
-        uniformSetter.set(locations.u_ClippingPlaneCount, frustum.length);
+        uniformSetter.set1ui(locations.u_ClippingPlaneCount, frustum.length);
 
         MemoryStack stack = MemoryStack.stackGet();
         int stackPointer = stack.getPointer();
@@ -78,7 +78,7 @@ public abstract class MixinClippingHelper1_16 implements IFrustum {
                 buffer.put(plane.x()).put(plane.y()).put(plane.z()).put(plane.w());
             }
             buffer.clear();
-            uniformSetter.set4(locations.u_ClippingPlanes, buffer);
+            uniformSetter.set4f(locations.u_ClippingPlanes, buffer);
         } finally {
             stack.setPointer(stackPointer);
         }

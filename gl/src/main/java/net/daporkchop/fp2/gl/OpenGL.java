@@ -770,82 +770,82 @@ public abstract class OpenGL {
     /**
      * @since OpenGL 2.0
      */
-    public abstract void glUniform(int location, int v0);
+    public abstract void glUniform1i(int location, int v0);
 
     /**
      * @since OpenGL 2.0
      */
-    public abstract void glUniform(int location, int v0, int v1);
+    public abstract void glUniform2i(int location, int v0, int v1);
 
     /**
      * @since OpenGL 2.0
      */
-    public abstract void glUniform(int location, int v0, int v1, int v2);
+    public abstract void glUniform3i(int location, int v0, int v1, int v2);
 
     /**
      * @since OpenGL 2.0
      */
-    public abstract void glUniform(int location, int v0, int v1, int v2, int v3);
+    public abstract void glUniform4i(int location, int v0, int v1, int v2, int v3);
 
     /**
      * @since OpenGL 2.0
      */
-    public abstract void glUniform(int location, float v0);
+    public abstract void glUniform1f(int location, float v0);
 
     /**
      * @since OpenGL 2.0
      */
-    public abstract void glUniform(int location, float v0, float v1);
+    public abstract void glUniform2f(int location, float v0, float v1);
 
     /**
      * @since OpenGL 2.0
      */
-    public abstract void glUniform(int location, float v0, float v1, float v2);
+    public abstract void glUniform3f(int location, float v0, float v1, float v2);
 
     /**
      * @since OpenGL 2.0
      */
-    public abstract void glUniform(int location, float v0, float v1, float v2, float v3);
+    public abstract void glUniform4f(int location, float v0, float v1, float v2, float v3);
 
     /**
      * @since OpenGL 2.0
      */
-    public abstract void glUniform1(int location, IntBuffer value);
+    public abstract void glUniform1i(int location, IntBuffer value);
 
     /**
      * @since OpenGL 2.0
      */
-    public abstract void glUniform2(int location, IntBuffer value);
+    public abstract void glUniform2i(int location, IntBuffer value);
 
     /**
      * @since OpenGL 2.0
      */
-    public abstract void glUniform3(int location, IntBuffer value);
+    public abstract void glUniform3i(int location, IntBuffer value);
 
     /**
      * @since OpenGL 2.0
      */
-    public abstract void glUniform4(int location, IntBuffer value);
+    public abstract void glUniform4i(int location, IntBuffer value);
 
     /**
      * @since OpenGL 2.0
      */
-    public abstract void glUniform1(int location, FloatBuffer value);
+    public abstract void glUniform1f(int location, FloatBuffer value);
 
     /**
      * @since OpenGL 2.0
      */
-    public abstract void glUniform2(int location, FloatBuffer value);
+    public abstract void glUniform2f(int location, FloatBuffer value);
 
     /**
      * @since OpenGL 2.0
      */
-    public abstract void glUniform3(int location, FloatBuffer value);
+    public abstract void glUniform3f(int location, FloatBuffer value);
 
     /**
      * @since OpenGL 2.0
      */
-    public abstract void glUniform4(int location, FloatBuffer value);
+    public abstract void glUniform4f(int location, FloatBuffer value);
 
     /**
      * @since OpenGL 2.0
@@ -932,6 +932,46 @@ public abstract class OpenGL {
      * @since OpenGL 3.0
      */
     public abstract void glFlushMappedBufferRange(int target, long offset, long length);
+
+    /**
+     * @since OpenGL 3.0
+     */
+    public abstract void glUniform1ui(int location, int v0);
+
+    /**
+     * @since OpenGL 3.0
+     */
+    public abstract void glUniform2ui(int location, int v0, int v1);
+
+    /**
+     * @since OpenGL 3.0
+     */
+    public abstract void glUniform3ui(int location, int v0, int v1, int v2);
+
+    /**
+     * @since OpenGL 3.0
+     */
+    public abstract void glUniform4ui(int location, int v0, int v1, int v2, int v3);
+
+    /**
+     * @since OpenGL 3.0
+     */
+    public abstract void glUniform1ui(int location, IntBuffer value);
+
+    /**
+     * @since OpenGL 3.0
+     */
+    public abstract void glUniform2ui(int location, IntBuffer value);
+
+    /**
+     * @since OpenGL 3.0
+     */
+    public abstract void glUniform3ui(int location, IntBuffer value);
+
+    /**
+     * @since OpenGL 3.0
+     */
+    public abstract void glUniform4ui(int location, IntBuffer value);
 
     //
     //
@@ -1111,112 +1151,168 @@ public abstract class OpenGL {
      * @since OpenGL 4.1
      */
     @GLRequires(GLExtension.GL_ARB_separate_shader_objects)
-    public abstract void glProgramUniform(int program, int location, int v0);
+    public abstract void glProgramUniform1i(int program, int location, int v0);
 
     /**
      * @apiNote requires {@link GLExtension#GL_ARB_separate_shader_objects GL_ARB_separate_shader_objects}
      * @since OpenGL 4.1
      */
     @GLRequires(GLExtension.GL_ARB_separate_shader_objects)
-    public abstract void glProgramUniform(int program, int location, int v0, int v1);
+    public abstract void glProgramUniform2i(int program, int location, int v0, int v1);
 
     /**
      * @apiNote requires {@link GLExtension#GL_ARB_separate_shader_objects GL_ARB_separate_shader_objects}
      * @since OpenGL 4.1
      */
     @GLRequires(GLExtension.GL_ARB_separate_shader_objects)
-    public abstract void glProgramUniform(int program, int location, int v0, int v1, int v2);
+    public abstract void glProgramUniform3i(int program, int location, int v0, int v1, int v2);
 
     /**
      * @apiNote requires {@link GLExtension#GL_ARB_separate_shader_objects GL_ARB_separate_shader_objects}
      * @since OpenGL 4.1
      */
     @GLRequires(GLExtension.GL_ARB_separate_shader_objects)
-    public abstract void glProgramUniform(int program, int location, int v0, int v1, int v2, int v3);
+    public abstract void glProgramUniform4i(int program, int location, int v0, int v1, int v2, int v3);
 
     /**
      * @apiNote requires {@link GLExtension#GL_ARB_separate_shader_objects GL_ARB_separate_shader_objects}
      * @since OpenGL 4.1
      */
     @GLRequires(GLExtension.GL_ARB_separate_shader_objects)
-    public abstract void glProgramUniform(int program, int location, float v0);
+    public abstract void glProgramUniform1ui(int program, int location, int v0);
 
     /**
      * @apiNote requires {@link GLExtension#GL_ARB_separate_shader_objects GL_ARB_separate_shader_objects}
      * @since OpenGL 4.1
      */
     @GLRequires(GLExtension.GL_ARB_separate_shader_objects)
-    public abstract void glProgramUniform(int program, int location, float v0, float v1);
+    public abstract void glProgramUniform2ui(int program, int location, int v0, int v1);
 
     /**
      * @apiNote requires {@link GLExtension#GL_ARB_separate_shader_objects GL_ARB_separate_shader_objects}
      * @since OpenGL 4.1
      */
     @GLRequires(GLExtension.GL_ARB_separate_shader_objects)
-    public abstract void glProgramUniform(int program, int location, float v0, float v1, float v2);
+    public abstract void glProgramUniform3ui(int program, int location, int v0, int v1, int v2);
 
     /**
      * @apiNote requires {@link GLExtension#GL_ARB_separate_shader_objects GL_ARB_separate_shader_objects}
      * @since OpenGL 4.1
      */
     @GLRequires(GLExtension.GL_ARB_separate_shader_objects)
-    public abstract void glProgramUniform(int program, int location, float v0, float v1, float v2, float v3);
+    public abstract void glProgramUniform4ui(int program, int location, int v0, int v1, int v2, int v3);
 
     /**
      * @apiNote requires {@link GLExtension#GL_ARB_separate_shader_objects GL_ARB_separate_shader_objects}
      * @since OpenGL 4.1
      */
     @GLRequires(GLExtension.GL_ARB_separate_shader_objects)
-    public abstract void glProgramUniform1(int program, int location, IntBuffer value);
+    public abstract void glProgramUniform1f(int program, int location, float v0);
 
     /**
      * @apiNote requires {@link GLExtension#GL_ARB_separate_shader_objects GL_ARB_separate_shader_objects}
      * @since OpenGL 4.1
      */
     @GLRequires(GLExtension.GL_ARB_separate_shader_objects)
-    public abstract void glProgramUniform2(int program, int location, IntBuffer value);
+    public abstract void glProgramUniform2f(int program, int location, float v0, float v1);
 
     /**
      * @apiNote requires {@link GLExtension#GL_ARB_separate_shader_objects GL_ARB_separate_shader_objects}
      * @since OpenGL 4.1
      */
     @GLRequires(GLExtension.GL_ARB_separate_shader_objects)
-    public abstract void glProgramUniform3(int program, int location, IntBuffer value);
+    public abstract void glProgramUniform3f(int program, int location, float v0, float v1, float v2);
 
     /**
      * @apiNote requires {@link GLExtension#GL_ARB_separate_shader_objects GL_ARB_separate_shader_objects}
      * @since OpenGL 4.1
      */
     @GLRequires(GLExtension.GL_ARB_separate_shader_objects)
-    public abstract void glProgramUniform4(int program, int location, IntBuffer value);
+    public abstract void glProgramUniform4f(int program, int location, float v0, float v1, float v2, float v3);
 
     /**
      * @apiNote requires {@link GLExtension#GL_ARB_separate_shader_objects GL_ARB_separate_shader_objects}
      * @since OpenGL 4.1
      */
     @GLRequires(GLExtension.GL_ARB_separate_shader_objects)
-    public abstract void glProgramUniform1(int program, int location, FloatBuffer value);
+    public abstract void glProgramUniform1i(int program, int location, IntBuffer value);
 
     /**
      * @apiNote requires {@link GLExtension#GL_ARB_separate_shader_objects GL_ARB_separate_shader_objects}
      * @since OpenGL 4.1
      */
     @GLRequires(GLExtension.GL_ARB_separate_shader_objects)
-    public abstract void glProgramUniform2(int program, int location, FloatBuffer value);
+    public abstract void glProgramUniform2i(int program, int location, IntBuffer value);
 
     /**
      * @apiNote requires {@link GLExtension#GL_ARB_separate_shader_objects GL_ARB_separate_shader_objects}
      * @since OpenGL 4.1
      */
     @GLRequires(GLExtension.GL_ARB_separate_shader_objects)
-    public abstract void glProgramUniform3(int program, int location, FloatBuffer value);
+    public abstract void glProgramUniform3i(int program, int location, IntBuffer value);
 
     /**
      * @apiNote requires {@link GLExtension#GL_ARB_separate_shader_objects GL_ARB_separate_shader_objects}
      * @since OpenGL 4.1
      */
     @GLRequires(GLExtension.GL_ARB_separate_shader_objects)
-    public abstract void glProgramUniform4(int program, int location, FloatBuffer value);
+    public abstract void glProgramUniform4i(int program, int location, IntBuffer value);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_separate_shader_objects GL_ARB_separate_shader_objects}
+     * @since OpenGL 4.1
+     */
+    @GLRequires(GLExtension.GL_ARB_separate_shader_objects)
+    public abstract void glProgramUniform1ui(int program, int location, IntBuffer value);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_separate_shader_objects GL_ARB_separate_shader_objects}
+     * @since OpenGL 4.1
+     */
+    @GLRequires(GLExtension.GL_ARB_separate_shader_objects)
+    public abstract void glProgramUniform2ui(int program, int location, IntBuffer value);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_separate_shader_objects GL_ARB_separate_shader_objects}
+     * @since OpenGL 4.1
+     */
+    @GLRequires(GLExtension.GL_ARB_separate_shader_objects)
+    public abstract void glProgramUniform3ui(int program, int location, IntBuffer value);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_separate_shader_objects GL_ARB_separate_shader_objects}
+     * @since OpenGL 4.1
+     */
+    @GLRequires(GLExtension.GL_ARB_separate_shader_objects)
+    public abstract void glProgramUniform4ui(int program, int location, IntBuffer value);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_separate_shader_objects GL_ARB_separate_shader_objects}
+     * @since OpenGL 4.1
+     */
+    @GLRequires(GLExtension.GL_ARB_separate_shader_objects)
+    public abstract void glProgramUniform1f(int program, int location, FloatBuffer value);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_separate_shader_objects GL_ARB_separate_shader_objects}
+     * @since OpenGL 4.1
+     */
+    @GLRequires(GLExtension.GL_ARB_separate_shader_objects)
+    public abstract void glProgramUniform2f(int program, int location, FloatBuffer value);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_separate_shader_objects GL_ARB_separate_shader_objects}
+     * @since OpenGL 4.1
+     */
+    @GLRequires(GLExtension.GL_ARB_separate_shader_objects)
+    public abstract void glProgramUniform3f(int program, int location, FloatBuffer value);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_separate_shader_objects GL_ARB_separate_shader_objects}
+     * @since OpenGL 4.1
+     */
+    @GLRequires(GLExtension.GL_ARB_separate_shader_objects)
+    public abstract void glProgramUniform4f(int program, int location, FloatBuffer value);
 
     //
     //
