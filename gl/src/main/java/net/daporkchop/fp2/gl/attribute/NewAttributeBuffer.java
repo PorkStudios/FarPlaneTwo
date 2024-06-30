@@ -23,6 +23,7 @@ import lombok.AccessLevel;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.attribute.vao.VertexArrayVertexBuffer;
+import net.daporkchop.fp2.gl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.buffer.upload.BufferUploader;
 import net.daporkchop.fp2.gl.buffer.upload.ImmediateBufferUploader;
 import net.daporkchop.fp2.gl.util.AbstractTypedBuffer;
@@ -93,4 +94,18 @@ public abstract class NewAttributeBuffer<STRUCT extends AttributeStruct> extends
      * @throws UnsupportedOperationException if this attribute buffer uses an {@link NewAttributeFormat attribute format} which doesn't support vertex attributes, or if the {@code divisor} is greater than {@code 0} and {@link net.daporkchop.fp2.gl.GLExtension#GL_ARB_instanced_arrays} isn't supported
      */
     public abstract VertexArrayVertexBuffer[] buffers(@NotNegative int divisor) throws UnsupportedOperationException;
+
+    /**
+     * @return the {@link GLBuffer} which should be bound to a {@link net.daporkchop.fp2.gl.OpenGLConstants#GL_UNIFORM_BUFFER} binding point to use this buffer's contents as a UBO array
+     * @apiNote the returned {@link GLBuffer} should not be modified in any way!
+     * @throws UnsupportedOperationException if this attribute buffer uses an {@link NewAttributeFormat attribute format} which doesn't support UBOs
+     */
+    public abstract GLBuffer bufferUBO() throws UnsupportedOperationException;
+
+    /**
+     * @return the {@link GLBuffer} which should be bound to a {@link net.daporkchop.fp2.gl.OpenGLConstants#GL_SHADER_STORAGE_BUFFER} binding point to use this buffer's contents as an SSBO array
+     * @apiNote the returned {@link GLBuffer} should not be modified in any way!
+     * @throws UnsupportedOperationException if this attribute buffer uses an {@link NewAttributeFormat attribute format} which doesn't support SSBOs
+     */
+    public abstract GLBuffer bufferSSBO() throws UnsupportedOperationException;
 }

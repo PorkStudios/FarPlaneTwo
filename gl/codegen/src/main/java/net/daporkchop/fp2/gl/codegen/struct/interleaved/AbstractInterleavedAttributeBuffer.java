@@ -20,11 +20,13 @@
 package net.daporkchop.fp2.gl.codegen.struct.interleaved;
 
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
+import net.daporkchop.fp2.gl.attribute.AttributeTarget;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.attribute.NewAttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
 import net.daporkchop.fp2.gl.attribute.NewAttributeWriter;
 import net.daporkchop.fp2.gl.attribute.vao.VertexArrayVertexBuffer;
+import net.daporkchop.fp2.gl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.buffer.GLMutableBuffer;
 import net.daporkchop.fp2.gl.buffer.upload.BufferUploader;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
@@ -94,6 +96,22 @@ public final class AbstractInterleavedAttributeBuffer<STRUCT extends AttributeSt
         VertexArrayVertexBuffer[] result = new VertexArrayVertexBuffer[this.format().occupiedVertexAttributes()];
         Arrays.fill(result, VertexArrayVertexBuffer.create(this.buffer.id(), 0L, toIntExact(this.format().size()), divisor));
         return result;
+    }
+
+    @Override
+    public final GLBuffer bufferUBO() throws UnsupportedOperationException {
+        if (!this.format().supports(AttributeTarget.UBO)) {
+            throw new UnsupportedOperationException();
+        }
+        return this.buffer;
+    }
+
+    @Override
+    public final GLBuffer bufferSSBO() throws UnsupportedOperationException {
+        if (!this.format().supports(AttributeTarget.SSBO)) {
+            throw new UnsupportedOperationException();
+        }
+        return this.buffer;
     }
 
     @Override
