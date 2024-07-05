@@ -25,10 +25,11 @@ import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.key.KeyCategory;
 import net.daporkchop.fp2.core.client.key.KeyModifier;
 import net.daporkchop.fp2.core.client.render.TextureUVs;
+import net.daporkchop.fp2.core.client.shader.ReloadableShaderRegistry;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
-import net.daporkchop.fp2.core.engine.client.AbstractFarRenderer;
 import net.daporkchop.fp2.core.engine.api.ctx.IFarClientContext;
+import net.daporkchop.fp2.core.engine.client.AbstractFarRenderer;
 import net.daporkchop.fp2.core.engine.client.FarTileCache;
 import net.daporkchop.fp2.core.network.packet.debug.client.CPacketDebugDropAllTiles;
 import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
@@ -60,14 +61,13 @@ public class FP2Debug {
             //register debug key bindings
             KeyCategory category = fp2.client().createKeyCategory(MODID + ".debug");
 
-            category.addBinding("reloadShaders", "0", () -> fp2.client().reloadableShaderRegistry().reload(true, (total, failed, cause) -> {
-                if (cause == null) {
-                    fp2.client().chat().success("§areloaded %d shader(s)", total);
-                } else {
-                    fp2.log().error("shader reload failed", cause);
-                    fp2.client().chat().error("§c%d/%d shaders failed to reload (check log for info)", failed, total);
+            category.addBinding("reloadShaders", "0", () -> {
+                try {
+                    fp2.client().reloadableShaderRegistry().reload();
+                } catch (ReloadableShaderRegistry.ShaderReloadFailedException e) {
+                    // swallow exception, it's already been logged and i don't want to crash the game every time i make a typo while prototyping a new shader
                 }
-            }));
+            });
             category.addBinding("dropTiles", "9", () -> fp2.client().currentPlayer().ifPresent(player -> {
                 player.send(CPacketClientConfig.create(null));
                 player.send(CPacketClientConfig.create(fp2.globalConfig()));

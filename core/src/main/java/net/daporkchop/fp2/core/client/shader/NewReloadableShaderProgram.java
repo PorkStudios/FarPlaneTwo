@@ -20,6 +20,7 @@
 package net.daporkchop.fp2.core.client.shader;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import lombok.AccessLevel;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -28,13 +29,16 @@ import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.gl.OpenGL;
+import net.daporkchop.fp2.gl.shader.ComputeShaderProgram;
+import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.shader.Shader;
 import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
 import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
 import net.daporkchop.fp2.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.gl.shader.ShaderType;
 import net.daporkchop.fp2.gl.shader.source.IncludePreprocessor;
-import net.daporkchop.lib.common.util.PorkUtil;
+import net.daporkchop.lib.common.annotation.param.NotNegative;
+import net.daporkchop.lib.common.closeable.PResourceUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -54,49 +58,47 @@ public final class NewReloadableShaderProgram<P extends ShaderProgram> implement
     final FP2Core fp2;
     final ShaderMacros macros;
 
-    final List<DeferredShaderReference> shaders;
     final Function<OpenGL, ShaderProgram.Builder<P, ?>> builderFactory; //this is some truly enterprise code
+    final ImmutableList<DeferredShaderReference> shaders;
     final SetupFunction<?> setupFunction;
 
-    ShaderMacros.Immutable macrosSnapshot;
     P program;
 
-    NewReloadableShaderProgram(NewReloadableShaderProgram.Builder<P> builder) {
+    NewReloadableShaderProgram(Builder<P, ?, ?> builder) {
         this.registry = builder.registry;
         this.fp2 = builder.fp2;
         this.macros = builder.macros;
 
-        this.shaders = ImmutableList.copyOf(builder.shaders);
         this.builderFactory = builder.builderFactory;
-        this.setupFunction = builder.setupFunction;
+        this.shaders = builder.shaders.build();
+        this.setupFunction = builder.buildSetupFunction();
 
-        this.macrosSnapshot = this.macros.snapshot();
-        this.program = this.compile(this.fp2.client().gl(), this.fp2.client().resourceProvider(), this.macrosSnapshot);
+        this.program = this.compile(this.fp2.client().gl(), this.fp2.client().resourceProvider());
 
         this.registry.register(this);
     }
 
-    P compile(OpenGL gl, ResourceProvider resourceProvider, ShaderMacros.Immutable macrosSnapshot) throws ShaderCompilationException, ShaderLinkageException {
+    P compile(OpenGL gl, ResourceProvider resourceProvider) throws ShaderCompilationException, ShaderLinkageException {
         List<Shader> compiledShaders = new ArrayList<>(this.shaders.size());
-        try {
+        try (val ignored = PResourceUtil.lazyCloseAll(compiledShaders)) {
             //compile each of the referenced shaders
             for (val shader : this.shaders) {
                 compiledShaders.add(new Shader(gl, shader.type,
                         new IncludePreprocessor(resourceProvider)
                                 .addVersionHeader(gl)
-                                .define(macrosSnapshot.macros())
+                                .define(this.macros.defines())
                                 .include(shader.identifier)
                                 .finish()));
             }
 
             val builder = this.builderFactory.apply(gl);
-            this.setupFunction.setup(uncheckedCast(builder));
+            if (this.setupFunction != null) {
+                this.setupFunction.setup(uncheckedCast(builder));
+            }
             for (val shader : compiledShaders) { //add all the compiled shaders to the program for linking
                 builder.addShader(shader);
             }
             return builder.build();
-        } finally {
-            PorkUtil.closeAll(compiledShaders);
         }
     }
 
@@ -136,22 +138,78 @@ public final class NewReloadableShaderProgram<P extends ShaderProgram> implement
      * @author DaPorkchop_
      */
     @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
-    public static final class Builder<P extends ShaderProgram> {
+    public static abstract class Builder<P extends ShaderProgram, PB extends ShaderProgram.Builder<P, PB>, B extends Builder<P, PB, B>> {
         final ReloadableShaderRegistry registry;
         final FP2Core fp2;
         final ShaderMacros macros;
-        final List<DeferredShaderReference> shaders = new ArrayList<>();
-
         final Function<OpenGL, ShaderProgram.Builder<P, ?>> builderFactory; //this is some truly enterprise code
-        final SetupFunction<?> setupFunction;
 
-        public Builder<P> addShader(@NonNull ShaderType type, @NonNull Identifier identifier) {
+        final ImmutableList.Builder<DeferredShaderReference> shaders = ImmutableList.builder();
+
+        final ImmutableMap.Builder<Integer, String> samplerBindings = ImmutableMap.builder();
+        final ImmutableMap.Builder<Integer, String> ssboBindings = ImmutableMap.builder();
+        final ImmutableMap.Builder<Integer, String> uboBindings = ImmutableMap.builder();
+        final SetupFunction<? super PB> setupFunction;
+
+        public final B addShader(@NonNull ShaderType type, @NonNull Identifier identifier) {
             this.shaders.add(new DeferredShaderReference(type, identifier));
             return uncheckedCast(this);
         }
 
-        public NewReloadableShaderProgram<P> build() {
+        public final B addSampler(@NotNegative int unit, @NonNull String name) {
+            this.samplerBindings.put(unit, name);
+            return uncheckedCast(this);
+        }
+
+        public final B addSSBO(@NotNegative int bindingIndex, @NonNull String name) {
+            this.ssboBindings.put(bindingIndex, name);
+            return uncheckedCast(this);
+        }
+
+        public final B addUBO(@NotNegative int bindingIndex, @NonNull String name) {
+            this.uboBindings.put(bindingIndex, name);
+            return uncheckedCast(this);
+        }
+
+        public final NewReloadableShaderProgram<P> build() {
             return new NewReloadableShaderProgram<>(this);
+        }
+
+        final SetupFunction<? super PB> buildSetupFunction() {
+            val samplerBindings = this.samplerBindings.build();
+            val ssboBindings = this.ssboBindings.build();
+            val uboBindings = this.uboBindings.build();
+            SetupFunction<? super PB> setupFunction = this.setupFunction;
+
+            if (samplerBindings.isEmpty() && ssboBindings.isEmpty() && uboBindings.isEmpty()) {
+                // There are no additional configurations, return the user-provided setup function directly
+                return setupFunction;
+            }
+
+            return builder -> {
+                setupFunction.setup(builder);
+                samplerBindings.forEach(builder::addSampler);
+                ssboBindings.forEach(builder::addSSBO);
+                uboBindings.forEach(builder::addUBO);
+            };
+        }
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    public static final class ComputeBuilder extends Builder<ComputeShaderProgram, ComputeShaderProgram.Builder, ComputeBuilder> {
+        ComputeBuilder(ReloadableShaderRegistry registry, FP2Core fp2, ShaderMacros macros, SetupFunction<? super ComputeShaderProgram.Builder> setupFunction) {
+            super(registry, fp2, macros, ComputeShaderProgram::builder, setupFunction);
+        }
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    public static final class DrawBuilder extends Builder<DrawShaderProgram, DrawShaderProgram.Builder, DrawBuilder> {
+        DrawBuilder(ReloadableShaderRegistry registry, FP2Core fp2, ShaderMacros macros, SetupFunction<? super DrawShaderProgram.Builder> setupFunction) {
+            super(registry, fp2, macros, DrawShaderProgram::builder, setupFunction);
         }
     }
 }

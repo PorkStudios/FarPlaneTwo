@@ -62,7 +62,7 @@ public final class GlobalRenderer {
     public final NewAttributeFormat<TextureUVs.QuadListAttribute> uvQuadListSSBOFormat;
     public final NewAttributeFormat<TextureUVs.PackedBakedQuadAttribute> uvPackedQuadSSBOFormat;
 
-    public final ShaderMacros.Mutable shaderMacros;
+    public final ShaderMacros shaderMacros;
 
     public final NewReloadableShaderProgram<DrawShaderProgram> blockShaderProgram;
     public final NewReloadableShaderProgram<DrawShaderProgram> blockCutoutShaderProgram;
@@ -88,7 +88,7 @@ public final class GlobalRenderer {
         this.uvQuadListSSBOFormat = NewAttributeFormat.get(gl, TextureUVs.QuadListAttribute.class, AttributeTarget.SSBO);
         this.uvPackedQuadSSBOFormat = NewAttributeFormat.get(gl, TextureUVs.PackedBakedQuadAttribute.class, AttributeTarget.SSBO);
 
-        this.shaderMacros = new ShaderMacros.Mutable()
+        this.shaderMacros = ShaderMacros.builder()
                 .define("T_SHIFT", EngineConstants.T_SHIFT)
                 .define("RENDER_PASS_COUNT", RenderConstants.RENDER_PASS_COUNT)
                 .define("MAX_CLIPPING_PLANES", IFrustum.MAX_CLIPPING_PLANES)
@@ -101,7 +101,8 @@ public final class GlobalRenderer {
                 .define("TEXTURE_UVS_LISTS_SSBO_NAME", RenderConstants.TEXTURE_UVS_LISTS_SSBO_NAME)
                 .define("TEXTURE_UVS_LISTS_SSBO_LAYOUT", this.uvQuadListSSBOFormat.interfaceBlockLayoutName())
                 .define("TEXTURE_UVS_QUADS_SSBO_NAME", RenderConstants.TEXTURE_UVS_QUADS_SSBO_NAME)
-                .define("TEXTURE_UVS_QUADS_SSBO_LAYOUT", this.uvPackedQuadSSBOFormat.interfaceBlockLayoutName());
+                .define("TEXTURE_UVS_QUADS_SSBO_LAYOUT", this.uvPackedQuadSSBOFormat.interfaceBlockLayoutName())
+                .build();
 
         NewReloadableShaderProgram.SetupFunction<DrawShaderProgram.Builder> shaderSetup = builder -> commonShaderSetup(builder)
                 .vertexAttributesWithPrefix("a_", this.voxelInstancedAttributesFormat)
@@ -114,7 +115,7 @@ public final class GlobalRenderer {
                 .addShader(ShaderType.FRAGMENT, Identifier.from(MODID, "shaders/frag/block.frag"))
                 .build();
 
-        this.blockCutoutShaderProgram = shaderRegistry.createDraw(new ShaderMacros.Mutable(this.shaderMacros).define("FP2_CUTOUT"), shaderSetup)
+        this.blockCutoutShaderProgram = shaderRegistry.createDraw(this.shaderMacros.toBuilder().define("FP2_CUTOUT").build(), shaderSetup)
                 .addShader(ShaderType.VERTEX, Identifier.from(MODID, "shaders/vert/voxel/voxel.vert"))
                 .addShader(ShaderType.FRAGMENT, Identifier.from(MODID, "shaders/frag/block.frag"))
                 .build();
@@ -125,11 +126,12 @@ public final class GlobalRenderer {
                 .build();
 
         if (gl.supports(GPUCulledBaseInstanceRenderIndex.REQUIRED_EXTENSIONS)) {
-            val computeShaderMacros = new ShaderMacros.Mutable(this.shaderMacros)
+            val computeShaderMacros = this.shaderMacros.toBuilder()
                     .define("TILE_POSITIONS_SSBO_NAME", RenderConstants.TILE_POSITIONS_SSBO_NAME)
                     .define("TILE_POSITIONS_SSBO_LAYOUT", this.voxelInstancedAttributesFormat.interfaceBlockLayoutName())
                     .define("INDIRECT_DRAWS_SSBO_NAME", RenderConstants.INDIRECT_DRAWS_SSBO_NAME)
-                    .define("INDIRECT_DRAWS_SSBO_LAYOUT", "std430"); //TODO: decide on the optimal layout automagically
+                    .define("INDIRECT_DRAWS_SSBO_LAYOUT", "std430") //TODO: decide on the optimal layout automagically
+                    .build();
 
             NewReloadableShaderProgram.SetupFunction<ComputeShaderProgram.Builder> computeShaderSetup = builder -> {
                 commonShaderSetup(builder)

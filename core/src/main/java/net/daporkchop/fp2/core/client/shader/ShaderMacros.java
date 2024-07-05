@@ -19,79 +19,62 @@
 
 package net.daporkchop.fp2.core.client.shader;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import lombok.AccessLevel;
-import lombok.Getter;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
-import net.daporkchop.lib.primitive.map.open.ObjObjOpenHashMap;
+import lombok.ToString;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.WeakHashMap;
-import java.util.stream.Stream;
 
 /**
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public abstract class ShaderMacros {
-    @NonNull
-    protected final Map<String, Object> macros;
-
+@EqualsAndHashCode(cacheStrategy = EqualsAndHashCode.CacheStrategy.LAZY)
+@ToString
+public final class ShaderMacros {
     /**
-     * @return an immutable snapshot of this instance's currently defined macros and values
+     * @return a new {@link Builder} instance
      */
-    public abstract Immutable snapshot();
+    public static Builder builder() {
+        return new Builder();
+    }
 
-    protected abstract Stream<ShaderMacros> parentsFlattened();
+    @NonNull
+    private final ImmutableMap<String, Object> defines;
 
     /**
+     * @return an {@link ImmutableMap} containing the actual macro values
+     */
+    public ImmutableMap<String, Object> defines() {
+        return this.defines;
+    }
+
+    /**
+     * @return a {@link Builder} for constructing a new {@link ShaderMacros} instance derived from this instance
+     */
+    public Builder toBuilder() {
+        return builder().defineAll(this.defines);
+    }
+
+    /**
+     * Builder class for constructing
+     *
      * @author DaPorkchop_
      */
-    public static final class Mutable extends ShaderMacros {
-        @Getter
-        private final List<ShaderMacros> parents;
-        private final Set<Mutable> children = Collections.newSetFromMap(new WeakHashMap<>());
-
-        private Immutable cachedSnapshot = null;
-
-        public Mutable(@NonNull ShaderMacros... parents) {
-            super(new ObjObjOpenHashMap<>());
-
-            this.parents = ImmutableList.copyOf(parents);
-
-            //register this as a child of all of the parents
-            this.parentsFlattened().forEach(parent -> {
-                if (parent instanceof Mutable) {
-                    ((Mutable) parent).children.add(this);
-                }
-            });
-        }
-
-        @Override
-        protected Stream<ShaderMacros> parentsFlattened() {
-            return this.parents.stream().flatMap(parent -> Stream.concat(parent.parentsFlattened(), Stream.of(parent)));
-        }
-
-        private void markDirty() {
-            if (this.cachedSnapshot != null) { //this instance has been cached
-                this.cachedSnapshot = null;
-
-                //recursively mark children as dirty
-                this.children.forEach(Mutable::markDirty);
-            }
-        }
+    @NoArgsConstructor(access = AccessLevel.PACKAGE)
+    public static final class Builder {
+        private final ImmutableMap.Builder<String, Object> delegate = ImmutableMap.builder();
 
         /**
          * Equivalent to {@code define(key, true)}.
          *
          * @see #define(String, Object)
          */
-        public Mutable define(@NonNull String key) {
+        public Builder define(@NonNull String key) {
             return this.define(key, true);
         }
 
@@ -101,10 +84,8 @@ public abstract class ShaderMacros {
          * @param key   the macro key
          * @param value the macro value
          */
-        public Mutable define(@NonNull String key, @NonNull Object value) {
-            if (!value.equals(this.macros.put(key, value))) { //the existing value for the key didn't match
-                this.markDirty();
-            }
+        public Builder define(@NonNull String key, @NonNull Object value) {
+            this.delegate.put(key, value);
             return this;
         }
 
@@ -113,59 +94,25 @@ public abstract class ShaderMacros {
          *
          * @param defines the macro values to define
          */
-        public Mutable defineAll(@NonNull Map<String, Object> defines) {
-            defines.forEach(this::define);
+        public Builder defineAll(@NonNull Map<String, Object> defines) {
+            this.delegate.putAll(defines);
             return this;
         }
 
         /**
-         * Un-defines a macro value with the given key.
+         * Defines a macro value, replacing any existing macro values for the given key.
          *
-         * @param key the macro key
+         * @param macros the macro values to define
          */
-        public Mutable undefine(@NonNull String key) {
-            if (this.macros.remove(key) != null) {
-                this.markDirty();
-            }
-            return this;
-        }
-
-        @Override
-        public Immutable snapshot() {
-            Immutable cachedSnapshot = this.cachedSnapshot;
-            if (cachedSnapshot == null) { //re-compute cached snapshot
-                ImmutableMap.Builder<String, Object> builder = ImmutableMap.builder();
-                this.parents().forEach(parent -> builder.putAll(parent.snapshot().macros));
-                builder.putAll(this.macros);
-                this.cachedSnapshot = cachedSnapshot = new Immutable(builder.build());
-            }
-            return cachedSnapshot;
-        }
-    }
-
-    /**
-     * @author DaPorkchop_
-     */
-    public static final class Immutable extends ShaderMacros {
-        private Immutable(@NonNull ImmutableMap<String, Object> macros) {
-            super(macros);
-        }
-
-        @Override
-        public Immutable snapshot() {
-            return this;
-        }
-
-        @Override
-        protected Stream<ShaderMacros> parentsFlattened() {
-            return Stream.empty();
+        public Builder defineAll(@NonNull ShaderMacros macros) {
+            return this.defineAll(macros.defines());
         }
 
         /**
-         * @return a {@link ImmutableMap} containing the defined macros
+         * @return a {@link ShaderMacros} containing the built result
          */
-        public ImmutableMap<String, Object> macros() {
-            return (ImmutableMap<String, Object>) this.macros;
+        public ShaderMacros build() {
+            return new ShaderMacros(this.delegate.build());
         }
     }
 }

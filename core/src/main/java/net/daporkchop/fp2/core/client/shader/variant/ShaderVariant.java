@@ -17,32 +17,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.impl.mc.forge1_12_2.client;
+package net.daporkchop.fp2.core.client.shader.variant;
 
-import net.daporkchop.fp2.core.client.render.TextureUVs;
-import net.minecraft.client.resources.IResourceManager;
-import net.minecraftforge.client.resource.IResourceType;
-import net.minecraftforge.client.resource.ISelectiveResourceReloadListener;
-import net.minecraftforge.client.resource.VanillaResourceType;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
-
-import java.util.function.Predicate;
-
-import static net.daporkchop.fp2.core.FP2Core.*;
+import com.google.common.collect.ImmutableMap;
 
 /**
+ * A key identifying a specific variant of a shader.
+ *
  * @author DaPorkchop_
  */
-@SideOnly(Side.CLIENT)
-public class ResourceReloadListener1_12 implements ISelectiveResourceReloadListener {
-    @Override
-    public void onResourceManagerReload(IResourceManager resourceManager, Predicate<IResourceType> resourcePredicate) {
-        if (resourcePredicate.test(VanillaResourceType.TEXTURES) || resourcePredicate.test(VanillaResourceType.MODELS)) {
-            TextureUVs.reloadAll();
-        }
-        if (resourcePredicate.test(VanillaResourceType.SHADERS)) {
-            fp2().client().reloadableShaderRegistry().reload();
-        }
-    }
+public interface ShaderVariant {
+    /**
+     * @return the macro values defined by this shader variant
+     */
+    ImmutableMap<String, Object> defines();
 }

@@ -21,15 +21,17 @@ package net.daporkchop.fp2.core.client.shader;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.val;
 import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.util.annotation.CalledFromClientThread;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.shader.ComputeShaderProgram;
 import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
+import net.daporkchop.fp2.gl.shader.ShaderCompilationException;
+import net.daporkchop.fp2.gl.shader.ShaderLinkageException;
 import net.daporkchop.fp2.gl.shader.ShaderProgram;
-import net.daporkchop.lib.common.util.PorkUtil;
-import net.daporkchop.lib.primitive.lambda.IntIntObjConsumer;
+import net.daporkchop.lib.common.closeable.PResourceUtil;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -47,10 +49,9 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 @RequiredArgsConstructor
 public final class ReloadableShaderRegistry {
+    @NonNull
     private final FP2Core fp2;
     private final Set<NewReloadableShaderProgram<?>> programs = Collections.newSetFromMap(new WeakHashMap<>());
-
-    private boolean resourcesChanged = false;
 
     /**
      * Gets a builder for a reloadable compute shader program which will be managed by this registry.
@@ -59,8 +60,8 @@ public final class ReloadableShaderRegistry {
      * @param setupFunction a function for configuring additional settings necessary when linking the shader
      * @return a builder for the shader
      */
-    public NewReloadableShaderProgram.Builder<ComputeShaderProgram> createCompute(@NonNull ShaderMacros macros, @NonNull NewReloadableShaderProgram.SetupFunction<? super ComputeShaderProgram.Builder> setupFunction) {
-        return new NewReloadableShaderProgram.Builder<>(this, this.fp2, macros, ComputeShaderProgram::builder, setupFunction);
+    public NewReloadableShaderProgram.ComputeBuilder createCompute(@NonNull ShaderMacros macros, NewReloadableShaderProgram.SetupFunction<? super ComputeShaderProgram.Builder> setupFunction) {
+        return new NewReloadableShaderProgram.ComputeBuilder(this, this.fp2, macros, setupFunction);
     }
 
     /**
@@ -70,8 +71,8 @@ public final class ReloadableShaderRegistry {
      * @param setupFunction a function for configuring additional settings necessary when linking the shader
      * @return a builder for the shader
      */
-    public NewReloadableShaderProgram.Builder<DrawShaderProgram> createDraw(@NonNull ShaderMacros macros, @NonNull NewReloadableShaderProgram.SetupFunction<? super DrawShaderProgram.Builder> setupFunction) {
-        return new NewReloadableShaderProgram.Builder<>(this, this.fp2, macros, DrawShaderProgram::builder, setupFunction);
+    public NewReloadableShaderProgram.DrawBuilder createDraw(@NonNull ShaderMacros macros, NewReloadableShaderProgram.SetupFunction<? super DrawShaderProgram.Builder> setupFunction) {
+        return new NewReloadableShaderProgram.DrawBuilder(this, this.fp2, macros, setupFunction);
     }
 
     /**
@@ -97,67 +98,56 @@ public final class ReloadableShaderRegistry {
      * <p>
      * If any shader fails to reload, all changes will be rolled back.
      *
-     * @param callback a callback function to run once the shaders have been reloaded. This will be called with the following arguments:
-     *                 <ol>
-     *                      <li>the total number of reloaded shaders</li>
-     *                      <li>the number of shaders which failed to reload</li>
-     *                      <li>a {@link Throwable} indicating the reason that shader reload failed (will be {@code null} if all shaders reloaded successfully)</li>
-     *                 </ol>
+     * @throws ShaderReloadFailedException if at least one of the shaders couldn't be reloaded
      */
     @CalledFromClientThread
-    public void reload(boolean resourcesChanged, IntIntObjConsumer<? super Throwable> callback) {
-        //if the resources were changed, or they were changed prior to a previous shader reload which failed, we want to forcibly reload all
-        //  shaders (otherwise we'd only reload the ones whose macros changed)
-        resourcesChanged = (this.resourcesChanged |= resourcesChanged);
-
-        int shaderCount = this.programs.size();
+    public void reload() throws ShaderReloadFailedException {
+        int programCount = this.programs.size();
 
         OpenGL gl = this.fp2.client().gl();
         ResourceProvider resourceProvider = this.fp2.client().resourceProvider();
 
-        List<NewReloadableShaderProgram<?>> reloadablePrograms = new ArrayList<>(shaderCount);
-        List<ShaderMacros.Immutable> macrosSnapshots = new ArrayList<>(shaderCount);
-        List<ShaderProgram> newPrograms = new ArrayList<>(shaderCount);
-        try {
-            Throwable cause = null;
+        List<NewReloadableShaderProgram<?>> reloadablePrograms = new ArrayList<>(this.programs);
+        List<ShaderProgram> reloadedPrograms = new ArrayList<>(programCount);
+        try (val ignored = PResourceUtil.lazyCloseAll(reloadedPrograms)) {
+            ShaderReloadFailedException cause = null;
             int failCount = 0;
-            for (NewReloadableShaderProgram<? extends ShaderProgram> program : this.programs) {
-                ShaderMacros.Immutable macrosSnapshot = program.macros.snapshot();
-                if (!resourcesChanged && macrosSnapshot == program.macrosSnapshot) { //if neither the resources nor the macros have changed, we can skip reloading this program
-                    continue;
-                }
-
+            for (val reloadableProgram : this.programs) {
                 ShaderProgram newProgram;
                 try {
-                    newProgram = program.compile(gl, resourceProvider, macrosSnapshot);
-                } catch (Exception e) {
+                    newProgram = reloadableProgram.compile(gl, resourceProvider);
+                } catch (ShaderCompilationException | ShaderLinkageException e) {
                     if (cause == null) {
-                        cause = new RuntimeException("shader reload failed");
+                        cause = new ShaderReloadFailedException();
                     }
                     cause.addSuppressed(e);
                     failCount++;
                     continue;
                 }
 
-                reloadablePrograms.add(program);
-                macrosSnapshots.add(macrosSnapshot);
-                newPrograms.add(newProgram);
+                reloadedPrograms.add(newProgram);
             }
 
-            if (cause == null) { //all shaders were compiled successfully, replace them with the new ones
+            if (cause == null) {
+                //all shaders were compiled successfully, replace them with the new ones
                 for (int i = 0; i < reloadablePrograms.size(); i++) {
                     NewReloadableShaderProgram<?> reloadableProgram = reloadablePrograms.get(i);
-                    reloadableProgram.macrosSnapshot = macrosSnapshots.get(i);
-                    //replace the element in newProgram with the old program so that it gets closed in the finally block
-                    reloadableProgram.program = uncheckedCast(newPrograms.set(i, reloadableProgram.program));
+                    //replace the element in reloadedPrograms with the old program so that it gets closed in the finally block
+                    reloadableProgram.program = uncheckedCast(reloadedPrograms.set(i, reloadableProgram.program));
                 }
 
-                this.resourcesChanged = false;
+                this.fp2.client().chat().success("§areloaded %d shader(s)", programCount);
+            } else {
+                this.fp2.log().error("shader reload failed", cause);
+                this.fp2.client().chat().error("§c%d/%d shaders failed to reload (check log for info)", failCount, programCount);
+                throw cause;
             }
-
-            callback.accept(reloadablePrograms.size(), failCount, cause);
-        } finally {
-            PorkUtil.closeAll(newPrograms);
         }
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    public static class ShaderReloadFailedException extends Exception {
     }
 }

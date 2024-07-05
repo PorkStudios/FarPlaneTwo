@@ -20,7 +20,6 @@
 package net.daporkchop.fp2.impl.mc.forge1_16.client;
 
 import net.daporkchop.fp2.core.client.render.TextureUVs;
-import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;
 import net.daporkchop.fp2.core.engine.api.ctx.IFarClientContext;
 import net.minecraft.resources.IResourceManager;
 import net.minecraftforge.resource.IResourceType;
@@ -47,7 +46,7 @@ public class ResourceReloadListener1_16 implements ISelectiveResourceReloadListe
             });
         }
         if (resourcePredicate.test(VanillaResourceType.SHADERS)) {
-            ReloadableShaderProgram.reloadAll();
+            fp2().client().reloadableShaderRegistry().reload();
         }
     }
 }
