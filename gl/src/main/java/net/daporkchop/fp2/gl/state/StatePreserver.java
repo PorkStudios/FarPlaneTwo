@@ -129,13 +129,13 @@ public final class StatePreserver {
     public AutoCloseable backup() {
         OpenGL gl = this.gl;
 
-        long tmpBuffer = PUnsafe.allocateMemory(4 * Float.BYTES);
-        try {
-            if (this.compatibility) {
-                //back up most of the fixed-function state
-                gl.glPushAttrib(GL_ALL_ATTRIB_BITS);
-                gl.glPushClientAttrib(GL_ALL_CLIENT_ATTRIB_BITS);
-            } else {
+        if (this.compatibility) {
+            //back up most of the fixed-function state
+            gl.glPushAttrib(GL_ALL_ATTRIB_BITS);
+            gl.glPushClientAttrib(GL_ALL_CLIENT_ATTRIB_BITS);
+        } else {
+            long tmpBuffer = PUnsafe.allocateMemory(4 * Float.BYTES);
+            try {
                 //manually back up the most important fixed-function state using a billion function calls
 
                 //fixed-function blend state
@@ -183,36 +183,36 @@ public final class StatePreserver {
                 this.stencilPassDepthPass = gl.glGetInteger(GL_STENCIL_PASS_DEPTH_PASS);
                 this.stencilPassDepthFail = gl.glGetInteger(GL_STENCIL_PASS_DEPTH_FAIL);
                 this.stencilClearValue = gl.glGetInteger(GL_STENCIL_CLEAR_VALUE);
+            } finally {
+                PUnsafe.freeMemory(tmpBuffer);
             }
+        }
 
-            //simple bindings
-            this.boundProgram = gl.glGetInteger(GL_CURRENT_PROGRAM);
-            this.boundVAO = gl.glGetInteger(GL_VERTEX_ARRAY_BINDING);
+        //simple bindings
+        this.boundProgram = gl.glGetInteger(GL_CURRENT_PROGRAM);
+        this.boundVAO = gl.glGetInteger(GL_VERTEX_ARRAY_BINDING);
 
-            //ordinary buffer bindings
-            BufferTarget[] bufferTargets = this.bufferTargets;
-            int[] bufferBindings = this.bufferBindings;
-            for (int i = 0; i < bufferTargets.length; i++) {
-                bufferBindings[i] = gl.glGetInteger(bufferTargets[i].binding());
+        //ordinary buffer bindings
+        BufferTarget[] bufferTargets = this.bufferTargets;
+        int[] bufferBindings = this.bufferBindings;
+        for (int i = 0; i < bufferTargets.length; i++) {
+            bufferBindings[i] = gl.glGetInteger(bufferTargets[i].binding());
+        }
+
+        //indexed buffer bindings
+        for (IndexedBufferBinding binding : this.indexedBufferBindings) {
+            binding.buffer = gl.glGetInteger(binding.target.binding(), binding.index);
+            //TODO: maybe we could back up the offset and size as well (for glBindBufferRange)
+        }
+
+        //texture bindings
+        this.activeTexture = gl.glGetInteger(GL_ACTIVE_TEXTURE);
+        for (TextureBinding binding : this.textureBindings) {
+            gl.glActiveTexture(GL_TEXTURE0 + binding.unit);
+            binding.texture = gl.glGetInteger(binding.target.binding());
+            if (this.samplerObjects) { //back up the sampler object bound to the current texture unit
+                binding.sampler = gl.glGetInteger(GL_SAMPLER_BINDING);
             }
-
-            //indexed buffer bindings
-            for (IndexedBufferBinding binding : this.indexedBufferBindings) {
-                binding.buffer = gl.glGetInteger(binding.target.binding(), binding.index);
-                //TODO: maybe we could back up the offset and size as well (for glBindBufferRange)
-            }
-
-            //texture bindings
-            this.activeTexture = gl.glGetInteger(GL_ACTIVE_TEXTURE);
-            for (TextureBinding binding : this.textureBindings) {
-                gl.glActiveTexture(GL_TEXTURE0 + binding.unit);
-                binding.texture = gl.glGetInteger(binding.target.binding());
-                if (this.samplerObjects) { //back up the sampler object bound to the current texture unit
-                    binding.sampler = gl.glGetInteger(GL_SAMPLER_BINDING);
-                }
-            }
-        } finally {
-            PUnsafe.freeMemory(tmpBuffer);
         }
 
         this.restoreDefaultValues();
