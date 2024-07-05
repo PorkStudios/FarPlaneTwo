@@ -43,15 +43,15 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
- * A registry of {@link NewReloadableShaderProgram reloadable shader programs}.
+ * A registry of {@link ReloadableShaderProgram reloadable shader programs}.
  *
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor
-public final class ReloadableShaderRegistry {
+public final class ReloadableShaderRegistry implements AutoCloseable {
     @NonNull
     private final FP2Core fp2;
-    private final Map<Object, NewReloadableShaderProgram<?>> programs = Collections.synchronizedMap(new HashMap<>());
+    private final Map<Object, ReloadableShaderProgram<?>> programs = Collections.synchronizedMap(new HashMap<>());
 
     /**
      * Gets a builder for a reloadable compute shader program which will be managed by this registry.
@@ -61,8 +61,8 @@ public final class ReloadableShaderRegistry {
      * @param setupFunction a function for configuring additional settings necessary when linking the shader
      * @return a builder for the shader
      */
-    public NewReloadableShaderProgram.ComputeBuilder createCompute(@NonNull Object key, @NonNull ShaderMacros macros, NewReloadableShaderProgram.SetupFunction<? super ComputeShaderProgram.Builder> setupFunction) {
-        return new NewReloadableShaderProgram.ComputeBuilder(this, this.fp2, key, macros, setupFunction);
+    public ReloadableShaderProgram.ComputeBuilder createCompute(@NonNull Object key, @NonNull ShaderMacros macros, ReloadableShaderProgram.SetupFunction<? super ComputeShaderProgram.Builder> setupFunction) {
+        return new ReloadableShaderProgram.ComputeBuilder(this, this.fp2, key, macros, setupFunction);
     }
 
     /**
@@ -73,8 +73,8 @@ public final class ReloadableShaderRegistry {
      * @param setupFunction a function for configuring additional settings necessary when linking the shader
      * @return a builder for the shader
      */
-    public NewReloadableShaderProgram.DrawBuilder createDraw(@NonNull Object key, @NonNull ShaderMacros macros, NewReloadableShaderProgram.SetupFunction<? super DrawShaderProgram.Builder> setupFunction) {
-        return new NewReloadableShaderProgram.DrawBuilder(this, this.fp2, key, macros, setupFunction);
+    public ReloadableShaderProgram.DrawBuilder createDraw(@NonNull Object key, @NonNull ShaderMacros macros, ReloadableShaderProgram.SetupFunction<? super DrawShaderProgram.Builder> setupFunction) {
+        return new ReloadableShaderProgram.DrawBuilder(this, this.fp2, key, macros, setupFunction);
     }
 
     /**
@@ -83,7 +83,7 @@ public final class ReloadableShaderRegistry {
      * @param key     the unique key which identifies the program in the registry
      * @param program the shader program
      */
-    void register(@NonNull Object key, @NonNull NewReloadableShaderProgram<?> program) {
+    void register(@NonNull Object key, @NonNull ReloadableShaderProgram<?> program) {
         checkState(this.programs.putIfAbsent(key, program) == null, "this registry already contains a program with the key: %s", key);
     }
 
@@ -91,10 +91,13 @@ public final class ReloadableShaderRegistry {
      * Removes an existing shader program from this registry.
      *
      * @param key     the unique key which identifies the program in the registry
-     * @param program the shader program
      */
-    boolean unregister(@NonNull Object key, @NonNull NewReloadableShaderProgram<?> program) {
-        return this.programs.remove(key, program);
+    public void unregister(@NonNull Object key) {
+        val program = this.programs.get(key);
+        checkArg(program != null, "no registered program with key: %s", key);
+
+        PResourceUtil.close(program.program);
+        program.program = null;
     }
 
     /**
@@ -104,10 +107,18 @@ public final class ReloadableShaderRegistry {
      * @return the shader program with the given key
      * @throws RuntimeException if this registry does not contain a value with the given key
      */
-    public <P extends ShaderProgram> NewReloadableShaderProgram<P> get(@NonNull Object key) {
-        NewReloadableShaderProgram<?> program = this.programs.get(key);
-        checkArg(program != null, "no such program with key: %s", key);
+    public <P extends ShaderProgram> ReloadableShaderProgram<P> get(@NonNull Object key) {
+        ReloadableShaderProgram<?> program = this.programs.get(key);
+        checkArg(program != null, "no registered program with key: %s", key);
         return uncheckedCast(program);
+    }
+
+    @Override
+    public void close() {
+        PResourceUtil.closeAll(program -> {
+            PResourceUtil.close(program.program);
+            program.program = null;
+        }, this.programs.values());
     }
 
     /**
@@ -124,7 +135,7 @@ public final class ReloadableShaderRegistry {
         OpenGL gl = this.fp2.client().gl();
         ResourceProvider resourceProvider = this.fp2.client().resourceProvider();
 
-        List<NewReloadableShaderProgram<?>> reloadablePrograms = new ArrayList<>(this.programs.values());
+        List<ReloadableShaderProgram<?>> reloadablePrograms = new ArrayList<>(this.programs.values());
         List<ShaderProgram> reloadedPrograms = new ArrayList<>(programCount);
         try (val ignored = PResourceUtil.lazyCloseAll(reloadedPrograms)) {
             ShaderReloadFailedException cause = null;
@@ -148,7 +159,7 @@ public final class ReloadableShaderRegistry {
             if (cause == null) {
                 //all shaders were compiled successfully, replace them with the new ones
                 for (int i = 0; i < reloadablePrograms.size(); i++) {
-                    NewReloadableShaderProgram<?> reloadableProgram = reloadablePrograms.get(i);
+                    ReloadableShaderProgram<?> reloadableProgram = reloadablePrograms.get(i);
                     //replace the element in reloadedPrograms with the old program so that it gets closed in the finally block
                     reloadableProgram.program = uncheckedCast(reloadedPrograms.set(i, reloadableProgram.program));
                 }

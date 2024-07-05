@@ -28,12 +28,10 @@ import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.client.render.GlobalRenderer;
 import net.daporkchop.fp2.core.client.render.GlobalUniformAttributes;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
-import net.daporkchop.fp2.core.client.shader.NewReloadableShaderProgram;
-import net.daporkchop.fp2.core.client.shader.ReloadableShaderRegistry;
+import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.EngineConstants;
 import net.daporkchop.fp2.core.engine.TilePos;
-import net.daporkchop.fp2.core.engine.client.RenderConstants;
 import net.daporkchop.fp2.core.engine.client.bake.storage.BakeStorage;
 import net.daporkchop.fp2.core.engine.client.index.postable.PerLevelRenderPosTable;
 import net.daporkchop.fp2.core.engine.client.index.postable.RenderPosTable;
@@ -61,7 +59,6 @@ import net.daporkchop.lib.common.closeable.PResourceUtil;
 import net.daporkchop.lib.common.math.PMath;
 import net.daporkchop.lib.primitive.lambda.IntIntObjFunction;
 
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -113,7 +110,7 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
     private final LevelPassArray<GLMutableBuffer> rawDrawListsGPU;
     private final LevelPassArray<GLMutableBuffer> culledDrawListsGPU;
 
-    private final NewReloadableShaderProgram<ComputeShaderProgram> cullingShader;
+    private final ReloadableShaderProgram<ComputeShaderProgram> cullingShader;
     private final int tilesCulledPerWorkGroup = 16 * 16; //TODO: a nicer way to acquire this without hardcoding it
 
     public GPUCulledBaseInstanceRenderIndex(OpenGL gl, BakeStorage<VertexType> bakeStorage, DirectMemoryAllocator alloc, NewAttributeFormat<VoxelGlobalAttributes> sharedVertexFormat, GlobalRenderer globalRenderer,

@@ -19,11 +19,10 @@
 
 package net.daporkchop.fp2.core.client.render;
 
-import lombok.val;
 import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.IFrustum;
-import net.daporkchop.fp2.core.client.shader.NewReloadableShaderProgram;
+import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;
 import net.daporkchop.fp2.core.client.shader.ReloadableShaderRegistry;
 import net.daporkchop.fp2.core.client.shader.ShaderMacros;
 import net.daporkchop.fp2.core.engine.EngineConstants;
@@ -36,7 +35,6 @@ import net.daporkchop.fp2.gl.attribute.AttributeTarget;
 import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
 import net.daporkchop.fp2.gl.draw.index.IndexType;
 import net.daporkchop.fp2.gl.draw.index.NewIndexFormat;
-import net.daporkchop.fp2.gl.shader.ComputeShaderProgram;
 import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.gl.shader.ShaderType;
@@ -68,9 +66,9 @@ public final class GlobalRenderer {
 
     public final ShaderMacros shaderMacros;
 
-    public final NewReloadableShaderProgram<DrawShaderProgram> blockShaderProgram;
-    public final NewReloadableShaderProgram<DrawShaderProgram> blockCutoutShaderProgram;
-    public final NewReloadableShaderProgram<DrawShaderProgram> blockStencilShaderProgram;
+    public final ReloadableShaderProgram<DrawShaderProgram> blockShaderProgram;
+    public final ReloadableShaderProgram<DrawShaderProgram> blockCutoutShaderProgram;
+    public final ReloadableShaderProgram<DrawShaderProgram> blockStencilShaderProgram;
 
     public GlobalRenderer(FP2Core fp2, OpenGL gl) {
         try {
@@ -109,7 +107,7 @@ public final class GlobalRenderer {
                     .define("TEXTURE_UVS_QUADS_SSBO_LAYOUT", this.uvPackedQuadSSBOFormat.interfaceBlockLayoutName())
                     .build();
 
-            NewReloadableShaderProgram.SetupFunction<DrawShaderProgram.Builder> shaderSetup = builder -> commonShaderSetup(builder)
+            ReloadableShaderProgram.SetupFunction<DrawShaderProgram.Builder> shaderSetup = builder -> commonShaderSetup(builder)
                     .vertexAttributesWithPrefix("a_", this.voxelInstancedAttributesFormat)
                     .vertexAttributesWithPrefix("a_", this.voxelVertexAttributesFormat);
 
@@ -146,8 +144,6 @@ public final class GlobalRenderer {
     }
 
     public void close() {
-        this.blockStencilShaderProgram.close();
-        this.blockCutoutShaderProgram.close();
-        this.blockShaderProgram.close();
+        PResourceUtil.close(this.shaderRegistry);
     }
 }

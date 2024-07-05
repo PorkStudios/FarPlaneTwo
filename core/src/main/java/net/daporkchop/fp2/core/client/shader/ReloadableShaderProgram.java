@@ -53,7 +53,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  *
  * @author DaPorkchop_
  */
-public final class NewReloadableShaderProgram<P extends ShaderProgram> implements AutoCloseable {
+public final class ReloadableShaderProgram<P extends ShaderProgram> {
     final ReloadableShaderRegistry registry;
     final Object key;
     final ShaderMacros macros;
@@ -64,7 +64,7 @@ public final class NewReloadableShaderProgram<P extends ShaderProgram> implement
 
     P program;
 
-    NewReloadableShaderProgram(Builder<P, ?, ?> builder) {
+    ReloadableShaderProgram(Builder<P, ?, ?> builder) {
         this.registry = builder.registry;
         this.key = builder.key;
         this.macros = builder.macros;
@@ -107,13 +107,6 @@ public final class NewReloadableShaderProgram<P extends ShaderProgram> implement
      */
     public P get() {
         return this.program;
-    }
-
-    @Override
-    public void close() {
-        try (val ignored = this.program) {
-            this.registry.unregister(this.key, this);
-        }
     }
 
     /**
@@ -185,8 +178,8 @@ public final class NewReloadableShaderProgram<P extends ShaderProgram> implement
             return uncheckedCast(this);
         }
 
-        public final NewReloadableShaderProgram<P> build() {
-            return new NewReloadableShaderProgram<>(this);
+        public final ReloadableShaderProgram<P> build() {
+            return new ReloadableShaderProgram<>(this);
         }
 
         final SetupFunction<? super PB> buildSetupFunction() {
