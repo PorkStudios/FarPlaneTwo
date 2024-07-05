@@ -46,7 +46,7 @@ public class ResourceReloadListener1_16 implements ISelectiveResourceReloadListe
             });
         }
         if (resourcePredicate.test(VanillaResourceType.SHADERS)) {
-            fp2().client().reloadableShaderRegistry().reload();
+            fp2().client().globalRenderer().shaderRegistry.reload();
         }
     }
 }

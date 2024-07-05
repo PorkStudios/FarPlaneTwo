@@ -340,6 +340,8 @@ public enum GLExtension {
      */
     GL_ARB_stencil_texturing(GLVersion.OpenGL43, false),
     /**
+     * Note that this also implies support for the {@code std430} interface block layout in GLSL.
+     *
      * @see <a href="https://registry.khronos.org/OpenGL/extensions/ARB/ARB_shader_storage_buffer_object.txt">https://registry.khronos.org/OpenGL/extensions/ARB/ARB_shader_storage_buffer_object.txt</a>
      */
     GL_ARB_shader_storage_buffer_object(GLVersion.OpenGL43, true),

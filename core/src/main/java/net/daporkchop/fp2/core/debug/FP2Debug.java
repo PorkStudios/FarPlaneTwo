@@ -63,7 +63,7 @@ public class FP2Debug {
 
             category.addBinding("reloadShaders", "0", () -> {
                 try {
-                    fp2.client().reloadableShaderRegistry().reload();
+                    fp2.client().globalRenderer().shaderRegistry.reload();
                 } catch (ReloadableShaderRegistry.ShaderReloadFailedException e) {
                     // swallow exception, it's already been logged and i don't want to crash the game every time i make a typo while prototyping a new shader
                 }

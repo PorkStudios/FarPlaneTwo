@@ -55,7 +55,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 public final class NewReloadableShaderProgram<P extends ShaderProgram> implements AutoCloseable {
     final ReloadableShaderRegistry registry;
-    final FP2Core fp2;
+    final Object key;
     final ShaderMacros macros;
 
     final Function<OpenGL, ShaderProgram.Builder<P, ?>> builderFactory; //this is some truly enterprise code
@@ -66,16 +66,16 @@ public final class NewReloadableShaderProgram<P extends ShaderProgram> implement
 
     NewReloadableShaderProgram(Builder<P, ?, ?> builder) {
         this.registry = builder.registry;
-        this.fp2 = builder.fp2;
+        this.key = builder.key;
         this.macros = builder.macros;
 
         this.builderFactory = builder.builderFactory;
         this.shaders = builder.shaders.build();
         this.setupFunction = builder.buildSetupFunction();
 
-        this.program = this.compile(this.fp2.client().gl(), this.fp2.client().resourceProvider());
+        this.registry.register(this.key, this);
 
-        this.registry.register(this);
+        this.program = this.compile(builder.fp2.client().gl(), builder.fp2.client().resourceProvider());
     }
 
     P compile(OpenGL gl, ResourceProvider resourceProvider) throws ShaderCompilationException, ShaderLinkageException {
@@ -111,9 +111,8 @@ public final class NewReloadableShaderProgram<P extends ShaderProgram> implement
 
     @Override
     public void close() {
-        this.registry.unregister(this);
-        if (this.program != null) {
-            this.program.close();
+        try (val ignored = this.program) {
+            this.registry.unregister(this.key, this);
         }
     }
 
@@ -141,6 +140,7 @@ public final class NewReloadableShaderProgram<P extends ShaderProgram> implement
     public static abstract class Builder<P extends ShaderProgram, PB extends ShaderProgram.Builder<P, PB>, B extends Builder<P, PB, B>> {
         final ReloadableShaderRegistry registry;
         final FP2Core fp2;
+        final Object key;
         final ShaderMacros macros;
         final Function<OpenGL, ShaderProgram.Builder<P, ?>> builderFactory; //this is some truly enterprise code
 
@@ -166,8 +166,22 @@ public final class NewReloadableShaderProgram<P extends ShaderProgram> implement
             return uncheckedCast(this);
         }
 
+        public final B addSSBOs(@NotNegative int bindingIndex, @NotNegative int count, @NonNull String name) {
+            for (int i = 0; i < count; i++) {
+                this.addSSBO(bindingIndex + i, name + '[' + i + ']');
+            }
+            return uncheckedCast(this);
+        }
+
         public final B addUBO(@NotNegative int bindingIndex, @NonNull String name) {
             this.uboBindings.put(bindingIndex, name);
+            return uncheckedCast(this);
+        }
+
+        public final B addUBOs(@NotNegative int bindingIndex, @NotNegative int count, @NonNull String name) {
+            for (int i = 0; i < count; i++) {
+                this.addUBO(bindingIndex + i, name + '[' + i + ']');
+            }
             return uncheckedCast(this);
         }
 
@@ -199,8 +213,8 @@ public final class NewReloadableShaderProgram<P extends ShaderProgram> implement
      * @author DaPorkchop_
      */
     public static final class ComputeBuilder extends Builder<ComputeShaderProgram, ComputeShaderProgram.Builder, ComputeBuilder> {
-        ComputeBuilder(ReloadableShaderRegistry registry, FP2Core fp2, ShaderMacros macros, SetupFunction<? super ComputeShaderProgram.Builder> setupFunction) {
-            super(registry, fp2, macros, ComputeShaderProgram::builder, setupFunction);
+        ComputeBuilder(ReloadableShaderRegistry registry, FP2Core fp2, Object key, ShaderMacros macros, SetupFunction<? super ComputeShaderProgram.Builder> setupFunction) {
+            super(registry, fp2, key, macros, ComputeShaderProgram::builder, setupFunction);
         }
     }
 
@@ -208,8 +222,8 @@ public final class NewReloadableShaderProgram<P extends ShaderProgram> implement
      * @author DaPorkchop_
      */
     public static final class DrawBuilder extends Builder<DrawShaderProgram, DrawShaderProgram.Builder, DrawBuilder> {
-        DrawBuilder(ReloadableShaderRegistry registry, FP2Core fp2, ShaderMacros macros, SetupFunction<? super DrawShaderProgram.Builder> setupFunction) {
-            super(registry, fp2, macros, DrawShaderProgram::builder, setupFunction);
+        DrawBuilder(ReloadableShaderRegistry registry, FP2Core fp2, Object key, ShaderMacros macros, SetupFunction<? super DrawShaderProgram.Builder> setupFunction) {
+            super(registry, fp2, key, macros, DrawShaderProgram::builder, setupFunction);
         }
     }
 }

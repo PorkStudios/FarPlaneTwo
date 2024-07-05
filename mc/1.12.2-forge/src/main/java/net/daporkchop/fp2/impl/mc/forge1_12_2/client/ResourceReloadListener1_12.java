@@ -42,7 +42,7 @@ public class ResourceReloadListener1_12 implements ISelectiveResourceReloadListe
             TextureUVs.reloadAll();
         }
         if (resourcePredicate.test(VanillaResourceType.SHADERS)) {
-            fp2().client().reloadableShaderRegistry().reload();
+            fp2().client().globalRenderer().shaderRegistry.reload();
         }
     }
 }

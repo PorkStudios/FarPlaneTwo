@@ -24,6 +24,7 @@ import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.client.shader.NewReloadableShaderProgram;
+import net.daporkchop.fp2.core.client.shader.ReloadableShaderRegistry;
 import net.daporkchop.fp2.core.client.shader.ShaderMacros;
 import net.daporkchop.fp2.core.engine.EngineConstants;
 import net.daporkchop.fp2.core.engine.client.RenderConstants;
@@ -51,6 +52,8 @@ import static net.daporkchop.fp2.core.debug.FP2Debug.*;
  * @author DaPorkchop_
  */
 public final class GlobalRenderer {
+    public final ReloadableShaderRegistry shaderRegistry;
+
     public final NewAttributeFormat<GlobalUniformAttributes> globalUniformAttributeFormat;
     public final NewAttributeFormat<IFrustum.ClippingPlanes> frustumClippingPlanesUBOFormat;
 
@@ -71,6 +74,8 @@ public final class GlobalRenderer {
     public final NewReloadableShaderProgram<ComputeShaderProgram> indirectTileFrustumCullingShaderProgram;
 
     public GlobalRenderer(FP2Core fp2, OpenGL gl) {
+        this.shaderRegistry = new ReloadableShaderRegistry(fp2);
+
         this.globalUniformAttributeFormat = NewAttributeFormat.get(gl, GlobalUniformAttributes.class, AttributeTarget.UBO);
         this.frustumClippingPlanesUBOFormat = NewAttributeFormat.get(gl, IFrustum.ClippingPlanes.class, AttributeTarget.UBO);
 
@@ -108,19 +113,17 @@ public final class GlobalRenderer {
                 .vertexAttributesWithPrefix("a_", this.voxelInstancedAttributesFormat)
                 .vertexAttributesWithPrefix("a_", this.voxelVertexAttributesFormat);
 
-        val shaderRegistry = fp2.client().reloadableShaderRegistry();
-
-        this.blockShaderProgram = shaderRegistry.createDraw(this.shaderMacros, shaderSetup)
+        this.blockShaderProgram = this.shaderRegistry.createDraw("block", this.shaderMacros, shaderSetup)
                 .addShader(ShaderType.VERTEX, Identifier.from(MODID, "shaders/vert/voxel/voxel.vert"))
                 .addShader(ShaderType.FRAGMENT, Identifier.from(MODID, "shaders/frag/block.frag"))
                 .build();
 
-        this.blockCutoutShaderProgram = shaderRegistry.createDraw(this.shaderMacros.toBuilder().define("FP2_CUTOUT").build(), shaderSetup)
+        this.blockCutoutShaderProgram = this.shaderRegistry.createDraw("block_cutout", this.shaderMacros.toBuilder().define("FP2_CUTOUT").build(), shaderSetup)
                 .addShader(ShaderType.VERTEX, Identifier.from(MODID, "shaders/vert/voxel/voxel.vert"))
                 .addShader(ShaderType.FRAGMENT, Identifier.from(MODID, "shaders/frag/block.frag"))
                 .build();
 
-        this.blockStencilShaderProgram = shaderRegistry.createDraw(this.shaderMacros, shaderSetup)
+        this.blockStencilShaderProgram = this.shaderRegistry.createDraw("block_stencil", this.shaderMacros, shaderSetup)
                 .addShader(ShaderType.VERTEX, Identifier.from(MODID, "shaders/vert/voxel/voxel.vert"))
                 .addShader(ShaderType.FRAGMENT, Identifier.from(MODID, "shaders/frag/stencil.frag"))
                 .build();
@@ -141,7 +144,7 @@ public final class GlobalRenderer {
                 }
             };
 
-            this.indirectTileFrustumCullingShaderProgram = shaderRegistry.createCompute(computeShaderMacros, computeShaderSetup)
+            this.indirectTileFrustumCullingShaderProgram = this.shaderRegistry.createCompute("tile_frustum_culling", computeShaderMacros, computeShaderSetup)
                     .addShader(ShaderType.COMPUTE, Identifier.from(MODID, "shaders/comp/indirect_tile_frustum_culling.comp"))
                     .build();
         } else {
