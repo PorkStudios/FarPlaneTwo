@@ -20,6 +20,8 @@
 package net.daporkchop.fp2.core.engine.client.index.attribdivisor;
 
 import lombok.val;
+import net.daporkchop.fp2.api.FP2;
+import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.core.client.IFrustum;
@@ -27,9 +29,11 @@ import net.daporkchop.fp2.core.client.render.GlobalRenderer;
 import net.daporkchop.fp2.core.client.render.GlobalUniformAttributes;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
 import net.daporkchop.fp2.core.client.shader.NewReloadableShaderProgram;
+import net.daporkchop.fp2.core.client.shader.ReloadableShaderRegistry;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.EngineConstants;
 import net.daporkchop.fp2.core.engine.TilePos;
+import net.daporkchop.fp2.core.engine.client.RenderConstants;
 import net.daporkchop.fp2.core.engine.client.bake.storage.BakeStorage;
 import net.daporkchop.fp2.core.engine.client.index.postable.PerLevelRenderPosTable;
 import net.daporkchop.fp2.core.engine.client.index.postable.RenderPosTable;
@@ -51,6 +55,7 @@ import net.daporkchop.fp2.gl.draw.indirect.DrawElementsIndirectCommand;
 import net.daporkchop.fp2.gl.shader.ComputeShaderProgram;
 import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.shader.ShaderProgram;
+import net.daporkchop.fp2.gl.shader.ShaderType;
 import net.daporkchop.fp2.gl.state.StatePreserver;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
 import net.daporkchop.lib.common.math.PMath;
@@ -91,13 +96,24 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
      * 3. Fill the culledDrawList buffer using a compute shader
      */
 
+    private static final String CULLING_SHADER_KEY = "tile_frustum_culling";
+
+    public static void registerShaders(GlobalRenderer globalRenderer) {
+        globalRenderer.shaderRegistry.createCompute(CULLING_SHADER_KEY, globalRenderer.shaderMacros, null)
+                .addShader(ShaderType.COMPUTE, Identifier.from(FP2.MODID, "shaders/comp/indirect_tile_frustum_culling.comp"))
+                .addUBO(GLOBAL_UNIFORMS_UBO_BINDING, GLOBAL_UNIFORMS_UBO_NAME)
+                .addSSBO(TILE_POSITIONS_SSBO_BINDING, TILE_POSITIONS_SSBO_NAME)
+                .addSSBOs(INDIRECT_DRAWS_SSBO_FIRST_BINDING, RENDER_PASS_COUNT, INDIRECT_DRAWS_SSBO_NAME)
+                .build();
+    }
+
     private final NewUniformBuffer<GlobalUniformAttributes> globalUniformBuffer;
 
     private final LevelPassArray<DirectCommandList> rawDrawListsCPU;
     private final LevelPassArray<GLMutableBuffer> rawDrawListsGPU;
     private final LevelPassArray<GLMutableBuffer> culledDrawListsGPU;
 
-    private final NewReloadableShaderProgram<ComputeShaderProgram> indirectTileFrustumCullingShaderProgram;
+    private final NewReloadableShaderProgram<ComputeShaderProgram> cullingShader;
     private final int tilesCulledPerWorkGroup = 16 * 16; //TODO: a nicer way to acquire this without hardcoding it
 
     public GPUCulledBaseInstanceRenderIndex(OpenGL gl, BakeStorage<VertexType> bakeStorage, DirectMemoryAllocator alloc, NewAttributeFormat<VoxelGlobalAttributes> sharedVertexFormat, GlobalRenderer globalRenderer,
@@ -107,8 +123,8 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
         try {
             this.globalUniformBuffer = globalUniformBuffer;
 
-            this.indirectTileFrustumCullingShaderProgram = Objects.requireNonNull(globalRenderer.indirectTileFrustumCullingShaderProgram);
-            //this.tilesCulledPerWorkGroup = this.indirectTileFrustumCullingShaderProgram.get().workGroupSize().invocations();
+            this.cullingShader = globalRenderer.shaderRegistry.get(CULLING_SHADER_KEY);
+            //this.tilesCulledPerWorkGroup = this.cullingShader.get().workGroupSize().invocations();
 
             this.rawDrawListsCPU = new LevelPassArray<>((level, pass) -> new DirectCommandList(alloc));
 
@@ -247,7 +263,7 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
 
         //TODO: i also need to bind the terrain rendering blocked tracker
 
-        val cullingShaderProgram = this.indirectTileFrustumCullingShaderProgram.get();
+        val cullingShaderProgram = this.cullingShader.get();
         val uniformSetter = cullingShaderProgram.bindUnsafe(); // active program binding will be restored by StatePreserver
 
         //configure frustum uniforms

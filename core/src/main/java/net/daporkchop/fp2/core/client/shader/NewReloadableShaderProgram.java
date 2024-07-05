@@ -201,7 +201,9 @@ public final class NewReloadableShaderProgram<P extends ShaderProgram> implement
             }
 
             return builder -> {
-                setupFunction.setup(builder);
+                if (setupFunction != null) {
+                    setupFunction.setup(builder);
+                }
                 samplerBindings.forEach(builder::addSampler);
                 ssboBindings.forEach(builder::addSSBO);
                 uboBindings.forEach(builder::addUBO);

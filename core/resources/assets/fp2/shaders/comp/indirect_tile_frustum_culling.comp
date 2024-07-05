@@ -28,11 +28,11 @@ layout(local_size_x = 256) in;
 #include <"fp2:shaders/util/frustum.glsl">
 #include <"fp2:shaders/util/indirect_draw.glsl">
 
-layout(TILE_POSITIONS_SSBO_LAYOUT) readonly restrict buffer TILE_POSITIONS_SSBO_NAME {
+layout(std140) readonly restrict buffer TILE_POSITIONS_SSBO_NAME {
     ivec4 b_tilePositions[];
 };
 
-layout(INDIRECT_DRAWS_SSBO_LAYOUT) restrict buffer INDIRECT_DRAWS_SSBO_NAME {
+layout(std430) restrict buffer INDIRECT_DRAWS_SSBO_NAME {
     DrawElementsIndirectCommand commands[];
 } b_drawCommandsByPass[RENDER_PASS_COUNT];
 

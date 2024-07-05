@@ -40,6 +40,7 @@ import net.daporkchop.fp2.gl.shader.ComputeShaderProgram;
 import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.gl.shader.ShaderType;
+import net.daporkchop.lib.common.closeable.PResourceUtil;
 
 import java.util.EnumSet;
 
@@ -71,84 +72,67 @@ public final class GlobalRenderer {
     public final NewReloadableShaderProgram<DrawShaderProgram> blockCutoutShaderProgram;
     public final NewReloadableShaderProgram<DrawShaderProgram> blockStencilShaderProgram;
 
-    public final NewReloadableShaderProgram<ComputeShaderProgram> indirectTileFrustumCullingShaderProgram;
-
     public GlobalRenderer(FP2Core fp2, OpenGL gl) {
-        this.shaderRegistry = new ReloadableShaderRegistry(fp2);
+        try {
+            this.shaderRegistry = new ReloadableShaderRegistry(fp2);
 
-        this.globalUniformAttributeFormat = NewAttributeFormat.get(gl, GlobalUniformAttributes.class, AttributeTarget.UBO);
-        this.frustumClippingPlanesUBOFormat = NewAttributeFormat.get(gl, IFrustum.ClippingPlanes.class, AttributeTarget.UBO);
+            this.globalUniformAttributeFormat = NewAttributeFormat.get(gl, GlobalUniformAttributes.class, AttributeTarget.UBO);
+            this.frustumClippingPlanesUBOFormat = NewAttributeFormat.get(gl, IFrustum.ClippingPlanes.class, AttributeTarget.UBO);
 
-        //determine whether we want the tile position attribute format to support the SSBO target
-        boolean tilePositionArrayAsSsbo = false;
-        tilePositionArrayAsSsbo |= gl.supports(GPUCulledBaseInstanceRenderIndex.REQUIRED_EXTENSIONS);
-        this.voxelInstancedAttributesFormat = NewAttributeFormat.get(gl, VoxelGlobalAttributes.class, tilePositionArrayAsSsbo
-                ? EnumSet.of(AttributeTarget.VERTEX_ATTRIBUTE, AttributeTarget.SSBO)
-                : EnumSet.of(AttributeTarget.VERTEX_ATTRIBUTE));
+            //determine whether we want the tile position attribute format to support the SSBO target
+            boolean tilePositionArrayAsSsbo = false;
+            tilePositionArrayAsSsbo |= gl.supports(GPUCulledBaseInstanceRenderIndex.REQUIRED_EXTENSIONS);
+            this.voxelInstancedAttributesFormat = NewAttributeFormat.get(gl, VoxelGlobalAttributes.class, tilePositionArrayAsSsbo
+                    ? EnumSet.of(AttributeTarget.VERTEX_ATTRIBUTE, AttributeTarget.SSBO)
+                    : EnumSet.of(AttributeTarget.VERTEX_ATTRIBUTE));
 
-        this.voxelVertexAttributesFormat = NewAttributeFormat.get(gl, VoxelLocalAttributes.class, AttributeTarget.VERTEX_ATTRIBUTE);
+            this.voxelVertexAttributesFormat = NewAttributeFormat.get(gl, VoxelLocalAttributes.class, AttributeTarget.VERTEX_ATTRIBUTE);
 
-        this.unsignedShortIndexFormat = NewIndexFormat.get(IndexType.UNSIGNED_SHORT);
+            this.unsignedShortIndexFormat = NewIndexFormat.get(IndexType.UNSIGNED_SHORT);
 
-        this.uvQuadListSSBOFormat = NewAttributeFormat.get(gl, TextureUVs.QuadListAttribute.class, AttributeTarget.SSBO);
-        this.uvPackedQuadSSBOFormat = NewAttributeFormat.get(gl, TextureUVs.PackedBakedQuadAttribute.class, AttributeTarget.SSBO);
+            this.uvQuadListSSBOFormat = NewAttributeFormat.get(gl, TextureUVs.QuadListAttribute.class, AttributeTarget.SSBO);
+            this.uvPackedQuadSSBOFormat = NewAttributeFormat.get(gl, TextureUVs.PackedBakedQuadAttribute.class, AttributeTarget.SSBO);
 
-        this.shaderMacros = ShaderMacros.builder()
-                .define("T_SHIFT", EngineConstants.T_SHIFT)
-                .define("RENDER_PASS_COUNT", RenderConstants.RENDER_PASS_COUNT)
-                .define("MAX_CLIPPING_PLANES", IFrustum.MAX_CLIPPING_PLANES)
-                .define("FP2_DEBUG", FP2_DEBUG)
+            this.shaderMacros = ShaderMacros.builder()
+                    .define("T_SHIFT", EngineConstants.T_SHIFT)
+                    .define("RENDER_PASS_COUNT", RenderConstants.RENDER_PASS_COUNT)
+                    .define("MAX_CLIPPING_PLANES", IFrustum.MAX_CLIPPING_PLANES)
+                    .define("FP2_DEBUG", FP2_DEBUG)
 
-                .define("GLOBAL_UNIFORMS_UBO_NAME", RenderConstants.GLOBAL_UNIFORMS_UBO_NAME)
-                .define("GLOBAL_UNIFORMS_UBO_LAYOUT", this.globalUniformAttributeFormat.interfaceBlockLayoutName())
-                .define("TEXTURE_ATLAS_SAMPLER_NAME", RenderConstants.TEXTURE_ATLAS_SAMPLER_NAME)
-                .define("LIGHTMAP_SAMPLER_NAME", RenderConstants.LIGHTMAP_SAMPLER_NAME)
-                .define("TEXTURE_UVS_LISTS_SSBO_NAME", RenderConstants.TEXTURE_UVS_LISTS_SSBO_NAME)
-                .define("TEXTURE_UVS_LISTS_SSBO_LAYOUT", this.uvQuadListSSBOFormat.interfaceBlockLayoutName())
-                .define("TEXTURE_UVS_QUADS_SSBO_NAME", RenderConstants.TEXTURE_UVS_QUADS_SSBO_NAME)
-                .define("TEXTURE_UVS_QUADS_SSBO_LAYOUT", this.uvPackedQuadSSBOFormat.interfaceBlockLayoutName())
-                .build();
-
-        NewReloadableShaderProgram.SetupFunction<DrawShaderProgram.Builder> shaderSetup = builder -> commonShaderSetup(builder)
-                .vertexAttributesWithPrefix("a_", this.voxelInstancedAttributesFormat)
-                .vertexAttributesWithPrefix("a_", this.voxelVertexAttributesFormat);
-
-        this.blockShaderProgram = this.shaderRegistry.createDraw("block", this.shaderMacros, shaderSetup)
-                .addShader(ShaderType.VERTEX, Identifier.from(MODID, "shaders/vert/voxel/voxel.vert"))
-                .addShader(ShaderType.FRAGMENT, Identifier.from(MODID, "shaders/frag/block.frag"))
-                .build();
-
-        this.blockCutoutShaderProgram = this.shaderRegistry.createDraw("block_cutout", this.shaderMacros.toBuilder().define("FP2_CUTOUT").build(), shaderSetup)
-                .addShader(ShaderType.VERTEX, Identifier.from(MODID, "shaders/vert/voxel/voxel.vert"))
-                .addShader(ShaderType.FRAGMENT, Identifier.from(MODID, "shaders/frag/block.frag"))
-                .build();
-
-        this.blockStencilShaderProgram = this.shaderRegistry.createDraw("block_stencil", this.shaderMacros, shaderSetup)
-                .addShader(ShaderType.VERTEX, Identifier.from(MODID, "shaders/vert/voxel/voxel.vert"))
-                .addShader(ShaderType.FRAGMENT, Identifier.from(MODID, "shaders/frag/stencil.frag"))
-                .build();
-
-        if (gl.supports(GPUCulledBaseInstanceRenderIndex.REQUIRED_EXTENSIONS)) {
-            val computeShaderMacros = this.shaderMacros.toBuilder()
-                    .define("TILE_POSITIONS_SSBO_NAME", RenderConstants.TILE_POSITIONS_SSBO_NAME)
-                    .define("TILE_POSITIONS_SSBO_LAYOUT", this.voxelInstancedAttributesFormat.interfaceBlockLayoutName())
-                    .define("INDIRECT_DRAWS_SSBO_NAME", RenderConstants.INDIRECT_DRAWS_SSBO_NAME)
-                    .define("INDIRECT_DRAWS_SSBO_LAYOUT", "std430") //TODO: decide on the optimal layout automagically
+                    .define("GLOBAL_UNIFORMS_UBO_NAME", RenderConstants.GLOBAL_UNIFORMS_UBO_NAME)
+                    .define("GLOBAL_UNIFORMS_UBO_LAYOUT", this.globalUniformAttributeFormat.interfaceBlockLayoutName())
+                    .define("TEXTURE_ATLAS_SAMPLER_NAME", RenderConstants.TEXTURE_ATLAS_SAMPLER_NAME)
+                    .define("LIGHTMAP_SAMPLER_NAME", RenderConstants.LIGHTMAP_SAMPLER_NAME)
+                    .define("TEXTURE_UVS_LISTS_SSBO_NAME", RenderConstants.TEXTURE_UVS_LISTS_SSBO_NAME)
+                    .define("TEXTURE_UVS_LISTS_SSBO_LAYOUT", this.uvQuadListSSBOFormat.interfaceBlockLayoutName())
+                    .define("TEXTURE_UVS_QUADS_SSBO_NAME", RenderConstants.TEXTURE_UVS_QUADS_SSBO_NAME)
+                    .define("TEXTURE_UVS_QUADS_SSBO_LAYOUT", this.uvPackedQuadSSBOFormat.interfaceBlockLayoutName())
                     .build();
 
-            NewReloadableShaderProgram.SetupFunction<ComputeShaderProgram.Builder> computeShaderSetup = builder -> {
-                commonShaderSetup(builder)
-                        .addSSBO(RenderConstants.TILE_POSITIONS_SSBO_BINDING, RenderConstants.TILE_POSITIONS_SSBO_NAME);
-                for (int pass = 0; pass < RenderConstants.RENDER_PASS_COUNT; pass++) {
-                    builder.addSSBO(RenderConstants.INDIRECT_DRAWS_SSBO_FIRST_BINDING + pass, RenderConstants.INDIRECT_DRAWS_SSBO_NAME + '[' + pass + ']');
-                }
-            };
+            NewReloadableShaderProgram.SetupFunction<DrawShaderProgram.Builder> shaderSetup = builder -> commonShaderSetup(builder)
+                    .vertexAttributesWithPrefix("a_", this.voxelInstancedAttributesFormat)
+                    .vertexAttributesWithPrefix("a_", this.voxelVertexAttributesFormat);
 
-            this.indirectTileFrustumCullingShaderProgram = this.shaderRegistry.createCompute("tile_frustum_culling", computeShaderMacros, computeShaderSetup)
-                    .addShader(ShaderType.COMPUTE, Identifier.from(MODID, "shaders/comp/indirect_tile_frustum_culling.comp"))
+            this.blockShaderProgram = this.shaderRegistry.createDraw("block", this.shaderMacros, shaderSetup)
+                    .addShader(ShaderType.VERTEX, Identifier.from(MODID, "shaders/vert/voxel/voxel.vert"))
+                    .addShader(ShaderType.FRAGMENT, Identifier.from(MODID, "shaders/frag/block.frag"))
                     .build();
-        } else {
-            this.indirectTileFrustumCullingShaderProgram = null;
+
+            this.blockCutoutShaderProgram = this.shaderRegistry.createDraw("block_cutout", this.shaderMacros.toBuilder().define("FP2_CUTOUT").build(), shaderSetup)
+                    .addShader(ShaderType.VERTEX, Identifier.from(MODID, "shaders/vert/voxel/voxel.vert"))
+                    .addShader(ShaderType.FRAGMENT, Identifier.from(MODID, "shaders/frag/block.frag"))
+                    .build();
+
+            this.blockStencilShaderProgram = this.shaderRegistry.createDraw("block_stencil", this.shaderMacros, shaderSetup)
+                    .addShader(ShaderType.VERTEX, Identifier.from(MODID, "shaders/vert/voxel/voxel.vert"))
+                    .addShader(ShaderType.FRAGMENT, Identifier.from(MODID, "shaders/frag/stencil.frag"))
+                    .build();
+
+            if (gl.supports(GPUCulledBaseInstanceRenderIndex.REQUIRED_EXTENSIONS)) {
+                GPUCulledBaseInstanceRenderIndex.registerShaders(this);
+            }
+        } catch (Throwable t) {
+            throw PResourceUtil.closeSuppressed(t, this::close);
         }
     }
 
