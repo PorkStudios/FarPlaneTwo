@@ -19,6 +19,7 @@
 
 package net.daporkchop.fp2.gl.sync;
 
+import lombok.NonNull;
 import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.GLExtensionSet;
 import net.daporkchop.fp2.gl.OpenGL;
@@ -60,5 +61,15 @@ public final class GLFenceSync extends GLObject {
     @Override
     protected void delete() {
         this.gl.glDeleteSync(this.sync);
+    }
+
+    @Override
+    public void setDebugLabel(@NonNull CharSequence label) {
+        this.gl.glObjectPtrLabel(this.sync, label);
+    }
+
+    @Override
+    public String getDebugLabel() {
+        return this.gl.glGetObjectPtrLabel(this.sync);
     }
 }

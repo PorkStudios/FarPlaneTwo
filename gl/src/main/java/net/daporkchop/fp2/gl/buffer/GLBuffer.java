@@ -32,6 +32,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
 
+import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -60,6 +61,16 @@ public abstract class GLBuffer extends GLObject.Normal {
     @Override
     protected final void delete() {
         this.gl.glDeleteBuffer(this.id);
+    }
+
+    @Override
+    public void setDebugLabel(@NonNull CharSequence label) {
+        this.gl.glObjectLabel(GL_BUFFER, this.id, label);
+    }
+
+    @Override
+    public String getDebugLabel() {
+        return this.gl.glGetObjectLabel(GL_BUFFER, this.id);
     }
 
     /**

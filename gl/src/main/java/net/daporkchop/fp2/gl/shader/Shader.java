@@ -20,6 +20,7 @@
 package net.daporkchop.fp2.gl.shader;
 
 import lombok.Getter;
+import lombok.NonNull;
 import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.fp2.gl.OpenGL;
@@ -70,6 +71,16 @@ public final class Shader extends GLObject.Normal {
     @Override
     protected void delete() {
         this.gl.glDeleteShader(this.id);
+    }
+
+    @Override
+    public void setDebugLabel(@NonNull CharSequence label) {
+        this.gl.glObjectLabel(GL_SHADER, this.id, label);
+    }
+
+    @Override
+    public String getDebugLabel() {
+        return this.gl.glGetObjectLabel(GL_SHADER, this.id);
     }
 
     //TODO: make this private

@@ -19,6 +19,7 @@
 
 package net.daporkchop.fp2.gl.util;
 
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.lib.common.annotation.NotThreadSafe;
@@ -56,6 +57,20 @@ public abstract class GLObject implements AutoCloseable {
             throw new IllegalStateException();
         }
     }
+
+    /**
+     * Sets this object's debug label to the given value.
+     *
+     * @param label the label
+     * @throws UnsupportedOperationException if the current OpenGL context doesn't support {@link net.daporkchop.fp2.gl.GLExtension#GL_KHR_debug}
+     */
+    public abstract void setDebugLabel(@NonNull CharSequence label);
+
+    /**
+     * @return this object's debug label to the given value
+     * @throws UnsupportedOperationException if the current OpenGL context doesn't support {@link net.daporkchop.fp2.gl.GLExtension#GL_KHR_debug}
+     */
+    public abstract String getDebugLabel();
 
     /**
      * An ordinary OpenGL object with an integer id.

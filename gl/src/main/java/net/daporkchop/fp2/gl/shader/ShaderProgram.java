@@ -81,6 +81,16 @@ public abstract class ShaderProgram extends GLObject.Normal {
         this.gl.glDeleteProgram(this.id);
     }
 
+    @Override
+    public void setDebugLabel(@NonNull CharSequence label) {
+        this.gl.glObjectLabel(GL_PROGRAM, this.id, label);
+    }
+
+    @Override
+    public String getDebugLabel() {
+        return this.gl.glGetObjectLabel(GL_PROGRAM, this.id);
+    }
+
     /**
      * Executes the given action with this program bound as the active program.
      *

@@ -20,6 +20,7 @@
 package net.daporkchop.fp2.gl.attribute.vao;
 
 import lombok.AccessLevel;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.OpenGL;
@@ -92,6 +93,16 @@ public abstract class VertexArrayObject extends GLObject.Normal {
     @Override
     protected final void delete() {
         this.gl.glDeleteVertexArray(this.id);
+    }
+
+    @Override
+    public void setDebugLabel(@NonNull CharSequence label) {
+        this.gl.glObjectLabel(GL_VERTEX_ARRAY, this.id, label);
+    }
+
+    @Override
+    public String getDebugLabel() {
+        return this.gl.glGetObjectLabel(GL_VERTEX_ARRAY, this.id);
     }
 
     /**

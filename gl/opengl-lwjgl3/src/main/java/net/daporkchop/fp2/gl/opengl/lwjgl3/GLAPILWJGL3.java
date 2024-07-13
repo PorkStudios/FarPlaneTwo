@@ -1926,6 +1926,32 @@ public final class GLAPILWJGL3 extends OpenGL {
         }
     }
 
+    @Override
+    public void glPushDebugGroup(int source, int id, @NonNull CharSequence msg) {
+        if (this.OpenGL43) {
+            GL43C.glPushDebugGroup(source, id, msg);
+            super.debugCheckError();
+        } else if (this.GL_KHR_debug) {
+            KHRDebug.glPushDebugGroup(source, id, msg);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_KHR_debug));
+        }
+    }
+
+    @Override
+    public void glPopDebugGroup() {
+        if (this.OpenGL43) {
+            GL43C.glPopDebugGroup();
+            super.debugCheckError();
+        } else if (this.GL_KHR_debug) {
+            KHRDebug.glPopDebugGroup();
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_KHR_debug));
+        }
+    }
+
     //
     //
     // OpenGL 4.4

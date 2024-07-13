@@ -28,6 +28,7 @@ import net.daporkchop.fp2.gl.buffer.IndexedBufferTarget;
 import net.daporkchop.fp2.gl.compute.ComputeWorkGroupCount;
 import net.daporkchop.fp2.gl.compute.ComputeWorkGroupSize;
 import net.daporkchop.fp2.gl.util.GLRequires;
+import net.daporkchop.fp2.gl.util.debug.DebugLabel;
 import net.daporkchop.fp2.gl.util.debug.GLDebugOutputCallback;
 
 import java.lang.invoke.MethodHandles;
@@ -60,6 +61,10 @@ import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 public abstract class OpenGL {
     public static final boolean DEBUG = Boolean.getBoolean("fp2.gl.opengl.debug");
     public static final boolean DEBUG_OUTPUT = Boolean.getBoolean("fp2.gl.opengl.debug.output");
+    public static final boolean DEBUG_LABELS = DEBUG;
+    public static final boolean DEBUG_GROUPS = DEBUG;
+
+    // TODO: use this!
     public static final boolean PRESERVE_BINDINGS = System.getProperty("fp2.gl.opengl.preserveBindings") == null || Boolean.getBoolean("fp2.gl.opengl.preserveBindings");
 
     /**
@@ -276,6 +281,36 @@ public abstract class OpenGL {
     @Override
     public final String toString() {
         return this.version + " " + this.profile + (this.forwardCompatibility ? " (forward compatibility)" : " ") + this.extensions;
+    }
+
+    /**
+     * If enabled and supported, gets a new {@link DebugLabel} for constructing a {@link GLExtension#GL_KHR_debug} debug object label.
+     *
+     * @param initial the debug label's initial message
+     * @return a {@link DebugLabel} for constructing a debug object label, or one which will do nothing if either disabled or unsupported
+     */
+    public final DebugLabel newDebugLabel(@NonNull String initial) {
+        if (DEBUG_LABELS && this.supports(GLExtension.GL_KHR_debug)) {
+            return DebugLabel.concat(initial);
+        } else {
+            return DebugLabel.ignore();
+        }
+    }
+
+    /**
+     * If enabled and supported, pushes a {@link GLExtension#GL_KHR_debug} debug group onto the debug group stack.
+     *
+     * @param id  the debug group's id
+     * @param msg the debug group's message
+     * @return an {@link AutoCloseable} which must be closed to pop the debug group
+     */
+    public final AutoCloseable pushDebugGroup(int id, @NonNull CharSequence msg) {
+        if (DEBUG_GROUPS && this.supports(GLExtension.GL_KHR_debug)) {
+            this.glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, id, msg);
+            return this::glPopDebugGroup;
+        } else {
+            return () -> {};
+        }
     }
 
     //
@@ -1451,6 +1486,20 @@ public abstract class OpenGL {
      */
     @GLRequires(GLExtension.GL_KHR_debug)
     public abstract void glDebugMessageCallback(GLDebugOutputCallback callback);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_KHR_debug GL_KHR_debug}
+     * @since OpenGL 4.3
+     */
+    @GLRequires(GLExtension.GL_KHR_debug)
+    public abstract void glPushDebugGroup(int source, int id, @NonNull CharSequence msg);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_KHR_debug GL_KHR_debug}
+     * @since OpenGL 4.3
+     */
+    @GLRequires(GLExtension.GL_KHR_debug)
+    public abstract void glPopDebugGroup();
 
     //
     //
