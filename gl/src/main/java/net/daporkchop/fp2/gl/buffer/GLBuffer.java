@@ -25,6 +25,8 @@ import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.util.GLObject;
+import net.daporkchop.fp2.gl.util.GLRequires;
+import net.daporkchop.fp2.gl.util.debug.DebugLabel;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.nio.ByteBuffer;
@@ -42,6 +44,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 public abstract class GLBuffer extends GLObject.Normal {
     protected final boolean dsa;
+    protected final boolean invalidateSubdata;
 
     protected long capacity = -1L;
     protected boolean mapped = false;
@@ -49,6 +52,7 @@ public abstract class GLBuffer extends GLObject.Normal {
     protected GLBuffer(OpenGL gl) {
         super(gl, gl.supports(GLExtension.GL_ARB_direct_state_access) ? gl.glCreateBuffer() : gl.glGenBuffer());
         this.dsa = gl.supports(GLExtension.GL_ARB_direct_state_access);
+        this.invalidateSubdata = gl.supports(GLExtension.GL_ARB_invalidate_subdata);
     }
 
     /**
@@ -180,6 +184,34 @@ public abstract class GLBuffer extends GLObject.Normal {
      */
     public final void copyRange(long srcOffset, @NonNull GLBuffer dst, long dstOffset, long size) {
         dst.copyRange(this, srcOffset, dstOffset, size);
+    }
+
+    /**
+     * Hints that the buffer's storage should be invalidated.
+     * <p>
+     * After invalidation, the buffer contents become undefined.
+     * <p>
+     * This may do nothing if the OpenGL implementation doesn't support buffer invalidation.
+     */
+    public void invalidateHint() {
+        this.checkOpen();
+        if (this.invalidateSubdata) {
+            this.gl.glInvalidateBufferData(this.id);
+        }
+    }
+
+    /**
+     * Invalidates this buffer's contents.
+     * <p>
+     * After invalidation, the buffer contents become undefined.
+     *
+     * @throws UnsupportedOperationException if {@link GLExtension#GL_ARB_invalidate_subdata GL_ARB_invalidate_subdata} isn't supported
+     * @apiNote requires {@link GLExtension#GL_ARB_invalidate_subdata GL_ARB_invalidate_subdata}
+     */
+    @GLRequires(GLExtension.GL_ARB_invalidate_subdata)
+    public final void invalidate() throws UnsupportedOperationException {
+        this.checkOpen();
+        this.gl.glInvalidateBufferData(this.id);
     }
 
     /**

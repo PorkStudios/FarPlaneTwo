@@ -64,7 +64,10 @@ public final class GLMutableBuffer extends GLBuffer {
         this.checkOpen();
         notNegative(capacity, "capacity");
 
-        if (this.dsa) {
+        if (this.invalidateSubdata && capacity == this.capacity) {
+            // if GL_ARB_invalidate_subdata is supported and the buffer's capacity isn't changing, prefer glInvalidateBufferData() over allocating a new buffer storage
+            this.gl.glInvalidateBufferData(this.id);
+        } else if (this.dsa) {
             this.gl.glNamedBufferData(this.id, capacity, 0L, usage.usage());
         } else {
             this.bind(BufferTarget.ARRAY_BUFFER, target -> {
