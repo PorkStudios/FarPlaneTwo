@@ -33,6 +33,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  *
  * @author DaPorkchop_
  */
+//TODO: make this extend from AbstractDirectVector
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
 public abstract class AbstractTypedWriter implements AutoCloseable {
     protected @NotNegative int size;
