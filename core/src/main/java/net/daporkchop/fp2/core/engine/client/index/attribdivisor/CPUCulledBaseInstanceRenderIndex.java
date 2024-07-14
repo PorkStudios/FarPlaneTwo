@@ -36,7 +36,9 @@ import net.daporkchop.fp2.gl.draw.indirect.DrawElementsIndirectCommand;
 import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.gl.state.StatePreserver;
+import net.daporkchop.fp2.gl.util.list.DirectDrawElementsIndirectCommandList;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
+import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.Map;
 import java.util.Set;
@@ -53,13 +55,13 @@ public class CPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
     private final Map<TilePos, DrawElementsIndirectCommand[]> drawCommands = DirectTilePosAccess.newPositionKeyedHashMap();
     private int selectedTilesCount = 0;
 
-    private final LevelPassArray<DirectCommandList> commandLists;
+    private final LevelPassArray<DirectDrawElementsIndirectCommandList> commandLists;
 
     public CPUCulledBaseInstanceRenderIndex(OpenGL gl, BakeStorage<VertexType> bakeStorage, DirectMemoryAllocator alloc, AttributeFormat<VoxelGlobalAttributes> sharedVertexFormat) {
         super(gl, bakeStorage, alloc, sharedVertexFormat);
 
         try {
-            this.commandLists = new LevelPassArray<>((level, pass) -> new DirectCommandList(alloc));
+            this.commandLists = new LevelPassArray<>((level, pass) -> new DirectDrawElementsIndirectCommandList(alloc));
         } catch (Throwable t) {
             throw PResourceUtil.closeSuppressed(t, this);
         }
@@ -117,7 +119,7 @@ public class CPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
     @Override
     public void select(IFrustum frustum, TerrainRenderingBlockedTracker blockedTracker) {
         //clear all the lists
-        this.commandLists.forEach(list -> list.size = 0);
+        this.commandLists.forEach(DirectDrawElementsIndirectCommandList::clear);
 
         //iterate over all the tile positions and draw commands
         this.selectedTilesCount = 0;
@@ -152,9 +154,11 @@ public class CPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
     @Override
     public void draw(DrawMode mode, int level, int pass, DrawShaderProgram shader, ShaderProgram.UniformSetter uniformSetter) {
         val list = this.commandLists.get(level, pass);
-        if (list.size != 0) {
+        int size = list.size();
+        if (size != 0) {
+            long indirect = PUnsafe.pork_directBufferAddress(list.byteBufferView());
             this.gl.glBindVertexArray(this.vaos.get(level, pass).id());
-            this.gl.glMultiDrawElementsIndirect(mode.mode(), this.bakeStorage.indexFormat.type().type(), list.address, list.size, 0);
+            this.gl.glMultiDrawElementsIndirect(mode.mode(), this.bakeStorage.indexFormat.type().type(), indirect, size, 0);
         }
     }
 
