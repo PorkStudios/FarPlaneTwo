@@ -42,7 +42,6 @@ import net.daporkchop.fp2.gl.GLExtensionSet;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
-import net.daporkchop.fp2.gl.attribute.NewAttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
 import net.daporkchop.fp2.gl.attribute.NewUniformBuffer;
 import net.daporkchop.fp2.gl.buffer.BufferTarget;
@@ -55,12 +54,12 @@ import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.gl.shader.ShaderType;
 import net.daporkchop.fp2.gl.state.StatePreserver;
+import net.daporkchop.fp2.gl.util.list.DirectDrawElementsIndirectCommandList;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
-import net.daporkchop.lib.common.math.PMath;
-import net.daporkchop.lib.primitive.lambda.IntIntObjFunction;
 
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.IntFunction;
 
 import static net.daporkchop.fp2.core.engine.client.RenderConstants.*;
 import static net.daporkchop.fp2.gl.OpenGLConstants.*;
@@ -106,12 +105,10 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
 
     private final NewUniformBuffer<GlobalUniformAttributes> globalUniformBuffer;
 
-    private final LevelPassArray<DirectCommandList> rawDrawListsCPU;
-    private final LevelPassArray<GLMutableBuffer> rawDrawListsGPU;
-    private final LevelPassArray<GLMutableBuffer> culledDrawListsGPU;
+    private final LevelArray<Level> levels;
 
     private final ReloadableShaderProgram<ComputeShaderProgram> cullingShader;
-    private final int tilesCulledPerWorkGroup = 16 * 16; //TODO: a nicer way to acquire this without hardcoding it
+    private final int workGroupSize = 16 * 16; //TODO: a nicer way to acquire this without hardcoding it
 
     public GPUCulledBaseInstanceRenderIndex(OpenGL gl, BakeStorage<VertexType> bakeStorage, DirectMemoryAllocator alloc, NewAttributeFormat<VoxelGlobalAttributes> sharedVertexFormat, GlobalRenderer globalRenderer,
                                             NewUniformBuffer<GlobalUniformAttributes> globalUniformBuffer) {
@@ -121,13 +118,9 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
             this.globalUniformBuffer = globalUniformBuffer;
 
             this.cullingShader = globalRenderer.shaderRegistry.get(CULLING_SHADER_KEY);
-            //this.tilesCulledPerWorkGroup = this.cullingShader.get().workGroupSize().invocations();
+            //this.workGroupSize = this.cullingShader.get().workGroupSize().invocations();
 
-            this.rawDrawListsCPU = new LevelPassArray<>((level, pass) -> new DirectCommandList(alloc));
-
-            IntIntObjFunction<GLMutableBuffer> drawListCreatorGPU = (level, pass) -> GLMutableBuffer.create(gl);
-            this.rawDrawListsGPU = new LevelPassArray<>(drawListCreatorGPU);
-            this.culledDrawListsGPU = new LevelPassArray<>(drawListCreatorGPU);
+            this.levels = new LevelArray<>(level -> new Level(gl, alloc));
         } catch (Throwable t) {
             throw PResourceUtil.closeSuppressed(t, this);
         }
@@ -135,22 +128,24 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
 
     @Override
     public void close() {
-        try (val ignored0 = this.rawDrawListsCPU;
-             val ignored1 = this.rawDrawListsGPU;
-             val ignored2 = this.culledDrawListsGPU) {
+        try (val ignored = this.levels) {
             super.close();
         }
     }
 
     @Override
     protected RenderPosTable constructRenderPosTable(NewAttributeFormat<VoxelGlobalAttributes> sharedVertexFormat) {
-        val step = this.tilesCulledPerWorkGroup; //TODO: this will always be uninitialized if i stop hardcoding the value
-        val growFunction = Allocator.GrowFunction.sqrt2(step);
-        return new PerLevelRenderPosTable(level -> new SimpleRenderPosTable(this.gl, sharedVertexFormat, this.alloc, growFunction));
+        val step = this.workGroupSize; //TODO: this will always be uninitialized if i stop hardcoding the value
+        return new PerLevelRenderPosTable(level -> new SimpleRenderPosTable(this.gl, sharedVertexFormat, this.alloc, (oldCapacity, increment) -> {
+            val newCapacity = Allocator.GrowFunction.sqrt2(step).grow(oldCapacity, increment);
+            this.levels.get(level).capacityChanged(this.gl, Math.toIntExact(newCapacity));
+            return newCapacity;
+        }));
     }
 
     private Consumer<TilePos> recomputeTile() {
         return pos -> {
+            Level levelInstance = this.levels.get(pos.level());
             BakeStorage.Location[] locations = this.bakeStorage.find(pos);
             if (locations == null || this.hiddenPositions.contains(pos)) {
                 //the position doesn't have any render data data associated with it or is hidden, and therefore can be entirely omitted from the index
@@ -158,9 +153,9 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
 
                 if (baseInstance >= 0) {
                     for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
-                        val rawDrawListCPU = this.rawDrawListsCPU.get(pos.level(), pass);
-                        if (rawDrawListCPU.size > baseInstance) {
-                            rawDrawListCPU.set(baseInstance, new DrawElementsIndirectCommand());
+                        val rawDrawListCPU = levelInstance.rawDrawListsCPU.get(pass);
+                        if (rawDrawListCPU.size() > baseInstance) {
+                            rawDrawListCPU.setZero(baseInstance);
                         }
                     }
                 }
@@ -182,13 +177,8 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
                 }
 
                 for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
-                    val rawDrawListCPU = this.rawDrawListsCPU.get(pos.level(), pass);
-                    // grow the cpu list
-                    // TODO: this should be done automatically when the RenderPosTable is resized
-                    while (rawDrawListCPU.size < PMath.roundUp(baseInstance + 1, this.tilesCulledPerWorkGroup)) {
-                        rawDrawListCPU.add(new DrawElementsIndirectCommand());
-                    }
-                    rawDrawListCPU.set(baseInstance, commands[pass] == null ? new DrawElementsIndirectCommand() : commands[pass]);
+                    levelInstance.rawDrawListsCPU.get(pass)
+                            .set(baseInstance, commands[pass] == null ? new DrawElementsIndirectCommand() : commands[pass]);
                 }
             }
         };
@@ -221,38 +211,6 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
     public void select(IFrustum frustum, TerrainRenderingBlockedTracker blockedTracker) {
         this.renderPosTable.flush();
 
-        //upload the rawDrawList at each detail level
-        for (int level = 0; level < EngineConstants.MAX_LODS; level++) {
-            int capacity = this.renderPosTable.vertexBuffer(level).capacity(); // TODO: maybe use some other mechanism to decide on this rather than capacity (as capacity can't shrink back down)
-            assert (capacity % this.tilesCulledPerWorkGroup) == 0 : "capacity not divisible by work group size! level=" + level + ", capacity=" + capacity + ", work group size=" + this.tilesCulledPerWorkGroup;
-
-            for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
-                val rawDrawListCPU = this.rawDrawListsCPU.get(level, pass);
-                val rawDrawListGPU = this.rawDrawListsGPU.get(level, pass);
-                rawDrawListGPU.capacity(capacity * DrawElementsIndirectCommand._SIZE, BufferUsage.STREAM_DRAW);
-                rawDrawListGPU.bufferSubData(0L, rawDrawListCPU.byteBufferView());
-            }
-        }
-
-        //orphan the culledDrawList at each detail level
-        for (int level = 0; level < EngineConstants.MAX_LODS; level++) {
-            int capacity = this.renderPosTable.vertexBuffer(level).capacity();
-
-            for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
-                this.culledDrawListsGPU.get(level, pass).capacity(capacity * DrawElementsIndirectCommand._SIZE, BufferUsage.STREAM_COPY);
-            }
-        }
-
-        //copy the rawDrawList into the culledDrawList
-        //TODO: i'd like to avoid this copy and instead simply bind both lists to the shader
-        for (int level = 0; level < EngineConstants.MAX_LODS; level++) {
-            int capacity = this.renderPosTable.vertexBuffer(level).capacity();
-
-            for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
-                this.culledDrawListsGPU.get(level, pass).copyRange(this.rawDrawListsGPU.get(level, pass), 0L, 0L, capacity * DrawElementsIndirectCommand._SIZE);
-            }
-        }
-
         //bind global uniforms
         // TODO: This will still contain the uniforms from the previous frame. Since we only use it to get the camera position into the shader, maybe we could
         //       add a different mechanism to get the live camera position before we know the full render uniform state?
@@ -266,19 +224,40 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
         //configure frustum uniforms
         frustum.configureClippingPlanes(uniformSetter, new IFrustum.UniformLocations(cullingShaderProgram));
 
-        //dispatch the compute shaders
         for (int level = 0; level < EngineConstants.MAX_LODS; level++) {
-            NewAttributeBuffer<VoxelGlobalAttributes> tilePosArray = this.renderPosTable.vertexBuffer(level);
-            int capacity = tilePosArray.capacity();
+            val levelInstance = this.levels.get(level);
+            val tilePosArray = this.renderPosTable.vertexBuffer(level);
+            int capacity = tilePosArray.capacity(); // TODO: maybe use some other mechanism to decide on this rather than capacity (as capacity can't shrink back down)
+            assert (capacity % this.workGroupSize) == 0 : "capacity not divisible by work group size! level=" + level + ", capacity=" + capacity + ", work group size=" + this.workGroupSize;
+
+            //upload the rawDrawList at each detail level
+            for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
+                val rawDrawListCPU = levelInstance.rawDrawListsCPU.get(pass);
+                val rawDrawListGPU = levelInstance.rawDrawListsGPU.get(pass);
+                rawDrawListGPU.upload(rawDrawListCPU.byteBufferView(), BufferUsage.STREAM_DRAW);
+            }
+
+            //orphan the culledDrawList at each detail level
+            for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
+                levelInstance.culledDrawListsGPU.get(pass).capacity(capacity * DrawElementsIndirectCommand._SIZE, BufferUsage.STREAM_COPY);
+            }
+
+            //copy the rawDrawList into the culledDrawList
+            //TODO: i'd like to avoid this copy and instead simply bind both lists to the shader
+            for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
+                levelInstance.culledDrawListsGPU.get(pass).copyRange(levelInstance.rawDrawListsGPU.get(pass), 0L, 0L, capacity * DrawElementsIndirectCommand._SIZE);
+            }
+
+            //dispatch the compute shader
 
             //bind the tile positions array and the culledDrawList for each render pass
             this.gl.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, TILE_POSITIONS_SSBO_BINDING, tilePosArray.bufferSSBO().id());
             for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
-                this.gl.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, INDIRECT_DRAWS_SSBO_FIRST_BINDING + pass, this.culledDrawListsGPU.get(level, pass).id());
+                this.gl.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, INDIRECT_DRAWS_SSBO_FIRST_BINDING + pass, levelInstance.culledDrawListsGPU.get(pass).id());
             }
 
             //cull the tiles!
-            this.gl.glDispatchCompute(capacity / this.tilesCulledPerWorkGroup, 1, 1);
+            this.gl.glDispatchCompute(capacity / this.workGroupSize, 1, 1);
         }
     }
 
@@ -291,12 +270,13 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
 
     @Override
     public void draw(DrawMode mode, int level, int pass, DrawShaderProgram shader, ShaderProgram.UniformSetter uniformSetter) {
-        val list = this.rawDrawListsCPU.get(level, pass);
-        if (list.size != 0) {
+        val levelInstance = this.levels.get(level);
+        val list = levelInstance.rawDrawListsCPU.get(pass);
+        if (list.size() != 0) {
             this.gl.glBindVertexArray(this.vaos.get(level, pass).id());
-            this.gl.glBindBuffer(GL_DRAW_INDIRECT_BUFFER, this.culledDrawListsGPU.get(level, pass).id());
+            this.gl.glBindBuffer(GL_DRAW_INDIRECT_BUFFER, levelInstance.culledDrawListsGPU.get(pass).id());
             this.gl.glMemoryBarrier(GL_COMMAND_BARRIER_BIT);
-            this.gl.glMultiDrawElementsIndirect(mode.mode(), this.bakeStorage.indexFormat.type().type(), 0L, list.size, 0);
+            this.gl.glMultiDrawElementsIndirect(mode.mode(), this.bakeStorage.indexFormat.type().type(), 0L, list.size(), 0);
         }
     }
 
@@ -312,5 +292,43 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
                 .selectedTiles(-1L)
                 .indexedTiles(-1L)
                 .build();
+    }
+
+    /**
+     * Represents the render state at a single detail level.
+     *
+     * @author DaPorkchop_
+     */
+    private static final class Level implements AutoCloseable {
+        final PassArray<DirectDrawElementsIndirectCommandList> rawDrawListsCPU;
+        final PassArray<GLMutableBuffer> rawDrawListsGPU;
+        final PassArray<GLMutableBuffer> culledDrawListsGPU;
+
+        public Level(OpenGL gl, DirectMemoryAllocator alloc) {
+            try {
+                this.rawDrawListsCPU = new PassArray<>(pass -> new DirectDrawElementsIndirectCommandList(alloc));
+
+                IntFunction<GLMutableBuffer> drawListCreatorGPU = pass -> GLMutableBuffer.create(gl);
+                this.rawDrawListsGPU = new PassArray<>(drawListCreatorGPU);
+                this.culledDrawListsGPU = new PassArray<>(drawListCreatorGPU);
+            } catch (Throwable t) {
+                throw PResourceUtil.closeSuppressed(t, this);
+            }
+        }
+
+        public void capacityChanged(OpenGL gl, int newCapacity) {
+            for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
+                val rawDrawListCPU = this.rawDrawListsCPU.get(pass);
+                rawDrawListCPU.appendZero(newCapacity - rawDrawListCPU.size());
+            }
+        }
+
+        @Override
+        public void close() {
+            PResourceUtil.closeAll(
+                    this.rawDrawListsCPU,
+                    this.rawDrawListsGPU,
+                    this.culledDrawListsGPU);
+        }
     }
 }

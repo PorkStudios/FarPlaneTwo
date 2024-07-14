@@ -63,8 +63,6 @@ public final class SimpleRenderPosTable extends RenderPosTable {
         try {
             this.writer = format.createWriter(alloc);
             this.buffer = format.createBuffer();
-
-            this.grow(1);
         } catch (Throwable t) {
             throw PResourceUtil.closeSuppressed(t, this);
         }
