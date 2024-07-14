@@ -217,7 +217,7 @@ public abstract class OpenGL {
      * @param extensions the unsupported extensions
      * @return a {@link String} to be used as an exception message
      */
-    private String unsupportedMsg(GLExtensionSet extensions) {
+    public final String unsupportedMsg(GLExtensionSet extensions) {
         return this.unsupportedMsg(Arrays.asList(extensions.toArray()));
     }
 

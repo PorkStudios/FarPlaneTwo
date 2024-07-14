@@ -275,9 +275,7 @@ public final class GLExtensionSet implements Iterable<GLExtension> {
 
     @Override
     public Iterator<GLExtension> iterator() { //this is slow but i don't care
-        List<GLExtension> list = new ArrayList<>(this.size());
-        this.forEach(list::add);
-        return Collections.unmodifiableList(list).iterator();
+        return Collections.unmodifiableList(Arrays.asList(this.toArray())).iterator();
     }
 
     @Override
@@ -304,7 +302,7 @@ public final class GLExtensionSet implements Iterable<GLExtension> {
                 int index = Long.numberOfTrailingZeros(bits);
                 bits &= ~(1L << index);
 
-                result[resultIndex] = VALUES[word * Long.SIZE + index];
+                result[resultIndex++] = VALUES[word * Long.SIZE + index];
             }
         }
         return result;
