@@ -27,7 +27,6 @@ import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.renderer.ATViewFrustum
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.renderer.ATWorldRenderer1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.renderer.ATWorldRenderer__LocalRenderInformationContainer1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.renderer.chunk.ATChunkRenderDispatcher__ChunkRender1_16;
-import net.daporkchop.lib.common.math.BinMath;
 import net.daporkchop.lib.common.math.PMath;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.renderer.ViewFrustum;
@@ -37,6 +36,7 @@ import net.minecraft.client.renderer.culling.ClippingHelper;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 
+import java.util.Arrays;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -49,36 +49,18 @@ import static net.daporkchop.lib.common.math.PMath.*;
  */
 public class TerrainRenderingBlockedTracker1_16 extends TerrainRenderingBlockedTracker {
     protected static final Direction[] DIRECTIONS = Direction.values();
-    protected static final int FACE_COUNT = DIRECTIONS.length;
 
-    protected static final int[] FACE_OFFSETS = Stream.of(DIRECTIONS)
+    static {
+        int[] expectedFaceOffsets = Stream.of(DIRECTIONS)
             .flatMapToInt(direction -> IntStream.of(direction.getStepX(), direction.getStepY(), direction.getStepZ()))
             .toArray();
+        if (!Arrays.equals(expectedFaceOffsets, FACE_OFFSETS)) {
+            throw new IllegalStateException("FACE_OFFSETS isn't correct!" +
+                    "\n  Expected:     " + Arrays.toString(expectedFaceOffsets) +
+                    "\n  FACE_OFFSETS: " + Arrays.toString(FACE_OFFSETS));
+        }
+    }
 
-    protected static final int SHIFT_BAKED = 0;
-    protected static final int SIZE_BAKED = 1;
-    protected static final long FLAG_BAKED = 1L << SHIFT_BAKED;
-
-    protected static final int SHIFT_RENDERABLE = SHIFT_BAKED + SIZE_BAKED;
-    protected static final int SIZE_RENDERABLE = 1;
-    protected static final long FLAG_RENDERABLE = 1L << SHIFT_RENDERABLE;
-
-    protected static final int SHIFT_SELECTED = SHIFT_RENDERABLE + SIZE_RENDERABLE;
-    protected static final int SIZE_SELECTED = 1;
-    protected static final long FLAG_SELECTED = 1L << SHIFT_SELECTED;
-
-    protected static final int SHIFT_INFRUSTUM = SHIFT_SELECTED + SIZE_SELECTED;
-    protected static final int SIZE_INFRUSTUM = 1;
-    protected static final long FLAG_INFRUSTUM = 1L << SHIFT_INFRUSTUM;
-
-    protected static final int SHIFT_VISIBILITY = SHIFT_INFRUSTUM + SIZE_INFRUSTUM;
-    protected static final int SIZE_VISIBILITY = sq(FACE_COUNT);
-
-    protected static final int SHIFT_RENDER_DIRECTIONS = SHIFT_VISIBILITY + SIZE_VISIBILITY;
-    protected static final int SIZE_RENDER_DIRECTIONS = FACE_COUNT;
-
-    protected static final int SHIFT_INFACE = SHIFT_RENDER_DIRECTIONS + SIZE_RENDER_DIRECTIONS;
-    protected static final int SIZE_INFACE = BinMath.getNumBitsNeededFor((FACE_COUNT + 1) - 1);
 
     protected static long visibilityFlags(ChunkRenderDispatcher.CompiledChunk compiledChunk) {
         long flags = 0L;
@@ -94,18 +76,6 @@ public class TerrainRenderingBlockedTracker1_16 extends TerrainRenderingBlockedT
         return flags;
     }
 
-    protected static boolean isVisible(long flags, int inFace, int outFace, int chunkX, int chunkY, int chunkZ, int minChunkX, int maxChunkX, int minChunkY, int maxChunkY, int minChunkZ, int maxChunkZ) {
-        //if the neighbor would be outside the renderable area, it isn't visible even if the flags indicate that it would be
-        if (chunkX + FACE_OFFSETS[outFace * 3 + 0] < minChunkX || chunkX + FACE_OFFSETS[outFace * 3 + 0] >= maxChunkX
-                || chunkY + FACE_OFFSETS[outFace * 3 + 1] < minChunkY || chunkY + FACE_OFFSETS[outFace * 3 + 1] >= maxChunkY
-                || chunkZ + FACE_OFFSETS[outFace * 3 + 2] < minChunkZ || chunkZ + FACE_OFFSETS[outFace * 3 + 2] >= maxChunkZ) {
-            return false;
-        }
-
-        return inFace < -100 //if inFace is invalid (i.e. sourceDirection was null), all directions are visible
-                || (flags & ((1L << SHIFT_VISIBILITY) << (outFace * FACE_COUNT + inFace))) != 0L;
-    }
-
     protected static long renderDirectionFlags(ATWorldRenderer__LocalRenderInformationContainer1_16 containerLocalRenderInformation) {
         long flags = 0L;
         int shift = SHIFT_RENDER_DIRECTIONS;
@@ -118,10 +88,6 @@ public class TerrainRenderingBlockedTracker1_16 extends TerrainRenderingBlockedT
         return flags;
     }
 
-    protected static boolean hasRenderDirection(long flags, int face) {
-        return (flags & ((1L << SHIFT_RENDER_DIRECTIONS) << face)) != 0L;
-    }
-
     protected static long inFaceFlags(ATWorldRenderer__LocalRenderInformationContainer1_16 containerLocalRenderInformation) {
         Direction direction = containerLocalRenderInformation.getSourceDirection();
         if (direction != null) {
@@ -129,14 +95,6 @@ public class TerrainRenderingBlockedTracker1_16 extends TerrainRenderingBlockedT
         } else { //direction is null, meaning this is the origin chunk section
             return 0L; //return an invalid face index, which will become negative when decoded
         }
-    }
-
-    protected static int getInFace(long flags) {
-        return (((int) (flags >>> SHIFT_INFACE)) & ((1 << SIZE_INFACE) - 1)) - 1;
-    }
-
-    protected static int getOppositeFace(int face) {
-        return face ^ 1;
     }
 
     public TerrainRenderingBlockedTracker1_16(FP2Client client) {
@@ -260,55 +218,11 @@ public class TerrainRenderingBlockedTracker1_16 extends TerrainRenderingBlockedT
             scanMaxY = 16;
         }
 
-        for (int x = scanMinX; x < scanMaxX; x++) {
-            for (int y = scanMinY; y < scanMaxY; y++) {
-                for (int z = scanMinZ; z < scanMaxZ; z++) {
-                    int idx = (x * factorChunkY + y) * factorChunkZ + z;
-                    long centerFlags = srcFlags[idx];
-
-                    boolean out = false;
-
-                    //if a RenderChunk is baked, renderable and selected, it's a possible candidate for blocking fp2 terrain
-                    if ((centerFlags & (FLAG_BAKED | FLAG_RENDERABLE | FLAG_SELECTED)) == (FLAG_BAKED | FLAG_RENDERABLE | FLAG_SELECTED)) {
-                        int inFace = getInFace(centerFlags);
-
-                        out = true;
-
-                        //scan neighbors to make sure none of them are un-selectable
-                        for (int outFace = 0; outFace < FACE_COUNT; outFace++) {
-                            //this direction is the opposite of one of the directions that was traversed to get to this RenderChunk, skip it
-                            if (hasRenderDirection(centerFlags, getOppositeFace(outFace))) {
-                                continue;
-                            }
-
-                            //the neighboring RenderChunk isn't visible from the direction that the current RenderChunk was entered from, skip it
-                            if (!isVisible(centerFlags, getOppositeFace(inFace), outFace, x - offsetChunkX, y - offsetChunkY, z - offsetChunkZ, minChunkX, maxChunkX, minChunkY, maxChunkY, minChunkZ, maxChunkZ)) {
-                                continue;
-                            }
-
-                            long neighborFlags = srcFlags[idx + offsets[outFace]];
-
-                            //if the neighboring RenderChunk is renderable but neither baked nor selected, it means that the tile would be a valid neighbor except it hasn't yet been baked
-                            //  because it's never passed the frustum check. skip these to avoid fp2 terrain drawing over vanilla along the edges of the screen when first loading a world.
-                            if ((neighborFlags & (FLAG_BAKED | FLAG_RENDERABLE | FLAG_SELECTED | FLAG_INFRUSTUM)) == (FLAG_RENDERABLE)) {
-                                continue;
-                            }
-
-                            //if the neighboring RenderChunk isn't baked, the current RenderChunk has at least one neighbor which isn't rendered and is therefore unable to block fp2 rendering.
-                            if ((neighborFlags & (FLAG_BAKED)) == 0) {
-                                out = false;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (out) {
-                        long wordAddr = addr + FLAGS_OFFSET + (idx >> 5 << 2);
-                        PUnsafe.putInt(wordAddr, PUnsafe.getInt(wordAddr) | (1 << idx));
-                    }
-                }
-            }
-        }
+        transformFlags(scanMinX, scanMaxX, scanMinY, scanMaxY, scanMinZ, scanMaxZ,
+                minChunkX, maxChunkX, minChunkY, maxChunkY, minChunkZ, maxChunkZ,
+                factorChunkX, factorChunkY, factorChunkZ,
+                offsetChunkX, offsetChunkY, offsetChunkZ,
+                offsets, srcFlags, addr);
 
         if (this.addr != 0L) {
             this.alloc.free(this.addr);

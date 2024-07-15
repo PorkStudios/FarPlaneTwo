@@ -28,7 +28,6 @@ import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.renderer.ATRenderGlo
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.renderer.ATRenderGlobal__ContainerLocalRenderInformation1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.renderer.ATViewFrustum1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cc.FP2CubicChunks1_12;
-import net.daporkchop.lib.common.math.BinMath;
 import net.daporkchop.lib.common.math.PMath;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.renderer.RenderGlobal;
@@ -38,6 +37,7 @@ import net.minecraft.client.renderer.culling.ICamera;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
 
+import java.util.Arrays;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -49,36 +49,16 @@ import static net.daporkchop.lib.common.math.PMath.*;
  * @author DaPorkchop_
  */
 public class TerrainRenderingBlockedTracker1_12 extends TerrainRenderingBlockedTracker {
-    protected static final int FACE_COUNT = EnumFacing.VALUES.length;
-
-    protected static final int[] FACE_OFFSETS = Stream.of(EnumFacing.VALUES)
+    static {
+        int[] expectedFaceOffsets = Stream.of(EnumFacing.VALUES)
             .flatMapToInt(direction -> IntStream.of(direction.getXOffset(), direction.getYOffset(), direction.getZOffset()))
             .toArray();
-
-    protected static final int SHIFT_BAKED = 0;
-    protected static final int SIZE_BAKED = 1;
-    protected static final long FLAG_BAKED = 1L << SHIFT_BAKED;
-
-    protected static final int SHIFT_RENDERABLE = SHIFT_BAKED + SIZE_BAKED;
-    protected static final int SIZE_RENDERABLE = 1;
-    protected static final long FLAG_RENDERABLE = 1L << SHIFT_RENDERABLE;
-
-    protected static final int SHIFT_SELECTED = SHIFT_RENDERABLE + SIZE_RENDERABLE;
-    protected static final int SIZE_SELECTED = 1;
-    protected static final long FLAG_SELECTED = 1L << SHIFT_SELECTED;
-
-    protected static final int SHIFT_INFRUSTUM = SHIFT_SELECTED + SIZE_SELECTED;
-    protected static final int SIZE_INFRUSTUM = 1;
-    protected static final long FLAG_INFRUSTUM = 1L << SHIFT_INFRUSTUM;
-
-    protected static final int SHIFT_VISIBILITY = SHIFT_INFRUSTUM + SIZE_INFRUSTUM;
-    protected static final int SIZE_VISIBILITY = sq(FACE_COUNT);
-
-    protected static final int SHIFT_RENDER_DIRECTIONS = SHIFT_VISIBILITY + SIZE_VISIBILITY;
-    protected static final int SIZE_RENDER_DIRECTIONS = FACE_COUNT;
-
-    protected static final int SHIFT_INFACE = SHIFT_RENDER_DIRECTIONS + SIZE_RENDER_DIRECTIONS;
-    protected static final int SIZE_INFACE = BinMath.getNumBitsNeededFor((FACE_COUNT + 1) - 1);
+        if (!Arrays.equals(expectedFaceOffsets, FACE_OFFSETS)) {
+            throw new IllegalStateException("FACE_OFFSETS isn't correct!" +
+                    "\n  Expected:     " + Arrays.toString(expectedFaceOffsets) +
+                    "\n  FACE_OFFSETS: " + Arrays.toString(FACE_OFFSETS));
+        }
+    }
 
     protected static long visibilityFlags(CompiledChunk compiledChunk) {
         long flags = 0L;
@@ -94,18 +74,6 @@ public class TerrainRenderingBlockedTracker1_12 extends TerrainRenderingBlockedT
         return flags;
     }
 
-    protected static boolean isVisible(long flags, int inFace, int outFace, int chunkX, int chunkY, int chunkZ, int minChunkX, int maxChunkX, int minChunkY, int maxChunkY, int minChunkZ, int maxChunkZ) {
-        //if the neighbor would be outside the renderable area, it isn't visible even if the flags indicate that it would be
-        if (chunkX + FACE_OFFSETS[outFace * 3 + 0] < minChunkX || chunkX + FACE_OFFSETS[outFace * 3 + 0] >= maxChunkX
-                || chunkY + FACE_OFFSETS[outFace * 3 + 1] < minChunkY || chunkY + FACE_OFFSETS[outFace * 3 + 1] >= maxChunkY
-                || chunkZ + FACE_OFFSETS[outFace * 3 + 2] < minChunkZ || chunkZ + FACE_OFFSETS[outFace * 3 + 2] >= maxChunkZ) {
-            return false;
-        }
-
-        return inFace < -100 //if inFace is invalid (i.e. sourceDirection was null), all directions are visible
-                || (flags & ((1L << SHIFT_VISIBILITY) << (outFace * FACE_COUNT + inFace))) != 0L;
-    }
-
     protected static long renderDirectionFlags(ATRenderGlobal__ContainerLocalRenderInformation1_12 containerLocalRenderInformation) {
         long flags = 0L;
         int shift = SHIFT_RENDER_DIRECTIONS;
@@ -118,10 +86,6 @@ public class TerrainRenderingBlockedTracker1_12 extends TerrainRenderingBlockedT
         return flags;
     }
 
-    protected static boolean hasRenderDirection(long flags, int face) {
-        return (flags & ((1L << SHIFT_RENDER_DIRECTIONS) << face)) != 0L;
-    }
-
     protected static long inFaceFlags(ATRenderGlobal__ContainerLocalRenderInformation1_12 containerLocalRenderInformation) {
         EnumFacing direction = containerLocalRenderInformation.getFacing();
         if (direction != null) {
@@ -129,14 +93,6 @@ public class TerrainRenderingBlockedTracker1_12 extends TerrainRenderingBlockedT
         } else { //direction is null, meaning this is the origin chunk section
             return 0L; //return an invalid face index, which will become negative when decoded
         }
-    }
-
-    protected static int getInFace(long flags) {
-        return (((int) (flags >>> SHIFT_INFACE)) & ((1 << SIZE_INFACE) - 1)) - 1;
-    }
-
-    protected static int getOppositeFace(int face) {
-        return face ^ 1;
     }
 
     public TerrainRenderingBlockedTracker1_12(FP2Client client) {
@@ -264,7 +220,13 @@ public class TerrainRenderingBlockedTracker1_12 extends TerrainRenderingBlockedT
             scanMaxY = 16;
         }
 
-        for (int x = scanMinX; x < scanMaxX; x++) {
+        transformFlags(scanMinX, scanMaxX, scanMinY, scanMaxY, scanMinZ, scanMaxZ,
+                minChunkX, maxChunkX, minChunkY, maxChunkY, minChunkZ, maxChunkZ,
+                factorChunkX, factorChunkY, factorChunkZ,
+                offsetChunkX, offsetChunkY, offsetChunkZ,
+                offsets, srcFlags, addr);
+
+        /*for (int x = scanMinX; x < scanMaxX; x++) {
             for (int y = scanMinY; y < scanMaxY; y++) {
                 for (int z = scanMinZ; z < scanMaxZ; z++) {
                     int idx = (x * factorChunkY + y) * factorChunkZ + z;
@@ -312,7 +274,7 @@ public class TerrainRenderingBlockedTracker1_12 extends TerrainRenderingBlockedT
                     }
                 }
             }
-        }
+        }*/
 
         if (this.addr != 0L) {
             this.alloc.free(this.addr);
