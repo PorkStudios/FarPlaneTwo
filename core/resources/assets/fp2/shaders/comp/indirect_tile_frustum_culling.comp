@@ -22,11 +22,11 @@ layout(local_size_x = 256) in;
 
 //#include <"fp2:shaders/comp/common.comp">
 
-#define LEVEL_0 (1)
 #include <"fp2:shaders/common.glsl"> // global uniforms
 
 #include <"fp2:shaders/util/frustum.glsl">
 #include <"fp2:shaders/util/indirect_draw.glsl">
+#include <"fp2:shaders/util/vanilla_renderability.glsl">
 
 layout(std140) readonly restrict buffer TILE_POSITIONS_SSBO_NAME {
     ivec4 b_tilePositions[];
@@ -41,7 +41,7 @@ bool select(uint index) {
 
     // Level-0 tiles must not overlap vanilla renderable terrain
     // TODO: Enable this once it actually works
-    if (false && pos.w == 0 && !isVanillaRenderableLevel0(pos.xyz)) {
+    if (pos.w == 0 && isVanillaRenderableLevel0(pos.xyz)) {
         return false;
     }
 

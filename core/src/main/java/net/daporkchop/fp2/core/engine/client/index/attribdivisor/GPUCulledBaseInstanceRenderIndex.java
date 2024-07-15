@@ -95,7 +95,10 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
     private static final String CULLING_SHADER_KEY = "tile_frustum_culling";
 
     public static void registerShaders(GlobalRenderer globalRenderer) {
-        globalRenderer.shaderRegistry.createCompute(CULLING_SHADER_KEY, globalRenderer.shaderMacros, null)
+        globalRenderer.shaderRegistry.createCompute(CULLING_SHADER_KEY, globalRenderer.shaderMacros.toBuilder()
+                        .define("INDIRECT_DRAWS_SSBO_NAME", INDIRECT_DRAWS_SSBO_NAME)
+                        .define("TILE_POSITIONS_SSBO_NAME", TILE_POSITIONS_SSBO_NAME)
+                        .build(), null)
                 .addShader(ShaderType.COMPUTE, Identifier.from(FP2.MODID, "shaders/comp/indirect_tile_frustum_culling.comp"))
                 .addUBO(GLOBAL_UNIFORMS_UBO_BINDING, GLOBAL_UNIFORMS_UBO_NAME)
                 .addSSBO(TILE_POSITIONS_SSBO_BINDING, TILE_POSITIONS_SSBO_NAME)
@@ -204,7 +207,8 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
                 .activeProgram()
                 .indexedBuffer(IndexedBufferTarget.UNIFORM_BUFFER, GLOBAL_UNIFORMS_UBO_BINDING)
                 .indexedBuffer(IndexedBufferTarget.SHADER_STORAGE_BUFFER, TILE_POSITIONS_SSBO_BINDING)
-                .indexedBuffers(IndexedBufferTarget.SHADER_STORAGE_BUFFER, INDIRECT_DRAWS_SSBO_FIRST_BINDING, RENDER_PASS_COUNT));
+                .indexedBuffers(IndexedBufferTarget.SHADER_STORAGE_BUFFER, INDIRECT_DRAWS_SSBO_FIRST_BINDING, RENDER_PASS_COUNT)
+                .indexedBuffer(IndexedBufferTarget.SHADER_STORAGE_BUFFER, VANILLA_RENDERABILITY_SSBO_BINDING));
     }
 
     @Override
@@ -215,6 +219,8 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
         // TODO: This will still contain the uniforms from the previous frame. Since we only use it to get the camera position into the shader, maybe we could
         //       add a different mechanism to get the live camera position before we know the full render uniform state?
         this.gl.glBindBufferBase(GL_UNIFORM_BUFFER, GLOBAL_UNIFORMS_UBO_BINDING, this.globalUniformBuffer.buffer().id());
+
+        this.gl.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, VANILLA_RENDERABILITY_SSBO_BINDING, blockedTracker.glBuffer().id());
 
         //TODO: i also need to bind the terrain rendering blocked tracker
 
@@ -235,17 +241,18 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
                 val rawDrawListCPU = levelInstance.rawDrawListsCPU.get(pass);
                 val rawDrawListGPU = levelInstance.rawDrawListsGPU.get(pass);
                 rawDrawListGPU.upload(rawDrawListCPU.byteBufferView(), BufferUsage.STREAM_DRAW);
+                levelInstance.culledDrawListsGPU.get(pass).upload(rawDrawListCPU.byteBufferView(), BufferUsage.STREAM_DRAW);
             }
 
             //orphan the culledDrawList at each detail level
             for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
-                levelInstance.culledDrawListsGPU.get(pass).capacity(capacity * DrawElementsIndirectCommand._SIZE, BufferUsage.STREAM_COPY);
+                //levelInstance.culledDrawListsGPU.get(pass).capacity(capacity * DrawElementsIndirectCommand._SIZE, BufferUsage.STREAM_COPY);
             }
 
             //copy the rawDrawList into the culledDrawList
             //TODO: i'd like to avoid this copy and instead simply bind both lists to the shader
             for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
-                levelInstance.culledDrawListsGPU.get(pass).copyRange(levelInstance.rawDrawListsGPU.get(pass), 0L, 0L, capacity * DrawElementsIndirectCommand._SIZE);
+                //levelInstance.culledDrawListsGPU.get(pass).copyRange(levelInstance.rawDrawListsGPU.get(pass), 0L, 0L, capacity * DrawElementsIndirectCommand._SIZE);
             }
 
             //dispatch the compute shader

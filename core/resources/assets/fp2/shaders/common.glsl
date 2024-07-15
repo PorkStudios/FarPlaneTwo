@@ -122,26 +122,6 @@ layout(GLOBAL_UNIFORMS_UBO_LAYOUT) uniform GLOBAL_UNIFORMS_UBO_NAME {
 
 //
 //
-// BUFFERS
-//
-//
-
-#if LEVEL_0
-// Vanilla renderability index
-
-//TODO: find a non-hacky way of implementing this
-layout(std430, binding = 7) readonly restrict buffer VANILLA_RENDERABILITY_SSBO_NAME {
-    ivec3 offset;
-    ivec3 size;
-
-    int _padding; //std430 layout is weird lol
-
-    uint flags[];
-} vanilla_renderability_state;
-#endif
-
-//
-//
 // UTILITIES
 //
 //
@@ -198,26 +178,5 @@ int normalToFaceIndex(vec3 normal)  {
         return normal.x < 0. ? 3 : 0;
     }*/
 }
-
-#if LEVEL_0
-// vanilla renderability tests
-
-bool isVanillaRenderableLevel0(in ivec3 chunkPos) {
-    ivec3 tableOffset = vanilla_renderability_state.offset;
-    ivec3 tableSize = vanilla_renderability_state.size;
-
-    //offset the given chunk position by the table offset
-    ivec3 offsetPos = chunkPos + tableOffset;
-
-    //clamp coordinates to the table size (this is safe because the edges are always false)
-    offsetPos = min(max(offsetPos, 0), tableSize - 1);
-
-    //compute bit index in the table
-    int idx = (offsetPos.x * tableSize.y + offsetPos.y) * tableSize.z + offsetPos.z;
-
-    //extract the bit at the given index
-    return (vanilla_renderability_state.flags[idx >> 5] & (1 << idx)) != 0;
-}
-#endif
 
 #endif //GLSL_COMMON
