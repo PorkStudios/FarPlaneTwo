@@ -22,13 +22,10 @@ package net.daporkchop.fp2.impl.mc.forge1_16.client;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
-import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.renderer.ATViewFrustum1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.renderer.ATWorldRenderer1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.renderer.ATWorldRenderer__LocalRenderInformationContainer1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.renderer.chunk.ATChunkRenderDispatcher__ChunkRender1_16;
-import net.daporkchop.lib.common.math.PMath;
-import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.renderer.ViewFrustum;
 import net.minecraft.client.renderer.WorldRenderer;
 import net.minecraft.client.renderer.chunk.ChunkRenderDispatcher;
@@ -36,11 +33,9 @@ import net.minecraft.client.renderer.culling.ClippingHelper;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 
-import java.util.Arrays;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 
@@ -49,18 +44,6 @@ import static net.daporkchop.lib.common.math.PMath.*;
  */
 public class TerrainRenderingBlockedTracker1_16 extends TerrainRenderingBlockedTracker {
     protected static final Direction[] DIRECTIONS = Direction.values();
-
-    static {
-        int[] expectedFaceOffsets = Stream.of(DIRECTIONS)
-            .flatMapToInt(direction -> IntStream.of(direction.getStepX(), direction.getStepY(), direction.getStepZ()))
-            .toArray();
-        if (!Arrays.equals(expectedFaceOffsets, FACE_OFFSETS)) {
-            throw new IllegalStateException("FACE_OFFSETS isn't correct!" +
-                    "\n  Expected:     " + Arrays.toString(expectedFaceOffsets) +
-                    "\n  FACE_OFFSETS: " + Arrays.toString(FACE_OFFSETS));
-        }
-    }
-
 
     protected static long visibilityFlags(ChunkRenderDispatcher.CompiledChunk compiledChunk) {
         long flags = 0L;
@@ -99,6 +82,13 @@ public class TerrainRenderingBlockedTracker1_16 extends TerrainRenderingBlockedT
 
     public TerrainRenderingBlockedTracker1_16(FP2Client client) {
         super(client);
+    }
+
+    @Override
+    protected int[] getExpectedFaceOffsets() {
+        return Stream.of(DIRECTIONS)
+                .flatMapToInt(direction -> IntStream.of(direction.getStepX(), direction.getStepY(), direction.getStepZ()))
+                .toArray();
     }
 
     /**
@@ -189,20 +179,6 @@ public class TerrainRenderingBlockedTracker1_16 extends TerrainRenderingBlockedT
         //  - the RenderChunk has been compiled
         //  - all of the RenderChunk's visible neighbors have been compiled
 
-        int offset0 = (Direction.DOWN.getStepX() * factorChunkY + Direction.DOWN.getStepY()) * factorChunkZ + Direction.DOWN.getStepZ();
-        int offset1 = (Direction.UP.getStepX() * factorChunkY + Direction.UP.getStepY()) * factorChunkZ + Direction.UP.getStepZ();
-        int offset2 = (Direction.NORTH.getStepX() * factorChunkY + Direction.NORTH.getStepY()) * factorChunkZ + Direction.NORTH.getStepZ();
-        int offset3 = (Direction.SOUTH.getStepX() * factorChunkY + Direction.SOUTH.getStepY()) * factorChunkZ + Direction.SOUTH.getStepZ();
-        int offset4 = (Direction.WEST.getStepX() * factorChunkY + Direction.WEST.getStepY()) * factorChunkZ + Direction.WEST.getStepZ();
-        int offset5 = (Direction.EAST.getStepX() * factorChunkY + Direction.EAST.getStepY()) * factorChunkZ + Direction.EAST.getStepZ();
-        int[] offsets = { offset0, offset1, offset2, offset3, offset4, offset5 };
-
-        long sizeBits = factorChunkX * factorChunkY * factorChunkZ;
-        long sizeBytes = FLAGS_OFFSET + (PMath.roundUp(sizeBits, 32) >> 2);
-
-        long addr = this.alloc.alloc(sizeBytes);
-        PUnsafe.setMemory(addr, sizeBytes, (byte) 0);
-
         int scanMinX = 1;
         int scanMaxX = factorChunkX - 1;
         int scanMinY;
@@ -218,41 +194,17 @@ public class TerrainRenderingBlockedTracker1_16 extends TerrainRenderingBlockedT
             scanMaxY = 16;
         }
 
-        transformFlags(scanMinX, scanMaxX, scanMinY, scanMaxY, scanMinZ, scanMaxZ,
+        long addr = this.preTransformFlags(
+                factorChunkX, factorChunkY, factorChunkZ,
+                offsetChunkX, offsetChunkY, offsetChunkZ);
+
+        transformFlags(
+                scanMinX, scanMaxX, scanMinY, scanMaxY, scanMinZ, scanMaxZ,
                 minChunkX, maxChunkX, minChunkY, maxChunkY, minChunkZ, maxChunkZ,
                 factorChunkX, factorChunkY, factorChunkZ,
                 offsetChunkX, offsetChunkY, offsetChunkZ,
-                offsets, srcFlags, addr);
+                srcFlags, addr);
 
-        if (this.addr != 0L) {
-            this.alloc.free(this.addr);
-        }
-
-        {
-            long headersAddr = addr + HEADERS_OFFSET;
-
-            //ivec3 offset
-            PUnsafe.putInt(headersAddr + 0 * INT_SIZE, offsetChunkX);
-            PUnsafe.putInt(headersAddr + 1 * INT_SIZE, offsetChunkY);
-            PUnsafe.putInt(headersAddr + 2 * INT_SIZE, offsetChunkZ);
-            headersAddr += 4 * INT_SIZE;
-
-            //ivec3 size
-            PUnsafe.putInt(headersAddr + 0 * INT_SIZE, factorChunkX);
-            PUnsafe.putInt(headersAddr + 1 * INT_SIZE, factorChunkY);
-            PUnsafe.putInt(headersAddr + 2 * INT_SIZE, factorChunkZ);
-            headersAddr += 4 * INT_SIZE;
-        }
-
-        this.offsetX = offsetChunkX;
-        this.offsetY = offsetChunkY;
-        this.offsetZ = offsetChunkZ;
-        this.sizeX = factorChunkX;
-        this.sizeY = factorChunkY;
-        this.sizeZ = factorChunkZ;
-        this.sizeBytes = sizeBytes;
-        this.addr = addr;
-
-        this.glBuffer.upload(addr, sizeBytes, BufferUsage.STATIC_DRAW);
+        this.postTransformFlags();
     }
 }

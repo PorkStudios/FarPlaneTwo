@@ -20,12 +20,16 @@
 package net.daporkchop.fp2.core.client.render;
 
 import lombok.Getter;
+import lombok.val;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.core.client.FP2Client;
-import net.daporkchop.fp2.gl.OpenGL;
+import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.buffer.GLMutableBuffer;
 import net.daporkchop.lib.common.math.BinMath;
+import net.daporkchop.lib.common.math.PMath;
 import net.daporkchop.lib.unsafe.PUnsafe;
+
+import java.util.Arrays;
 
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 
@@ -38,14 +42,16 @@ public abstract class TerrainRenderingBlockedTracker implements AutoCloseable {
 
     protected static final int FACE_COUNT = 6;
 
+    //@formatter:off
     protected static final int[] FACE_OFFSETS = {
-            0, -1, 0, //DOWN
-            0, 1, 0, //UP
-            0, 0, -1, //NORTH
-            0, 0, 1, //SOUTH
-            -1, 0, 0, //WEST
-            1, 0, 0, //EAST
+             0, -1,  0, //DOWN
+             0,  1,  0, //UP
+             0,  0, -1, //NORTH
+             0,  0,  1, //SOUTH
+            -1,  0,  0, //WEST
+             1,  0,  0, //EAST
     };
+    //@formatter:on
 
     protected static final int SHIFT_BAKED = 0;
     protected static final int SIZE_BAKED = 1;
@@ -102,33 +108,105 @@ public abstract class TerrainRenderingBlockedTracker implements AutoCloseable {
         return face ^ 1;
     }
 
-    protected final DirectMemoryAllocator alloc = new DirectMemoryAllocator();
+    private final DirectMemoryAllocator alloc = new DirectMemoryAllocator();
 
-    protected final OpenGL gl;
     @Getter
-    protected final GLMutableBuffer glBuffer;
+    private final GLMutableBuffer glBuffer;
 
-    protected int offsetX;
-    protected int offsetY;
-    protected int offsetZ;
-    protected int sizeX;
-    protected int sizeY;
-    protected int sizeZ;
+    private int offsetX;
+    private int offsetY;
+    private int offsetZ;
+    private int sizeX;
+    private int sizeY;
+    private int sizeZ;
 
-    protected long sizeBytes;
-    protected long addr;
+    private long sizeBytes = -1L;
+    private long addr;
 
     public TerrainRenderingBlockedTracker(FP2Client client) {
-        this.gl = client.gl();
-        this.glBuffer = GLMutableBuffer.create(this.gl);
+        assert Arrays.equals(this.getExpectedFaceOffsets(), FACE_OFFSETS)
+                : "FACE_OFFSETS isn't correct!" +
+                "\n  Expected:     " + Arrays.toString(this.getExpectedFaceOffsets()) +
+                "\n  FACE_OFFSETS: " + Arrays.toString(FACE_OFFSETS);
+
+        this.glBuffer = GLMutableBuffer.create(client.gl());
     }
 
     @Override
     public void close() {
-        this.glBuffer.close();
+        try (val ignored0 = this.alloc;
+             val ignored1 = this.glBuffer) {
+            this.alloc.free(this.addr);
+        }
+    }
 
-        this.alloc.free(this.addr);
-        this.alloc.close();
+    /**
+     * @return gets the expected value of {@link #FACE_OFFSETS}
+     * @apiNote this is only used for a sanity check on startup
+     */
+    protected abstract int[] getExpectedFaceOffsets();
+
+    private static long allocationSizeBytes(int factorChunkX, int factorChunkY, int factorChunkZ) {
+        long sizeBits = (long) factorChunkX * factorChunkY * factorChunkZ;
+        return FLAGS_OFFSET + (PMath.roundUp(sizeBits, 32) >> 2);
+    }
+
+    @SuppressWarnings("PointlessArithmeticExpression")
+    private static void initializeHeaders(long addr,
+                                          int factorChunkX, int factorChunkY, int factorChunkZ,
+                                          int offsetChunkX, int offsetChunkY, int offsetChunkZ) {
+        long headersAddr = addr + HEADERS_OFFSET;
+
+        //ivec3 offset
+        PUnsafe.putInt(headersAddr + 0 * Integer.BYTES, offsetChunkX);
+        PUnsafe.putInt(headersAddr + 1 * Integer.BYTES, offsetChunkY);
+        PUnsafe.putInt(headersAddr + 2 * Integer.BYTES, offsetChunkZ);
+        headersAddr += 4 * Integer.BYTES;
+
+        //ivec3 size
+        PUnsafe.putInt(headersAddr + 0 * Integer.BYTES, factorChunkX);
+        PUnsafe.putInt(headersAddr + 1 * Integer.BYTES, factorChunkY);
+        PUnsafe.putInt(headersAddr + 2 * Integer.BYTES, factorChunkZ);
+        headersAddr += 4 * Integer.BYTES;
+    }
+
+    protected final long preTransformFlags(int factorChunkX, int factorChunkY, int factorChunkZ,
+                                           int offsetChunkX, int offsetChunkY, int offsetChunkZ) {
+        long sizeBytes = allocationSizeBytes(factorChunkX, factorChunkY, factorChunkZ);
+        if (sizeBytes != this.sizeBytes) {
+            this.addr = this.alloc.alloc(sizeBytes);
+            this.sizeBytes = sizeBytes;
+        }
+
+        PUnsafe.setMemory(this.addr, sizeBytes, (byte) 0);
+        initializeHeaders(this.addr, factorChunkX, factorChunkY, factorChunkZ, offsetChunkX, offsetChunkY, offsetChunkZ);
+
+        this.offsetX = offsetChunkX;
+        this.offsetY = offsetChunkY;
+        this.offsetZ = offsetChunkZ;
+        this.sizeX = factorChunkX;
+        this.sizeY = factorChunkY;
+        this.sizeZ = factorChunkZ;
+
+        return this.addr;
+    }
+
+    protected final void postTransformFlags() {
+        this.glBuffer.upload(this.addr, this.sizeBytes, BufferUsage.STATIC_DRAW);
+    }
+
+    @SuppressWarnings("UnnecessaryUnaryMinus")
+    private static int[] getFaceIndexOffsets(int factorChunkX, int factorChunkY, int factorChunkZ) {
+        //@formatter:off
+        return new int[] {
+                ( 0 * factorChunkY + -1) * factorChunkZ +  0, //DOWN
+                ( 0 * factorChunkY +  1) * factorChunkZ +  0, //UP
+                ( 0 * factorChunkY +  0) * factorChunkZ + -1, //NORTH
+                ( 0 * factorChunkY +  0) * factorChunkZ +  1, //SOUTH
+                (-1 * factorChunkY +  0) * factorChunkZ +  0, //WEST
+                ( 1 * factorChunkY +  0) * factorChunkZ +  0, //EAST
+        };
+        //@formatter:on
     }
 
     //TODO: document whatever the fuck this is, lmao
@@ -136,9 +214,10 @@ public abstract class TerrainRenderingBlockedTracker implements AutoCloseable {
                                          int minChunkX, int maxChunkX, int minChunkY, int maxChunkY, int minChunkZ, int maxChunkZ,
                                          int factorChunkX, int factorChunkY, int factorChunkZ,
                                          int offsetChunkX, int offsetChunkY, int offsetChunkZ,
-                                         int[] faceOffsets,
                                          long[] srcFlags,
                                          long addr) {
+        int[] faceIndexOffsets = getFaceIndexOffsets(factorChunkX, factorChunkY, factorChunkZ);
+
         for (int x = scanMinX; x < scanMaxX; x++) {
             for (int y = scanMinY; y < scanMaxY; y++) {
                 for (int z = scanMinZ; z < scanMaxZ; z++) {
@@ -165,7 +244,7 @@ public abstract class TerrainRenderingBlockedTracker implements AutoCloseable {
                                 continue;
                             }
 
-                            long neighborFlags = srcFlags[idx + faceOffsets[outFace]];
+                            long neighborFlags = srcFlags[idx + faceIndexOffsets[outFace]];
 
                             //if the neighboring RenderChunk is renderable but neither baked nor selected, it means that the tile would be a valid neighbor except it hasn't yet been baked
                             //  because it's never passed the frustum check. skip these to avoid fp2 terrain drawing over vanilla along the edges of the screen when first loading a world.

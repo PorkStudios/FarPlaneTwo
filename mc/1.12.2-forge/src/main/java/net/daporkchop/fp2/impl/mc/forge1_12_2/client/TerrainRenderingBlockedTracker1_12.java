@@ -22,14 +22,11 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.client;
 import lombok.NonNull;
 import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
-import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.renderer.ATRenderChunk1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.renderer.ATRenderGlobal1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.renderer.ATRenderGlobal__ContainerLocalRenderInformation1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.renderer.ATViewFrustum1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.compat.cc.FP2CubicChunks1_12;
-import net.daporkchop.lib.common.math.PMath;
-import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.renderer.RenderGlobal;
 import net.minecraft.client.renderer.ViewFrustum;
 import net.minecraft.client.renderer.chunk.CompiledChunk;
@@ -37,11 +34,9 @@ import net.minecraft.client.renderer.culling.ICamera;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
 
-import java.util.Arrays;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.lib.common.math.PMath.*;
 
@@ -49,17 +44,6 @@ import static net.daporkchop.lib.common.math.PMath.*;
  * @author DaPorkchop_
  */
 public class TerrainRenderingBlockedTracker1_12 extends TerrainRenderingBlockedTracker {
-    static {
-        int[] expectedFaceOffsets = Stream.of(EnumFacing.VALUES)
-            .flatMapToInt(direction -> IntStream.of(direction.getXOffset(), direction.getYOffset(), direction.getZOffset()))
-            .toArray();
-        if (!Arrays.equals(expectedFaceOffsets, FACE_OFFSETS)) {
-            throw new IllegalStateException("FACE_OFFSETS isn't correct!" +
-                    "\n  Expected:     " + Arrays.toString(expectedFaceOffsets) +
-                    "\n  FACE_OFFSETS: " + Arrays.toString(FACE_OFFSETS));
-        }
-    }
-
     protected static long visibilityFlags(CompiledChunk compiledChunk) {
         long flags = 0L;
         int shift = SHIFT_VISIBILITY;
@@ -97,6 +81,13 @@ public class TerrainRenderingBlockedTracker1_12 extends TerrainRenderingBlockedT
 
     public TerrainRenderingBlockedTracker1_12(FP2Client client) {
         super(client);
+    }
+
+    @Override
+    protected int[] getExpectedFaceOffsets() {
+        return Stream.of(EnumFacing.VALUES)
+                .flatMapToInt(direction -> IntStream.of(direction.getXOffset(), direction.getYOffset(), direction.getZOffset()))
+                .toArray();
     }
 
     /**
@@ -191,20 +182,6 @@ public class TerrainRenderingBlockedTracker1_12 extends TerrainRenderingBlockedT
         //  - the RenderChunk has been compiled
         //  - all of the RenderChunk's visible neighbors have been compiled
 
-        int offset0 = (EnumFacing.DOWN.getXOffset() * factorChunkY + EnumFacing.DOWN.getYOffset()) * factorChunkZ + EnumFacing.DOWN.getZOffset();
-        int offset1 = (EnumFacing.UP.getXOffset() * factorChunkY + EnumFacing.UP.getYOffset()) * factorChunkZ + EnumFacing.UP.getZOffset();
-        int offset2 = (EnumFacing.NORTH.getXOffset() * factorChunkY + EnumFacing.NORTH.getYOffset()) * factorChunkZ + EnumFacing.NORTH.getZOffset();
-        int offset3 = (EnumFacing.SOUTH.getXOffset() * factorChunkY + EnumFacing.SOUTH.getYOffset()) * factorChunkZ + EnumFacing.SOUTH.getZOffset();
-        int offset4 = (EnumFacing.WEST.getXOffset() * factorChunkY + EnumFacing.WEST.getYOffset()) * factorChunkZ + EnumFacing.WEST.getZOffset();
-        int offset5 = (EnumFacing.EAST.getXOffset() * factorChunkY + EnumFacing.EAST.getYOffset()) * factorChunkZ + EnumFacing.EAST.getZOffset();
-        int[] offsets = { offset0, offset1, offset2, offset3, offset4, offset5 };
-
-        long sizeBits = factorChunkX * factorChunkY * factorChunkZ;
-        long sizeBytes = FLAGS_OFFSET + (PMath.roundUp(sizeBits, 32) >> 2);
-
-        long addr = this.alloc.alloc(sizeBytes);
-        PUnsafe.setMemory(addr, sizeBytes, (byte) 0);
-
         int scanMinX = 1;
         int scanMaxX = factorChunkX - 1;
         int scanMinY;
@@ -220,91 +197,17 @@ public class TerrainRenderingBlockedTracker1_12 extends TerrainRenderingBlockedT
             scanMaxY = 16;
         }
 
-        transformFlags(scanMinX, scanMaxX, scanMinY, scanMaxY, scanMinZ, scanMaxZ,
+        long addr = this.preTransformFlags(
+                factorChunkX, factorChunkY, factorChunkZ,
+                offsetChunkX, offsetChunkY, offsetChunkZ);
+
+        transformFlags(
+                scanMinX, scanMaxX, scanMinY, scanMaxY, scanMinZ, scanMaxZ,
                 minChunkX, maxChunkX, minChunkY, maxChunkY, minChunkZ, maxChunkZ,
                 factorChunkX, factorChunkY, factorChunkZ,
                 offsetChunkX, offsetChunkY, offsetChunkZ,
-                offsets, srcFlags, addr);
+                srcFlags, addr);
 
-        /*for (int x = scanMinX; x < scanMaxX; x++) {
-            for (int y = scanMinY; y < scanMaxY; y++) {
-                for (int z = scanMinZ; z < scanMaxZ; z++) {
-                    int idx = (x * factorChunkY + y) * factorChunkZ + z;
-                    long centerFlags = srcFlags[idx];
-
-                    boolean out = false;
-
-                    //if a RenderChunk is baked, renderable and selected, it's a possible candidate for blocking fp2 terrain
-                    if ((centerFlags & (FLAG_BAKED | FLAG_RENDERABLE | FLAG_SELECTED)) == (FLAG_BAKED | FLAG_RENDERABLE | FLAG_SELECTED)) {
-                        int inFace = getInFace(centerFlags);
-
-                        out = true;
-
-                        //scan neighbors to make sure none of them are un-selectable
-                        for (int outFace = 0; outFace < FACE_COUNT; outFace++) {
-                            //this direction is the opposite of one of the directions that was traversed to get to this RenderChunk, skip it
-                            if (hasRenderDirection(centerFlags, getOppositeFace(outFace))) {
-                                continue;
-                            }
-
-                            //the neighboring RenderChunk isn't visible from the direction that the current RenderChunk was entered from, skip it
-                            if (!isVisible(centerFlags, getOppositeFace(inFace), outFace, x - offsetChunkX, y - offsetChunkY, z - offsetChunkZ, minChunkX, maxChunkX, minChunkY, maxChunkY, minChunkZ, maxChunkZ)) {
-                                continue;
-                            }
-
-                            long neighborFlags = srcFlags[idx + offsets[outFace]];
-
-                            //if the neighboring RenderChunk is renderable but neither baked nor selected, it means that the tile would be a valid neighbor except it hasn't yet been baked
-                            //  because it's never passed the frustum check. skip these to avoid fp2 terrain drawing over vanilla along the edges of the screen when first loading a world.
-                            if ((neighborFlags & (FLAG_BAKED | FLAG_RENDERABLE | FLAG_SELECTED | FLAG_INFRUSTUM)) == (FLAG_RENDERABLE)) {
-                                continue;
-                            }
-
-                            //if the neighboring RenderChunk isn't baked, the current RenderChunk has at least one neighbor which isn't rendered and is therefore unable to block fp2 rendering.
-                            if ((neighborFlags & (FLAG_BAKED)) == 0) {
-                                out = false;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (out) {
-                        long wordAddr = addr + FLAGS_OFFSET + (idx >> 5 << 2);
-                        PUnsafe.putInt(wordAddr, PUnsafe.getInt(wordAddr) | (1 << idx));
-                    }
-                }
-            }
-        }*/
-
-        if (this.addr != 0L) {
-            this.alloc.free(this.addr);
-        }
-
-        {
-            long headersAddr = addr + HEADERS_OFFSET;
-
-            //ivec3 offset
-            PUnsafe.putInt(headersAddr + 0 * INT_SIZE, offsetChunkX);
-            PUnsafe.putInt(headersAddr + 1 * INT_SIZE, offsetChunkY);
-            PUnsafe.putInt(headersAddr + 2 * INT_SIZE, offsetChunkZ);
-            headersAddr += 4 * INT_SIZE;
-
-            //ivec3 size
-            PUnsafe.putInt(headersAddr + 0 * INT_SIZE, factorChunkX);
-            PUnsafe.putInt(headersAddr + 1 * INT_SIZE, factorChunkY);
-            PUnsafe.putInt(headersAddr + 2 * INT_SIZE, factorChunkZ);
-            headersAddr += 4 * INT_SIZE;
-        }
-
-        this.offsetX = offsetChunkX;
-        this.offsetY = offsetChunkY;
-        this.offsetZ = offsetChunkZ;
-        this.sizeX = factorChunkX;
-        this.sizeY = factorChunkY;
-        this.sizeZ = factorChunkZ;
-        this.sizeBytes = sizeBytes;
-        this.addr = addr;
-
-        this.glBuffer.upload(addr, sizeBytes, BufferUsage.STATIC_DRAW);
+        this.postTransformFlags();
     }
 }
