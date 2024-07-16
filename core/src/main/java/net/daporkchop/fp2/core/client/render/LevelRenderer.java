@@ -20,7 +20,6 @@
 package net.daporkchop.fp2.core.client.render;
 
 import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
-import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.OpenGL;
 
 /**
@@ -70,14 +69,4 @@ public interface LevelRenderer {
      * @return the OpenGL context used in this level
      */
     OpenGL gl();
-
-    /**
-     * @return the {@link GL}-implementation-specific ID for the terrain texture
-     */
-    Object terrainTextureId();
-
-    /**
-     * @return the {@link GL}-implementation-specific ID for the lightmap texture
-     */
-    Object lightmapTextureId();
 }

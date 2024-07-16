@@ -55,9 +55,9 @@ public abstract class NewAttributeBuffer<STRUCT extends AttributeStruct> extends
     public abstract void copyTo(int srcIndex, NewAttributeBuffer<STRUCT> dstBuffer, int dstIndex, int length);
 
     /**
-     * Copies the attribute data from the given {@link AttributeWriter} into this buffer, discarding any existing data and modifying its capacity.
+     * Copies the attribute data from the given {@link NewAttributeWriter} into this buffer, discarding any existing data and modifying its capacity.
      *
-     * @param writer a {@link AttributeWriter} containing the sequence of attribute data elements to copy
+     * @param writer a {@link NewAttributeWriter} containing the sequence of attribute data elements to copy
      */
     public void set(NewAttributeWriter<STRUCT> writer, BufferUsage usage) {
         int size = writer.size();
@@ -68,22 +68,22 @@ public abstract class NewAttributeBuffer<STRUCT extends AttributeStruct> extends
     }
 
     /**
-     * Copies the attribute data from the given {@link AttributeWriter} into a subregion of this buffer.
+     * Copies the attribute data from the given {@link NewAttributeWriter} into a subregion of this buffer.
      *
      * @param startIndex the destination index for the first attribute data element
-     * @param writer     a {@link AttributeWriter} containing the sequence of attribute data elements to copy
+     * @param writer     a {@link NewAttributeWriter} containing the sequence of attribute data elements to copy
      */
     public void setRange(@NotNegative int startIndex, @NonNull NewAttributeWriter<STRUCT> writer) {
         this.setRange(startIndex, writer, ImmediateBufferUploader.instance());
     }
 
     /**
-     * Copies the attribute data from the given {@link AttributeWriter} into a subregion of this buffer.
+     * Copies the attribute data from the given {@link NewAttributeWriter} into a subregion of this buffer.
      * <p>
      * Unless the {@link BufferUploader} implementation specifies otherwise, the uploaded data may not be visible until {@link BufferUploader#flush() flushed}.
      *
      * @param startIndex the destination index for the first attribute data element
-     * @param writer     a {@link AttributeWriter} containing the sequence of attribute data elements to copy
+     * @param writer     a {@link NewAttributeWriter} containing the sequence of attribute data elements to copy
      * @param uploader   a {@link BufferUploader} to be used for uploading the actual attribute data
      */
     public abstract void setRange(@NotNegative int startIndex, @NonNull NewAttributeWriter<STRUCT> writer, @NonNull BufferUploader uploader);

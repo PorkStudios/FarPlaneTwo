@@ -25,7 +25,6 @@ import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.render.LevelRenderer;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
 import net.daporkchop.fp2.gl.OpenGL;
-import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.renderer.ATEntityRenderer1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.client.renderer.IMixinRenderGlobal1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.client.world.level.FLevelClient1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.SingleBiomeBlockAccess1_12;
@@ -113,16 +112,6 @@ public class LevelRenderer1_12 implements LevelRenderer, AutoCloseable {
     @Override
     public OpenGL gl() {
         return this.fp2.client().gl();
-    }
-
-    @Override
-    public Object terrainTextureId() {
-        return this.mc.getTextureMapBlocks().getGlTextureId();
-    }
-
-    @Override
-    public Object lightmapTextureId() {
-        return ((ATEntityRenderer1_12) this.mc.entityRenderer).getLightmapTexture().getGlTextureId();
     }
 
     @Override

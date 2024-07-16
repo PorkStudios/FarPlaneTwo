@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -19,7 +19,6 @@
 
 package net.daporkchop.fp2.gl.attribute.annotation;
 
-import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 
 import java.lang.annotation.ElementType;
@@ -30,7 +29,7 @@ import java.lang.annotation.Target;
 
 /**
  * When placed on a method declared in a {@link AttributeStruct struct interface}, indicates that the annotated method serves only as a convenience method and should
- * be ignored by the {@link GL implementation}.
+ * be ignored by the {@link net.daporkchop.fp2.gl.attribute.NewAttributeFormat implementation}.
  *
  * @author DaPorkchop_
  */

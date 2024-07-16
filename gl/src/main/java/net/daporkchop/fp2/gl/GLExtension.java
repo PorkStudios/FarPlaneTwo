@@ -41,18 +41,6 @@ public enum GLExtension {
         }
 
         @Override
-        public boolean supported(@NonNull GLEnvironment env) {
-            if (env.version().compareTo(GLVersion.OpenGL30) <= 0) { //3.0: compatibility features are all available on 3.0
-                //they may be removed if forward compatibility is enabled, however that would still be overridden by the presence of ARB_compatibility
-                return !env.forwardCompatibility() || env.extensions().contains(this);
-            } else if (env.version().compareTo(GLVersion.OpenGL31) <= 0) { //3.1: compatibility features only available if ARB_compatibility is present
-                return env.extensions().contains(this);
-            } else { //3.2+: compatibility features only available in compat profile, or if ARB_compatibility is present
-                return env.profile() == GLProfile.COMPAT || env.extensions().contains(this);
-            }
-        }
-
-        @Override
         public boolean supported(@NonNull OpenGL gl) {
             if (gl.version().compareTo(GLVersion.OpenGL30) <= 0) { //3.0: compatibility features are all available on 3.0
                 //they may be removed if forward compatibility is enabled, however that would still be overridden by the presence of ARB_compatibility
@@ -547,16 +535,6 @@ public enum GLExtension {
      */
     public boolean core(@NonNull GLVersion version) {
         return this.coreVersion != null && version.compareTo(this.coreVersion) >= 0;
-    }
-
-    /**
-     * Checks whether or not this extension is supported in the given OpenGL environment.
-     *
-     * @param env the OpenGL environment
-     */
-    @Deprecated
-    public boolean supported(@NonNull GLEnvironment env) {
-        return this.core(env.version()) || env.extensions().contains(this);
     }
 
     /**

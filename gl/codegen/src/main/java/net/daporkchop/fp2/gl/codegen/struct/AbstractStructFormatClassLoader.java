@@ -23,7 +23,6 @@ import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.OpenGLConstants;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.AttributeTarget;
-import net.daporkchop.fp2.gl.attribute.AttributeWriter;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.attribute.NewAttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
@@ -74,7 +73,7 @@ public abstract class AbstractStructFormatClassLoader<STRUCT extends AttributeSt
         prefix = structClass.getName().replace('.', '/') + '/' + prefix + '$' + layoutInfo.name() + '/';
 
         this.attributeFormatClassInternalName = (prefix + NewAttributeFormat.class.getSimpleName() + "Impl").replace('.', '/');
-        this.attributeWriterClassInternalName = (prefix + AttributeWriter.class.getSimpleName() + "Impl").replace('.', '/');
+        this.attributeWriterClassInternalName = (prefix + NewAttributeWriter.class.getSimpleName() + "Impl").replace('.', '/');
         this.bufferClassInternalName = (prefix + NewAttributeBuffer.class.getSimpleName() + "Impl").replace('.', '/');
         this.handleClassInternalName = (prefix + AttributeStruct.class.getSimpleName() + "Impl").replace('.', '/');
         this.handleUniformClassInternalName = (prefix + AttributeStruct.class.getSimpleName() + "UniformUpdateImpl").replace('.', '/');

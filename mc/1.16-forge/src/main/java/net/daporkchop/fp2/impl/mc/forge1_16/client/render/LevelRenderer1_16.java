@@ -26,13 +26,10 @@ import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.render.LevelRenderer;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
 import net.daporkchop.fp2.core.engine.client.RenderConstants;
-import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.OpenGL;
-import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.renderer.ATLightTexture1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.interfaz.client.renderer.IMixinWorldRenderer1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.client.world.level.FLevelClient1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.util.BiomeColorBlockDisplayReader1_16;
-import net.daporkchop.fp2.impl.mc.forge1_16.util.ResourceProvider1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.util.Util1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.world.registry.GameRegistry1_16;
 import net.daporkchop.lib.common.misc.threadlocal.TL;
@@ -41,7 +38,6 @@ import net.minecraft.block.BlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.RenderTypeLookup;
-import net.minecraft.inventory.container.PlayerContainer;
 import net.minecraft.util.math.BlockPos;
 
 /**
@@ -128,15 +124,5 @@ public class LevelRenderer1_16 implements LevelRenderer, AutoCloseable {
     @Override
     public OpenGL gl() {
         return this.fp2.client().gl();
-    }
-
-    @Override
-    public Object terrainTextureId() {
-        return this.mc.getModelManager().getAtlas(PlayerContainer.BLOCK_ATLAS).getId();
-    }
-
-    @Override
-    public Object lightmapTextureId() {
-        return ((ATLightTexture1_16) this.mc.gameRenderer.lightTexture()).getLightTexture().getId();
     }
 }
