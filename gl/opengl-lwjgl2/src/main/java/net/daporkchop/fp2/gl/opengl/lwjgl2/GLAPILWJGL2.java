@@ -31,6 +31,7 @@ import net.daporkchop.fp2.gl.util.debug.GLDebugOutputCallback;
 import net.daporkchop.lib.common.function.throwing.TPredicate;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import org.lwjgl.BufferChecks;
+import org.lwjgl.LWJGLUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.opengl.ARBBaseInstance;
 import org.lwjgl.opengl.ARBBufferStorage;
@@ -216,8 +217,10 @@ public final class GLAPILWJGL2 extends OpenGL {
     }
 
     private static final MethodHandle APIUtil_getBufferInt;
-    
+
     private static final MethodHandle StateTracker_getIndirectBuffer;
+    private static final MethodHandle StateTracker_createVAO; // (ContextCapabilities, int) -> void
+    private static final MethodHandle StateTracker_setVAOElementArrayBuffer; // (ContextCapabilities, int, int) -> void
 
     static {
         Class<?> _APIUtil = Class.forName("org.lwjgl.opengl.APIUtil");
@@ -239,6 +242,44 @@ public final class GLAPILWJGL2 extends OpenGL {
         StateTracker_getIndirectBuffer = MethodHandles.filterReturnValue(
                 StateTracker_getReferences,
                 _References_getIndirectBuffer);
+
+        Field _ContextCapabilities_tracker = ContextCapabilities.class.getDeclaredField("tracker");
+        _ContextCapabilities_tracker.setAccessible(true);
+        Field _StateTracker_vaoMap = _StateTracker.getDeclaredField("vaoMap");
+        _StateTracker_vaoMap.setAccessible(true);
+        Class<?> _StateTracker_VaoState = Class.forName("org.lwjgl.opengl.StateTracker$VAOState");
+        Constructor<?> _StateTracker_VaoState_$init$ = _StateTracker_VaoState.getDeclaredConstructor();
+        _StateTracker_VaoState_$init$.setAccessible(true);
+        Field _StateTracker_VaoState_elementArrayBuffer = _StateTracker_VaoState.getDeclaredField("elementArrayBuffer");
+        _StateTracker_VaoState_elementArrayBuffer.setAccessible(true);
+
+        Class<?> _FastIntMap = _StateTracker_vaoMap.getType();
+        Method _FastIntMap_put = _FastIntMap.getDeclaredMethod("put", int.class, Object.class);
+        _FastIntMap_put.setAccessible(true);
+        Method _FastIntMap_get = _FastIntMap.getDeclaredMethod("get", int.class);
+        _FastIntMap_get.setAccessible(true);
+
+        MethodHandle _ContextCapabilities_getTracker = MethodHandles.publicLookup().unreflectGetter(_ContextCapabilities_tracker);
+        MethodHandle _StateTracker_getVaoMap = MethodHandles.publicLookup().unreflectGetter(_StateTracker_vaoMap);
+        MethodHandle _StateTracker_VaoState_setElementArrayBuffer = MethodHandles.publicLookup().unreflectSetter(_StateTracker_VaoState_elementArrayBuffer);
+
+        MethodHandle _ContextCapabilities_tracker_vaoMap = MethodHandles.filterReturnValue(_ContextCapabilities_getTracker, _StateTracker_getVaoMap);
+
+        StateTracker_createVAO =
+                MethodHandles.collectArguments(
+                                MethodHandles.filterArguments(
+                                        MethodHandles.publicLookup().unreflect(_FastIntMap_put)
+                                                .asType(MethodType.methodType(void.class, _FastIntMap, int.class, _StateTracker_VaoState)),
+                                        0, _ContextCapabilities_tracker_vaoMap),
+                                2, MethodHandles.publicLookup().unreflectConstructor(_StateTracker_VaoState_$init$));
+
+        MethodHandle _StateTracker_getVAO = MethodHandles.filterArguments(
+                MethodHandles.publicLookup().unreflect(_FastIntMap_get).asType(MethodType.methodType(_StateTracker_VaoState, _FastIntMap, int.class)),
+                0, _ContextCapabilities_tracker_vaoMap);
+
+        StateTracker_setVAOElementArrayBuffer = MethodHandles.collectArguments(
+                _StateTracker_VaoState_setElementArrayBuffer,
+                0, _StateTracker_getVAO);
     }
 
     //
@@ -1972,7 +2013,7 @@ public final class GLAPILWJGL2 extends OpenGL {
             
             //switch between the two internal methods depending on whether or not a buffer is bound to GL_DRAW_INDIRECT_BUFFER
             // (this is necessary to avoid internal LWJGL2 throwing an exception if we try to call this with an actual raw memory address)
-            if ((int) StateTracker_getIndirectBuffer.invokeExact(caps) == 0) {
+            if (!LWJGLUtil.CHECKS || (int) StateTracker_getIndirectBuffer.invokeExact(caps) == 0) {
                 nglMultiDrawArraysIndirect.invokeExact(mode, indirect, primcount, stride, function_pointer);
                 super.debugCheckError();
             } else {
@@ -2649,10 +2690,16 @@ public final class GLAPILWJGL2 extends OpenGL {
         if (this.OpenGL45) {
             val res = GL45.glCreateVertexArrays();
             super.debugCheckError();
+            if (LWJGLUtil.CHECKS) { // Prevents the workaround in glVertexArrayElementBuffer from throwing an NPE
+                StateTracker_createVAO.invokeExact(GLContext.getCapabilities(), res);
+            }
             return res;
         } else if (this.GL_ARB_direct_state_access) {
             val res = ARBDirectStateAccess.glCreateVertexArrays();
             super.debugCheckError();
+            if (LWJGLUtil.CHECKS) { // Prevents the workaround in glVertexArrayElementBuffer from throwing an NPE
+                StateTracker_createVAO.invokeExact(GLContext.getCapabilities(), res);
+            }
             return res;
         } else {
             throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
@@ -2669,6 +2716,13 @@ public final class GLAPILWJGL2 extends OpenGL {
             super.debugCheckError();
         } else {
             throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
+        }
+
+        if (LWJGLUtil.CHECKS) {
+            //LWJGL2 runtime checks will prevent us from using glDrawElements* with a buffer offset if the
+            //  bound VAO doesn't have an element array buffer attached, but doesn't track element arrays
+            //  attached to a VAO by this function. We'll do it ourself!
+            StateTracker_setVAOElementArrayBuffer.invokeExact(GLContext.getCapabilities(), vaobj, buffer);
         }
     }
 
