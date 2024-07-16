@@ -18,28 +18,25 @@
  *
  */
 
-#ifndef UTIL_INDIRECT_DRAW
-#define UTIL_INDIRECT_DRAW
+#ifndef UTIL_CAMERA_TRANSFORM
+#define UTIL_CAMERA_TRANSFORM
+
+#include <"fp2:shaders/util/global_render_uniforms.glsl"> // u_modelViewProjectionMatrix
 
 //
 //
-// STRUCTS
+// UTILITIES
 //
 //
 
-struct DrawArraysIndirectCommand {
-    uint count;
-    uint instanceCount;
-    uint first;
-    uint baseInstance;
-};
+// vertex transformation
 
-struct DrawElementsIndirectCommand {
-    uint count;
-    uint instanceCount;
-    uint firstIndex;
-    uint baseVertex;
-    uint baseInstance;
-};
+vec4 cameraTransform(vec4 point) {
+    return u_modelViewProjectionMatrix * point;
+}
 
-#endif //UTIL_INDIRECT_DRAW
+vec4 cameraTransform(vec3 point)   {
+    return cameraTransform(vec4(point, 1.));
+}
+
+#endif //UTIL_CAMERA_TRANSFORM

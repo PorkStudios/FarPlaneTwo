@@ -103,6 +103,7 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
                 .addUBO(GLOBAL_UNIFORMS_UBO_BINDING, GLOBAL_UNIFORMS_UBO_NAME)
                 .addSSBO(TILE_POSITIONS_SSBO_BINDING, TILE_POSITIONS_SSBO_NAME)
                 .addSSBOs(INDIRECT_DRAWS_SSBO_FIRST_BINDING, RENDER_PASS_COUNT, INDIRECT_DRAWS_SSBO_NAME)
+                .addSSBO(VANILLA_RENDERABILITY_SSBO_BINDING, VANILLA_RENDERABILITY_SSBO_NAME)
                 .build();
     }
 

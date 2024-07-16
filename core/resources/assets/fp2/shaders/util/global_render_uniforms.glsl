@@ -18,28 +18,31 @@
  *
  */
 
-#ifndef UTIL_INDIRECT_DRAW
-#define UTIL_INDIRECT_DRAW
+#ifndef UTIL_GLOBAL_RENDER_UNIFORMS
+#define UTIL_GLOBAL_RENDER_UNIFORMS
 
 //
 //
-// STRUCTS
+// UNIFORMS
 //
 //
 
-struct DrawArraysIndirectCommand {
-    uint count;
-    uint instanceCount;
-    uint first;
-    uint baseInstance;
+layout(GLOBAL_UNIFORMS_UBO_LAYOUT) uniform GLOBAL_UNIFORMS_UBO_NAME {
+    //camera
+    mat4 u_modelViewProjectionMatrix;
+    ivec3 u_positionFloor;
+    vec3 u_positionFrac;
+    //fog
+    vec4 u_fogColor;
+    int u_fogMode; //TODO: make this a constant and generate specialized shader variants
+    float u_fogDensity;
+    float u_fogStart;
+    float u_fogEnd;
+    float u_fogScale;
+    //misc. GL state
+    float u_alphaRefCutout;
+    //debug state
+    int u_debug_colorMode; //TODO: make this a constant and generate specialized shader variants (?)
 };
 
-struct DrawElementsIndirectCommand {
-    uint count;
-    uint instanceCount;
-    uint firstIndex;
-    uint baseVertex;
-    uint baseInstance;
-};
-
-#endif //UTIL_INDIRECT_DRAW
+#endif //UTIL_GLOBAL_RENDER_UNIFORMS

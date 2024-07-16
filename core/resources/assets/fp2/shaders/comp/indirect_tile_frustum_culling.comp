@@ -20,11 +20,10 @@
 
 layout(local_size_x = 256) in;
 
-//#include <"fp2:shaders/comp/common.comp">
-
-#include <"fp2:shaders/common.glsl"> // global uniforms
+#include <"fp2:shaders/common.glsl"> // T_SHIFT, T_VOXELS
 
 #include <"fp2:shaders/util/frustum.glsl">
+#include <"fp2:shaders/util/global_render_uniforms.glsl"> // u_positionFrac, u_positionFloor
 #include <"fp2:shaders/util/indirect_draw.glsl">
 #include <"fp2:shaders/util/vanilla_renderability.glsl">
 
@@ -40,7 +39,6 @@ bool select(uint index) {
     ivec4 pos = b_tilePositions[index];
 
     // Level-0 tiles must not overlap vanilla renderable terrain
-    // TODO: Enable this once it actually works
     if (pos.w == 0 && isVanillaRenderableLevel0(pos.xyz)) {
         return false;
     }

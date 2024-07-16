@@ -18,6 +18,9 @@
  *
  */
 
+#ifndef UTIL_VANILLA_RENDERABILITY
+#define UTIL_VANILLA_RENDERABILITY
+
 //
 //
 // BUFFERS
@@ -27,7 +30,7 @@
 // Vanilla renderability index
 
 //TODO: find a non-hacky way of implementing this
-layout(std430, binding = 7) readonly restrict buffer VANILLA_RENDERABILITY_SSBO_NAME {
+layout(std430) readonly restrict buffer VANILLA_RENDERABILITY_SSBO_NAME {
     ivec3 offset;
     ivec3 size;
 
@@ -60,3 +63,5 @@ bool isVanillaRenderableLevel0(in ivec3 chunkPos) {
     //extract the bit at the given index
     return (vanilla_renderability_state.flags[idx >> 5] & (1 << idx)) != 0;
 }
+
+#endif //UTIL_VANILLA_RENDERABILITY

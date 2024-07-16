@@ -23,6 +23,8 @@
 
 #include <"fp2:shaders/common.glsl">
 
+#include <"fp2:shaders/util/global_render_uniforms.glsl"> // u_fogMode, u_fogColor, u_fogDensity, u_fogStart, u_fogEnd, u_fogScale
+
 //
 //
 // INPUTS

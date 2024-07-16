@@ -98,43 +98,9 @@
 
 //
 //
-// UNIFORMS
-//
-//
-
-layout(GLOBAL_UNIFORMS_UBO_LAYOUT) uniform GLOBAL_UNIFORMS_UBO_NAME {
-    //camera
-    mat4 u_modelViewProjectionMatrix;
-    ivec3 u_positionFloor;
-    vec3 u_positionFrac;
-    //fog
-    vec4 u_fogColor;
-    int u_fogMode;
-    float u_fogDensity;
-    float u_fogStart;
-    float u_fogEnd;
-    float u_fogScale;
-    //misc. GL state
-    float u_alphaRefCutout;
-    //debug state
-    int u_debug_colorMode;
-};
-
-//
-//
 // UTILITIES
 //
 //
-
-// vertex transformation
-
-vec4 cameraTransform(vec4 point) {
-    return u_modelViewProjectionMatrix * point;
-}
-
-vec4 cameraTransform(vec3 point)   {
-    return cameraTransform(vec4(point, 1.));
-}
 
 // lighting
 

@@ -28,6 +28,8 @@ import net.daporkchop.fp2.gl.attribute.annotation.ScalarType;
 import net.daporkchop.fp2.gl.attribute.annotation.VectorType;
 
 /**
+ * The global render uniforms, as defined in {@code resources/assets/fp2/shaders/util/global_render_uniforms.glsl}.
+ *
  * @author DaPorkchop_
  */
 //camera

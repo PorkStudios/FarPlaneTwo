@@ -22,6 +22,7 @@
 
 #include <"fp2:shaders/frag/common.frag">
 #include <"fp2:shaders/frag/fog.frag">
+#include <"fp2:shaders/util/global_render_uniforms.glsl"> // u_alphaRefCutout, u_debug_colorMode
 
 vec4 computeBlockColor(vec3 normal) {
     //initial block texture sample
