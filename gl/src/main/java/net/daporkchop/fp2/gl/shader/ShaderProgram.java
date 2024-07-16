@@ -25,6 +25,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.val;
 import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.OpenGL;
+import net.daporkchop.fp2.gl.shader.introspection.GLSLType;
+import net.daporkchop.fp2.gl.shader.introspection.Uniform;
 import net.daporkchop.fp2.gl.util.GLObject;
 import net.daporkchop.fp2.gl.util.GLRequires;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
@@ -35,10 +37,12 @@ import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -161,6 +165,64 @@ public abstract class ShaderProgram extends GLObject.Normal {
         }
     }
 
+    /**
+     * @return all active uniforms in this shader program, excluding those which are part of an interface block
+     */
+    @GLRequires(GLExtension.GL_ARB_uniform_buffer_object)
+    protected final Uniform[] getActiveUniforms() throws UnsupportedOperationException {
+        this.checkOpen();
+
+        if (!this.gl.supports(GLExtension.GL_ARB_program_interface_query)) {
+            return this.getActiveUniformsLegacy();
+        }
+
+        int activeResources = this.gl.glGetProgramInterfacei(this.id, GL_UNIFORM, GL_ACTIVE_RESOURCES);
+        int bufSize = this.gl.glGetProgramInterfacei(this.id, GL_UNIFORM, GL_MAX_NAME_LENGTH);
+
+        Uniform[] result = new Uniform[activeResources];
+        int resultSize = 0;
+
+        for (int resourceIndex = 0; resourceIndex < activeResources; resourceIndex++) {
+            int[] buf = new int[3];
+            this.gl.glGetProgramResourceiv(this.id, GL_UNIFORM, resourceIndex, new int[]{ GL_BLOCK_INDEX, GL_TYPE, GL_ARRAY_SIZE }, null, buf);
+            if (buf[0] >= 0) {
+                //this uniform is part of a uniform block, skip it
+                continue;
+            }
+
+            String name = this.gl.glGetProgramResourceName(this.id, GL_UNIFORM, resourceIndex, bufSize);
+            result[resultSize++] = new Uniform(name, GLSLType.get(buf[1]), buf[2]);
+        }
+        result = Arrays.copyOf(result, resultSize);
+        assert Arrays.equals(result, this.getActiveUniformsLegacy()) //sanity check because i'm not entirely sure how reliable the old API is
+                : "Program introspection: " + Arrays.toString(result) + ", Legacy: " + Arrays.toString(this.getActiveUniformsLegacy());
+        return result;
+    }
+
+    @GLRequires(GLExtension.GL_ARB_uniform_buffer_object)
+    private Uniform[] getActiveUniformsLegacy() throws UnsupportedOperationException {
+        this.checkOpen();
+
+        int activeUniforms = this.gl.glGetProgrami(this.id, GL_ACTIVE_UNIFORMS);
+        int bufSize = this.gl.glGetProgrami(this.id, GL_ACTIVE_UNIFORM_MAX_LENGTH);
+
+        Uniform[] result = new Uniform[activeUniforms];
+        int resultSize = 0;
+
+        for (int uniformIndex = 0; uniformIndex < activeUniforms; uniformIndex++) {
+            if (this.gl.glGetActiveUniformsi(this.id, uniformIndex, GL_UNIFORM_BLOCK_INDEX) >= 0) {
+                //this uniform is part of a uniform block, skip it
+                continue;
+            }
+
+            String name = this.gl.glGetActiveUniformName(this.id, uniformIndex, bufSize);
+            GLSLType type = GLSLType.get(this.gl.glGetActiveUniformsi(this.id, uniformIndex, GL_UNIFORM_TYPE));
+            int size = this.gl.glGetActiveUniformsi(this.id, uniformIndex, GL_UNIFORM_SIZE);
+            result[resultSize++] = new Uniform(name, type, size);
+        }
+        return Arrays.copyOf(result, resultSize);
+    }
+
     @GLRequires(GLExtension.GL_ARB_uniform_buffer_object)
     protected final String[] getUniformBlockNames() throws UnsupportedOperationException {
         this.checkOpen();
@@ -180,9 +242,9 @@ public abstract class ShaderProgram extends GLObject.Normal {
         this.checkOpen();
 
         int activeUniformBlocks = this.gl.glGetProgrami(this.id, GL_ACTIVE_UNIFORM_BLOCKS);
-        int bufSize = this.gl.glGetProgrami(this.id, GL_ACTIVE_UNIFORM_MAX_LENGTH);
         String[] result = new String[activeUniformBlocks];
         for (int uniformBlockIndex = 0; uniformBlockIndex < activeUniformBlocks; uniformBlockIndex++) {
+            int bufSize = this.gl.glGetActiveUniformBlocki(this.id, uniformBlockIndex, GL_UNIFORM_BLOCK_NAME_LENGTH);
             result[uniformBlockIndex] = this.gl.glGetActiveUniformBlockName(this.id, uniformBlockIndex, bufSize);
         }
         return result;
@@ -584,6 +646,13 @@ public abstract class ShaderProgram extends GLObject.Normal {
         }
 
         public void configurePostLink(ShaderProgram program) {
+            List<Uniform> unboundSamplerUniforms = Arrays.stream(program.getActiveUniforms())
+                    .filter(uniform -> uniform.type().isSampler() && !this.bindings.containsKey(uniform.name()))
+                    .collect(Collectors.toList());
+            if (!unboundSamplerUniforms.isEmpty()) {
+                throw new ShaderLinkageException("Program contains unbound samplers: " + unboundSamplerUniforms);
+            }
+
             if (this.bindings.isEmpty()) {
                 return;
             }
@@ -595,8 +664,6 @@ public abstract class ShaderProgram extends GLObject.Normal {
                             uniformSetter.set1i(location, unit);
                         }
                     }));
-
-            // TODO: verify that all sampler uniforms have their location set
         }
     }
 
