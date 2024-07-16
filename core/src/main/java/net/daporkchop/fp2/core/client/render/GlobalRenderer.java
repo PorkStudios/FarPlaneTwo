@@ -32,9 +32,9 @@ import net.daporkchop.fp2.core.engine.client.struct.VoxelGlobalAttributes;
 import net.daporkchop.fp2.core.engine.client.struct.VoxelLocalAttributes;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeTarget;
-import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.draw.index.IndexType;
-import net.daporkchop.fp2.gl.draw.index.NewIndexFormat;
+import net.daporkchop.fp2.gl.draw.index.IndexFormat;
 import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.gl.shader.ShaderType;
@@ -53,16 +53,16 @@ import static net.daporkchop.fp2.core.debug.FP2Debug.*;
 public final class GlobalRenderer {
     public final ReloadableShaderRegistry shaderRegistry;
 
-    public final NewAttributeFormat<GlobalUniformAttributes> globalUniformAttributeFormat;
-    public final NewAttributeFormat<IFrustum.ClippingPlanes> frustumClippingPlanesUBOFormat;
+    public final AttributeFormat<GlobalUniformAttributes> globalUniformAttributeFormat;
+    public final AttributeFormat<IFrustum.ClippingPlanes> frustumClippingPlanesUBOFormat;
 
-    public final NewAttributeFormat<VoxelGlobalAttributes> voxelInstancedAttributesFormat;
-    public final NewAttributeFormat<VoxelLocalAttributes> voxelVertexAttributesFormat;
+    public final AttributeFormat<VoxelGlobalAttributes> voxelInstancedAttributesFormat;
+    public final AttributeFormat<VoxelLocalAttributes> voxelVertexAttributesFormat;
 
-    public final NewIndexFormat unsignedShortIndexFormat;
+    public final IndexFormat unsignedShortIndexFormat;
 
-    public final NewAttributeFormat<TextureUVs.QuadListAttribute> uvQuadListSSBOFormat;
-    public final NewAttributeFormat<TextureUVs.PackedBakedQuadAttribute> uvPackedQuadSSBOFormat;
+    public final AttributeFormat<TextureUVs.QuadListAttribute> uvQuadListSSBOFormat;
+    public final AttributeFormat<TextureUVs.PackedBakedQuadAttribute> uvPackedQuadSSBOFormat;
 
     public final ShaderMacros shaderMacros;
 
@@ -74,22 +74,22 @@ public final class GlobalRenderer {
         try {
             this.shaderRegistry = new ReloadableShaderRegistry(fp2);
 
-            this.globalUniformAttributeFormat = NewAttributeFormat.get(gl, GlobalUniformAttributes.class, AttributeTarget.UBO);
-            this.frustumClippingPlanesUBOFormat = NewAttributeFormat.get(gl, IFrustum.ClippingPlanes.class, AttributeTarget.UBO);
+            this.globalUniformAttributeFormat = AttributeFormat.get(gl, GlobalUniformAttributes.class, AttributeTarget.UBO);
+            this.frustumClippingPlanesUBOFormat = AttributeFormat.get(gl, IFrustum.ClippingPlanes.class, AttributeTarget.UBO);
 
             //determine whether we want the tile position attribute format to support the SSBO target
             boolean tilePositionArrayAsSsbo = false;
             tilePositionArrayAsSsbo |= gl.supports(GPUCulledBaseInstanceRenderIndex.REQUIRED_EXTENSIONS);
-            this.voxelInstancedAttributesFormat = NewAttributeFormat.get(gl, VoxelGlobalAttributes.class, tilePositionArrayAsSsbo
+            this.voxelInstancedAttributesFormat = AttributeFormat.get(gl, VoxelGlobalAttributes.class, tilePositionArrayAsSsbo
                     ? EnumSet.of(AttributeTarget.VERTEX_ATTRIBUTE, AttributeTarget.SSBO)
                     : EnumSet.of(AttributeTarget.VERTEX_ATTRIBUTE));
 
-            this.voxelVertexAttributesFormat = NewAttributeFormat.get(gl, VoxelLocalAttributes.class, AttributeTarget.VERTEX_ATTRIBUTE);
+            this.voxelVertexAttributesFormat = AttributeFormat.get(gl, VoxelLocalAttributes.class, AttributeTarget.VERTEX_ATTRIBUTE);
 
-            this.unsignedShortIndexFormat = NewIndexFormat.get(IndexType.UNSIGNED_SHORT);
+            this.unsignedShortIndexFormat = IndexFormat.get(IndexType.UNSIGNED_SHORT);
 
-            this.uvQuadListSSBOFormat = NewAttributeFormat.get(gl, TextureUVs.QuadListAttribute.class, AttributeTarget.SSBO);
-            this.uvPackedQuadSSBOFormat = NewAttributeFormat.get(gl, TextureUVs.PackedBakedQuadAttribute.class, AttributeTarget.SSBO);
+            this.uvQuadListSSBOFormat = AttributeFormat.get(gl, TextureUVs.QuadListAttribute.class, AttributeTarget.SSBO);
+            this.uvPackedQuadSSBOFormat = AttributeFormat.get(gl, TextureUVs.PackedBakedQuadAttribute.class, AttributeTarget.SSBO);
 
             this.shaderMacros = ShaderMacros.builder()
                     .define("T_SHIFT", EngineConstants.T_SHIFT)

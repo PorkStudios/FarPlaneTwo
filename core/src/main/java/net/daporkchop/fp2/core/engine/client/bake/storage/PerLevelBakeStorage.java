@@ -25,11 +25,11 @@ import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.client.bake.BakeOutput;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
-import net.daporkchop.fp2.gl.attribute.NewAttributeBuffer;
-import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.buffer.upload.BufferUploader;
-import net.daporkchop.fp2.gl.draw.index.NewIndexBuffer;
-import net.daporkchop.fp2.gl.draw.index.NewIndexFormat;
+import net.daporkchop.fp2.gl.draw.index.IndexBuffer;
+import net.daporkchop.fp2.gl.draw.index.IndexFormat;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
 
 import java.util.Arrays;
@@ -48,7 +48,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 public final class PerLevelBakeStorage<VertexType extends AttributeStruct> extends BakeStorage<VertexType> {
     private final BakeStorage<VertexType>[] storages = uncheckedCast(new BakeStorage[MAX_LODS]);
 
-    public PerLevelBakeStorage(OpenGL gl, BufferUploader bufferUploader, NewAttributeFormat<VertexType> vertexFormat, NewIndexFormat indexFormat,
+    public PerLevelBakeStorage(OpenGL gl, BufferUploader bufferUploader, AttributeFormat<VertexType> vertexFormat, IndexFormat indexFormat,
                                IntFunction<? extends BakeStorage<VertexType>> storageFactory) {
         super(gl, bufferUploader, vertexFormat, indexFormat);
 
@@ -97,12 +97,12 @@ public final class PerLevelBakeStorage<VertexType extends AttributeStruct> exten
     }
 
     @Override
-    public NewAttributeBuffer<VertexType> vertexBuffer(int level, int pass) {
+    public AttributeBuffer<VertexType> vertexBuffer(int level, int pass) {
         return this.storages[level].vertexBuffer(level, pass);
     }
 
     @Override
-    public NewIndexBuffer indexBuffer(int level, int pass) {
+    public IndexBuffer indexBuffer(int level, int pass) {
         return this.storages[level].indexBuffer(level, pass);
     }
 

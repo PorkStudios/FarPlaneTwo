@@ -19,15 +19,14 @@
 
 package net.daporkchop.fp2.gl.attribute.vao;
 
-import lombok.AccessLevel;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.OpenGL;
-import net.daporkchop.fp2.gl.attribute.NewAttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.fp2.gl.buffer.BufferTarget;
 import net.daporkchop.fp2.gl.buffer.GLBuffer;
-import net.daporkchop.fp2.gl.draw.index.NewIndexBuffer;
+import net.daporkchop.fp2.gl.draw.index.IndexBuffer;
 import net.daporkchop.fp2.gl.util.GLObject;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 
@@ -62,11 +61,11 @@ public abstract class VertexArrayObject extends GLObject.Normal {
 
     public abstract void setIAttrib(GLBuffer buffer, int index, int size, int type, int stride, long pointer, int divisor);
 
-    public final void configure(NewAttributeBuffer<?> buffer) {
+    public final void configure(AttributeBuffer<?> buffer) {
         this.configure(buffer, 0);
     }
 
-    public final void configure(NewAttributeBuffer<?> buffer, @NotNegative int divisor) {
+    public final void configure(AttributeBuffer<?> buffer, @NotNegative int divisor) {
         this.configure(buffer.format().vertexAttributeFormats(), buffer.buffers(divisor));
     }
 
@@ -329,11 +328,11 @@ public abstract class VertexArrayObject extends GLObject.Normal {
 
         GLBuffer elementsBuffer = null;
 
-        public Builder buffer(NewAttributeBuffer<?> buffer) {
+        public Builder buffer(AttributeBuffer<?> buffer) {
             return this.buffer(buffer, 0);
         }
 
-        public Builder buffer(NewAttributeBuffer<?> buffer, @NotNegative int divisor) {
+        public Builder buffer(AttributeBuffer<?> buffer, @NotNegative int divisor) {
             this.formats.addAll(Arrays.asList(buffer.format().vertexAttributeFormats()));
             this.buffers.addAll(Arrays.asList(buffer.buffers(divisor)));
             return this;
@@ -344,7 +343,7 @@ public abstract class VertexArrayObject extends GLObject.Normal {
             return this;
         }
 
-        public Builder elementBuffer(NewIndexBuffer indexBuffer) {
+        public Builder elementBuffer(IndexBuffer indexBuffer) {
             return this.elementBuffer(indexBuffer.elementsBuffer());
         }
 

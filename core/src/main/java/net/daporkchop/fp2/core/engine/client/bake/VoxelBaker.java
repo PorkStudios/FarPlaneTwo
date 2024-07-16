@@ -27,12 +27,10 @@ import net.daporkchop.fp2.core.engine.Tile;
 import net.daporkchop.fp2.core.engine.TileData;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.api.ctx.IFarClientContext;
-import net.daporkchop.fp2.core.engine.client.bake.BakeOutput;
-import net.daporkchop.fp2.core.engine.client.bake.IRenderBaker;
 import net.daporkchop.fp2.core.engine.client.struct.VoxelLocalAttributes;
 import net.daporkchop.fp2.core.util.GlobalAllocators;
-import net.daporkchop.fp2.gl.attribute.NewAttributeWriter;
-import net.daporkchop.fp2.gl.draw.index.NewIndexWriter;
+import net.daporkchop.fp2.gl.attribute.AttributeWriter;
+import net.daporkchop.fp2.gl.draw.index.IndexWriter;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 
 import java.util.Arrays;
@@ -125,7 +123,7 @@ public class VoxelBaker implements IRenderBaker<VoxelLocalAttributes> {
         }
     }
 
-    protected void writeVertices(Tile[] srcs, int blockX, int blockY, int blockZ, int level, int[] map, NewAttributeWriter<VoxelLocalAttributes> verts) {
+    protected void writeVertices(Tile[] srcs, int blockX, int blockY, int blockZ, int level, int[] map, AttributeWriter<VoxelLocalAttributes> verts) {
         final TileData data = new TileData();
 
         for (int i = 0; i < 8; i++) {
@@ -151,7 +149,7 @@ public class VoxelBaker implements IRenderBaker<VoxelLocalAttributes> {
         }
     }
 
-    protected void writeVertex(int baseX, int baseY, int baseZ, int level, int x, int y, int z, TileData data, NewAttributeWriter<VoxelLocalAttributes> vertices, int[] map) {
+    protected void writeVertex(int baseX, int baseY, int baseZ, int level, int x, int y, int z, TileData data, AttributeWriter<VoxelLocalAttributes> vertices, int[] map) {
         baseX += (x & T_VOXELS) << level;
         baseY += (y & T_VOXELS) << level;
         baseZ += (z & T_VOXELS) << level;
@@ -199,7 +197,7 @@ public class VoxelBaker implements IRenderBaker<VoxelLocalAttributes> {
         }
     }
 
-    protected void writeIndices(Tile src, int[] map, NewIndexWriter[] indices) {
+    protected void writeIndices(Tile src, int[] map, IndexWriter[] indices) {
         final TileData data = new TileData();
 
         for (int j = 0; j < src.count(); j++) {
@@ -226,7 +224,7 @@ public class VoxelBaker implements IRenderBaker<VoxelLocalAttributes> {
                     continue; //skip if any of the vertices are missing
                 }
 
-                NewIndexWriter buf = indices[this.levelRenderer.renderTypeForState(data.states[edge])];
+                IndexWriter buf = indices[this.levelRenderer.renderTypeForState(data.states[edge])];
 
                 boolean water = false; //TODO: isWater(data.states[edge]);
                 if (water) {

@@ -27,7 +27,7 @@ import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.AttributeTarget;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
-import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.annotation.ArrayIndex;
 import net.daporkchop.fp2.gl.attribute.annotation.ArrayLength;
 import net.daporkchop.fp2.gl.attribute.annotation.ArrayType;
@@ -42,7 +42,7 @@ import net.daporkchop.fp2.gl.attribute.vao.VertexArrayObject;
 import net.daporkchop.fp2.gl.buffer.IndexedBufferTarget;
 import net.daporkchop.fp2.gl.buffer.upload.UnsynchronizedMapBufferUploader;
 import net.daporkchop.fp2.gl.draw.index.IndexType;
-import net.daporkchop.fp2.gl.draw.index.NewIndexFormat;
+import net.daporkchop.fp2.gl.draw.index.IndexFormat;
 import net.daporkchop.fp2.gl.shader.ComputeShaderProgram;
 import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.shader.Shader;
@@ -89,11 +89,11 @@ public class TestOpenGL {
             System.out.println(compute.workGroupSize());
         }
 
-        val uniformFormat = NewAttributeFormat.get(gl, TestOpenGL.UniformAttribs.class, AttributeTarget.UBO);
+        val uniformFormat = AttributeFormat.get(gl, TestOpenGL.UniformAttribs.class, AttributeTarget.UBO);
         val uniformBuffer = uniformFormat.createUniformBuffer();
         uniformBuffer.update().scale((byte) 32, (byte) 32).close();
 
-        val vertexFormat = NewAttributeFormat.get(gl, TestOpenGL.LocalAttribs.class, AttributeTarget.VERTEX_ATTRIBUTE);
+        val vertexFormat = AttributeFormat.get(gl, TestOpenGL.LocalAttribs.class, AttributeTarget.VERTEX_ATTRIBUTE);
         val vertexBuffer = vertexFormat.createBuffer();
         try (val writer = vertexFormat.createWriter(alloc)) {
             writer.append().pos(16, 16).close();
@@ -107,7 +107,7 @@ public class TestOpenGL {
             vertexBuffer.set(writer, BufferUsage.STATIC_DRAW);
         }
 
-        val instanceVertexFormat = NewAttributeFormat.get(gl, TestOpenGL.GlobalAttribs.class, AttributeTarget.VERTEX_ATTRIBUTE);
+        val instanceVertexFormat = AttributeFormat.get(gl, TestOpenGL.GlobalAttribs.class, AttributeTarget.VERTEX_ATTRIBUTE);
         val instanceVertexBuffer = instanceVertexFormat.createBuffer();
         try (val writer = instanceVertexFormat.createWriter(alloc)) {
             for (int i = 0, color = -1, x = 0; x < 2; x++) {
@@ -121,7 +121,7 @@ public class TestOpenGL {
             instanceVertexBuffer.set(writer, BufferUsage.STATIC_DRAW);
         }
 
-        val ubyteIndexFormat = NewIndexFormat.get(IndexType.UNSIGNED_BYTE);
+        val ubyteIndexFormat = IndexFormat.get(IndexType.UNSIGNED_BYTE);
         val quadsIndexBuffer = ubyteIndexFormat.createBuffer(gl);
         try (val writer = ubyteIndexFormat.createWriter(alloc)) {
             writer.appendQuadAsTriangles(0, 1, 4, 2);

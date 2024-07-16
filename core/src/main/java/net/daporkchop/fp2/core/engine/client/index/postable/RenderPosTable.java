@@ -21,7 +21,7 @@ package net.daporkchop.fp2.core.engine.client.index.postable;
 
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.client.struct.VoxelGlobalAttributes;
-import net.daporkchop.fp2.gl.attribute.NewAttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 
 /**
  * An indexed table of tile positions stored on the GPU.
@@ -59,7 +59,7 @@ public abstract class RenderPosTable implements AutoCloseable {
      * @param level the detail level
      * @return a reference to the vertex buffer containing the list of tile positions for the given detail level
      */
-    public abstract NewAttributeBuffer<VoxelGlobalAttributes> vertexBuffer(int level);
+    public abstract AttributeBuffer<VoxelGlobalAttributes> vertexBuffer(int level);
 
     /**
      * @author DaPorkchop_

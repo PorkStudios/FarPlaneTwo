@@ -42,8 +42,8 @@ import net.daporkchop.fp2.gl.GLExtensionSet;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
-import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
-import net.daporkchop.fp2.gl.attribute.NewUniformBuffer;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.UniformBuffer;
 import net.daporkchop.fp2.gl.buffer.BufferTarget;
 import net.daporkchop.fp2.gl.buffer.GLMutableBuffer;
 import net.daporkchop.fp2.gl.buffer.IndexedBufferTarget;
@@ -107,15 +107,15 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
                 .build();
     }
 
-    private final NewUniformBuffer<GlobalUniformAttributes> globalUniformBuffer;
+    private final UniformBuffer<GlobalUniformAttributes> globalUniformBuffer;
 
     private final LevelArray<Level> levels;
 
     private final ReloadableShaderProgram<ComputeShaderProgram> cullingShader;
     private final int workGroupSize = 16 * 16; //TODO: a nicer way to acquire this without hardcoding it
 
-    public GPUCulledBaseInstanceRenderIndex(OpenGL gl, BakeStorage<VertexType> bakeStorage, DirectMemoryAllocator alloc, NewAttributeFormat<VoxelGlobalAttributes> sharedVertexFormat, GlobalRenderer globalRenderer,
-                                            NewUniformBuffer<GlobalUniformAttributes> globalUniformBuffer) {
+    public GPUCulledBaseInstanceRenderIndex(OpenGL gl, BakeStorage<VertexType> bakeStorage, DirectMemoryAllocator alloc, AttributeFormat<VoxelGlobalAttributes> sharedVertexFormat, GlobalRenderer globalRenderer,
+                                            UniformBuffer<GlobalUniformAttributes> globalUniformBuffer) {
         super(gl, bakeStorage, alloc, sharedVertexFormat);
 
         try {
@@ -138,7 +138,7 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
     }
 
     @Override
-    protected RenderPosTable constructRenderPosTable(NewAttributeFormat<VoxelGlobalAttributes> sharedVertexFormat) {
+    protected RenderPosTable constructRenderPosTable(AttributeFormat<VoxelGlobalAttributes> sharedVertexFormat) {
         val step = this.workGroupSize; //TODO: this will always be uninitialized if i stop hardcoding the value
         return new PerLevelRenderPosTable(level -> new SimpleRenderPosTable(this.gl, sharedVertexFormat, this.alloc, (oldCapacity, increment) -> {
             val newCapacity = Allocator.GrowFunction.sqrt2(step).grow(oldCapacity, increment);

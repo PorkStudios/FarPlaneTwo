@@ -27,11 +27,11 @@ import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.client.bake.BakeOutput;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
-import net.daporkchop.fp2.gl.attribute.NewAttributeBuffer;
-import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.buffer.upload.BufferUploader;
-import net.daporkchop.fp2.gl.draw.index.NewIndexBuffer;
-import net.daporkchop.fp2.gl.draw.index.NewIndexFormat;
+import net.daporkchop.fp2.gl.draw.index.IndexBuffer;
+import net.daporkchop.fp2.gl.draw.index.IndexFormat;
 
 import java.util.Map;
 
@@ -58,12 +58,12 @@ public abstract class BakeStorage<VertexType extends AttributeStruct> implements
     /**
      * The format of vertex data in this storage.
      */
-    public final NewAttributeFormat<VertexType> vertexFormat;
+    public final AttributeFormat<VertexType> vertexFormat;
 
     /**
      * The format of index data in this storage.
      */
-    public final NewIndexFormat indexFormat;
+    public final IndexFormat indexFormat;
 
     @Override
     public abstract void close();
@@ -92,14 +92,14 @@ public abstract class BakeStorage<VertexType extends AttributeStruct> implements
      * @param pass  the render pass index
      * @return a reference to the vertex buffer containing the vertex data for the given pass
      */
-    public abstract NewAttributeBuffer<VertexType> vertexBuffer(int level, int pass);
+    public abstract AttributeBuffer<VertexType> vertexBuffer(int level, int pass);
 
     /**
      * @param level the detail level
      * @param pass  the render pass index
      * @return a reference to the index buffer containing the index data for the given pass
      */
-    public abstract NewIndexBuffer indexBuffer(int level, int pass);
+    public abstract IndexBuffer indexBuffer(int level, int pass);
 
     /**
      * @return debug statistics about this storage's current state

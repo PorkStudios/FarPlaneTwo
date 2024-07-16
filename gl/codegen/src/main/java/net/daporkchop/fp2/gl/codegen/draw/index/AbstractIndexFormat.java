@@ -21,19 +21,19 @@ package net.daporkchop.fp2.gl.codegen.draw.index;
 
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.draw.index.IndexType;
-import net.daporkchop.fp2.gl.draw.index.NewIndexBuffer;
-import net.daporkchop.fp2.gl.draw.index.NewIndexFormat;
+import net.daporkchop.fp2.gl.draw.index.IndexBuffer;
+import net.daporkchop.fp2.gl.draw.index.IndexFormat;
 
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractIndexFormat extends NewIndexFormat {
+public abstract class AbstractIndexFormat extends IndexFormat {
     protected AbstractIndexFormat(IndexType type) {
         super(type);
     }
 
     @Override
-    public final NewIndexBuffer createBuffer(OpenGL gl) {
+    public final IndexBuffer createBuffer(OpenGL gl) {
         return new IndexBufferImpl(this, gl);
     }
 }

@@ -24,10 +24,10 @@ import net.daporkchop.fp2.gl.OpenGLConstants;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.AttributeTarget;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
-import net.daporkchop.fp2.gl.attribute.NewAttributeBuffer;
-import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
-import net.daporkchop.fp2.gl.attribute.NewAttributeWriter;
-import net.daporkchop.fp2.gl.attribute.NewUniformBuffer;
+import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeWriter;
+import net.daporkchop.fp2.gl.attribute.UniformBuffer;
 import net.daporkchop.fp2.gl.attribute.annotation.AttributeIgnore;
 import net.daporkchop.fp2.gl.attribute.annotation.AttributeSetter;
 import net.daporkchop.fp2.gl.attribute.vao.VertexArrayObject;
@@ -72,15 +72,15 @@ public abstract class AbstractStructFormatClassLoader<STRUCT extends AttributeSt
         //String suffix = "layout$" + layoutInfo.name() + '/' + structClass.getName().replace('.', '_');
         prefix = structClass.getName().replace('.', '/') + '/' + prefix + '$' + layoutInfo.name() + '/';
 
-        this.attributeFormatClassInternalName = (prefix + NewAttributeFormat.class.getSimpleName() + "Impl").replace('.', '/');
-        this.attributeWriterClassInternalName = (prefix + NewAttributeWriter.class.getSimpleName() + "Impl").replace('.', '/');
-        this.bufferClassInternalName = (prefix + NewAttributeBuffer.class.getSimpleName() + "Impl").replace('.', '/');
+        this.attributeFormatClassInternalName = (prefix + AttributeFormat.class.getSimpleName() + "Impl").replace('.', '/');
+        this.attributeWriterClassInternalName = (prefix + AttributeWriter.class.getSimpleName() + "Impl").replace('.', '/');
+        this.bufferClassInternalName = (prefix + AttributeBuffer.class.getSimpleName() + "Impl").replace('.', '/');
         this.handleClassInternalName = (prefix + AttributeStruct.class.getSimpleName() + "Impl").replace('.', '/');
         this.handleUniformClassInternalName = (prefix + AttributeStruct.class.getSimpleName() + "UniformUpdateImpl").replace('.', '/');
-        this.uniformBufferClassInternalName = (prefix + NewUniformBuffer.class.getSimpleName() + "Impl").replace('.', '/');
+        this.uniformBufferClassInternalName = (prefix + UniformBuffer.class.getSimpleName() + "Impl").replace('.', '/');
     }
 
-    public abstract NewAttributeFormat<STRUCT> createAttributeFormat(OpenGL gl);
+    public abstract AttributeFormat<STRUCT> createAttributeFormat(OpenGL gl);
 
     protected abstract byte[] attributeFormatClass();
 
@@ -108,13 +108,13 @@ public abstract class AbstractStructFormatClassLoader<STRUCT extends AttributeSt
         registerClass.accept(PUnsafe.class);
 
         registerClass.accept(OpenGL.class);
-        registerClass.accept(NewAttributeBuffer.class);
-        registerClass.accept(NewAttributeFormat.class);
+        registerClass.accept(AttributeBuffer.class);
+        registerClass.accept(AttributeFormat.class);
         registerClass.accept(AttributeStruct.class);
         registerClass.accept(AttributeTarget.class);
-        registerClass.accept(NewAttributeWriter.class);
+        registerClass.accept(AttributeWriter.class);
         registerClass.accept(BufferUsage.class);
-        registerClass.accept(NewUniformBuffer.class);
+        registerClass.accept(UniformBuffer.class);
 
         registerClass.accept(LayoutInfo.class);
         registerClass.accept(VertexArrayObject.class);

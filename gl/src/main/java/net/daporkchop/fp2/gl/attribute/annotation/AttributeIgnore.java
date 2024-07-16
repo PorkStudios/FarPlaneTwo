@@ -19,6 +19,7 @@
 
 package net.daporkchop.fp2.gl.attribute.annotation;
 
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 
 import java.lang.annotation.ElementType;
@@ -29,7 +30,7 @@ import java.lang.annotation.Target;
 
 /**
  * When placed on a method declared in a {@link AttributeStruct struct interface}, indicates that the annotated method serves only as a convenience method and should
- * be ignored by the {@link net.daporkchop.fp2.gl.attribute.NewAttributeFormat implementation}.
+ * be ignored by the {@link AttributeFormat implementation}.
  *
  * @author DaPorkchop_
  */

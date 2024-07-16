@@ -28,11 +28,11 @@ import net.daporkchop.fp2.core.engine.client.bake.BakeOutput;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
-import net.daporkchop.fp2.gl.attribute.NewAttributeBuffer;
-import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.buffer.upload.BufferUploader;
-import net.daporkchop.fp2.gl.draw.index.NewIndexBuffer;
-import net.daporkchop.fp2.gl.draw.index.NewIndexFormat;
+import net.daporkchop.fp2.gl.draw.index.IndexBuffer;
+import net.daporkchop.fp2.gl.draw.index.IndexFormat;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
 
 import java.util.Map;
@@ -46,15 +46,15 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  */
 public final class SimpleBakeStorage<VertexType extends AttributeStruct> extends BakeStorage<VertexType> {
-    private final NewAttributeBuffer<VertexType> vertexBuffer;
+    private final AttributeBuffer<VertexType> vertexBuffer;
     private final Allocator vertexAlloc;
 
-    private final NewIndexBuffer indexBuffer;
+    private final IndexBuffer indexBuffer;
     private final Allocator indexAlloc;
 
     private final Map<TilePos, Entry> positionsToEntries = DirectTilePosAccess.newPositionKeyedHashMap();
 
-    public SimpleBakeStorage(OpenGL gl, BufferUploader uploader, NewAttributeFormat<VertexType> vertexFormat, NewIndexFormat indexFormat) {
+    public SimpleBakeStorage(OpenGL gl, BufferUploader uploader, AttributeFormat<VertexType> vertexFormat, IndexFormat indexFormat) {
         super(gl, uploader, vertexFormat, indexFormat);
 
         try {
@@ -131,13 +131,13 @@ public final class SimpleBakeStorage<VertexType extends AttributeStruct> extends
     }
 
     @Override
-    public NewAttributeBuffer<VertexType> vertexBuffer(int level, int pass) {
+    public AttributeBuffer<VertexType> vertexBuffer(int level, int pass) {
         checkIndex(RENDER_PASS_COUNT, pass);
         return this.vertexBuffer;
     }
 
     @Override
-    public NewIndexBuffer indexBuffer(int level, int pass) {
+    public IndexBuffer indexBuffer(int level, int pass) {
         checkIndex(RENDER_PASS_COUNT, pass);
         return this.indexBuffer;
     }

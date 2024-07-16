@@ -22,9 +22,9 @@ package net.daporkchop.fp2.gl.codegen.struct.interleaved;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.AttributeTarget;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
-import net.daporkchop.fp2.gl.attribute.NewAttributeBuffer;
-import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
-import net.daporkchop.fp2.gl.attribute.NewAttributeWriter;
+import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeWriter;
 import net.daporkchop.fp2.gl.attribute.vao.VertexArrayVertexBuffer;
 import net.daporkchop.fp2.gl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.buffer.GLMutableBuffer;
@@ -39,12 +39,12 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public final class AbstractInterleavedAttributeBuffer<STRUCT extends AttributeStruct> extends NewAttributeBuffer<STRUCT> {
+public final class AbstractInterleavedAttributeBuffer<STRUCT extends AttributeStruct> extends AttributeBuffer<STRUCT> {
     //none of these methods have codegen because this class isn't really performance-critical
 
     public final GLMutableBuffer buffer;
 
-    public AbstractInterleavedAttributeBuffer(NewAttributeFormat<STRUCT> format) {
+    public AbstractInterleavedAttributeBuffer(AttributeFormat<STRUCT> format) {
         super(format);
         this.buffer = GLMutableBuffer.create(format.gl());
     }
@@ -62,7 +62,7 @@ public final class AbstractInterleavedAttributeBuffer<STRUCT extends AttributeSt
     }
 
     @Override
-    public void copyTo(int srcIndex, NewAttributeBuffer<STRUCT> dstBuffer, int dstIndex, int length) {
+    public void copyTo(int srcIndex, AttributeBuffer<STRUCT> dstBuffer, int dstIndex, int length) {
         checkArg(this.getClass() == dstBuffer.getClass(), "incompatible vertex formats: %s\n%s", this.format(), dstBuffer.format());
         checkRangeLen(this.capacity(), dstIndex, length);
         checkRangeLen(dstBuffer.capacity(), dstIndex, length);
@@ -72,7 +72,7 @@ public final class AbstractInterleavedAttributeBuffer<STRUCT extends AttributeSt
     }
 
     @Override
-    public void set(NewAttributeWriter<STRUCT> writer, BufferUsage usage) {
+    public void set(AttributeWriter<STRUCT> writer, BufferUsage usage) {
         checkArg(this.format().getClass() == writer.format().getClass(), "incompatible vertex formats: %s\n%s", this.format(), writer.format());
 
         int count = writer.size();
@@ -81,7 +81,7 @@ public final class AbstractInterleavedAttributeBuffer<STRUCT extends AttributeSt
     }
 
     @Override
-    public void setRange(@NotNegative int startIndex, NewAttributeWriter<STRUCT> writer, BufferUploader uploader) {
+    public void setRange(@NotNegative int startIndex, AttributeWriter<STRUCT> writer, BufferUploader uploader) {
         checkArg(this.format().getClass() == writer.format().getClass(), "incompatible vertex formats: %s\n%s", this.format(), writer.format());
         int count = writer.size();
         checkRangeLen(this.capacity(), startIndex, count);

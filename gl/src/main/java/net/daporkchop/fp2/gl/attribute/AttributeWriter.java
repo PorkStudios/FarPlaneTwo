@@ -25,7 +25,6 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.gl.util.AbstractTypedWriter;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
-import net.daporkchop.lib.common.annotation.param.Positive;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
 
@@ -37,13 +36,13 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
-public abstract class NewAttributeWriter<STRUCT extends AttributeStruct> extends AbstractTypedWriter {
-    private final NewAttributeFormat<STRUCT> format;
+public abstract class AttributeWriter<STRUCT extends AttributeStruct> extends AbstractTypedWriter {
+    private final AttributeFormat<STRUCT> format;
 
     /**
-     * @return the {@link NewAttributeFormat} which this writer can write vertex attributes for
+     * @return the {@link AttributeFormat} which this writer can write vertex attributes for
      */
-    public final NewAttributeFormat<STRUCT> format() {
+    public final AttributeFormat<STRUCT> format() {
         return this.format;
     }
 
@@ -148,14 +147,14 @@ public abstract class NewAttributeWriter<STRUCT extends AttributeStruct> extends
     @Deprecated
     @SuppressWarnings("unchecked")
     public final void copyTo(@NotNegative int srcIndex, @NonNull AbstractTypedWriter dstWriter, @NotNegative int dstIndex) {
-        this.copyTo(srcIndex, (NewAttributeWriter<STRUCT>) dstWriter, dstIndex);
+        this.copyTo(srcIndex, (AttributeWriter<STRUCT>) dstWriter, dstIndex);
     }
 
     @Override
     @Deprecated
     @SuppressWarnings("unchecked")
     public final void copyTo(@NotNegative int srcIndex, @NonNull AbstractTypedWriter dstWriter, @NotNegative int dstIndex, @NotNegative int length) {
-        this.copyTo(srcIndex, (NewAttributeWriter<STRUCT>) dstWriter, dstIndex, length);
+        this.copyTo(srcIndex, (AttributeWriter<STRUCT>) dstWriter, dstIndex, length);
     }
 
     /**
@@ -165,7 +164,7 @@ public abstract class NewAttributeWriter<STRUCT extends AttributeStruct> extends
      * @param dstWriter the destination writer
      * @param dstIndex  the destination index
      */
-    public void copyTo(@NotNegative int srcIndex, @NonNull NewAttributeWriter<STRUCT> dstWriter, @NotNegative int dstIndex) {
+    public void copyTo(@NotNegative int srcIndex, @NonNull AttributeWriter<STRUCT> dstWriter, @NotNegative int dstIndex) {
         this.copyTo(srcIndex, dstWriter, dstIndex, 1);
     }
 
@@ -179,5 +178,5 @@ public abstract class NewAttributeWriter<STRUCT extends AttributeStruct> extends
      * @param dstIndex  the destination index
      * @param length    the number of elements to copy
      */
-    public abstract void copyTo(@NotNegative int srcIndex, @NonNull NewAttributeWriter<STRUCT> dstWriter, @NotNegative int dstIndex, @NotNegative int length);
+    public abstract void copyTo(@NotNegative int srcIndex, @NonNull AttributeWriter<STRUCT> dstWriter, @NotNegative int dstIndex, @NotNegative int length);
 }

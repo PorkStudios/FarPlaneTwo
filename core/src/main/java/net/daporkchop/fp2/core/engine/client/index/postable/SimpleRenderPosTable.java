@@ -21,7 +21,6 @@ package net.daporkchop.fp2.core.engine.client.index.postable;
 
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import lombok.NonNull;
-import lombok.val;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.core.engine.DirectTilePosAccess;
@@ -29,9 +28,9 @@ import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.client.struct.VoxelGlobalAttributes;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
-import net.daporkchop.fp2.gl.attribute.NewAttributeBuffer;
-import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
-import net.daporkchop.fp2.gl.attribute.NewAttributeWriter;
+import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeWriter;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
 
 import java.util.BitSet;
@@ -45,8 +44,8 @@ public final class SimpleRenderPosTable extends RenderPosTable {
     private final Object2IntMap<TilePos> positionToIndex = DirectTilePosAccess.newPositionKeyed2IntHashMap();
     private final BitSet indexAlloc = new BitSet();
 
-    private final NewAttributeWriter<VoxelGlobalAttributes> writer;
-    private final NewAttributeBuffer<VoxelGlobalAttributes> buffer;
+    private final AttributeWriter<VoxelGlobalAttributes> writer;
+    private final AttributeBuffer<VoxelGlobalAttributes> buffer;
 
     private final Allocator.GrowFunction growFunction;
 
@@ -55,7 +54,7 @@ public final class SimpleRenderPosTable extends RenderPosTable {
     /**
      * @param growFunction the {@link Allocator.GrowFunction} used to determine the table capacity. Units are in tile positions, not bytes!
      */
-    public SimpleRenderPosTable(OpenGL gl, NewAttributeFormat<VoxelGlobalAttributes> format, DirectMemoryAllocator alloc,
+    public SimpleRenderPosTable(OpenGL gl, AttributeFormat<VoxelGlobalAttributes> format, DirectMemoryAllocator alloc,
                                 Allocator.GrowFunction growFunction) {
         this.positionToIndex.defaultReturnValue(-1);
         this.growFunction = growFunction;
@@ -125,7 +124,7 @@ public final class SimpleRenderPosTable extends RenderPosTable {
     }
 
     @Override
-    public NewAttributeBuffer<VoxelGlobalAttributes> vertexBuffer(int level) {
+    public AttributeBuffer<VoxelGlobalAttributes> vertexBuffer(int level) {
         return this.buffer;
     }
 }

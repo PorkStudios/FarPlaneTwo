@@ -21,15 +21,15 @@ package net.daporkchop.fp2.gl.codegen.struct.interleaved;
 
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
-import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
-import net.daporkchop.fp2.gl.attribute.NewUniformBuffer;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.UniformBuffer;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractInterleavedUniformBuffer<STRUCT extends AttributeStruct> extends NewUniformBuffer<STRUCT> {
-    protected AbstractInterleavedUniformBuffer(NewAttributeFormat<STRUCT> format) {
+public abstract class AbstractInterleavedUniformBuffer<STRUCT extends AttributeStruct> extends UniformBuffer<STRUCT> {
+    protected AbstractInterleavedUniformBuffer(AttributeFormat<STRUCT> format) {
         super(format);
     }
 

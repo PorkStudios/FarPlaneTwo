@@ -24,18 +24,18 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.gl.draw.index.IndexType;
-import net.daporkchop.fp2.gl.draw.index.NewIndexFormat;
+import net.daporkchop.fp2.gl.draw.index.IndexFormat;
 
 /**
  * @author DaPorkchop_
  */
 @UtilityClass
 public class IndexFormatFactory {
-    private static final LoadingCache<IndexType, NewIndexFormat> FORMAT_CACHE = CacheBuilder.newBuilder()
+    private static final LoadingCache<IndexType, IndexFormat> FORMAT_CACHE = CacheBuilder.newBuilder()
             .weakValues().concurrencyLevel(1)
             .build(CacheLoader.from(indexType -> new IndexFormatClassLoader(indexType).createIndexFormat()));
 
-    public static NewIndexFormat get(IndexType type) {
+    public static IndexFormat get(IndexType type) {
         return FORMAT_CACHE.get(type);
     }
 }

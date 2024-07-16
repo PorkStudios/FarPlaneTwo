@@ -31,26 +31,26 @@ import java.lang.invoke.MethodType;
 /**
  * @author DaPorkchop_
  */
-public abstract class NewIndexFormat extends AbstractTypedFormat {
+public abstract class IndexFormat extends AbstractTypedFormat {
     /**
-     * Gets an {@link NewIndexFormat} for the given index type.
+     * Gets an {@link IndexFormat} for the given index type.
      *
      * @param type the index type
-     * @return an {@link NewIndexFormat}
+     * @return an {@link IndexFormat}
      */
     @SneakyThrows
-    public static NewIndexFormat get(IndexType type) {
-        return (NewIndexFormat) MethodHandles.publicLookup()
+    public static IndexFormat get(IndexType type) {
+        return (IndexFormat) MethodHandles.publicLookup()
                 .findStatic(
-                        GlobalProperties.find(NewIndexFormat.class, "format").getClass("factory"),
+                        GlobalProperties.find(IndexFormat.class, "format").getClass("factory"),
                         "get",
-                        MethodType.methodType(NewIndexFormat.class, IndexType.class))
+                        MethodType.methodType(IndexFormat.class, IndexType.class))
                 .invokeExact(type);
     }
 
     private final IndexType type;
 
-    protected NewIndexFormat(IndexType type) {
+    protected IndexFormat(IndexType type) {
         super(type.size());
         this.type = type;
     }
@@ -63,18 +63,18 @@ public abstract class NewIndexFormat extends AbstractTypedFormat {
     }
 
     /**
-     * Creates a new {@link NewIndexBuffer} for storing indices using this index format.
+     * Creates a new {@link IndexBuffer} for storing indices using this index format.
      *
      * @param gl the OpenGL context to create the buffer in
-     * @return the created {@link NewIndexBuffer}
+     * @return the created {@link IndexBuffer}
      */
-    public abstract NewIndexBuffer createBuffer(OpenGL gl);
+    public abstract IndexBuffer createBuffer(OpenGL gl);
 
     /**
-     * Creates a new {@link NewIndexWriter} for writing indices using this index format.
+     * Creates a new {@link IndexWriter} for writing indices using this index format.
      *
      * @param alloc a {@link DirectMemoryAllocator} to use for allocating memory
-     * @return the created {@link NewIndexWriter}
+     * @return the created {@link IndexWriter}
      */
-    public abstract NewIndexWriter createWriter(DirectMemoryAllocator alloc);
+    public abstract IndexWriter createWriter(DirectMemoryAllocator alloc);
 }

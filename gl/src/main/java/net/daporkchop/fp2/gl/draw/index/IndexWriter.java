@@ -29,13 +29,13 @@ import net.daporkchop.lib.common.annotation.param.NotNegative;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
-public abstract class NewIndexWriter extends AbstractTypedWriter {
-    private final NewIndexFormat format;
+public abstract class IndexWriter extends AbstractTypedWriter {
+    private final IndexFormat format;
 
     /**
-     * @return the {@link NewIndexFormat} which this writer can write indices for
+     * @return the {@link IndexFormat} which this writer can write indices for
      */
-    public final NewIndexFormat format() {
+    public final IndexFormat format() {
         return this.format;
     }
 
@@ -45,7 +45,7 @@ public abstract class NewIndexWriter extends AbstractTypedWriter {
      * @param value the index value to append
      * @return this writer
      */
-    public abstract NewIndexWriter append(int value);
+    public abstract IndexWriter append(int value);
 
     /**
      * Appends 4 indices to this writer, forming a single quad.
@@ -55,7 +55,7 @@ public abstract class NewIndexWriter extends AbstractTypedWriter {
      * @param c1             the index of the other edge vertex
      * @param provoking      the index of the provoking vertex
      */
-    public NewIndexWriter appendQuad(int oppositeCorner, int c0, int c1, int provoking) {
+    public IndexWriter appendQuad(int oppositeCorner, int c0, int c1, int provoking) {
         this.reserve(4);
 
         this.append(c1);
@@ -73,7 +73,7 @@ public abstract class NewIndexWriter extends AbstractTypedWriter {
      * @param c1             the index of the other edge vertex
      * @param provoking      the index of the provoking vertex
      */
-    public NewIndexWriter appendQuadAsTriangles(int oppositeCorner, int c0, int c1, int provoking) {
+    public IndexWriter appendQuadAsTriangles(int oppositeCorner, int c0, int c1, int provoking) {
         this.reserve(6);
 
         //first triangle
@@ -100,13 +100,13 @@ public abstract class NewIndexWriter extends AbstractTypedWriter {
     @Override
     @Deprecated
     public final void copyTo(@NotNegative int srcIndex, @NonNull AbstractTypedWriter dstWriter, @NotNegative int dstIndex) {
-        this.copyTo(srcIndex, (NewIndexWriter) dstWriter, dstIndex);
+        this.copyTo(srcIndex, (IndexWriter) dstWriter, dstIndex);
     }
 
     @Override
     @Deprecated
     public final void copyTo(@NotNegative int srcIndex, @NonNull AbstractTypedWriter dstWriter, @NotNegative int dstIndex, @NotNegative int length) {
-        this.copyTo(srcIndex, (NewIndexWriter) dstWriter, dstIndex, length);
+        this.copyTo(srcIndex, (IndexWriter) dstWriter, dstIndex, length);
     }
 
     /**
@@ -116,7 +116,7 @@ public abstract class NewIndexWriter extends AbstractTypedWriter {
      * @param dstWriter the destination writer
      * @param dstIndex  the destination index
      */
-    public void copyTo(@NotNegative int srcIndex, @NonNull NewIndexWriter dstWriter, @NotNegative int dstIndex) {
+    public void copyTo(@NotNegative int srcIndex, @NonNull IndexWriter dstWriter, @NotNegative int dstIndex) {
         this.copyTo(srcIndex, dstWriter, dstIndex, 1);
     }
 
@@ -130,5 +130,5 @@ public abstract class NewIndexWriter extends AbstractTypedWriter {
      * @param dstIndex  the destination index
      * @param length    the number of elements to copy
      */
-    public abstract void copyTo(@NotNegative int srcIndex, @NonNull NewIndexWriter dstWriter, @NotNegative int dstIndex, @NotNegative int length);
+    public abstract void copyTo(@NotNegative int srcIndex, @NonNull IndexWriter dstWriter, @NotNegative int dstIndex, @NotNegative int length);
 }

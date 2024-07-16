@@ -42,15 +42,15 @@ import net.daporkchop.fp2.core.engine.client.index.attribdivisor.GPUCulledBaseIn
 import net.daporkchop.fp2.core.engine.client.struct.VoxelLocalAttributes;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
-import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
-import net.daporkchop.fp2.gl.attribute.NewUniformBuffer;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.UniformBuffer;
 import net.daporkchop.fp2.gl.attribute.texture.TextureTarget;
 import net.daporkchop.fp2.gl.buffer.IndexedBufferTarget;
 import net.daporkchop.fp2.gl.buffer.upload.BufferUploader;
 import net.daporkchop.fp2.gl.buffer.upload.ScratchCopyBufferUploader;
 import net.daporkchop.fp2.gl.buffer.upload.UnsynchronizedMapBufferUploader;
 import net.daporkchop.fp2.gl.draw.DrawMode;
-import net.daporkchop.fp2.gl.draw.index.NewIndexFormat;
+import net.daporkchop.fp2.gl.draw.index.IndexFormat;
 import net.daporkchop.fp2.gl.state.StatePreserver;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
 import net.daporkchop.lib.common.misc.release.AbstractReleasable;
@@ -69,13 +69,13 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
 
     protected final IFarClientContext context;
 
-    protected final NewAttributeFormat<VertexType> vertexFormat;
-    protected final NewIndexFormat indexFormat;
+    protected final AttributeFormat<VertexType> vertexFormat;
+    protected final IndexFormat indexFormat;
 
     protected final DirectMemoryAllocator alloc = new DirectMemoryAllocator(false);
     protected final BufferUploader bufferUploader;
 
-    protected final NewUniformBuffer<GlobalUniformAttributes> globalUniformBuffer;
+    protected final UniformBuffer<GlobalUniformAttributes> globalUniformBuffer;
 
     protected final IRenderBaker<VertexType> baker;
     protected final BakeStorage<VertexType> bakeStorage;
@@ -96,7 +96,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
             this.levelRenderer = context.level().renderer();
             this.gl = this.levelRenderer.gl();
 
-            this.vertexFormat = (NewAttributeFormat<VertexType>) this.fp2.client().globalRenderer().voxelVertexAttributesFormat;
+            this.vertexFormat = (AttributeFormat<VertexType>) this.fp2.client().globalRenderer().voxelVertexAttributesFormat;
             this.indexFormat = this.fp2.client().globalRenderer().unsignedShortIndexFormat;
 
             this.bufferUploader = this.gl.supports(UnsynchronizedMapBufferUploader.REQUIRED_EXTENSIONS) //TODO

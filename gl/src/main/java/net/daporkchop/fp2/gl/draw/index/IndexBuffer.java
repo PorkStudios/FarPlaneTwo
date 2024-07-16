@@ -32,13 +32,13 @@ import net.daporkchop.lib.common.annotation.param.NotNegative;
  * @author DaPorkchop_
  */
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
-public abstract class NewIndexBuffer extends AbstractTypedBuffer {
-    private final NewIndexFormat format;
+public abstract class IndexBuffer extends AbstractTypedBuffer {
+    private final IndexFormat format;
 
     /**
-     * @return the {@link NewIndexFormat} which this buffer can store indices for
+     * @return the {@link IndexFormat} which this buffer can store indices for
      */
-    public final NewIndexFormat format() {
+    public final IndexFormat format() {
         return this.format;
     }
 
@@ -50,14 +50,14 @@ public abstract class NewIndexBuffer extends AbstractTypedBuffer {
      * @param dstIndex  the offset into the source buffer to begin copying from
      * @param length    the number of indexs to copy
      */
-    public abstract void copyTo(int srcIndex, NewIndexBuffer dstBuffer, int dstIndex, int length);
+    public abstract void copyTo(int srcIndex, IndexBuffer dstBuffer, int dstIndex, int length);
 
     /**
-     * Copies the index data from the given {@link NewIndexWriter} into this buffer, discarding any existing data and modifying its capacity.
+     * Copies the index data from the given {@link IndexWriter} into this buffer, discarding any existing data and modifying its capacity.
      *
-     * @param writer an {@link NewIndexWriter} containing the sequence of index data elements to copy
+     * @param writer an {@link IndexWriter} containing the sequence of index data elements to copy
      */
-    public void set(NewIndexWriter writer, BufferUsage usage) {
+    public void set(IndexWriter writer, BufferUsage usage) {
         int size = writer.size();
         if (this.capacity() != size) {
             this.capacity(size, usage);
@@ -66,25 +66,25 @@ public abstract class NewIndexBuffer extends AbstractTypedBuffer {
     }
 
     /**
-     * Copies the index data from the given {@link NewIndexWriter} into a subregion of this buffer.
+     * Copies the index data from the given {@link IndexWriter} into a subregion of this buffer.
      *
      * @param startIndex the destination index for the first index data element
-     * @param writer     an {@link NewIndexWriter} containing the sequence of index data elements to copy
+     * @param writer     an {@link IndexWriter} containing the sequence of index data elements to copy
      */
-    public void setRange(@NotNegative int startIndex, NewIndexWriter writer) {
+    public void setRange(@NotNegative int startIndex, IndexWriter writer) {
         this.setRange(startIndex, writer, ImmediateBufferUploader.instance());
     }
 
     /**
-     * Copies the index data from the given {@link NewIndexWriter} into a subregion of this buffer.
+     * Copies the index data from the given {@link IndexWriter} into a subregion of this buffer.
      * <p>
      * Unless the {@link BufferUploader} implementation specifies otherwise, the uploaded data may not be visible until {@link BufferUploader#flush() flushed}.
      *
      * @param startIndex the destination index for the first index data element
-     * @param writer     an {@link NewIndexWriter} containing the sequence of index data elements to copy
+     * @param writer     an {@link IndexWriter} containing the sequence of index data elements to copy
      * @param uploader   a {@link BufferUploader} to be used for uploading the actual index data
      */
-    public abstract void setRange(@NotNegative int startIndex, NewIndexWriter writer, BufferUploader uploader);
+    public abstract void setRange(@NotNegative int startIndex, IndexWriter writer, BufferUploader uploader);
 
     /**
      * @return the underlying {@link GLBuffer}

@@ -24,9 +24,9 @@ import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.buffer.GLMutableBuffer;
 import net.daporkchop.fp2.gl.buffer.upload.BufferUploader;
-import net.daporkchop.fp2.gl.draw.index.NewIndexBuffer;
-import net.daporkchop.fp2.gl.draw.index.NewIndexFormat;
-import net.daporkchop.fp2.gl.draw.index.NewIndexWriter;
+import net.daporkchop.fp2.gl.draw.index.IndexBuffer;
+import net.daporkchop.fp2.gl.draw.index.IndexFormat;
+import net.daporkchop.fp2.gl.draw.index.IndexWriter;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -34,12 +34,12 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public final class IndexBufferImpl extends NewIndexBuffer {
+public final class IndexBufferImpl extends IndexBuffer {
     //none of these methods have codegen because this class isn't really performance-critical
 
     private final GLMutableBuffer buffer;
 
-    IndexBufferImpl(NewIndexFormat format, OpenGL gl) {
+    IndexBufferImpl(IndexFormat format, OpenGL gl) {
         super(format);
         this.buffer = GLMutableBuffer.create(gl);
     }
@@ -57,7 +57,7 @@ public final class IndexBufferImpl extends NewIndexBuffer {
     }
 
     @Override
-    public void copyTo(int srcIndex, NewIndexBuffer dstBuffer, int dstIndex, int length) {
+    public void copyTo(int srcIndex, IndexBuffer dstBuffer, int dstIndex, int length) {
         checkArg(this.format() == dstBuffer.format(), "incompatible index formats: %s\n%s", this.format(), dstBuffer.format());
         checkRangeLen(this.capacity(), dstIndex, length);
         checkRangeLen(dstBuffer.capacity(), dstIndex, length);
@@ -67,7 +67,7 @@ public final class IndexBufferImpl extends NewIndexBuffer {
     }
 
     @Override
-    public void set(NewIndexWriter writer, BufferUsage usage) {
+    public void set(IndexWriter writer, BufferUsage usage) {
         checkArg(this.format() == writer.format(), "incompatible index formats: %s\n%s", this.format(), writer.format());
 
         int count = writer.size();
@@ -76,7 +76,7 @@ public final class IndexBufferImpl extends NewIndexBuffer {
     }
 
     @Override
-    public void setRange(@NotNegative int startIndex, NewIndexWriter writer, BufferUploader uploader) {
+    public void setRange(@NotNegative int startIndex, IndexWriter writer, BufferUploader uploader) {
         checkArg(this.format() == writer.format(), "incompatible index formats: %s\n%s", this.format(), writer.format());
         int count = writer.size();
         checkRangeLen(this.capacity(), startIndex, count);

@@ -32,51 +32,50 @@ import java.lang.invoke.MethodType;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.function.ObjIntConsumer;
 
 /**
  * @param <STRUCT> the struct type
  * @author DaPorkchop_
  */
-public abstract class NewAttributeFormat<STRUCT extends AttributeStruct> extends AbstractTypedFormat {
+public abstract class AttributeFormat<STRUCT extends AttributeStruct> extends AbstractTypedFormat {
     /**
-     * Gets an {@link NewAttributeFormat} for the given struct class which is suitable for use as the requested {@link AttributeTarget target} in the given OpenGL context.
+     * Gets an {@link AttributeFormat} for the given struct class which is suitable for use as the requested {@link AttributeTarget target} in the given OpenGL context.
      *
      * @param gl          the OpenGL context
      * @param structClass the struct class
      * @param validTarget the requested {@link AttributeTarget target} which the returned attribute format must be suitable for
      * @param <STRUCT>    the struct type
-     * @return an {@link NewAttributeFormat}
+     * @return an {@link AttributeFormat}
      */
     @SneakyThrows
-    public static <STRUCT extends AttributeStruct> NewAttributeFormat<STRUCT> get(OpenGL gl, Class<STRUCT> structClass, AttributeTarget validTarget) {
+    public static <STRUCT extends AttributeStruct> AttributeFormat<STRUCT> get(OpenGL gl, Class<STRUCT> structClass, AttributeTarget validTarget) {
         return get(gl, structClass, EnumSet.of(validTarget));
     }
 
     /**
-     * Gets an {@link NewAttributeFormat} for the given struct class which is suitable for use as all of the requested {@link AttributeTarget targets} in the given OpenGL context.
+     * Gets an {@link AttributeFormat} for the given struct class which is suitable for use as all of the requested {@link AttributeTarget targets} in the given OpenGL context.
      *
      * @param gl           the OpenGL context
      * @param structClass  the struct class
      * @param validTargets a non-empty {@link Set} containing the requested {@link AttributeTarget targets} which the returned attribute format must be suitable for
      * @param <STRUCT>     the struct type
-     * @return an {@link NewAttributeFormat}
+     * @return an {@link AttributeFormat}
      */
     @SneakyThrows
     @SuppressWarnings("unchecked")
-    public static <STRUCT extends AttributeStruct> NewAttributeFormat<STRUCT> get(OpenGL gl, Class<STRUCT> structClass, Set<AttributeTarget> validTargets) {
-        return (NewAttributeFormat<STRUCT>) MethodHandles.publicLookup()
+    public static <STRUCT extends AttributeStruct> AttributeFormat<STRUCT> get(OpenGL gl, Class<STRUCT> structClass, Set<AttributeTarget> validTargets) {
+        return (AttributeFormat<STRUCT>) MethodHandles.publicLookup()
                 .findStatic(
-                        GlobalProperties.find(NewAttributeFormat.class, "format").getClass("factory"),
+                        GlobalProperties.find(AttributeFormat.class, "format").getClass("factory"),
                         "get",
-                        MethodType.methodType(NewAttributeFormat.class, OpenGL.class, Class.class, Set.class))
+                        MethodType.methodType(AttributeFormat.class, OpenGL.class, Class.class, Set.class))
                 .invokeExact(gl, structClass, validTargets);
     }
 
     private final OpenGL gl;
     private final EnumSet<AttributeTarget> validTargets;
 
-    public NewAttributeFormat(OpenGL gl, EnumSet<AttributeTarget> validTargets, long size) {
+    public AttributeFormat(OpenGL gl, EnumSet<AttributeTarget> validTargets, long size) {
         super(size);
         this.gl = gl;
         this.validTargets = validTargets.clone();
@@ -100,19 +99,19 @@ public abstract class NewAttributeFormat<STRUCT extends AttributeStruct> extends
     }
 
     /**
-     * Creates a new {@link NewAttributeBuffer} for storing attributes using this attribute format.
+     * Creates a new {@link AttributeBuffer} for storing attributes using this attribute format.
      *
-     * @return the created {@link NewAttributeBuffer}
+     * @return the created {@link AttributeBuffer}
      */
-    public abstract NewAttributeBuffer<STRUCT> createBuffer();
+    public abstract AttributeBuffer<STRUCT> createBuffer();
 
     /**
-     * Creates a new {@link NewAttributeWriter} for writing attributes using this attribute format.
+     * Creates a new {@link AttributeWriter} for writing attributes using this attribute format.
      *
      * @param alloc a {@link DirectMemoryAllocator} to use for allocating memory
-     * @return the created {@link NewAttributeWriter}
+     * @return the created {@link AttributeWriter}
      */
-    public abstract NewAttributeWriter<STRUCT> createWriter(@NonNull DirectMemoryAllocator alloc);
+    public abstract AttributeWriter<STRUCT> createWriter(@NonNull DirectMemoryAllocator alloc);
 
     /**
      * @return the number of vertex attribute binding locations taken up by this vertex attribute format
@@ -149,10 +148,10 @@ public abstract class NewAttributeFormat<STRUCT extends AttributeStruct> extends
     public abstract String interfaceBlockLayoutName() throws UnsupportedOperationException;
 
     /**
-     * Creates a new {@link NewUniformBuffer} for storing individual shader uniforms using this attribute format.
+     * Creates a new {@link UniformBuffer} for storing individual shader uniforms using this attribute format.
      *
-     * @return the created {@link NewUniformBuffer}
+     * @return the created {@link UniformBuffer}
      * @throws UnsupportedOperationException if this attribute format doesn't {@link #supports(AttributeTarget) support} {@link AttributeTarget#UBO uniform buffers}
      */
-    public abstract NewUniformBuffer<STRUCT> createUniformBuffer() throws UnsupportedOperationException;
+    public abstract UniformBuffer<STRUCT> createUniformBuffer() throws UnsupportedOperationException;
 }

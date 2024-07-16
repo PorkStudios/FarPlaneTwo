@@ -34,7 +34,7 @@ import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.render.TextureUVs;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
-import net.daporkchop.fp2.gl.attribute.NewAttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.lib.common.misc.release.AbstractReleasable;
 import net.daporkchop.lib.primitive.map.ObjIntMap;
 import net.daporkchop.lib.primitive.map.open.ObjIntOpenHashMap;
@@ -53,8 +53,8 @@ public abstract class AbstractTextureUVs extends AbstractReleasable implements T
     protected final FP2Core fp2;
     protected final FGameRegistry registry;
 
-    protected final NewAttributeBuffer<QuadListAttribute> listsBuffer;
-    protected final NewAttributeBuffer<PackedBakedQuadAttribute> quadsBuffer;
+    protected final AttributeBuffer<QuadListAttribute> listsBuffer;
+    protected final AttributeBuffer<PackedBakedQuadAttribute> quadsBuffer;
 
     protected int[] stateIdToIndexId;
 

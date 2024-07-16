@@ -30,7 +30,7 @@ import net.daporkchop.fp2.core.engine.client.index.postable.SimpleRenderPosTable
 import net.daporkchop.fp2.core.engine.client.struct.VoxelGlobalAttributes;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
-import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.vao.VertexArrayObject;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
 
@@ -49,7 +49,7 @@ public abstract class AbstractBaseInstanceRenderIndex<VertexType extends Attribu
     protected final RenderPosTable renderPosTable;
     protected final LevelPassArray<VertexArrayObject> vaos;
 
-    public AbstractBaseInstanceRenderIndex(OpenGL gl, BakeStorage<VertexType> bakeStorage, DirectMemoryAllocator alloc, NewAttributeFormat<VoxelGlobalAttributes> sharedVertexFormat) {
+    public AbstractBaseInstanceRenderIndex(OpenGL gl, BakeStorage<VertexType> bakeStorage, DirectMemoryAllocator alloc, AttributeFormat<VoxelGlobalAttributes> sharedVertexFormat) {
         super(gl, bakeStorage, alloc);
 
         try {
@@ -71,7 +71,7 @@ public abstract class AbstractBaseInstanceRenderIndex<VertexType extends Attribu
         PResourceUtil.closeAll(this.vaos, this.renderPosTable);
     }
 
-    protected RenderPosTable constructRenderPosTable(NewAttributeFormat<VoxelGlobalAttributes> sharedVertexFormat) {
+    protected RenderPosTable constructRenderPosTable(AttributeFormat<VoxelGlobalAttributes> sharedVertexFormat) {
         return new SimpleRenderPosTable(this.gl, sharedVertexFormat, this.alloc, Allocator.GrowFunction.def());
     }
 

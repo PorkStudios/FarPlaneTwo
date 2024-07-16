@@ -20,8 +20,8 @@
 package net.daporkchop.fp2.gl.codegen.draw.index;
 
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
-import net.daporkchop.fp2.gl.draw.index.NewIndexFormat;
-import net.daporkchop.fp2.gl.draw.index.NewIndexWriter;
+import net.daporkchop.fp2.gl.draw.index.IndexFormat;
+import net.daporkchop.fp2.gl.draw.index.IndexWriter;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
@@ -30,11 +30,11 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractIndexWriter extends NewIndexWriter {
+public abstract class AbstractIndexWriter extends IndexWriter {
     protected final DirectMemoryAllocator alloc;
     protected long address;
 
-    protected AbstractIndexWriter(NewIndexFormat format, DirectMemoryAllocator alloc) {
+    protected AbstractIndexWriter(IndexFormat format, DirectMemoryAllocator alloc) {
         super(format);
         this.alloc = alloc;
 
@@ -43,7 +43,7 @@ public abstract class AbstractIndexWriter extends NewIndexWriter {
     }
 
     @Override
-    public final NewIndexWriter append(int value) {
+    public final IndexWriter append(int value) {
         this.appendUninitialized();
         this.set(this.address, this.size - 1, value);
         return this;
@@ -105,7 +105,7 @@ public abstract class AbstractIndexWriter extends NewIndexWriter {
     }
 
     @Override
-    public final void copyTo(@NotNegative int srcIndex, NewIndexWriter dstWriterIn, @NotNegative int dstIndex, @NotNegative int length) {
+    public final void copyTo(@NotNegative int srcIndex, IndexWriter dstWriterIn, @NotNegative int dstIndex, @NotNegative int length) {
         checkArg(this.getClass() == dstWriterIn.getClass(), "incompatible index formats: %s\n%s", this.format(), dstWriterIn.format());
         AbstractIndexWriter dstWriter = (AbstractIndexWriter) dstWriterIn;
 

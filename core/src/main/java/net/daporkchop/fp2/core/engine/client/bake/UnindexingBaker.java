@@ -26,8 +26,8 @@ import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.core.engine.Tile;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
-import net.daporkchop.fp2.gl.attribute.NewAttributeWriter;
-import net.daporkchop.fp2.gl.draw.index.NewIndexWriter;
+import net.daporkchop.fp2.gl.attribute.AttributeWriter;
+import net.daporkchop.fp2.gl.draw.index.IndexWriter;
 
 import java.util.Arrays;
 import java.util.stream.Stream;
@@ -65,13 +65,13 @@ public final class UnindexingBaker<VertexType extends AttributeStruct> implement
         }
 
         val origVerts = output.verts;
-        try (NewAttributeWriter<VertexType> copiedVerts = origVerts.format().createWriter(this.alloc);
-             NewIndexWriter copiedIndices = output.indicesPerPass[0].format().createWriter(this.alloc)) {
+        try (AttributeWriter<VertexType> copiedVerts = origVerts.format().createWriter(this.alloc);
+             IndexWriter copiedIndices = output.indicesPerPass[0].format().createWriter(this.alloc)) {
 
             copiedVerts.appendUninitialized(origVerts.size());
             origVerts.copyTo(0, copiedVerts, 0, origVerts.size());
             origVerts.clear();
-            origVerts.reserve(Arrays.stream(output.indicesPerPass).mapToInt(NewIndexWriter::size).sum());
+            origVerts.reserve(Arrays.stream(output.indicesPerPass).mapToInt(IndexWriter::size).sum());
 
             int outputIndex = 0;
             for (val origIndices : output.indicesPerPass) {

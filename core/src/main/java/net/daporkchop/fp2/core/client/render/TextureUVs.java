@@ -29,7 +29,7 @@ import net.daporkchop.fp2.api.util.Direction;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.fp2.core.event.AbstractReloadEvent;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
-import net.daporkchop.fp2.gl.attribute.NewAttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
 import net.daporkchop.fp2.gl.attribute.annotation.AttributeIgnore;
 import net.daporkchop.fp2.gl.attribute.annotation.AttributeSetter;
@@ -61,9 +61,9 @@ public interface TextureUVs {
         }.fire();
     }
 
-    NewAttributeBuffer<QuadListAttribute> listsBuffer();
+    AttributeBuffer<QuadListAttribute> listsBuffer();
 
-    NewAttributeBuffer<PackedBakedQuadAttribute> quadsBuffer();
+    AttributeBuffer<PackedBakedQuadAttribute> quadsBuffer();
 
     int state2index(int state);
 

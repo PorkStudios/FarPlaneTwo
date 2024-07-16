@@ -23,8 +23,8 @@ import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.gl.codegen.struct.attribute.JavaPrimitiveType;
 import net.daporkchop.fp2.gl.codegen.util.SimpleGeneratingClassLoader;
 import net.daporkchop.fp2.gl.draw.index.IndexType;
-import net.daporkchop.fp2.gl.draw.index.NewIndexFormat;
-import net.daporkchop.fp2.gl.draw.index.NewIndexWriter;
+import net.daporkchop.fp2.gl.draw.index.IndexFormat;
+import net.daporkchop.fp2.gl.draw.index.IndexWriter;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import org.objectweb.asm.MethodVisitor;
 
@@ -65,12 +65,12 @@ public final class IndexFormatClassLoader extends SimpleGeneratingClassLoader {
         this.type = type;
         this.primitiveType = primitiveType(type);
 
-        this.formatClassInternalName = (NewIndexFormat.class.getSimpleName() + "Impl$" + type).replace('.', '/');
-        this.writerClassInternalName = (NewIndexWriter.class.getSimpleName() + "Impl$" + type).replace('.', '/');
+        this.formatClassInternalName = (IndexFormat.class.getSimpleName() + "Impl$" + type).replace('.', '/');
+        this.writerClassInternalName = (IndexWriter.class.getSimpleName() + "Impl$" + type).replace('.', '/');
     }
 
-    public NewIndexFormat createIndexFormat() {
-        return (NewIndexFormat) MethodHandles.publicLookup().findConstructor(
+    public IndexFormat createIndexFormat() {
+        return (IndexFormat) MethodHandles.publicLookup().findConstructor(
                         this.loadClass(this.formatClassInternalName.replace('/', '.')),
                         MethodType.methodType(void.class, IndexType.class))
                 .invoke(this.type);
@@ -85,8 +85,8 @@ public final class IndexFormatClassLoader extends SimpleGeneratingClassLoader {
         registerClass.accept(DirectMemoryAllocator.class);
 
         registerClass.accept(IndexType.class);
-        registerClass.accept(NewIndexFormat.class);
-        registerClass.accept(NewIndexWriter.class);
+        registerClass.accept(IndexFormat.class);
+        registerClass.accept(IndexWriter.class);
         registerClass.accept(AbstractIndexFormat.class);
         registerClass.accept(AbstractIndexWriter.class);
     }
@@ -96,12 +96,12 @@ public final class IndexFormatClassLoader extends SimpleGeneratingClassLoader {
             generatePassthroughCtor(cv, getInternalName(AbstractIndexFormat.class), getType(IndexType.class));
 
             //NewIndexWriter createWriter(DirectMemoryAllocator alloc)
-            generateMethod(cv, ACC_PUBLIC | ACC_FINAL, "createWriter", getMethodDescriptor(getType(NewIndexWriter.class), getType(DirectMemoryAllocator.class)), mv -> {
+            generateMethod(cv, ACC_PUBLIC | ACC_FINAL, "createWriter", getMethodDescriptor(getType(IndexWriter.class), getType(DirectMemoryAllocator.class)), mv -> {
                 mv.visitTypeInsn(NEW, this.writerClassInternalName);
                 mv.visitInsn(DUP);
                 mv.visitVarInsn(ALOAD, 0);
                 mv.visitVarInsn(ALOAD, 1);
-                mv.visitMethodInsn(INVOKESPECIAL, this.writerClassInternalName, "<init>", getMethodDescriptor(VOID_TYPE, getType(NewIndexFormat.class), getType(DirectMemoryAllocator.class)), false);
+                mv.visitMethodInsn(INVOKESPECIAL, this.writerClassInternalName, "<init>", getMethodDescriptor(VOID_TYPE, getType(IndexFormat.class), getType(DirectMemoryAllocator.class)), false);
                 return ARETURN;
             });
         });
@@ -109,7 +109,7 @@ public final class IndexFormatClassLoader extends SimpleGeneratingClassLoader {
 
     private byte[] writerClass() {
         return generateClass(ACC_PUBLIC | ACC_FINAL, this.writerClassInternalName, getInternalName(AbstractIndexWriter.class), null, cv -> {
-            generatePassthroughCtor(cv, getInternalName(AbstractIndexWriter.class), getType(NewIndexFormat.class), getType(DirectMemoryAllocator.class));
+            generatePassthroughCtor(cv, getInternalName(AbstractIndexWriter.class), getType(IndexFormat.class), getType(DirectMemoryAllocator.class));
 
             //void set(long address, long index, int value)
             generateMethod(cv, ACC_PUBLIC | ACC_FINAL, "set", getMethodDescriptor(VOID_TYPE, LONG_TYPE, LONG_TYPE, INT_TYPE), mv -> {

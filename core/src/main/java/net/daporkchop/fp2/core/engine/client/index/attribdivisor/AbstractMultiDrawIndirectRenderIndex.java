@@ -28,7 +28,7 @@ import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.GLExtensionSet;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
-import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.draw.indirect.DrawElementsIndirectCommand;
 
 import java.nio.ByteBuffer;
@@ -42,7 +42,7 @@ public abstract class AbstractMultiDrawIndirectRenderIndex<VertexType extends At
     public static final GLExtensionSet REQUIRED_EXTENSIONS = GLExtensionSet.empty()
             .add(GLExtension.GL_ARB_multi_draw_indirect);
 
-    public AbstractMultiDrawIndirectRenderIndex(OpenGL gl, BakeStorage<VertexType> bakeStorage, DirectMemoryAllocator alloc, NewAttributeFormat<VoxelGlobalAttributes> sharedVertexFormat) {
+    public AbstractMultiDrawIndirectRenderIndex(OpenGL gl, BakeStorage<VertexType> bakeStorage, DirectMemoryAllocator alloc, AttributeFormat<VoxelGlobalAttributes> sharedVertexFormat) {
         super(gl, bakeStorage, alloc, sharedVertexFormat);
     }
 

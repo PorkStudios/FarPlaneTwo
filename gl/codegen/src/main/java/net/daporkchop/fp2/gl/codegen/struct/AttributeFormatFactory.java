@@ -23,7 +23,7 @@ import lombok.experimental.UtilityClass;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.AttributeTarget;
-import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.codegen.struct.attribute.StructAttributeFactory;
 import net.daporkchop.fp2.gl.codegen.struct.attribute.StructAttributeType;
 import net.daporkchop.fp2.gl.codegen.struct.layout.LayoutInfo;
@@ -40,7 +40,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  */
 @UtilityClass
 public class AttributeFormatFactory {
-    public static <STRUCT extends AttributeStruct> NewAttributeFormat<STRUCT> get(OpenGL gl, Class<STRUCT> structClass, Set<AttributeTarget> requestedSupportedTargets) {
+    public static <STRUCT extends AttributeStruct> AttributeFormat<STRUCT> get(OpenGL gl, Class<STRUCT> structClass, Set<AttributeTarget> requestedSupportedTargets) {
         LayoutInfo layout = getAttributeLayout(gl, structClass, requestedSupportedTargets);
         checkArg(layout.interleaved(), "separate attribute layout isn't supported!");
         return new InterleavedStructFormatClassLoader<>(structClass, layout).createAttributeFormat(gl);

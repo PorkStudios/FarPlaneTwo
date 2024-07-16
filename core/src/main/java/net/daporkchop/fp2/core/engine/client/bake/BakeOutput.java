@@ -23,10 +23,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.val;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
-import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
-import net.daporkchop.fp2.gl.attribute.NewAttributeWriter;
-import net.daporkchop.fp2.gl.draw.index.NewIndexFormat;
-import net.daporkchop.fp2.gl.draw.index.NewIndexWriter;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeWriter;
+import net.daporkchop.fp2.gl.draw.index.IndexFormat;
+import net.daporkchop.fp2.gl.draw.index.IndexWriter;
 
 import java.util.Arrays;
 
@@ -37,10 +37,10 @@ import static net.daporkchop.fp2.core.engine.client.RenderConstants.*;
  */
 @RequiredArgsConstructor
 public final class BakeOutput<VertexType extends AttributeStruct> implements AutoCloseable {
-    public final NewAttributeWriter<VertexType> verts;
-    public final NewIndexWriter[] indicesPerPass = new NewIndexWriter[RENDER_PASS_COUNT];
+    public final AttributeWriter<VertexType> verts;
+    public final IndexWriter[] indicesPerPass = new IndexWriter[RENDER_PASS_COUNT];
 
-    public BakeOutput(NewAttributeFormat<VertexType> vertexFormat, NewIndexFormat indexFormat, DirectMemoryAllocator alloc) {
+    public BakeOutput(AttributeFormat<VertexType> vertexFormat, IndexFormat indexFormat, DirectMemoryAllocator alloc) {
         this.verts = vertexFormat.createWriter(alloc);
         for (int i = 0; i < RENDER_PASS_COUNT; i++) {
             this.indicesPerPass[i] = indexFormat.createWriter(alloc);

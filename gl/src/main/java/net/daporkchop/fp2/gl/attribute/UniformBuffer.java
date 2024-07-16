@@ -21,7 +21,6 @@ package net.daporkchop.fp2.gl.attribute;
 
 import lombok.Getter;
 import net.daporkchop.fp2.gl.OpenGL;
-import net.daporkchop.fp2.gl.buffer.GLBuffer;
 import net.daporkchop.fp2.gl.buffer.GLMutableBuffer;
 
 /**
@@ -29,13 +28,13 @@ import net.daporkchop.fp2.gl.buffer.GLMutableBuffer;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class NewUniformBuffer<STRUCT extends AttributeStruct> implements AutoCloseable {
-    protected final NewAttributeFormat<STRUCT> format;
+public abstract class UniformBuffer<STRUCT extends AttributeStruct> implements AutoCloseable {
+    protected final AttributeFormat<STRUCT> format;
     protected final OpenGL gl;
 
     protected final GLMutableBuffer buffer;
 
-    protected NewUniformBuffer(NewAttributeFormat<STRUCT> format) {
+    protected UniformBuffer(AttributeFormat<STRUCT> format) {
         this.format = format;
         this.gl = format.gl();
 

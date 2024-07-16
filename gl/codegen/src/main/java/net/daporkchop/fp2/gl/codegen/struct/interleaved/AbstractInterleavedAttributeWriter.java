@@ -22,8 +22,8 @@ package net.daporkchop.fp2.gl.codegen.struct.interleaved;
 import lombok.NonNull;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
-import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
-import net.daporkchop.fp2.gl.attribute.NewAttributeWriter;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeWriter;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.common.annotation.param.Positive;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -33,7 +33,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractInterleavedAttributeWriter<STRUCT extends AttributeStruct> extends NewAttributeWriter<STRUCT> {
+public abstract class AbstractInterleavedAttributeWriter<STRUCT extends AttributeStruct> extends AttributeWriter<STRUCT> {
     /*
      * Implementation note:
      *
@@ -46,7 +46,7 @@ public abstract class AbstractInterleavedAttributeWriter<STRUCT extends Attribut
     protected final DirectMemoryAllocator alloc;
     protected long address;
 
-    protected AbstractInterleavedAttributeWriter(@NonNull NewAttributeFormat<STRUCT> format, @NonNull DirectMemoryAllocator alloc) {
+    protected AbstractInterleavedAttributeWriter(@NonNull AttributeFormat<STRUCT> format, @NonNull DirectMemoryAllocator alloc) {
         super(format);
         this.alloc = alloc;
 
@@ -112,7 +112,7 @@ public abstract class AbstractInterleavedAttributeWriter<STRUCT extends Attribut
     }
 
     @Override
-    public final void copyTo(@NotNegative int srcIndex, NewAttributeWriter<STRUCT> dstWriterIn, @NotNegative int dstIndex, @NotNegative int length) {
+    public final void copyTo(@NotNegative int srcIndex, AttributeWriter<STRUCT> dstWriterIn, @NotNegative int dstIndex, @NotNegative int length) {
         checkArg(this.getClass() == dstWriterIn.getClass(), "incompatible index formats: %s\n%s", this.format(), dstWriterIn.format());
         AbstractInterleavedAttributeWriter<STRUCT> dstWriter = (AbstractInterleavedAttributeWriter<STRUCT>) dstWriterIn;
 

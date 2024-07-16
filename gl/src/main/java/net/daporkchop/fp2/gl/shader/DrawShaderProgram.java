@@ -22,7 +22,7 @@ package net.daporkchop.fp2.gl.shader;
 import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeTarget;
-import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 
 import java.util.Arrays;
 import java.util.BitSet;
@@ -99,29 +99,29 @@ public final class DrawShaderProgram extends ShaderProgram {
             return this.addShader(fragmentShader);
         }
 
-        public Builder vertexAttributes(NewAttributeFormat<?> attributeFormat) {
+        public Builder vertexAttributes(AttributeFormat<?> attributeFormat) {
             return this.vertexAttributes(attributeFormat, null);
         }
 
-        public Builder vertexAttributesWithPrefix(String prefix, NewAttributeFormat<?> attributeFormat) {
+        public Builder vertexAttributesWithPrefix(String prefix, AttributeFormat<?> attributeFormat) {
             return this.vertexAttributes(attributeFormat, prefix::concat);
         }
 
-        public Builder vertexAttributes(NewAttributeFormat<?> attributeFormat, Function<String, String> nameFormatter) {
+        public Builder vertexAttributes(AttributeFormat<?> attributeFormat, Function<String, String> nameFormatter) {
             checkArg(attributeFormat.supports(AttributeTarget.VERTEX_ATTRIBUTE), attributeFormat);
             this.vertexAttributes.add(this.gl.limits().maxVertexAttributes(), this.vertexAttributes.nextBindingIndex(), attributeFormat, nameFormatter, false);
             return this;
         }
 
-        public Builder vertexAttributes(int bindingIndex, NewAttributeFormat<?> attributeFormat) {
+        public Builder vertexAttributes(int bindingIndex, AttributeFormat<?> attributeFormat) {
             return this.vertexAttributes(bindingIndex, attributeFormat, null);
         }
 
-        public Builder vertexAttributesWithPrefix(int bindingIndex, String prefix, NewAttributeFormat<?> attributeFormat) {
+        public Builder vertexAttributesWithPrefix(int bindingIndex, String prefix, AttributeFormat<?> attributeFormat) {
             return this.vertexAttributes(bindingIndex, attributeFormat, prefix::concat);
         }
 
-        public Builder vertexAttributes(int bindingIndex, NewAttributeFormat<?> attributeFormat, Function<String, String> nameFormatter) {
+        public Builder vertexAttributes(int bindingIndex, AttributeFormat<?> attributeFormat, Function<String, String> nameFormatter) {
             checkArg(attributeFormat.supports(AttributeTarget.VERTEX_ATTRIBUTE), attributeFormat);
             this.vertexAttributes.add(this.gl.limits().maxVertexAttributes(), bindingIndex, attributeFormat, nameFormatter, true);
             return this;
@@ -150,7 +150,7 @@ public final class DrawShaderProgram extends ShaderProgram {
      */
     private static final class VertexAttributeBindings {
         private final BitSet occupiedBindingLocations = new BitSet();
-        private final Map<Integer, NewAttributeFormat<?>> bindings = new TreeMap<>();
+        private final Map<Integer, AttributeFormat<?>> bindings = new TreeMap<>();
         private final Map<Integer, Function<String, String>> nameFormatters = new TreeMap<>();
         private Boolean usedExplicit;
 
@@ -159,7 +159,7 @@ public final class DrawShaderProgram extends ShaderProgram {
             return this.occupiedBindingLocations.length();
         }
 
-        public void add(int maxAttribBindings, int bindingIndex, NewAttributeFormat<?> format, Function<String, String> nameFormatter, Boolean explicit) {
+        public void add(int maxAttribBindings, int bindingIndex, AttributeFormat<?> format, Function<String, String> nameFormatter, Boolean explicit) {
             if (this.usedExplicit != null) {
                 checkState(this.usedExplicit == explicit, "a vertex attribute was already registered with an %s binding index", explicit ? "explicit" : "implicit");
             } else {

@@ -23,8 +23,8 @@ import lombok.NonNull;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.AttributeTarget;
-import net.daporkchop.fp2.gl.attribute.NewAttributeBuffer;
-import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.codegen.struct.attribute.StructAttributeType;
 import net.daporkchop.fp2.gl.codegen.struct.layout.LayoutInfo;
 
@@ -33,7 +33,7 @@ import java.util.function.Function;
 /**
  * @author DaPorkchop_
  */
-public abstract class AbstractInterleavedAttributeFormat<STRUCT extends AttributeStruct> extends NewAttributeFormat<STRUCT> {
+public abstract class AbstractInterleavedAttributeFormat<STRUCT extends AttributeStruct> extends AttributeFormat<STRUCT> {
     public final LayoutInfo layoutInfo;
 
     public AbstractInterleavedAttributeFormat(OpenGL gl, LayoutInfo layoutInfo) {
@@ -42,7 +42,7 @@ public abstract class AbstractInterleavedAttributeFormat<STRUCT extends Attribut
     }
 
     @Override
-    public final NewAttributeBuffer<STRUCT> createBuffer() {
+    public final AttributeBuffer<STRUCT> createBuffer() {
         return new AbstractInterleavedAttributeBuffer<>(this);
     }
 
