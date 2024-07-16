@@ -32,6 +32,7 @@ import java.lang.invoke.MethodType;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.ObjIntConsumer;
 
 /**
  * @param <STRUCT> the struct type
@@ -124,6 +125,12 @@ public abstract class NewAttributeFormat<STRUCT extends AttributeStruct> extends
      * @throws UnsupportedOperationException if this attribute format doesn't {@link #supports(AttributeTarget) support} {@link AttributeTarget#VERTEX_ATTRIBUTE vertex attributes}
      */
     public abstract VertexAttributeFormat[] vertexAttributeFormats() throws UnsupportedOperationException;
+
+    /**
+     * @return the names of all the vertex attributes in this vertex attribute format
+     * @throws UnsupportedOperationException if this attribute format doesn't {@link #supports(AttributeTarget) support} {@link AttributeTarget#VERTEX_ATTRIBUTE vertex attributes}
+     */
+    public abstract String[] vertexAttributeNames() throws UnsupportedOperationException;
 
     /**
      * Configures the vertex attribute binding locations of all the vertex attributes referenced by this vertex attribute format.

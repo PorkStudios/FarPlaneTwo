@@ -793,6 +793,39 @@ public final class GLAPILWJGL3 extends OpenGL {
     }
 
     @Override
+    public int glGetAttribLocation(int program, @NonNull CharSequence name) {
+        val res = GL20C.glGetAttribLocation(program, name);
+        super.debugCheckError();
+        return res;
+    }
+
+    @Override
+    public String glGetActiveAttrib(int program, int index, int bufSize, @NonNull IntBuffer size, @NonNull IntBuffer type) {
+        val res = GL20C.glGetActiveAttrib(program, index, bufSize, size, type);
+        super.debugCheckError();
+        return res;
+    }
+
+    @Override
+    public String glGetActiveAttrib(int program, int index, int bufSize, @NonNull int[] size, @NonNull int[] type) {
+        long allocSize = 2L * Integer.BYTES;
+        long address = DirectBufferHackery.allocateTemporary(allocSize);
+        try {
+            IntBuffer sizeBuffer = DirectBufferHackery.wrapInt(address, 1);
+            IntBuffer typeBuffer = DirectBufferHackery.wrapInt(address + Integer.BYTES, 1);
+
+            val res = this.glGetActiveAttrib(program, index, bufSize, sizeBuffer, typeBuffer);
+
+            //copy size and type into the destination arrays
+            size[0] = sizeBuffer.get(0);
+            type[0] = typeBuffer.get(0);
+            return res;
+        } finally {
+            DirectBufferHackery.freeTemporary(address, allocSize);
+        }
+    }
+
+    @Override
     public int glGetUniformLocation(int program, @NonNull CharSequence name) {
         val res = GL20C.glGetUniformLocation(program, name);
         super.debugCheckError();
@@ -1124,6 +1157,36 @@ public final class GLAPILWJGL3 extends OpenGL {
     }
 
     @Override
+    public int glGetActiveUniformBlocki(int program, int uniformBlockIndex, int pname) {
+        if (this.OpenGL31) {
+            val res = GL31C.glGetActiveUniformBlocki(program, uniformBlockIndex, pname);
+            super.debugCheckError();
+            return res;
+        } else if (this.GL_ARB_uniform_buffer_object) {
+            val res = ARBUniformBufferObject.glGetActiveUniformBlocki(program, uniformBlockIndex, pname);
+            super.debugCheckError();
+            return res;
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_uniform_buffer_object));
+        }
+    }
+
+    @Override
+    public String glGetActiveUniformBlockName(int program, int uniformBlockIndex, int bufSize) {
+        if (this.OpenGL31) {
+            val res = GL31C.glGetActiveUniformBlockName(program, uniformBlockIndex, bufSize);
+            super.debugCheckError();
+            return res;
+        } else if (this.GL_ARB_uniform_buffer_object) {
+            val res = ARBUniformBufferObject.glGetActiveUniformBlockName(program, uniformBlockIndex, bufSize);
+            super.debugCheckError();
+            return res;
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_uniform_buffer_object));
+        }
+    }
+
+    @Override
     public void glUniformBlockBinding(int program, int uniformBlockIndex, int uniformBlockBinding) {
         if (this.OpenGL31) {
             GL31C.glUniformBlockBinding(program, uniformBlockIndex, uniformBlockBinding);
@@ -1167,6 +1230,21 @@ public final class GLAPILWJGL3 extends OpenGL {
             return res;
         } else if (this.GL_ARB_uniform_buffer_object) {
             val res = ARBUniformBufferObject.glGetActiveUniformsi(program, uniformIndex, pname);
+            super.debugCheckError();
+            return res;
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_uniform_buffer_object));
+        }
+    }
+
+    @Override
+    public String glGetActiveUniformName(int program, int uniformIndex, int bufSize) {
+        if (this.OpenGL31) {
+            val res = GL31C.glGetActiveUniformName(program, uniformIndex, bufSize);
+            super.debugCheckError();
+            return res;
+        } else if (this.GL_ARB_uniform_buffer_object) {
+            val res = ARBUniformBufferObject.glGetActiveUniformName(program, uniformIndex, bufSize);
             super.debugCheckError();
             return res;
         } else {
@@ -1785,6 +1863,21 @@ public final class GLAPILWJGL3 extends OpenGL {
     }
 
     @Override
+    public int glGetProgramInterfacei(int program, int programInterface, int pname) {
+        if (this.OpenGL43) {
+            val res = GL43C.glGetProgramInterfacei(program, programInterface, pname);
+            super.debugCheckError();
+            return res;
+        } else if (this.GL_ARB_program_interface_query) {
+            val res = ARBProgramInterfaceQuery.glGetProgramInterfacei(program, programInterface, pname);
+            super.debugCheckError();
+            return res;
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_program_interface_query));
+        }
+    }
+
+    @Override
     public int glGetProgramResourceIndex(int program, int programInterface, @NonNull CharSequence name) {
         if (this.OpenGL43) {
             val res = GL43C.glGetProgramResourceIndex(program, programInterface, name);
@@ -1792,6 +1885,47 @@ public final class GLAPILWJGL3 extends OpenGL {
             return res;
         } else if (this.GL_ARB_program_interface_query) {
             val res = ARBProgramInterfaceQuery.glGetProgramResourceIndex(program, programInterface, name);
+            super.debugCheckError();
+            return res;
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_program_interface_query));
+        }
+    }
+
+    @Override
+    public void glGetProgramResourceiv(int program, int programInterface, int index, @NonNull IntBuffer props, IntBuffer length, @NonNull IntBuffer params) {
+        if (this.OpenGL43) {
+            GL43C.glGetProgramResourceiv(program, programInterface, index, props, length, params);
+            super.debugCheckError();
+        } else if (this.GL_ARB_program_interface_query) {
+            ARBProgramInterfaceQuery.glGetProgramResourceiv(program, programInterface, index, props, length, params);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_program_interface_query));
+        }
+    }
+
+    @Override
+    public void glGetProgramResourceiv(int program, int programInterface, int index, @NonNull int[] props, int[] length, @NonNull int[] params) {
+        if (this.OpenGL43) {
+            GL43C.glGetProgramResourceiv(program, programInterface, index, props, length, params);
+            super.debugCheckError();
+        } else if (this.GL_ARB_program_interface_query) {
+            ARBProgramInterfaceQuery.glGetProgramResourceiv(program, programInterface, index, props, length, params);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_program_interface_query));
+        }
+    }
+
+    @Override
+    public String glGetProgramResourceName(int program, int programInterface, int index, int bufSize) {
+        if (this.OpenGL43) {
+            val res = GL43C.glGetProgramResourceName(program, programInterface, index, bufSize);
+            super.debugCheckError();
+            return res;
+        } else if (this.GL_ARB_program_interface_query) {
+            val res = ARBProgramInterfaceQuery.glGetProgramResourceName(program, programInterface, index, bufSize);
             super.debugCheckError();
             return res;
         } else {

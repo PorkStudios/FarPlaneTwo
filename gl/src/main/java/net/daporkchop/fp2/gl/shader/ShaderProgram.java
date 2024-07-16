@@ -26,14 +26,14 @@ import lombok.val;
 import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.util.GLObject;
+import net.daporkchop.fp2.gl.util.GLRequires;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
-import net.daporkchop.lib.common.function.plain.QuadConsumer;
-import net.daporkchop.lib.common.function.plain.TriFunction;
-import net.daporkchop.lib.unsafe.PUnsafe;
+import net.daporkchop.lib.common.closeable.PResourceUtil;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -50,7 +50,7 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 public abstract class ShaderProgram extends GLObject.Normal {
-    protected ShaderProgram(Builder<?, ?> builder) throws ShaderLinkageException {
+    protected ShaderProgram(@NonNull Builder<?, ?> builder) throws ShaderLinkageException {
         super(builder.gl, builder.gl.glCreateProgram());
 
         try {
@@ -58,7 +58,7 @@ public abstract class ShaderProgram extends GLObject.Normal {
             for (Shader shader : builder.shaders) {
                 this.gl.glAttachShader(this.id, shader.id());
             }
-            builder.configurePreLink(this.id);
+            builder.configurePreLink(uncheckedCast(this));
             this.gl.glLinkProgram(this.id);
             for (Shader shader : builder.shaders) {
                 this.gl.glDetachShader(this.id, shader.id());
@@ -69,10 +69,9 @@ public abstract class ShaderProgram extends GLObject.Normal {
                 throw new ShaderLinkageException(this.gl.glGetProgramInfoLog(this.id));
             }
 
-            builder.configurePostLink(this.id);
+            builder.configurePostLink(uncheckedCast(this));
         } catch (Throwable t) { //clean up if something goes wrong
-            this.gl.glDeleteProgram(this.id);
-            throw PUnsafe.throwException(t);
+            throw PResourceUtil.closeSuppressed(t, this);
         }
     }
 
@@ -96,7 +95,7 @@ public abstract class ShaderProgram extends GLObject.Normal {
      *
      * @param action the action to run while the shader is bound
      */
-    public final void bind(Runnable action) {
+    public final void bind(@NonNull Runnable action) {
         this.checkOpen();
         int old = this.gl.glGetInteger(GL_CURRENT_PROGRAM);
         try {
@@ -112,7 +111,7 @@ public abstract class ShaderProgram extends GLObject.Normal {
      *
      * @param action the action to run while the shader is bound, will be called with a {@link UniformSetter} which may be used to set shader uniforms
      */
-    public final void bind(Consumer<UniformSetter> action) {
+    public final void bind(@NonNull Consumer<UniformSetter> action) {
         this.checkOpen();
         int old = this.gl.glGetInteger(GL_CURRENT_PROGRAM);
         try {
@@ -143,7 +142,7 @@ public abstract class ShaderProgram extends GLObject.Normal {
      * @param name the uniform name
      * @return the uniform's location
      */
-    public final int uniformLocation(String name) {
+    public final int uniformLocation(@NonNull String name) {
         this.checkOpen();
         return this.gl.glGetUniformLocation(this.id, name);
     }
@@ -153,13 +152,58 @@ public abstract class ShaderProgram extends GLObject.Normal {
      *
      * @param action a function which will be called with a {@link UniformSetter} which may be used to set shader uniforms
      */
-    public final void setUniforms(Consumer<UniformSetter> action) {
+    public final void setUniforms(@NonNull Consumer<UniformSetter> action) {
         this.checkOpen();
         if (this.gl.supports(GLExtension.GL_ARB_separate_shader_objects)) {
             action.accept(new DSAUniformSetter(this.gl, this.id));
         } else {
             this.bind(action);
         }
+    }
+
+    @GLRequires(GLExtension.GL_ARB_uniform_buffer_object)
+    protected final String[] getUniformBlockNames() throws UnsupportedOperationException {
+        this.checkOpen();
+
+        if (!this.gl.supports(GLExtension.GL_ARB_program_interface_query)) {
+            return this.getUniformBlockNamesLegacy();
+        }
+
+        String[] result = this.getActiveResourceNames(GL_UNIFORM_BLOCK);
+        assert Arrays.equals(result, this.getUniformBlockNamesLegacy()) //sanity check because i'm not entirely sure how reliable the old API is
+                : "Program introspection: " + Arrays.toString(result) + ", Legacy: " + Arrays.toString(this.getUniformBlockNamesLegacy());
+        return result;
+    }
+
+    @GLRequires(GLExtension.GL_ARB_uniform_buffer_object)
+    private String[] getUniformBlockNamesLegacy() throws UnsupportedOperationException {
+        this.checkOpen();
+
+        int activeUniformBlocks = this.gl.glGetProgrami(this.id, GL_ACTIVE_UNIFORM_BLOCKS);
+        int bufSize = this.gl.glGetProgrami(this.id, GL_ACTIVE_UNIFORM_MAX_LENGTH);
+        String[] result = new String[activeUniformBlocks];
+        for (int uniformBlockIndex = 0; uniformBlockIndex < activeUniformBlocks; uniformBlockIndex++) {
+            result[uniformBlockIndex] = this.gl.glGetActiveUniformBlockName(this.id, uniformBlockIndex, bufSize);
+        }
+        return result;
+    }
+
+    @GLRequires(GLExtension.GL_ARB_shader_storage_buffer_object)
+    protected final String[] getShaderStorageBlockNames() throws UnsupportedOperationException {
+        return this.getActiveResourceNames(GL_SHADER_STORAGE_BLOCK);
+    }
+
+    @GLRequires(GLExtension.GL_ARB_program_interface_query)
+    protected final String[] getActiveResourceNames(int programInterface) throws UnsupportedOperationException {
+        this.checkOpen();
+
+        int activeResources = this.gl.glGetProgramInterfacei(this.id, programInterface, GL_ACTIVE_RESOURCES);
+        int bufSize = this.gl.glGetProgramInterfacei(this.id, programInterface, GL_MAX_NAME_LENGTH);
+        String[] result = new String[activeResources];
+        for (int resourceIndex = 0; resourceIndex < activeResources; resourceIndex++) {
+            result[resourceIndex] = this.gl.glGetProgramResourceName(this.id, programInterface, resourceIndex, bufSize);
+        }
+        return result;
     }
 
     /**
@@ -171,6 +215,7 @@ public abstract class ShaderProgram extends GLObject.Normal {
     public static abstract class UniformSetter {
         protected final OpenGL gl;
 
+        //@formatter:off
         public abstract void set1i(int location, int v0);
         public abstract void set2i(int location, int v0, int v1);
         public abstract void set3i(int location, int v0, int v1, int v2);
@@ -195,6 +240,7 @@ public abstract class ShaderProgram extends GLObject.Normal {
         public abstract void set2f(int location, FloatBuffer value);
         public abstract void set3f(int location, FloatBuffer value);
         public abstract void set4f(int location, FloatBuffer value);
+        //@formatter:on
     }
 
     /**
@@ -513,12 +559,12 @@ public abstract class ShaderProgram extends GLObject.Normal {
 
         protected abstract S build0() throws ShaderLinkageException;
 
-        protected void configurePreLink(int program) {
+        protected void configurePreLink(S program) {
             //no-op
         }
 
-        protected void configurePostLink(int program) {
-            this.samplers.configurePostLink(this.gl, program);
+        protected void configurePostLink(S program) {
+            this.samplers.configurePostLink(program);
             this.SSBOs.configurePostLink(this.gl, program);
             this.UBOs.configurePostLink(this.gl, program);
         }
@@ -528,8 +574,8 @@ public abstract class ShaderProgram extends GLObject.Normal {
      * @author DaPorkchop_
      */
     @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
-    protected static class SamplerBindings {
-        protected final Map<String, Integer> bindings = new TreeMap<>();
+    protected static final class SamplerBindings {
+        private final Map<String, Integer> bindings = new TreeMap<>();
 
         public void add(int maxTexUnits, int unit, @NonNull String name) {
             checkIndex(maxTexUnits, unit);
@@ -537,24 +583,20 @@ public abstract class ShaderProgram extends GLObject.Normal {
             this.bindings.put(name, unit);
         }
 
-        public void configurePostLink(OpenGL gl, int program) {
+        public void configurePostLink(ShaderProgram program) {
             if (this.bindings.isEmpty()) {
                 return;
             }
 
-            int oldProgram = gl.glGetInteger(GL_CURRENT_PROGRAM);
-            try {
-                gl.glUseProgram(program);
+            program.bind(uniformSetter ->
+                    this.bindings.forEach((name, unit) -> {
+                        int location = program.uniformLocation(name);
+                        if (location >= 0) { //sampler may have been optimized out, so only set it if it's present
+                            uniformSetter.set1i(location, unit);
+                        }
+                    }));
 
-                this.bindings.forEach((name, unit) -> {
-                    int location = gl.glGetUniformLocation(program, name);
-                    if (location >= 0) { //sampler may have been optimized out, so only set it if it's present
-                        gl.glUniform1i(location, unit);
-                    }
-                });
-            } finally {
-                gl.glUseProgram(oldProgram);
-            }
+            // TODO: verify that all sampler uniforms have their location set
         }
     }
 
@@ -562,41 +604,84 @@ public abstract class ShaderProgram extends GLObject.Normal {
      * @author DaPorkchop_
      */
     @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
-    protected static class BlockBindings {
+    protected static abstract class BlockBindings {
         public static BlockBindings createSSBO() {
-            return new BlockBindings(
-                    (gl, program, name) -> gl.glGetProgramResourceIndex(program, GL_SHADER_STORAGE_BLOCK, name),
-                    OpenGL::glShaderStorageBlockBinding);
+            return new BlockBindings(GLExtension.GL_ARB_shader_storage_buffer_object) {
+                @Override
+                protected String[] getBlockNames(@NonNull ShaderProgram program) {
+                    return program.getShaderStorageBlockNames();
+                }
+
+                @Override
+                protected void setBlockBinding(@NonNull OpenGL gl, int program, int blockIndex, int bindingIndex) {
+                    gl.glShaderStorageBlockBinding(program, blockIndex, bindingIndex);
+                }
+            };
         }
 
         public static BlockBindings createUBO() {
-            return new BlockBindings(OpenGL::glGetUniformBlockIndex, OpenGL::glUniformBlockBinding);
+            return new BlockBindings(GLExtension.GL_ARB_uniform_buffer_object) {
+                @Override
+                protected String[] getBlockNames(@NonNull ShaderProgram program) {
+                    return program.getUniformBlockNames();
+                }
+
+                @Override
+                protected void setBlockBinding(@NonNull OpenGL gl, int program, int blockIndex, int bindingIndex) {
+                    gl.glUniformBlockBinding(program, blockIndex, bindingIndex);
+                }
+            };
         }
 
-        protected final TriFunction<OpenGL, Integer, String, Integer> getBlockIndex;
-        protected final QuadConsumer<OpenGL, Integer, Integer, Integer> configureBlockBinding;
+        private final GLExtension requiredExtension;
+        private final Map<String, Integer> bindings = new TreeMap<>();
 
-        protected final Map<String, Integer> bindings = new TreeMap<>();
-
-        public void add(int maxBindings, int bindingIndex, @NonNull String name) {
+        public final void add(@NotNegative int maxBindings, @NotNegative int bindingIndex, @NonNull String name) {
             checkIndex(maxBindings, bindingIndex);
             checkArg(!this.bindings.containsValue(bindingIndex), "binding index %s is already configured", bindingIndex);
             checkArg(!this.bindings.containsKey(name), "binding block named '%s' is already configured", name);
             this.bindings.put(name, bindingIndex);
         }
 
-        public void configurePostLink(OpenGL gl, int program) {
-            if (this.bindings.isEmpty()) {
+        public final void configurePostLink(@NonNull OpenGL gl, @NonNull ShaderProgram program) {
+            if (!gl.supports(this.requiredExtension)) {
+                //if the extension isn't supported, no bindings should be configured and the shader obviously can't contain any unbound blocks
+                checkState(this.bindings.isEmpty(), "extension %s isn't supported, but a binding was configured?!?", this.requiredExtension);
                 return;
             }
 
-            this.bindings.forEach((name, bindingIndex) -> {
-                int blockIndex = this.getBlockIndex.apply(gl, program, name);
-                if (blockIndex != GL_INVALID_INDEX) { //TODO: this check isn't useful, i'd prefer to do it the other way around (check if there are any unconfigured bindings)
-                    //checkArg(blockIndex != GL_INVALID_INDEX, "unable to find shader storage block: %s", name);
-                    this.configureBlockBinding.accept(gl, program, blockIndex, bindingIndex);
+            //iterate over all the the interface blocks of this sort in the program
+            String[] blockNames = this.getBlockNames(program);
+            List<String> unboundBlockNames = null;
+            for (int blockIndex = 0; blockIndex < blockNames.length; blockIndex++) {
+                String blockName = blockNames[blockIndex];
+                Integer bindingIndex = this.bindings.get(blockName);
+                if (bindingIndex != null) {
+                    //the interface block's binding index is defined, use it!
+                    this.setBlockBinding(gl, program.id(), blockIndex, bindingIndex);
+                } else {
+                    //the interface block isn't bound! remember it for later and keep going
+                    if (unboundBlockNames == null) {
+                        unboundBlockNames = new ArrayList<>();
+                    }
+                    unboundBlockNames.add(blockName);
                 }
-            });
+            }
+
+            if (unboundBlockNames != null) {
+                //at least one interface block isn't bound
+                throw new ShaderLinkageException("Program contains unbound " + this.requiredExtension + ": " + unboundBlockNames);
+            }
+
+            //Note that the builder may have defined additional bindings for interface blocks not present in the shader. Unfortunately, throwing
+            //  an exception in this case doesn't make much sense, since the "non-existent" interface block may actually have been defined in the
+            //  GLSL source code and then subsequently optimized away by the driver. Since there isn't any way for the program introspection API
+            //  to differentiate between something which has been optimized away and something which was never there in the first place, throwing
+            //  or logging an error would result in a lot of false positives.
         }
+
+        protected abstract String[] getBlockNames(@NonNull ShaderProgram program);
+
+        protected abstract void setBlockBinding(@NonNull OpenGL gl, int programId, int blockIndex, int bindingIndex);
     }
 }

@@ -19,16 +19,21 @@
 
 package net.daporkchop.fp2.gl.shader;
 
+import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeTarget;
 import net.daporkchop.fp2.gl.attribute.NewAttributeFormat;
 
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.EnumSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.function.Function;
 
+import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -43,6 +48,33 @@ public final class DrawShaderProgram extends ShaderProgram {
 
     DrawShaderProgram(Builder builder) throws ShaderLinkageException {
         super(builder);
+    }
+
+    private String[] getVertexAttributeNames() {
+        this.checkOpen();
+
+        if (!this.gl.supports(GLExtension.GL_ARB_program_interface_query)) {
+            return this.getVertexAttributeNamesLegacy();
+        }
+
+        String[] result = this.getActiveResourceNames(GL_PROGRAM_INPUT);
+        assert Arrays.equals(result, this.getVertexAttributeNamesLegacy()) //sanity check because i'm not entirely sure how reliable the old API is
+                : "Program introspection: " + Arrays.toString(result) + ", Legacy: " + Arrays.toString(this.getVertexAttributeNamesLegacy());
+        return result;
+    }
+
+    private String[] getVertexAttributeNamesLegacy() {
+        this.checkOpen();
+
+        int activeAttributes = this.gl.glGetProgrami(this.id, GL_ACTIVE_ATTRIBUTES);
+        int bufSize = this.gl.glGetProgrami(this.id, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH);
+        String[] result = new String[activeAttributes];
+        for (int attributeIndex = 0; attributeIndex < activeAttributes; attributeIndex++) {
+            int[] size = new int[1];
+            int[] type = new int[1];
+            result[attributeIndex] = this.gl.glGetActiveAttrib(this.id, attributeIndex, bufSize, size, type);
+        }
+        return result;
     }
 
     /**
@@ -101,20 +133,26 @@ public final class DrawShaderProgram extends ShaderProgram {
         }
 
         @Override
-        protected void configurePreLink(int program) {
+        protected void configurePreLink(DrawShaderProgram program) {
             super.configurePreLink(program);
-            this.vertexAttributes.configurePreLink(this.gl, program);
+            this.vertexAttributes.configurePreLink(program);
+        }
+
+        @Override
+        protected void configurePostLink(DrawShaderProgram program) {
+            super.configurePostLink(program);
+            this.vertexAttributes.configurePostLink(program);
         }
     }
 
     /**
      * @author DaPorkchop_
      */
-    protected static class VertexAttributeBindings {
-        protected final BitSet occupiedBindingLocations = new BitSet();
-        protected final Map<Integer, NewAttributeFormat<?>> bindings = new TreeMap<>();
-        protected final Map<Integer, Function<String, String>> nameFormatters = new TreeMap<>();
-        protected Boolean usedExplicit;
+    private static final class VertexAttributeBindings {
+        private final BitSet occupiedBindingLocations = new BitSet();
+        private final Map<Integer, NewAttributeFormat<?>> bindings = new TreeMap<>();
+        private final Map<Integer, Function<String, String>> nameFormatters = new TreeMap<>();
+        private Boolean usedExplicit;
 
         public int nextBindingIndex() {
             checkState(this.usedExplicit == null || !this.usedExplicit, "a vertex attribute was already registered with an explicit binding index");
@@ -141,12 +179,36 @@ public final class DrawShaderProgram extends ShaderProgram {
             }
         }
 
-        public void configurePreLink(OpenGL gl, int program) {
-            if (this.bindings.isEmpty()) {
-                return;
+        public void configurePreLink(DrawShaderProgram program) {
+            this.bindings.forEach((bindingIndex, format) -> {
+                Function<String, String> nameFormatter = this.nameFormatters.getOrDefault(bindingIndex, Function.identity());
+                format.bindVertexAttributeLocations(program.id(), nameFormatter, bindingIndex);
+            });
+        }
+
+        public void configurePostLink(DrawShaderProgram program) {
+            //iterate over all the the interface blocks of this sort in the program
+            Set<String> unboundAttributeNames = new TreeSet<>(Arrays.asList(program.getVertexAttributeNames()));
+
+            this.bindings.forEach((bindingIndex, format) -> {
+                Function<String, String> nameFormatter = this.nameFormatters.getOrDefault(bindingIndex, Function.identity());
+
+                //mark each vertex attribute name as bound
+                for (String name : format.vertexAttributeNames()) {
+                    unboundAttributeNames.remove(nameFormatter.apply(name));
+                }
+            });
+
+            if (!unboundAttributeNames.isEmpty()) {
+                //at least one vertex attribute location isn't bound
+                throw new ShaderLinkageException("Program contains unbound vertex attributes: " + unboundAttributeNames);
             }
 
-            this.bindings.forEach((bindingIndex, format) -> format.bindVertexAttributeLocations(program, this.nameFormatters.getOrDefault(bindingIndex, Function.identity()), bindingIndex));
+            //Note that the builder may have defined additional bindings for vertex attributes not present in the shader. Unfortunately, throwing
+            //  an exception in this case doesn't make much sense, since the "non-existent" vertex attribute may actually have been defined in the
+            //  GLSL source code and then subsequently optimized away by the driver. Since there isn't any way for the program introspection API
+            //  to differentiate between something which has been optimized away and something which was never there in the first place, throwing
+            //  or logging an error would result in a lot of false positives.
         }
     }
 }

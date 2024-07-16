@@ -47,6 +47,20 @@ public abstract class AbstractInterleavedAttributeFormat<STRUCT extends Attribut
     }
 
     @Override
+    public final String[] vertexAttributeNames() throws UnsupportedOperationException {
+        if (!this.supports(AttributeTarget.VERTEX_ATTRIBUTE)) {
+            throw new UnsupportedOperationException("Attribute format doesn't support " + AttributeTarget.VERTEX_ATTRIBUTE);
+        }
+
+        StructAttributeType structType = this.layoutInfo.rootType();
+        String[] result = new String[structType.fieldCount()];
+        for (int index = 0; index < structType.fieldCount(); index++) {
+            result[index] = structType.fieldName(index);
+        }
+        return result;
+    }
+
+    @Override
     public final void bindVertexAttributeLocations(int program, @NonNull Function<String, String> nameFormatter, int baseBindingIndex) throws UnsupportedOperationException {
         if (!this.supports(AttributeTarget.VERTEX_ATTRIBUTE)) {
             throw new UnsupportedOperationException("Attribute format doesn't support " + AttributeTarget.VERTEX_ATTRIBUTE);

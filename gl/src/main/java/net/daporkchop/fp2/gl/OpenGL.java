@@ -800,6 +800,23 @@ public abstract class OpenGL {
     /**
      * @since OpenGL 2.0
      */
+    public abstract int glGetAttribLocation(int program, @NonNull CharSequence name);
+
+    /**
+     * @since OpenGL 2.0
+     * @return the attribute name
+     */
+    public abstract String glGetActiveAttrib(int program, int index, int bufSize, @NonNull IntBuffer size, @NonNull IntBuffer type);
+
+    /**
+     * @since OpenGL 2.0
+     * @return the attribute name
+     */
+    public abstract String glGetActiveAttrib(int program, int index, int bufSize, @NonNull int[] size, @NonNull int[] type);
+
+    /**
+     * @since OpenGL 2.0
+     */
     public abstract int glGetUniformLocation(int program, @NonNull CharSequence name);
 
     /**
@@ -1054,6 +1071,20 @@ public abstract class OpenGL {
      * @since OpenGL 3.1
      */
     @GLRequires(GLExtension.GL_ARB_uniform_buffer_object)
+    public abstract int glGetActiveUniformBlocki(int program, int uniformBlockIndex, int pname);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_uniform_buffer_object GL_ARB_uniform_buffer_object}
+     * @since OpenGL 3.1
+     */
+    @GLRequires(GLExtension.GL_ARB_uniform_buffer_object)
+    public abstract String glGetActiveUniformBlockName(int program, int uniformBlockIndex, int bufSize);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_uniform_buffer_object GL_ARB_uniform_buffer_object}
+     * @since OpenGL 3.1
+     */
+    @GLRequires(GLExtension.GL_ARB_uniform_buffer_object)
     public abstract void glUniformBlockBinding(int program, int uniformBlockIndex, int uniformBlockBinding);
 
     /**
@@ -1078,6 +1109,13 @@ public abstract class OpenGL {
      */
     @GLRequires(GLExtension.GL_ARB_uniform_buffer_object)
     public abstract int glGetActiveUniformsi(int program, int uniformIndex, int pname);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_uniform_buffer_object GL_ARB_uniform_buffer_object}
+     * @since OpenGL 3.1
+     */
+    @GLRequires(GLExtension.GL_ARB_uniform_buffer_object)
+    public abstract String glGetActiveUniformName(int program, int uniformIndex, int bufSize);
 
     //
     //
@@ -1422,7 +1460,35 @@ public abstract class OpenGL {
      * @since OpenGL 4.3
      */
     @GLRequires(GLExtension.GL_ARB_program_interface_query)
+    public abstract int glGetProgramInterfacei(int program, int programInterface, int pname);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_program_interface_query GL_ARB_program_interface_query}
+     * @since OpenGL 4.3
+     */
+    @GLRequires(GLExtension.GL_ARB_program_interface_query)
     public abstract int glGetProgramResourceIndex(int program, int programInterface, @NonNull CharSequence name);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_program_interface_query GL_ARB_program_interface_query}
+     * @since OpenGL 4.3
+     */
+    @GLRequires(GLExtension.GL_ARB_program_interface_query)
+    public abstract void glGetProgramResourceiv(int program, int programInterface, int index, @NonNull IntBuffer props, IntBuffer length, @NonNull IntBuffer params);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_program_interface_query GL_ARB_program_interface_query}
+     * @since OpenGL 4.3
+     */
+    @GLRequires(GLExtension.GL_ARB_program_interface_query)
+    public abstract void glGetProgramResourceiv(int program, int programInterface, int index, @NonNull int[] props, int[] length, @NonNull int[] params);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_program_interface_query GL_ARB_program_interface_query}
+     * @since OpenGL 4.3
+     */
+    @GLRequires(GLExtension.GL_ARB_program_interface_query)
+    public abstract String glGetProgramResourceName(int program, int programInterface, int index, int bufSize);
 
     /**
      * @apiNote requires {@link GLExtension#GL_ARB_shader_storage_buffer_object GL_ARB_shader_storage_buffer_object}

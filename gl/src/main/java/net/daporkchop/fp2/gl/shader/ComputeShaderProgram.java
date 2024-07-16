@@ -25,6 +25,7 @@ import net.daporkchop.fp2.gl.GLExtensionSet;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.compute.ComputeWorkGroupCount;
 import net.daporkchop.fp2.gl.compute.ComputeWorkGroupSize;
+import net.daporkchop.lib.common.closeable.PResourceUtil;
 
 import java.util.EnumSet;
 
@@ -48,8 +49,12 @@ public final class ComputeShaderProgram extends ShaderProgram {
     ComputeShaderProgram(Builder builder) throws ShaderLinkageException {
         super(builder);
 
-        int[] workGroupSize = this.gl.glGetProgramiv(this.id, GL_COMPUTE_WORK_GROUP_SIZE, 3);
-        this.workGroupSize = new ComputeWorkGroupSize(workGroupSize[0], workGroupSize[1], workGroupSize[2]);
+        try {
+            int[] workGroupSize = this.gl.glGetProgramiv(this.id, GL_COMPUTE_WORK_GROUP_SIZE, 3);
+            this.workGroupSize = new ComputeWorkGroupSize(workGroupSize[0], workGroupSize[1], workGroupSize[2]);
+        } catch (Throwable t) {
+            throw PResourceUtil.closeSuppressed(t, this);
+        }
     }
 
     /**
