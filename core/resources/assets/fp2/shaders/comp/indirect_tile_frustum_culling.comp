@@ -22,10 +22,10 @@ layout(local_size_x = 256) in;
 
 #include <"fp2:shaders/common.glsl"> // T_SHIFT, T_VOXELS
 
-#include <"fp2:shaders/util/frustum.glsl">
+#include <"fp2:shaders/util/frustum.glsl"> // isBoxInFrustum()
 #include <"fp2:shaders/util/global_render_uniforms.glsl"> // u_positionFrac, u_positionFloor
-#include <"fp2:shaders/util/indirect_draw.glsl">
-#include <"fp2:shaders/util/vanilla_renderability.glsl">
+#include <"fp2:shaders/util/indirect_draw.glsl"> // DrawElementsIndirectCommand
+#include <"fp2:shaders/util/vanilla_renderability.glsl"> // isVanillaRenderableLevel0()
 
 layout(std140) readonly restrict buffer TILE_POSITIONS_SSBO_NAME {
     ivec4 b_tilePositions[];

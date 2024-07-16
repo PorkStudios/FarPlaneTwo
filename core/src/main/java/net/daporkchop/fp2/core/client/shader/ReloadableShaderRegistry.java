@@ -93,7 +93,7 @@ public final class ReloadableShaderRegistry implements AutoCloseable {
      * @param key     the unique key which identifies the program in the registry
      */
     public void unregister(@NonNull Object key) {
-        val program = this.programs.get(key);
+        val program = this.programs.remove(key);
         checkArg(program != null, "no registered program with key: %s", key);
 
         PResourceUtil.close(program.program);

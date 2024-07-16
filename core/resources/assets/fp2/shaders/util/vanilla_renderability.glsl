@@ -29,12 +29,10 @@
 
 // Vanilla renderability index
 
-//TODO: find a non-hacky way of implementing this
 layout(std430) readonly restrict buffer VANILLA_RENDERABILITY_SSBO_NAME {
-    ivec3 offset;
-    ivec3 size;
-
-    int _padding; //std430 layout is weird lol
+    //TODO: these two should probably be turned into uniforms, as drivers may not be able to infer that the values are dynamically uniform
+    uvec4 offset; //this is actually a uvec3
+    uvec4 size; //this is actually a uvec3
 
     uint flags[];
 } vanilla_renderability_state;
@@ -48,20 +46,23 @@ layout(std430) readonly restrict buffer VANILLA_RENDERABILITY_SSBO_NAME {
 // vanilla renderability tests
 
 bool isVanillaRenderableLevel0(in ivec3 chunkPos) {
-    ivec3 tableOffset = vanilla_renderability_state.offset;
-    ivec3 tableSize = vanilla_renderability_state.size;
+    uvec3 tableOffset = vanilla_renderability_state.offset.xyz;
+    uvec3 tableSize = vanilla_renderability_state.size.xyz;
 
     //offset the given chunk position by the table offset
-    ivec3 offsetPos = chunkPos + tableOffset;
+    uvec3 offsetPos = uvec3(chunkPos) + tableOffset;
 
-    //clamp coordinates to the table size (this is safe because the edges are always false)
-    offsetPos = min(max(offsetPos, 0), tableSize - 1);
+    //check if the chunk's coordinates are in-bounds (if not, the chunk is obviously not renderable by vanilla and can be skipped).
+    //  this is equivalent to (offsetPos < 0 || offsetPos >= tableSize).
+    if (any(greaterThanEqual(offsetPos, tableSize))) {
+        return false;
+    }
 
     //compute bit index in the table
-    int idx = (offsetPos.x * tableSize.y + offsetPos.y) * tableSize.z + offsetPos.z;
+    uint idx = (offsetPos.x * tableSize.y + offsetPos.y) * tableSize.z + offsetPos.z;
 
     //extract the bit at the given index
-    return (vanilla_renderability_state.flags[idx >> 5] & (1 << idx)) != 0;
+    return (vanilla_renderability_state.flags[idx >> 5u] & (1u << idx)) != 0u;
 }
 
 #endif //UTIL_VANILLA_RENDERABILITY
