@@ -23,19 +23,24 @@
 
 //
 //
+// UNIFORMS
+//
+//
+
+layout(std140) uniform U_VanillaRenderability {
+    uvec4 offset; //this is actually a uvec3
+    uvec4 size; //this is actually a uvec3
+} u_VanillaRenderability;
+
+//
+//
 // BUFFERS
 //
 //
 
-// Vanilla renderability index
-
-layout(std430) readonly restrict buffer VANILLA_RENDERABILITY_SSBO_NAME {
-    //TODO: these two should probably be turned into uniforms, as drivers may not be able to infer that the values are dynamically uniform
-    uvec4 offset; //this is actually a uvec3
-    uvec4 size; //this is actually a uvec3
-
+layout(std430) readonly restrict buffer B_VanillaRenderability {
     uint flags[];
-} vanilla_renderability_state;
+} b_VanillaRenderability;
 
 //
 //
@@ -46,8 +51,8 @@ layout(std430) readonly restrict buffer VANILLA_RENDERABILITY_SSBO_NAME {
 // vanilla renderability tests
 
 bool isVanillaRenderableLevel0(in ivec3 chunkPos) {
-    uvec3 tableOffset = vanilla_renderability_state.offset.xyz;
-    uvec3 tableSize = vanilla_renderability_state.size.xyz;
+    uvec3 tableOffset = u_VanillaRenderability.offset.xyz;
+    uvec3 tableSize = u_VanillaRenderability.size.xyz;
 
     //offset the given chunk position by the table offset
     uvec3 offsetPos = uvec3(chunkPos) + tableOffset;
@@ -62,7 +67,7 @@ bool isVanillaRenderableLevel0(in ivec3 chunkPos) {
     uint idx = (offsetPos.x * tableSize.y + offsetPos.y) * tableSize.z + offsetPos.z;
 
     //extract the bit at the given index
-    return (vanilla_renderability_state.flags[idx >> 5u] & (1u << idx)) != 0u;
+    return (b_VanillaRenderability.flags[idx >> 5u] & (1u << idx)) != 0u;
 }
 
 #endif //UTIL_VANILLA_RENDERABILITY

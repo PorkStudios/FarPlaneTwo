@@ -59,7 +59,10 @@ public class RenderConstants {
     public static final String INDIRECT_DRAWS_SSBO_NAME = "B_IndirectDraws";
     public static final int INDIRECT_DRAWS_SSBO_FIRST_BINDING = 3; // count=RENDER_PASS_COUNT
 
-    public static final String VANILLA_RENDERABILITY_SSBO_NAME = "B_VanillaRenderability";
+    public static final String VANILLA_RENDERABILITY_UBO_NAME = "U_VanillaRenderability"; //synced with resources/assets/fp2/shaders/util/vanilla_renderability.glsl
+    public static final int VANILLA_RENDERABILITY_UBO_BINDING = 1;
+
+    public static final String VANILLA_RENDERABILITY_SSBO_NAME = "B_VanillaRenderability"; //synced with resources/assets/fp2/shaders/util/vanilla_renderability.glsl
     public static final int VANILLA_RENDERABILITY_SSBO_BINDING = 7;
 
     /**

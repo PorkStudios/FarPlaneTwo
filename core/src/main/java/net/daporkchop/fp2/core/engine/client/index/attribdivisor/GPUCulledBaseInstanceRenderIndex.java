@@ -72,6 +72,7 @@ import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct> extends AbstractMultiDrawIndirectRenderIndex<VertexType> {
     public static final GLExtensionSet REQUIRED_EXTENSIONS = AbstractMultiDrawIndirectRenderIndex.REQUIRED_EXTENSIONS
             .addAll(ComputeShaderProgram.REQUIRED_EXTENSIONS)
+            .addAll(TerrainRenderingBlockedTracker.REQUIRED_EXTENSIONS_GPU)
             .add(GLExtension.GL_ARB_shader_storage_buffer_object)
             .add(GLExtension.GL_ARB_shader_image_load_store); //glMemoryBarrier()
 
@@ -103,6 +104,7 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
                 .addUBO(GLOBAL_UNIFORMS_UBO_BINDING, GLOBAL_UNIFORMS_UBO_NAME)
                 .addSSBO(TILE_POSITIONS_SSBO_BINDING, TILE_POSITIONS_SSBO_NAME)
                 .addSSBOs(INDIRECT_DRAWS_SSBO_FIRST_BINDING, RENDER_PASS_COUNT, INDIRECT_DRAWS_SSBO_NAME)
+                .addUBO(VANILLA_RENDERABILITY_UBO_BINDING, VANILLA_RENDERABILITY_UBO_NAME)
                 .addSSBO(VANILLA_RENDERABILITY_SSBO_BINDING, VANILLA_RENDERABILITY_SSBO_NAME)
                 .build();
     }
@@ -209,6 +211,7 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
                 .indexedBuffer(IndexedBufferTarget.UNIFORM_BUFFER, GLOBAL_UNIFORMS_UBO_BINDING)
                 .indexedBuffer(IndexedBufferTarget.SHADER_STORAGE_BUFFER, TILE_POSITIONS_SSBO_BINDING)
                 .indexedBuffers(IndexedBufferTarget.SHADER_STORAGE_BUFFER, INDIRECT_DRAWS_SSBO_FIRST_BINDING, RENDER_PASS_COUNT)
+                .indexedBuffer(IndexedBufferTarget.UNIFORM_BUFFER, VANILLA_RENDERABILITY_UBO_BINDING)
                 .indexedBuffer(IndexedBufferTarget.SHADER_STORAGE_BUFFER, VANILLA_RENDERABILITY_SSBO_BINDING));
     }
 
@@ -221,9 +224,8 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
         //       add a different mechanism to get the live camera position before we know the full render uniform state?
         this.gl.glBindBufferBase(GL_UNIFORM_BUFFER, GLOBAL_UNIFORMS_UBO_BINDING, this.globalUniformBuffer.buffer().id());
 
-        this.gl.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, VANILLA_RENDERABILITY_SSBO_BINDING, blockedTracker.glBuffer().id());
-
-        //TODO: i also need to bind the terrain rendering blocked tracker
+        //bind terrain rendering blocked tracker, so that level-0 tiles can be skipped if they overlap with vanilla terrain
+        blockedTracker.bindGlBuffers(this.gl, VANILLA_RENDERABILITY_UBO_BINDING, VANILLA_RENDERABILITY_SSBO_BINDING);
 
         val cullingShaderProgram = this.cullingShader.get();
         val uniformSetter = cullingShaderProgram.bindUnsafe(); // active program binding will be restored by StatePreserver

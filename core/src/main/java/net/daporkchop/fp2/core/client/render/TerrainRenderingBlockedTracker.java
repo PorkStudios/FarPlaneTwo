@@ -19,12 +19,15 @@
 
 package net.daporkchop.fp2.core.client.render;
 
-import lombok.Getter;
 import lombok.val;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.core.client.FP2Client;
+import net.daporkchop.fp2.gl.GLExtension;
+import net.daporkchop.fp2.gl.GLExtensionSet;
+import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.buffer.GLMutableBuffer;
+import net.daporkchop.fp2.gl.util.GLRequires;
 import net.daporkchop.lib.common.math.BinMath;
 import net.daporkchop.lib.common.math.PMath;
 import net.daporkchop.lib.unsafe.PUnsafe;
@@ -32,11 +35,21 @@ import net.daporkchop.lib.unsafe.PUnsafe;
 import java.util.Arrays;
 
 import static net.daporkchop.fp2.core.util.math.MathUtil.*;
+import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 
 /**
  * @author DaPorkchop_
  */
 public abstract class TerrainRenderingBlockedTracker implements AutoCloseable {
+    /**
+     * The set of {@link GLExtension OpenGL extensions} which must be supported in order for the terrain rendering blocked tracker to be usable on the GPU.
+     * <p>
+     * See {@code resources/assets/fp2/shaders/util/vanilla_renderability.glsl}.
+     */
+    public static final GLExtensionSet REQUIRED_EXTENSIONS_GPU = GLExtensionSet.empty()
+            .add(GLExtension.GL_ARB_uniform_buffer_object)
+            .add(GLExtension.GL_ARB_shader_storage_buffer_object); //TODO: we could probably emulate this functionality using texture buffers, but I doubt there's any hardware which could benefit from GPU culling while not supporting SSBOs (leaving aside Mac devices)
+
     protected static final long HEADERS_OFFSET = 0L;
     protected static final long FLAGS_OFFSET = HEADERS_OFFSET + 2L * (4 * Integer.BYTES);
 
@@ -110,8 +123,7 @@ public abstract class TerrainRenderingBlockedTracker implements AutoCloseable {
 
     private final DirectMemoryAllocator alloc = new DirectMemoryAllocator();
 
-    @Getter
-    private final GLMutableBuffer glBuffer;
+    private final GLMutableBuffer glBuffer; //this is null if REQUIRED_EXTENSIONS_GPU aren't supported
 
     private int offsetX;
     private int offsetY;
@@ -129,7 +141,8 @@ public abstract class TerrainRenderingBlockedTracker implements AutoCloseable {
                 "\n  Expected:     " + Arrays.toString(this.getExpectedFaceOffsets()) +
                 "\n  FACE_OFFSETS: " + Arrays.toString(FACE_OFFSETS);
 
-        this.glBuffer = GLMutableBuffer.create(client.gl());
+        OpenGL gl = client.gl();
+        this.glBuffer = gl.supports(REQUIRED_EXTENSIONS_GPU) ? GLMutableBuffer.create(gl) : null;
     }
 
     @Override
@@ -192,7 +205,10 @@ public abstract class TerrainRenderingBlockedTracker implements AutoCloseable {
     }
 
     protected final void postTransformFlags() {
-        this.glBuffer.upload(this.addr, this.sizeBytes, BufferUsage.STATIC_DRAW);
+        //glBuffer may be null if REQUIRED_EXTENSIONS_GPU aren't supported, in which case there's no point in updating the GPU buffer
+        if (this.glBuffer != null) {
+            this.glBuffer.upload(this.addr, this.sizeBytes, BufferUsage.STATIC_DRAW);
+        }
     }
 
     @SuppressWarnings("UnnecessaryUnaryMinus")
@@ -290,5 +306,21 @@ public abstract class TerrainRenderingBlockedTracker implements AutoCloseable {
         //this is carefully crafted so that HotSpot C2 on OpenJDK 8 on x86_64 can optimize this into just three instructions
         // by taking advantage of complex addressing
         return (PUnsafe.getInt(this.addr + FLAGS_OFFSET + ((long) idx >> 5 << 2)) & (1 << idx)) != 0;
+    }
+
+    /**
+     * Binds the buffer(s) containing vanilla renderability information to the OpenGL context.
+     *
+     * @param gl               the OpenGL context
+     * @param uboBindingIndex  the binding index for the vanilla renderability UBO
+     * @param ssboBindingIndex the binding index for the vanilla renderability SSBO
+     * @throws UnsupportedOperationException if the {@link #REQUIRED_EXTENSIONS_GPU required OpenGL extensions} aren't supported
+     */
+    @GLRequires({ GLExtension.GL_ARB_uniform_buffer_object, GLExtension.GL_ARB_shader_storage_buffer_object })
+    public final void bindGlBuffers(OpenGL gl, int uboBindingIndex, int ssboBindingIndex) throws UnsupportedOperationException {
+        gl.checkSupported(REQUIRED_EXTENSIONS_GPU); //TODO: check if glBuffer is null instead?
+
+        gl.glBindBufferRange(GL_UNIFORM_BUFFER, uboBindingIndex, this.glBuffer.id(), 0L, FLAGS_OFFSET);
+        gl.glBindBufferRange(GL_SHADER_STORAGE_BUFFER, ssboBindingIndex, this.glBuffer.id(), FLAGS_OFFSET, this.sizeBytes - FLAGS_OFFSET);
     }
 }
