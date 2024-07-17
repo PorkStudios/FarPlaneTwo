@@ -27,13 +27,17 @@ layout(local_size_x = 256) in;
 #include <"fp2:shaders/util/indirect_draw.glsl"> // DrawElementsIndirectCommand
 #include <"fp2:shaders/util/vanilla_renderability.glsl"> // isVanillaRenderableLevel0()
 
-layout(std140) readonly restrict buffer TILE_POSITIONS_SSBO_NAME {
+layout(std140) readonly restrict buffer B_TilePositions {
     ivec4 b_tilePositions[];
 };
 
-layout(std430) restrict buffer INDIRECT_DRAWS_SSBO_NAME {
+layout(std430) readonly restrict buffer B_RawDrawLists {
     DrawElementsIndirectCommand commands[];
-} b_drawCommandsByPass[RENDER_PASS_COUNT];
+} b_rawDrawLists[RENDER_PASS_COUNT];
+
+layout(std430) writeonly restrict buffer B_CulledDrawLists {
+    DrawElementsIndirectCommand commands[];
+} b_culledDrawLists[RENDER_PASS_COUNT];
 
 bool select(uint index) {
     ivec4 pos = b_tilePositions[index];
@@ -53,9 +57,11 @@ bool select(uint index) {
 
 void main() {
     uint index = gl_WorkGroupID.x * (gl_WorkGroupSize.x * gl_WorkGroupSize.y * gl_WorkGroupSize.z) + gl_LocalInvocationIndex;
-    uint mask = uint(-int(select(index)));
+    bool selected = select(index);
 
     for (uint pass = 0; pass < RENDER_PASS_COUNT; pass++) {
-        b_drawCommandsByPass[pass].commands[index].instanceCount &= mask;
+        b_culledDrawLists[pass].commands[index] = selected
+                ? b_rawDrawLists[pass].commands[index]
+                : DrawElementsIndirectCommand(0, 0, 0, 0, 0);
     }
 }
