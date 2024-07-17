@@ -37,6 +37,7 @@ import org.lwjgl.opengl.ARBDebugOutput;
 import org.lwjgl.opengl.ARBDirectStateAccess;
 import org.lwjgl.opengl.ARBDrawElementsBaseVertex;
 import org.lwjgl.opengl.ARBDrawInstanced;
+import org.lwjgl.opengl.ARBIndirectParameters;
 import org.lwjgl.opengl.ARBInstancedArrays;
 import org.lwjgl.opengl.ARBInvalidateSubdata;
 import org.lwjgl.opengl.ARBMultiBind;
@@ -67,6 +68,7 @@ import org.lwjgl.opengl.GL42C;
 import org.lwjgl.opengl.GL43C;
 import org.lwjgl.opengl.GL44C;
 import org.lwjgl.opengl.GL45C;
+import org.lwjgl.opengl.GL46C;
 import org.lwjgl.opengl.GLCapabilities;
 import org.lwjgl.opengl.GLDebugMessageARBCallback;
 import org.lwjgl.opengl.GLDebugMessageCallback;
@@ -134,6 +136,10 @@ public final class GLAPILWJGL3 extends OpenGL {
     private final boolean OpenGL45;
     private final boolean GL_ARB_direct_state_access;
 
+    // OpenGL 4.6
+    private final boolean OpenGL46;
+    private final boolean GL_ARB_indirect_parameters;
+
     // No OpenGL version
     private final boolean GL_ARB_debug_output;
     private final boolean GL_ARB_sparse_buffer;
@@ -184,6 +190,10 @@ public final class GLAPILWJGL3 extends OpenGL {
         // OpenGL 4.5
         this.OpenGL45 = capabilities.OpenGL45;
         this.GL_ARB_direct_state_access = !capabilities.OpenGL45 && capabilities.GL_ARB_direct_state_access;
+
+        // OpenGL 4.6
+        this.OpenGL46 = capabilities.OpenGL46;
+        this.GL_ARB_indirect_parameters = !capabilities.OpenGL46 && capabilities.GL_ARB_indirect_parameters;
 
         // No OpenGL version
         this.GL_ARB_debug_output = capabilities.GL_ARB_debug_output;
@@ -2550,6 +2560,38 @@ public final class GLAPILWJGL3 extends OpenGL {
             super.debugCheckError();
         } else {
             throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_direct_state_access));
+        }
+    }
+
+    //
+    //
+    // OpenGL 4.6
+    //
+    //
+
+    @Override
+    public void glMultiDrawArraysIndirectCount(int mode, long indirect, long drawcount, int maxdrawcount, int stride) {
+        if (this.OpenGL46) {
+            GL46C.glMultiDrawArraysIndirectCount(mode, indirect, drawcount, maxdrawcount, stride);
+            super.debugCheckError();
+        } else if (this.GL_ARB_indirect_parameters) {
+            ARBIndirectParameters.glMultiDrawArraysIndirectCountARB(mode, indirect, drawcount, maxdrawcount, stride);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_indirect_parameters));
+        }
+    }
+
+    @Override
+    public void glMultiDrawElementsIndirectCount(int mode, int type, long indirect, long drawcount, int maxdrawcount, int stride) {
+        if (this.OpenGL46) {
+            GL46C.glMultiDrawElementsIndirectCount(mode, type, indirect, drawcount, maxdrawcount, stride);
+            super.debugCheckError();
+        } else if (this.GL_ARB_indirect_parameters) {
+            ARBIndirectParameters.glMultiDrawElementsIndirectCountARB(mode, type, indirect, drawcount, maxdrawcount, stride);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_indirect_parameters));
         }
     }
 

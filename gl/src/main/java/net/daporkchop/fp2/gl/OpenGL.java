@@ -1812,6 +1812,26 @@ public abstract class OpenGL {
 
     //
     //
+    // OpenGL 4.6
+    //
+    //
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_indirect_parameters GL_ARB_indirect_parameters}
+     * @since OpenGL 4.6
+     */
+    @GLRequires(GLExtension.GL_ARB_indirect_parameters)
+    public abstract void glMultiDrawArraysIndirectCount(int mode, long indirect, long drawcount, int maxdrawcount, int stride);
+
+    /**
+     * @apiNote requires {@link GLExtension#GL_ARB_indirect_parameters GL_ARB_indirect_parameters}
+     * @since OpenGL 4.6
+     */
+    @GLRequires(GLExtension.GL_ARB_indirect_parameters)
+    public abstract void glMultiDrawElementsIndirectCount(int mode, int type, long indirect, long drawcount, int maxdrawcount, int stride);
+
+    //
+    //
     // No OpenGL version
     //
     //
