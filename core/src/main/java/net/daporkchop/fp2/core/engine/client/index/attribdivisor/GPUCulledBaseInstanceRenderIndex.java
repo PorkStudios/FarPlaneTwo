@@ -19,7 +19,6 @@
 
 package net.daporkchop.fp2.core.engine.client.index.attribdivisor;
 
-import com.google.common.collect.Multiset;
 import lombok.val;
 import net.daporkchop.fp2.api.FP2;
 import net.daporkchop.fp2.api.util.Identifier;
@@ -45,6 +44,7 @@ import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.UniformBuffer;
+import net.daporkchop.fp2.gl.buffer.BufferAccess;
 import net.daporkchop.fp2.gl.buffer.BufferTarget;
 import net.daporkchop.fp2.gl.buffer.GLMutableBuffer;
 import net.daporkchop.fp2.gl.buffer.IndexedBufferTarget;
@@ -60,10 +60,10 @@ import net.daporkchop.lib.common.closeable.PResourceUtil;
 
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.function.IntFunction;
 
 import static net.daporkchop.fp2.core.engine.client.RenderConstants.*;
 import static net.daporkchop.fp2.gl.OpenGLConstants.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * Render index implementation using MultiDrawIndirect with an attribute divisor for the tile position which does frustum culling on tiles on the GPU.
@@ -98,10 +98,10 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
     private static final int TILE_POSITIONS_SSBO_BINDING = 0;
 
     private static final String RAW_DRAW_LISTS_SSBO_NAME = "B_RawDrawLists"; //synced with resources/assets/fp2/shaders/comp/indirect_tile_frustum_culling.glsl
-    private static final int RAW_DRAW_LISTS_SSBO_FIRST_BINDING = TILE_POSITIONS_SSBO_BINDING + 1; // count=RENDER_PASS_COUNT
+    private static final int RAW_DRAW_LISTS_SSBO_BINDING = TILE_POSITIONS_SSBO_BINDING + 1;
 
     private static final String CULLED_DRAW_LISTS_SSBO_NAME = "B_CulledDrawLists"; //synced with resources/assets/fp2/shaders/comp/indirect_tile_frustum_culling.glsl
-    private static final int CULLED_DRAW_LISTS_SSBO_FIRST_BINDING = RAW_DRAW_LISTS_SSBO_FIRST_BINDING + RENDER_PASS_COUNT; // count=RENDER_PASS_COUNT
+    private static final int CULLED_DRAW_LISTS_SSBO_BINDING = RAW_DRAW_LISTS_SSBO_BINDING + 1;
 
     private static final String CULLING_SHADER_KEY = "indirect_tile_frustum_culling";
 
@@ -110,8 +110,8 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
                 .addShader(ShaderType.COMPUTE, Identifier.from(FP2.MODID, "shaders/comp/indirect_tile_frustum_culling.comp"))
                 .addUBO(GLOBAL_UNIFORMS_UBO_BINDING, GLOBAL_UNIFORMS_UBO_NAME)
                 .addSSBO(TILE_POSITIONS_SSBO_BINDING, TILE_POSITIONS_SSBO_NAME)
-                .addSSBOs(RAW_DRAW_LISTS_SSBO_FIRST_BINDING, RENDER_PASS_COUNT, RAW_DRAW_LISTS_SSBO_NAME)
-                .addSSBOs(CULLED_DRAW_LISTS_SSBO_FIRST_BINDING, RENDER_PASS_COUNT, CULLED_DRAW_LISTS_SSBO_NAME)
+                .addSSBO(RAW_DRAW_LISTS_SSBO_BINDING, RAW_DRAW_LISTS_SSBO_NAME)
+                .addSSBO(CULLED_DRAW_LISTS_SSBO_BINDING, CULLED_DRAW_LISTS_SSBO_NAME)
                 .addUBO(VANILLA_RENDERABILITY_UBO_BINDING, VANILLA_RENDERABILITY_UBO_NAME)
                 .addSSBO(VANILLA_RENDERABILITY_SSBO_BINDING, VANILLA_RENDERABILITY_SSBO_NAME)
                 .build();
@@ -152,7 +152,7 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
         val step = this.workGroupSize; //TODO: this will always be uninitialized if i stop hardcoding the value
         return new PerLevelRenderPosTable(level -> new SimpleRenderPosTable(this.gl, sharedVertexFormat, this.alloc, (oldCapacity, increment) -> {
             val newCapacity = Allocator.GrowFunction.sqrt2(step).grow(oldCapacity, increment);
-            this.levels.get(level).capacityChanged(this.gl, Math.toIntExact(newCapacity));
+            this.levels.get(level).capacityChanged(Math.toIntExact(newCapacity));
             return newCapacity;
         }));
     }
@@ -218,8 +218,8 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
                 .activeProgram()
                 .indexedBuffer(IndexedBufferTarget.UNIFORM_BUFFER, GLOBAL_UNIFORMS_UBO_BINDING)
                 .indexedBuffer(IndexedBufferTarget.SHADER_STORAGE_BUFFER, TILE_POSITIONS_SSBO_BINDING)
-                .indexedBuffers(IndexedBufferTarget.SHADER_STORAGE_BUFFER, RAW_DRAW_LISTS_SSBO_FIRST_BINDING, RENDER_PASS_COUNT)
-                .indexedBuffers(IndexedBufferTarget.SHADER_STORAGE_BUFFER, CULLED_DRAW_LISTS_SSBO_FIRST_BINDING, RENDER_PASS_COUNT)
+                .indexedBuffer(IndexedBufferTarget.SHADER_STORAGE_BUFFER, RAW_DRAW_LISTS_SSBO_BINDING)
+                .indexedBuffer(IndexedBufferTarget.SHADER_STORAGE_BUFFER, CULLED_DRAW_LISTS_SSBO_BINDING)
                 .indexedBuffer(IndexedBufferTarget.UNIFORM_BUFFER, VANILLA_RENDERABILITY_UBO_BINDING)
                 .indexedBuffer(IndexedBufferTarget.SHADER_STORAGE_BUFFER, VANILLA_RENDERABILITY_SSBO_BINDING));
     }
@@ -253,29 +253,15 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
                 continue;
             }
 
-            for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
-                val rawDrawListCPU = levelInstance.rawDrawListsCPU.get(pass);
-                val rawDrawListGPU = levelInstance.rawDrawListsGPU.get(pass);
-                val culledDrawListGPU = levelInstance.culledDrawListsGPU.get(pass);
-
-                //upload the rawDrawList for each render pass
-                rawDrawListGPU.upload(rawDrawListCPU.byteBufferView(), BufferUsage.STREAM_DRAW);
-
-                //orphan the culledDrawList for each render pass
-                culledDrawListGPU.capacity(capacity * DrawElementsIndirectCommand._SIZE, BufferUsage.STREAM_COPY);
-                //TODO: culledDrawListGPU.invalidateHint(BufferUsage.STREAM_COPY);
-            }
+            levelInstance.flushRawDrawLists();
+            levelInstance.orphanCulledDrawLists();
 
             //dispatch the compute shader
 
             //bind the tile positions array and the rawDrawLists+culledDrawLists for each render pass
             this.gl.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, TILE_POSITIONS_SSBO_BINDING, tilePosArray.bufferSSBO().id());
-            for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
-                this.gl.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, RAW_DRAW_LISTS_SSBO_FIRST_BINDING + pass, levelInstance.rawDrawListsGPU.get(pass).id());
-            }
-            for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
-                this.gl.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, CULLED_DRAW_LISTS_SSBO_FIRST_BINDING + pass, levelInstance.culledDrawListsGPU.get(pass).id());
-            }
+            this.gl.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, RAW_DRAW_LISTS_SSBO_BINDING, levelInstance.rawDrawListsGPU.id());
+            this.gl.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, CULLED_DRAW_LISTS_SSBO_BINDING, levelInstance.culledDrawListsGPU.id());
 
             //cull the tiles!
             this.gl.glDispatchCompute(capacity / this.workGroupSize, 1, 1);
@@ -292,12 +278,16 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
     @Override
     public void draw(DrawMode mode, int level, int pass, DrawShaderProgram shader, ShaderProgram.UniformSetter uniformSetter) {
         val levelInstance = this.levels.get(level);
-        val list = levelInstance.rawDrawListsCPU.get(pass);
-        if (list.size() != 0) {
+        if (levelInstance.capacityTiles != 0) {
             this.gl.glBindVertexArray(this.vaos.get(level, pass).id());
-            this.gl.glBindBuffer(GL_DRAW_INDIRECT_BUFFER, levelInstance.culledDrawListsGPU.get(pass).id());
+            this.gl.glBindBuffer(GL_DRAW_INDIRECT_BUFFER, levelInstance.culledDrawListsGPU.id());
             this.gl.glMemoryBarrier(GL_COMMAND_BARRIER_BIT);
-            this.gl.glMultiDrawElementsIndirect(mode.mode(), this.bakeStorage.indexFormat.type().type(), 0L, list.size(), 0);
+            this.gl.glMultiDrawElementsIndirect(
+                    mode.mode(),
+                    this.bakeStorage.indexFormat.type().type(),
+                    (long) pass * levelInstance.capacityTiles * DrawElementsIndirectCommand._SIZE,
+                    levelInstance.capacityTiles,
+                    0);
         }
     }
 
@@ -322,28 +312,62 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
      */
     private static final class Level implements AutoCloseable {
         final PassArray<DirectDrawElementsIndirectCommandList> rawDrawListsCPU;
-        final PassArray<GLMutableBuffer> rawDrawListsGPU;
-        final PassArray<GLMutableBuffer> culledDrawListsGPU;
+        final GLMutableBuffer rawDrawListsGPU;
+        final GLMutableBuffer culledDrawListsGPU;
+        int capacityTiles;
 
         public Level(OpenGL gl, DirectMemoryAllocator alloc) {
             try {
                 this.rawDrawListsCPU = new PassArray<>(pass -> new DirectDrawElementsIndirectCommandList(alloc));
 
-                IntFunction<GLMutableBuffer> drawListCreatorGPU = pass -> GLMutableBuffer.create(gl);
-                this.rawDrawListsGPU = new PassArray<>(drawListCreatorGPU);
-                this.culledDrawListsGPU = new PassArray<>(drawListCreatorGPU);
+                this.rawDrawListsGPU = GLMutableBuffer.create(gl);
+                this.culledDrawListsGPU = GLMutableBuffer.create(gl);
             } catch (Throwable t) {
                 throw PResourceUtil.closeSuppressed(t, this);
             }
         }
 
-        public void capacityChanged(OpenGL gl, int newCapacity) {
-            for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
-                val rawDrawListCPU = this.rawDrawListsCPU.get(pass);
-                rawDrawListCPU.appendZero(newCapacity - rawDrawListCPU.size());
+        public void capacityChanged(int newCapacityTiles) {
+            int newCapacityCommands = Math.multiplyExact(newCapacityTiles, RENDER_PASS_COUNT);
 
-                this.culledDrawListsGPU.get(pass).capacity(newCapacity * DrawElementsIndirectCommand._SIZE, BufferUsage.STREAM_COPY);
+            int oldCapacityTiles = this.capacityTiles;
+            int oldCapacityCommands = oldCapacityTiles * RENDER_PASS_COUNT;
+            checkState(newCapacityCommands > oldCapacityCommands, "newCapacityTiles=%s, oldCapacityTiles=%s", newCapacityTiles, oldCapacityTiles);
+            this.capacityTiles = newCapacityTiles;
+
+            //extend each of the rawDrawLists by the number of tiles added
+            for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
+                this.rawDrawListsCPU.get(pass).appendZero(newCapacityTiles - oldCapacityTiles);
             }
+
+            //resize both of the GPU-side buffers to RENDER_PASS_COUNT times the number of tiles added
+            this.rawDrawListsGPU.capacity((long) newCapacityCommands * DrawElementsIndirectCommand._SIZE, BufferUsage.STREAM_DRAW);
+            this.culledDrawListsGPU.capacity((long) newCapacityCommands * DrawElementsIndirectCommand._SIZE, BufferUsage.STREAM_COPY);
+        }
+
+        public void flushRawDrawLists() {
+            if (this.capacityTiles == 0) {
+                return;
+            }
+
+            //orphan the GPU-side rawDrawLists and fill it with new data
+            try (val mapping = this.rawDrawListsGPU.mapRange(BufferAccess.WRITE_ONLY, GL_MAP_INVALIDATE_BUFFER_BIT, 0L, this.rawDrawListsGPU.capacity())) {
+                for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
+                    //this technically won't work if the buffer capacity is greater than Integer.MAX_VALUE, but i don't care because there are never going to be 2 GiB command
+                    //  lists anyway (if there are, something has almost certainly gone horribly wrong)
+                    mapping.buffer.put(this.rawDrawListsCPU.get(pass).byteBufferView());
+                }
+                assert !mapping.buffer.hasRemaining();
+            }
+        }
+
+        public void orphanCulledDrawLists() {
+            if (this.capacityTiles == 0) {
+                return;
+            }
+
+            //orphan the GPU-side rawDrawLists
+            this.culledDrawListsGPU.capacity((long) this.capacityTiles * RENDER_PASS_COUNT * DrawElementsIndirectCommand._SIZE, BufferUsage.STREAM_DRAW);
         }
 
         @Override

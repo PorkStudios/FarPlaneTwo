@@ -32,15 +32,15 @@ layout(std140) readonly restrict buffer B_TilePositions {
 };
 
 layout(std430) readonly restrict buffer B_RawDrawLists {
-    DrawElementsIndirectCommand commands[];
-} b_rawDrawLists[RENDER_PASS_COUNT];
+    DrawElementsIndirectCommand b_rawDrawLists[];
+};
 
 layout(std430) writeonly restrict buffer B_CulledDrawLists {
-    DrawElementsIndirectCommand commands[];
-} b_culledDrawLists[RENDER_PASS_COUNT];
+    DrawElementsIndirectCommand b_culledDrawLists[];
+};
 
-bool select(uint index) {
-    ivec4 pos = b_tilePositions[index];
+bool select(uint tileIndex) {
+    ivec4 pos = b_tilePositions[tileIndex];
 
     // Level-0 tiles must not overlap vanilla renderable terrain
     if (pos.w == 0 && isVanillaRenderableLevel0(pos.xyz)) {
@@ -56,12 +56,13 @@ bool select(uint index) {
 }
 
 void main() {
-    uint index = gl_WorkGroupID.x * (gl_WorkGroupSize.x * gl_WorkGroupSize.y * gl_WorkGroupSize.z) + gl_LocalInvocationIndex;
-    bool selected = select(index);
+    uint tileIndex = gl_WorkGroupID.x * (gl_WorkGroupSize.x * gl_WorkGroupSize.y * gl_WorkGroupSize.z) + gl_LocalInvocationIndex;
+    uint stride = gl_NumWorkGroups.x * (gl_WorkGroupSize.x * gl_WorkGroupSize.y * gl_WorkGroupSize.z);
+
+    bool selected = select(tileIndex);
 
     for (uint pass = 0; pass < RENDER_PASS_COUNT; pass++) {
-        b_culledDrawLists[pass].commands[index] = selected
-                ? b_rawDrawLists[pass].commands[index]
-                : DrawElementsIndirectCommand(0, 0, 0, 0, 0);
+        uint commandIndex = tileIndex + pass * stride;
+        b_culledDrawLists[commandIndex] = selected ? b_rawDrawLists[commandIndex] : DrawElementsIndirectCommand(0, 0, 0, 0, 0);
     }
 }
