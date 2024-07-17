@@ -296,6 +296,7 @@ public abstract class GLBuffer extends GLObject.Normal {
                 this.gl.glUnmapBuffer(target.id());
             });
         }
+        this.mapped = false;
     }
 
     protected final void checkNotMapped() {
