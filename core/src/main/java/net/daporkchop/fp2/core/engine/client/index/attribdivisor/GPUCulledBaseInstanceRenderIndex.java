@@ -167,32 +167,27 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
 
                 if (baseInstance >= 0) {
                     for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
-                        val rawDrawListCPU = levelInstance.rawDrawListsCPU.get(pass);
-                        if (rawDrawListCPU.size() > baseInstance) {
-                            rawDrawListCPU.setZero(baseInstance);
-                        }
+                        levelInstance.rawDrawListsCPU.get(pass).setZero(baseInstance);
                     }
                 }
             } else {
                 //configure the render commands which will be used when selecting this
                 int baseInstance = this.renderPosTable.add(pos);
 
-                DrawElementsIndirectCommand[] commands = new DrawElementsIndirectCommand[RENDER_PASS_COUNT];
                 for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
-                    BakeStorage.Location location = locations[pass];
+                    val location = locations[pass];
+                    val command = new DrawElementsIndirectCommand();
                     if (location != null) {
-                        val command = commands[pass] = new DrawElementsIndirectCommand();
+                        //if the bake storage contains render data for the tile at this pass, configure the draw command accordingly
                         command.count = location.count;
                         command.baseInstance = baseInstance;
                         command.firstIndex = location.firstIndex;
                         command.baseVertex = location.baseVertex;
                         command.instanceCount = 1;
+                    } else {
+                        //otherwise, the draw command will be filled with zeroes
                     }
-                }
-
-                for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
-                    levelInstance.rawDrawListsCPU.get(pass)
-                            .set(baseInstance, commands[pass] == null ? new DrawElementsIndirectCommand() : commands[pass]);
+                    levelInstance.rawDrawListsCPU.get(pass).set(baseInstance, command);
                 }
             }
         };
@@ -367,7 +362,7 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
             }
 
             //orphan the GPU-side rawDrawLists
-            this.culledDrawListsGPU.capacity((long) this.capacityTiles * RENDER_PASS_COUNT * DrawElementsIndirectCommand._SIZE, BufferUsage.STREAM_DRAW);
+            this.culledDrawListsGPU.invalidateHint();
         }
 
         @Override

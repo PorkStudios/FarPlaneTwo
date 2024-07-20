@@ -30,7 +30,7 @@ import net.daporkchop.fp2.core.engine.client.index.attribdivisor.GPUCulledBaseIn
 import net.daporkchop.fp2.core.engine.client.struct.VoxelLocalAttributes;
 import net.daporkchop.fp2.gl.GLExtensionSet;
 import net.daporkchop.fp2.gl.OpenGL;
-import net.daporkchop.fp2.gl.attribute.NewUniformBuffer;
+import net.daporkchop.fp2.gl.attribute.UniformBuffer;
 
 /**
  * The different {@link RenderIndex} implementations.
@@ -50,7 +50,7 @@ public enum RenderIndexType {
         }
 
         @Override
-        public RenderIndex<VoxelLocalAttributes> createRenderIndex(OpenGL gl, BakeStorage<VoxelLocalAttributes> bakeStorage, DirectMemoryAllocator alloc, GlobalRenderer globalRenderer, NewUniformBuffer<GlobalUniformAttributes> globalUniformBuffer) {
+        public RenderIndex<VoxelLocalAttributes> createRenderIndex(OpenGL gl, BakeStorage<VoxelLocalAttributes> bakeStorage, DirectMemoryAllocator alloc, GlobalRenderer globalRenderer, UniformBuffer<GlobalUniformAttributes> globalUniformBuffer) {
             gl.checkSupported(this.requiredExtensions());
             return new GPUCulledBaseInstanceRenderIndex<>(gl, bakeStorage, alloc, globalRenderer.voxelInstancedAttributesFormat, globalRenderer, globalUniformBuffer);
         }
@@ -68,7 +68,7 @@ public enum RenderIndexType {
         }
 
         @Override
-        public RenderIndex<VoxelLocalAttributes> createRenderIndex(OpenGL gl, BakeStorage<VoxelLocalAttributes> bakeStorage, DirectMemoryAllocator alloc, GlobalRenderer globalRenderer, NewUniformBuffer<GlobalUniformAttributes> globalUniformBuffer) {
+        public RenderIndex<VoxelLocalAttributes> createRenderIndex(OpenGL gl, BakeStorage<VoxelLocalAttributes> bakeStorage, DirectMemoryAllocator alloc, GlobalRenderer globalRenderer, UniformBuffer<GlobalUniformAttributes> globalUniformBuffer) {
             gl.checkSupported(this.requiredExtensions());
             return new CPUCulledBaseInstanceRenderIndex<>(gl, bakeStorage, alloc, globalRenderer.voxelInstancedAttributesFormat);
         }
@@ -98,5 +98,5 @@ public enum RenderIndexType {
      * @return a new {@link RenderIndex} instance using this implementation
      * @throws UnsupportedOperationException if this render index implementation isn't supported
      */
-    public abstract RenderIndex<VoxelLocalAttributes> createRenderIndex(OpenGL gl, BakeStorage<VoxelLocalAttributes> bakeStorage, DirectMemoryAllocator alloc, GlobalRenderer globalRenderer, NewUniformBuffer<GlobalUniformAttributes> globalUniformBuffer);
+    public abstract RenderIndex<VoxelLocalAttributes> createRenderIndex(OpenGL gl, BakeStorage<VoxelLocalAttributes> bakeStorage, DirectMemoryAllocator alloc, GlobalRenderer globalRenderer, UniformBuffer<GlobalUniformAttributes> globalUniformBuffer);
 }
