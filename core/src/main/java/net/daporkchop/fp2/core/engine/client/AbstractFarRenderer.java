@@ -38,8 +38,6 @@ import net.daporkchop.fp2.core.engine.client.bake.storage.PerLevelBakeStorage;
 import net.daporkchop.fp2.core.engine.client.bake.storage.SimpleBakeStorage;
 import net.daporkchop.fp2.core.engine.client.index.RenderIndex;
 import net.daporkchop.fp2.core.engine.client.index.RenderIndexType;
-import net.daporkchop.fp2.core.engine.client.index.attribdivisor.CPUCulledBaseInstanceRenderIndex;
-import net.daporkchop.fp2.core.engine.client.index.attribdivisor.GPUCulledBaseInstanceRenderIndex;
 import net.daporkchop.fp2.core.engine.client.struct.VoxelLocalAttributes;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
@@ -55,8 +53,6 @@ import net.daporkchop.fp2.gl.draw.index.IndexFormat;
 import net.daporkchop.fp2.gl.state.StatePreserver;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
 import net.daporkchop.lib.common.misc.release.AbstractReleasable;
-
-import java.util.Map;
 
 import static net.daporkchop.fp2.core.debug.FP2Debug.*;
 import static net.daporkchop.fp2.gl.OpenGLConstants.*;
