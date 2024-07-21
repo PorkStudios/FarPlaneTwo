@@ -74,7 +74,7 @@ public class CWGVoxelGenerator1_12 extends AbstractDualContouringRoughVoxelGener
         for (int x = CACHE_MIN; x < CACHE_MAX; x++) {
             for (int y = CACHE_MIN; y < CACHE_MAX; y++) {
                 final int idx = cacheIndex(x, y, CACHE_MIN);
-                Arrays.fill(densityMap[0], idx, idx + CACHE_MAX, ((this.seaLevel() - 0.125d) - (baseY + (y << level))) * scaleFactor);
+                Arrays.fill(densityMap[0], idx, idx + CACHE_SIZE, ((this.seaLevel() - 0.125d) - (baseY + (y << level))) * scaleFactor);
             }
         }
 
