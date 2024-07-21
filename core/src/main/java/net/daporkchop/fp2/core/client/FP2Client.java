@@ -43,6 +43,7 @@ import net.daporkchop.lib.logging.Logger;
 import java.util.Optional;
 import java.util.function.Function;
 
+import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -77,6 +78,13 @@ public abstract class FP2Client {
         //require at least OpenGL 4.5
         clientThreadExecutor.run(() -> {
             OpenGL gl = OpenGL.forCurrent();
+
+            //write OpenGL context info to the log, because surprisingly vanilla doesn't do this unless the game actually crashes
+            this.fp2().log()
+                    .info("OpenGL context: " + gl)
+                    .info("OpenGL vendor: " + gl.glGetString(GL_VENDOR))
+                    .info("OpenGL renderer: " + gl.glGetString(GL_RENDERER));
+
             if (gl.version().compareTo(GLVersion.OpenGL45) < 0) {
                 this.fp2().unsupported("Your system does not support OpenGL 4.5!\nRequired by FarPlaneTwo.");
                 throw new UnsupportedOperationException("Your system does not support OpenGL 4.5!\nRequired by FarPlaneTwo.");
