@@ -72,8 +72,22 @@ public class FP2Debug {
             category.addBinding("regenerateTiles", "9", KeyModifier.CONTROL, () -> fp2.client().currentPlayer().ifPresent(player -> {
                 IFarClientContext context = player.activeContext();
                 if (context != null) {
-                    player.send(CPacketDebugDropAllTiles.create(context.sessionId()));
                     fp2.client().chat().debug("§aRegenerating all tiles");
+                    player.send(CPacketDebugDropAllTiles.create(context.sessionId()));
+                }
+            }));
+            category.addBinding("reloadRenderer", "9", KeyModifier.SHIFT, () -> fp2.client().currentPlayer().ifPresent(player -> {
+                IFarClientContext context = player.activeContext();
+                if (context != null) {
+                    fp2.client().chat().debug("§aReloading renderer");
+                    context.reloadRenderer();
+                }
+            }));
+            category.addBinding("rebakeTiles", "9", KeyModifier.ALT, () -> fp2.client().currentPlayer().ifPresent(player -> {
+                IFarClientContext context = player.activeContext();
+                if (context != null) {
+                    fp2.client().chat().debug("§aRe-baking tiles");
+                    context.rebakeTiles();
                 }
             }));
             category.addBinding("reversedZ", "8", () -> {

@@ -46,11 +46,11 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 // received/unloaded during the initial notification pass
 //TODO: handling in case an exception is thrown by a listener
 public final class FarTileCache extends AbstractReleasable implements Function<TilePos, ITileSnapshot> {
-    protected final Map<TilePos, ITileSnapshot> tiles = new ConcurrentHashMap<>();
-    protected final Collection<Listener> listeners = new CopyOnWriteArraySet<>();
+    private final Map<TilePos, ITileSnapshot> tiles = new ConcurrentHashMap<>();
+    private final Collection<Listener> listeners = new CopyOnWriteArraySet<>();
 
-    protected final AtomicReference<DebugStats.TileSnapshot> debug_tileStats = new AtomicReference<>(DebugStats.TileSnapshot.ZERO);
-    protected final LongAdder debug_nonEmptyTileCount = new LongAdder();
+    private final AtomicReference<DebugStats.TileSnapshot> debug_tileStats = new AtomicReference<>(DebugStats.TileSnapshot.ZERO);
+    private final LongAdder debug_nonEmptyTileCount = new LongAdder();
 
     /**
      * Adds the given tile into the cache.
@@ -158,7 +158,19 @@ public final class FarTileCache extends AbstractReleasable implements Function<T
         return positions.map(this);
     }
 
-    protected void debug_updateStats(ITileSnapshot prev, ITileSnapshot next) {
+    /**
+     * Gets every tile snapshot in this cache.
+     * <p>
+     * No synchronization guarantees are made - tiles added or removed after calling this method may or may not be visible in the returned stream.
+     *
+     * @return a {@link Stream} over every tile snapshot in this cache
+     */
+    public Stream<ITileSnapshot> getAllTiles() {
+        this.assertNotReleased();
+        return this.tiles.values().stream();
+    }
+
+    private void debug_updateStats(ITileSnapshot prev, ITileSnapshot next) {
         DebugStats.TileSnapshot prevStats = prev != null ? prev.stats() : DebugStats.TileSnapshot.ZERO;
         DebugStats.TileSnapshot nextStats = next != null ? next.stats() : DebugStats.TileSnapshot.ZERO;
 

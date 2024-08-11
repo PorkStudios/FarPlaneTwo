@@ -127,7 +127,7 @@ public final class BakeManager extends AbstractReleasable implements FarTileCach
         this.notifyOutputs(pos);
     }
 
-    protected void notifyOutputs(@NonNull TilePos pos) {
+    private void notifyOutputs(@NonNull TilePos pos) {
         //schedule all of the positions affected by the tile for re-bake
         this.baker.bakeOutputs(pos).forEach(outputPos -> {
             if (!outputPos.isLevelValid()) { //output tile is at an invalid zoom level, skip it

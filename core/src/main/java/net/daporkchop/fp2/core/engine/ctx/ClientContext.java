@@ -24,6 +24,7 @@ import lombok.NonNull;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.client.world.level.IFarLevelClient;
 import net.daporkchop.fp2.core.engine.api.ctx.IFarClientContext;
+import net.daporkchop.fp2.core.engine.client.BakeManager;
 import net.daporkchop.fp2.core.engine.client.FarTileCache;
 import net.daporkchop.fp2.core.engine.client.AbstractFarRenderer;
 import net.daporkchop.fp2.core.util.annotation.CalledFromAnyThread;
@@ -71,6 +72,16 @@ public class ClientContext implements IFarClientContext {
             oldRenderer.close();
 
             this.renderer = this.renderer0(null, this.config);
+        });
+    }
+
+    @Override
+    public synchronized void rebakeTiles() {
+        checkState(!this.closed, "already closed!");
+
+        this.level.workerManager().rootExecutor().execute(() -> {
+            BakeManager bakeManager = this.renderer.bakeManager();
+            bakeManager.tileCache().getAllTiles().parallel().forEach(bakeManager::tileModified);
         });
     }
 
