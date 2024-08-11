@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -164,8 +164,12 @@ public abstract class AbstractRenderStrategy<BO extends IBakeOutput, DB extends 
 
     @FEventHandler
     protected void onConfigChanged(FChangedEvent<FP2Config> event) {
-        this.lastMacrosSnapshot = null; //reversed-z settings may have changed, force command buffer rebuild on next frame
+        if (this.shouldConfigChangeCauseReload(event.prev(), event.next())) {
+            this.lastMacrosSnapshot = null; //reversed-z settings may have changed, force command buffer rebuild on next frame
+        }
     }
+
+    protected abstract boolean shouldConfigChangeCauseReload(FP2Config prev, FP2Config next);
 
     @FEventHandler
     protected void onReloadCommandBuffer(FReloadEvent<CommandBuffer> event) {

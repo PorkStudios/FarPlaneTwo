@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -20,6 +20,7 @@
 package net.daporkchop.fp2.core.engine.client.strategy;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.engine.EngineConstants;
 import net.daporkchop.fp2.core.engine.client.RenderConstants;
 import net.daporkchop.fp2.gl.command.BlendFactor;
@@ -53,6 +54,11 @@ public interface IMultipassRenderStrategy<BO extends IBakeOutput, DB extends Dra
         }
     }*/
 
+    default boolean shouldConfigChangeCauseReload(FP2Config prev, FP2Config next) {
+        return (FP2_DEBUG && prev.debug().backfaceCulling() != next.debug().backfaceCulling())
+                || prev.compatibility().reversedZ() != next.compatibility().reversedZ();
+    }
+
     default void render(@NonNull CommandBufferBuilder builder, @NonNull IRenderIndex<BO, DB, DC> index) {
         this.preRender(builder);
 
@@ -75,6 +81,8 @@ public interface IMultipassRenderStrategy<BO extends IBakeOutput, DB extends Dra
     default void preRender(@NonNull CommandBufferBuilder builder) {
         if (!FP2_DEBUG || fp2().globalConfig().debug().backfaceCulling()) {
             builder.cullEnable();
+        } else {
+            builder.cullDisable();
         }
 
         builder.depthEnable();
