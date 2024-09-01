@@ -43,11 +43,11 @@ import java.util.Collection;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
@@ -171,20 +171,20 @@ public final class TrackerManager implements FTileStorage.Listener, AutoCloseabl
         });
     }
 
-    void tileLoaded(@NonNull ITileHandle handle) {
-        new AbstractEntryOperation_VoidIfPresent(handle.pos()) {
+    void tileLoaded(@NonNull TilePos pos, ITileHandle handle, Throwable t) {
+        new AbstractEntryOperation_VoidIfPresent(pos) {
             @Override
             protected void run(@NonNull Entry entry) {
-                entry.tileLoaded(handle);
+                entry.tileLoaded(handle, t);
             }
         }.run();
     }
 
-    void tileUpdated(@NonNull ITileHandle handle) {
-        new AbstractEntryOperation_VoidIfPresent(handle.pos()) {
+    void tileUpdated(@NonNull TilePos pos, ITileHandle handle, Throwable t) {
+        new AbstractEntryOperation_VoidIfPresent(pos) {
             @Override
             protected void run(@NonNull Entry entry) {
-                entry.tileUpdated(handle);
+                entry.tileUpdated(handle, t);
             }
         }.run();
     }
@@ -333,7 +333,7 @@ public final class TrackerManager implements FTileStorage.Listener, AutoCloseabl
      * @author DaPorkchop_
      */
     @ToString(callSuper = true)
-    protected class Entry extends CompactReferenceArraySet<Tracker> implements Consumer<ITileHandle>, Function<ITileHandle, Void> {
+    protected class Entry extends CompactReferenceArraySet<Tracker> implements BiConsumer<ITileHandle, Throwable>, BiFunction<ITileHandle, Throwable, Void> {
         //we're using an ArraySet because even though all the operations run in O(n) time, it shouldn't ever be an issue - this should still be plenty fast even if there are
         //  hundreds of players tracking the same tile, and it uses a fair amount less memory than an equivalent HashSet.
         //we extend from CompactReferenceArraySet rather than having it as a field in order to minimize memory wasted by JVM object headers and the likes, as well as reduced
@@ -388,7 +388,7 @@ public final class TrackerManager implements FTileStorage.Listener, AutoCloseabl
 
             if (this.loadFuture == null) { //loadFuture isn't set, schedule a new one
                 this.loadFuture = TrackerManager.this.tileProvider.requestLoad(this.pos);
-                this.loadFuture.thenAccept(this);
+                this.loadFuture.whenComplete(this);
             }
         }
 
@@ -416,21 +416,34 @@ public final class TrackerManager implements FTileStorage.Listener, AutoCloseabl
          */
         @Override
         @Deprecated
-        public void accept(@NonNull ITileHandle handle) { //used by loadFuture
+        public void accept(ITileHandle handle, Throwable t) { //used by loadFuture
             if (Thread.holdsLock(this)) { //the thenAccept callback was fired immediately
-                this.tileLoaded(handle);
+                this.tileLoaded(handle, t);
             } else { //future was completed from another thread - go through TrackerManager in order to acquire a lock
-                TrackerManager.this.tileLoaded(handle);
+                TrackerManager.this.tileLoaded(this.pos, handle, t);
             }
         }
 
-        public void tileLoaded(@NonNull ITileHandle handle) {
-            checkState(handle.isInitialized(), "handle at %s hasn't been initialized yet!", this.pos);
-
+        public void tileLoaded(ITileHandle handle, Throwable t) {
             if (this.loadFuture != null) { //cancel loadFuture if needed
                 this.loadFuture.cancel(false);
                 this.loadFuture = null;
             }
+
+            if (t instanceof CancellationException) { //the tile load task was cancelled
+                //TODO: Should we add an assertion here to verify that this entry has no trackers?
+                return;
+            } else if (t != null) { //an exception occurred while loading the tile
+                super.forEach(tracker -> tracker.notifyFailed(this.pos));
+
+                //all of the trackers which were waiting for load have been notified of the failure as well
+                this.trackersWaitingForLoad = null;
+
+                TrackerManager.this.tileProvider.world().workerManager().handle(new RuntimeException("failed to load tile at " + this.pos, t));
+                return;
+            }
+
+            checkState(handle.isInitialized(), "handle at %s hasn't been initialized yet!", this.pos);
 
             ITileSnapshot snapshot = handle.snapshot();
             if (snapshot.timestamp() > this.lastSentTimestamp) { //tile is newer than the tile previously sent to all trackers, so we'll broadcast it to everyone
@@ -448,12 +461,26 @@ public final class TrackerManager implements FTileStorage.Listener, AutoCloseabl
             this.checkDirty(handle);
         }
 
-        public void tileUpdated(@NonNull ITileHandle handle) {
-            checkState(handle.isInitialized(), "handle at %s hasn't been initialized yet!", this.pos);
-
+        public void tileUpdated(ITileHandle handle, Throwable t) {
             checkState(this.updateFuture != null, "tileUpdated called at %s even though it wasn't scheduled for an update!", this.pos);
             checkState(this.updateFuture.isDone(), "tileUpdated called at %s even though it wasn't complete!", this.pos);
             this.updateFuture = null;
+
+            if (t instanceof CancellationException) { //the tile update task was cancelled
+                //TODO: Should we add an assertion here to verify that this entry has no trackers?
+                return;
+            } else if (t != null) { //an exception occurred while updating the tile
+                super.forEach(tracker -> {
+                    if (!this.isWaitingForLoad(tracker)) {
+                        tracker.notifyFailed(this.pos);
+                    }
+                });
+
+                TrackerManager.this.tileProvider.world().workerManager().handle(new RuntimeException("failed to update tile at " + this.pos, t));
+                return;
+            }
+
+            checkState(handle.isInitialized(), "handle at %s hasn't been initialized yet!", this.pos);
 
             ITileSnapshot snapshot = handle.snapshot();
             if (snapshot.timestamp() > this.lastSentTimestamp) { //tile is newer than the tile previously sent to all trackers, so we'll broadcast it to all the trackers
@@ -491,7 +518,7 @@ public final class TrackerManager implements FTileStorage.Listener, AutoCloseabl
 
             //schedule a new update task for this tile
             this.updateFuture = TrackerManager.this.tileProvider.requestUpdate(this.pos);
-            this.updateFuture.thenApply(this);
+            this.updateFuture.handle(this);
         }
 
         /**
@@ -499,11 +526,11 @@ public final class TrackerManager implements FTileStorage.Listener, AutoCloseabl
          */
         @Override
         @Deprecated
-        public Void apply(ITileHandle handle) { //used by updateFuture
+        public Void apply(ITileHandle handle, Throwable t) { //used by updateFuture
             if (Thread.holdsLock(this)) { //the thenApply callback was fired immediately
-                this.tileUpdated(handle);
+                this.tileUpdated(handle, t);
             } else { //future was completed from another thread - go through TrackerManager in order to acquire a lock
-                TrackerManager.this.tileUpdated(handle);
+                TrackerManager.this.tileUpdated(this.pos, handle, t);
             }
             return null;
         }
