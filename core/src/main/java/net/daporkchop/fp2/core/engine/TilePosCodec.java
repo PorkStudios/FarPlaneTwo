@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -46,7 +46,7 @@ public class TilePosCodec {
     /**
      * @return the size of a serialized {@link TilePos} instance, in bytes
      */
-    public static long size() {
+    public static int size() {
         return SIZE;
     }
 
@@ -242,5 +242,32 @@ public class TilePosCodec {
         int y = MathUtil.uninterleave3_1(interleavedLow, interleavedHigh);
         int z = MathUtil.uninterleave3_2(interleavedLow, interleavedHigh);
         return new TilePos(level, x, y, z);
+    }
+
+    //
+    // BYTE ARRAY HELPERS
+    //
+
+    /**
+     * Stores a {@link TilePos} instance into a new {@code byte[]}.
+     *
+     * @param pos   the {@link TilePos} instance
+     * @return a new {@code byte[]} containing the tile position
+     */
+    public static byte[] toByteArray(TilePos pos) {
+        byte[] arr = new byte[SIZE];
+        store(pos, arr, 0);
+        return arr;
+    }
+
+    /**
+     * Loads a {@link TilePos} instance from the given {@code byte[]}.
+     *
+     * @param arr the {@code byte[]} containing the tile position
+     * @return the decoded {@link TilePos} instance
+     */
+    public static TilePos fromByteArray(byte[] arr) {
+        checkArg(arr.length == SIZE, "incorrectly sized array: expected " + SIZE + ", contains %d", arr.length);
+        return load(arr, 0);
     }
 }

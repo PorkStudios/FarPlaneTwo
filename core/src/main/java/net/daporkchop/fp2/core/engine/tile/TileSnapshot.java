@@ -21,7 +21,6 @@ package net.daporkchop.fp2.core.engine.tile;
 
 import lombok.NonNull;
 import lombok.SneakyThrows;
-import net.daporkchop.fp2.common.util.DirectBufferHackery;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.Tile;
 import net.daporkchop.fp2.core.engine.TilePos;
@@ -32,7 +31,6 @@ import net.daporkchop.lib.common.annotation.BorrowOwnership;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.common.pool.recycler.Recycler;
 import net.daporkchop.lib.common.util.PorkUtil;
-import net.daporkchop.lib.unsafe.PCleaner;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.io.IOException;
@@ -53,6 +51,12 @@ public final class TileSnapshot extends AbstractTileSnapshot {
         return dataLength < 0
                 ? new TileSnapshot(pos, timestamp) //negative length means there's no data
                 : new TileSnapshot(pos, timestamp, dataAddr, dataLength);
+    }
+
+    public static TileSnapshot of(@NonNull TilePos pos, long timestamp, byte[] data) {
+        return data == null
+                ? new TileSnapshot(pos, timestamp) //null array means there's no data
+                : new TileSnapshot(pos, timestamp, data);
     }
 
     private TileSnapshot(@NonNull TilePos pos, @NonNull DataIn in) throws IOException {
@@ -88,6 +92,17 @@ public final class TileSnapshot extends AbstractTileSnapshot {
             //populate data buffer
             PUnsafe.requireTightlyPackedByteArrays();
             PUnsafe.copyMemory(null, dataAddr, this.data, PUnsafe.arrayByteBaseOffset(), dataLength);
+        }
+    }
+
+    private TileSnapshot(@NonNull TilePos pos, long timestamp, @NonNull byte[] data) {
+        super(pos, timestamp);
+
+        if (data.length == 0) { //special case for zero-length buffer which requires zero allocations
+            this.data = PorkUtil.EMPTY_BYTE_ARRAY;
+        } else {
+            //allocate buffer space
+            this.data = data.clone();
         }
     }
 
