@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -23,7 +23,8 @@ import lombok.NonNull;
 import net.daporkchop.fp2.core.engine.Tile;
 import net.daporkchop.fp2.core.engine.TilePos;
 
-import java.util.stream.Stream;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Converts uncompressed tile contents to renderable data which can be stored in an {@link IBakeOutputStorage}.
@@ -37,7 +38,7 @@ public interface IRenderBaker<B extends IBakeOutput> {
      * @param pos the position of the tile
      * @return Gets the positions of the tiles which use the tile at the given position as a bake input
      */
-    Stream<TilePos> bakeOutputs(@NonNull TilePos pos);
+    Set<TilePos> bakeOutputs(@NonNull TilePos pos);
 
     /**
      * Gets the positions of the tiles required in order to bake the tile at the given position.
@@ -45,7 +46,7 @@ public interface IRenderBaker<B extends IBakeOutput> {
      * @param pos the position of the tile to bake
      * @return the positions of the tiles required in order to bake the tile at the given position
      */
-    Stream<TilePos> bakeInputs(@NonNull TilePos pos);
+    List<TilePos> bakeInputs(@NonNull TilePos pos);
 
     /**
      * Bakes the tile data at the given position.

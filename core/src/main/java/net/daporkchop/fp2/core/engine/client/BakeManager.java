@@ -25,11 +25,11 @@ import net.daporkchop.fp2.core.engine.DirectTilePosAccess;
 import net.daporkchop.fp2.core.engine.Tile;
 import net.daporkchop.fp2.core.engine.TileCoordLimits;
 import net.daporkchop.fp2.core.engine.TilePos;
-import net.daporkchop.fp2.core.engine.tile.ITileSnapshot;
 import net.daporkchop.fp2.core.engine.client.bake.IBakeOutput;
 import net.daporkchop.fp2.core.engine.client.bake.IRenderBaker;
 import net.daporkchop.fp2.core.engine.client.index.IRenderIndex;
 import net.daporkchop.fp2.core.engine.client.strategy.IFarRenderStrategy;
+import net.daporkchop.fp2.core.engine.tile.ITileSnapshot;
 import net.daporkchop.fp2.core.util.threading.scheduler.NoFutureScheduler;
 import net.daporkchop.fp2.core.util.threading.scheduler.Scheduler;
 import net.daporkchop.lib.common.misc.release.AbstractReleasable;
@@ -49,6 +49,7 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
@@ -150,9 +151,20 @@ public final class BakeManager extends AbstractReleasable implements FarTileCach
         this.checkSelfRenderable(pos);
         this.checkParentsRenderable(pos);
 
-        ITileSnapshot[] compressedInputTiles = uncheckedCast(this.tileCache.getTilesCached(this.baker.bakeInputs(pos)).toArray(ITileSnapshot[]::new));
-        if (compressedInputTiles[0] == null //tile isn't cached any more
-            || compressedInputTiles[0].isEmpty()) { //tile data is empty
+        //get the list of input tile positions
+        List<TilePos> inputTilePositions = this.baker.bakeInputs(pos);
+
+        //double-check that the original (provoking) tile position is one of the inputs
+        int provokingTilePositionInputIndex = inputTilePositions.indexOf(pos);
+        checkState(provokingTilePositionInputIndex >= 0, "bake inputs for %s don't include the tile itself: %s", pos, inputTilePositions);
+
+        //get the input tile data from the tile cache
+        ITileSnapshot[] compressedInputTiles = this.tileCache.getTilesCached(inputTilePositions)
+                .toArray(new ITileSnapshot[inputTilePositions.size()]);
+
+        //fast path: if the provoking tile was unloaded or is empty, we can skip baking it entirely
+        if (compressedInputTiles[provokingTilePositionInputIndex] == null //tile isn't cached any more
+            || compressedInputTiles[provokingTilePositionInputIndex].isEmpty()) { //tile data is empty
             this.updateData(pos, Optional.empty());
             return;
         }

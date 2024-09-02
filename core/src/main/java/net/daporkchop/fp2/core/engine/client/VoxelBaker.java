@@ -21,26 +21,29 @@ package net.daporkchop.fp2.core.engine.client;
 
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.val;
 import net.daporkchop.fp2.api.world.level.BlockLevelConstants;
-import net.daporkchop.fp2.core.client.render.TextureUVs;
 import net.daporkchop.fp2.core.client.render.LevelRenderer;
+import net.daporkchop.fp2.core.client.render.TextureUVs;
+import net.daporkchop.fp2.core.engine.DirectTilePosAccess;
+import net.daporkchop.fp2.core.engine.Tile;
+import net.daporkchop.fp2.core.engine.TileData;
+import net.daporkchop.fp2.core.engine.TilePos;
+import net.daporkchop.fp2.core.engine.client.bake.IRenderBaker;
+import net.daporkchop.fp2.core.engine.client.bake.indexed.IndexedBakeOutput;
+import net.daporkchop.fp2.core.engine.client.struct.VoxelGlobalAttributes;
+import net.daporkchop.fp2.core.engine.client.struct.VoxelLocalAttributes;
 import net.daporkchop.fp2.core.util.GlobalAllocators;
 import net.daporkchop.fp2.gl.attribute.AttributeWriter;
 import net.daporkchop.fp2.gl.draw.index.IndexWriter;
-import net.daporkchop.fp2.core.engine.client.bake.IRenderBaker;
-import net.daporkchop.fp2.core.engine.client.bake.indexed.IndexedBakeOutput;
-import net.daporkchop.fp2.core.engine.TileData;
-import net.daporkchop.fp2.core.engine.TilePos;
-import net.daporkchop.fp2.core.engine.Tile;
-import net.daporkchop.fp2.core.engine.client.struct.VoxelGlobalAttributes;
-import net.daporkchop.fp2.core.engine.client.struct.VoxelLocalAttributes;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 
 import java.util.Arrays;
-import java.util.stream.Stream;
+import java.util.List;
+import java.util.Set;
 
-import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 import static net.daporkchop.fp2.core.engine.EngineConstants.*;
+import static net.daporkchop.fp2.core.util.math.MathUtil.*;
 
 /**
  * Shared code for baking voxel geometry.
@@ -65,41 +68,39 @@ public class VoxelBaker implements IRenderBaker<IndexedBakeOutput<VoxelGlobalAtt
     protected final boolean forceBlockyMesh;
 
     @Override
-    public Stream<TilePos> bakeOutputs(@NonNull TilePos srcPos) {
+    public Set<TilePos> bakeOutputs(@NonNull TilePos srcPos) {
         int x = srcPos.x();
         int y = srcPos.y();
         int z = srcPos.z();
         int level = srcPos.level();
 
-        TilePos[] arr = new TilePos[8];
-        int i = 0;
+        val res = DirectTilePosAccess.newPositionHashSet();
         for (int dx = -1; dx <= 0; dx++) {
             for (int dy = -1; dy <= 0; dy++) {
                 for (int dz = -1; dz <= 0; dz++) {
-                    arr[i++] = new TilePos(level, x + dx, y + dy, z + dz);
+                    res.add(new TilePos(level, x + dx, y + dy, z + dz));
                 }
             }
         }
-        return Stream.of(arr);
+        return res;
     }
 
     @Override
-    public Stream<TilePos> bakeInputs(@NonNull TilePos dstPos) {
+    public List<TilePos> bakeInputs(@NonNull TilePos dstPos) {
         int x = dstPos.x();
         int y = dstPos.y();
         int z = dstPos.z();
         int level = dstPos.level();
 
-        TilePos[] arr = new TilePos[8];
-        int i = 0;
+        val res = DirectTilePosAccess.newPositionArrayList();
         for (int dx = 0; dx <= 1; dx++) {
             for (int dy = 0; dy <= 1; dy++) {
                 for (int dz = 0; dz <= 1; dz++) {
-                    arr[i++] = new TilePos(level, x + dx, y + dy, z + dz);
+                    res.add(new TilePos(level, x + dx, y + dy, z + dz));
                 }
             }
         }
-        return Stream.of(arr);
+        return res;
     }
 
     @Override

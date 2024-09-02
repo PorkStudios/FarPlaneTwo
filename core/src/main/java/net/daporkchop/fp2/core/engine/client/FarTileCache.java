@@ -26,13 +26,14 @@ import net.daporkchop.fp2.core.engine.tile.CompressedTileSnapshot;
 import net.daporkchop.fp2.core.engine.tile.ITileSnapshot;
 import net.daporkchop.lib.common.misc.release.AbstractReleasable;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -45,7 +46,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 //TODO: this still has some race conditions - it's possible that addListener/removeListener might cause the listener to be notified twice for tiles that are
 // received/unloaded during the initial notification pass
 //TODO: handling in case an exception is thrown by a listener
-public final class FarTileCache extends AbstractReleasable implements Function<TilePos, ITileSnapshot> {
+public final class FarTileCache extends AbstractReleasable {
     private final Map<TilePos, ITileSnapshot> tiles = new ConcurrentHashMap<>();
     private final Collection<Listener> listeners = new CopyOnWriteArraySet<>();
 
@@ -153,9 +154,14 @@ public final class FarTileCache extends AbstractReleasable implements Function<T
      * @param positions the positions
      * @return the tiles at the given positions. Tiles that were not present in the cache will be {@code null}
      */
-    public Stream<ITileSnapshot> getTilesCached(@NonNull Stream<TilePos> positions) {
+    public List<ITileSnapshot> getTilesCached(@NonNull List<TilePos> positions) {
         this.assertNotReleased();
-        return positions.map(this);
+
+        List<ITileSnapshot> res = new ArrayList<>(positions.size());
+        for (TilePos pos : positions) {
+            res.add(this.getTileCached(pos));
+        }
+        return res;
     }
 
     /**
@@ -190,15 +196,6 @@ public final class FarTileCache extends AbstractReleasable implements Function<T
                 .totalSpace(snapshotStats.allocatedSpace())
                 .uncompressedSize(snapshotStats.uncompressedSize())
                 .build();
-    }
-
-    /**
-     * @deprecated internal API, do not touch!
-     */
-    @Override
-    @Deprecated
-    public ITileSnapshot apply(@NonNull TilePos pos) {
-        return this.getTileCached(pos);
     }
 
     @Override
