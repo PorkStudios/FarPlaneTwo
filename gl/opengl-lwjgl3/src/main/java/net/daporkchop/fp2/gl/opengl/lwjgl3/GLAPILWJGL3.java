@@ -77,6 +77,7 @@ import org.lwjgl.system.MemoryUtil;
 
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
+import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.Comparator;
@@ -260,8 +261,8 @@ public final class GLAPILWJGL3 extends OpenGL {
     }
 
     @Override
-    public void glGetBoolean(int pname, long data) {
-        GL11C.nglGetBooleanv(pname, data);
+    public void glGetBoolean(int pname, @NonNull ByteBuffer data) {
+        GL11C.glGetBooleanv(pname, data);
         super.debugCheckError();
     }
 
@@ -273,8 +274,8 @@ public final class GLAPILWJGL3 extends OpenGL {
     }
 
     @Override
-    public void glGetInteger(int pname, long data) {
-        GL11C.nglGetIntegerv(pname, data);
+    public void glGetInteger(int pname, @NonNull IntBuffer data) {
+        GL11C.glGetIntegerv(pname, data);
         super.debugCheckError();
     }
 
@@ -286,8 +287,8 @@ public final class GLAPILWJGL3 extends OpenGL {
     }
 
     @Override
-    public void glGetFloat(int pname, long data) {
-        GL11C.nglGetFloatv(pname, data);
+    public void glGetFloat(int pname, @NonNull FloatBuffer data) {
+        GL11C.glGetFloatv(pname, data);
         super.debugCheckError();
     }
 
@@ -299,8 +300,8 @@ public final class GLAPILWJGL3 extends OpenGL {
     }
 
     @Override
-    public void glGetDouble(int pname, long data) {
-        GL11C.nglGetDoublev(pname, data);
+    public void glGetDouble(int pname, @NonNull DoubleBuffer data) {
+        GL11C.glGetDoublev(pname, data);
         super.debugCheckError();
     }
 

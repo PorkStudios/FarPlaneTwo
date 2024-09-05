@@ -22,6 +22,7 @@ package net.daporkchop.fp2.gl.state;
 import lombok.AccessLevel;
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.common.util.DirectBufferHackery;
 import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.texture.TextureTarget;
@@ -134,7 +135,8 @@ public final class StatePreserver {
             gl.glPushAttrib(GL_ALL_ATTRIB_BITS);
             gl.glPushClientAttrib(GL_ALL_CLIENT_ATTRIB_BITS);
         } else {
-            long tmpBuffer = PUnsafe.allocateMemory(4 * Float.BYTES);
+            final int tmpBufferSizeBytes = 4 * Float.BYTES;
+            final long tmpBufferAddr = DirectBufferHackery.allocateTemporary(tmpBufferSizeBytes);
             try {
                 //manually back up the most important fixed-function state using a billion function calls
 
@@ -146,23 +148,23 @@ public final class StatePreserver {
                 this.blendFuncDstA = gl.glGetInteger(GL_BLEND_DST_ALPHA);
                 this.blendEquationRGB = gl.glGetInteger(GL_BLEND_EQUATION_RGB);
                 this.blendEquationA = gl.glGetInteger(GL_BLEND_EQUATION_ALPHA);
-                gl.glGetFloat(GL_BLEND_COLOR, tmpBuffer);
-                this.blendColorR = PUnsafe.getFloat(tmpBuffer + 0 * Float.BYTES);
-                this.blendColorG = PUnsafe.getFloat(tmpBuffer + 1 * Float.BYTES);
-                this.blendColorB = PUnsafe.getFloat(tmpBuffer + 2 * Float.BYTES);
-                this.blendColorA = PUnsafe.getFloat(tmpBuffer + 3 * Float.BYTES);
+                gl.glGetFloat(GL_BLEND_COLOR, DirectBufferHackery.wrapFloat(tmpBufferAddr, tmpBufferSizeBytes / Float.BYTES));
+                this.blendColorR = PUnsafe.getFloat(tmpBufferAddr + 0 * Float.BYTES);
+                this.blendColorG = PUnsafe.getFloat(tmpBufferAddr + 1 * Float.BYTES);
+                this.blendColorB = PUnsafe.getFloat(tmpBufferAddr + 2 * Float.BYTES);
+                this.blendColorA = PUnsafe.getFloat(tmpBufferAddr + 3 * Float.BYTES);
 
                 //fixed-function color state
-                gl.glGetFloat(GL_COLOR_CLEAR_VALUE, tmpBuffer);
-                this.clearColorR = PUnsafe.getFloat(tmpBuffer + 0 * Float.BYTES);
-                this.clearColorG = PUnsafe.getFloat(tmpBuffer + 1 * Float.BYTES);
-                this.clearColorB = PUnsafe.getFloat(tmpBuffer + 2 * Float.BYTES);
-                this.clearColorA = PUnsafe.getFloat(tmpBuffer + 3 * Float.BYTES);
-                gl.glGetBoolean(GL_COLOR_WRITEMASK, tmpBuffer);
-                this.colorMaskR = PUnsafe.getBoolean(tmpBuffer + 0);
-                this.colorMaskG = PUnsafe.getBoolean(tmpBuffer + 1);
-                this.colorMaskB = PUnsafe.getBoolean(tmpBuffer + 2);
-                this.colorMaskA = PUnsafe.getBoolean(tmpBuffer + 3);
+                gl.glGetFloat(GL_COLOR_CLEAR_VALUE, DirectBufferHackery.wrapFloat(tmpBufferAddr, tmpBufferSizeBytes / Float.BYTES));
+                this.clearColorR = PUnsafe.getFloat(tmpBufferAddr + 0 * Float.BYTES);
+                this.clearColorG = PUnsafe.getFloat(tmpBufferAddr + 1 * Float.BYTES);
+                this.clearColorB = PUnsafe.getFloat(tmpBufferAddr + 2 * Float.BYTES);
+                this.clearColorA = PUnsafe.getFloat(tmpBufferAddr + 3 * Float.BYTES);
+                gl.glGetBoolean(GL_COLOR_WRITEMASK, DirectBufferHackery.wrapByte(tmpBufferAddr, tmpBufferSizeBytes));
+                this.colorMaskR = PUnsafe.getBoolean(tmpBufferAddr + 0);
+                this.colorMaskG = PUnsafe.getBoolean(tmpBufferAddr + 1);
+                this.colorMaskB = PUnsafe.getBoolean(tmpBufferAddr + 2);
+                this.colorMaskA = PUnsafe.getBoolean(tmpBufferAddr + 3);
 
                 //fixed-function culling state
                 this.cullEnabled = gl.glIsEnabled(GL_CULL_FACE);
@@ -184,7 +186,7 @@ public final class StatePreserver {
                 this.stencilPassDepthFail = gl.glGetInteger(GL_STENCIL_PASS_DEPTH_FAIL);
                 this.stencilClearValue = gl.glGetInteger(GL_STENCIL_CLEAR_VALUE);
             } finally {
-                PUnsafe.freeMemory(tmpBuffer);
+                DirectBufferHackery.freeTemporary(tmpBufferAddr, tmpBufferSizeBytes);
             }
         }
 

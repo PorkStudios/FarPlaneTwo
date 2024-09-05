@@ -82,6 +82,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
+import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.Comparator;
@@ -335,8 +336,8 @@ public final class GLAPILWJGL2 extends OpenGL {
     }
 
     @Override
-    public void glGetBoolean(int pname, long data) {
-        GL11.glGetBoolean(pname, DirectBufferHackery.wrapByte(data, 16)); //LWJGL2 will throw a fit if the buffer doesn't have at least 16 elements
+    public void glGetBoolean(int pname, @NonNull ByteBuffer data) {
+        GL11.glGetBoolean(pname, DirectBufferHackery.wrapByte(DirectBufferHackery.address(data), 16)); //LWJGL2 will throw a fit if the buffer doesn't have at least 16 elements
         super.debugCheckError();
     }
 
@@ -348,8 +349,8 @@ public final class GLAPILWJGL2 extends OpenGL {
     }
 
     @Override
-    public void glGetInteger(int pname, long data) {
-        GL11.glGetInteger(pname, DirectBufferHackery.wrapInt(data, 16));
+    public void glGetInteger(int pname, @NonNull IntBuffer data) {
+        GL11.glGetInteger(pname, DirectBufferHackery.wrapInt(DirectBufferHackery.address(data), 16)); //LWJGL2 will throw a fit if the buffer doesn't have at least 16 elements
         super.debugCheckError();
     }
 
@@ -361,8 +362,8 @@ public final class GLAPILWJGL2 extends OpenGL {
     }
 
     @Override
-    public void glGetFloat(int pname, long data) {
-        GL11.glGetFloat(pname, DirectBufferHackery.wrapFloat(data, 16));
+    public void glGetFloat(int pname, @NonNull FloatBuffer data) {
+        GL11.glGetFloat(pname, DirectBufferHackery.wrapFloat(DirectBufferHackery.address(data), 16)); //LWJGL2 will throw a fit if the buffer doesn't have at least 16 elements
         super.debugCheckError();
     }
 
@@ -374,8 +375,8 @@ public final class GLAPILWJGL2 extends OpenGL {
     }
 
     @Override
-    public void glGetDouble(int pname, long data) {
-        GL11.glGetDouble(pname, DirectBufferHackery.wrapDouble(data, 16));
+    public void glGetDouble(int pname, @NonNull DoubleBuffer data) {
+        GL11.glGetDouble(pname, DirectBufferHackery.wrapDouble(DirectBufferHackery.address(data), 16)); //LWJGL2 will throw a fit if the buffer doesn't have at least 16 elements
         super.debugCheckError();
     }
 

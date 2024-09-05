@@ -34,6 +34,7 @@ import net.daporkchop.fp2.gl.util.debug.GLDebugOutputCallback;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
+import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.Arrays;
@@ -352,7 +353,7 @@ public abstract class OpenGL {
     /**
      * @since OpenGL 1.1
      */
-    public abstract void glGetBoolean(int pname, long data);
+    public abstract void glGetBoolean(int pname, @NonNull ByteBuffer data);
 
     /**
      * @since OpenGL 1.1
@@ -362,7 +363,7 @@ public abstract class OpenGL {
     /**
      * @since OpenGL 1.1
      */
-    public abstract void glGetInteger(int pname, long data);
+    public abstract void glGetInteger(int pname, @NonNull IntBuffer data);
 
     /**
      * @since OpenGL 1.1
@@ -372,7 +373,7 @@ public abstract class OpenGL {
     /**
      * @since OpenGL 1.1
      */
-    public abstract void glGetFloat(int pname, long data);
+    public abstract void glGetFloat(int pname, @NonNull FloatBuffer data);
 
     /**
      * @since OpenGL 1.1
@@ -382,7 +383,7 @@ public abstract class OpenGL {
     /**
      * @since OpenGL 1.1
      */
-    public abstract void glGetDouble(int pname, long data);
+    public abstract void glGetDouble(int pname, @NonNull DoubleBuffer data);
 
     /**
      * @since OpenGL 1.1
