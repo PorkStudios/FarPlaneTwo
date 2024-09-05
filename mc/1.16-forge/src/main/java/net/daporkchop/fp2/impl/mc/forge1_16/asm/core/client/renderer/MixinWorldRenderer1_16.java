@@ -20,10 +20,12 @@
 package net.daporkchop.fp2.impl.mc.forge1_16.asm.core.client.renderer;
 
 import com.mojang.blaze3d.matrix.MatrixStack;
+import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.client.MatrixHelper;
 import net.daporkchop.fp2.core.client.player.IFarPlayerClient;
 import net.daporkchop.fp2.core.client.render.GlobalUniformAttributes;
+import net.daporkchop.fp2.core.client.render.state.CameraState;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.engine.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.engine.client.AbstractFarRenderer;
@@ -44,6 +46,7 @@ import net.minecraft.client.renderer.culling.ClippingHelper;
 import net.minecraft.client.renderer.texture.AtlasTexture;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.vector.Matrix4f;
+import net.minecraft.util.math.vector.Vector3d;
 import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -58,16 +61,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.nio.FloatBuffer;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
-import static net.daporkchop.lib.common.math.PMath.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
-import static net.minecraft.util.math.MathHelper.*;
 import static org.lwjgl.opengl.GL11.*;
 
 /**
  * @author DaPorkchop_
  */
 @Mixin(WorldRenderer.class)
-public abstract class MixinWorldRenderer1_16 implements IMixinWorldRenderer1_16 {
+abstract class MixinWorldRenderer1_16 implements IMixinWorldRenderer1_16 {
     @Shadow
     private ClientWorld level;
 
@@ -76,7 +77,10 @@ public abstract class MixinWorldRenderer1_16 implements IMixinWorldRenderer1_16 
     private Minecraft minecraft;
 
     @Unique
-    protected TerrainRenderingBlockedTracker1_16 fp2_vanillaRenderabilityTracker;
+    private TerrainRenderingBlockedTracker1_16 fp2_vanillaRenderabilityTracker;
+
+    @Unique
+    private final CameraState fp2_cameraState = new CameraState();
 
     @Inject(method = "Lnet/minecraft/client/renderer/WorldRenderer;setLevel(Lnet/minecraft/client/world/ClientWorld;)V",
             at = @At(value = "FIELD",
@@ -101,6 +105,15 @@ public abstract class MixinWorldRenderer1_16 implements IMixinWorldRenderer1_16 
         if (this.fp2_vanillaRenderabilityTracker == null) {
             this.fp2_vanillaRenderabilityTracker = new TerrainRenderingBlockedTracker1_16(fp2().client());
         }
+    }
+
+    @Inject(method = "Lnet/minecraft/client/renderer/WorldRenderer;renderLevel(Lcom/mojang/blaze3d/matrix/MatrixStack;FJZLnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/GameRenderer;Lnet/minecraft/client/renderer/LightTexture;Lnet/minecraft/util/math/vector/Matrix4f;)V",
+            at = @At(value = "INVOKE_STRING",
+                    target = "Lnet/minecraft/profiler/IProfiler;popPush(Ljava/lang/String;)V",
+                    args = "ldc=captureFrustum"),
+            require = 1, allow = 1)
+    private void fp2_renderLevel_captureCameraState(MatrixStack matrixStack, float partialTicks, long finishTimeNanos, boolean shouldRenderBlockOutline, ActiveRenderInfo activeRenderInfo, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f projectionMatrix, CallbackInfo ci) {
+        this.fp2_cameraState(this.fp2_cameraState, fp2().client(), activeRenderInfo, matrixStack, projectionMatrix);
     }
 
     @Inject(method = "Lnet/minecraft/client/renderer/WorldRenderer;setupRender(Lnet/minecraft/client/renderer/ActiveRenderInfo;Lnet/minecraft/client/renderer/culling/ClippingHelper;ZIZ)V",
@@ -131,7 +144,7 @@ public abstract class MixinWorldRenderer1_16 implements IMixinWorldRenderer1_16 
             AbstractFarRenderer renderer;
             if (context != null && (renderer = context.renderer()) != null) {
                 this.level.getProfiler().push("fp2_prepare");
-                renderer.prepare((IFrustum) clippingHelper);
+                renderer.prepare(this.fp2_cameraState, (IFrustum) clippingHelper);
                 this.level.getProfiler().pop();
             }
         });
@@ -183,7 +196,7 @@ public abstract class MixinWorldRenderer1_16 implements IMixinWorldRenderer1_16 
                 this.level.getProfiler().push("fp2_render_post");
 
                 this.minecraft.getModelManager().getAtlas(AtlasTexture.LOCATION_BLOCKS).setBlurMipmap(false, this.minecraft.options.mipmapLevels > 0);
-                renderer.render(attributes -> this.fp2_globalUniformAttributes(attributes, activeRenderInfo, matrixStack, projectionMatrix));
+                renderer.render(this.fp2_cameraState, this::fp2_globalUniformAttributes);
                 this.minecraft.getModelManager().getAtlas(AtlasTexture.LOCATION_BLOCKS).restoreLastBlurMipmap();
 
                 this.level.getProfiler().pop();
@@ -192,16 +205,34 @@ public abstract class MixinWorldRenderer1_16 implements IMixinWorldRenderer1_16 
     }
 
     @Unique
-    private void fp2_globalUniformAttributes(GlobalUniformAttributes attributes, ActiveRenderInfo activeRenderInfo, MatrixStack matrixStack, Matrix4f projectionMatrix) {
+    private void fp2_cameraState(CameraState cameraState, FP2Client client, ActiveRenderInfo activeRenderInfo, MatrixStack matrixStack, Matrix4f projectionMatrix) {
+        //ModelViewProjection matrix
+        ArrayAllocator<float[]> alloc = GlobalAllocators.ALLOC_FLOAT.get();
+
+        float[] modelView = alloc.exactly(MatrixHelper.MAT4_ELEMENTS);
+        float[] projection = alloc.exactly(MatrixHelper.MAT4_ELEMENTS);
+        try {
+            //load both matrices into arrays
+            matrixStack.last().pose().store(FloatBuffer.wrap(modelView));
+            projectionMatrix.store(FloatBuffer.wrap(projection));
+
+            //configure the camera state
+            cameraState.setModelViewMatrixAndProjectionMatrix(modelView, projection, client);
+        } finally {
+            alloc.release(projection);
+            alloc.release(modelView);
+        }
+
+        { //position
+            Vector3d position = activeRenderInfo.getPosition();
+            cameraState.positionDouble(position.x(), position.y(), position.z());
+        }
+    }
+
+    @Unique
+    private void fp2_globalUniformAttributes(GlobalUniformAttributes attributes) {
         { //camera
-            this.fp2_initModelViewProjectionMatrix(attributes, matrixStack, projectionMatrix);
-
-            double x = activeRenderInfo.getPosition().x();
-            double y = activeRenderInfo.getPosition().y();
-            double z = activeRenderInfo.getPosition().z();
-
-            attributes.positionFloor(floorI(x), floorI(y), floorI(z));
-            attributes.positionFrac((float) frac(x), (float) frac(y), (float) frac(z));
+            this.fp2_cameraState.configureUniforms(attributes);
         }
 
         { //fog
@@ -233,33 +264,6 @@ public abstract class MixinWorldRenderer1_16 implements IMixinWorldRenderer1_16 
             //in OptiFine, both RenderType.CUTOUT and RenderType.CUTOUT_MIPPED are created with setAlphaState(CUTOUT_MIPPED_ALPHA), which
             //  corresponds to an alpha test reference value of 0.1.
             attributes.alphaRefCutout(OFHelper1_16.OF ? 0.1f : 0.5f);
-        }
-    }
-
-    @Unique
-    private void fp2_initModelViewProjectionMatrix(GlobalUniformAttributes attributes, MatrixStack matrixStack, Matrix4f projectionMatrix) {
-        ArrayAllocator<float[]> alloc = GlobalAllocators.ALLOC_FLOAT.get();
-
-        float[] modelView = alloc.exactly(MatrixHelper.MAT4_ELEMENTS);
-        float[] projection = alloc.exactly(MatrixHelper.MAT4_ELEMENTS);
-        float[] modelViewProjectionMatrix = alloc.exactly(MatrixHelper.MAT4_ELEMENTS);
-        try {
-            //load both matrices into arrays
-            matrixStack.last().pose().store(FloatBuffer.wrap(modelView));
-            projectionMatrix.store(FloatBuffer.wrap(projection));
-
-            //pre-multiply matrices on CPU to avoid having to do it per-vertex on GPU
-            MatrixHelper.multiply4x4(projection, modelView, modelViewProjectionMatrix);
-
-            //offset the projected points' depth values to avoid z-fighting with vanilla terrain
-            MatrixHelper.offsetDepth(modelViewProjectionMatrix, fp2().client().isReverseZ() ? -0.00001f : 0.00001f);
-
-            //store the matrix into the GlobalUniformAttributes
-            attributes.modelViewProjectionMatrix(modelViewProjectionMatrix);
-        } finally {
-            alloc.release(modelViewProjectionMatrix);
-            alloc.release(projection);
-            alloc.release(modelView);
         }
     }
 

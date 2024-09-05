@@ -25,9 +25,11 @@ import lombok.val;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.IFrustum;
+import net.daporkchop.fp2.core.client.render.state.CameraState;
 import net.daporkchop.fp2.core.client.render.GlobalUniformAttributes;
 import net.daporkchop.fp2.core.client.render.LevelRenderer;
 import net.daporkchop.fp2.core.client.render.RenderInfo;
+import net.daporkchop.fp2.core.client.render.state.CameraStateUniforms;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.EngineConstants;
 import net.daporkchop.fp2.core.engine.api.ctx.IFarClientContext;
@@ -74,6 +76,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
     protected final DirectMemoryAllocator alloc = new DirectMemoryAllocator(false);
     protected final BufferUploader bufferUploader;
 
+    protected final UniformBuffer<CameraStateUniforms> cameraStateUniformsBuffer;
     protected final UniformBuffer<GlobalUniformAttributes> globalUniformBuffer;
 
     protected final IRenderBaker<VertexType> baker;
@@ -102,6 +105,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
                     ? new UnsynchronizedMapBufferUploader(this.gl, 8 << 20) //8 MiB
                     : new ScratchCopyBufferUploader(this.gl);
 
+            this.cameraStateUniformsBuffer = this.fp2.client().globalRenderer().cameraStateUniformsFormat.createUniformBuffer();
             this.globalUniformBuffer = this.fp2.client().globalRenderer().globalUniformAttributeFormat.createUniformBuffer();
 
             this.baker = this.createBaker();
@@ -122,6 +126,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
                         .fixedFunctionDrawState()
                         .texture(TextureTarget.TEXTURE_2D, RenderConstants.TEXTURE_ATLAS_SAMPLER_BINDING)
                         .texture(TextureTarget.TEXTURE_2D, RenderConstants.LIGHTMAP_SAMPLER_BINDING)
+                        .indexedBuffer(IndexedBufferTarget.UNIFORM_BUFFER, RenderConstants.CAMERA_STATE_UNIFORMS_UBO_BINDING)
                         .indexedBuffer(IndexedBufferTarget.UNIFORM_BUFFER, RenderConstants.GLOBAL_UNIFORMS_UBO_BINDING)
                         .indexedBuffer(IndexedBufferTarget.SHADER_STORAGE_BUFFER, RenderConstants.TEXTURE_UVS_LISTS_SSBO_BINDING)
                         .indexedBuffer(IndexedBufferTarget.SHADER_STORAGE_BUFFER, RenderConstants.TEXTURE_UVS_QUADS_SSBO_BINDING);
@@ -140,6 +145,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
                 this.renderIndex,
                 this.bakeStorage,
                 this.globalUniformBuffer,
+                this.cameraStateUniformsBuffer,
                 this.bufferUploader,
                 this.alloc);
     }
@@ -158,8 +164,13 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
      *
      * @param frustum the current view frustum
      */
-    public void prepare(@NonNull IFrustum frustum) {
+    public void prepare(@NonNull CameraState cameraState, @NonNull IFrustum frustum) {
         this.bufferUploader.tick();
+
+        //update camera state uniforms
+        try (val uniforms = this.cameraStateUniformsBuffer.update()) {
+            cameraState.configureUniforms(uniforms);
+        }
 
         try (val ignored = this.statePreserverSelect.backup()) { //back up opengl state prior to selecting
             this.renderIndex.select(frustum, this.levelRenderer.blockedTracker());
@@ -171,7 +182,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
      *
      * @param renderInfo the current {@link RenderInfo} for setting per-frame uniform values
      */
-    public void render(@NonNull RenderInfo renderInfo) {
+    public void render(@NonNull CameraState cameraState, @NonNull RenderInfo renderInfo) {
         //set global uniforms
         try (val attributes = this.globalUniformBuffer.update()) {
             renderInfo.configureGlobalUniformAttributes(attributes);
@@ -202,6 +213,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
     }
 
     private void preRender() {
+        this.gl.glBindBufferBase(GL_UNIFORM_BUFFER, RenderConstants.CAMERA_STATE_UNIFORMS_UBO_BINDING, this.cameraStateUniformsBuffer.buffer().id());
         this.gl.glBindBufferBase(GL_UNIFORM_BUFFER, RenderConstants.GLOBAL_UNIFORMS_UBO_BINDING, this.globalUniformBuffer.buffer().id());
 
         val textureUVs = this.levelRenderer.textureUVs();
@@ -322,7 +334,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
                     //TODO: show a warning message ingame, somehow
                     this.fp2.log().warn("Render index implementation " + implementation + " is enabled, but your OpenGL implementation doesn't support it! " + this.gl.unsupportedMsg(implementation.requiredExtensions()));
                 } else {
-                    return implementation.createRenderIndex(this.gl, this.bakeStorage, this.alloc, this.fp2.client().globalRenderer(), this.globalUniformBuffer);
+                    return implementation.createRenderIndex(this.gl, this.bakeStorage, this.alloc, this.fp2.client().globalRenderer(), this.cameraStateUniformsBuffer);
                 }
             }
 

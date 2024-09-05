@@ -28,6 +28,7 @@ import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.client.render.GlobalRenderer;
 import net.daporkchop.fp2.core.client.render.GlobalUniformAttributes;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
+import net.daporkchop.fp2.core.client.render.state.CameraStateUniforms;
 import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.EngineConstants;
@@ -109,7 +110,7 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
     public static void registerShaders(GlobalRenderer globalRenderer) {
         globalRenderer.shaderRegistry.createCompute(CULLING_SHADER_KEY, globalRenderer.shaderMacros, null)
                 .addShader(ShaderType.COMPUTE, Identifier.from(FP2.MODID, "shaders/comp/indirect_tile_frustum_culling.comp"))
-                .addUBO(GLOBAL_UNIFORMS_UBO_BINDING, GLOBAL_UNIFORMS_UBO_NAME)
+                .addUBO(CAMERA_STATE_UNIFORMS_UBO_BINDING, CAMERA_STATE_UNIFORMS_UBO_NAME)
                 .addSSBO(TILE_POSITIONS_SSBO_BINDING, TILE_POSITIONS_SSBO_NAME)
                 .addSSBO(RAW_DRAW_LISTS_SSBO_BINDING, RAW_DRAW_LISTS_SSBO_NAME)
                 .addSSBO(CULLED_DRAW_LISTS_SSBO_BINDING, CULLED_DRAW_LISTS_SSBO_NAME)
@@ -118,18 +119,18 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
                 .build();
     }
 
-    private final UniformBuffer<GlobalUniformAttributes> globalUniformBuffer;
+    private final UniformBuffer<CameraStateUniforms> cameraStateUniformsBuffer;
 
     private final LevelArray<Level> levels;
 
     private final ReloadableShaderProgram<ComputeShaderProgram> cullingShader;
 
     public GPUCulledBaseInstanceRenderIndex(OpenGL gl, BakeStorage<VertexType> bakeStorage, DirectMemoryAllocator alloc, AttributeFormat<VoxelGlobalAttributes> sharedVertexFormat, GlobalRenderer globalRenderer,
-                                            UniformBuffer<GlobalUniformAttributes> globalUniformBuffer) {
+                                            UniformBuffer<CameraStateUniforms> cameraStateUniformsBuffer) {
         super(gl, bakeStorage, alloc, sharedVertexFormat);
 
         try {
-            this.globalUniformBuffer = globalUniformBuffer;
+            this.cameraStateUniformsBuffer = cameraStateUniformsBuffer;
 
             this.cullingShader = globalRenderer.shaderRegistry.get(CULLING_SHADER_KEY);
             //this.workGroupSize = this.cullingShader.get().workGroupSize().invocations();
@@ -212,7 +213,7 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
     public void preservedSelectState(StatePreserver.Builder builder) {
         super.preservedSelectState(builder
                 .activeProgram()
-                .indexedBuffer(IndexedBufferTarget.UNIFORM_BUFFER, GLOBAL_UNIFORMS_UBO_BINDING)
+                .indexedBuffer(IndexedBufferTarget.UNIFORM_BUFFER, CAMERA_STATE_UNIFORMS_UBO_BINDING)
                 .indexedBuffer(IndexedBufferTarget.SHADER_STORAGE_BUFFER, TILE_POSITIONS_SSBO_BINDING)
                 .indexedBuffer(IndexedBufferTarget.SHADER_STORAGE_BUFFER, RAW_DRAW_LISTS_SSBO_BINDING)
                 .indexedBuffer(IndexedBufferTarget.SHADER_STORAGE_BUFFER, CULLED_DRAW_LISTS_SSBO_BINDING)
@@ -224,10 +225,8 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
     public void select(IFrustum frustum, TerrainRenderingBlockedTracker blockedTracker) {
         this.renderPosTable.flush();
 
-        //bind global uniforms
-        // TODO: This will still contain the uniforms from the previous frame. Since we only use it to get the camera position into the shader, maybe we could
-        //       add a different mechanism to get the live camera position before we know the full render uniform state?
-        this.gl.glBindBufferBase(GL_UNIFORM_BUFFER, GLOBAL_UNIFORMS_UBO_BINDING, this.globalUniformBuffer.buffer().id());
+        //bind camera state uniforms
+        this.gl.glBindBufferBase(GL_UNIFORM_BUFFER, CAMERA_STATE_UNIFORMS_UBO_BINDING, this.cameraStateUniformsBuffer.buffer().id());
 
         //bind terrain rendering blocked tracker, so that level-0 tiles can be skipped if they overlap with vanilla terrain
         blockedTracker.bindGlBuffers(this.gl, VANILLA_RENDERABILITY_UBO_BINDING, VANILLA_RENDERABILITY_SSBO_BINDING);

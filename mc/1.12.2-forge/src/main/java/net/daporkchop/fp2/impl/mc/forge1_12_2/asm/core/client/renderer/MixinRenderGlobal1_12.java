@@ -22,6 +22,7 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.core.client.renderer;
 import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.engine.client.AbstractFarRenderer;
 import net.daporkchop.fp2.core.engine.api.ctx.IFarClientContext;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.client.network.IMixinEntityRenderer1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.client.renderer.IMixinRenderGlobal1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.client.TerrainRenderingBlockedTracker1_12;
 import net.minecraft.client.Minecraft;
@@ -46,16 +47,16 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 @Mixin(RenderGlobal.class)
-public abstract class MixinRenderGlobal1_12 implements IMixinRenderGlobal1_12 {
+abstract class MixinRenderGlobal1_12 implements IMixinRenderGlobal1_12 {
     @Shadow
-    public WorldClient world;
+    private WorldClient world;
 
     @Shadow
     @Final
-    public Minecraft mc;
+    private Minecraft mc;
 
     @Unique
-    protected TerrainRenderingBlockedTracker1_12 fp2_vanillaRenderabilityTracker;
+    private TerrainRenderingBlockedTracker1_12 fp2_vanillaRenderabilityTracker;
 
     @Inject(method = "Lnet/minecraft/client/renderer/RenderGlobal;setWorldAndLoadRenderers(Lnet/minecraft/client/multiplayer/WorldClient;)V",
             at = @At(value = "FIELD",
@@ -110,7 +111,7 @@ public abstract class MixinRenderGlobal1_12 implements IMixinRenderGlobal1_12 {
             AbstractFarRenderer renderer;
             if (context != null && (renderer = context.renderer()) != null) {
                 this.mc.profiler.startSection("fp2_prepare");
-                renderer.prepare((IFrustum) camera);
+                renderer.prepare(((IMixinEntityRenderer1_12) this.mc.entityRenderer).fp2_cameraState(), (IFrustum) camera);
                 this.mc.profiler.endSection();
             }
         });

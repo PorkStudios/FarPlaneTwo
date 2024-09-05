@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,7 +15,6 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.client;
@@ -154,5 +153,16 @@ public class MatrixHelper {
         swap(mat, matrixIndex(1, 2), matrixIndex(2, 1));
         swap(mat, matrixIndex(1, 3), matrixIndex(3, 1));
         swap(mat, matrixIndex(2, 3), matrixIndex(3, 2));
+    }
+
+    /**
+     * Copies a 4x4 matrix from the given source array into the given destination array.
+     *
+     * @param src the source array
+     * @param dst the destination array
+     */
+    public static void copy4x4(float[] src, float[] dst) {
+        //this should be able to handle all bounds checks and whatnot better than i could
+        System.arraycopy(src, 0, dst, 0, MAT4_ELEMENTS);
     }
 }

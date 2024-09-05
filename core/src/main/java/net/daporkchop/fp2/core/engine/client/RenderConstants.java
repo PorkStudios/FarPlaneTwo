@@ -42,8 +42,11 @@ public class RenderConstants {
     public static final String LIGHTMAP_SAMPLER_NAME = "t_lightmap";
     public static final int LIGHTMAP_SAMPLER_BINDING = 1;
 
+    public static final String CAMERA_STATE_UNIFORMS_UBO_NAME = "U_CameraStateUniforms";
+    public static final int CAMERA_STATE_UNIFORMS_UBO_BINDING = 0;
+
     public static final String GLOBAL_UNIFORMS_UBO_NAME = "U_GlobalUniforms";
-    public static final int GLOBAL_UNIFORMS_UBO_BINDING = 0;
+    public static final int GLOBAL_UNIFORMS_UBO_BINDING = 1;
 
     public static final String TEXTURE_UVS_LISTS_SSBO_NAME = "B_TexQuadLists";
     public static final int TEXTURE_UVS_LISTS_SSBO_BINDING = 0;

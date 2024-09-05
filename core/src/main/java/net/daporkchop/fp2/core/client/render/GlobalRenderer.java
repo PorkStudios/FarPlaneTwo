@@ -22,6 +22,7 @@ package net.daporkchop.fp2.core.client.render;
 import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.IFrustum;
+import net.daporkchop.fp2.core.client.render.state.CameraStateUniforms;
 import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;
 import net.daporkchop.fp2.core.client.shader.ReloadableShaderRegistry;
 import net.daporkchop.fp2.core.client.shader.ShaderMacros;
@@ -53,6 +54,7 @@ import static net.daporkchop.fp2.core.debug.FP2Debug.*;
 public final class GlobalRenderer {
     public final ReloadableShaderRegistry shaderRegistry;
 
+    public final AttributeFormat<CameraStateUniforms> cameraStateUniformsFormat;
     public final AttributeFormat<GlobalUniformAttributes> globalUniformAttributeFormat;
     public final AttributeFormat<IFrustum.ClippingPlanes> frustumClippingPlanesUBOFormat;
 
@@ -74,6 +76,7 @@ public final class GlobalRenderer {
         try {
             this.shaderRegistry = new ReloadableShaderRegistry(fp2);
 
+            this.cameraStateUniformsFormat = AttributeFormat.get(gl, CameraStateUniforms.class, AttributeTarget.UBO);
             this.globalUniformAttributeFormat = AttributeFormat.get(gl, GlobalUniformAttributes.class, AttributeTarget.UBO);
             this.frustumClippingPlanesUBOFormat = AttributeFormat.get(gl, IFrustum.ClippingPlanes.class, AttributeTarget.UBO);
 
@@ -97,6 +100,8 @@ public final class GlobalRenderer {
                     .define("MAX_CLIPPING_PLANES", IFrustum.MAX_CLIPPING_PLANES)
                     .define("FP2_DEBUG", FP2_DEBUG)
 
+                    .define("CAMERA_STATE_UNIFORMS_UBO_NAME", RenderConstants.CAMERA_STATE_UNIFORMS_UBO_NAME)
+                    .define("CAMERA_STATE_UNIFORMS_UBO_LAYOUT", this.cameraStateUniformsFormat.interfaceBlockLayoutName())
                     .define("GLOBAL_UNIFORMS_UBO_NAME", RenderConstants.GLOBAL_UNIFORMS_UBO_NAME)
                     .define("GLOBAL_UNIFORMS_UBO_LAYOUT", this.globalUniformAttributeFormat.interfaceBlockLayoutName())
                     .define("TEXTURE_ATLAS_SAMPLER_NAME", RenderConstants.TEXTURE_ATLAS_SAMPLER_NAME)
@@ -136,6 +141,7 @@ public final class GlobalRenderer {
 
     private static <B extends ShaderProgram.Builder<?, B>> B commonShaderSetup(B builder) {
         return builder
+                .addUBO(RenderConstants.CAMERA_STATE_UNIFORMS_UBO_BINDING, RenderConstants.CAMERA_STATE_UNIFORMS_UBO_NAME)
                 .addUBO(RenderConstants.GLOBAL_UNIFORMS_UBO_BINDING, RenderConstants.GLOBAL_UNIFORMS_UBO_NAME)
                 .addSSBO(RenderConstants.TEXTURE_UVS_LISTS_SSBO_BINDING, RenderConstants.TEXTURE_UVS_LISTS_SSBO_NAME)
                 .addSSBO(RenderConstants.TEXTURE_UVS_QUADS_SSBO_BINDING, RenderConstants.TEXTURE_UVS_QUADS_SSBO_NAME)

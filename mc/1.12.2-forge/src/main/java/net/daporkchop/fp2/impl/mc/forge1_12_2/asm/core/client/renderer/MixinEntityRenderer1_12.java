@@ -20,14 +20,17 @@
 package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.core.client.renderer;
 
 import net.daporkchop.fp2.common.util.DirectBufferHackery;
+import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.MatrixHelper;
 import net.daporkchop.fp2.core.client.player.IFarPlayerClient;
+import net.daporkchop.fp2.core.client.render.state.CameraState;
 import net.daporkchop.fp2.core.client.render.GlobalUniformAttributes;
 import net.daporkchop.fp2.core.config.FP2Config;
-import net.daporkchop.fp2.core.engine.client.AbstractFarRenderer;
 import net.daporkchop.fp2.core.engine.api.ctx.IFarClientContext;
+import net.daporkchop.fp2.core.engine.client.AbstractFarRenderer;
 import net.daporkchop.fp2.core.util.GlobalAllocators;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.ATMinecraft1_12;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.client.network.IMixinEntityRenderer1_12;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
@@ -52,8 +55,6 @@ import java.nio.FloatBuffer;
 import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.fp2.impl.mc.forge1_12_2.compat.of.OFHelper1_12.*;
-import static net.daporkchop.lib.common.math.PMath.*;
-import static net.minecraft.util.math.MathHelper.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL12.*;
 
@@ -61,7 +62,7 @@ import static org.lwjgl.opengl.GL12.*;
  * @author DaPorkchop_
  */
 @Mixin(EntityRenderer.class)
-public abstract class MixinEntityRenderer1_12 {
+abstract class MixinEntityRenderer1_12 implements IMixinEntityRenderer1_12 {
     @Shadow
     @Final
     private Minecraft mc;
@@ -72,10 +73,22 @@ public abstract class MixinEntityRenderer1_12 {
     @Unique
     private final FloatBuffer fp2_tempMatrix = BufferUtils.createFloatBuffer(MatrixHelper.MAT4_ELEMENTS);
 
+    @Unique
+    private final CameraState fp2_cameraState = new CameraState();
+
     @Inject(method = "Lnet/minecraft/client/renderer/EntityRenderer;renderWorldPass(IFJ)V",
             at = @At("HEAD"))
     private void fp2_renderWorldPass_pre(int pass, float partialTicks, long finishTimeNano, CallbackInfo ci) {
         fp2().client().enableReverseZ();
+    }
+
+    @Inject(method = "Lnet/minecraft/client/renderer/EntityRenderer;renderWorldPass(IFJ)V",
+            at = @At(value = "INVOKE",
+                    target = "Lnet/minecraft/client/renderer/culling/ICamera;setPosition(DDD)V",
+                    shift = At.Shift.AFTER),
+            require = 1, allow = 1)
+    private void fp2_renderWorldPass_captureCameraState(int pass, float partialTicks, long finishTimeNano, CallbackInfo ci) {
+        this.fp2_cameraState(this.fp2_cameraState, fp2().client(), partialTicks);
     }
 
     @Inject(method = "Lnet/minecraft/client/renderer/EntityRenderer;renderWorldPass(IFJ)V",
@@ -97,7 +110,8 @@ public abstract class MixinEntityRenderer1_12 {
                 ((ATMinecraft1_12) this.mc).getTextureMapBlocks().setBlurMipmapDirect(false, this.mc.gameSettings.mipmapLevels > 0);
 
                 //actually render stuff!
-                renderer.render(attributes -> this.fp2_globalUniformAttributes(attributes, partialTicks));
+                //TODO: we assume that the camera state hasn't changed... maybe we should add an assertion?
+                renderer.render(this.fp2_cameraState, this::fp2_globalUniformAttributes);
 
                 ((ATMinecraft1_12) this.mc).getTextureMapBlocks().restoreLastBlurMipmap();
                 GlStateManager.enableAlpha();
@@ -108,7 +122,37 @@ public abstract class MixinEntityRenderer1_12 {
     }
 
     @Unique
-    private void fp2_globalUniformAttributes(GlobalUniformAttributes attributes, float partialTicks) {
+    private void fp2_cameraState(CameraState cameraState, FP2Client client, float partialTicks) {
+        //ModelViewProjection matrix
+        ArrayAllocator<float[]> alloc = GlobalAllocators.ALLOC_FLOAT.get();
+
+        float[] modelView = alloc.exactly(MatrixHelper.MAT4_ELEMENTS);
+        float[] projection = alloc.exactly(MatrixHelper.MAT4_ELEMENTS);
+        try {
+            //load both matrices into arrays
+            glGetFloat(GL_MODELVIEW_MATRIX, (FloatBuffer) this.fp2_tempMatrix.clear());
+            this.fp2_tempMatrix.get(modelView);
+            glGetFloat(GL_PROJECTION_MATRIX, (FloatBuffer) this.fp2_tempMatrix.clear());
+            this.fp2_tempMatrix.get(projection);
+
+            //configure the camera state
+            cameraState.setModelViewMatrixAndProjectionMatrix(modelView, projection, client);
+        } finally {
+            alloc.release(projection);
+            alloc.release(modelView);
+        }
+
+        { //position
+            Entity entity = this.mc.getRenderViewEntity();
+            double x = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * partialTicks;
+            double y = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * partialTicks;
+            double z = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * partialTicks;
+            cameraState.positionDouble(x, y, z);
+        }
+    }
+
+    @Unique
+    private void fp2_globalUniformAttributes(GlobalUniformAttributes attributes) {
         //optifine compatibility: disable fog if it's turned off, because optifine only does this itself if no vanilla terrain is being rendered
         //  (e.g. it's all being discarded in frustum culling)
         if (OF && (PUnsafe.getInt(this.mc.gameSettings, OF_FOGTYPE_OFFSET) == OF_OFF && PUnsafe.getBoolean(this.mc.entityRenderer, OF_ENTITYRENDERER_FOGSTANDARD_OFFSET))) {
@@ -116,15 +160,7 @@ public abstract class MixinEntityRenderer1_12 {
         }
 
         { //camera
-            this.fp2_initModelViewProjectionMatrix(attributes);
-
-            Entity entity = this.mc.getRenderViewEntity();
-            double x = entity.lastTickPosX + (entity.posX - entity.lastTickPosX) * partialTicks;
-            double y = entity.lastTickPosY + (entity.posY - entity.lastTickPosY) * partialTicks;
-            double z = entity.lastTickPosZ + (entity.posZ - entity.lastTickPosZ) * partialTicks;
-
-            attributes.positionFloor(floorI(x), floorI(y), floorI(z));
-            attributes.positionFrac((float) frac(x), (float) frac(y), (float) frac(z));
+            this.fp2_cameraState.configureUniforms(attributes);
         }
 
         { //fog
@@ -141,35 +177,6 @@ public abstract class MixinEntityRenderer1_12 {
 
         { //misc GL state
             attributes.alphaRefCutout(0.1f);
-        }
-    }
-
-    @Unique
-    private void fp2_initModelViewProjectionMatrix(GlobalUniformAttributes attributes) {
-        ArrayAllocator<float[]> alloc = GlobalAllocators.ALLOC_FLOAT.get();
-
-        float[] modelView = alloc.exactly(MatrixHelper.MAT4_ELEMENTS);
-        float[] projection = alloc.exactly(MatrixHelper.MAT4_ELEMENTS);
-        float[] modelViewProjectionMatrix = alloc.exactly(MatrixHelper.MAT4_ELEMENTS);
-        try {
-            //load both matrices into arrays
-            glGetFloat(GL_MODELVIEW_MATRIX, (FloatBuffer) this.fp2_tempMatrix.clear());
-            this.fp2_tempMatrix.get(modelView);
-            glGetFloat(GL_PROJECTION_MATRIX, (FloatBuffer) this.fp2_tempMatrix.clear());
-            this.fp2_tempMatrix.get(projection);
-
-            //pre-multiply matrices on CPU to avoid having to do it per-vertex on GPU
-            MatrixHelper.multiply4x4(projection, modelView, modelViewProjectionMatrix);
-
-            //offset the projected points' depth values to avoid z-fighting with vanilla terrain
-            MatrixHelper.offsetDepth(modelViewProjectionMatrix, fp2().client().isReverseZ() ? -0.00001f : 0.00001f);
-
-            //store the matrix into the GlobalUniformAttributes
-            attributes.modelViewProjectionMatrix(modelViewProjectionMatrix);
-        } finally {
-            alloc.release(modelViewProjectionMatrix);
-            alloc.release(projection);
-            alloc.release(modelView);
         }
     }
 
@@ -234,5 +241,10 @@ public abstract class MixinEntityRenderer1_12 {
             allow = 2)
     private int fp2_enableLightmap_setLightmapEdgeClampModeToEmulateOptifine(int value) {
         return GL_CLAMP_TO_EDGE;
+    }
+
+    @Override
+    public final CameraState fp2_cameraState() {
+        return this.fp2_cameraState;
     }
 }
