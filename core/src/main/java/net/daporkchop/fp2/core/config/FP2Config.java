@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -39,11 +39,13 @@ import net.daporkchop.lib.common.util.PorkUtil;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 
 import static java.lang.Math.*;
 import static java.nio.file.StandardCopyOption.*;
 import static java.nio.file.StandardOpenOption.*;
+import static net.daporkchop.fp2.core.debug.FP2Debug.*;
 import static net.daporkchop.lib.common.util.PorkUtil.*;
 
 /**
@@ -95,7 +97,7 @@ public final class FP2Config implements Cloneable<FP2Config> {
      * Loads the config from the given directory, falling back to the default configuration if needed.
      */
     @SneakyThrows(IOException.class)
-    public static FP2Config load(@NonNull Path configDir) {
+    public synchronized static FP2Config load(@NonNull Path configDir) {
         //delete temporary config file (will only be present if the system crashed while saving config)
         Files.deleteIfExists(configDir.resolve(CONFIG_FILE_NAME + ".tmp"));
 
@@ -114,13 +116,19 @@ public final class FP2Config implements Cloneable<FP2Config> {
      * @param config the new global configuration
      */
     @SneakyThrows(IOException.class)
-    public static void save(@NonNull Path configDir, @NonNull FP2Config config) {
+    public synchronized static void save(@NonNull Path configDir, @NonNull FP2Config config) {
         Files.createDirectories(configDir);
         Path tempConfigFile = configDir.resolve(CONFIG_FILE_NAME + ".tmp");
         Path realConfigFile = configDir.resolve(CONFIG_FILE_NAME);
 
-        //write whole config to temporary file and sync to storage device, then atomically replace the existing one
-        Files.write(tempConfigFile, GSON_PRETTY.toJson(config).getBytes(StandardCharsets.UTF_8), WRITE, CREATE, TRUNCATE_EXISTING, SYNC);
+        byte[] configBytes = GSON_PRETTY.toJson(config).getBytes(StandardCharsets.UTF_8);
+
+        OpenOption[] openOptions = FP2_DEBUG
+                ? new OpenOption[0] //don't sync the config to disk in debug mode
+                : new OpenOption[]{ CREATE, TRUNCATE_EXISTING, SYNC };
+
+        //write whole config to temporary file, then atomically replace the existing one
+        Files.write(tempConfigFile, configBytes, openOptions);
         Files.move(tempConfigFile, realConfigFile, REPLACE_EXISTING, ATOMIC_MOVE);
     }
 
