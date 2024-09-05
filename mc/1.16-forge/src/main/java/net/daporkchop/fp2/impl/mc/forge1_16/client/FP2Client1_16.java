@@ -178,6 +178,16 @@ public class FP2Client1_16 extends FP2Client {
         return this.mc.options.renderDistance;
     }
 
+    @Override
+    public int terrainTextureUnit() {
+        return 0;
+    }
+
+    @Override
+    public int lightmapTextureUnit() {
+        return 2;
+    }
+
     //forge events
 
     @SubscribeEvent

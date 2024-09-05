@@ -144,6 +144,10 @@ public abstract class FP2Client {
     @Deprecated
     public abstract int vanillaRenderDistanceChunks();
 
+    public abstract int terrainTextureUnit();
+
+    public abstract int lightmapTextureUnit();
+
     //fp2 events
 
     @FEventHandler

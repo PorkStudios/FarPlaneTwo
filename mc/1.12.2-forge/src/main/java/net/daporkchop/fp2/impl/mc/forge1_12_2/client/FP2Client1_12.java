@@ -181,6 +181,16 @@ public class FP2Client1_12 extends FP2Client {
         return this.mc.gameSettings.renderDistanceChunks;
     }
 
+    @Override
+    public int terrainTextureUnit() {
+        return 0;
+    }
+
+    @Override
+    public int lightmapTextureUnit() {
+        return 1;
+    }
+
     //forge events
 
     @SubscribeEvent(priority = EventPriority.LOW)
