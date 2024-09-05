@@ -26,7 +26,6 @@ import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.client.render.GlobalRenderer;
-import net.daporkchop.fp2.core.client.render.GlobalUniformAttributes;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
 import net.daporkchop.fp2.core.client.render.state.CameraStateUniforms;
 import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;

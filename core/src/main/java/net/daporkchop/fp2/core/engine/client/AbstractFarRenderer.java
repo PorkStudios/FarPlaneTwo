@@ -26,10 +26,10 @@ import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.client.render.state.CameraState;
-import net.daporkchop.fp2.core.client.render.GlobalUniformAttributes;
 import net.daporkchop.fp2.core.client.render.LevelRenderer;
-import net.daporkchop.fp2.core.client.render.RenderInfo;
 import net.daporkchop.fp2.core.client.render.state.CameraStateUniforms;
+import net.daporkchop.fp2.core.client.render.state.DrawState;
+import net.daporkchop.fp2.core.client.render.state.DrawStateUniforms;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.EngineConstants;
 import net.daporkchop.fp2.core.engine.api.ctx.IFarClientContext;
@@ -77,7 +77,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
     protected final BufferUploader bufferUploader;
 
     protected final UniformBuffer<CameraStateUniforms> cameraStateUniformsBuffer;
-    protected final UniformBuffer<GlobalUniformAttributes> globalUniformBuffer;
+    protected final UniformBuffer<DrawStateUniforms> drawStateUniformsBuffer;
 
     protected final IRenderBaker<VertexType> baker;
     protected final BakeStorage<VertexType> bakeStorage;
@@ -106,7 +106,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
                     : new ScratchCopyBufferUploader(this.gl);
 
             this.cameraStateUniformsBuffer = this.fp2.client().globalRenderer().cameraStateUniformsFormat.createUniformBuffer();
-            this.globalUniformBuffer = this.fp2.client().globalRenderer().globalUniformAttributeFormat.createUniformBuffer();
+            this.drawStateUniformsBuffer = this.fp2.client().globalRenderer().drawStateUniformsFormat.createUniformBuffer();
 
             this.baker = this.createBaker();
             this.bakeStorage = this.createBakeStorage();
@@ -127,7 +127,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
                         .texture(TextureTarget.TEXTURE_2D, RenderConstants.TEXTURE_ATLAS_SAMPLER_BINDING)
                         .texture(TextureTarget.TEXTURE_2D, RenderConstants.LIGHTMAP_SAMPLER_BINDING)
                         .indexedBuffer(IndexedBufferTarget.UNIFORM_BUFFER, RenderConstants.CAMERA_STATE_UNIFORMS_UBO_BINDING)
-                        .indexedBuffer(IndexedBufferTarget.UNIFORM_BUFFER, RenderConstants.GLOBAL_UNIFORMS_UBO_BINDING)
+                        .indexedBuffer(IndexedBufferTarget.UNIFORM_BUFFER, RenderConstants.DRAW_STATE_UNIFORMS_UBO_BINDING)
                         .indexedBuffer(IndexedBufferTarget.SHADER_STORAGE_BUFFER, RenderConstants.TEXTURE_UVS_LISTS_SSBO_BINDING)
                         .indexedBuffer(IndexedBufferTarget.SHADER_STORAGE_BUFFER, RenderConstants.TEXTURE_UVS_QUADS_SSBO_BINDING);
                 this.renderIndex.preservedDrawState(statePreserverBuilder);
@@ -144,7 +144,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
                 this.bakeManager,
                 this.renderIndex,
                 this.bakeStorage,
-                this.globalUniformBuffer,
+                this.drawStateUniformsBuffer,
                 this.cameraStateUniformsBuffer,
                 this.bufferUploader,
                 this.alloc);
@@ -179,16 +179,14 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
 
     /**
      * Renders a frame.
-     *
-     * @param renderInfo the current {@link RenderInfo} for setting per-frame uniform values
      */
-    public void render(@NonNull CameraState cameraState, @NonNull RenderInfo renderInfo) {
-        //set global uniforms
-        try (val attributes = this.globalUniformBuffer.update()) {
-            renderInfo.configureGlobalUniformAttributes(attributes);
+    public void render(@NonNull CameraState cameraState, @NonNull DrawState drawState) {
+        //update draw state uniforms
+        try (val uniforms = this.drawStateUniformsBuffer.update()) {
+            drawState.configureUniforms(uniforms);
 
             if (FP2_DEBUG) {
-                attributes.debug_colorMode(this.fp2.globalConfig().debug().debugColors().ordinal());
+                uniforms.debug_colorMode(this.fp2.globalConfig().debug().debugColors().ordinal());
             }
         }
 
@@ -214,7 +212,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
 
     private void preRender() {
         this.gl.glBindBufferBase(GL_UNIFORM_BUFFER, RenderConstants.CAMERA_STATE_UNIFORMS_UBO_BINDING, this.cameraStateUniformsBuffer.buffer().id());
-        this.gl.glBindBufferBase(GL_UNIFORM_BUFFER, RenderConstants.GLOBAL_UNIFORMS_UBO_BINDING, this.globalUniformBuffer.buffer().id());
+        this.gl.glBindBufferBase(GL_UNIFORM_BUFFER, RenderConstants.DRAW_STATE_UNIFORMS_UBO_BINDING, this.drawStateUniformsBuffer.buffer().id());
 
         val textureUVs = this.levelRenderer.textureUVs();
         this.gl.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, RenderConstants.TEXTURE_UVS_LISTS_SSBO_BINDING, textureUVs.listsBuffer().bufferSSBO().id());

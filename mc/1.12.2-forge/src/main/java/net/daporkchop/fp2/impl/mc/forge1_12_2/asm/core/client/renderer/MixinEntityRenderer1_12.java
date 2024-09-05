@@ -24,7 +24,7 @@ import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.MatrixHelper;
 import net.daporkchop.fp2.core.client.player.IFarPlayerClient;
 import net.daporkchop.fp2.core.client.render.state.CameraState;
-import net.daporkchop.fp2.core.client.render.GlobalUniformAttributes;
+import net.daporkchop.fp2.core.client.render.state.DrawState;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.engine.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.engine.client.AbstractFarRenderer;
@@ -111,7 +111,7 @@ abstract class MixinEntityRenderer1_12 implements IMixinEntityRenderer1_12 {
 
                 //actually render stuff!
                 //TODO: we assume that the camera state hasn't changed... maybe we should add an assertion?
-                renderer.render(this.fp2_cameraState, this::fp2_globalUniformAttributes);
+                renderer.render(this.fp2_cameraState, this.fp2_drawState());
 
                 ((ATMinecraft1_12) this.mc).getTextureMapBlocks().restoreLastBlurMipmap();
                 GlStateManager.enableAlpha();
@@ -152,43 +152,43 @@ abstract class MixinEntityRenderer1_12 implements IMixinEntityRenderer1_12 {
     }
 
     @Unique
-    private void fp2_globalUniformAttributes(GlobalUniformAttributes attributes) {
+    private DrawState fp2_drawState() {
+        DrawState drawState = new DrawState();
+
         //optifine compatibility: disable fog if it's turned off, because optifine only does this itself if no vanilla terrain is being rendered
         //  (e.g. it's all being discarded in frustum culling)
         if (OF && (PUnsafe.getInt(this.mc.gameSettings, OF_FOGTYPE_OFFSET) == OF_OFF && PUnsafe.getBoolean(this.mc.entityRenderer, OF_ENTITYRENDERER_FOGSTANDARD_OFFSET))) {
             GlStateManager.disableFog();
         }
 
-        { //camera
-            this.fp2_cameraState.configureUniforms(attributes);
-        }
-
         { //fog
-            this.fp2_initFogColor(attributes);
+            this.fp2_initFogColor(drawState);
 
-            float fogStart;
-            float fogEnd;
-            attributes.fogMode(glGetBoolean(GL_FOG) ? glGetInteger(GL_FOG_MODE) : 0)
-                    .fogDensity(glGetFloat(GL_FOG_DENSITY))
-                    .fogStart(fogStart = glGetFloat(GL_FOG_START))
-                    .fogEnd(fogEnd = glGetFloat(GL_FOG_END))
-                    .fogScale(1.0f / (fogEnd - fogStart));
+            drawState.fogMode = glGetBoolean(GL_FOG) ? glGetInteger(GL_FOG_MODE) : 0;
+            drawState.fogDensity = glGetFloat(GL_FOG_DENSITY);
+            drawState.fogStart = glGetFloat(GL_FOG_START);
+            drawState.fogEnd = glGetFloat(GL_FOG_END);
         }
 
         { //misc GL state
-            attributes.alphaRefCutout(0.1f);
+            drawState.alphaRefCutout = 0.1f;
         }
+
+        return drawState;
     }
 
     @Unique
-    private void fp2_initFogColor(GlobalUniformAttributes attributes) {
+    private void fp2_initFogColor(DrawState drawState) {
         //buffer needs to fit 16 elements, but only the first 4 will be used
         long addr = PUnsafe.allocateMemory(16 * FLOAT_SIZE);
         try {
             FloatBuffer buffer = DirectBufferHackery.wrapFloat(addr, 16);
             glGetFloat(GL_FOG_COLOR, buffer);
 
-            attributes.fogColor(buffer.get(0), buffer.get(1), buffer.get(2), buffer.get(3));
+            drawState.fogColorR = buffer.get(0);
+            drawState.fogColorG = buffer.get(1);
+            drawState.fogColorB = buffer.get(2);
+            drawState.fogColorA = buffer.get(3);
         } finally {
             PUnsafe.freeMemory(addr);
         }

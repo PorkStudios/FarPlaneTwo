@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-$today.year DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,22 +15,30 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
-
-package net.daporkchop.fp2.core.client.render;
-
-import lombok.NonNull;
-
-/**
- * Provides information about the current render state when preparing to render a frame.
  *
- * @author DaPorkchop_
  */
-public interface RenderInfo {
-    /**
-     * Extracts the global uniform attribute values from the current renderer state and stores them in the given {@link GlobalUniformAttributes} instance.
-     *
-     * @param attributes the {@link GlobalUniformAttributes} instance to store the global uniform attribute values in
-     */
-    void configureGlobalUniformAttributes(@NonNull GlobalUniformAttributes attributes);
-}
+
+#ifndef UTIL_DRAW_STATE_UNIFORMS
+#define UTIL_DRAW_STATE_UNIFORMS
+
+//
+//
+// UNIFORMS
+//
+//
+
+layout(DRAW_STATE_UNIFORMS_UBO_LAYOUT) uniform DRAW_STATE_UNIFORMS_UBO_NAME {
+    //fog
+    vec4 u_fogColor;
+    int u_fogMode; //TODO: make this a constant and generate specialized shader variants
+    float u_fogDensity;
+    float u_fogStart;
+    float u_fogEnd;
+    float u_fogScale;
+    //misc. GL state
+    float u_alphaRefCutout;
+    //debug state
+    int u_debug_colorMode; //TODO: make this a constant and generate specialized shader variants (?)
+};
+
+#endif //UTIL_DRAW_STATE_UNIFORMS

@@ -20,8 +20,8 @@
 
 #define VERT_VOXEL_VOXEL
 
+#include <"fp2:shaders/util/camera_state_uniforms.glsl"> // u_positionFrac, u_positionFloor
 #include <"fp2:shaders/util/camera_transform.glsl"> // cameraTransform()
-#include <"fp2:shaders/util/global_render_uniforms.glsl"> // u_positionFrac, u_positionFloor
 #include <"fp2:shaders/vert/common.vert">
 #include <"fp2:shaders/vert/fog.vert">
 

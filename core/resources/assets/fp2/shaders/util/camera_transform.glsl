@@ -21,7 +21,7 @@
 #ifndef UTIL_CAMERA_TRANSFORM
 #define UTIL_CAMERA_TRANSFORM
 
-#include <"fp2:shaders/util/global_render_uniforms.glsl"> // u_modelViewProjectionMatrix
+#include <"fp2:shaders/util/camera_state_uniforms.glsl"> // u_modelViewProjectionMatrix
 
 //
 //

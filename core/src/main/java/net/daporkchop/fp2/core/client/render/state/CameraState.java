@@ -23,7 +23,6 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.MatrixHelper;
-import net.daporkchop.fp2.core.client.render.GlobalUniformAttributes;
 import net.daporkchop.lib.common.misc.Cloneable;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
@@ -144,17 +143,6 @@ public final class CameraState implements Cloneable<CameraState> {
      * @param uniforms the {@link CameraStateUniforms} instance to store the camera state values in
      */
     public void configureUniforms(CameraStateUniforms uniforms) {
-        uniforms.modelViewProjectionMatrix(this.modelViewProjectionMatrix);
-        uniforms.positionFloor(this.positionFloorX, this.positionFloorY, this.positionFloorZ);
-        uniforms.positionFrac(this.positionFracX, this.positionFracY, this.positionFracZ);
-    }
-
-    /**
-     * Stores this camera state in the given {@link GlobalUniformAttributes} instance.
-     *
-     * @param uniforms the {@link GlobalUniformAttributes} instance to store the camera state values in
-     */
-    public void configureUniforms(GlobalUniformAttributes uniforms) {
         uniforms.modelViewProjectionMatrix(this.modelViewProjectionMatrix);
         uniforms.positionFloor(this.positionFloorX, this.positionFloorY, this.positionFloorZ);
         uniforms.positionFrac(this.positionFracX, this.positionFracY, this.positionFracZ);

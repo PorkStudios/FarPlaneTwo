@@ -24,8 +24,8 @@ import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.client.MatrixHelper;
 import net.daporkchop.fp2.core.client.player.IFarPlayerClient;
-import net.daporkchop.fp2.core.client.render.GlobalUniformAttributes;
 import net.daporkchop.fp2.core.client.render.state.CameraState;
+import net.daporkchop.fp2.core.client.render.state.DrawState;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.engine.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.engine.client.AbstractFarRenderer;
@@ -196,7 +196,7 @@ abstract class MixinWorldRenderer1_16 implements IMixinWorldRenderer1_16 {
                 this.level.getProfiler().push("fp2_render_post");
 
                 this.minecraft.getModelManager().getAtlas(AtlasTexture.LOCATION_BLOCKS).setBlurMipmap(false, this.minecraft.options.mipmapLevels > 0);
-                renderer.render(this.fp2_cameraState, this::fp2_globalUniformAttributes);
+                renderer.render(this.fp2_cameraState, this.fp2_drawState());
                 this.minecraft.getModelManager().getAtlas(AtlasTexture.LOCATION_BLOCKS).restoreLastBlurMipmap();
 
                 this.level.getProfiler().pop();
@@ -230,16 +230,16 @@ abstract class MixinWorldRenderer1_16 implements IMixinWorldRenderer1_16 {
     }
 
     @Unique
-    private void fp2_globalUniformAttributes(GlobalUniformAttributes attributes) {
-        { //camera
-            this.fp2_cameraState.configureUniforms(attributes);
-        }
+    private DrawState fp2_drawState() {
+        DrawState drawState = new DrawState();
 
         { //fog
-            attributes.fogColor(ATFogRenderer1_16.getFogRed(), ATFogRenderer1_16.getFogGreen(), ATFogRenderer1_16.getFogBlue(), 1.0f);
+            drawState.fogColorR = ATFogRenderer1_16.getFogRed();
+            drawState.fogColorG = ATFogRenderer1_16.getFogGreen();
+            drawState.fogColorB = ATFogRenderer1_16.getFogBlue();
+            drawState.fogColorA = 1.0f;
 
             int fogMode = glGetInteger(GL_FOG_MODE);
-
             float fogDensity = glGetFloat(GL_FOG_DENSITY);
             float fogStart = glGetFloat(GL_FOG_START);
             float fogEnd = glGetFloat(GL_FOG_END);
@@ -251,11 +251,10 @@ abstract class MixinWorldRenderer1_16 implements IMixinWorldRenderer1_16 {
                 fogMode = 0;
             }
 
-            attributes.fogMode(fogMode)
-                    .fogDensity(fogDensity)
-                    .fogStart(fogStart)
-                    .fogEnd(fogEnd)
-                    .fogScale(1.0f / (fogEnd - fogStart));
+            drawState.fogMode = fogMode;
+            drawState.fogDensity = fogDensity;
+            drawState.fogStart = fogStart;
+            drawState.fogEnd = fogEnd;
         }
 
         { //misc. GL state
@@ -263,8 +262,10 @@ abstract class MixinWorldRenderer1_16 implements IMixinWorldRenderer1_16 {
             //  to an alpha test reference value of 0.5.
             //in OptiFine, both RenderType.CUTOUT and RenderType.CUTOUT_MIPPED are created with setAlphaState(CUTOUT_MIPPED_ALPHA), which
             //  corresponds to an alpha test reference value of 0.1.
-            attributes.alphaRefCutout(OFHelper1_16.OF ? 0.1f : 0.5f);
+            drawState.alphaRefCutout = OFHelper1_16.OF ? 0.1f : 0.5f;
         }
+
+        return drawState;
     }
 
     @Override

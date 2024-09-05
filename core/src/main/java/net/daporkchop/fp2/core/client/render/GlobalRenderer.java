@@ -23,6 +23,7 @@ import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.client.render.state.CameraStateUniforms;
+import net.daporkchop.fp2.core.client.render.state.DrawStateUniforms;
 import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;
 import net.daporkchop.fp2.core.client.shader.ReloadableShaderRegistry;
 import net.daporkchop.fp2.core.client.shader.ShaderMacros;
@@ -32,10 +33,10 @@ import net.daporkchop.fp2.core.engine.client.index.attribdivisor.GPUCulledBaseIn
 import net.daporkchop.fp2.core.engine.client.struct.VoxelGlobalAttributes;
 import net.daporkchop.fp2.core.engine.client.struct.VoxelLocalAttributes;
 import net.daporkchop.fp2.gl.OpenGL;
-import net.daporkchop.fp2.gl.attribute.AttributeTarget;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
-import net.daporkchop.fp2.gl.draw.index.IndexType;
+import net.daporkchop.fp2.gl.attribute.AttributeTarget;
 import net.daporkchop.fp2.gl.draw.index.IndexFormat;
+import net.daporkchop.fp2.gl.draw.index.IndexType;
 import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.gl.shader.ShaderType;
@@ -55,7 +56,7 @@ public final class GlobalRenderer {
     public final ReloadableShaderRegistry shaderRegistry;
 
     public final AttributeFormat<CameraStateUniforms> cameraStateUniformsFormat;
-    public final AttributeFormat<GlobalUniformAttributes> globalUniformAttributeFormat;
+    public final AttributeFormat<DrawStateUniforms> drawStateUniformsFormat;
     public final AttributeFormat<IFrustum.ClippingPlanes> frustumClippingPlanesUBOFormat;
 
     public final AttributeFormat<VoxelGlobalAttributes> voxelInstancedAttributesFormat;
@@ -77,7 +78,7 @@ public final class GlobalRenderer {
             this.shaderRegistry = new ReloadableShaderRegistry(fp2);
 
             this.cameraStateUniformsFormat = AttributeFormat.get(gl, CameraStateUniforms.class, AttributeTarget.UBO);
-            this.globalUniformAttributeFormat = AttributeFormat.get(gl, GlobalUniformAttributes.class, AttributeTarget.UBO);
+            this.drawStateUniformsFormat = AttributeFormat.get(gl, DrawStateUniforms.class, AttributeTarget.UBO);
             this.frustumClippingPlanesUBOFormat = AttributeFormat.get(gl, IFrustum.ClippingPlanes.class, AttributeTarget.UBO);
 
             //determine whether we want the tile position attribute format to support the SSBO target
@@ -102,8 +103,8 @@ public final class GlobalRenderer {
 
                     .define("CAMERA_STATE_UNIFORMS_UBO_NAME", RenderConstants.CAMERA_STATE_UNIFORMS_UBO_NAME)
                     .define("CAMERA_STATE_UNIFORMS_UBO_LAYOUT", this.cameraStateUniformsFormat.interfaceBlockLayoutName())
-                    .define("GLOBAL_UNIFORMS_UBO_NAME", RenderConstants.GLOBAL_UNIFORMS_UBO_NAME)
-                    .define("GLOBAL_UNIFORMS_UBO_LAYOUT", this.globalUniformAttributeFormat.interfaceBlockLayoutName())
+                    .define("DRAW_STATE_UNIFORMS_UBO_NAME", RenderConstants.DRAW_STATE_UNIFORMS_UBO_NAME)
+                    .define("DRAW_STATE_UNIFORMS_UBO_LAYOUT", this.drawStateUniformsFormat.interfaceBlockLayoutName())
                     .define("TEXTURE_ATLAS_SAMPLER_NAME", RenderConstants.TEXTURE_ATLAS_SAMPLER_NAME)
                     .define("LIGHTMAP_SAMPLER_NAME", RenderConstants.LIGHTMAP_SAMPLER_NAME)
                     .define("TEXTURE_UVS_LISTS_SSBO_NAME", RenderConstants.TEXTURE_UVS_LISTS_SSBO_NAME)
@@ -142,7 +143,7 @@ public final class GlobalRenderer {
     private static <B extends ShaderProgram.Builder<?, B>> B commonShaderSetup(B builder) {
         return builder
                 .addUBO(RenderConstants.CAMERA_STATE_UNIFORMS_UBO_BINDING, RenderConstants.CAMERA_STATE_UNIFORMS_UBO_NAME)
-                .addUBO(RenderConstants.GLOBAL_UNIFORMS_UBO_BINDING, RenderConstants.GLOBAL_UNIFORMS_UBO_NAME)
+                .addUBO(RenderConstants.DRAW_STATE_UNIFORMS_UBO_BINDING, RenderConstants.DRAW_STATE_UNIFORMS_UBO_NAME)
                 .addSSBO(RenderConstants.TEXTURE_UVS_LISTS_SSBO_BINDING, RenderConstants.TEXTURE_UVS_LISTS_SSBO_NAME)
                 .addSSBO(RenderConstants.TEXTURE_UVS_QUADS_SSBO_BINDING, RenderConstants.TEXTURE_UVS_QUADS_SSBO_NAME)
                 .addSampler(RenderConstants.TEXTURE_ATLAS_SAMPLER_BINDING, RenderConstants.TEXTURE_ATLAS_SAMPLER_NAME)

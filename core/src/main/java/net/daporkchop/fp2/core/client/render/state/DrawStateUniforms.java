@@ -17,7 +17,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.client.render;
+package net.daporkchop.fp2.core.client.render.state;
 
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.annotation.ArrayLength;
@@ -28,14 +28,10 @@ import net.daporkchop.fp2.gl.attribute.annotation.ScalarType;
 import net.daporkchop.fp2.gl.attribute.annotation.VectorType;
 
 /**
- * The global render uniforms, as defined in {@code resources/assets/fp2/shaders/util/global_render_uniforms.glsl}.
+ * The draw state uniforms, as defined in {@code resources/assets/fp2/shaders/util/draw_state_uniforms.glsl}.
  *
  * @author DaPorkchop_
  */
-//camera
-@Attribute(name = "modelViewProjectionMatrix", typeMatrix = @MatrixType(cols = 4, rows = 4, componentType = @ScalarType(float.class)))
-@Attribute(name = "positionFloor", typeVector = @VectorType(components = 3, componentType = @ScalarType(int.class)))
-@Attribute(name = "positionFrac", typeVector = @VectorType(components = 3, componentType = @ScalarType(float.class)))
 //fog
 @Attribute(name = "fogColor", typeVector = @VectorType(components = 4, componentType = @ScalarType(float.class)))
 @Attribute(name = "fogMode", typeScalar = @ScalarType(int.class))
@@ -47,53 +43,40 @@ import net.daporkchop.fp2.gl.attribute.annotation.VectorType;
 @Attribute(name = "alphaRefCutout", typeScalar = @ScalarType(float.class))
 //debug state
 @Attribute(name = "debug_colorMode", typeScalar = @ScalarType(int.class))
-public interface GlobalUniformAttributes extends AttributeStruct {
-    //
-    // camera
-    //
-
-    @AttributeSetter
-    GlobalUniformAttributes modelViewProjectionMatrix(float @ArrayLength(16) [] modelViewProjectionMatrix);
-
-    @AttributeSetter
-    GlobalUniformAttributes positionFloor(int x, int y, int z);
-
-    @AttributeSetter
-    GlobalUniformAttributes positionFrac(float x, float y, float z);
-
+public interface DrawStateUniforms extends AttributeStruct {
     //
     // fog
     //
 
     @AttributeSetter
-    GlobalUniformAttributes fogColor(float r, float g, float b, float a);
+    DrawStateUniforms fogColor(float r, float g, float b, float a);
 
     @AttributeSetter
-    GlobalUniformAttributes fogMode(int fogMode);
+    DrawStateUniforms fogMode(int fogMode);
 
     @AttributeSetter
-    GlobalUniformAttributes fogDensity(float fogDensity);
+    DrawStateUniforms fogDensity(float fogDensity);
 
     @AttributeSetter
-    GlobalUniformAttributes fogStart(float fogStart);
+    DrawStateUniforms fogStart(float fogStart);
 
     @AttributeSetter
-    GlobalUniformAttributes fogEnd(float fogEnd);
+    DrawStateUniforms fogEnd(float fogEnd);
 
     @AttributeSetter
-    GlobalUniformAttributes fogScale(float fogScale);
+    DrawStateUniforms fogScale(float fogScale);
 
     //
     // misc. GL state
     //
 
     @AttributeSetter
-    GlobalUniformAttributes alphaRefCutout(float alphaRefCutout);
+    DrawStateUniforms alphaRefCutout(float alphaRefCutout);
 
     //
     // debug state
     //
 
     @AttributeSetter
-    GlobalUniformAttributes debug_colorMode(int debug_colorMode);
+    DrawStateUniforms debug_colorMode(int debug_colorMode);
 }
