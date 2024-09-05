@@ -38,6 +38,7 @@ import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
 import net.daporkchop.lib.common.pool.recycler.Recycler;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -46,6 +47,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * @author DaPorkchop_
@@ -147,9 +149,20 @@ public final class BakeManager<VertexType extends AttributeStruct> extends Abstr
         this.checkSelfRenderable(pos);
         this.checkParentsRenderable(pos);
 
-        ITileSnapshot[] compressedInputTiles = this.tileCache.getTilesCached(this.baker.bakeInputs(pos)).toArray(ITileSnapshot[]::new);
-        if (compressedInputTiles[0] == null //tile isn't cached any more
-                || compressedInputTiles[0].isEmpty()) { //tile data is empty
+        //get the list of input tile positions
+        List<TilePos> inputTilePositions = this.baker.bakeInputs(pos);
+
+        //double-check that the original (provoking) tile position is one of the inputs
+        int provokingTilePositionInputIndex = inputTilePositions.indexOf(pos);
+        checkState(provokingTilePositionInputIndex >= 0, "bake inputs for %s don't include the tile itself: %s", pos, inputTilePositions);
+
+        //get the input tile data from the tile cache
+        ITileSnapshot[] compressedInputTiles = this.tileCache.getTilesCached(inputTilePositions)
+                .toArray(new ITileSnapshot[inputTilePositions.size()]);
+
+        //fast path: if the provoking tile was unloaded or is empty, we can skip baking it entirely
+        if (compressedInputTiles[provokingTilePositionInputIndex] == null //tile isn't cached any more
+            || compressedInputTiles[provokingTilePositionInputIndex].isEmpty()) { //tile data is empty
             this.updateData(pos, Optional.empty());
             return;
         }
@@ -208,8 +221,8 @@ public final class BakeManager<VertexType extends AttributeStruct> extends Abstr
             //condition changed now that tiles default to being shown rather than hidden
             this.updateRenderable(pos,
                     pos.level() == 0 //level-0 tiles are always shown
-                            || this.tileCache.getTileCached(pos) == null //if the tile isn't loaded, mark it as shown to prune unused entries from the render index's hidden set
-                            || pos.down().allPositionsInBB(1, 3).anyMatch(p -> this.coordLimits.contains(p) && this.tileCache.getTileCached(p) == null));
+                    || this.tileCache.getTileCached(pos) == null //if the tile isn't loaded, mark it as shown to prune unused entries from the render index's hidden set
+                    || pos.down().allPositionsInBB(1, 3).anyMatch(p -> this.coordLimits.contains(p) && this.tileCache.getTileCached(p) == null));
         }
     }
 

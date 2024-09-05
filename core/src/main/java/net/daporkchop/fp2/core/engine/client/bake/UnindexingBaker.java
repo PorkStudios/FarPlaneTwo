@@ -30,7 +30,8 @@ import net.daporkchop.fp2.gl.attribute.AttributeWriter;
 import net.daporkchop.fp2.gl.draw.index.IndexWriter;
 
 import java.util.Arrays;
-import java.util.stream.Stream;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Post-processes an {@link IRenderBaker}'s output by duplicating the vertices in the stream, so that the index buffers are a sequence of uniformly ascending integers, and
@@ -48,12 +49,12 @@ public final class UnindexingBaker<VertexType extends AttributeStruct> implement
     private final DirectMemoryAllocator alloc;
 
     @Override
-    public Stream<TilePos> bakeOutputs(@NonNull TilePos pos) {
+    public Set<TilePos> bakeOutputs(@NonNull TilePos pos) {
         return this.delegate.bakeOutputs(pos);
     }
 
     @Override
-    public Stream<TilePos> bakeInputs(@NonNull TilePos pos) {
+    public List<TilePos> bakeInputs(@NonNull TilePos pos) {
         return this.delegate.bakeInputs(pos);
     }
 

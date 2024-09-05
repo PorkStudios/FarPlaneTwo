@@ -360,6 +360,16 @@ public final class Tracker {
     }
 
     /**
+     * Notifies the tracker that the tile data at the given position has failed to load/update.
+     *
+     * @param pos the position of the tile
+     */
+    @CalledFromAnyThread
+    void notifyFailed(@NonNull TilePos pos) {
+        //no-op
+    }
+
+    /**
      * Notifies the tracker that the tile data at the given position has been unloaded.
      * <p>
      * This will only be called for a position which was already loaded.

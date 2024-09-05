@@ -38,8 +38,10 @@ import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 import net.daporkchop.lib.common.pool.recycler.Recycler;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.stream.Stream;
 
 import static java.lang.Math.*;
@@ -62,6 +64,11 @@ public class DefaultTileHandle implements ITileHandle {
     @SneakyThrows(FStorageException.class)
     public long timestamp() {
         return this.storage.storageInternal.readGet(access -> {
+            if (DefaultTileStorage.HEAP_BUFFERS) {
+                byte[] timestampBytes = access.get(this.storage.columnTimestamp, TilePosCodec.toByteArray(this.pos));
+                return DefaultTileStorage.readTimestampFromNullableByteArray(timestampBytes);
+            }
+
             /*
              * struct buffer {
              *     POS pos; //db key
@@ -70,7 +77,7 @@ public class DefaultTileHandle implements ITileHandle {
              */
 
             final long bufferKeyOffset = 0L;
-            final int bufferKeySize = toIntExact(TilePosCodec.size());
+            final int bufferKeySize = TilePosCodec.size();
 
             final long bufferTimestampOffset = bufferKeyOffset + bufferKeySize;
             final int bufferTimestampSize = LONG_SIZE;
@@ -98,9 +105,7 @@ public class DefaultTileHandle implements ITileHandle {
                     byteBufferRecycler.release(keyBuffer);
                 }
 
-                return size >= 0
-                        ? PUnsafe.getUnalignedLongLE(buffer + bufferTimestampOffset) //we assume that the timestamp, if it exists, is always exactly 8 bytes long
-                        : TIMESTAMP_BLANK; //key isn't present in db -> the tile doesn't exist
+                return DefaultTileStorage.readTimestampFromDirectMemory(buffer + bufferTimestampOffset, size);
             } finally {
                 PUnsafe.freeMemory(buffer);
             }
@@ -111,6 +116,21 @@ public class DefaultTileHandle implements ITileHandle {
     @SneakyThrows(FStorageException.class)
     public ITileSnapshot snapshot() {
         return this.storage.storageInternal.readGet(access -> {
+            if (DefaultTileStorage.HEAP_BUFFERS) {
+                List<byte[]> timestampTileBytes = access.multiGet(
+                        this.storage.listColumns_Timestamp_Data,
+                        ListUtils.repeat(TilePosCodec.toByteArray(this.pos), 2));
+
+                byte[] timestampBytes = timestampTileBytes.get(0);
+                byte[] tileBytes = timestampTileBytes.get(1);
+
+                if (timestampBytes == null) { //timestamp wasn't present in the db, meaning the tile doesn't exist
+                    return null;
+                } else { //the tile exists
+                    return TileSnapshot.of(this.pos, DefaultTileStorage.readTimestampFromNullableByteArray(timestampBytes), tileBytes);
+                }
+            }
+
             /*
              * struct buffer {
              *     POS pos; //db key
@@ -120,7 +140,7 @@ public class DefaultTileHandle implements ITileHandle {
              */
 
             final long bufferKeyOffset = 0L;
-            final int bufferKeySize = toIntExact(TilePosCodec.size());
+            final int bufferKeySize = TilePosCodec.size();
 
             final long bufferTimestampOffset = bufferKeyOffset + bufferKeySize;
             final int bufferTimestampSize = LONG_SIZE;
@@ -175,7 +195,7 @@ public class DefaultTileHandle implements ITileHandle {
                 } else { //the tile exists
                     return TileSnapshot.of(
                             this.pos,
-                            PUnsafe.getUnalignedLongLE(buffer + bufferTimestampOffset), //we assume that the timestamp, if it exists, is always exactly 8 bytes long
+                            DefaultTileStorage.readTimestampFromDirectMemory(buffer + bufferTimestampOffset, sizeTimestamp),
                             buffer + bufferTileOffset, sizeTile);
                 }
             } finally {
@@ -188,6 +208,46 @@ public class DefaultTileHandle implements ITileHandle {
     @SneakyThrows(FStorageException.class)
     public boolean set(@NonNull ITileMetadata metadata, @NonNull Tile tile) {
         boolean result = this.storage.storageInternal.transactAtomicGet(access -> {
+            if (DefaultTileStorage.HEAP_BUFFERS) {
+                byte[] keyBytes = TilePosCodec.toByteArray(this.pos);
+
+                List<byte[]> resultBytes = access.multiGet(
+                        this.storage.listColumns_Timestamp_DirtyTimestamp,
+                        ListUtils.repeat(keyBytes, 2));
+
+                long timestamp = DefaultTileStorage.readTimestampFromNullableByteArray(resultBytes.get(0));
+                long dirtyTimestamp = DefaultTileStorage.readTimestampFromNullableByteArray(resultBytes.get(1));
+
+                if (metadata.timestamp() <= timestamp) { //the new timestamp isn't newer than the existing one, so we can't replace it
+                    //exit without making any changes
+                    return false;
+                }
+
+                //put new timestamp into db
+                access.put(this.storage.columnTimestamp, keyBytes, DefaultTileStorage.toByteArrayLongLE(metadata.timestamp()));
+
+                //clear dirty timestamp if needed
+                if (metadata.timestamp() >= dirtyTimestamp) {
+                    access.delete(this.storage.columnDirtyTimestamp, keyBytes);
+                }
+
+                //encode tile and store it in db
+                if (tile.isEmpty()) { //the tile is empty, so it has no contents for us to bother keeping around
+                    //actually delete tile data from db
+                    access.delete(this.storage.columnData, keyBytes);
+                } else { //the tile isn't empty
+                    //actually encode tile
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    try (DataOut out = DataOut.wrap(baos)) {
+                        Tile.CODEC.store(tile, out);
+                    }
+
+                    //actually put tile data into db
+                    access.put(this.storage.columnData, keyBytes, baos.toByteArray());
+                }
+                return true;
+            }
+
             /*
              * struct buffer {
              *     POS pos; //db key
@@ -198,7 +258,7 @@ public class DefaultTileHandle implements ITileHandle {
              */
 
             final long bufferKeyOffset = 0L;
-            final int bufferKeySize = toIntExact(TilePosCodec.size());
+            final int bufferKeySize = TilePosCodec.size();
 
             final long bufferTimestampOffset = bufferKeyOffset + bufferKeySize;
             final int bufferTimestampSize = LONG_SIZE;
@@ -252,13 +312,8 @@ public class DefaultTileHandle implements ITileHandle {
                     checkState(success, "insufficient buffer space???");
                 }
 
-                long timestamp = sizeTimestamp < 0
-                        ? TIMESTAMP_BLANK
-                        : PUnsafe.getUnalignedLongLE(buffer + bufferTimestampOffset); //we assume that the timestamp, if it exists, is always exactly 8 bytes long
-
-                long dirtyTimestamp = sizeDirtyTimestamp < 0
-                        ? TIMESTAMP_BLANK
-                        : PUnsafe.getUnalignedLongLE(buffer + bufferDirtyTimestampOffset); //we assume that the timestamp, if it exists, is always exactly 8 bytes long
+                long timestamp = DefaultTileStorage.readTimestampFromDirectMemory(buffer + bufferTimestampOffset, sizeTimestamp);
+                long dirtyTimestamp = DefaultTileStorage.readTimestampFromDirectMemory(buffer + bufferDirtyTimestampOffset, sizeDirtyTimestamp);
 
                 if (metadata.timestamp() <= timestamp) { //the new timestamp isn't newer than the existing one, so we can't replace it
                     //exit without making any changes
@@ -340,6 +395,11 @@ public class DefaultTileHandle implements ITileHandle {
     @SneakyThrows(FStorageException.class)
     public long dirtyTimestamp() {
         return this.storage.storageInternal.readGet(access -> {
+            if (DefaultTileStorage.HEAP_BUFFERS) {
+                byte[] dirtyTimestampBytes = access.get(this.storage.columnDirtyTimestamp, TilePosCodec.toByteArray(this.pos));
+                return DefaultTileStorage.readTimestampFromNullableByteArray(dirtyTimestampBytes);
+            }
+
             /*
              * struct buffer {
              *     POS pos; //db key
@@ -348,7 +408,7 @@ public class DefaultTileHandle implements ITileHandle {
              */
 
             final long bufferKeyOffset = 0L;
-            final int bufferKeySize = toIntExact(TilePosCodec.size());
+            final int bufferKeySize = TilePosCodec.size();
 
             final long bufferDirtyTimestampOffset = bufferKeyOffset + bufferKeySize;
             final int bufferDirtyTimestampSize = LONG_SIZE;
@@ -377,10 +437,7 @@ public class DefaultTileHandle implements ITileHandle {
                     byteBufferRecycler.release(keyBuffer);
                 }
 
-                return size >= 0
-                        ? PUnsafe.getUnalignedLongLE(buffer
-                                                     + bufferDirtyTimestampOffset) //we assume that the dirty timestamp, if it exists, is always exactly 8 bytes long
-                        : TIMESTAMP_BLANK; //key isn't present in db -> the tile doesn't exist or doesn't have a dirty timestamp
+                return DefaultTileStorage.readTimestampFromDirectMemory(buffer + bufferDirtyTimestampOffset, size);
             } finally {
                 PUnsafe.freeMemory(buffer);
             }
@@ -391,6 +448,29 @@ public class DefaultTileHandle implements ITileHandle {
     @SneakyThrows(FStorageException.class)
     public boolean markDirty(long dirtyTimestamp) {
         boolean result = this.storage.storageInternal.transactAtomicGet(access -> {
+            if (DefaultTileStorage.HEAP_BUFFERS) {
+                List<byte[]> resultBytes = access.multiGet(
+                        this.storage.listColumns_Timestamp_DirtyTimestamp,
+                        ListUtils.repeat(TilePosCodec.toByteArray(this.pos), 2));
+
+                long timestamp = DefaultTileStorage.readTimestampFromNullableByteArray(resultBytes.get(0));
+                long existingDirtyTimestamp = DefaultTileStorage.readTimestampFromNullableByteArray(resultBytes.get(1));
+
+                if (timestamp == TIMESTAMP_BLANK //the tile doesn't exist, so we can't mark it as dirty
+                    || dirtyTimestamp <= timestamp
+                    || dirtyTimestamp <= existingDirtyTimestamp) { //the new dirty timestamp isn't newer than the existing one, so we can't replace it
+                    //exit without making any changes
+                    return false;
+                }
+
+                //put new dirtyTimestamp into db
+                access.put(
+                        this.storage.columnDirtyTimestamp,
+                        TilePosCodec.toByteArray(this.pos),
+                        DefaultTileStorage.toByteArrayLongLE(dirtyTimestamp));
+                return true;
+            }
+
             /*
              * struct buffer {
              *     POS pos; //db key
@@ -400,7 +480,7 @@ public class DefaultTileHandle implements ITileHandle {
              */
 
             final long bufferKeyOffset = 0L;
-            final int bufferKeySize = toIntExact(TilePosCodec.size());
+            final int bufferKeySize = TilePosCodec.size();
 
             final long bufferTimestampOffset = bufferKeyOffset + bufferKeySize;
             final int bufferTimestampSize = LONG_SIZE;
@@ -451,13 +531,8 @@ public class DefaultTileHandle implements ITileHandle {
                     checkState(success, "insufficient buffer space???");
                 }
 
-                long timestamp = sizeTimestamp < 0
-                        ? TIMESTAMP_BLANK
-                        : PUnsafe.getUnalignedLongLE(buffer + bufferTimestampOffset); //we assume that the timestamp, if it exists, is always exactly 8 bytes long
-
-                long existingDirtyTimestamp = sizeDirtyTimestamp < 0
-                        ? TIMESTAMP_BLANK
-                        : PUnsafe.getUnalignedLongLE(buffer + bufferDirtyTimestampOffset); //we assume that the timestamp, if it exists, is always exactly 8 bytes long
+                long timestamp = DefaultTileStorage.readTimestampFromDirectMemory(buffer + bufferTimestampOffset, sizeTimestamp);
+                long existingDirtyTimestamp = DefaultTileStorage.readTimestampFromDirectMemory(buffer + bufferDirtyTimestampOffset, sizeDirtyTimestamp);
 
                 if (timestamp == TIMESTAMP_BLANK //the tile doesn't exist, so we can't mark it as dirty
                     || dirtyTimestamp <= timestamp
@@ -500,6 +575,18 @@ public class DefaultTileHandle implements ITileHandle {
     @SneakyThrows(FStorageException.class)
     public boolean clearDirty() {
         return this.storage.storageInternal.transactAtomicGet(access -> {
+            if (DefaultTileStorage.HEAP_BUFFERS) {
+                byte[] dirtyTimestampBytes = access.get(this.storage.columnDirtyTimestamp, TilePosCodec.toByteArray(this.pos));
+                if (dirtyTimestampBytes == null) { //the tile's dirty timestamp isn't set
+                    //exit without making any changes
+                    return false;
+                }
+
+                //clear dirty timestamp in db
+                access.delete(this.storage.columnDirtyTimestamp, TilePosCodec.toByteArray(this.pos));
+                return true;
+            }
+
             /*
              * struct buffer {
              *     POS pos; //db key
@@ -507,7 +594,7 @@ public class DefaultTileHandle implements ITileHandle {
              */
 
             final long bufferKeyOffset = 0L;
-            final int bufferKeySize = toIntExact(TilePosCodec.size());
+            final int bufferKeySize = TilePosCodec.size();
 
             final long bufferSize = bufferKeyOffset + bufferKeySize;
 
@@ -542,7 +629,7 @@ public class DefaultTileHandle implements ITileHandle {
                     Recycler<ByteBuffer> byteBufferRecycler = DirectBufferHackery.byteRecycler();
                     ByteBuffer keyBuffer = DirectBufferHackery.reset(byteBufferRecycler.allocate(), buffer + bufferKeyOffset, bufferKeySize);
 
-                    //actually delete dirty timestamp from
+                    //actually delete dirty timestamp from db
                     access.delete(this.storage.columnDirtyTimestamp, keyBuffer);
 
                     //release ByteBuffer again

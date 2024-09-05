@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -330,13 +330,20 @@ public class ListUtils {
         }
 
         @RequiredArgsConstructor
-        abstract class AbstractWrappedRepeatingList extends AbstractList<E> implements RandomAccess {
-            protected final List<E> sequence;
-            protected final int times;
+        final class WrappedRepeatingList extends AbstractList<E> implements RandomAccess {
+            private final List<E> sequence;
+            private final int times;
 
             @Override
             public int size() {
                 return multiplyExact(this.times, this.sequence.size());
+            }
+
+            @Override
+            public E get(int index) {
+                int sequenceSize = this.sequence.size();
+                checkIndex(index >= 0 && index < multiplyExact(this.times, sequenceSize), index);
+                return this.sequence.get(index % sequenceSize);
             }
 
             @Override
@@ -375,23 +382,7 @@ public class ListUtils {
             }
         }
 
-        return BinMath.isPow2(times) ?
-                new AbstractWrappedRepeatingList(sequence, times) {
-                    final int shift = Integer.numberOfTrailingZeros(this.times);
-
-                    @Override
-                    public E get(int index) {
-                        checkIndex(index >= 0 && (index >> this.shift) < this.sequence.size(), index);
-                        return this.sequence.get(index & (this.times - 1));
-                    }
-                } :
-                new AbstractWrappedRepeatingList(sequence, times) {
-                    @Override
-                    public E get(int index) {
-                        checkIndex(index >= 0 && index < this.size(), index);
-                        return this.sequence.get(index % this.times);
-                    }
-                };
+        return new WrappedRepeatingList(sequence, times);
     }
 
     /**

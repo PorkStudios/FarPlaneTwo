@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2022 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -405,6 +405,33 @@ public class RocksStorageInternal extends ReentrantReadWriteLock implements FSto
             //increment modification counter in order to cause all the outstanding transactions to fail
             this.modificationCounter++;
         } catch (RocksDBException e) {
+            if ("DeleteRangeCF not implemented".equals(e.getMessage())) {
+                //apparently we can't use DeleteRange in a TransactionDB, so we'll do the next best thing and iteratively issue a single delete for every key
+                try (WriteBatch batch = new WriteBatch()) {
+                    //iterate over each of the columns
+                    for (FStorageColumn column : new ReferenceOpenHashSet<>(columns)) {
+                        ColumnFamilyHandle handle = ((RocksStorageColumn) column).handle();
+
+                        //create an iterator in the column family
+                        try (RocksIterator itr = this.storage.db().newIterator(handle, RocksStorage.READ_OPTIONS)) {
+                            //delete every key individually
+                            for (itr.seekToFirst(); itr.isValid(); itr.next()) {
+                                batch.delete(handle, itr.key());
+                            }
+                        }
+                    }
+
+                    //execute all the deleteRange()s
+                    this.storage.db().write(RocksStorage.WRITE_OPTIONS, batch);
+
+                    //increment modification counter in order to cause all the outstanding transactions to fail
+                    this.modificationCounter++;
+                    return;
+                } catch (RocksDBException e1) {
+                    e.addSuppressed(e1);
+                }
+            }
+
             throw new FStorageException("failed to clear old column families", e);
         } finally {
             this.writeLock().unlock();

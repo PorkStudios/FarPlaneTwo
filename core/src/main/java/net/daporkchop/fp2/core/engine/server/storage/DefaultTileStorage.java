@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -32,34 +32,45 @@ import net.daporkchop.fp2.api.storage.external.FStorageItemFactory;
 import net.daporkchop.fp2.api.storage.internal.FStorageColumn;
 import net.daporkchop.fp2.api.storage.internal.FStorageColumnHintsInternal;
 import net.daporkchop.fp2.api.storage.internal.FStorageInternal;
+import net.daporkchop.fp2.common.util.DirectBufferHackery;
 import net.daporkchop.fp2.core.engine.EngineConstants;
+import net.daporkchop.fp2.core.engine.Tile;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.TilePosCodec;
 import net.daporkchop.fp2.core.engine.api.server.storage.FTileStorage;
 import net.daporkchop.fp2.core.engine.server.TileProvider;
 import net.daporkchop.fp2.core.engine.tile.ITileHandle;
+import net.daporkchop.fp2.core.engine.tile.ITileMetadata;
+import net.daporkchop.fp2.core.engine.tile.ITileSnapshot;
+import net.daporkchop.fp2.core.engine.tile.TileSnapshot;
 import net.daporkchop.fp2.core.util.GlobalAllocators;
 import net.daporkchop.fp2.core.util.datastructure.java.list.ArraySliceAsList;
 import net.daporkchop.fp2.core.util.datastructure.java.list.ListUtils;
+import net.daporkchop.lib.common.annotation.BorrowOwnership;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
-import net.daporkchop.lib.common.reference.ReferenceStrength;
 import net.daporkchop.lib.common.reference.cache.Cached;
-import net.daporkchop.lib.common.system.PlatformInfo;
+import net.daporkchop.lib.primitive.list.LongList;
+import net.daporkchop.lib.primitive.list.array.LongArrayList;
 import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.stream.Collectors;
 
 import static java.lang.Math.*;
 import static net.daporkchop.fp2.common.util.TypeSize.*;
 import static net.daporkchop.fp2.core.FP2Core.*;
+import static net.daporkchop.fp2.core.engine.tile.ITileMetadata.*;
+import static net.daporkchop.fp2.core.util.GlobalAllocators.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -72,66 +83,50 @@ public class DefaultTileStorage implements FTileStorage {
     protected static final String COLUMN_NAME_DIRTY_TIMESTAMP = "dirty_timestamp";
     protected static final String COLUMN_NAME_DATA = "data";
 
+    /**
+     * If {@code true}, storage operations will use on-heap {@code byte[]}s instead of off-heap memory.
+     * <p>
+     * This will cause a lot of additional GC churn, but is far less error-prone.
+     */
+    protected static final boolean HEAP_BUFFERS = false;
+
+    /**
+     * If {@code true}, bulk storage operations inherited from {@link FTileStorage} will use optimized implementations instead of
+     * simply processing each tile individually.
+     */
+    protected static final boolean OPTIMIZED_BULK_OPS = true;
+
     protected static final Cached<ArrayAllocator<ByteBuffer[]>> ALLOC_BYTEBUFFER_ARRAY = GlobalAllocators.getArrayAllocatorForComponentType(ByteBuffer.class);
-    protected static final Cached<ArrayAllocator<List<ByteBuffer>>> ALLOC_BYTEBUFFER_LIST = Cached.threadLocal(() -> new ArrayAllocator<List<ByteBuffer>>() {
-        final ArrayAllocator<ByteBuffer[]> delegate = ALLOC_BYTEBUFFER_ARRAY.get();
 
-        @Override
-        public List<ByteBuffer> atLeast(int length) {
-            return this.exactly(length);
-        }
-
-        @Override
-        public List<ByteBuffer> exactly(int length) {
-            //allocate an array, then wrap it in a List of exactly the requested length
-            ByteBuffer[] array = this.delegate.atLeast(length);
-            return ArraySliceAsList.wrap(array, 0, length);
-        }
-
-        @Override
-        public void release(@NonNull List<ByteBuffer> list) {
-            //unwrap the list and return an array
-            ByteBuffer[] array = ((ArraySliceAsList<ByteBuffer>) list).array();
-            Arrays.fill(array, 0, list.size(), null); //null out all elements in the array
-            this.delegate.release(array);
-        }
-    }, ReferenceStrength.WEAK);
-
-    @Deprecated
-    protected static long readLongLE(@NonNull byte[] src) {
-        checkRangeLen(src.length, 0, Long.BYTES);
-        return readLongLE(src, PUnsafe.arrayByteElementOffset(0));
+    static {
+        //we're reading longs directly out of byte arrays
+        PUnsafe.requireTightlyPackedByteArrays();
     }
 
-    @Deprecated
-    protected static long readLongLE(@NonNull byte[] src, int index) {
-        checkRangeLen(src.length, index, Long.BYTES);
-        return readLongLE(src, PUnsafe.arrayByteElementOffset(index));
+    protected static long fromByteArrayLongLE(@NonNull byte[] src) {
+        checkArg(src.length == Long.BYTES, "incorrectly sized array: expected " + Long.BYTES + ", contains %d", src.length);
+        return PUnsafe.getUnalignedLongLE(src, PUnsafe.arrayByteElementOffset(0));
     }
 
-    @Deprecated
-    protected static long readLongLE(long addr) {
-        return readLongLE(null, addr);
-    }
-
-    @Deprecated
-    protected static long readLongLE(Object base, long offset) {
-        long val = PUnsafe.getLong(base, offset);
-        return PlatformInfo.IS_BIG_ENDIAN ? Long.reverseBytes(val) : val;
-    }
-
-    @Deprecated
-    protected static byte[] writeLongLE(long val) {
+    protected static byte[] toByteArrayLongLE(long val) {
         byte[] dst = new byte[Long.BYTES];
-        writeLongLE(dst, 0, val);
+        PUnsafe.putUnalignedLongLE(dst, PUnsafe.arrayByteElementOffset(0), val);
         return dst;
     }
 
-    @Deprecated
-    protected static void writeLongLE(@NonNull byte[] dst, int index, long val) {
-        checkRangeLen(dst.length, index, Long.BYTES);
+    protected static long readTimestampFromNullableByteArray(byte[] src) {
+        return src != null
+                ? fromByteArrayLongLE(src)
+                : TIMESTAMP_BLANK; //key isn't present in db -> the tile doesn't exist
+    }
 
-        PUnsafe.putLong(dst, PUnsafe.ARRAY_BYTE_BASE_OFFSET + index, PlatformInfo.IS_BIG_ENDIAN ? Long.reverseBytes(val) : val);
+    protected static long readTimestampFromDirectMemory(@BorrowOwnership long addr, int size) {
+        if (size < 0) {
+            return TIMESTAMP_BLANK; //key isn't present in db -> the tile doesn't exist
+        } else {
+            checkArg(size == Long.BYTES, "incorrectly sized array: expected " + Long.BYTES + ", contains %d", size);
+            return PUnsafe.getUnalignedLongLE(addr);
+        }
     }
 
     public static FStorageItemFactory<FTileStorage> factory(@NonNull TileProvider tileProvider) {
@@ -157,7 +152,7 @@ public class DefaultTileStorage implements FTileStorage {
         return new FStorageItemFactory<FTileStorage>() {
             @Override
             public ConfigurationResult configure(@NonNull ConfigurationCallback callback) {
-                int expectedPositionSize = toIntExact(TilePosCodec.size());
+                int expectedPositionSize = TilePosCodec.size();
 
                 //register the columns
                 callback.registerColumn(COLUMN_NAME_TIMESTAMP, //tile timestamp
@@ -240,9 +235,13 @@ public class DefaultTileStorage implements FTileStorage {
         return this.handleCache.getUnchecked(pos);
     }
 
-    /*@Override
+    @Override
     @SneakyThrows(FStorageException.class)
-    public List<ITileSnapshot<POS, T>> multiSnapshot(@NonNull List<POS> positions) {
+    public List<ITileSnapshot> multiSnapshot(@NonNull List<TilePos> positions) {
+        if (!OPTIMIZED_BULK_OPS) {
+            return FTileStorage.super.multiSnapshot(positions);
+        }
+
         int length = positions.size();
 
         if (length == 0) { //nothing to do!
@@ -250,13 +249,39 @@ public class DefaultTileStorage implements FTileStorage {
         }
 
         //read from storage
-        List<byte[]> valueBytes = this.storageInternal.readGet(access -> {
-            int posSize = toIntExact(this.posCodec.size());
-            int tileMaxSize = toIntExact(this.tileCodec.maxSize());
+        return this.storageInternal.readGet(access -> {
+            if (HEAP_BUFFERS) {
+                ArrayAllocator<int[]> intArrayAlloc = ALLOC_INT.get();
+                int[] sizes = intArrayAlloc.atLeast(multiplyExact(length, 2));
+
+                try {
+                    List<byte[]> keyBytes = positions.stream().map(TilePosCodec::toByteArray).collect(Collectors.toList());
+
+                    List<byte[]> timestampsTilesBytes = access.multiGet(
+                            ListUtils.repeatSequence(this.listColumns_Timestamp_Data, length),
+                            ListUtils.repeatElements(keyBytes, 2));
+
+                    //read the resulting tiles into heap objects
+                    List<ITileSnapshot> out = new ArrayList<>(length);
+                    for (int i = 0, j = 0; i < length; i++) {
+                        byte[] timestampBytes = timestampsTilesBytes.get(j++);
+                        byte[] tileBytes = timestampsTilesBytes.get(j++);
+
+                        if (timestampBytes == null) { //timestamp wasn't present in the db, meaning the tile doesn't exist
+                            out.add(null);
+                        } else { //the tile exists
+                            out.add(TileSnapshot.of(positions.get(i), readTimestampFromNullableByteArray(timestampBytes), tileBytes));
+                        }
+                    }
+                    return out;
+                } finally {
+                    intArrayAlloc.release(sizes);
+                }
+            }
+
+            final int tileMaxSize = toIntExact(Tile.CODEC.maxSize());
 
             ArrayAllocator<int[]> intArrayAlloc = ALLOC_INT.get();
-            ArrayAllocator<ByteBuffer[]> byteBufferArrayAlloc = ALLOC_BYTEBUFFER_ARRAY.get();
-            Recycler<ByteBuffer> byteBufferRecycler = FAKE_DIRECT_BYTEBUFFER_RECYCLER.get();
 
             //helper variables for array sizes
 
@@ -264,81 +289,79 @@ public class DefaultTileStorage implements FTileStorage {
             int[] sizes = intArrayAlloc.atLeast(multiplyExact(length, 2));
 
             //allocate an array of direct ByteBuffers
-            int tmpBuffersKeysOffset = 0;
-            int tmpBuffersTimestampsTilesOffset = tmpBuffersKeysOffset + length;
-            int tmpBufferCount = tmpBuffersTimestampsTilesOffset + multiplyExact(length, 2);
-            //TODO: ByteBuffer[] tmpBuffers = byteBufferRecycler.allocate(tmpBufferCount, byteBufferArrayAlloc);
-            ByteBuffer[] tmpBuffers = byteBufferArrayAlloc.atLeast(tmpBufferCount);
-            for (int i = 0; i < tmpBufferCount; i++) {
-                tmpBuffers[i] = byteBufferRecycler.allocate();
-            }
+            ByteBuffer[] keyBuffers = new ByteBuffer[length];
+            ByteBuffer[] timestampTileBuffers = new ByteBuffer[length * 2];
 
             //allocate temporary off-heap buffer for serialized keys, tile timestamps and tile data
-            long bufferKeysOffset = 0L;
-            long bufferTimestampsTilesOffset = addExact(bufferKeysOffset, multiplyExact(length, posSize));
-            long buffer = PUnsafe.allocateMemory(addExact(bufferTimestampsTilesOffset, addExact(multiplyExact(length, (long) tileMaxSize), multiplyExact(length, (long) LONG_SIZE))));
+            final long bufferKeysOffset = 0L;
+            final int bufferKeysStride = TilePosCodec.size();
+            final long bufferKeysSize = length * (long) bufferKeysStride;
+
+            final long bufferTimestampsOffset = bufferKeysOffset + bufferKeysSize;
+            final int bufferTimestampsStride = Long.BYTES;
+            final long bufferTimestampsSize = length * (long) bufferTimestampsStride;
+
+            final long bufferTilesOffset = bufferTimestampsOffset + bufferTimestampsSize;
+            final int bufferTilesStride = tileMaxSize;
+            final long bufferTilesSize = length * (long) bufferTilesStride;
+
+            final long bufferSize = bufferTilesOffset + bufferTilesSize;
+
+            long buffer = PUnsafe.allocateMemory(bufferSize);
             try {
-                long bufferKeys = buffer + bufferKeysOffset;
-                long bufferTimestampsTiles = buffer + bufferTimestampsTilesOffset;
+                //serialize keys and configure key buffers
+                for (int i = 0; i < length; i++) {
+                    long addr = buffer + bufferKeysOffset + i * (long) bufferKeysStride;
+                    TilePosCodec.store(positions.get(i), addr);
 
-                { //serialize keys
-                    int i = 0;
-                    for (long addr = bufferKeys; i < length; i++, addr += posSize) {
-                        this.posCodec.store(positions.get(i), addr);
-
-                        //configure buffer
-                        DirectBufferHackery.reset(tmpBuffers[tmpBuffersKeysOffset + i], addr, posSize);
-                    }
+                    keyBuffers[i] = DirectBufferHackery.wrapByte(addr, bufferKeysStride);
                 }
 
-                { //configure buffers for timestamps and data
-                    int i = 0;
-                    for (long addr = bufferTimestampsTiles; i < length; ) {
-                        DirectBufferHackery.reset(tmpBuffers[tmpBuffersTimestampsTilesOffset + i++], addr, LONG_SIZE);
-                        addr += LONG_SIZE;
-                        DirectBufferHackery.reset(tmpBuffers[tmpBuffersTimestampsTilesOffset + i++], addr, LONG_SIZE);
-                        addr += tileMaxSize;
-                    }
+                //configure buffers for timestamps and data
+                for (int i = 0, j = 0; i < length; i++) {
+                    long timestampAddr = buffer + bufferTimestampsOffset + i * (long) bufferTimestampsStride;
+                    timestampTileBuffers[j++] = DirectBufferHackery.wrapByte(timestampAddr, bufferTimestampsStride);
+
+                    long tileAddr = buffer + bufferTilesOffset + i * (long) bufferTilesStride;
+                    timestampTileBuffers[j++] = DirectBufferHackery.wrapByte(tileAddr, bufferTilesStride);
                 }
 
                 //read all timestamps and values simultaneously
                 checkState(access.multiGet(
-                        ListUtils.repeatSequence(ImmutableList.of(this.columnTimestamp, this.columnData), length),
-                        ListUtils.repeatElements(ArraySliceAsList.wrap(tmpBuffers, tmpBuffersKeysOffset, length), 2),
-                        ArraySliceAsList.wrap(tmpBuffers, tmpBuffersTimestampsTilesOffset, length * 2),
+                        ListUtils.repeatSequence(this.listColumns_Timestamp_Data, length),
+                        ListUtils.repeatElements(ArraySliceAsList.wrap(keyBuffers, 0, length), 2),
+                        ArraySliceAsList.wrap(timestampTileBuffers, 0, length * 2),
                         sizes));
 
-                //TODO: actually do something with the retrieved data
-                throw new UnsupportedOperationException();
+                //read the resulting tiles into heap objects
+                List<ITileSnapshot> out = new ArrayList<>(length);
+                for (int i = 0, j = 0; i < length; i++) {
+                    int timestampSize = sizes[j++];
+                    int tileSize = sizes[j++];
+
+                    long timestampAddr = buffer + bufferTimestampsOffset + i * (long) bufferTimestampsStride;
+                    long tileAddr = buffer + bufferTilesOffset + i * (long) bufferTilesStride;
+
+                    if (timestampSize < 0) { //timestamp wasn't present in the db, meaning the tile doesn't exist
+                        out.add(null);
+                    } else { //the tile exists
+                        out.add(TileSnapshot.of(positions.get(i),
+                                readTimestampFromDirectMemory(timestampAddr, timestampSize),
+                                tileAddr, tileSize));
+                    }
+                }
+                return out;
             } finally {
                 PUnsafe.freeMemory(buffer);
-                //TODO: byteBufferRecycler.release(tmpBuffers, tmpBufferCount, byteBufferArrayAlloc);
-                for (int i = 0; i < tmpBufferCount; i++) {
-                    byteBufferRecycler.release(tmpBuffers[i]);
-                }
-                Arrays.fill(tmpBuffers, 0, tmpBufferCount, null);
-                byteBufferArrayAlloc.release(tmpBuffers);
-
+                Arrays.fill(timestampTileBuffers, null);
+                Arrays.fill(keyBuffers, null);
                 intArrayAlloc.release(sizes);
             }
         });
-
-        //construct snapshots
-        List<ITileSnapshot<POS, T>> out = new ArrayList<>(length);
-        for (int i = 0; i < length; i++) {
-            byte[] timestampBytes = valueBytes.get((i << 1) + 0);
-            byte[] tileBytes = valueBytes.get((i << 1) + 1);
-
-            out.add(timestampBytes != null
-                    ? new TileSnapshot<>(positions.get(i), readLongLE(timestampBytes), tileBytes)
-                    : null);
-        }
-        return out;
     }
 
-    @Override
     @SneakyThrows(FStorageException.class)
-    public LongList multiTimestamp(@NonNull List<POS> positions) {
+    private LongList genericMultiGetTimestamps(@NonNull List<TilePos> positions, @NonNull FStorageColumn column) {
         int length = positions.size();
         LongList out = new LongArrayList(length);
 
@@ -348,17 +371,30 @@ public class DefaultTileStorage implements FTileStorage {
 
         //read all timestamps simultaneously
         List<byte[]> timestamps = this.storageInternal.readGet(access -> access.multiGet(
-                Arrays.asList(PArrays.filled(length, FStorageColumn.class, this.columnTimestamp)),
-                positions.stream().map(POS::toBytes).collect(Collectors.toList())));
+                ListUtils.repeat(column, length),
+                positions.stream().map(TilePosCodec::toByteArray).collect(Collectors.toList())));
 
         //deserialize timestamp values
-        timestamps.forEach(timestamp -> out.add(timestamp != null ? readLongLE(timestamp) : TIMESTAMP_BLANK));
+        timestamps.forEach(timestamp -> out.add(readTimestampFromNullableByteArray(timestamp)));
         return out;
     }
 
     @Override
+    public LongList multiTimestamp(@NonNull List<TilePos> positions) {
+        if (!OPTIMIZED_BULK_OPS) {
+            return FTileStorage.super.multiTimestamp(positions);
+        }
+
+        return this.genericMultiGetTimestamps(positions, this.columnTimestamp);
+    }
+
+    @Override
     @SneakyThrows(FStorageException.class)
-    public BitSet multiSet(@NonNull List<POS> positions, @NonNull List<ITileMetadata> metadatas, @NonNull List<T> tiles) {
+    public BitSet multiSet(@NonNull List<TilePos> positions, @NonNull List<ITileMetadata> metadatas, @NonNull List<Tile> tiles) {
+        if (!OPTIMIZED_BULK_OPS) {
+            return FTileStorage.super.multiSet(positions, metadatas, tiles);
+        }
+
         if (positions.isEmpty()) { //nothing to do!
             return new BitSet();
         }
@@ -366,28 +402,15 @@ public class DefaultTileStorage implements FTileStorage {
         BitSet result = this.storageInternal.transactAtomicGet(access -> {
             int length = positions.size();
 
+            //TODO: optimized off-heap implementation?
+
             //convert positions to key bytes
-            byte[][] allKeyBytes = positions.stream().map(POS::toBytes).toArray(byte[][]::new);
+            byte[][] allKeyBytes = positions.stream().map(TilePosCodec::toByteArray).toArray(byte[][]::new);
 
             //read timestamps and dirty timestamps
-            List<byte[]> timestampsAndDirtyTimestamps;
-            {
-                //prepare parameter arrays for MultiGet
-                int doubleLength = multiplyExact(length, 2);
-                FStorageColumn[] columns = new FStorageColumn[doubleLength];
-                byte[][] keys = new byte[doubleLength][];
-
-                for (int i = 0; i < doubleLength; ) {
-                    byte[] keyBytes = positions.get(i >> 1).toBytes();
-
-                    columns[i] = this.columnTimestamp;
-                    keys[i++] = keyBytes;
-                    columns[i] = this.columnDirtyTimestamp;
-                    keys[i++] = keyBytes;
-                }
-
-                timestampsAndDirtyTimestamps = access.multiGet(Arrays.asList(columns), Arrays.asList(keys));
-            }
+            List<byte[]> timestampsAndDirtyTimestamps = access.multiGet(
+                    ListUtils.repeatSequence(this.listColumns_Timestamp_DirtyTimestamp, length),
+                    ListUtils.repeatElements(Arrays.asList(allKeyBytes), 2));
 
             ByteBuf buf = ByteBufAllocator.DEFAULT.heapBuffer();
             try {
@@ -395,18 +418,14 @@ public class DefaultTileStorage implements FTileStorage {
 
                 for (int i = 0; i < length; i++) {
                     byte[] timestampBytes = timestampsAndDirtyTimestamps.get((i << 1) + 0);
-                    long timestamp = timestampBytes != null
-                            ? readLongLE(timestampBytes) //timestamp for this tile exists, extract it from the byte array
-                            : TIMESTAMP_BLANK;
+                    long timestamp = readTimestampFromNullableByteArray(timestampBytes);
 
                     byte[] dirtyTimestampBytes = timestampsAndDirtyTimestamps.get((i << 1) + 1);
-                    long dirtyTimestamp = dirtyTimestampBytes != null
-                            ? readLongLE(dirtyTimestampBytes) //dirty timestamp for this tile exists, extract it from the byte array
-                            : TIMESTAMP_BLANK;
+                    long dirtyTimestamp = readTimestampFromNullableByteArray(dirtyTimestampBytes);
 
                     byte[] keyBytes = allKeyBytes[i];
                     ITileMetadata metadata = metadatas.get(i);
-                    T tile = tiles.get(i);
+                    Tile tile = tiles.get(i);
 
                     if (metadata.timestamp() <= timestamp) { //the new timestamp isn't newer than the existing one, so we can't replace it
                         //skip this position
@@ -417,7 +436,7 @@ public class DefaultTileStorage implements FTileStorage {
                     out.set(i);
 
                     //store new timestamp in db
-                    access.put(this.columnTimestamp, keyBytes, writeLongLE(metadata.timestamp()));
+                    access.put(this.columnTimestamp, keyBytes, toByteArrayLongLE(metadata.timestamp()));
 
                     //clear dirty timestamp if needed
                     if (metadata.timestamp() >= dirtyTimestamp) {
@@ -447,76 +466,51 @@ public class DefaultTileStorage implements FTileStorage {
     }
 
     @Override
-    @SneakyThrows(FStorageException.class)
-    public LongList multiDirtyTimestamp(@NonNull List<POS> positions) {
-        int length = positions.size();
-        LongList out = new LongArrayList(length);
-
-        if (length == 0) { //nothing to do!
-            return out;
+    public LongList multiDirtyTimestamp(@NonNull List<TilePos> positions) {
+        if (!OPTIMIZED_BULK_OPS) {
+            return FTileStorage.super.multiDirtyTimestamp(positions);
         }
 
-        //read all dirty timestamps simultaneously
-        List<byte[]> dirtyTimestamps = this.storageInternal.readGet(access -> access.multiGet(
-                Arrays.asList(PArrays.filled(length, FStorageColumn.class, this.columnDirtyTimestamp)),
-                positions.stream().map(POS::toBytes).collect(Collectors.toList())));
-
-        //deserialize dirty timestamp values
-        dirtyTimestamps.forEach(dirtyTimestamp -> out.add(dirtyTimestamp != null ? readLongLE(dirtyTimestamp) : TIMESTAMP_BLANK));
-        return out;
+        return this.genericMultiGetTimestamps(positions, this.columnDirtyTimestamp);
     }
 
     @Override
     @SneakyThrows(FStorageException.class)
-    public BitSet multiMarkDirty(@NonNull List<POS> positions, long dirtyTimestamp) {
+    public BitSet multiMarkDirty(@NonNull List<TilePos> positions, long dirtyTimestamp) {
+        if (!OPTIMIZED_BULK_OPS) {
+            return FTileStorage.super.multiMarkDirty(positions, dirtyTimestamp);
+        }
+
         //we'll lock all of the positions at once, compare each one and then modify as many as needed. the logic here is identical to
         //  DefaultTileHandle#markDirty(long), but in bulk, and since DefaultTileHandle doesn't cache anything internally, we don't need to get any instances
         //  of DefaultTileHandle or do any additional synchronization.
 
-        if (positions.isEmpty()) { //nothing to do!
+        int length = positions.size();
+        if (length == 0) { //nothing to do!
             return new BitSet();
         }
 
         BitSet result = this.storageInternal.transactAtomicGet(access -> {
-            int length = positions.size();
+            //TODO: optimized off-heap implementation?
 
             //convert positions to key bytes
-            byte[][] allKeyBytes = positions.stream().map(POS::toBytes).toArray(byte[][]::new);
+            byte[][] allKeyBytes = positions.stream().map(TilePosCodec::toByteArray).toArray(byte[][]::new);
 
             //read timestamps and dirty timestamps
-            List<byte[]> timestampsAndDirtyTimestamps;
-            {
-                //prepare parameter arrays for MultiGet
-                int doubleLength = multiplyExact(length, 2);
-                FStorageColumn[] columns = new FStorageColumn[doubleLength];
-                byte[][] keys = new byte[doubleLength][];
-
-                for (int i = 0; i < doubleLength; ) {
-                    byte[] keyBytes = positions.get(i >> 1).toBytes();
-
-                    columns[i] = this.columnTimestamp;
-                    keys[i++] = keyBytes;
-                    columns[i] = this.columnDirtyTimestamp;
-                    keys[i++] = keyBytes;
-                }
-
-                timestampsAndDirtyTimestamps = access.multiGet(Arrays.asList(columns), Arrays.asList(keys));
-            }
+            List<byte[]> timestampsAndDirtyTimestamps = access.multiGet(
+                    ListUtils.repeatSequence(this.listColumns_Timestamp_DirtyTimestamp, length),
+                    ListUtils.repeatElements(Arrays.asList(allKeyBytes), 2));
 
             //iterate through positions, updating the dirty timestamps as needed
-            byte[] dirtyTimestampArray = new byte[Long.BYTES];
+            byte[] dirtyTimestampArray = toByteArrayLongLE(dirtyTimestamp);
 
             BitSet out = new BitSet(length);
-            for (int i = 0; i < length; i++) {
-                byte[] timestampBytes = timestampsAndDirtyTimestamps.get((i << 1) + 0);
-                long timestamp = timestampBytes != null
-                        ? readLongLE(timestampBytes) //timestamp for this tile exists, extract it from the byte array
-                        : TIMESTAMP_BLANK;
+            for (int i = 0, j = 0; i < length; i++) {
+                byte[] timestampBytes = timestampsAndDirtyTimestamps.get(j++);
+                long timestamp = readTimestampFromNullableByteArray(timestampBytes);
 
-                byte[] dirtyTimestampBytes = timestampsAndDirtyTimestamps.get((i << 1) + 1);
-                long existingDirtyTimestamp = dirtyTimestampBytes != null
-                        ? readLongLE(dirtyTimestampBytes) //dirty timestamp for this tile exists, extract it from the byte array
-                        : TIMESTAMP_BLANK;
+                byte[] dirtyTimestampBytes = timestampsAndDirtyTimestamps.get(j++);
+                long existingDirtyTimestamp = readTimestampFromNullableByteArray(dirtyTimestampBytes);
 
                 if (timestamp == TIMESTAMP_BLANK //the tile doesn't exist, so we can't mark it as dirty
                     || dirtyTimestamp <= timestamp
@@ -526,7 +520,6 @@ public class DefaultTileStorage implements FTileStorage {
                 }
 
                 //store new dirty timestamp in db
-                writeLongLE(dirtyTimestampArray, 0, dirtyTimestamp);
                 access.put(this.columnDirtyTimestamp, allKeyBytes[i], dirtyTimestampArray);
 
                 //save the position to return it as part of the result stream
@@ -543,20 +536,25 @@ public class DefaultTileStorage implements FTileStorage {
 
     @Override
     @SneakyThrows(FStorageException.class)
-    public BitSet multiClearDirty(@NonNull List<POS> positions) {
-        if (positions.isEmpty()) { //nothing to do!
+    public BitSet multiClearDirty(@NonNull List<TilePos> positions) {
+        if (!OPTIMIZED_BULK_OPS) {
+            return FTileStorage.super.multiClearDirty(positions);
+        }
+
+        int length = positions.size();
+        if (length == 0) { //nothing to do!
             return new BitSet();
         }
 
         return this.storageInternal.transactAtomicGet(access -> {
-            int length = positions.size();
+            //TODO: optimized off-heap implementation?
 
             //convert positions to key bytes
-            byte[][] allKeyBytes = positions.stream().map(POS::toBytes).toArray(byte[][]::new);
+            byte[][] allKeyBytes = positions.stream().map(TilePosCodec::toByteArray).toArray(byte[][]::new);
 
             //read all dirty timestamps simultaneously
             List<byte[]> dirtyTimestamps = access.multiGet(
-                    Arrays.asList(PArrays.filled(length, FStorageColumn.class, this.columnDirtyTimestamp)),
+                    ListUtils.repeat(this.columnDirtyTimestamp, length),
                     Arrays.asList(allKeyBytes));
 
             BitSet out = new BitSet(length);
@@ -570,7 +568,7 @@ public class DefaultTileStorage implements FTileStorage {
             }
             return out;
         });
-    }*/
+    }
 
     @Override
     @SneakyThrows(FStorageException.class)

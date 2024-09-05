@@ -24,7 +24,8 @@ import net.daporkchop.fp2.core.engine.Tile;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 
-import java.util.stream.Stream;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Converts uncompressed tile contents to renderable data which can be stored in a {@link net.daporkchop.fp2.core.engine.client.bake.storage.BakeStorage}.
@@ -38,7 +39,7 @@ public interface IRenderBaker<VertexType extends AttributeStruct> {
      * @param pos the position of the tile
      * @return Gets the positions of the tiles which use the tile at the given position as a bake input
      */
-    Stream<TilePos> bakeOutputs(@NonNull TilePos pos);
+    Set<TilePos> bakeOutputs(@NonNull TilePos pos);
 
     /**
      * Gets the positions of the tiles required in order to bake the tile at the given position.
@@ -46,7 +47,7 @@ public interface IRenderBaker<VertexType extends AttributeStruct> {
      * @param pos the position of the tile to bake
      * @return the positions of the tiles required in order to bake the tile at the given position
      */
-    Stream<TilePos> bakeInputs(@NonNull TilePos pos);
+    List<TilePos> bakeInputs(@NonNull TilePos pos);
 
     /**
      * Bakes the tile data at the given position.

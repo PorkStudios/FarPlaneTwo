@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -33,7 +33,6 @@ import org.rocksdb.RocksIterator;
 import org.rocksdb.Snapshot;
 import org.rocksdb.Transaction;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
 
@@ -105,8 +104,7 @@ public class RocksAccessTransaction implements FStorageAccess, ArrayOnlyFStorage
                 for (int i = 0; i < keysArray.length; ) {
                     int batchSize = min(keysArray.length - i, MAX_BATCH_SIZE);
 
-                    byte[][] tmp = this.transaction.multiGetForUpdate(this.readOptions, handles.subList(i, i + batchSize), Arrays.copyOfRange(keysArray, i, i
-                                                                                                                                                            + batchSize));
+                    byte[][] tmp = this.transaction.multiGetForUpdate(this.readOptions, handles.subList(i, i + batchSize), Arrays.copyOfRange(keysArray, i, i + batchSize));
                     System.arraycopy(tmp, 0, result, i, batchSize);
 
                     i += batchSize;
