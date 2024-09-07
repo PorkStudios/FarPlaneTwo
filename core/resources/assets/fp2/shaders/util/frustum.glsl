@@ -18,8 +18,7 @@
  *
  */
 
-#ifndef UTIL_FRUSTUM
-#define UTIL_FRUSTUM
+#pragma once
 
 //
 //
@@ -85,5 +84,3 @@ bool isBoxInFrustum(in vec3 min, in vec3 max) {
     }
     return true;
 }
-
-#endif //UTIL_FRUSTUM

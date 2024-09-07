@@ -19,6 +19,7 @@
 
 package net.daporkchop.fp2.gl.shader.source;
 
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.common.util.ResourceProvider;
@@ -49,10 +50,11 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 public final class IncludePreprocessor {
     private static final Pattern INCLUDE_PATTERN = Pattern.compile("^#include <\"([^\"]+)\">");
 
+    @NonNull
     private final ResourceProvider resourceProvider;
 
     private final List<SourceLine> lines = new ArrayList<>();
-    private final Set<Identifier> includedFiles = Collections.newSetFromMap(new IdentityHashMap<>());
+    private final Set<Identifier> includedFilesWithPragmaOnce = Collections.newSetFromMap(new IdentityHashMap<>());
 
     /**
      * Adds the version string for the current OpenGL context to the beginning of the shader source code.
@@ -105,7 +107,8 @@ public final class IncludePreprocessor {
     }
 
     private IncludePreprocessor include(Identifier file, SourceLine includedFrom) throws IOException, ResourceNotFoundException {
-        if (!this.includedFiles.add(file)) { //this source file has already been included!
+        if (this.includedFilesWithPragmaOnce.contains(file)) {
+            //this source file contains a "#pragma once" and has already been included, don't include it again!
             return this;
         }
 
@@ -117,6 +120,9 @@ public final class IncludePreprocessor {
                     Matcher matcher = INCLUDE_PATTERN.matcher(line);
                     checkArg(matcher.find(), sourceLine);
                     this.include(Identifier.from(matcher.group(1)), sourceLine);
+                } else if ("#pragma once".equals(line)) {
+                    //remember that the file contained a line with "#pragma once" so that we don't end up including it again
+                    this.includedFilesWithPragmaOnce.add(file);
                 } else {
                     this.lines.add(sourceLine);
                 }

@@ -18,8 +18,6 @@
  *
  */
 
-#define FRAG_BLOCK
-
 #include <"fp2:shaders/frag/common.frag">
 #include <"fp2:shaders/frag/fog.frag">
 #include <"fp2:shaders/util/draw_state_uniforms.glsl"> // u_alphaRefCutout, u_debug_colorMode

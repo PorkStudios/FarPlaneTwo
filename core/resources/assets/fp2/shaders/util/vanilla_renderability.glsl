@@ -18,8 +18,7 @@
  *
  */
 
-#ifndef UTIL_VANILLA_RENDERABILITY
-#define UTIL_VANILLA_RENDERABILITY
+#pragma once
 
 //
 //
@@ -69,5 +68,3 @@ bool isVanillaRenderableLevel0(in ivec3 chunkPos) {
     //extract the bit at the given index
     return (b_VanillaRenderability.flags[idx >> 5u] & (1u << idx)) != 0u;
 }
-
-#endif //UTIL_VANILLA_RENDERABILITY

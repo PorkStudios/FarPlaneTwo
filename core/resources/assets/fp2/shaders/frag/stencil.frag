@@ -18,8 +18,6 @@
  *
  */
 
-#define FRAG_STENCIL
-
 #include <"fp2:shaders/frag/common.frag">
 #include <"fp2:shaders/frag/fog.frag">
 

@@ -18,8 +18,7 @@
  *
  */
 
-#ifndef UTIL_INDIRECT_DRAW
-#define UTIL_INDIRECT_DRAW
+#pragma once
 
 //
 //
@@ -41,5 +40,3 @@ struct DrawElementsIndirectCommand {
     uint baseVertex;
     uint baseInstance;
 };
-
-#endif //UTIL_INDIRECT_DRAW

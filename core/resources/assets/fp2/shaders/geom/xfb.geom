@@ -18,6 +18,8 @@
  *
  */
 
+#pragma once
+
 #define PROVOKING (2)
 
 vec3 normalVector() {

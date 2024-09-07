@@ -18,8 +18,7 @@
  *
  */
 
-#ifndef FRAG_FOG
-#define FRAG_FOG
+#pragma once
 
 #include <"fp2:shaders/common.glsl">
 
@@ -62,5 +61,3 @@ vec4 addFog(in vec4 color) {
     //mix fog colors
     return mix(u_fogColor, color, clamp(fogFactor, 0., 1.));
 }
-
-#endif //FRAG_FOG

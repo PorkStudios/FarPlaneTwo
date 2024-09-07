@@ -18,8 +18,7 @@
  *
  */
 
-#ifndef UTIL_CAMERA_TRANSFORM
-#define UTIL_CAMERA_TRANSFORM
+#pragma once
 
 #include <"fp2:shaders/util/camera_state_uniforms.glsl"> // u_modelViewProjectionMatrix
 
@@ -38,5 +37,3 @@ vec4 cameraTransform(vec4 point) {
 vec4 cameraTransform(vec3 point)   {
     return cameraTransform(vec4(point, 1.));
 }
-
-#endif //UTIL_CAMERA_TRANSFORM

@@ -18,8 +18,7 @@
  *
  */
 
-#ifndef UTIL_DRAW_STATE_UNIFORMS
-#define UTIL_DRAW_STATE_UNIFORMS
+#pragma once
 
 //
 //
@@ -40,5 +39,3 @@ layout(DRAW_STATE_UNIFORMS_UBO_LAYOUT) uniform DRAW_STATE_UNIFORMS_UBO_NAME {
     //debug state
     int u_debug_colorMode; //TODO: make this a constant and generate specialized shader variants (?)
 };
-
-#endif //UTIL_DRAW_STATE_UNIFORMS

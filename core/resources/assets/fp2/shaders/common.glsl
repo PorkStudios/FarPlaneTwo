@@ -18,8 +18,7 @@
  *
  */
 
-#ifndef GLSL_COMMON
-#define GLSL_COMMON
+#pragma once
 
 //
 //
@@ -144,5 +143,3 @@ int normalToFaceIndex(vec3 normal)  {
         return normal.x < 0. ? 3 : 0;
     }*/
 }
-
-#endif //GLSL_COMMON

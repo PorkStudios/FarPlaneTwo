@@ -18,8 +18,7 @@
  *
  */
 
-#ifndef VERT_COMMON
-#define VERT_COMMON
+#pragma once
 
 #include <"fp2:shaders/common.glsl">
 
@@ -77,5 +76,3 @@ vec3 computeVertexColor(vec3 va_color, ivec4 tile_position) {
     //debug colors aren't enabled, we can just use the standard color
     return va_color;
 }
-
-#endif //VERT_COMMON

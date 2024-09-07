@@ -18,8 +18,7 @@
  *
  */
 
-#ifndef VERT_FOG
-#define VERT_FOG
+#pragma once
 
 #include <"fp2:shaders/common.glsl">
 
@@ -47,5 +46,3 @@ void setFog(in vec3 relativePos) {
         fog_out.depth = length(relativePos);
     }
 }
-
-#endif //VERT_FOG

@@ -18,8 +18,7 @@
  *
  */
 
-#ifndef UTIL_CAMERA_STATE_UNIFORMS
-#define UTIL_CAMERA_STATE_UNIFORMS
+#pragma once
 
 //
 //
@@ -32,5 +31,3 @@ layout(CAMERA_STATE_UNIFORMS_UBO_LAYOUT) uniform CAMERA_STATE_UNIFORMS_UBO_NAME 
     ivec3 u_positionFloor;
     vec3 u_positionFrac;
 };
-
-#endif //UTIL_CAMERA_STATE_UNIFORMS

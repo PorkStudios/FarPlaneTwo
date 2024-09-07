@@ -18,8 +18,7 @@
  *
  */
 
-#ifndef FRAG_COMMON
-#define FRAG_COMMON
+#pragma once
 
 #include <"fp2:shaders/common.glsl">
 
@@ -140,5 +139,3 @@ vec4 sampleTerrain(vec3 normal)  {
 
     return color_out;
 }
-
-#endif //FRAG_COMMON
