@@ -317,4 +317,51 @@ public abstract class TestNDimensionalIntSet<IntSet extends NDimensionalIntSet> 
         val computed = test.countInRange(begin, end);
         checkState(expected == computed, "%s != %s", expected, computed);
     }
+
+    @Test
+    public void testAddAllInRangeSmallCoordinates() {
+        this.testAddAllInRange(-500, 500);
+    }
+
+    protected void testAddAllInRangeBetween(Set<int[]> reference, IntSet test, int[] begin, int[] end) {
+        val expected = allPointsBetween(begin, end).filter(reference::add).count();
+        val computed = test.addAllInRange(begin, end);
+        checkState(expected == computed, "%s != %s", expected, computed);
+    }
+
+    protected void testAddAllInRange(int min, int max) {
+        val reference = this.makeArraySet();
+        val r = this.makeRandom();
+
+        {
+            val test = this.makeSet();
+            this.ensureEqual(reference, test);
+
+            for (int i = 0; i < 100; i++) {
+                if (r.nextBoolean()) {
+                    test.clear();
+                    reference.clear();
+                }
+
+                int[] begin = this.getPoint(r, min, max);
+                int[] end = Arrays.stream(begin).map(j -> j + r.nextInt(1, (max - min) / 16)).toArray();
+
+                this.testAddAllInRangeBetween(reference, test, begin, end);
+                this.ensureEqual(reference, test);
+            }
+
+            for (int i = 0; i < 10; i++) {
+                if (r.nextBoolean()) {
+                    test.clear();
+                    reference.clear();
+                }
+
+                int[] begin = this.getPoint(r, min, max);
+                int[] end = Arrays.stream(begin).map(j -> j + 128).toArray();
+
+                this.testAddAllInRangeBetween(reference, test, begin, end);
+                this.ensureEqual(reference, test);
+            }
+        }
+    }
 }

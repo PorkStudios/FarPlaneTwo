@@ -468,8 +468,8 @@ public class Int2HashSet implements NDimensionalIntSet {
 
     @Override
     public int countInRange(int beginX, int beginY, int endX, int endY) {
-        checkArg(beginX <= endX, "beginX (%s) may not be greater than endX (%d)", beginX, endX);
-        checkArg(beginY <= endY, "beginY (%s) may not be greater than endY (%d)", beginY, endY);
+        checkArg(beginX <= endX, "beginX (%s) may not be greater than endX (%s)", beginX, endX);
+        checkArg(beginY <= endY, "beginY (%s) may not be greater than endY (%s)", beginY, endY);
         if (beginX == endX || beginY == endY) { //range is empty
             return 0;
         }
@@ -545,6 +545,58 @@ public class Int2HashSet implements NDimensionalIntSet {
     }
 
     @Override
+    public int addAllInRange(int beginX, int beginY, int endX, int endY) {
+        checkArg(beginX <= endX, "beginX (%s) may not be greater than endX (%s)", beginX, endX);
+        checkArg(beginY <= endY, "beginY (%s) may not be greater than endY (%s)", beginY, endY);
+        if (beginX == endX || beginY == endY) { //range is empty
+            return 0;
+        }
+
+        int firstBucketIndexX = beginX >> BUCKET_AXIS_BITS;
+        int firstBucketIndexY = beginY >> BUCKET_AXIS_BITS;
+        int lastBucketIndexX = (endX - 1) >> BUCKET_AXIS_BITS;
+        int lastBucketIndexY = (endY - 1) >> BUCKET_AXIS_BITS;
+
+        long firstWordMaskX = broadcastMaskX(beginX, 0);
+        long firstWordMaskY = broadcastMaskY(beginY, 0);
+        long lastWordMaskX = broadcastMaskX(0, endX);
+        long lastWordMaskY = broadcastMaskY(0, endY);
+
+        int result = 0;
+        for (int bucketX = firstBucketIndexX; bucketX <= lastBucketIndexX; bucketX++) {
+            long maskX = -1L;
+            if (bucketX == firstBucketIndexX) {
+                maskX &= firstWordMaskX;
+            }
+            if (bucketX == lastBucketIndexX) {
+                maskX &= lastWordMaskX;
+            }
+
+            for (int bucketY = firstBucketIndexY; bucketY <= lastBucketIndexY; bucketY++) {
+                long maskY = -1L;
+                if (bucketY == firstBucketIndexY) {
+                    maskY &= firstWordMaskY;
+                }
+                if (bucketY == lastBucketIndexY) {
+                    maskY &= lastWordMaskY;
+                }
+
+                result += this.findBucketAndAddAllMasked(bucketX, bucketY, maskX & maskY);
+            }
+        }
+        return result;
+    }
+
+    private int findBucketAndAddAllMasked(int x, int y, long mask) {
+        int bucket = this.findBucket(x, y, true);
+        long oldValue = this.values[bucket];
+        this.values[bucket] = mask | oldValue;
+        int addedCount = Long.bitCount(mask & ~oldValue);
+        this.size += addedCount;
+        return addedCount;
+    }
+
+    @Override
     public void clear() {
         if (this.isEmpty()) { //if the set is empty, there's nothing to clear
             return;
@@ -595,5 +647,11 @@ public class Int2HashSet implements NDimensionalIntSet {
     public int countInRange(@NonNull int[] begin, @NonNull int[] end) {
         checkArg(begin.length == 2 && end.length == 2);
         return this.countInRange(begin[0], begin[1], end[0], end[1]);
+    }
+
+    @Override
+    public int addAllInRange(@NonNull int[] begin, @NonNull int[] end) {
+        checkArg(begin.length == 2 && end.length == 2);
+        return this.addAllInRange(begin[0], begin[1], end[0], end[1]);
     }
 }

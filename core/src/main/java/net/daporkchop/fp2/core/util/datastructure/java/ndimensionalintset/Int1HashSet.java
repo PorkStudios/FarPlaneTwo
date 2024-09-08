@@ -446,7 +446,7 @@ public class Int1HashSet implements NDimensionalIntSet {
 
     @Override
     public int countInRange(int beginX, int endX) {
-        checkArg(beginX <= endX, "beginX (%s) may not be greater than endX (%d)", beginX, endX);
+        checkArg(beginX <= endX, "beginX (%s) may not be greater than endX (%s)", beginX, endX);
         if (beginX == endX) { //range is empty
             return 0;
         }
@@ -475,6 +475,39 @@ public class Int1HashSet implements NDimensionalIntSet {
         } else {
             return Long.bitCount(this.values[bucket] & mask);
         }
+    }
+
+    @Override
+    public int addAllInRange(int beginX, int endX) {
+        checkArg(beginX <= endX, "beginX (%s) may not be greater than endX (%s)", beginX, endX);
+        if (beginX == endX) { //range is empty
+            return 0;
+        }
+
+        int firstBucketIndex = beginX >> BUCKET_AXIS_BITS;
+        int lastBucketIndex = (endX - 1) >> BUCKET_AXIS_BITS;
+
+        long firstWordMask = -1L << beginX;
+        long lastWordMask = -1L >>> -endX;
+
+        if (firstBucketIndex == lastBucketIndex) { //the whole range is contained within a single bucket
+            return this.findBucketAndAddAllMasked(firstBucketIndex, firstWordMask & lastWordMask);
+        } else {
+            int result = this.findBucketAndAddAllMasked(firstBucketIndex, firstWordMask) + this.findBucketAndAddAllMasked(lastBucketIndex, lastWordMask);
+            for (int bucketX = firstBucketIndex + 1; bucketX < lastBucketIndex; bucketX++) {
+                result += this.findBucketAndAddAllMasked(bucketX, -1L);
+            }
+            return result;
+        }
+    }
+
+    private int findBucketAndAddAllMasked(int x, long mask) {
+        int bucket = this.findBucket(x, true);
+        long oldValue = this.values[bucket];
+        this.values[bucket] = mask | oldValue;
+        int addedCount = Long.bitCount(mask & ~oldValue);
+        this.size += addedCount;
+        return addedCount;
     }
 
     @Override
@@ -528,5 +561,11 @@ public class Int1HashSet implements NDimensionalIntSet {
     public int countInRange(@NonNull int[] begin, @NonNull int[] end) {
         checkArg(begin.length == 1 && end.length == 1);
         return this.countInRange(begin[0], end[0]);
+    }
+
+    @Override
+    public int addAllInRange(@NonNull int[] begin, @NonNull int[] end) {
+        checkArg(begin.length == 1 && end.length == 1);
+        return this.addAllInRange(begin[0], end[0]);
     }
 }

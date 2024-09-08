@@ -485,9 +485,9 @@ public class Int3HashSet implements NDimensionalIntSet {
 
     @Override
     public int countInRange(int beginX, int beginY, int beginZ, int endX, int endY, int endZ) {
-        checkArg(beginX <= endX, "beginX (%s) may not be greater than endX (%d)", beginX, endX);
-        checkArg(beginY <= endY, "beginY (%s) may not be greater than endY (%d)", beginY, endY);
-        checkArg(beginZ <= endZ, "beginZ (%s) may not be greater than endZ (%d)", beginZ, endZ);
+        checkArg(beginX <= endX, "beginX (%s) may not be greater than endX (%s)", beginX, endX);
+        checkArg(beginY <= endY, "beginY (%s) may not be greater than endY (%s)", beginY, endY);
+        checkArg(beginZ <= endZ, "beginZ (%s) may not be greater than endZ (%s)", beginZ, endZ);
         if (beginX == endX || beginY == endY || beginZ == endZ) { //range is empty
             return 0;
         }
@@ -581,6 +581,73 @@ public class Int3HashSet implements NDimensionalIntSet {
     }
 
     @Override
+    public int addAllInRange(int beginX, int beginY, int beginZ, int endX, int endY, int endZ) {
+        checkArg(beginX <= endX, "beginX (%s) may not be greater than endX (%s)", beginX, endX);
+        checkArg(beginY <= endY, "beginY (%s) may not be greater than endY (%s)", beginY, endY);
+        checkArg(beginZ <= endZ, "beginZ (%s) may not be greater than endZ (%s)", beginZ, endZ);
+        if (beginX == endX || beginY == endY || beginZ == endZ) { //range is empty
+            return 0;
+        }
+
+        int firstBucketIndexX = beginX >> BUCKET_AXIS_BITS;
+        int firstBucketIndexY = beginY >> BUCKET_AXIS_BITS;
+        int firstBucketIndexZ = beginZ >> BUCKET_AXIS_BITS;
+        int lastBucketIndexX = (endX - 1) >> BUCKET_AXIS_BITS;
+        int lastBucketIndexY = (endY - 1) >> BUCKET_AXIS_BITS;
+        int lastBucketIndexZ = (endZ - 1) >> BUCKET_AXIS_BITS;
+
+        long firstWordMaskX = broadcastMaskX(beginX, 0);
+        long firstWordMaskY = broadcastMaskY(beginY, 0);
+        long firstWordMaskZ = broadcastMaskZ(beginZ, 0);
+        long lastWordMaskX = broadcastMaskX(0, endX);
+        long lastWordMaskY = broadcastMaskY(0, endY);
+        long lastWordMaskZ = broadcastMaskZ(0, endZ);
+
+        int result = 0;
+        for (int bucketX = firstBucketIndexX; bucketX <= lastBucketIndexX; bucketX++) {
+            long maskX = -1L;
+            if (bucketX == firstBucketIndexX) {
+                maskX &= firstWordMaskX;
+            }
+            if (bucketX == lastBucketIndexX) {
+                maskX &= lastWordMaskX;
+            }
+
+            for (int bucketY = firstBucketIndexY; bucketY <= lastBucketIndexY; bucketY++) {
+                long maskY = -1L;
+                if (bucketY == firstBucketIndexY) {
+                    maskY &= firstWordMaskY;
+                }
+                if (bucketY == lastBucketIndexY) {
+                    maskY &= lastWordMaskY;
+                }
+
+                for (int bucketZ = firstBucketIndexZ; bucketZ <= lastBucketIndexZ; bucketZ++) {
+                    long maskZ = -1L;
+                    if (bucketZ == firstBucketIndexZ) {
+                        maskZ &= firstWordMaskZ;
+                    }
+                    if (bucketZ == lastBucketIndexZ) {
+                        maskZ &= lastWordMaskZ;
+                    }
+
+                    result += this.findBucketAndAddAllMasked(bucketX, bucketY, bucketZ, maskX & maskY & maskZ);
+                }
+            }
+        }
+        return result;
+    }
+
+    private int findBucketAndAddAllMasked(int x, int y, int z, long mask) {
+        int bucket = this.findBucket(x, y, z, true);
+        long oldValue = this.values[bucket];
+        this.values[bucket] = mask | oldValue;
+        int addedCount = Long.bitCount(mask & ~oldValue);
+        this.size += addedCount;
+        return addedCount;
+    }
+
+    @Override
     public void clear() {
         if (this.isEmpty()) { //if the set is empty, there's nothing to clear
             return;
@@ -631,5 +698,11 @@ public class Int3HashSet implements NDimensionalIntSet {
     public int countInRange(@NonNull int[] begin, @NonNull int[] end) {
         checkArg(begin.length == 3 && end.length == 3);
         return this.countInRange(begin[0], begin[1], begin[2], end[0], end[1], end[2]);
+    }
+
+    @Override
+    public int addAllInRange(@NonNull int[] begin, @NonNull int[] end) {
+        checkArg(begin.length == 3 && end.length == 3);
+        return this.addAllInRange(begin[0], begin[1], begin[2], end[0], end[1], end[2]);
     }
 }

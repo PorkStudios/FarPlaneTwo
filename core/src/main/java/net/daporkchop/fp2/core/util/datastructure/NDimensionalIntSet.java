@@ -152,6 +152,55 @@ public interface NDimensionalIntSet extends IDatastructure<NDimensionalIntSet> {
         }
     }
 
+    /**
+     * Adds all of the elements in the given coordinate range to this set.
+     *
+     * @param begin the minimum coordinates to add (inclusive)
+     * @param end   the maximum coordinates to add (exclusive)
+     * @return the number of elements which were newly added
+     */
+    default int addAllInRange(@NonNull int[] begin, @NonNull int[] end) {
+        int dimensions = this.dimensions();
+        {
+            checkArg(dimensions == begin.length, "mismatched dimension count (this: %dD, begin: %dD)", dimensions, begin.length);
+            checkArg(dimensions == end.length, "mismatched dimension count (this: %dD, end: %dD)", dimensions, end.length);
+        }
+
+        for (int i = 0; i < dimensions; i++) {
+            checkArg(begin[i] <= end[i], "begin#%s (%s) may not be greater than end#%s (%s)", i, begin[i], i, end[i]);
+        }
+
+        for (int i = 0; i < dimensions; i++) { //break out early if the range is empty
+            if (begin[i] == end[i]) {
+                return 0;
+            }
+        }
+
+        int result = 0;
+        int[] point = begin.clone();
+        while (true) { //keep iterating until we reach the end point
+            if (this.add(point)) {
+                result++;
+            }
+
+            //advance to the next point
+            INCREMENT:
+            {
+                for (int i = 0; i < dimensions - 1; i++) {
+                    if (++point[i] < end[i]) {
+                        break INCREMENT;
+                    } else {
+                        point[i] = begin[i];
+                    }
+                }
+
+                if (++point[dimensions - 1] >= end[dimensions - 1]) { //special handling for last coordinate, since rather than wrapping around it should terminate the loop when reached
+                    return result;
+                }
+            }
+        }
+    }
+
     //
     // special cases
     //
@@ -343,6 +392,48 @@ public interface NDimensionalIntSet extends IDatastructure<NDimensionalIntSet> {
      */
     default int countInRange(int beginX, int beginY, int beginZ, int endX, int endY, int endZ) {
         return this.countInRange(new int[]{ beginX, beginY, beginZ }, new int[]{ endX, endY, endZ });
+    }
+
+    /**
+     * Adds all of the elements in the given coordinate range to this set.
+     *
+     * @param beginX the minimum X coordinate to add (inclusive)
+     * @param endX   the maximum X coordinate to add (exclusive)
+     * @return the number of elements which were newly added
+     * @throws IllegalArgumentException if this set's dimensionality is not equal to 1
+     */
+    default int addAllInRange(int beginX, int endX) {
+        return this.addAllInRange(new int[]{ beginX }, new int[]{ endX });
+    }
+
+    /**
+     * Adds all of the elements in the given coordinate range to this set.
+     *
+     * @param beginX the minimum X coordinate to add (inclusive)
+     * @param beginY the minimum Y coordinate to add (inclusive)
+     * @param endX   the maximum X coordinate to add (exclusive)
+     * @param endY   the maximum Y coordinate to add (exclusive)
+     * @return the number of elements which were newly added
+     * @throws IllegalArgumentException if this set's dimensionality is not equal to 2
+     */
+    default int addAllInRange(int beginX, int beginY, int endX, int endY) {
+        return this.addAllInRange(new int[]{ beginX, beginY }, new int[]{ endX, endY });
+    }
+
+    /**
+     * Adds all of the elements in the given coordinate range to this set.
+     *
+     * @param beginX the minimum X coordinate to add (inclusive)
+     * @param beginY the minimum Y coordinate to add (inclusive)
+     * @param beginZ the minimum Z coordinate to add (inclusive)
+     * @param endX   the maximum X coordinate to add (exclusive)
+     * @param endY   the maximum Y coordinate to add (exclusive)
+     * @param endZ   the maximum Z coordinate to add (exclusive)
+     * @return the number of elements which were newly added
+     * @throws IllegalArgumentException if this set's dimensionality is not equal to 3
+     */
+    default int addAllInRange(int beginX, int beginY, int beginZ, int endX, int endY, int endZ) {
+        return this.addAllInRange(new int[]{ beginX, beginY, beginZ }, new int[]{ endX, endY, endZ });
     }
 
     //
