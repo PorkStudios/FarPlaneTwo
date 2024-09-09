@@ -27,12 +27,8 @@ import lombok.ToString;
 import net.daporkchop.fp2.api.util.math.IntAxisAlignedBB;
 import net.daporkchop.fp2.core.util.math.MathUtil;
 
-import java.util.Arrays;
 import java.util.Spliterator;
 import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.IntFunction;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -215,45 +211,9 @@ public class TilePos implements Comparable<TilePos> {
      * Both corners are inclusive.
      */
     public final Stream<TilePos> allPositionsInBB(int offsetMin, int offsetMax) {
-        assert this.checkAllPositionsInBB(offsetMin, offsetMax);
-        return this.allPositionsInBB0(offsetMin, offsetMax);
-    }
-
-    //TODO: remove this test code eventually (i should probably write some more unit tests for the whole thing)
-    private boolean checkAllPositionsInBB(int offsetMin, int offsetMax) {
-        IntFunction<TilePos[]> arrayFactory = TilePos[]::new;
-        TilePos[] expected = this.allPositionsInBB0(offsetMin, offsetMax).toArray(arrayFactory);
-        TilePos[] test = StreamSupport.stream(new AllPositionsInBBSpliterator(this.level,
+        return StreamSupport.stream(new AllPositionsInBBSpliterator(this.level,
                 Math.subtractExact(this.x, offsetMin), Math.subtractExact(this.y, offsetMin), Math.subtractExact(this.z, offsetMin),
-                Math.addExact(this.x, offsetMax), Math.addExact(this.y, offsetMax), Math.addExact(this.z, offsetMax)), false).toArray(arrayFactory);
-        if (!Arrays.equals(expected, test)) {
-            throw new IllegalStateException(this + " from " + offsetMin + " to " + offsetMax + ":\nexpect: " + Arrays.toString(expected) + "\nfound: " + Arrays.toString(test));
-        }
-        return true;
-    }
-
-    private Stream<TilePos> allPositionsInBB0(int offsetMin, int offsetMax) {
-        notNegative(offsetMin, "offsetMin");
-        notNegative(offsetMax, "offsetMax");
-
-        if (cb((long) offsetMin + offsetMax + 1L) < 256L) { //fast-track: fill an array and create a simple stream over that
-            TilePos[] arr = new TilePos[cb(offsetMin + offsetMax + 1)];
-            for (int i = 0, dx = -offsetMin; dx <= offsetMax; dx++) {
-                for (int dy = -offsetMin; dy <= offsetMax; dy++) {
-                    for (int dz = -offsetMin; dz <= offsetMax; dz++) {
-                        arr[i++] = new TilePos(this.level, this.x + dx, this.y + dy, this.z + dz);
-                    }
-                }
-            }
-            return Stream.of(arr);
-        } else { //slower fallback: dynamically computed stream
-            return IntStream.rangeClosed(this.x - offsetMin, this.x + offsetMax)
-                    .mapToObj(x -> IntStream.rangeClosed(this.y - offsetMin, this.y + offsetMax)
-                            .mapToObj(y -> IntStream.rangeClosed(this.z - offsetMin, this.z + offsetMax)
-                                    .mapToObj(z -> new TilePos(this.level, x, y, z)))
-                            .flatMap(Function.identity()))
-                    .flatMap(Function.identity());
-        }
+                Math.addExact(this.x, offsetMax), Math.addExact(this.y, offsetMax), Math.addExact(this.z, offsetMax)), false);
     }
 
     private static final class AllPositionsInBBSpliterator implements Spliterator<TilePos> {
