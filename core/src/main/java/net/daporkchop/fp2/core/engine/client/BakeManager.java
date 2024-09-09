@@ -30,6 +30,7 @@ import net.daporkchop.fp2.core.engine.client.bake.IRenderBaker;
 import net.daporkchop.fp2.core.engine.client.bake.storage.BakeStorage;
 import net.daporkchop.fp2.core.engine.client.index.RenderIndex;
 import net.daporkchop.fp2.core.engine.tile.ITileSnapshot;
+import net.daporkchop.fp2.core.util.threading.BlockingSupport;
 import net.daporkchop.fp2.core.util.threading.scheduler.NoFutureScheduler;
 import net.daporkchop.fp2.core.util.threading.scheduler.Scheduler;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
@@ -216,8 +217,8 @@ public final class BakeManager<VertexType extends AttributeStruct> extends Abstr
         }
     }
 
-    private void updateData(@NonNull TilePos pos, @NonNull Optional<BakeOutput<VertexType>> optionalBakeOutput) {
-        this.dataUpdatesLock.acquireUninterruptibly();
+    private void updateData(@NonNull TilePos pos, @NonNull Optional<BakeOutput<VertexType>> optionalBakeOutput) throws InterruptedException {
+        BlockingSupport.managedAcquire(this.dataUpdatesLock, 1);
 
         this.pendingDataUpdates.merge(pos, optionalBakeOutput, (oldOutput, newOutput) -> {
             //release old bake output to avoid potential memory leak when silently replacing entries
