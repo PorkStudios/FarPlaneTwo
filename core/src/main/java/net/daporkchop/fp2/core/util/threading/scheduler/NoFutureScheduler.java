@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2021 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -15,12 +15,12 @@
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
  * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
  */
 
 package net.daporkchop.fp2.core.util.threading.scheduler;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.core.util.threading.BlockingSupport;
 import net.daporkchop.fp2.core.util.threading.workergroup.WorkerGroup;
 import net.daporkchop.fp2.core.util.threading.workergroup.WorkerGroupBuilder;
 
@@ -33,7 +33,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
@@ -106,7 +105,7 @@ public class NoFutureScheduler<P> implements Scheduler<P, Void>, Runnable {
             while (this.running) {
                 //poll the queue, but don't wait indefinitely because we need to be able to exit if the executor stops running.
                 // we don't want to use interrupts because they can cause unwanted side-effects (such as closing NIO channels).
-                P param = this.queue.poll(1L, TimeUnit.SECONDS);
+                P param = BlockingSupport.managedPoll(this.queue, 1L, TimeUnit.SECONDS);
 
                 if (param == null) { //the queue was empty
                     continue;
@@ -119,6 +118,10 @@ public class NoFutureScheduler<P> implements Scheduler<P, Void>, Runnable {
                     //pass the parameter to the function
                     this.function.accept(param);
                 } catch (Throwable t) {
+                    if (t instanceof InterruptedException) {
+                        //rethrow InterruptedException to outer try-catch block
+                        throw (InterruptedException) t;
+                    }
                     this.group.manager().handle(t);
                 } finally {
                     //if the parameter was re-scheduled while running the function, it'll have been mapped to ADDED again and this removal will fail. it's our
@@ -129,7 +132,16 @@ public class NoFutureScheduler<P> implements Scheduler<P, Void>, Runnable {
                 }
             }
         } catch (Exception e) { //should be impossible, but whatever
-            fp2().log().error(Thread.currentThread().getName(), e);
+            if (e instanceof InterruptedException) {
+                if (!this.running) { //exit quietly
+                    return;
+                } else {
+                    //ideally, the only thing which should be able to interrupt us is the worker group shutting down
+                    e = new IllegalStateException("thread " + Thread.currentThread() + " was interrupted, but the scheduler is still running?!?", e);
+                }
+            }
+            this.group.manager().handle(e);
+            throw e;
         }
     }
 

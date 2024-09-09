@@ -30,6 +30,7 @@ import net.daporkchop.fp2.core.engine.client.bake.IRenderBaker;
 import net.daporkchop.fp2.core.engine.client.index.IRenderIndex;
 import net.daporkchop.fp2.core.engine.client.strategy.IFarRenderStrategy;
 import net.daporkchop.fp2.core.engine.tile.ITileSnapshot;
+import net.daporkchop.fp2.core.util.threading.BlockingSupport;
 import net.daporkchop.fp2.core.util.threading.scheduler.NoFutureScheduler;
 import net.daporkchop.fp2.core.util.threading.scheduler.Scheduler;
 import net.daporkchop.lib.common.misc.release.AbstractReleasable;
@@ -210,8 +211,8 @@ public final class BakeManager extends AbstractReleasable implements FarTileCach
         }
     }
 
-    protected void updateData(@NonNull TilePos pos, @NonNull Optional<IBakeOutput> optionalBakeOutput) {
-        this.dataUpdatesLock.acquireUninterruptibly();
+    protected void updateData(@NonNull TilePos pos, @NonNull Optional<IBakeOutput> optionalBakeOutput) throws InterruptedException {
+        BlockingSupport.managedAcquire(this.dataUpdatesLock, 1);
 
         this.pendingDataUpdates.merge(pos, optionalBakeOutput, (oldOutput, newOutput) -> {
             if (oldOutput.isPresent()) { //release old bake output to avoid potential memory leak when silently replacing entries
