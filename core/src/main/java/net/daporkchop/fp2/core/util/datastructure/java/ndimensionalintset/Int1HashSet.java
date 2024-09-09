@@ -24,7 +24,6 @@ import lombok.NonNull;
 import net.daporkchop.fp2.core.util.datastructure.NDimensionalIntSet;
 
 import java.util.Arrays;
-import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 
 import static java.lang.Math.*;
@@ -38,34 +37,34 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  * @see <a href="https://github.com/OpenCubicChunks/CubicChunks/pull/674">https://github.com/OpenCubicChunks/CubicChunks/pull/674</a>
  */
-public class Int1HashSet implements NDimensionalIntSet {
-    protected static final int AXIS_COUNT = 1;
+public final class Int1HashSet extends AbstractInt1Set {
+    private static final int AXIS_COUNT = 1;
 
-    protected static final int AXIS_X_OFFSET = 0;
+    private static final int AXIS_X_OFFSET = 0;
 
-    protected static final int BUCKET_AXIS_BITS = 6; //the number of bits per axis which are used inside of the bucket rather than identifying the bucket
-    protected static final int BUCKET_AXIS_MASK = (1 << BUCKET_AXIS_BITS) - 1;
+    private static final int BUCKET_AXIS_BITS = 6; //the number of bits per axis which are used inside of the bucket rather than identifying the bucket
+    private static final int BUCKET_AXIS_MASK = (1 << BUCKET_AXIS_BITS) - 1;
 
-    protected static final int DEFAULT_TABLE_SIZE = 16;
+    private static final int DEFAULT_TABLE_SIZE = 16;
 
-    protected static int hashPosition(int x) {
+    private static int hashPosition(int x) {
         //                 random prime number
         return (int) ((x * 1403638657883916319L) >>> 32L);
     }
 
-    protected static long positionFlag(int x) {
+    private static long positionFlag(int x) {
         return 1L << (x & BUCKET_AXIS_MASK);
     }
 
-    protected int[] keys = null;
-    protected long[] values = null;
+    private int[] keys = null;
+    private long[] values = null;
 
-    protected int tableSize = 0; //the physical size of the table (in buckets). always a non-zero power of two
-    protected int resizeThreshold = 0;
-    protected int usedBuckets = 0;
+    private int tableSize = 0; //the physical size of the table (in buckets). always a non-zero power of two
+    private int resizeThreshold = 0;
+    private int usedBuckets = 0;
 
     @Getter
-    protected int size = 0; //the number of values stored in the set
+    private int size = 0; //the number of values stored in the set
 
     public Int1HashSet() {
         this.setTableSize(DEFAULT_TABLE_SIZE);
@@ -119,7 +118,7 @@ public class Int1HashSet implements NDimensionalIntSet {
                && (this.values[bucket] & flag) != 0L; //flag is set
     }
 
-    protected int findBucket(int x, boolean createIfAbsent) {
+    private int findBucket(int x, boolean createIfAbsent) {
         int[] keys = this.keys;
         long[] values = this.values;
 
@@ -165,7 +164,7 @@ public class Int1HashSet implements NDimensionalIntSet {
         }
     }
 
-    protected void resize() {
+    private void resize() {
         int oldTableSize = this.tableSize;
         int[] oldKeys = this.keys;
         long[] oldValues = this.values;
@@ -200,11 +199,6 @@ public class Int1HashSet implements NDimensionalIntSet {
                 //continue search...
             }
         }
-    }
-
-    @Override
-    public void forEach(@NonNull Consumer<int[]> callback) {
-        this.forEach1D(x -> callback.accept(new int[]{ x }));
     }
 
     @Override
@@ -280,7 +274,7 @@ public class Int1HashSet implements NDimensionalIntSet {
     }
 
     //adapted from it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap#shiftKeys(int)
-    protected void shiftBuckets(int[] keys, long[] values, int pos, int mask) {
+    private void shiftBuckets(int[] keys, long[] values, int pos, int mask) {
         int last;
         int slot;
 
@@ -309,10 +303,10 @@ public class Int1HashSet implements NDimensionalIntSet {
 
     @Override
     public boolean containsAll(@NonNull NDimensionalIntSet set) {
-        return set instanceof Int1HashSet ? this.containsAll((Int1HashSet) set) : NDimensionalIntSet.super.containsAll(set);
+        return set instanceof Int1HashSet ? this.containsAll((Int1HashSet) set) : super.containsAll(set);
     }
 
-    protected boolean containsAll(@NonNull Int1HashSet other) {
+    private boolean containsAll(@NonNull Int1HashSet other) {
         if (this.size < other.size) { //we contain fewer points than the other set, and therefore cannot contain all of them
             return false;
         } else if (other.size == 0) { //other set is empty, we contain everything
@@ -345,10 +339,10 @@ public class Int1HashSet implements NDimensionalIntSet {
 
     @Override
     public boolean addAll(@NonNull NDimensionalIntSet set) {
-        return set instanceof Int1HashSet ? this.addAll((Int1HashSet) set) : NDimensionalIntSet.super.addAll(set);
+        return set instanceof Int1HashSet ? this.addAll((Int1HashSet) set) : super.addAll(set);
     }
 
-    protected boolean addAll(@NonNull Int1HashSet other) {
+    private boolean addAll(@NonNull Int1HashSet other) {
         if (other.size == 0) { //other set is empty, there's nothing to add
             return false;
         }
@@ -388,10 +382,10 @@ public class Int1HashSet implements NDimensionalIntSet {
 
     @Override
     public boolean removeAll(@NonNull NDimensionalIntSet set) {
-        return set instanceof Int1HashSet ? this.removeAll((Int1HashSet) set) : NDimensionalIntSet.super.removeAll(set);
+        return set instanceof Int1HashSet ? this.removeAll((Int1HashSet) set) : super.removeAll(set);
     }
 
-    protected boolean removeAll(@NonNull Int1HashSet other) {
+    private boolean removeAll(@NonNull Int1HashSet other) {
         if (this.size == 0) { //this set is empty, there's nothing to be removed
             return false;
         } else if (other.size == 0) { //other set is empty, there's nothing to remove
@@ -525,47 +519,8 @@ public class Int1HashSet implements NDimensionalIntSet {
         this.size = 0;
     }
 
-    protected void setTableSize(int tableSize) {
+    private void setTableSize(int tableSize) {
         this.tableSize = tableSize;
         this.resizeThreshold = (tableSize >> 1) + (tableSize >> 2); //count * 0.75
-    }
-
-    //
-    // NDimensionalIntSet methods
-    //
-
-    @Override
-    public int dimensions() {
-        return 1;
-    }
-
-    @Override
-    public boolean add(@NonNull int... point) {
-        checkArg(point.length == 1);
-        return this.add(point[0]);
-    }
-
-    @Override
-    public boolean remove(@NonNull int... point) {
-        checkArg(point.length == 1);
-        return this.remove(point[0]);
-    }
-
-    @Override
-    public boolean contains(@NonNull int... point) {
-        checkArg(point.length == 1);
-        return this.contains(point[0]);
-    }
-
-    @Override
-    public int countInRange(@NonNull int[] begin, @NonNull int[] end) {
-        checkArg(begin.length == 1 && end.length == 1);
-        return this.countInRange(begin[0], end[0]);
-    }
-
-    @Override
-    public int addAllInRange(@NonNull int[] begin, @NonNull int[] end) {
-        checkArg(begin.length == 1 && end.length == 1);
-        return this.addAllInRange(begin[0], end[0]);
     }
 }

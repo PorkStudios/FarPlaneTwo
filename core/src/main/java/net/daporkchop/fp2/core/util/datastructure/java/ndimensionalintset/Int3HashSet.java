@@ -39,40 +39,40 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  * @author DaPorkchop_
  * @see <a href="https://github.com/OpenCubicChunks/CubicChunks/pull/674">https://github.com/OpenCubicChunks/CubicChunks/pull/674</a>
  */
-public class Int3HashSet implements NDimensionalIntSet {
-    protected static final int AXIS_COUNT = 3;
+public final class Int3HashSet extends AbstractInt3Set {
+    private static final int AXIS_COUNT = 3;
 
-    protected static final int AXIS_X_OFFSET = 0;
-    protected static final int AXIS_Y_OFFSET = 1;
-    protected static final int AXIS_Z_OFFSET = 2;
+    private static final int AXIS_X_OFFSET = 0;
+    private static final int AXIS_Y_OFFSET = 1;
+    private static final int AXIS_Z_OFFSET = 2;
 
-    protected static final int BUCKET_AXIS_BITS = 2; //the number of bits per axis which are used inside of the bucket rather than identifying the bucket
-    protected static final int BUCKET_AXIS_MASK = (1 << BUCKET_AXIS_BITS) - 1;
+    private static final int BUCKET_AXIS_BITS = 2; //the number of bits per axis which are used inside of the bucket rather than identifying the bucket
+    private static final int BUCKET_AXIS_MASK = (1 << BUCKET_AXIS_BITS) - 1;
 
-    protected static final int BUCKET_AXIS_SIZE = 1 << BUCKET_AXIS_BITS; //the number of positions per bucket per axis
-    protected static final int BUCKET_AXIS_SIZE_MASK = (1 << BUCKET_AXIS_SIZE) - 1;
+    private static final int BUCKET_AXIS_SIZE = 1 << BUCKET_AXIS_BITS; //the number of positions per bucket per axis
+    private static final int BUCKET_AXIS_SIZE_MASK = (1 << BUCKET_AXIS_SIZE) - 1;
 
-    protected static final int DEFAULT_TABLE_SIZE = 16;
+    private static final int DEFAULT_TABLE_SIZE = 16;
 
-    protected static int hashPosition(int x, int y, int z) {
+    private static int hashPosition(int x, int y, int z) {
         return (int) ((x * 1403638657883916319L //some random prime numbers
                        + y * 4408464607732138253L
                        + z * 2587306874955016303L) >>> 32L);
     }
 
-    protected static long positionFlag(int x, int y, int z) {
+    private static long positionFlag(int x, int y, int z) {
         return 1L << (((x & BUCKET_AXIS_MASK) << (BUCKET_AXIS_BITS * 2)) | ((y & BUCKET_AXIS_MASK) << BUCKET_AXIS_BITS) | (z & BUCKET_AXIS_MASK));
     }
 
-    protected int[] keys = null;
-    protected long[] values = null;
+    private int[] keys = null;
+    private long[] values = null;
 
-    protected int tableSize = 0; //the physical size of the table (in buckets). always a non-zero power of two
-    protected int resizeThreshold = 0;
-    protected int usedBuckets = 0;
+    private int tableSize = 0; //the physical size of the table (in buckets). always a non-zero power of two
+    private int resizeThreshold = 0;
+    private int usedBuckets = 0;
 
     @Getter
-    protected int size = 0; //the number of values stored in the set
+    private int size = 0; //the number of values stored in the set
 
     public Int3HashSet() {
         this.setTableSize(DEFAULT_TABLE_SIZE);
@@ -126,7 +126,7 @@ public class Int3HashSet implements NDimensionalIntSet {
                && (this.values[bucket] & flag) != 0L; //flag is set
     }
 
-    protected int findBucket(int x, int y, int z, boolean createIfAbsent) {
+    private int findBucket(int x, int y, int z, boolean createIfAbsent) {
         int[] keys = this.keys;
         long[] values = this.values;
 
@@ -176,7 +176,7 @@ public class Int3HashSet implements NDimensionalIntSet {
         }
     }
 
-    protected void resize() {
+    private void resize() {
         int oldTableSize = this.tableSize;
         int[] oldKeys = this.keys;
         long[] oldValues = this.values;
@@ -215,11 +215,6 @@ public class Int3HashSet implements NDimensionalIntSet {
                 //continue search...
             }
         }
-    }
-
-    @Override
-    public void forEach(@NonNull Consumer<int[]> callback) {
-        this.forEach3D((x, y, z) -> callback.accept(new int[]{ x, y, z }));
     }
 
     @Override
@@ -304,7 +299,7 @@ public class Int3HashSet implements NDimensionalIntSet {
     }
 
     //adapted from it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap#shiftKeys(int)
-    protected void shiftBuckets(int[] keys, long[] values, int pos, int mask) {
+    private void shiftBuckets(int[] keys, long[] values, int pos, int mask) {
         int last;
         int slot;
 
@@ -339,10 +334,10 @@ public class Int3HashSet implements NDimensionalIntSet {
 
     @Override
     public boolean containsAll(@NonNull NDimensionalIntSet set) {
-        return set instanceof Int3HashSet ? this.containsAll((Int3HashSet) set) : NDimensionalIntSet.super.containsAll(set);
+        return set instanceof Int3HashSet ? this.containsAll((Int3HashSet) set) : super.containsAll(set);
     }
 
-    protected boolean containsAll(@NonNull Int3HashSet other) {
+    private boolean containsAll(@NonNull Int3HashSet other) {
         if (this.size < other.size) { //we contain fewer points than the other set, and therefore cannot contain all of them
             return false;
         } else if (other.size == 0) { //other set is empty, we contain everything
@@ -378,10 +373,10 @@ public class Int3HashSet implements NDimensionalIntSet {
 
     @Override
     public boolean addAll(@NonNull NDimensionalIntSet set) {
-        return set instanceof Int3HashSet ? this.addAll((Int3HashSet) set) : NDimensionalIntSet.super.addAll(set);
+        return set instanceof Int3HashSet ? this.addAll((Int3HashSet) set) : super.addAll(set);
     }
 
-    protected boolean addAll(@NonNull Int3HashSet other) {
+    private boolean addAll(@NonNull Int3HashSet other) {
         if (other.size == 0) { //other set is empty, there's nothing to add
             return false;
         }
@@ -424,10 +419,10 @@ public class Int3HashSet implements NDimensionalIntSet {
 
     @Override
     public boolean removeAll(@NonNull NDimensionalIntSet set) {
-        return set instanceof Int3HashSet ? this.removeAll((Int3HashSet) set) : NDimensionalIntSet.super.removeAll(set);
+        return set instanceof Int3HashSet ? this.removeAll((Int3HashSet) set) : super.removeAll(set);
     }
 
-    protected boolean removeAll(@NonNull Int3HashSet other) {
+    private boolean removeAll(@NonNull Int3HashSet other) {
         if (this.size == 0) { //this set is empty, there's nothing to be removed
             return false;
         } else if (other.size == 0) { //other set is empty, there's nothing to remove
@@ -662,47 +657,8 @@ public class Int3HashSet implements NDimensionalIntSet {
         this.size = 0;
     }
 
-    protected void setTableSize(int tableSize) {
+    private void setTableSize(int tableSize) {
         this.tableSize = tableSize;
         this.resizeThreshold = (tableSize >> 1) + (tableSize >> 2); //count * 0.75
-    }
-
-    //
-    // NDimensionalIntSet methods
-    //
-
-    @Override
-    public int dimensions() {
-        return 3;
-    }
-
-    @Override
-    public boolean add(@NonNull int... point) {
-        checkArg(point.length == 3);
-        return this.add(point[0], point[1], point[2]);
-    }
-
-    @Override
-    public boolean remove(@NonNull int... point) {
-        checkArg(point.length == 3);
-        return this.remove(point[0], point[1], point[2]);
-    }
-
-    @Override
-    public boolean contains(@NonNull int... point) {
-        checkArg(point.length == 3);
-        return this.contains(point[0], point[1], point[2]);
-    }
-
-    @Override
-    public int countInRange(@NonNull int[] begin, @NonNull int[] end) {
-        checkArg(begin.length == 3 && end.length == 3);
-        return this.countInRange(begin[0], begin[1], begin[2], end[0], end[1], end[2]);
-    }
-
-    @Override
-    public int addAllInRange(@NonNull int[] begin, @NonNull int[] end) {
-        checkArg(begin.length == 3 && end.length == 3);
-        return this.addAllInRange(begin[0], begin[1], begin[2], end[0], end[1], end[2]);
     }
 }
