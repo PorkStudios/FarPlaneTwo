@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 import static net.daporkchop.fp2.core.engine.EngineConstants.*;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * Implementation of {@link Set} optimized specifically for {@link TilePos}.
@@ -222,5 +223,21 @@ public final class TilePosHashSet extends SimpleSet<TilePos> {
         } else {
             return super.removeAll(c);
         }
+    }
+
+    /**
+     * Adds all of the positions in the AABB defined by the given corner positions to this set.
+     *
+     * @param min the minimum position (inclusive)
+     * @param max the maximum position (exclusive)
+     * @return {@code true} if the set was modified
+     * @throws IllegalArgumentException if the given tile positions are not both at the same level
+     * @throws IllegalArgumentException if any of the minimum coordinates are greater than the corresponding maximum coordinates
+     */
+    public boolean addAllInAABB(@NonNull TilePos min, @NonNull TilePos max) {
+        checkArg(min.level() == max.level(), "mismatched levels (min=%s, max=%s)", min, max);
+        checkArg(min.x() <= max.x() && min.y() <= max.y() && min.z() <= max.z(), "min (%s) may not be greater than max (%s)", min, max);
+
+        return this.getOrCreateDelegate(min.level()).addAllInRange(min.x(), min.y(), min.z(), max.x(), max.y(), max.z()) != 0;
     }
 }
