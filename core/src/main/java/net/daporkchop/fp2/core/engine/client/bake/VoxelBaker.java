@@ -30,6 +30,7 @@ import net.daporkchop.fp2.core.engine.TileData;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.api.ctx.IFarClientContext;
 import net.daporkchop.fp2.core.engine.client.struct.VoxelLocalAttributes;
+import net.daporkchop.fp2.core.engine.util.TilePosSingleLevelAABBSet;
 import net.daporkchop.fp2.core.util.GlobalAllocators;
 import net.daporkchop.fp2.gl.attribute.AttributeWriter;
 import net.daporkchop.fp2.gl.draw.index.IndexWriter;
@@ -74,15 +75,9 @@ public class VoxelBaker implements IRenderBaker<VoxelLocalAttributes> {
         int z = srcPos.z();
         int level = srcPos.level();
 
-        val res = DirectTilePosAccess.newPositionHashSet();
-        for (int dx = -1; dx <= 0; dx++) {
-            for (int dy = -1; dy <= 0; dy++) {
-                for (int dz = -1; dz <= 0; dz++) {
-                    res.add(new TilePos(level, x + dx, y + dy, z + dz));
-                }
-            }
-        }
-        return res;
+        return TilePosSingleLevelAABBSet.createInclusive(
+                new TilePos(level, x - 1, y - 1, z - 1),
+                new TilePos(level, x, y, z));
     }
 
     @Override
