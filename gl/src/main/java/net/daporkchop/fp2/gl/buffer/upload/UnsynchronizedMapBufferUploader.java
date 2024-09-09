@@ -169,6 +169,17 @@ public final class UnsynchronizedMapBufferUploader extends BufferUploader {
     }
 
     @Override
+    public long estimateCapacity() {
+        //return the available space in the staging buffer (if exceeded, we'll resort to the fallback uploader)
+        return this.freeSize;
+    }
+
+    @Override
+    public long maximumCapacity() {
+        return this.stagingBuffer.capacity();
+    }
+
+    @Override
     public void close() {
         super.close();
 

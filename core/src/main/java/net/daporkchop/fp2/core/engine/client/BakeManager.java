@@ -20,6 +20,7 @@
 package net.daporkchop.fp2.core.engine.client;
 
 import lombok.NonNull;
+import lombok.val;
 import net.daporkchop.fp2.core.engine.DirectTilePosAccess;
 import net.daporkchop.fp2.core.engine.Tile;
 import net.daporkchop.fp2.core.engine.TileCoordLimits;
@@ -33,6 +34,7 @@ import net.daporkchop.fp2.core.util.threading.scheduler.NoFutureScheduler;
 import net.daporkchop.fp2.core.util.threading.scheduler.Scheduler;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.buffer.upload.BufferUploader;
+import net.daporkchop.lib.common.closeable.PResourceUtil;
 import net.daporkchop.lib.common.misc.release.AbstractReleasable;
 import net.daporkchop.lib.common.misc.threadfactory.PThreadFactories;
 import net.daporkchop.lib.common.pool.recycler.Recycler;
@@ -41,9 +43,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
@@ -56,27 +56,20 @@ public final class BakeManager<VertexType extends AttributeStruct> extends Abstr
     private final AbstractFarRenderer<VertexType> renderer;
 
     private final FarTileCache tileCache;
-    private final BufferUploader bufferUploader;
     private final IRenderBaker<VertexType> baker;
-    private final BakeStorage<VertexType> bakeStorage;
-    private final RenderIndex<VertexType> renderIndex;
 
     private final Scheduler<TilePos, Void> bakeScheduler;
     private final TileCoordLimits coordLimits;
 
     private final Map<TilePos, Optional<BakeOutput<VertexType>>> pendingDataUpdates = DirectTilePosAccess.newPositionKeyedConcurrentHashMap();
     private final Map<TilePos, Boolean> pendingRenderableUpdates = DirectTilePosAccess.newPositionKeyedConcurrentHashMap();
-    private final AtomicBoolean isBulkUpdateQueued = new AtomicBoolean();
     private final Semaphore dataUpdatesLock = new Semaphore(fp2().globalConfig().performance().maxBakesProcessedPerFrame());
 
-    public BakeManager(@NonNull AbstractFarRenderer<VertexType> renderer, @NonNull FarTileCache tileCache, @NonNull BufferUploader bufferUploader, @NonNull IRenderBaker<VertexType> baker, @NonNull BakeStorage<VertexType> bakeStorage, @NonNull RenderIndex<VertexType> renderIndex) {
+    public BakeManager(@NonNull AbstractFarRenderer<VertexType> renderer, @NonNull FarTileCache tileCache, @NonNull IRenderBaker<VertexType> baker) {
         this.renderer = renderer;
 
         this.tileCache = tileCache;
-        this.bufferUploader = bufferUploader;
         this.baker = baker;
-        this.bakeStorage = bakeStorage;
-        this.renderIndex = renderIndex;
 
         this.coordLimits = new TileCoordLimits(renderer.context().level().coordLimits());
 
@@ -90,9 +83,6 @@ public final class BakeManager<VertexType extends AttributeStruct> extends Abstr
     @Override
     protected void doRelease() {
         this.tileCache.removeListener(this, false);
-
-        //prevent workers from scheduling tasks on the client thread
-        this.isBulkUpdateQueued.set(true);
 
         //reset permit count to maximum possible to prevent infinite blocking while shutting down executor
         this.dataUpdatesLock.drainPermits();
@@ -234,56 +224,78 @@ public final class BakeManager<VertexType extends AttributeStruct> extends Abstr
             oldOutput.ifPresent(BakeOutput::close);
             return newOutput;
         });
-
-        this.enqueueBulkUpdate();
     }
 
     private void updateRenderable(@NonNull TilePos pos, boolean renderable) {
         this.pendingRenderableUpdates.put(pos, renderable);
-
-        this.enqueueBulkUpdate();
     }
 
-    private void enqueueBulkUpdate() {
-        if (this.isBulkUpdateQueued.compareAndSet(false, true)) { //we won the race to enqueue a bulk update!
-            this.renderer.context().level().workerManager().workExecutor().run(this::doBulkUpdate);
-        }
-    }
+    /**
+     * Processes tile update events from completed tile bake operations, forwarding them to the bake storage and render index.
+     *
+     * @param bufferUploader the {@link BufferUploader} to use for uploading bake output data
+     * @param bakeStorage    the {@link BakeStorage} to store uploaded tile data in
+     * @param renderIndex    the {@link RenderIndex} to notify of changed tiles
+     */
+    public void tick(@NonNull BufferUploader bufferUploader, @NonNull BakeStorage<VertexType> bakeStorage, @NonNull RenderIndex<VertexType> renderIndex) {
+        final int dataUpdatesCount = this.pendingDataUpdates.size();
+        if (dataUpdatesCount != 0) {
+            final long availableBufferUploaderCapacity = bufferUploader.estimateCapacity();
+            final long maximumBufferUploaderCapacity = bufferUploader.maximumCapacity();
 
-    private void doBulkUpdate() { //executes a bulk update on the client thread
-        this.isBulkUpdateQueued.set(false);
+            //pre-allocate a bit of extra space in case it grows while we're iterating
+            Map<TilePos, BakeOutput<VertexType>> dataUpdates = DirectTilePosAccess.newPositionKeyedHashMap(dataUpdatesCount + (dataUpdatesCount >> 3));
 
-        int dataUpdatesSize = this.pendingDataUpdates.size();
+            //the total size (in bytes) of the data which is queued to be sent to the GPU
+            long dataUploadSize = 0L;
+            try {
+                UPDATES_LOOP:
+                for (TilePos pos : this.pendingDataUpdates.keySet()) {
+                    Optional<BakeOutput<VertexType>> optionalValue;
+                    do {
+                        optionalValue = this.pendingDataUpdates.get(pos);
+                        if (optionalValue.isPresent()) {
+                            long dataSize = optionalValue.get().sizeBytes();
 
-        //pre-allocate a bit of extra space in case it grows while we're iterating
-        Map<TilePos, BakeOutput<VertexType>> dataUpdates = DirectTilePosAccess.newPositionKeyedHashMap(dataUpdatesSize + (dataUpdatesSize >> 3));
-        try {
-            for (TilePos pos : this.pendingDataUpdates.keySet()) {
-                dataUpdates.put(pos, this.pendingDataUpdates.remove(pos).orElse(null));
+                            if (dataSize > maximumBufferUploaderCapacity) {
+                                //this tile will always exceed the buffer uploader's non-blocking capacity, so we may as well upload it as soon as possible
+                                //  as the GPU will end up getting stalled no matter what.
+                                //that said, this should never actually occur, and if it ever does it's most likely a bug.
+                            } else if (dataSize > availableBufferUploaderCapacity - dataUploadSize) {
+                                //avoid uploading more data than the buffer uploader has available space to avoid stalling the GPU pipeline. we'll simply
+                                //  skip all remaining data updates and defer them until the buffer uploader has more space available (which will hopefully
+                                //  occur within the next few frames)
+                                break UPDATES_LOOP;
+                            }
+                        }
+                    } while (!this.pendingDataUpdates.remove(pos, optionalValue));
+
+                    dataUploadSize += optionalValue.map(BakeOutput::sizeBytes).orElse(0L);
+                    dataUpdates.put(pos, optionalValue.orElse(null));
+                }
+
+                //execute the bulk tile data update
+                bakeStorage.update(dataUpdates);
+                renderIndex.notifyTilesChanged(dataUpdates.keySet());
+                bufferUploader.flush();
+            } finally {
+                //release all bake outputs (which are still sitting around in memory, and we now own the handles to)
+                PResourceUtil.closeAll(dataUpdates.values());
             }
 
-            //execute the bulk tile data update
-            this.bakeStorage.update(dataUpdates);
-            this.renderIndex.notifyTilesChanged(dataUpdates.keySet());
-            this.bufferUploader.flush();
-        } finally {
-            dataUpdates.forEach((pos, output) -> { //release all bake outputs (which are still sitting around in memory)
-                if (output != null) {
-                    output.close();
-                }
-            });
+            //this is the best we can do of resetting a semaphore to its initial permit count
+            this.dataUpdatesLock.drainPermits();
+            this.dataUpdatesLock.release(Math.max(fp2().globalConfig().performance().maxBakesProcessedPerFrame() - this.pendingDataUpdates.size(), 0));
         }
 
-        //this is the best we can do of resetting a semaphore to its initial permit count
-        this.dataUpdatesLock.drainPermits();
-        this.dataUpdatesLock.release(fp2().globalConfig().performance().maxBakesProcessedPerFrame());
-
-        //iterate over the renderable updates, sort them into separate sets and notify the render index
-        Set<TilePos> hidden = DirectTilePosAccess.newPositionHashSet();
-        Set<TilePos> shown = DirectTilePosAccess.newPositionHashSet();
-        for (TilePos pos : this.pendingRenderableUpdates.keySet()) {
-            (this.pendingRenderableUpdates.remove(pos) ? shown : hidden).add(pos);
+        if (!this.pendingRenderableUpdates.isEmpty()) {
+            //iterate over the renderable updates, sort them into separate sets and notify the render index
+            val hidden = DirectTilePosAccess.newPositionHashSet();
+            val shown = DirectTilePosAccess.newPositionHashSet();
+            for (TilePos pos : this.pendingRenderableUpdates.keySet()) {
+                (this.pendingRenderableUpdates.remove(pos) ? shown : hidden).add(pos);
+            }
+            renderIndex.updateHidden(hidden, shown);
         }
-        this.renderIndex.updateHidden(hidden, shown);
     }
 }

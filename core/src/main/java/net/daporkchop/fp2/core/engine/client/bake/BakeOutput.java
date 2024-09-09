@@ -51,6 +51,11 @@ public final class BakeOutput<VertexType extends AttributeStruct> implements Aut
         return this.verts.size() == 0 || Arrays.stream(this.indicesPerPass).allMatch(writer -> writer.size() == 0);
     }
 
+    public long sizeBytes() {
+        return this.verts.size() * this.verts.format().size()
+               + Arrays.stream(this.indicesPerPass).mapToLong(writer -> writer.size() * writer.format().size()).sum();
+    }
+
     @Override
     public void close() {
         this.verts.close();

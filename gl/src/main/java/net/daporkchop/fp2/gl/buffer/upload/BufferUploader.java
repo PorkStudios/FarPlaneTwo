@@ -66,6 +66,31 @@ public abstract class BufferUploader implements AutoCloseable {
      */
     public abstract void tick();
 
+    /**
+     * Gets an estimate of the number of bytes that may still be uploaded without causing the graphics pipeline to stall.
+     * <p>
+     * If known, this value will decrease as more uploads are submitted, and will gradually increase up to {@link #maximumCapacity()} as the uploads are completed. In
+     * any case, the value will always be less than or equal to {@link #maximumCapacity()}.
+     * <p>
+     * If unknown/infinite, this should return {@link Long#MAX_VALUE}.
+     *
+     * @return an estimate of the number of bytes that may still be uploaded without causing the graphics pipeline to stall
+     */
+    public long estimateCapacity() {
+        return Long.MAX_VALUE;
+    }
+
+    /**
+     * Gets an estimate of the maximum number of bytes that may ever be uploaded without causing the graphics pipeline to stall.
+     * <p>
+     * If unknown/infinite, this should return {@link Long#MAX_VALUE}.
+     *
+     * @return an estimate of the maximum number of bytes that may still be uploaded without causing the graphics pipeline to stall
+     */
+    public long maximumCapacity() {
+        return Long.MAX_VALUE;
+    }
+
     @Override
     public void close() {
         //no-op

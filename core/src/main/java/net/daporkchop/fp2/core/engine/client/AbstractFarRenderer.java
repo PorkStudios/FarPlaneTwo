@@ -111,7 +111,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
             this.baker = this.createBaker();
             this.bakeStorage = this.createBakeStorage();
             this.renderIndex = this.createRenderIndex();
-            this.bakeManager = new BakeManager<>(this, context.tileCache(), this.bufferUploader, this.baker, this.bakeStorage, this.renderIndex);
+            this.bakeManager = new BakeManager<>(this, context.tileCache(), this.baker);
 
             {
                 StatePreserver.Builder statePreserverBuilder = StatePreserver.builder(this.gl);
@@ -166,6 +166,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
      */
     public void prepare(@NonNull CameraState cameraState, @NonNull IFrustum frustum) {
         this.bufferUploader.tick();
+        this.bakeManager.tick(this.bufferUploader, this.bakeStorage, this.renderIndex);
 
         //update camera state uniforms
         try (val uniforms = this.cameraStateUniformsBuffer.update()) {
