@@ -38,18 +38,16 @@ public class OpenGLException extends RuntimeException {
                 return GL_INVALID_VALUE + " (INVALID_VALUE)";
             case GL_INVALID_OPERATION:
                 return GL_INVALID_OPERATION + " (INVALID_OPERATION)";
+            case GL_INVALID_FRAMEBUFFER_OPERATION:
+                return GL_INVALID_FRAMEBUFFER_OPERATION + " (INVALID_FRAMEBUFFER_OPERATION)";
             case GL_STACK_OVERFLOW:
                 return GL_STACK_OVERFLOW + " (STACK_OVERFLOW)";
             case GL_STACK_UNDERFLOW:
                 return GL_STACK_UNDERFLOW + " (STACK_UNDERFLOW)";
             case GL_OUT_OF_MEMORY:
                 return GL_OUT_OF_MEMORY + " (OUT_OF_MEMORY)";
-            /*case GL_TABLE_TOO_LARGE:
-                return GL_TABLE_TOO_LARGE + " (TABLE_TOO_LARGE)";*/
-            case GL_INVALID_FRAMEBUFFER_OPERATION:
-                return GL_INVALID_FRAMEBUFFER_OPERATION + " (INVALID_FRAMEBUFFER_OPERATION)";
             default:
-                return null;
+                return errorCode + " (<unknown>)";
         }
     }
 
