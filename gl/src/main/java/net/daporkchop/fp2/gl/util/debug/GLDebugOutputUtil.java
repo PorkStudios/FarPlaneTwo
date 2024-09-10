@@ -68,6 +68,10 @@ public class GLDebugOutputUtil {
 
         //suppress some weird texture thing which gets spammed by NVIDIA on every framebuffer clear
         glDebugMessageControl(gl, GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_OTHER, GL_DONT_CARE, new int[]{ 0x20084 }, false);
+
+        //suppress NVIDIA driver notifications indicating what kind of memory buffers are stored in (this would be very useful, but it gets
+        // logged for every single glCopyBufferSubData)
+        glDebugMessageControl(gl, GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_OTHER, GL_DONT_CARE, new int[]{ 131185 }, false);
     }
 
     private static void glDebugMessageControl(OpenGL gl, int source, int type, int severity, int[] ids, boolean enabled) {
