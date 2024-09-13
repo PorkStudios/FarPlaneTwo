@@ -81,7 +81,7 @@ public class ClientContext implements IFarClientContext {
 
         this.level.workerManager().rootExecutor().execute(() -> {
             BakeManager bakeManager = this.renderer.bakeManager();
-            bakeManager.tileCache().getAllTiles().parallel().forEach(bakeManager::tileModified);
+            bakeManager.tilesChanged(bakeManager.tileCache().getAllPositions());
         });
     }
 

@@ -88,11 +88,12 @@ public final class BakeManager extends AbstractReleasable implements FarTileCach
                 .threadFactory(PThreadFactories.builder().daemon().minPriority().collapsingId().name("FP2 Rendering Thread #%d").build()));
 
         this.tileCache.addListener(this, true);
+        this.tilesChanged(this.tileCache.getAllPositions());
     }
 
     @Override
     protected void doRelease() {
-        this.tileCache.removeListener(this, false);
+        this.tileCache.removeListener(this);
 
         //prevent workers from scheduling tasks on the client thread
         this.isBulkUpdateQueued.set(true);
@@ -114,22 +115,7 @@ public final class BakeManager extends AbstractReleasable implements FarTileCach
     }
 
     @Override
-    public void tileAdded(@NonNull ITileSnapshot tile) {
-        this.notifyOutputs(tile.pos());
-    }
-
-    @Override
-    public void tileModified(@NonNull ITileSnapshot tile) {
-        this.notifyOutputs(tile.pos());
-    }
-
-    @Override
-    public void tileRemoved(@NonNull TilePos pos) {
-        //schedule the tile itself for re-bake
-        this.notifyOutputs(pos);
-    }
-
-    private void notifyOutputs(@NonNull TilePos pos) {
+    public void tileChanged(@NonNull TilePos pos) {
         //schedule all of the positions affected by the tile for re-bake
         this.baker.bakeOutputs(pos).forEach(outputPos -> {
             if (!outputPos.isLevelValid()) { //output tile is at an invalid zoom level, skip it
