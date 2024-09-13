@@ -108,7 +108,7 @@ public class FP2Client1_16 extends FP2Client {
         this.mc.getMainRenderTarget().enableStencil();
 
         //register resource reload listener
-        ((IReloadableResourceManager) this.mc.getResourceManager()).registerReloadListener(new ResourceReloadListener1_16());
+        ((IReloadableResourceManager) this.mc.getResourceManager()).registerReloadListener(new ResourceReloadListener1_16(this));
     }
 
     @Override

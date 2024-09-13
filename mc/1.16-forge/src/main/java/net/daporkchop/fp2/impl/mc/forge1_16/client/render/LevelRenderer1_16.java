@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -95,7 +95,7 @@ public class LevelRenderer1_16 implements LevelRenderer, AutoCloseable {
                 .withResourceProvider(new ResourceProvider1_16(this.mc))
                 .wrapCurrent();
 
-        this.textureUVs = new TextureUVs1_16(level.registry(), this.gl, mc);
+        this.textureUVs = new TextureUVs1_16(level.fp2().client(), level.registry(), this.gl, mc);
     }
 
     @Override

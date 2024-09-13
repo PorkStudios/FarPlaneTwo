@@ -19,6 +19,9 @@
 
 package net.daporkchop.fp2.impl.mc.forge1_16.client;
 
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.render.TextureUVs;
 import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;
 import net.daporkchop.fp2.core.engine.api.ctx.IFarClientContext;
@@ -29,17 +32,18 @@ import net.minecraftforge.resource.VanillaResourceType;
 
 import java.util.function.Predicate;
 
-import static net.daporkchop.fp2.core.FP2Core.*;
-
 /**
  * @author DaPorkchop_
  */
-public class ResourceReloadListener1_16 implements ISelectiveResourceReloadListener {
+@RequiredArgsConstructor
+public final class ResourceReloadListener1_16 implements ISelectiveResourceReloadListener {
+    private final @NonNull FP2Client client;
+
     @Override
     public void onResourceManagerReload(IResourceManager resourceManager, Predicate<IResourceType> resourcePredicate) {
         if (resourcePredicate.test(VanillaResourceType.TEXTURES) || resourcePredicate.test(VanillaResourceType.MODELS)) {
-            TextureUVs.reloadAll();
-            fp2().client().currentPlayer().ifPresent(player -> { //TODO: this wouldn't be necessary if the texture atlas weren't baked into the command buffer
+            TextureUVs.reloadAll(this.client);
+            this.client.currentPlayer().ifPresent(player -> { //TODO: this wouldn't be necessary if the texture atlas weren't baked into the command buffer
                 IFarClientContext context = player.activeContext();
                 if (context != null) {
                     context.reloadRenderer();

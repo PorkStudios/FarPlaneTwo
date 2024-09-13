@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -25,9 +25,8 @@ import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import lombok.Getter;
 import lombok.NonNull;
-import net.daporkchop.fp2.api.event.FEventHandler;
-import net.daporkchop.fp2.api.event.generic.FReloadEvent;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
+import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.render.TextureUVs;
 import net.daporkchop.fp2.api.util.Direction;
 import net.daporkchop.fp2.gl.GL;
@@ -52,7 +51,8 @@ import static net.daporkchop.fp2.core.FP2Core.*;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractTextureUVs extends AbstractReleasable implements TextureUVs {
+public abstract class AbstractTextureUVs extends AbstractReleasable implements TextureUVs, TextureUVs.ReloadListener {
+    protected final FP2Client client;
     protected final FGameRegistry registry;
 
     protected final AttributeFormat<QuadListAttribute> listsFormat;
@@ -63,7 +63,8 @@ public abstract class AbstractTextureUVs extends AbstractReleasable implements T
 
     protected int[] stateIdToIndexId;
 
-    public AbstractTextureUVs(@NonNull FGameRegistry registry, @NonNull GL gl) {
+    public AbstractTextureUVs(@NonNull FP2Client client, @NonNull FGameRegistry registry, @NonNull GL gl) {
+        this.client = client;
         this.registry = registry;
 
         this.listsFormat = gl.createAttributeFormat(QuadListAttribute.class).useFor(AttributeUsage.UNIFORM_ARRAY).build();
@@ -72,23 +73,19 @@ public abstract class AbstractTextureUVs extends AbstractReleasable implements T
         this.quadsFormat = gl.createAttributeFormat(PackedBakedQuadAttribute.class).useFor(AttributeUsage.UNIFORM_ARRAY).build();
         this.quadsBuffer = this.quadsFormat.createBuffer(BufferUsage.STATIC_DRAW);
 
-        fp2().eventBus().registerWeak(this);
+        client.textureUVsReloadListeners().add(this); //TODO: i'd like this to be registered weakly
     }
 
     @Override
     protected void doRelease() {
-        fp2().eventBus().unregister(this);
+        this.client.textureUVsReloadListeners().remove(this);
 
         this.quadsBuffer.close();
         this.listsBuffer.close();
     }
 
-    @FEventHandler
-    protected void onReload(@NonNull FReloadEvent<TextureUVs> event) {
-        event.doReload(this::reloadUVs);
-    }
-
-    protected void reloadUVs() {
+    @Override
+    public void reloadUVs() {
         ObjIntMap<List<PackedBakedQuad>> distinctQuadsToId = new ObjIntOpenHashMap<>();
         List<List<PackedBakedQuad>> distinctQuadsById = new ArrayList<>();
 

@@ -86,7 +86,7 @@ public class LevelRenderer1_12 implements LevelRenderer, AutoCloseable {
                 .withResourceProvider(new ResourceProvider1_12(this.mc))
                 .wrapCurrent();
 
-        this.textureUVs = new TextureUVs1_12(level.registry(), this.gl, mc);
+        this.textureUVs = new TextureUVs1_12(level.fp2().client(), level.registry(), this.gl, mc);
     }
 
     @Override

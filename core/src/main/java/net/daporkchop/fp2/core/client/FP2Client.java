@@ -30,10 +30,12 @@ import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.gui.GuiContext;
 import net.daporkchop.fp2.core.client.gui.GuiScreen;
 import net.daporkchop.fp2.core.client.key.KeyCategory;
+import net.daporkchop.fp2.core.client.render.TextureUVs;
 import net.daporkchop.fp2.core.client.shader.ShaderMacros;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.client.player.IFarPlayerClient;
 import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
+import net.daporkchop.fp2.core.util.listener.ListenerList;
 import net.daporkchop.fp2.core.util.threading.futureexecutor.FutureExecutor;
 import net.daporkchop.lib.logging.Logger;
 
@@ -50,6 +52,8 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 @Setter(AccessLevel.PROTECTED)
 public abstract class FP2Client {
     private final ShaderMacros.Mutable globalShaderMacros = new ShaderMacros.Mutable();
+
+    private final ListenerList<TextureUVs.ReloadListener> textureUVsReloadListeners = ListenerList.create(TextureUVs.ReloadListener.class);
 
     private Logger chat;
 

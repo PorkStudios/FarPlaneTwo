@@ -22,6 +22,7 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.client.render;
 import lombok.Getter;
 import lombok.NonNull;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
+import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.render.common.AbstractTextureUVs;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.world.registry.GameRegistry1_12;
@@ -38,8 +39,8 @@ import java.util.List;
 public class TextureUVs1_12 extends AbstractTextureUVs {
     protected final Minecraft mc;
 
-    public TextureUVs1_12(@NonNull FGameRegistry registry, @NonNull GL gl, @NonNull Minecraft mc) {
-        super(registry, gl);
+    public TextureUVs1_12(@NonNull FP2Client client, @NonNull FGameRegistry registry, @NonNull GL gl, @NonNull Minecraft mc) {
+        super(client, registry, gl);
         this.mc = mc;
 
         this.reloadUVs();
