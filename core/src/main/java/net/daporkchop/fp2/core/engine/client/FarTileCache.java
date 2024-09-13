@@ -36,8 +36,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Stream;
 
-import static net.daporkchop.lib.common.util.PValidation.*;
-
 /**
  * Client-side, in-memory cache for loaded tiles.
  *
@@ -101,32 +99,12 @@ public final class FarTileCache extends AbstractReleasable {
     /**
      * Adds a new {@link Listener} that will be notified when tiles change.
      *
-     * @param listener          the {@link Listener}
-     * @param notifyForExisting whether or not to call {@link Listener#tileChanged(TilePos)} for tiles that were already cached before
-     *                          the listener was added
-     */
-    public void addListener(@NonNull Listener listener, boolean notifyForExisting) {
-        this.assertNotReleased();
-        checkState(this.listeners.add(listener), "duplicate listener: %s", listener);
-        if (notifyForExisting) {
-            //iterate while delegating to compute() for each key to ensure we hold a lock
-            this.tiles.forEach((_pos, _tile) -> this.tiles.computeIfPresent(_pos, (pos, tile) -> {
-                listener.tileChanged(pos);
-                return tile; //don't modify the saved tile
-            }));
-        }
-    }
-
-    /**
-     * Removes a previously added {@link Listener}.
-     * <p>
-     * The listener will not be notified of the "removal" tiles that are currently cached at the time it was removed.
-     *
      * @param listener the {@link Listener}
+     * @return a {@link ListenerList.Handle} which should be closed in order to remove the listener again
      */
-    public void removeListener(@NonNull Listener listener) {
+    public ListenerList<Listener>.Handle addListener(@NonNull Listener listener) {
         this.assertNotReleased();
-        checkState(this.listeners.remove(listener), "unknown listener: %s", listener);
+        return this.listeners.add(listener);
     }
 
     /**
@@ -195,7 +173,6 @@ public final class FarTileCache extends AbstractReleasable {
     @Override
     protected void doRelease() {
         this.tiles.clear();
-        this.listeners.clear();
     }
 
     /**

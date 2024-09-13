@@ -19,16 +19,20 @@
 
 package net.daporkchop.fp2.core.util.listener;
 
+import com.google.common.collect.ImmutableSet;
+import lombok.AccessLevel;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.lib.common.annotation.ThreadSafe;
+import net.daporkchop.lib.unsafe.PCleaner;
 
-import java.util.concurrent.CopyOnWriteArraySet;
+import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * Implements an ordered set of values which implement various event callback methods.
  * <p>
  * A {@link ListenerList} is created for a specific {@link Listener} class, and instances can be {@link #add(Object) added} and
- * {@link #remove(Object) removed} from it dynamically. Events can then be dispatched by invoking the corresponding method on the
+ * removed from it dynamically. Events can then be dispatched by invoking the corresponding method on the
  * {@link Listener} instance returned by {@link #dispatcher()}, which will then invoke the method on each of the listeners in turn.
  *
  * @author DaPorkchop_
@@ -46,8 +50,8 @@ public final class ListenerList<Listener> {
         return new ListenerList<>(listenerClass);
     }
 
-    private final CopyOnWriteArraySet<Listener> listenerSet = new CopyOnWriteArraySet<>();
     private final ListenerListGenerator<Listener> dispatcherFactory;
+    private ImmutableSet<Listener> listenerSet = ImmutableSet.of();
 
     private volatile Listener dispatcher;
 
@@ -73,52 +77,75 @@ public final class ListenerList<Listener> {
      * Adds the given {@link Listener} instance.
      *
      * @param listener the {@link Listener} instance to add
-     * @return {@code true} if the {@link Listener} was added
+     * @return a {@link Handle} which should be closed in order to remove the listener again
      */
-    public synchronized boolean add(@NonNull Listener listener) {
-        boolean res = this.listenerSet.add(listener);
-        if (res) {
-            try {
-                this.dispatcher = this.dispatcherFactory.get(this.listenerSet);
-            } catch (Throwable t) {
-                this.listenerSet.remove(listener);
-                throw t;
-            }
-        }
-        return res;
+    public synchronized Handle add(@NonNull Listener listener) {
+        checkState(!this.listenerSet.contains(listener), "duplicate listener: %s", listener);
+
+        ImmutableSet<Listener> newListeners = ImmutableSet.<Listener>builder().addAll(this.listenerSet).add(listener).build();
+        Listener newDispatcher = this.dispatcherFactory.get(newListeners);
+
+        Handle handle = new Handle(listener, new Throwable());
+        this.listenerSet = newListeners;
+        this.dispatcher = newDispatcher;
+        return handle;
     }
 
     /**
      * Removes the given {@link Listener} instance.
      *
      * @param listener the {@link Listener} instance to remove
-     * @return {@code true} if the {@link Listener} was previously added and was successfully removed
      */
-    public synchronized boolean remove(@NonNull Listener listener) {
-        boolean res = this.listenerSet.remove(listener);
-        if (res) {
-            try {
-                this.dispatcher = this.dispatcherFactory.get(this.listenerSet);
-            } catch (Throwable t) {
-                this.listenerSet.add(listener);
-                throw t;
-            }
-        }
-        return res;
+    synchronized void remove0(@NonNull Listener listener) {
+        checkState(this.listenerSet.contains(listener), "unknown listener: %s", listener);
+
+        ImmutableSet<Listener> newListeners = this.listenerSet.stream().filter(l -> !listener.equals(l)).collect(ImmutableSet.toImmutableSet());
+        Listener newDispatcher = this.dispatcherFactory.get(newListeners);
+
+        this.listenerSet = newListeners;
+        this.dispatcher = newDispatcher;
     }
 
     /**
-     * Removes all previously added {@link Listener} instances.
-     *
-     * @return {@code true} if any {@link Listener}s were removed
+     * @author DaPorkchop_
      */
-    public synchronized boolean clear() {
-        if (this.listenerSet.isEmpty()) {
-            return false;
+    public final class Handle implements AutoCloseable {
+        private final @NonNull Listener listener;
+        private final @NonNull Releaser releaser;
+        private final @NonNull PCleaner cleaner;
+
+        Handle(@NonNull Listener listener, @NonNull Throwable constructorStackTrace) {
+            this.listener = listener;
+            this.releaser = new Releaser(listener.getClass(), constructorStackTrace);
+            this.cleaner = PCleaner.cleaner(this, this.releaser);
         }
 
-        this.listenerSet.clear();
-        this.dispatcher = this.dispatcherFactory.get(this.listenerSet);
-        return true;
+        @Override
+        public void close() {
+            checkState(!this.releaser.closed);
+            this.releaser.closed = true;
+            this.cleaner.clean(); //run cleaner now to make the internal PhantomReference collectable
+
+            ListenerList.this.remove0(this.listener);
+        }
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
+    private static final class Releaser implements Runnable {
+        private final @NonNull Class<?> listenerClass;
+        private final @NonNull Throwable constructorStackTrace;
+        boolean closed;
+
+        @Override
+        public void run() {
+            if (!this.closed) {
+                RuntimeException re = new RuntimeException("an event listener (" + this.listenerClass + ") was not closed!", this.constructorStackTrace);
+                re.printStackTrace();
+                throw re; //throwing this from the cleaner thread will cause java to exit (although it's broken on Forge)
+            }
+        }
     }
 }

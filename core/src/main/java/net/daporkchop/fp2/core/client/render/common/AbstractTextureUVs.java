@@ -29,12 +29,14 @@ import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.render.TextureUVs;
 import net.daporkchop.fp2.api.util.Direction;
+import net.daporkchop.fp2.core.util.listener.ListenerList;
 import net.daporkchop.fp2.gl.GL;
 import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeUsage;
 import net.daporkchop.fp2.gl.attribute.AttributeWriter;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
+import net.daporkchop.lib.common.closeable.PResourceUtil;
 import net.daporkchop.lib.primitive.map.ObjIntMap;
 import net.daporkchop.lib.primitive.map.open.ObjIntOpenHashMap;
 import net.daporkchop.lib.common.misc.release.AbstractReleasable;
@@ -63,6 +65,8 @@ public abstract class AbstractTextureUVs extends AbstractReleasable implements T
 
     protected int[] stateIdToIndexId;
 
+    private final ListenerList<TextureUVs.ReloadListener>.Handle reloadListenerHandle;
+
     public AbstractTextureUVs(@NonNull FP2Client client, @NonNull FGameRegistry registry, @NonNull GL gl) {
         this.client = client;
         this.registry = registry;
@@ -73,12 +77,12 @@ public abstract class AbstractTextureUVs extends AbstractReleasable implements T
         this.quadsFormat = gl.createAttributeFormat(PackedBakedQuadAttribute.class).useFor(AttributeUsage.UNIFORM_ARRAY).build();
         this.quadsBuffer = this.quadsFormat.createBuffer(BufferUsage.STATIC_DRAW);
 
-        client.textureUVsReloadListeners().add(this); //TODO: i'd like this to be registered weakly
+        this.reloadListenerHandle = client.textureUVsReloadListeners().add(this);
     }
 
     @Override
     protected void doRelease() {
-        this.client.textureUVsReloadListeners().remove(this);
+        this.reloadListenerHandle.close();
 
         this.quadsBuffer.close();
         this.listsBuffer.close();

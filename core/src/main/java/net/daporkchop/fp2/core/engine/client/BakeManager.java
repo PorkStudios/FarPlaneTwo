@@ -30,6 +30,7 @@ import net.daporkchop.fp2.core.engine.client.bake.IRenderBaker;
 import net.daporkchop.fp2.core.engine.client.index.IRenderIndex;
 import net.daporkchop.fp2.core.engine.client.strategy.IFarRenderStrategy;
 import net.daporkchop.fp2.core.engine.tile.ITileSnapshot;
+import net.daporkchop.fp2.core.util.listener.ListenerList;
 import net.daporkchop.fp2.core.util.threading.BlockingSupport;
 import net.daporkchop.fp2.core.util.threading.scheduler.NoFutureScheduler;
 import net.daporkchop.fp2.core.util.threading.scheduler.Scheduler;
@@ -69,6 +70,8 @@ public final class BakeManager extends AbstractReleasable implements FarTileCach
     private final Scheduler<TilePos, Void> bakeScheduler;
     private final TileCoordLimits coordLimits;
 
+    private final ListenerList<FarTileCache.Listener>.Handle tileCacheListenerHandle;
+
     private final Map<TilePos, Optional<IBakeOutput>> pendingDataUpdates = DirectTilePosAccess.newPositionKeyedConcurrentHashMap();
     private final Map<TilePos, Boolean> pendingRenderableUpdates = DirectTilePosAccess.newPositionKeyedConcurrentHashMap();
     private final AtomicBoolean isBulkUpdateQueued = new AtomicBoolean();
@@ -87,13 +90,14 @@ public final class BakeManager extends AbstractReleasable implements FarTileCach
                 .threads(fp2().globalConfig().performance().bakeThreads())
                 .threadFactory(PThreadFactories.builder().daemon().minPriority().collapsingId().name("FP2 Rendering Thread #%d").build()));
 
-        this.tileCache.addListener(this, true);
+        this.tileCacheListenerHandle = this.tileCache.addListener(this);
         this.tilesChanged(this.tileCache.getAllPositions());
     }
 
     @Override
     protected void doRelease() {
-        this.tileCache.removeListener(this);
+        //TODO: use try-with-resources here?
+        this.tileCacheListenerHandle.close();
 
         //prevent workers from scheduling tasks on the client thread
         this.isBulkUpdateQueued.set(true);
