@@ -30,6 +30,7 @@ import net.daporkchop.fp2.core.engine.client.bake.IRenderBaker;
 import net.daporkchop.fp2.core.engine.client.bake.storage.BakeStorage;
 import net.daporkchop.fp2.core.engine.client.index.RenderIndex;
 import net.daporkchop.fp2.core.engine.tile.ITileSnapshot;
+import net.daporkchop.fp2.core.util.listener.ListenerList;
 import net.daporkchop.fp2.core.util.threading.BlockingSupport;
 import net.daporkchop.fp2.core.util.threading.scheduler.NoFutureScheduler;
 import net.daporkchop.fp2.core.util.threading.scheduler.Scheduler;
@@ -62,6 +63,8 @@ public final class BakeManager<VertexType extends AttributeStruct> extends Abstr
     private final Scheduler<TilePos, Void> bakeScheduler;
     private final TileCoordLimits coordLimits;
 
+    private final ListenerList<FarTileCache.Listener>.Handle tileCacheListenerHandle;
+
     private final Map<TilePos, Optional<BakeOutput<VertexType>>> pendingDataUpdates = DirectTilePosAccess.newPositionKeyedConcurrentHashMap();
     private final Map<TilePos, Boolean> pendingRenderableUpdates = DirectTilePosAccess.newPositionKeyedConcurrentHashMap();
     private final Semaphore dataUpdatesLock = new Semaphore(fp2().globalConfig().performance().maxBakesProcessedPerFrame());
@@ -78,12 +81,14 @@ public final class BakeManager<VertexType extends AttributeStruct> extends Abstr
                 .threads(fp2().globalConfig().performance().bakeThreads())
                 .threadFactory(PThreadFactories.builder().daemon().minPriority().collapsingId().name("FP2 Rendering Thread #%d").build()));
 
-        this.tileCache.addListener(this, true);
+        this.tileCacheListenerHandle = this.tileCache.addListener(this);
+        this.tilesChanged(this.tileCache.getAllPositions());
     }
 
     @Override
     protected void doRelease() {
-        this.tileCache.removeListener(this, false);
+        //TODO: use try-with-resources here?
+        this.tileCacheListenerHandle.close();
 
         //reset permit count to maximum possible to prevent infinite blocking while shutting down executor
         this.dataUpdatesLock.drainPermits();
@@ -102,22 +107,7 @@ public final class BakeManager<VertexType extends AttributeStruct> extends Abstr
     }
 
     @Override
-    public void tileAdded(@NonNull ITileSnapshot tile) {
-        this.notifyOutputs(tile.pos());
-    }
-
-    @Override
-    public void tileModified(@NonNull ITileSnapshot tile) {
-        this.notifyOutputs(tile.pos());
-    }
-
-    @Override
-    public void tileRemoved(@NonNull TilePos pos) {
-        //schedule the tile itself for re-bake
-        this.notifyOutputs(pos);
-    }
-
-    private void notifyOutputs(@NonNull TilePos pos) {
+    public void tileChanged(@NonNull TilePos pos) {
         //schedule all of the positions affected by the tile for re-bake
         this.baker.bakeOutputs(pos).forEach(outputPos -> {
             if (!outputPos.isLevelValid()) { //output tile is at an invalid zoom level, skip it

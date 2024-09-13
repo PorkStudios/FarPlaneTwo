@@ -111,7 +111,7 @@ public class FP2Client1_12 extends FP2Client {
         }
 
         //register resource reload listener
-        ((ATMinecraft1_12) this.mc).getResourceManager().registerReloadListener(new ResourceReloadListener1_12());
+        ((ATMinecraft1_12) this.mc).getResourceManager().registerReloadListener(new ResourceReloadListener1_12(this));
     }
 
     @Override

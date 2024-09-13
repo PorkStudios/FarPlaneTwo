@@ -24,19 +24,17 @@ import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.tile.CompressedTileSnapshot;
 import net.daporkchop.fp2.core.engine.tile.ITileSnapshot;
+import net.daporkchop.fp2.core.util.listener.ListenerList;
 import net.daporkchop.lib.common.misc.release.AbstractReleasable;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.stream.Stream;
-
-import static net.daporkchop.lib.common.util.PValidation.*;
 
 /**
  * Client-side, in-memory cache for loaded tiles.
@@ -48,7 +46,7 @@ import static net.daporkchop.lib.common.util.PValidation.*;
 //TODO: handling in case an exception is thrown by a listener
 public final class FarTileCache extends AbstractReleasable {
     private final Map<TilePos, ITileSnapshot> tiles = new ConcurrentHashMap<>();
-    private final Collection<Listener> listeners = new CopyOnWriteArraySet<>();
+    private final ListenerList<Listener> listeners = ListenerList.create(Listener.class);
 
     private final AtomicReference<DebugStats.TileSnapshot> debug_tileStats = new AtomicReference<>(DebugStats.TileSnapshot.ZERO);
     private final LongAdder debug_nonEmptyTileCount = new LongAdder();
@@ -63,11 +61,7 @@ public final class FarTileCache extends AbstractReleasable {
         this.tiles.compute(tile.pos(), (pos, old) -> {
             this.debug_updateStats(old, tile);
 
-            if (old == null) {
-                this.listeners.forEach(listener -> listener.tileAdded(tile));
-            } else {
-                this.listeners.forEach(listener -> listener.tileModified(tile));
-            }
+            this.listeners.dispatcher().tileChanged(pos);
             return tile;
         });
     }
@@ -97,7 +91,7 @@ public final class FarTileCache extends AbstractReleasable {
         this.tiles.computeIfPresent(_pos, (pos, old) -> {
             this.debug_updateStats(old, null);
 
-            this.listeners.forEach(listener -> listener.tileRemoved(pos));
+            this.listeners.dispatcher().tileChanged(pos);
             return null;
         });
     }
@@ -105,34 +99,12 @@ public final class FarTileCache extends AbstractReleasable {
     /**
      * Adds a new {@link Listener} that will be notified when tiles change.
      *
-     * @param listener          the {@link Listener}
-     * @param notifyForExisting whether or not to call {@link Listener#tileAdded(ITileSnapshot)} for tiles that were already cached before
-     *                          the listener was added
+     * @param listener the {@link Listener}
+     * @return a {@link ListenerList.Handle} which should be closed in order to remove the listener again
      */
-    public void addListener(@NonNull Listener listener, boolean notifyForExisting) {
+    public ListenerList<Listener>.Handle addListener(@NonNull Listener listener) {
         this.assertNotReleased();
-        checkState(this.listeners.add(listener), "duplicate listener: %s", listener);
-        if (notifyForExisting) {
-            //iterate while delegating to compute() for each key to ensure we hold a lock
-            this.tiles.forEach((_pos, _tile) -> this.tiles.computeIfPresent(_pos, (pos, tile) -> {
-                listener.tileAdded(tile);
-                return tile; //don't modify the saved tile
-            }));
-        }
-    }
-
-    /**
-     * Removes a previously added {@link Listener}.
-     *
-     * @param listener      the {@link Listener}
-     * @param notifyRemoval whether or not to call {@link Listener#tileRemoved(TilePos)} for all cached tiles
-     */
-    public void removeListener(@NonNull Listener listener, boolean notifyRemoval) {
-        this.assertNotReleased();
-        checkState(this.listeners.remove(listener), "unknown listener: %s", listener);
-        if (notifyRemoval) {
-            this.tiles.forEach((pos, tile) -> listener.tileRemoved(pos));
-        }
+        return this.listeners.add(listener);
     }
 
     /**
@@ -167,13 +139,13 @@ public final class FarTileCache extends AbstractReleasable {
     /**
      * Gets every tile snapshot in this cache.
      * <p>
-     * No synchronization guarantees are made - tiles added or removed after calling this method may or may not be visible in the returned stream.
+     * No synchronization guarantees are made - tiles added or removed after calling this method may or may not be visible in the returned set.
      *
-     * @return a {@link Stream} over every tile snapshot in this cache
+     * @return a {@link Stream} over the position of every tile in this cache
      */
-    public Stream<ITileSnapshot> getAllTiles() {
+    public Set<TilePos> getAllPositions() {
         this.assertNotReleased();
-        return this.tiles.values().stream();
+        return this.tiles.keySet();
     }
 
     private void debug_updateStats(ITileSnapshot prev, ITileSnapshot next) {
@@ -200,9 +172,7 @@ public final class FarTileCache extends AbstractReleasable {
 
     @Override
     protected void doRelease() {
-        this.tiles.forEach((pos, tile) -> this.listeners.forEach(listener -> listener.tileRemoved(pos)));
         this.tiles.clear();
-        this.listeners.clear();
     }
 
     /**
@@ -212,24 +182,19 @@ public final class FarTileCache extends AbstractReleasable {
      */
     public interface Listener {
         /**
-         * Fired when a new tile is added to the cache.
-         *
-         * @param tile the tile
-         */
-        void tileAdded(@NonNull ITileSnapshot tile);
-
-        /**
-         * Fired when a tile's contents are changed.
-         *
-         * @param tile the tile
-         */
-        void tileModified(@NonNull ITileSnapshot tile);
-
-        /**
-         * Fired when a tile is removed from the cache.
+         * Fired when a tile's cached data is added/modified/removed.
          *
          * @param pos the position of the tile
          */
-        void tileRemoved(@NonNull TilePos pos);
+        void tileChanged(@NonNull TilePos pos);
+
+        /**
+         * Fired when multiple tiles' cached data is added/modified/removed.
+         *
+         * @param positions the positions of the tiles
+         */
+        default void tilesChanged(@NonNull Set<TilePos> positions) {
+            positions.forEach(this::tileChanged);
+        }
     }
 }

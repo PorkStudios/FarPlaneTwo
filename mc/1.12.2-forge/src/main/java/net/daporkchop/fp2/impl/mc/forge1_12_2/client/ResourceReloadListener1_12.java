@@ -19,6 +19,9 @@
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.client;
 
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.render.TextureUVs;
 import net.minecraft.client.resources.IResourceManager;
 import net.minecraftforge.client.resource.IResourceType;
@@ -34,12 +37,15 @@ import static net.daporkchop.fp2.core.FP2Core.*;
 /**
  * @author DaPorkchop_
  */
+@RequiredArgsConstructor
 @SideOnly(Side.CLIENT)
-public class ResourceReloadListener1_12 implements ISelectiveResourceReloadListener {
+public final class ResourceReloadListener1_12 implements ISelectiveResourceReloadListener {
+    private final @NonNull FP2Client client;
+
     @Override
     public void onResourceManagerReload(IResourceManager resourceManager, Predicate<IResourceType> resourcePredicate) {
         if (resourcePredicate.test(VanillaResourceType.TEXTURES) || resourcePredicate.test(VanillaResourceType.MODELS)) {
-            TextureUVs.reloadAll();
+            TextureUVs.reloadAll(this.client);
         }
         if (resourcePredicate.test(VanillaResourceType.SHADERS)) {
             fp2().client().globalRenderer().shaderRegistry.reload();

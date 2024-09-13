@@ -26,15 +26,14 @@ import it.unimi.dsi.fastutil.ints.IntList;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.val;
-import net.daporkchop.fp2.api.event.FEventHandler;
-import net.daporkchop.fp2.api.event.generic.FReloadEvent;
 import net.daporkchop.fp2.api.util.Direction;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.render.TextureUVs;
-import net.daporkchop.fp2.gl.attribute.BufferUsage;
+import net.daporkchop.fp2.core.util.listener.ListenerList;
 import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.lib.common.misc.release.AbstractReleasable;
 import net.daporkchop.lib.primitive.map.ObjIntMap;
 import net.daporkchop.lib.primitive.map.open.ObjIntOpenHashMap;
@@ -49,7 +48,7 @@ import java.util.List;
  * @author DaPorkchop_
  */
 @Getter
-public abstract class AbstractTextureUVs extends AbstractReleasable implements TextureUVs {
+public abstract class AbstractTextureUVs extends AbstractReleasable implements TextureUVs, TextureUVs.ReloadListener {
     protected final FP2Core fp2;
     protected final FGameRegistry registry;
 
@@ -58,6 +57,8 @@ public abstract class AbstractTextureUVs extends AbstractReleasable implements T
 
     protected int[] stateIdToIndexId;
 
+    private final ListenerList<TextureUVs.ReloadListener>.Handle reloadListenerHandle;
+
     public AbstractTextureUVs(@NonNull FP2Core fp2, @NonNull FGameRegistry registry) {
         this.fp2 = fp2;
         this.registry = registry;
@@ -65,23 +66,19 @@ public abstract class AbstractTextureUVs extends AbstractReleasable implements T
         this.listsBuffer = fp2.client().globalRenderer().uvQuadListSSBOFormat.createBuffer();
         this.quadsBuffer = fp2.client().globalRenderer().uvPackedQuadSSBOFormat.createBuffer();
 
-        fp2.eventBus().registerWeak(this);
+        this.reloadListenerHandle = fp2.client().textureUVsReloadListeners().add(this);
     }
 
     @Override
     protected void doRelease() {
-        this.fp2.eventBus().unregister(this);
+        this.reloadListenerHandle.close();
 
         this.quadsBuffer.close();
         this.listsBuffer.close();
     }
 
-    @FEventHandler
-    protected void onReload(@NonNull FReloadEvent<TextureUVs> event) {
-        event.doReload(this::reloadUVs);
-    }
-
-    protected void reloadUVs() {
+    @Override
+    public void reloadUVs() {
         ObjIntMap<List<PackedBakedQuad>> distinctQuadsToId = new ObjIntOpenHashMap<>();
         List<List<PackedBakedQuad>> distinctQuadsById = new ArrayList<>();
 

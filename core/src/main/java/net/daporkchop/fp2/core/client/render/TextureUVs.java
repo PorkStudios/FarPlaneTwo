@@ -27,9 +27,10 @@ import lombok.Setter;
 import net.daporkchop.fp2.api.event.ReturningEvent;
 import net.daporkchop.fp2.api.util.Direction;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
-import net.daporkchop.fp2.core.event.AbstractReloadEvent;
-import net.daporkchop.fp2.gl.attribute.AttributeStruct;
+import net.daporkchop.fp2.core.client.FP2Client;
+import net.daporkchop.fp2.core.util.annotation.CalledFromClientThread;
 import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
+import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.annotation.Attribute;
 import net.daporkchop.fp2.gl.attribute.annotation.AttributeIgnore;
 import net.daporkchop.fp2.gl.attribute.annotation.AttributeSetter;
@@ -40,14 +41,15 @@ import net.daporkchop.lib.common.annotation.param.NotNegative;
 
 import java.util.List;
 
-import static net.daporkchop.fp2.core.FP2Core.*;
-
 /**
  * @author DaPorkchop_
  */
 public interface TextureUVs {
-    static void reloadAll() {
-        new AbstractReloadEvent<TextureUVs>() {
+    static void reloadAll(@NonNull FP2Client client) {
+        client.textureUVsReloadListeners().dispatcher().reloadUVs();
+        client.chat().success("§areloaded texture UV cache(s)"); //TODO: determine total count or handle failure
+
+        /*new AbstractReloadEvent<TextureUVs>() {
             @Override
             protected void handleSuccess(int total) {
                 fp2().client().chat().success("§areloaded %d texture UV cache(s)", total);
@@ -58,7 +60,7 @@ public interface TextureUVs {
                 fp2().log().error("texture UV cache reload failed", cause);
                 fp2().client().chat().error("§c%d/%d texture UV cache failed to reload (check log for info)", failed, total);
             }
-        }.fire();
+        }.fire();*/
     }
 
     AttributeBuffer<QuadListAttribute> listsBuffer();
@@ -134,5 +136,13 @@ public interface TextureUVs {
         private int state;
         @NonNull
         private Direction direction;
+    }
+
+    /**
+     * @author DaPorkchop_
+     */
+    interface ReloadListener {
+        @CalledFromClientThread
+        void reloadUVs();
     }
 }

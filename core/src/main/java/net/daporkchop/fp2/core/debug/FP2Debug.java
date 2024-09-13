@@ -104,7 +104,7 @@ public class FP2Debug {
                 fp2.globalConfig(config.withDebug(config.debug().withVanillaTerrainRendering(!config.debug().vanillaTerrainRendering())));
                 fp2.client().chat().debug((fp2.globalConfig().debug().vanillaTerrainRendering() ? "§aEnabled" : "§cDisabled") + " vanilla terrain");
             });
-            category.addBinding("rebuildUVs", "6", TextureUVs::reloadAll);
+            category.addBinding("rebuildUVs", "6", () -> TextureUVs.reloadAll(fp2.client()));
             category.addBinding("toggleLevel0", "4", () -> {
                 FP2Config config = fp2.globalConfig();
                 fp2.globalConfig(config.withDebug(config.debug().withLevelZeroRendering(!config.debug().levelZeroRendering())));
