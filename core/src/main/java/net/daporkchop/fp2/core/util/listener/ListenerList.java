@@ -22,9 +22,7 @@ package net.daporkchop.fp2.core.util.listener;
 import lombok.NonNull;
 import net.daporkchop.lib.common.annotation.ThreadSafe;
 
-import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.function.Function;
 
 /**
  * Implements an ordered set of values which implement various event callback methods.
@@ -49,13 +47,13 @@ public final class ListenerList<Listener> {
     }
 
     private final CopyOnWriteArraySet<Listener> listenerSet = new CopyOnWriteArraySet<>();
-    private final Function<Set<Listener>, Listener> dispatcherFactory;
+    private final ListenerListGenerator<Listener> dispatcherFactory;
 
     private volatile Listener dispatcher;
 
     private ListenerList(@NonNull Class<Listener> listenerClass) {
-        this.dispatcherFactory = ListenerListGenerator.generateInstanceFactory(listenerClass);
-        this.dispatcher = this.dispatcherFactory.apply(this.listenerSet);
+        this.dispatcherFactory = ListenerListGenerator.get(listenerClass);
+        this.dispatcher = this.dispatcherFactory.get(this.listenerSet);
     }
 
     /**
@@ -81,7 +79,7 @@ public final class ListenerList<Listener> {
         boolean res = this.listenerSet.add(listener);
         if (res) {
             try {
-                this.dispatcher = this.dispatcherFactory.apply(this.listenerSet);
+                this.dispatcher = this.dispatcherFactory.get(this.listenerSet);
             } catch (Throwable t) {
                 this.listenerSet.remove(listener);
                 throw t;
@@ -100,7 +98,7 @@ public final class ListenerList<Listener> {
         boolean res = this.listenerSet.remove(listener);
         if (res) {
             try {
-                this.dispatcher = this.dispatcherFactory.apply(this.listenerSet);
+                this.dispatcher = this.dispatcherFactory.get(this.listenerSet);
             } catch (Throwable t) {
                 this.listenerSet.add(listener);
                 throw t;
@@ -120,7 +118,7 @@ public final class ListenerList<Listener> {
         }
 
         this.listenerSet.clear();
-        this.dispatcher = this.dispatcherFactory.apply(this.listenerSet);
+        this.dispatcher = this.dispatcherFactory.get(this.listenerSet);
         return true;
     }
 }

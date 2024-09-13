@@ -23,9 +23,9 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import lombok.experimental.UtilityClass;
-import net.daporkchop.fp2.common.asm.DelegatingClassLoader;
+import net.daporkchop.fp2.common.asm.ClassloadingUtils;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
@@ -34,15 +34,13 @@ import org.objectweb.asm.Type;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
+import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.Collection;
 import java.util.stream.Stream;
 
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -53,121 +51,62 @@ import static org.objectweb.asm.Type.*;
 /**
  * @author DaPorkchop_
  */
-@UtilityClass
-class ListenerListGenerator {
-    private static final LoadingCache<Class<?>, Function<Set<?>, ?>> FACTORY_CACHE = CacheBuilder.newBuilder()
+@RequiredArgsConstructor
+final class ListenerListGenerator<Listener> extends CacheLoader<Integer, MethodHandle> {
+    private static final int MAX_SPECIALIZE_COUNT = 5;
+
+    private static final LoadingCache<Class<?>, ListenerListGenerator<?>> FACTORY_CACHE = CacheBuilder.newBuilder()
             .weakKeys().weakValues().concurrencyLevel(1)
-            .build(CacheLoader.from(ListenerListGenerator::generateInstanceFactory0));
+            .build(CacheLoader.from(listenerClass -> {
+                checkArg(listenerClass.isInterface(), "not an interface: %s", listenerClass);
+
+                Method[] methods = Stream.of(listenerClass.getMethods())
+                        .filter(method -> (method.getModifiers() & Modifier.STATIC) == 0)
+                        .peek(method -> checkArg(method.getReturnType() == void.class, "listener method doesn't return void: %s", method))
+                        .toArray(Method[]::new);
+
+                return new ListenerListGenerator<>(listenerClass, methods);
+            }));
 
     @SneakyThrows
-    public static <Listener> Function<Set<Listener>, Listener> generateInstanceFactory(@NonNull Class<Listener> listenerClass) {
+    public static <Listener> ListenerListGenerator<Listener> get(@NonNull Class<Listener> listenerClass) {
         return uncheckedCast(FACTORY_CACHE.get(listenerClass));
     }
 
+    private final @NonNull Class<Listener> listenerClass;
+    private final @NonNull Method[] methods;
+    private final @NonNull LoadingCache<Integer, MethodHandle> cachedListeners = CacheBuilder.newBuilder().softValues().build(this);
+
     @SneakyThrows
-    private static Function<Set<?>, ?> generateInstanceFactory0(Class<?> listenerClass) {
-        //TODO: generate implementations lazily?
-        final int specializeForCounts = 5;
-
-        checkArg(listenerClass.isInterface(), "not an interface: %s", listenerClass);
-
-        List<Method> methods = Stream.of(listenerClass.getMethods())
-                .filter(method -> (method.getModifiers() & Modifier.STATIC) == 0)
-                .peek(method -> checkArg(method.getReturnType() == void.class, "listener method doesn't return void: %s", method))
-                .collect(Collectors.toList());
-
-        String listenerClassInternalName = getInternalName(listenerClass);
-        String factoryClassInternalName = listenerClassInternalName + "$GeneratedImpl$Factory";
-
-        String[] specializedClassInternalNames = new String[specializeForCounts];
-        for (int i = 0; i < specializeForCounts; i++) {
-            specializedClassInternalNames[i] = listenerClassInternalName + "$GeneratedImpl$Specialized" + i;
-        }
-        String arrayClassInternalName = listenerClassInternalName + "$GeneratedImpl$Array";
-
-        DelegatingClassLoader classLoader = new DelegatingClassLoader(listenerClass.getClassLoader());
-        for (int i = 0; i < specializeForCounts; i++) {
-            classLoader.defineClass(specializedClassInternalNames[i].replace('/', '.'), generateListenerImpl(methods, listenerClassInternalName, specializedClassInternalNames[i], i));
-        }
-        classLoader.defineClass(arrayClassInternalName.replace('/', '.'), generateListenerImpl(methods, listenerClassInternalName, arrayClassInternalName, null));
-
-        String setInternalName = getInternalName(Set.class);
-
-        ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
-        cw.visit(V1_8, ACC_PUBLIC | ACC_FINAL, factoryClassInternalName, null, "java/lang/Object", new String[]{ "java/util/function/Function" });
-
-        { //<init>
-            MethodVisitor mv = cw.visitMethod(ACC_PUBLIC, "<init>", "()V", null, null);
-            mv.visitCode();
-
-            mv.visitVarInsn(ALOAD, 0);
-            mv.visitMethodInsn(INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false);
-            mv.visitInsn(RETURN);
-
-            mv.visitMaxs(0, 0);
-            mv.visitEnd();
-        }
-
-        { //apply(Object)
-            MethodVisitor mv = cw.visitMethod(ACC_PUBLIC | ACC_FINAL, "apply", "(Ljava/lang/Object;)Ljava/lang/Object;", null, null);
-            mv.visitCode();
-
-            mv.visitVarInsn(ALOAD, 1);
-            mv.visitTypeInsn(CHECKCAST, setInternalName);
-            mv.visitLdcInsn(0);
-            mv.visitTypeInsn(ANEWARRAY, listenerClassInternalName);
-            mv.visitMethodInsn(INVOKEINTERFACE, setInternalName, "toArray", "([Ljava/lang/Object;)[Ljava/lang/Object;", true);
-            mv.visitTypeInsn(CHECKCAST, "[L" + listenerClassInternalName + ';');
-            mv.visitVarInsn(ASTORE, 1);
-
-            Label[] countLabels = new Label[specializeForCounts];
-            for (int i = 0; i < specializeForCounts; i++) {
-                countLabels[i] = new Label();
-            }
-            Label defaultLbl = new Label();
-
-            mv.visitVarInsn(ALOAD, 1);
-            mv.visitInsn(ARRAYLENGTH);
-            mv.visitTableSwitchInsn(0, specializeForCounts - 1, defaultLbl, countLabels);
-
-            for (int i = 0; i < specializeForCounts; i++) {
-                mv.visitLabel(countLabels[i]);
-                mv.visitTypeInsn(NEW, specializedClassInternalNames[i]);
-                mv.visitInsn(DUP);
-                mv.visitVarInsn(ALOAD, 1);
-                mv.visitMethodInsn(INVOKESPECIAL, specializedClassInternalNames[i], "<init>", "([L" + listenerClassInternalName + ";)V", false);
-                mv.visitInsn(ARETURN);
-            }
-
-            mv.visitLabel(defaultLbl);
-            mv.visitTypeInsn(NEW, arrayClassInternalName);
-            mv.visitInsn(DUP);
-            mv.visitVarInsn(ALOAD, 1);
-            mv.visitMethodInsn(INVOKESPECIAL, arrayClassInternalName, "<init>", "([L" + listenerClassInternalName + ";)V", false);
-            mv.visitInsn(ARETURN);
-
-            mv.visitMaxs(0, 0);
-            mv.visitEnd();
-        }
-
-        cw.visitEnd();
-
-        dumpClass(factoryClassInternalName, cw);
-
-        Class<?> factoryClass = classLoader.defineClass(factoryClassInternalName.replace('/', '.'), cw.toByteArray());
-        MethodHandle factoryCtor = MethodHandles.publicLookup().findConstructor(factoryClass, MethodType.methodType(void.class));
-        return uncheckedCast(factoryCtor.invoke());
+    public Listener get(@NonNull Collection<Listener> listeners) {
+        Object[] arr = listeners.toArray();
+        return uncheckedCast((Object) this.cachedListeners.get(arr.length <= MAX_SPECIALIZE_COUNT ? arr.length : -1).invokeExact(arr));
     }
 
-    private static byte[] generateListenerImpl(List<Method> methods, String listenerClassInternalName, String implClassInternalName, Integer fixedListenerCount) {
-        String listenerClassDesc = 'L' + listenerClassInternalName + ';';
-        String listenerClassArrayDesc = '[' + listenerClassDesc;
+    /**
+     * @deprecated internal API, do not touch!
+     */
+    @Override
+    @Deprecated
+    public MethodHandle load(@NonNull Integer key) throws Exception {
+        Integer fixedListenerCount = key < 0 ? null : key;
+
+        Class<?> listenerArrayClass = Array.newInstance(this.listenerClass, 0).getClass();
+
+        String listenerClassInternalName = getInternalName(this.listenerClass);
+        String listenerClassDesc = getDescriptor(this.listenerClass);
+        String listenerArrayClassInternalName = getInternalName(listenerArrayClass);
+        String listenerArrayClassDesc = getDescriptor(listenerArrayClass);
+
+        String dispatcherClassInternalName = fixedListenerCount != null
+                ? listenerClassInternalName + "$Dispatcher$Specialized" + fixedListenerCount
+                : listenerClassInternalName + "$Dispatcher$Generic";
 
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
-        cw.visit(V1_8, ACC_PUBLIC | ACC_FINAL, implClassInternalName, null, "java/lang/Object", new String[]{ listenerClassInternalName });
+        cw.visit(V1_8, ACC_PUBLIC | ACC_FINAL, dispatcherClassInternalName, null, "java/lang/Object", new String[]{ listenerClassInternalName });
 
         if (fixedListenerCount == null) {
-            cw.visitField(ACC_PRIVATE | ACC_FINAL, "listeners", listenerClassArrayDesc, null, null).visitEnd();
+            cw.visitField(ACC_PRIVATE | ACC_FINAL, "listeners", listenerArrayClassDesc, null, null).visitEnd();
         } else {
             for (int i = 0; i < fixedListenerCount; i++) {
                 cw.visitField(ACC_PRIVATE | ACC_FINAL, "listener" + i, listenerClassDesc, null, null).visitEnd();
@@ -175,7 +114,7 @@ class ListenerListGenerator {
         }
 
         { //<init>
-            MethodVisitor mv = cw.visitMethod(ACC_PUBLIC, "<init>", "([" + listenerClassDesc + ")V", null, null);
+            MethodVisitor mv = cw.visitMethod(ACC_PUBLIC, "<init>", "([Ljava/lang/Object;)V", null, null);
             mv.visitCode();
 
             mv.visitVarInsn(ALOAD, 0);
@@ -184,14 +123,19 @@ class ListenerListGenerator {
             if (fixedListenerCount == null) {
                 mv.visitVarInsn(ALOAD, 0);
                 mv.visitVarInsn(ALOAD, 1);
-                mv.visitFieldInsn(PUTFIELD, implClassInternalName, "listeners", listenerClassArrayDesc);
+                mv.visitVarInsn(ALOAD, 1);
+                mv.visitInsn(ARRAYLENGTH);
+                mv.visitLdcInsn(getType(listenerArrayClass));
+                mv.visitMethodInsn(INVOKESTATIC, "java/util/Arrays", "copyOf", "([Ljava/lang/Object;ILjava/lang/Class;)[Ljava/lang/Object;", false);
+                mv.visitTypeInsn(CHECKCAST, listenerArrayClassInternalName);
+                mv.visitFieldInsn(PUTFIELD, dispatcherClassInternalName, "listeners", listenerArrayClassDesc);
             } else {
                 for (int i = 0; i < fixedListenerCount; i++) {
                     mv.visitVarInsn(ALOAD, 0);
                     mv.visitVarInsn(ALOAD, 1);
                     mv.visitLdcInsn(i);
                     mv.visitInsn(AALOAD);
-                    mv.visitFieldInsn(PUTFIELD, implClassInternalName, "listener" + i, listenerClassDesc);
+                    mv.visitFieldInsn(PUTFIELD, dispatcherClassInternalName, "listener" + i, listenerClassDesc);
                 }
             }
 
@@ -201,11 +145,11 @@ class ListenerListGenerator {
             mv.visitEnd();
         }
 
-        for (Method method : methods) {
+        for (Method method : this.methods) {
             assert method.getReturnType() == void.class : method;
             Type[] argumentTypes = getArgumentTypes(method);
             String desc = getMethodDescriptor(method);
-            int lvtAlloc = (getArgumentsAndReturnSizes(desc) >> 2) + 1;
+            int lvtAlloc = getArgumentsAndReturnSizes(desc) >> 2;
 
             MethodVisitor mv = cw.visitMethod(ACC_PUBLIC | ACC_FINAL, method.getName(), desc, null, null);
             mv.visitCode();
@@ -215,7 +159,7 @@ class ListenerListGenerator {
                 final int indexLvtIndex = lvtAlloc++;
 
                 mv.visitVarInsn(ALOAD, 0);
-                mv.visitFieldInsn(GETFIELD, implClassInternalName, "listeners", listenerClassArrayDesc);
+                mv.visitFieldInsn(GETFIELD, dispatcherClassInternalName, "listeners", listenerArrayClassDesc);
                 mv.visitVarInsn(ASTORE, listenersLvtIndex);
 
                 mv.visitLdcInsn(0);
@@ -245,9 +189,19 @@ class ListenerListGenerator {
 
                 mv.visitLabel(tailLbl);
             } else {
+                final int listenerLvtBase = lvtAlloc;
+                lvtAlloc += fixedListenerCount;
+
+                //load all the listeners into local variables
                 for (int i = 0; i < fixedListenerCount; i++) {
                     mv.visitVarInsn(ALOAD, 0);
-                    mv.visitFieldInsn(GETFIELD, implClassInternalName, "listener" + i, listenerClassDesc);
+                    mv.visitFieldInsn(GETFIELD, dispatcherClassInternalName, "listener" + i, listenerClassDesc);
+                    mv.visitVarInsn(ASTORE, listenerLvtBase + i);
+                }
+
+                //actually invoke all the listeners
+                for (int i = 0; i < fixedListenerCount; i++) {
+                    mv.visitVarInsn(ALOAD, listenerLvtBase + i);
                     int lvt = 1;
                     for (Type argumentType : argumentTypes) {
                         mv.visitVarInsn(argumentType.getOpcode(ILOAD), lvt);
@@ -265,16 +219,15 @@ class ListenerListGenerator {
 
         cw.visitEnd();
 
-        dumpClass(implClassInternalName, cw);
-
-        return cw.toByteArray();
-    }
-
-    private static void dumpClass(String internalName, ClassWriter cw) {
         if (false) {
-            Path path = Paths.get(".fp2/core/listener_list/" + internalName + ".class");
+            Path path = Paths.get(".fp2/core/listener_list/" + dispatcherClassInternalName + ".class");
             Files.createDirectories(path.getParent());
             Files.write(path, cw.toByteArray());
         }
+
+        Class<?> dispatcherClass = ClassloadingUtils.defineHiddenClass(this.listenerClass.getClassLoader(), cw.toByteArray());
+        return MethodHandles.publicLookup()
+                .findConstructor(dispatcherClass, MethodType.methodType(void.class, Object[].class))
+                .asType(MethodType.methodType(Object.class, Object[].class));
     }
 }
