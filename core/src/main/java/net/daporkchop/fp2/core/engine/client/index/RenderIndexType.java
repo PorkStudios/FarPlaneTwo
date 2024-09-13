@@ -26,6 +26,7 @@ import net.daporkchop.fp2.core.client.render.state.CameraStateUniforms;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.engine.client.bake.storage.BakeStorage;
 import net.daporkchop.fp2.core.engine.client.index.attribdivisor.CPUCulledBaseInstanceRenderIndex;
+import net.daporkchop.fp2.core.engine.client.index.attribdivisor.CPUCulledUniformRenderIndex;
 import net.daporkchop.fp2.core.engine.client.index.attribdivisor.GPUCulledBaseInstanceRenderIndex;
 import net.daporkchop.fp2.core.engine.client.struct.VoxelLocalAttributes;
 import net.daporkchop.fp2.gl.GLExtensionSet;
@@ -38,7 +39,7 @@ import net.daporkchop.fp2.gl.attribute.UniformBuffer;
  * @author DaPorkchop_
  */
 public enum RenderIndexType {
-    GPU_CULLED {
+    GPU_CULLED_INDIRECT_MULTIDRAW {
         @Override
         public boolean enabled(@NonNull FP2Config config) {
             return config.performance().gpuFrustumCulling();
@@ -56,7 +57,7 @@ public enum RenderIndexType {
         }
     },
 
-    CPU_CULLED {
+    CPU_CULLED_INDIRECT_MULTIDRAW {
         @Override
         public boolean enabled(@NonNull FP2Config config) {
             return true;
@@ -71,6 +72,24 @@ public enum RenderIndexType {
         public RenderIndex<VoxelLocalAttributes> createRenderIndex(OpenGL gl, BakeStorage<VoxelLocalAttributes> bakeStorage, DirectMemoryAllocator alloc, GlobalRenderer globalRenderer, UniformBuffer<CameraStateUniforms> cameraStateUniformsBuffer) {
             gl.checkSupported(this.requiredExtensions());
             return new CPUCulledBaseInstanceRenderIndex<>(gl, bakeStorage, alloc, globalRenderer.voxelInstancedAttributesFormat);
+        }
+    },
+
+    CPU_CULLED_UNIFORM_SINGLE {
+        @Override
+        public boolean enabled(@NonNull FP2Config config) {
+            return true;
+        }
+
+        @Override
+        public GLExtensionSet requiredExtensions() {
+            return CPUCulledUniformRenderIndex.REQUIRED_EXTENSIONS;
+        }
+
+        @Override
+        public RenderIndex<VoxelLocalAttributes> createRenderIndex(OpenGL gl, BakeStorage<VoxelLocalAttributes> bakeStorage, DirectMemoryAllocator alloc, GlobalRenderer globalRenderer, UniformBuffer<CameraStateUniforms> cameraStateUniformsBuffer) {
+            gl.checkSupported(this.requiredExtensions());
+            return new CPUCulledUniformRenderIndex<>(gl, bakeStorage, alloc);
         }
     };
 

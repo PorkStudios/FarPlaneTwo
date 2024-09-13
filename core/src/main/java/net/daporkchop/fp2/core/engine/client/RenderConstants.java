@@ -66,7 +66,7 @@ public class RenderConstants {
      * @param gl the OpenGL context
      * @return the length of the TilePos uniform array, in tile positions
      */
-    public static int tilePosArrayElements(OpenGL gl) {
+    public static int tilePosArrayUBOElements(OpenGL gl) {
         return gl.limits().maxUniformBlockSize() >> 4;
     }
 

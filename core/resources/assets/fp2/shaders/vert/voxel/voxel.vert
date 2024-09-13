@@ -18,8 +18,10 @@
  *
  */
 
+#include <"fp2:shaders/util/arb/shader_draw_parameters.glsl"> // get_gl_DrawID()
 #include <"fp2:shaders/util/camera_state_uniforms.glsl"> // u_positionFrac, u_positionFloor
 #include <"fp2:shaders/util/camera_transform.glsl"> // cameraTransform()
+#include <"fp2:shaders/util/tile_pos_technique.glsl"> // FP2_TILE_POS_TECHNIQUE_*
 #include <"fp2:shaders/vert/common.vert">
 #include <"fp2:shaders/vert/fog.vert">
 
@@ -29,13 +31,47 @@ in vec2 a_light;
 in vec3 a_color;
 in vec3 a_pos;
 
-//instanced vertex attributes
-in ivec4 a_tilePos;
+//shader inputs for accessing the tile position
+#if FP2_TILE_POS_TECHNIQUE == FP2_TILE_POS_TECHNIQUE_VERTEX_ATTRIBUTE
+    //instanced vertex attributes
+    in ivec4 a_tilePos;
+#elif FP2_TILE_POS_TECHNIQUE == FP2_TILE_POS_TECHNIQUE_UNIFORM_ARRAY_DRAWID
+    //uniforms
+    layout(TILE_POS_ARRAY_UBO_LAYOUT) uniform TILE_POS_ARRAY_UBO_NAME {
+        ivec4 u_tilePosArray[TILE_POS_ARRAY_UBO_ELEMENTS];
+    };
+#elif FP2_TILE_POS_TECHNIQUE == FP2_TILE_POS_TECHNIQUE_UNIFORM
+    //uniforms
+    uniform ivec4 u_TilePos;
+#else
+#   error
+#endif
+
+//get the tile position
+//  (how we do this depends on the configured tile position technique)
+ivec4 getTilePosition() {
+#if FP2_TILE_POS_TECHNIQUE == FP2_TILE_POS_TECHNIQUE_VERTEX_ATTRIBUTE
+    //simply read the tile position from the vertex attribute
+    return a_tilePos;
+#elif FP2_TILE_POS_TECHNIQUE == FP2_TILE_POS_TECHNIQUE_UNIFORM_ARRAY_DRAWID
+    //load the tile position from the corresponding index of the tile positions uniform array
+    return u_tilePosArray[get_gl_DrawID()];
+#elif FP2_TILE_POS_TECHNIQUE == FP2_TILE_POS_TECHNIQUE_UNIFORM
+    //simply read the tile position from the uniform variable
+    return u_TilePos;
+#else
+#   error
+#endif
+}
 
 void main() {
+    //get the tile position
+    //  (how we do this depends on the configured tile position technique)
+    ivec4 tilePos = getTilePosition();
+
     //convert position to vec3 afterwards to minimize precision loss
-    ivec3 relative_tile_position = (a_tilePos.xyz << a_tilePos.w << T_SHIFT) - u_positionFloor;
-    vec3 relativePos = vec3(relative_tile_position) + a_pos * float(1 << a_tilePos.w) / 8. - u_positionFrac;
+    ivec3 relative_tile_position = (tilePos.xyz << (tilePos.w + T_SHIFT)) - u_positionFloor;
+    vec3 relativePos = vec3(relative_tile_position) + a_pos * float(1 << tilePos.w) / 8. - u_positionFrac;
 
     //set fog depth based on vertex distance to camera
     setFog(relativePos);
@@ -49,5 +85,5 @@ void main() {
     //copy trivial attributes
     vs_out.light = a_light;
     vs_out.state = a_state;
-    vs_out.color = computeVertexColor(a_color, a_tilePos);
+    vs_out.color = computeVertexColor(a_color, tilePos);
 }

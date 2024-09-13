@@ -19,6 +19,7 @@
 
 package net.daporkchop.fp2.core.client.shader;
 
+import com.google.common.collect.ImmutableMap;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
@@ -34,6 +35,7 @@ import net.daporkchop.fp2.gl.shader.ShaderProgram;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -111,6 +113,21 @@ public final class ReloadableShaderRegistry implements AutoCloseable {
         ReloadableShaderProgram<?> program = this.programs.get(key);
         checkArg(program != null, "no registered program with key: %s", key);
         return uncheckedCast(program);
+    }
+
+    /**
+     * Gets the registered shader programs with the given keys.
+     *
+     * @param keys the unique keys which identify the programs in the registry
+     * @return the shader programs with the given keys
+     * @throws RuntimeException if this registry does not contain a value with one or more of the given keys
+     */
+    public <K, P extends ShaderProgram> ReloadableShaderPrograms<K, P> getAll(@NonNull Collection<K> keys) {
+        ImmutableMap.Builder<K, ReloadableShaderProgram<P>> builder = ImmutableMap.builder();
+        for (K key : keys) {
+            builder.put(key, this.get(key));
+        }
+        return new ReloadableShaderPrograms<>(builder.build());
     }
 
     @Override

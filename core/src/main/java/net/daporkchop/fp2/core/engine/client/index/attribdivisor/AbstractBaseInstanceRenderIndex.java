@@ -57,8 +57,8 @@ public abstract class AbstractBaseInstanceRenderIndex<VertexType extends Attribu
 
             this.vaos = new LevelPassArray<>(
                     (level, pass) -> VertexArrayObject.builder(gl)
-                            .buffer(this.renderPosTable.vertexBuffer(level), 1)
                             .buffer(bakeStorage.vertexBuffer(level, pass))
+                            .buffer(this.renderPosTable.vertexBuffer(level), 1)
                             .elementBuffer(bakeStorage.indexBuffer(level, pass))
                             .build());
         } catch (Throwable t) {

@@ -28,6 +28,7 @@ import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;
 import net.daporkchop.fp2.core.client.shader.ReloadableShaderRegistry;
 import net.daporkchop.fp2.core.client.shader.ShaderMacros;
 import net.daporkchop.fp2.core.engine.EngineConstants;
+import net.daporkchop.fp2.core.engine.client.AbstractFarRenderer;
 import net.daporkchop.fp2.core.engine.client.RenderConstants;
 import net.daporkchop.fp2.core.engine.client.index.attribdivisor.GPUCulledBaseInstanceRenderIndex;
 import net.daporkchop.fp2.core.engine.client.struct.VoxelGlobalAttributes;
@@ -69,10 +70,6 @@ public final class GlobalRenderer {
 
     public final ShaderMacros shaderMacros;
 
-    public final ReloadableShaderProgram<DrawShaderProgram> blockShaderProgram;
-    public final ReloadableShaderProgram<DrawShaderProgram> blockCutoutShaderProgram;
-    public final ReloadableShaderProgram<DrawShaderProgram> blockStencilShaderProgram;
-
     public GlobalRenderer(FP2Core fp2, OpenGL gl) {
         try {
             this.shaderRegistry = new ReloadableShaderRegistry(fp2);
@@ -111,26 +108,12 @@ public final class GlobalRenderer {
                     .define("TEXTURE_UVS_LISTS_SSBO_LAYOUT", this.uvQuadListSSBOFormat.interfaceBlockLayoutName())
                     .define("TEXTURE_UVS_QUADS_SSBO_NAME", RenderConstants.TEXTURE_UVS_QUADS_SSBO_NAME)
                     .define("TEXTURE_UVS_QUADS_SSBO_LAYOUT", this.uvPackedQuadSSBOFormat.interfaceBlockLayoutName())
+                    .define("TILE_POS_ARRAY_UBO_NAME", RenderConstants.TILE_POS_ARRAY_UBO_NAME)
+                    .define("TILE_POS_ARRAY_UBO_LAYOUT", "std140")
+                    .define("TILE_POS_ARRAY_UBO_ELEMENTS", RenderConstants.tilePosArrayUBOElements(gl))
                     .build();
 
-            ReloadableShaderProgram.SetupFunction<DrawShaderProgram.Builder> shaderSetup = builder -> commonShaderSetup(fp2, builder)
-                    .vertexAttributesWithPrefix("a_", this.voxelInstancedAttributesFormat)
-                    .vertexAttributesWithPrefix("a_", this.voxelVertexAttributesFormat);
-
-            this.blockShaderProgram = this.shaderRegistry.createDraw("block", this.shaderMacros, shaderSetup)
-                    .addShader(ShaderType.VERTEX, Identifier.from(MODID, "shaders/vert/voxel/voxel.vert"))
-                    .addShader(ShaderType.FRAGMENT, Identifier.from(MODID, "shaders/frag/block.frag"))
-                    .build();
-
-            this.blockCutoutShaderProgram = this.shaderRegistry.createDraw("block_cutout", this.shaderMacros.toBuilder().define("FP2_CUTOUT").build(), shaderSetup)
-                    .addShader(ShaderType.VERTEX, Identifier.from(MODID, "shaders/vert/voxel/voxel.vert"))
-                    .addShader(ShaderType.FRAGMENT, Identifier.from(MODID, "shaders/frag/block.frag"))
-                    .build();
-
-            this.blockStencilShaderProgram = this.shaderRegistry.createDraw("block_stencil", this.shaderMacros, shaderSetup)
-                    .addShader(ShaderType.VERTEX, Identifier.from(MODID, "shaders/vert/voxel/voxel.vert"))
-                    .addShader(ShaderType.FRAGMENT, Identifier.from(MODID, "shaders/frag/stencil.frag"))
-                    .build();
+            AbstractFarRenderer.registerShaders(this, fp2);
 
             if (gl.supports(GPUCulledBaseInstanceRenderIndex.REQUIRED_EXTENSIONS)) {
                 GPUCulledBaseInstanceRenderIndex.registerShaders(this);

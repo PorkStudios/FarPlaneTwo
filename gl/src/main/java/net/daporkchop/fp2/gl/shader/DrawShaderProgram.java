@@ -190,6 +190,9 @@ public final class DrawShaderProgram extends ShaderProgram {
             //iterate over all the the interface blocks of this sort in the program
             Set<String> unboundAttributeNames = new TreeSet<>(Arrays.asList(program.getVertexAttributeNames()));
 
+            //ignore OpenGL-controlled vertex attributes
+            unboundAttributeNames.removeIf(name -> name.startsWith("gl_"));
+
             this.bindings.forEach((bindingIndex, format) -> {
                 Function<String, String> nameFormatter = this.nameFormatters.getOrDefault(bindingIndex, Function.identity());
 

@@ -19,6 +19,8 @@
 
 package net.daporkchop.fp2.core.engine.client.index;
 
+import lombok.Getter;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.core.client.IFrustum;
@@ -28,6 +30,8 @@ import net.daporkchop.fp2.core.engine.EngineConstants;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.client.RenderConstants;
 import net.daporkchop.fp2.core.engine.client.bake.storage.BakeStorage;
+import net.daporkchop.fp2.gl.GLExtension;
+import net.daporkchop.fp2.gl.GLExtensionSet;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.draw.DrawMode;
@@ -152,25 +156,33 @@ public abstract class RenderIndex<VertexType extends AttributeStruct> implements
      *
      * @author DaPorkchop_
      */
-    public enum PosTechnique {
+    @RequiredArgsConstructor
+    @Getter
+    public enum PosTechnique { //synced with resources/assets/fp2/shaders/comp/tile_pos_technique.glsl
         /**
          * The shader declares ordinary vertex attributes for {@link net.daporkchop.fp2.core.engine.client.struct.VoxelGlobalAttributes}.
          * <p>
          * The render index is responsible for ensuring that the corresponding attribute arrays are bound to data representing the tile position, which
          * is likely done using a vertex attribute divisor and issuing instanced draws using a corresponding BaseInstance value.
          */
-        VERTEX_ATTRIBUTE,
+        VERTEX_ATTRIBUTE(GLExtensionSet.empty()),
         /**
          * The shader declares a uniform buffer at binding location {@link RenderConstants#TILE_POS_ARRAY_UBO_BINDING}. The buffer must use the {@code std140}
-         * layout, and contain an array of {@code ivec4} of length {@link RenderConstants#tilePosArrayElements(OpenGL)}.
+         * layout, and contain an array of {@code ivec4} of length {@link RenderConstants#tilePosArrayUBOElements(OpenGL)}.
          * <p>
          * The shader can access the tile position of the current tile by reading the uniform element at index {@code gl_DrawID}.
          */
-        UNIFORM_ARRAY_DRAWID,
+        UNIFORM_ARRAY_DRAWID(GLExtensionSet.empty()
+                .add(GLExtension.GL_ARB_uniform_buffer_object) // we obviously need UBOs in order to do this
+                .add(GLExtension.GL_ARB_shader_draw_parameters) // GLSL: gl_DrawID
+        ),
         /**
          * The shader declares a uniform {@code ivec4} named {@link RenderConstants#TILE_POS_UNIFORM_NAME}.
          */
-        UNIFORM,
+        UNIFORM(GLExtensionSet.empty()),
+        ;
+
+        private final @NonNull GLExtensionSet requiredExtensions;
     }
 
     /**

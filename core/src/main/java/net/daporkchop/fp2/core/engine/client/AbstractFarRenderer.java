@@ -19,17 +19,26 @@
 
 package net.daporkchop.fp2.core.engine.client;
 
+import com.google.common.collect.ImmutableMap;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import lombok.ToString;
 import lombok.val;
+import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.core.FP2Core;
+import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.IFrustum;
+import net.daporkchop.fp2.core.client.render.GlobalRenderer;
 import net.daporkchop.fp2.core.client.render.state.CameraState;
 import net.daporkchop.fp2.core.client.render.LevelRenderer;
 import net.daporkchop.fp2.core.client.render.state.CameraStateUniforms;
 import net.daporkchop.fp2.core.client.render.state.DrawState;
 import net.daporkchop.fp2.core.client.render.state.DrawStateUniforms;
+import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;
+import net.daporkchop.fp2.core.client.shader.ReloadableShaderPrograms;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.EngineConstants;
 import net.daporkchop.fp2.core.engine.api.ctx.IFarClientContext;
@@ -40,6 +49,7 @@ import net.daporkchop.fp2.core.engine.client.bake.storage.PerLevelBakeStorage;
 import net.daporkchop.fp2.core.engine.client.bake.storage.SimpleBakeStorage;
 import net.daporkchop.fp2.core.engine.client.index.RenderIndex;
 import net.daporkchop.fp2.core.engine.client.index.RenderIndexType;
+import net.daporkchop.fp2.core.engine.client.index.attribdivisor.CPUCulledUniformRenderIndex;
 import net.daporkchop.fp2.core.engine.client.struct.VoxelLocalAttributes;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
@@ -52,10 +62,16 @@ import net.daporkchop.fp2.gl.buffer.upload.ScratchCopyBufferUploader;
 import net.daporkchop.fp2.gl.buffer.upload.UnsynchronizedMapBufferUploader;
 import net.daporkchop.fp2.gl.draw.DrawMode;
 import net.daporkchop.fp2.gl.draw.index.IndexFormat;
+import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
+import net.daporkchop.fp2.gl.shader.ShaderType;
 import net.daporkchop.fp2.gl.state.StatePreserver;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
 import net.daporkchop.lib.common.misc.release.AbstractReleasable;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.fp2.core.debug.FP2Debug.*;
 import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 
@@ -64,6 +80,66 @@ import static net.daporkchop.fp2.gl.OpenGLConstants.*;
  */
 @Getter
 public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> extends AbstractReleasable {
+    /**
+     * @author DaPorkchop_
+     */
+    @RequiredArgsConstructor
+    @EqualsAndHashCode
+    @ToString
+    private static final class DrawShaderVariant {
+        final @NonNull RenderIndex.PosTechnique posTechnique;
+        final boolean cutout;
+        final boolean stencil;
+
+        public ImmutableMap<String, Object> defines() {
+            ImmutableMap.Builder<String, Object> builder = ImmutableMap.builder();
+            builder.put("FP2_TILE_POS_TECHNIQUE", this.posTechnique.ordinal());
+            if (this.cutout) {
+                builder.put("FP2_CUTOUT", true);
+            }
+            return builder.build();
+        }
+
+        public static List<DrawShaderVariant> allVariants(@NonNull OpenGL gl) {
+            List<DrawShaderVariant> result = new ArrayList<>();
+            for (RenderIndex.PosTechnique posTechnique : RenderIndex.PosTechnique.values()) {
+                if (!gl.supports(posTechnique.requiredExtensions())) {
+                    continue;
+                }
+
+                for (int i = 0b00; i <= 0b11; i++) {
+                    boolean cutout = (i & 0b01) != 0;
+                    boolean stencil = (i & 0b10) != 0;
+
+                    result.add(new DrawShaderVariant(posTechnique, cutout, stencil));
+                }
+            }
+            return result;
+        }
+    }
+
+    public static void registerShaders(GlobalRenderer globalRenderer, FP2Core fp2) {
+        ReloadableShaderProgram.SetupFunction<DrawShaderProgram.Builder> shaderSetup = builder -> builder
+                .addUBO(RenderConstants.CAMERA_STATE_UNIFORMS_UBO_BINDING, RenderConstants.CAMERA_STATE_UNIFORMS_UBO_NAME)
+                .addUBO(RenderConstants.DRAW_STATE_UNIFORMS_UBO_BINDING, RenderConstants.DRAW_STATE_UNIFORMS_UBO_NAME)
+                .addUBO(RenderConstants.TILE_POS_ARRAY_UBO_BINDING, RenderConstants.TILE_POS_ARRAY_UBO_NAME)
+                .addSSBO(RenderConstants.TEXTURE_UVS_LISTS_SSBO_BINDING, RenderConstants.TEXTURE_UVS_LISTS_SSBO_NAME)
+                .addSSBO(RenderConstants.TEXTURE_UVS_QUADS_SSBO_BINDING, RenderConstants.TEXTURE_UVS_QUADS_SSBO_NAME)
+                .addSampler(fp2.client().terrainTextureUnit(), RenderConstants.TEXTURE_ATLAS_SAMPLER_NAME)
+                .addSampler(fp2.client().lightmapTextureUnit(), RenderConstants.LIGHTMAP_SAMPLER_NAME)
+                .vertexAttributesWithPrefix("a_", globalRenderer.voxelVertexAttributesFormat)
+                .vertexAttributesWithPrefix("a_", globalRenderer.voxelInstancedAttributesFormat);
+
+        for (DrawShaderVariant variant : DrawShaderVariant.allVariants(fp2.client().gl())) {
+            val builder = globalRenderer.shaderRegistry.createDraw(variant, globalRenderer.shaderMacros.toBuilder().defineAll(variant.defines()).build(), shaderSetup);
+            builder.addShader(ShaderType.VERTEX, Identifier.from(MODID, "shaders/vert/voxel/voxel.vert"));
+            if (!variant.stencil) {
+                builder.addShader(ShaderType.FRAGMENT, Identifier.from(MODID, "shaders/frag/block.frag"));
+            }
+            builder.build();
+        }
+    }
+
     protected final FP2Core fp2;
     protected final LevelRenderer levelRenderer;
     protected final OpenGL gl;
@@ -79,11 +155,16 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
     protected final UniformBuffer<CameraStateUniforms> cameraStateUniformsBuffer;
     protected final UniformBuffer<DrawStateUniforms> drawStateUniformsBuffer;
 
+    protected final ReloadableShaderProgram<DrawShaderProgram> blockShaderProgram;
+    protected final ReloadableShaderProgram<DrawShaderProgram> blockCutoutShaderProgram;
+    protected final ReloadableShaderProgram<DrawShaderProgram> blockStencilShaderProgram;
+
     protected final IRenderBaker<VertexType> baker;
     protected final BakeStorage<VertexType> bakeStorage;
     protected final RenderIndex<VertexType> renderIndex;
     protected final BakeManager<VertexType> bakeManager;
 
+    protected final RenderIndex.PosTechnique tilePosTechnique;
     protected final DrawMode drawMode = DrawMode.QUADS; //TODO: this shouldn't be hardcoded
 
     protected final StatePreserver statePreserverSelect;
@@ -95,23 +176,32 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
             this.fp2 = context.fp2();
             this.context = context;
 
-            this.levelRenderer = context.level().renderer();
-            this.gl = this.levelRenderer.gl();
+            FP2Client client = this.fp2.client();
+            GlobalRenderer globalRenderer = client.globalRenderer();
 
-            this.vertexFormat = (AttributeFormat<VertexType>) this.fp2.client().globalRenderer().voxelVertexAttributesFormat;
-            this.indexFormat = this.fp2.client().globalRenderer().unsignedShortIndexFormat;
+            this.levelRenderer = context.level().renderer();
+            this.gl = client.gl();
+
+            this.vertexFormat = (AttributeFormat<VertexType>) globalRenderer.voxelVertexAttributesFormat;
+            this.indexFormat = globalRenderer.unsignedShortIndexFormat;
 
             this.bufferUploader = this.gl.supports(UnsynchronizedMapBufferUploader.REQUIRED_EXTENSIONS) //TODO
                     ? new UnsynchronizedMapBufferUploader(this.gl, 8 << 20) //8 MiB
                     : new ScratchCopyBufferUploader(this.gl);
 
-            this.cameraStateUniformsBuffer = this.fp2.client().globalRenderer().cameraStateUniformsFormat.createUniformBuffer();
-            this.drawStateUniformsBuffer = this.fp2.client().globalRenderer().drawStateUniformsFormat.createUniformBuffer();
+            this.cameraStateUniformsBuffer = globalRenderer.cameraStateUniformsFormat.createUniformBuffer();
+            this.drawStateUniformsBuffer = globalRenderer.drawStateUniformsFormat.createUniformBuffer();
 
             this.baker = this.createBaker();
             this.bakeStorage = this.createBakeStorage();
             this.renderIndex = this.createRenderIndex();
             this.bakeManager = new BakeManager<>(this, context.tileCache(), this.baker);
+
+            this.tilePosTechnique = this.renderIndex.posTechnique();
+
+            this.blockShaderProgram = globalRenderer.shaderRegistry.get(new DrawShaderVariant(this.tilePosTechnique, false, false));
+            this.blockCutoutShaderProgram = globalRenderer.shaderRegistry.get(new DrawShaderVariant(this.tilePosTechnique, true, false));
+            this.blockStencilShaderProgram = globalRenderer.shaderRegistry.get(new DrawShaderVariant(this.tilePosTechnique, false, true));
 
             {
                 StatePreserver.Builder statePreserverBuilder = StatePreserver.builder(this.gl);
@@ -124,8 +214,8 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
                         .activeProgram()
                         .vao()
                         .fixedFunctionDrawState()
-                        .texture(TextureTarget.TEXTURE_2D, this.fp2.client().terrainTextureUnit())
-                        .texture(TextureTarget.TEXTURE_2D, this.fp2.client().lightmapTextureUnit())
+                        .texture(TextureTarget.TEXTURE_2D, client.terrainTextureUnit())
+                        .texture(TextureTarget.TEXTURE_2D, client.lightmapTextureUnit())
                         .indexedBuffer(IndexedBufferTarget.UNIFORM_BUFFER, RenderConstants.CAMERA_STATE_UNIFORMS_UBO_BINDING)
                         .indexedBuffer(IndexedBufferTarget.UNIFORM_BUFFER, RenderConstants.DRAW_STATE_UNIFORMS_UBO_BINDING)
                         .indexedBuffer(IndexedBufferTarget.SHADER_STORAGE_BUFFER, RenderConstants.TEXTURE_UVS_LISTS_SSBO_BINDING)
@@ -246,7 +336,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
         this.gl.glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE); //TODO: last two args should be swapped, i think
         this.gl.glStencilFunc(GL_LEQUAL, level, 0x7F);
 
-        val shader = this.fp2.client().globalRenderer().blockShaderProgram.get();
+        val shader = this.blockShaderProgram.get();
         val uniformSetter = shader.bindUnsafe();
         this.renderIndex.draw(this.drawMode, level, RenderConstants.LAYER_SOLID, shader, uniformSetter);
 
@@ -259,7 +349,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
         this.gl.glStencilOp(GL_KEEP, GL_REPLACE, GL_REPLACE);
         this.gl.glStencilFunc(GL_LEQUAL, level, 0x7F);
 
-        val shader = this.fp2.client().globalRenderer().blockCutoutShaderProgram.get();
+        val shader = this.blockCutoutShaderProgram.get();
         val uniformSetter = shader.bindUnsafe();
         this.renderIndex.draw(this.drawMode, level, RenderConstants.LAYER_CUTOUT, shader, uniformSetter);
 
@@ -275,7 +365,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
         this.gl.glColorMask(false, false, false, false);
         this.gl.glDepthMask(false);
 
-        val shader = this.fp2.client().globalRenderer().blockStencilShaderProgram.get();
+        val shader = this.blockStencilShaderProgram.get();
         val uniformSetter = shader.bindUnsafe();
 
         this.gl.glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE); //TODO: last two args should be swapped, i think
@@ -294,7 +384,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
 
         //GlStateManager.alphaFunc(GL_GREATER, 0.1f);
 
-        val shader = this.fp2.client().globalRenderer().blockShaderProgram.get();
+        val shader = this.blockShaderProgram.get();
         val uniformSetter = shader.bindUnsafe();
 
         this.gl.glStencilMask(0);
