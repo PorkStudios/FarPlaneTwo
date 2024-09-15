@@ -152,6 +152,9 @@ public final class GLAPILWJGL2 extends OpenGL {
     private final boolean GL_ARB_debug_output;
     private final boolean GL_ARB_sparse_buffer;
 
+    //funny workarounds
+    private final long glMultiDrawElements;
+
     public GLAPILWJGL2() {
         ContextCapabilities capabilities = GLContext.getCapabilities();
 
@@ -208,6 +211,9 @@ public final class GLAPILWJGL2 extends OpenGL {
         // No OpenGL version
         this.GL_ARB_debug_output = capabilities.GL_ARB_debug_output;
         this.GL_ARB_sparse_buffer = capabilities.GL_ARB_sparse_buffer;
+
+        //funny workarounds
+        this.glMultiDrawElements = getFunctionAddress("glMultiDrawElements");
     }
 
     @Override
@@ -224,6 +230,22 @@ public final class GLAPILWJGL2 extends OpenGL {
                 })
                 .max(Comparator.naturalOrder())
                 .get();
+    }
+
+    private static final MethodHandle GLContext_getFunctionAddress;
+
+    static {
+        Method _GLContext_getFunctionAddress = GLContext.class.getDeclaredMethod("getFunctionAddress", String.class);
+        _GLContext_getFunctionAddress.setAccessible(true);
+        GLContext_getFunctionAddress = MethodHandles.publicLookup().unreflect(_GLContext_getFunctionAddress);
+    }
+
+    private static long getFunctionAddress(@NonNull String name) {
+        long addr = (long) GLContext_getFunctionAddress.invokeExact(name);
+        if (addr == 0L) {
+            throw new IllegalStateException("unable to find function " + name);
+        }
+        return addr;
     }
 
     private static final MethodHandle APIUtil_getBufferInt;
@@ -643,9 +665,19 @@ public final class GLAPILWJGL2 extends OpenGL {
         super.debugCheckError();
     }
 
+    //LWJGL2 doesn't expose glMultiDrawElements() at all, but it does have glShaderBinary() which happens to have a compatible function
+    // signature. We're going to call nglShaderBinary(), but pass it the pointer to glMultiDrawElements() instead!
+    private static final MethodHandle nglShaderBinary;
+
+    static {
+        Method _nglShaderBinary = GL41.class.getDeclaredMethod("nglShaderBinary", int.class, long.class, int.class, long.class, int.class, long.class);
+        _nglShaderBinary.setAccessible(true);
+        nglShaderBinary = MethodHandles.publicLookup().unreflect(_nglShaderBinary);
+    }
+
     @Override
     public void glMultiDrawElements(int mode, long count, int type, long indices, int drawcount) {
-        this.extraFunctions.glMultiDrawElements(mode, count, type, indices, drawcount);
+        nglShaderBinary.invokeExact(mode, count, type, indices, drawcount, this.glMultiDrawElements);
         super.debugCheckError();
     }
 
