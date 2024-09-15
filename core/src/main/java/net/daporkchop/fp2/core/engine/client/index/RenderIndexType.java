@@ -68,6 +68,13 @@ public abstract class RenderIndexType {
     }
 
     /**
+     * @return {@code true} if this render index can only render tile data from a {@link BakeStorage} with {@link BakeStorage#absoluteIndices} set to {@code true}
+     */
+    public boolean absoluteIndices() {
+        return false;
+    }
+
+    /**
      * Creates a new {@link RenderIndex} instance using this implementation.
      *
      * @param gl                        the OpenGL context

@@ -26,9 +26,9 @@ import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.client.bake.BakeOutput;
 import net.daporkchop.fp2.gl.OpenGL;
-import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.buffer.upload.BufferUploader;
 import net.daporkchop.fp2.gl.draw.index.IndexBuffer;
 import net.daporkchop.fp2.gl.draw.index.IndexFormat;
@@ -64,6 +64,12 @@ public abstract class BakeStorage<VertexType extends AttributeStruct> implements
      * The format of index data in this storage.
      */
     public final IndexFormat indexFormat;
+
+    /**
+     * If {@code true}, all indices in this storage are absolute: they're always relative to the beginning of the vertex array, and {@link Location#baseVertex}
+     * will always be {@code 0}.
+     */
+    public final boolean absoluteIndices;
 
     @Override
     public abstract void close();

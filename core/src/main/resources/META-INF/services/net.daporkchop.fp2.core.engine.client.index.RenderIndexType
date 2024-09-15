@@ -23,5 +23,8 @@ net.daporkchop.fp2.core.engine.client.index.attribdivisor.GPUCulledBaseInstanceR
 # CPU-based frustum culling, indirect MultiDraw (instanced vertex attribute)
 net.daporkchop.fp2.core.engine.client.index.attribdivisor.CPUCulledBaseInstanceRenderIndex$Type
 
-# CPU-based frustum culling, individual draws (simple shader uniform)
-net.daporkchop.fp2.core.engine.client.index.uniform.CPUCulledUniformRenderIndex$Type
+# CPU-based frustum culling, individual draws, using GL_ARB_draw_elements_base_vertex (simple shader uniform)
+net.daporkchop.fp2.core.engine.client.index.uniform.CPUCulledUniformRenderIndex$TypeBaseVertex
+
+# CPU-based frustum culling, individual draws, using elements array with absolute indices (simple shader uniform)
+net.daporkchop.fp2.core.engine.client.index.uniform.CPUCulledUniformRenderIndex$TypeAbsoluteIndices

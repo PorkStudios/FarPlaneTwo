@@ -32,8 +32,8 @@ import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.client.render.GlobalRenderer;
-import net.daporkchop.fp2.core.client.render.state.CameraState;
 import net.daporkchop.fp2.core.client.render.LevelRenderer;
+import net.daporkchop.fp2.core.client.render.state.CameraState;
 import net.daporkchop.fp2.core.client.render.state.CameraStateUniforms;
 import net.daporkchop.fp2.core.client.render.state.DrawState;
 import net.daporkchop.fp2.core.client.render.state.DrawStateUniforms;
@@ -46,12 +46,12 @@ import net.daporkchop.fp2.core.engine.client.bake.VoxelBaker;
 import net.daporkchop.fp2.core.engine.client.bake.storage.BakeStorage;
 import net.daporkchop.fp2.core.engine.client.bake.storage.PerLevelBakeStorage;
 import net.daporkchop.fp2.core.engine.client.bake.storage.SimpleBakeStorage;
-import net.daporkchop.fp2.core.engine.client.index.RenderIndexType;
 import net.daporkchop.fp2.core.engine.client.index.RenderIndex;
+import net.daporkchop.fp2.core.engine.client.index.RenderIndexType;
 import net.daporkchop.fp2.core.engine.client.struct.VoxelLocalAttributes;
 import net.daporkchop.fp2.gl.OpenGL;
-import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
+import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.UniformBuffer;
 import net.daporkchop.fp2.gl.attribute.texture.TextureTarget;
 import net.daporkchop.fp2.gl.buffer.IndexedBufferTarget;
@@ -180,8 +180,12 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
             this.levelRenderer = context.level().renderer();
             this.gl = client.gl();
 
+            RenderIndexType renderIndexType = this.chooseRenderIndexType();
+
             this.vertexFormat = (AttributeFormat<VertexType>) globalRenderer.voxelVertexAttributesFormat;
-            this.indexFormat = globalRenderer.unsignedShortIndexFormat;
+            this.indexFormat = renderIndexType.absoluteIndices()
+                    ? globalRenderer.unsignedIntIndexFormat
+                    : globalRenderer.unsignedShortIndexFormat;
 
             this.bufferUploader = this.gl.supports(UnsynchronizedMapBufferUploader.REQUIRED_EXTENSIONS) //TODO
                     ? new UnsynchronizedMapBufferUploader(this.gl, 8 << 20) //8 MiB
@@ -191,8 +195,9 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
             this.drawStateUniformsBuffer = globalRenderer.drawStateUniformsFormat.createUniformBuffer();
 
             this.baker = this.createBaker();
-            this.bakeStorage = this.createBakeStorage();
-            this.renderIndex = this.createRenderIndex();
+            this.bakeStorage = new PerLevelBakeStorage<>(this.gl, this.bufferUploader, this.vertexFormat, this.indexFormat, renderIndexType.absoluteIndices(),
+                    (level, absoluteIndices) -> new SimpleBakeStorage<>(this.gl, this.bufferUploader, this.vertexFormat, this.indexFormat, absoluteIndices));
+            this.renderIndex = renderIndexType.createRenderIndex(this.gl, this.bakeStorage, this.alloc, globalRenderer, this.cameraStateUniformsBuffer);
             this.bakeManager = new BakeManager<>(this, context.tileCache(), this.baker);
 
             this.tilePosTechnique = this.renderIndex.posTechnique();
@@ -238,14 +243,23 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
                 this.alloc);
     }
 
-    protected abstract IRenderBaker<VertexType> createBaker();
+    private RenderIndexType chooseRenderIndexType() {
+        for (val implementation : RenderIndexType.getTypes(this.fp2)) {
+            if (!implementation.enabled(this.fp2.globalConfig())) {
+                this.fp2.log().debug("Render index implementation " + implementation + " is disabled by config");
+            } else if (!this.gl.supports(implementation.requiredExtensions())) {
+                //TODO: show a warning message ingame, somehow
+                this.fp2.log().warn("Render index implementation " + implementation + " is enabled, but your OpenGL implementation doesn't support it! " + this.gl.unsupportedMsg(implementation.requiredExtensions()));
+            } else {
+                this.fp2.log().info("Using " + implementation);
+                return implementation;
+            }
+        }
 
-    protected BakeStorage<VertexType> createBakeStorage() {
-        return new PerLevelBakeStorage<>(this.gl, this.bufferUploader, this.vertexFormat, this.indexFormat,
-                level -> new SimpleBakeStorage<>(this.gl, this.bufferUploader, this.vertexFormat, this.indexFormat));
+        throw new UnsupportedOperationException("No render index implementations are supported! (see log)");
     }
 
-    protected abstract RenderIndex<VertexType> createRenderIndex();
+    protected abstract IRenderBaker<VertexType> createBaker();
 
     /**
      * Called before rendering a frame to prepare the render system for drawing the frame.
@@ -410,23 +424,6 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
         @Override
         protected IRenderBaker<VoxelLocalAttributes> createBaker() {
             return new VoxelBaker(this.context);
-        }
-
-        @Override
-        protected RenderIndex<VoxelLocalAttributes> createRenderIndex() {
-            for (val implementation : RenderIndexType.getTypes(this.fp2)) {
-                if (!implementation.enabled(this.fp2.globalConfig())) {
-                    this.fp2.log().debug("Render index implementation " + implementation + " is disabled by config");
-                } else if (!this.gl.supports(implementation.requiredExtensions())) {
-                    //TODO: show a warning message ingame, somehow
-                    this.fp2.log().warn("Render index implementation " + implementation + " is enabled, but your OpenGL implementation doesn't support it! " + this.gl.unsupportedMsg(implementation.requiredExtensions()));
-                } else {
-                    this.fp2.log().info("Creating new render index using " + implementation);
-                    return implementation.createRenderIndex(this.gl, this.bakeStorage, this.alloc, this.fp2.client().globalRenderer(), this.cameraStateUniformsBuffer);
-                }
-            }
-
-            throw new UnsupportedOperationException("No render index implementations are supported! (see log)");
         }
     }
 }

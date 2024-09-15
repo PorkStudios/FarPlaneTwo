@@ -54,8 +54,8 @@ public final class SimpleBakeStorage<VertexType extends AttributeStruct> extends
 
     private final Map<TilePos, Entry> positionsToEntries = DirectTilePosAccess.newPositionKeyedHashMap();
 
-    public SimpleBakeStorage(OpenGL gl, BufferUploader uploader, AttributeFormat<VertexType> vertexFormat, IndexFormat indexFormat) {
-        super(gl, uploader, vertexFormat, indexFormat);
+    public SimpleBakeStorage(OpenGL gl, BufferUploader uploader, AttributeFormat<VertexType> vertexFormat, IndexFormat indexFormat, boolean absoluteIndices) {
+        super(gl, uploader, vertexFormat, indexFormat, absoluteIndices);
 
         try {
             this.vertexBuffer = vertexFormat.createBuffer();
@@ -85,7 +85,7 @@ public final class SimpleBakeStorage<VertexType extends AttributeStruct> extends
             Entry entry = this.positionsToEntries.get(pos);
             if (entry != null) {
                 //free all the old allocations
-                this.vertexAlloc.free(entry.baseVertex);
+                this.vertexAlloc.free(entry.vertexOffset);
                 for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
                     if (entry.count[pass] > 0) {
                         this.indexAlloc.free(entry.firstIndex[pass]);
@@ -98,17 +98,23 @@ public final class SimpleBakeStorage<VertexType extends AttributeStruct> extends
 
                 //allocate space for the new vertex and index data
                 entry.vertexCount = output.verts.size();
-                entry.baseVertex = toInt(this.vertexAlloc.alloc(entry.vertexCount));
+                entry.vertexOffset = toInt(this.vertexAlloc.alloc(entry.vertexCount));
+                entry.baseVertex = this.absoluteIndices ? 0 : entry.vertexOffset;
+
                 for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
                     int indexCount = output.indicesPerPass[pass].size();
                     entry.count[pass] = indexCount;
                     if (indexCount > 0) {
+                        if (this.absoluteIndices) {
+                            //TODO: maybe check if the indices could overflow?
+                            output.indicesPerPass[pass].offsetIndices(entry.vertexOffset);
+                        }
                         entry.firstIndex[pass] = toInt(this.indexAlloc.alloc(indexCount));
                     }
                 }
 
                 //upload vertex and index data
-                this.vertexBuffer.setRange(entry.baseVertex, output.verts, this.bufferUploader);
+                this.vertexBuffer.setRange(entry.vertexOffset, output.verts, this.bufferUploader);
                 for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
                     if (output.indicesPerPass[pass].size() > 0) {
                         this.indexBuffer.setRange(entry.firstIndex[pass], output.indicesPerPass[pass], this.bufferUploader);
@@ -166,7 +172,8 @@ public final class SimpleBakeStorage<VertexType extends AttributeStruct> extends
      * @author DaPorkchop_
      */
     private static final class Entry {
-        public int baseVertex;
+        public int vertexOffset; //the actual offset of the vertex data in the vertex buffer
+        public int baseVertex; //the baseVertex value which will stored in each of the Location instances
         public int vertexCount;
 
         public final int[] firstIndex = new int[RENDER_PASS_COUNT];

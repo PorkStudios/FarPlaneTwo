@@ -55,15 +55,36 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  * @author DaPorkchop_
  */
 public class CPUCulledUniformRenderIndex<VertexType extends AttributeStruct> extends AbstractRenderIndex.OnlyVertexTypeAttribs<VertexType> {
-    public static final GLExtensionSet REQUIRED_EXTENSIONS = OnlyVertexTypeAttribs.REQUIRED_EXTENSIONS
-            .add(GLExtension.GL_ARB_draw_elements_base_vertex);
+    /**
+     * @author DaPorkchop_
+     */
+    public static class TypeBaseVertex extends RenderIndexType {
+        public static final GLExtensionSet REQUIRED_EXTENSIONS = OnlyVertexTypeAttribs.REQUIRED_EXTENSIONS
+                .add(GLExtension.GL_ARB_draw_elements_base_vertex);
+
+        public TypeBaseVertex() {
+            super(REQUIRED_EXTENSIONS);
+        }
+
+        @Override
+        public <VertexType extends AttributeStruct> RenderIndex<VertexType> createRenderIndex(OpenGL gl, BakeStorage<VertexType> bakeStorage, DirectMemoryAllocator alloc, GlobalRenderer globalRenderer, UniformBuffer<CameraStateUniforms> cameraStateUniformsBuffer) {
+            return new CPUCulledUniformRenderIndex<>(gl, bakeStorage, alloc);
+        }
+    }
 
     /**
      * @author DaPorkchop_
      */
-    public static final class Type extends RenderIndexType {
-        public Type() {
+    public static final class TypeAbsoluteIndices extends RenderIndexType {
+        public static final GLExtensionSet REQUIRED_EXTENSIONS = OnlyVertexTypeAttribs.REQUIRED_EXTENSIONS;
+
+        public TypeAbsoluteIndices() {
             super(REQUIRED_EXTENSIONS);
+        }
+
+        @Override
+        public boolean absoluteIndices() {
+            return true;
         }
 
         @Override
@@ -120,8 +141,12 @@ public class CPUCulledUniformRenderIndex<VertexType extends AttributeStruct> ext
             val indexFormat = this.bakeStorage.indexFormat.type();
             int indexType = indexFormat.type();
             int indexSize = indexFormat.size();
+            int modeEnum = mode.mode();
 
-            this.gl.glBindVertexArray(this.vaos.get(level, pass).id());
+            OpenGL gl = this.gl;
+            boolean absoluteIndices = this.bakeStorage.absoluteIndices;
+
+            gl.glBindVertexArray(this.vaos.get(level, pass).id());
 
             int uniformLocation = shader.uniformLocation(RenderConstants.TILE_POS_UNIFORM_NAME);
 
@@ -130,8 +155,16 @@ public class CPUCulledUniformRenderIndex<VertexType extends AttributeStruct> ext
                 if (command != null) {
                     uniformSetter.set4i(uniformLocation, pos.x(), pos.y(), pos.z(), pos.level());
 
-                    //TODO: if we make all the indices absolute, we won't have to rely on ARB_draw_elements_base_vertex
-                    this.gl.glDrawElementsBaseVertex(mode.mode(), command.count, indexType, command.firstIndex * (long) indexSize, command.baseVertex);
+                    int count = command.count;
+                    long indices = command.firstIndex * (long) indexSize;
+
+                    if (absoluteIndices) {
+                        //if the indices are absolute, we don't need to pass in the baseVertex parameter and so we can use a draw command
+                        //  with absolutely no feature requirements
+                        gl.glDrawElements(modeEnum, count, indexType, indices);
+                    } else {
+                        gl.glDrawElementsBaseVertex(modeEnum, count, indexType, indices, command.baseVertex);
+                    }
                 }
             });
         }

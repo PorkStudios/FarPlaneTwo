@@ -31,6 +31,7 @@ import net.daporkchop.fp2.gl.buffer.upload.BufferUploader;
 import net.daporkchop.fp2.gl.draw.index.IndexBuffer;
 import net.daporkchop.fp2.gl.draw.index.IndexFormat;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
+import net.daporkchop.lib.primitive.lambda.IntBoolObjFunction;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -48,13 +49,13 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 public final class PerLevelBakeStorage<VertexType extends AttributeStruct> extends BakeStorage<VertexType> {
     private final BakeStorage<VertexType>[] storages = uncheckedCast(new BakeStorage[MAX_LODS]);
 
-    public PerLevelBakeStorage(OpenGL gl, BufferUploader bufferUploader, AttributeFormat<VertexType> vertexFormat, IndexFormat indexFormat,
-                               IntFunction<? extends BakeStorage<VertexType>> storageFactory) {
-        super(gl, bufferUploader, vertexFormat, indexFormat);
+    public PerLevelBakeStorage(OpenGL gl, BufferUploader bufferUploader, AttributeFormat<VertexType> vertexFormat, IndexFormat indexFormat, boolean absoluteIndices,
+                               IntBoolObjFunction<? extends BakeStorage<VertexType>> storageFactory) {
+        super(gl, bufferUploader, vertexFormat, indexFormat, absoluteIndices);
 
         try {
             for (int level = 0; level < MAX_LODS; level++) {
-                this.storages[level] = Objects.requireNonNull(storageFactory.apply(level));
+                this.storages[level] = Objects.requireNonNull(storageFactory.apply(level, absoluteIndices));
             }
         } catch (Throwable t) {
             throw PResourceUtil.closeSuppressed(t, this);
