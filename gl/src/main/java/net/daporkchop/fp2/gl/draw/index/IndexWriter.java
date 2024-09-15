@@ -121,7 +121,7 @@ public abstract class IndexWriter extends AbstractTypedWriter {
     }
 
     /**
-     * Copies the elements starting at the given source index to the given destination index. in the given destination writer
+     * Copies the elements starting at the given source index to the given destination index in the given destination writer
      * <p>
      * The behavior of this method is undefined if the two ranges overlap.
      *
@@ -131,4 +131,11 @@ public abstract class IndexWriter extends AbstractTypedWriter {
      * @param length    the number of elements to copy
      */
     public abstract void copyTo(@NotNegative int srcIndex, @NonNull IndexWriter dstWriter, @NotNegative int dstIndex, @NotNegative int length);
+
+    /**
+     * Adds the given value to each of the index values in this writer.
+     *
+     * @param delta the value to add
+     */
+    public abstract void offsetIndices(int delta);
 }

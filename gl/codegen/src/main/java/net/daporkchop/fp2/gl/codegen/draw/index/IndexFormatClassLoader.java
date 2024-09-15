@@ -26,6 +26,7 @@ import net.daporkchop.fp2.gl.draw.index.IndexType;
 import net.daporkchop.fp2.gl.draw.index.IndexFormat;
 import net.daporkchop.fp2.gl.draw.index.IndexWriter;
 import net.daporkchop.lib.unsafe.PUnsafe;
+import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 
 import java.lang.invoke.MethodHandles;
@@ -136,6 +137,46 @@ public final class IndexFormatClassLoader extends SimpleGeneratingClassLoader {
                 this.generateComputeAddress(mv, 1, 5);
                 this.primitiveType.unsafeGet(mv);
                 this.primitiveType.unsafePut(mv);
+                return RETURN;
+            });
+
+            //void offsetIndices(long address, int size, int delta)
+            generateMethod(cv, ACC_PROTECTED | ACC_FINAL, "offsetIndices", getMethodDescriptor(VOID_TYPE, LONG_TYPE, INT_TYPE, INT_TYPE), mv -> {
+                //for (int i = 0; i < size; i++) {
+                //    PUnsafe.put*(null, address, truncate(PUnsafe.get*(null, address) + delta));
+                //    address += type.size();
+                //}
+
+                final int indexLvt = 5;
+                mv.visitLdcInsn(0);
+                mv.visitVarInsn(ISTORE, indexLvt);
+
+                Label conditionLbl = new Label();
+                Label tailLbl = new Label();
+
+                mv.visitLabel(conditionLbl);
+                mv.visitVarInsn(ILOAD, indexLvt);
+                mv.visitVarInsn(ILOAD, 3);
+                mv.visitJumpInsn(IF_ICMPGE, tailLbl);
+
+                mv.visitInsn(ACONST_NULL);
+                mv.visitVarInsn(LLOAD, 1);
+                mv.visitInsn(ACONST_NULL);
+                mv.visitVarInsn(LLOAD, 1);
+                this.primitiveType.unsafeGet(mv);
+                mv.visitVarInsn(ILOAD, 4);
+                mv.visitInsn(IADD);
+                this.primitiveType.truncateInteger(mv);
+                this.primitiveType.unsafePut(mv);
+
+                mv.visitVarInsn(LLOAD, 1);
+                generateAddConstant(mv, (long) this.type.size());
+                mv.visitVarInsn(LSTORE, 1);
+
+                mv.visitIincInsn(indexLvt, 1);
+                mv.visitJumpInsn(GOTO, conditionLbl);
+
+                mv.visitLabel(tailLbl);
                 return RETURN;
             });
         });

@@ -118,6 +118,13 @@ public abstract class AbstractIndexWriter extends IndexWriter {
     }
 
     @Override
+    public final void offsetIndices(int delta) {
+        this.offsetIndices(this.address, this.size, delta);
+    }
+
+    protected abstract void offsetIndices(long address, int size, int delta);
+
+    @Override
     public void close() {
         this.alloc.free(this.address);
     }

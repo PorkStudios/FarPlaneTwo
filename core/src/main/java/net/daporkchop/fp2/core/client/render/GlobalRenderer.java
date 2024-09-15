@@ -68,6 +68,7 @@ public final class GlobalRenderer {
     public final AttributeFormat<VoxelLocalAttributes> voxelVertexAttributesFormat;
 
     public final IndexFormat unsignedShortIndexFormat;
+    public final IndexFormat unsignedIntIndexFormat;
 
     public final AttributeFormat<TextureUVs.QuadListAttribute> uvQuadListSSBOFormat;
     public final AttributeFormat<TextureUVs.PackedBakedQuadAttribute> uvPackedQuadSSBOFormat;
@@ -96,6 +97,7 @@ public final class GlobalRenderer {
             this.voxelVertexAttributesFormat = AttributeFormat.get(gl, VoxelLocalAttributes.class, AttributeTarget.VERTEX_ATTRIBUTE);
 
             this.unsignedShortIndexFormat = IndexFormat.get(IndexType.UNSIGNED_SHORT);
+            this.unsignedIntIndexFormat = IndexFormat.get(IndexType.UNSIGNED_INT);
 
             this.uvQuadListSSBOFormat = AttributeFormat.get(gl, TextureUVs.QuadListAttribute.class, AttributeTarget.SSBO);
             this.uvPackedQuadSSBOFormat = AttributeFormat.get(gl, TextureUVs.PackedBakedQuadAttribute.class, AttributeTarget.SSBO);
