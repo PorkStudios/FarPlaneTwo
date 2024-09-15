@@ -38,7 +38,6 @@ import net.daporkchop.fp2.core.client.render.state.CameraStateUniforms;
 import net.daporkchop.fp2.core.client.render.state.DrawState;
 import net.daporkchop.fp2.core.client.render.state.DrawStateUniforms;
 import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;
-import net.daporkchop.fp2.core.client.shader.ReloadableShaderPrograms;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.EngineConstants;
 import net.daporkchop.fp2.core.engine.api.ctx.IFarClientContext;
@@ -47,9 +46,8 @@ import net.daporkchop.fp2.core.engine.client.bake.VoxelBaker;
 import net.daporkchop.fp2.core.engine.client.bake.storage.BakeStorage;
 import net.daporkchop.fp2.core.engine.client.bake.storage.PerLevelBakeStorage;
 import net.daporkchop.fp2.core.engine.client.bake.storage.SimpleBakeStorage;
-import net.daporkchop.fp2.core.engine.client.index.RenderIndex;
 import net.daporkchop.fp2.core.engine.client.index.RenderIndexType;
-import net.daporkchop.fp2.core.engine.client.index.attribdivisor.CPUCulledUniformRenderIndex;
+import net.daporkchop.fp2.core.engine.client.index.RenderIndex;
 import net.daporkchop.fp2.core.engine.client.struct.VoxelLocalAttributes;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
@@ -416,13 +414,14 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
 
         @Override
         protected RenderIndex<VoxelLocalAttributes> createRenderIndex() {
-            for (val implementation : RenderIndexType.values()) {
+            for (val implementation : RenderIndexType.getTypes(this.fp2)) {
                 if (!implementation.enabled(this.fp2.globalConfig())) {
                     this.fp2.log().debug("Render index implementation " + implementation + " is disabled by config");
                 } else if (!this.gl.supports(implementation.requiredExtensions())) {
                     //TODO: show a warning message ingame, somehow
                     this.fp2.log().warn("Render index implementation " + implementation + " is enabled, but your OpenGL implementation doesn't support it! " + this.gl.unsupportedMsg(implementation.requiredExtensions()));
                 } else {
+                    this.fp2.log().info("Creating new render index using " + implementation);
                     return implementation.createRenderIndex(this.gl, this.bakeStorage, this.alloc, this.fp2.client().globalRenderer(), this.cameraStateUniformsBuffer);
                 }
             }

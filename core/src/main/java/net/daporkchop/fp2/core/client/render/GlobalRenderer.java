@@ -19,12 +19,12 @@
 
 package net.daporkchop.fp2.core.client.render;
 
-import net.daporkchop.fp2.api.util.Identifier;
+import lombok.Getter;
 import net.daporkchop.fp2.core.FP2Core;
+import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.client.render.state.CameraStateUniforms;
 import net.daporkchop.fp2.core.client.render.state.DrawStateUniforms;
-import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;
 import net.daporkchop.fp2.core.client.shader.ReloadableShaderRegistry;
 import net.daporkchop.fp2.core.client.shader.ShaderMacros;
 import net.daporkchop.fp2.core.engine.EngineConstants;
@@ -38,14 +38,11 @@ import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeTarget;
 import net.daporkchop.fp2.gl.draw.index.IndexFormat;
 import net.daporkchop.fp2.gl.draw.index.IndexType;
-import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.shader.ShaderProgram;
-import net.daporkchop.fp2.gl.shader.ShaderType;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
 
 import java.util.EnumSet;
 
-import static net.daporkchop.fp2.api.FP2.*;
 import static net.daporkchop.fp2.core.debug.FP2Debug.*;
 
 /**
@@ -54,6 +51,13 @@ import static net.daporkchop.fp2.core.debug.FP2Debug.*;
  * @author DaPorkchop_
  */
 public final class GlobalRenderer {
+    @Getter
+    private final FP2Core fp2;
+    @Getter
+    private final FP2Client client;
+    @Getter
+    private final OpenGL gl;
+
     public final ReloadableShaderRegistry shaderRegistry;
 
     public final AttributeFormat<CameraStateUniforms> cameraStateUniformsFormat;
@@ -72,6 +76,10 @@ public final class GlobalRenderer {
 
     public GlobalRenderer(FP2Core fp2, OpenGL gl) {
         try {
+            this.fp2 = fp2;
+            this.client = fp2.client();
+            this.gl = gl;
+
             this.shaderRegistry = new ReloadableShaderRegistry(fp2);
 
             this.cameraStateUniformsFormat = AttributeFormat.get(gl, CameraStateUniforms.class, AttributeTarget.UBO);

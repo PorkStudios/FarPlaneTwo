@@ -17,33 +17,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package net.daporkchop.fp2.core.engine.client.index.attribdivisor;
+package net.daporkchop.fp2.core.engine.client.index.uniform;
 
+import lombok.NonNull;
 import lombok.val;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.core.client.IFrustum;
+import net.daporkchop.fp2.core.client.render.GlobalRenderer;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
+import net.daporkchop.fp2.core.client.render.state.CameraStateUniforms;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.DirectTilePosAccess;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.client.RenderConstants;
 import net.daporkchop.fp2.core.engine.client.bake.storage.BakeStorage;
+import net.daporkchop.fp2.core.engine.client.index.AbstractRenderIndex;
 import net.daporkchop.fp2.core.engine.client.index.RenderIndex;
+import net.daporkchop.fp2.core.engine.client.index.RenderIndexType;
 import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.GLExtensionSet;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
-import net.daporkchop.fp2.gl.attribute.vao.VertexArrayObject;
+import net.daporkchop.fp2.gl.attribute.UniformBuffer;
 import net.daporkchop.fp2.gl.draw.DrawMode;
 import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.gl.state.StatePreserver;
-import net.daporkchop.lib.common.closeable.PResourceUtil;
 import net.daporkchop.lib.common.util.PArrays;
 
 import java.util.Map;
-import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static net.daporkchop.fp2.core.engine.EngineConstants.*;
@@ -52,13 +54,23 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
 /**
  * @author DaPorkchop_
  */
-public class CPUCulledUniformRenderIndex<VertexType extends AttributeStruct> extends RenderIndex<VertexType> {
-    public static final GLExtensionSet REQUIRED_EXTENSIONS = GLExtensionSet.empty()
+public class CPUCulledUniformRenderIndex<VertexType extends AttributeStruct> extends AbstractRenderIndex.OnlyVertexTypeAttribs<VertexType> {
+    public static final GLExtensionSet REQUIRED_EXTENSIONS = OnlyVertexTypeAttribs.REQUIRED_EXTENSIONS
             .add(GLExtension.GL_ARB_draw_elements_base_vertex);
 
-    protected final Set<TilePos> hiddenPositions = DirectTilePosAccess.newPositionHashSet();
+    /**
+     * @author DaPorkchop_
+     */
+    public static final class Type extends RenderIndexType {
+        public Type() {
+            super(REQUIRED_EXTENSIONS);
+        }
 
-    protected final LevelPassArray<VertexArrayObject> vaos;
+        @Override
+        public <VertexType extends AttributeStruct> RenderIndex<VertexType> createRenderIndex(OpenGL gl, BakeStorage<VertexType> bakeStorage, DirectMemoryAllocator alloc, GlobalRenderer globalRenderer, UniformBuffer<CameraStateUniforms> cameraStateUniformsBuffer) {
+            return new CPUCulledUniformRenderIndex<>(gl, bakeStorage, alloc);
+        }
+    }
 
     //TODO: this isn't even remotely as efficient as it could be, but i don't care
     protected final Map<TilePos, BakeStorage.Location[]> allLocations = DirectTilePosAccess.newPositionKeyedHashMap();
@@ -66,48 +78,17 @@ public class CPUCulledUniformRenderIndex<VertexType extends AttributeStruct> ext
 
     public CPUCulledUniformRenderIndex(OpenGL gl, BakeStorage<VertexType> bakeStorage, DirectMemoryAllocator alloc) {
         super(gl, bakeStorage, alloc);
+    }
 
-        try {
-            this.vaos = new LevelPassArray<>(
-                    (level, pass) -> VertexArrayObject.builder(gl)
-                            .buffer(bakeStorage.vertexBuffer(level, pass))
-                            .elementBuffer(bakeStorage.indexBuffer(level, pass))
-                            .build());
-        } catch (Throwable t) {
-            throw PResourceUtil.closeSuppressed(t, this);
+    @Override
+    protected void recomputeTile(@NonNull TilePos pos) {
+        BakeStorage.Location[] locations = this.bakeStorage.find(pos);
+        if (locations == null || this.hiddenPositions.contains(pos)) {
+            //the position doesn't have any render data data associated with it or is hidden, and therefore can be entirely omitted from the index
+            this.allLocations.remove(pos);
+        } else {
+            this.allLocations.put(pos, locations);
         }
-    }
-
-    @Override
-    public void close() {
-        PResourceUtil.closeAll(this.vaos);
-    }
-
-    private Consumer<TilePos> recomputeTile() {
-        return pos -> {
-            BakeStorage.Location[] locations = this.bakeStorage.find(pos);
-            if (locations == null || this.hiddenPositions.contains(pos)) {
-                //the position doesn't have any render data data associated with it or is hidden, and therefore can be entirely omitted from the index
-                this.allLocations.remove(pos);
-            } else {
-                this.allLocations.put(pos, locations);
-            }
-        };
-    }
-
-    @Override
-    public void notifyTilesChanged(Set<TilePos> changedPositions) {
-        changedPositions.forEach(this.recomputeTile());
-    }
-
-    @Override
-    public void updateHidden(Set<TilePos> hidden, Set<TilePos> shown) {
-        this.hiddenPositions.removeAll(shown);
-        this.hiddenPositions.addAll(hidden);
-
-        //recompute the draw commands for all affected tiles, so that all tiles which got hidden get excluded from the index
-        hidden.forEach(this.recomputeTile());
-        shown.forEach(this.recomputeTile());
     }
 
     @Override

@@ -19,79 +19,43 @@
 
 package net.daporkchop.fp2.core.engine.client.index;
 
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
+import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.render.GlobalRenderer;
 import net.daporkchop.fp2.core.client.render.state.CameraStateUniforms;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.engine.client.bake.storage.BakeStorage;
-import net.daporkchop.fp2.core.engine.client.index.attribdivisor.CPUCulledBaseInstanceRenderIndex;
-import net.daporkchop.fp2.core.engine.client.index.attribdivisor.CPUCulledUniformRenderIndex;
-import net.daporkchop.fp2.core.engine.client.index.attribdivisor.GPUCulledBaseInstanceRenderIndex;
-import net.daporkchop.fp2.core.engine.client.struct.VoxelLocalAttributes;
+import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.GLExtensionSet;
 import net.daporkchop.fp2.gl.OpenGL;
+import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.UniformBuffer;
 
+import java.util.ServiceLoader;
+
 /**
- * The different {@link RenderIndex} implementations.
- *
  * @author DaPorkchop_
  */
-public enum RenderIndexType {
-    GPU_CULLED_INDIRECT_MULTIDRAW {
-        @Override
-        public boolean enabled(@NonNull FP2Config config) {
-            return config.performance().gpuFrustumCulling();
-        }
+@RequiredArgsConstructor
+@Getter
+public abstract class RenderIndexType {
+    /**
+     * Returns an {@link Iterable} each of the supported {@link RenderIndexType}s.
+     *
+     * @param fp2 the current {@link FP2Core FP2} instance
+     * @return an {@link Iterable} each of the supported {@link RenderIndexType}s
+     */
+    public static Iterable<? extends RenderIndexType> getTypes(@NonNull FP2Core fp2) {
+        return ServiceLoader.load(RenderIndexType.class, fp2.getClass().getClassLoader());
+    }
 
-        @Override
-        public GLExtensionSet requiredExtensions() {
-            return GPUCulledBaseInstanceRenderIndex.REQUIRED_EXTENSIONS;
-        }
-
-        @Override
-        public RenderIndex<VoxelLocalAttributes> createRenderIndex(OpenGL gl, BakeStorage<VoxelLocalAttributes> bakeStorage, DirectMemoryAllocator alloc, GlobalRenderer globalRenderer, UniformBuffer<CameraStateUniforms> cameraStateUniformsBuffer) {
-            gl.checkSupported(this.requiredExtensions());
-            return new GPUCulledBaseInstanceRenderIndex<>(gl, bakeStorage, alloc, globalRenderer.voxelInstancedAttributesFormat, globalRenderer, cameraStateUniformsBuffer);
-        }
-    },
-
-    CPU_CULLED_INDIRECT_MULTIDRAW {
-        @Override
-        public boolean enabled(@NonNull FP2Config config) {
-            return true;
-        }
-
-        @Override
-        public GLExtensionSet requiredExtensions() {
-            return CPUCulledBaseInstanceRenderIndex.REQUIRED_EXTENSIONS;
-        }
-
-        @Override
-        public RenderIndex<VoxelLocalAttributes> createRenderIndex(OpenGL gl, BakeStorage<VoxelLocalAttributes> bakeStorage, DirectMemoryAllocator alloc, GlobalRenderer globalRenderer, UniformBuffer<CameraStateUniforms> cameraStateUniformsBuffer) {
-            gl.checkSupported(this.requiredExtensions());
-            return new CPUCulledBaseInstanceRenderIndex<>(gl, bakeStorage, alloc, globalRenderer.voxelInstancedAttributesFormat);
-        }
-    },
-
-    CPU_CULLED_UNIFORM_SINGLE {
-        @Override
-        public boolean enabled(@NonNull FP2Config config) {
-            return true;
-        }
-
-        @Override
-        public GLExtensionSet requiredExtensions() {
-            return CPUCulledUniformRenderIndex.REQUIRED_EXTENSIONS;
-        }
-
-        @Override
-        public RenderIndex<VoxelLocalAttributes> createRenderIndex(OpenGL gl, BakeStorage<VoxelLocalAttributes> bakeStorage, DirectMemoryAllocator alloc, GlobalRenderer globalRenderer, UniformBuffer<CameraStateUniforms> cameraStateUniformsBuffer) {
-            gl.checkSupported(this.requiredExtensions());
-            return new CPUCulledUniformRenderIndex<>(gl, bakeStorage, alloc);
-        }
-    };
+    /**
+     * The set of {@link GLExtension OpenGL extensions} which are required by this render index.
+     */
+    private final @NonNull GLExtensionSet requiredExtensions;
 
     /**
      * Checks if this render index implementation is enabled with the current configuration.
@@ -99,12 +63,9 @@ public enum RenderIndexType {
      * @param config the current config
      * @return {@code true} if this render index implementation is enabled
      */
-    public abstract boolean enabled(@NonNull FP2Config config);
-
-    /**
-     * @return a {@link GLExtensionSet} containing the OpenGL extensions required by this render index implementation
-     */
-    public abstract GLExtensionSet requiredExtensions();
+    public boolean enabled(@NonNull FP2Config config) {
+        return true;
+    }
 
     /**
      * Creates a new {@link RenderIndex} instance using this implementation.
@@ -117,5 +78,5 @@ public enum RenderIndexType {
      * @return a new {@link RenderIndex} instance using this implementation
      * @throws UnsupportedOperationException if this render index implementation isn't supported
      */
-    public abstract RenderIndex<VoxelLocalAttributes> createRenderIndex(OpenGL gl, BakeStorage<VoxelLocalAttributes> bakeStorage, DirectMemoryAllocator alloc, GlobalRenderer globalRenderer, UniformBuffer<CameraStateUniforms> cameraStateUniformsBuffer);
+    public abstract <VertexType extends AttributeStruct> RenderIndex<VertexType> createRenderIndex(OpenGL gl, BakeStorage<VertexType> bakeStorage, DirectMemoryAllocator alloc, GlobalRenderer globalRenderer, UniformBuffer<CameraStateUniforms> cameraStateUniformsBuffer);
 }

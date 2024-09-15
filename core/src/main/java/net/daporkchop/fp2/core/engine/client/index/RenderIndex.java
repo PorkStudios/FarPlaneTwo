@@ -57,6 +57,8 @@ import static net.daporkchop.lib.common.util.PorkUtil.*;
  */
 @RequiredArgsConstructor
 public abstract class RenderIndex<VertexType extends AttributeStruct> implements AutoCloseable {
+    protected static final GLExtensionSet REQUIRED_EXTENSIONS = GLExtensionSet.empty();
+
     /**
      * The OpenGL context.
      */
@@ -75,7 +77,9 @@ public abstract class RenderIndex<VertexType extends AttributeStruct> implements
     public final DirectMemoryAllocator alloc;
 
     @Override
-    public abstract void close();
+    public void close() {
+        //no-op
+    }
 
     /**
      * Notifies this index that the tiles at the given positions may have been changed in the bake storage.

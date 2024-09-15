@@ -19,6 +19,7 @@
 
 package net.daporkchop.fp2.core.engine.client.index.attribdivisor;
 
+import lombok.NonNull;
 import lombok.val;
 import net.daporkchop.fp2.api.FP2;
 import net.daporkchop.fp2.api.util.Identifier;
@@ -29,10 +30,14 @@ import net.daporkchop.fp2.core.client.render.GlobalRenderer;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
 import net.daporkchop.fp2.core.client.render.state.CameraStateUniforms;
 import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;
+import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.EngineConstants;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.client.bake.storage.BakeStorage;
+import net.daporkchop.fp2.core.engine.client.index.AbstractRenderIndex;
+import net.daporkchop.fp2.core.engine.client.index.RenderIndex;
+import net.daporkchop.fp2.core.engine.client.index.RenderIndexType;
 import net.daporkchop.fp2.core.engine.client.index.postable.PerLevelRenderPosTable;
 import net.daporkchop.fp2.core.engine.client.index.postable.RenderPosTable;
 import net.daporkchop.fp2.core.engine.client.index.postable.SimpleRenderPosTable;
@@ -40,9 +45,9 @@ import net.daporkchop.fp2.core.engine.client.struct.VoxelGlobalAttributes;
 import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.GLExtensionSet;
 import net.daporkchop.fp2.gl.OpenGL;
+import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
-import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.UniformBuffer;
 import net.daporkchop.fp2.gl.buffer.BufferAccess;
 import net.daporkchop.fp2.gl.buffer.BufferTarget;
@@ -58,9 +63,6 @@ import net.daporkchop.fp2.gl.state.StatePreserver;
 import net.daporkchop.fp2.gl.util.list.DirectDrawElementsIndirectCommandList;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
 
-import java.util.Set;
-import java.util.function.Consumer;
-
 import static net.daporkchop.fp2.core.engine.client.RenderConstants.*;
 import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
@@ -70,8 +72,9 @@ import static net.daporkchop.lib.common.util.PValidation.*;
  *
  * @author DaPorkchop_
  */
-public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct> extends AbstractMultiDrawIndirectRenderIndex<VertexType> {
-    public static final GLExtensionSet REQUIRED_EXTENSIONS = AbstractMultiDrawIndirectRenderIndex.REQUIRED_EXTENSIONS
+public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct> extends AbstractRenderIndex.WithTilePosAttrib<VertexType> {
+    public static final GLExtensionSet REQUIRED_EXTENSIONS = WithTilePosAttrib.REQUIRED_EXTENSIONS
+            .add(GLExtension.GL_ARB_multi_draw_indirect) //glMultiDrawElementsIndirect()
             .addAll(ComputeShaderProgram.REQUIRED_EXTENSIONS)
             .addAll(TerrainRenderingBlockedTracker.REQUIRED_EXTENSIONS_GPU)
             .add(GLExtension.GL_ARB_shader_storage_buffer_object)
@@ -118,15 +121,34 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
                 .build();
     }
 
+    /**
+     * @author DaPorkchop_
+     */
+    public static final class Type extends RenderIndexType {
+        public Type() {
+            super(REQUIRED_EXTENSIONS);
+        }
+
+        @Override
+        public boolean enabled(@NonNull FP2Config config) {
+            return config.performance().gpuFrustumCulling();
+        }
+
+        @Override
+        public <VertexType extends AttributeStruct> RenderIndex<VertexType> createRenderIndex(OpenGL gl, BakeStorage<VertexType> bakeStorage, DirectMemoryAllocator alloc, GlobalRenderer globalRenderer, UniformBuffer<CameraStateUniforms> cameraStateUniformsBuffer) {
+            return new GPUCulledBaseInstanceRenderIndex<>(gl, bakeStorage, alloc, globalRenderer, cameraStateUniformsBuffer);
+        }
+    }
+
     private final UniformBuffer<CameraStateUniforms> cameraStateUniformsBuffer;
 
     private final LevelArray<Level> levels;
 
     private final ReloadableShaderProgram<ComputeShaderProgram> cullingShader;
 
-    public GPUCulledBaseInstanceRenderIndex(OpenGL gl, BakeStorage<VertexType> bakeStorage, DirectMemoryAllocator alloc, AttributeFormat<VoxelGlobalAttributes> sharedVertexFormat, GlobalRenderer globalRenderer,
+    public GPUCulledBaseInstanceRenderIndex(OpenGL gl, BakeStorage<VertexType> bakeStorage, DirectMemoryAllocator alloc, GlobalRenderer globalRenderer,
                                             UniformBuffer<CameraStateUniforms> cameraStateUniformsBuffer) {
-        super(gl, bakeStorage, alloc, sharedVertexFormat);
+        super(gl, bakeStorage, alloc, globalRenderer);
 
         try {
             this.cameraStateUniformsBuffer = cameraStateUniformsBuffer;
@@ -156,56 +178,41 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
         }));
     }
 
-    private Consumer<TilePos> recomputeTile() {
-        return pos -> {
-            Level levelInstance = this.levels.get(pos.level());
-            BakeStorage.Location[] locations = this.bakeStorage.find(pos);
-            if (locations == null || this.hiddenPositions.contains(pos)) {
-                //the position doesn't have any render data data associated with it or is hidden, and therefore can be entirely omitted from the index
-                int baseInstance = this.renderPosTable.remove(pos);
+    @Override
+    protected void recomputeTile(@NonNull TilePos pos) {
+        Level levelInstance = this.levels.get(pos.level());
+        BakeStorage.Location[] locations = this.bakeStorage.find(pos);
+        if (locations == null || this.hiddenPositions.contains(pos)) {
+            //the position doesn't have any render data data associated with it or is hidden, and therefore can be entirely omitted from the index
+            int baseInstance = this.renderPosTable.remove(pos);
 
-                if (baseInstance >= 0) {
-                    for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
-                        levelInstance.rawDrawListsCPU.get(pass).setZero(baseInstance);
-                    }
-                    levelInstance.rawDrawListsDirty = true;
-                }
-            } else {
-                //configure the render commands which will be used when selecting this
-                int baseInstance = this.renderPosTable.add(pos);
-
+            if (baseInstance >= 0) {
                 for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
-                    val location = locations[pass];
-                    val command = new DrawElementsIndirectCommand();
-                    if (location != null) {
-                        //if the bake storage contains render data for the tile at this pass, configure the draw command accordingly
-                        command.count = location.count;
-                        command.baseInstance = baseInstance;
-                        command.firstIndex = location.firstIndex;
-                        command.baseVertex = location.baseVertex;
-                        command.instanceCount = 1;
-                    } else {
-                        //otherwise, the draw command will be filled with zeroes
-                    }
-                    levelInstance.rawDrawListsCPU.get(pass).set(baseInstance, command);
+                    levelInstance.rawDrawListsCPU.get(pass).setZero(baseInstance);
                 }
                 levelInstance.rawDrawListsDirty = true;
             }
-        };
-    }
+        } else {
+            //configure the render commands which will be used when selecting this
+            int baseInstance = this.renderPosTable.add(pos);
 
-    @Override
-    public void notifyTilesChanged(Set<TilePos> changedPositions) {
-        changedPositions.forEach(this.recomputeTile());
-    }
-
-    @Override
-    public void updateHidden(Set<TilePos> hidden, Set<TilePos> shown) {
-        super.updateHidden(hidden, shown);
-
-        //recompute the draw commands for all affected tiles, so that all tiles which got hidden get excluded from the index
-        hidden.forEach(this.recomputeTile());
-        shown.forEach(this.recomputeTile());
+            for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
+                val location = locations[pass];
+                val command = new DrawElementsIndirectCommand();
+                if (location != null) {
+                    //if the bake storage contains render data for the tile at this pass, configure the draw command accordingly
+                    command.count = location.count;
+                    command.baseInstance = baseInstance;
+                    command.firstIndex = location.firstIndex;
+                    command.baseVertex = location.baseVertex;
+                    command.instanceCount = 1;
+                } else {
+                    //otherwise, the draw command will be filled with zeroes
+                }
+                levelInstance.rawDrawListsCPU.get(pass).set(baseInstance, command);
+            }
+            levelInstance.rawDrawListsDirty = true;
+        }
     }
 
     @Override
