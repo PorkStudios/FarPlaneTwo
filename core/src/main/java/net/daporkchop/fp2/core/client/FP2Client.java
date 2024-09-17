@@ -32,6 +32,7 @@ import net.daporkchop.fp2.core.client.gui.GuiScreen;
 import net.daporkchop.fp2.core.client.key.KeyCategory;
 import net.daporkchop.fp2.core.client.player.IFarPlayerClient;
 import net.daporkchop.fp2.core.client.render.GlobalRenderer;
+import net.daporkchop.fp2.core.client.render.RenderManager;
 import net.daporkchop.fp2.core.client.render.TextureUVs;
 import net.daporkchop.fp2.core.client.shader.ReloadableShaderRegistry;
 import net.daporkchop.fp2.core.config.FP2Config;
@@ -61,6 +62,7 @@ public abstract class FP2Client {
     private Logger chat;
     private OpenGL gl;
     private GlobalRenderer globalRenderer;
+    private RenderManager renderManager;
 
     /**
      * Initializes this instance.
@@ -96,11 +98,14 @@ public abstract class FP2Client {
 
             this.gl = gl;
             this.globalRenderer = new GlobalRenderer(this.fp2(), gl);
+            this.renderManager = this.createRenderManager();
         }); //TODO: without joining this, the initial render state *could* end up being uninitialized by the time we try to access it
 
         //register self to listen for events
         this.fp2().eventBus().register(this);
     }
+
+    protected abstract RenderManager createRenderManager();
 
     /**
      * @return the {@link FP2Core} instance which this {@link FP2Client} is used for
@@ -134,16 +139,6 @@ public abstract class FP2Client {
      * @return the current {@link IFarPlayerClient}, or an empty {@link Optional} if the client is not connected
      */
     public abstract Optional<? extends IFarPlayerClient> currentPlayer();
-
-    //TODO: somehow move Reversed-Z stuff out of FP2Client, and preferably into :gl
-    @Deprecated
-    public abstract void enableReverseZ();
-
-    @Deprecated
-    public abstract void disableReverseZ();
-
-    @Deprecated
-    public abstract boolean isReverseZ();
 
     @Deprecated
     public abstract int vanillaRenderDistanceChunks();

@@ -22,18 +22,21 @@ package net.daporkchop.fp2.impl.mc.forge1_12_2.client;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.val;
 import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.gui.GuiContext;
 import net.daporkchop.fp2.core.client.gui.GuiScreen;
 import net.daporkchop.fp2.core.client.key.KeyCategory;
 import net.daporkchop.fp2.core.client.player.IFarPlayerClient;
+import net.daporkchop.fp2.core.client.render.RenderManager;
 import net.daporkchop.fp2.core.minecraft.util.log.ChatLogger;
 import net.daporkchop.fp2.core.util.threading.futureexecutor.FutureExecutor;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.FP2Forge1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.at.client.ATMinecraft1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.asm.interfaz.client.network.IMixinNetHandlerPlayClient1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.client.gui.GuiContext1_12;
+import net.daporkchop.fp2.impl.mc.forge1_12_2.client.render.RenderManager1_12;
 import net.daporkchop.fp2.impl.mc.forge1_12_2.util.ResourceProvider1_12;
 import net.daporkchop.lib.unsafe.PUnsafe;
 import net.minecraft.client.Minecraft;
@@ -41,7 +44,6 @@ import net.minecraft.client.gui.GuiIngameMenu;
 import net.minecraft.client.gui.GuiMainMenu;
 import net.minecraft.client.gui.GuiVideoSettings;
 import net.minecraft.client.network.NetHandlerPlayClient;
-import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraftforge.client.event.GuiScreenEvent;
@@ -62,9 +64,6 @@ import java.util.function.Function;
 import static net.daporkchop.fp2.core.debug.FP2Debug.*;
 import static net.daporkchop.fp2.impl.mc.forge1_12_2.compat.of.OFHelper1_12.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
-import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL20.*;
-import static org.lwjgl.opengl.GL45.*;
 
 /**
  * @author DaPorkchop_
@@ -78,8 +77,6 @@ public class FP2Client1_12 extends FP2Client {
     private final Minecraft mc;
 
     private final Map<KeyBinding, Runnable> keyBindings = new IdentityHashMap<>();
-
-    private boolean reverseZ = false;
 
     @Override
     public void init(@NonNull FutureExecutor clientThreadExecutor) {
@@ -102,9 +99,9 @@ public class FP2Client1_12 extends FP2Client {
         if (!this.mc.getFramebuffer().isStencilEnabled() && !this.mc.getFramebuffer().enableStencil()) {
             if (OF && (PUnsafe.getBoolean(this.mc.gameSettings, OF_FASTRENDER_OFFSET) || PUnsafe.getInt(this.mc.gameSettings, OF_AALEVEL_OFFSET) > 0)) {
                 this.fp2().unsupported("FarPlaneTwo was unable to enable the OpenGL stencil buffer!\n"
-                        + "Please launch the game without FarPlaneTwo and disable\n"
-                        + "  OptiFine's \"Fast Render\" and \"Antialiasing\", then\n"
-                        + "  try again.");
+                                       + "Please launch the game without FarPlaneTwo and disable\n"
+                                       + "  OptiFine's \"Fast Render\" and \"Antialiasing\", then\n"
+                                       + "  try again.");
             } else {
                 this.fp2().unsupported("Unable to enable the OpenGL stencil buffer!\nRequired by FarPlaneTwo.");
             }
@@ -112,6 +109,11 @@ public class FP2Client1_12 extends FP2Client {
 
         //register resource reload listener
         ((ATMinecraft1_12) this.mc).getResourceManager().registerReloadListener(new ResourceReloadListener1_12(this));
+    }
+
+    @Override
+    protected RenderManager createRenderManager() {
+        return new RenderManager1_12(this);
     }
 
     @Override
@@ -147,33 +149,6 @@ public class FP2Client1_12 extends FP2Client {
         return connection != null
                 ? ((IMixinNetHandlerPlayClient1_12) connection).fp2_playerClient()
                 : Optional.empty();
-    }
-
-    @Override
-    public void enableReverseZ() {
-        if (this.fp2.globalConfig().compatibility().reversedZ()) {
-            this.reverseZ = true;
-
-            GlStateManager.depthFunc(GL_LEQUAL);
-            glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
-            GlStateManager.clearDepth(0.0d);
-        }
-    }
-
-    @Override
-    public void disableReverseZ() {
-        if (this.reverseZ) {
-            this.reverseZ = false;
-
-            glClipControl(GL_LOWER_LEFT, GL_NEGATIVE_ONE_TO_ONE);
-            GlStateManager.depthFunc(GL_LEQUAL);
-            GlStateManager.clearDepth(1.0d);
-        }
-    }
-
-    @Override
-    public boolean isReverseZ() {
-        return this.reverseZ;
     }
 
     @Override
@@ -218,6 +193,9 @@ public class FP2Client1_12 extends FP2Client {
 
     @SubscribeEvent
     public void renderWorldLast(RenderWorldLastEvent event) {
-        this.disableReverseZ();
+        val reversedZ = this.renderManager().reversedZ();
+        if (reversedZ != null) {
+            reversedZ.deactivate();
+        }
     }
 }

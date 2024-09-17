@@ -19,6 +19,7 @@
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.core.client.renderer;
 
+import lombok.val;
 import net.daporkchop.fp2.common.util.DirectBufferHackery;
 import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.MatrixHelper;
@@ -79,7 +80,10 @@ abstract class MixinEntityRenderer1_12 implements IMixinEntityRenderer1_12 {
     @Inject(method = "Lnet/minecraft/client/renderer/EntityRenderer;renderWorldPass(IFJ)V",
             at = @At("HEAD"))
     private void fp2_renderWorldPass_pre(int pass, float partialTicks, long finishTimeNano, CallbackInfo ci) {
-        fp2().client().enableReverseZ();
+        val reversedZ = fp2().client().renderManager().reversedZ();
+        if (reversedZ != null) {
+            reversedZ.activate();
+        }
     }
 
     @Inject(method = "Lnet/minecraft/client/renderer/EntityRenderer;renderWorldPass(IFJ)V",

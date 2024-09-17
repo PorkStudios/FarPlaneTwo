@@ -19,16 +19,17 @@
 
 package net.daporkchop.fp2.impl.mc.forge1_16.client;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import lombok.val;
 import net.daporkchop.fp2.common.util.ResourceProvider;
 import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.gui.GuiContext;
 import net.daporkchop.fp2.core.client.gui.GuiScreen;
 import net.daporkchop.fp2.core.client.key.KeyCategory;
 import net.daporkchop.fp2.core.client.player.IFarPlayerClient;
+import net.daporkchop.fp2.core.client.render.RenderManager;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.config.gui.ConfigGuiHelper;
 import net.daporkchop.fp2.core.minecraft.util.log.ChatLogger;
@@ -37,6 +38,7 @@ import net.daporkchop.fp2.impl.mc.forge1_16.FP2Forge1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.at.client.gui.screen.ATScreen1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.asm.interfaz.client.network.play.IMixinClientPlayNetHandler1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.client.gui.GuiContext1_16;
+import net.daporkchop.fp2.impl.mc.forge1_16.client.render.RenderManager1_16;
 import net.daporkchop.fp2.impl.mc.forge1_16.util.ResourceProvider1_16;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.IngameMenuScreen;
@@ -68,9 +70,6 @@ import java.util.function.Function;
 import static net.daporkchop.fp2.core.FP2Core.*;
 import static net.daporkchop.fp2.core.debug.FP2Debug.*;
 import static net.daporkchop.lib.common.util.PValidation.*;
-import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL20.*;
-import static org.lwjgl.opengl.GL45.*;
 
 /**
  * @author DaPorkchop_
@@ -84,8 +83,6 @@ public class FP2Client1_16 extends FP2Client {
     private final Minecraft mc;
 
     private final Map<KeyBinding, Runnable> keyBindings = new IdentityHashMap<>();
-
-    private boolean reverseZ = false;
 
     @Override
     public void init(@NonNull FutureExecutor clientThreadExecutor) {
@@ -108,6 +105,11 @@ public class FP2Client1_16 extends FP2Client {
 
         //register resource reload listener
         ((IReloadableResourceManager) this.mc.getResourceManager()).registerReloadListener(new ResourceReloadListener1_16(this));
+    }
+
+    @Override
+    protected RenderManager createRenderManager() {
+        return new RenderManager1_16(this);
     }
 
     @Override
@@ -144,33 +146,6 @@ public class FP2Client1_16 extends FP2Client {
         return netHandler != null
                 ? ((IMixinClientPlayNetHandler1_16) netHandler).fp2_playerClient()
                 : Optional.empty();
-    }
-
-    @Override
-    public void enableReverseZ() {
-        if (this.fp2.globalConfig().compatibility().reversedZ()) {
-            this.reverseZ = true;
-
-            RenderSystem.depthFunc(GL_LEQUAL);
-            glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
-            RenderSystem.clearDepth(0.0d);
-        }
-    }
-
-    @Override
-    public void disableReverseZ() {
-        if (this.reverseZ) {
-            this.reverseZ = false;
-
-            glClipControl(GL_LOWER_LEFT, GL_NEGATIVE_ONE_TO_ONE);
-            RenderSystem.depthFunc(GL_LEQUAL);
-            RenderSystem.clearDepth(1.0d);
-        }
-    }
-
-    @Override
-    public boolean isReverseZ() {
-        return this.reverseZ;
     }
 
     @Override
@@ -232,6 +207,9 @@ public class FP2Client1_16 extends FP2Client {
 
     @SubscribeEvent
     public void renderWorldLast(RenderWorldLastEvent event) {
-        this.disableReverseZ();
+        val reversedZ = this.renderManager().reversedZ();
+        if (reversedZ != null) {
+            reversedZ.deactivate();
+        }
     }
 }

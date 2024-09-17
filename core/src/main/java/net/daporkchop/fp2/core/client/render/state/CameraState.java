@@ -21,6 +21,7 @@ package net.daporkchop.fp2.core.client.render.state;
 
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+import lombok.val;
 import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.MatrixHelper;
 import net.daporkchop.lib.common.misc.Cloneable;
@@ -93,7 +94,8 @@ public final class CameraState implements Cloneable<CameraState> {
      */
     public void applyMatrixTweaks(FP2Client client) {
         //offset the projected points' depth values to avoid z-fighting with vanilla terrain
-        MatrixHelper.offsetDepth(this.modelViewProjectionMatrix, client.isReverseZ() ? -0.00001f : 0.00001f);
+        val reversedZ = client.renderManager().reversedZ();
+        MatrixHelper.offsetDepth(this.modelViewProjectionMatrix, reversedZ != null && reversedZ.isActive() ? -0.00001f : 0.00001f);
     }
 
     /**

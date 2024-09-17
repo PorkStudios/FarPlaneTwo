@@ -19,34 +19,40 @@
 
 package net.daporkchop.fp2.impl.mc.forge1_12_2.asm.core.client.renderer;
 
+import net.daporkchop.fp2.core.FP2Core;
+import net.daporkchop.fp2.core.client.render.ReversedZ;
 import net.minecraft.client.renderer.GlStateManager;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
 import static net.daporkchop.fp2.core.FP2Core.*;
-import static org.lwjgl.opengl.GL11.*;
 
 /**
  * @author DaPorkchop_
  */
 @Mixin(GlStateManager.class)
 public abstract class MixinGlStateManager1_12 {
+    @Unique
+    private static ReversedZ fp2_getReversedZ() {
+        FP2Core fp2 = fp2();
+        if (fp2 == null) {
+            return null;
+        }
+
+        return fp2.client()
+                .renderManager()
+                .reversedZ();
+    }
+
     @ModifyVariable(method = "Lnet/minecraft/client/renderer/GlStateManager;depthFunc(I)V",
             at = @At("HEAD"),
             argsOnly = true)
     private static int fp2_depthFunc_invertForReversedZ(int func) {
-        if (fp2() != null && fp2().client().isReverseZ()) { //reversed-z projection is enabled, flip function around
-            switch (func) {
-                case GL_LESS:
-                    return GL_GREATER;
-                case GL_LEQUAL:
-                    return GL_GEQUAL;
-                case GL_GREATER:
-                    return GL_LESS;
-                case GL_GEQUAL:
-                    return GL_LEQUAL;
-            }
+        ReversedZ reversedZ = fp2_getReversedZ();
+        if (reversedZ != null) { //if reversed-z projection is enabled, flip function around
+            return reversedZ.transformDepthFunc(func);
         }
 
         return func;
@@ -57,8 +63,9 @@ public abstract class MixinGlStateManager1_12 {
             argsOnly = true,
             ordinal = 0)
     private static float fp2_doPolygonOffset_invertFactorForReversedZ(float factor) {
-        if (fp2() != null && fp2().client().isReverseZ()) { //reversed-z projection is enabled, invert factor
-            return -factor;
+        ReversedZ reversedZ = fp2_getReversedZ();
+        if (reversedZ != null) { //if reversed-z projection is enabled, invert factor
+            return reversedZ.transformPolygonOffsetFactor(factor);
         }
 
         return factor;
@@ -68,11 +75,12 @@ public abstract class MixinGlStateManager1_12 {
             at = @At("HEAD"),
             argsOnly = true,
             ordinal = 1)
-    private static float fp2_doPolygonOffset_invertOffsetForReversedZ(float offset) {
-        if (fp2() != null && fp2().client().isReverseZ()) { //reversed-z projection is enabled, invert offset
-            return -offset;
+    private static float fp2_doPolygonOffset_invertUnitsForReversedZ(float units) {
+        ReversedZ reversedZ = fp2_getReversedZ();
+        if (reversedZ != null) { //if reversed-z projection is enabled, invert units
+            return reversedZ.transformPolygonOffsetUnits(units);
         }
 
-        return offset;
+        return units;
     }
 }
