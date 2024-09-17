@@ -30,12 +30,16 @@
 //
 //
 
-#ifdef GL_ARB_shader_draw_parameters
+#if __VERSION__ >= 460
+    //we can use the variables from the core profile
+    int get_gl_DrawID() { return int(gl_DrawID); }
+    int get_gl_BaseVertex() { return int(gl_BaseVertex); }
+    int get_gl_BaseInstance() { return int(gl_BaseInstance); }
+#elif defined(GL_ARB_shader_draw_parameters)
+    //we can use the variables from the extension
     int get_gl_DrawID() { return int(gl_DrawIDARB); }
     int get_gl_BaseVertex() { return int(gl_BaseVertexARB); }
     int get_gl_BaseInstance() { return int(gl_BaseInstanceARB); }
 #else
-    int get_gl_DrawID() { return int(gl_DrawID); }
-    int get_gl_BaseVertex() { return int(gl_BaseVertex); }
-    int get_gl_BaseInstance() { return int(gl_BaseInstance); }
+#   error "GL_ARB_shader_draw_parameters must be supported!"
 #endif

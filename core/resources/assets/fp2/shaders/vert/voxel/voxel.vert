@@ -18,7 +18,6 @@
  *
  */
 
-#include <"fp2:shaders/util/arb/shader_draw_parameters.glsl"> // get_gl_DrawID()
 #include <"fp2:shaders/util/camera_state_uniforms.glsl"> // u_positionFrac, u_positionFloor
 #include <"fp2:shaders/util/camera_transform.glsl"> // cameraTransform()
 #include <"fp2:shaders/util/tile_pos_technique.glsl"> // FP2_TILE_POS_TECHNIQUE_*
@@ -36,6 +35,7 @@ in vec3 a_pos;
     //instanced vertex attributes
     in ivec4 a_tilePos;
 #elif FP2_TILE_POS_TECHNIQUE == FP2_TILE_POS_TECHNIQUE_UNIFORM_ARRAY_DRAWID
+#include <"fp2:shaders/util/arb/shader_draw_parameters.glsl"> // get_gl_DrawID()
     //uniforms
     layout(TILE_POS_ARRAY_UBO_LAYOUT) uniform TILE_POS_ARRAY_UBO_NAME {
         ivec4 u_tilePosArray[TILE_POS_ARRAY_UBO_ELEMENTS];
