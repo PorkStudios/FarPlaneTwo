@@ -35,6 +35,7 @@ import org.lwjgl.LWJGLUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.opengl.ARBBaseInstance;
 import org.lwjgl.opengl.ARBBufferStorage;
+import org.lwjgl.opengl.ARBClipControl;
 import org.lwjgl.opengl.ARBComputeShader;
 import org.lwjgl.opengl.ARBCopyBuffer;
 import org.lwjgl.opengl.ARBDebugOutput;
@@ -142,6 +143,7 @@ public final class GLAPILWJGL2 extends OpenGL {
 
     // OpenGL 4.5
     private final boolean OpenGL45;
+    private final boolean GL_ARB_clip_control;
     private final boolean GL_ARB_direct_state_access;
 
     // OpenGL 4.6
@@ -202,6 +204,7 @@ public final class GLAPILWJGL2 extends OpenGL {
 
         // OpenGL 4.5
         this.OpenGL45 = capabilities.OpenGL45;
+        this.GL_ARB_clip_control = !capabilities.OpenGL45 && capabilities.GL_ARB_clip_control;
         this.GL_ARB_direct_state_access = !capabilities.OpenGL45 && capabilities.GL_ARB_direct_state_access;
 
         // OpenGL 4.6
@@ -2435,6 +2438,19 @@ public final class GLAPILWJGL2 extends OpenGL {
     // OpenGL 4.5
     //
     //
+
+    @Override
+    public void glClipControl(int origin, int depth) {
+        if (this.OpenGL45) {
+            GL45.glClipControl(origin, depth);
+            super.debugCheckError();
+        } else if (this.GL_ARB_clip_control) {
+            ARBClipControl.glClipControl(origin, depth);
+            super.debugCheckError();
+        } else {
+            throw new UnsupportedOperationException(super.unsupportedMsg(GLExtension.GL_ARB_clip_control));
+        }
+    }
 
     @Override
     public int glCreateBuffer() {

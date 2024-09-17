@@ -1616,6 +1616,13 @@ public abstract class OpenGL {
     //
 
     /**
+     * @apiNote requires {@link GLExtension#GL_ARB_clip_control GL_ARB_clip_control}
+     * @since OpenGL 4.5
+     */
+    @GLRequires(GLExtension.GL_ARB_clip_control)
+    public abstract void glClipControl(int origin, int depth);
+
+    /**
      * @apiNote requires {@link GLExtension#GL_ARB_direct_state_access GL_ARB_direct_state_access}
      * @since OpenGL 4.5
      */
