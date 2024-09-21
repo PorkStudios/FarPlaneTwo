@@ -19,6 +19,7 @@
 
 package net.daporkchop.fp2.core.engine.client.bake.storage;
 
+import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.SequentialVariableSizedAllocator;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
@@ -33,6 +34,7 @@ import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.buffer.upload.BufferUploader;
 import net.daporkchop.fp2.gl.draw.index.IndexBuffer;
 import net.daporkchop.fp2.gl.draw.index.IndexFormat;
+import net.daporkchop.fp2.gl.draw.index.IndexWriter;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
 
 import java.util.Map;
@@ -94,30 +96,35 @@ public final class SimpleBakeStorage<VertexType extends AttributeStruct> extends
             }
 
             if (output != null && !output.isEmpty()) { //the tile is being added
-                entry = new Entry();
+                //allocate space for vertex data
+                final int vertexCount = output.verts.size();
+                final int vertexOffset = toInt(this.vertexAlloc.alloc(vertexCount));
+                final int baseVertex = this.absoluteIndices ? 0 : vertexOffset;
+                entry = new Entry(vertexOffset, baseVertex, vertexCount);
 
-                //allocate space for the new vertex and index data
-                entry.vertexCount = output.verts.size();
-                entry.vertexOffset = toInt(this.vertexAlloc.alloc(entry.vertexCount));
-                entry.baseVertex = this.absoluteIndices ? 0 : entry.vertexOffset;
+                //upload vertex data
+                this.vertexBuffer.setRange(vertexOffset, output.verts, this.bufferUploader);
 
+                //allocate space for and upload index data
                 for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
-                    int indexCount = output.indicesPerPass[pass].size();
+                    final IndexWriter indexWriter = output.indicesPerPass[pass];
+                    final int indexCount = indexWriter.size();
                     entry.count[pass] = indexCount;
                     if (indexCount > 0) {
                         if (this.absoluteIndices) {
-                            //TODO: maybe check if the indices could overflow?
-                            output.indicesPerPass[pass].offsetIndices(entry.vertexOffset);
-                        }
-                        entry.firstIndex[pass] = toInt(this.indexAlloc.alloc(indexCount));
-                    }
-                }
+                            //check if any of the indices could overflow
+                            checkRangeLen(this.indexFormat.type().maxValue(), vertexOffset, vertexCount);
 
-                //upload vertex and index data
-                this.vertexBuffer.setRange(entry.vertexOffset, output.verts, this.bufferUploader);
-                for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
-                    if (output.indicesPerPass[pass].size() > 0) {
-                        this.indexBuffer.setRange(entry.firstIndex[pass], output.indicesPerPass[pass], this.bufferUploader);
+                            //increment all of the index values by the given offset amount
+                            indexWriter.offsetIndices(vertexOffset);
+                        }
+
+                        //allocate space for index data
+                        final int firstIndex = toInt(this.indexAlloc.alloc(indexCount));
+                        entry.firstIndex[pass] = firstIndex;
+
+                        //upload index data
+                        this.indexBuffer.setRange(firstIndex, indexWriter, this.bufferUploader);
                     }
                 }
 
@@ -171,10 +178,11 @@ public final class SimpleBakeStorage<VertexType extends AttributeStruct> extends
     /**
      * @author DaPorkchop_
      */
+    @RequiredArgsConstructor
     private static final class Entry {
-        public int vertexOffset; //the actual offset of the vertex data in the vertex buffer
-        public int baseVertex; //the baseVertex value which will stored in each of the Location instances
-        public int vertexCount;
+        public final int vertexOffset; //the actual offset of the vertex data in the vertex buffer
+        public final int baseVertex; //the baseVertex value which will stored in each of the Location instances
+        public final int vertexCount;
 
         public final int[] firstIndex = new int[RENDER_PASS_COUNT];
         public final int[] count = new int[RENDER_PASS_COUNT];

@@ -48,7 +48,7 @@ public abstract class TerrainRenderingBlockedTracker implements AutoCloseable {
      */
     public static final GLExtensionSet REQUIRED_EXTENSIONS_GPU = GLExtensionSet.empty()
             .add(GLExtension.GL_ARB_uniform_buffer_object)
-            .add(GLExtension.GL_ARB_shader_storage_buffer_object); //TODO: we could probably emulate this functionality using texture buffers, but I doubt there's any hardware which could benefit from GPU culling while not supporting SSBOs (leaving aside Mac devices)
+            .add(GLExtension.GL_ARB_shader_storage_buffer_object);
 
     protected static final long HEADERS_OFFSET = 0L;
     protected static final long FLAGS_OFFSET = HEADERS_OFFSET + 2L * (4 * Integer.BYTES);

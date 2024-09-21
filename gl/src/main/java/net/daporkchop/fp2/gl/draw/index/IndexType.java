@@ -36,4 +36,11 @@ public enum IndexType {
 
     private final int size;
     private final int type;
+
+    /**
+     * @return the maximum value that an index value of this type can have (exclusive)
+     */
+    public final long maxValue() {
+        return 1L << (this.size * Byte.SIZE);
+    }
 }
