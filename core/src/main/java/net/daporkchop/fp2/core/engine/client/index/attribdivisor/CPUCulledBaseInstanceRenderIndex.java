@@ -28,6 +28,7 @@ import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
 import net.daporkchop.fp2.core.client.render.state.CameraStateUniforms;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.DirectTilePosAccess;
+import net.daporkchop.fp2.core.engine.EngineConstants;
 import net.daporkchop.fp2.core.engine.TilePos;
 import net.daporkchop.fp2.core.engine.client.bake.storage.BakeStorage;
 import net.daporkchop.fp2.core.engine.client.index.AbstractRenderIndex;
@@ -37,7 +38,11 @@ import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.GLExtensionSet;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
+import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.attribute.UniformBuffer;
+import net.daporkchop.fp2.gl.buffer.BufferAccess;
+import net.daporkchop.fp2.gl.buffer.BufferTarget;
+import net.daporkchop.fp2.gl.buffer.GLMutableBuffer;
 import net.daporkchop.fp2.gl.draw.DrawMode;
 import net.daporkchop.fp2.gl.draw.indirect.DrawElementsIndirectCommand;
 import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
@@ -50,6 +55,7 @@ import net.daporkchop.lib.unsafe.PUnsafe;
 import java.util.Map;
 
 import static net.daporkchop.fp2.core.engine.client.RenderConstants.*;
+import static net.daporkchop.fp2.gl.OpenGLConstants.*;
 
 /**
  * Render index implementation using MultiDrawIndirect with an attribute divisor for the tile position which does frustum culling on tiles on the CPU.
@@ -78,12 +84,16 @@ public class CPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
     private int selectedTilesCount = 0;
 
     private final LevelPassArray<DirectDrawElementsIndirectCommandList> commandLists;
+    private final GLMutableBuffer commandListBuffer;
+    private final int[][] commandListBufferOffsets = new int[EngineConstants.MAX_LODS][RENDER_PASS_COUNT];
 
     public CPUCulledBaseInstanceRenderIndex(OpenGL gl, BakeStorage<VertexType> bakeStorage, DirectMemoryAllocator alloc, GlobalRenderer globalRenderer) {
         super(gl, bakeStorage, alloc, globalRenderer);
 
         try {
             this.commandLists = new LevelPassArray<>((level, pass) -> new DirectDrawElementsIndirectCommandList(alloc));
+
+            this.commandListBuffer = GLMutableBuffer.create(gl);
         } catch (Throwable t) {
             throw PResourceUtil.closeSuppressed(t, this);
         }
@@ -91,7 +101,8 @@ public class CPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
 
     @Override
     public void close() {
-        try (val ignored = this.commandLists) {
+        try (val ignored0 = this.commandLists;
+             val ignored1 = this.commandListBuffer) {
             super.close();
         }
     }
@@ -144,17 +155,44 @@ public class CPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
                 }
             }
         });
+
+        this.uploadCommandLists();
+    }
+
+    private void uploadCommandLists() {
+        //compute total capacity of all command lists
+        int totalCapacity = 0;
+        for (val commandList : this.commandLists) {
+            totalCapacity += commandList.capacity();
+        }
+
+        //resize buffer if needed
+        if (this.commandListBuffer.capacity() != totalCapacity * DrawElementsIndirectCommand._SIZE) {
+            this.commandListBuffer.capacity(totalCapacity * DrawElementsIndirectCommand._SIZE, BufferUsage.STREAM_DRAW);
+        }
+
+        //upload all the command lists
+        try (val mapping = this.commandListBuffer.mapRange(BufferAccess.WRITE_ONLY, GL_MAP_INVALIDATE_BUFFER_BIT, 0L, this.commandListBuffer.capacity())) {
+            for (int level = 0; level < EngineConstants.MAX_LODS; level++) {
+                for (int pass = 0; pass < RENDER_PASS_COUNT; pass++) {
+                    this.commandListBufferOffsets[level][pass] = mapping.buffer.position();
+                    mapping.buffer.put(this.commandLists.get(level, pass).byteBufferView());
+                }
+            }
+        }
     }
 
     @Override
     public void preservedDrawState(StatePreserver.Builder builder) {
-        super.preservedDrawState(builder.vao());
+        super.preservedDrawState(builder.vao()
+                .buffer(BufferTarget.DRAW_INDIRECT_BUFFER));
     }
 
     @Override
     public void preDraw() {
         super.preDraw();
         this.renderPosTable.flush();
+        this.gl.glBindBuffer(GL_DRAW_INDIRECT_BUFFER, this.commandListBuffer.id());
     }
 
     @Override
@@ -162,9 +200,8 @@ public class CPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
         val list = this.commandLists.get(level, pass);
         int size = list.size();
         if (size != 0) {
-            long indirect = PUnsafe.pork_directBufferAddress(list.byteBufferView());
             this.gl.glBindVertexArray(this.vaos.get(level, pass).id());
-            this.gl.glMultiDrawElementsIndirect(mode.mode(), this.bakeStorage.indexFormat.type().type(), indirect, size, 0);
+            this.gl.glMultiDrawElementsIndirect(mode.mode(), this.bakeStorage.indexFormat.type().type(), this.commandListBufferOffsets[level][pass], size, 0);
         }
     }
 
