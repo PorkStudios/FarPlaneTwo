@@ -52,6 +52,7 @@ import net.daporkchop.fp2.core.engine.client.bake.storage.SimpleBakeStorage;
 import net.daporkchop.fp2.core.engine.client.index.RenderIndex;
 import net.daporkchop.fp2.core.engine.client.index.RenderIndexType;
 import net.daporkchop.fp2.core.engine.client.struct.VoxelLocalAttributes;
+import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.GLExtensionSet;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
@@ -177,7 +178,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
     protected final BakeManager<VertexType> bakeManager;
 
     protected final RenderIndex.PosTechnique tilePosTechnique;
-    protected final DrawMode drawMode = DrawMode.QUADS; //TODO: this shouldn't be hardcoded
+    protected final DrawMode drawMode;
 
     protected final StatePreserver statePreserverSelect;
     protected final StatePreserver statePreserverDraw;
@@ -201,6 +202,15 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
                     ? globalRenderer.unsignedIntIndexFormat
                     : globalRenderer.unsignedShortIndexFormat;
 
+            //If GL_ARB_compatibility is supported, we can draw using quads instead of triangles.
+            //Based on tests, this seems to very slightly improve performance - modern GPUs seem to be able to split indexed quads into triangles
+            //  in hardware, and it reduces the size of our index buffers.
+            //TODO: Would be nice to make this configurable, though.
+            this.drawMode = this.gl.supports(GLExtension.GL_ARB_compatibility)
+                    ? DrawMode.QUADS
+                    : DrawMode.TRIANGLES;
+
+            //TODO: figure out why i slapped a TODO on this
             this.bufferUploader = this.gl.supports(UnsynchronizedMapBufferUploader.REQUIRED_EXTENSIONS) //TODO
                     ? new UnsynchronizedMapBufferUploader(this.gl, 8 << 20) //8 MiB
                     : new ScratchCopyBufferUploader(this.gl);
@@ -208,7 +218,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
             this.cameraStateUniformsBuffer = globalRenderer.cameraStateUniformsFormat.createUniformBuffer();
             this.drawStateUniformsBuffer = globalRenderer.drawStateUniformsFormat.createUniformBuffer();
 
-            this.baker = this.createBaker();
+            this.baker = this.createBaker(context, this.drawMode);
             this.bakeStorage = new PerLevelBakeStorage<>(this.gl, this.bufferUploader, this.vertexFormat, this.indexFormat, renderIndexType.absoluteIndices(),
                     (level, absoluteIndices) -> new SimpleBakeStorage<>(this.gl, this.bufferUploader, this.vertexFormat, this.indexFormat, absoluteIndices));
             this.renderIndex = renderIndexType.createRenderIndex(this.gl, this.bakeStorage, this.alloc, globalRenderer, this.cameraStateUniformsBuffer);
@@ -273,7 +283,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
         throw new UnsupportedOperationException("No render index implementations are supported! (see log)");
     }
 
-    protected abstract IRenderBaker<VertexType> createBaker();
+    protected abstract IRenderBaker<VertexType> createBaker(@NonNull IFarClientContext context, @NonNull DrawMode drawMode);
 
     /**
      * Called before rendering a frame to prepare the render system for drawing the frame.
@@ -436,8 +446,8 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
         }
 
         @Override
-        protected IRenderBaker<VoxelLocalAttributes> createBaker() {
-            return new VoxelBaker(this.context);
+        protected IRenderBaker<VoxelLocalAttributes> createBaker(@NonNull IFarClientContext context, @NonNull DrawMode drawMode) {
+            return new VoxelBaker(context, drawMode);
         }
     }
 }

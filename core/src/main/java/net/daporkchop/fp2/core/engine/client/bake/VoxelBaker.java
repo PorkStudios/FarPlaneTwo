@@ -33,6 +33,7 @@ import net.daporkchop.fp2.core.engine.client.struct.VoxelLocalAttributes;
 import net.daporkchop.fp2.core.engine.util.TilePosSingleLevelAABBSet;
 import net.daporkchop.fp2.core.util.GlobalAllocators;
 import net.daporkchop.fp2.gl.attribute.AttributeWriter;
+import net.daporkchop.fp2.gl.draw.DrawMode;
 import net.daporkchop.fp2.gl.draw.index.IndexWriter;
 import net.daporkchop.lib.common.pool.array.ArrayAllocator;
 
@@ -61,11 +62,21 @@ public class VoxelBaker implements IRenderBaker<VoxelLocalAttributes> {
     protected final LevelRenderer levelRenderer;
     protected final TextureUVs textureUVs;
     protected final boolean forceBlockyMesh;
+    protected final boolean useTriangles;
 
-    public VoxelBaker(IFarClientContext context) {
+    public VoxelBaker(@NonNull IFarClientContext context, @NonNull DrawMode drawMode) {
         this.levelRenderer = context.level().renderer();
         this.textureUVs = this.levelRenderer.textureUVs();
         this.forceBlockyMesh = context.fp2().globalConfig().quality().forceBlockyMesh();
+
+        switch (drawMode) {
+            case QUADS:
+            case TRIANGLES:
+                this.useTriangles = drawMode == DrawMode.TRIANGLES;
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported draw mode: " + drawMode);
+        }
     }
 
     @Override
@@ -229,7 +240,7 @@ public class VoxelBaker implements IRenderBaker<VoxelLocalAttributes> {
 
                 if ((edges & (EDGE_DIR_NEGATIVE << (edge << 1))) != 0) { //the face has the negative bit set
                     if ((edges & (EDGE_DIR_POSITIVE << (edge << 1))) != 0) { //the positive bit is set as well, output the face once before flipping
-                        buf.appendQuad(oppositeCorner, c0, c1, provoking);
+                        this.appendQuad(buf, oppositeCorner, c0, c1, provoking);
                     }
 
                     //flip the face around
@@ -238,8 +249,16 @@ public class VoxelBaker implements IRenderBaker<VoxelLocalAttributes> {
                     c1 = i;
                 }
 
-                buf.appendQuad(oppositeCorner, c0, c1, provoking);
+                this.appendQuad(buf, oppositeCorner, c0, c1, provoking);
             }
+        }
+    }
+
+    private void appendQuad(IndexWriter indices, int oppositeCorner, int c0, int c1, int provoking) {
+        if (this.useTriangles) {
+            indices.appendQuadAsTriangles(oppositeCorner, c0, c1, provoking);
+        } else {
+            indices.appendQuad(oppositeCorner, c0, c1, provoking);
         }
     }
 }
