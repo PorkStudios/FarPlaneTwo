@@ -25,7 +25,7 @@
 #include <"fp2:shaders/vert/fog.vert">
 
 //per-vertex attributes
-in int a_state;
+in uint a_state;
 in vec2 a_light;
 in vec3 a_color;
 in vec3 a_pos;

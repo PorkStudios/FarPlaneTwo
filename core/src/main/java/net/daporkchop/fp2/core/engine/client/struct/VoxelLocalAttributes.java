@@ -1,7 +1,7 @@
 /*
  * Adapted from The MIT License (MIT)
  *
- * Copyright (c) 2020-2023 DaPorkchop_
+ * Copyright (c) 2020-2024 DaPorkchop_
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy,
@@ -31,7 +31,9 @@ import net.daporkchop.fp2.gl.attribute.annotation.ScalarTransform;
 /**
  * @author DaPorkchop_
  */
-@Attribute(name = "state", typeScalar = @ScalarType(int.class))
+@Attribute(name = "state", typeScalar = @ScalarType(value = int.class, interpret = {
+        @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED),
+}))
 @Attribute(name = "light", typeVector = @VectorType(components = 2, componentType = @ScalarType(value = byte.class, interpret = {
         @ScalarConvert(ScalarConvert.Type.TO_UNSIGNED),
         @ScalarConvert(value = ScalarConvert.Type.TO_FLOAT, normalized = true)
