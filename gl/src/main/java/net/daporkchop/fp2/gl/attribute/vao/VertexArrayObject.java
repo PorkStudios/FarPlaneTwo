@@ -152,13 +152,21 @@ public abstract class VertexArrayObject extends GLObject.Normal {
             super(gl, gl.glGenVertexArray());
         }
 
+        private void configureDivisor(int index, int divisor) {
+            if (this.gl.supports(GLExtension.GL_ARB_instanced_arrays)) {
+                this.gl.glVertexAttribDivisor(index, divisor);
+            } else if (divisor != 0) {
+                throw new UnsupportedOperationException(this.gl.unsupportedMsg(GLExtension.GL_ARB_instanced_arrays));
+            }
+        }
+
         @Override
         public void setFAttrib(GLBuffer buffer, int index, int size, int type, boolean normalized, int stride, long pointer, int divisor) {
             buffer.bind(BufferTarget.ARRAY_BUFFER, target -> {
                 this.bind(() -> {
                     this.gl.glEnableVertexAttribArray(index);
                     this.gl.glVertexAttribPointer(index, size, type, normalized, stride, pointer);
-                    this.gl.glVertexAttribDivisor(index, divisor); //TODO: throw exception if divisors aren't supported
+                    this.configureDivisor(index, divisor);
                 });
             });
         }
@@ -169,7 +177,7 @@ public abstract class VertexArrayObject extends GLObject.Normal {
                 this.bind(() -> {
                     this.gl.glEnableVertexAttribArray(index);
                     this.gl.glVertexAttribIPointer(index, size, type, stride, pointer);
-                    this.gl.glVertexAttribDivisor(index, divisor);
+                    this.configureDivisor(index, divisor);
                 });
             });
         }
@@ -196,7 +204,7 @@ public abstract class VertexArrayObject extends GLObject.Normal {
                         } else {
                             this.gl.glVertexAttribPointer(index, attrib.size(), attrib.type(), attrib.normalized(), buffer.stride(), attrib.offset() + buffer.offset());
                         }
-                        this.gl.glVertexAttribDivisor(index, buffer.divisor());
+                        this.configureDivisor(index, buffer.divisor());
                     }
                 } finally {
                     this.gl.glBindBuffer(GL_ARRAY_BUFFER, oldBuffer);
@@ -217,6 +225,14 @@ public abstract class VertexArrayObject extends GLObject.Normal {
         DSA(OpenGL gl) {
             super(gl, gl.glCreateVertexArray());
         }
+
+        /*private void configureDivisor(int index, int divisor) {
+            if (this.gl.supports(GLExtension.GL_ARB_instanced_arrays)) {
+                this.gl.glVertexArrayBindingDivisor(this.id, index, divisor);
+            } else if (divisor != 0) {
+                throw new UnsupportedOperationException(this.gl.unsupportedMsg(GLExtension.GL_ARB_instanced_arrays));
+            }
+        }*/
 
         @Override
         public void setFAttrib(GLBuffer buffer, int index, int size, int type, boolean normalized, int stride, long pointer, int divisor) {

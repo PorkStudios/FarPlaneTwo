@@ -91,7 +91,9 @@ public abstract class OpenGL {
     private final Limits limits;
 
     protected OpenGL() {
-        this.version = this.determineVersion();
+        final boolean FORCE_LEGACY = false;
+
+        this.version = !FORCE_LEGACY ? this.determineVersion() : GLVersion.OpenGL30;
 
         { //get supported extensions
             Set<String> extensionNames;
@@ -102,6 +104,14 @@ public abstract class OpenGL {
                 extensionNames = IntStream.range(0, this.glGetInteger(GL_NUM_EXTENSIONS))
                         .mapToObj(i -> this.glGetString(GL_EXTENSIONS, i))
                         .collect(Collectors.toSet());
+            }
+
+            if (FORCE_LEGACY) {
+                extensionNames.clear();
+                extensionNames.add(GLExtension.GL_ARB_uniform_buffer_object.name());
+                extensionNames.add(GLExtension.GL_ARB_gpu_shader5.name());
+                extensionNames.add(GLExtension.GL_ARB_shader_storage_buffer_object.name());
+                extensionNames.add(GLExtension.GL_ARB_program_interface_query.name());
             }
 
             BiFunction<GLExtensionSet, GLExtension, GLExtensionSet> extensionSetReducer = GLExtensionSet::add;
@@ -199,7 +209,7 @@ public abstract class OpenGL {
      * @param extension the unsupported extension
      * @return a {@link String} to be used as an exception message
      */
-    protected final String unsupportedMsg(GLExtension extension) {
+    public final String unsupportedMsg(GLExtension extension) {
         return this.unsupportedMsg(Collections.singletonList(extension));
     }
 

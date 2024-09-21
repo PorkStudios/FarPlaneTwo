@@ -30,6 +30,8 @@ import net.daporkchop.fp2.core.engine.client.bake.storage.BakeStorage;
 import net.daporkchop.fp2.core.engine.client.index.postable.RenderPosTable;
 import net.daporkchop.fp2.core.engine.client.index.postable.SimpleRenderPosTable;
 import net.daporkchop.fp2.core.engine.client.struct.VoxelGlobalAttributes;
+import net.daporkchop.fp2.gl.GLExtension;
+import net.daporkchop.fp2.gl.GLExtensionSet;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
@@ -89,6 +91,9 @@ public abstract class AbstractRenderIndex<VertexType extends AttributeStruct> ex
      * @author DaPorkchop_
      */
     public static abstract class WithTilePosAttrib<VertexType extends AttributeStruct> extends AbstractRenderIndex<VertexType> {
+        protected static final GLExtensionSet REQUIRED_EXTENSIONS = AbstractRenderIndex.REQUIRED_EXTENSIONS
+                .add(GLExtension.GL_ARB_instanced_arrays);
+
         protected final RenderPosTable renderPosTable;
         protected final LevelPassArray<VertexArrayObject> vaos;
 

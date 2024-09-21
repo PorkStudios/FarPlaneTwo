@@ -39,6 +39,8 @@ import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.network.packet.standard.client.CPacketClientConfig;
 import net.daporkchop.fp2.core.util.listener.ListenerList;
 import net.daporkchop.fp2.core.util.threading.futureexecutor.FutureExecutor;
+import net.daporkchop.fp2.gl.GLExtension;
+import net.daporkchop.fp2.gl.GLExtensionSet;
 import net.daporkchop.fp2.gl.GLVersion;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.lib.logging.Logger;
@@ -91,9 +93,23 @@ public abstract class FP2Client {
                     .info("OpenGL vendor: " + gl.glGetString(GL_VENDOR))
                     .info("OpenGL renderer: " + gl.glGetString(GL_RENDERER));
 
-            if (gl.version().compareTo(GLVersion.OpenGL45) < 0) {
-                this.fp2().unsupported("Your system does not support OpenGL 4.5!\nRequired by FarPlaneTwo.");
-                throw new UnsupportedOperationException("Your system does not support OpenGL 4.5!\nRequired by FarPlaneTwo.");
+            GLVersion minimumVersion = GLVersion.OpenGL30;
+            GLExtensionSet minimumRequiredExtensions = GLExtensionSet.empty()
+                    .add(GLExtension.GL_ARB_uniform_buffer_object) //needed for select and draw state uniforms (this requirement will probably not be relaxed, too much hassle)
+                    .add(GLExtension.GL_ARB_gpu_shader5) //needed for input and output blocks in shaders (this can be relaxed)
+                    .add(GLExtension.GL_ARB_shader_storage_buffer_object) //needed for state -> texture UV mappings (this requirement can be relaxed)
+                    .add(GLExtension.GL_ARB_program_interface_query); //needed by ShaderProgram if any SSBO bindings are added (this requirement can be removed with GL_ARB_shader_storage_buffer_object)
+
+            Object unsupportedCause = null;
+            if (gl.version().compareTo(minimumVersion) < 0) {
+                unsupportedCause = minimumVersion;
+            } else if (!gl.supports(minimumRequiredExtensions)) {
+                unsupportedCause = minimumRequiredExtensions.removeAll(gl.allExtensions());
+            }
+            if (unsupportedCause != null) {
+                String msg = "Your system does not support " + unsupportedCause + "!\nRequired by FarPlaneTwo.";
+                this.fp2().unsupported(msg);
+                throw new UnsupportedOperationException(msg);
             }
 
             this.gl = gl;

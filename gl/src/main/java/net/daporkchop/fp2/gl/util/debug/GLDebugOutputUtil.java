@@ -85,6 +85,6 @@ public class GLDebugOutputUtil {
     }
 
     private static String unsupportedMessage(OpenGL gl) {
-        return "OpenGL debug tracing is output, but neither " + GLExtension.GL_KHR_debug + " nor " + GLExtension.GL_ARB_debug_output + " are supported! " + gl;
+        return "OpenGL debug tracing is enabled, but neither " + GLExtension.GL_KHR_debug + " nor " + GLExtension.GL_ARB_debug_output + " are supported! " + gl;
     }
 }

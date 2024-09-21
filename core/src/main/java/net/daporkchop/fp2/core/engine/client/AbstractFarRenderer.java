@@ -61,6 +61,7 @@ import net.daporkchop.fp2.gl.attribute.UniformBuffer;
 import net.daporkchop.fp2.gl.attribute.texture.TextureTarget;
 import net.daporkchop.fp2.gl.buffer.IndexedBufferTarget;
 import net.daporkchop.fp2.gl.buffer.upload.BufferUploader;
+import net.daporkchop.fp2.gl.buffer.upload.ImmediateBufferUploader;
 import net.daporkchop.fp2.gl.buffer.upload.ScratchCopyBufferUploader;
 import net.daporkchop.fp2.gl.buffer.upload.UnsynchronizedMapBufferUploader;
 import net.daporkchop.fp2.gl.draw.DrawMode;
@@ -213,7 +214,9 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
             //TODO: figure out why i slapped a TODO on this
             this.bufferUploader = this.gl.supports(UnsynchronizedMapBufferUploader.REQUIRED_EXTENSIONS) //TODO
                     ? new UnsynchronizedMapBufferUploader(this.gl, 8 << 20) //8 MiB
-                    : new ScratchCopyBufferUploader(this.gl);
+                    : this.gl.supports(ScratchCopyBufferUploader.REQUIRED_EXTENSIONS)
+                    ? new ScratchCopyBufferUploader(this.gl)
+                    : ImmediateBufferUploader.instance();
 
             this.cameraStateUniformsBuffer = globalRenderer.cameraStateUniformsFormat.createUniformBuffer();
             this.drawStateUniformsBuffer = globalRenderer.drawStateUniformsFormat.createUniformBuffer();
@@ -349,8 +352,9 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
             this.gl.glEnable(GL_CULL_FACE);
         }
 
+        val reversedZ = this.fp2.client().renderManager().reversedZ();
         this.gl.glEnable(GL_DEPTH_TEST);
-        this.gl.glDepthFunc(this.fp2.globalConfig().compatibility().reversedZ() ? GL_GREATER : GL_LESS);
+        this.gl.glDepthFunc(reversedZ != null && reversedZ.isActive() ? GL_GREATER : GL_LESS);
 
         this.gl.glEnable(GL_STENCIL_TEST);
         this.gl.glStencilMask(0xFF);

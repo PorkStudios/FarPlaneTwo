@@ -19,6 +19,8 @@
 
 package net.daporkchop.fp2.gl.buffer.upload;
 
+import net.daporkchop.fp2.gl.GLExtension;
+import net.daporkchop.fp2.gl.GLExtensionSet;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
 import net.daporkchop.fp2.gl.buffer.GLBuffer;
@@ -36,9 +38,14 @@ import java.nio.ByteBuffer;
  * @author DaPorkchop_
  */
 public final class ScratchCopyBufferUploader extends AbstractImmediateBufferUploader {
+    public static final GLExtensionSet REQUIRED_EXTENSIONS = GLExtensionSet.empty()
+            .add(GLExtension.GL_ARB_copy_buffer);
+
     private final GLMutableBuffer scratchBuffer;
 
     public ScratchCopyBufferUploader(OpenGL gl) {
+        gl.checkSupported(REQUIRED_EXTENSIONS);
+
         this.scratchBuffer = GLMutableBuffer.create(gl);
     }
 

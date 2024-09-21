@@ -42,6 +42,8 @@ public final class UnsynchronizedMapBufferUploader extends BufferUploader {
     public static final GLExtensionSet REQUIRED_EXTENSIONS = GLExtensionSet.empty()
             .addAll(GLImmutableBuffer.REQUIRED_EXTENSIONS)
             .addAll(GLFenceSync.REQUIRED_EXTENSIONS)
+            .addAll(ScratchCopyBufferUploader.REQUIRED_EXTENSIONS)
+            .add(GLExtension.GL_ARB_copy_buffer)
             .add(GLExtension.GL_ARB_buffer_storage);
 
     private final OpenGL gl;

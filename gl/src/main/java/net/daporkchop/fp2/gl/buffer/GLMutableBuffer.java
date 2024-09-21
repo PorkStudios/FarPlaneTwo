@@ -20,6 +20,7 @@
 package net.daporkchop.fp2.gl.buffer;
 
 import lombok.NonNull;
+import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.OpenGLException;
 import net.daporkchop.fp2.gl.attribute.BufferUsage;
@@ -137,6 +138,11 @@ public final class GLMutableBuffer extends GLBuffer {
         try {
             TRY_GPU_COPY:
             try (GLMutableBuffer tempBuffer = new GLMutableBuffer(this.gl)) {
+                if (!this.gl.supports(GLExtension.GL_ARB_copy_buffer)) {
+                    //GL_ARB_copy_buffer isn't supported, this technique cannot work
+                    break TRY_GPU_COPY;
+                }
+
                 //try to allocate storage for the temporary buffer
                 try {
                     tempBuffer.capacity(retainedCapacity, BufferUsage.STREAM_COPY);

@@ -158,7 +158,10 @@ public abstract class GLBuffer extends GLObject.Normal {
      * @param srcOffset the offset in the source buffer to begin copying from
      * @param dstOffset the offset in this buffer to begin copying to
      * @param size      the number of bytes to copy
+     * @throws UnsupportedOperationException if {@link GLExtension#GL_ARB_copy_buffer ARB_copy_buffer} isn't supported
+     * @apiNote requires {@link GLExtension#GL_ARB_copy_buffer GL_ARB_copy_buffer}
      */
+    @GLRequires(GLExtension.GL_ARB_copy_buffer)
     public final void copyRange(@NonNull GLBuffer src, long srcOffset, long dstOffset, long size) {
         this.checkOpen();
         checkRangeLen(src.capacity(), srcOffset, size);
@@ -181,7 +184,10 @@ public abstract class GLBuffer extends GLObject.Normal {
      * @param dst       the buffer to copy the data to
      * @param dstOffset the offset in the destination buffer to begin copying to
      * @param size      the number of bytes to copy
+     * @throws UnsupportedOperationException if {@link GLExtension#GL_ARB_copy_buffer ARB_copy_buffer} isn't supported
+     * @apiNote requires {@link GLExtension#GL_ARB_copy_buffer GL_ARB_copy_buffer}
      */
+    @GLRequires(GLExtension.GL_ARB_copy_buffer)
     public final void copyRange(long srcOffset, @NonNull GLBuffer dst, long dstOffset, long size) {
         dst.copyRange(this, srcOffset, dstOffset, size);
     }

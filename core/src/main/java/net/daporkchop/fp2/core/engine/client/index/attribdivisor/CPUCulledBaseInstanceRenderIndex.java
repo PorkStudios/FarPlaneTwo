@@ -50,7 +50,6 @@ import net.daporkchop.fp2.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.gl.state.StatePreserver;
 import net.daporkchop.fp2.gl.util.list.DirectDrawElementsIndirectCommandList;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
-import net.daporkchop.lib.unsafe.PUnsafe;
 
 import java.util.Map;
 
