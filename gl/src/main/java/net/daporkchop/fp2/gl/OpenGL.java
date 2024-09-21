@@ -65,8 +65,10 @@ public abstract class OpenGL {
     public static final boolean DEBUG_LABELS = DEBUG;
     public static final boolean DEBUG_GROUPS = DEBUG;
 
-    // TODO: use this!
-    public static final boolean PRESERVE_BINDINGS = System.getProperty("fp2.gl.opengl.preserveBindings") == null || Boolean.getBoolean("fp2.gl.opengl.preserveBindings");
+    //these are currently all enabled by default, as they don't seem to make much performance difference
+    public static final boolean PRESERVE_REGULAR_BUFFER_BINDINGS_IN_METHODS = Boolean.parseBoolean(System.getProperty("fp2.gl.opengl.preserveBufferBindings", "true"));
+    public static final boolean PRESERVE_VAO_BINDINGS_IN_METHODS = Boolean.parseBoolean(System.getProperty("fp2.gl.opengl.preserveVaoBindings", "true"));
+    public static final boolean PRESERVE_PROGRAM_BINDINGS_IN_METHODS = Boolean.parseBoolean(System.getProperty("fp2.gl.opengl.preserveProgramBindings", "true"));
 
     /**
      * @return an instance of {@link OpenGL} for accessing the current OpenGL context

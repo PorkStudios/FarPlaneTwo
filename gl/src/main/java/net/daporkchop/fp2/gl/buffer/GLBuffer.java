@@ -216,11 +216,13 @@ public abstract class GLBuffer extends GLObject.Normal {
 
     /**
      * Executes the given action with this buffer bound to the given {@link BufferTarget buffer binding target}.
+     * <p>
+     * This will restore the previously bound buffer when the operation completes.
      *
      * @param target   the {@link BufferTarget buffer binding target} to bind the buffer to
      * @param callback the action to run
      */
-    public final void bind(BufferTarget target, Consumer<BufferTarget> callback) {
+    public final void bindPreserving(BufferTarget target, Consumer<BufferTarget> callback) {
         this.checkOpen();
         int old = this.gl.glGetInteger(target.binding());
         try {
@@ -233,11 +235,13 @@ public abstract class GLBuffer extends GLObject.Normal {
 
     /**
      * Executes the given action with this buffer bound to the given {@link BufferTarget buffer binding target}.
+     * <p>
+     * This will restore the previously bound buffer when the operation completes.
      *
      * @param target   the {@link BufferTarget buffer binding target} to bind the buffer to
      * @param callback the action to run
      */
-    public final <T> T bind(BufferTarget target, Function<BufferTarget, T> callback) {
+    public final <T> T bindPreserving(BufferTarget target, Function<BufferTarget, T> callback) {
         this.checkOpen();
         int old = this.gl.glGetInteger(target.binding());
         try {
@@ -245,6 +249,77 @@ public abstract class GLBuffer extends GLObject.Normal {
             return callback.apply(target);
         } finally {
             this.gl.glBindBuffer(target.id(), old);
+        }
+    }
+
+    /**
+     * Immediately binds this buffer to the given {@link BufferTarget buffer binding target} in the OpenGL context.
+     * <p>
+     * This method is unsafe in that it does not provide a mechanism to restore the previously bound buffer when the operation completes. The user is responsible for ensuring
+     * that OpenGL state is preserved, or that leaving this buffer bound will not cause future issues.
+     *
+     * @param target the {@link BufferTarget buffer binding target} to bind the buffer to
+     */
+    public final void bindUnsafe(BufferTarget target) {
+        this.checkOpen();
+        this.gl.glBindBuffer(target.id(), this.id);
+    }
+
+    /**
+     * Executes the given action with this buffer bound to the given {@link BufferTarget buffer binding target}.
+     * <p>
+     * This method is unsafe in that it does not provide a mechanism to restore the previously bound buffer when the operation completes. The user is responsible for ensuring
+     * that OpenGL state is preserved, or that leaving this buffer bound will not cause future issues.
+     *
+     * @param target   the {@link BufferTarget buffer binding target} to bind the buffer to
+     * @param callback the action to run
+     */
+    public final void bindUnsafe(BufferTarget target, Consumer<BufferTarget> callback) {
+        this.checkOpen();
+        this.gl.glBindBuffer(target.id(), this.id);
+        callback.accept(target);
+    }
+
+    /**
+     * Executes the given action with this buffer bound to the given {@link BufferTarget buffer binding target}.
+     * <p>
+     * This method is unsafe in that it does not provide a mechanism to restore the previously bound buffer when the operation completes. The user is responsible for ensuring
+     * that OpenGL state is preserved, or that leaving this buffer bound will not cause future issues.
+     *
+     * @param target   the {@link BufferTarget buffer binding target} to bind the buffer to
+     * @param callback the action to run
+     */
+    public final <T> T bindUnsafe(BufferTarget target, Function<BufferTarget, T> callback) {
+        this.checkOpen();
+        this.gl.glBindBuffer(target.id(), this.id);
+        return callback.apply(target);
+    }
+
+    /**
+     * Executes the given action with this buffer bound to the given {@link BufferTarget buffer binding target}.
+     *
+     * @param target   the {@link BufferTarget buffer binding target} to bind the buffer to
+     * @param callback the action to run
+     */
+    public final void bind(BufferTarget target, Consumer<BufferTarget> callback) {
+        if (OpenGL.PRESERVE_REGULAR_BUFFER_BINDINGS_IN_METHODS) {
+            this.bindPreserving(target, callback);
+        } else {
+            this.bindUnsafe(target, callback);
+        }
+    }
+
+    /**
+     * Executes the given action with this buffer bound to the given {@link BufferTarget buffer binding target}.
+     *
+     * @param target   the {@link BufferTarget buffer binding target} to bind the buffer to
+     * @param callback the action to run
+     */
+    public final <T> T bind(BufferTarget target, Function<BufferTarget, T> callback) {
+        if (OpenGL.PRESERVE_REGULAR_BUFFER_BINDINGS_IN_METHODS) {
+            return this.bindPreserving(target, callback);
+        } else {
+            return this.bindUnsafe(target, callback);
         }
     }
 

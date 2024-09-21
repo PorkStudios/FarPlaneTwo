@@ -99,7 +99,7 @@ public abstract class ShaderProgram extends GLObject.Normal {
      *
      * @param action the action to run while the shader is bound
      */
-    public final void bind(@NonNull Runnable action) {
+    public final void bind(Runnable action) {
         this.checkOpen();
         int old = this.gl.glGetInteger(GL_CURRENT_PROGRAM);
         try {
@@ -112,10 +112,12 @@ public abstract class ShaderProgram extends GLObject.Normal {
 
     /**
      * Executes the given action with this program bound as the active program.
+     * <p>
+     * This will restore the previously bound program when the operation completes.
      *
      * @param action the action to run while the shader is bound, will be called with a {@link UniformSetter} which may be used to set shader uniforms
      */
-    public final void bind(@NonNull Consumer<UniformSetter> action) {
+    public final void bindPreserving(Consumer<UniformSetter> action) {
         this.checkOpen();
         int old = this.gl.glGetInteger(GL_CURRENT_PROGRAM);
         try {
@@ -138,6 +140,33 @@ public abstract class ShaderProgram extends GLObject.Normal {
         this.checkOpen();
         this.gl.glUseProgram(this.id);
         return new BoundUniformSetter(this.gl);
+    }
+
+    /**
+     * Executes the given action with this program bound as the active program.
+     * <p>
+     * This method is unsafe in that it does not provide a mechanism to restore the previously bound program when the operation completes. The user is responsible for ensuring
+     * that OpenGL state is preserved, or that leaving this shader bound will not cause future issues.
+     *
+     * @param action the action to run while the shader is bound, will be called with a {@link UniformSetter} which may be used to set shader uniforms
+     */
+    public final void bindUnsafe(Consumer<UniformSetter> action) {
+        this.checkOpen();
+        this.gl.glUseProgram(this.id);
+        action.accept(new BoundUniformSetter(this.gl));
+    }
+
+    /**
+     * Executes the given action with this program bound as the active program.
+     *
+     * @param action the action to run while the shader is bound, will be called with a {@link UniformSetter} which may be used to set shader uniforms
+     */
+    public final void bind(Consumer<UniformSetter> action) {
+        if (OpenGL.PRESERVE_PROGRAM_BINDINGS_IN_METHODS) {
+            this.bindPreserving(action);
+        } else {
+            this.bindUnsafe(action);
+        }
     }
 
     /**

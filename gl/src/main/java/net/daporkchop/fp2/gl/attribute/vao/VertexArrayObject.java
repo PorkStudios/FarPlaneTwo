@@ -75,10 +75,12 @@ public abstract class VertexArrayObject extends GLObject.Normal {
 
     /**
      * Executes the given action with this vertex array bound.
+     * <p>
+     * This will restore the previously bound vertex array when the operation completes.
      *
      * @param action the action to run
      */
-    public final void bind(Runnable action) {
+    public final void bindPreserving(Runnable action) {
         this.checkOpen();
         int old = this.gl.glGetInteger(GL_VERTEX_ARRAY_BINDING);
         try {
@@ -86,6 +88,44 @@ public abstract class VertexArrayObject extends GLObject.Normal {
             action.run();
         } finally {
             this.gl.glBindVertexArray(old);
+        }
+    }
+
+    /**
+     * Immediately binds this vertex array to the OpenGL context.
+     * <p>
+     * This method is unsafe in that it does not provide a mechanism to restore the previously bound vertex array when the operation completes. The user is responsible for ensuring
+     * that OpenGL state is preserved, or that leaving this vertex array bound will not cause future issues.
+     */
+    public final void bindUnsafe() {
+        this.checkOpen();
+        this.gl.glBindVertexArray(this.id);
+    }
+
+    /**
+     * Executes the given action with this vertex array bound.
+     * <p>
+     * This method is unsafe in that it does not provide a mechanism to restore the previously bound vertex array when the operation completes. The user is responsible for ensuring
+     * that OpenGL state is preserved, or that leaving this vertex array bound will not cause future issues.
+     *
+     * @param action the action to run
+     */
+    public final void bindUnsafe(Runnable action) {
+        this.checkOpen();
+        this.gl.glBindVertexArray(this.id);
+        action.run();
+    }
+
+    /**
+     * Executes the given action with this vertex array bound.
+     *
+     * @param action the action to run
+     */
+    public final void bind(Runnable action) {
+        if (OpenGL.PRESERVE_VAO_BINDINGS_IN_METHODS) {
+            this.bindPreserving(action);
+        } else {
+            this.bindUnsafe(action);
         }
     }
 
