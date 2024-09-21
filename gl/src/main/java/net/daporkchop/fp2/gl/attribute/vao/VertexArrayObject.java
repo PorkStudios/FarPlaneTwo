@@ -226,13 +226,13 @@ public abstract class VertexArrayObject extends GLObject.Normal {
             super(gl, gl.glCreateVertexArray());
         }
 
-        /*private void configureDivisor(int index, int divisor) {
+        private void configureDivisor(int index, int divisor) {
             if (this.gl.supports(GLExtension.GL_ARB_instanced_arrays)) {
                 this.gl.glVertexArrayBindingDivisor(this.id, index, divisor);
             } else if (divisor != 0) {
                 throw new UnsupportedOperationException(this.gl.unsupportedMsg(GLExtension.GL_ARB_instanced_arrays));
             }
-        }*/
+        }
 
         @Override
         public void setFAttrib(GLBuffer buffer, int index, int size, int type, boolean normalized, int stride, long pointer, int divisor) {
@@ -241,7 +241,7 @@ public abstract class VertexArrayObject extends GLObject.Normal {
             this.gl.glVertexArrayAttribFormat(this.id, index, size, type, normalized, 0);
             this.gl.glVertexArrayAttribBinding(this.id, index, index);
             this.gl.glVertexArrayVertexBuffer(this.id, index, buffer.id(), pointer, stride);
-            this.gl.glVertexArrayBindingDivisor(this.id, index, divisor);
+            this.configureDivisor(index, divisor);
         }
 
         @Override
@@ -251,7 +251,7 @@ public abstract class VertexArrayObject extends GLObject.Normal {
             this.gl.glVertexArrayAttribIFormat(this.id, index, size, type, 0);
             this.gl.glVertexArrayAttribBinding(this.id, index, index);
             this.gl.glVertexArrayVertexBuffer(this.id, index, buffer.id(), pointer, stride);
-            this.gl.glVertexArrayBindingDivisor(this.id, index, divisor);
+            this.configureDivisor(index, divisor);
         }
 
         private static void configureFormat(OpenGL gl, int vaobj, int attribIndex, VertexAttributeFormat attrib) {
@@ -277,7 +277,7 @@ public abstract class VertexArrayObject extends GLObject.Normal {
 
                     bindingIndex++;
                     this.gl.glVertexArrayVertexBuffer(this.id, bindingIndex, buffer.buffer(), buffer.offset(), buffer.stride());
-                    this.gl.glVertexArrayBindingDivisor(this.id, bindingIndex, buffer.divisor());
+                    this.configureDivisor(bindingIndex, buffer.divisor());
                 }
 
                 VertexAttributeFormat attrib = attributes[attribIndex];
