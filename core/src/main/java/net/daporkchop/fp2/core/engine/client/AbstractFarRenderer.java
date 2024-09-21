@@ -38,6 +38,9 @@ import net.daporkchop.fp2.core.client.render.state.CameraStateUniforms;
 import net.daporkchop.fp2.core.client.render.state.DrawState;
 import net.daporkchop.fp2.core.client.render.state.DrawStateUniforms;
 import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;
+import net.daporkchop.fp2.core.client.shader.ReloadableShaderRegistry;
+import net.daporkchop.fp2.core.client.shader.ShaderMacros;
+import net.daporkchop.fp2.core.client.shader.ShaderRegistration;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.EngineConstants;
 import net.daporkchop.fp2.core.engine.api.ctx.IFarClientContext;
@@ -49,6 +52,7 @@ import net.daporkchop.fp2.core.engine.client.bake.storage.SimpleBakeStorage;
 import net.daporkchop.fp2.core.engine.client.index.RenderIndex;
 import net.daporkchop.fp2.core.engine.client.index.RenderIndexType;
 import net.daporkchop.fp2.core.engine.client.struct.VoxelLocalAttributes;
+import net.daporkchop.fp2.gl.GLExtensionSet;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
@@ -116,25 +120,35 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
         }
     }
 
-    public static void registerShaders(GlobalRenderer globalRenderer, FP2Core fp2) {
-        ReloadableShaderProgram.SetupFunction<DrawShaderProgram.Builder> shaderSetup = builder -> builder
-                .addUBO(RenderConstants.CAMERA_STATE_UNIFORMS_UBO_BINDING, RenderConstants.CAMERA_STATE_UNIFORMS_UBO_NAME)
-                .addUBO(RenderConstants.DRAW_STATE_UNIFORMS_UBO_BINDING, RenderConstants.DRAW_STATE_UNIFORMS_UBO_NAME)
-                .addUBO(RenderConstants.TILE_POS_ARRAY_UBO_BINDING, RenderConstants.TILE_POS_ARRAY_UBO_NAME)
-                .addSSBO(RenderConstants.TEXTURE_UVS_LISTS_SSBO_BINDING, RenderConstants.TEXTURE_UVS_LISTS_SSBO_NAME)
-                .addSSBO(RenderConstants.TEXTURE_UVS_QUADS_SSBO_BINDING, RenderConstants.TEXTURE_UVS_QUADS_SSBO_NAME)
-                .addSampler(fp2.client().terrainTextureUnit(), RenderConstants.TEXTURE_ATLAS_SAMPLER_NAME)
-                .addSampler(fp2.client().lightmapTextureUnit(), RenderConstants.LIGHTMAP_SAMPLER_NAME)
-                .vertexAttributesWithPrefix("a_", globalRenderer.voxelVertexAttributesFormat)
-                .vertexAttributesWithPrefix("a_", globalRenderer.voxelInstancedAttributesFormat);
+    /**
+     * @author DaPorkchop_
+     */
+    public static final class RegisterShaders extends ShaderRegistration {
+        public RegisterShaders() {
+            super(GLExtensionSet.empty());
+        }
 
-        for (DrawShaderVariant variant : DrawShaderVariant.allVariants(fp2.client().gl())) {
-            val builder = globalRenderer.shaderRegistry.createDraw(variant, globalRenderer.shaderMacros.toBuilder().defineAll(variant.defines()).build(), shaderSetup);
-            builder.addShader(ShaderType.VERTEX, Identifier.from(MODID, "shaders/vert/voxel/voxel.vert"));
-            if (!variant.stencil) {
-                builder.addShader(ShaderType.FRAGMENT, Identifier.from(MODID, "shaders/frag/block.frag"));
+        @Override
+        public void registerShaders(@NonNull GlobalRenderer globalRenderer, @NonNull ReloadableShaderRegistry shaderRegistry, @NonNull ShaderMacros shaderMacros, @NonNull FP2Client client, @NonNull OpenGL gl) {
+            ReloadableShaderProgram.SetupFunction<DrawShaderProgram.Builder> shaderSetup = builder -> builder
+                    .addUBO(RenderConstants.CAMERA_STATE_UNIFORMS_UBO_BINDING, RenderConstants.CAMERA_STATE_UNIFORMS_UBO_NAME)
+                    .addUBO(RenderConstants.DRAW_STATE_UNIFORMS_UBO_BINDING, RenderConstants.DRAW_STATE_UNIFORMS_UBO_NAME)
+                    .addUBO(RenderConstants.TILE_POS_ARRAY_UBO_BINDING, RenderConstants.TILE_POS_ARRAY_UBO_NAME)
+                    .addSSBO(RenderConstants.TEXTURE_UVS_LISTS_SSBO_BINDING, RenderConstants.TEXTURE_UVS_LISTS_SSBO_NAME)
+                    .addSSBO(RenderConstants.TEXTURE_UVS_QUADS_SSBO_BINDING, RenderConstants.TEXTURE_UVS_QUADS_SSBO_NAME)
+                    .addSampler(client.terrainTextureUnit(), RenderConstants.TEXTURE_ATLAS_SAMPLER_NAME)
+                    .addSampler(client.lightmapTextureUnit(), RenderConstants.LIGHTMAP_SAMPLER_NAME)
+                    .vertexAttributesWithPrefix("a_", globalRenderer.voxelVertexAttributesFormat)
+                    .vertexAttributesWithPrefix("a_", globalRenderer.voxelInstancedAttributesFormat);
+
+            for (DrawShaderVariant variant : DrawShaderVariant.allVariants(gl)) {
+                val builder = shaderRegistry.createDraw(variant, shaderMacros.withDefined(variant.defines()), shaderSetup);
+                builder.addShader(ShaderType.VERTEX, Identifier.from(MODID, "shaders/vert/voxel/voxel.vert"));
+                if (!variant.stencil) {
+                    builder.addShader(ShaderType.FRAGMENT, Identifier.from(MODID, "shaders/frag/block.frag"));
+                }
+                builder.build();
             }
-            builder.build();
         }
     }
 

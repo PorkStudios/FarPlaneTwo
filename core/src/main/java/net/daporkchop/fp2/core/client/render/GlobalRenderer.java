@@ -20,6 +20,8 @@
 package net.daporkchop.fp2.core.client.render;
 
 import lombok.Getter;
+import lombok.NonNull;
+import lombok.val;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.IFrustum;
@@ -27,18 +29,17 @@ import net.daporkchop.fp2.core.client.render.state.CameraStateUniforms;
 import net.daporkchop.fp2.core.client.render.state.DrawStateUniforms;
 import net.daporkchop.fp2.core.client.shader.ReloadableShaderRegistry;
 import net.daporkchop.fp2.core.client.shader.ShaderMacros;
+import net.daporkchop.fp2.core.client.shader.ShaderRegistration;
 import net.daporkchop.fp2.core.engine.EngineConstants;
-import net.daporkchop.fp2.core.engine.client.AbstractFarRenderer;
 import net.daporkchop.fp2.core.engine.client.RenderConstants;
-import net.daporkchop.fp2.core.engine.client.index.attribdivisor.GPUCulledBaseInstanceRenderIndex;
 import net.daporkchop.fp2.core.engine.client.struct.VoxelGlobalAttributes;
 import net.daporkchop.fp2.core.engine.client.struct.VoxelLocalAttributes;
+import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeTarget;
 import net.daporkchop.fp2.gl.draw.index.IndexFormat;
 import net.daporkchop.fp2.gl.draw.index.IndexType;
-import net.daporkchop.fp2.gl.shader.ShaderProgram;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
 
 import java.util.EnumSet;
@@ -75,7 +76,7 @@ public final class GlobalRenderer {
 
     public final ShaderMacros shaderMacros;
 
-    public GlobalRenderer(FP2Core fp2, OpenGL gl) {
+    public GlobalRenderer(@NonNull FP2Core fp2, @NonNull OpenGL gl) {
         try {
             this.fp2 = fp2;
             this.client = fp2.client();
@@ -88,11 +89,10 @@ public final class GlobalRenderer {
             this.frustumClippingPlanesUBOFormat = AttributeFormat.get(gl, IFrustum.ClippingPlanes.class, AttributeTarget.UBO);
 
             //determine whether we want the tile position attribute format to support the SSBO target
-            boolean tilePositionArrayAsSsbo = false;
-            tilePositionArrayAsSsbo |= gl.supports(GPUCulledBaseInstanceRenderIndex.REQUIRED_EXTENSIONS);
-            this.voxelInstancedAttributesFormat = AttributeFormat.get(gl, VoxelGlobalAttributes.class, tilePositionArrayAsSsbo
+            val tilePositionsArrayTargets = gl.supports(GLExtension.GL_ARB_shader_storage_buffer_object)
                     ? EnumSet.of(AttributeTarget.VERTEX_ATTRIBUTE, AttributeTarget.SSBO)
-                    : EnumSet.of(AttributeTarget.VERTEX_ATTRIBUTE));
+                    : EnumSet.of(AttributeTarget.VERTEX_ATTRIBUTE);
+            this.voxelInstancedAttributesFormat = AttributeFormat.get(gl, VoxelGlobalAttributes.class, tilePositionsArrayTargets);
 
             this.voxelVertexAttributesFormat = AttributeFormat.get(gl, VoxelLocalAttributes.class, AttributeTarget.VERTEX_ATTRIBUTE);
 
@@ -123,24 +123,19 @@ public final class GlobalRenderer {
                     .define("TILE_POS_ARRAY_UBO_ELEMENTS", RenderConstants.tilePosArrayUBOElements(gl))
                     .build();
 
-            AbstractFarRenderer.registerShaders(this, fp2);
-
-            if (gl.supports(GPUCulledBaseInstanceRenderIndex.REQUIRED_EXTENSIONS)) {
-                GPUCulledBaseInstanceRenderIndex.registerShaders(this);
+            val log = fp2.log();
+            for (val shaderRegistration : ShaderRegistration.getTypes(fp2)) {
+                val requiredExtensions = shaderRegistration.requiredExtensions();
+                if (gl.supports(requiredExtensions)) {
+                    log.debug("Registering shaders from %s", shaderRegistration);
+                    shaderRegistration.registerShaders(this, this.shaderRegistry, this.shaderMacros, this.client, gl);
+                } else {
+                    log.debug("Not registering shaders from %s: %s", shaderRegistration, gl.unsupportedMsg(requiredExtensions));
+                }
             }
         } catch (Throwable t) {
             throw PResourceUtil.closeSuppressed(t, this::close);
         }
-    }
-
-    private static <B extends ShaderProgram.Builder<?, B>> B commonShaderSetup(FP2Core fp2, B builder) {
-        return builder
-                .addUBO(RenderConstants.CAMERA_STATE_UNIFORMS_UBO_BINDING, RenderConstants.CAMERA_STATE_UNIFORMS_UBO_NAME)
-                .addUBO(RenderConstants.DRAW_STATE_UNIFORMS_UBO_BINDING, RenderConstants.DRAW_STATE_UNIFORMS_UBO_NAME)
-                .addSSBO(RenderConstants.TEXTURE_UVS_LISTS_SSBO_BINDING, RenderConstants.TEXTURE_UVS_LISTS_SSBO_NAME)
-                .addSSBO(RenderConstants.TEXTURE_UVS_QUADS_SSBO_BINDING, RenderConstants.TEXTURE_UVS_QUADS_SSBO_NAME)
-                .addSampler(fp2.client().terrainTextureUnit(), RenderConstants.TEXTURE_ATLAS_SAMPLER_NAME)
-                .addSampler(fp2.client().lightmapTextureUnit(), RenderConstants.LIGHTMAP_SAMPLER_NAME);
     }
 
     public void close() {

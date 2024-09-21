@@ -25,11 +25,15 @@ import net.daporkchop.fp2.api.FP2;
 import net.daporkchop.fp2.api.util.Identifier;
 import net.daporkchop.fp2.common.util.alloc.Allocator;
 import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
+import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.client.render.GlobalRenderer;
 import net.daporkchop.fp2.core.client.render.TerrainRenderingBlockedTracker;
 import net.daporkchop.fp2.core.client.render.state.CameraStateUniforms;
 import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;
+import net.daporkchop.fp2.core.client.shader.ReloadableShaderRegistry;
+import net.daporkchop.fp2.core.client.shader.ShaderMacros;
+import net.daporkchop.fp2.core.client.shader.ShaderRegistration;
 import net.daporkchop.fp2.core.config.FP2Config;
 import net.daporkchop.fp2.core.debug.util.DebugStats;
 import net.daporkchop.fp2.core.engine.EngineConstants;
@@ -109,16 +113,26 @@ public class GPUCulledBaseInstanceRenderIndex<VertexType extends AttributeStruct
     private static final String CULLING_SHADER_KEY = "indirect_tile_frustum_culling";
     private static final int CULLING_SHADER_WORK_GROUP_SIZE = 256; //synced with resources/assets/fp2/shaders/comp/indirect_tile_frustum_culling.glsl
 
-    public static void registerShaders(GlobalRenderer globalRenderer) {
-        globalRenderer.shaderRegistry.createCompute(CULLING_SHADER_KEY, globalRenderer.shaderMacros, null)
-                .addShader(ShaderType.COMPUTE, Identifier.from(FP2.MODID, "shaders/comp/indirect_tile_frustum_culling.comp"))
-                .addUBO(CAMERA_STATE_UNIFORMS_UBO_BINDING, CAMERA_STATE_UNIFORMS_UBO_NAME)
-                .addSSBO(TILE_POSITIONS_SSBO_BINDING, TILE_POSITIONS_SSBO_NAME)
-                .addSSBO(RAW_DRAW_LISTS_SSBO_BINDING, RAW_DRAW_LISTS_SSBO_NAME)
-                .addSSBO(CULLED_DRAW_LISTS_SSBO_BINDING, CULLED_DRAW_LISTS_SSBO_NAME)
-                .addUBO(VANILLA_RENDERABILITY_UBO_BINDING, VANILLA_RENDERABILITY_UBO_NAME)
-                .addSSBO(VANILLA_RENDERABILITY_SSBO_BINDING, VANILLA_RENDERABILITY_SSBO_NAME)
-                .build();
+    /**
+     * @author DaPorkchop_
+     */
+    public static final class RegisterShaders extends ShaderRegistration {
+        public RegisterShaders() {
+            super(REQUIRED_EXTENSIONS);
+        }
+
+        @Override
+        public void registerShaders(@NonNull GlobalRenderer globalRenderer, @NonNull ReloadableShaderRegistry shaderRegistry, @NonNull ShaderMacros shaderMacros, @NonNull FP2Client client, @NonNull OpenGL gl) {
+            shaderRegistry.createCompute(CULLING_SHADER_KEY, shaderMacros, null)
+                    .addShader(ShaderType.COMPUTE, Identifier.from(FP2.MODID, "shaders/comp/indirect_tile_frustum_culling.comp"))
+                    .addUBO(CAMERA_STATE_UNIFORMS_UBO_BINDING, CAMERA_STATE_UNIFORMS_UBO_NAME)
+                    .addSSBO(TILE_POSITIONS_SSBO_BINDING, TILE_POSITIONS_SSBO_NAME)
+                    .addSSBO(RAW_DRAW_LISTS_SSBO_BINDING, RAW_DRAW_LISTS_SSBO_NAME)
+                    .addSSBO(CULLED_DRAW_LISTS_SSBO_BINDING, CULLED_DRAW_LISTS_SSBO_NAME)
+                    .addUBO(VANILLA_RENDERABILITY_UBO_BINDING, VANILLA_RENDERABILITY_UBO_NAME)
+                    .addSSBO(VANILLA_RENDERABILITY_SSBO_BINDING, VANILLA_RENDERABILITY_SSBO_NAME)
+                    .build();
+        }
     }
 
     /**
