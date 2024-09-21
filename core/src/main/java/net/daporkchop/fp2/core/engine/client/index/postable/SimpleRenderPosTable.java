@@ -75,16 +75,15 @@ public final class SimpleRenderPosTable extends RenderPosTable {
     private void grow(int increment) {
         int oldCapacity = this.writer.size();
         int newCapacity = Math.toIntExact(this.growFunction.grow(oldCapacity, increment));
-        assert oldCapacity < newCapacity : oldCapacity + " -> " + newCapacity;
+        assert oldCapacity + increment <= newCapacity : oldCapacity + " -> " + newCapacity;
 
         this.writer.appendUninitialized(newCapacity - oldCapacity);
         assert this.writer.size() == newCapacity : this.writer.size() + " != " + newCapacity;
 
         //initialize the memory
-        //TODO: this isn't necessary yet, but if we do decide to do this we'll need to reset to -1 in remove() as well
-        /*for (int i = oldCapacity; i < newCapacity; i++) {
+        for (int i = oldCapacity; i < newCapacity; i++) {
             this.writer.at(i).tilePos(-1, -1, -1, -1).close();
-        }*/
+        }
     }
 
     @Override
@@ -110,7 +109,10 @@ public final class SimpleRenderPosTable extends RenderPosTable {
         int index = this.positionToIndex.removeInt(pos);
         if (index >= 0) { //the position was in the table before, clear the corresponding bit to free up the slot for use by another position
             this.indexAlloc.clear(index);
-            //don't need to mark dirty, as we didn't actually modify any data
+
+            //reset slot to -1
+            this.writer.at(index).tilePos(-1, -1, -1, -1).close();
+            this.dirty = true;
         }
         return index;
     }
