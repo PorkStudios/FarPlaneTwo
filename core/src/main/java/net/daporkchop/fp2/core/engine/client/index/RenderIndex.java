@@ -39,6 +39,7 @@ import net.daporkchop.fp2.gl.shader.DrawShaderProgram;
 import net.daporkchop.fp2.gl.shader.ShaderProgram;
 import net.daporkchop.fp2.gl.state.StatePreserver;
 import net.daporkchop.lib.common.annotation.TransferOwnership;
+import net.daporkchop.lib.common.annotation.param.NotNegative;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
 import net.daporkchop.lib.primitive.lambda.IntIntObjFunction;
 
@@ -256,7 +257,7 @@ public abstract class RenderIndex<VertexType extends AttributeStruct> implements
          * @param level the detail level
          * @return the element at the given detail level
          */
-        public E get(int level) {
+        public E get(@NotNegative int level) {
             return this.delegate[level];
         }
 
@@ -268,7 +269,7 @@ public abstract class RenderIndex<VertexType extends AttributeStruct> implements
          * @param level the detail level
          * @param value the new value
          */
-        public void set(int level, @TransferOwnership E value) {
+        public void set(@NotNegative int level, @TransferOwnership E value) {
             super.set(level, value);
         }
     }
@@ -296,7 +297,7 @@ public abstract class RenderIndex<VertexType extends AttributeStruct> implements
          * @param pass the render pass index
          * @return the element at the given render pass index
          */
-        public E get(int pass) {
+        public E get(@NotNegative int pass) {
             return this.delegate[pass];
         }
 
@@ -308,7 +309,7 @@ public abstract class RenderIndex<VertexType extends AttributeStruct> implements
          * @param pass  the render pass index
          * @param value the new value
          */
-        public void set(int pass, @TransferOwnership E value) {
+        public void set(@NotNegative int pass, @TransferOwnership E value) {
             super.set(pass, value);
         }
     }
@@ -339,7 +340,7 @@ public abstract class RenderIndex<VertexType extends AttributeStruct> implements
          * @param pass  the render pass index
          * @return the element at the given detail level and render pass index
          */
-        public E get(int level, int pass) {
+        public E get(@NotNegative int level, @NotNegative int pass) {
             checkIndex(EngineConstants.MAX_LODS, level);
             checkIndex(RenderConstants.RENDER_PASS_COUNT, pass);
             return this.delegate[level * RenderConstants.RENDER_PASS_COUNT + pass];
@@ -354,9 +355,15 @@ public abstract class RenderIndex<VertexType extends AttributeStruct> implements
          * @param pass  the render pass index
          * @param value the new value
          */
-        public void set(int level, int pass, @TransferOwnership E value) {
-            checkIndex(EngineConstants.MAX_LODS, level);
-            checkIndex(RenderConstants.RENDER_PASS_COUNT, pass);
+        public void set(@NotNegative int level, @NotNegative int pass, @TransferOwnership E value) {
+            try {
+                checkIndex(EngineConstants.MAX_LODS, level);
+                checkIndex(RenderConstants.RENDER_PASS_COUNT, pass);
+            } catch (Throwable t) {
+                //If the index is out-of-bounds, we should try to close the value again since we currently own it.
+                //If only there were a language which could automatically destroy owned resources when they go out of scope! Just imagine that.
+                throw PResourceUtil.closeSuppressed(t, value);
+            }
             super.set(level * RenderConstants.RENDER_PASS_COUNT + pass, value);
         }
     }
