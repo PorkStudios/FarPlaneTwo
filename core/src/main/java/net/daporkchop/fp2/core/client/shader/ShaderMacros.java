@@ -46,6 +46,10 @@ public final class ShaderMacros {
     @NonNull
     private final ImmutableMap<String, Object> defines;
 
+    private boolean isEmpty() {
+        return this.defines.isEmpty();
+    }
+
     /**
      * @return an {@link ImmutableMap} containing the actual macro values
      */
@@ -58,6 +62,34 @@ public final class ShaderMacros {
      */
     public Builder toBuilder() {
         return builder().defineAll(this.defines);
+    }
+
+    /**
+     * Equivalent to {@code this.toBuilder().defineAll(defines).build()}.
+     *
+     * @param defines the macro values to define
+     * @return an instance of {@link ShaderMacros} containing all macro values defined by this instance merged with the given macro values
+     */
+    public ShaderMacros withDefined(@NonNull Map<String, Object> defines) {
+        if (defines.isEmpty()) {
+            return this;
+        }
+
+        return this.toBuilder().defineAll(defines).build();
+    }
+
+    /**
+     * Equivalent to {@code this.toBuilder().defineAll(defines).build()}.
+     *
+     * @param macros the macro values to define
+     * @return an instance of {@link ShaderMacros} containing all macro values defined by this instance merged with the given macro values
+     */
+    public ShaderMacros withDefined(@NonNull ShaderMacros macros) {
+        if (macros.isEmpty()) {
+            return this;
+        }
+
+        return this.toBuilder().defineAll(macros).build();
     }
 
     /**
