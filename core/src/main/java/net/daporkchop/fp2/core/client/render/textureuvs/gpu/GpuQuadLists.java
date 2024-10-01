@@ -49,10 +49,16 @@ public abstract class GpuQuadLists implements AutoCloseable {
         val gl = fp2.client().gl();
         val globalRenderer = fp2.client().globalRenderer();
 
-        if (gl.supports(SSBOQuadLists.REQUIRED_EXTENSIONS)) {
-            return new SSBOQuadLists(gl, globalRenderer);
+        if (gl.supports(SSBOGpuQuadLists.REQUIRED_EXTENSIONS)) {
+            return new SSBOGpuQuadLists(gl, globalRenderer);
         } else {
-            logUnsupported(fp2, SSBOQuadLists.class, SSBOQuadLists.REQUIRED_EXTENSIONS);
+            logUnsupported(fp2, SSBOGpuQuadLists.class, SSBOGpuQuadLists.REQUIRED_EXTENSIONS);
+        }
+
+        if (gl.supports(BufferTextureGpuQuadLists.REQUIRED_EXTENSIONS)) {
+            return new BufferTextureGpuQuadLists(gl);
+        } else {
+            logUnsupported(fp2, BufferTextureGpuQuadLists.class, BufferTextureGpuQuadLists.REQUIRED_EXTENSIONS);
         }
 
         throw new UnsupportedOperationException("No texture UV implementations are supported! (see log)");
@@ -115,7 +121,16 @@ public abstract class GpuQuadLists implements AutoCloseable {
          *     <li>An SSBO at {@link RenderConstants#TEXTURE_UVS_QUADS_SSBO_BINDING}, containing an array of {@link TextureUVs.PackedBakedQuad}s</li>
          * </ul>
          */
-        SSBO(SSBOQuadLists.REQUIRED_EXTENSIONS),
+        SSBO(SSBOGpuQuadLists.REQUIRED_EXTENSIONS),
+        /**
+         * The shader declares the following:
+         * <br>
+         * <ul>
+         *     <li>A  at {@link RenderConstants#TEXTURE_UVS_LISTS_SSBO_BINDING}, containing an array of {@link TextureUVs.QuadList}s</li>
+         *     <li>An SSBO at {@link RenderConstants#TEXTURE_UVS_QUADS_SSBO_BINDING}, containing an array of {@link TextureUVs.PackedBakedQuad}s</li>
+         * </ul>
+         */
+        BUFFER_TEXTURE(BufferTextureGpuQuadLists.REQUIRED_EXTENSIONS),
         ;
 
         private final @NonNull GLExtensionSet requiredExtensions;

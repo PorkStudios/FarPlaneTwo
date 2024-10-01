@@ -43,14 +43,14 @@ import static net.daporkchop.fp2.gl.OpenGLConstants.*;
  *
  * @author DaPorkchop_
  */
-public final class SSBOQuadLists extends GpuQuadLists {
+public final class SSBOGpuQuadLists extends GpuQuadLists {
     public static final GLExtensionSet REQUIRED_EXTENSIONS = GpuQuadLists.REQUIRED_EXTENSIONS
             .add(GLExtension.GL_ARB_shader_storage_buffer_object);
 
     private final AttributeBuffer<TextureUVs.QuadListAttribute> listsBuffer;
     private final AttributeBuffer<TextureUVs.PackedBakedQuadAttribute> quadsBuffer;
 
-    public SSBOQuadLists(@NonNull OpenGL gl, @NonNull GlobalRenderer globalRenderer) {
+    public SSBOGpuQuadLists(@NonNull OpenGL gl, @NonNull GlobalRenderer globalRenderer) {
         super(gl, QuadsTechnique.SSBO);
 
         try {

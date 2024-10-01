@@ -131,6 +131,12 @@ public final class GlobalRenderer {
                         .define("TEXTURE_UVS_QUADS_SSBO_NAME", RenderConstants.TEXTURE_UVS_QUADS_SSBO_NAME)
                         .define("TEXTURE_UVS_QUADS_SSBO_LAYOUT", this.uvPackedQuadSSBOFormat.interfaceBlockLayoutName());
             }
+            if (gl.supports(GpuQuadLists.QuadsTechnique.BUFFER_TEXTURE.requiredExtensions())) {
+                shaderMacrosBuilder
+                        .define("TEXTURE_UVS_LISTS_SAMPLERBUFFER_NAME", RenderConstants.TEXTURE_UVS_LISTS_SAMPLERBUFFER_NAME)
+                        .define("TEXTURE_UVS_QUADS_COORD_SAMPLERBUFFER_NAME", RenderConstants.TEXTURE_UVS_QUADS_COORD_SAMPLERBUFFER_NAME)
+                        .define("TEXTURE_UVS_QUADS_TINT_SAMPLERBUFFER_NAME", RenderConstants.TEXTURE_UVS_QUADS_TINT_SAMPLERBUFFER_NAME);
+            }
 
             this.shaderMacros = shaderMacrosBuilder.build();
 

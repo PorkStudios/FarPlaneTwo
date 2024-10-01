@@ -107,6 +107,32 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
             return builder.build();
         }
 
+        public ReloadableShaderProgram.SetupFunction<DrawShaderProgram.Builder> setupFunction(FP2Client client, GlobalRenderer globalRenderer) {
+            return builder -> {
+                builder.addUBO(RenderConstants.CAMERA_STATE_UNIFORMS_UBO_BINDING, RenderConstants.CAMERA_STATE_UNIFORMS_UBO_NAME);
+                builder.addUBO(RenderConstants.DRAW_STATE_UNIFORMS_UBO_BINDING, RenderConstants.DRAW_STATE_UNIFORMS_UBO_NAME);
+                builder.addUBO(RenderConstants.TILE_POS_ARRAY_UBO_BINDING, RenderConstants.TILE_POS_ARRAY_UBO_NAME);
+                builder.addSampler(client.terrainTextureUnit(), RenderConstants.TEXTURE_ATLAS_SAMPLER_NAME);
+                builder.addSampler(client.lightmapTextureUnit(), RenderConstants.LIGHTMAP_SAMPLER_NAME);
+                builder.vertexAttributesWithPrefix("a_", globalRenderer.voxelVertexAttributesFormat);
+                builder.vertexAttributesWithPrefix("a_", globalRenderer.voxelInstancedAttributesFormat);
+
+                switch (this.quadsTechnique) {
+                    case SSBO:
+                        builder.addSSBO(RenderConstants.TEXTURE_UVS_LISTS_SSBO_BINDING, RenderConstants.TEXTURE_UVS_LISTS_SSBO_NAME);
+                        builder.addSSBO(RenderConstants.TEXTURE_UVS_QUADS_SSBO_BINDING, RenderConstants.TEXTURE_UVS_QUADS_SSBO_NAME);
+                        break;
+                    case BUFFER_TEXTURE:
+                        builder.addSampler(RenderConstants.TEXTURE_UVS_LISTS_SAMPLERBUFFER_BINDING, RenderConstants.TEXTURE_UVS_LISTS_SAMPLERBUFFER_NAME);
+                        builder.addSampler(RenderConstants.TEXTURE_UVS_QUADS_COORD_SAMPLERBUFFER_BINDING, RenderConstants.TEXTURE_UVS_QUADS_COORD_SAMPLERBUFFER_NAME);
+                        builder.addSampler(RenderConstants.TEXTURE_UVS_QUADS_TINT_SAMPLERBUFFER_BINDING, RenderConstants.TEXTURE_UVS_QUADS_TINT_SAMPLERBUFFER_NAME);
+                        break;
+                    default:
+                        throw new IllegalArgumentException(this.quadsTechnique.name());
+                }
+            };
+        }
+
         public static List<DrawShaderVariant> allVariants(@NonNull OpenGL gl) {
             RenderIndex.PosTechnique[] posTechniques = RenderIndex.PosTechnique.values();
             GpuQuadLists.QuadsTechnique[] quadsTechniques = GpuQuadLists.QuadsTechnique.values();
@@ -144,19 +170,8 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
 
         @Override
         public void registerShaders(@NonNull GlobalRenderer globalRenderer, @NonNull ReloadableShaderRegistry shaderRegistry, @NonNull ShaderMacros shaderMacros, @NonNull FP2Client client, @NonNull OpenGL gl) {
-            ReloadableShaderProgram.SetupFunction<DrawShaderProgram.Builder> shaderSetup = builder -> builder
-                    .addUBO(RenderConstants.CAMERA_STATE_UNIFORMS_UBO_BINDING, RenderConstants.CAMERA_STATE_UNIFORMS_UBO_NAME)
-                    .addUBO(RenderConstants.DRAW_STATE_UNIFORMS_UBO_BINDING, RenderConstants.DRAW_STATE_UNIFORMS_UBO_NAME)
-                    .addUBO(RenderConstants.TILE_POS_ARRAY_UBO_BINDING, RenderConstants.TILE_POS_ARRAY_UBO_NAME)
-                    .addSSBO(RenderConstants.TEXTURE_UVS_LISTS_SSBO_BINDING, RenderConstants.TEXTURE_UVS_LISTS_SSBO_NAME)
-                    .addSSBO(RenderConstants.TEXTURE_UVS_QUADS_SSBO_BINDING, RenderConstants.TEXTURE_UVS_QUADS_SSBO_NAME)
-                    .addSampler(client.terrainTextureUnit(), RenderConstants.TEXTURE_ATLAS_SAMPLER_NAME)
-                    .addSampler(client.lightmapTextureUnit(), RenderConstants.LIGHTMAP_SAMPLER_NAME)
-                    .vertexAttributesWithPrefix("a_", globalRenderer.voxelVertexAttributesFormat)
-                    .vertexAttributesWithPrefix("a_", globalRenderer.voxelInstancedAttributesFormat);
-
             for (DrawShaderVariant variant : DrawShaderVariant.allVariants(gl)) {
-                val builder = shaderRegistry.createDraw(variant, shaderMacros.withDefined(variant.defines()), shaderSetup);
+                val builder = shaderRegistry.createDraw(variant, shaderMacros.withDefined(variant.defines()), variant.setupFunction(client, globalRenderer));
                 builder.addShader(ShaderType.VERTEX, Identifier.from(MODID, "shaders/vert/voxel/voxel.vert"));
                 if (!variant.stencil) {
                     builder.addShader(ShaderType.FRAGMENT, Identifier.from(MODID, "shaders/frag/block.frag"));

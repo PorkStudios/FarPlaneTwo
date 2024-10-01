@@ -30,7 +30,6 @@ import net.daporkchop.fp2.api.util.Direction;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.render.TextureUVs;
-import net.daporkchop.fp2.core.client.render.textureuvs.gpu.SSBOQuadLists;
 import net.daporkchop.fp2.core.client.render.textureuvs.gpu.GpuQuadLists;
 import net.daporkchop.fp2.core.util.listener.ListenerList;
 import net.daporkchop.lib.common.closeable.PResourceUtil;
@@ -63,8 +62,7 @@ public abstract class AbstractTextureUVs extends AbstractReleasable implements T
         this.registry = registry;
 
         try {
-            //TODO: autodetect
-            this.gpuQuadLists = new SSBOQuadLists(fp2.client().gl(), fp2.client().globalRenderer());
+            this.gpuQuadLists = GpuQuadLists.createQuadLists(fp2);
 
             this.reloadListenerHandle = fp2.client().textureUVsReloadListeners().add(this);
         } catch (Throwable t) {

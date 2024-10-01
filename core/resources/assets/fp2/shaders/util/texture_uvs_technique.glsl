@@ -32,6 +32,7 @@
 
 //synced with net.daporkchop.fp2.core.client.render.textureuvs.gpu.GpuQuadLists$QuadsTechnique
 #define FP2_TEXTURE_UVS_TECHNIQUE_SSBO (0)
+#define FP2_TEXTURE_UVS_TECHNIQUE_BUFFER_TEXTURE (1)
 
 #if FP2_TEXTURE_UVS_TECHNIQUE == FP2_TEXTURE_UVS_TECHNIQUE_SSBO
 #   ifndef TEXTURE_UVS_LISTS_SSBO_NAME
@@ -46,6 +47,16 @@
 #   ifndef TEXTURE_UVS_QUADS_SSBO_LAYOUT
 #       error "TEXTURE_UVS_QUADS_SSBO_LAYOUT must be defined!"
 #   endif //TEXTURE_UVS_QUADS_SSBO_LAYOUT
+#elif FP2_TEXTURE_UVS_TECHNIQUE == FP2_TEXTURE_UVS_TECHNIQUE_BUFFER_TEXTURE
+#   ifndef TEXTURE_UVS_LISTS_SAMPLERBUFFER_NAME
+#       error "TEXTURE_UVS_LISTS_SAMPLERBUFFER_NAME must be defined!"
+#   endif //TEXTURE_UVS_LISTS_SAMPLERBUFFER_NAME
+#   ifndef TEXTURE_UVS_QUADS_COORD_SAMPLERBUFFER_NAME
+#       error "TEXTURE_UVS_QUADS_COORD_SAMPLERBUFFER_NAME must be defined!"
+#   endif //TEXTURE_UVS_QUADS_COORD_SAMPLERBUFFER_NAME
+#   ifndef TEXTURE_UVS_QUADS_TINT_SAMPLERBUFFER_NAME
+#       error "TEXTURE_UVS_QUADS_TINT_SAMPLERBUFFER_NAME must be defined!"
+#   endif //TEXTURE_UVS_QUADS_TINT_SAMPLERBUFFER_NAME
 #else
 #   error "FP2_TEXTURE_UVS_TECHNIQUE is set to an unsupported value!"
 #endif
@@ -65,6 +76,18 @@ struct PackedBakedQuad {
     vec4 coords;
     float tint;
 };
+
+//
+//
+// TEXTURES
+//
+//
+
+#if FP2_TEXTURE_UVS_TECHNIQUE == FP2_TEXTURE_UVS_TECHNIQUE_BUFFER_TEXTURE
+    uniform usamplerBuffer TEXTURE_UVS_LISTS_SAMPLERBUFFER_NAME;
+    uniform samplerBuffer TEXTURE_UVS_QUADS_COORD_SAMPLERBUFFER_NAME;
+    uniform samplerBuffer TEXTURE_UVS_QUADS_TINT_SAMPLERBUFFER_NAME;
+#endif
 
 //
 //
@@ -99,6 +122,13 @@ TexQuadList stateAndFaceIndexToTexQuadList(uint state, uint faceIndex) {
 
 #if FP2_TEXTURE_UVS_TECHNIQUE == FP2_TEXTURE_UVS_TECHNIQUE_SSBO
     return b_texQuadList[listIndex];
+#elif FP2_TEXTURE_UVS_TECHNIQUE == FP2_TEXTURE_UVS_TECHNIQUE_BUFFER_TEXTURE
+    uvec2 list = texelFetch(TEXTURE_UVS_LISTS_SAMPLERBUFFER_NAME, int(listIndex)).xy;
+
+    TexQuadList result;
+    result.first = list.x;
+    result.last = list.y;
+    return result;
 #else
 #   error
 #endif
@@ -112,6 +142,14 @@ TexQuadList stateAndFaceIndexToTexQuadList(uint state, uint faceIndex) {
 PackedBakedQuad quadIndexToQuad(uint quadIndex) {
 #if FP2_TEXTURE_UVS_TECHNIQUE == FP2_TEXTURE_UVS_TECHNIQUE_SSBO
     return b_texQuad[quadIndex];
+#elif FP2_TEXTURE_UVS_TECHNIQUE == FP2_TEXTURE_UVS_TECHNIQUE_BUFFER_TEXTURE
+    vec4 coord = texelFetch(TEXTURE_UVS_QUADS_COORD_SAMPLERBUFFER_NAME, int(quadIndex));
+    float tint = texelFetch(TEXTURE_UVS_QUADS_TINT_SAMPLERBUFFER_NAME, int(quadIndex)).x;
+
+    PackedBakedQuad result;
+    result.coords = coord;
+    result.tint = tint;
+    return result;
 #else
 #   error
 #endif
