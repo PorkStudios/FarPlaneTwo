@@ -30,6 +30,7 @@
 #   error "FP2_TILE_POS_TECHNIQUE must be defined!"
 #endif // FP2_TILE_POS_TECHNIQUE
 
+//synced with net.daporkchop.fp2.core.engine.client.index.RenderIndex$PosTechnique
 #define FP2_TILE_POS_TECHNIQUE_VERTEX_ATTRIBUTE (0)
 #define FP2_TILE_POS_TECHNIQUE_UNIFORM_ARRAY_DRAWID (1)
 #define FP2_TILE_POS_TECHNIQUE_UNIFORM (2)

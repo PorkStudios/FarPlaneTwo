@@ -21,6 +21,7 @@
 #pragma once
 
 #include <"fp2:shaders/common.glsl">
+#include <"fp2:shaders/util/texture_uvs_technique.glsl"> //stateAndFaceIndexToTexQuadList(), quadIndexToQuad()
 
 //
 //
@@ -44,30 +45,6 @@ in VS_OUT {
 //
 
 out vec4 color;
-
-//
-//
-// SSBOs
-//
-//
-
-struct TexQuadList {
-    uint first;
-    uint last;
-};
-
-layout(TEXTURE_UVS_LISTS_SSBO_LAYOUT) readonly buffer TEXTURE_UVS_LISTS_SSBO_NAME {
-    TexQuadList b_texQuadList[];
-};
-
-struct TexQuad {
-    vec4 coords;
-    float tint;
-};
-
-layout(TEXTURE_UVS_QUADS_SSBO_LAYOUT) readonly buffer TEXTURE_UVS_QUADS_SSBO_NAME {
-    TexQuad b_texQuad[];
-};
 
 //
 //
@@ -107,9 +84,12 @@ vec2 texUvFactor(vec3 normal, vec3 pos)  {
 
 vec4 sampleTerrain(vec3 normal)  {
     vec2 factor = texUvFactor(normal, fs_in.pos);
-    TexQuadList list = b_texQuadList[fs_in.state * 6 + normalToFaceIndex(normal)];
 
-    TexQuad quad = b_texQuad[list.first];
+    uint state = fs_in.state;
+    uint faceIndex = normalToFaceIndex(normal);
+    TexQuadList list = stateAndFaceIndexToTexQuadList(state, faceIndex);
+
+    PackedBakedQuad quad = quadIndexToQuad(list.first);
     vec4 quadCoords = quad.coords;
     float tint = quad.tint;
 
@@ -122,7 +102,7 @@ vec4 sampleTerrain(vec3 normal)  {
     //this shouldn't be too bad performance-wise, because in all likelihood it'll have the same number of loops for all neighboring fragments
     // almost all the time
     for (uint i = list.first + 1; i < list.last; i++) {
-        quad = b_texQuad[i];
+        quad = quadIndexToQuad(i);
         quadCoords = quad.coords;
         tint = quad.tint;
 

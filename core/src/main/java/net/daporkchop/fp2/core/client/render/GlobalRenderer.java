@@ -27,6 +27,7 @@ import net.daporkchop.fp2.core.client.FP2Client;
 import net.daporkchop.fp2.core.client.IFrustum;
 import net.daporkchop.fp2.core.client.render.state.CameraStateUniforms;
 import net.daporkchop.fp2.core.client.render.state.DrawStateUniforms;
+import net.daporkchop.fp2.core.client.render.textureuvs.gpu.GpuQuadLists;
 import net.daporkchop.fp2.core.client.shader.ReloadableShaderRegistry;
 import net.daporkchop.fp2.core.client.shader.ShaderMacros;
 import net.daporkchop.fp2.core.client.shader.ShaderRegistration;
@@ -99,10 +100,15 @@ public final class GlobalRenderer {
             this.unsignedShortIndexFormat = IndexFormat.get(IndexType.UNSIGNED_SHORT);
             this.unsignedIntIndexFormat = IndexFormat.get(IndexType.UNSIGNED_INT);
 
-            this.uvQuadListSSBOFormat = AttributeFormat.get(gl, TextureUVs.QuadListAttribute.class, AttributeTarget.SSBO);
-            this.uvPackedQuadSSBOFormat = AttributeFormat.get(gl, TextureUVs.PackedBakedQuadAttribute.class, AttributeTarget.SSBO);
+            if (gl.supports(GpuQuadLists.QuadsTechnique.SSBO.requiredExtensions())) {
+                this.uvQuadListSSBOFormat = AttributeFormat.get(gl, TextureUVs.QuadListAttribute.class, AttributeTarget.SSBO);
+                this.uvPackedQuadSSBOFormat = AttributeFormat.get(gl, TextureUVs.PackedBakedQuadAttribute.class, AttributeTarget.SSBO);
+            } else {
+                this.uvQuadListSSBOFormat = null;
+                this.uvPackedQuadSSBOFormat = null;
+            }
 
-            this.shaderMacros = ShaderMacros.builder()
+            ShaderMacros.Builder shaderMacrosBuilder = ShaderMacros.builder()
                     .define("T_SHIFT", EngineConstants.T_SHIFT)
                     .define("RENDER_PASS_COUNT", RenderConstants.RENDER_PASS_COUNT)
                     .define("MAX_CLIPPING_PLANES", IFrustum.MAX_CLIPPING_PLANES)
@@ -114,14 +120,19 @@ public final class GlobalRenderer {
                     .define("DRAW_STATE_UNIFORMS_UBO_LAYOUT", this.drawStateUniformsFormat.interfaceBlockLayoutName())
                     .define("TEXTURE_ATLAS_SAMPLER_NAME", RenderConstants.TEXTURE_ATLAS_SAMPLER_NAME)
                     .define("LIGHTMAP_SAMPLER_NAME", RenderConstants.LIGHTMAP_SAMPLER_NAME)
-                    .define("TEXTURE_UVS_LISTS_SSBO_NAME", RenderConstants.TEXTURE_UVS_LISTS_SSBO_NAME)
-                    .define("TEXTURE_UVS_LISTS_SSBO_LAYOUT", this.uvQuadListSSBOFormat.interfaceBlockLayoutName())
-                    .define("TEXTURE_UVS_QUADS_SSBO_NAME", RenderConstants.TEXTURE_UVS_QUADS_SSBO_NAME)
-                    .define("TEXTURE_UVS_QUADS_SSBO_LAYOUT", this.uvPackedQuadSSBOFormat.interfaceBlockLayoutName())
                     .define("TILE_POS_ARRAY_UBO_NAME", RenderConstants.TILE_POS_ARRAY_UBO_NAME)
                     .define("TILE_POS_ARRAY_UBO_LAYOUT", "std140")
-                    .define("TILE_POS_ARRAY_UBO_ELEMENTS", RenderConstants.tilePosArrayUBOElements(gl))
-                    .build();
+                    .define("TILE_POS_ARRAY_UBO_ELEMENTS", RenderConstants.tilePosArrayUBOElements(gl));
+
+            if (gl.supports(GpuQuadLists.QuadsTechnique.SSBO.requiredExtensions())) {
+                shaderMacrosBuilder
+                        .define("TEXTURE_UVS_LISTS_SSBO_NAME", RenderConstants.TEXTURE_UVS_LISTS_SSBO_NAME)
+                        .define("TEXTURE_UVS_LISTS_SSBO_LAYOUT", this.uvQuadListSSBOFormat.interfaceBlockLayoutName())
+                        .define("TEXTURE_UVS_QUADS_SSBO_NAME", RenderConstants.TEXTURE_UVS_QUADS_SSBO_NAME)
+                        .define("TEXTURE_UVS_QUADS_SSBO_LAYOUT", this.uvPackedQuadSSBOFormat.interfaceBlockLayoutName());
+            }
+
+            this.shaderMacros = shaderMacrosBuilder.build();
 
             val log = fp2.log();
             for (val shaderRegistration : ShaderRegistration.getTypes(fp2)) {

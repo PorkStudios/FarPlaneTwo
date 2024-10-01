@@ -28,12 +28,12 @@ import lombok.NonNull;
 import lombok.val;
 import net.daporkchop.fp2.api.util.Direction;
 import net.daporkchop.fp2.api.world.registry.FGameRegistry;
-import net.daporkchop.fp2.common.util.alloc.DirectMemoryAllocator;
 import net.daporkchop.fp2.core.FP2Core;
 import net.daporkchop.fp2.core.client.render.TextureUVs;
+import net.daporkchop.fp2.core.client.render.textureuvs.gpu.SSBOQuadLists;
+import net.daporkchop.fp2.core.client.render.textureuvs.gpu.GpuQuadLists;
 import net.daporkchop.fp2.core.util.listener.ListenerList;
-import net.daporkchop.fp2.gl.attribute.AttributeBuffer;
-import net.daporkchop.fp2.gl.attribute.BufferUsage;
+import net.daporkchop.lib.common.closeable.PResourceUtil;
 import net.daporkchop.lib.common.misc.release.AbstractReleasable;
 import net.daporkchop.lib.primitive.map.ObjIntMap;
 import net.daporkchop.lib.primitive.map.open.ObjIntOpenHashMap;
@@ -52,8 +52,7 @@ public abstract class AbstractTextureUVs extends AbstractReleasable implements T
     protected final FP2Core fp2;
     protected final FGameRegistry registry;
 
-    protected final AttributeBuffer<QuadListAttribute> listsBuffer;
-    protected final AttributeBuffer<PackedBakedQuadAttribute> quadsBuffer;
+    protected final GpuQuadLists gpuQuadLists;
 
     protected int[] stateIdToIndexId;
 
@@ -63,18 +62,21 @@ public abstract class AbstractTextureUVs extends AbstractReleasable implements T
         this.fp2 = fp2;
         this.registry = registry;
 
-        this.listsBuffer = fp2.client().globalRenderer().uvQuadListSSBOFormat.createBuffer();
-        this.quadsBuffer = fp2.client().globalRenderer().uvPackedQuadSSBOFormat.createBuffer();
+        try {
+            //TODO: autodetect
+            this.gpuQuadLists = new SSBOQuadLists(fp2.client().gl(), fp2.client().globalRenderer());
 
-        this.reloadListenerHandle = fp2.client().textureUVsReloadListeners().add(this);
+            this.reloadListenerHandle = fp2.client().textureUVsReloadListeners().add(this);
+        } catch (Throwable t) {
+            throw PResourceUtil.closeSuppressed(t, this);
+        }
     }
 
     @Override
     protected void doRelease() {
-        this.reloadListenerHandle.close();
-
-        this.quadsBuffer.close();
-        this.listsBuffer.close();
+        PResourceUtil.closeAll(
+                this.reloadListenerHandle,
+                this.gpuQuadLists);
     }
 
     @Override
@@ -133,7 +135,7 @@ public abstract class AbstractTextureUVs extends AbstractReleasable implements T
         stateIdToIndexId.forEach((state, indexId) -> realStateIdToIndexId[state] = indexId);
         this.stateIdToIndexId = realStateIdToIndexId;
 
-        DirectMemoryAllocator alloc = new DirectMemoryAllocator(false);
+        /*DirectMemoryAllocator alloc = new DirectMemoryAllocator(false);
 
         QuadList[] quadIdToList = new QuadList[distinctQuadsById.size()];
         try (val quadsOut = this.quadsBuffer.format().createWriter(alloc)) {
@@ -154,7 +156,29 @@ public abstract class AbstractTextureUVs extends AbstractReleasable implements T
             }
 
             this.listsBuffer().set(listsOut, BufferUsage.STATIC_DRAW);
+        }*/
+
+        //sort quads into a single sequence
+        List<PackedBakedQuad> quadsOut = new ArrayList<>();
+        QuadList[] quadIdToList = new QuadList[distinctQuadsById.size()];
+        for (int i = 0, len = distinctQuadsById.size(); i < len; i++) {
+            val quads = distinctQuadsById.get(i);
+            quadIdToList[i] = new QuadList(quadsOut.size(), quadsOut.size() + quads.size());
+            quadsOut.addAll(quads);
         }
+
+        //sort lists into a single sequence
+        int listsOutSize = distinctIndicesById.size() * 6;
+        List<QuadList> listsOut = new ArrayList<>(listsOutSize);
+        for (int[] faceIds : distinctIndicesById) {
+            for (int i : faceIds) {
+                listsOut.add(quadIdToList[i]);
+            }
+        }
+        assert listsOut.size() == listsOutSize : listsOut.size() + " != " + listsOutSize;
+
+        //upload quads and lists to the GPU
+        this.gpuQuadLists.set(listsOut, quadsOut);
     }
 
     @Override

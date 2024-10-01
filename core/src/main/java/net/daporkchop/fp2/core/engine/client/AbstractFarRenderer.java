@@ -37,6 +37,7 @@ import net.daporkchop.fp2.core.client.render.state.CameraState;
 import net.daporkchop.fp2.core.client.render.state.CameraStateUniforms;
 import net.daporkchop.fp2.core.client.render.state.DrawState;
 import net.daporkchop.fp2.core.client.render.state.DrawStateUniforms;
+import net.daporkchop.fp2.core.client.render.textureuvs.gpu.GpuQuadLists;
 import net.daporkchop.fp2.core.client.shader.ReloadableShaderProgram;
 import net.daporkchop.fp2.core.client.shader.ReloadableShaderRegistry;
 import net.daporkchop.fp2.core.client.shader.ShaderMacros;
@@ -92,12 +93,14 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
     @ToString
     private static final class DrawShaderVariant {
         final @NonNull RenderIndex.PosTechnique posTechnique;
+        final @NonNull GpuQuadLists.QuadsTechnique quadsTechnique;
         final boolean cutout;
         final boolean stencil;
 
         public ImmutableMap<String, Object> defines() {
             ImmutableMap.Builder<String, Object> builder = ImmutableMap.builder();
             builder.put("FP2_TILE_POS_TECHNIQUE", this.posTechnique.ordinal());
+            builder.put("FP2_TEXTURE_UVS_TECHNIQUE", this.quadsTechnique.ordinal());
             if (this.cutout) {
                 builder.put("FP2_CUTOUT", true);
             }
@@ -105,17 +108,26 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
         }
 
         public static List<DrawShaderVariant> allVariants(@NonNull OpenGL gl) {
-            List<DrawShaderVariant> result = new ArrayList<>();
-            for (RenderIndex.PosTechnique posTechnique : RenderIndex.PosTechnique.values()) {
+            RenderIndex.PosTechnique[] posTechniques = RenderIndex.PosTechnique.values();
+            GpuQuadLists.QuadsTechnique[] quadsTechniques = GpuQuadLists.QuadsTechnique.values();
+
+            List<DrawShaderVariant> result = new ArrayList<>(posTechniques.length * quadsTechniques.length * 4);
+            for (val posTechnique : posTechniques) {
                 if (!gl.supports(posTechnique.requiredExtensions())) {
                     continue;
                 }
 
-                for (int i = 0b00; i <= 0b11; i++) {
-                    boolean cutout = (i & 0b01) != 0;
-                    boolean stencil = (i & 0b10) != 0;
+                for (val quadsTechnique : quadsTechniques) {
+                    if (!gl.supports(quadsTechnique.requiredExtensions())) {
+                        continue;
+                    }
 
-                    result.add(new DrawShaderVariant(posTechnique, cutout, stencil));
+                    for (int i = 0b00; i <= 0b11; i++) {
+                        boolean cutout = (i & 0b01) != 0;
+                        boolean stencil = (i & 0b10) != 0;
+
+                        result.add(new DrawShaderVariant(posTechnique, quadsTechnique, cutout, stencil));
+                    }
                 }
             }
             return result;
@@ -179,6 +191,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
     protected final BakeManager<VertexType> bakeManager;
 
     protected final RenderIndex.PosTechnique tilePosTechnique;
+    protected final GpuQuadLists.QuadsTechnique textureQuadsTechnique;
     protected final DrawMode drawMode;
 
     protected final StatePreserver statePreserverSelect;
@@ -228,10 +241,11 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
             this.bakeManager = new BakeManager<>(this, context.tileCache(), this.baker);
 
             this.tilePosTechnique = this.renderIndex.posTechnique();
+            this.textureQuadsTechnique = this.levelRenderer.textureUVs().gpuQuadLists().quadsTechnique;
 
-            this.blockShaderProgram = globalRenderer.shaderRegistry.get(new DrawShaderVariant(this.tilePosTechnique, false, false));
-            this.blockCutoutShaderProgram = globalRenderer.shaderRegistry.get(new DrawShaderVariant(this.tilePosTechnique, true, false));
-            this.blockStencilShaderProgram = globalRenderer.shaderRegistry.get(new DrawShaderVariant(this.tilePosTechnique, false, true));
+            this.blockShaderProgram = globalRenderer.shaderRegistry.get(new DrawShaderVariant(this.tilePosTechnique, this.textureQuadsTechnique, false, false));
+            this.blockCutoutShaderProgram = globalRenderer.shaderRegistry.get(new DrawShaderVariant(this.tilePosTechnique, this.textureQuadsTechnique, true, false));
+            this.blockStencilShaderProgram = globalRenderer.shaderRegistry.get(new DrawShaderVariant(this.tilePosTechnique, this.textureQuadsTechnique, false, true));
 
             {
                 StatePreserver.Builder statePreserverBuilder = StatePreserver.builder(this.gl);
@@ -250,6 +264,7 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
                         .indexedBuffer(IndexedBufferTarget.UNIFORM_BUFFER, RenderConstants.DRAW_STATE_UNIFORMS_UBO_BINDING)
                         .indexedBuffer(IndexedBufferTarget.SHADER_STORAGE_BUFFER, RenderConstants.TEXTURE_UVS_LISTS_SSBO_BINDING)
                         .indexedBuffer(IndexedBufferTarget.SHADER_STORAGE_BUFFER, RenderConstants.TEXTURE_UVS_QUADS_SSBO_BINDING);
+                this.levelRenderer.textureUVs().gpuQuadLists().preservedBindState(statePreserverBuilder);
                 this.renderIndex.preservedDrawState(statePreserverBuilder);
                 this.statePreserverDraw = statePreserverBuilder.build();
             }
@@ -341,12 +356,12 @@ public abstract class AbstractFarRenderer<VertexType extends AttributeStruct> ex
     }
 
     private void preRender() {
+        //bind uniform buffers
         this.gl.glBindBufferBase(GL_UNIFORM_BUFFER, RenderConstants.CAMERA_STATE_UNIFORMS_UBO_BINDING, this.cameraStateUniformsBuffer.buffer().id());
         this.gl.glBindBufferBase(GL_UNIFORM_BUFFER, RenderConstants.DRAW_STATE_UNIFORMS_UBO_BINDING, this.drawStateUniformsBuffer.buffer().id());
 
-        val textureUVs = this.levelRenderer.textureUVs();
-        this.gl.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, RenderConstants.TEXTURE_UVS_LISTS_SSBO_BINDING, textureUVs.listsBuffer().bufferSSBO().id());
-        this.gl.glBindBufferBase(GL_SHADER_STORAGE_BUFFER, RenderConstants.TEXTURE_UVS_QUADS_SSBO_BINDING, textureUVs.quadsBuffer().bufferSSBO().id());
+        //bind texture UVs
+        this.levelRenderer.textureUVs().gpuQuadLists().bind(this.gl);
 
         if (!FP2_DEBUG || this.fp2.globalConfig().debug().backfaceCulling()) {
             this.gl.glEnable(GL_CULL_FACE);
