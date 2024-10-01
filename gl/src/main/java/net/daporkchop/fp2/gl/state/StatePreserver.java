@@ -25,7 +25,7 @@ import lombok.RequiredArgsConstructor;
 import net.daporkchop.fp2.common.util.DirectBufferHackery;
 import net.daporkchop.fp2.gl.GLExtension;
 import net.daporkchop.fp2.gl.OpenGL;
-import net.daporkchop.fp2.gl.attribute.texture.TextureTarget;
+import net.daporkchop.fp2.gl.texture.TextureTarget;
 import net.daporkchop.fp2.gl.buffer.BufferTarget;
 import net.daporkchop.fp2.gl.buffer.IndexedBufferTarget;
 import net.daporkchop.lib.common.annotation.param.NotNegative;
@@ -332,7 +332,7 @@ public final class StatePreserver {
         //texture bindings
         for (TextureBinding binding : this.textureBindings) {
             gl.glActiveTexture(GL_TEXTURE0 + binding.unit);
-            gl.glBindTexture(binding.target.target(), binding.texture);
+            gl.glBindTexture(binding.target.id(), binding.texture);
             if (this.samplerObjects) {
                 gl.glBindSampler(binding.unit, binding.sampler);
             }

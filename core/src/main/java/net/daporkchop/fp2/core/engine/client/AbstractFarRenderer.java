@@ -59,7 +59,7 @@ import net.daporkchop.fp2.gl.OpenGL;
 import net.daporkchop.fp2.gl.attribute.AttributeFormat;
 import net.daporkchop.fp2.gl.attribute.AttributeStruct;
 import net.daporkchop.fp2.gl.attribute.UniformBuffer;
-import net.daporkchop.fp2.gl.attribute.texture.TextureTarget;
+import net.daporkchop.fp2.gl.texture.TextureTarget;
 import net.daporkchop.fp2.gl.buffer.IndexedBufferTarget;
 import net.daporkchop.fp2.gl.buffer.upload.BufferUploader;
 import net.daporkchop.fp2.gl.buffer.upload.ImmediateBufferUploader;

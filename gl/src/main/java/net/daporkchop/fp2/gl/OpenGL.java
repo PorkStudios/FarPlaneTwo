@@ -67,6 +67,7 @@ public abstract class OpenGL {
 
     //these are currently all enabled by default, as they don't seem to make much performance difference
     public static final boolean PRESERVE_REGULAR_BUFFER_BINDINGS_IN_METHODS = Boolean.parseBoolean(System.getProperty("fp2.gl.opengl.preserveBufferBindings", "true"));
+    public static final boolean PRESERVE_TEXTURE_BINDINGS_IN_METHODS = Boolean.parseBoolean(System.getProperty("fp2.gl.opengl.preserveTextureBindings", "true"));
     public static final boolean PRESERVE_VAO_BINDINGS_IN_METHODS = Boolean.parseBoolean(System.getProperty("fp2.gl.opengl.preserveVaoBindings", "true"));
     public static final boolean PRESERVE_PROGRAM_BINDINGS_IN_METHODS = Boolean.parseBoolean(System.getProperty("fp2.gl.opengl.preserveProgramBindings", "true"));
 
@@ -1917,6 +1918,9 @@ public abstract class OpenGL {
         @GLRequires(GLExtension.GL_ARB_uniform_buffer_object)
         private final int maxUniformBlockSize;
 
+        @GLRequires(GLExtension.GL_ARB_texture_buffer_object)
+        private final int maxTextureBufferSize;
+
         @GLRequires(GLExtension.GL_ARB_compute_shader)
         private final int maxComputeWorkGroupInvocations;
         @GLRequires(GLExtension.GL_ARB_compute_shader)
@@ -1950,6 +1954,12 @@ public abstract class OpenGL {
                 this.maxUniformBlockSize = gl.glGetInteger(GL_MAX_UNIFORM_BLOCK_SIZE);
             } else {
                 this.maxUniformBufferBindings = this.maxUniformBlockSize = 0;
+            }
+
+            if (gl.supports(GLExtension.GL_ARB_texture_buffer_object)) {
+                this.maxTextureBufferSize = gl.glGetInteger(GL_MAX_TEXTURE_BUFFER_SIZE);
+            } else {
+                this.maxTextureBufferSize = 0;
             }
 
             if (gl.supports(GLExtension.GL_ARB_compute_shader)) {
